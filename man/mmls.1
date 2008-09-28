@@ -1,0 +1,76 @@
+.TH MMLS 1 
+.SH NAME
+mmls \- Display the partition layout of a volume system  (partition tables)
+.SH SYNOPSIS
+.B mmls [-t
+.I mmtype 
+.B ] [-o
+.I offset
+.B ] [ -i
+.I imgtype
+.B ] [-brvV]  [-aAmM]
+.I image [images]
+.SH DESCRIPTION
+.B mmls
+displays the layout of the partitions in a volume system, which include partition
+tables and disk labels.
+
+.SH ARGUMENTS
+.IP "-t mmtype"
+Specify the media management type.  Use '-t list' to list the supported types. If not given, autodetection methods are used.
+.IP "-o offset"
+Specify the offset into the image where the volume containing the
+partition system starts.  The relative offset of the partition system
+will be added to this value.
+.IP "-i imgtype"
+Identify the type of image file, such as raw or split.  If not given, autodetection methods are used.
+.IP -b
+Include a column with the partition sizes in bytes
+.IP -r
+Recurse into DOS partitions and look for other partition tables.  This setup frequently occurs when Unix is installed on x86 systems.  
+.IP -v
+Verbose output of debugging statements to stderr
+.IP -V
+Display version
+.IP -a
+Show allocated volumes
+.IP -A
+Show unallocated volumes
+.IP -m
+Show metadata volumes
+.IP -M
+Hide metadata volumes
+.IP "image [images]"
+One (or more if split) disk images whose format is given with '-i'.
+
+.PP
+\'mmls\' is similar to 'fdisk -lu' in Linux with a few differences.  
+Namely, it will show which sectors are not being used so that those
+can be searched for hidden data.  It also gives the length value so
+that it can be plugged into 'dd' more easily for extracting the
+partitions.  It also will show BSD disk labels for Free, Open, and
+NetBSD and will display the output in sectors and not cylinders.  
+Lastly, it works on non-Linux systems.
+
+If none of -a, -A, -m, or -M are given then all volume types will
+be listed.  If any of them are given, then only the types specified
+on the command line will be listed.  Allocated volumes are those
+that are listed in a partition table in the volume system.  Unallocated
+volumes are virtually created by mmls to show you which sectors
+have not been allocated to a volume.  The metadata volumes overlap
+the allocated and unallocated volumes and describe where the partition
+tables and other metadata structures are located.  In some volume
+systems, these structures are in allocated space and in others they
+are in unallocated space.  They can be hidden with -M.
+
+.SH "EXAMPLES"
+To list the partition table of a Windows system using autodetect:
+
+# mmls disk_image.dd
+
+To list the contents of a BSD system that starts in sector 12345 of a split image:
+
+# mmls -t bsd -o 12345 -i split disk-1.dd disk-2.dd
+
+.SH AUTHOR
+Brian Carrier <carrier at sleuthkit dot org>

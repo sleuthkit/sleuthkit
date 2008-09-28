@@ -1,0 +1,27 @@
+/*! \page hashdbpage Hash Databases
+   
+This section describes some the API functions and concepts associated with the Hash Database library.  
+
+\section hash_over Overview
+
+Hash databases are frequently used to identify known good and known bad files. Text files of MD5 and SHA-1 hashes can be easily created and shared, but they are frequently not the most efficient to use to use when searching for a hash because they are in an unsorted order. 
+
+The hash database functions in TSK create an index into text file hash databases and allow you to more quickly perform lookups.  TSK  uses the index to perform binary searches for the hashes (see <a href="http://www.sleuthkit.org/informer/sleuthkit-informer-6.html">Informer #6</a>). 
+
+\section hash_open Opening a Hash Database
+Before a database can be indexed or searched, it must first be opened.  Use the tsk_hdb_open() function to open the database. There is a flag that can be specified to open only the index.  This allows you to save storage space by keeping only the index around, but it means that you will not have access to other metadata that is stored in the database. 
+
+The tsk_hdb_open() function will return a TSK_HDB_INFO structure that will be used as a handle to index and search the database. An open hash database can be closed with tsk_hdb_close(). 
+
+\section hash_index Indexing a Hash Database
+A single database can have more than one index if the database contains multiple hash types.  For example, both MD5 and SHA-1 indexes can be made for the NSRL database.  Because multiple indexes can exist, you must specify the type when making or testing for an index. 
+
+You can test if an open hash database has an index by using the tsk_hdb_hasindex().  If you need to create one, use the tsk_hdb_makeindex() function. This process may take several minutes (or longer). 
+
+\section hash_search Searching a Hash Database
+An indexed database can be searched using either tsk_hdb_lookup_raw() or tsk_hdb_lookup_str().  The only difference is that tsk_hdb_lookup_raw() takes the hash value as a byte array and tsk_hdb_lookup_str() takes the hash value as a string. 
+
+Both functions can call a callback with details of entries that are found, or the QUICK flag can be given in which case the callback is not called and instead the return value of the function identifies if the hash is in the database or not. 
+
+Back to \ref users_guide "Table of Contents"
+*/

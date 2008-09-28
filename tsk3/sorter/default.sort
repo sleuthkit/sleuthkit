@@ -1,0 +1,181 @@
+#
+# default.sort
+# default config file for Sleuth Kit sorter
+#
+# These settings have the lowest priority of all config files
+#
+# It is used for ALL platform types though
+#
+#
+# Category
+# If the keyword is found in the 'file' output, then the data is saved
+# to either the summary file or even copied if the appropriate flags are
+# given
+#
+# category	cat_name	keywords
+#
+#
+# Extension
+# If the keywords are found in the 'file' output, and the file extension
+# is different than then the one on the file, an alert is generated 
+# 'somewhere'
+# ext		ext1,ext2,ext3	keywords
+
+
+
+
+##########################################################################
+# Multimedia
+##########################################################################
+
+# Audio
+category    audio           audio
+
+category	audio			MIDI
+ext			mid,rmi			MIDI
+
+category	audio			MP3
+ext			mp3				MP3
+
+
+
+# Images
+category	images		image data
+ext			jpg,jpeg,jpe 	JPEG image data	
+ext			gif			GIF image data
+ext			tif			TIFF image data
+ext			png			PNG image data
+
+category	images		bitmap data
+ext			bmp			PC bitmap data
+
+category	images		font
+ext			ttf			true type font
+
+
+
+# Video
+category	video		RealMedia
+ext			rm			RealMedia
+
+
+
+
+##########################################################################
+# archive & compression
+##########################################################################
+
+# archive
+category	archive		archive 
+ext			zip,jar		Zip archive data
+ext			tar			tar archive
+
+category    archive     DB
+ext         db      	Berkeley DB
+
+
+# compression
+category    compress        compress
+ext         gz,tgz          gzip compressed data
+ext         Z               compress'd data
+
+
+
+
+##########################################################################
+# Executables 
+##########################################################################
+# Execs
+category 	exec		executable
+category	exec		\sscript
+# the above can cause errors with postscript and transcript
+
+category	exec		batch file
+
+# NOTE: Some windows binaries have the term "executable not relocatable"
+# which will trigger on this when it should trigger on executable
+category	exec		relocatable
+
+
+# Java
+category	exec		class data
+ext			class		Java class data
+
+
+category	exec		object
+ext			o			object
+
+category	exec		python compiled
+
+
+
+
+##########################################################################
+# Documents, 
+##########################################################################
+category	documents				document 
+
+
+# Microsoft
+ext			doc,dot,ppt,pot,xls,xlt,msc,pcb			Microsoft Office Document
+
+category	documents				Rich Text Format
+ext			rtf						Rich Text Format
+
+# Corel & Word Perfect
+category	documents				Corel\/WP
+ext			wpg,wpd,shw				Corel\/WP
+
+# Lotus 
+category	documents				Lotus 1\-2\-3
+ext			wb2						Lotus 1\-2\-3
+
+# Adobe
+ext			pdf						PDF document
+ext			ps,eps					PostScript document
+
+
+##########################################################################
+# Text
+##########################################################################
+category	text			ASCII(.*?)text
+ext         txt,log         ASCII(.*?)text
+ext			c,cpp,h,js		ASCII(.*?)text
+ext			sh,csh			ASCII(.*?)text
+ext			conf			ASCII(.*?)text
+
+category    text            character data
+ext         txt             character data
+
+category	text			ISO\-8859(.*?)text
+ext         txt             ISO\-8859(.*?)text
+
+category	text			HTML document text
+ext			htm,html,hta	HTML document text
+
+category	text		program text
+ext			c,cpp,h,js	program text
+category	text		\ssource
+
+
+
+##########################################################################
+# Other
+##########################################################################
+# Disk
+category	disk			boot sector
+category	disk			filesystem data
+
+
+# Crypto
+category	crypto			PGP
+ext			asc				PGP armored
+
+# Postscript Printer Description
+category	system			PPD file
+ext			ppd				PPD file
+
+
+# 'file' reports 'data' for all unknown binary files
+# do not bother with extensions with this 
+category	data			^data$

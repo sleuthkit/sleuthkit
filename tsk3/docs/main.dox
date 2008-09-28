@@ -1,0 +1,28 @@
+/*! \mainpage The Sleuth Kit (TSK) Library User's Guide and API Reference
+
+  \author Brian Carrier
+
+<h3>Overview</h3>
+    This document was designed to help integrate the <a href="http://www.sleuthkit.org/sleuthkit/">Sleuth Kit</a> (TSK) library into an application that needs to analyze data from a disk image. Note that this document does not contain information about using the command line tools in TSK.  The command line tools use the functionality of this library, but this document is for programmers who want to use the library.
+
+    There are two main sections to this document.  One is the User's Guide that describes the organization of TSK, the APIs, and how to use them together.  The other is a list of the API functions and a description of their arguments and return values.  
+
+<h3>User's Guide</h3>
+\anchor users_guide
+The User's Guide describes the various components of TSK and how to use them.  It refers to specific functions and data structures with links to the details in the API Reference. 
+  - \subpage basicpage
+  - \subpage basepage 
+  - \subpage imgpage 
+  - \subpage vspage 
+  - \subpage fspage 
+  - \subpage hashdbpage
+
+<h3>API Reference</h3>
+The API Reference lists the public API functions and the arguments and return values.  The Users's Guide should be read first so that the interaction and use of the functions are understood.  These pages can also be found in the <a href="modules.html">Modules</a> section.  
+  - \ref baselib
+  - \ref imglib
+  - \ref vslib
+  - \ref fslib
+  - \ref hashdblib
+*/
+

@@ -1,0 +1,61 @@
+.TH ICAT 1 
+.SH NAME
+icat \- Output the contents of a file based on its inode number.
+.SH SYNOPSIS
+.B icat [-hrsvV] [-f
+.I fstype
+.B ] [-i
+.I imgtype
+.B ] [-o 
+.I imgoffset
+.B ]
+.I image [images] inode 
+.SH DESCRIPTION
+.B icat
+opens the named 
+.I image(s)
+and copies the file with the specified 
+.I inode
+number to standard output.
+
+.SH ARGUMENTS
+.IP "-f fstype"
+Specifies the file system type.  
+Use '-f list' to list the supported file system types.
+If not given, autodetection methods are used.
+.IP -h
+Skip over holes in sparse files, so that absolute address information
+is lost. This option saves space when copying sparse files.
+.IP -r
+Use file recovery techniques if the file is deleted.  
+.IP -s
+Include the slack space in the output.
+.IP "-i imgtype"
+Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+If not given, autodetection methods are used.
+.IP "-o imgoffset"
+The sector offset where the file system starts in the image.  Non-512 byte
+sectors can be specified using '@' (32@2048).
+.IP -v
+Enable verbose mode, output to stderr.
+.IP -V
+Display version
+.IP "image [images]"
+One (or more if split) disk or partition images whose format is given with '-i'.
+.IP inode
+Inode number. \fBicat\fR concatenates the contents of all specified
+files.
+.SH LICENSE
+This software is distributed under the IBM Public License.
+.SH HISTORY
+First appeared in The Coroners Toolkit (TCT) 1.0 and is now
+in The Sleuth Kit.
+.SH AUTHOR(S)
+Wietse Venema
+IBM T.J. Watson Research
+P.O. Box 704
+Yorktown Heights, NY 10598, USA
+
+This version is maintained by Brian Carrier (carrier at sleuthkit at org).
+
+Send documentation updates to <doc-updates at sleuthkit dot org>

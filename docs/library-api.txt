@@ -1,0 +1,4 @@
+The library API documentation can be found online at:
+
+    http://www.sleuthkit.org/sleuthkit/docs/api-docs/
+

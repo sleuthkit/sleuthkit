@@ -1,0 +1,127 @@
+.TH FLS 1 
+.SH NAME
+fls \- List file and directory names in a disk image.
+.SH SYNOPSIS
+.B fls [-adDFlpruvV] [-m
+.I mnt
+.B ] [-z
+.I zone
+.B ] [-f
+.I fstype
+.B ] [-s
+.I seconds
+.B ] [-i 
+.I imgtype
+.B ] [-o 
+.I imgoffset
+.B ] 
+.I image [images] 
+.B [
+.I inode
+.B ]
+.SH DESCRIPTION
+.B fls
+lists the files and directory names in the
+.I image
+and can display file names of recently deleted files for the directory
+using the given
+.I inode.
+If the inode argument is not given, the inode value for the root directory is used. For example, on an NTFS file system it would be 5 and on a Ext3 file system it would be 2. 
+
+The arguments are as follows:
+.IP -a
+Display the "." and ".." directory entries (by default it does not)
+.IP -d
+Display deleted entries only
+.IP -D  
+Display directory entries only
+.IP "-f fstype"
+The type of file system.  
+Use '-f list' to list the supported file system types.
+If not given, autodetection methods are used.
+.IP -F  
+Display file (all non-directory) entries only.  
+.IP -l  
+Display file details in long format.  The following contents are displayed:
+
+file_type inode file_name mod_time acc_time cre_time size uid gid
+.IP "-m mnt"
+.RB "Display files in time machine format so that a timeline can be \
+    created with mactime(1).  
+The string given as 
+.I mnt
+will be prepended to the file names as the mounting point 
+(for example /usr).  
+.IP -p  
+Display the full path for each entry.  By default it denotes
+the directory depth on recursive runs with a '+' sign. 
+.IP -r  
+Recursively display directories.  This will not
+follow deleted directories, because it can't. 
+.IP "-s seconds"
+The time skew of the original system in seconds.  For example, if the
+original system was 100 seconds slow, this value would be -100.  This 
+is only used if -l or -m are given.
+.IP "-i imgtype"
+Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+If not given, autodetection methods are used.
+.IP "-o imgoffset"
+The sector offset where the file system starts in the image.  Non-512 byte
+sectors can be specified using '@' (32@2048).
+.IP -u  
+Display undeleted entries only
+.IP -v
+Verbose output to stderr.
+.IP -V
+Display version.
+.IP "-z zone"
+The ASCII string of the time zone of the original system.  For
+example, EST or GMT.  These strings must be defined by your operating
+system and may vary.  
+.IP "image [images]"
+One (or more if split) disk or partition images whose format is given with '-i'.
+
+.PP
+Once the inode has been determined, the file can be recovered using
+.BR icat(1)
+from The Coroners Toolkit.  The amount of information recovered from
+deleted file entries varies depending on the system.  For example,
+on Linux, a recently deleted file can be easily recovered, while in
+Solaris not even the inode can be determined.  If you just want to
+find what file name belongs to an inode, it is easier to use
+.BR ffind(1).
+
+.SH EXAMPLES
+To get a list of all files and directories in an image use:
+
+	# fls -r image 2
+
+	or just (if no inode is specified, the root directory inode is used):
+
+	# fls -r image 
+
+To get the full path of deleted files in a given directory:
+
+	# fls -d -p image 29
+
+To get the mactime output do:
+
+	# fls -m /usr/local image 2
+
+If you have a disk image and the file system starts in sector 63, use:
+
+	# fls -o 63 disk-img.dd 
+
+If you have a disk image that is split use:
+
+	# fls -i "split" -o 63 disk-1.dd disk-2.dd disk-3.dd
+
+
+.SH "SEE ALSO"
+.BR ffind (1),
+.BR icat (1)
+
+.SH AUTHOR
+Brian Carrier <carrier at sleuthkit dot org>
+
+Send documentation updates to <doc-updates at sleuthkit dot org>

@@ -1,0 +1,29 @@
+#
+# images.sort
+# Save Images only
+# config file for Sleuth Kit sorter
+#
+# Category
+# If the keyword is found in the 'file' output, then the data is saved
+# to either the summary file or even copied if the appropriate flags are
+# given
+#
+# category	cat_name	keywords
+#
+#
+# Extension
+# If the keywords are found in the 'file' output, and the file extension
+# is different than then the one on the file, an alert is generated 
+# 'somewhere'
+# ext		ext1,ext2,ext3	keywords
+
+# Images
+category	images		image data
+ext			jpg,jpeg,jpe 	JPEG image data	
+ext			gif			GIF image data
+ext			tif			TIFF image data
+ext			png			PNG image data
+
+category	images		bitmap data
+ext			bmp			PC bitmap data
+

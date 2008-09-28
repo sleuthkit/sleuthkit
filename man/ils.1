@@ -1,0 +1,136 @@
+.TH ILS 1 
+.SH NAME
+ils \- List inode information
+.SH SYNOPSIS
+.B ils [-emOpvV] [-f 
+.I fstype
+.B ] [-s 
+.I seconds
+.B ] [-i
+.I imgtype
+.B ] [-o
+.I imgoffset
+.B ]
+.I image [images] [start-stop]
+
+.B ils [-aAlLvVzZ] [-f
+.I fstype
+.B ] [-s
+.I seconds
+.B ] [-i
+.I imgtype
+.B ] [-o
+.I imgoffset
+.B ]
+.I image [images] [start-stop]
+.SH DESCRIPTION
+.B ils
+opens the named 
+.I image(s)
+and lists inode information. By default, 
+.B ils
+lists only the inodes of removed files.
+
+Arguments:
+.IP \fB-e\fR
+List every inode in the file system.
+.IP "\fB-f\fI fstype\fR"
+Specifies the file system type.  
+Use '-f list' to list the supported file system types.
+If not given, autodetection methods are used.
+.IP "\fB-s\fI seconds\fR"
+The time skew of the original system in seconds.  For example, if the
+original system was 100 seconds slow, this value would be -100. 
+.IP \fB-m\fR
+Display the inode details in the format that the mactime program reads
+(replaces the ils2mac script from TCT)
+.IP \fB-O\fR
+List only inodes of removed files that are still open or executing.
+This option is short-hand notation for \fB-aL\fR
+"(see the \fBfine controls\fR section below). (this used to be -o).
+.IP \fB-p\fR
+Display orphan inodes (unallocated with no file name)
+.IP \fB-r\fR
+(default) List only inodes of removed files. This option is short-hand notation
+for \fB-LZ\fR
+(see the \fBfine controls\fR section below).
+.IP "-i imgtype"
+Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+If not given, autodetection methods are used.
+.IP "-o imgoffset"
+The sector offset where the file system starts in the image.  Non-512 byte
+sectors can be specified using '@' (32@2048).
+.IP \fB-v\fR
+Turn on verbose mode, output to stderr.
+.IP \fB-V\fR
+Display Version.
+.IP "image [images]"
+One (or more if split) disk or partition images whose format is given with '-i'.
+.IP "\fIstart-stop\fR"
+Examine the specified inode number or number range. 
+.PP
+Fine controls:
+.IP \fB-a\fR
+List only allocated inodes: these belong to files with at least one
+directory entry in the file system, and to removed files that
+are still open or executing.
+.IP \fB-A\fR
+List only unallocated inodes: these belong to files that no longer
+exist.
+.IP \fB-l\fR
+List only inodes with at least one hard link. These belong to files
+with at least one directory entry in the file system.
+.IP \fB-L\fR
+List only inodes without any hard links. These belong to files that no
+longer exist, and to removed files that are still open or executing.
+.IP \fB-z\fR
+List only inodes with zero status change time. Presumably, these
+inodes were never used.
+.IP \fB-Z\fR
+List only inodes with non-zero status change time. Presumably, these
+belong to files that still exist, or that existed in the past.
+.PP
+The output format is in time machine format.
+The output begins with a two-line header that
+describes the data origin, and is followed by a one-line header
+that lists the names of the data attributes that make up the
+remainder of the output:
+.IP st_ino
+The inode number.
+.IP st_alloc
+Allocation status: `a' for allocated inode, `f' for free inode.
+.IP st_uid
+Owner user ID.
+.IP st_gid
+Owner group ID.
+.IP st_mtime
+UNIX time (seconds) of last file modification.
+.IP st_atime
+UNIX time (seconds) of last file access.
+.IP st_ctime
+UNIX time (seconds) of last inode status change.
+.IP st_dtime
+UNIX time (seconds) of file deletion (LINUX only).
+.IP st_mode
+File type and permissions (octal).
+.IP st_nlink
+Number of hard links.
+.IP st_size
+File size in bytes.
+.IP st_block0,st_block1
+The first two entries in the direct block address list.
+.SH SEE ALSO
+mactime(1)
+.SH LICENSE
+This software is distributed under the IBM Public License.
+.SH HISTORY
+First appeared in The Coroners Toolkit (TCT) 1.0.
+.SH AUTHOR(S)
+Wietse Venema
+IBM T.J. Watson Research
+P.O. Box 704
+Yorktown Heights, NY 10598, USA
+
+This version is maintained by Brian Carrier (carrier at sleuthkit dot org)
+
+Send documentation updates to <doc-updates at sleuthkit dot org>

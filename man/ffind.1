@@ -1,0 +1,57 @@
+.TH FFIND 1 
+.SH NAME
+ffind \- Finds the name of the file or directory using a given inode
+.SH SYNOPSIS
+.B ffind [-aduvV] [-f fstype] [-i imgtype] [-o imgoffset]
+.I image inode
+.SH DESCRIPTION
+.B ffind
+finds the names of files or directories that are allocated to 
+.I inode
+on disk image 
+.I image.
+By default it only will only return the first name it finds.  With
+some file systems, this will find deleted file names.
+
+.SH ARGUMENTS
+.IP "image [images]"
+One (or more if split) disk or partition images whose format is given with '-i'.
+.IP inode
+Integer of inode to find.
+
+The optional arguments are:
+.IP -a
+Find all occurrences of inode.
+.IP -d
+Find deleted entries only.
+.IP "-f fstype"
+Identify the file system type of the image.  
+Use '-f list' to list the supported file system types.
+If not given, autodetection methods are used.
+.IP -u
+Find undeleted entries only.
+.IP "-i imgtype"
+Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+If not given, autodetection methods are used.
+.IP "-o imgoffset"
+The sector offset where the file system starts in the image.  Non-512 byte
+sectors can be specified using '@' (32@2048).
+.IP -v
+Verbose output to stderr.
+.IP -V
+Display version.
+
+.PP
+This program searches all directory entries looking for the
+given inode.  This is useful when an inode has been identified
+from a disk unit address using 
+.BR ifind(1).
+
+.SH EXAMPLE
+# ffind -a image 212
+.SH "SEE ALSO"
+.BR ifind (1)
+.SH AUTHOR
+Brian Carrier <carrier at sleuthkit dot org>
+
+Send documentation updates to <doc-updates at sleuthkit dot org>

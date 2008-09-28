@@ -1,0 +1,8 @@
+#!/bin/sh
+
+RMAN=../../rman-3.2/rman
+
+files='blkcalc blkcat disk_sreset disk_stat blkls blkstat ffind fls fsstat hfind icat ifind ils img_cat img_stat istat jcat jls mactime mmcat mmls mmstat sigfind sorter'
+for f in $files
+  do $RMAN -f html ${f}.1 > ../../www/man/${f}.html
+done

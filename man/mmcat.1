@@ -1,0 +1,39 @@
+.TH MMCAT 1 
+.SH NAME
+mmcat \- Output the contents of a partition to stdout
+.SH SYNOPSIS
+.B mmcat [-t
+.I mmtype 
+.B ] [-o
+.I offset
+.B ] [ -i
+.I imgtype
+.B ] [-vV] 
+.I image [images] part_num
+.SH DESCRIPTION
+.B mmcat
+outputs the contents of a specific volume to stdout.  This allows you to
+extract the contents of a partition to a seperate file.
+
+.SH ARGUMENTS
+.IP "-t mmtype"
+Specify the media management type.  Use '-t list' to list the supported types. If not given, autodetection methods are used.
+.IP "-o offset"
+Specify the offset into the image where the volume containing the
+partition system starts.  The relative offset of the partition system
+will be added to this value.
+.IP "-i imgtype"
+Identify the type of image file, such as raw or split.  If not given, autodetection methods are used.
+.IP -v
+Verbose output of debugging statements to stderr
+.IP -V
+Display version
+.IP "image [images]"
+One (or more if split) disk images whose format is given with '-i'.
+.IP "part_num"
+Address of partition to process.  See the mmls output to determine the address of the partitions. 
+
+.SH AUTHOR
+Brian Carrier <carrier at sleuthkit dot org>
+
+Send documentation updates to <doc-updates at sleuthkit dot org>

@@ -1,0 +1,175 @@
+/*! \page fspage File Systems
+
+This section describes the general file system analysis concepts and corresponding APIs in TSK.  In addition to this documentation, there are sample programs in the <tt>samples</tt> directory in TSK that show these functions being used while processing a disk image. 
+
+\section fs_gen General Concepts
+\subsection fs_layers File System Layers
+
+File systems are a collection of data structures that are stored in a disk or volume that allow you to save and open files. There are many different file systems and they all have unique data structures, but there are some general concepts that apply to all file systems.  These general concepts are used in TSK to provide generic access to a variety of file systems. 
+
+TSK organizes the data in file systems into five categories: File System, Data Units, Metadata, File Name, and Application. All data can be categorized into one of these: 
+<ul>
+<li>File System Category:  The data in this category describe the layout and general features of the file system.  For example, how big each data unit is and how many data units there are.</li>
+
+<li>Data Unit Category: This category contains the data units (i.e. blocks and clusters) in the file system that can store file content. Data units are a fixed size and most file systems require it to be a power of 2, 1024- or 4096-bytes for example. </li>
+<li>Metadata Category: This is where the descriptive data about files and directories are stored. This layer includes the inode structures in UNIX, MFT entries in NTFS, and directory entry structures in FAT. This layer contains information such as last access times, permissions, and pointers to the data units that were allocated by the file or directory. The data in this category completely describes a file, but it is typically given a numeric address that is difficult to remember.</li>
+<li>File Name Category: This is where the actual name of the file or directory is saved. In general, this is a different structure than the metadata structure. The exception to this is the FAT file system. File names are typically stored in data structures in the parent directory. The data structures contain a pointer to the metadata structure, which contains the rest of the file information. </li>
+
+<li>Application Category: This is where a bunch of non-essential file system data exists. These are features that make life easier for the file system and operating system. Examples include journals that record file system updates and lists that record what files have recently been updated. </li>
+</ul>
+
+A basic ASCII diagram is shown here of the different categories.  The file system category identifies the locations of the file name, metadata, data units, and application categories.  The file names then point to the metadata, and the metadata points to the data units. 
+<pre>
+                     +-------------------------+
+                     |       File System       |
+                     +-------------------------+
+                       /          |           \        +------------------+
+                      /           |            \       |   Application    |
+                     /            |             \      +------------------+
+                    /             |              \
+        +------------+      +-----------+      +-------------+
+        | File Names | ---> | Metadata  | ---> | Data Units  |
+        +------------+      +-----------+      +-------------+
+</pre>
+
+The command line tools and the file system APIs are organized based on these layers.   Data at each layer can be directly accessed and some functions combine layers. 
+    
+\subsection fs_del Deleted Files
+
+When a file is deleted, its data units, metadata structure, and file name structure are typically marked as being free and they can be reused when a new file is created.  It is very easy for them to be reallocated at different times and therefore care must be taken when interpreting the data associated with deleted files. 
+
+When you encounter an unallocated file name, check the allocation status of the metadata structure it points to.  If the metadata structure is allocated, then either the metadata structure was reallocated to a new file or the the unallocated file name was created when a file was moved and the unallocated name is the old file name.  In general, there is no way to differentiate between these two scenarios (the exception is in NTFS, which includes sequence numbers that increment each time the metadata structure is reallocated). One test that can be applied in this situation is to compare the type (i.e. file or directory) as reported in the file name structure versus the type as reported in the metadata structure. If one is a directory and one is a file, then the metadata structure was reallocated.  You could also compare the file name extension with the file type (i.e. HTML, doc, JPEG). 
+
+When you encounter an unallocated metadata entry, there may no longer be a file name structure that points to it. These are called <b>orphan files</b>.  You will still be able to access them via their metadata address, but the their full path will be unknown.  TSK makes a special directory to store the orphan files in so that they can be easily accessed.  
+
+
+
+    \section fs_open Opening the File System
+Typically, a file system exists in a \ref vspage "volume", but it can also exist on its own on a disk (such as a USB drive, CD-ROM, or floppy disk).  You may also have an image file that is of only one partition (i.e. a logical image). Because of these different scenarios, TSK has two functions to open a file system.     
+
+The tsk_fs_open_img() function allows you to open a file system using only a TSK_IMG_INFO structure and an offset.  The offset indicates the location where the file system starts in the image. As a convenience, there is also the tsk_fs_open_vol() function that takes a TSK_VS_PART_INFO structure as an argument and determines the offset based on the volume information. 
+
+Both of these functions return a TSK_FS_INFO structure that is used as a handle for more detailed file system analysis.  Close the file system with the tsk_fs_close() function.   The TSK_FS_INFO structure contains data regarding the number of data units, the number of metadata structures, etc. 
+
+    \subsection fs_types File System Types
+
+    The functions that open the file system can detect the file system type, but sometimes you may need to specify it (if for example TSK detects multiple file system structures).   Internally, TSK uses a numerical ID (TSK_FS_TYPE_ENUM) for each file system type, which is stored in TSK_FS_INFO::ftype.  
+
+If you have an TSK_FS_INFO structure and want to know what file system type it is for, you can pass the TSK_FS_INFO::ftype value to one of the TSK_FS_TYPE_ISXXX macros, such as TSK_FS_TYPE_ISNTFS(). 
+
+<pre>
+	if (TSK_FS_TYPE_ISNTFS(fs_info->ftype)) {
+		....
+	}
+</pre>
+
+To map from the numerical ID to a short name (such as "ntfs"), the tsk_fs_type_toname() function can be used.  You can also map from the short name to the ID using the tsk_fs_type_toid() function.
+
+    To determine the IDs of the supported file systems, the tsk_fs_type_supported() function can be used.  The names and descriptions of the supported types can be printed to an open FILE handle using the tsk_fs_type_print() function.
+
+ 	\subsection fs_read Reading General File System Data
+As you will see, there are many ways to access file system data from the different categories. One of the most generic methods is using the tsk_fs_read() function.  It simply takes a byte offset relative to the start of the file system and a buffer to read the data into.  It does not care about block addresses or files.  In the following sections, there are smarter versions of this function that will take block addresses as an argument, instead of a byte offset. 
+
+
+\section fs_block_open Opening and Reading File System Blocks
+TSK allows you to read the contents of any block in the file system. The size of each data unit is defined in the TSK_FS_INFO::block_size field and the number of data units (as defined by the file system) is defined in the TSK_FS_INFO::block_count field.  The address of the first block is defined in TSK_FS_INFO::first_block and the last block address (as defined by the file system structures) is defined in TSK_FS_INFO::last_block.  In some cases, the image may not be complete and the last block that can be read is less than TSK_FS_INFO::last_block.  In that case, TSK_FS_INFO::last_block_act contains the actual last block in the image.  When last_block_act is less than last_block, it means that the image is not complete. 
+
+You can obtain the contents of a specific block by calling the tsk_fs_block_get() function. It returns a TSK_FS_BLOCK structure with the contents of the data unit and flags about its allocation status. You must free the TSK_FS_BLOCK structure by calling tsk_fs_block_free(). 
+
+You can also walk the data units by calling tsk_fs_block_walk().  This function will call a callback function on data units that meet a certain criteria.  Walking is useful if, for example, you want to focus on only allocated or unallocated data units.  
+
+You can also read the contents of a data unit using the tsk_fs_read_block() function, which reads a block of data (given its data unit address) into a buffer.  tsk_fs_read_block() does not provide the data unit's allocation status and is therefore more efficient than tsk_fs_block_get() if you want only the content. 
+
+One FAT file system specific thing should be mentioned here. FAT stores its file content in clusters, but the first cluster does not start at the beginning of the file system.  There is typically many megabytes of data (FAT tables) before it.  If TSK were to use clusters as the standard data unit, it would have no way of addressing the sectors prior to the first cluster and a confusing addressing scheme would need to exist so that all data could be accessed.  For simplicity, TSK uses sector addresses everywhere with FAT file systems. All data unit addresses used by the TSK API are in 512-byte sectors (and TSK_FS_INFO::block_size is 512 and not the original cluster size).  
+
+
+
+\section fs_file Opening and Reading Files
+
+	\subsection fs_file_open Opening a File
+
+With TSK, you can open a file from either the metadata or file name layer. To open at the metadata layer, you need the metadata address of the file. To open at the file name layer, you need the name of the file. 
+
+Regardless of the method used to open a file, a TSK_FS_FILE structure will be returned.  This structure can point to TSK_FS_NAME and TSK_FS_META structures, which store the file and metadata category data.  
+
+The tsk_fs_file_open_meta() function takes a metadata address as an argument and returns a TSK_FS_FILE structure.  The TSK_FS_FILE::name pointer will be NULL because the file name was not used to open the file and, for efficiency, TSK does not search the directory tree to locate the file name that points to the metadata address.  The first and last metadata addresses in the file system are defined in TSK_FS_INFO::first_inum and TSK_FS_INFO::last_inum.  
+
+The tsk_fs_file_open() function takes a file name as an argument and first identifies the metadata address that the file name points to.  It then calls tsk_fs_file_open_meta(). Note that if you know the metadata address of a file, then using tsk_fs_file_open_meta() is more efficient then tsk_fs_file_open() because you can skip the process of mapping the file name to the metadata address. If you use tsk_fs_file_open() then the TSK_FS_FILE::name structure will be populated with the name details. 
+ 
+The TSK_FS_FILE structure can be used to read file content and its fields can be used for processing. The  structure must be closed with tsk_fs_file_close().
+
+	\subsection Reading File Content
+There are two basic approaches to reading file content after you have a TSK_FS_FILE structure.  You can read data into a buffer from a specific offset in a file using tsk_fs_file_read().  You can also use  the tsk_fs_file_walk() function, which takes a callback function as an argument and will call the callback with the contents of each data unit in the file. 
+
+Note that there are several ways of storing file content. For example, NTFS can store the content in a compressed form and can store small amounts of data in buffers inside of the metadata structure (instead of allocating a full data unit).  The callback for tsk_fs_file_walk() will be given the address from where the data came from, but it will be 0 and not be relevant if the TSK_FS_BLOCK_FLAG_ENUM flag is for a sparse, compressed, or non-resident file.  
+
+
+	\subsection fs_file_attrs Attributes 
+TSK allows each file to have multiple attributes.  An attribute is simply a data container.  Files in most file systems will have only one attribute, which stores the file content.  NTFS files will have multiple attributes because NTFS stores the file name, dates, and other information in different attributes. TSK allows you to read from all of the attributes. 
+
+Each attribute has a type and an ID.  The types are defined in the TSK_FS_ATTR_TYPE_ENUM structure and the ID is an integer that is unique to the file. A file can have multiple attributes with the same type, but it can have only one attribute with a given id. 
+
+The TSK APIs that have been previously presented will use the default attribute.  Many of the APIs have a variation that will allow you to specify a specific attribute type and ID.  For example, tsk_fs_file_read_type() has the same basic operation as tsk_fs_file_read() except it allows the caller to specify the type and ID.  There is also the tsk_fs_file_walk_type() function that is the more specific version of tsk_fs_file_walk() function. 
+
+	\subsection fs_file_attr_read Accessing Attributes
+The previous section outlined that some API functions allow you to access a specific attribute.  Sometimes though, you may want access to the attribute, which is stored in a TSK_FS_ATTR structure. 
+
+To access the default attribute use tsk_fs_file_attr_get().  If you know the type that you want to access, you can use the tsk_fs_file_attr_get_type() function.
+
+If you want to figure out what types exist or want to cycle through all of the attributes, you can use the tsk_fs_file_attr_getsize() function to get the number of attributes and the tsk_fs_file_attr_get_idx() function to get an attribute based on a 0 to n-1 based index. For example:
+
+<code>
+	int i, cnt;
+	cnt = tsk_fs_file_attr_getsize(fs_file);
+	for (i = 0; i < cnt; i++) {
+		const TSK_FS_ATTR *fs_attr;
+		fs_attr = tsk_fs_file_attr_get_idx(fs_file, i);
+		if (!fs_attr)
+			continue;
+		...
+	}
+</code>
+
+Once you have a TSK_FS_ATTR structure, you can read from it using the tsk_fs_attr_read() and tsk_fs_attr_walk() functions.  These operate just like the
+tsk_fs_file_read() and tsk_fs_file_walk() functions and in fact the file-based functions simply load the relevant attribute and call the corresponding attribute-based function. 
+
+	\subsection fs_file_runs Data Runs
+This section provides some details on how the file content is stored in TSK.  If you use the APIs previously described, you will not need to read this section.  It is more of an FYI. 
+
+TSK stores locations where file content is stored in run lists.  A run is a set of consecutive blocks that a file has allocated.  The run is stored based on the starting block and the length of the run.   
+The run lists for the file attributes are stored in TSK_FS_META::attr, but note that the data may not be filled in until it is needed by TSK.  For efficiency, TSK only loads this data as needed (for some file systems).  The TSK_FS_META::attr_state field identifies if it has been loaded yet or not. 
+
+
+
+\section fs_dir_open Opening and Reading a Directory
+
+The previous section outlined how to open a file when you know its name or address.  In many cases, you will want to browse the files in a directory and see what files can be opened.  There two methods for browsing the file names.  
+
+The first is that a directory can be opened using tsk_fs_dir_open() or tsk_fs_dir_open_meta().  The difference between these two functions is that tsk_fs_dir_open() uses the directory name and tsk_fs_dir_open_meta() uses the directory metadata address.  Like opening a file, the tsk_fs_dir_open_meta() is more efficient if you already know the metadata address because tsk_fs_dir_open() will first search the directory structure for the the metadata address and then call tsk_fs_dir_open_meta(). 
+
+These return a TSK_FS_DIR structure that allows the caller to then access individual file names in the directory.  The number of entries in the directory can be obtained using the tsk_fs_dir_getsize() function and individual entries can be returned with the tsk_fs_dir_get() function.   You can close the open directory using tsk_fs_dir_close().  If you are recursing into directories, you could get into an infinite loop.  You can use the TSK_STACK structure to prevent this, see \ref basic_misc. 
+
+You can also walk the directory tree using tsk_fs_dir_walk().  This will call the callback for every file or subdirectory in a directory and can recurse into directories if the proper flag is given.  To walk the entire directory structure, start the walk at the root directory (TSK_FS_INFO::root_inum) and set the recurse flag. 
+
+These approaches all return a TSK_FS_FILE structure and these will all have the TSK_FS_FILE::name structure defined.  However, some of the files may not have the TSK_FS_FILE::meta structure defined if the file is deleted and the link to the metadata has been lost. 
+
+
+Another way to browse the files is using the tsk_fs_meta_walk() function, which will process a range of metadata structures and call a callback function on each one.  The callback gets the corresponding TSK_FS_FILE structure with the file's metadata in TSK_FS_FILE::meta and TSK_FS_FILE::name set to NULL. 
+
+
+
+	\subsection fs_dir_spec Virtual Files
+When browsing the file system, using the directory structure is most convenient and therefore special files and directories were added to make finding all relevant data easier.  Orphan files, which were discussed in \ref fs_del, can be accessed from the <tt>/$OrphanFiles</tt> directory. This is a virtual directory, but TSK allows you to treat it as a normal directory (its flags in TSK_FS_META::flags will show that it is virtual though). 
+
+TSK also provides special files so that you can access the boot sector and FATs in a FAT file system.  The <tt>$MBR</tt>, <tt>$FAT1</tt>, and <tt>$FAT2</tt> files are virtual files that point to the sectors for the boot sector, primary FAT, and backup FAT. You can use these virtual files to read the contents of those structures. 
+
+\section fs_map Mapping Data
+In some cases, you may want to identify which file has allocated a given block or which name points to a meta data structure. This can typically be done by using the tsk_fs_meta_walk() or tsk_fs_dir_walk() functions, respectively.  But, there are some convenience functions to make this easier. 
+
+The tsk_fs_path2inum() function takes a UTF-8 path as an argument and will identify the meta data address that it points to.   
+
+Next to \ref hashdbpage
+ 
+Back to \ref users_guide "Table of Contents"
+
+*/

@@ -1,0 +1,37 @@
+/*! \page vspage Volume Systems
+    
+This section describes the general volume system analysis concepts and corresponding APIs in TSK.  In addition to this documentation, there are sample programs in the <tt>samples</tt> directory in TSK that show these functions being used while processing a disk image. 
+
+    \section vs_open Opening the Volume System
+
+    Once the disk image has been opened, you can start to analyze it.  If you have a physical disk image then you will need to check if a volume system exists.  Volume systems organize contiguous sectors on a disk into volumes.  Use TSK to determine the type of volume system that a disk is using and to determine the volume layout.  Note that some USB storage devices and floppy disks do not have volume systems.
+    
+    The first step is to open the volume system using the tsk_vs_open() function. This function takes an offset as a argument.  TSK uses this offset to start looking for volume systems.  In general, an offset of 0 should be used.  This function returns a TSK_VS_INFO structure that has values for the volume system type and number of volumes (also called partitions).  The volume system is closed with the tsk_vs_close() function.
+
+    \section vs_types Volume System Types
+
+    tsk_vs_open() can detect the type of the volume system, but sometimes you may need to specify it (if for example TSK detects multiple volume system structures) or you may want to print the name of the volume system type.   Internally, TSK uses a numerical ID for each volume system type.  To map from the numerical ID to a short name (such as "dos"), the tsk_vs_type_toname() function can be used.  To map the ID to a longer description (such as "DOS Partition Table"), use the tsk_vs_type_todesc() function.  You can also map from the short name to the ID using the tsk_vs_type_toid() function.
+
+    To determine the IDs of the supported volume systems, the tsk_vs_type_supported() function can be used.  The names and descriptions of the supported types can be printed to an open FILE handle using the tsk_vs_type_print() function.
+
+    
+    \section vs_open2 Accessing Individual Volumes
+
+    The TSK_VS_INFO structure that tsk_vs_open() returns is for all volumes in the volume system. Each volume will be assigned an address, starting with 0. There are two general ways for accessing the individual volumes.  The tsk_vs_part_get() returns information about a specific volume while the tsk_vs_part_walk() function goes through a specified range of volumes and calls a callback function with data about each volume.
+
+    Regardless of the method used, a TSK_VS_PART_INFO structure is used to describe each volume.  This structure has fields for the volume starting offset (relative to the start of the disk image), length, and type.
+
+    TSK defines several volume types.  \b Allocated volumes are those that are defined by the volume system.  An allocated volume has an entry in a partition table in the volume system.  \b Unallocated volumes contain the sectors that are not allocated to a volume in the volume system.  For example, if one volume has sectors 0 to 9 and another has sectors 50 to 99 then TSK would create an unallocated volume for sectors 10 to 49.  Note that these volumes are virtually created by TSK and they are not defined in the volume system.   Allocated and unallocated volumes will cover the entire disk image. 
+    
+    The third type of volume is a metadata volume.  \b Metadata volumes contain sectors that store volume system data, such as a partition table.  With some volume systems, the metadata volumes will overlap allocated volumes (because those volume systems "allocate" space for the metadata structures).  In other volume systems, the metadata volumes will overlap unallocated volumes (because those volume systems store metadata in unused space).  
+    
+    In general, you will want to analyze the data in allocated volumes as a file system and analyze the data in unallocated volumes using file carving or other data recovery techniques.  In many cases, you can ignore the metadata volumes.  If you are using the tsk_vs_part_walk() function then you can specify what types of partitions that you would like returned via the callback. 
+    
+    \section vs_read Reading Data
+
+    There are three ways to read data from a volume system.  The tsk_vs_read_block() function reads sectors using a sector address relative to the start of the volume system.  However, to read sectors using an address that is relative to the start of a specific volume, use the tsk_vs_part_read_block() function.  To read data in a volume in non-sector sized chunks, use the tsk_vs_part_read() function. 
+
+Next to \ref fspage
+
+Back to \ref users_guide "Table of Contents"
+*/

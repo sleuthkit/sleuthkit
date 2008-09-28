@@ -1,0 +1,111 @@
+#
+# config file for Sleuth Kit sorter
+#
+# Windows Platform
+#
+# To make custom modifications, you can also use a file named
+# windows.lcl.sort
+
+##########################################################################
+# Multimedia
+##########################################################################
+
+# Images
+category	images			icon resource
+ext			ico				ms\-windows icon resource
+
+category    images      animated cursor
+ext         ani         animated cursor
+
+# It seems that a lot of ttf files come up as raw G3 data ...
+# category    ignore      raw G3 data, byte\-padded
+
+
+# Audio
+ext			wav				WAVE audio
+category	audio			Winamp
+ext			avs				Winamp plug in
+
+category    audio           AVI
+ext         avi             AVI
+
+
+# Video
+
+
+##########################################################################
+# archive & compression
+##########################################################################
+# archive
+category	archive		cabinet file data
+ext			cab			cabinet file data
+
+ext			wmz			Zip archive data
+# compression
+
+
+
+
+##########################################################################
+# Executables 
+##########################################################################
+# execs
+ext			exe,dll,com,ocx,sys,tlb,drv,cpl,scr,ax		MS\-DOS executable
+ext			386,acm,flt,fon,lrc,vxd,x32			MS\-DOS executable
+
+category	exec			Windows PE
+ext			exe,dll,com,ocx,sys,wpc,acm,cpl			Windows PE
+
+ext			dll				relocatable
+
+category	exec			batch file
+ext			bat				batch file
+
+# source code
+category	exec		MSVC program database
+ext			pdb			MSVC program database
+
+
+
+
+
+##########################################################################
+# Documents
+##########################################################################
+category	documents	Outlook binary email folder
+ext			pst			Outlook binary email folder
+
+
+
+##########################################################################
+# Text
+##########################################################################
+ext			ini,inf,srg,dep			ASCII(.*?)text
+ext			ini,inf					ISO\-8859(.*?)text
+
+
+
+
+
+##########################################################################
+# Other
+##########################################################################
+# System
+category	system		Help Data
+ext			hlp			Windows Help Data
+
+category	system		Registry file
+ext			dat,log,sav	Registry file
+
+category	system		ms\-Windows shortcut
+ext			lnk			ms\-Windows shortcut
+
+category	system		Internet shortcut
+ext			url				Internet shortcut 
+
+category	system		hyperterm
+ext			ht				hyperterm
+
+# Image Color Matching Profile
+category	system		Color Management System
+ext			icm			Color Management System

@@ -1,0 +1,25 @@
+                          NSRL Removal Notes
+                     Sleuth Kit Reference Document 
+                       http://www.sleuthkit.org
+
+                            Brian Carrier
+                      Last Updated: Aug 25, 2003
+
+
+The NSRL functionality has been temporarily removed from 'sorter'
+(and therefore Autopsy) until it can be better determined as to how
+to identify the known good and known bad files in it.  It was
+originally thought that only software from a box was included in
+the NSRL and therefore everything could be trusted.  This was false
+and there are other types of hashes in it from "Hacker Tools" and
+maybe rootkits in the future.
+
+This problem is not easily solved because there is not a clear
+taxonomy of categories in the NSRL.  There are 100 different
+categories that tools fall into and one of which is "hacker tools".
+I do not want to maintain a database of what should be "good" and
+what should be "bad", so until a more scalable solution is identified
+(besides having the user select good vs bad for 100 categories),
+the functionality has been removed.
+
+brian

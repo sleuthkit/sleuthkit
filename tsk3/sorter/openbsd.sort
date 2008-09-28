@@ -1,0 +1,54 @@
+#
+# config file for Sleuth Kit sorter
+#
+# OpenBSD Platform
+#
+# To make custom modifications, you can also use a file named
+# openbsd.lcl.sort
+
+##########################################################################
+# Multimedia
+##########################################################################
+# Images
+
+# Audio
+
+# video
+
+
+##########################################################################
+# archive & compression
+##########################################################################
+
+
+
+##########################################################################
+# Executables & Source Code
+##########################################################################
+
+# object & relocatable are already a category in default
+ext			so,0,1,2,3,4,5,6,7,8,9		shared object
+#ext			o				relocatable
+
+#category	exec			library
+#ext			so				library
+
+#category	exec			ar archive
+#ext			a				ar archive
+
+
+##########################################################################
+# Documents, text, and internet (web)
+##########################################################################
+# Text
+#ext			afm				ASCII font metrics
+
+ext				conf			ASCII(.*?)text
+
+##########################################################################
+# Other
+##########################################################################
+
+category		system			pixmap image text
+ext				xpm				pixmap image text
+

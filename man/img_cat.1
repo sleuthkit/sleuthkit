@@ -1,0 +1,27 @@
+.TH IMG_CAT 1 
+.SH NAME
+img_cat \- Output contents of an image file.
+.SH SYNOPSIS
+.B img_cat [-i imgtype] [-vV] 
+.I image [images] 
+.SH DESCRIPTION
+.B img_cat
+outputs the contents of an image file.  Image files that are not raw will have embedded
+data and metadata.  img_cat will output only the metadata.  This allows you to convert 
+an embedded format to raw or to calculate the MD5 hash of the data by piping the output to
+the appropriate tool. 
+
+.SH ARGUMENTS
+.IP "-i imgtype"
+Identify the type of image file, such as raw, split, or aff.  Use '-i list' to list the supported types.  If not given, autodetection methods are used.
+.IP -v
+Verbose output of debugging statements to stderr
+.IP -V
+Display version
+.IP "image [images]"
+One (or more if split) disk or partition images whose format is given with '-i'.
+
+.SH AUTHOR
+Brian Carrier <carrier at sleuthkit dot org>
+
+Send documentation updates to <doc-updates at sleuthkit dot org>

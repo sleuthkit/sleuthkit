@@ -1,0 +1,44 @@
+.TH FSSTAT 1 
+.SH NAME
+fsstat \- Display general details of a file system
+.SH SYNOPSIS
+.B  fsstat [-f 
+.I fstype 
+.B ] [-i imgtype] [-o imgoffset] [-tvV] 
+.I image [images] 
+.SH DESCRIPTION
+.B fsstat
+displays the details associated with a file system.  The output of this
+command is file system specific.  At a minimum, the range of meta-data
+values (inode numbers) and content units (blocks or clusters) are given.
+Also given are details from the Super Block, such as mount times and
+and features.   For file systems that use groups (FFS and EXT2FS), the
+layout of each group is listed.  
+
+For a FAT file system, the FAT table is displayed in a condensed format.
+Note that the data is in sectors and not in clusters.  
+
+.SH ARGUMENTS
+.IP "-t type"
+Print the file system type only. 
+.IP "-f fstype"
+Specify the file system type.  
+Use '-f list' to list the supported file system types.
+If not given, autodetection methods are used.
+.IP "-i imgtype"
+Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+If not given, autodetection methods are used.
+.IP "-o imgoffset"
+The sector offset where the file system starts in the image.  Non-512 byte
+sectors can be specified using '@' (32@2048).
+.IP -v
+Verbose output of debugging statements to stderr
+.IP -V
+Display version
+.IP "image [images]"
+One (or more if split) disk or partition images whose format is given with '-i'.
+
+.SH AUTHOR
+Brian Carrier <carrier at sleuthkit dot org>
+
+Send documentation updates to <doc-updates at sleuthkit dot org>

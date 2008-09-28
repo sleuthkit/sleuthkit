@@ -1,0 +1,1758 @@
+#
+# The Sleuth Kit
+#
+# Brian Carrier [carrier <at> sleuthkit [dot] org]
+# Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+#
+# TASK
+# Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
+#
+# This software is distributed under the Common Public License 1.0
+
+use strict;
+use integer;
+
+my $SHARE_DIR = "$DATA_DIR/tsk3/sorter/";
+
+my $SK_FLS     = "${BIN_DIR}/fls";
+my $SK_ICAT    = "${BIN_DIR}/icat";
+my $SK_HFIND   = "${BIN_DIR}/hfind";
+my $SK_FSSTAT  = "${BIN_DIR}/fsstat";
+my $SK_IMGSTAT = "${BIN_DIR}/img_stat";
+my $SK_FILE    = "";
+my $SK_MD5     = "";
+my $SK_SHA1    = "";
+
+my $MIS_NAME        = "mismatch";
+my $UNK_NAME        = "unknown";
+my $ALERT_NAME      = "alert";
+my $EXCLUDE_NAME    = "exclude";
+my $EXCLUDEMIS_NAME = "mismatch_exclude";
+my $IGNORE_NAME     = "ignore";
+
+# Formats for regular expressions
+my $REG_DAY   = '\d\d\d\d\-\d\d\-\d\d';
+my $REG_TIME  = '\d\d:\d\d:\d\d';
+my $REG_ZONE2 = '\([\w\+\- ]*\)';
+my $REG_DATE  = "$REG_DAY" . '\s+' . "$REG_TIME" . '\s+' . "$REG_ZONE2";
+
+my $SUMMARY_NAME = "sorter.sum";
+
+# CONSTANTS
+my $DEL_ALLOC = 0;    # Allocated File
+my $DEL_DEL   = 1;    # Deleted File
+
+# Text / HTML CONSTANTS
+my $NL  = "\n";
+my $TAB = '  ';
+my $EXT = '.txt';
+my $BUL = "- ";
+
+my $IMG_PAGE = 100;
+
+# Globals
+my $alloc_cnt   = 0;    # Number of allocated files processed
+my $dirskip_cnt = 0;    # Files skipped because dir or null size
+my $ignore_cnt  = 0;    # Files skipped bc in ignore category
+my $alert_cnt   = 0;    # number of files flagged by hash
+my $excl_cnt    = 0;    # number of files skipped bc known good
+my $mis_cnt     = 0;    # number of mismatch files
+my $exclmis_cnt = 0;    # known good file with extension mismatch
+my $img_cnt     = 0;    # number of images
+
+sub usage {
+    print <<EOF;
+
+sorter [-b size] [-E] [-e] [-h]  [-l] [-md5] [-s] [-sha1] [-U] [-v] [-V] [-a hash_alert] [-c config] [-C config] [-d dir] [-m mnt] [-n nsrl_db] [-x hash_exclude] [-o imgoffset] [-f fstype] [-i imgtype] image [images] [dir_meta_addr] 
+
+    -b size: Minimum size.  Ignore files smaller than 'size'
+	-E: Perform category indexing only (no extension checks - was '-i')
+	-e: Perform extension checks only (no category index files)
+	-h: HTML Format
+	-l: List index to STDOUT (no files are ever written)
+	-md5: Print the MD5 value with the index output
+	-s: Save files to category directories
+	-sha1: Print the SHA-1 value with the index output
+	-U: Ignore the unknown category - only save catgories in config files
+	-v: verbose debugging output
+	-V: print version information
+	-a hash_alert: hash database of hashes to alert on
+	-c config: specify a config file to use (in addition to default files)
+	   NOTE: This config file has priority over default files
+	-C config: specify the ONLY config file to use
+	-d dir: Save category index files in the specified directory
+	-f fstype: file system type (Sleuth Kit types) of image
+	-i imgtype: Format of image file
+	-o imgoffset: Offset of file system in image (in sectors)
+	-m mnt: The mounting point of the image
+	-n nsrl_db: The NIST NSRL database file (NSRLFile.txt) (hashes to ignore)
+	-x hash_exclude: hash database of hashes to ignore
+	dir_meta_addr: Address of directory to start analyzing from 
+	image: image to analyze
+EOF
+    exit(1);
+}
+
+sub version {
+    print "The Sleuth Kit ver $VER\n";
+}
+
+my @s_dirs = (
+    "/usr/local/bin/", "/usr/local/sbin/",
+    "/usr/bin/",       "/usr/sbin/",
+    "/bin/",           "/sbin/"
+);
+
+sub find_file {
+    $SK_FILE = "";
+    foreach my $d (@s_dirs) {
+        if (-x "${d}file") {
+            $SK_FILE = "${d}file";
+            return;
+        }
+    }
+
+    print "File tool not found\n";
+    exit(1);
+}
+
+sub find_md5 {
+    $SK_MD5 = "";
+    foreach my $d (@s_dirs) {
+        if (-x "${d}md5") {
+            $SK_MD5 = "${d}md5";
+            return;
+        }
+    }
+
+    foreach my $d (@s_dirs) {
+        if (-x "${d}md5sum") {
+            $SK_MD5 = "${d}md5sum";
+            return;
+        }
+    }
+
+    print "md5 or md5sum tool not found\n";
+    exit(1);
+}
+
+sub find_sha1 {
+    $SK_SHA1 = "";
+    foreach my $d (@s_dirs) {
+        if (-x "${d}sha1") {
+            $SK_SHA1 = "${d}sha1";
+            return;
+        }
+    }
+
+    foreach my $d (@s_dirs) {
+        if (-x "${d}sha1sum") {
+            $SK_SHA1 = "${d}sha1sum";
+            return;
+        }
+    }
+
+    print "sha1 or sha1sum tool not found\n";
+    exit(1);
+}
+
+# Globals
+
+# Globals
+my %file_to_cat;
+my @cat_order;
+my %file_to_ext = (NOT_USED => [","]);
+my @ext_order;
+my %cat_handle;
+my %output_used;
+
+# Argument variables
+my $HTML        = 0;
+my $LIST        = 0;
+my $SAVE        = 0;
+my $VERBOSE     = 0;
+my $DO_MD5      = 0;
+my $DO_SHA1     = 0;
+my $ALL_CONFIGS = 1;
+my $DO_INDEX    = 1;    # create index files by category
+my $DO_UNKNOWN  = 1;    # Process the files that are unknown
+my $DO_EXT      = 1;    # Do extension mismatch analysis
+my $MIN_SIZE    = 0;
+
+my $CONFIG     = "";
+my $DIR        = "";
+my $FSTYPE     = "";
+my $IMGTYPE    = "";
+my $IMGOFF     = 0;
+my $NSRL       = "";
+my $PLATFORM   = "";
+my $ALERT_DB   = "";
+my $EXCLUDE_DB = "";
+
+my $img_shrt;
+my $TEMP_FILE;
+my $img_str = "";
+my $MNT     = "";
+
+usage() if (scalar @ARGV == 0);
+
+# Read the arguments
+while (($_ = $ARGV[0]) =~ /^-(.)(.*)/) {
+
+    # Alert hash database
+    if (/^-a$/) {
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            $ALERT_DB = $ARGV[0];
+        }
+        else {
+            print "-a requires hash database argument\n";
+            usage();
+        }
+        unless (-e "$ALERT_DB") {
+            print "Alert hash database $ALERT_DB does not exist\n";
+            usage();
+        }
+        $DO_MD5 = 1;
+    }
+
+    # @@@ This is currently not used
+    elsif (/^-b$/) {
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            $MIN_SIZE = $ARGV[0];
+        }
+        else {
+            print "-b requires a size\n";
+            usage();
+        }
+    }
+
+    # config file to use in addition to other config files
+    elsif (/^-c$/) {
+        if ($ALL_CONFIGS == 0) {
+            print "-c cannot be used with -C\n";
+            exit(1);
+        }
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            $CONFIG = $ARGV[0];
+        }
+        else {
+            print "-c requires config file argument\n";
+            usage();
+        }
+        unless (-e "$CONFIG") {
+            print "Config file $CONFIG does not exist\n";
+            usage();
+        }
+    }
+
+    # Exclusive config file to use
+    elsif (/^-C$/) {
+        if ($CONFIG ne "") {
+            print "-C cannot be used with -c\n";
+            exit(1);
+        }
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            $CONFIG = $ARGV[0];
+        }
+        else {
+            print "-C requires config file argument\n";
+            usage();
+        }
+        unless (-e "$CONFIG") {
+            print "Config file $CONFIG does not exist\n";
+            usage();
+        }
+        $ALL_CONFIGS = 0;
+    }
+
+    # output directory for category files
+    elsif (/^-d$/) {
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            $DIR = $ARGV[0];
+        }
+        else {
+            print "-d requires directory name\n";
+            usage();
+        }
+        unless (-d "$DIR") {
+            print "Directory $DIR does not exist\n";
+            usage();
+        }
+    }
+
+    # Extension mismatch only
+    elsif (/^-e$/) {
+        $DO_INDEX = 0;
+    }
+
+    # Category types only
+    elsif (/^-E$/) {
+        $DO_EXT = 0;
+    }
+
+    # file system type
+    elsif (/^-f$/) {
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            $FSTYPE = "-f " . $ARGV[0];
+        }
+        else {
+            print "-f requires file system type\n";
+            usage();
+        }
+    }
+
+    # HTML
+    elsif (/^-h$/) {
+        $HTML = 1;
+        $NL   = "<BR>\n";
+        $TAB  = "&nbsp;&nbsp;";
+        $EXT  = ".html";
+        $BUL  = "  <LI>";
+    }
+
+    # Image type
+    elsif (/^-i$/) {
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            $IMGTYPE = "-i " . $ARGV[0];
+        }
+        else {
+            print "-i requires file system type\n";
+            usage();
+        }
+    }
+
+    # List the data instead of saving to files
+    elsif (/^-l$/) {
+        $LIST = 1;
+    }
+    elsif (/^-m$/) {
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            $MNT = $ARGV[0];
+        }
+        else {
+            print "-m requires a mounting point\n";
+            usage();
+        }
+        $MNT .= "/" unless ($MNT =~ /\/$/);
+    }
+
+    # MD5 hashes
+    elsif (/^-md5$/) {
+        $DO_MD5 = 1;
+    }
+
+    # NIST NSRL hash database for excluding files
+    elsif (/^-n$/) {
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            $NSRL = $ARGV[0];
+        }
+        else {
+            print "-n requires file name\n";
+            usage();
+        }
+        unless (-e "$NSRL") {
+            print "NSRL Database file missing ($NSRL)\n";
+            usage();
+        }
+        $DO_MD5 = 1;
+    }
+
+    elsif (/^-o$/) {
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            $IMGOFF = $ARGV[0];
+            unless ($IMGOFF =~ /^\d+$/) {
+                print "Invalid sector offset\n";
+                usage();
+            }
+        }
+        else {
+            print "-o requires offset value\n";
+            usage();
+        }
+    }
+
+    # Do SHA
+    elsif (/^-sha1$/) {
+        $DO_SHA1 = 1;
+    }
+
+    # Save the files in category directories
+    elsif (/^-s$/) {
+        $SAVE = 1;
+    }
+    elsif (/^-U$/) {
+        $DO_UNKNOWN = 0;
+    }
+
+    # Version
+    elsif (/^-V$/) {
+        version();
+        exit(0);
+    }
+
+    # Verbose
+    elsif (/^-v$/) {
+        $VERBOSE = 1;
+    }
+
+    # Exclude hash database
+    elsif (/^-x$/) {
+        shift(@ARGV);
+        if (defined $ARGV[0]) {
+            $EXCLUDE_DB = $ARGV[0];
+        }
+        else {
+            print "-x requires hash database argument\n";
+            usage();
+        }
+        unless (-e "$EXCLUDE_DB") {
+            print "Exclude hash database $EXCLUDE_DB does not exist\n";
+            usage();
+        }
+        $DO_MD5 = 1;
+    }
+    else {
+        print "Unknown option: $_\n";
+        usage();
+    }
+    shift(@ARGV);
+}
+
+if (scalar @ARGV == 0) {
+    print "Missing image argument\n";
+    usage();
+}
+
+# Find local copies of std execs
+find_file();
+if ($DO_MD5 == 1) {
+    find_md5();
+}
+if ($DO_SHA1 == 1) {
+    find_sha1();
+}
+
+# Verify that the TSK binaries are there
+check_execs();
+
+# Process the rest of the arguments - image and optional meta addr
+my $IMG       = "";    # global for image path
+my $first_img = "";
+my $META      = "";    # global for root directory to start with
+
+# Cycle through the rest of the args
+while (my $tmpimg = shift @ARGV) {
+
+    # If it isn't a file, then it is probably the last meta addr
+    unless ((-e "$tmpimg") || (-l "$tmpimg")) {
+        if ($tmpimg =~ /^\d+$/) {
+            if (scalar @ARGV != 0) {
+                print "Invalid image file (additional args after meta addr)\n";
+                usage();
+            }
+
+            $META = $tmpimg;
+            print "Using Directory $META\n" if ($VERBOSE);
+
+            last;
+        }
+        else {
+            print "Image file not found: $tmpimg\n";
+            exit(1);
+        }
+    }
+
+    # Append it to the list
+    $IMG .= " \"$tmpimg\"";
+    $first_img = $tmpimg
+      if ($first_img eq "");
+
+}
+
+# Update the output message
+$img_str .= "${BUL}$first_img${NL}";
+
+# Determine the short name
+$img_shrt = $first_img;
+$img_shrt = substr($first_img, rindex($first_img, '/') + 1)
+  if ($first_img =~ /\//);
+
+# Figure out the temp file name
+$TEMP_FILE = "${DIR}/.sorter-$img_shrt-$$-";
+
+# verify that the correct arguments were given
+check_args();
+
+# Set the $PLATFORM variable based on $FSTYPE
+set_platform();
+
+# Read the config file
+if ($ALL_CONFIGS == 1) {
+    read_config("${SHARE_DIR}default.sort")
+      if (-e "$SHARE_DIR/default.sort");
+
+    read_config("${SHARE_DIR}${PLATFORM}.sort")
+      if (($PLATFORM ne "") && (-e "${SHARE_DIR}${PLATFORM}.sort"));
+
+    read_config("${SHARE_DIR}${PLATFORM}.lcl.sort")
+      if (($PLATFORM ne "") && (-e "${SHARE_DIR}${PLATFORM}.lcl.sort"));
+}
+
+read_config($CONFIG) if ($CONFIG ne "");
+
+# any config data?
+if ((scalar(keys %file_to_cat) == 0) && ($DO_INDEX == 1) && ($DO_EXT == 0)) {
+    print "Error: Empty config files\n";
+    exit(1);
+}
+
+if ((scalar(keys %file_to_ext) == 0) && ($DO_EXT == 1) && ($DO_INDEX == 0)) {
+    print "Error: No defined extensions\n";
+    exit(1);
+}
+
+# Open the file handles
+open_files() if ($LIST == 0);
+
+analyze_img();
+
+if ($LIST == 0) {
+    close_files();
+    print "\nAll files have been saved to: ${DIR}\n";
+}
+
+# close off the thumbnails if we used them
+print_thumb_footer() if ($img_cnt != 0);
+
+print_summary();
+
+exit(0);
+
+#########################################################################
+#
+# subroutines
+#
+#################################################################3
+
+#################################################################3
+# analyze_img
+#
+# Analyze one image.  This function calls 'fls', parses the
+# output, and then calls analyze_file for each file
+#
+# Argument is the meta address of directory (null to use root)
+#
+sub analyze_img {
+
+    #################################################################3
+    # Process the allocated files in the image
+    my $pr_str = "";
+
+    $pr_str = "of Directory $META"
+      unless ($META eq "");
+
+    print "\nAnalyzing $IMG\n" . "  Loading Allocated File Listing $pr_str\n"
+      if ($LIST == 0);
+
+    my @out     = `\"$SK_FLS\" $IMGTYPE -o $IMGOFF $FSTYPE -rpl $IMG $META`;
+    my $tmp_cnt = scalar @out;
+    $alloc_cnt += $tmp_cnt;
+    print "  Processing $tmp_cnt Allocated Files and Directories\n  "
+      if ($LIST == 0);
+
+    my $prev = 0;
+    my $cnt  = 0;
+    foreach (@out) {
+        my $del;
+        my $inode;
+        my $path;
+        my $size;
+
+        # Print the status
+        if ((++$cnt % 1000) == 0) {
+            my $cur = int(100 * ($cnt / $tmp_cnt));
+            if ($cur > $prev + 1) {
+                print "$cur%," if ($LIST == 0);
+                $prev = $cur;
+            }
+        }
+
+        # Extract the file name and inode, skip if it is a directory
+        # TYPE/TYPE * INUM (realloc): NAME
+        if (
+/^([\w\-])\/[\w\-]\s+(\*?)\s*([\d\-]+)[\(\)\w]*:\s+(.*)\s+$REG_DATE\s+$REG_DATE\s+$REG_DATE\s+$REG_DATE\s+(\d+)\s+\d+\s+\d+\s*$/
+          )
+        {
+            if (($1 ne "r") && ($1 ne "-")) {
+                $dirskip_cnt++;
+                next;
+            }
+            $inode = $3;
+            $path  = $4;
+            $size  = $5;
+            $del   = ($2 eq '*') ? $DEL_DEL : $DEL_ALLOC;
+        }
+        else {
+            print "Error Parsing Output: $_";
+            next;
+        }
+
+        # skip if file is too small
+        if (($MIN_SIZE > 0) && ($size < $MIN_SIZE)) {
+            $dirskip_cnt++;
+            next;
+        }
+
+        # NTFS can have an inode of 0, but the others cannot
+        my $inode_int = $inode;
+        $inode_int = $1 if ($inode_int =~ /^(\d+)-[\d\-]+$/);
+        if (($inode_int == 0) && ($FSTYPE ne "-f ntfs")) {
+            $dirskip_cnt++;
+            next;
+        }
+
+        analyze_file($path, $inode, $del);
+    }
+    print "100%\n" if ($LIST == 0);
+}
+
+#################################################################3
+# analyze_file
+#
+# Process one file
+#
+# Arguments are the name of the file, the inode number of the file,
+# and the deletion status ($DEL_*)
+sub analyze_file {
+    if (scalar(@_) != 3) {
+        print "Incorrect Number of Arguments for analyze_file\n";
+        return;
+    }
+
+    my $path  = shift;
+    my $inode = shift;
+    my $del   = shift;
+
+    my $sha1 = "";
+    my $md5  = "";
+    my $file;
+
+    my $recflag = "";
+    $recflag = " -R " if ($del != $DEL_ALLOC);
+
+    ###############################################################
+    # Setup & Data Collection
+
+    # The FAT full path has the short name in parenths, so
+    # take them off first
+    if (($path =~ /\)$/) && ($FSTYPE =~ /fat/)) {
+        $path = substr($path, 0, rindex($path, '(') - 1);
+    }
+
+    # This was mainly because of the ils output which is <sdas-dead-X>
+    my $path_encode = $path;
+    if ($HTML == 1) {
+        $path_encode =~ s/</&lt;/gs;
+        $path_encode =~ s/>/&gt;/gs;
+    }
+
+    # Get the hash values and file type
+
+    # Are we listing (i.e. can't write files) or we aren't going to save
+    # the file and do not need the MD5?
+    if (($LIST) || (($SAVE == 0) && ($DO_MD5 == 0) && ($DO_SHA1 == 0))) {
+        $file =
+`\"$SK_ICAT\" $IMGTYPE -o $IMGOFF $FSTYPE $recflag $IMG \"$inode\" | \"$SK_FILE\" -b -z -`;
+        chomp $file;
+        if ($DO_SHA1 == 1) {
+            $sha1 =
+`\"$SK_ICAT\" $IMGTYPE -o $IMGOFF $FSTYPE $recflag $IMG \"$inode\" | \"$SK_SHA1\"`;
+            chomp $sha1;
+        }
+        if ($DO_MD5 == 1) {
+            $sha1 =
+`\"$SK_ICAT\" $IMGTYPE -o $IMGOFF $FSTYPE $recflag $IMG \"$inode\" | \"$SK_MD5\"`;
+            chomp $md5;
+        }
+    }
+
+    # Save to temp file
+    else {
+`\"$SK_ICAT\" $IMGTYPE -o $IMGOFF $FSTYPE $recflag $IMG \"$inode\" > \"${TEMP_FILE}$inode\"`;
+        $file = `\"$SK_FILE\" -b -z \"${TEMP_FILE}$inode\"`;
+        chomp $file;
+        if ($DO_SHA1 == 1) {
+            $sha1 = `\"$SK_SHA1\" \"${TEMP_FILE}$inode\"`;
+            if ($sha1 =~ /^([A-Fa-f0-9]+)\s+.*$/) {
+                $sha1 = $1;
+            }
+            elsif ($sha1 =~ /=\s+([A-Fa-f0-9]+)$/) {
+                $sha1 = $1;
+            }
+        }
+        if ($DO_MD5 == 1) {
+            $md5 = `\"$SK_MD5\" \"${TEMP_FILE}$inode\"`;
+            if ($md5 =~ /^([A-Fa-f0-9]+)\s+.*$/) {
+                $md5 = $1;
+            }
+            elsif ($md5 =~ /=\s+([A-Fa-f0-9]+)$/) {
+                $md5 = $1;
+            }
+        }
+
+        unlink("${TEMP_FILE}$inode") if ($SAVE == 0);
+    }
+
+    # Remove non-printable values from the 'file' output
+    $file =~ s/[\x00-\x19\x7F-\xFF]//g;
+
+    # "empty" is a null size file
+    if ($file eq 'empty') {
+        unlink("${TEMP_FILE}$inode") if ($SAVE == 1);
+        $dirskip_cnt++;
+        return;
+    }
+
+    ###############################################################
+    # Lookup in hash databases
+
+    #
+    # We will first examine any hashes of known files to alert on.
+    # Next, we wil look if this is a file that is known and that we can
+    # ignore (NSRL and the -x flag).  If one of these files is found, we do
+    # no immediately exit the function.  We also check the extension and
+    # make sure that it is appropriate.
+
+    my $exclude = "";
+    my $alert   = 0;
+
+    # First the alert data base
+    if ("$ALERT_DB" ne "") {
+        print "Looking up in Alert Hash Database\n" if ($VERBOSE);
+        my $out = `\"$SK_HFIND\" -q \"$ALERT_DB\" \"$md5\"`;
+        if ($out =~ /^1\s+$/) {
+            $alert = 1;
+        }
+        elsif ($out !~ /^0\s+$/) {
+            print "Error running 'hfind': $out\n";
+            exit(1);
+        }
+    }
+
+    # Ones we can ignore
+    if (($alert == 0) && ("$EXCLUDE_DB" ne "")) {
+        print "Looking up in Exclude Hash Database\n" if ($VERBOSE);
+
+        my $out = `\"$SK_HFIND\" -q \"$EXCLUDE_DB\" \"$md5\"`;
+        if ($out =~ /^1\s+$/) {
+
+            # Print to the appropriate files
+            if ($LIST == 0) {
+                print EXCLUDE "${MNT}$path_encode${NL}";
+                print EXCLUDE "${TAB}Image: $first_img  Inode: $inode${NL}";
+                print EXCLUDE "${TAB}$file${NL}";
+                print EXCLUDE "${TAB}MD5: $md5${NL}";
+                print EXCLUDE "${TAB}Exclude Database${NL}${NL}";
+
+            }
+            $exclude = "Exclude Hash Database";
+            $excl_cnt++;
+        }
+        elsif ($out !~ /^0\s+$/) {
+            print "Error running 'hfind': $out\n";
+            exit(1);
+        }
+    }
+
+    # NSRL
+    if (($alert == 0) && ("$NSRL" ne "") && ($exclude eq "")) {
+        print "Looking up in NSRL Hash Database\n" if ($VERBOSE);
+
+        my $out = `\"$SK_HFIND\" -q \"$NSRL\" \"$md5\"`;
+        if ($out =~ /^1\s+$/) {
+
+            # Print to the appropriate files
+            if ($LIST == 0) {
+                print EXCLUDE "${MNT}$path_encode${NL}";
+                print EXCLUDE "${TAB}Image: $first_img  Inode: $inode${NL}";
+                print EXCLUDE "${TAB}$file${NL}";
+                print EXCLUDE "${TAB}MD5: $md5${NL}";
+                print EXCLUDE "${TAB}NSRL Database${NL}${NL}";
+            }
+            $exclude = "NSRL";
+            $excl_cnt++;
+        }
+        elsif ($out !~ /^0\s+$/) {
+            print "Error running 'hfind': $out\n";
+            exit(1);
+        }
+    }
+
+    ###############################################################
+    #
+    # Extension versus File Type
+    #
+    ###############################################################
+
+    my $mismatch = 0;
+    my $ext      = "";
+
+    # Is there an extension on this file?
+    my $ext_off = rindex($path, ".");
+
+    # Some sanity checks to verify that the '.' is after the '/' and
+    # add one so that we don't process /.asd as an extension
+    if (($ext_off != -1) && ($ext_off > (rindex($path, "/") + 1))) {
+        $ext = substr($path, $ext_off + 1);
+        $ext =~ tr/[A-Z]/[a-z]/;
+    }
+
+    $path .= " (deleted)" if ($del == $DEL_DEL);
+
+    if ($VERBOSE) {
+        print "File ${MNT}$path (ext: $ext)\n";
+        print "File Output: $file\n";
+    }
+
+    # Check the extension if it exists
+    # Ignore data as it is unknown stuff
+    if (($DO_EXT == 1) && ($ext ne "") && ($file ne 'data')) {
+
+        my $found = 0;
+
+        # cycle through the known file keywords that have a known ext
+        for (my $ext_i = $#ext_order; $ext_i >= 0; $ext_i--) {
+            my $ext_kw = $ext_order[$ext_i];
+
+            print "Trying Extension Keyword: $ext_kw\n" if ($VERBOSE);
+
+            # is this the 'file' category?
+            if ($file =~ /$ext_kw/i) {
+
+                print "Found Extension Keyword\n" if ($VERBOSE);
+
+                # we found at least one set of extensions that matches
+                # this file type, so set the mismatch to 1 and if we
+                # find this extension we will set it to 0, otherwise
+                # it will be considered a mismatch
+                $mismatch = 1;
+
+                $ext =~ tr/[A-Z]/[a-z/;
+
+                # cycle through each possible extension for this type
+                foreach my $cat_ext (@{$file_to_ext{$ext_kw}}) {
+                    print "Comparing ext with $cat_ext\n" if ($VERBOSE);
+                    if ($cat_ext eq $ext) {
+                        print "Found ext\n" if ($VERBOSE);
+                        $mismatch = 0;
+                        $found    = 1;
+                        last;
+                    }
+                }
+            }
+
+            # If we have found the extension, then get out of the loop
+            last if ($found == 1);
+        }
+
+    }
+
+    # The special mismatch file for those that we should be ignoring
+    # but they may be worthwhile looking at now
+    if (($mismatch == 1) && ($exclude ne "")) {
+
+        $exclmis_cnt++;
+
+        if ($LIST == 0) {
+            print EXCLUDEMIS "${MNT}$path_encode${NL}";
+            print EXCLUDEMIS "${TAB}$file$  (Ext: $ext)${NL}";
+            print EXCLUDEMIS "${TAB}Image: $first_img  Inode: $inode${NL}";
+            print EXCLUDEMIS "${TAB}SHA-1: $sha1${NL}" if ($DO_SHA1 == 1);
+            print EXCLUDEMIS "${TAB}MD5: $md5${NL}"    if ($DO_MD5 == 1);
+            print EXCLUDEMIS "${TAB}$exclude${NL}${NL}";
+        }
+    }
+
+    # Now we will return if we are supposed to ignore this file
+    return if ($exclude ne "");
+
+    ###############################################################
+    # File Type Category
+
+    my $save_name = "";
+
+    my $cat = "";
+    if ($DO_INDEX) {
+
+        # is this a category we want to save data about?
+        for (my $cat_i = $#cat_order; $cat_i >= 0; $cat_i--) {
+            my $cat_kw = $cat_order[$cat_i];
+
+            if ($file =~ /$cat_kw/i) {
+                $cat = $file_to_cat{$cat_kw};
+
+                last if ($cat eq $IGNORE_NAME);
+
+                $output_used{$cat}++;
+
+                # Are we going to save this to a directory?
+                if ($SAVE == 1) {
+                    my $save_dir = "${DIR}/${cat}";
+                    mkdir($save_dir, 0775) unless (-d $save_dir);
+
+                    if ($ext eq "") {
+                        $save_name = "${img_shrt}-${inode}";
+                    }
+                    else {
+                        $save_name = "${img_shrt}-${inode}.${ext}";
+                    }
+                    rename("${TEMP_FILE}$inode", "${save_dir}/${save_name}");
+
+                    # Add to the thumbnail file
+                    if (($cat eq "images") && ($HTML == 1)) {
+                        print_thumb($save_name, $path_encode);
+                    }
+                }
+
+                last;
+            }
+        }
+    }
+
+    # make sure it is gone if we did not move it to a category
+    unlink("${TEMP_FILE}$inode")
+      if (($SAVE == 1) && (-e "${TEMP_FILE}$inode"));
+
+    if ($cat eq $IGNORE_NAME) {
+        $ignore_cnt++;
+        goto PRINT_ALERT;
+    }
+
+    # Print the category results
+
+    # If we are listing, then print anything to STDOUT
+    if ($LIST == 1) {
+        if ($cat eq "") {
+            print "Category: Unknown\n";
+            $output_used{'unknown'}++;
+        }
+        else {
+            print "Category: $cat\n";
+        }
+        print "${MNT}$path_encode\n" . "$file\n";
+        print "--- Found in Alert Hash Database ---\n"
+          if ($alert == 1);
+        print "--- Extension Mismatch! ---\n" if ($mismatch == 1);
+
+        print "Image: $first_img  Inode: $inode\n";
+        print "SHA-1: $sha1\n" if ($DO_SHA1 == 1);
+        print "MD5: $md5\n"    if ($DO_MD5 == 1);
+
+        print "\n";
+    }
+
+    # print to a specific category file
+    elsif ($DO_INDEX == 1) {
+        if ($cat ne "") {
+            my $tmphandle = $cat_handle{$cat};
+
+            print $tmphandle "<A NAME=\"${save_name}\">\n"
+              if ($HTML == 1);
+
+            print $tmphandle "${MNT}$path_encode${NL}";
+            print $tmphandle "${TAB}$file${NL}";
+            print $tmphandle "${TAB}--- Found in Alert Database ---${NL}"
+              if ($alert == 1);
+            print $tmphandle "${TAB}--- Extension Mismatch! ---${NL}"
+              if ($mismatch == 1);
+
+            print $tmphandle "${TAB}Image: $first_img  Inode: $inode${NL}";
+            print $tmphandle "${TAB}SHA-1: $sha1${NL}" if ($DO_SHA1 == 1);
+            print $tmphandle "${TAB}MD5: $md5${NL}"    if ($DO_MD5 == 1);
+            if ($SAVE == 1) {
+                if ($HTML == 0) {
+                    print $tmphandle "${TAB}Saved to: ${cat}/${save_name}${NL}";
+                }
+                else {
+                    print $tmphandle
+                      "${TAB}Saved to: <A HREF=\"./${cat}/${save_name}\">"
+                      . "${cat}/${save_name}</A>${NL}";
+                }
+            }
+
+            print $tmphandle "${NL}";
+        }
+
+        # the $cat is "" and we are making index files and it has some
+        # uniqe file output, so save it to the unknown file
+        #
+        # Ignore the 'data' type and the 'empty' type has already been removed
+        # data should be saved by the default config file and if not then the
+        # user obviously does not want it
+        elsif ($file ne 'data') {
+            if ($DO_UNKNOWN == 1) {
+                print UNKNOWN "${MNT}$path_encode${NL}";
+                print UNKNOWN "${TAB}--- Found in Alert Database ---${NL}"
+                  if ($alert == 1);
+                print UNKNOWN "${TAB}$file${NL}";
+                print UNKNOWN
+                  "${TAB}Image: $first_img  Inode: $inode${NL}${NL}";
+            }
+
+            $output_used{'unknown'}++;
+        }
+    }
+
+    # Print the mismatch info
+    if (($DO_EXT == 1) && ($mismatch == 1)) {
+
+        $mis_cnt++;
+
+        if ($LIST == 0) {
+            print MISMATCH "${MNT}$path_encode${NL}";
+            print MISMATCH "${TAB}$file  (Ext: $ext)${NL}";
+            print MISMATCH "${TAB}Image: $first_img  Inode: $inode${NL}";
+            print MISMATCH "${TAB}SHA-1: $sha1${NL}" if ($DO_SHA1 == 1);
+            print MISMATCH "${TAB}MD5: $md5${NL}"    if ($DO_MD5 == 1);
+            if ($SAVE == 1) {
+                if ($HTML == 0) {
+                    print MISMATCH "${TAB}Saved to: ${cat}/${save_name}${NL}";
+                }
+                else {
+                    print MISMATCH
+                      "${TAB}Saved to: <A HREF=\"./${cat}/${save_name}\">"
+                      . "${cat}/${save_name}</A>${NL}";
+                }
+            }
+            print MISMATCH "${NL}";
+        }
+
+    }
+
+  PRINT_ALERT:
+
+    # If we are alerting because of a hash value, do it now.  It is all
+    # the way down here so that we know the path that it was saved to
+    if ($alert == 1) {
+
+        $alert_cnt++;
+
+        if ($LIST == 0) {
+            print ALERT "${MNT}$path_encode${NL}";
+            print ALERT "${TAB}Image: $first_img  Inode: $inode${NL}";
+            print ALERT "${TAB}SHA-1: $sha1${NL}" if ($DO_SHA1 == 1);
+            print ALERT "${TAB}MD5: $md5${NL}"    if ($DO_MD5 == 1);
+            if ($SAVE == 1) {
+                if ($HTML == 0) {
+                    print ALERT "${TAB}Saved to: ${cat}/${save_name}${NL}";
+                }
+                else {
+                    print ALERT
+                      "${TAB}Saved to: <A HREF=\"./${cat}/${save_name}\">"
+                      . "${cat}/${save_name}</A>${NL}";
+                }
+            }
+            print ALERT "${NL}";
+        }
+    }
+
+    return;
+}
+
+# Read the config files
+sub read_config {
+    my $config = shift;
+
+    open(CONFIG, "$config") or die "Can't open $config";
+
+    print "Reading $config\n" if ($VERBOSE);
+
+    while (<CONFIG>) {
+        next if ((/^\#/) || (/^\s+$/));
+
+        # category definition
+        # category name key_words
+        if (/^\s*category\s+([\w\d]+)\s+(.*?)\s*$/) {
+            my $kw  = $2;
+            my $cat = $1;
+
+            # Make lowercase
+            $cat =~ tr/[A-Z]/[a-z]/;
+
+            # we have some reservered categories already
+            if (   ($cat eq $MIS_NAME)
+                || ($cat eq $UNK_NAME)
+                || ($cat eq $ALERT_NAME)
+                || ($cat eq $EXCLUDE_NAME)
+                || ($cat eq $EXCLUDEMIS_NAME))
+            {
+                print "Invalid Category Name: $cat (Reserved)\n";
+                exit(1);
+            }
+
+            # do a sanity check to see if we are overriding a
+            # category that already existed for this file type
+            if (   (exists $file_to_cat{$kw})
+                && ($file_to_cat{$kw} ne $cat))
+            {
+                print
+"Warning: overriding category $file_to_cat{$kw} with $cat for key words: $kw\n";
+            }
+            else {
+                push @cat_order, $kw;
+            }
+
+            $file_to_cat{$kw} = $cat;
+            print "Adding Category: $cat   File Keywords: $kw\n" if ($VERBOSE);
+        }
+
+        # extention defn
+        # ext ext1,ext2, key_words
+        elsif (/^\s*ext\s+([\w\d\,]+)\s+(.*?)\s*$/) {
+            my $ext = $1;
+            my $kw  = $2;
+
+            # Make lowercase
+            $ext =~ tr/[A-Z]/[a-z]/;
+
+            # If there are already some extensions, then we will just
+            # extend them
+            if (exists $file_to_ext{$kw}) {
+
+                # We could just do a push, but then we risk having
+                # duplicate entries, which will waste time later
+                foreach my $e1 (split(/,/, $ext)) {
+                    my $exists = 0;
+                    foreach my $e2 (@{$file_to_ext{$kw}}) {
+                        if ($e1 eq $e2) {
+                            $exists = 1;
+                            last;
+                        }
+                    }
+                    push @{$file_to_ext{$kw}}, $e1 if ($exists == 0);
+                }
+                print "Adding Extensions: $ext   File Keywords: $kw\n"
+                  if ($VERBOSE);
+
+            }
+            else {
+                $file_to_ext{$kw} = [split(/,/, $ext)];
+                push @ext_order, $kw;
+                print "New Extensions: $ext   File Keywords: $kw\n"
+                  if ($VERBOSE);
+            }
+        }
+        else {
+            print "Invalid line in $config:$.\n";
+            exit(1);
+        }
+    }
+
+    close(CONFIG);
+}
+
+# This is needed to assign the handle to a local variable
+sub myopen {
+    my $path = shift;
+    local *FH;
+    open(FH, $path) or die("Can not open $path");
+    return *FH;
+}
+
+# Open the summary files into an array of handles
+sub open_files {
+    return if ($LIST == 1);
+
+    if ($DO_EXT == 1) {
+        open(MISMATCH, ">${DIR}/${MIS_NAME}${EXT}")
+          or die "Can't open ${DIR}/${MIS_NAME}${EXT}";
+        $mis_cnt = 0;
+
+        print MISMATCH "<HTML><HEAD>\n"
+          . "<TITLE>Extension Mismatches</TITLE>"
+          . "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></HEAD>\n"
+          . "<BODY>\n"
+          . "<CENTER><H2>Extension Mismatch</H2></CENTER>\n"
+          if ($HTML == 1);
+    }
+
+    if ("$ALERT_DB" ne "") {
+        open(ALERT, ">${DIR}/${ALERT_NAME}${EXT}")
+          or die "Can't open ${DIR}/${ALERT_NAME}${EXT}";
+
+        $alert_cnt = 0;
+
+        print ALERT "<HTML><HEAD>\n"
+          . "<TITLE>Hash Database Alerts</TITLE>"
+          . "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></HEAD>\n"
+          . "<BODY>\n"
+          . "<CENTER><H2>Hash Database Alerts</H2></CENTER>\n"
+          if ($HTML == 1);
+    }
+
+    if (("$EXCLUDE_DB" ne "") || ("$NSRL" ne "")) {
+        open(EXCLUDE, ">${DIR}/${EXCLUDE_NAME}${EXT}")
+          or die "Can't open ${DIR}/${EXCLUDE_NAME}${EXT}";
+
+        $excl_cnt = 0;
+
+        print EXCLUDE "<HTML><HEAD>\n"
+          . "<TITLE>Hash Database Excludes</TITLE>"
+          . "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></HEAD>\n"
+          . "<BODY>\n"
+          . "<CENTER><H2>Hash Database Excludes</H2></CENTER>\n"
+          if ($HTML == 1);
+
+        if ($DO_EXT == 1) {
+            open(EXCLUDEMIS, ">${DIR}/${EXCLUDEMIS_NAME}${EXT}")
+              or die "Can't open ${DIR}/${EXCLUDEMIS_NAME}${EXT}";
+            $exclmis_cnt = 0;
+
+            print EXCLUDEMIS "<HTML><HEAD>\n"
+              . "<TITLE>Hash Database Excludes with Mismatches</TITLE>"
+              . "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></HEAD>\n"
+              . "<BODY>\n"
+              . "<CENTER><H2>Hash Database Excludes with Mismatches</H2></CENTER>\n"
+              if ($HTML == 1);
+        }
+    }
+
+    if ($DO_INDEX == 1) {
+
+        $output_used{'unknown'} = 0;
+
+        if ($DO_UNKNOWN == 1) {
+            open(UNKNOWN, ">${DIR}/${UNK_NAME}${EXT}")
+              or die "Can't open ${DIR}/${UNK_NAME}${EXT}";
+
+            print UNKNOWN "<HTML><HEAD>\n"
+              . "<TITLE>Unknown Category</TITLE>"
+              . "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></HEAD>\n"
+              . "<BODY>\n"
+              . "<CENTER><H2>Unknown Category</H2></CENTER>\n"
+              if ($HTML == 1);
+
+        }
+
+        foreach my $cat (values %file_to_cat) {
+            next if (exists $cat_handle{$cat});
+            next if ($cat eq $IGNORE_NAME);
+
+            $cat_handle{$cat} = myopen(">${DIR}/${cat}${EXT}");
+            my $tmphandle = $cat_handle{$cat};
+
+            $output_used{$cat} = 0;
+
+            print $tmphandle "<HTML><HEAD>\n"
+              . "<TITLE>$cat Category</TITLE>"
+              . "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></HEAD>\n"
+              . "<BODY>\n"
+              . "<CENTER><H2>$cat Category</H2></CENTER>\n"
+              if ($HTML == 1);
+
+            # make a directory for the thumbnail images
+            if (($cat eq "images") && ($SAVE == 1) && ($HTML == 1)) {
+                mkdir("${DIR}/images", 0775)
+                  unless (-d "${DIR}/images");
+
+                open(IMG_INDEX, ">${DIR}/images/index.html")
+                  or die "Can't open ${DIR}/images/index.html";
+
+                print IMG_INDEX "<HTML><HEAD>\n"
+                  . "<TITLE>Image Thumbnails Index</TITLE>"
+                  . "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></HEAD>\n"
+                  . "<BODY>\n"
+                  . "<CENTER><H2>Image Thumbnails Index</H2></CENTER>\n<UL>\n";
+            }
+        }
+    }
+
+    return;
+}
+
+# Close the output summary files and remove them if they have
+# a size of 0
+#
+sub close_files {
+    return if ($LIST == 1);
+
+    # Extension Mismatch
+    if ($DO_EXT == 1) {
+        close(MISMATCH);
+        unlink "${DIR}/${MIS_NAME}${EXT}" if ($mis_cnt == 0);
+    }
+
+    # Alert Hash database
+    if ("$ALERT_DB" ne "") {
+        close(ALERT);
+        unlink "${DIR}/${ALERT_NAME}${EXT}"
+          if ($alert_cnt == 0);
+    }
+
+    # Exclude hash databases (-x and NSRL)
+    if (("$EXCLUDE_DB" ne "") || ("$NSRL" ne "")) {
+        close(EXCLUDE);
+        unlink "${DIR}/${EXCLUDE_NAME}${EXT}"
+          if ($excl_cnt == 0);
+
+        if ($DO_EXT == 1) {
+            close(EXCLUDEMIS);
+            unlink "${DIR}/${EXCLUDEMIS_NAME}${EXT}"
+              if ($exclmis_cnt == 0);
+        }
+    }
+
+    # Categories
+    if ($DO_INDEX == 1) {
+        if ($DO_UNKNOWN == 1) {
+            close(UNKNOWN);
+            unlink "${DIR}/${UNK_NAME}${EXT}"
+              if ($output_used{'unknown'} == 0);
+        }
+
+        foreach my $cat (keys %cat_handle) {
+            if ($HTML == 1) {
+                my $tmphandle = $cat_handle{$cat};
+                print $tmphandle "</BODY></HTML>\n";
+            }
+
+            close($cat_handle{$cat});
+            unlink "${DIR}/${cat}${EXT}" if ($output_used{$cat} == 0);
+
+            if (($cat eq "images") && ($SAVE == 1) && ($HTML == 1)) {
+                print IMG_INDEX "</UL>\n</HTML>\n";
+                close(IMG_INDEX);
+            }
+        }
+    }
+}
+
+sub check_execs {
+    unless (-e "$SK_FLS") {
+        print "Missing Sleuth Kit fls executable: $SK_FLS\n";
+        exit(1);
+    }
+
+    unless (-e "$SK_FILE") {
+        print "Missing file executable: $SK_FILE\n";
+        exit(1);
+    }
+
+    unless (-e "$SK_ICAT") {
+        print "Missing Sleuth Kit icat executable: $SK_ICAT\n";
+        exit(1);
+    }
+
+    unless (-e "$SK_HFIND") {
+        print "Missing Sleuth Kit hfind executable: $SK_HFIND\n";
+        exit(1);
+    }
+
+    unless (-e "$SK_IMGSTAT") {
+        print "Missing Sleuth Kit img_stat executable: $SK_IMGSTAT\n";
+        exit(1);
+    }
+
+    if ($DO_SHA1 == 1) {
+        unless (-e "$SK_SHA1") {
+            print "Missing sha1 executable: $SK_SHA1\n";
+            exit(1);
+        }
+    }
+
+    if ($DO_MD5 == 1) {
+        unless (-e "$SK_MD5") {
+            print "Missing md5 executable: $SK_MD5\n";
+            exit(1);
+        }
+    }
+}
+
+# Set the $PLATFORM value from $FSTYPE
+sub set_platform {
+
+    if (   ($FSTYPE eq "-f ntfs")
+        || ($FSTYPE eq "-f fat")
+        || ($FSTYPE eq "-f fat32")
+        || ($FSTYPE eq "-f fat16")
+        || ($FSTYPE eq "-f fat12"))
+    {
+        $PLATFORM = "windows";
+    }
+    elsif ($FSTYPE eq "-f solaris") {
+        $PLATFORM = "solaris";
+    }
+    elsif ($FSTYPE eq "-f openbsd") {
+        $PLATFORM = "openbsd";
+    }
+    elsif ($FSTYPE eq "-f freebsd") {
+        $PLATFORM = "freebsd";
+    }
+
+    # Use freebsd as a default for UFS
+    elsif ($FSTYPE eq "-f ufs") {
+        $PLATFORM = "freebsd";
+    }
+    elsif (($FSTYPE eq "-f linux-ext2")
+        || ($FSTYPE eq "-f linux-ext3")
+        || ($FSTYPE eq "-f ext"))
+    {
+        $PLATFORM = "linux";
+    }
+    else {
+        print "Unknown file system type: $FSTYPE\n";
+        exit(1);
+    }
+
+    print "Platform set to: $PLATFORM\n" if ($VERBOSE);
+}
+
+sub check_args {
+
+    # Sanity check the arguments
+    if ("$IMGTYPE" eq "") {
+
+        # Test that autodetect works
+        my $out = `\"$SK_IMGSTAT\" -t $IMG`;
+        if ($out =~ /^(\w+)$/) {
+            $IMGTYPE = "-i $1";
+        }
+        else {
+            print "Missing image file type (and autodetect is not working)\n";
+            usage();
+        }
+    }
+
+    if ("$FSTYPE" eq "") {
+
+        # Test that autodetect works
+        my $out = `\"$SK_FSSTAT\" $IMGTYPE -o $IMGOFF -t $IMG`;
+        if ($out =~ /^([\w\-]+)$/) {
+            $FSTYPE = "-f $1";
+        }
+        else {
+            print "Missing file system type (and autodetect is not working)\n";
+            usage();
+        }
+    }
+    else {
+        my $out = `\"$SK_FSSTAT\" $IMGTYPE -o $IMGOFF $FSTYPE -t $IMG`;
+        unless ($out =~ /^([\w\d\-]+)$/) {
+            print "Incorrect file system type ($FSTYPE)\n";
+            exit(1);
+        }
+    }
+
+    if (("$DIR" eq "") && ($LIST == 0)) {
+        print "Missing directory location\n";
+        usage();
+    }
+
+    elsif (("$DIR" ne "") && ($LIST == 1)) {
+        print "Directory (-d) and List (-l) flags cannot be used together\n";
+        usage();
+    }
+
+    elsif (($SAVE == 1) && ($LIST == 1)) {
+        print "Save Files (-s) and List (-l) flags cannot be used together\n";
+        usage();
+    }
+}
+
+# Print a summary of results to the screen
+sub print_summary {
+
+    if ($HTML == 1) {
+        print_index();
+        return;
+    }
+
+    my $str = "";
+
+    $str .= "Images\n" . $img_str . ${NL};
+
+    $str .= "Files (" . ($alloc_cnt) . ")\n\n";
+
+    $str .=
+        "Files Skipped ("
+      . ($dirskip_cnt + $ignore_cnt) . ")\n"
+      . "- Non-Files ($dirskip_cnt)\n"
+      . "- 'ignore' category ($ignore_cnt)\n\n";
+
+    if (("$EXCLUDE_DB" ne "") || ("$NSRL" ne "") || ("$ALERT_DB" ne "")) {
+        $str .= "Hash Databases\n";
+
+        if ("$ALERT_DB" ne "") {
+            $str .= "- Hash Database Alerts" . " ($alert_cnt)\n";
+        }
+
+        if (("$EXCLUDE_DB" ne "") || ("$NSRL" ne "")) {
+            $str .= "- Hash Database Exclusions ($excl_cnt)\n";
+        }
+
+        $str .= "\n";
+    }
+
+    if ($DO_EXT == 1) {
+        $str .= "Extensions\n";
+
+        $str .= "- Extension Mismatches" . " ($mis_cnt)\n";
+
+        if (("$EXCLUDE_DB" ne "") || ("$NSRL" ne "")) {
+            $str .=
+"- Hash Database Exclusions with Extension Mismatch ($exclmis_cnt)\n";
+        }
+        $str .= "\n";
+    }
+
+    if ($DO_INDEX == 1) {
+        my $tot  = 0;
+        my $str2 = "";
+
+        foreach my $cat (sort { lc($a) cmp lc($b) } keys %output_used) {
+            $str2 .= "- $cat ($output_used{$cat})\n";
+            $tot += $output_used{$cat};
+        }
+
+        $str .= "Categories ($tot)\n" . $str2 . "\n";
+    }
+
+    if ($LIST == 1) {
+        print "\n--------------------------------------------------\n" . $str;
+    }
+    else {
+        open(SUM, ">${DIR}/${SUMMARY_NAME}")
+          or die "Can't open ${SUMMARY_NAME}";
+        print SUM $str;
+        close(SUM);
+    }
+
+    return;
+}
+
+# index.html file with links to specific sections
+sub print_index {
+    return if (($HTML == 0) || ($LIST == 1));
+
+    open(INDEX, ">${DIR}/index.html")
+      or die "Can't open index.html";
+
+    print INDEX "<HTML><HEAD><TITLE>sorter output</TITLE>"
+      . "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></HEAD>\n"
+      . "<BODY>"
+      . "<CENTER><H2>sorter output</H2></CENTER>\n"
+      . "<P><B>Images</B><BR>"
+      . "<UL>$img_str</UL>\n"
+      . "<P><B>Files</B> ("
+      . ($alloc_cnt) . ")\n"
+      . "<P><B>Files Skipped</B> ("
+      . ($dirskip_cnt + $ignore_cnt)
+      . ")\n<UL>\n"
+      . "  <LI>Non-Files ($dirskip_cnt)\n"
+      . "  <LI>'ignore' category ($ignore_cnt)\n"
+      . "</UL>\n";
+
+    if (("$EXCLUDE_DB" ne "") || ("$NSRL" ne "") || ("$ALERT_DB" ne "")) {
+        print INDEX "<P><B>Hash Databases</B>\n<UL>\n";
+    }
+
+    if ("$ALERT_DB" ne "") {
+        if ($alert_cnt > 0) {
+            print INDEX "<LI><A HREF=\"./${ALERT_NAME}${EXT}\">"
+              . "Hash Database Alerts</A> ($alert_cnt)\n";
+        }
+        else {
+            print INDEX "<LI>Hash Database Alerts" . " ($alert_cnt)\n";
+        }
+    }
+
+    if (("$EXCLUDE_DB" ne "") || ("$NSRL" ne "")) {
+        if ($excl_cnt > 0) {
+            print INDEX "<LI><A HREF=\"./${EXCLUDE_NAME}${EXT}\">"
+              . "Hash Database Exclusions</A> ($excl_cnt)\n";
+        }
+        else {
+            print INDEX "<LI>Hash Database Exclusions ($excl_cnt)\n";
+        }
+    }
+    if (("$EXCLUDE_DB" ne "") || ("$NSRL" ne "") || ("$ALERT_DB" ne "")) {
+        print INDEX "</UL>\n";
+    }
+
+    if ($DO_EXT == 1) {
+
+        print INDEX "<P><B>Extensions</B>\n<UL>\n";
+        if ($mis_cnt > 0) {
+            print INDEX "<LI><A HREF=\"./${MIS_NAME}${EXT}\">"
+              . "Extension Mismatches</A>"
+              . " ($mis_cnt)\n";
+        }
+        else {
+            print INDEX "<LI>Extension Mismatches" . " ($mis_cnt)\n";
+        }
+
+        if (("$EXCLUDE_DB" ne "") || ("$NSRL" ne "")) {
+            if ($exclmis_cnt > 0) {
+                print INDEX "<LI><A HREF=\"./${EXCLUDEMIS_NAME}${EXT}\">"
+                  . "Hash Database Exclusions with Extension Mismatch</A> ($exclmis_cnt)\n";
+            }
+            else {
+                print INDEX
+"<LI>Hash Database Exclusions with Extension Mismatch ($exclmis_cnt)\n";
+            }
+        }
+        print INDEX "</UL>\n";
+    }
+
+    if ($DO_INDEX == 1) {
+        my $str = "<UL>\n";
+        my $tot = 0;
+
+        foreach my $cat (sort { lc($a) cmp lc($b) } keys %output_used) {
+
+            # Print no link if there were no files or we are not saving
+            # the unknown files
+            if (   ($output_used{$cat} == 0)
+                || (($cat eq $UNK_NAME) && ($DO_UNKNOWN == 0)))
+            {
+                $str .= "  <LI>$cat ($output_used{$cat})\n";
+            }
+            else {
+                $str .=
+                    "  <LI><A HREF=\"./${cat}${EXT}\">"
+                  . "$cat</A> ($output_used{$cat})\n";
+            }
+
+            # Note that an Autopsy regexp that removes the link
+            # may need to be changed if this line is changed
+            $str .= " (<A HREF=\"./images/index.html\">thumbnails</A>)\n"
+              if (($cat eq 'images') && ($img_cnt > 0));
+
+            $tot += $output_used{$cat};
+        }
+
+        print INDEX "<P><B>Categories</B> ($tot)\n" . $str . "</UL>\n";
+    }
+
+    close(INDEX);
+
+    return;
+}
+
+sub print_thumb_footer {
+    return if (($HTML == 0) || ($LIST == 1));
+
+    my $close_page;
+
+    # Get the location of the page that we are closing
+    if (($img_cnt % $IMG_PAGE) == 0) {
+
+        # We are closing a page because we hit the limit
+        $close_page = ($img_cnt - 1) / $IMG_PAGE + 1;
+    }
+    else {
+
+        # we are closing the page because we are done
+        $close_page = ($img_cnt) / $IMG_PAGE + 1;
+    }
+
+    # This could be called to close off the final file, so check if
+    # we need to finish off the last row
+    print IMG_THUMB "</TR>\n"
+      unless (($img_cnt % 4) == 0);
+
+    print IMG_THUMB "</TABLE>\n";
+
+    # Print a previous unless we are closing page 1
+    unless ($close_page == 1) {
+        my $tmp = $close_page - 1;
+        print IMG_THUMB
+          "<A HREF=./thumbs-${tmp}.html>previous $IMG_PAGE</A>&nbsp;&nbsp;\n";
+    }
+
+    print IMG_THUMB "<A HREF=./index.html>Main Index</A>&nbsp;&nbsp;\n";
+
+    # only do next if we are making a new page next
+    if (($img_cnt % $IMG_PAGE) == 0) {
+        my $tmp = $close_page + 1;
+        print IMG_THUMB "<A HREF=./thumbs-${tmp}.html>next $IMG_PAGE</A>\n";
+    }
+
+    print IMG_THUMB "</BODY></HTML>";
+
+    close IMG_THUMB;
+}
+
+# Arguments: Saved name and path
+
+sub print_thumb {
+    return if (($HTML == 0) || ($LIST == 1));
+
+    my $save_name = shift;
+    my $path      = shift;
+
+    # A new page is required
+    # $IMG_PAGE per page
+    if (($img_cnt % $IMG_PAGE) == 0) {
+
+        my $page = $img_cnt / $IMG_PAGE + 1;
+
+        # Close off the current one - if there is one
+        if ($img_cnt != 0) {
+            print_thumb_footer();
+        }
+
+        open(IMG_THUMB, ">${DIR}/images/thumbs-" . $page . ".html")
+          or die "Can't open ${DIR}/images/thumbs-" . $page . ".html";
+
+        print IMG_THUMB "<HTML><HEAD>\n"
+          . "<TITLE>Image Thumbnails - Page $page</TITLE>"
+          . "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></HEAD>\n"
+          . "<BODY>\n"
+          . "<CENTER><H2>Image Thumbnails - Page $page</H2>\n<P>"
+          . "<TABLE WIDTH=630 CELLSPACING=5 CELLPADDING=0 BORDER=0>\n"
+          . "<TR><TD></TD><TD ALIGN=CENTER>A</TD><TD ALIGN=CENTER>B</TD>"
+          . "<TD ALIGN=CENTER>C</TD><TD ALIGN=CENTER>D</TD></TR>\n";
+
+        # Add to the main index
+        print IMG_INDEX
+          "<LI><A HREF=\"./thumbs-${page}.html\">Page $page</A></LI>\n";
+
+    }
+
+    # A new row
+    if (($img_cnt % 4) == 0) {
+        my $row = (($img_cnt % 100) / 4) + 1;
+        print IMG_THUMB "<TR>\n  <TD>$row</TD>\n";
+    }
+
+    my $img_shrt = $path;
+    $img_shrt = substr($path, rindex($path, '/') + 1)
+      if ($path =~ /\//);
+
+    print IMG_THUMB "  <TD WIDTH=150>"
+      . "<A HREF=\"./$save_name\" TARGET=_blank>"
+      . "<IMG SRC=\"./$save_name\" "
+      . "WIDTH=150 HEIGHT=150 ALT=\"$img_shrt\"></A><BR>"
+      . "$img_shrt<BR>"
+      . "<A HREF=\"../images.html#${save_name}\" TARGET=\"_blank\">details</A>"
+      . "</TD>\n";
+
+    $img_cnt++;
+
+    # Ending a row
+    print IMG_THUMB "</TR>\n"
+      if (($img_cnt % 4) == 0);
+
+    return;
+}

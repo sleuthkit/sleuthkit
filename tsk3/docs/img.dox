@@ -1,0 +1,26 @@
+/*! \page imgpage Disk Images
+   
+This section describes the general disk image analysis concepts and corresponding APIs in TSK.  In addition to this documentation, there are sample programs in the <tt>samples</tt> directory in TSK that show these functions being used while processing a disk image. 
+
+  \section img_open Opening the Disk Image 
+
+    Before the volume and file system structures can be analyzed, the disk image must be opened.  The tsk_img_open() function is used to open one or more disk image files.  The file format can be specified or auto-detection methods will be used.  If the specific type cannot be determined, then the raw type will be assumed. Note that by default, TSK supports only single and split raw images.  Other file formats, such as AFF and EWF, are supported only if the corresponding libraries existed and were configured when TSK was built and installed.  If you are opening only a single disk image file (i.e. it is not split), then you can use the tsk_img_open_sing() function. It takes fewer arguments. 
+
+    The tsk_img_open() function returns a TSK_IMG_INFO structure.  This structure has fields that contain the type and size (uncompressed, if applicable) of the disk image.  When you are done analyzing the disk image, it can be closed with tsk_img_close(). 
+
+    Note that the tsk_img_open() and tsk_img_open_sing() functions use the TSK_TCHAR type to store the disk image paths. This type is system dependent and is a wchar_t on Windows and char on other sytems.  See \ref basic_enc_t for more details. If you are in an environment where you will have UTF-8 text even in Windows, then you can use the tsk_img_open_utf8() and tsk_img_open_utf8_sing() functions. 
+    
+    \section img_types File Format Types
+
+    There are several functions that can be used to map between names and IDs of file format types.  Internally, the TSK functions use a numerical ID for each type.  The tsk_img_type_toname() function maps the ID to a single word name (such as "raw") and the tsk_img_type_todesc() function maps an ID to a longer description (such as "Single raw file").  The short name is used in the TSK command line tools when the user specifies a type and the tsk_img_type_toid() function maps the short name to an ID. 
+
+    There are also functions that identify which file formats are supported by the installation.  The tsk_img_type_supported() function returns the IDs of the supported types.  The tsk_img_type_print() prints the supported type names and descriptions to a handle.  This function is used by the command line tools to print the supported types to the console.
+    
+    \section img_read Reading Data
+
+    To read data from the disk image, the tsk_img_read() function is used.  This function can read an arbitrary amount of data from an arbitrary byte offset. 
+
+Next to \ref vspage
+
+Back to \ref users_guide "Table of Contents"
+*/

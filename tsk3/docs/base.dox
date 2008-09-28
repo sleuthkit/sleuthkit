@@ -1,0 +1,47 @@
+/*! \page basepage Base Functions
+   
+This section describes some base API functions and concepts that are general to all of the other layers, such as error and Unicode handling.  In addition to this documentation, there are sample programs in the <tt>samples</tt> directory in TSK that show these functions being used while processing a disk image. 
+
+
+\section basic_encodings Encodings
+
+\subsection basic_enc_over Overview
+TSK supports Unicode volume or file system data and can process disk image files that contain non-Latin characters. This section describes how that is done. 
+
+TSK runs on both Unix and Windows systems and these two systems differ on how they store Unicode.  There are several storage methods for Unicode characters.  The UTF-16 method stores the characters using either 2-bytes or 4-bytes (though most characters can be stored in 2-bytes).  UTF-8 is a method where 1- to 4-bytes are used, depending on the character.  UTF-8 is backward compatible with ASCII because the ASCII characters require only 1-byte.   
+
+The FAT and NTFS file systems store file names in UTF-16 while UFS and Ext2/3 store file names in UTF-8.  Unix internally uses UTF-8 to store Unicode text and Windows uses UTF-16 (if UNICODE is enabled).  To support running on both Unix and Windows and to support file systems from both Unix and Windows, TSK must convert between UTF-8 and UTF-16.  
+
+Internally, all TSK data structures store text in UTF-8.  For example, the UTF-16 file names in NTFS are converted to UTF-8.  However, the Windows functions that are used to open disk images require that the file name be in UTF-16.  To account for this, special data types (as described in the next section) are used to handle disk image and local file names in the local storage method. 
+
+\subsection basic_enc_t Special Data Types (TSK_TCHAR)
+
+At compile-time, <tt>TSK_TCHAR</tt> is defined to be a UTF-16 wide character on a Windows system and a UTF-8 character on a Unix system.  This data type is used to store the disk image file name and other command line arguments that may need to be parsed. 
+
+There are various definitions that can help to process the <tt>TSK_TCHAR</tt> strings, such as <tt>TSTRLEN</tt>, which maps to the appropriate function to find the length of the string.   There are also functions that can be used to convert between UTF-8 and UTF-16 (see tsk_UTF16toUTF8() and tsk_UTF8toUTF16()). 
+
+Note that in some environments, the TSK_TCHAR design is difficult to work with.  For example, if you have a Windows environment where you are storing all strings in UTF-8.  Some of the functions that take a TSK_TCHAR as an argument have been expanded to have versions that take a specific encoding.  These are being added as needed, so send e-mail to <tt>sleuthkit-developers &lt; at &gt; lists &lt; dot &gt; sourceforge &lt; dot &gt; net</tt> if you find more that need to be updated. 
+
+\section basic_error Error Handling
+
+The public API functions all return a value to indicate when an error occurs. More details about the error can be learned by reading the global tsk_errno value. This will be one of several predefined error codes.  A description of the error can be obtained using the tsk_error_get() function or the error can be printed to a FILE handle using tsk_error_print().  
+
+
+\section basic_misc Miscellaneous Utilities
+The TSK library includes some basic utility structures and functions that can be used to manage lists and stacks.  These are used internally and are part of the public API for convenience. 
+
+The TSK_LIST structure is used to keep track of values that have been seen while processing.  Values are added to the list using tsk_list_add().  The list can be searched using tsk_list_find() and closed using tsk_list_free().
+
+The TSK_STACK structure is used to prevent infinite loops when recursing into directories.  The stack can be created using tsk_stack_create() and data can pushed and popped using tsk_stack_push() and tsk_stack_pop().  To search the stack, tsk_stack_find() is used and tsk_stack_free() is used to free the stack. When recursing directories, the metadata address of the directory is stored on the stack when that directory is analyzed and popped off when that directory is done.  
+
+\section basic_hash Hash Algorithms
+
+The TSK library includes support to calculate MD5 and SHA-1 hashes.  To calculate the MD5 hash, a context must be first initialized with TSK_MD5_Init(). Data is added to the context with TSK_MD5_Update() and the hash is calculated with a call to TSK_MD5_Final().  A similar process is used for SHA-1 hashes using TSK_SHA_Init(), TSK_SHA_Update(), and TSK_SHA_Final(). 
+
+\section basic_version Version
+To get the version number of the TSK library, you can all the tsk_version_get_str() function to get a string representation.  Or, you can call tsk_version_print() to print the library name and version to a FILE handle. 
+
+Next to \ref imgpage
+
+Back to \ref users_guide "Table of Contents"
+*/

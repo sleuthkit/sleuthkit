@@ -1,0 +1,66 @@
+.TH BLKLS 1 
+.SH NAME
+blkls \- List or output file system data units.
+.SH SYNOPSIS
+.B blkls [-aAelsvV] [-f 
+.I fstype
+.B ] [-i 
+.I imgtype
+.B ] [-o 
+.I imgoffset
+.B ]
+.I image [images] [start-stop]
+
+.SH DESCRIPTION
+.B blkls
+opens the named 
+.I image(s)
+and copies file system data units (blocks).  By default, 
+.B blkls
+copies the contents of unallocated data blocks.  
+.B blkls 
+was called 
+.B dls
+in TSK versions prior to 3.0.0.
+.B blkls 
+was called 
+.B unrm
+in TCT.  
+
+.SH ARGUMENTS
+.IP -e
+Copy every block. The output should be similar to dd.
+.IP -a
+Display all allocated blocks (same as -e if -A is also given).
+.IP -A
+Display all unallocated blocks (same as -e if -a is also given). This
+is the default behavior. 
+.IP "-f fstype"
+Specifies the file system type.   
+Use '-f list' to list the supported file system types.
+If not given, autodetection methods are used.
+.IP "-i imgtype"
+Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+If not given, autodetection methods are used.
+.IP "-o imgoffset"
+The sector offset where the file system starts in the image.  Non-512 byte
+sectors can be specified using '@' (32@2048).
+.IP -l
+List the data information in time machine format.
+.IP -s
+Copy only the slack space of the image.
+.IP -v
+Turn on verbose mode, output to stderr.
+.IP -V
+Display version.
+.IP "image [images]"
+One (or more if split) disk or partition images whose format is given with '-i'.
+.IP "start-stop ..."
+Examine the specified block number or number range. 
+.SH LICENSE
+This software is distributed under the IBM Public License.
+.SH HISTORY
+First appeared in The Coroners Toolkit (TCT) 1.0 (Wietse Venema).
+Now maintained by Brian Carrier <carrier at sleuthkit dot org>.
+
+Send documentation updates to <doc-updates at sleuthkit dot org>

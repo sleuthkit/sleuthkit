@@ -1,0 +1,48 @@
+.TH JCAT 1 
+.SH NAME
+jcat \- Show the contents of a block in the file system journal.
+.SH SYNOPSIS
+.B jcat [-f
+.I fstype
+.B ] [-vV] [-i imgtype] [-o imgoffset]
+.I image [images]
+.B ] [
+.I inode
+.B ]
+.I jblk
+
+.SH DESCRIPTION
+.B jcat
+shows the contents of a journal block in the file system journal.  The 
+inode address of the journal can be given or the default location will
+be used.  Note that the block address is a journal block address and not
+a file system block.  The raw output is given to STDOUT.
+
+.SH ARGUMENTS
+.IP "-f fstype"
+Specify the file system type.  Use '-f list' to list the supported file system types. If not given, autodetection methods are used.
+.IP "-i imgtype"
+Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. If not given, autodetection methods are used.
+.IP "-o imgoffset"
+The sector offset where the file system starts in the image.  Non-512 byte
+sectors can be specified using '@' (32@2048).
+.IP -V
+Display version
+.IP -v
+verbose output
+.IP image [images]
+One (or more if split) disk or partition images whose format is given with '-i'.
+.IP [inode]
+The inode where the file system journal can be found. 
+
+.IP jblk
+The journal block to display.  
+
+.SH "EXAMPLES"
+
+jcat -f linux-ext3 img.dd 34 | xxd
+
+.SH AUTHOR
+Brian Carrier <carrier at sleuthkit dot org>
+
+Send documentation updates to <doc-updates at sleuthkit dot org>

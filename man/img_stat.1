@@ -1,0 +1,28 @@
+.TH IMG_STAT 1 
+.SH NAME
+img_stat \- Display details of an image file
+.SH SYNOPSIS
+.B img_stat [-i imgtype] [-tvV] 
+.I image [images] 
+.SH DESCRIPTION
+.B img_stat
+displays the details associated with an image file.  The output of this
+command is image format specific.  At a minimum, the size will be given 
+and the byte range of each file will be given for split image formats.
+
+.SH ARGUMENTS
+.IP "-i imgtype"
+Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. If not given, autodetection methods are used.
+.IP "-t"
+Print the image type only. 
+.IP -v
+Verbose output of debugging statements to stderr
+.IP -V
+Display version
+.IP "image [images]"
+One (or more if split) disk or partition images whose format is given with '-i'.
+
+.SH AUTHOR
+Brian Carrier <carrier at sleuthkit dot org>
+
+Send documentation updates to <doc-updates at sleuthkit dot org>
