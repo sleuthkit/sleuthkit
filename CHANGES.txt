@@ -68,6 +68,9 @@ Reported by Phil Peacock.
 9/25/08: Bug Fix: Added O_BINARY to open() in raw and split because Cygwin
 was having problems. Reported by Mark Stam.
 
+10/1/08: Update: Added ifndef to TSK_USE_HFS define to allow people
+to define it on the command line.  Patch by RB.
+
 
 ---------------- VERSION 2.52 --------------
 2/12/08: Bug Fix: Fixed warning messages in mactime about non-Numeric
