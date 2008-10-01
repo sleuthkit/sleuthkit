@@ -1,9 +1,10 @@
-                          The FAT File System
-                  Sleuth Kit Implementation Notes (SKINs)
-                       http://www.sleuthkit.org
+                       The FAT File System
 
-                            Brian Carrier
-                        Last Updated: June 2003 
+             Sleuth Kit Implementation Notes (SKINs)
+                     http://www.sleuthkit.org
+
+                          Brian Carrier
+                     Last Updated: Sept 2008
 
 
 
@@ -118,4 +119,6 @@ The FAT spec can be found at:
     http://www.microsoft.com/whdc/system/platform/firmware/fatgen.mspx
 
 -----------------------------------------------------------------------------
+Send documentation updates to: <doc-updates at sleuthkit dot org>
+
 Copyright (c) 2002-2008 by Brian Carrier.  All Rights Reserved

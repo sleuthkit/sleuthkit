@@ -55,4 +55,6 @@ GetCommandLineW() instead of using wmain() because mingw does not
 support wmain().
 
 -----------------------------------------------------------------------
+Send documentation updates to: <doc-updates at sleuthkit dot org>
+
 Copyright (c) 2006-2008 by Brian Carrier.  All Rights Reserved
