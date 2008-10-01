@@ -52,7 +52,9 @@ extern "C" {
 #endif
 
 // set to 1 to open HFS+ file systems -- which is not fully tested
+#ifndef TSK_USE_HFS
 #define TSK_USE_HFS 0
+#endif
 
 
 #ifndef NBBY
