@@ -1,9 +1,10 @@
-                         The NTFS File System
-                 Sleuth Kit Implementation Notes (SKINs)
-                        http://www.sleuthkit.org
+                       The NTFS File System
 
-                            Brian Carrier
-                        Last Updated: Sept 2008
+             Sleuth Kit Implementation Notes (SKINs)
+                     http://www.sleuthkit.org
+
+                          Brian Carrier
+                     Last Updated: Sept 2008
 
 
 
@@ -227,7 +228,9 @@ with NTFS:
   exact ACLs of the object can not be displayed.
 - Directories that are indexed by a descriptor other than the file
   name, are not supported.
-- Compressed & encrypted files are not supported
+- Encrypted files are not supported
 
 -----------------------------------------------------------------
+Send documentation updates to: <doc-updates at sleuthkit dot org>
+
 Copyright (c) 2002-2008 by Brian Carrier.  All Rights Reserved
