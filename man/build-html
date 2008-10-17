@@ -1,8 +1,36 @@
-#!/bin/sh
+#!/usr/bin/perl -w
 
-RMAN=../../rman-3.2/rman
+use strict;
 
-files='blkcalc blkcat disk_sreset disk_stat blkls blkstat ffind fls fsstat hfind icat ifind ils img_cat img_stat istat jcat jls mactime mmcat mmls mmstat sigfind sorter'
-for f in $files
-  do $RMAN -f html ${f}.1 > ../../www/man/${f}.html
-done
+my $BACK = "";
+my $RMAN = "/rman-3.2/rman";
+
+# rman and www are back different levels depending on 
+# which branch we are on.
+if (-d "../../../rman-3.2") {
+    $BACK = "../../../";
+} elsif (-d "../../../../rman-3.2") {
+    $BACK = "../../../../";
+} else {
+    die "Missing rman directory";
+}
+
+die "www not in same dir as rman" unless (-e "${BACK}/www");
+
+print "Cleaning up www directory\n";
+system ("rm ${BACK}/www/man/*.html");
+
+print "Building html files\n";
+opendir (DIR, ".") or die "Error opening current directory";
+while (1) {
+    my $f = readdir(DIR);
+    last unless defined ($f);
+    next if (($f eq ".") || ($f eq ".."));
+    if ($f =~ /^(.*?)\.1$/) {
+        $f = $1;
+    } else {
+        next;
+    }
+
+    system("${BACK}${RMAN} -f html ${f}.1 > ${BACK}/www/man/${f}.html");
+}
