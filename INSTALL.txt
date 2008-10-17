@@ -31,7 +31,7 @@ There are optional features that TSK can use if you have installed
 them before you build and install TSK. 
 
 - AFFLIB: Allows you to process disk images that are stored in the
-AFF format. Version 3.2.5 has been tested to compile and work with this
+AFF format. Version 3.3.4 has been tested to compile and work with this
 release. 
     Available at: http://www.afflib.org
 
