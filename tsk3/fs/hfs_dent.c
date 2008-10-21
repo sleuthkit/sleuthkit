@@ -173,9 +173,9 @@ hfsmode2tsknametype(uint16_t a_mode)
  * @param a_addr Address of directory to process.
  * @returns error, corruption, ok etc. 
  */
-
+#if 0
 TSK_RETVAL_ENUM
-hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
+hfs_dir_open_meta3(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
     TSK_INUM_T a_addr)
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;
@@ -256,7 +256,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
     temp_32ptr = (uint32_t *) (needle.parent_cnid);
     *temp_32ptr = tsk_getu32(fs->endian, (char *) &cnid);       // @@@@ I'm not sure that this works...
 
-  /*** navigate to thread record ***/
+    /*** navigate to thread record ***/
 
     /* read catalog header record */
     off = hfs_cat_find_node_offset(hfs, 0);
@@ -555,3 +555,285 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         }
     }
 }
+#endif
+
+TSK_RETVAL_ENUM
+hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
+                  TSK_INUM_T a_addr)
+{
+    HFS_INFO *hfs = (HFS_INFO *) fs;
+    uint32_t cnid;              /* catalog node ID of the entry (= inum) */
+    uint32_t cur_node;          /* node id of the current node */
+    char *node;    
+    TSK_FS_DIR *fs_dir;
+    TSK_FS_NAME *fs_name;
+    uint16_t nodesize;
+    uint8_t is_done = 0;
+    
+    tsk_error_reset();
+    
+    cnid = (uint32_t) a_addr;
+    
+    if (tsk_verbose)
+        fprintf(stderr,
+                "hfs_dir_open_meta: called for directory %" PRIu32 "\n", cnid);
+    
+    if (a_addr < fs->first_inum || a_addr > fs->last_inum) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_FS_WALK_RNG;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+                 "hfs_dir_open_meta: Invalid inode value: %" PRIuINUM, a_addr);
+        return TSK_ERR;
+    }
+    else if (a_fs_dir == NULL) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_FS_ARG;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+                 "hfs_dir_open_meta: NULL fs_data argument given");
+        return TSK_ERR;
+    }
+    
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+                    "hfs_dir_open_meta: Processing directory %" PRIuINUM "\n",
+                    a_addr);
+    
+    fs_dir = *a_fs_dir;
+    if (fs_dir) {
+        tsk_fs_dir_reset(fs_dir);
+    }
+    else {
+        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(fs, 128)) == NULL) {
+            return TSK_ERR;
+        }
+    }
+    
+    if ((fs_name = tsk_fs_name_alloc(HFS_MAXNAMLEN, 0)) == NULL) {
+        return TSK_ERR;
+    }
+    
+    if ((fs_dir->fs_file =
+         tsk_fs_file_open_meta(fs, NULL, a_addr)) == NULL) {
+        strncat(tsk_errstr2, " - hfs_dir_open_meta",
+                TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_fs_dir_close(fs_dir);
+        return TSK_ERR;
+    }
+    
+    
+    nodesize = tsk_getu16(fs->endian, hfs->catalog_header.nodesize);
+    if ((node = (char *) tsk_malloc(nodesize)) == NULL)
+        return 1;
+    // @@@ ADD FREE CODE
+    
+    /* start at root node */
+    cur_node = tsk_getu32(fs->endian, hfs->catalog_header.root);
+    
+    /* if the root node is zero, then the extents btree is empty */
+    /* if no files have overflow extents, the Extents B-tree still
+        exists on disk, but is an empty B-tree containing only
+        the header node */
+    if (cur_node == 0) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "hfs_dir_open_meta: "
+                        "empty extents btree\n");
+        return 0;
+    }
+    
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "hfs_dir_open_meta: starting at "
+                    "root node %" PRIu32 "; nodesize = %"
+                    PRIu16 "\n", cur_node, nodesize);
+    
+    is_done = 0;
+    while (is_done == 0) {
+        TSK_OFF_T cur_off;      /* start address of cur_node */
+        uint16_t num_rec;       /* number of records in this node */
+        ssize_t cnt;
+        hfs_btree_node *node_desc;
+        
+        cur_off = cur_node * nodesize;
+        
+        cnt = tsk_fs_attr_read(hfs->catalog_attr, cur_off,
+                               node, nodesize, 0);
+        if (cnt != nodesize) {
+            // @@@
+            return 1;
+        }
+        
+        node_desc = (hfs_btree_node *) node;
+        
+        num_rec = tsk_getu16(fs->endian, node_desc->num_rec);
+        
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "hfs_dir_open_meta: node %" PRIu32
+                        " @ %" PRIu64 " has %" PRIu16 " records\n",
+                        cur_node, cur_off, num_rec);
+        
+        if (num_rec == 0) {
+            tsk_errno = TSK_ERR_FS_GENFS;
+            snprintf(tsk_errstr, TSK_ERRSTR_L,
+                     "hfs_dir_open_meta: zero records in node %"
+                     PRIu32, cur_node);
+            return 1;
+        }
+        
+        
+        if (node_desc->kind == HFS_BTREE_INDEX_NODE) {
+            uint32_t next_node = 0;
+            int rec;
+            
+            /* find largest key smaller than or equal to cnid */
+            for (rec = 0; rec < num_rec; rec++) {
+                size_t rec_off;
+                hfs_cat_key *key;
+                
+                // get the record offset in the node
+                rec_off =
+                    tsk_getu16(fs->endian,
+                               &node[nodesize - (rec + 1) * 2]);
+                if (rec_off > nodesize) {
+                    // @@@ ERROR
+                    return TSK_ERR;
+                }
+                key = (hfs_cat_key *) & node[rec_off];
+                
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                                "hfs_dir_open_meta: record %" PRIu16
+                                " ; keylen %" PRIu16 " (%" PRIu32")\n", rec,
+                                tsk_getu16(fs->endian, key->key_len),
+                                tsk_getu32(fs->endian, key->parent_cnid));
+                
+                /* find the largest key less than or equal to our key */
+                /* if all keys are larger than our key, select the leftmost key */
+                if ((tsk_getu32(fs->endian, key->parent_cnid) <= cnid) || (next_node == 0)) {
+                    int keylen = tsk_getu16(fs->endian, key->key_len) + 2;
+                    if (rec_off + keylen > nodesize) {
+                        // @@@ ERROR
+                        return TSK_ERR;
+                    }
+                    next_node =
+                        tsk_getu32(fs->endian, &node[rec_off + keylen]);
+                }
+                else {
+                    break;
+                }
+            }
+            if (next_node == 0) {
+                // @@@@
+                is_done = 1;
+                break;
+            }
+            cur_node = next_node;
+        }
+        
+        else if (node_desc->kind == HFS_BTREE_LEAF_NODE) {
+            int rec;
+            
+            for (rec = 0; rec < num_rec; rec++) {
+                size_t rec_off;
+                hfs_cat_key *key;
+                uint16_t rec_type;
+                size_t rec_off2;
+                
+                // get the record offset in the node
+                rec_off =
+                    tsk_getu16(fs->endian,
+                               &node[nodesize - (rec + 1) * 2]);
+                if (rec_off > nodesize) {
+                    // @@@ ERROR
+                    return TSK_ERR;
+                }
+                key = (hfs_cat_key *) & node[rec_off];
+                
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                                "hfs_dir_open_meta: record %" PRIu16
+                                "; keylen %" PRIu16 " (%" PRIu32")\n", rec,
+                                tsk_getu16(fs->endian, key->key_len),
+                                tsk_getu32(fs->endian, key->parent_cnid));
+                
+//                rec_cnid = tsk_getu32(fs->endian, key->file_id);
+                
+                // see if this record is for our file or if we passed the interesting entries
+                if (tsk_getu32(fs->endian, key->parent_cnid) < cnid) {
+                    continue;
+                }
+                else if(tsk_getu32(fs->endian, key->parent_cnid) > cnid) {
+                    is_done = 1;
+                    break;
+                }
+               
+                
+//                HERE
+                rec_off2 = rec_off + 2 + tsk_getu16(fs->endian, key->key_len);
+                if (rec_off2 > nodesize) {
+                    // @@@ ERROR
+                    return TSK_ERR;
+                }
+                // @@@ Add length checks...
+                rec_type = tsk_getu16(fs->endian, &node[rec_off2]);
+                if (rec_type == HFS_FILE_THREAD) {
+                    // we shouldn't get this
+                }
+                
+                /* This will link the folder to its parent, which is the ".." entry */
+                else if (rec_type == HFS_FOLDER_THREAD) {
+                    hfs_thread *thread = (hfs_thread *)&node[rec_off2];
+                    
+                    strcpy(fs_name->name, "..");
+                    fs_name->meta_addr = tsk_getu32(fs->endian, thread->parent_cnid);
+                    fs_name->type = TSK_FS_NAME_TYPE_DIR;
+                    fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;                     
+                }
+
+                /* This is a folder in the folder */
+                else if (rec_type == HFS_FOLDER_RECORD) {
+                    hfs_folder *folder = (hfs_folder *)&node[rec_off2];
+                    
+                    fs_name->meta_addr = tsk_getu32(fs->endian, folder->cnid);
+                    fs_name->type = TSK_FS_NAME_TYPE_DIR;
+                    fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+                    
+                    if (hfs_uni2ascii(fs, key->name.unicode,
+                                      tsk_getu16(fs->endian, key->name.length),
+                                      fs_name->name, HFS_MAXNAMLEN + 1))
+                        return 1;
+                }
+                
+                /* This is a normal file in the folder */
+                else if (rec_type == HFS_FILE_RECORD) {
+                    hfs_file *file = (hfs_file *)&node[rec_off2];
+
+                    fs_name->meta_addr = tsk_getu32(fs->endian, file->cnid);
+                    fs_name->type = TSK_FS_NAME_TYPE_REG;
+                    fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;                     
+                    if (hfs_uni2ascii(fs, key->name.unicode,
+                                      tsk_getu16(fs->endian, key->name.length),
+                                      fs_name->name, HFS_MAXNAMLEN + 1))
+                        return 1;
+                }
+                else {
+                    return 1;
+                    // @@@
+                }
+                
+                if (tsk_fs_dir_add(fs_dir, fs_name)) {
+                    tsk_fs_name_free(fs_name);
+                    return TSK_ERR;
+                }                
+            }
+        }
+        else {
+            tsk_errno = TSK_ERR_FS_GENFS;
+            snprintf(tsk_errstr, TSK_ERRSTR_L,
+                     "hfs_dir_open_meta: btree node %" PRIu32
+                     " (%" PRIu64 ") is neither index nor leaf (%" PRIu8 ")",
+                     cur_node, cur_off, node_desc->kind);
+            return 1;
+        }
+    }
+    return 0;
+}
+

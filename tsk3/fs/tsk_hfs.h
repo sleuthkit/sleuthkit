@@ -147,6 +147,9 @@
 #define HFS_HARDLINK_FILE_TYPE 0x686C6E6B       /* hlnk */
 #define HFS_HARDLINK_FILE_CREATOR 0x6866732B    /* hfs+ */
 
+#define HFS_CATALOGNAME "$CatalogFile"
+#define HFS_EXTENTSNAME "$ExtentsFile"
+
 /*
  * HFS structures
  */
@@ -205,7 +208,7 @@ struct hfs_ext_desc {
 typedef struct hfs_ext_desc hfs_ext_desc;
 
 typedef struct {
-    hfs_ext_desc ext[8];
+    hfs_ext_desc extents[8];
 } hfs_extents;
 
 /* fork data structure */
@@ -378,15 +381,20 @@ typedef struct {
 
 typedef struct {
     TSK_FS_INFO fs_info;        /* SUPER CLASS */
+    
     hfs_sb *fs;                 /* cached superblock */
     hfs_ext_desc *cat_extents;  /* full extents of the Catalog file */
     uint8_t *block_map;         /* cached block allocation bitmap */
     uint32_t block_map_size;
-    hfs_btree_header_record *hdr;       /* stored catalog btree header node */
+    
     char is_case_sensitive;
-    TSK_FS_ATTR *catalog_attr;
+    
+    TSK_FS_FILE *catalog_file;
+    const TSK_FS_ATTR *catalog_attr;
+    hfs_btree_header_record catalog_header;
 
-    TSK_FS_ATTR *extents_attr;
+    TSK_FS_FILE *extents_file;
+    const TSK_FS_ATTR *extents_attr;
     hfs_btree_header_record extents_header;
 
 } HFS_INFO;
@@ -439,8 +447,5 @@ extern uint32_t hfs_cat_next_record(HFS_INFO *, uint16_t *, uint16_t *,
     hfs_btree_node *, uint32_t *, TSK_OFF_T *, hfs_btree_header_record *);
 extern uint8_t hfs_read_file_folder_record(HFS_INFO *, TSK_OFF_T,
     hfs_file_folder *);
-extern uint8_t hfs_dinode_copy(HFS_INFO * hfs, HFS_ENTRY * entry,
-    TSK_FS_META * fs_inode);
-extern uint8_t hfs_catalog_lookup(HFS_INFO *, TSK_INUM_T, HFS_ENTRY *);
 
 #endif
