@@ -64,8 +64,8 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
             tsk_error_reset();
             tsk_errno = TSK_ERR_IMG_OPEN;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
-                "split_read file: %" PRIttocTSK " msg: %s",
-                split_info->images[idx], strerror(errno));
+                "split_read file: %" PRIttocTSK " msg: %d",
+                split_info->images[idx], (int)GetLastError());
             return -1;
         }
 #else

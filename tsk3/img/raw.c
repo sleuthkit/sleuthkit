@@ -208,16 +208,27 @@ raw_open(const TSK_TCHAR * image)
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "raw_open: Trying Windows device with share_write mode\n");
+
                 raw_info->fd = CreateFile(image, GENERIC_READ,
-                    FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+                    FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
             }
 
             if (raw_info->fd == INVALID_HANDLE_VALUE) {
                 tsk_error_reset();
                 tsk_errno = TSK_ERR_IMG_OPEN;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
-                    "raw_open file: %" PRIttocTSK " msg: %d", image,
-                    (int)GetLastError());
+				if (GetLastError() == ERROR_ACCESS_DENIED) {
+					snprintf(tsk_errstr, TSK_ERRSTR_L,
+						"raw_open file: %" PRIttocTSK " msg: Access Denied", image);
+				}
+				if (GetLastError() == ERROR_SHARING_VIOLATION) {
+					snprintf(tsk_errstr, TSK_ERRSTR_L,
+						"raw_open file: %" PRIttocTSK " msg: Sharing Violation", image);
+				}
+				else {
+					snprintf(tsk_errstr, TSK_ERRSTR_L,
+						"raw_open file: %" PRIttocTSK " msg: %d", image,
+						(int)GetLastError());
+				}
                 return NULL;
             }
         }
