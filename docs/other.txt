@@ -1,5 +1,0 @@
-For more docs, refer to The Sleuth Kit Informer at:
-
-   www.sleuthkit.org/informer
-
-brian
