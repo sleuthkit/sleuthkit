@@ -1,7 +1,7 @@
 # Files that we want to include in the dist
 EXTRA_DIST = README_win32.txt README.txt INSTALL.txt TODO.txt CHANGES.txt \
     licenses/GNU-COPYING licenses/IBM-LICENSE licenses/cpl1.0.txt \
-    docs/library-api.txt \
+    docs/README.txt \
     win32/BUILDING.txt \
     win32/blkcalc/blkcalc.vcproj win32/blkcat/blkcat.vcproj \
     win32/blkls/blkls.vcproj win32/blkstat/blkstat.vcproj \
