@@ -208,8 +208,9 @@ raw_open(const TSK_TCHAR * image)
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "raw_open: Trying Windows device with share_write mode\n");
+
                 raw_info->fd = CreateFile(image, GENERIC_READ,
-                    FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+                    FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
             }
 
             if (raw_info->fd == INVALID_HANDLE_VALUE) {
