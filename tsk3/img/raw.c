@@ -199,10 +199,10 @@ raw_open(const TSK_TCHAR * image)
         DWORD dwHi, dwLo;
 
         if ((raw_info->fd = CreateFile(image, GENERIC_READ,
-                    FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0)) ==
+                    FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) ==
             INVALID_HANDLE_VALUE) {
 
-            // if it is a device, try SHARE_WRITE
+            // if it is a device, try with SHARE_WRITE
             if ((image[0] == _TSK_T('\\')) && (image[1] == _TSK_T('\\')) &&
                 (image[2] == _TSK_T('.')) && (image[3] == _TSK_T('\\'))) {
                 if (tsk_verbose)
@@ -210,23 +210,28 @@ raw_open(const TSK_TCHAR * image)
                         "raw_open: Trying Windows device with share_write mode\n");
 
                 raw_info->fd = CreateFile(image, GENERIC_READ,
-                    FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+                    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
             }
 
             if (raw_info->fd == INVALID_HANDLE_VALUE) {
                 tsk_error_reset();
                 tsk_errno = TSK_ERR_IMG_OPEN;
+                // print string of commonly found errors
 				if (GetLastError() == ERROR_ACCESS_DENIED) {
 					snprintf(tsk_errstr, TSK_ERRSTR_L,
-						"raw_open file: %" PRIttocTSK " msg: Access Denied", image);
+						"raw_open file: %" PRIttocTSK " (Access Denied)", image);
 				}
-				if (GetLastError() == ERROR_SHARING_VIOLATION) {
+				else if (GetLastError() == ERROR_SHARING_VIOLATION) {
 					snprintf(tsk_errstr, TSK_ERRSTR_L,
-						"raw_open file: %" PRIttocTSK " msg: Sharing Violation", image);
+						"raw_open file: %" PRIttocTSK " (Sharing Violation)", image);
+				}
+                else if (GetLastError() == ERROR_FILE_NOT_FOUND) {
+					snprintf(tsk_errstr, TSK_ERRSTR_L,
+						"raw_open file: %" PRIttocTSK " (File not found)", image);
 				}
 				else {
 					snprintf(tsk_errstr, TSK_ERRSTR_L,
-						"raw_open file: %" PRIttocTSK " msg: %d", image,
+						"raw_open file: %" PRIttocTSK " (%d)", image,
 						(int)GetLastError());
 				}
                 return NULL;
