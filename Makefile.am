@@ -24,7 +24,7 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt TODO.txt CHANGES.txt \
 
 
 # directories to compile
-SUBDIRS = tsk3 tools tests samples docs man
+SUBDIRS = tsk3 tools tests samples man
 
 nobase_include_HEADERS = tsk3/libtsk.h tsk3/tsk_incs.h \
     tsk3/base/tsk_base.h tsk3/base/tsk_os.h \

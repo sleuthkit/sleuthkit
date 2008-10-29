@@ -168,7 +168,6 @@ AC_CONFIG_FILES([Makefile
                  tools/timeline/Makefile
                  tests/Makefile
                  samples/Makefile
-                 docs/Makefile
                  man/Makefile])
 AC_OUTPUT
 
