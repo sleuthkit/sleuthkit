@@ -59,7 +59,7 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
         }
 
 #ifdef TSK_WIN32
-        if ((cimg->fd = CreateFile(split_info->images[idx], GENERIC_READ,
+        if ((cimg->fd = CreateFile(split_info->images[idx], FILE_READ_DATA,
                     0, 0, OPEN_EXISTING, 0, 0)) == INVALID_HANDLE_VALUE) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_IMG_OPEN;
