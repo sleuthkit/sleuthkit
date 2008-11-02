@@ -339,7 +339,7 @@ hfs_dir_open_meta3(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                     " in node %" PRIu32, rec, cur_node);
                 return 0;
             }
-            cmp = hfs_compare_catalog_keys(hfs, &key, &needle);
+            cmp = hfs_cat_compare_keys(hfs, &key, &needle);
 
             if (tsk_verbose >= 2)
                 tsk_fprintf(stderr, "hfs_dir_open_meta: record %" PRIu16
@@ -392,7 +392,7 @@ hfs_dir_open_meta3(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                 return 1;
             }
 
-            if (hfs_compare_catalog_keys(hfs, &key, &needle) == 0) {
+            if (hfs_cat_compare_keys(hfs, &key, &needle) == 0) {
 
             /*** thread record found ***/
 

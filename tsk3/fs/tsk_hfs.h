@@ -149,6 +149,7 @@
 
 #define HFS_CATALOGNAME "$CatalogFile"
 #define HFS_EXTENTSNAME "$ExtentsFile"
+#define HFS_ALLOCATIONNAME "$BitMap"
 
 /*
  * HFS structures
@@ -384,10 +385,13 @@ typedef struct {
     
     hfs_sb *fs;                 /* cached superblock */
     hfs_ext_desc *cat_extents;  /* full extents of the Catalog file */
-    uint8_t *block_map;         /* cached block allocation bitmap */
-    uint32_t block_map_size;
     
     char is_case_sensitive;
+    
+    TSK_FS_FILE *blockmap_file;
+    const TSK_FS_ATTR *blockmap_attr;
+    char blockmap_cache[4096];
+    int blockmap_cache_start;
     
     TSK_FS_FILE *catalog_file;
     const TSK_FS_ATTR *catalog_attr;
@@ -434,6 +438,7 @@ extern uint8_t hfs_jblk_walk(TSK_FS_INFO *, TSK_DADDR_T, TSK_DADDR_T, int,
 extern uint8_t hfs_jentry_walk(TSK_FS_INFO *, int, TSK_FS_JENTRY_WALK_CB,
     void *);
 
+/*
 extern TSK_OFF_T hfs_cat_find_node_offset(HFS_INFO *, uint32_t);
 extern TSK_OFF_T hfs_get_bt_rec_off(HFS_INFO *, TSK_OFF_T, uint16_t,
     uint16_t);
@@ -441,11 +446,12 @@ extern TSK_OFF_T hfs_read_key(HFS_INFO *, hfs_btree_header_record *,
     TSK_OFF_T, char *, int, uint8_t);
 extern int hfs_compare_catalog_keys(HFS_INFO *, hfs_cat_key *,
     hfs_cat_key *);
-extern uint8_t hfs_read_thread_record(HFS_INFO *, TSK_DADDR_T,
+
+extern uint8_t hfs_read_thread_record(HFS_INFO *, TSK_OFF_T,
     hfs_thread *);
 extern uint32_t hfs_cat_next_record(HFS_INFO *, uint16_t *, uint16_t *,
     hfs_btree_node *, uint32_t *, TSK_OFF_T *, hfs_btree_header_record *);
 extern uint8_t hfs_read_file_folder_record(HFS_INFO *, TSK_OFF_T,
     hfs_file_folder *);
-
+*/
 #endif

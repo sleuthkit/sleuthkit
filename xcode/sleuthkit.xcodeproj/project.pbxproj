@@ -24,6 +24,7 @@
 		02260C770D64895B0027BE02 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
 		02260C780D64895B0027BE02 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
 		02260C790D64895B0027BE02 /* Makefile.in */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Makefile.in; sourceTree = "<group>"; };
+		0229714A0EBD0AC0001AC9C7 /* hfs_unicompare.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = hfs_unicompare.c; sourceTree = "<group>"; };
 		022B139A0DB6486D00C4BE09 /* nofs_misc.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = nofs_misc.c; sourceTree = "<group>"; };
 		025328FF0E59B5ED000595D8 /* img_io.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = img_io.c; sourceTree = "<group>"; };
 		025558630DA1C67E00A635EC /* fs_block.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fs_block.c; sourceTree = "<group>"; };
@@ -303,6 +304,7 @@
 				026FB4570D19C868000434C7 /* hfs.c */,
 				026FB45A0D19C868000434C7 /* hfs_dent.c */,
 				026FB45D0D19C868000434C7 /* hfs_journal.c */,
+				0229714A0EBD0AC0001AC9C7 /* hfs_unicompare.c */,
 				026FB4600D19C868000434C7 /* icat_lib.c */,
 				026FB4630D19C868000434C7 /* ifind_lib.c */,
 				026FB4660D19C868000434C7 /* ils_lib.c */,
