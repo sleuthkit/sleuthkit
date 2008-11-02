@@ -149,7 +149,9 @@
 
 #define HFS_CATALOGNAME "$CatalogFile"
 #define HFS_EXTENTSNAME "$ExtentsFile"
-#define HFS_ALLOCATIONNAME "$BitMap"
+#define HFS_ALLOCATIONNAME "$BitMapFile"
+#define HFS_STARTUPNAME "$BootFile"
+#define HFS_ATTRIBUTESNAME "$AttributesFile"
 
 /*
  * HFS structures
