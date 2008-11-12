@@ -1608,8 +1608,11 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         (fs_meta->flags & TSK_FS_META_FLAG_ALLOC) ? "" : "Not ");
 
     tsk_fprintf(hFile, "Group: %" PRIuGID "\n", ext2fs->grp_num);
-    tsk_fprintf(hFile, "Generation Id: %" PRIu32 "\n",
-        tsk_getu32(fs->endian, ext2fs->dino_buf->i_generation));
+
+    // Note that if this is a "virtual file", then ext2fs->dino_buf may not be set.
+    if (ext2fs->dino_buf)
+        tsk_fprintf(hFile, "Generation Id: %" PRIu32 "\n",
+            tsk_getu32(fs->endian, ext2fs->dino_buf->i_generation));
 
     if (fs_meta->link)
         tsk_fprintf(hFile, "symbolic link to: %s\n", fs_meta->link);
@@ -1620,276 +1623,283 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fs_make_ls(fs_meta, ls);
     tsk_fprintf(hFile, "mode: %s\n", ls);
 
-    /* Print the device ids */
-    if ((fs_meta->type == TSK_FS_META_TYPE_BLK)
-        || (fs_meta->type == TSK_FS_META_TYPE_CHR)) {
-        tsk_fprintf(hFile,
-            "Device Major: %" PRIu8 "   Minor: %" PRIu8 "\n",
-            ext2fs->dino_buf->i_block[0][1],
-            ext2fs->dino_buf->i_block[0][0]);
-    }
+    if (ext2fs->dino_buf) {
+        /* Print the device ids */
+        if ((fs_meta->type == TSK_FS_META_TYPE_BLK)
+            || (fs_meta->type == TSK_FS_META_TYPE_CHR)) {
+            tsk_fprintf(hFile,
+                "Device Major: %" PRIu8 "   Minor: %" PRIu8 "\n",
+                ext2fs->dino_buf->i_block[0][1],
+                ext2fs->dino_buf->i_block[0][0]);
+        }
 
-    if (tsk_getu32(fs->endian, ext2fs->dino_buf->i_flags)) {
-        tsk_fprintf(hFile, "Flags: ");
-        if (tsk_getu32(fs->endian,
-                ext2fs->dino_buf->i_flags) & EXT2_IN_SECDEL)
-            tsk_fprintf(hFile, "Secure Delete, ");
+        if (tsk_getu32(fs->endian, ext2fs->dino_buf->i_flags)) {
+            tsk_fprintf(hFile, "Flags: ");
+            if (tsk_getu32(fs->endian,
+                    ext2fs->dino_buf->i_flags) & EXT2_IN_SECDEL)
+                tsk_fprintf(hFile, "Secure Delete, ");
 
-        if (tsk_getu32(fs->endian,
-                ext2fs->dino_buf->i_flags) & EXT2_IN_UNRM)
-            tsk_fprintf(hFile, "Undelete, ");
+            if (tsk_getu32(fs->endian,
+                    ext2fs->dino_buf->i_flags) & EXT2_IN_UNRM)
+                tsk_fprintf(hFile, "Undelete, ");
 
-        if (tsk_getu32(fs->endian,
-                ext2fs->dino_buf->i_flags) & EXT2_IN_COMP)
-            tsk_fprintf(hFile, "Compressed, ");
+            if (tsk_getu32(fs->endian,
+                    ext2fs->dino_buf->i_flags) & EXT2_IN_COMP)
+                tsk_fprintf(hFile, "Compressed, ");
 
-        if (tsk_getu32(fs->endian,
-                ext2fs->dino_buf->i_flags) & EXT2_IN_SYNC)
-            tsk_fprintf(hFile, "Sync Updates, ");
+            if (tsk_getu32(fs->endian,
+                    ext2fs->dino_buf->i_flags) & EXT2_IN_SYNC)
+                tsk_fprintf(hFile, "Sync Updates, ");
 
-        if (tsk_getu32(fs->endian,
-                ext2fs->dino_buf->i_flags) & EXT2_IN_IMM)
-            tsk_fprintf(hFile, "Immutable, ");
+            if (tsk_getu32(fs->endian,
+                    ext2fs->dino_buf->i_flags) & EXT2_IN_IMM)
+                tsk_fprintf(hFile, "Immutable, ");
 
-        if (tsk_getu32(fs->endian,
-                ext2fs->dino_buf->i_flags) & EXT2_IN_APPEND)
-            tsk_fprintf(hFile, "Append Only, ");
+            if (tsk_getu32(fs->endian,
+                    ext2fs->dino_buf->i_flags) & EXT2_IN_APPEND)
+                tsk_fprintf(hFile, "Append Only, ");
 
-        if (tsk_getu32(fs->endian,
-                ext2fs->dino_buf->i_flags) & EXT2_IN_NODUMP)
-            tsk_fprintf(hFile, "Do Not Dump, ");
+            if (tsk_getu32(fs->endian,
+                    ext2fs->dino_buf->i_flags) & EXT2_IN_NODUMP)
+                tsk_fprintf(hFile, "Do Not Dump, ");
 
-        if (tsk_getu32(fs->endian,
-                ext2fs->dino_buf->i_flags) & EXT2_IN_NOA)
-            tsk_fprintf(hFile, "No A-Time, ");
+            if (tsk_getu32(fs->endian,
+                    ext2fs->dino_buf->i_flags) & EXT2_IN_NOA)
+                tsk_fprintf(hFile, "No A-Time, ");
 
-        tsk_fprintf(hFile, "\n");
+            tsk_fprintf(hFile, "\n");
+        }
     }
 
     tsk_fprintf(hFile, "size: %" PRIuOFF "\n", fs_meta->size);
     tsk_fprintf(hFile, "num of links: %d\n", fs_meta->nlink);
 
-    /* Ext attribute are stored in a block with a header and a list
-     * of entries that are aligned to 4-byte boundaries.  The attr
-     * value is stored at the end of the block.  There are 4 null bytes
-     * in between the headers and values 
-     */
-    if (tsk_getu32(fs->endian, ext2fs->dino_buf->i_file_acl) != 0) {
-        char *buf;
-        ext2fs_ea_header *ea_head;
-        ext2fs_ea_entry *ea_entry;
-        ssize_t cnt;
+    if (ext2fs->dino_buf) {
+        /* Ext attribute are stored in a block with a header and a list
+         * of entries that are aligned to 4-byte boundaries.  The attr
+         * value is stored at the end of the block.  There are 4 null bytes
+         * in between the headers and values 
+         */
+        if (tsk_getu32(fs->endian, ext2fs->dino_buf->i_file_acl) != 0) {
+            char *buf;
+            ext2fs_ea_header *ea_head;
+            ext2fs_ea_entry *ea_entry;
+            ssize_t cnt;
 
-        if ((buf = tsk_malloc(fs->block_size)) == NULL) {
-            tsk_fs_file_close(fs_file);
-            return 1;
-        }
-
-        tsk_fprintf(hFile, "\nExtended Attributes  (Block: %" PRIu32 ")\n",
-            tsk_getu32(fs->endian, ext2fs->dino_buf->i_file_acl));
-
-        /* Is the value too big? */
-        if (tsk_getu32(fs->endian,
-                ext2fs->dino_buf->i_file_acl) > fs->last_block) {
-            tsk_fprintf(hFile,
-                "Extended Attributes block is larger than file system\n");
-            goto egress_ea;
-        }
-
-        cnt = tsk_fs_read(fs,
-            (TSK_DADDR_T) tsk_getu32(fs->endian,
-                ext2fs->dino_buf->i_file_acl) * fs->block_size,
-            buf, fs->block_size);
-
-        if (cnt != fs->block_size) {
-            if (cnt >= 0) {
-                tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_READ;
+            if ((buf = tsk_malloc(fs->block_size)) == NULL) {
+                tsk_fs_file_close(fs_file);
+                return 1;
             }
-            snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                "ext2fs_istat: ACL block %" PRIu32,
+
+            tsk_fprintf(hFile,
+                "\nExtended Attributes  (Block: %" PRIu32 ")\n",
                 tsk_getu32(fs->endian, ext2fs->dino_buf->i_file_acl));
-            tsk_fs_file_close(fs_file);
-            free(buf);
-            return 1;
-        }
 
-
-        /* Check the header */
-        ea_head = (ext2fs_ea_header *) buf;
-        if (tsk_getu32(fs->endian, ea_head->magic) != EXT2_EA_MAGIC) {
-            tsk_fprintf(hFile,
-                "Incorrect extended attribute header: %" PRIx32 "\n",
-                tsk_getu32(fs->endian, ea_head->magic));
-        }
-
-
-        /* Cycle through each entry - at the top of the block */
-        for (ea_entry = (ext2fs_ea_entry *) & ea_head->entry;
-            ((uintptr_t) ea_entry <
-                ((uintptr_t) buf + fs->block_size -
-                    sizeof(ext2fs_ea_entry)));
-            ea_entry =
-            (ext2fs_ea_entry *) ((uintptr_t) ea_entry +
-                EXT2_EA_LEN(ea_entry->nlen))) {
-
-            char name[256];
-
-            /* Stop if the first four bytes are NULL */
-            if ((ea_entry->nlen == 0) && (ea_entry->nidx == 0) &&
-                (tsk_getu16(fs->endian, ea_entry->val_off) == 0))
-                break;
-
-            /* The Linux src does not allow this */
-            if (tsk_getu32(fs->endian, ea_entry->val_blk) != 0) {
+            /* Is the value too big? */
+            if (tsk_getu32(fs->endian,
+                    ext2fs->dino_buf->i_file_acl) > fs->last_block) {
                 tsk_fprintf(hFile,
-                    "Attribute has non-zero value block - skipping\n");
-                continue;
+                    "Extended Attributes block is larger than file system\n");
+                goto egress_ea;
+            }
+
+            cnt = tsk_fs_read(fs,
+                (TSK_DADDR_T) tsk_getu32(fs->endian,
+                    ext2fs->dino_buf->i_file_acl) * fs->block_size,
+                buf, fs->block_size);
+
+            if (cnt != fs->block_size) {
+                if (cnt >= 0) {
+                    tsk_error_reset();
+                    tsk_errno = TSK_ERR_FS_READ;
+                }
+                snprintf(tsk_errstr2, TSK_ERRSTR_L,
+                    "ext2fs_istat: ACL block %" PRIu32,
+                    tsk_getu32(fs->endian, ext2fs->dino_buf->i_file_acl));
+                tsk_fs_file_close(fs_file);
+                free(buf);
+                return 1;
             }
 
 
-            /* Is the value location and size valid? */
-            if ((tsk_getu32(fs->endian,
-                        ea_entry->val_off) > fs->block_size)
-                || ((tsk_getu16(fs->endian,
-                            ea_entry->val_off) + tsk_getu32(fs->endian,
-                            ea_entry->val_size)) > fs->block_size)) {
-                continue;
+            /* Check the header */
+            ea_head = (ext2fs_ea_header *) buf;
+            if (tsk_getu32(fs->endian, ea_head->magic) != EXT2_EA_MAGIC) {
+                tsk_fprintf(hFile,
+                    "Incorrect extended attribute header: %" PRIx32 "\n",
+                    tsk_getu32(fs->endian, ea_head->magic));
             }
 
 
-            /* Copy the name into a buffer - not NULL term */
-            strncpy(name, (char *) &ea_entry->name, ea_entry->nlen);
-            name[ea_entry->nlen] = '\0';
+            /* Cycle through each entry - at the top of the block */
+            for (ea_entry = (ext2fs_ea_entry *) & ea_head->entry;
+                ((uintptr_t) ea_entry <
+                    ((uintptr_t) buf + fs->block_size -
+                        sizeof(ext2fs_ea_entry)));
+                ea_entry =
+                (ext2fs_ea_entry *) ((uintptr_t) ea_entry +
+                    EXT2_EA_LEN(ea_entry->nlen))) {
 
+                char name[256];
 
-            /* User assigned attributes - setfattr / getfattr */
-            if ((ea_entry->nidx == EXT2_EA_IDX_USER) ||
-                (ea_entry->nidx == EXT2_EA_IDX_TRUSTED) ||
-                (ea_entry->nidx == EXT2_EA_IDX_SECURITY)) {
-                char val[256];
+                /* Stop if the first four bytes are NULL */
+                if ((ea_entry->nlen == 0) && (ea_entry->nidx == 0) &&
+                    (tsk_getu16(fs->endian, ea_entry->val_off) == 0))
+                    break;
 
-                strncpy(val,
-                    &buf[tsk_getu16(fs->endian, ea_entry->val_off)],
-                    tsk_getu32(fs->endian,
-                        ea_entry->val_size) >
-                    256 ? 256 : tsk_getu32(fs->endian,
-                        ea_entry->val_size));
-
-                val[tsk_getu32(fs->endian, ea_entry->val_size) > 256 ?
-                    256 : tsk_getu32(fs->endian, ea_entry->val_size)] =
-                    '\0';
-
-                if (ea_entry->nidx == EXT2_EA_IDX_USER)
-                    tsk_fprintf(hFile, "user.%s=%s\n", name, val);
-                else if (ea_entry->nidx == EXT2_EA_IDX_TRUSTED)
-                    tsk_fprintf(hFile, "trust.%s=%s\n", name, val);
-                else if (ea_entry->nidx == EXT2_EA_IDX_SECURITY)
-                    tsk_fprintf(hFile, "security.%s=%s\n", name, val);
-
-            }
-
-
-            /* POSIX ACL - setfacl / getfacl stuff */
-            else if ((ea_entry->nidx == EXT2_EA_IDX_POSIX_ACL_ACCESS) ||
-                (ea_entry->nidx == EXT2_EA_IDX_POSIX_ACL_DEFAULT)) {
-
-                ext2fs_pos_acl_entry_lo *acl_lo;
-                ext2fs_pos_acl_head *acl_head;
-
-                if (ea_entry->nidx == EXT2_EA_IDX_POSIX_ACL_ACCESS)
+                /* The Linux src does not allow this */
+                if (tsk_getu32(fs->endian, ea_entry->val_blk) != 0) {
                     tsk_fprintf(hFile,
-                        "POSIX Access Control List Entries:\n");
-                else if (ea_entry->nidx == EXT2_EA_IDX_POSIX_ACL_DEFAULT)
-                    tsk_fprintf(hFile,
-                        "POSIX Default Access Control List Entries:\n");
-
-                /* examine the header */
-                acl_head =
-                    (ext2fs_pos_acl_head *) &
-                    buf[tsk_getu16(fs->endian, ea_entry->val_off)];
-
-                if (tsk_getu32(fs->endian, acl_head->ver) != 1) {
-                    tsk_fprintf(hFile,
-                        "Invalid ACL Header Version: %" PRIu32 "\n",
-                        tsk_getu32(fs->endian, acl_head->ver));
+                        "Attribute has non-zero value block - skipping\n");
                     continue;
                 }
 
-                /* The first entry starts after the header */
-                acl_lo =
-                    (ext2fs_pos_acl_entry_lo *) ((uintptr_t) acl_head +
-                    sizeof(ext2fs_pos_acl_head));
+
+                /* Is the value location and size valid? */
+                if ((tsk_getu32(fs->endian,
+                            ea_entry->val_off) > fs->block_size)
+                    || ((tsk_getu16(fs->endian,
+                                ea_entry->val_off) + tsk_getu32(fs->endian,
+                                ea_entry->val_size)) > fs->block_size)) {
+                    continue;
+                }
 
 
-                /* Cycle through the values */
-                while ((uintptr_t) acl_lo <
-                    ((uintptr_t) buf +
-                        tsk_getu16(fs->endian,
-                            ea_entry->val_off) + tsk_getu32(fs->endian,
-                            ea_entry->val_size))) {
-
-                    char perm[64];
-                    int len;
-
-                    /* Make a string from the permissions */
-                    ext2fs_make_acl_str(perm, 64,
-                        tsk_getu16(fs->endian, acl_lo->perm));
-
-                    switch (tsk_getu16(fs->endian, acl_lo->tag)) {
-                    case EXT2_PACL_TAG_USERO:
-                        tsk_fprintf(hFile, "  uid: %" PRIuUID ": %s\n",
-                            fs_meta->uid, perm);
-                        len = sizeof(ext2fs_pos_acl_entry_sh);
-                        break;
-
-                    case EXT2_PACL_TAG_GRPO:
-                        tsk_fprintf(hFile, "  gid: %" PRIuGID ": %s\n",
-                            fs_meta->gid, perm);
-                        len = sizeof(ext2fs_pos_acl_entry_sh);
-                        break;
-                    case EXT2_PACL_TAG_OTHER:
-                        tsk_fprintf(hFile, "  other: %s\n", perm);
-                        len = sizeof(ext2fs_pos_acl_entry_sh);
-                        break;
-                    case EXT2_PACL_TAG_MASK:
-                        tsk_fprintf(hFile, "  mask: %s\n", perm);
-                        len = sizeof(ext2fs_pos_acl_entry_sh);
-                        break;
+                /* Copy the name into a buffer - not NULL term */
+                strncpy(name, (char *) &ea_entry->name, ea_entry->nlen);
+                name[ea_entry->nlen] = '\0';
 
 
-                    case EXT2_PACL_TAG_GRP:
-                        tsk_fprintf(hFile, "  gid: %" PRIu32 ": %s\n",
-                            tsk_getu32(fs->endian, acl_lo->id), perm);
-                        len = sizeof(ext2fs_pos_acl_entry_lo);
-                        break;
+                /* User assigned attributes - setfattr / getfattr */
+                if ((ea_entry->nidx == EXT2_EA_IDX_USER) ||
+                    (ea_entry->nidx == EXT2_EA_IDX_TRUSTED) ||
+                    (ea_entry->nidx == EXT2_EA_IDX_SECURITY)) {
+                    char val[256];
 
-                    case EXT2_PACL_TAG_USER:
-                        tsk_fprintf(hFile, "  uid: %" PRIu32 ": %s\n",
-                            tsk_getu32(fs->endian, acl_lo->id), perm);
+                    strncpy(val,
+                        &buf[tsk_getu16(fs->endian, ea_entry->val_off)],
+                        tsk_getu32(fs->endian,
+                            ea_entry->val_size) >
+                        256 ? 256 : tsk_getu32(fs->endian,
+                            ea_entry->val_size));
 
-                        len = sizeof(ext2fs_pos_acl_entry_lo);
-                        break;
+                    val[tsk_getu32(fs->endian, ea_entry->val_size) > 256 ?
+                        256 : tsk_getu32(fs->endian, ea_entry->val_size)] =
+                        '\0';
 
-                    default:
-                        tsk_fprintf(hFile, "Unknown ACL tag: %d\n",
-                            tsk_getu16(fs->endian, acl_lo->tag));
-                        len = sizeof(ext2fs_pos_acl_entry_sh);
-                        break;
+                    if (ea_entry->nidx == EXT2_EA_IDX_USER)
+                        tsk_fprintf(hFile, "user.%s=%s\n", name, val);
+                    else if (ea_entry->nidx == EXT2_EA_IDX_TRUSTED)
+                        tsk_fprintf(hFile, "trust.%s=%s\n", name, val);
+                    else if (ea_entry->nidx == EXT2_EA_IDX_SECURITY)
+                        tsk_fprintf(hFile, "security.%s=%s\n", name, val);
+
+                }
+
+
+                /* POSIX ACL - setfacl / getfacl stuff */
+                else if ((ea_entry->nidx == EXT2_EA_IDX_POSIX_ACL_ACCESS)
+                    || (ea_entry->nidx == EXT2_EA_IDX_POSIX_ACL_DEFAULT)) {
+
+                    ext2fs_pos_acl_entry_lo *acl_lo;
+                    ext2fs_pos_acl_head *acl_head;
+
+                    if (ea_entry->nidx == EXT2_EA_IDX_POSIX_ACL_ACCESS)
+                        tsk_fprintf(hFile,
+                            "POSIX Access Control List Entries:\n");
+                    else if (ea_entry->nidx ==
+                        EXT2_EA_IDX_POSIX_ACL_DEFAULT)
+                        tsk_fprintf(hFile,
+                            "POSIX Default Access Control List Entries:\n");
+
+                    /* examine the header */
+                    acl_head =
+                        (ext2fs_pos_acl_head *) &
+                        buf[tsk_getu16(fs->endian, ea_entry->val_off)];
+
+                    if (tsk_getu32(fs->endian, acl_head->ver) != 1) {
+                        tsk_fprintf(hFile,
+                            "Invalid ACL Header Version: %" PRIu32 "\n",
+                            tsk_getu32(fs->endian, acl_head->ver));
+                        continue;
                     }
+
+                    /* The first entry starts after the header */
                     acl_lo =
-                        (ext2fs_pos_acl_entry_lo *) ((uintptr_t) acl_lo +
-                        len);
+                        (ext2fs_pos_acl_entry_lo *) ((uintptr_t) acl_head +
+                        sizeof(ext2fs_pos_acl_head));
+
+
+                    /* Cycle through the values */
+                    while ((uintptr_t) acl_lo <
+                        ((uintptr_t) buf +
+                            tsk_getu16(fs->endian,
+                                ea_entry->val_off) + tsk_getu32(fs->endian,
+                                ea_entry->val_size))) {
+
+                        char perm[64];
+                        int len;
+
+                        /* Make a string from the permissions */
+                        ext2fs_make_acl_str(perm, 64,
+                            tsk_getu16(fs->endian, acl_lo->perm));
+
+                        switch (tsk_getu16(fs->endian, acl_lo->tag)) {
+                        case EXT2_PACL_TAG_USERO:
+                            tsk_fprintf(hFile, "  uid: %" PRIuUID ": %s\n",
+                                fs_meta->uid, perm);
+                            len = sizeof(ext2fs_pos_acl_entry_sh);
+                            break;
+
+                        case EXT2_PACL_TAG_GRPO:
+                            tsk_fprintf(hFile, "  gid: %" PRIuGID ": %s\n",
+                                fs_meta->gid, perm);
+                            len = sizeof(ext2fs_pos_acl_entry_sh);
+                            break;
+                        case EXT2_PACL_TAG_OTHER:
+                            tsk_fprintf(hFile, "  other: %s\n", perm);
+                            len = sizeof(ext2fs_pos_acl_entry_sh);
+                            break;
+                        case EXT2_PACL_TAG_MASK:
+                            tsk_fprintf(hFile, "  mask: %s\n", perm);
+                            len = sizeof(ext2fs_pos_acl_entry_sh);
+                            break;
+
+
+                        case EXT2_PACL_TAG_GRP:
+                            tsk_fprintf(hFile, "  gid: %" PRIu32 ": %s\n",
+                                tsk_getu32(fs->endian, acl_lo->id), perm);
+                            len = sizeof(ext2fs_pos_acl_entry_lo);
+                            break;
+
+                        case EXT2_PACL_TAG_USER:
+                            tsk_fprintf(hFile, "  uid: %" PRIu32 ": %s\n",
+                                tsk_getu32(fs->endian, acl_lo->id), perm);
+
+                            len = sizeof(ext2fs_pos_acl_entry_lo);
+                            break;
+
+                        default:
+                            tsk_fprintf(hFile, "Unknown ACL tag: %d\n",
+                                tsk_getu16(fs->endian, acl_lo->tag));
+                            len = sizeof(ext2fs_pos_acl_entry_sh);
+                            break;
+                        }
+                        acl_lo =
+                            (ext2fs_pos_acl_entry_lo *) ((uintptr_t) acl_lo
+                            + len);
+                    }
+                }
+                else {
+                    tsk_fprintf(hFile,
+                        "Unsupported Extended Attr Type: %d\n",
+                        ea_entry->nidx);
                 }
             }
-            else {
-                tsk_fprintf(hFile, "Unsupported Extended Attr Type: %d\n",
-                    ea_entry->nidx);
-            }
-        }
-      egress_ea:
+          egress_ea:
 
-        free(buf);
+            free(buf);
+        }
     }
 
     if (sec_skew != 0) {

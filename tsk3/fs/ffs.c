@@ -314,6 +314,14 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta)
     unsigned char *inosused = NULL;
     TSK_INUM_T ibase;
 
+    if (ffs->dino_buf == NULL) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_FS_ARG;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "ffs_dinode_copy: dino_buf is NULL");
+        return 1;
+    }
+
     fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
     if (fs_meta->attr) {
         tsk_fs_attrlist_markunused(fs_meta->attr);
@@ -1683,7 +1691,8 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fprintf(hFile, "File Modified:\t%s", ctime(&fs_meta->mtime));
     tsk_fprintf(hFile, "Inode Modified:\t%s", ctime(&fs_meta->ctime));
 
-    if (fs->ftype == TSK_FS_TYPE_FFS2) {
+    // we won't have dino_buf for "virtual" files
+    if ((fs->ftype == TSK_FS_TYPE_FFS2) && (ffs->dino_buf)) {
         ffs_inode2 *in = (ffs_inode2 *) ffs->dino_buf;
         /* Are there extended attributes */
         if (tsk_getu32(fs->endian, in->di_extsize) > 0) {
