@@ -3,6 +3,8 @@
 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.  Bug: 2265927
 
+11/11/08: Bug Fix: Fixed crashing bug in istat on ExtX $OrphanFiles dir. Bug: 2266104
+
 ---------------- VERSION 3.0.0 --------------
 0/00/00: Update: Many, many, many API changes.
 
