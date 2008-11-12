@@ -1,3 +1,7 @@
+---------------- VERSION 3.0.1 --------------
+11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.  Bug: 2265927
+
+
 ---------------- VERSION 3.00 --------------
 0/00/00: Update: Many, many, many API changes.
 

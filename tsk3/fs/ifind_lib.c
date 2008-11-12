@@ -246,7 +246,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
              */
             if (TSK_FS_TYPE_ISFFS(a_fs->ftype)
                 || TSK_FS_TYPE_ISEXT(a_fs->ftype)) {
-                if (strcmp(fs_file->name->name, cur_dir) == 0) {
+                if ((fs_file->name->name) && (strcmp(fs_file->name->name, cur_dir) == 0)) {
                     found_name = 1;
                 }
             }
@@ -254,18 +254,18 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
              * the short name 
              */
             else if (TSK_FS_TYPE_ISFAT(a_fs->ftype)) {
-                if (strcasecmp(fs_file->name->name, cur_dir) == 0) {
+                if ((fs_file->name->name) && (strcasecmp(fs_file->name->name, cur_dir) == 0)) {
                     found_name = 1;
                 }
-                else if (strcasecmp(fs_file->name->shrt_name,
-                        cur_dir) == 0) {
+                else if ((fs_file->name->shrt_name) && (strcasecmp(fs_file->name->shrt_name,
+                        cur_dir) == 0)) {
                     found_name = 1;
                 }
             }
 
             /* NTFS gets a case insensitive comparison */
             else if (TSK_FS_TYPE_ISNTFS(a_fs->ftype)) {
-                if (strcasecmp(fs_file->name->name, cur_dir) == 0) {
+                if ((fs_file->name->name) && (strcasecmp(fs_file->name->name, cur_dir) == 0)) {
                     /*  ensure we have the right attribute name */
                     if (cur_attr == NULL) {
                         found_name = 1;
@@ -282,8 +282,8 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                                 if (!fs_attr)
                                     continue;
 
-                                if (strcasecmp(fs_attr->name,
-                                        cur_attr) == 0) {
+                                if ((fs_attr->name) && (strcasecmp(fs_attr->name,
+                                        cur_attr) == 0)) {
                                     found_name = 1;
                                 }
                             }
