@@ -1,6 +1,8 @@
 ---------------- VERSION 3.1.0 --------------
 10/26/08: Update: Removed 'docs' files and moved them to the wiki.
 
+11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.  Bug: 2265927
+
 ---------------- VERSION 3.0.0 --------------
 0/00/00: Update: Many, many, many API changes.
 
