@@ -444,18 +444,47 @@
 /* End PBXGroup section */
 
 /* Begin PBXLegacyTarget section */
-		025D0FE90DBCE02300A9420F /* fstools */ = {
+		02DC8CFF0ED0A60E00BFCE0B /* libtsk */ = {
 			isa = PBXLegacyTarget;
 			buildArgumentsString = "$(ACTION)";
-			buildConfigurationList = 025D0FEA0DBCE04200A9420F /* Build configuration list for PBXLegacyTarget "fstools" */;
+			buildConfigurationList = 02DC8D100ED0A61100BFCE0B /* Build configuration list for PBXLegacyTarget "libtsk" */;
 			buildPhases = (
 			);
 			buildToolPath = /usr/bin/make;
+			buildWorkingDirectory = ../tsk3;
 			dependencies = (
 			);
-			name = fstools;
+			name = libtsk;
 			passBuildSettingsInEnvironment = 1;
-			productName = fstools;
+			productName = libtsk;
+		};
+		02DC8D4E0ED0A7AF00BFCE0B /* tools */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(ACTION)";
+			buildConfigurationList = 02DC8D570ED0A7B700BFCE0B /* Build configuration list for PBXLegacyTarget "tools" */;
+			buildPhases = (
+			);
+			buildToolPath = /usr/bin/make;
+			buildWorkingDirectory = ../tools/;
+			dependencies = (
+			);
+			name = tools;
+			passBuildSettingsInEnvironment = 1;
+			productName = tools;
+		};
+		02DC8D5A0ED0A7C500BFCE0B /* all */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(ACTION)";
+			buildConfigurationList = 02DC8D630ED0A7CC00BFCE0B /* Build configuration list for PBXLegacyTarget "all" */;
+			buildPhases = (
+			);
+			buildToolPath = /usr/bin/make;
+			buildWorkingDirectory = ../;
+			dependencies = (
+			);
+			name = all;
+			passBuildSettingsInEnvironment = 1;
+			productName = all;
 		};
 /* End PBXLegacyTarget section */
 
@@ -467,34 +496,14 @@
 			mainGroup = 026FB3810D19C831000434C7;
 			projectDirPath = "";
 			targets = (
-				025D0FE90DBCE02300A9420F /* fstools */,
+				02DC8CFF0ED0A60E00BFCE0B /* libtsk */,
+				02DC8D4E0ED0A7AF00BFCE0B /* tools */,
+				02DC8D5A0ED0A7C500BFCE0B /* all */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin XCBuildConfiguration section */
-		025D0FEB0DBCE04200A9420F /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				PRODUCT_NAME = fstools;
-			};
-			name = Debug;
-		};
-		025D0FEC0DBCE04200A9420F /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				PRODUCT_NAME = fstools;
-				ZERO_LINK = NO;
-			};
-			name = Release;
-		};
 		026FB3850D19C831000434C7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -509,23 +518,107 @@
 			};
 			name = Release;
 		};
+		02DC8D110ED0A61100BFCE0B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = libtsk;
+			};
+			name = Debug;
+		};
+		02DC8D120ED0A61100BFCE0B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				PRODUCT_NAME = libtsk;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		02DC8D580ED0A7B700BFCE0B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = tools;
+			};
+			name = Debug;
+		};
+		02DC8D590ED0A7B700BFCE0B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				PRODUCT_NAME = tools;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
+		02DC8D640ED0A7CC00BFCE0B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = all;
+			};
+			name = Debug;
+		};
+		02DC8D650ED0A7CC00BFCE0B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				PRODUCT_NAME = all;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		025D0FEA0DBCE04200A9420F /* Build configuration list for PBXLegacyTarget "fstools" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				025D0FEB0DBCE04200A9420F /* Debug */,
-				025D0FEC0DBCE04200A9420F /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		026FB3840D19C831000434C7 /* Build configuration list for PBXProject "sleuthkit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				026FB3850D19C831000434C7 /* Debug */,
 				026FB3860D19C831000434C7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		02DC8D100ED0A61100BFCE0B /* Build configuration list for PBXLegacyTarget "libtsk" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				02DC8D110ED0A61100BFCE0B /* Debug */,
+				02DC8D120ED0A61100BFCE0B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		02DC8D570ED0A7B700BFCE0B /* Build configuration list for PBXLegacyTarget "tools" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				02DC8D580ED0A7B700BFCE0B /* Debug */,
+				02DC8D590ED0A7B700BFCE0B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		02DC8D630ED0A7CC00BFCE0B /* Build configuration list for PBXLegacyTarget "all" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				02DC8D640ED0A7CC00BFCE0B /* Debug */,
+				02DC8D650ED0A7CC00BFCE0B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
