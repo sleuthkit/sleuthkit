@@ -92,7 +92,7 @@
 #define FSK_MOUNT_VERSION     0x46534b21        /* 'FSK!' for failed journal replay */
 
 #define HFS_SBOFF	1024
-#define HFS_FILE_CONTENT_LEN 0
+#define HFS_FILE_CONTENT_LEN 160        // size of two hfs_fork data structures
 
 /* b-tree kind types */
 #define HFS_BTREE_LEAF_NODE	-1
@@ -202,28 +202,24 @@ typedef struct {
 #define HFS_IFXATTR    0200000  /* extended attributes */
 
 /* HFS extent descriptor */
-//typedef struct {
-struct hfs_ext_desc {
+typedef struct {
     uint8_t start_blk[4];       /* start block */
     uint8_t blk_cnt[4];         /* block count */
-};
-//} hfs_ext_desc;
-typedef struct hfs_ext_desc hfs_ext_desc;
+} hfs_ext_desc;
 
+/* Structre used in the extents tree */
 typedef struct {
     hfs_ext_desc extents[8];
 } hfs_extents;
 
 /* fork data structure */
-//typedef struct {
-struct hfs_fork {
-    uint8_t logic_sz[8];        /* logical size */
-    uint8_t clmp_sz[4];         /* clump size */
-    uint8_t total_blk[4];       /* total blocks */
+typedef struct {
+    uint8_t logic_sz[8];        /* The size (in bytes) of the fork */
+    uint8_t clmp_sz[4];         /* For forks in volume header, clump size.  For
+                                 * catalog files, this is number of blocks read or not used. */
+    uint8_t total_blk[4];       /* total blocks in all extents of the fork */
     hfs_ext_desc extents[8];
-};
-//} hfs_fork;
-typedef struct hfs_fork hfs_fork;
+} hfs_fork;
 
 /*
 ** Super Block
@@ -384,17 +380,16 @@ typedef struct {
 
 typedef struct {
     TSK_FS_INFO fs_info;        /* SUPER CLASS */
-    
+
     hfs_sb *fs;                 /* cached superblock */
-    hfs_ext_desc *cat_extents;  /* full extents of the Catalog file */
-    
+
     char is_case_sensitive;
-    
+
     TSK_FS_FILE *blockmap_file;
     const TSK_FS_ATTR *blockmap_attr;
     char blockmap_cache[4096];
     int blockmap_cache_start;
-    
+
     TSK_FS_FILE *catalog_file;
     const TSK_FS_ATTR *catalog_attr;
     hfs_btree_header_record catalog_header;

@@ -197,6 +197,7 @@ hfs_get_keylen(HFS_INFO * hfs, uint16_t keylen,
  * @param nodenum Node number in B-Tree to find
  * @returns byte offset or 0 on failure. 
  */
+#if 0
 static TSK_OFF_T
 hfs_ext_find_node_offset(HFS_INFO * hfs, hfs_btree_header_record * hdr,
     uint32_t nodenum)
@@ -280,6 +281,7 @@ hfs_ext_find_node_offset(HFS_INFO * hfs, hfs_btree_header_record * hdr,
     return r_offs;
 
 }
+#endif
 
 /** \internal
  * Process a B-Tree node record and return the record contents and the 
@@ -397,6 +399,7 @@ hfs_get_bt_rec_off(HFS_INFO * hfs, TSK_OFF_T node_off,
  * @param cur_node_off [in,out] XXXX
  * @param header [in] Header of tree
  * @returns 0 on error */
+#if 0
 static uint32_t
 hfs_ext_next_record(HFS_INFO * hfs, uint16_t * rec, uint16_t * num_rec,
     hfs_btree_node * node, uint32_t * cur_node, TSK_OFF_T * cur_node_off,
@@ -445,9 +448,9 @@ hfs_ext_next_record(HFS_INFO * hfs, uint16_t * rec, uint16_t * num_rec,
 
     return *cur_node;
 }
+#endif
 
 
-// @@@ This could probably return TSK_FS_ATTR
 /**  \internal
  * Returns the extents (data runs) for the data fork of a given file.  The
  * caller must free the returned array. 
@@ -463,6 +466,7 @@ hfs_ext_next_record(HFS_INFO * hfs, uint16_t * rec, uint16_t * num_rec,
  * found, this function will also return NULL.
  * May set up to error string 2.  
  */
+#if 0
 static hfs_ext_desc *
 hfs_ext_find_extent_record(HFS_INFO * hfs, uint32_t cnid,
     hfs_ext_desc * first_ext)
@@ -503,7 +507,7 @@ hfs_ext_find_extent_record(HFS_INFO * hfs, uint32_t cnid,
     }
 
     /* Get the starting address of the extents file to read header record */
-    // @@@@ ERROR: header is 0 here, which doesn't help to find the node size, which is why it is passe to find_....
+    //  ERROR: header is 0 here, which doesn't help to find the node size, which is why it is passe to find_....
     off = hfs_ext_find_node_offset(hfs, &header, 0);
     if (off == 0) {
         snprintf(tsk_errstr2, TSK_ERRSTR_L,
@@ -561,7 +565,6 @@ hfs_ext_find_extent_record(HFS_INFO * hfs, uint32_t cnid,
             return NULL;
         }
 
-        // @@@ We could probably make this faster by reading the entire node
 
         if (hfs_checked_read_random(fs, (char *) &node, sizeof(node),
                 cur_off)) {
@@ -838,7 +841,7 @@ hfs_ext_find_extent_record(HFS_INFO * hfs, uint32_t cnid,
     }
 
 }
-
+#endif
 
 /**
  * Convert the extents runs to TSK_FS_ATTR_RUN runs.
@@ -934,10 +937,11 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         }
     }
 
+    // allocate a node buffer 
     nodesize = tsk_getu16(fs->endian, hfs->extents_header.nodesize);
-    if ((node = (char *) tsk_malloc(nodesize)) == NULL)
+    if ((node = (char *) tsk_malloc(nodesize)) == NULL) {
         return 1;
-    // @@@ ADD FREE CODE
+    }
 
     /* start at root node */
     cur_node = tsk_getu32(fs->endian, hfs->extents_header.root);
@@ -950,6 +954,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         if (tsk_verbose)
             tsk_fprintf(stderr, "hfs_ext_find_extent_record: "
                 "empty extents btree\n");
+        free(node);
         return 0;
     }
 
@@ -970,6 +975,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             node, nodesize, 0);
         if (cnt != nodesize) {
             // @@@
+            free(node);
             return 1;
         }
 
@@ -987,6 +993,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             snprintf(tsk_errstr, TSK_ERRSTR_L,
                 "hfs_ext_find_extent_record: zero records in node %"
                 PRIu32, cur_node);
+            free(node);
             return 1;
         }
 
@@ -1102,9 +1109,11 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 "hfs_ext_find_extent_record: btree node %" PRIu32
                 " (%" PRIu64 ") is neither index nor leaf (%" PRIu8 ")",
                 cur_node, cur_off, node_desc->kind);
+            free(node);
             return 1;
         }
     }
+    free(node);
 }
 
 
@@ -1523,7 +1532,7 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
 
     memcpy((char *) &entry->thread, (char *) &thread, sizeof(hfs_thread));
 
-    entry->flags |= TSK_FS_META_FLAG_ALLOC;     /// @@@ What about USED, etc.?
+    entry->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
     entry->inum = inum;
 
     if (tsk_verbose)
@@ -1678,6 +1687,7 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         tsk_getu64(fs->endian, hfs->fs->cat_file.logic_sz);
 
 
+    // convert the  runs in the volume header to attribute runs 
     if ((attr_run =
             hfs_extents_to_attr(fs, hfs->fs->cat_file.extents,
                 0)) == NULL) {
@@ -1983,46 +1993,59 @@ hfs_make_attrfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 }
 
 
-/*
- * Copy the inode into the generic structure
+/** \internal
+ * Copy the catalog file record entry into a TSK data structure. 
+ * @param a_hfs File system being analyzed
+ * @param a_entry Catalog record entry (could be a hfs_folder structure too)
+ * @param a_fs_meta Structure to copy data into
  * Returns 1 on error.
  */
 static uint8_t
-hfs_dinode_copy(HFS_INFO * hfs, hfs_file * entry, TSK_FS_META * fs_meta)
+hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file * a_entry,
+    TSK_FS_META * a_fs_meta)
 {
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & hfs->fs_info;
+    TSK_FS_INFO *fs = (TSK_FS_INFO *) & a_hfs->fs_info;
+
+    if (a_fs_meta == NULL) {
+        tsk_errno = TSK_ERR_FS_ARG;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "hfs_dinode_copy: a_fs_meta is NULL");
+        return 1;
+    }
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "hfs_dinode_copy: called\n");
 
-    fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
-    if (fs_meta->attr) {
-        tsk_fs_attrlist_markunused(fs_meta->attr);
-    }
-
-    fs_meta->mode =
-        hfsmode2tskmode(tsk_getu32(fs->endian, entry->perm.mode));
-
-    if (tsk_getu16(fs->endian, entry->rec_type) == HFS_FOLDER_RECORD) {
-        fs_meta->size = 0;
-        fs_meta->type =
-            hfsmode2tskmetatype(tsk_getu16(fs->endian, entry->perm.mode));
-        if (fs_meta->type != TSK_FS_META_TYPE_DIR) {
-            tsk_fprintf(stderr,
-                "hfs_dinode_copy error: folder has non-directory type %"
-                PRIu16 "\n", fs_meta->type);
+    if (a_fs_meta->content_len < HFS_FILE_CONTENT_LEN) {
+        if ((a_fs_meta =
+                tsk_fs_meta_realloc(a_fs_meta,
+                    HFS_FILE_CONTENT_LEN)) == NULL) {
             return 1;
         }
     }
-    else if (tsk_getu16(fs->endian, entry->rec_type) == HFS_FILE_RECORD) {
-        fs_meta->size = tsk_getu64(fs->endian, entry->data.logic_sz);
-        fs_meta->type =
-            hfsmode2tskmetatype(tsk_getu16(fs->endian, entry->perm.mode));
-        if (fs_meta->type == TSK_FS_META_TYPE_DIR) {
-            tsk_fprintf(stderr,
-                "hfs_dinode_copy error: file has directory type\n");
-            return 1;
-        }
+
+    a_fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
+    if (a_fs_meta->attr) {
+        tsk_fs_attrlist_markunused(a_fs_meta->attr);
+    }
+
+    a_fs_meta->mode =
+        hfsmode2tskmode(tsk_getu32(fs->endian, a_entry->perm.mode));
+    a_fs_meta->type =
+        hfsmode2tskmetatype(tsk_getu32(fs->endian, a_entry->perm.mode));
+
+    if (tsk_getu16(fs->endian, a_entry->rec_type) == HFS_FOLDER_RECORD) {
+        a_fs_meta->size = 0;
+        memset(a_fs_meta->content_ptr, 0, HFS_FILE_CONTENT_LEN);
+    }
+    else if (tsk_getu16(fs->endian, a_entry->rec_type) == HFS_FILE_RECORD) {
+        hfs_fork *fork;
+        a_fs_meta->size = tsk_getu64(fs->endian, a_entry->data.logic_sz);
+
+        // copy the data and resource forks
+        fork = (hfs_fork *) a_fs_meta->content_ptr;
+        memcpy(fork, &(a_entry->data), sizeof(hfs_fork));
+        memcpy(&fork[1], &(a_entry->resource), sizeof(hfs_fork));
     }
     else {
         tsk_fprintf(stderr,
@@ -2030,30 +2053,34 @@ hfs_dinode_copy(HFS_INFO * hfs, hfs_file * entry, TSK_FS_META * fs_meta)
         return 1;
     }
 
-    fs_meta->uid = tsk_getu32(fs->endian, entry->perm.owner);
-    fs_meta->gid = tsk_getu32(fs->endian, entry->perm.group);
-    fs_meta->mtime = hfs2unixtime(tsk_getu32(fs->endian, entry->cmtime));
-    fs_meta->atime = hfs2unixtime(tsk_getu32(fs->endian, entry->atime));
-    fs_meta->crtime = hfs2unixtime(tsk_getu32(fs->endian, entry->ctime));
-    fs_meta->ctime =
-        hfs2unixtime(tsk_getu32(fs->endian, entry->attr_mtime));
-    fs_meta->time2.hfs.bkup_time =
-        hfs2unixtime(tsk_getu32(fs->endian, entry->bkup_date));
-    fs_meta->addr = tsk_getu32(fs->endian, entry->cnid);
+    a_fs_meta->uid = tsk_getu32(fs->endian, a_entry->perm.owner);
+    a_fs_meta->gid = tsk_getu32(fs->endian, a_entry->perm.group);
 
-    fs_meta->flags = 0;         // @@@ entry->flags;
+    a_fs_meta->mtime =
+        hfs2unixtime(tsk_getu32(fs->endian, a_entry->cmtime));
+    a_fs_meta->atime =
+        hfs2unixtime(tsk_getu32(fs->endian, a_entry->atime));
+    a_fs_meta->crtime =
+        hfs2unixtime(tsk_getu32(fs->endian, a_entry->ctime));
+    a_fs_meta->ctime =
+        hfs2unixtime(tsk_getu32(fs->endian, a_entry->attr_mtime));
+    a_fs_meta->time2.hfs.bkup_time =
+        hfs2unixtime(tsk_getu32(fs->endian, a_entry->bkup_date));
+
+    a_fs_meta->addr = tsk_getu32(fs->endian, a_entry->cnid);
+
+    // All entries here are used.  @@@ What about alloc?
+    a_fs_meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
 
     /* TODO could fill in name2 with this entry's name and parent inode
        from Catalog entry */
-
-    // @@@ Shouldn't there be basic filling in of record locations etc?
 
     return 0;
 }
 
 
 /** \internal
- * Read a catalog file entry and save it in the generic TSK_FS_META format.
+ * Load a catalog file entry and save it in the TSK_FS_FILE structure. 
  * 
  * @param fs File system to read from.
  * @param a_fs_file Structure to read into. 
@@ -2135,18 +2162,20 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 }
 
 /** \internal
+ * Populate the attributes in fs_file using the internal fork data.  This uses
+ * the data cached in the content_ptr structure.
+ * @param fs_file File to load attributes for
  *
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-hfs_make_data_run(TSK_FS_FILE * fs_file)
+hfs_load_attrs(TSK_FS_FILE * fs_file)
 {
     TSK_FS_INFO *fs;
     HFS_INFO *hfs;
-    int i;
     TSK_FS_ATTR *fs_attr;
-    HFS_ENTRY entry;
-    hfs_ext_desc *extents;
+    TSK_FS_ATTR_RUN *attr_run;
+    hfs_fork *fork;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -2155,16 +2184,21 @@ hfs_make_data_run(TSK_FS_FILE * fs_file)
         || (fs_file->fs_info == NULL)) {
         tsk_errno = TSK_ERR_FS_ARG;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "hfs_make_data_run: fs_file or meta is NULL");
+            "hfs_load_attrs: fs_file or meta is NULL");
+        return 1;
+    }
+    if (fs_file->meta->content_ptr == NULL) {
+        tsk_errno = TSK_ERR_FS_ARG;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "hfs_load_attrs: content_ptr is NULL");
         return 1;
     }
     fs = (TSK_FS_INFO *) fs_file->fs_info;
     hfs = (HFS_INFO *) fs;
 
-
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "hfs_make_data_run: Processing file %" PRIuINUM "\n",
+            "hfs_load_attrs: Processing file %" PRIuINUM "\n",
             fs_file->meta->addr);
 
     // see if we have already loaded the runs
@@ -2183,62 +2217,54 @@ hfs_make_data_run(TSK_FS_FILE * fs_file)
     }
 
 
-    // look up the catalog entries for this file
-    // (they have already been looked up once before, but that information
-    // isn't propagated to here, so we look it up again)
-    if (hfs_cat_file_lookup(hfs, fs_file->meta->addr, &entry))
-        return 1;
-
-    // if the catalog entry is not a file entry (presumably it would have
-    // to be a folder entry), then it has no data
-    if (tsk_getu16(fs->endian, entry.cat.rec_type) != HFS_FILE_RECORD)
+    //@@@ is this teh best response?
+    // need to come up with compete plan on dealig with directories, size, content etc. 
+    if (fs_file->meta->type != TSK_FS_META_TYPE_REG)
         return 0;
 
+    // get an attribute structure to store the data in
     if ((fs_attr =
             tsk_fs_attrlist_getnew(fs_file->meta->attr,
                 TSK_FS_ATTR_NONRES)) == NULL) {
-        return 1;
-    }
-    // initialize the data run
-    if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, NULL, 0, 0,
-            fs_file->meta->size, roundup(fs_file->meta->size,
-                fs->block_size), 0, 0)) {
+        strncat(tsk_errstr2, " - hfs_load_attrs",
+            TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
     }
 
-    extents =
-        hfs_ext_find_extent_record(hfs, (uint32_t) entry.inum,
-        entry.cat.data.extents);
-
-    if (extents == NULL)
+    // Get the data fork and convert it to the TSK format
+    fork = (hfs_fork *) fs_file->meta->content_ptr;
+    if ((attr_run = hfs_extents_to_attr(fs, fork->extents, 0)) == NULL) {
+        strncat(tsk_errstr2, " - hfs_load_attrs",
+            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_fs_attr_free(fs_attr);
         return 1;
-
-    for (i = 0; (tsk_getu32(fs->endian, extents[i].start_blk) != 0) ||
-        (tsk_getu32(fs->endian, extents[i].blk_cnt) != 0); i++) {
-        TSK_FS_ATTR_RUN *data_run;
-
-        data_run = tsk_fs_attr_run_alloc();
-        if (data_run == NULL) {
-            free(extents);
-            return -1;
-        }
-
-        data_run->addr = (TSK_DADDR_T) tsk_getu32(fs->endian,
-            extents[i].start_blk);
-        data_run->len = (TSK_DADDR_T) tsk_getu32(fs->endian,
-            extents[i].blk_cnt);
-
-        // save the run
-        tsk_fs_attr_append_run(fs, fs_attr, data_run);
     }
 
-    // note that the old code used to check if the total number of blocks in the
-    // extents was too large or small for the size of the file (fork)
-    // this is no longer done (at least within this function)
+    // add the runs to the attribute and the attribute to the file. 
+    if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run, NULL,
+            TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
+            tsk_getu64(fs->endian, fork->logic_sz),
+            tsk_getu32(fs->endian, fork->total_blk) * fs->block_size, 0,
+            0)) {
+        strncat(tsk_errstr2, " - hfs_load_attrs",
+            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_fs_attr_free(fs_attr);
+        tsk_fs_attr_run_free(attr_run);
+        return 1;
+    }
+
+    // see if extents file has additional runs
+    if (hfs_ext_find_extent_record_attr(hfs, fs_file->meta->addr, fs_attr)) {
+        strncat(tsk_errstr2, " - hfs_load_attrs",
+            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
+        return 1;
+    }
+
+    // @@@ Resource fork too
 
     fs_file->meta->attr_state = TSK_FS_META_ATTR_STUDIED;
 
-    free(extents);
     return 0;
 }
 
@@ -2487,7 +2513,8 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         if (hfs_dinode_copy(hfs, &entry.cat, fs_file->meta))
             return 1;
 
-        // @@@ We should be looking at some flags here...
+        if ((fs_file->meta->flags & flags) != flags)
+            continue;
 
         /* call action */
         retval = action(fs_file, ptr);
@@ -3027,7 +3054,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->inode_walk = hfs_inode_walk;
     fs->block_walk = hfs_block_walk;
     fs->block_getflags = hfs_block_getflags;
-    fs->load_attrs = hfs_make_data_run;
+    fs->load_attrs = hfs_load_attrs;
     fs->get_default_attr_type = hfs_get_default_attr_type;
 
     fs->file_add_meta = hfs_inode_lookup;
@@ -3047,24 +3074,11 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->last_inum = HFS_FIRST_USER_CNID - 1;    // we will later increase this
     fs->inum_count = fs->last_inum - fs->first_inum + 1;
 
-    /* Load the Catalog file extents (data runs) starting with 
-     * the data in the volume header */
-    // @@@@ How will this know to load only one entry from the volume header?
-    hfs->cat_extents =
-        hfs_ext_find_extent_record(hfs, HFS_CATALOG_FILE_ID,
-        hfs->fs->cat_file.extents);
-    if (hfs->cat_extents == NULL) {
-        fs->tag = 0;
-        free(hfs->fs);
-        free(hfs);
-        return NULL;
-    }
-
-    hfs->extents_file = NULL;   // we will load this when needed
+    /* We will load the extents file data when we need it */
+    hfs->extents_file = NULL;
     hfs->extents_attr = NULL;
 
-
-
+    /* Load the catalog file though */
     if ((hfs->catalog_file =
             tsk_fs_file_open_meta(fs, NULL,
                 HFS_CATALOG_FILE_ID)) == NULL) {
