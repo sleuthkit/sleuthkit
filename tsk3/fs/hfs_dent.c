@@ -254,7 +254,7 @@ hfs_dir_open_meta3(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
     memset((char *) &needle, 0, sizeof(hfs_cat_key));
 
     temp_32ptr = (uint32_t *) (needle.parent_cnid);
-    *temp_32ptr = tsk_getu32(fs->endian, (char *) &cnid);       // @@@@ I'm not sure that this works...
+    *temp_32ptr = tsk_getu32(fs->endian, (char *) &cnid);       //  I'm not sure that this works...
 
     /*** navigate to thread record ***/
 
@@ -282,8 +282,6 @@ hfs_dir_open_meta3(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
             "root node %" PRIu32 "; header @ %" PRIu64 "; leafsize = %"
             PRIu16 "\n", cur_node, off, leafsize);
 
-    // @@@ We can probably merge this content with tree code in hfs.c.
-    // @@@ Change names from addr to off
     while (1) {
         uint16_t rec, recno;
         TSK_OFF_T recoff;
@@ -449,7 +447,6 @@ hfs_dir_open_meta3(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                 if (a_addr == fs->root_inum)
                     fs_name->meta_addr = fs->root_inum;
                 else
-					// @@@ VS warns that entry is uninitialized...debug
                     fs_name->meta_addr =
                         tsk_getu32(fs->endian, entry.thread.parent_cnid);
 
@@ -616,15 +613,16 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
          tsk_fs_file_open_meta(fs, NULL, a_addr)) == NULL) {
         strncat(tsk_errstr2, " - hfs_dir_open_meta",
                 TSK_ERRSTR_L - strlen(tsk_errstr2));
-        tsk_fs_dir_close(fs_dir);
+        tsk_fs_name_free(fs_name);
         return TSK_ERR;
     }
     
     
     nodesize = tsk_getu16(fs->endian, hfs->catalog_header.nodesize);
-    if ((node = (char *) tsk_malloc(nodesize)) == NULL)
-        return 1;
-    // @@@ ADD FREE CODE
+    if ((node = (char *) tsk_malloc(nodesize)) == NULL) {
+        tsk_fs_name_free(fs_name);
+        return TSK_ERR;
+    }
     
     /* start at root node */
     cur_node = tsk_getu32(fs->endian, hfs->catalog_header.root);
@@ -637,7 +635,9 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         if (tsk_verbose)
             tsk_fprintf(stderr, "hfs_dir_open_meta: "
                         "empty extents btree\n");
-        return 0;
+        tsk_fs_name_free(fs_name);
+        free(node);
+        return TSK_OK;
     }
     
     if (tsk_verbose)
@@ -657,8 +657,15 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         cnt = tsk_fs_attr_read(hfs->catalog_attr, cur_off,
                                node, nodesize, 0);
         if (cnt != nodesize) {
-            // @@@
-            return 1;
+            if (cnt >= 0) {
+                tsk_error_reset();
+                tsk_errno = TSK_ERR_FS_READ;
+            }
+            snprintf(tsk_errstr2, TSK_ERRSTR_L,
+                     "hfs_dir_open_meta: Error reading catalog node %d at offset %"PRIuOFF, cur_node, cur_off); 
+            tsk_fs_name_free(fs_name);
+            free(node);
+            return TSK_ERR;
         }
         
         node_desc = (hfs_btree_node *) node;
@@ -675,7 +682,9 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
             snprintf(tsk_errstr, TSK_ERRSTR_L,
                      "hfs_dir_open_meta: zero records in node %"
                      PRIu32, cur_node);
-            return 1;
+            tsk_fs_name_free(fs_name);
+            free(node);
+            return TSK_COR;
         }
         
         
@@ -693,8 +702,13 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                     tsk_getu16(fs->endian,
                                &node[nodesize - (rec + 1) * 2]);
                 if (rec_off > nodesize) {
-                    // @@@ ERROR
-                    return TSK_ERR;
+                    tsk_errno = TSK_ERR_FS_GENFS;
+                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                             "hfs_dir_open_meta: offset of record %d in index node %d too large (%zu vs %"PRIu16")",
+                             rec, cur_node, rec_off, nodesize);
+                    tsk_fs_name_free(fs_name);
+                    free(node);
+                    return TSK_COR;
                 }
                 key = (hfs_cat_key *) & node[rec_off];
                 
@@ -710,8 +724,13 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                 if ((tsk_getu32(fs->endian, key->parent_cnid) <= cnid) || (next_node == 0)) {
                     int keylen = tsk_getu16(fs->endian, key->key_len) + 2;
                     if (rec_off + keylen > nodesize) {
-                        // @@@ ERROR
-                        return TSK_ERR;
+                        tsk_errno = TSK_ERR_FS_GENFS;
+                        snprintf(tsk_errstr, TSK_ERRSTR_L,
+                                 "hfs_dir_open_meta: offset of record + keylen %d in index node %d too large (%zu vs %"PRIu16")",
+                                 rec, cur_node, rec_off+keylen, nodesize);
+                        tsk_fs_name_free(fs_name);
+                        free(node);
+                        return TSK_COR;
                     }
                     next_node =
                         tsk_getu32(fs->endian, &node[rec_off + keylen]);
@@ -721,7 +740,10 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                 }
             }
             if (next_node == 0) {
-                // @@@@
+                tsk_errno = TSK_ERR_FS_GENFS;
+                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                         "hfs_dir_open_meta: did not find any keys for %d in index node %d",
+                         cnid, cur_node);
                 is_done = 1;
                 break;
             }
@@ -742,8 +764,13 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                     tsk_getu16(fs->endian,
                                &node[nodesize - (rec + 1) * 2]);
                 if (rec_off > nodesize) {
-                    // @@@ ERROR
-                    return TSK_ERR;
+                    tsk_errno = TSK_ERR_FS_GENFS;
+                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                             "hfs_dir_open_meta: offset of record %d in leaf node %d too large (%zu vs %"PRIu16")",
+                             rec, cur_node, rec_off, nodesize);
+                    tsk_fs_name_free(fs_name);
+                    free(node);
+                    return TSK_COR;
                 }
                 key = (hfs_cat_key *) & node[rec_off];
                 
@@ -754,8 +781,6 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                                 tsk_getu16(fs->endian, key->key_len),
                                 tsk_getu32(fs->endian, key->parent_cnid));
                 
-//                rec_cnid = tsk_getu32(fs->endian, key->file_id);
-                
                 // see if this record is for our file or if we passed the interesting entries
                 if (tsk_getu32(fs->endian, key->parent_cnid) < cnid) {
                     continue;
@@ -765,17 +790,25 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                     break;
                 }
                
-                
-//                HERE
                 rec_off2 = rec_off + 2 + tsk_getu16(fs->endian, key->key_len);
                 if (rec_off2 > nodesize) {
-                    // @@@ ERROR
-                    return TSK_ERR;
+                    tsk_errno = TSK_ERR_FS_GENFS;
+                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                             "hfs_dir_open_meta: offset of record+keylen %d in leaf node %d too large (%zu vs %"PRIu16")",
+                             rec, cur_node, rec_off2, nodesize);
+                    tsk_fs_name_free(fs_name);
+                    free(node);
+                    return TSK_COR;
                 }
-                // @@@ Add length checks...
                 rec_type = tsk_getu16(fs->endian, &node[rec_off2]);
                 if (rec_type == HFS_FILE_THREAD) {
-                    // we shouldn't get this
+                    tsk_errno = TSK_ERR_FS_GENFS;
+                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                             "hfs_dir_open_meta: Got File Thread record in record %d in leaf node %d",
+                             rec, cur_node);
+                    tsk_fs_name_free(fs_name);
+                    free(node);
+                    return TSK_COR;
                 }
                 
                 /* This will link the folder to its parent, which is the ".." entry */
@@ -798,8 +831,11 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                     
                     if (hfs_uni2ascii(fs, key->name.unicode,
                                       tsk_getu16(fs->endian, key->name.length),
-                                      fs_name->name, HFS_MAXNAMLEN + 1))
-                        return 1;
+                                      fs_name->name, HFS_MAXNAMLEN + 1)) {
+                        tsk_fs_name_free(fs_name);
+                        free(node);
+                        return TSK_ERR;
+                    }
                 }
                 
                 /* This is a normal file in the folder */
@@ -811,16 +847,25 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                     fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;                     
                     if (hfs_uni2ascii(fs, key->name.unicode,
                                       tsk_getu16(fs->endian, key->name.length),
-                                      fs_name->name, HFS_MAXNAMLEN + 1))
-                        return 1;
+                                      fs_name->name, HFS_MAXNAMLEN + 1)) {
+                        tsk_fs_name_free(fs_name);
+                        free(node);
+                        return TSK_ERR;
+                    }
                 }
                 else {
-                    return 1;
-                    // @@@
+                    tsk_errno = TSK_ERR_FS_GENFS;
+                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                             "hfs_dir_open_meta: Unknown record type %d in leaf node %d",
+                             rec_type, cur_node);
+                    tsk_fs_name_free(fs_name);
+                    free(node);
+                    return TSK_COR;                    
                 }
                 
                 if (tsk_fs_dir_add(fs_dir, fs_name)) {
                     tsk_fs_name_free(fs_name);
+                    free(node);
                     return TSK_ERR;
                 }                
             }
@@ -831,9 +876,14 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                      "hfs_dir_open_meta: btree node %" PRIu32
                      " (%" PRIu64 ") is neither index nor leaf (%" PRIu8 ")",
                      cur_node, cur_off, node_desc->kind);
-            return 1;
+            
+            tsk_fs_name_free(fs_name);
+            free(node);
+            return TSK_COR;
         }
     }
-    return 0;
+    tsk_fs_name_free(fs_name);
+    free(node);
+    return TSK_OK;
 }
 

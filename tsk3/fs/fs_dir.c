@@ -203,6 +203,8 @@ tsk_fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr)
     }
 
     retval = a_fs->dir_open_meta(a_fs, &fs_dir, a_addr);
+    if (retval != TSK_OK)
+        return NULL;
 
     return fs_dir;
 }
