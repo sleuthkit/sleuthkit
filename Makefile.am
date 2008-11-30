@@ -1,5 +1,5 @@
 # Files that we want to include in the dist
-EXTRA_DIST = README_win32.txt README.txt INSTALL.txt TODO.txt CHANGES.txt \
+EXTRA_DIST = README_win32.txt README.txt INSTALL.txt CHANGES.txt \
     licenses/GNU-COPYING licenses/IBM-LICENSE licenses/cpl1.0.txt \
     docs/library-api.txt \
     win32/BUILDING.txt \
