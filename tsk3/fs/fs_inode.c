@@ -132,7 +132,6 @@ tsk_fs_meta_close(TSK_FS_META * fs_meta)
 void
 tsk_fs_meta_reset(TSK_FS_META * a_fs_meta)
 {
-    TSK_FS_INFO *fs_tmp;
     void *content_ptr_tmp;
     size_t content_len_tmp;
     TSK_FS_ATTRLIST *attr_tmp;
@@ -140,7 +139,6 @@ tsk_fs_meta_reset(TSK_FS_META * a_fs_meta)
     char *link_tmp;
 
     // backup pointers
-    fs_tmp = a_fs_meta->fs_info;
     content_ptr_tmp = a_fs_meta->content_ptr;
     content_len_tmp = a_fs_meta->content_len;
     attr_tmp = a_fs_meta->attr;
@@ -152,8 +150,6 @@ tsk_fs_meta_reset(TSK_FS_META * a_fs_meta)
     a_fs_meta->tag = TSK_FS_META_TAG;
 
     // restore and clear the pointers
-    a_fs_meta->fs_info = fs_tmp;
-
     a_fs_meta->content_ptr = content_ptr_tmp;
     a_fs_meta->content_len = content_len_tmp;
 

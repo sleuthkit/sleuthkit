@@ -407,7 +407,6 @@ extern "C" {
      */
     typedef struct {
         int tag;                ///< \internal Will be set to TSK_FS_META_TAG if structure is allocated
-        TSK_FS_INFO *fs_info;   ///< Pointer to file system that file is located in.
 
         TSK_FS_META_FLAG_ENUM flags;    ///< Flags for this file for its allocation status etc.
         TSK_INUM_T addr;        ///< Address of the meta data structure for this file
@@ -525,7 +524,7 @@ extern "C" {
         char *name;             ///< The name of the file (in UTF-8)
         size_t name_size;       ///< The number of bytes allocated to name
 
-        char *shrt_name;        ///< The short name of the file (FAT and NTFS only) or null (in UTF-8)
+        char *shrt_name;        ///< The short name of the file or null (in UTF-8)
         size_t shrt_name_size;  ///< The number of bytes allocated to shrt_name
 
         TSK_INUM_T meta_addr;   ///< Address of the metadata structure that the name points to. 
