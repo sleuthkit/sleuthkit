@@ -64,11 +64,11 @@ extern "C" {
         TSK_FS_BLOCK_FLAG_UNALLOC = 0x0002,     ///< Block is unallocated (and not TSK_FS_BLOCK_FLAG_ALLOC)
         TSK_FS_BLOCK_FLAG_CONT = 0x0004,        ///< Block (could) contain file content (and not TSK_FS_BLOCK_FLAG_META)
         TSK_FS_BLOCK_FLAG_META = 0x0008,        ///< Block (could) contain file system metadata (and not TSK_FS_BLOCK_FLAG_CONT)
-        TSK_FS_BLOCK_FLAG_RAW = 0x0010, ///< The data has been read raw from the disk and is not compressed, encrypted, sparse etc.
-        TSK_FS_BLOCK_FLAG_BAD = 0x0020, ///< Block has been marked as bad by the file system
-        TSK_FS_BLOCK_FLAG_RES = 0x0040, ///< The data passed in the file_walk callback is from an NTFS resident file
-        TSK_FS_BLOCK_FLAG_SPARSE = 0x0080,      ///< The data passed in the file_walk calback was stored as sparse (all zeros)
-        TSK_FS_BLOCK_FLAG_COMP = 0x0100 ///< The data passed in the file_walk callback was stored in a compressed form
+        TSK_FS_BLOCK_FLAG_BAD = 0x0010, ///< Block has been marked as bad by the file system
+        TSK_FS_BLOCK_FLAG_RAW = 0x0020, ///< The data has been read raw from the disk (and not COMP or SPARSE)
+        TSK_FS_BLOCK_FLAG_SPARSE = 0x0040,      ///< The data passed in the file_walk calback was stored as sparse (all zeros) (and not RAW or COMP)
+        TSK_FS_BLOCK_FLAG_COMP = 0x0080,        ///< The data passed in the file_walk callback was stored in a compressed form (and not RAW or SPARSE)
+        TSK_FS_BLOCK_FLAG_RES = 0x0100  ///< The data passed in the file_walk callback is from an NTFS resident file
     };
     typedef enum TSK_FS_BLOCK_FLAG_ENUM TSK_FS_BLOCK_FLAG_ENUM;
 

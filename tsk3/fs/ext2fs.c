@@ -886,6 +886,9 @@ ext2fs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     TSK_DADDR_T dmin = 0;       /* first block after inodes */
 
     // these blocks are not described in the group descriptors
+    // sparse
+    if (a_addr == 0)
+        return TSK_FS_BLOCK_FLAG_CONT | TSK_FS_BLOCK_FLAG_ALLOC;
     if (a_addr < ext2fs->first_data_block)
         return TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_ALLOC;
 
