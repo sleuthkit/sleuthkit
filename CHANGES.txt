@@ -5,7 +5,20 @@
 
 11/11/08: Bug Fix: Fixed crashing bug in istat on ExtX $OrphanFiles dir. Bug: 2266104
 
----------------- VERSION 3.0.0 --------------
+11/16/08: Update: Added more HFS error checking and better loading
+
+11/26/08: Update: Updated fls man page.
+
+11/30/08: Update: Removed TODO file and using tracker for bugs and feature requests. 
+
+12/29/08: Bug Fix: Fixed incorrectly setting block status in file_walk
+for compressed files (Bug: 2475246)
+
+12/29/08: Bug Fix: removed fs_info field from FS_META because it
+was not being set and should have been removed in 3.0. Reported by
+Rob Joyce and Judson Powers.  
+
+---------------- VERSION 3.0.0 -------------- 
 0/00/00: Update: Many, many, many API changes.
 
 2/14/08: Update: Added mmcat tool.

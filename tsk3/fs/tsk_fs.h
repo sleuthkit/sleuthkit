@@ -407,7 +407,6 @@ extern "C" {
      */
     typedef struct {
         int tag;                ///< \internal Will be set to TSK_FS_META_TAG if structure is allocated
-        TSK_FS_INFO *fs_info;   ///< Pointer to file system that file is located in.
 
         TSK_FS_META_FLAG_ENUM flags;    ///< Flags for this file for its allocation status etc.
         TSK_INUM_T addr;        ///< Address of the meta data structure for this file
