@@ -525,7 +525,7 @@ extern "C" {
         char *name;             ///< The name of the file (in UTF-8)
         size_t name_size;       ///< The number of bytes allocated to name
 
-        char *shrt_name;        ///< The short name of the file (FAT and NTFS only) or null (in UTF-8)
+        char *shrt_name;        ///< The short name of the file or null (in UTF-8)
         size_t shrt_name_size;  ///< The number of bytes allocated to shrt_name
 
         TSK_INUM_T meta_addr;   ///< Address of the metadata structure that the name points to. 
