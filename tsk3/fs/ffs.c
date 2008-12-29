@@ -1046,6 +1046,10 @@ ffs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
     unsigned char *freeblocks = NULL;
     int flags;
 
+    // sparse
+    if (a_addr == 0)
+        return TSK_FS_BLOCK_FLAG_CONT | TSK_FS_BLOCK_FLAG_ALLOC;
+
     grp_num = dtog_lcl(a_fs, ffs->fs.sb1, a_addr);
 
     if (ffs_group_load(ffs, grp_num)) {

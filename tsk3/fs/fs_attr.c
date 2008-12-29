@@ -863,7 +863,9 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                 if ((fs_attr_run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE) ||
                     (fs_attr_run->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) ||
                     (off > fs_attr->nrd.initsize)) {
-                    myflags = TSK_FS_BLOCK_FLAG_SPARSE;
+                    myflags = fs->block_getflags(fs, 0);
+                    myflags |= TSK_FS_BLOCK_FLAG_SPARSE;
+
                     if ((a_flags & TSK_FS_FILE_WALK_FLAG_NOSPARSE) == 0) {
                         retval =
                             a_action(fs_attr->fs_file, off, 0,
