@@ -778,10 +778,7 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
     }
     data->fs_name->meta_addr = a_fs_file->meta->addr;
     data->fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
-    if (a_fs_file->meta->type == TSK_FS_META_TYPE_DIR)
-        data->fs_name->type = TSK_FS_NAME_TYPE_DIR;
-    else
-        data->fs_name->type = TSK_FS_NAME_TYPE_REG;
+    data->fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
 
     if (tsk_fs_dir_add(data->fs_dir, data->fs_name))
         return TSK_WALK_ERROR;
