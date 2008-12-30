@@ -65,10 +65,7 @@ ntfs_par_act(TSK_FS_FILE * fs_file, void *ptr)
             par_data->fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
             strncpy(par_data->fs_name->name, fs_name_list->name,
                 par_data->fs_name->name_size);
-            if (fs_file->meta->type == TSK_FS_META_TYPE_DIR)
-                par_data->fs_name->type = TSK_FS_NAME_TYPE_DIR;
-            else
-                par_data->fs_name->type = TSK_FS_NAME_TYPE_REG;
+            par_data->fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
 
             tsk_fs_dir_add(par_data->fs_dir, par_data->fs_name);
         }
