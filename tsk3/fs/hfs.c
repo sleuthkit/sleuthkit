@@ -904,6 +904,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
     uint16_t nodesize;          /* size of nodes (all, regardless of the name) */
     uint32_t cur_node;          /* node id of the current node */
     char *node = NULL;
+    uint8_t is_done;
 
     tsk_error_reset();
 
@@ -969,14 +970,16 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             "root node %" PRIu32 "; nodesize = %"
             PRIu16 "\n", cur_node, nodesize);
 
-    while (1) {
+    /* Recurse down to the needed leaf nodes and then go forward */
+    is_done = 0;
+    while (is_done == 0) {
         TSK_OFF_T cur_off;      /* start address of cur_node */
         uint16_t num_rec;       /* number of records in this node */
         ssize_t cnt;
         hfs_btree_node *node_desc;
 
+        // read the current node
         cur_off = cur_node * nodesize;
-
         cnt = tsk_fs_attr_read(hfs->extents_attr, cur_off,
             node, nodesize, 0);
         if (cnt != nodesize) {
@@ -991,8 +994,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             return 1;
         }
 
+        // process the header / descriptor
         node_desc = (hfs_btree_node *) node;
-
         num_rec = tsk_getu16(fs->endian, node_desc->num_rec);
 
         if (tsk_verbose)
@@ -1010,20 +1013,21 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         }
 
 
+        /* With an index node, find the record with the largest key that is smaller
+         * to or equal to cnid */
         if (node_desc->kind == HFS_BTREE_INDEX_NODE) {
             uint32_t next_node = 0;
             int rec;
 
-            /* find largest key smaller than or equal to cnid */
             for (rec = 0; rec < num_rec; rec++) {
                 int cmp;
                 size_t rec_off;
                 hfs_ext_key *key;
 
-                // get the record offset in the node (the end of the node has record offsets)
+                // get the record offset in the node 
                 rec_off =
-                    tsk_getu32(fs->endian,
-                    &node[nodesize - (rec + 1) * 4]);
+                    tsk_getu16(fs->endian,
+                    &node[nodesize - (rec + 1) * 2]);
                 if (rec_off > nodesize) {
                     tsk_errno = TSK_ERR_FS_GENFS;
                     snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -1033,6 +1037,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     return 1;
                 }
                 key = (hfs_ext_key *) & node[rec_off];
+                
                 cmp = hfs_ext_compare_keys(hfs, cnid, key);
 
                 if (tsk_verbose)
@@ -1045,8 +1050,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                         key->fork_type[0], tsk_getu32(fs->endian,
                             key->start_block), cmp);
 
-                /* find the largest key less than or equal to our key */
-                /* if all keys are larger than our key, select the leftmost key */
+                /* save the info from this record unless it is bigger than cnid */
                 if ((cmp <= 0) || (next_node == 0)) {
                     int keylen = tsk_getu16(fs->endian, key->key_len);
                     if (rec_off + keylen > nodesize) {
@@ -1062,24 +1066,27 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                         tsk_getu32(fs->endian, &node[rec_off + keylen]);
                 }
                 else {
+                    // we are bigger than cnid, so move on to the next node
                     break;
                 }
             }
 
-            // check if we found any relevant node
+            // check if we found a relevant node, if not stop.
             if (next_node == 0) {
-                tsk_errno = TSK_ERR_FS_GENFS;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                if (tsk_verbose)
+                 fprintf (stderr, 
                     "hfs_ext_find_extent_record_attr: did not find any keys for %d in index node %d",
                     cnid, cur_node);
-                free(node);
-                return 1;
+                is_done = 1;
+                break;
             }
             cur_node = next_node;
         }
 
+        /* with a leaf, we process until we are past cnid.  We move right too if we can */
         else if (node_desc->kind == HFS_BTREE_LEAF_NODE) {
             int rec;
+            
             for (rec = 0; rec < num_rec; rec++) {
                 size_t rec_off;
                 hfs_ext_key *key;
@@ -1091,8 +1098,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
 
                 // get the record offset in the node
                 rec_off =
-                    tsk_getu32(fs->endian,
-                    &node[nodesize - (rec + 1) * 4]);
+                    tsk_getu16(fs->endian,
+                    &node[nodesize - (rec + 1) * 2]);
                 if (rec_off > nodesize) {
                     tsk_errno = TSK_ERR_FS_GENFS;
                     snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -1116,10 +1123,13 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 rec_cnid = tsk_getu32(fs->endian, key->file_id);
 
                 // see if this record is for our file
-                if (rec_cnid < cnid)
+                if (rec_cnid < cnid) {
                     continue;
-                else if ((rec_cnid > cnid) || (key->fork_type[0] != 0))
+                }
+                else if ((rec_cnid > cnid) || (key->fork_type[0] != 0)) {
+                    is_done = 1;
                     break;
+                }
 
                 keylen = tsk_getu16(fs->endian, key->key_len);
                 if (rec_off + keylen > nodesize) {
@@ -1156,6 +1166,11 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     return 1;
                 }
             }
+            cur_node = tsk_getu32(fs->endian, node_desc->flink);
+            if (cur_node == 0) {
+                is_done = 1;
+                break;
+            }
         }
         else {
             tsk_errno = TSK_ERR_FS_GENFS;
@@ -1168,6 +1183,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         }
     }
     free(node);
+    return 0;
 }
 
 
@@ -1243,6 +1259,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
             "root node %" PRIu32 "; nodesize = %"
             PRIu16 "\n", cur_node, nodesize);
 
+    /* Recurse down to the needed leaf nodes and then go forward */
     is_done = 0;
     while (is_done == 0) {
         TSK_OFF_T cur_off;      /* start address of cur_node */
@@ -1250,8 +1267,8 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
         ssize_t cnt;
         hfs_btree_node *node_desc;
 
+        // read the current node
         cur_off = cur_node * nodesize;
-
         cnt = tsk_fs_attr_read(hfs->catalog_attr, cur_off,
             node, nodesize, 0);
         if (cnt != nodesize) {
@@ -1266,8 +1283,8 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
             return 0;
         }
 
+        // process the header / descriptor
         node_desc = (hfs_btree_node *) node;
-
         num_rec = tsk_getu16(fs->endian, node_desc->num_rec);
 
         if (tsk_verbose)
@@ -1284,11 +1301,12 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
             return 0;
         }
 
+        /* With an index node, find the record with the largest key that is smaller
+         * to or equal to cnid */
         if (node_desc->kind == HFS_BTREE_INDEX_NODE) {
             uint32_t next_node = 0;
             int rec;
 
-            /* find largest key smaller than or equal to cnid */
             for (rec = 0; rec < num_rec; rec++) {
                 size_t rec_off;
                 hfs_cat_key *key;
@@ -1314,8 +1332,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
                         tsk_getu16(fs->endian, key->key_len),
                         tsk_getu32(fs->endian, key->parent_cnid));
 
-                /* find the largest key less than or equal to our key */
-                /* if all keys are larger than our key, select the leftmost key */
+               /* save the info from this record unless it is bigger than cnid */
                 if ((hfs_cat_compare_keys(hfs, key, needle) <= 0)
                     || (next_node == 0)) {
                     int keylen = tsk_getu16(fs->endian, key->key_len) + 2;
@@ -1332,10 +1349,11 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
                         tsk_getu32(fs->endian, &node[rec_off + keylen]);
                 }
                 else {
+                     // we are bigger than cnid, so move down to the next node
                     break;
                 }
             }
-            // check if we found any relevant node
+            // check if we found a relevant node
             if (next_node == 0) {
                 tsk_errno = TSK_ERR_FS_GENFS;
                 snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -1347,6 +1365,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
             cur_node = next_node;
         }
 
+        /* With a leaf, we look for the specific record. */
         else if (node_desc->kind == HFS_BTREE_LEAF_NODE) {
             int rec;
 
@@ -1400,7 +1419,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
                     free(node);
                     return 0;
                 }
-
+                free(node);
                 return cur_off + rec_off2;
             }
         }
@@ -1679,7 +1698,7 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
 static TSK_INUM_T
 hfs_find_highest_inum(HFS_INFO * hfs)
 {
-    // @@@ get actual number from Catalog file
+    // @@@ get actual number from Catalog file (go to far right)
     /* I haven't gotten looking at the end of the Catalog B-Tree to work
        properly. A fast method: if HFS_BIT_VOLUME_CNIDS_REUSED is set, then
        the maximum CNID is 2^32-1; if it's not set, then nextCatalogId is

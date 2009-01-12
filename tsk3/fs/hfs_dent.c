@@ -645,6 +645,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                     "root node %" PRIu32 "; nodesize = %"
                     PRIu16 "\n", cur_node, nodesize);
     
+    /* Recurse down to the needed leaf nodes and then go forward */
     is_done = 0;
     while (is_done == 0) {
         TSK_OFF_T cur_off;      /* start address of cur_node */
@@ -652,8 +653,8 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         ssize_t cnt;
         hfs_btree_node *node_desc;
         
+        // read the current node
         cur_off = cur_node * nodesize;
-        
         cnt = tsk_fs_attr_read(hfs->catalog_attr, cur_off,
                                node, nodesize, 0);
         if (cnt != nodesize) {
@@ -668,8 +669,8 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
             return TSK_ERR;
         }
         
+        // process the header / descriptor
         node_desc = (hfs_btree_node *) node;
-        
         num_rec = tsk_getu16(fs->endian, node_desc->num_rec);
         
         if (tsk_verbose)
@@ -687,12 +688,12 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
             return TSK_COR;
         }
         
-        
+        /* With an index node, find the record with the largest key that is smaller
+         * to or equal to cnid */
         if (node_desc->kind == HFS_BTREE_INDEX_NODE) {
             uint32_t next_node = 0;
             int rec;
             
-            /* find largest key smaller than or equal to cnid */
             for (rec = 0; rec < num_rec; rec++) {
                 size_t rec_off;
                 hfs_cat_key *key;
@@ -719,8 +720,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                                 tsk_getu16(fs->endian, key->key_len),
                                 tsk_getu32(fs->endian, key->parent_cnid));
                 
-                /* find the largest key less than or equal to our key */
-                /* if all keys are larger than our key, select the leftmost key */
+                /* save the info from this record unless it is bigger than cnid */
                 if ((tsk_getu32(fs->endian, key->parent_cnid) <= cnid) || (next_node == 0)) {
                     int keylen = tsk_getu16(fs->endian, key->key_len) + 2;
                     if (rec_off + keylen > nodesize) {
@@ -736,20 +736,25 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                         tsk_getu32(fs->endian, &node[rec_off + keylen]);
                 }
                 else {
+                    // we are bigger than cnid, so move down to the next node
                     break;
                 }
             }
+            
+            // check if we found a relevant node
             if (next_node == 0) {
                 tsk_errno = TSK_ERR_FS_GENFS;
                 snprintf(tsk_errstr, TSK_ERRSTR_L,
                          "hfs_dir_open_meta: did not find any keys for %d in index node %d",
                          cnid, cur_node);
+                // @@@ is this an error?  It is probably just an empty directory, so the error msg does not ned to be set..
                 is_done = 1;
                 break;
             }
             cur_node = next_node;
         }
         
+        /* with a leaf, we process until we are past cnid.  We move right too if we can */
         else if (node_desc->kind == HFS_BTREE_LEAF_NODE) {
             int rec;
             
@@ -869,7 +874,13 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                     return TSK_ERR;
                 }                
             }
+            
+            // move right to the next node if we got this far
             cur_node = tsk_getu32(fs->endian, node_desc->flink);
+            if (cur_node == 0) {
+                is_done = 1;
+                break;
+            }
         }
         else {
             tsk_errno = TSK_ERR_FS_GENFS;
