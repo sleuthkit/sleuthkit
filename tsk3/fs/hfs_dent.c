@@ -869,6 +869,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                     return TSK_ERR;
                 }                
             }
+            cur_node = tsk_getu32(fs->endian, node_desc->flink);
         }
         else {
             tsk_errno = TSK_ERR_FS_GENFS;

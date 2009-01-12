@@ -848,7 +848,7 @@ hfs_ext_find_extent_record(HFS_INFO * hfs, uint32_t cnid,
  *
  * @param a_fs File system to analyze
  * @param a_extents Raw extents to process (in an array of 8)
- * @param a_start_off Starting byte offset of these runs
+ * @param a_start_off Starting block offset of these runs
  * @returns NULL on error
  */
 static TSK_FS_ATTR_RUN *
@@ -881,7 +881,7 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
             head_run = cur_run;
         if (prev_run != NULL)
             prev_run->next = cur_run;
-        cur_off += (cur_run->len * a_fs->block_size);
+        cur_off += cur_run->len;
         prev_run = cur_run;
     }
 
@@ -1119,9 +1119,6 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 else if ((rec_cnid > cnid) || (key->fork_type[0] != 0))
                     break;
 
-                // get the starting offset of this extent
-                ext_off = tsk_getu32(fs->endian, key->start_block);
-
                 keylen = tsk_getu16(fs->endian, key->key_len);
                 if (rec_off+keylen > nodesize) {
                     tsk_errno = TSK_ERR_FS_GENFS;
@@ -1132,8 +1129,12 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     return 1;
                 }
 
+                // get the starting offset of this extent
+                ext_off = tsk_getu32(fs->endian, key->start_block);
+                
                 // convert the extents to the TSK format
                 extents = (hfs_extents *) & node[rec_off + keylen];
+                
                 attr_run =
                     hfs_extents_to_attr(fs, extents->extents, ext_off);
                 if (attr_run == NULL) {
