@@ -222,7 +222,7 @@ typedef struct {
 } hfs_fork;
 
 /*
-** Super Block
+** HFS+/HFSX Super Block
 */
 typedef struct {
     uint8_t signature[2];       /* "H+" for HFS+, "HX" for HFSX */
@@ -252,6 +252,42 @@ typedef struct {
     hfs_fork attr_file;         /* location and size of attributes file */
     hfs_fork start_file;        /* location and size of startup file */
 } hfs_sb;
+
+/*
+** HFS Super Block for wrapped HFS+/HFSX file systems
+*/
+typedef struct {
+    uint8_t drSigWord[2];       /* "BD" for HFS (same location as hfs_sb.signature) */
+    uint8_t drCrDate[4];        /* volume creation date */
+    uint8_t drLsMod[4];         /* volume last modified date */
+    uint8_t drAtrb[2];          /* volume attributes */
+    uint8_t drNmFls[2];         /* number of files on volume */
+    uint8_t drVBMSt[2];         /* starting block for volume bitmap */
+    uint8_t drAllocPtr[2];      /* start of next allocation search */
+    uint8_t drNmAlBlks[2];      /* number of blocks on disk */
+    uint8_t drAlBlkSiz[4];      /* size in bytes of each allocation block */
+    uint8_t drClpSiz[4];        /* default clump size for volume */
+    uint8_t drAlBlSt[2];        /* first allocation block, in 512-byte sectors */
+    uint8_t drNxtCNID[4];       /* next unused catalog node ID */
+    uint8_t drFreeBlks[2];      /* number of unused allocation blocks */
+    uint8_t drVN[28];           /* volume name, where first byte is length */
+    uint8_t drVolBkUp[4];       /* volume last backup date */
+    uint8_t drVSeqNum[2];       /* volume sequence number */
+    uint8_t drWrCnt[4];         /* write count */
+    uint8_t drXTClpSiz[4];      /* clump size for extents overflow file */
+    uint8_t drCTClpSiz[4];      /* clump size for catalog file */
+    uint8_t drNmRtDirs[2];      /* number of folders in root directory */
+    uint8_t drFilCnt[4];        /* number of files on volume */
+    uint8_t drDirCnt[4];        /* number of directories on volume */
+    uint8_t drFndrInfo[32];     /* Finder info */
+    uint8_t drEmbedSigWord[2];  /* signature of the embedded HFS+ volume (eg, "H+") */
+    uint8_t drEmbedExtent_startBlock[2];        /* extent descriptor for start of embedded volume */
+    uint8_t drEmbedExtent_blockCount[2];        /* extent descriptor for start of embedded volume */
+    uint8_t drXTFlSize[4];      /* size of the extents overflow file */
+    uint8_t drXTExtRec[12];     /* extent record with size and location of extents overflow file */
+    uint8_t drCTFlSize[4];      /* size of the catalog file */
+    uint8_t drCTExtRec[12];     /* extent record with size and location of catalog file */
+} hfs_wrapper_sb;
 
 typedef struct {
     uint8_t key_len[2];
@@ -398,6 +434,7 @@ typedef struct {
     const TSK_FS_ATTR *extents_attr;
     hfs_btree_header_record extents_header;
 
+    TSK_OFF_T hfs_wrapper_offset;       /* byte offset of this FS within an HFS wrapper */
 } HFS_INFO;
 
 typedef struct {

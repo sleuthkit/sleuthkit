@@ -698,11 +698,11 @@ extern "C" {
         TSK_FS_TYPE_SWAP = 0x00000200,  ///< SWAP file system
         TSK_FS_TYPE_SWAP_DETECT = 0x00000200,   ///< SWAP auto detection
         TSK_FS_TYPE_RAW = 0x00000400,   ///< RAW file system
-        TSK_FS_TYPE_RAW_DETECT = 0x00000400,    ///< Raw auto detection
+        TSK_FS_TYPE_RAW_DETECT = 0x00000400,    ///< RAW auto detection
         TSK_FS_TYPE_ISO9660 = 0x00000800,       ///< ISO9660 file system
         TSK_FS_TYPE_ISO9660_DETECT = 0x00000800,        ///< ISO9660 auto detection
         TSK_FS_TYPE_HFS = 0x00001000,   ///< HFS file system
-        TSK_FS_TYPE_HFS_DETECT = 0x00001000,    ///< FAT auto detection
+        TSK_FS_TYPE_HFS_DETECT = 0x00001000,    ///< HFS auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     typedef enum TSK_FS_TYPE_ENUM TSK_FS_TYPE_ENUM;

@@ -22,6 +22,8 @@ Rob Joyce and Judson Powers.
 directory have an unknown file name type (instead of being equal
 to meta type).  (Bug: 2389901). Reported by Barry Grundy.
 
+1/11/09: Update: Support for HFS Wrappers was added.  Patch by Rob Joyce.
+
 
 ---------------- VERSION 3.0.0 -------------- 
 0/00/00: Update: Many, many, many API changes.
