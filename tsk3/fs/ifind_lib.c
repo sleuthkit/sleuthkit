@@ -26,6 +26,7 @@
  */
 
 #include "tsk_fs_i.h"
+#include "tsk_hfs.h"
 
 
 /*******************************************************************************
@@ -240,6 +241,8 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                 return -1;
             }
 
+            // @@@ It seems that we could abstract this and have a name comparison
+            // function for each file system that hides the case sensitive details...
             /* 
              * Check if this is the name that we are currently looking for,
              * as identified in 'cur_dir'
@@ -302,6 +305,29 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                 }
             }
 
+            /* HFS+ can be case-sensitive or case-insensitive */
+            else if (TSK_FS_TYPE_ISHFS(a_fs->ftype)) {
+                HFS_INFO *hfs = (HFS_INFO *)a_fs;
+                if ( hfs->is_case_sensitive ) {
+                    if (strcmp(fs_file->name->name, cur_dir) == 0) {
+                        found_name = 1;
+                    }
+                } else {
+                    if (strcasecmp(fs_file->name->name, cur_dir) == 0) {
+                        found_name = 1;
+                    }
+                }
+            }
+
+            /* Unknown how to compare names in this filesystem */
+            else {
+                tsk_errno = TSK_ERR_FS_GENFS;
+                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                         "tsk_fs_path2inum: File System type not supported for file name comparison (%X)",
+                         a_fs->ftype);
+                return TSK_WALK_ERROR;
+            }
+			
             /* if found_name is 1, this entry was our target.  Update
              * data and move on to the next step, if needed. */
             if (found_name) {

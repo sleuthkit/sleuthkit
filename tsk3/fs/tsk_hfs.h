@@ -80,16 +80,18 @@
  * Constants
  */
 
-#define HFS_MAGIC	0x4244  /* BD in big endian */
+#define HFS_MAGIC	    0x4244      /* BD in big endian */
 #define HFSPLUS_MAGIC	0x482b  /* H+ in big endian */
 #define HFSX_MAGIC      0x4858  /* HX in big endian */
 
 #define HFSPLUS_VERSION 0x0004  /* all HFS+ volumes are version 4 */
 #define HFSX_VERSION    0x0005  /* HFSX volumes start with version 5 */
 
-#define HFSPLUS_MOUNT_VERSION 0x31302e30        /* '10.0 for Mac OS X */
-#define HFSJ_MOUNT_VERSION    0x4846534a        /* 'HFSJ' for jounraled HFS+ on Mac OS X */
+#define HFSPLUS_MOUNT_VERSION 0x31302e30        /* '10.0' for Mac OS X */
+#define HFSJ_MOUNT_VERSION    0x4846534a        /* 'HFSJ' for journaled HFS+ on Mac OS X */
 #define FSK_MOUNT_VERSION     0x46534b21        /* 'FSK!' for failed journal replay */
+#define FSCK_MOUNT_VERSION    0x6673636b        /* 'fsck' for fsck_hfs */
+#define OS89_MOUNT_VERSION    0x382e3130        /* '8.10' for Mac OS 8.1-9.2.2 */
 
 #define HFS_SBOFF	1024
 #define HFS_FILE_CONTENT_LEN 160        // size of two hfs_fork data structures
@@ -116,11 +118,12 @@
  */
 #define NSEC_BTWN_1904_1970	(uint32_t) 2082844800U
 
-#define HFS_BIT_VOLUME_UNMOUNTED	(uint32_t)(1 << 8)      /* set if the volume was unmounted properly; as per TN 1150, modern Macintosh OSes always leave this bit set */
+#define HFS_BIT_VOLUME_UNMOUNTED	(uint32_t)(1 << 8)      /* set if the volume was unmounted properly; as per TN 1150, modern Macintosh OSes always leave this bit set for the boot volume */
 #define HFS_BIT_VOLUME_BADBLOCKS        (uint32_t)(1 << 9)      /* set if there are any bad blocks for this volume (in the Extents B-tree) */
 #define HFS_BIT_VOLUME_INCONSISTENT	(uint32_t)(1 << 11)     /* cleared if the volume was unmounted properly */
-#define HFS_BIT_VOLUME_JOURNALED	(uint32_t)(1 << 13)
 #define HFS_BIT_VOLUME_CNIDS_REUSED     (uint32_t)(1 << 12)     /* set if CNIDs have wrapped around past the maximum value and are being reused; in this case, there are CNIDs on the disk larger than the nextCatalogId field */
+#define HFS_BIT_VOLUME_JOURNALED	(uint32_t)(1 << 13)
+#define HFS_BIT_VOLUME_SOFTWARE_LOCK	(uint32_t)(1 << 14)     /* set if volume should be write-protected in software */
 
 /* constants for BTree header record attributes */
 #define HFS_BT_BIGKEYS 0x00000002       /* kBTBigKeysMask : key length field is 16 bits */

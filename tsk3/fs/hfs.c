@@ -2750,8 +2750,10 @@ print_inode_file(FILE * hFile, TSK_FS_INFO * fs, TSK_INUM_T inum)
     if (inum == HFS_ROOT_INUM)
         tsk_fprintf(hFile, "/");
     else {
-        if (print_parent_path(hFile, fs, inum))
+        if (print_parent_path(hFile, fs, inum)) {
+            tsk_fprintf(hFile, "unknown]");
             return 1;
+        }
     }
     tsk_fprintf(hFile, "]");
     return 0;
@@ -2819,6 +2821,12 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         tsk_fprintf(hFile, " (Mac OS X, Journaled)\n");
     else if (tsk_getu32(fs->endian, sb->last_mnt_ver) == FSK_MOUNT_VERSION)
         tsk_fprintf(hFile, " (failed journal replay)\n");
+    else if (tsk_getu32(fs->endian,
+            sb->last_mnt_ver) == FSCK_MOUNT_VERSION)
+        tsk_fprintf(hFile, " (fsck_hfs)\n");
+    else if (tsk_getu32(fs->endian,
+            sb->last_mnt_ver) == OS89_MOUNT_VERSION)
+        tsk_fprintf(hFile, " (Mac OS 8.1 - 9.2.2)\n");
     else
         tsk_fprintf(hFile, "\n");
 
@@ -2847,14 +2855,18 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
     /* State of the file system */
     if ((tsk_getu32(fs->endian, hfs->fs->attr) & HFS_BIT_VOLUME_UNMOUNTED)
-        || ((tsk_getu32(fs->endian,
-                    hfs->fs->attr) & HFS_BIT_VOLUME_INCONSISTENT) == 0))
+        && (!(tsk_getu32(fs->endian,
+                    hfs->fs->attr) & HFS_BIT_VOLUME_INCONSISTENT)))
         tsk_fprintf(hFile, "Volume Unmounted Properly\n");
     else
         tsk_fprintf(hFile, "Volume Unmounted Improperly\n");
 
     if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_BIT_VOLUME_BADBLOCKS)
         tsk_fprintf(hFile, "Volume has bad blocks\n");
+
+    if (tsk_getu32(fs->endian,
+            hfs->fs->attr) & HFS_BIT_VOLUME_SOFTWARE_LOCK)
+        tsk_fprintf(hFile, "Software write protect enabled\n");
 
     tsk_fprintf(hFile, "Write count: %" PRIu32 "\n",
         tsk_getu32(fs->endian, sb->write_cnt));
@@ -2876,39 +2888,34 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
     inode = tsk_getu32(fs->endian, &(sb->finder_info[0]));
     tsk_fprintf(hFile, "Bootable Folder ID: %" PRIuINUM, inode);
-    if (inode > HFS_ROOT_INUM)
-        if (print_inode_file(hFile, fs, inode))
-            return 1;
+    if (inode > 0)
+        print_inode_file(hFile, fs, inode);
     tsk_fprintf(hFile, "\n");
 
     inode = tsk_getu32(fs->endian, &(sb->finder_info[4]));
     tsk_fprintf(hFile, "Startup App ID: %" PRIuINUM, inode);
-    if (inode > HFS_ROOT_INUM)
-        if (print_inode_file(hFile, fs, inode))
-            return 1;
+    if (inode > 0)
+        print_inode_file(hFile, fs, inode);
     tsk_fprintf(hFile, "\n");
 
     inode = tsk_getu32(fs->endian, &(sb->finder_info[8]));
     tsk_fprintf(hFile, "Startup Open Folder ID: %" PRIuINUM, inode);
-    if (inode > HFS_ROOT_INUM)
-        if (print_inode_file(hFile, fs, inode))
-            return 1;
+    if (inode > 0)
+        print_inode_file(hFile, fs, inode);
     tsk_fprintf(hFile, "\n");
 
     inode = tsk_getu32(fs->endian, &(sb->finder_info[12]));
     tsk_fprintf(hFile, "Mac OS 8/9 Blessed System Folder ID: %" PRIuINUM,
         inode);
-    if (inode > HFS_ROOT_INUM)
-        if (print_inode_file(hFile, fs, inode))
-            return 1;
+    if (inode > 0)
+        print_inode_file(hFile, fs, inode);
     tsk_fprintf(hFile, "\n");
 
     inode = tsk_getu32(fs->endian, &(sb->finder_info[20]));
     tsk_fprintf(hFile, "Mac OS X Blessed System Folder ID: %" PRIuINUM,
         inode);
-    if (inode > HFS_ROOT_INUM)
-        if (print_inode_file(hFile, fs, inode))
-            return 1;
+    if (inode > 0)
+        print_inode_file(hFile, fs, inode);
     tsk_fprintf(hFile, "\n");
 
     tsk_fprintf(hFile, "Volume Identifier: %08" PRIx32 "%08" PRIx32 "\n",
@@ -2958,7 +2965,18 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     return TSK_WALK_CONT;
 }
 
-uint8_t
+/**
+ * Print details on a specific file to a file handle. 
+ *
+ * @param fs File system file is located in
+ * @param hFile File name to print text to
+ * @param inum Address of file in file system
+ * @param numblock The number of blocks in file to force print (can go beyond file size)
+ * @param sec_skew Clock skew in seconds to also print times in
+ * 
+ * @returns 1 on error and 0 on success
+ */
+static uint8_t
 hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
@@ -2973,11 +2991,11 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             "hfs_istat: inum: %" PRIuINUM " numblock: %" PRIu32 "\n",
             inum, numblock);
 
-
-
-
-    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, inum)) == NULL)
+    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, inum)) == NULL) {
+        strncat(tsk_errstr2, " - istat",
+            TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
+    }
 
     tsk_fprintf(hFile, "\nINODE INFORMATION\n");
     tsk_fprintf(hFile, "Entry:\t%" PRIuINUM "\n", inum);
@@ -2992,6 +3010,29 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     tsk_fs_make_ls(fs_file->meta, hfs_mode);
     tsk_fprintf(hFile, "Mode:\t%s\n", hfs_mode);
+
+    if (sec_skew != 0) {
+        tsk_fprintf(hFile, "\nAdjusted times:\n");
+        fs_file->meta->mtime -= sec_skew;
+        fs_file->meta->atime -= sec_skew;
+        fs_file->meta->ctime -= sec_skew;
+        fs_file->meta->crtime -= sec_skew;
+        fs_file->meta->time2.hfs.bkup_time -= sec_skew;
+        tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_file->meta->crtime));
+        tsk_fprintf(hFile, "Content Modified:\t%s",
+            ctime(&fs_file->meta->mtime));
+        tsk_fprintf(hFile, "Attributes Modified:\t%s",
+            ctime(&fs_file->meta->ctime));
+        tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_file->meta->atime));
+        tsk_fprintf(hFile, "Backed Up:\t%s",
+            ctime(&fs_file->meta->time2.hfs.bkup_time));
+        fs_file->meta->mtime += sec_skew;
+        fs_file->meta->atime += sec_skew;
+        fs_file->meta->ctime += sec_skew;
+        fs_file->meta->crtime += sec_skew;
+        fs_file->meta->time2.hfs.bkup_time += sec_skew;
+        tsk_fprintf(hFile, "\nOriginal times:\n");
+    }
 
     tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_file->meta->crtime));
     tsk_fprintf(hFile, "Content Modified:\t%s",
@@ -3195,8 +3236,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 tsk_getu16(fs->endian, wrapper_sb->drAlBlSt);
             uint32_t drAlBlkSiz =
                 tsk_getu32(fs->endian, wrapper_sb->drAlBlkSiz);
-            uint16_t startBlock =
-                tsk_getu16(fs->endian,
+            uint16_t startBlock = tsk_getu16(fs->endian,
                 wrapper_sb->drEmbedExtent_startBlock);
             TSK_OFF_T hfsplus_offset =
                 (drAlBlSt * (TSK_OFF_T) 512) +
