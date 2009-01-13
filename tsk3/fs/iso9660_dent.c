@@ -76,10 +76,11 @@
 
 uint8_t
 iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
-    size_t length, TSK_INUM_T a_addr)
+    size_t a_length, TSK_INUM_T a_addr)
 {
     ISO_INFO *iso = (ISO_INFO *) a_fs;
     TSK_FS_NAME *fs_name;
+    size_t buf_idx;
 
     iso9660_dentry *dd;         /* directory descriptor */
     iso9660_inode_node *in;
@@ -87,7 +88,8 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
     if ((fs_name = tsk_fs_name_alloc(ISO9660_MAXNAMLEN + 1, 0)) == NULL)
         return TSK_ERR;
 
-    dd = (iso9660_dentry *) buf;
+    buf_idx = 0;
+    dd = (iso9660_dentry *) & buf[buf_idx];
 
     /* handle "." entry */
     fs_name->meta_addr = a_addr;
@@ -97,8 +99,13 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
 
     tsk_fs_dir_add(a_fs_dir, fs_name);
 
-    length -= dd->entry_len;
-    dd = (iso9660_dentry *) ((char *) dd + dd->entry_len);
+    buf_idx += dd->entry_len;
+    if (buf_idx > a_length - sizeof(iso9660_dentry)) {
+        free(buf);
+        tsk_fs_name_free(fs_name);
+        return TSK_OK;
+    }
+    dd = (iso9660_dentry *) & buf[buf_idx];
 
     /* handle ".." entry */
     in = iso->in_list;
@@ -115,15 +122,17 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
 
         tsk_fs_dir_add(a_fs_dir, fs_name);
     }
-    length -= dd->entry_len;
-    dd = (iso9660_dentry *) ((char *) dd + dd->entry_len);
+    buf_idx += dd->entry_len;
 
     // process the rest of the entries in the directory
-    while (length > sizeof(iso9660_dentry)) {
-        if (dd->entry_len) {
+    while (buf_idx < a_length - sizeof(iso9660_dentry)) {
+        dd = (iso9660_dentry *) & buf[buf_idx];
+
+        // process the entry (if it has a defined and valid length)
+        if ((dd->entry_len) && (buf_idx + dd->entry_len < a_length)) {
             int i;
 
-            // find the entry in our list of files
+            // find the corresponding entry in the inode/file list
             in = iso->in_list;
             while ((in)
                 && (tsk_getu32(a_fs->endian,
@@ -132,14 +141,14 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
                 in = in->next;
             }
 
+            // we may have not found it because we are reading corrupt data...
             if ((!in)
                 || (tsk_getu32(a_fs->endian,
                         in->inode.dr.ext_loc_m) != tsk_getu32(a_fs->endian,
                         dd->ext_loc_m))) {
-                // @@@ 
-                return TSK_COR;
+                buf_idx++;
+                continue;
             }
-
 
             fs_name->meta_addr = in->inum;
             strncpy(fs_name->name, in->inode.fn, ISO9660_MAXNAMLEN);
@@ -160,27 +169,24 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
 
             tsk_fs_dir_add(a_fs_dir, fs_name);
 
-            length -= dd->entry_len;
-
-            dd = (iso9660_dentry *) ((char *) dd + dd->entry_len);
-            /* we need to look for files past the next NULL we discover, in case
-             * directory has a hole in it (this is common) */
+            buf_idx += dd->entry_len;
         }
+        /* If the length was not defined, we are probably in a hole in the
+         * directory.  The contents are  block aligned. So, we 
+         * scan ahead until we get either a non-zero entry or the block boundary */
         else {
-            char *a, *b;
-            length -= sizeof(iso9660_dentry);
 
-            /* find next non-zero byte and we'll start over there */
-            a = (char *) dd;
-            b = a + sizeof(iso9660_dentry);
+            while (buf_idx < a_length - sizeof(iso9660_dentry)) {
+                if (buf[buf_idx] != 0) {
+                    dd = (iso9660_dentry *) & buf[buf_idx];
+                    if ((dd->entry_len)
+                        && (buf_idx + dd->entry_len < a_length))
+                        break;
+                }
+                if (buf_idx % a_fs->block_size == 0)
+                    break;
 
-            while ((*a == 0) && (a != b))
-                a++;
-
-            if (a != b) {
-                length += (int) (b - a);
-                dd = (iso9660_dentry *) ((char *) dd +
-                    (sizeof(iso9660_dentry) - (int) (b - a)));
+                buf_idx++;
             }
         }
     }
@@ -211,11 +217,9 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 {
     TSK_RETVAL_ENUM retval;
     TSK_FS_DIR *fs_dir;
-    TSK_OFF_T offs;             /* where we are reading in the file */
     ssize_t cnt;
     char *buf;
     size_t length;
-    ISO_INFO *iso = (ISO_INFO *) a_fs;
 
     if (a_addr < a_fs->first_inum || a_addr > a_fs->last_inum) {
         tsk_error_reset();
@@ -258,12 +262,6 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             a_addr);
         return TSK_COR;
     }
-
-
-    /* calculate directory extent location */
-    offs =
-        (TSK_OFF_T) (a_fs->block_size *
-        tsk_getu32(a_fs->endian, iso->dinode->dr.ext_loc_m));
 
     /* read directory extent into memory */
     length = (size_t) fs_dir->fs_file->meta->size;
