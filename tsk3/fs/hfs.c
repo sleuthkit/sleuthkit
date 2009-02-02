@@ -2242,7 +2242,8 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file * a_entry,
     a_fs_meta->gid = tsk_getu32(fs->endian, a_entry->perm.group);
     // this field is set only for "indirect" entries
     if (tsk_getu32(fs->endian, a_entry->perm.special.nlink))
-        a_fs_meta->nlink = tsk_getu32(fs->endian, a_entry->perm.special.nlink);
+        a_fs_meta->nlink =
+            tsk_getu32(fs->endian, a_entry->perm.special.nlink);
     else
         a_fs_meta->nlink = 1;
 
@@ -2840,8 +2841,7 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     tsk_fprintf(hFile, "FILE SYSTEM INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
 
-    tsk_fprintf(hFile, "File System Type: ");
-
+    tsk_fprintf(hFile, "File System Signature: ");
     if (tsk_getu16(fs->endian, hfs->fs->signature) == HFSPLUS_MAGIC)
         tsk_fprintf(hFile, "HFS+\n");
     else if (tsk_getu16(fs->endian, hfs->fs->signature) == HFSX_MAGIC)
@@ -2849,67 +2849,56 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     else
         tsk_fprintf(hFile, "Unknown\n");
 
-    tsk_fprintf(hFile, "File System Version: %" PRIu16,
-        tsk_getu16(fs->endian, hfs->fs->version));
-
+    // print name and number of version
+    tsk_fprintf(hFile, "File System Version: ");
     switch (tsk_getu16(fs->endian, hfs->fs->version)) {
     case 4:
-        tsk_fprintf(hFile, " (HFS+)\n");
+        tsk_fprintf(hFile, " HFS+\n");
         break;
     case 5:
-        tsk_fprintf(hFile, " (HFSX)\n");
+        tsk_fprintf(hFile, " HFSX\n");
         break;
     default:
-        tsk_fprintf(hFile, " (unknown)\n");
+        tsk_fprintf(hFile, " Unknown (%" PRIu16 ")\n",
+            tsk_getu16(fs->endian, hfs->fs->version));
         break;
     }
+
+
     if (hfs->hfs_wrapper_offset > 0) {
         tsk_fprintf(hFile,
             "File system is embedded in an HFS wrapper at offset %" PRIuOFF
             "\n", hfs->hfs_wrapper_offset);
     }
 
-    tsk_fprintf(hFile, "Last mounted version: %" PRIx32,
-        tsk_getu32(fs->endian, sb->last_mnt_ver));
-
-    if (tsk_getu32(fs->endian, sb->last_mnt_ver) == HFSPLUS_MOUNT_VERSION)
-        tsk_fprintf(hFile, " (Mac OS X)\n");
-    else if (tsk_getu32(fs->endian,
-            sb->last_mnt_ver) == HFSJ_MOUNT_VERSION)
-        tsk_fprintf(hFile, " (Mac OS X, Journaled)\n");
-    else if (tsk_getu32(fs->endian, sb->last_mnt_ver) == FSK_MOUNT_VERSION)
-        tsk_fprintf(hFile, " (failed journal replay)\n");
-    else if (tsk_getu32(fs->endian,
-            sb->last_mnt_ver) == FSCK_MOUNT_VERSION)
-        tsk_fprintf(hFile, " (fsck_hfs)\n");
-    else if (tsk_getu32(fs->endian,
-            sb->last_mnt_ver) == OS89_MOUNT_VERSION)
-        tsk_fprintf(hFile, " (Mac OS 8.1 - 9.2.2)\n");
-    else
-        tsk_fprintf(hFile, "\n");
-
-    tsk_fprintf(hFile, "Volume Name: ");
+    tsk_fprintf(hFile, "\nVolume Name: ");
     if (print_inode_name(hFile, fs, HFS_ROOT_INUM))
         return 1;
     tsk_fprintf(hFile, "\n");
 
-    tsk_fprintf(hFile, "Number of files: %" PRIu32 "\n",
-        tsk_getu32(fs->endian, sb->file_cnt));
+    tsk_fprintf(hFile, "Volume Identifier: %08" PRIx32 "%08" PRIx32 "\n",
+        tsk_getu32(fs->endian, &(sb->finder_info[24])),
+        tsk_getu32(fs->endian, &(sb->finder_info[28])));
 
-    tsk_fprintf(hFile, "Number of folders: %" PRIu32 "\n",
-        tsk_getu32(fs->endian, sb->fldr_cnt));
 
-    mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->c_date));
-    tsk_fprintf(hFile, "Created: %s", ctime(&mac_time));
-
-    mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->m_date));
-    tsk_fprintf(hFile, "Last Written at: %s", ctime(&mac_time));
-
-    mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->bkup_date));
-    tsk_fprintf(hFile, "Last Backed Up at: %s", ctime(&mac_time));
-
-    mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->chk_date));
-    tsk_fprintf(hFile, "Last Checked at: %s", ctime(&mac_time));
+    // print last mounted info
+    tsk_fprintf(hFile, "\nLast Mounted By: ");
+    if (tsk_getu32(fs->endian, sb->last_mnt_ver) == HFSPLUS_MOUNT_VERSION)
+        tsk_fprintf(hFile, "Mac OS X\n");
+    else if (tsk_getu32(fs->endian,
+            sb->last_mnt_ver) == HFSJ_MOUNT_VERSION)
+        tsk_fprintf(hFile, "Mac OS X, Journaled\n");
+    else if (tsk_getu32(fs->endian, sb->last_mnt_ver) == FSK_MOUNT_VERSION)
+        tsk_fprintf(hFile, "failed journal replay\n");
+    else if (tsk_getu32(fs->endian,
+            sb->last_mnt_ver) == FSCK_MOUNT_VERSION)
+        tsk_fprintf(hFile, "fsck_hfs\n");
+    else if (tsk_getu32(fs->endian,
+            sb->last_mnt_ver) == OS89_MOUNT_VERSION)
+        tsk_fprintf(hFile, "Mac OS 8.1 - 9.2.2\n");
+    else
+        tsk_fprintf(hFile, "Unknown (%" PRIx32 "\n",
+            tsk_getu32(fs->endian, sb->last_mnt_ver));
 
     /* State of the file system */
     if ((tsk_getu32(fs->endian, hfs->fs->attr) & HFS_BIT_VOLUME_UNMOUNTED)
@@ -2919,15 +2908,27 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     else
         tsk_fprintf(hFile, "Volume Unmounted Improperly\n");
 
-    if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_BIT_VOLUME_BADBLOCKS)
-        tsk_fprintf(hFile, "Volume has bad blocks\n");
+    tsk_fprintf(hFile, "Mount Count: %" PRIu32 "\n",
+        tsk_getu32(fs->endian, sb->write_cnt));
+
+
+    // Dates
+    mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->c_date));
+    tsk_fprintf(hFile, "\nCreation Date: \t%s", ctime(&mac_time));
+
+    mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->m_date));
+    tsk_fprintf(hFile, "Last Written Date: \t%s", ctime(&mac_time));
+
+    mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->bkup_date));
+    tsk_fprintf(hFile, "Last Backup Date: \t%s", ctime(&mac_time));
+
+    mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->chk_date));
+    tsk_fprintf(hFile, "Last Checked Date: \t%s", ctime(&mac_time));
+
 
     if (tsk_getu32(fs->endian,
             hfs->fs->attr) & HFS_BIT_VOLUME_SOFTWARE_LOCK)
         tsk_fprintf(hFile, "Software write protect enabled\n");
-
-    tsk_fprintf(hFile, "Write count: %" PRIu32 "\n",
-        tsk_getu32(fs->endian, sb->write_cnt));
 
     /* Print journal information */
     if (tsk_getu32(fs->endian, sb->attr) & HFS_BIT_VOLUME_JOURNALED) {
@@ -2937,9 +2938,6 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
     tsk_fprintf(hFile, "\nMETADATA INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
-
-    tsk_fprintf(hFile, "First Block of Catalog File: %" PRIu32 "\n",
-        tsk_getu32(fs->endian, hfs->fs->cat_file.extents[0].start_blk));
 
     tsk_fprintf(hFile, "Range: %" PRIuINUM " - %" PRIuINUM "\n",
         fs->first_inum, fs->last_inum);
@@ -2976,9 +2974,11 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         print_inode_file(hFile, fs, inode);
     tsk_fprintf(hFile, "\n");
 
-    tsk_fprintf(hFile, "Volume Identifier: %08" PRIx32 "%08" PRIx32 "\n",
-        tsk_getu32(fs->endian, &(sb->finder_info[24])),
-        tsk_getu32(fs->endian, &(sb->finder_info[28])));
+    tsk_fprintf(hFile, "Number of files: %" PRIu32 "\n",
+        tsk_getu32(fs->endian, sb->file_cnt));
+    tsk_fprintf(hFile, "Number of folders: %" PRIu32 "\n",
+        tsk_getu32(fs->endian, sb->fldr_cnt));
+
 
     tsk_fprintf(hFile, "\nCONTENT INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
@@ -2993,8 +2993,11 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
     tsk_fprintf(hFile, "Allocation Block Size: %u\n", fs->block_size);
 
-    tsk_fprintf(hFile, "Free Blocks: %" PRIu32 "\n",
+    tsk_fprintf(hFile, "Number of Free Blocks: %" PRIu32 "\n",
         tsk_getu32(fs->endian, sb->free_blks));
+
+    if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_BIT_VOLUME_BADBLOCKS)
+        tsk_fprintf(hFile, "Volume has bad blocks\n");
 
     return 0;
 }
@@ -3069,15 +3072,15 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fprintf(hFile, "Mode:\t%s\n", hfs_mode);
 
     tsk_fprintf(hFile, "uid / gid: %" PRIuUID " / %" PRIuGID "\n",
-                fs_file->meta->uid, fs_file->meta->gid);
-    
+        fs_file->meta->uid, fs_file->meta->gid);
+
     tsk_fprintf(hFile, "Link count:\t%d\n", fs_file->meta->nlink);
-    
+
     if (hfs_cat_file_lookup(hfs, inum, &entry) == 0) {
         tsk_fprintf(hFile, "\n");
-        
-        if ((fs_file->meta->type == TSK_FS_META_TYPE_CHR) || 
-            (fs_file->meta->type == TSK_FS_META_TYPE_BLK)) { 
+
+        if ((fs_file->meta->type == TSK_FS_META_TYPE_CHR) ||
+            (fs_file->meta->type == TSK_FS_META_TYPE_BLK)) {
             tsk_fprintf(hFile, "Device ID:\t%" PRIu32 "\n",
                 tsk_getu32(fs->endian, entry.cat.perm.special.raw));
         }
