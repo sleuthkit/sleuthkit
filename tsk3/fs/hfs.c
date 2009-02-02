@@ -860,11 +860,21 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
     int i;
     TSK_OFF_T cur_off = a_start_off;
 
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "hfs_extents_to_attr: Converting extents from offset %" PRIuOFF
+            " to runlist\n", a_start_off);
+
     for (i = 0; i < 8; i++) {
         TSK_FS_ATTR_RUN *cur_run;
 
         uint32_t addr = tsk_getu32(a_fs->endian, a_extents[i].start_blk);
         uint32_t len = tsk_getu32(a_fs->endian, a_extents[i].blk_cnt);
+
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "hfs_extents_to_attr: run %i at addr %" PRIu32
+                " with len %" PRIu32 "\n", i, addr, len);
 
         if ((addr == 0) && (len == 0))
             break;
@@ -908,6 +918,11 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
 
     tsk_error_reset();
 
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "hfs_ext_find_extent_record_attr: Looking for extents for file %"
+            PRIu32 "\n", cnid);
+
     // Load the extents attribute, if it has not been done so yet.
     if (hfs->extents_file == NULL) {
         ssize_t cnt;
@@ -922,7 +937,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         hfs->extents_attr =
             tsk_fs_attrlist_get(hfs->extents_file->meta->attr,
             TSK_FS_ATTR_TYPE_DEFAULT);
-        if (!hfs->catalog_attr) {
+        if (!hfs->extents_attr) {
             strncat(tsk_errstr2,
                 " - Default Attribute not found in Extents File",
                 TSK_ERRSTR_L - strlen(tsk_errstr2));
@@ -1037,7 +1052,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     return 1;
                 }
                 key = (hfs_ext_key *) & node[rec_off];
-                
+
                 cmp = hfs_ext_compare_keys(hfs, cnid, key);
 
                 if (tsk_verbose)
@@ -1053,17 +1068,18 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 /* save the info from this record unless it is bigger than cnid */
                 if ((cmp <= 0) || (next_node == 0)) {
                     int keylen = tsk_getu16(fs->endian, key->key_len);
-                    if (rec_off + keylen > nodesize) {
+                    if (rec_off + 2 + keylen > nodesize) {
                         tsk_errno = TSK_ERR_FS_GENFS;
                         snprintf(tsk_errstr, TSK_ERRSTR_L,
                             "hfs_ext_find_extent_record_attr: offset and keylenth of record %d in index node %d too large (%zu vs %"
-                            PRIu16 ")", rec, cur_node, rec_off + keylen,
-                            nodesize);
+                            PRIu16 ")", rec, cur_node,
+                            rec_off + 2 + keylen, nodesize);
                         free(node);
                         return 1;
                     }
                     next_node =
-                        tsk_getu32(fs->endian, &node[rec_off + keylen]);
+                        tsk_getu32(fs->endian,
+                        &node[rec_off + 2 + keylen]);
                 }
                 else {
                     // we are bigger than cnid, so move on to the next node
@@ -1074,9 +1090,9 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             // check if we found a relevant node, if not stop.
             if (next_node == 0) {
                 if (tsk_verbose)
-                 fprintf (stderr, 
-                    "hfs_ext_find_extent_record_attr: did not find any keys for %d in index node %d",
-                    cnid, cur_node);
+                    fprintf(stderr,
+                        "hfs_ext_find_extent_record_attr: did not find any keys for %d in index node %d",
+                        cnid, cur_node);
                 is_done = 1;
                 break;
             }
@@ -1086,7 +1102,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         /* with a leaf, we process until we are past cnid.  We move right too if we can */
         else if (node_desc->kind == HFS_BTREE_LEAF_NODE) {
             int rec;
-            
+
             for (rec = 0; rec < num_rec; rec++) {
                 size_t rec_off;
                 hfs_ext_key *key;
@@ -1132,11 +1148,11 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 }
 
                 keylen = tsk_getu16(fs->endian, key->key_len);
-                if (rec_off + keylen > nodesize) {
+                if (rec_off + 2 + keylen > nodesize) {
                     tsk_errno = TSK_ERR_FS_GENFS;
                     snprintf(tsk_errstr, TSK_ERRSTR_L,
                         "hfs_ext_find_extent_record_attr: offset and keylenth of record %d in leaf node %d too large (%zu vs %"
-                        PRIu16 ")", rec, cur_node, rec_off + keylen,
+                        PRIu16 ")", rec, cur_node, rec_off + 2 + keylen,
                         nodesize);
                     free(node);
                     return 1;
@@ -1146,7 +1162,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 ext_off = tsk_getu32(fs->endian, key->start_block);
 
                 // convert the extents to the TSK format
-                extents = (hfs_extents *) & node[rec_off + keylen];
+                extents = (hfs_extents *) & node[rec_off + 2 + keylen];
 
                 attr_run =
                     hfs_extents_to_attr(fs, extents->extents, ext_off);
@@ -1332,7 +1348,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
                         tsk_getu16(fs->endian, key->key_len),
                         tsk_getu32(fs->endian, key->parent_cnid));
 
-               /* save the info from this record unless it is bigger than cnid */
+                /* save the info from this record unless it is bigger than cnid */
                 if ((hfs_cat_compare_keys(hfs, key, needle) <= 0)
                     || (next_node == 0)) {
                     int keylen = tsk_getu16(fs->endian, key->key_len) + 2;
@@ -1349,7 +1365,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
                         tsk_getu32(fs->endian, &node[rec_off + keylen]);
                 }
                 else {
-                     // we are bigger than cnid, so move down to the next node
+                    // we are bigger than cnid, so move down to the next node
                     break;
                 }
             }
@@ -1825,6 +1841,10 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     TSK_FS_ATTR *fs_attr;
     TSK_FS_ATTR_RUN *attr_run;
 
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "hfs_make_catalog: Making virtual catalog file\n");
+
     if (hfs_make_specialbase(fs_file))
         return 1;
 
@@ -1893,6 +1913,10 @@ hfs_make_extents(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     TSK_FS_ATTR *fs_attr;
     TSK_FS_ATTR_RUN *attr_run;
 
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "hfs_make_extents: Making virtual extents file\n");
+
     if (hfs_make_specialbase(fs_file))
         return 1;
 
@@ -1954,6 +1978,10 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     TSK_FS_INFO *fs = (TSK_FS_INFO *) hfs;
     TSK_FS_ATTR *fs_attr;
     TSK_FS_ATTR_RUN *attr_run;
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "hfs_make_blockmap: Making virtual blockmap file\n");
 
     if (hfs_make_specialbase(fs_file))
         return 1;
@@ -2022,6 +2050,10 @@ hfs_make_startfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     TSK_FS_ATTR *fs_attr;
     TSK_FS_ATTR_RUN *attr_run;
 
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "hfs_make_startfile: Making virtual startup file\n");
+
     if (hfs_make_specialbase(fs_file))
         return 1;
 
@@ -2088,6 +2120,10 @@ hfs_make_attrfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     TSK_FS_INFO *fs = (TSK_FS_INFO *) hfs;
     TSK_FS_ATTR *fs_attr;
     TSK_FS_ATTR_RUN *attr_run;
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "hfs_make_attrfile: Making virtual attributes file\n");
 
     if (hfs_make_specialbase(fs_file))
         return 1;
@@ -2204,6 +2240,11 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file * a_entry,
 
     a_fs_meta->uid = tsk_getu32(fs->endian, a_entry->perm.owner);
     a_fs_meta->gid = tsk_getu32(fs->endian, a_entry->perm.group);
+    // this field is set only for "indirect" entries
+    if (tsk_getu32(fs->endian, a_entry->perm.special.nlink))
+        a_fs_meta->nlink = tsk_getu32(fs->endian, a_entry->perm.special.nlink);
+    else
+        a_fs_meta->nlink = 1;
 
     a_fs_meta->mtime =
         hfs2unixtime(tsk_getu32(fs->endian, a_entry->cmtime));
@@ -2466,6 +2507,7 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
             return -1;
         }
         hfs->blockmap_cache_start = -1;
+        hfs->blockmap_cache_len = 0;
     }
 
     // get the byte offset
@@ -2482,21 +2524,18 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
     // see if it is in the cache
     if ((hfs->blockmap_cache_start == -1)
         || (hfs->blockmap_cache_start > b)
-        || (hfs->blockmap_cache_start + sizeof(hfs->blockmap_cache) <= b)) {
+        || (hfs->blockmap_cache_start + hfs->blockmap_cache_len <= b)) {
         size_t cnt = tsk_fs_attr_read(hfs->blockmap_attr, b,
             hfs->blockmap_cache,
             sizeof(hfs->blockmap_cache), 0);
-        if (cnt != sizeof(hfs->blockmap_cache)) {
-            if (cnt >= 0) {
-                tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_READ;
-            }
+        if (cnt < 1) {
             snprintf(tsk_errstr2, TSK_ERRSTR_L,
                 "hfs_block_is_alloc: Error reading block bitmap at offset %"
                 PRIuOFF, b);
             return -1;
         }
         hfs->blockmap_cache_start = b;
+        hfs->blockmap_cache_len = cnt;
     }
     b2 = b - hfs->blockmap_cache_start;
     return (hfs->blockmap_cache[b2] & (1 << (7 - (a_addr % 8)))) != 0;
@@ -3016,12 +3055,11 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         return 1;
     }
 
-    tsk_fprintf(hFile, "\nINODE INFORMATION\n");
-    tsk_fprintf(hFile, "Entry:\t%" PRIuINUM "\n", inum);
+    tsk_fprintf(hFile, "Catalog Record: %" PRIuINUM "\n", inum);
+    tsk_fprintf(hFile, "%sAllocated\n",
+        (fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) ? "Not " : "");
 
     tsk_fprintf(hFile, "Type:\t");
-
-
     if (fs_file->meta->type == TSK_FS_META_TYPE_REG)
         tsk_fprintf(hFile, "File\n");
     else if (fs_file->meta->type == TSK_FS_META_TYPE_DIR)
@@ -3030,50 +3068,16 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fs_make_ls(fs_file->meta, hfs_mode);
     tsk_fprintf(hFile, "Mode:\t%s\n", hfs_mode);
 
-    if (sec_skew != 0) {
-        tsk_fprintf(hFile, "\nAdjusted times:\n");
-        fs_file->meta->mtime -= sec_skew;
-        fs_file->meta->atime -= sec_skew;
-        fs_file->meta->ctime -= sec_skew;
-        fs_file->meta->crtime -= sec_skew;
-        fs_file->meta->time2.hfs.bkup_time -= sec_skew;
-        tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_file->meta->crtime));
-        tsk_fprintf(hFile, "Content Modified:\t%s",
-            ctime(&fs_file->meta->mtime));
-        tsk_fprintf(hFile, "Attributes Modified:\t%s",
-            ctime(&fs_file->meta->ctime));
-        tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_file->meta->atime));
-        tsk_fprintf(hFile, "Backed Up:\t%s",
-            ctime(&fs_file->meta->time2.hfs.bkup_time));
-        fs_file->meta->mtime += sec_skew;
-        fs_file->meta->atime += sec_skew;
-        fs_file->meta->ctime += sec_skew;
-        fs_file->meta->crtime += sec_skew;
-        fs_file->meta->time2.hfs.bkup_time += sec_skew;
-        tsk_fprintf(hFile, "\nOriginal times:\n");
-    }
-
-    tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_file->meta->crtime));
-    tsk_fprintf(hFile, "Content Modified:\t%s",
-        ctime(&fs_file->meta->mtime));
-    tsk_fprintf(hFile, "Attributes Modified:\t%s",
-        ctime(&fs_file->meta->ctime));
-    tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_file->meta->atime));
-    tsk_fprintf(hFile, "Backed Up:\t%s",
-        ctime(&fs_file->meta->time2.hfs.bkup_time));
-
-
+    tsk_fprintf(hFile, "uid / gid: %" PRIuUID " / %" PRIuGID "\n",
+                fs_file->meta->uid, fs_file->meta->gid);
+    
+    tsk_fprintf(hFile, "Link count:\t%d\n", fs_file->meta->nlink);
+    
     if (hfs_cat_file_lookup(hfs, inum, &entry) == 0) {
-        tsk_fprintf(hFile, "Owner-ID:\t%" PRIu32 "\n",
-            tsk_getu32(fs->endian, entry.cat.perm.owner));
-        tsk_fprintf(hFile, "Group-ID:\t%" PRIu32 "\n",
-            tsk_getu32(fs->endian, entry.cat.perm.group));
-        if (((tsk_getu16(fs->endian,
-                        entry.cat.perm.mode) & HFS_IN_IFMT) ==
-                HFS_IN_IFCHR)
-            || ((tsk_getu16(fs->endian,
-                        entry.cat.perm.mode) & HFS_IN_IFMT) ==
-                HFS_IN_IFBLK)) {
+        tsk_fprintf(hFile, "\n");
+        
+        if ((fs_file->meta->type == TSK_FS_META_TYPE_CHR) || 
+            (fs_file->meta->type == TSK_FS_META_TYPE_BLK)) { 
             tsk_fprintf(hFile, "Device ID:\t%" PRIu32 "\n",
                 tsk_getu32(fs->endian, entry.cat.perm.special.raw));
         }
@@ -3086,12 +3090,6 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             // creation date of the "HFS+ Private Data" folder or the creation date of the root folder
             tsk_fprintf(hFile, "Hard link inode number\t %" PRIu32 "\n",
                 tsk_getu32(fs->endian, entry.cat.perm.special.inum));
-        }
-        else {
-            // only files within the "HFS+ Private Data" folder are actually hard link files
-            // (and even then, only the ones labelled "iNode*"
-            tsk_fprintf(hFile, "Link count:\t%" PRIu32 "\n",
-                tsk_getu32(fs->endian, entry.cat.perm.special.nlink));
         }
 
         if (tsk_getu16(fs->endian, entry.cat.flags) & HFS_FILE_FLAG_LOCKED)
@@ -3131,14 +3129,59 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         }
     }
 
+    if (sec_skew != 0) {
+        tsk_fprintf(hFile, "\nAdjusted times:\n");
+        fs_file->meta->mtime -= sec_skew;
+        fs_file->meta->atime -= sec_skew;
+        fs_file->meta->ctime -= sec_skew;
+        fs_file->meta->crtime -= sec_skew;
+        fs_file->meta->time2.hfs.bkup_time -= sec_skew;
+
+        tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_file->meta->crtime));
+        tsk_fprintf(hFile, "Content Modified:\t%s",
+            ctime(&fs_file->meta->mtime));
+        tsk_fprintf(hFile, "Attributes Modified:\t%s",
+            ctime(&fs_file->meta->ctime));
+        tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_file->meta->atime));
+        tsk_fprintf(hFile, "Backed Up:\t%s",
+            ctime(&fs_file->meta->time2.hfs.bkup_time));
+
+        fs_file->meta->mtime += sec_skew;
+        fs_file->meta->atime += sec_skew;
+        fs_file->meta->ctime += sec_skew;
+        fs_file->meta->crtime += sec_skew;
+        fs_file->meta->time2.hfs.bkup_time += sec_skew;
+        tsk_fprintf(hFile, "\nOriginal times:\n");
+    }
+    else {
+        tsk_fprintf(hFile, "\nTimes:\n");
+    }
+
+    tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_file->meta->crtime));
+    tsk_fprintf(hFile, "Content Modified:\t%s",
+        ctime(&fs_file->meta->mtime));
+    tsk_fprintf(hFile, "Attributes Modified:\t%s",
+        ctime(&fs_file->meta->ctime));
+    tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_file->meta->atime));
+    tsk_fprintf(hFile, "Backed Up:\t%s",
+        ctime(&fs_file->meta->time2.hfs.bkup_time));
+
+
+    // @@@ Will need to add resource fork to here when support is added.
+    tsk_fprintf(hFile, "\nData Fork Blocks:\n");
     print.idx = 0;
     print.hFile = hFile;
 
-    tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
-        print_addr_act, (void *) &print);
-
-    if (print.idx != 0)
+    if (tsk_fs_file_walk(fs_file,
+            (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK),
+            print_addr_act, (void *) &print)) {
+        tsk_fprintf(hFile, "\nError reading file\n");
+        tsk_error_print(hFile);
+        tsk_error_reset();
+    }
+    else if (print.idx != 0) {
         tsk_fprintf(hFile, "\n");
+    }
 
     tsk_fs_file_close(fs_file);
     return 0;
@@ -3323,6 +3366,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     hfs->blockmap_file = NULL;
     hfs->blockmap_attr = NULL;
     hfs->blockmap_cache_start = -1;
+    hfs->blockmap_cache_len = 0;
 
     fs->first_inum = HFS_ROOT_INUM;
     fs->root_inum = HFS_ROOT_INUM;

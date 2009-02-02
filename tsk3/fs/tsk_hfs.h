@@ -426,8 +426,9 @@ typedef struct {
 
     TSK_FS_FILE *blockmap_file;
     const TSK_FS_ATTR *blockmap_attr;
-    char blockmap_cache[4096];
-    int blockmap_cache_start;
+    char blockmap_cache[4096];  ///< Cache for blockmap
+    int blockmap_cache_start;   ///< Byte offset of blockmap where cache starts
+    size_t blockmap_cache_len;  ///< Length of cache that is being used
 
     TSK_FS_FILE *catalog_file;
     const TSK_FS_ATTR *catalog_attr;
