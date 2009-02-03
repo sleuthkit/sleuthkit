@@ -4,7 +4,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 3.0.0)
+AC_INIT(sleuthkit, 3.0.1)
 AC_CONFIG_SRCDIR([tsk3/base/tsk_base.h])
 AM_CONFIG_HEADER([tsk3/tsk_config.h])
 AC_CONFIG_AUX_DIR(config)

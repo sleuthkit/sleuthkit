@@ -102,7 +102,8 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
 
     // see if we already have it in the buffer / queue
     for (i = 0; i < a_fs_dir->names_used; i++) {
-        if (strcmp(a_fs_name->name, a_fs_dir->names[i].name) == 0) {
+        if ((a_fs_name->meta_addr == a_fs_dir->names[i].meta_addr) &&
+            (strcmp(a_fs_name->name, a_fs_dir->names[i].name) == 0)) {
 
             /* We do not check type because then we cannot detect NTFS orphan file
              * duplicates that are added as "-/r" while a similar entry exists as "r/r"  

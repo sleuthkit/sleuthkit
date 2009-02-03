@@ -152,7 +152,10 @@ tsk_fs_ifind_par(TSK_FS_INFO * fs, TSK_FS_IFIND_FLAG_ENUM lclflags,
 /**
  * \ingroup fslib
  * 
- * Find the meta data address for a given file name (UTF-8)
+ * Find the meta data address for a given file name (UTF-8).
+ * The basic idea of the function is to break the given name into its
+ * subdirectories and start looking for each (starting in the root
+ * directory). 
  *
  * @param a_fs FS to analyze
  * @param a_path UTF-8 path of file to search for
@@ -170,17 +173,17 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     char *cur_attr;             // The "current" attribute of the dir we are looking for
     char *strtok_last;
     TSK_INUM_T next_meta;
-
+    uint8_t is_done;
     *a_result = 0;
 
-    // copy to a buffer that we can modify
+    // copy path to a buffer that we can modify
     clen = strlen(a_path) + 1;
     if ((cpath = (char *) tsk_malloc(clen)) == NULL) {
         return -1;
     }
     strncpy(cpath, a_path, clen);
 
-
+    // Get the first part of the directory path. 
     cur_dir = (char *) strtok_r(cpath, "/", &strtok_last);
     cur_attr = NULL;
 
@@ -217,25 +220,28 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
 
     // we loop until we know the outcome and then exit. 
     // everything should return from inside the loop.
-    while (1) {
+    is_done = 0;
+    while (is_done == 0) {
         size_t i;
-        uint8_t found_name;
+        TSK_FS_FILE *fs_file_alloc = NULL;      // set to the allocated file that is our target
+        TSK_FS_FILE *fs_file_del = NULL;        // set to an unallocated file that matches our criteria
+
         TSK_FS_DIR *fs_dir = NULL;
 
+        // open the next directory in the recursion
         if ((fs_dir = tsk_fs_dir_open_meta(a_fs, next_meta)) == NULL) {
             free(cpath);
             return -1;
         }
 
-        // will be set to 1 if an entry in this dir matches the target
-        found_name = 0;
-
         // cycle through each entry
         for (i = 0; i < tsk_fs_dir_getsize(fs_dir); i++) {
 
             TSK_FS_FILE *fs_file;
+            uint8_t found_name = 0;
 
             if ((fs_file = tsk_fs_dir_get(fs_dir, i)) == NULL) {
+                tsk_fs_dir_close(fs_dir);
                 free(cpath);
                 return -1;
             }
@@ -246,7 +252,8 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
              */
             if (TSK_FS_TYPE_ISFFS(a_fs->ftype)
                 || TSK_FS_TYPE_ISEXT(a_fs->ftype)) {
-                if ((fs_file->name->name) && (strcmp(fs_file->name->name, cur_dir) == 0)) {
+                if ((fs_file->name->name)
+                    && (strcmp(fs_file->name->name, cur_dir) == 0)) {
                     found_name = 1;
                 }
             }
@@ -254,18 +261,21 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
              * the short name 
              */
             else if (TSK_FS_TYPE_ISFAT(a_fs->ftype)) {
-                if ((fs_file->name->name) && (strcasecmp(fs_file->name->name, cur_dir) == 0)) {
+                if ((fs_file->name->name)
+                    && (strcasecmp(fs_file->name->name, cur_dir) == 0)) {
                     found_name = 1;
                 }
-                else if ((fs_file->name->shrt_name) && (strcasecmp(fs_file->name->shrt_name,
-                        cur_dir) == 0)) {
+                else if ((fs_file->name->shrt_name)
+                    && (strcasecmp(fs_file->name->shrt_name,
+                            cur_dir) == 0)) {
                     found_name = 1;
                 }
             }
 
             /* NTFS gets a case insensitive comparison */
             else if (TSK_FS_TYPE_ISNTFS(a_fs->ftype)) {
-                if ((fs_file->name->name) && (strcasecmp(fs_file->name->name, cur_dir) == 0)) {
+                if ((fs_file->name->name)
+                    && (strcasecmp(fs_file->name->name, cur_dir) == 0)) {
                     /*  ensure we have the right attribute name */
                     if (cur_attr == NULL) {
                         found_name = 1;
@@ -282,101 +292,115 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                                 if (!fs_attr)
                                     continue;
 
-                                if ((fs_attr->name) && (strcasecmp(fs_attr->name,
-                                        cur_attr) == 0)) {
+                                if ((fs_attr->name)
+                                    && (strcasecmp(fs_attr->name,
+                                            cur_attr) == 0)) {
                                     found_name = 1;
                                 }
                             }
                         }
-                        if (found_name != 1) {
-                            free(cpath);
-
-                            if (tsk_verbose)
-                                tsk_fprintf(stderr,
-                                    "Attribute name (%s) not found in %s: %"
-                                    PRIuINUM "\n", cur_attr, cur_dir,
-                                    fs_file->name->meta_addr);
-                            return 1;
-                        }
                     }
                 }
             }
 
-            /* if found_name is 1, this entry was our target.  Update
-             * data and move on to the next step, if needed. */
+            /* Unknown how to compare names in this filesystem */
+            else {
+                tsk_fs_dir_close(fs_dir);
+                free(cpath);
+                tsk_errno = TSK_ERR_FS_GENFS;
+                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                    "tsk_fs_path2inum: File System type not supported for file name comparison (%X)",
+                    a_fs->ftype);
+                return -1;
+            }
+
             if (found_name) {
-                const char *pname;
-
-                pname = cur_dir;        // save a copy of the current name pointer
-
-                // advance to the next name
-                cur_dir = (char *) strtok_r(NULL, "/", &(strtok_last));
-                cur_attr = NULL;
-
-                if (tsk_verbose)
-                    tsk_fprintf(stderr,
-                        "Found it (%s), now looking for %s\n", pname,
-                        cur_dir);
-
-
-                /* That was the last name in the path -- we found the file! */
-                if (cur_dir == NULL) {
-                    *a_result = fs_file->name->meta_addr;
-
-                    // make a copy if one was requested
-                    if (a_fs_name) {
-                        tsk_fs_name_copy(a_fs_name, fs_file->name);
+                /* If we found our file and it is allocated, then stop. If
+                 * it is unallocated, keep on going to see if we can get
+                 * an allocated hit */
+                if (fs_file->name->flags & TSK_FS_NAME_FLAG_ALLOC) {
+                    fs_file_alloc = fs_file;
+                    break;
+                }
+                else {
+                    // if we already have an unalloc and its addr is 0, then use the new one
+                    if ((fs_file_del)
+                        && (fs_file_del->name->meta_addr == 0)) {
+                        tsk_fs_file_close(fs_file_del);
                     }
+                    fs_file_del = fs_file;
+                }
+            }
+            // close the file if we did not save it for future analysis.
+            else {
+                tsk_fs_file_close(fs_file);
+                fs_file = NULL;
+            }
+        }
 
-                    free(cpath);
-                    return 0;
+        // we found a directory, go into it 
+        if ((fs_file_alloc) || (fs_file_del)) {
+
+            const char *pname;
+            TSK_FS_FILE *fs_file_tmp;
+
+            // choose the alloc one first (if they both exist)
+            if (fs_file_alloc)
+                fs_file_tmp = fs_file_alloc;
+            else
+                fs_file_tmp = fs_file_del;
+
+            pname = cur_dir;    // save a copy of the current name pointer
+
+            // advance to the next name
+            cur_dir = (char *) strtok_r(NULL, "/", &(strtok_last));
+            cur_attr = NULL;
+
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "Found it (%s), now looking for %s\n", pname, cur_dir);
+
+            /* That was the last name in the path -- we found the file! */
+            if (cur_dir == NULL) {
+                *a_result = fs_file_tmp->name->meta_addr;
+
+                // make a copy if one was requested
+                if (a_fs_name) {
+                    tsk_fs_name_copy(a_fs_name, fs_file_tmp->name);
                 }
 
-                // update the attribute field, if needed
-                if (TSK_FS_TYPE_ISNTFS(a_fs->ftype)
-                    && ((cur_attr = strchr(cur_dir, ':')) != NULL)) {
-                    *(cur_attr) = '\0';
-                    cur_attr++;
-                }
-
-                /* Before we recurse into this directory, check it */
-                if (fs_file->meta == NULL) {
-                    free(cpath);
-                    if (tsk_verbose)
-                        tsk_fprintf(stderr,
-                            "Name does not point to an inode (%s)\n",
-                            fs_file->name->name);
-                    return 1;
-                }
-
-                /* Make sure this name is for a directory */
-                else if (fs_file->meta->type != TSK_FS_META_TYPE_DIR) {
-                    free(cpath);
-                    if (tsk_verbose)
-                        tsk_fprintf(stderr,
-                            "Name is not for a directory (%s) (type: %x)\n",
-                            fs_file->name->name, fs_file->meta->type);
-                    return 1;
-                }
-
-                next_meta = fs_file->name->meta_addr;
+                tsk_fs_dir_close(fs_dir);
+                free(cpath);
+                return 0;
             }
 
-            tsk_fs_file_close(fs_file);
-            fs_file = NULL;
+            // update the attribute field, if needed
+            if (TSK_FS_TYPE_ISNTFS(a_fs->ftype)
+                && ((cur_attr = strchr(cur_dir, ':')) != NULL)) {
+                *(cur_attr) = '\0';
+                cur_attr++;
+            }
 
-            if (found_name)
-                break;
+            // update the value for the next directory to open
+            next_meta = fs_file_tmp->name->meta_addr;
+
+            if (fs_file_alloc) {
+                tsk_fs_file_close(fs_file_alloc);
+                fs_file_alloc = NULL;
+            }
+            if (fs_file_del) {
+                tsk_fs_file_close(fs_file_del);
+                fs_file_del = NULL;
+            }
+        }
+
+        // no hit in directory
+        else {
+            is_done = 1;
         }
 
         tsk_fs_dir_close(fs_dir);
         fs_dir = NULL;
-
-        // didn't find the name in this directory...
-        if (found_name == 0) {
-            free(cpath);
-            return 1;
-        }
     }
 
     free(cpath);

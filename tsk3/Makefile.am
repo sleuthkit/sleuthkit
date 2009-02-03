@@ -7,7 +7,7 @@ libtsk3_la_SOURCES =
 libtsk3_la_LIBADD = base/libtskbase.la img/libtskimg.la \
     vs/libtskvs.la fs/libtskfs.la hashdb/libtskhashdb.la
 # current:revision:age
-libtsk3_la_LDFLAGS = -version-info 4:2:1
+libtsk3_la_LDFLAGS = -version-info 4:3:1
 
 EXTRA_DIST = tsk_tools_i.h docs/Doxyfile docs/main.dox \
     docs/basics.dox docs/img.dox docs/vs.dox docs/fs.dox \
