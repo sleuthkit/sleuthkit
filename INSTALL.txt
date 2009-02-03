@@ -38,7 +38,7 @@ release.
 - LibEWF: Allows you to process disk images that are stored in the
 Expert Witness format (EnCase Format).  Version 20080501 has been
 tested to compile and work with this release.
-    Available at: https://www.uitwisselplatform.nl/projects/libewf/
+    Available at: http://sourceforge.net/projects/libewf/
 
 
 
