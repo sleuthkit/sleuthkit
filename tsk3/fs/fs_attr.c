@@ -387,7 +387,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
         tsk_error_reset();
         tsk_errno = TSK_ERR_FS_ARG;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "Null fs_attr in tsk_fs_attr_add_run");
+            "tsk_fs_attr_add_run: Error, a_fs_attr is NULL");
         return 1;
     }
 
@@ -396,7 +396,8 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
         tsk_error_reset();
         tsk_errno = TSK_ERR_FS_ARG;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "tsk_fs_attr_put_run: Error, NULL run added to existing attribute");
+            "tsk_fs_attr_add_run: Error, a_data_run_new is NULL (%"
+            PRIuINUM ")", a_fs_attr->fs_file->meta->addr);
         return 1;
     }
 
@@ -423,6 +424,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
         return 0;
     }
 
+    // cycle through existing runs and see if we can add this into a filler spot
     data_run_cur = a_fs_attr->nrd.run;
     data_run_prev = NULL;
     while (data_run_cur) {
@@ -436,7 +438,10 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
                 tsk_error_reset();
                 tsk_errno = TSK_ERR_FS_ARG;
                 snprintf(tsk_errstr, TSK_ERRSTR_L,
-                    "tsk_fs_attr_put_run: could not add data_run");
+                    "tsk_fs_attr_add_run: could not add data_run b.c. offset (%"
+                    PRIuOFF ") is larger than FILLER (%" PRIuOFF ") (%"
+                    PRIuINUM ")", a_data_run_new->offset,
+                    data_run_cur->offset, a_fs_attr->fs_file->meta->addr);
                 return 1;
             }
 
@@ -519,10 +524,10 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
      * 0 if there is no list
      */
 
-    /* this is an error condition.  
-     * it means that we are currently at a greater VCN than
-     * what we are inserting, but we never found the filler
-     * for where we were to insert
+    /* This is an error condition.  
+     * It means that we cycled through the existing runs,
+     * ended at a VCN that is larger than what we are adding,
+     * and never found a filler entry to insert it into... 
      */
     if ((data_run_prev)
         && (data_run_prev->offset + data_run_prev->len >
@@ -531,7 +536,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
         /* MAYBE this is because of a duplicate entry .. */
         if ((data_run_prev->addr == a_data_run_new->addr) &&
             (data_run_prev->len == a_data_run_new->len)) {
-            // @@@ Sould be we freeing this....?  What if the caller tries to write ti it?
+            // @@@ Sould be we freeing this....?  What if the caller tries to write to it?
             tsk_fs_attr_run_free(a_data_run_new);
             return 0;
         }
@@ -539,11 +544,10 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
         tsk_error_reset();
         tsk_errno = TSK_ERR_FS_ARG;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "fs_attr_run: error adding aditional run: %" PRIuDADDR
-            ", Previous %" PRIuDADDR " -> %" PRIuDADDR "   Current %"
-            PRIuDADDR " -> %" PRIuDADDR "\n", a_data_run_new->offset,
-            data_run_prev->addr, data_run_prev->len, a_data_run_new->addr,
-            a_data_run_new->len);
+            "fs_attr_add_run: error adding aditional run (%" PRIuINUM
+            "): No filler entry for %" PRIuDADDR ". Final: %" PRIuDADDR,
+            a_fs_attr->fs_file->meta->addr, a_data_run_new->offset,
+            data_run_prev->offset + data_run_prev->len);
         return 1;
     }
 
