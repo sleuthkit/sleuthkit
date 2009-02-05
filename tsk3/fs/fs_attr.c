@@ -429,6 +429,13 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
     data_run_prev = NULL;
     while (data_run_cur) {
 
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "tsk_fs_attr_add: %" PRIuOFF "@%" PRIuOFF
+                " (Filler: %s)\n", data_run_cur->offset, data_run_cur->len,
+                (data_run_cur->
+                    flags & TSK_FS_ATTR_RUN_FLAG_FILLER) ? "Yes" : "No");
+
         /* Do we replace this filler spot? */
         if (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) {
 
@@ -502,6 +509,8 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
                 else {
                     endrun->next = data_run_cur;
                     data_run_cur->len -= run_len;
+                    data_run_cur->offset =
+                        a_data_run_new->offset + a_data_run_new->len;
                 }
 
                 return 0;

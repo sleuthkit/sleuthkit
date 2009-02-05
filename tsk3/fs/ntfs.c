@@ -406,12 +406,14 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, ntfs_mft * a_mft,
 
         new_val = &upd->upd_seq + (i - 1) * 2;
         old_val = (uint8_t *) ((uintptr_t) a_mft + offset);
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "ntfs_dinode_lookup: upd_seq %i   Replacing: %.4"
-                PRIx16 "   With: %.4" PRIx16 "\n", i,
-                tsk_getu16(fs->endian, old_val), tsk_getu16(fs->endian,
-                    new_val));
+        /*
+           if (tsk_verbose)
+           tsk_fprintf(stderr,
+           "ntfs_dinode_lookup: upd_seq %i   Replacing: %.4"
+           PRIx16 "   With: %.4" PRIx16 "\n", i,
+           tsk_getu16(fs->endian, old_val), tsk_getu16(fs->endian,
+           new_val));
+         */
         *old_val++ = *new_val++;
         *old_val = *new_val;
     }
@@ -1562,7 +1564,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "ntfs_proc_attrseq: Processing entry %"
+            "ntfs_proc_attrseq: Processing extended entry for primary entry %"
             PRIuINUM "\n", fs_file->meta->addr);
 
     if (fs_file->meta->attr == NULL) {
@@ -1656,10 +1658,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
             if (tsk_verbose)
                 tsk_fprintf(stderr,
-                    "ntfs_proc_attrseq: Resident Attribute in %"
-                    PRIuINUM " Type: %" PRIu32 " Id: %"
-                    PRIu16 " Name: %s\n", ntfs->mnum,
-                    type, tsk_getu16(fs->endian, attr->id), name);
+                    "ntfs_proc_attrseq: Resident Attribute in Type: %"
+                    PRIu32 " Id: %" PRIu16 " Name: %s\n", type,
+                    tsk_getu16(fs->endian, attr->id), name);
 
             /* Validate the offset lengths */
             if (((tsk_getu16(fs->endian,
@@ -1726,11 +1727,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
             if (tsk_verbose)
                 tsk_fprintf(stderr,
-                    "ntfs_proc_attrseq: Non-Resident Attribute in %"
-                    PRIuINUM " Type: %" PRIu32 " Id: %"
-                    PRIu16 " Name: %s  Start VCN: %"
-                    PRIu64 "\n", ntfs->mnum, type, id,
-                    name, tsk_getu64(fs->endian, attr->c.nr.start_vcn));
+                    "ntfs_proc_attrseq: Non-Resident Attribute Type: %"
+                    PRIu32 " Id: %" PRIu16 " Name: %s  Start VCN: %" PRIu64
+                    "\n", type, id, name, tsk_getu64(fs->endian,
+                        attr->c.nr.start_vcn));
 
             /* convert the run to generic form */
             retval = ntfs_make_data_run(ntfs,
