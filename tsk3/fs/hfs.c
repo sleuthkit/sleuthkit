@@ -1341,12 +1341,14 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
                 }
                 key = (hfs_cat_key *) & node[rec_off];
 
-                if (tsk_verbose)
-                    tsk_fprintf(stderr,
-                        "hfs_cat_get_record_offset: record %" PRIu16
-                        " ; keylen %" PRIu16 " (%" PRIu32 ")\n", rec,
-                        tsk_getu16(fs->endian, key->key_len),
-                        tsk_getu32(fs->endian, key->parent_cnid));
+                /*
+                   if (tsk_verbose)
+                   tsk_fprintf(stderr,
+                   "hfs_cat_get_record_offset: record %" PRIu16
+                   " ; keylen %" PRIu16 " (%" PRIu32 ")\n", rec,
+                   tsk_getu16(fs->endian, key->key_len),
+                   tsk_getu32(fs->endian, key->parent_cnid));
+                 */
 
                 /* save the info from this record unless it is bigger than cnid */
                 if ((hfs_cat_compare_keys(hfs, key, needle) <= 0)
@@ -1405,13 +1407,14 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
                 }
                 key = (hfs_cat_key *) & node[rec_off];
 
-                if (tsk_verbose)
-                    tsk_fprintf(stderr,
-                        "hfs_cat_get_record_offset: record %" PRIu16
-                        "; keylen %" PRIu16 " (%" PRIu32 ")\n", rec,
-                        tsk_getu16(fs->endian, key->key_len),
-                        tsk_getu32(fs->endian, key->parent_cnid));
-
+                /*
+                   if (tsk_verbose)
+                   tsk_fprintf(stderr,
+                   "hfs_cat_get_record_offset: record %" PRIu16
+                   "; keylen %" PRIu16 " (%" PRIu32 ")\n", rec,
+                   tsk_getu16(fs->endian, key->key_len),
+                   tsk_getu32(fs->endian, key->parent_cnid));
+                 */
                 //                rec_cnid = tsk_getu32(fs->endian, key->file_id);
 
                 diff = hfs_cat_compare_keys(hfs, key, needle);
@@ -2199,7 +2202,9 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file * a_entry,
     }
 
     if (tsk_verbose)
-        tsk_fprintf(stderr, "hfs_dinode_copy: called\n");
+        tsk_fprintf(stderr,
+            "hfs_dinode_copy: called for file %" PRIu32 "\n",
+            tsk_getu32(fs->endian, a_entry->cnid));
 
     if (a_fs_meta->content_len < HFS_FILE_CONTENT_LEN) {
         if ((a_fs_meta =
@@ -2265,6 +2270,16 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file * a_entry,
 
     /* TODO could fill in name2 with this entry's name and parent inode
        from Catalog entry */
+
+    /* If a sym link, copy the destination to a_fs_meta->link */
+    /*
+       if (fs_file->meta->type == TSK_FS_META_TYPE_LNK) {
+       @@@ Need to do this.  We need to read the file content,
+       but we don't really have enough context (i.e. FS_FILE)
+       to simply use the existing load and read functions. 
+       Probably need to make a dummy TSK_FS_FILE. 
+       }
+     */
 
     return 0;
 }
@@ -2415,15 +2430,18 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
     }
+    /* NOTE that fs_attr is now tied to fs_file->meta->attr.
+     * that means that we do not need to free it if we abort in the
+     * following code (and doing so will cause double free errors). */
 
-    // if not a file, then make an empty entry
-    if (fs_file->meta->type != TSK_FS_META_TYPE_REG) {
+    // if not a file or symbolic link, then make an empty entry
+    if ((fs_file->meta->type != TSK_FS_META_TYPE_REG)
+        && (fs_file->meta->type != TSK_FS_META_TYPE_LNK)) {
         if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, NULL,
-                TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-                0, 0, 0, 0)) {
+                TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT, 0, 0, 0,
+                0)) {
             strncat(tsk_errstr2, " - hfs_load_attrs (non-file)",
                 TSK_ERRSTR_L - strlen(tsk_errstr2));
-            tsk_fs_attr_free(fs_attr);
             tsk_fs_attr_run_free(attr_run);
             return 1;
         }
@@ -2431,12 +2449,31 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
         return 0;
     }
 
+    /*
+       @@@ We need to detect hard links and load up the indirect node info
+       instead of the current node info.
+
+       //Detect Hard links
+       else if ((tsk_getu32(fs->endian,
+       entry.cat.u_info.file_type) == HFS_HARDLINK_FILE_TYPE)
+       && (tsk_getu32(fs->endian,
+       entry.cat.u_info.file_cr) ==
+       HFS_HARDLINK_FILE_CREATOR)) {
+
+       //  Get the indirect node value
+       tsk_getu32(fs->endian, entry.cat.perm.special.inum)
+
+       // Find the indirect node 
+       "/____HFS+ Private Data/iNodeXXXX"
+       // Load its runs and look in extents for others (based on its CNID)
+     */
+
+
     // Get the data fork and convert it to the TSK format
     fork = (hfs_fork *) fs_file->meta->content_ptr;
     if ((attr_run = hfs_extents_to_attr(fs, fork->extents, 0)) == NULL) {
         strncat(tsk_errstr2, " - hfs_load_attrs",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
-        tsk_fs_attr_free(fs_attr);
         return 1;
     }
 
@@ -2448,7 +2485,6 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
             0)) {
         strncat(tsk_errstr2, " - hfs_load_attrs",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
-        tsk_fs_attr_free(fs_attr);
         tsk_fs_attr_run_free(attr_run);
         return 1;
     }
