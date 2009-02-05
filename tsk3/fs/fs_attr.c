@@ -443,7 +443,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
              * the filler to start from VCN 0 */
             if (data_run_cur->offset > a_data_run_new->offset) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_ARG;
+                tsk_errno = TSK_ERR_FS_GENFS;
                 snprintf(tsk_errstr, TSK_ERRSTR_L,
                     "tsk_fs_attr_add_run: could not add data_run b.c. offset (%"
                     PRIuOFF ") is larger than FILLER (%" PRIuOFF ") (%"
@@ -551,9 +551,9 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
         }
 
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
+        tsk_errno = TSK_ERR_FS_GENFS;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "fs_attr_add_run: error adding aditional run (%" PRIuINUM
+            "fs_attr_add_run: error adding additional run (%" PRIuINUM
             "): No filler entry for %" PRIuDADDR ". Final: %" PRIuDADDR,
             a_fs_attr->fs_file->meta->addr, a_data_run_new->offset,
             data_run_prev->offset + data_run_prev->len);
