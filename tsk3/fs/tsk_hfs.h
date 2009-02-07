@@ -135,14 +135,22 @@
 /* predefined files */
 #define HFS_ROOT_PARENT_ID         1
 #define HFS_ROOT_FOLDER_ID         2
-#define HFS_EXTENTS_FILE_ID        3
-#define HFS_CATALOG_FILE_ID        4
-#define HFS_BAD_BLOCK_FILE_ID      5
-#define HFS_ALLOCATION_FILE_ID     6
-#define HFS_STARTUP_FILE_ID        7
-#define HFS_ATTRIBUTES_FILE_ID     8
-#define HFS_REPAIR_CATALOG_FILE_ID 14
-#define HFS_BOGUS_EXTENT_FILE_ID   15
+#define HFS_EXTENTS_FILE_ID        3    // extents overflow file
+#define HFS_EXTENTS_FILE_NAME   "$ExtentsFile"
+#define HFS_CATALOG_FILE_ID        4    // catalog file
+#define HFS_CATALOG_FILE_NAME   "$CatalogFile"
+#define HFS_BAD_BLOCK_FILE_ID      5    
+#define HFS_BAD_BLOCK_FILE_NAME   "$BadBlockFile"
+#define HFS_ALLOCATION_FILE_ID     6    // allocation file (HFS+)
+#define HFS_ALLOCATION_FILE_NAME   "$AllocationFile"
+#define HFS_STARTUP_FILE_ID        7    // startup file (HFS+)
+#define HFS_STARTUP_FILE_NAME   "$StartupFile"
+#define HFS_ATTRIBUTES_FILE_ID     8    // Attributes file (HFS+)
+#define HFS_ATTRIBUTES_FILE_NAME   "$AttributesFile"
+#define HFS_REPAIR_CATALOG_FILE_ID 14   // Temp file during fsck
+#define HFS_REPAIR_CATALOG_FILE_NAME   "$RepairCatalogFile"
+#define HFS_BOGUS_EXTENT_FILE_ID   15   // Temp file during fsck
+#define HFS_BOGUS_EXTENT_FILE_NAME   "$BogusExtentFile"
 
 #define HFS_FIRST_USER_CNID	   16
 #define HFS_ROOT_INUM HFS_ROOT_FOLDER_ID

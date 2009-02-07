@@ -849,7 +849,7 @@ hfs_ext_find_extent_record(HFS_INFO * hfs, uint32_t cnid,
  * @param a_fs File system to analyze
  * @param a_extents Raw extents to process (in an array of 8)
  * @param a_start_off Starting block offset of these runs
- * @returns NULL on error
+ * @returns NULL on error or if no runs are in extents (test tsk_errno)
  */
 static TSK_FS_ATTR_RUN *
 hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
@@ -1166,7 +1166,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
 
                 attr_run =
                     hfs_extents_to_attr(fs, extents->extents, ext_off);
-                if (attr_run == NULL) {
+                if ((attr_run == NULL) && (tsk_errno)) {
                     strncat(tsk_errstr2,
                         " - hfs_ext_find_extent_record_attr",
                         TSK_ERRSTR_L - strlen(tsk_errstr2));
@@ -1804,7 +1804,7 @@ hfsmode2tskmetatype(uint16_t a_mode)
 static uint8_t
 hfs_make_specialbase(TSK_FS_FILE * fs_file)
 {
-    fs_file->meta->type = TSK_FS_META_TYPE_VIRT;
+    fs_file->meta->type = TSK_FS_META_TYPE_REG;
     fs_file->meta->mode = 0;
     fs_file->meta->nlink = 1;
     fs_file->meta->flags =
@@ -1860,9 +1860,9 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 
     // convert the  runs in the volume header to attribute runs 
-    if ((attr_run =
+    if (((attr_run =
             hfs_extents_to_attr(fs, hfs->fs->cat_file.extents,
-                0)) == NULL) {
+                0)) == NULL)  && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_make_catalog",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -1931,9 +1931,9 @@ hfs_make_extents(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         tsk_getu64(fs->endian, hfs->fs->ext_file.logic_sz);
 
 
-    if ((attr_run =
+    if (((attr_run =
             hfs_extents_to_attr(fs, hfs->fs->ext_file.extents,
-                0)) == NULL) {
+                0)) == NULL)  && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_make_extents",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -1996,9 +1996,9 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     fs_file->meta->size =
         tsk_getu64(fs->endian, hfs->fs->alloc_file.logic_sz);
 
-    if ((attr_run =
+    if (((attr_run =
             hfs_extents_to_attr(fs, hfs->fs->alloc_file.extents,
-                0)) == NULL) {
+                0)) == NULL)  && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_make_blockmap",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -2067,9 +2067,9 @@ hfs_make_startfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     fs_file->meta->size =
         tsk_getu64(fs->endian, hfs->fs->start_file.logic_sz);
 
-    if ((attr_run =
+    if (((attr_run =
             hfs_extents_to_attr(fs, hfs->fs->start_file.extents,
-                0)) == NULL) {
+                0)) == NULL)  && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_make_startfile",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -2138,9 +2138,9 @@ hfs_make_attrfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     fs_file->meta->size =
         tsk_getu64(fs->endian, hfs->fs->attr_file.logic_sz);
 
-    if ((attr_run =
+    if (((attr_run =
             hfs_extents_to_attr(fs, hfs->fs->attr_file.extents,
-                0)) == NULL) {
+                0)) == NULL)  && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_make_attrfile",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -2471,7 +2471,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
 
     // Get the data fork and convert it to the TSK format
     fork = (hfs_fork *) fs_file->meta->content_ptr;
-    if ((attr_run = hfs_extents_to_attr(fs, fork->extents, 0)) == NULL) {
+    if (((attr_run = hfs_extents_to_attr(fs, fork->extents, 0)) == NULL)  && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_load_attrs",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -3103,9 +3103,12 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "File\n");
     else if (fs_file->meta->type == TSK_FS_META_TYPE_DIR)
         tsk_fprintf(hFile, "Folder\n");
+    else 
+        tsk_fprintf(hFile, "\n");
 
     tsk_fs_make_ls(fs_file->meta, hfs_mode);
     tsk_fprintf(hFile, "Mode:\t%s\n", hfs_mode);
+    tsk_fprintf(hFile, "Size:\t%"PRIuOFF"\n", fs_file->meta->size);
 
     tsk_fprintf(hFile, "uid / gid: %" PRIuUID " / %" PRIuGID "\n",
         fs_file->meta->uid, fs_file->meta->gid);
@@ -3161,9 +3164,8 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
         if (tsk_getu16(fs->endian, entry.cat.rec_type) == HFS_FILE_RECORD) {
             tsk_fprintf(hFile,
-                "Data fork size:\t%" PRIu64 "\nResource fork size:\t%"
+                "Resource fork size:\t%"
                 PRIu64 "\n", tsk_getu64(fs->endian,
-                    entry.cat.data.logic_sz), tsk_getu64(fs->endian,
                     entry.cat.resource.logic_sz));
         }
     }
