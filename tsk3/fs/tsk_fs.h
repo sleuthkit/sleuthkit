@@ -337,8 +337,8 @@ extern "C" {
         TSK_FS_META_FLAG_UNALLOC = 0x02,        ///< Metadata structure is currently in an unallocated state
         TSK_FS_META_FLAG_USED = 0x04,   ///< Metadata structure has been allocated at least once
         TSK_FS_META_FLAG_UNUSED = 0x08, ///< Metadata structure has never been allocated. 
-        TSK_FS_META_FLAG_ORPHAN = 0x10, ///< Metadata structure is unallocated and has no file name pointing to it.
-        TSK_FS_META_FLAG_COMP = 0x20    ///< The file contents are compressed. 
+        TSK_FS_META_FLAG_COMP = 0x10,   ///< The file contents are compressed. 
+        TSK_FS_META_FLAG_ORPHAN = 0x20, ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
     };
     typedef enum TSK_FS_META_FLAG_ENUM TSK_FS_META_FLAG_ENUM;
 

@@ -3,7 +3,7 @@
  * The Sleuth Kit 
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2008 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2008-2009 Brian Carrier.  All Rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  *
@@ -371,7 +371,8 @@ tsk_fs_dir_get(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
 #define DIR_STRSZ   4096
 
 /** \internal
-*/
+ * used to keep state between calls to dir_walk_lcl
+ */
 typedef struct {
     /* Recursive path stuff */
 
@@ -392,6 +393,8 @@ typedef struct {
 } DENT_DINFO;
 
 
+/* dir_walk local function that is used for recursive calls.  Callers
+ * should initially call the non-local version. */
 static uint8_t
 tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     TSK_INUM_T a_addr, TSK_FS_DIR_WALK_FLAG_ENUM a_flags,
@@ -696,7 +699,8 @@ tsk_fs_dir_make_orphan_dir_meta(TSK_FS_INFO * a_fs,
 
 
 
-
+/* callback that is used by tsk_fs_dir_load_inum_named.  It does nothing
+ * because each file system has the code needed to make caller happy. */
 static TSK_WALK_RET_ENUM
 load_named_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
     void *a_ptr)
@@ -705,6 +709,11 @@ load_named_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
 }
 
 
+/** \internal
+ * Proces a file system and populate a list of the metadata structures
+ * that are reachable by file names. This is used to find orphan files. 
+ * Each file system has code that does the populating. 
+ */
 TSK_RETVAL_ENUM
 tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
 {
@@ -730,12 +739,15 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
 }
 
 
+/* Used to keep state while populating the orphan directory */
 typedef struct {
     TSK_FS_NAME *fs_name;
     TSK_FS_DIR *fs_dir;
     TSK_LIST *orphan_subdir_list;       // keep track of files that can already be accessed via orphan directory
 } FIND_ORPHAN_DATA;
 
+/* Used to process orphan directories and make sure that their contents
+ * are now marked as reachable */
 static TSK_WALK_RET_ENUM
 load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
     void *a_ptr)
@@ -749,6 +761,7 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
     return TSK_WALK_CONT;
 }
 
+/* used to identify the unnamed metadata structures */
 static TSK_WALK_RET_ENUM
 find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
 {
@@ -800,6 +813,11 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
     return TSK_WALK_CONT;
 }
 
+/** \internal
+ * Search the file system for orphan files and create the orphan file directory. 
+ * @param a_fs File system to search
+ * @param a_fs_dir Structure to store the orphan file directory info in.
+ */
 TSK_RETVAL_ENUM
 tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
 {
