@@ -40,6 +40,9 @@ instead of fs_dir_add().
 2/6/09: Bug Fix: Fixed bug 2568528, which was caused by incorrect 
 adjustment of attribute FILLER offset.  Reported by Andy Bontoft.
 
+2/13/09: Bug Fix: Fixed bug 2596397, which was caused by mactime
+doing text-based sorting on dates of different lengths (fix was to
+pad with 0s).  Fix by Bruce Nikkel.
 
 
 ---------------- VERSION 3.0.0 -------------- 
