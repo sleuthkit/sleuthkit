@@ -188,100 +188,6 @@ hfs_get_keylen(HFS_INFO * hfs, uint16_t keylen,
         return tsk_getu16(fs->endian, header->max_len);
 }
 
-/** \internal
- * Returns the byte offset on disk of the given node (nodenum) in the Extents B-tree.
- * Unlike the other files on disk, the Extents B-tree never occupies more than 8
- * extents, so we can simply use the in-volume-header extents to get its layout.
- * @param hfs File system
- * @param hdr Header record (to get node size)
- * @param nodenum Node number in B-Tree to find
- * @returns byte offset or 0 on failure. 
- */
-#if 0
-static TSK_OFF_T
-hfs_ext_find_node_offset(HFS_INFO * hfs, hfs_btree_header_record * hdr,
-    uint32_t nodenum)
-{
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
-    uint16_t nodesize;          /* size of each node */
-    int i;
-    uint64_t bytes;             /* bytes left this extent */
-    TSK_OFF_T r_offs;           /* offset we are reading from */
-    TSK_OFF_T f_offs;           /* offset into the extents file */
-    TSK_OFF_T n_offs;           /* offset of the node we are looking for */
-    hfs_sb *sb = hfs->fs;
-
-    tsk_error_reset();
-
-    if (tsk_verbose)
-        tsk_fprintf(stderr, "hfs_ext_find_node_offset: finding offset of "
-            "btree node: %" PRIu32 "\n", nodenum);
-
-    /* find first extent with data in it */
-    /* included from previous code -- are there cases where
-       the initial extents will appear empty? */
-    i = 0;
-    while ((i < 8)
-        && !(tsk_getu32(fs->endian, sb->ext_file.extents[i].blk_cnt)))
-        i++;
-
-    if (i > 7) {
-        tsk_errno = TSK_ERR_FS_GENFS;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "hfs_ext_find_node_offset: no data found in extents file extents");
-        return 0;
-    }
-
-    bytes =
-        tsk_getu32(fs->endian,
-        sb->ext_file.extents[i].blk_cnt) * (TSK_OFF_T) fs->block_size;
-    r_offs =
-        tsk_getu32(fs->endian,
-        sb->ext_file.extents[i].start_blk) * (TSK_OFF_T) fs->block_size;
-    f_offs = 0;
-
-    nodesize = tsk_getu16(fs->endian, hfs->catalog_header.nodesize);
-
-    /* calculate where we will find the 'nodenum' node */
-    n_offs = nodesize * nodenum;
-
-    while (f_offs < n_offs) {
-
-        if (n_offs <= (f_offs + (TSK_OFF_T) bytes)) {
-
-            r_offs += n_offs - f_offs;
-            f_offs = n_offs;
-
-        }
-        else {
-
-            i++;
-
-            if (i > 7) {
-                tsk_errno = TSK_ERR_FS_GENFS;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
-                    "hfs_ext_find_node_offset: file seek error while searching for node %"
-                    PRIu32 "\n", nodenum);
-                return 0;
-            }
-
-            r_offs =
-                tsk_getu32(fs->endian,
-                sb->ext_file.extents[i].start_blk) *
-                (TSK_OFF_T) fs->block_size;
-            f_offs += bytes;
-            bytes =
-                tsk_getu32(fs->endian,
-                sb->ext_file.extents[i].blk_cnt) *
-                (TSK_OFF_T) fs->block_size;
-
-        }
-    }
-
-    return r_offs;
-
-}
-#endif
 
 /** \internal
  * Process a B-Tree node record and return the record contents and the 
@@ -344,504 +250,7 @@ hfs_read_key(HFS_INFO * hfs, hfs_btree_header_record * header,
     return rec_off + 2 + keylen;        /* return record data address */
 }
 
-/** \internal
- * Return the disk byte offset of a record in a btree node.
- * Note that this points to start of the record (hfs_read_key
- * can be used to determine the content offset).
- *
- * @param hfs File system node is in
- * @param node_off Byte offset in disk of start of node. 
- * @param nodesize Size, in bytes, of each node
- * @param rec Record number to return offset of
- * @returns 0 on error or offset. 
- */
-TSK_OFF_T
-hfs_get_bt_rec_off(HFS_INFO * hfs, TSK_OFF_T node_off,
-    uint16_t nodesize, uint16_t rec)
-{
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
-    TSK_OFF_T off;
-    char buf[2];
 
-    tsk_error_reset();
-
-    off = node_off + nodesize - 2 * (rec + 1);  /* location of record offset */
-    if (hfs_checked_read_random(fs, buf, 2, off))       /* read record offset */
-        return 0;
-    off = node_off + tsk_getu16(fs->endian, buf);       /* go to record */
-
-    if (tsk_verbose)
-        tsk_fprintf(stderr,
-            "hfs_get_bt_rec_off: record %" PRIu16 " @ %" PRIu64
-            " (node @ %" PRIu64 ")\n", rec, off, node_off);
-
-    return off;
-}
-
-/* Advances to the next record in the Extents B-tree, given information about
- * where you currently are in the B-tree.
- * Assumes that you are actually keeping track of these many fields. They
- * must correctly contain the current values. If the current node is changed,
- * they will be changed to their new values.
- * Returns cur_node. If you have reached the end of the node chain (no more
- * records), cur_node will be set to zero and returned.
- */
-/** \internal
- * Takes current state variables as input and advances to next record.  If
- * the next record is in a different node, then it advances the node.  If a
- * new node needs to be loaded, the values passed as arguments are updated. 
- *
- * @param hfs [in] File system being analyzed
- * @param rec [in,out] Record number of the current record in the current node
- * @param num_rec [in,out] Number of records in current node
- * @param node [in,out] Node structure for current node
- * @param cur_node [in,out] Address of current node
- * @param cur_node_off [in,out] XXXX
- * @param header [in] Header of tree
- * @returns 0 on error */
-#if 0
-static uint32_t
-hfs_ext_next_record(HFS_INFO * hfs, uint16_t * rec, uint16_t * num_rec,
-    hfs_btree_node * node, uint32_t * cur_node, TSK_OFF_T * cur_node_off,
-    hfs_btree_header_record * header)
-{
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
-
-    tsk_error_reset();
-
-    /* passing invalid pointers (or null) to this function is unchecked */
-
-    (*rec)++;
-
-    if (*rec >= *num_rec) {     /* ran out of records in this node */
-        *cur_node = tsk_getu32(fs->endian, node->flink);
-        if (*cur_node == 0)
-            return *cur_node;
-        *cur_node_off = hfs_ext_find_node_offset(hfs, header, *cur_node);
-        if (*cur_node_off == 0) {
-            snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                "hfs_ext_next_record: find next node offset (%" PRIu32 ")",
-                *cur_node);
-            return 0;
-        }
-        if (hfs_checked_read_random(fs, (char *) node,
-                sizeof(hfs_btree_node), *cur_node_off)) {
-            snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                "hfs_ext_next_record: read btree node %" PRIu32 " at %"
-                PRIuDADDR, *cur_node, *cur_node_off);
-            return 0;
-        }
-        *num_rec = tsk_getu16(fs->endian, node->num_rec);
-        *rec = 0;
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "hfs_ext_next_record: advanced to next node %" PRIu32
-                "(@ %" PRIu64 ", has %" PRIu16 "records \n", *cur_node,
-                *cur_node_off, *num_rec);
-    }
-    else {
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "hfs_ext_next_record: advanced to record %" PRIu16 "\n",
-                *rec);
-    }
-
-    return *cur_node;
-}
-#endif
-
-
-/**  \internal
- * Returns the extents (data runs) for the data fork of a given file.  The
- * caller must free the returned array. 
- * 
- * @param hfs File system being analyzed
- * @param cnid CNID of the file to get data on
- * @param first_ext Pointer to 8 extents of file that have already been found 
- * (or NULL).  Note if it is not NULL, it must have 8 elements in the array. It
- * will be copied to start of returned array. 
- * @returns Array of extents (not guaranteed to be a multple of 8).  The final
- * entry will have 0,0 entries.  NULL on error.  
- * Note that if first_ext is NULL and no extents are
- * found, this function will also return NULL.
- * May set up to error string 2.  
- */
-#if 0
-static hfs_ext_desc *
-hfs_ext_find_extent_record(HFS_INFO * hfs, uint32_t cnid,
-    hfs_ext_desc * first_ext)
-{
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
-
-    hfs_btree_header_record header;     /* header for the Extents btree */
-    uint16_t nodesize;          /* size of nodes (all, regardless of the name) */
-
-    uint32_t cur_node;          /* node id of the current node */
-
-    hfs_ext_desc *out_ext;
-    int num_out_ext;
-
-    TSK_OFF_T off;
-
-    char buf[4];
-    int i;
-
-    tsk_error_reset();
-
-    /* initialize the output extents */
-    if (first_ext == NULL) {
-        num_out_ext = 0;
-        out_ext = NULL;
-    }
-    else {
-        num_out_ext = 8;
-        out_ext = (hfs_ext_desc *)
-            tsk_malloc(9 * sizeof(hfs_ext_desc));
-        if (out_ext == NULL)
-            return NULL;
-        memcpy(out_ext, first_ext, 8 * sizeof(hfs_ext_desc));
-        memset(out_ext + 8, 0, sizeof(hfs_ext_desc));
-        /* we make 9 output extents so that if these are all the extents,
-           there's a guaranteed terminating (0,0); we only set num_out_ext
-           to 8 so that we overwrite our 9th extent if we don't need it */
-    }
-
-    /* Get the starting address of the extents file to read header record */
-    //  ERROR: header is 0 here, which doesn't help to find the node size, which is why it is passe to find_....
-    off = hfs_ext_find_node_offset(hfs, &header, 0);
-    if (off == 0) {
-        snprintf(tsk_errstr2, TSK_ERRSTR_L,
-            "hfs_ext_find_extent_record: finding extents header node");
-        if (out_ext != NULL)
-            free(out_ext);
-        return NULL;
-    }
-    off += 14;                  // sizeof(hfs_btree_node) 
-    if (hfs_checked_read_random(fs, (char *) &header, sizeof(header), off)) {
-        snprintf(tsk_errstr2, TSK_ERRSTR_L,
-            "hfs_ext_find_extent_record: reading extents header node at %"
-            PRIuDADDR, off);
-        if (out_ext != NULL)
-            free(out_ext);
-        return NULL;
-    }
-    nodesize = tsk_getu16(fs->endian, header.nodesize);
-
-    /* start at root node */
-    cur_node = tsk_getu32(fs->endian, header.root);
-
-    /* if the root node is zero, then the extents btree is empty */
-    /* if no files have overflow extents, the Extents B-tree still
-       exists on disk, but is an empty B-tree containing only
-       the header node */
-    if (cur_node == 0) {
-        if (tsk_verbose)
-            tsk_fprintf(stderr, "hfs_ext_find_extent_record: "
-                "empty extents btree\n");
-        return out_ext;
-    }
-
-    if (tsk_verbose)
-        tsk_fprintf(stderr, "hfs_ext_find_extent_record: starting at "
-            "root node %" PRIu32 "; header @ %" PRIuOFF "; nodesize = %"
-            PRIu16 "\n", cur_node, off, nodesize);
-
-    while (1) {
-        TSK_OFF_T cur_off;      /* start address of cur_node */
-        hfs_btree_node node;    /* data of the current node */
-        uint16_t num_rec;       /* number of records in this node */
-        hfs_ext_key key;        /* current key */
-        TSK_DADDR_T addr, recaddr;
-        uint16_t rec, recno;
-
-        /* load node header */
-        cur_off = hfs_ext_find_node_offset(hfs, &header, cur_node);
-        if (cur_off == 0) {
-            snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                "hfs_ext_find_extent_record: finding extents node (%"
-                PRIu32 ")", cur_node);
-            if (out_ext != NULL)
-                free(out_ext);
-            return NULL;
-        }
-
-
-        if (hfs_checked_read_random(fs, (char *) &node, sizeof(node),
-                cur_off)) {
-            snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                "hfs_ext_find_extent_record: reading extents node (%"
-                PRIu32 " at %" PRIuDADDR ")", cur_node, cur_off);
-            if (out_ext != NULL)
-                free(out_ext);
-            return NULL;
-        }
-
-        num_rec = tsk_getu16(fs->endian, node.num_rec);
-
-        if (tsk_verbose)
-            tsk_fprintf(stderr, "hfs_ext_find_extent_record: node %" PRIu32
-                " @ %" PRIu64 " has %" PRIu16 " records\n",
-                cur_node, cur_off, num_rec);
-
-        if (num_rec == 0) {
-            tsk_errno = TSK_ERR_FS_GENFS;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
-                "hfs_ext_find_extent_record: zero records in node %"
-                PRIu32, cur_node);
-            if (out_ext != NULL)
-                free(out_ext);
-            return NULL;
-        }
-
-        /* find largest key smaller than or equal to cnid */
-        recno = 0;
-        recaddr = 0;
-        for (rec = 0; rec < num_rec; rec++) {
-            int cmp;
-
-            // get the record offset
-            addr = hfs_get_bt_rec_off(hfs, cur_off, nodesize, rec);
-            if (addr == 0) {
-                snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                    "hfs_ext_find_extent_record: finding record %" PRIu16
-                    " in node %" PRIu32, rec, cur_node);
-                if (out_ext != NULL)
-                    free(out_ext);
-                return NULL;
-            }
-
-            // get the content offet and read the key
-            addr =
-                hfs_read_key(hfs, &header, addr, (char *) &key,
-                sizeof(hfs_ext_key), 1);
-            if (addr == 0) {
-                snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                    "hfs_ext_find_extent_record: reading key for record %"
-                    PRIu16 " in node %" PRIu32, rec, cur_node);
-                if (out_ext != NULL)
-                    free(out_ext);
-                return NULL;
-            }
-            cmp = hfs_ext_compare_keys(hfs, cnid, &key);
-
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "hfs_ext_find_extent_record: record %" PRIu16 " @ %"
-                    PRIu64 "; keylen %" PRIu16 " (%" PRIu32 ", %" PRIu8
-                    ", %" PRIu32 "); compare: %d\n", rec, addr,
-                    tsk_getu16(fs->endian, key.key_len),
-                    tsk_getu32(fs->endian, key.file_id), key.fork_type[0],
-                    tsk_getu32(fs->endian, key.start_block), cmp);
-
-            /* find the largest key less than or equal to our key */
-            /* if all keys are larger than our key, select the leftmost key */
-            if ((cmp <= 0) || (recaddr == 0)) {
-                recaddr = addr;
-                recno = rec;
-            }
-            if (cmp >= 0)
-                break;
-        }
-
-        if (node.kind == HFS_BTREE_INDEX_NODE) {
-            /* replace cur node number with the node number referenced
-             * by the found key, continue until we hit a leaf. */
-            if (hfs_checked_read_random(fs, buf, 4, recaddr)) {
-                snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                    "hfs_ext_find_extent_record: reading pointer in record %"
-                    PRIu16 " in node %" PRIu32, rec, cur_node);
-                if (out_ext != NULL)
-                    free(out_ext);
-                return NULL;
-            }
-            cur_node = tsk_getu32(fs->endian, buf);
-        }
-        else if (node.kind == HFS_BTREE_LEAF_NODE) {
-            rec = recno;        /* using rec as our counting variable again, for kicks */
-
-            /* reget key */
-            addr = hfs_get_bt_rec_off(hfs, cur_off, nodesize, rec);
-            if (addr == 0) {
-                snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                    "hfs_ext_find_extent_record: finding record %" PRIu16
-                    " in node %" PRIu32, rec, cur_node);
-                if (out_ext != NULL)
-                    free(out_ext);
-                return NULL;
-            }
-            addr =
-                hfs_read_key(hfs, &header, addr, (char *) &key,
-                sizeof(hfs_ext_key), 1);
-            if (addr == 0) {
-                snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                    "hfs_ext_find_extent_record: reading key for record %"
-                    PRIu16 " in node %" PRIu32, rec, cur_node);
-                if (out_ext != NULL)
-                    free(out_ext);
-                return NULL;
-            }
-
-            /* we've been searching for a start block of zero, and we're
-             * essentially guaranteed it won't have a start block of zero;
-             * as a result, we may very well be one left of our target --
-             * but since we alternately take the leftmost record, we might *not*
-             * be one left of our target */
-
-            /* we don't check for it, but note that the current record would have
-             * to be less than the record we're looking for -- if it's greater,
-             * there's no record in the btree for us */
-
-            /* correct this, first */
-
-            /* if associated with the wrong file */
-            if (tsk_getu32(fs->endian, key.file_id) != cnid) {
-
-                /* go to the next record */
-                if ((hfs_ext_next_record(hfs, &rec, &num_rec, &node,
-                            &cur_node, &cur_off, &header)) == 0) {
-                    if (cur_node != 0) {
-                        snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                            "hfs_ext_find_extent_record: advancing to next record (record %"
-                            PRIu16 " node %" PRIu32 ")", rec, cur_node);
-                        if (out_ext != NULL)
-                            free(out_ext);
-                        return NULL;
-                    }
-
-                    /* here, means that our file is not in the overflow extents tree */
-                    if (tsk_verbose)
-                        tsk_fprintf(stderr, "hfs_ext_find_extent_record: "
-                            "end of extents btree before finding any extents\n");
-                    return out_ext;
-                }
-
-                /* load new key data, since I'm about to use it */
-                addr = hfs_get_bt_rec_off(hfs, cur_off, nodesize, rec);
-                if (addr == 0) {
-                    snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                        "hfs_ext_find_extent_record: finding record %"
-                        PRIu16 " in node %" PRIu32, rec, cur_node);
-                    if (out_ext != NULL)
-                        free(out_ext);
-                    return NULL;
-                }
-                addr =
-                    hfs_read_key(hfs, &header, addr, (char *) &key,
-                    sizeof(hfs_ext_key), 1);
-                if (addr == 0) {
-                    snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                        "hfs_ext_find_extent_record: reading key for record %"
-                        PRIu16 " in node %" PRIu32, rec, cur_node);
-                    if (out_ext != NULL)
-                        free(out_ext);
-                    return NULL;
-                }
-            }
-
-            /* iterate as long as this is associated with our file */
-            while (1) {
-                /* expand output extents record */
-                num_out_ext += 8;
-                if (out_ext) {  /* already allocated */
-                    out_ext = (hfs_ext_desc *)
-                        tsk_realloc((char *) out_ext,
-                        num_out_ext * sizeof(hfs_ext_desc));
-                }
-                else {          /* not already allocated */
-                    out_ext = (hfs_ext_desc *)
-                        tsk_malloc(num_out_ext * sizeof(hfs_ext_desc));
-                }
-                if (out_ext == NULL)
-                    return NULL;
-
-                /* if we've moved on to a different file (or fork), stop */
-                if ((tsk_getu32(fs->endian, key.file_id) != cnid) ||
-                    (key.fork_type[0] != 0)) {
-                    memset(((char *) out_ext) + (num_out_ext * 8 - 64), 0,
-                        64);
-                    return out_ext;
-                }
-
-                /* read extents data */
-                if (hfs_checked_read_random(fs,
-                        ((char *) out_ext) + (num_out_ext * 8 - 64), 64,
-                        addr)) {
-                    snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                        "hfs_ext_find_extent_record: reading extents data (record %"
-                        PRIu16 " node %" PRIu32 ")", rec, cur_node);
-                    free(out_ext);
-                    return NULL;
-                }
-
-                if (tsk_verbose) {
-                    for (i = num_out_ext - 8; i < num_out_ext; i++) {
-                        tsk_fprintf(stderr, "hfs_ext_find_extent_record: "
-                            "overflow extent start: %" PRIu32 ", length: %"
-                            PRIu32 "\n", tsk_getu32(fs->endian,
-                                out_ext[i].start_blk),
-                            tsk_getu32(fs->endian, out_ext[i].blk_cnt));
-                    }
-                }
-
-                /* according to Apple, if any start_blk and blk_cnt both == 0,
-                   we can stop, but we'll continue until we run out of
-                   extents for this file and fork regardless of their content */
-
-                /* go to the next record */
-                if ((hfs_ext_next_record(hfs, &rec, &num_rec, &node,
-                            &cur_node, &cur_off, &header)) == 0) {
-                    if (cur_node != 0) {
-                        snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                            "hfs_ext_find_extent_record: advancing to next record (record %"
-                            PRIu16 " node %" PRIu32 ")", rec, cur_node);
-                        free(out_ext);
-                        return NULL;
-                    }
-
-                    /* ran out of records (file was at the end of the tree) */
-                    if (tsk_verbose)
-                        tsk_fprintf(stderr, "hfs_ext_find_extent_record: "
-                            "end of extents btree reached while finding extents\n");
-                    return out_ext;
-                }
-
-                /* load new key data */
-                addr = hfs_get_bt_rec_off(hfs, cur_off, nodesize, rec);
-                if (addr == 0) {
-                    snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                        "hfs_ext_find_extent_record: finding record %"
-                        PRIu16 " in node %" PRIu32, rec, cur_node);
-                    free(out_ext);
-                    return NULL;
-                }
-                addr =
-                    hfs_read_key(hfs, &header, addr, (char *) &key,
-                    sizeof(hfs_ext_key), 1);
-                if (addr == 0) {
-                    snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                        "hfs_ext_find_extent_record: reading key for record %"
-                        PRIu16 " in node %" PRIu32, rec, cur_node);
-                    free(out_ext);
-                    return NULL;
-                }
-
-            }
-
-        }
-        else {
-            tsk_errno = TSK_ERR_FS_GENFS;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
-                "hfs_ext_find_extent_record: btree node %" PRIu32
-                " (%" PRIu64 ") is neither index nor leaf (%" PRIu8 ")",
-                cur_node, cur_off, node.kind);
-            if (out_ext != NULL)
-                free(out_ext);
-            return NULL;
-        }
-    }
-
-}
-#endif
 
 /**
  * Convert the extents runs to TSK_FS_ATTR_RUN runs.
@@ -1861,8 +1270,8 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
     // convert the  runs in the volume header to attribute runs 
     if (((attr_run =
-            hfs_extents_to_attr(fs, hfs->fs->cat_file.extents,
-                0)) == NULL)  && (tsk_errno)) {
+                hfs_extents_to_attr(fs, hfs->fs->cat_file.extents,
+                    0)) == NULL) && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_make_catalog",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -1932,8 +1341,8 @@ hfs_make_extents(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 
     if (((attr_run =
-            hfs_extents_to_attr(fs, hfs->fs->ext_file.extents,
-                0)) == NULL)  && (tsk_errno)) {
+                hfs_extents_to_attr(fs, hfs->fs->ext_file.extents,
+                    0)) == NULL) && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_make_extents",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -1997,8 +1406,8 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         tsk_getu64(fs->endian, hfs->fs->alloc_file.logic_sz);
 
     if (((attr_run =
-            hfs_extents_to_attr(fs, hfs->fs->alloc_file.extents,
-                0)) == NULL)  && (tsk_errno)) {
+                hfs_extents_to_attr(fs, hfs->fs->alloc_file.extents,
+                    0)) == NULL) && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_make_blockmap",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -2068,8 +1477,8 @@ hfs_make_startfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         tsk_getu64(fs->endian, hfs->fs->start_file.logic_sz);
 
     if (((attr_run =
-            hfs_extents_to_attr(fs, hfs->fs->start_file.extents,
-                0)) == NULL)  && (tsk_errno)) {
+                hfs_extents_to_attr(fs, hfs->fs->start_file.extents,
+                    0)) == NULL) && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_make_startfile",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -2139,8 +1548,8 @@ hfs_make_attrfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         tsk_getu64(fs->endian, hfs->fs->attr_file.logic_sz);
 
     if (((attr_run =
-            hfs_extents_to_attr(fs, hfs->fs->attr_file.extents,
-                0)) == NULL)  && (tsk_errno)) {
+                hfs_extents_to_attr(fs, hfs->fs->attr_file.extents,
+                    0)) == NULL) && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_make_attrfile",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -2265,10 +1674,10 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file * a_entry,
 
     a_fs_meta->addr = tsk_getu32(fs->endian, a_entry->cnid);
 
-    // All entries here are used.  @@@ What about alloc?
+    // All entries here are used.  
     a_fs_meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
 
-    /* TODO could fill in name2 with this entry's name and parent inode
+    /* TODO @@@ could fill in name2 with this entry's name and parent inode
        from Catalog entry */
 
     /* If a sym link, copy the destination to a_fs_meta->link */
@@ -2471,7 +1880,8 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
 
     // Get the data fork and convert it to the TSK format
     fork = (hfs_fork *) fs_file->meta->content_ptr;
-    if (((attr_run = hfs_extents_to_attr(fs, fork->extents, 0)) == NULL)  && (tsk_errno)) {
+    if (((attr_run = hfs_extents_to_attr(fs, fork->extents, 0)) == NULL)
+        && (tsk_errno)) {
         strncat(tsk_errstr2, " - hfs_load_attrs",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         return 1;
@@ -2857,8 +2267,11 @@ print_inode_file(FILE * hFile, TSK_FS_INFO * fs, TSK_INUM_T inum)
 static uint8_t
 hfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
 {
-    tsk_fprintf(stderr, "fscheck not implemented for HFS yet");
-    return 0;
+    tsk_error_reset();
+    tsk_errno = TSK_ERR_FS_UNSUPFUNC;
+    snprintf(tsk_errstr, TSK_ERRSTR_L,
+        "fscheck not implemented for HFS yet");
+    return 1;
 }
 
 
@@ -3103,12 +2516,12 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "File\n");
     else if (fs_file->meta->type == TSK_FS_META_TYPE_DIR)
         tsk_fprintf(hFile, "Folder\n");
-    else 
+    else
         tsk_fprintf(hFile, "\n");
 
     tsk_fs_make_ls(fs_file->meta, hfs_mode);
     tsk_fprintf(hFile, "Mode:\t%s\n", hfs_mode);
-    tsk_fprintf(hFile, "Size:\t%"PRIuOFF"\n", fs_file->meta->size);
+    tsk_fprintf(hFile, "Size:\t%" PRIuOFF "\n", fs_file->meta->size);
 
     tsk_fprintf(hFile, "uid / gid: %" PRIuUID " / %" PRIuGID "\n",
         fs_file->meta->uid, fs_file->meta->gid);

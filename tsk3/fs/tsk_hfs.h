@@ -139,7 +139,7 @@
 #define HFS_EXTENTS_FILE_NAME   "$ExtentsFile"
 #define HFS_CATALOG_FILE_ID        4    // catalog file
 #define HFS_CATALOG_FILE_NAME   "$CatalogFile"
-#define HFS_BAD_BLOCK_FILE_ID      5    
+#define HFS_BAD_BLOCK_FILE_ID      5
 #define HFS_BAD_BLOCK_FILE_NAME   "$BadBlockFile"
 #define HFS_ALLOCATION_FILE_ID     6    // allocation file (HFS+)
 #define HFS_ALLOCATION_FILE_NAME   "$AllocationFile"
@@ -484,20 +484,4 @@ extern uint8_t hfs_jblk_walk(TSK_FS_INFO *, TSK_DADDR_T, TSK_DADDR_T, int,
 extern uint8_t hfs_jentry_walk(TSK_FS_INFO *, int, TSK_FS_JENTRY_WALK_CB,
     void *);
 
-/*
-extern TSK_OFF_T hfs_cat_find_node_offset(HFS_INFO *, uint32_t);
-extern TSK_OFF_T hfs_get_bt_rec_off(HFS_INFO *, TSK_OFF_T, uint16_t,
-    uint16_t);
-extern TSK_OFF_T hfs_read_key(HFS_INFO *, hfs_btree_header_record *,
-    TSK_OFF_T, char *, int, uint8_t);
-extern int hfs_compare_catalog_keys(HFS_INFO *, hfs_cat_key *,
-    hfs_cat_key *);
-
-extern uint8_t hfs_read_thread_record(HFS_INFO *, TSK_OFF_T,
-    hfs_thread *);
-extern uint32_t hfs_cat_next_record(HFS_INFO *, uint16_t *, uint16_t *,
-    hfs_btree_node *, uint32_t *, TSK_OFF_T *, hfs_btree_header_record *);
-extern uint8_t hfs_read_file_folder_record(HFS_INFO *, TSK_OFF_T,
-    hfs_file_folder *);
-*/
 #endif
