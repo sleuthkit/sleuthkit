@@ -8,6 +8,8 @@
 ** 14900 Conference Center Drive
 ** Chantilly, VA 20151
 **
+** Copyright (c) 2009 Brian Carrier.  All rights reserved.
+** 
 ** Judson Powers [jpowers@atc-nycorp.com]
 ** Copyright (c) 2008 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
@@ -80,27 +82,8 @@
  * Constants
  */
 
-#define HFS_MAGIC	    0x4244      /* BD in big endian */
-#define HFSPLUS_MAGIC	0x482b  /* H+ in big endian */
-#define HFSX_MAGIC      0x4858  /* HX in big endian */
-
-#define HFSPLUS_VERSION 0x0004  /* all HFS+ volumes are version 4 */
-#define HFSX_VERSION    0x0005  /* HFSX volumes start with version 5 */
-
-#define HFSPLUS_MOUNT_VERSION 0x31302e30        /* '10.0' for Mac OS X */
-#define HFSJ_MOUNT_VERSION    0x4846534a        /* 'HFSJ' for journaled HFS+ on Mac OS X */
-#define FSK_MOUNT_VERSION     0x46534b21        /* 'FSK!' for failed journal replay */
-#define FSCK_MOUNT_VERSION    0x6673636b        /* 'fsck' for fsck_hfs */
-#define OS89_MOUNT_VERSION    0x382e3130        /* '8.10' for Mac OS 8.1-9.2.2 */
-
-#define HFS_SBOFF	1024
 #define HFS_FILE_CONTENT_LEN 160        // size of two hfs_fork data structures
 
-/* b-tree kind types */
-#define HFS_BTREE_LEAF_NODE	-1
-#define HFS_BTREE_INDEX_NODE	 0
-#define HFS_BTREE_HEADER_NODE	 1
-#define HFS_BTREE_MAP_NODE	 2
 
 #define HFS_MAXNAMLEN		765     /* maximum HFS+ name length in bytes, when encoded in UTF8, not including terminating null */
 
@@ -118,19 +101,7 @@
  */
 #define NSEC_BTWN_1904_1970	(uint32_t) 2082844800U
 
-#define HFS_BIT_VOLUME_UNMOUNTED	(uint32_t)(1 << 8)      /* set if the volume was unmounted properly; as per TN 1150, modern Macintosh OSes always leave this bit set for the boot volume */
-#define HFS_BIT_VOLUME_BADBLOCKS        (uint32_t)(1 << 9)      /* set if there are any bad blocks for this volume (in the Extents B-tree) */
-#define HFS_BIT_VOLUME_INCONSISTENT	(uint32_t)(1 << 11)     /* cleared if the volume was unmounted properly */
-#define HFS_BIT_VOLUME_CNIDS_REUSED     (uint32_t)(1 << 12)     /* set if CNIDs have wrapped around past the maximum value and are being reused; in this case, there are CNIDs on the disk larger than the nextCatalogId field */
-#define HFS_BIT_VOLUME_JOURNALED	(uint32_t)(1 << 13)
-#define HFS_BIT_VOLUME_SOFTWARE_LOCK	(uint32_t)(1 << 14)     /* set if volume should be write-protected in software */
 
-/* constants for BTree header record attributes */
-#define HFS_BT_BIGKEYS 0x00000002       /* kBTBigKeysMask : key length field is 16 bits */
-// NOTE: HFS_BT_BIGKEYS must be set for all HFS+ BTrees
-#define HFS_BT_VARKEYS 0x00000004       /* kBTVariableIndexKeysMask : keys in index nodes are variable length */
-// NOTE: this bit is required to be set for the Catalog B-tree and cleared
-// for the Extents B-tree
 
 /* predefined files */
 #define HFS_ROOT_PARENT_ID         1
@@ -182,9 +153,9 @@ typedef struct {
     uint8_t o_flags;            /* owner flags */
     uint8_t mode[2];            /* file mode */
     union {
-        uint8_t inum[4];        /* inode number */
-        uint8_t nlink[4];       /* link count */
-        uint8_t raw[4];         /* raw device */
+        uint8_t inum[4];        /* inode number (for hard link files) */
+        uint8_t nlink[4];       /* link count (for direct node files) */
+        uint8_t raw[4];         /* device id (for block and char device files) */
     } special;
 } hfs_access_perm;
 
@@ -223,14 +194,61 @@ typedef struct {
     hfs_ext_desc extents[8];
 } hfs_extents;
 
-/* fork data structure */
+/* Fork data structure.  This is used in both the volume header and catalog tree. */
 typedef struct {
     uint8_t logic_sz[8];        /* The size (in bytes) of the fork */
-    uint8_t clmp_sz[4];         /* For forks in volume header, clump size.  For
+    uint8_t clmp_sz[4];         /* For "special files" in volume header, clump size.  For
                                  * catalog files, this is number of blocks read or not used. */
     uint8_t total_blk[4];       /* total blocks in all extents of the fork */
     hfs_ext_desc extents[8];
 } hfs_fork;
+
+
+
+/****************************************************
+ * Super block / volume header
+ */
+#define HFS_VH_OFF	1024    // byte offset in volume to volume header
+
+// signature values
+#define HFS_VH_SIG_HFS	    0x4244      /* BD in big endian */
+#define HFS_VH_SIG_HFSPLUS	0x482b  /* H+ in big endian */
+#define HFS_VH_SIG_HFSX      0x4858     /* HX in big endian */
+
+// version values
+#define HFS_VH_VER_HFSPLUS 0x0004       /* all HFS+ volumes are version 4 */
+#define HFS_VH_VER_HFSX    0x0005       /* HFSX volumes start with version 5 */
+
+// attr values (
+// bits 0 to 7 are reserved
+#define HFS_VH_ATTR_UNMOUNTED       (uint32_t)(1<<8)    /* set if the volume was unmounted properly; as per TN 1150, modern Macintosh OSes always leave this bit set for the boot volume */
+#define HFS_VH_ATTR_BADBLOCKS       (uint32_t)(1<<9)    /* set if there are any bad blocks for this volume (in the Extents B-tree) */
+#define HFS_VH_ATTR_NOCACHE         (uint32_t)(1<<10)   /* set if volume should not be cached */
+#define HFS_VH_ATTR_INCONSISTENT	(uint32_t)(1<<11)       /* cleared if the volume was unmounted properly */
+#define HFS_VH_ATTR_CNIDS_REUSED    (uint32_t)(1<<12)   /* set if CNIDs have wrapped around past the maximum value and are being reused; in this case, there are CNIDs on the disk larger than the nextCatalogId field */
+#define HFS_VH_ATTR_JOURNALED       (uint32_t)(1<<13)
+// 14 is reserved
+#define HFS_VH_ATTR_SOFTWARE_LOCK	(uint32_t)(1 << 15)     /* set if volume should be write-protected in software */
+// 16 to 31 are reserved
+
+
+// last_mnt_ver values
+#define HFS_VH_MVER_HFSPLUS 0x31302e30  /* '10.0' for Mac OS X */
+#define HFS_VH_MVER_HFSJ    0x4846534a  /* 'HFSJ' for journaled HFS+ on Mac OS X */
+#define HFS_VH_MVER_FSK     0x46534b21  /* 'FSK!' for failed journal replay */
+#define HFS_VH_MVER_FSCK    0x6673636b  /* 'fsck' for fsck_hfs */
+#define HFS_VH_MVER_OS89    0x382e3130  /* '8.10' for Mac OS 8.1-9.2.2 */
+
+/* Index values for finder_info array */
+#define HFS_VH_FI_BOOT  0       /*Directory ID of bootable directory */
+#define HFS_VH_FI_START 1       /* Parent dir ID of startup app */
+#define HFS_VH_FI_OPEN  2       /* Directory to open when volume is mounted */
+#define HFS_VH_FI_BOOT9 3       /* Directory ID of OS 8 or 9 bootable sys folder */
+#define HFS_VH_FI_RESV1 4
+#define HFS_VH_FI_BOOTX 5       /* Directory ID of OS X bootable system (CoreServices dir) */
+#define HFS_VH_FI_ID1   6       /* OS X Volume ID part 1 */
+#define HFS_VH_FI_ID2   7       /* OS X Volume ID part 2 */
+
 
 /*
 ** HFS+/HFSX Super Block
@@ -241,23 +259,30 @@ typedef struct {
     uint8_t attr[4];            /* volume attributes */
     uint8_t last_mnt_ver[4];    /* last mounted version */
     uint8_t jinfo_blk[4];       /* journal info block */
-    uint8_t c_date[4];          /* volume creation date */
-    uint8_t m_date[4];          /* volume last modified date */
-    uint8_t bkup_date[4];       /* volume last backup date */
-    uint8_t chk_date[4];        /* date of last consistency check */
-    uint8_t file_cnt[4];        /* number of files on volume */
-    uint8_t fldr_cnt[4];        /* number of folders on volume */
-    uint8_t blk_sz[4];          /* allocation block size */
+
+    uint8_t cr_date[4];         /* volume creation date (NOT in GMT) */
+    uint8_t m_date[4];          /* volume last modified date (GMT) */
+    uint8_t bkup_date[4];       /* volume last backup date (GMT) */
+    uint8_t chk_date[4];        /* date of last consistency check (GMT) */
+
+    uint8_t file_cnt[4];        /* number of files on volume (not incl. special files) */
+    uint8_t fldr_cnt[4];        /* number of folders on volume (not incl. root dir) */
+
+    uint8_t blk_sz[4];          /* allocation block size (in bytes) */
     uint8_t blk_cnt[4];         /* number of blocks on disk */
     uint8_t free_blks[4];       /* unused block count */
-    uint8_t next_alloc[4];      /* start of next allocation search */
-    uint8_t rsrc_clmp_sz[4];    /* default clump size for resource forks */
-    uint8_t data_clmp_sz[4];    /* default clump size for data forks */
-    uint8_t next_cat_id[4];     /* next catalog id */
-    uint8_t write_cnt[4];       /* write count */
-    uint8_t enc_bmp[8];         /* encoding bitmap */
-    uint8_t finder_info[32];
-    hfs_fork alloc_file;        /* location and size of allocation file */
+
+    uint8_t next_alloc[4];      /* block addr to start allocation search from */
+    uint8_t rsrc_clmp_sz[4];    /* default clump size for resource forks (in bytes) */
+    uint8_t data_clmp_sz[4];    /* default clump size for data forks (in bytes) */
+    uint8_t next_cat_id[4];     /* next catalog id for allocation */
+
+    uint8_t write_cnt[4];       /* write count: incremented each time it is mounted and modified */
+    uint8_t enc_bmp[8];         /* encoding bitmap (identifies which encodings were used in FS) */
+
+    uint8_t finder_info[8][4];  /* Special finder details */
+
+    hfs_fork alloc_file;        /* location and size of allocation bitmap file */
     hfs_fork ext_file;          /* location and size of extents file */
     hfs_fork cat_file;          /* location and size of catalog file */
     hfs_fork attr_file;         /* location and size of attributes file */
@@ -300,19 +325,82 @@ typedef struct {
     uint8_t drCTExtRec[12];     /* extent record with size and location of catalog file */
 } hfs_wrapper_sb;
 
+
+
+/********* B-Tree data structures **********/
+
+/* Node descriptor that starts each node in a B-tree */
+// type values
+#define HFS_BT_NODE_TYPE_LEAF	-1
+#define HFS_BT_NODE_TYPE_IDX	 0
+#define HFS_BT_NODE_TYPE_HEAD	 1
+#define HFS_BT_NODE_TYPE_MAP	 2
+
+// header that starts every B-tree node
 typedef struct {
-    uint8_t key_len[2];
-    uint8_t parent_cnid[4];
-    hfs_uni_str name;
-} hfs_cat_key;
+    uint8_t flink[4];           /* node num of next node of same type */
+    uint8_t blink[4];           /* node num of prev node of same type */
+    int8_t type;                /* type of this node */
+    uint8_t height;             /* level in B-tree (0 for root, 1 for leaf) */
+    uint8_t num_rec[2];         /* number of records this node */
+    uint8_t res[2];             /* reserved */
+} hfs_btree_node;
+
+/*****************/
+// structure for the 1st record in the B-Tree header node
+
+// type values
+#define HFS_BT_HEAD_TYPE_CNTL   0       // control file (catalog, extents, attributes)
+#define HFS_BT_HEAD_TYPE_USER   128     // hot file
+#define HFS_BT_HEAD_TYPE_RSV    255
+
+// compType values
+#define HFS_BT_HEAD_COMP_SENS    0xCF   // case sensitive
+#define HFS_BT_HEAD_COMP_INSENS    0xBC // case insensitive
+
+// attr values
+#define HFS_BT_HEAD_ATTR_BIGKEYS 0x00000002     /* key length field is 16 bits (req'd for HFS+) */
+#define HFS_BT_HEAD_ATTR_VARIDXKEYS 0x00000004  /* Keys in INDEX nodes are variable length */
+// NOTE: VARIDXKEYS is required for the Catalog B-tree and cleared for the Extents B-tree
 
 typedef struct {
-    uint8_t key_len[2];
+    uint8_t depth[2];           /* current depth of btree */
+    uint8_t rootNode[4];        /* node number of root node */
+    uint8_t leafRecords[4];     /* number of records in leaf nodes */
+    uint8_t firstLeafNode[4];   /* number of first leaf node (0 if no leafs) */
+    uint8_t lastLeafNode[4];    /* number of last leaf node (0 if no leafs) */
+    uint8_t nodesize[2];        /* byte size of each node (512..32768) */
+    uint8_t maxKeyLen[2];       /* max key length in an index or leaf node */
+    uint8_t totalNodes[4];      /* number of nodes in btree (free or in use) */
+    uint8_t freeNodes[4];       /* unused nodes in btree */
+    uint8_t res[2];             /* reserved */
+    uint8_t clumpSize[4];       /* clump size */
+    uint8_t type;               /* btree type (control or user) */
+    uint8_t compType;           /* HFSX Only: identifies of key comparisons are case sensitive */
+    uint8_t attr[4];            /* attributes */
+    uint8_t res2[64];           /* reserved */
+} hfs_btree_header_record;
+
+/* key for category records */
+typedef struct {
+    uint8_t key_len[2];         // length of key minus 2
+    uint8_t parent_cnid[4];
+    hfs_uni_str name;
+} hfs_btree_key_cat;
+
+/* Key for extents records */
+typedef struct {
+    uint8_t key_len[2];         // length of key minus 2
     uint8_t fork_type[1];
     uint8_t pad[1];
     uint8_t file_id[4];
     uint8_t start_block[4];
-} hfs_ext_key;
+} hfs_btree_key_ext;
+
+/* Record contents for index record after key */
+typedef struct {
+    uint8_t childNode[4];
+} hfs_btree_index_record;
 
 typedef struct {
     uint32_t inum;              /* inode number */
@@ -321,32 +409,8 @@ typedef struct {
     TSK_DADDR_T offs;           /* offset of beginning of inode */
 } htsk_fs_inode_mode_struct;
 
-typedef struct {
-    uint8_t flink[4];           /* next node number */
-    uint8_t blink[4];           /* previous node number */
-    int8_t kind;                /* type of node */
-    uint8_t height;             /* level in B-tree */
-    uint8_t num_rec[2];         /* number of records this node */
-    uint8_t res[2];             /* reserved */
-} hfs_btree_node;
 
-typedef struct {
-    uint8_t depth[2];           /* current depth of btree */
-    uint8_t root[4];            /* node number of root node */
-    uint8_t leaf[4];            /* number of records in leaf nodes */
-    uint8_t firstleaf[4];       /* number of first leaf node */
-    uint8_t lastleaf[4];        /* number of last leaf node */
-    uint8_t nodesize[2];        /* byte size of leaf node (512..32768) */
-    uint8_t max_len[2];         /* max key length in an index or leaf node */
-    uint8_t total[4];           /* number of nodes in btree (free or in use) */
-    uint8_t free[4];            /* unused nodes in btree */
-    uint8_t res[2];             /* reserved */
-    uint8_t clmp_sz[4];         /* clump size */
-    uint8_t bt_type;            /* btree type */
-    uint8_t k_type;             /* key compare type */
-    uint8_t attr[4];            /* attributes */
-    uint8_t res2[64];           /* reserved */
-} hfs_btree_header_record;
+
 
 typedef struct {
     int8_t v[2];
@@ -474,6 +538,9 @@ extern uint8_t hfs_checked_read_random(TSK_FS_INFO *, char *, size_t,
     TSK_OFF_T);
 extern uint8_t hfs_uni2ascii(TSK_FS_INFO *, uint8_t *, int, char *, int);
 extern int hfs_unicode_compare(HFS_INFO *, hfs_uni_str *, hfs_uni_str *);
+extern uint16_t hfs_get_idxkeylen(HFS_INFO * hfs, uint16_t keylen,
+    const hfs_btree_header_record * header);
+
 
 extern TSK_RETVAL_ENUM
 hfs_dir_open_meta(TSK_FS_INFO *, TSK_FS_DIR **, TSK_INUM_T);

@@ -8,6 +8,8 @@
 ** 14900 Conference Center Drive
 ** Chantilly, VA 20151
 **
+** Copyright (c) 2009 Brian Carrier.  All rights reserved.
+**
 ** Judson Powers [jpowers@atc-nycorp.com]
 ** Copyright (c) 2008 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
@@ -298,7 +300,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
     }
 
     /* start at root node */
-    cur_node = tsk_getu32(fs->endian, hfs->catalog_header.root);
+    cur_node = tsk_getu32(fs->endian, hfs->catalog_header.rootNode);
 
     /* if the root node is zero, then the extents btree is empty */
     /* if no files have overflow extents, the Extents B-tree still
@@ -364,13 +366,13 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
 
         /* With an index node, find the record with the largest key that is smaller
          * to or equal to cnid */
-        if (node_desc->kind == HFS_BTREE_INDEX_NODE) {
+        if (node_desc->type == HFS_BT_NODE_TYPE_IDX) {
             uint32_t next_node = 0;
             int rec;
 
             for (rec = 0; rec < num_rec; rec++) {
                 size_t rec_off;
-                hfs_cat_key *key;
+                hfs_btree_key_cat *key;
 
                 // get the record offset in the node
                 rec_off =
@@ -385,7 +387,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                     free(node);
                     return TSK_COR;
                 }
-                key = (hfs_cat_key *) & node[rec_off];
+                key = (hfs_btree_key_cat *) & node[rec_off];
 
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
@@ -397,7 +399,9 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                 /* save the info from this record unless it is bigger than cnid */
                 if ((tsk_getu32(fs->endian, key->parent_cnid) <= cnid)
                     || (next_node == 0)) {
-                    int keylen = tsk_getu16(fs->endian, key->key_len) + 2;
+                    int keylen =
+                        hfs_get_idxkeylen(hfs, tsk_getu16(fs->endian,
+                            key->key_len) + 2, &(hfs->catalog_header));
                     if (rec_off + keylen > nodesize) {
                         tsk_errno = TSK_ERR_FS_GENFS;
                         snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -431,12 +435,12 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         }
 
         /* with a leaf, we process until we are past cnid.  We move right too if we can */
-        else if (node_desc->kind == HFS_BTREE_LEAF_NODE) {
+        else if (node_desc->type == HFS_BT_NODE_TYPE_LEAF) {
             int rec;
 
             for (rec = 0; rec < num_rec; rec++) {
                 size_t rec_off;
-                hfs_cat_key *key;
+                hfs_btree_key_cat *key;
                 uint16_t rec_type;
                 size_t rec_off2;
 
@@ -453,7 +457,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                     free(node);
                     return TSK_COR;
                 }
-                key = (hfs_cat_key *) & node[rec_off];
+                key = (hfs_btree_key_cat *) & node[rec_off];
 
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
@@ -570,7 +574,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
             snprintf(tsk_errstr, TSK_ERRSTR_L,
                 "hfs_dir_open_meta: btree node %" PRIu32
                 " (%" PRIu64 ") is neither index nor leaf (%" PRIu8 ")",
-                cur_node, cur_off, node_desc->kind);
+                cur_node, cur_off, node_desc->type);
 
             tsk_fs_name_free(fs_name);
             free(node);

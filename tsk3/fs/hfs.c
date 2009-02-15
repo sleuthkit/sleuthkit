@@ -8,6 +8,8 @@
 ** 14900 Conference Center Drive
 ** Chantilly, VA 20151
 **
+** Copyright (c) 2009 Brian Carrier.  All rights reserved.
+**
 ** Judson Powers [jpowers@atc-nycorp.com]
 ** Copyright (c) 2008 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
@@ -136,7 +138,8 @@ cnid_to_array(uint32_t cnid, uint8_t array[4])
  * fork = 0 and start_block = 0.)
  */
 static int
-hfs_ext_compare_keys(HFS_INFO * hfs, uint32_t cnid, hfs_ext_key * key)
+hfs_ext_compare_keys(HFS_INFO * hfs, uint32_t cnid,
+    hfs_btree_key_ext * key)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
     uint32_t key_cnid;
@@ -164,8 +167,9 @@ hfs_ext_compare_keys(HFS_INFO * hfs, uint32_t cnid, hfs_ext_key * key)
     return 1;
 }
 
+
 /** \internal
- * Returns the length of an HFS+ B-tree key based on the tree header
+ * Returns the length of an HFS+ B-tree INDEX key based on the tree header
  * structure and the length claimed in the record.  With some trees,
  * the length given in the record is not used. 
  * Note that this neither detects nor correctly handles 8-bit keys
@@ -175,20 +179,20 @@ hfs_ext_compare_keys(HFS_INFO * hfs, uint32_t cnid, hfs_ext_key * key)
  * @param header Tree header
  * @returns Length of key
  */
-static uint16_t
-hfs_get_keylen(HFS_INFO * hfs, uint16_t keylen,
-    hfs_btree_header_record * header)
+uint16_t
+hfs_get_idxkeylen(HFS_INFO * hfs, uint16_t keylen,
+    const hfs_btree_header_record * header)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
 
     // if the flag is set, use the length given in the record
-    if (tsk_getu32(fs->endian, header->attr) & HFS_BT_VARKEYS)
+    if (tsk_getu32(fs->endian, header->attr) & HFS_BT_HEAD_ATTR_VARIDXKEYS)
         return keylen;
     else
-        return tsk_getu16(fs->endian, header->max_len);
+        return tsk_getu16(fs->endian, header->maxKeyLen);
 }
 
-
+#if 0
 /** \internal
  * Process a B-Tree node record and return the record contents and the 
  * offset of the data content in the record. 
@@ -225,9 +229,9 @@ hfs_read_key(HFS_INFO * hfs, hfs_btree_header_record * header,
     keylen = tsk_getu16(fs->endian, dest);
     // use the header to figure out if we should be ignoring this length or not
     if (header)
-        keylen = hfs_get_keylen(hfs, keylen, header);
+        keylen = hfs_get_idxkeylen(hfs, keylen, header);
 
-    if ((header && (keylen > tsk_getu16(fs->endian, header->max_len)))
+    if ((header && (keylen > tsk_getu16(fs->endian, header->maxKeyLen)))
         || (!header && (keylen > 516))) {       /* sanity check key length */
         tsk_errno = TSK_ERR_FS_GENFS;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -249,7 +253,7 @@ hfs_read_key(HFS_INFO * hfs, hfs_btree_header_record * header,
 
     return rec_off + 2 + keylen;        /* return record data address */
 }
-
+#endif
 
 
 /**
@@ -375,7 +379,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
     }
 
     /* start at root node */
-    cur_node = tsk_getu32(fs->endian, hfs->extents_header.root);
+    cur_node = tsk_getu32(fs->endian, hfs->extents_header.rootNode);
 
     /* if the root node is zero, then the extents btree is empty */
     /* if no files have overflow extents, the Extents B-tree still
@@ -439,14 +443,14 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
 
         /* With an index node, find the record with the largest key that is smaller
          * to or equal to cnid */
-        if (node_desc->kind == HFS_BTREE_INDEX_NODE) {
+        if (node_desc->type == HFS_BT_NODE_TYPE_IDX) {
             uint32_t next_node = 0;
             int rec;
 
             for (rec = 0; rec < num_rec; rec++) {
                 int cmp;
                 size_t rec_off;
-                hfs_ext_key *key;
+                hfs_btree_key_ext *key;
 
                 // get the record offset in the node 
                 rec_off =
@@ -460,7 +464,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     free(node);
                     return 1;
                 }
-                key = (hfs_ext_key *) & node[rec_off];
+                key = (hfs_btree_key_ext *) & node[rec_off];
 
                 cmp = hfs_ext_compare_keys(hfs, cnid, key);
 
@@ -476,19 +480,20 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
 
                 /* save the info from this record unless it is bigger than cnid */
                 if ((cmp <= 0) || (next_node == 0)) {
-                    int keylen = tsk_getu16(fs->endian, key->key_len);
-                    if (rec_off + 2 + keylen > nodesize) {
+                    int keylen =
+                        hfs_get_idxkeylen(hfs, tsk_getu16(fs->endian,
+                            key->key_len) + 2, &(hfs->extents_header));
+                    if (rec_off + keylen > nodesize) {
                         tsk_errno = TSK_ERR_FS_GENFS;
                         snprintf(tsk_errstr, TSK_ERRSTR_L,
                             "hfs_ext_find_extent_record_attr: offset and keylenth of record %d in index node %d too large (%zu vs %"
                             PRIu16 ")", rec, cur_node,
-                            rec_off + 2 + keylen, nodesize);
+                            rec_off + keylen, nodesize);
                         free(node);
                         return 1;
                     }
                     next_node =
-                        tsk_getu32(fs->endian,
-                        &node[rec_off + 2 + keylen]);
+                        tsk_getu32(fs->endian, &node[rec_off + keylen]);
                 }
                 else {
                     // we are bigger than cnid, so move on to the next node
@@ -509,12 +514,12 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         }
 
         /* with a leaf, we process until we are past cnid.  We move right too if we can */
-        else if (node_desc->kind == HFS_BTREE_LEAF_NODE) {
+        else if (node_desc->type == HFS_BT_NODE_TYPE_LEAF) {
             int rec;
 
             for (rec = 0; rec < num_rec; rec++) {
                 size_t rec_off;
-                hfs_ext_key *key;
+                hfs_btree_key_ext *key;
                 uint32_t rec_cnid;
                 hfs_extents *extents;
                 TSK_OFF_T ext_off = 0;
@@ -533,7 +538,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     free(node);
                     return 1;
                 }
-                key = (hfs_ext_key *) & node[rec_off];
+                key = (hfs_btree_key_ext *) & node[rec_off];
 
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
@@ -602,7 +607,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             snprintf(tsk_errstr, TSK_ERRSTR_L,
                 "hfs_ext_find_extent_record: btree node %" PRIu32
                 " (%" PRIuOFF ") is neither index nor leaf (%" PRIu8 ")",
-                cur_node, cur_off, node_desc->kind);
+                cur_node, cur_off, node_desc->type);
             free(node);
             return 1;
         }
@@ -620,8 +625,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
  * @returns -1 if key1 is smaller, 0 if equal, and 1 if key1 is larger
  */
 int
-hfs_cat_compare_keys(HFS_INFO * hfs, hfs_cat_key * key1,
-    hfs_cat_key * key2)
+hfs_cat_compare_keys(HFS_INFO * hfs, hfs_btree_key_cat * key1,
+    hfs_btree_key_cat * key2)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
     uint32_t cnid1, cnid2;
@@ -649,7 +654,7 @@ hfs_cat_compare_keys(HFS_INFO * hfs, hfs_cat_key * key1,
 * record was not found. Check tsk_errno to determine if error occured.
 */
 static TSK_OFF_T
-hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
+hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_btree_key_cat * needle)
 {
     TSK_FS_INFO *fs = &(hfs->fs_info);
     uint32_t cur_node;          /* node id of the current node */
@@ -665,7 +670,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
         return 0;
 
     /* start at root node */
-    cur_node = tsk_getu32(fs->endian, hfs->catalog_header.root);
+    cur_node = tsk_getu32(fs->endian, hfs->catalog_header.rootNode);
 
     /* if the root node is zero, then the extents btree is empty */
     /* if no files have overflow extents, the Extents B-tree still
@@ -728,13 +733,13 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
 
         /* With an index node, find the record with the largest key that is smaller
          * to or equal to cnid */
-        if (node_desc->kind == HFS_BTREE_INDEX_NODE) {
+        if (node_desc->type == HFS_BT_NODE_TYPE_IDX) {
             uint32_t next_node = 0;
             int rec;
 
             for (rec = 0; rec < num_rec; rec++) {
                 size_t rec_off;
-                hfs_cat_key *key;
+                hfs_btree_key_cat *key;
 
                 // get the record offset in the node
                 rec_off =
@@ -748,7 +753,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
                     free(node);
                     return 1;
                 }
-                key = (hfs_cat_key *) & node[rec_off];
+                key = (hfs_btree_key_cat *) & node[rec_off];
 
                 /*
                    if (tsk_verbose)
@@ -762,7 +767,9 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
                 /* save the info from this record unless it is bigger than cnid */
                 if ((hfs_cat_compare_keys(hfs, key, needle) <= 0)
                     || (next_node == 0)) {
-                    int keylen = tsk_getu16(fs->endian, key->key_len) + 2;
+                    int keylen =
+                        hfs_get_idxkeylen(hfs, tsk_getu16(fs->endian,
+                            key->key_len) + 2, &(hfs->catalog_header));
                     if (rec_off + keylen > nodesize) {
                         tsk_errno = TSK_ERR_FS_GENFS;
                         snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -793,12 +800,12 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
         }
 
         /* With a leaf, we look for the specific record. */
-        else if (node_desc->kind == HFS_BTREE_LEAF_NODE) {
+        else if (node_desc->type == HFS_BT_NODE_TYPE_LEAF) {
             int rec;
 
             for (rec = 0; rec < num_rec; rec++) {
                 size_t rec_off;
-                hfs_cat_key *key;
+                hfs_btree_key_cat *key;
                 size_t rec_off2;
                 int diff;
 
@@ -814,7 +821,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
                     free(node);
                     return 0;
                 }
-                key = (hfs_cat_key *) & node[rec_off];
+                key = (hfs_btree_key_cat *) & node[rec_off];
 
                 /*
                    if (tsk_verbose)
@@ -856,7 +863,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, hfs_cat_key * needle)
             snprintf(tsk_errstr, TSK_ERRSTR_L,
                 "hfs_cat_get_record_offset: btree node %" PRIu32
                 " (%" PRIu64 ") is neither index nor leaf (%" PRIu8 ")",
-                cur_node, cur_off, node_desc->kind);
+                cur_node, cur_off, node_desc->type);
             free(node);
             return 0;
         }
@@ -1019,7 +1026,7 @@ static uint8_t
 hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
-    hfs_cat_key key;            /* current catalog key */
+    hfs_btree_key_cat key;      /* current catalog key */
     hfs_thread thread;          /* thread record */
     hfs_file_folder record;     /* file/folder record */
     TSK_OFF_T off;
@@ -1046,7 +1053,7 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
     /* first look up the thread record for the item we're searching for */
 
     /* set up the thread record key */
-    memset((char *) &key, 0, sizeof(hfs_cat_key));
+    memset((char *) &key, 0, sizeof(hfs_btree_key_cat));
     cnid_to_array((uint32_t) inum, key.parent_cnid);
 
     /* look up the thread record */
@@ -1067,7 +1074,7 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
     /* now look up the actual file/folder record */
 
     /* build key */
-    memset((char *) &key, 0, sizeof(hfs_cat_key));
+    memset((char *) &key, 0, sizeof(hfs_btree_key_cat));
     memcpy((char *) key.parent_cnid, (char *) thread.parent_cnid,
         sizeof(key.parent_cnid));
     memcpy((char *) &key.name, (char *) &thread.name, sizeof(key.name));
@@ -1128,15 +1135,14 @@ hfs_find_highest_inum(HFS_INFO * hfs)
 {
     // @@@ get actual number from Catalog file (go to far right)
     /* I haven't gotten looking at the end of the Catalog B-Tree to work
-       properly. A fast method: if HFS_BIT_VOLUME_CNIDS_REUSED is set, then
+       properly. A fast method: if HFS_VH_ATTR_CNIDS_REUSED is set, then
        the maximum CNID is 2^32-1; if it's not set, then nextCatalogId is
        supposed to be larger than all CNIDs on disk.
      */
 
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
 
-    if (tsk_getu32(fs->endian,
-            hfs->fs->attr) & HFS_BIT_VOLUME_CNIDS_REUSED)
+    if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_VH_ATTR_CNIDS_REUSED)
         return (TSK_INUM_T) 0xffffffff;
     else
         return (TSK_INUM_T) tsk_getu32(fs->endian,
@@ -2291,9 +2297,9 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     tsk_fprintf(hFile, "--------------------------------------------\n");
 
     tsk_fprintf(hFile, "File System Signature: ");
-    if (tsk_getu16(fs->endian, hfs->fs->signature) == HFSPLUS_MAGIC)
+    if (tsk_getu16(fs->endian, hfs->fs->signature) == HFS_VH_SIG_HFSPLUS)
         tsk_fprintf(hFile, "HFS+\n");
-    else if (tsk_getu16(fs->endian, hfs->fs->signature) == HFSX_MAGIC)
+    else if (tsk_getu16(fs->endian, hfs->fs->signature) == HFS_VH_SIG_HFSX)
         tsk_fprintf(hFile, "HFSX\n");
     else
         tsk_fprintf(hFile, "Unknown\n");
@@ -2326,33 +2332,30 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     tsk_fprintf(hFile, "\n");
 
     tsk_fprintf(hFile, "Volume Identifier: %08" PRIx32 "%08" PRIx32 "\n",
-        tsk_getu32(fs->endian, &(sb->finder_info[24])),
-        tsk_getu32(fs->endian, &(sb->finder_info[28])));
+        tsk_getu32(fs->endian, sb->finder_info[HFS_VH_FI_ID1]),
+        tsk_getu32(fs->endian, sb->finder_info[HFS_VH_FI_ID2]));
 
 
     // print last mounted info
     tsk_fprintf(hFile, "\nLast Mounted By: ");
-    if (tsk_getu32(fs->endian, sb->last_mnt_ver) == HFSPLUS_MOUNT_VERSION)
+    if (tsk_getu32(fs->endian, sb->last_mnt_ver) == HFS_VH_MVER_HFSPLUS)
         tsk_fprintf(hFile, "Mac OS X\n");
-    else if (tsk_getu32(fs->endian,
-            sb->last_mnt_ver) == HFSJ_MOUNT_VERSION)
+    else if (tsk_getu32(fs->endian, sb->last_mnt_ver) == HFS_VH_MVER_HFSJ)
         tsk_fprintf(hFile, "Mac OS X, Journaled\n");
-    else if (tsk_getu32(fs->endian, sb->last_mnt_ver) == FSK_MOUNT_VERSION)
+    else if (tsk_getu32(fs->endian, sb->last_mnt_ver) == HFS_VH_MVER_FSK)
         tsk_fprintf(hFile, "failed journal replay\n");
-    else if (tsk_getu32(fs->endian,
-            sb->last_mnt_ver) == FSCK_MOUNT_VERSION)
+    else if (tsk_getu32(fs->endian, sb->last_mnt_ver) == HFS_VH_MVER_FSCK)
         tsk_fprintf(hFile, "fsck_hfs\n");
-    else if (tsk_getu32(fs->endian,
-            sb->last_mnt_ver) == OS89_MOUNT_VERSION)
+    else if (tsk_getu32(fs->endian, sb->last_mnt_ver) == HFS_VH_MVER_OS89)
         tsk_fprintf(hFile, "Mac OS 8.1 - 9.2.2\n");
     else
         tsk_fprintf(hFile, "Unknown (%" PRIx32 "\n",
             tsk_getu32(fs->endian, sb->last_mnt_ver));
 
     /* State of the file system */
-    if ((tsk_getu32(fs->endian, hfs->fs->attr) & HFS_BIT_VOLUME_UNMOUNTED)
+    if ((tsk_getu32(fs->endian, hfs->fs->attr) & HFS_VH_ATTR_UNMOUNTED)
         && (!(tsk_getu32(fs->endian,
-                    hfs->fs->attr) & HFS_BIT_VOLUME_INCONSISTENT)))
+                    hfs->fs->attr) & HFS_VH_ATTR_INCONSISTENT)))
         tsk_fprintf(hFile, "Volume Unmounted Properly\n");
     else
         tsk_fprintf(hFile, "Volume Unmounted Improperly\n");
@@ -2362,7 +2365,7 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
 
     // Dates
-    mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->c_date));
+    mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->cr_date));
     tsk_fprintf(hFile, "\nCreation Date: \t%s", ctime(&mac_time));
 
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->m_date));
@@ -2375,12 +2378,11 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     tsk_fprintf(hFile, "Last Checked Date: \t%s", ctime(&mac_time));
 
 
-    if (tsk_getu32(fs->endian,
-            hfs->fs->attr) & HFS_BIT_VOLUME_SOFTWARE_LOCK)
+    if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_VH_ATTR_SOFTWARE_LOCK)
         tsk_fprintf(hFile, "Software write protect enabled\n");
 
     /* Print journal information */
-    if (tsk_getu32(fs->endian, sb->attr) & HFS_BIT_VOLUME_JOURNALED) {
+    if (tsk_getu32(fs->endian, sb->attr) & HFS_VH_ATTR_JOURNALED) {
         tsk_fprintf(hFile, "\nJournal Info Block: %" PRIu32 "\n",
             tsk_getu32(fs->endian, sb->jinfo_blk));
     }
@@ -2391,32 +2393,32 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     tsk_fprintf(hFile, "Range: %" PRIuINUM " - %" PRIuINUM "\n",
         fs->first_inum, fs->last_inum);
 
-    inode = tsk_getu32(fs->endian, &(sb->finder_info[0]));
+    inode = tsk_getu32(fs->endian, sb->finder_info[HFS_VH_FI_BOOT]);
     tsk_fprintf(hFile, "Bootable Folder ID: %" PRIuINUM, inode);
     if (inode > 0)
         print_inode_file(hFile, fs, inode);
     tsk_fprintf(hFile, "\n");
 
-    inode = tsk_getu32(fs->endian, &(sb->finder_info[4]));
+    inode = tsk_getu32(fs->endian, sb->finder_info[HFS_VH_FI_START]);
     tsk_fprintf(hFile, "Startup App ID: %" PRIuINUM, inode);
     if (inode > 0)
         print_inode_file(hFile, fs, inode);
     tsk_fprintf(hFile, "\n");
 
-    inode = tsk_getu32(fs->endian, &(sb->finder_info[8]));
+    inode = tsk_getu32(fs->endian, sb->finder_info[HFS_VH_FI_OPEN]);
     tsk_fprintf(hFile, "Startup Open Folder ID: %" PRIuINUM, inode);
     if (inode > 0)
         print_inode_file(hFile, fs, inode);
     tsk_fprintf(hFile, "\n");
 
-    inode = tsk_getu32(fs->endian, &(sb->finder_info[12]));
+    inode = tsk_getu32(fs->endian, sb->finder_info[HFS_VH_FI_BOOT9]);
     tsk_fprintf(hFile, "Mac OS 8/9 Blessed System Folder ID: %" PRIuINUM,
         inode);
     if (inode > 0)
         print_inode_file(hFile, fs, inode);
     tsk_fprintf(hFile, "\n");
 
-    inode = tsk_getu32(fs->endian, &(sb->finder_info[20]));
+    inode = tsk_getu32(fs->endian, sb->finder_info[HFS_VH_FI_BOOTX]);
     tsk_fprintf(hFile, "Mac OS X Blessed System Folder ID: %" PRIuINUM,
         inode);
     if (inode > 0)
@@ -2445,7 +2447,7 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     tsk_fprintf(hFile, "Number of Free Blocks: %" PRIu32 "\n",
         tsk_getu32(fs->endian, sb->free_blks));
 
-    if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_BIT_VOLUME_BADBLOCKS)
+    if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_VH_ATTR_BADBLOCKS)
         tsk_fprintf(hFile, "Volume has bad blocks\n");
 
     return 0;
@@ -2531,6 +2533,8 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     if (hfs_cat_file_lookup(hfs, inum, &entry) == 0) {
         tsk_fprintf(hFile, "\n");
 
+        /* The cat.perm union contains file-type specific values.
+         * Print them if they are relevant. */
         if ((fs_file->meta->type == TSK_FS_META_TYPE_CHR) ||
             (fs_file->meta->type == TSK_FS_META_TYPE_BLK)) {
             tsk_fprintf(hFile, "Device ID:\t%" PRIu32 "\n",
@@ -2572,6 +2576,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
                 entry.cat.u_info.flags) & HFS_FINDER_FLAG_IS_ALIAS)
             tsk_fprintf(hFile, "Is alias\n");
 
+        // @@@ The tech note has a table that converts nums to encoding names. 
         tsk_fprintf(hFile, "Text encoding:\t%" PRIx32 "\n",
             tsk_getu32(fs->endian, entry.cat.text_enc));
 
@@ -2711,7 +2716,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     }
 
     if (hfs_checked_read_random(fs, (char *) hfs->fs, len,
-            (TSK_OFF_T) HFS_SBOFF)) {
+            (TSK_OFF_T) HFS_VH_OFF)) {
         snprintf(tsk_errstr2, TSK_ERRSTR_L, "hfs_open: superblock");
         fs->tag = 0;
         free(hfs->fs);
@@ -2722,9 +2727,9 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     /*
      * Verify we are looking at an HFS+ image
      */
-    if (tsk_fs_guessu16(fs, hfs->fs->signature, HFSPLUS_MAGIC) &&
-        tsk_fs_guessu16(fs, hfs->fs->signature, HFSX_MAGIC) &&
-        tsk_fs_guessu16(fs, hfs->fs->signature, HFS_MAGIC)) {
+    if (tsk_fs_guessu16(fs, hfs->fs->signature, HFS_VH_SIG_HFSPLUS) &&
+        tsk_fs_guessu16(fs, hfs->fs->signature, HFS_VH_SIG_HFSX) &&
+        tsk_fs_guessu16(fs, hfs->fs->signature, HFS_VH_SIG_HFS)) {
 
         fs->tag = 0;
         free(hfs->fs);
@@ -2738,14 +2743,14 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     /*
      * Handle an HFS-wrapped HFS+ image
      */
-    if (tsk_getu16(fs->endian, hfs->fs->signature) == HFS_MAGIC) {
+    if (tsk_getu16(fs->endian, hfs->fs->signature) == HFS_VH_SIG_HFS) {
 
         hfs_wrapper_sb *wrapper_sb = (hfs_wrapper_sb *) hfs->fs;
 
         if ((tsk_getu16(fs->endian,
-                    wrapper_sb->drEmbedSigWord) == HFSPLUS_MAGIC)
+                    wrapper_sb->drEmbedSigWord) == HFS_VH_SIG_HFSPLUS)
             || (tsk_getu16(fs->endian,
-                    wrapper_sb->drEmbedSigWord) == HFSX_MAGIC)) {
+                    wrapper_sb->drEmbedSigWord) == HFS_VH_SIG_HFSX)) {
 
             TSK_FS_INFO *fs_info2;
             uint16_t drAlBlSt =
@@ -2872,17 +2877,17 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         return NULL;
     }
 
-    if (tsk_getu16(fs->endian, hfs->fs->version) == 4)
+    if (tsk_getu16(fs->endian, hfs->fs->version) == HFS_VH_VER_HFSPLUS)
         hfs->is_case_sensitive = 0;
-    else if (tsk_getu16(fs->endian, hfs->fs->version) == 5) {
-        if (hfs->catalog_header.k_type == 0xcf)
+    else if (tsk_getu16(fs->endian, hfs->fs->version) == HFS_VH_VER_HFSX) {
+        if (hfs->catalog_header.compType == HFS_BT_HEAD_COMP_SENS)
             hfs->is_case_sensitive = 0;
-        else if (hfs->catalog_header.k_type == 0xbc)
+        else if (hfs->catalog_header.compType == HFS_BT_HEAD_COMP_INSENS)
             hfs->is_case_sensitive = 1;
         else {
             tsk_fprintf(stderr,
                 "hfs_open: invalid value (0x%02" PRIx8
-                ") for key compare type\n", hfs->catalog_header.k_type);
+                ") for key compare type\n", hfs->catalog_header.compType);
             hfs->is_case_sensitive = 0;
         }
     }
@@ -2898,8 +2903,8 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->inum_count = fs->last_inum + 1;
 
     snprintf((char *) fs->fs_id, 17, "%08" PRIx32 "%08" PRIx32,
-        tsk_getu32(fs->endian, &(hfs->fs->finder_info[24])),
-        tsk_getu32(fs->endian, &(hfs->fs->finder_info[28])));
+        tsk_getu32(fs->endian, hfs->fs->finder_info[HFS_VH_FI_ID1]),
+        tsk_getu32(fs->endian, hfs->fs->finder_info[HFS_VH_FI_ID2]));
     fs->fs_id_used = 16;
 
     /* journal */
