@@ -1857,7 +1857,6 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                 0)) {
             strncat(tsk_errstr2, " - hfs_load_attrs (non-file)",
                 TSK_ERRSTR_L - strlen(tsk_errstr2));
-            tsk_fs_attr_run_free(attr_run);
             return 1;
         }
         fs_file->meta->attr_state = TSK_FS_META_ATTR_STUDIED;
@@ -1906,7 +1905,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
     }
 
     // see if extents file has additional runs
-    if (hfs_ext_find_extent_record_attr(hfs, fs_file->meta->addr, fs_attr)) {
+    if (hfs_ext_find_extent_record_attr(hfs, (uint32_t)fs_file->meta->addr, fs_attr)) {
         strncat(tsk_errstr2, " - hfs_load_attrs",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
@@ -1990,7 +1989,7 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
         hfs->blockmap_cache_start = b;
         hfs->blockmap_cache_len = cnt;
     }
-    b2 = b - hfs->blockmap_cache_start;
+    b2 = (size_t)(b - hfs->blockmap_cache_start);
     return (hfs->blockmap_cache[b2] & (1 << (7 - (a_addr % 8)))) != 0;
 }
 
