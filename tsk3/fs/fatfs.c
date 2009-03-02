@@ -778,7 +778,7 @@ fatfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
                 "Volume Label (Root Directory): %c%c%c%c%c%c%c%c%c%c%c\n",
                 de->name[0], de->name[1], de->name[2], de->name[3],
                 de->name[4], de->name[5], de->name[6], de->name[7],
-                de->name[8], de->name[9], de->name[10]);
+                de->ext[0], de->ext[1], de->ext[2]);
         }
         else {
             tsk_fprintf(hFile, "Volume Label (Root Directory):\n");
@@ -818,7 +818,7 @@ fatfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
                 "Volume Label (Root Directory): %c%c%c%c%c%c%c%c%c%c%c\n",
                 de->name[0], de->name[1], de->name[2], de->name[3],
                 de->name[4], de->name[5], de->name[6], de->name[7],
-                de->name[8], de->name[9], de->name[10]);
+                de->ext[0], de->ext[1], de->ext[2]);
         }
         else {
             tsk_fprintf(hFile, "Volume Label (Root Directory):\n");
