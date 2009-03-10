@@ -57,11 +57,11 @@ Both of these functions return a TSK_FS_INFO structure that is used as a handle 
 
 If you have an TSK_FS_INFO structure and want to know what file system type it is for, you can pass the TSK_FS_INFO::ftype value to one of the TSK_FS_TYPE_ISXXX macros, such as TSK_FS_TYPE_ISNTFS(). 
 
-<pre>
+\code
 	if (TSK_FS_TYPE_ISNTFS(fs_info->ftype)) {
 		....
 	}
-</pre>
+\endcode
 
 To map from the numerical ID to a short name (such as "ntfs"), the tsk_fs_type_toname() function can be used.  You can also map from the short name to the ID using the tsk_fs_type_toid() function.
 
@@ -118,7 +118,7 @@ To access the default attribute use tsk_fs_file_attr_get().  If you know the typ
 
 If you want to figure out what types exist or want to cycle through all of the attributes, you can use the tsk_fs_file_attr_getsize() function to get the number of attributes and the tsk_fs_file_attr_get_idx() function to get an attribute based on a 0 to n-1 based index. For example:
 
-<code>
+\code
 	int i, cnt;
 	cnt = tsk_fs_file_attr_getsize(fs_file);
 	for (i = 0; i < cnt; i++) {
@@ -128,7 +128,7 @@ If you want to figure out what types exist or want to cycle through all of the a
 			continue;
 		...
 	}
-</code>
+\endcode
 
 Once you have a TSK_FS_ATTR structure, you can read from it using the tsk_fs_attr_read() and tsk_fs_attr_walk() functions.  These operate just like the
 tsk_fs_file_read() and tsk_fs_file_walk() functions and in fact the file-based functions simply load the relevant attribute and call the corresponding attribute-based function. 
