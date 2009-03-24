@@ -44,6 +44,9 @@ adjustment of attribute FILLER offset.  Reported by Andy Bontoft.
 doing text-based sorting on dates of different lengths (fix was to
 pad with 0s).  Fix by Bruce Nikkel.
 
+3/23/09: Bug Fix: Fixed bug  2708195, for long reads in fragmented
+attributes.  Reported and patch by Jamie Butler (Mandiant).
+
 
 ---------------- VERSION 3.0.0 -------------- 
 0/00/00: Update: Many, many, many API changes.

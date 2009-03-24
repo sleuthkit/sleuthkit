@@ -1109,7 +1109,10 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                 continue;
 
             // block offset into this run
-            run_offset = blkoffset - data_run_cur->offset;
+            if (data_run_cur->offset <= blkoffset)
+                run_offset = blkoffset - data_run_cur->offset;
+            else
+                run_offset = 0;
 
             // see if we need to read the rest of this run and into the next or if it is all here
             if (fs->block_size * (data_run_cur->len - run_offset) >=
