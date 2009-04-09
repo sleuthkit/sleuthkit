@@ -680,7 +680,7 @@ sub analyze_file {
             chomp $sha1;
         }
         if ($DO_MD5 == 1) {
-            $sha1 =
+            $md5 =
 `\"$SK_ICAT\" $IMGTYPE -o $IMGOFF $FSTYPE $recflag $IMG \"$inode\" | \"$SK_MD5\"`;
             chomp $md5;
         }
@@ -847,7 +847,7 @@ sub analyze_file {
                 # it will be considered a mismatch
                 $mismatch = 1;
 
-                $ext =~ tr/[A-Z]/[a-z/;
+                $ext =~ tr/[A-Z]/[a-z]/;
 
                 # cycle through each possible extension for this type
                 foreach my $cat_ext (@{$file_to_ext{$ext_kw}}) {
