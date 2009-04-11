@@ -76,19 +76,43 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             tsk_error_reset();
         }
         if ((vs = tsk_vs_gpt_open(img_info, offset)) != NULL) {
-            if (set == NULL) {
-                set = "GPT";
-                vs_set = vs;
+            if (set != NULL) {
+                /* GPT drives have a DOS Safety partition table.
+                 * Test to see if we can ignore one */
+                if ((strcmp(set, "DOS"))
+                    && (vs_set->part_count == 1)
+                    && (vs_set->part_list)
+                    && (vs_set->part_list->start <= 63)
+                    && (vs_set->part_list->desc)
+                    && (strncmp(vs_set->part_list->desc, "GPT", 3))) {
+                    TSK_VS_PART_INFO *tmp;
+                    /* see if we can find a GPT partition that ends at the same
+                     * location as the DOS (we should be testing for the last GPT partition...) */
+                    for (tmp = vs->part_list; tmp; tmp = tmp->next) {
+                        if ((vs_set->part_list->start +
+                                vs_set->part_list->len) ==
+                            (tmp->start + tmp->len)) {
+                            if (tsk_verbose)
+                                tsk_fprintf(stderr,
+                                    "mm_open: Ignoring DOS Safety GPT Partition\n");
+                            set = NULL;
+                            vs_set = NULL;
+                        }
+                    }
+                }
+
+                if (set != NULL) {
+                    vs_set->close(vs_set);
+                    vs->close(vs);
+                    tsk_error_reset();
+                    tsk_errno = TSK_ERR_VS_UNKTYPE;
+                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                        "GPT or %s at %" PRIuDADDR, set, offset);
+                    return NULL;
+                }
             }
-            else {
-                vs_set->close(vs_set);
-                vs->close(vs);
-                tsk_error_reset();
-                tsk_errno = TSK_ERR_VS_UNKTYPE;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
-                    "GPT or %s at %" PRIuDADDR, set, offset);
-                return NULL;
-            }
+            set = "GPT";
+            vs_set = vs;
         }
         else {
             tsk_error_reset();
