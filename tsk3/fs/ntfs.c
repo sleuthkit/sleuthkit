@@ -1619,7 +1619,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
             /* Make sure it is NULL Terminated */
             else if ((uintptr_t) name8 >= (uintptr_t) name + sizeof(name))
-                name[sizeof(name)-1] = '\0';
+                name[sizeof(name) - 1] = '\0';
             else
                 *name8 = '\0';
 
@@ -1994,7 +1994,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             /* Make sure it is NULL Terminated */
             else if ((uintptr_t) name8 >=
                 (uintptr_t) fs_name->name + sizeof(fs_name->name))
-                fs_name->name[sizeof(fs_name->name)-1] = '\0';
+                fs_name->name[sizeof(fs_name->name) - 1] = '\0';
             else
                 *name8 = '\0';
 
@@ -3637,7 +3637,7 @@ ntfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
         /* Make sure it is NULL Terminated */
         else if ((uintptr_t) name8 >= (uintptr_t) asc + sizeof(asc))
-            asc[sizeof(asc)-1] = '\0';
+            asc[sizeof(asc) - 1] = '\0';
         else
             *name8 = '\0';
         tsk_fprintf(hFile, "Volume Name: %s\n", asc);
@@ -3720,7 +3720,7 @@ ntfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
         /* Make sure it is NULL Terminated */
         else if ((uintptr_t) name8 >= (uintptr_t) asc + sizeof(asc))
-            asc[sizeof(asc)-1] = '\0';
+            asc[sizeof(asc) - 1] = '\0';
         else
             *name8 = '\0';
         tsk_fprintf(hFile, "%s (%" PRIu32 ")   ",
@@ -4273,6 +4273,8 @@ ntfs_close(TSK_FS_INFO * fs)
         tsk_list_free(fs->list_inum_named);
         fs->list_inum_named = NULL;
     }
+    if (ntfs->orphan_map)
+        ntfs_orphan_map_free(ntfs);
 
     free(fs);
 }
@@ -4590,6 +4592,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     // initialize the caches
     ntfs->attrdef = NULL;
     fs->list_inum_named = NULL;
+    ntfs->orphan_map = NULL;
 
 
     if (tsk_verbose) {
