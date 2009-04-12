@@ -210,30 +210,34 @@ raw_open(const TSK_TCHAR * image)
                         "raw_open: Trying Windows device with share_write mode\n");
 
                 raw_info->fd = CreateFile(image, FILE_READ_DATA,
-                    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+                    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                    OPEN_EXISTING, 0, NULL);
             }
 
             if (raw_info->fd == INVALID_HANDLE_VALUE) {
                 tsk_error_reset();
                 tsk_errno = TSK_ERR_IMG_OPEN;
                 // print string of commonly found errors
-				if (GetLastError() == ERROR_ACCESS_DENIED) {
-					snprintf(tsk_errstr, TSK_ERRSTR_L,
-						"raw_open file: %" PRIttocTSK " (Access Denied)", image);
-				}
-				else if (GetLastError() == ERROR_SHARING_VIOLATION) {
-					snprintf(tsk_errstr, TSK_ERRSTR_L,
-						"raw_open file: %" PRIttocTSK " (Sharing Violation)", image);
-				}
+                if (GetLastError() == ERROR_ACCESS_DENIED) {
+                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                        "raw_open file: %" PRIttocTSK " (Access Denied)",
+                        image);
+                }
+                else if (GetLastError() == ERROR_SHARING_VIOLATION) {
+                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                        "raw_open file: %" PRIttocTSK
+                        " (Sharing Violation)", image);
+                }
                 else if (GetLastError() == ERROR_FILE_NOT_FOUND) {
-					snprintf(tsk_errstr, TSK_ERRSTR_L,
-						"raw_open file: %" PRIttocTSK " (File not found)", image);
-				}
-				else {
-					snprintf(tsk_errstr, TSK_ERRSTR_L,
-						"raw_open file: %" PRIttocTSK " (%d)", image,
-						(int)GetLastError());
-				}
+                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                        "raw_open file: %" PRIttocTSK " (File not found)",
+                        image);
+                }
+                else {
+                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                        "raw_open file: %" PRIttocTSK " (%d)", image,
+                        (int) GetLastError());
+                }
                 return NULL;
             }
         }
@@ -248,7 +252,7 @@ raw_open(const TSK_TCHAR * image)
                 tsk_errno = TSK_ERR_IMG_OPEN;
                 snprintf(tsk_errstr, TSK_ERRSTR_L,
                     "raw_open file: %" PRIttocTSK " GetFileSize: %d",
-                    image, (int)GetLastError());
+                    image, (int) GetLastError());
                 return NULL;
             }
             img_info->size = dwLo | ((TSK_OFF_T) dwHi << 32);
@@ -265,7 +269,7 @@ raw_open(const TSK_TCHAR * image)
                 tsk_errno = TSK_ERR_IMG_OPEN;
                 snprintf(tsk_errstr, TSK_ERRSTR_L,
                     "raw_open file: %" PRIttocTSK
-                    " DeviceIoControl: %d", image, (int)GetLastError());
+                    " DeviceIoControl: %d", image, (int) GetLastError());
                 return NULL;
             }
 
@@ -286,13 +290,13 @@ raw_open(const TSK_TCHAR * image)
         return NULL;
     }
 
-    /* We don't use the stat output because it doesn't work on raw
-     * devices and such */
-    img_info->size = lseek(raw_info->fd, 0, SEEK_END);
-    lseek(raw_info->fd, 0, SEEK_SET);
-
 #if defined(__APPLE__)
-    /* OS X doesn't support SEEK_END on devices */
+    /* OS X doesn't support SEEK_END on char devices */
+    if ((stat_buf.st_mode & S_IFMT) != S_IFCHR) {
+        img_info->size = lseek(raw_info->fd, 0, SEEK_END);
+        lseek(raw_info->fd, 0, SEEK_SET);
+    }
+
     if (img_info->size == 0) {
         int blkSize;
         long long blkCnt;
@@ -303,7 +307,12 @@ raw_open(const TSK_TCHAR * image)
             }
         }
     }
-#endif                          // apple
+#else 
+    /* We don't use the stat output because it doesn't work on raw
+     * devices and such */
+    img_info->size = lseek(raw_info->fd, 0, SEEK_END);
+    lseek(raw_info->fd, 0, SEEK_SET);
+#endif                          
 
 #endif
     raw_info->seek_pos = 0;
