@@ -458,7 +458,7 @@ tsk_fs_ifind_path(TSK_FS_INFO * fs, TSK_TCHAR * tpath, TSK_INUM_T * result)
         ptr16 = (UTF16 *) tpath;
 
         retval =
-            tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &ptr16, (UTF16 *)
+            tsk_UTF16toUTF8_lclorder((const UTF16 **) &ptr16, (UTF16 *)
             & ptr16[TSTRLEN(tpath) + 1], &ptr8,
             (UTF8 *) ((uintptr_t) ptr8 + clen), TSKlenientConversion);
         if (retval != TSKconversionOK) {

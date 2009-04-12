@@ -39,14 +39,15 @@ extern "C" {
     (roundup((x),(y)) - (y)))
 #endif
 
-extern void *tsk_malloc(size_t);
-extern void *tsk_realloc(void *, size_t);
+    extern void *tsk_malloc(size_t);
+    extern void *tsk_realloc(void *, size_t);
 
 // getopt for windows
 #ifdef TSK_WIN32
     extern int tsk_optind;
     extern TSK_TCHAR *tsk_optarg;
-    extern int tsk_getopt(int argc, TSK_TCHAR * const argv[], const TSK_TCHAR * optstring);
+    extern int tsk_getopt(int argc, TSK_TCHAR * const argv[],
+        const TSK_TCHAR * optstring);
 #endif
 
 
@@ -55,9 +56,9 @@ extern void *tsk_realloc(void *, size_t);
 #define TSK_ERRSTR_L	512
 #define TSK_ERRSTR_PR_L	((TSK_ERRSTR_L << 2) + 64)
 
-extern char tsk_errstr[TSK_ERRSTR_L];
-extern char tsk_errstr2[TSK_ERRSTR_L];
-extern char tsk_errstr_print[TSK_ERRSTR_PR_L];
+    extern char tsk_errstr[TSK_ERRSTR_L];
+    extern char tsk_errstr2[TSK_ERRSTR_L];
+    extern char tsk_errstr_print[TSK_ERRSTR_PR_L];
 
 
 
@@ -65,8 +66,10 @@ extern char tsk_errstr_print[TSK_ERRSTR_PR_L];
 /* macros to read in multi-byte fields
 * file system is an array of 8-bit values, not 32-bit values
 */
-extern uint8_t tsk_guess_end_u16(TSK_ENDIAN_ENUM *, uint8_t *, uint16_t);
-extern uint8_t tsk_guess_end_u32(TSK_ENDIAN_ENUM *, uint8_t *, uint32_t);
+    extern uint8_t tsk_guess_end_u16(TSK_ENDIAN_ENUM *, uint8_t *,
+        uint16_t);
+    extern uint8_t tsk_guess_end_u32(TSK_ENDIAN_ENUM *, uint8_t *,
+        uint32_t);
 
 /** \internal
 * Read a 16-bit unsigned value.
@@ -280,33 +283,39 @@ extern uint8_t tsk_guess_end_u32(TSK_ENDIAN_ENUM *, uint8_t *, uint32_t);
 ------------------------------------------------------------------------ */
 
 
-typedef unsigned short UTF16;   /* at least 16 bits */
-typedef unsigned char UTF8;     /* typically 8 bits */
-typedef unsigned char Boolean;  /* 0 or 1 */
+    typedef unsigned short UTF16;       /* at least 16 bits */
+    typedef unsigned char UTF8; /* typically 8 bits */
+    typedef unsigned char Boolean;      /* 0 or 1 */
 
 
-typedef enum {
-    TSKconversionOK,            ///< conversion successful
-    TSKsourceExhausted,         ///< partial character in source, but hit end 
-    TSKtargetExhausted,         ///< insuff. room in target for conversion 
-    TSKsourceIllegal            ///< source sequence is illegal/malformed 
-} TSKConversionResult;
+    typedef enum {
+        TSKconversionOK,        ///< conversion successful
+        TSKsourceExhausted,     ///< partial character in source, but hit end 
+        TSKtargetExhausted,     ///< insuff. room in target for conversion 
+        TSKsourceIllegal        ///< source sequence is illegal/malformed 
+    } TSKConversionResult;
 
-typedef enum {
-    TSKstrictConversion = 0,    ///< Error if invalid surrogate pairs are found
-    TSKlenientConversion        ///< Ignore invalid surrogate pairs
-} TSKConversionFlags;
+    typedef enum {
+        TSKstrictConversion = 0,        ///< Error if invalid surrogate pairs are found
+        TSKlenientConversion    ///< Ignore invalid surrogate pairs
+    } TSKConversionFlags;
 
-TSKConversionResult tsk_UTF8toUTF16(const UTF8 ** sourceStart,
-    const UTF8 * sourceEnd,
-    UTF16 ** targetStart, UTF16 * targetEnd, TSKConversionFlags flags);
+    extern TSKConversionResult tsk_UTF8toUTF16(const UTF8 ** sourceStart,
+        const UTF8 * sourceEnd,
+        UTF16 ** targetStart, UTF16 * targetEnd, TSKConversionFlags flags);
 
-TSKConversionResult tsk_UTF16toUTF8(TSK_ENDIAN_ENUM,
-    const UTF16 ** sourceStart, const UTF16 * sourceEnd,
-    UTF8 ** targetStart, UTF8 * targetEnd, TSKConversionFlags flags);
+    extern TSKConversionResult tsk_UTF16toUTF8(TSK_ENDIAN_ENUM,
+        const UTF16 ** sourceStart, const UTF16 * sourceEnd,
+        UTF8 ** targetStart, UTF8 * targetEnd, TSKConversionFlags flags);
 
-Boolean tsk_isLegalUTF8Sequence(const UTF8 * source,
-    const UTF8 * sourceEnd);
+    extern TSKConversionResult
+        tsk_UTF16toUTF8_lclorder(const UTF16 ** sourceStart,
+        const UTF16 * sourceEnd, UTF8 ** targetStart,
+        UTF8 * targetEnd, TSKConversionFlags flags);
+
+
+    extern Boolean tsk_isLegalUTF8Sequence(const UTF8 * source,
+        const UTF8 * sourceEnd);
 #endif
 //@}
 

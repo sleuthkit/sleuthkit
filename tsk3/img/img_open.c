@@ -314,8 +314,8 @@ tsk_img_open_utf8(int num_img, const char **images, TSK_IMG_TYPE_ENUM type)
             // we allocate the buffer with the same number of chars as the UTF-8 length
             ilen = strlen(images[i]);
             if ((images16[i] =
-                    (wchar_t *) tsk_malloc((ilen+1) * sizeof(wchar_t))) ==
-                NULL) {
+                    (wchar_t *) tsk_malloc((ilen +
+                            1) * sizeof(wchar_t))) == NULL) {
                 goto tsk_utf8_cleanup;
             }
 
@@ -324,8 +324,7 @@ tsk_img_open_utf8(int num_img, const char **images, TSK_IMG_TYPE_ENUM type)
 
             retval2 =
                 tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
-                &utf16, &utf16[ilen],
-                TSKlenientConversion);
+                &utf16, &utf16[ilen], TSKlenientConversion);
             if (retval2 != TSKconversionOK) {
                 tsk_errno = TSK_ERR_IMG_CONVERT;
                 snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -411,7 +410,7 @@ tsk_img_open_utf16(int num_img,
             utf8 = (UTF8 *) images8[i];
 
             retval2 =
-                tsk_UTF16toUTF8(endian, (const UTF16 **) &utf16,
+                tsk_UTF16toUTF8_lclorder((const UTF16 **) &utf16,
                 &utf16[wcslen(images[i]) + 1], &utf8,
                 &utf8[ilen + 1], TSKlenientConversion);
             if (retval2 != TSKconversionOK) {

@@ -220,8 +220,7 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
             ptr16 = (UTF16 *) tpre;
 
             retval =
-                tsk_UTF16toUTF8(fs->endian,
-                (const UTF16 **) &ptr16, (UTF16 *)
+                tsk_UTF16toUTF8_lclorder((const UTF16 **) &ptr16, (UTF16 *)
                 & ptr16[TSTRLEN(tpre) + 1], &ptr8,
                 (UTF8 *) ((uintptr_t) ptr8 + clen), TSKlenientConversion);
             if (retval != TSKconversionOK) {
