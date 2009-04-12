@@ -57,6 +57,11 @@ collisions with GPT and the DOS safety partition table.  DOS partition
 table ignored if it seems to be the safety partition.  Based on a
 variation of a patch submitted by Aaron Burghardt.
 
+4/11/09: Bug Fix: Fixed issue 2655831 regarding sorter not knowing
+about the ext2 and ext3 types (it knew about ext and the older
+forms).  Also added support for ufs1, ufs2, iso, and hfs. reported
+by Vinogratzky.
+
 ---------------- VERSION 3.0.0 -------------- 
 0/00/00: Update: Many, many, many API changes.
 

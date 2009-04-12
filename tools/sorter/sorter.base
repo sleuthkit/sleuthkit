@@ -2,7 +2,7 @@
 # The Sleuth Kit
 #
 # Brian Carrier [carrier <at> sleuthkit [dot] org]
-# Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+# Copyright (c) 2003-2009 Brian Carrier.  All rights reserved
 #
 # TASK
 # Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
@@ -1400,14 +1400,25 @@ sub set_platform {
     }
 
     # Use freebsd as a default for UFS
-    elsif ($FSTYPE eq "-f ufs") {
+    elsif (($FSTYPE eq "-f ufs")
+        || ($FSTYPE eq "-f ufs1")
+        || ($FSTYPE eq "-f ufs2"))
+    {
         $PLATFORM = "freebsd";
     }
     elsif (($FSTYPE eq "-f linux-ext2")
         || ($FSTYPE eq "-f linux-ext3")
-        || ($FSTYPE eq "-f ext"))
+        || ($FSTYPE eq "-f ext")
+        || ($FSTYPE eq "-f ext2")
+        || ($FSTYPE eq "-f ext3"))
     {
         $PLATFORM = "linux";
+    }
+    elsif ($FSTYPE eq "-f iso9660") {
+        $PLATFORM = "";
+    }
+    elsif ($FSTYPE eq "-f hfs") {
+        $PLATFORM = "mac";
     }
     else {
         print "Unknown file system type: $FSTYPE\n";
