@@ -77,26 +77,33 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
         }
         if ((vs = tsk_vs_gpt_open(img_info, offset)) != NULL) {
             if (set != NULL) {
+
                 /* GPT drives have a DOS Safety partition table.
                  * Test to see if we can ignore one */
-                if ((strcmp(set, "DOS"))
-                    && (vs_set->part_count == 1)
-                    && (vs_set->part_list)
-                    && (vs_set->part_list->start <= 63)
-                    && (vs_set->part_list->desc)
-                    && (strncmp(vs_set->part_list->desc, "GPT", 3))) {
-                    TSK_VS_PART_INFO *tmp;
-                    /* see if we can find a GPT partition that ends at the same
-                     * location as the DOS (we should be testing for the last GPT partition...) */
-                    for (tmp = vs->part_list; tmp; tmp = tmp->next) {
-                        if ((vs_set->part_list->start +
-                                vs_set->part_list->len) ==
-                            (tmp->start + tmp->len)) {
-                            if (tsk_verbose)
-                                tsk_fprintf(stderr,
-                                    "mm_open: Ignoring DOS Safety GPT Partition\n");
-                            set = NULL;
-                            vs_set = NULL;
+                if (strcmp(set, "DOS") == 0) {
+                    TSK_VS_PART_INFO *tmp_set;
+                    for (tmp_set = vs_set->part_list; tmp_set;
+                        tmp_set = tmp_set->next) {
+                        if ((tmp_set->desc)
+                            && (strncmp(tmp_set->desc, "GPT", 3) == 0)
+                            && (tmp_set->start <= 63)) {
+                            TSK_VS_PART_INFO *tmp_cur;
+                            /* see if we can find a GPT partition that ends at the same
+                             * location as the DOS (we should be testing for the last GPT partition...) */
+                            for (tmp_cur = vs->part_list; tmp_cur;
+                                tmp_cur = tmp_cur->next) {
+                                if ((tmp_set->start + tmp_set->len) ==
+                                    (tmp_cur->start + tmp_cur->len)) {
+                                    if (tsk_verbose)
+                                        tsk_fprintf(stderr,
+                                            "mm_open: Ignoring DOS Safety GPT Partition\n");
+                                    set = NULL;
+                                    vs_set = NULL;
+                                    break;
+                                }
+                            }
+                            if (set == NULL)
+                                break;
                         }
                     }
                 }
