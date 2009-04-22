@@ -1032,12 +1032,12 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
     else if (a_fs_attr->flags & TSK_FS_ATTR_RES) {
         size_t read_len;
 
-        if (a_offset > a_fs_attr->rd.buf_size) {
+        if (a_offset > a_fs_attr->size) {
             return 0;
         }
 
-        if (a_len + a_offset > a_fs_attr->rd.buf_size)
-            read_len = a_fs_attr->rd.buf_size - (size_t) a_offset;
+        if (a_offset + a_len > a_fs_attr->size)
+            read_len = a_fs_attr->size - (size_t) a_offset;
         else
             read_len = a_len;
 

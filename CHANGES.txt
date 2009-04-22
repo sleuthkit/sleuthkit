@@ -71,6 +71,9 @@ by Rob Joyce.
 4/11/09: Bug Fix: Fixed issue 2662168 re: warning messages on macs
 when reading the raw character device.  patch by Rob Joyce. 
 
+4/21/09: Bug Fix. Fixed issue 2778170 re: incorrect read size on resident
+attributes.  Patch by Jamie Butler. 
+
 ---------------- VERSION 3.0.0 -------------- 
 0/00/00: Update: Many, many, many API changes.
 
