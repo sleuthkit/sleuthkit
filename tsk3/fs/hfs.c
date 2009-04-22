@@ -1727,6 +1727,7 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file_folder * a_entry,
 {
     const hfs_file_fold_std *std;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & a_hfs->fs_info;
+    uint16_t hfsmode;
 
     if (a_fs_meta == NULL) {
         tsk_errno = TSK_ERR_FS_ARG;
@@ -1758,12 +1759,20 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file_folder * a_entry,
     /* 
      * Copy the file type specific stuff first 
      */
+    hfsmode = tsk_getu16(fs->endian, std->perm.mode);
+
     if (tsk_getu16(fs->endian, std->rec_type) == HFS_FOLDER_RECORD) {
+        // set the type of mode is not set
+        if ((hfsmode & HFS_IN_IFMT) == 0)
+            a_fs_meta->type = TSK_FS_META_TYPE_DIR;
         a_fs_meta->size = 0;
         memset(a_fs_meta->content_ptr, 0, HFS_FILE_CONTENT_LEN);
     }
     else if (tsk_getu16(fs->endian, std->rec_type) == HFS_FILE_RECORD) {
         hfs_fork *fork;
+        // set the type of mode is not set
+        if ((hfsmode & HFS_IN_IFMT) == 0)
+            a_fs_meta->type = TSK_FS_META_TYPE_REG;
         a_fs_meta->size =
             tsk_getu64(fs->endian, a_entry->file.data.logic_sz);
 
@@ -1779,15 +1788,21 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file_folder * a_entry,
     }
 
     /*
-     * Copy the standard stuff 
+     * Copy the standard stuff.  
+     * Use default values (as defined in spec) if mode is not defined.
      */
-    a_fs_meta->mode =
-        hfsmode2tskmode(tsk_getu16(fs->endian, std->perm.mode));
-    a_fs_meta->type =
-        hfsmode2tskmetatype(tsk_getu16(fs->endian, std->perm.mode));
+    if ((hfsmode & HFS_IN_IFMT) == 0) {
+        a_fs_meta->mode = 0;
+        a_fs_meta->uid = 99;
+        a_fs_meta->gid = 99;
+    }
+    else {
+        a_fs_meta->mode = hfsmode2tskmode(hfsmode);
+        a_fs_meta->type = hfsmode2tskmetatype(hfsmode);
+        a_fs_meta->uid = tsk_getu32(fs->endian, std->perm.owner);
+        a_fs_meta->gid = tsk_getu32(fs->endian, std->perm.group);
+    }
 
-    a_fs_meta->uid = tsk_getu32(fs->endian, std->perm.owner);
-    a_fs_meta->gid = tsk_getu32(fs->endian, std->perm.group);
     // this field is set only for "indirect" entries
     if (tsk_getu32(fs->endian, std->perm.special.nlink))
         a_fs_meta->nlink = tsk_getu32(fs->endian, std->perm.special.nlink);
