@@ -176,7 +176,7 @@ extern "C" {
         uint8_t ext[3];
         uint8_t attrib;
         uint8_t lowercase;
-        uint8_t ctimeten;       /* create times */
+        uint8_t ctimeten;       /* create times (ctimeten is 0-199) */
         uint8_t ctime[2];
         uint8_t cdate[2];
         uint8_t adate[2];       /* access time */

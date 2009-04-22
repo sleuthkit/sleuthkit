@@ -95,7 +95,7 @@ is_83_name(fatfs_dentry * de)
 ** 
 */
 static time_t
-dos2unixtime(uint16_t date, uint16_t time)
+dos2unixtime(uint16_t date, uint16_t time, uint8_t timetens)
 {
     struct tm tm1;
     time_t ret;
@@ -108,6 +108,9 @@ dos2unixtime(uint16_t date, uint16_t time)
     tm1.tm_sec = ((time & FATFS_SEC_MASK) >> FATFS_SEC_SHIFT) * 2;
     if ((tm1.tm_sec < 0) || (tm1.tm_sec > 60))
         tm1.tm_sec = 0;
+    // the ctimetens value has a range of 0 to 199
+    if (timetens > 100)
+        tm1.tm_sec++;
 
     tm1.tm_min = ((time & FATFS_MIN_MASK) >> FATFS_MIN_SHIFT);
     if ((tm1.tm_min < 0) || (tm1.tm_min > 59))
@@ -273,13 +276,13 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
         if (FATFS_ISDATE(tsk_getu16(fs->endian, in->wdate)))
             fs_meta->mtime =
                 dos2unixtime(tsk_getu16(fs->endian, in->wdate),
-                tsk_getu16(fs->endian, in->wtime));
+                tsk_getu16(fs->endian, in->wtime), 0);
         else
             fs_meta->mtime = 0;
 
         if (FATFS_ISDATE(tsk_getu16(fs->endian, in->adate)))
             fs_meta->atime =
-                dos2unixtime(tsk_getu16(fs->endian, in->adate), 0);
+                dos2unixtime(tsk_getu16(fs->endian, in->adate), 0, 0);
         else
             fs_meta->atime = 0;
 
@@ -291,7 +294,7 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
         if (FATFS_ISDATE(tsk_getu16(fs->endian, in->cdate)))
             fs_meta->crtime =
                 dos2unixtime(tsk_getu16(fs->endian, in->cdate),
-                tsk_getu16(fs->endian, in->ctime));
+                tsk_getu16(fs->endian, in->ctime), in->ctimeten);
         else
             fs_meta->crtime = 0;
 
@@ -752,6 +755,8 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de)
             return 0;
         else if ((tsk_getu16(fs->endian, de->cdate) != 0) &&
             (FATFS_ISDATE(tsk_getu16(fs->endian, de->cdate)) == 0))
+            return 0;
+        else if (de->ctimeten > 200)
             return 0;
         else if ((tsk_getu16(fs->endian, de->adate) != 0) &&
             (FATFS_ISDATE(tsk_getu16(fs->endian, de->adate)) == 0))

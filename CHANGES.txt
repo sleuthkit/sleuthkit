@@ -74,6 +74,9 @@ when reading the raw character device.  patch by Rob Joyce.
 4/21/09: Bug Fix. Fixed issue 2778170 re: incorrect read size on resident
 attributes.  Patch by Jamie Butler. 
 
+4/21/09: Bug Fix. Fixed issue 2777633 re: missing second resolution on FAT
+creation times.  Reported by Eoghan Casey.
+
 ---------------- VERSION 3.0.0 -------------- 
 0/00/00: Update: Many, many, many API changes.
 
