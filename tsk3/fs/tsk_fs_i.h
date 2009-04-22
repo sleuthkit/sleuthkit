@@ -53,7 +53,7 @@ extern "C" {
 
 // set to 1 to open HFS+ file systems -- which is not fully tested
 #ifndef TSK_USE_HFS
-#define TSK_USE_HFS 0
+#define TSK_USE_HFS 1
 #endif
 
 

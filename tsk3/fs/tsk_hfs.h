@@ -87,11 +87,6 @@
 
 #define HFS_MAXNAMLEN		765     /* maximum HFS+ name length in bytes, when encoded in UTF8, not including terminating null */
 
-/* catalog file data types */
-#define HFS_FOLDER_RECORD	0x0001
-#define HFS_FILE_RECORD		0X0002
-#define HFS_FOLDER_THREAD	0x0003
-#define HFS_FILE_THREAD		0x0004
 
 /*
  * HFS uses its own time system, which is seconds since Jan 1 1904
@@ -287,13 +282,13 @@ typedef struct {
     hfs_fork cat_file;          /* location and size of catalog file */
     hfs_fork attr_file;         /* location and size of attributes file */
     hfs_fork start_file;        /* location and size of startup file */
-} hfs_sb;
+} hfs_plus_vh;
 
 /*
-** HFS Super Block for wrapped HFS+/HFSX file systems
+** HFS (non-Plus) Master Directory Block (volume header-like) (used with wrapped HFS+/HFSX file systems)
 */
 typedef struct {
-    uint8_t drSigWord[2];       /* "BD" for HFS (same location as hfs_sb.signature) */
+    uint8_t drSigWord[2];       /* "BD" for HFS (same location as hfs_plus_vh.signature) */
     uint8_t drCrDate[4];        /* volume creation date */
     uint8_t drLsMod[4];         /* volume last modified date */
     uint8_t drAtrb[2];          /* volume attributes */
@@ -316,14 +311,14 @@ typedef struct {
     uint8_t drFilCnt[4];        /* number of files on volume */
     uint8_t drDirCnt[4];        /* number of directories on volume */
     uint8_t drFndrInfo[32];     /* Finder info */
-    uint8_t drEmbedSigWord[2];  /* signature of the embedded HFS+ volume (eg, "H+") */
+    uint8_t drEmbedSigWord[2];  /* signature of the embedded HFS+ volume (eg, "H+") - 0x7c offset */
     uint8_t drEmbedExtent_startBlock[2];        /* extent descriptor for start of embedded volume */
-    uint8_t drEmbedExtent_blockCount[2];        /* extent descriptor for start of embedded volume */
+    uint8_t drEmbedExtent_blockCount[2];        /* extent descriptor for num of blks in of embedded volume */
     uint8_t drXTFlSize[4];      /* size of the extents overflow file */
     uint8_t drXTExtRec[12];     /* extent record with size and location of extents overflow file */
     uint8_t drCTFlSize[4];      /* size of the catalog file */
     uint8_t drCTExtRec[12];     /* extent record with size and location of catalog file */
-} hfs_wrapper_sb;
+} hfs_mdb;
 
 
 
@@ -389,12 +384,16 @@ typedef struct {
 } hfs_btree_key_cat;
 
 /* Key for extents records */
+// fork_type values
+#define HFS_EXT_KEY_TYPE_DATA   0x00    // extents key is for data fork
+#define HFS_EXT_KEY_TYPE_RSRC   0xFF    // extents key is for resource fork
+
 typedef struct {
-    uint8_t key_len[2];         // length of key minus 2
-    uint8_t fork_type[1];
-    uint8_t pad[1];
-    uint8_t file_id[4];
-    uint8_t start_block[4];
+    uint8_t key_len[2];         // length of key minus 2 (should always be 10)
+    uint8_t fork_type;          // data or resource fork
+    uint8_t pad;                // reserved
+    uint8_t file_id[4];         // the cnid that this key is for
+    uint8_t start_block[4];     // the offset in the file (in blocks) that this run is for
 } hfs_btree_key_ext;
 
 /* Record contents for index record after key */
@@ -402,16 +401,9 @@ typedef struct {
     uint8_t childNode[4];
 } hfs_btree_index_record;
 
-typedef struct {
-    uint32_t inum;              /* inode number */
-    uint32_t parent;            /* parent directory number */
-    uint32_t node;              /* btree leaf node */
-    TSK_DADDR_T offs;           /* offset of beginning of inode */
-} htsk_fs_inode_mode_struct;
 
 
-
-
+/********* CATALOG Record structures *********/
 typedef struct {
     int8_t v[2];
     int8_t h[2];
@@ -422,6 +414,7 @@ typedef struct {
 #define HFS_FINDER_FLAG_IS_INVISIBLE 0x4000
 #define HFS_FINDER_FLAG_IS_ALIAS     0x8000
 
+// Finder info stored in file and folder structures
 typedef struct {
     uint8_t file_type[4];       /* file type */
     uint8_t file_cr[4];         /* file creator */
@@ -437,69 +430,79 @@ typedef struct {
     uint8_t folderid[4];        /* putaway folder id */
 } hfs_extendedfileinfo;
 
-#define HFS_FILE_FLAG_LOCKED 0x0001     /* file is locked */
-#define HFS_FILE_FLAG_ATTR   0x0004     /* file has extended attributes */
-#define HFS_FILE_FLAG_ACL    0x0008     /* file has security data (ACLs) */
+/* Note that the file, folder, and thread structures all
+* start with a 2-byte type field. */
 
+// values for rec_type Record Type fields
+#define HFS_FOLDER_RECORD	0x0001
+#define HFS_FILE_RECORD		0X0002
+#define HFS_FOLDER_THREAD	0x0003
+#define HFS_FILE_THREAD		0x0004
+
+// the start of the folder and file catalog entries are the same
 typedef struct {
     uint8_t rec_type[2];        /* record type */
-    uint8_t flags[2];           /* flags - reserved */
-    uint8_t valence[4];         /* valence - items in this folder */
-    uint8_t cnid[4];            /* catalog node id */
-    uint8_t ctime[4];           /* create date */
-    uint8_t cmtime[4];          /* content mod date */
-    uint8_t amtime[4];          /* attribute mod date */
-    uint8_t atime[4];           /* access date */
-    uint8_t bkup_time[4];       /* backup time */
-    hfs_access_perm perm;       /* HFS permissions */
-    hfs_fileinfo u_info;        /* user info */
-    hfs_extendedfileinfo f_info;        /* finder info */
-    uint8_t txt_enc[4];         /* text encoding */
-    uint8_t res[4];             /* reserved */
-} hfs_folder;
-
-typedef struct {
-    uint8_t rec_type[2];        /* record type */
-    uint8_t flags[2];
-    uint8_t res[4];             /* reserved */
-    uint8_t cnid[4];            /* catalog node id */
-    uint8_t ctime[4];           /* create date */
-    uint8_t cmtime[4];          /* content modification date */
-    uint8_t attr_mtime[4];      /* attribute mod date */
+    uint8_t flags[2];           /* Flags (reserved (0) for folders) */
+    uint8_t valence[4];         /* valence - items in this folder (folders only) */
+    uint8_t cnid[4];            /* CNID of this file or folder */
+    uint8_t crtime[4];          /* create date */
+    uint8_t cmtime[4];          /* content modification date (m-time) */
+    uint8_t amtime[4];          /* attribute mod date (c-time) */
     uint8_t atime[4];           /* access date */
     uint8_t bkup_date[4];       /* backup date */
     hfs_access_perm perm;       /* permissions */
-    hfs_fileinfo u_info;        /* user info */
+    hfs_fileinfo u_info;        /* user info (Used by Finder) */
     hfs_extendedfileinfo f_info;        /* finder info */
-    uint8_t text_enc[4];        /* text encoding */
+    uint8_t text_enc[4];        /* text encoding hint for file name */
     uint8_t res2[4];            /* reserved 2 */
+} hfs_file_fold_std;
+
+// structure for folder data in catalog leaf records
+typedef struct {
+    hfs_file_fold_std std;      /* standard data that files and folders share */
+} hfs_folder;
+
+// value for flags in hfs_file
+#define HFS_FILE_FLAG_LOCKED 0x0001     /* file is locked */
+#define HFS_FILE_FLAG_THREAD 0x0002     /* File has a thread entry */
+
+// @@@ BC: I Can't find a reference to these values...
+#define HFS_FILE_FLAG_ATTR   0x0004     /* file has extended attributes */
+#define HFS_FILE_FLAG_ACL    0x0008     /* file has security data (ACLs) */
+
+// structure for file data in catalog leaf records
+typedef struct {
+    hfs_file_fold_std std;      /* standard data that files and folders share */
     hfs_fork data;              /* data fork */
     hfs_fork resource;          /* resource fork */
 } hfs_file;
 
+// structure for thread data in catalog leaf records
+typedef struct {
+    uint8_t rec_type[2];        /* == kHFSPlusFolderThreadRecord or kHFSPlusFileThreadRecord */
+    uint8_t res[2];             /* reserved - initialized as zero */
+    uint8_t parent_cnid[4];     /* parent ID for this catalog node */
+    hfs_uni_str name;           /* name of this catalog node (variable length) */
+} hfs_thread;
+
+
+// internally used structure to pass around both files and folders
 typedef union {
     hfs_folder folder;
     hfs_file file;
 } hfs_file_folder;
 
 typedef struct {
-    uint8_t record_type[2];     /* == kHFSPlusFolderThreadRecord or kHFSPlusFileThreadRecord */
-    uint8_t reserved[2];        /* reserved - initialized as zero */
-    uint8_t parent_cnid[4];     /* parent ID for this catalog node */
-    hfs_uni_str name;           /* name of this catalog node (variable length) */
-} hfs_thread;
-
-typedef struct {
     TSK_FS_INFO fs_info;        /* SUPER CLASS */
 
-    hfs_sb *fs;                 /* cached superblock */
+    hfs_plus_vh *fs;            /* cached superblock */
 
     char is_case_sensitive;
 
     TSK_FS_FILE *blockmap_file;
     const TSK_FS_ATTR *blockmap_attr;
     char blockmap_cache[4096];  ///< Cache for blockmap
-    TSK_OFF_T blockmap_cache_start;   ///< Byte offset of blockmap where cache starts
+    TSK_OFF_T blockmap_cache_start;     ///< Byte offset of blockmap where cache starts
     size_t blockmap_cache_len;  ///< Length of cache that is being used
 
     TSK_FS_FILE *catalog_file;
@@ -537,7 +540,8 @@ typedef struct {
 extern uint8_t hfs_checked_read_random(TSK_FS_INFO *, char *, size_t,
     TSK_OFF_T);
 extern uint8_t hfs_uni2ascii(TSK_FS_INFO *, uint8_t *, int, char *, int);
-extern int hfs_unicode_compare(HFS_INFO *, hfs_uni_str *, hfs_uni_str *);
+extern int hfs_unicode_compare(HFS_INFO *, const hfs_uni_str *,
+    const hfs_uni_str *);
 extern uint16_t hfs_get_idxkeylen(HFS_INFO * hfs, uint16_t keylen,
     const hfs_btree_header_record * header);
 
@@ -550,5 +554,18 @@ extern uint8_t hfs_jblk_walk(TSK_FS_INFO *, TSK_DADDR_T, TSK_DADDR_T, int,
     TSK_FS_JBLK_WALK_CB, void *);
 extern uint8_t hfs_jentry_walk(TSK_FS_INFO *, int, TSK_FS_JENTRY_WALK_CB,
     void *);
+
+
+typedef uint8_t(*TSK_HFS_BTREE_CB) (HFS_INFO *, int8_t level_type,
+    const void *targ_key, const hfs_btree_key_cat * cur_key,
+    TSK_OFF_T key_off, void *);
+// return values for callback
+#define HFS_BTREE_CB_GO     0
+#define HFS_BTREE_CB_STOP   1
+#define HFS_BTREE_CB_ERR   2
+
+extern uint8_t hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
+    TSK_HFS_BTREE_CB a_cb, void *ptr);
+
 
 #endif

@@ -108,15 +108,16 @@
 #include "tsk_fs_i.h"
 #include "tsk_hfs.h"
 
-static int hfs_unicode_compare_int(uint16_t endian, hfs_uni_str * uni1,
-    hfs_uni_str * uni2);
+static int hfs_unicode_compare_int(uint16_t endian,
+    const hfs_uni_str * uni1, const hfs_uni_str * uni2);
 
 int
-hfs_unicode_compare(HFS_INFO * hfs, hfs_uni_str * uni1, hfs_uni_str * uni2)
+hfs_unicode_compare(HFS_INFO * hfs, const hfs_uni_str * uni1,
+    const hfs_uni_str * uni2)
 {
     if (hfs->is_case_sensitive) {
         uint16_t l1, l2;
-        uint8_t *s1, *s2;
+        const uint8_t *s1, *s2;
         uint16_t c1, c2;
 
         l1 = tsk_getu16(hfs->fs_info.endian, uni1->length);
@@ -150,19 +151,17 @@ hfs_unicode_compare(HFS_INFO * hfs, hfs_uni_str * uni1, hfs_uni_str * uni2)
 extern uint16_t gLowerCaseTable[];
 
 static int
-hfs_unicode_compare_int(uint16_t endian, hfs_uni_str * uni1,
-    hfs_uni_str * uni2)
+hfs_unicode_compare_int(uint16_t endian, const hfs_uni_str * uni1,
+    const hfs_uni_str * uni2)
 {
     uint16_t c1, c2;
     uint16_t temp;
     uint16_t *lowerCaseTable;
 
-    uint16_t length1, length2;
-    uint8_t *str1 = uni1->unicode;
-    uint8_t *str2 = uni2->unicode;
-
-    length1 = tsk_getu16(endian, uni1->length);
-    length2 = tsk_getu16(endian, uni2->length);
+    const uint8_t *str1 = uni1->unicode;
+    const uint8_t *str2 = uni2->unicode;
+    uint16_t length1 = tsk_getu16(endian, uni1->length);
+    uint16_t length2 = tsk_getu16(endian, uni2->length);
 
     lowerCaseTable = gLowerCaseTable;
 
