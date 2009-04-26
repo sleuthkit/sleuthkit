@@ -61,9 +61,11 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
                 (a_img_info->cache_off[i] + a_img_info->cache_len[i] >=
                     a_off + len2)) {
 
+                /*
                 if (tsk_verbose)
                     fprintf(stderr,
                         "tsk_img_read: Read found in cache %d\n", i);
+                 */
 
                 // We found it...
                 memcpy(a_buf,
@@ -101,10 +103,12 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         // round the offset down to a sector boundary
         a_img_info->cache_off[cache_next] = (a_off / 512) * 512;
 
+        /*
         if (tsk_verbose)
             fprintf(stderr,
                 "tsk_img_read: Loading data into cache %d (%" PRIuOFF
                 ")\n", cache_next, a_img_info->cache_off[cache_next]);
+         */
 
         // figure out the length to read into the cache
         rlen = TSK_IMG_INFO_CACHE_LEN;

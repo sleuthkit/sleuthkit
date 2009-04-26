@@ -178,20 +178,30 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
     HFS_DIR_OPEN_META_INFO *info = (HFS_DIR_OPEN_META_INFO *) ptr;
     TSK_FS_INFO *fs = &hfs->fs_info;
 
-    // for both node types, continue for smaller values and stop for bigger
-    if (tsk_getu32(hfs->fs_info.endian, cur_key->parent_cnid) < *cnid_p)
-        return HFS_BTREE_CB_GO;
-    else if (tsk_getu32(hfs->fs_info.endian,
-            cur_key->parent_cnid) > *cnid_p)
-        return HFS_BTREE_CB_STOP;
+    if (tsk_verbose)
+        fprintf(stderr,
+            "hfs_dir_open_meta_cb: want %" PRIu32 " vs got %" PRIu32
+            " (%s node)\n", *cnid_p, tsk_getu32(hfs->fs_info.endian,
+                cur_key->parent_cnid),
+            (level_type == HFS_BT_NODE_TYPE_IDX) ? "Index" : "Leaf");
 
     if (level_type == HFS_BT_NODE_TYPE_IDX) {
-        // for equals, return "go"
-        return HFS_BTREE_CB_GO;
+        if (tsk_getu32(hfs->fs_info.endian,
+                cur_key->parent_cnid) < *cnid_p)
+            return HFS_BTREE_CB_IDX_LT;
+        else
+            return HFS_BTREE_CB_IDX_EQGT;
     }
     else {
         uint8_t *rec_buf = (uint8_t *) cur_key;
         uint16_t rec_type;
+
+        if (tsk_getu32(hfs->fs_info.endian,
+                cur_key->parent_cnid) < *cnid_p)
+            return HFS_BTREE_CB_LEAF_GO;
+        else if (tsk_getu32(hfs->fs_info.endian,
+                cur_key->parent_cnid) > *cnid_p)
+            return HFS_BTREE_CB_LEAF_STOP;
 
         size_t rec_off2 =
             2 + tsk_getu16(hfs->fs_info.endian, cur_key->key_len);
@@ -271,7 +281,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
         if (tsk_fs_dir_add(info->fs_dir, info->fs_name)) {
             return HFS_BTREE_CB_ERR;
         }
-        return HFS_BTREE_CB_GO;
+        return HFS_BTREE_CB_LEAF_GO;
     }
 }
 

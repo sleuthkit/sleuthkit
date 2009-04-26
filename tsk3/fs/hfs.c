@@ -745,7 +745,9 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                     free(node);
                     return 1;
                 }
-                else if ((retval == HFS_BTREE_CB_GO) || (next_node == 0)) {
+                // record the closest entry
+                else if ((retval == HFS_BTREE_CB_IDX_LT)
+                    || (next_node == 0)) {
                     hfs_btree_index_record *idx_rec;
                     int keylen =
                         2 + hfs_get_idxkeylen(hfs, tsk_getu16(fs->endian,
@@ -764,8 +766,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                         keylen];
                     next_node = tsk_getu32(fs->endian, idx_rec->childNode);
                 }
-                if (retval == HFS_BTREE_CB_STOP) {
-                    // we are now too big, so move down to the next node
+                if (retval == HFS_BTREE_CB_IDX_EQGT) {
+                    // move down to the next node
                     break;
                 }
             }
@@ -817,7 +819,7 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                 retval =
                     a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, targ_data, key,
                     cur_off + rec_off, ptr);
-                if (retval == HFS_BTREE_CB_STOP) {
+                if (retval == HFS_BTREE_CB_LEAF_STOP) {
                     is_done = 1;
                     break;
                 }
@@ -836,6 +838,9 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                 if (cur_node == 0) {
                     is_done = 1;
                 }
+                if (tsk_verbose)
+                    fprintf(stderr,
+                        "hfs_cat_traverse: moving forward to next leaf");
             }
         }
         else {
@@ -859,20 +864,27 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
     TSK_OFF_T key_off, void *ptr)
 {
     const hfs_btree_key_cat *targ_key = (hfs_btree_key_cat *) targ_data;
+    if (tsk_verbose)
+        fprintf(stderr,
+            "hfs_cat_get_record_offset_cb: %s node want: %" PRIu32
+            " vs have: %" PRIu32 "\n",
+            (level_type == HFS_BT_NODE_TYPE_IDX) ? "Index" : "Leaf",
+            tsk_getu32(hfs->fs_info.endian, targ_key->parent_cnid),
+            tsk_getu32(hfs->fs_info.endian, cur_key->parent_cnid));
+
     if (level_type == HFS_BT_NODE_TYPE_IDX) {
-        if (hfs_cat_compare_keys(hfs, cur_key, targ_key) <= 0)
-            return HFS_BTREE_CB_GO;
+        int diff = hfs_cat_compare_keys(hfs, cur_key, targ_key);
+        if (diff < 0)
+            return HFS_BTREE_CB_IDX_LT;
         else
-            return HFS_BTREE_CB_STOP;
+            return HFS_BTREE_CB_IDX_EQGT;
     }
     else {
-        int diff;
-
-        diff = hfs_cat_compare_keys(hfs, cur_key, targ_key);
+        int diff = hfs_cat_compare_keys(hfs, cur_key, targ_key);
 
         // see if this record is for our file or if we passed the interesting entries
         if (diff < 0) {
-            return HFS_BTREE_CB_GO;
+            return HFS_BTREE_CB_LEAF_GO;
         }
         else if (diff == 0) {
             TSK_OFF_T *off = (TSK_OFF_T *) ptr;
@@ -880,7 +892,7 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
                 key_off + 2 + tsk_getu16(hfs->fs_info.endian,
                 cur_key->key_len);
         }
-        return HFS_BTREE_CB_STOP;
+        return HFS_BTREE_CB_LEAF_STOP;
     }
 }
 
@@ -1086,6 +1098,11 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
     memset((char *) &key, 0, sizeof(hfs_btree_key_cat));
     cnid_to_array((uint32_t) inum, key.parent_cnid);
 
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "hfs_cat_file_lookup: Looking up thread record (%" PRIuINUM
+            ")\n", inum);
+
     /* look up the thread record */
     off = hfs_cat_get_record_offset(hfs, &key);
     if (off == 0) {
@@ -1118,6 +1135,11 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
     memcpy((char *) key.parent_cnid, (char *) thread.parent_cnid,
         sizeof(key.parent_cnid));
     memcpy((char *) &key.name, (char *) &thread.name, sizeof(key.name));
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "hfs_cat_file_lookup: Looking up file record (parent: %"
+            PRIuINUM ")\n", tsk_getu32(fs->endian, key.parent_cnid));
 
     /* look up the record */
     off = hfs_cat_get_record_offset(hfs, &key);

@@ -560,9 +560,11 @@ typedef uint8_t(*TSK_HFS_BTREE_CB) (HFS_INFO *, int8_t level_type,
     const void *targ_key, const hfs_btree_key_cat * cur_key,
     TSK_OFF_T key_off, void *);
 // return values for callback
-#define HFS_BTREE_CB_GO     0
-#define HFS_BTREE_CB_STOP   1
-#define HFS_BTREE_CB_ERR   2
+#define HFS_BTREE_CB_IDX_LT     1       // current key is less than target (keeps looking in node)
+#define HFS_BTREE_CB_IDX_EQGT   2       // current key is equal or greater than target (stops)
+#define HFS_BTREE_CB_LEAF_GO    3       // keep on going to the next key in the leaf node
+#define HFS_BTREE_CB_LEAF_STOP  4       // stop processing keys in the leaf node
+#define HFS_BTREE_CB_ERR        5
 
 extern uint8_t hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
     TSK_HFS_BTREE_CB a_cb, void *ptr);
