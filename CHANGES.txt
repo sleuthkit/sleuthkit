@@ -83,6 +83,9 @@ permissions and type.  Patch by Rob Joyce.
 4/26/09: Update: Removed disk_stat and disk_sreset because they were out
 of date and hdparm now has the same functionality. 
 
+4/27/09: Update: Added support in mactime to read body files with comment
+lines.  Suggested by Simson Garfinkel. 
+
 ---------------- VERSION 3.0.0 -------------- 
 0/00/00: Update: Many, many, many API changes.
 

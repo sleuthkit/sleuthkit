@@ -285,6 +285,8 @@ sub read_body {
     }
 
     while (<BODY>) {
+        next if ((/^\#/) || (/^\s+$/));
+
         chomp;
 
         my (
