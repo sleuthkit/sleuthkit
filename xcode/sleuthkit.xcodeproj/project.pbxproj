@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		02260BF70D64895A0027BE02 /* disk_ide.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = disk_ide.h; sourceTree = "<group>"; };
-		02260BFE0D64895A0027BE02 /* ide.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = ide.c; sourceTree = "<group>"; };
 		02260C4B0D64895B0027BE02 /* md5.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = md5.c; sourceTree = "<group>"; };
 		02260C4C0D64895B0027BE02 /* sha1.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = sha1.c; sourceTree = "<group>"; };
 		02260C5E0D64895B0027BE02 /* .perltidyrc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = .perltidyrc; sourceTree = "<group>"; };
@@ -28,8 +26,6 @@
 		022B139A0DB6486D00C4BE09 /* nofs_misc.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = nofs_misc.c; sourceTree = "<group>"; };
 		025328FF0E59B5ED000595D8 /* img_io.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = img_io.c; sourceTree = "<group>"; };
 		025558630DA1C67E00A635EC /* fs_block.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fs_block.c; sourceTree = "<group>"; };
-		025D0FBF0DBCDD9B00A9420F /* disk_sreset.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = disk_sreset.cpp; sourceTree = "<group>"; };
-		025D0FC00DBCDD9B00A9420F /* disk_stat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = disk_stat.cpp; sourceTree = "<group>"; };
 		025D0FC30DBCDDBF00A9420F /* hfind.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = hfind.cpp; sourceTree = "<group>"; };
 		025D0FC60DBCDDDB00A9420F /* img_cat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = img_cat.cpp; sourceTree = "<group>"; };
 		025D0FC70DBCDDDB00A9420F /* img_stat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = img_stat.cpp; sourceTree = "<group>"; };
@@ -156,18 +152,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-		02260BF00D64895A0027BE02 /* disktools */ = {
-			isa = PBXGroup;
-			children = (
-				025D0FBF0DBCDD9B00A9420F /* disk_sreset.cpp */,
-				025D0FC00DBCDD9B00A9420F /* disk_stat.cpp */,
-				02260BF70D64895A0027BE02 /* disk_ide.h */,
-				02260BFE0D64895A0027BE02 /* ide.c */,
-			);
-			name = disktools;
-			path = ../tools/disktools;
-			sourceTree = SOURCE_ROOT;
-		};
 		02260C400D64895B0027BE02 /* hashtools */ = {
 			isa = PBXGroup;
 			children = (
@@ -240,7 +224,6 @@
 				02260C4D0D64895B0027BE02 /* imgtools */,
 				02F9DE5C0D9BFCF2009C3F0E /* vstools */,
 				02F9DE070D9BF030009C3F0E /* fstools */,
-				02260BF00D64895A0027BE02 /* disktools */,
 				02260C400D64895B0027BE02 /* hashtools */,
 				02260C5D0D64895B0027BE02 /* sorter */,
 				02260C640D64895B0027BE02 /* srchtools */,

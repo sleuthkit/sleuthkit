@@ -80,6 +80,9 @@ creation times.  Reported by Eoghan Casey.
 4/21/09: Bug Fix: Fixed issue 2706862 re: default assignment of HFS
 permissions and type.  Patch by Rob Joyce.
 
+4/26/09: Update: Removed disk_stat and disk_sreset because they were out
+of date and hdparm now has the same functionality. 
+
 ---------------- VERSION 3.0.0 -------------- 
 0/00/00: Update: Many, many, many API changes.
 

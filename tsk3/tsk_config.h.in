@@ -24,9 +24,6 @@
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
 
-/* Set to 1 if type exists in Linux */
-#undef HAVE_IDE_TASK_REQUEST_T
-
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
@@ -35,9 +32,6 @@
 
 /* Define to 1 if you have the `ewf' library (-lewf). */
 #undef HAVE_LIBEWF
-
-/* Define to 1 if you have the <linux/hdreg.h> header file. */
-#undef HAVE_LINUX_HDREG_H
 
 /* Define to 1 if `lstat' has the bug that it succeeds when given the
    zero-length file name argument. */

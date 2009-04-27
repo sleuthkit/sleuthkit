@@ -69,13 +69,6 @@ if test -d /usr/local/include; then
     LDFLAGS="$LDFLAGS -L/usr/local/lib"
 fi
 
-# This is used by disktools
-AC_CHECK_HEADERS([linux/hdreg.h],
-        [AC_CHECK_TYPE(ide_task_request_t, 
-            [AC_DEFINE(HAVE_IDE_TASK_REQUEST_T, [1], [Set to 1 if type exists in Linux])],
-            [],
-            [#include <linux/hdreg.h>])])
-
 # Checks for libraries.
 
 # Check if we should link afflib.  Some installations
@@ -162,7 +155,6 @@ AC_CONFIG_FILES([Makefile
                  tools/vstools/Makefile
                  tools/fstools/Makefile
                  tools/hashtools/Makefile
-                 tools/disktools/Makefile
                  tools/srchtools/Makefile
                  tools/sorter/Makefile
                  tools/timeline/Makefile
