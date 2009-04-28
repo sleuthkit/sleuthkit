@@ -1679,7 +1679,6 @@ static uint8_t
 hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 {
     TSK_FS_ATTR *fs_attr;
-    TSK_FS_ATTR_RUN *attr_run;
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
@@ -1699,7 +1698,6 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
                 TSK_FS_ATTR_NONRES)) == NULL) {
         strncat(tsk_errstr2, " - hfs_make_attrfile",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
-        tsk_fs_attr_run_free(attr_run);
         return 1;
     }
 
@@ -1710,7 +1708,6 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         strncat(tsk_errstr2, " - hfs_make_attrfile",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         tsk_fs_attr_free(fs_attr);
-        tsk_fs_attr_run_free(attr_run);
         return 1;
     }
 

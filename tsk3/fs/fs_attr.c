@@ -1037,7 +1037,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
         }
 
         if (a_offset + a_len > a_fs_attr->size)
-            read_len = a_fs_attr->size - (size_t) a_offset;
+            read_len = (size_t)(a_fs_attr->size - a_offset);
         else
             read_len = a_len;
 

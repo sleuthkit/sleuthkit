@@ -195,6 +195,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
     else {
         uint8_t *rec_buf = (uint8_t *) cur_key;
         uint16_t rec_type;
+        size_t rec_off2;
 
         if (tsk_getu32(hfs->fs_info.endian,
                 cur_key->parent_cnid) < *cnid_p)
@@ -203,7 +204,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
                 cur_key->parent_cnid) > *cnid_p)
             return HFS_BTREE_CB_LEAF_STOP;
 
-        size_t rec_off2 =
+        rec_off2 =
             2 + tsk_getu16(hfs->fs_info.endian, cur_key->key_len);
         // @@@ NEED TO REPLACE THIS SOMEHOW, but need to figure out the max length
         /*
