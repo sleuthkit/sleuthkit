@@ -89,6 +89,10 @@ lines.  Suggested by Simson Garfinkel.
 4/28/09: Update: Added ability to build windows executables in VS w/out
 needing other image format  libraries.  
 
+4/29/09: Bug Fix: Added the READ_SHARE option to the CreateFile command
+for split image files.  Patch by Christopher Siwy. 
+
+
 ---------------- VERSION 3.0.0 -------------- 
 0/00/00: Update: Many, many, many API changes.
 
