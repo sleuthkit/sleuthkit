@@ -3106,6 +3106,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->jblk_walk = hfs_jblk_walk;
     fs->jentry_walk = hfs_jentry_walk;
     fs->jopen = hfs_jopen;
+    fs->name_cmp = hfs_name_cmp;
     fs->journ_inum = 0;
 
     return fs;

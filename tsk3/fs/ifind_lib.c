@@ -247,29 +247,19 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                 return -1;
             }
 
-            // @@@ It seems that we could abstract this and have a name comparison
-            // function for each file system that hides the case sensitive details...
             /* 
              * Check if this is the name that we are currently looking for,
              * as identified in 'cur_dir'
              */
-            if (TSK_FS_TYPE_ISFFS(a_fs->ftype)
-                || TSK_FS_TYPE_ISEXT(a_fs->ftype)) {
+            /* FAT is a special case because we check the short name */
+            if (TSK_FS_TYPE_ISFAT(a_fs->ftype)) {
                 if ((fs_file->name->name)
-                    && (strcmp(fs_file->name->name, cur_dir) == 0)) {
-                    found_name = 1;
-                }
-            }
-            /* FAT is a special case because we do case insensitive and we check
-             * the short name 
-             */
-            else if (TSK_FS_TYPE_ISFAT(a_fs->ftype)) {
-                if ((fs_file->name->name)
-                    && (strcasecmp(fs_file->name->name, cur_dir) == 0)) {
+                    && (a_fs->name_cmp(a_fs, fs_file->name->name,
+                            cur_dir) == 0)) {
                     found_name = 1;
                 }
                 else if ((fs_file->name->shrt_name)
-                    && (strcasecmp(fs_file->name->shrt_name,
+                    && (a_fs->name_cmp(a_fs, fs_file->name->shrt_name,
                             cur_dir) == 0)) {
                     found_name = 1;
                 }
@@ -278,7 +268,8 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
             /* NTFS gets a case insensitive comparison */
             else if (TSK_FS_TYPE_ISNTFS(a_fs->ftype)) {
                 if ((fs_file->name->name)
-                    && (strcasecmp(fs_file->name->name, cur_dir) == 0)) {
+                    && (a_fs->name_cmp(a_fs, fs_file->name->name,
+                            cur_dir) == 0)) {
                     /*  ensure we have the right attribute name */
                     if (cur_attr == NULL) {
                         found_name = 1;
@@ -296,7 +287,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                                     continue;
 
                                 if ((fs_attr->name)
-                                    && (strcasecmp(fs_attr->name,
+                                    && (a_fs->name_cmp(a_fs, fs_attr->name,
                                             cur_attr) == 0)) {
                                     found_name = 1;
                                 }
@@ -305,34 +296,12 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                     }
                 }
             }
-
-            /* HFS+ can be case-sensitive or case-insensitive */
-            else if (TSK_FS_TYPE_ISHFS(a_fs->ftype)) {
-                HFS_INFO *hfs = (HFS_INFO *) a_fs;
-                if (hfs->is_case_sensitive) {
-                    if ((fs_file->name->name)
-                        && (strcmp(fs_file->name->name, cur_dir) == 0)) {
-                        found_name = 1;
-                    }
-                }
-                else {
-                    if ((fs_file->name->name)
-                        && (strcasecmp(fs_file->name->name,
-                                cur_dir) == 0)) {
-                        found_name = 1;
-                    }
-                }
-            }
-
-            /* Unknown how to compare names in this filesystem */
             else {
-                tsk_fs_dir_close(fs_dir);
-                free(cpath);
-                tsk_errno = TSK_ERR_FS_GENFS;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
-                    "tsk_fs_path2inum: File System type not supported for file name comparison (%X)",
-                    a_fs->ftype);
-                return -1;
+                if ((fs_file->name->name)
+                    && (a_fs->name_cmp(a_fs, fs_file->name->name,
+                            cur_dir) == 0)) {
+                    found_name = 1;
+                }
             }
 
             if (found_name) {

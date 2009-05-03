@@ -83,6 +83,7 @@ swapfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset)
     fs->load_attrs = tsk_fs_nofs_make_data_run;
 
     fs->dir_open_meta = tsk_fs_nofs_dir_open_meta;
+    fs->name_cmp = tsk_fs_nofs_name_cmp;
 
     fs->jblk_walk = tsk_fs_nofs_jblk_walk;
     fs->jentry_walk = tsk_fs_nofs_jentry_walk;

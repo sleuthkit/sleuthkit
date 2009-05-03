@@ -4488,6 +4488,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->fscheck = ntfs_fscheck;
     fs->istat = ntfs_istat;
     fs->close = ntfs_close;
+    fs->name_cmp = ntfs_name_cmp;
 
     fs->jblk_walk = ntfs_jblk_walk;
     fs->jentry_walk = ntfs_jentry_walk;

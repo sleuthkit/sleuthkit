@@ -2193,6 +2193,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->fsstat = ext2fs_fsstat;
     fs->fscheck = ext2fs_fscheck;
     fs->istat = ext2fs_istat;
+    fs->name_cmp = tsk_fs_unix_name_cmp;
     fs->close = ext2fs_close;
 
 

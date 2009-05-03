@@ -204,8 +204,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
                 cur_key->parent_cnid) > *cnid_p)
             return HFS_BTREE_CB_LEAF_STOP;
 
-        rec_off2 =
-            2 + tsk_getu16(hfs->fs_info.endian, cur_key->key_len);
+        rec_off2 = 2 + tsk_getu16(hfs->fs_info.endian, cur_key->key_len);
         // @@@ NEED TO REPLACE THIS SOMEHOW, but need to figure out the max length
         /*
            if (rec_off2 > nodesize) {
@@ -421,4 +420,14 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
 
     tsk_fs_name_free(fs_name);
     return TSK_OK;
+}
+
+int
+hfs_name_cmp(TSK_FS_INFO * a_fs_info, const char *s1, const char *s2)
+{
+    HFS_INFO *hfs = (HFS_INFO *) a_fs_info;
+    if (hfs->is_case_sensitive)
+        return strcmp(s1, s2);
+    else
+        return strcasecmp(s1, s2);
 }

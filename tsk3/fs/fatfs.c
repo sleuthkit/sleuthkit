@@ -1681,6 +1681,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->load_attrs = fatfs_make_data_run;
 
     fs->dir_open_meta = fatfs_dir_open_meta;
+    fs->name_cmp = fatfs_name_cmp;
 
     fs->fsstat = fatfs_fsstat;
     fs->fscheck = fatfs_fscheck;

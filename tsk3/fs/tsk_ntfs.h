@@ -705,6 +705,8 @@ extern "C" {
         TSK_INUM_T a_addr);
 
     extern void ntfs_orphan_map_free(NTFS_INFO * a_ntfs);
+
+    extern int ntfs_name_cmp(TSK_FS_INFO *, const char *, const char *);
 #ifdef __cplusplus
 }
 #endif

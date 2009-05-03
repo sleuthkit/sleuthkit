@@ -179,7 +179,8 @@ extern "C" {
     extern uint8_t tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file);
     extern TSK_FS_ATTR_TYPE_ENUM tsk_fs_unix_get_default_attr_type(const
         TSK_FS_FILE * a_file);
-
+    extern int tsk_fs_unix_name_cmp(TSK_FS_INFO * a_fs_info,
+        const char *s1, const char *s2);
 
     /* Specific file system routines */
     extern TSK_FS_INFO *ext2fs_open(TSK_IMG_INFO *, TSK_OFF_T,
@@ -203,6 +204,8 @@ extern "C" {
     extern TSK_FS_ATTR_TYPE_ENUM tsk_fs_nofs_get_default_attr_type(const
         TSK_FS_FILE * a_file);
     extern uint8_t tsk_fs_nofs_make_data_run(TSK_FS_FILE *);
+    extern int tsk_fs_nofs_name_cmp(TSK_FS_INFO *, const char *,
+        const char *);
 
     extern TSK_FS_BLOCK_FLAG_ENUM tsk_fs_nofs_block_getflags(TSK_FS_INFO *
         a_fs, TSK_DADDR_T a_addr);

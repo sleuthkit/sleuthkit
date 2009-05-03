@@ -856,6 +856,8 @@ extern "C" {
 
          uint8_t(*fsstat) (TSK_FS_INFO * fs, FILE * hFile);     ///< \internal
 
+        int (*name_cmp) (TSK_FS_INFO *, const char *, const char *);    ///< \internal
+
          uint8_t(*fscheck) (TSK_FS_INFO *, FILE *);     ///< \internal
 
         void (*close) (TSK_FS_INFO * fs);       ///< FS-specific function: Call tsk_fs_close() instead. 

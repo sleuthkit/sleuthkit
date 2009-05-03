@@ -2267,6 +2267,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->fscheck = iso9660_fscheck;
     fs->istat = iso9660_istat;
     fs->close = iso9660_close;
+    fs->name_cmp = iso9660_name_cmp;
 
     fs->jblk_walk = iso9660_jblk_walk;
     fs->jentry_walk = iso9660_jentry_walk;

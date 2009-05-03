@@ -273,3 +273,10 @@ tsk_fs_nofs_jblk_walk(TSK_FS_INFO * a_fs, TSK_INUM_T start, TSK_INUM_T end,
         tsk_fs_type_toname(a_fs->ftype));
     return 1;
 }
+
+int
+tsk_fs_nofs_name_cmp(TSK_FS_INFO * a_fs_info, const char *s1,
+    const char *s2)
+{
+    return strcmp(s1, s2);
+}

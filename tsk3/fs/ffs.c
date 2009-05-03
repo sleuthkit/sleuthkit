@@ -2096,6 +2096,7 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype)
 
     fs->get_default_attr_type = tsk_fs_unix_get_default_attr_type;
     fs->load_attrs = tsk_fs_unix_make_data_run;
+    fs->name_cmp = tsk_fs_unix_name_cmp;
 
     fs->file_add_meta = ffs_inode_lookup;
     fs->dir_open_meta = ffs_dir_open_meta;

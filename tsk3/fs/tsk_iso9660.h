@@ -390,6 +390,8 @@ extern TSK_RETVAL_ENUM iso9660_dir_open_meta(TSK_FS_INFO * a_fs,
 
 extern uint8_t iso9660_dinode_load(ISO_INFO * iso, TSK_INUM_T inum);
 
+extern int iso9660_name_cmp(TSK_FS_INFO *, const char *, const char *);
+
 /**********************************************************
  *
  * RockRidge Extensions

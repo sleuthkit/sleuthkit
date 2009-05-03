@@ -386,3 +386,10 @@ tsk_fs_unix_get_default_attr_type(const TSK_FS_FILE * a_file)
 {
     return TSK_FS_ATTR_TYPE_DEFAULT;
 }
+
+int
+tsk_fs_unix_name_cmp(TSK_FS_INFO * a_fs_info, const char *s1,
+    const char *s2)
+{
+    return strcmp(s1, s2);
+}

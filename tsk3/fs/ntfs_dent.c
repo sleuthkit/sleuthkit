@@ -1455,3 +1455,10 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
     tsk_fs_file_close(fs_file);
     return 0;
 }
+
+
+int
+ntfs_name_cmp(TSK_FS_INFO * a_fs_info, const char *s1, const char *s2)
+{
+    return strcasecmp(s1, s2);
+}
