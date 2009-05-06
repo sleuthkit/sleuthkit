@@ -685,6 +685,11 @@ tsk_fs_dir_make_orphan_dir_meta(TSK_FS_INFO * a_fs,
         a_fs_meta->name2->next = NULL;
     }
 
+    a_fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
+    if (a_fs_meta->attr) {
+        tsk_fs_attrlist_markunused(a_fs_meta->attr);
+    }
+
     a_fs_meta->addr = TSK_FS_ORPHANDIR_INUM(a_fs);
     strncpy(a_fs_meta->name2->name, "$OrphanFiles",
         TSK_FS_META_NAME_LIST_NSIZE);

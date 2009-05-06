@@ -551,6 +551,10 @@ fatfs_make_root(FATFS_INFO * fatfs, TSK_FS_META * fs_meta)
     }
     fs_meta->name2->name[0] = '\0';
 
+    fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
+    if (fs_meta->attr) {
+        tsk_fs_attrlist_markunused(fs_meta->attr);
+    }
     addr_ptr = (TSK_DADDR_T *) fs_meta->content_ptr;
 
     /* TSK_FS_TYPE_FAT12 and TSK_FS_TYPE_FAT16 don't use the FAT for root directory, so 
@@ -641,6 +645,11 @@ fatfs_make_mbr(FATFS_INFO * fatfs, TSK_FS_META * fs_meta)
     strncpy(fs_meta->name2->name, FATFS_MBRNAME,
         TSK_FS_META_NAME_LIST_NSIZE);
 
+    fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
+    if (fs_meta->attr) {
+        tsk_fs_attrlist_markunused(fs_meta->attr);
+    }
+
     addr_ptr = (TSK_DADDR_T *) fs_meta->content_ptr;
     addr_ptr[0] = 0;
     fs_meta->size = 512;
@@ -693,8 +702,14 @@ fatfs_make_fat(FATFS_INFO * fatfs, uint8_t a_which, TSK_FS_META * fs_meta)
         addr_ptr[0] = fatfs->firstfatsect + fatfs->sectperfat;
     }
     else {
-        ////XXXX 
+        ////@@@ 
     }
+
+    fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
+    if (fs_meta->attr) {
+        tsk_fs_attrlist_markunused(fs_meta->attr);
+    }
+
     fs_meta->size = fatfs->sectperfat * fs->block_size;
 
     return 0;
@@ -1288,6 +1303,8 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             inum <= end_inum; inum++) {
             int retval;
 
+            tsk_fs_meta_reset(fs_file->meta);
+
             if (inum == FATFS_MBRINO(fs)) {
                 if (fatfs_make_mbr(fatfs, fs_file->meta)) {
                     tsk_fs_file_close(fs_file);
@@ -1501,7 +1518,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
     fatfs = (FATFS_INFO *) fs;
 
     clust = ((TSK_DADDR_T *) fs_meta->content_ptr)[0];
-    size_remain = fs_meta->size;
+    size_remain = roundup(fs_meta->size, fatfs->csize * fs->block_size);
 
     // see if we have already loaded the runs
     if ((fs_meta->attr != NULL)
@@ -1740,7 +1757,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
             if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run_head,
                     NULL, TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
                     fs_meta->size, roundup(fs_meta->size,
-                        fs->block_size), 0, 0)) {
+                        fatfs->csize * fs->block_size), 0, 0)) {
                 fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
                 return 1;
             }
@@ -1761,7 +1778,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
             if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run_tmp, NULL,
                     TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
                     fs_meta->size, roundup(fs_meta->size,
-                        fs->block_size), 0, 0)) {
+                        fatfs->csize * fs->block_size), 0, 0)) {
                 fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
                 return 1;
             }
@@ -1874,8 +1891,8 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         // initialize the data run
         if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run_head, NULL,
                 TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-                fs_meta->size, roundup(fs_meta->size, fs->block_size), 0,
-                0)) {
+                fs_meta->size, roundup(fs_meta->size,
+                    fatfs->csize * fs->block_size), 0, 0)) {
             fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
             return 1;
         }

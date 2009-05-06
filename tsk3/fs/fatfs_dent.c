@@ -646,6 +646,13 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             "fatfs_dir_open_meta: Processing directory %" PRIuINUM "\n",
             a_addr);
 
+    if (size == 0) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "fatfs_dir_open_meta: directory has 0 size\n");
+        return TSK_OK;
+    }
+
     /* Make a copy of the directory contents using file_walk */
     if ((dirbuf = tsk_malloc((size_t) len)) == NULL) {
         return TSK_ERR;

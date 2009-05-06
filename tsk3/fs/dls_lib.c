@@ -117,8 +117,9 @@ slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "slack_file_act: Remaining File:  %" PRIuOFF
-            "  Buffer: %u\n", data->flen, size);
+            "slack_file_act: File: %" PRIuINUM " Remaining File:  %"
+            PRIuOFF "  Buffer: %u\n", fs_file->meta->addr, data->flen,
+            size);
 
     /* This is not the last data unit */
     if (data->flen >= size) {

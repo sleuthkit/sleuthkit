@@ -261,8 +261,10 @@ tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
  * @param name Name of the attribute (can be NULL)
  * @param type Type of attribute to add run to
  * @param id Id of attribute to add run to
- * @param size Total size of the attribute (can be larger than length of initial run being added)
+ * @param size Total size of the attribute (can be larger than length of initial run being added) 
+ * (note that this sets the size for the attribute and it will not be updated as more runs are added).
  * @param alloc_size Allocated size of the attribute (>= size).  Identifies the slack space. 
+ * (note that this sets the allocated size for the attribute and it will not be updated as more runs are added).
  * @param flags Flags about compression, sparse etc. of data
  * @param compsize Compression unit size (in case it needs to be created)
  *

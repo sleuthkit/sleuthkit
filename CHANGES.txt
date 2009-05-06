@@ -65,7 +65,11 @@ for split image files.  Patch by Christopher Siwy.
 5/3/09: Update: Abstracted name comparison to file system-specific function.
 
 5/4/09: Bug Fix: NTFS compression infinite loop fix by Jamie Butler.
-Bug 2786963)
+Bug 2786963.
+
+5/5/09: Bug Fix: FAT / blkls error getting slack because allocsize was 
+being set too small (and other values were not being reset).  Reported
+by Charlie Daly .  Bug 2645156.
 
 
 ---------------- VERSION 3.0.1 -------------- 
