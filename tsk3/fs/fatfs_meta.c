@@ -1581,6 +1581,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run, NULL,
                 TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
                 data_run->len * fs->block_size,
+                data_run->len * fs->block_size,
                 data_run->len * fs->block_size, 0, 0)) {
             return 1;
         }
@@ -1616,6 +1617,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         // initialize the data run
         if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run, NULL,
                 TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
+                data_run->len * fs->block_size,
                 data_run->len * fs->block_size,
                 data_run->len * fs->block_size, 0, 0)) {
             return 1;
@@ -1756,7 +1758,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
             // initialize the data run
             if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run_head,
                     NULL, TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-                    fs_meta->size, roundup(fs_meta->size,
+                    fs_meta->size, fs_meta->size, roundup(fs_meta->size,
                         fatfs->csize * fs->block_size), 0, 0)) {
                 fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
                 return 1;
@@ -1777,7 +1779,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
             // initialize the data run
             if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run_tmp, NULL,
                     TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-                    fs_meta->size, roundup(fs_meta->size,
+                    fs_meta->size, fs_meta->size, roundup(fs_meta->size,
                         fatfs->csize * fs->block_size), 0, 0)) {
                 fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
                 return 1;
@@ -1891,7 +1893,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         // initialize the data run
         if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run_head, NULL,
                 TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-                fs_meta->size, roundup(fs_meta->size,
+                fs_meta->size, fs_meta->size, roundup(fs_meta->size,
                     fatfs->csize * fs->block_size), 0, 0)) {
             fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
             return 1;

@@ -262,7 +262,8 @@ tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
  * @param type Type of attribute to add run to
  * @param id Id of attribute to add run to
  * @param size Total size of the attribute (can be larger than length of initial run being added) 
- * (note that this sets the size for the attribute and it will not be updated as more runs are added).
+ * @param init_size Number of bytes in attribute that have been initialized (less then or equal to size)
+ * (note that this sets the initialized size for the attribute and it will not be updated as more runs are added).
  * @param alloc_size Allocated size of the attribute (>= size).  Identifies the slack space. 
  * (note that this sets the allocated size for the attribute and it will not be updated as more runs are added).
  * @param flags Flags about compression, sparse etc. of data
@@ -274,7 +275,8 @@ uint8_t
 tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     TSK_FS_ATTR_RUN * a_data_run_new, const char *name,
     TSK_FS_ATTR_TYPE_ENUM type, uint16_t id, TSK_OFF_T size,
-    TSK_OFF_T alloc_size, TSK_FS_ATTR_FLAG_ENUM flags, uint32_t compsize)
+    TSK_OFF_T init_size, TSK_OFF_T alloc_size,
+    TSK_FS_ATTR_FLAG_ENUM flags, uint32_t compsize)
 {
     TSK_FS_INFO *fs;
 
@@ -310,7 +312,7 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     a_fs_attr->id = id;
     a_fs_attr->size = size;
     a_fs_attr->nrd.allocsize = alloc_size;
-    a_fs_attr->nrd.initsize = 0;
+    a_fs_attr->nrd.initsize = init_size;
     a_fs_attr->nrd.compsize = compsize;
 
     if (fs_attr_put_name(a_fs_attr, name)) {
@@ -351,14 +353,10 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
 
     a_fs_attr->nrd.run = a_data_run_new;
 
-    // update the pointer to the end of the list and the initsize
+    // update the pointer to the end of the list
     a_fs_attr->nrd.run_end = a_data_run_new;
-    a_fs_attr->nrd.initsize =
-        (a_fs_attr->nrd.run_end->len * fs->block_size);
     while (a_fs_attr->nrd.run_end->next) {
         a_fs_attr->nrd.run_end = a_fs_attr->nrd.run_end->next;
-        a_fs_attr->nrd.initsize +=
-            (a_fs_attr->nrd.run_end->len * fs->block_size);
     }
 
     return 0;
@@ -416,8 +414,6 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
             a_data_run_new->offset)) {
 
         a_fs_attr->nrd.run_end->next = a_data_run_new;
-        a_fs_attr->nrd.initsize += (run_len * a_fs->block_size);
-
         // update the pointer to the end of the list
         while (a_fs_attr->nrd.run_end->next)
             a_fs_attr->nrd.run_end = a_fs_attr->nrd.run_end->next;
@@ -589,17 +585,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
         tmprun->len = a_data_run_new->offset - tmprun->offset;
         tmprun->flags = TSK_FS_ATTR_RUN_FLAG_FILLER;
         tmprun->next = a_data_run_new;
-
-        /* Adjust the length of the TSK_FS_ATTR structure to reflect the 
-         * new FILLER run
-         */
-        a_fs_attr->nrd.initsize += (tmprun->len * a_fs->block_size);
     }
-
-    /* Adjust the length of the TSK_FS_ATTR structure to reflect the 
-     * new run
-     */
-    a_fs_attr->nrd.initsize += (run_len * a_fs->block_size);
 
     // update the pointer to the end of the list
     a_fs_attr->nrd.run_end = a_data_run_new;
@@ -649,13 +635,9 @@ tsk_fs_attr_append_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
 
     // update the rest of the offsets in the run (if any exist)
     data_run_cur = a_data_run;
-    a_fs_attr->nrd.initsize += (data_run_cur->len * a_fs->block_size);
     while (data_run_cur->next) {
         data_run_cur->next->offset =
             data_run_cur->offset + data_run_cur->len;
-
-        a_fs_attr->nrd.initsize +=
-            (data_run_cur->next->len * a_fs->block_size);
         a_fs_attr->nrd.run_end = data_run_cur->next;
         data_run_cur = data_run_cur->next;
     }
@@ -852,6 +834,12 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                             "tsk_fs_file_walk: Error reading block at %"
                             PRIuDADDR, addr + len_idx);
                         return 1;
+                    }
+
+                    if (off + fs->block_size > fs_attr->nrd.initsize) {
+                        memset(&buf[fs_attr->nrd.initsize - off], 0,
+                            fs->block_size - (fs_attr->nrd.initsize -
+                                off));
                     }
                 }
             }

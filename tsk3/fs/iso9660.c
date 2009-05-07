@@ -1302,7 +1302,7 @@ iso9660_make_data_run(TSK_FS_FILE * a_fs_file)
     // initialize the data run
     if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-            a_fs_file->meta->size,
+            a_fs_file->meta->size, a_fs_file->meta->size,
             roundup(a_fs_file->meta->size + dd.ext_len,
                 fs->block_size) - dd.ext_len, 0, 0)) {
         return 1;

@@ -1368,6 +1368,7 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             tsk_getu64(fs->endian, hfs->fs->cat_file.logic_sz),
+            tsk_getu64(fs->endian, hfs->fs->cat_file.logic_sz),
             tsk_getu64(fs->endian, hfs->fs->cat_file.logic_sz), 0, 0)) {
         strncat(tsk_errstr2, " - hfs_make_catalog",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
@@ -1439,6 +1440,7 @@ hfs_make_extents(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             tsk_getu64(fs->endian, hfs->fs->ext_file.logic_sz),
+            tsk_getu64(fs->endian, hfs->fs->ext_file.logic_sz),
             tsk_getu64(fs->endian, hfs->fs->ext_file.logic_sz), 0, 0)) {
         strncat(tsk_errstr2, " - hfs_make_extents",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
@@ -1503,6 +1505,7 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     // initialize the data run
     if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
+            tsk_getu64(fs->endian, hfs->fs->alloc_file.logic_sz),
             tsk_getu64(fs->endian, hfs->fs->alloc_file.logic_sz),
             tsk_getu64(fs->endian, hfs->fs->alloc_file.logic_sz), 0, 0)) {
         strncat(tsk_errstr2, " - hfs_make_blockmap",
@@ -1575,6 +1578,7 @@ hfs_make_startfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             tsk_getu64(fs->endian, hfs->fs->start_file.logic_sz),
+            tsk_getu64(fs->endian, hfs->fs->start_file.logic_sz),
             tsk_getu64(fs->endian, hfs->fs->start_file.logic_sz), 0, 0)) {
         strncat(tsk_errstr2, " - hfs_make_startfile",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
@@ -1646,6 +1650,7 @@ hfs_make_attrfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             tsk_getu64(fs->endian, hfs->fs->attr_file.logic_sz),
+            tsk_getu64(fs->endian, hfs->fs->attr_file.logic_sz),
             tsk_getu64(fs->endian, hfs->fs->attr_file.logic_sz), 0, 0)) {
         strncat(tsk_errstr2, " - hfs_make_attrfile",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
@@ -1704,7 +1709,8 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     // dd the run to the file. 
     if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-            fs_file->meta->size, fs_file->meta->size, 0, 0)) {
+            fs_file->meta->size, fs_file->meta->size, fs_file->meta->size,
+            0, 0)) {
         strncat(tsk_errstr2, " - hfs_make_attrfile",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         tsk_fs_attr_free(fs_attr);
@@ -2018,7 +2024,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
         && (fs_file->meta->type != TSK_FS_META_TYPE_LNK)) {
         if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, NULL,
                 TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT, 0, 0, 0,
-                0)) {
+                0, 0)) {
             strncat(tsk_errstr2, " - hfs_load_attrs (non-file)",
                 TSK_ERRSTR_L - strlen(tsk_errstr2));
             return 1;
@@ -2059,6 +2065,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
     // add the runs to the attribute and the attribute to the file. 
     if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
+            tsk_getu64(fs->endian, fork->logic_sz),
             tsk_getu64(fs->endian, fork->logic_sz),
             tsk_getu32(fs->endian, fork->total_blk) * fs->block_size, 0,
             0)) {

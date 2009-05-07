@@ -282,7 +282,8 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
     // initialize the data run
     if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-            fs_meta->size, roundup(fs_meta->size, fs->block_size), 0, 0)) {
+            fs_meta->size, fs_meta->size, roundup(fs_meta->size,
+                fs->block_size), 0, 0)) {
         return 1;
     }
 

@@ -263,8 +263,8 @@ extern "C" {
             TSK_FS_ATTR_RUN *run;       ///< Linked list of runs for non-resident attributes
             TSK_FS_ATTR_RUN *run_end;   ///< Pointer to final run in the list
             uint32_t skiplen;   ///< Number of initial bytes in run to skip before content begins. The size field does not include this length. 
-            TSK_OFF_T allocsize;        ///< Number of bytes that are allocated in all clusters of non-resident run (will be larger than size - does not include skiplen).  This is used for slack space.
-            TSK_OFF_T initsize; ///< Number of bytes (starting from offset 0) that have data (including FILLER) saved for them (smaller then or equal to size - NTFS only).  
+            TSK_OFF_T allocsize;        ///< Number of bytes that are allocated in all clusters of non-resident run (will be larger than size - does not include skiplen).  This is defined when the attribute is created and used to determine slack space.
+            TSK_OFF_T initsize; ///< Number of bytes (starting from offset 0) that have data (including FILLER) saved for them (smaller then or equal to size).  This is defined when the attribute is created.   
             uint32_t compsize;  ///< Size of compression units (needed only if NTFS file is compressed)
         } nrd;
 

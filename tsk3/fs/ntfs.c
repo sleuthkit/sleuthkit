@@ -5,7 +5,7 @@
 ** Content and meta data layer support for the NTFS file system
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2009 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
@@ -1876,7 +1876,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
                 if (tsk_fs_attr_set_run(fs_file, fs_attr,
                         fs_attr_run, name,
-                        type, id, ssize, alen, data_flag, compsize)) {
+                        type, id, ssize,
+                        tsk_getu64(fs->endian, attr->c.nr.initsize),
+                        alen, data_flag, compsize)) {
                     strncat(tsk_errstr2, " - proc_attrseq: set run",
                         TSK_ERRSTR_L - strlen(tsk_errstr2));
                     return TSK_ERR;
