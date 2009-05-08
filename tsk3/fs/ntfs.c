@@ -1513,7 +1513,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                         (a_fs_attr->fs_file->meta->size - (a_offset +
                                 buf_idx)))
                         cpylen =
-                            (a_fs_attr->fs_file->meta->size - (a_offset +
+                            (size_t)(a_fs_attr->fs_file->meta->size - (a_offset +
                                 buf_idx));
 
                     memcpy(&a_buf[buf_idx], &comp.uncomp_buf[byteoffset],

@@ -839,7 +839,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                     if ((off + fs->block_size > fs_attr->nrd.initsize)
                         && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
                         memset(&buf[fs_attr->nrd.initsize - off], 0,
-                            fs->block_size - (fs_attr->nrd.initsize -
+                            fs->block_size - (size_t)(fs_attr->nrd.initsize -
                                 off));
                     }
                 }
@@ -1116,9 +1116,9 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                         meta->addr : 0);
             }
             // we return 0s for reads past the initsize (unless they want slack space)
-            else if (((data_run_cur->offset +
+            else if (((TSK_OFF_T)((data_run_cur->offset +
                         blkoffset_inrun) * fs->block_size +
-                    byteoffset_toread >= a_fs_attr->nrd.initsize)
+                    byteoffset_toread) >= a_fs_attr->nrd.initsize)
                 && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
                 memset(&a_buf[len_toread - len_remain], 0, len_inrun);
                 if (tsk_verbose)
@@ -1158,16 +1158,16 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                 }
 
                 // see if part of the data is in the non-initialized space
-                if (((data_run_cur->offset +
+                if (((TSK_OFF_T)((data_run_cur->offset +
                             blkoffset_inrun) * fs->block_size +
-                        byteoffset_toread + len_inrun >
+                        byteoffset_toread + len_inrun) >
                         a_fs_attr->nrd.initsize)
                     && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
                     size_t off =
-                        (data_run_cur->offset +
+                        (size_t)((data_run_cur->offset +
                         blkoffset_inrun) * fs->block_size +
                         byteoffset_toread + len_inrun -
-                        a_fs_attr->nrd.initsize;
+                        a_fs_attr->nrd.initsize);
                     memset(&a_buf[len_toread - len_remain + off], 0,
                         len_inrun - off);
                 }

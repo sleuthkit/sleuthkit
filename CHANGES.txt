@@ -77,6 +77,9 @@ after the initialized part of an NTFS file (VDL Slack).
 5/7/09: Update: Finish rest of 2367426 so that uninitialized file
 space is shown if slack space is requested.
 
+5/8/09: Update: Resolved issue 2596153 by changing arguments to the
+img_open functions.
+
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.
