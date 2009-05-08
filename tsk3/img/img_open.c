@@ -339,7 +339,7 @@ tsk_img_open_utf8(int num_img, const char *const images[],
         }
 
         retval =
-            tsk_img_open(num_img, (const TSK_TCHAR **) images16, type);
+            tsk_img_open(num_img, images16, type);
 
         // free up the memory
       tsk_utf8_cleanup:
