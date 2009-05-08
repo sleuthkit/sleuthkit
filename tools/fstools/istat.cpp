@@ -51,7 +51,7 @@ usage()
 
 
 int
-main(int argc, char ** argv1)
+main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_IMG_INFO *img;
@@ -68,17 +68,17 @@ main(int argc, char ** argv1)
     /* When > 0 this is the number of blocks to print, used for -b arg */
     TSK_DADDR_T numblock = 0;
     TSK_TCHAR **argv;
-    
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if( argv == NULL) {    
+    if (argv == NULL) {
         fprintf(stderr, "Error getting wide arguments\n");
         exit(1);
     }
 #else
-    argv = (TSK_TCHAR **)argv1;
-#endif    
+    argv = (TSK_TCHAR **) argv1;
+#endif
 
     progname = argv[0];
     setlocale(LC_ALL, "");
@@ -174,8 +174,8 @@ main(int argc, char ** argv1)
      * Open the file system.
      */
     if ((img =
-            tsk_img_open(argc - OPTIND - 1,
-                (const TSK_TCHAR **) &argv[OPTIND], imgtype)) == NULL) {
+            tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
+                imgtype)) == NULL) {
         tsk_error_print(stderr);
         exit(1);
     }

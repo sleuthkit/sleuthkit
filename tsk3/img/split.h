@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-    extern TSK_IMG_INFO *split_open(int, const TSK_TCHAR **);
+    extern TSK_IMG_INFO *split_open(int, const TSK_TCHAR * const images[]);
 
 #define SPLIT_CACHE	15
 
@@ -35,7 +35,7 @@ extern "C" {
     typedef struct {
         TSK_IMG_INFO img_info;
         int num_img;
-        const TSK_TCHAR **images;
+        const TSK_TCHAR *const *images;
         TSK_OFF_T *max_off;
         int *cptr;              /* exists for each image - points to entry in cache */
         IMG_SPLIT_CACHE cache[SPLIT_CACHE];     /* small number of fds for open images */

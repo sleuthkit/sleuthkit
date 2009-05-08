@@ -183,7 +183,8 @@ testfile(TSK_FS_INFO * a_fs, TSK_INUM_T a_inum)
     s_off = 0;
     if (tsk_fs_file_walk(file1, (TSK_FS_FILE_WALK_FLAG_ENUM) 0,
             fw_action1, NULL)) {
-        fprintf(stderr, "Error walking file inode: %"PRIuINUM"\n", a_inum);
+        fprintf(stderr, "Error walking file inode: %" PRIuINUM "\n",
+            a_inum);
         tsk_error_print(stderr);
         tsk_error_reset();
         return 1;
@@ -206,9 +207,7 @@ test_fat12()
     char fname[512];
 
     snprintf(fname, 512, "%s/fat12.dd", s_root);
-    if ((img =
-            tsk_img_open_sing((const TSK_TCHAR *) fname,
-                (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();
@@ -247,9 +246,7 @@ test_fat_slack()
     ssize_t retval;
 
     snprintf(fname, 512, "%s/fat-img-kw.dd", s_root);
-    if ((img =
-            tsk_img_open_sing((const TSK_TCHAR *) fname,
-                (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();
@@ -343,9 +340,7 @@ test_fat_recover()
     ssize_t retval;
 
     snprintf(fname, 512, "%s/fe_test_1.img", s_root);
-    if ((img =
-            tsk_img_open_sing((const TSK_TCHAR *) fname,
-                (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();
@@ -485,9 +480,7 @@ test_ntfs_slack_ads()
     ssize_t retval;
 
     snprintf(fname, 512, "%s/ntfs-img-kw-1.dd", s_root);
-    if ((img =
-            tsk_img_open_sing((const TSK_TCHAR *) fname,
-                (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();
@@ -585,11 +578,11 @@ test_ntfs_slack_ads()
     }
 
     // test the getsize API for both attributes
-    const TSK_FS_ATTR *fs_attr = tsk_fs_file_attr_get_type(file1, TSK_FS_ATTR_TYPE_NTFS_DATA, 3, 1);
+    const TSK_FS_ATTR *fs_attr =
+        tsk_fs_file_attr_get_type(file1, TSK_FS_ATTR_TYPE_NTFS_DATA, 3, 1);
     if (!fs_attr) {
         fprintf(stderr,
-            "Error getting data attribute 3 in file-n-5.dat (%s)",
-            tname);
+            "Error getting data attribute 3 in file-n-5.dat (%s)", tname);
         tsk_error_print(stderr);
         tsk_error_reset();
         return 1;
@@ -601,7 +594,8 @@ test_ntfs_slack_ads()
         return 1;
     }
 
-    fs_attr = tsk_fs_file_attr_get_type(file1, TSK_FS_ATTR_TYPE_NTFS_DATA, 5, 1);
+    fs_attr =
+        tsk_fs_file_attr_get_type(file1, TSK_FS_ATTR_TYPE_NTFS_DATA, 5, 1);
     if (!fs_attr) {
         fprintf(stderr,
             "Error getting size of attribute 5 in file-n-5.dat (%s)",
@@ -633,9 +627,7 @@ test_ntfs_fe()
     char fname[512];
 
     snprintf(fname, 512, "%s/fe_test_1.img", s_root);
-    if ((img =
-            tsk_img_open_sing((const TSK_TCHAR *) fname,
-                (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();
@@ -673,9 +665,7 @@ test_ntfs_comp()
     char fname[512];
 
     snprintf(fname, 512, "%s/ntfs-comp-1.img", s_root);
-    if ((img =
-            tsk_img_open_sing((const TSK_TCHAR *) fname,
-                (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();

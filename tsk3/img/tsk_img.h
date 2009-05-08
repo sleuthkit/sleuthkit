@@ -94,11 +94,11 @@ extern "C" {
     extern TSK_IMG_INFO *tsk_img_open_sing(const TSK_TCHAR * a_image,
         TSK_IMG_TYPE_ENUM type);
     extern TSK_IMG_INFO *tsk_img_open(int,
-        const TSK_TCHAR **, TSK_IMG_TYPE_ENUM);
+        const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM);
     extern TSK_IMG_INFO *tsk_img_open_utf8_sing(const char *a_image,
         TSK_IMG_TYPE_ENUM type);
     extern TSK_IMG_INFO *tsk_img_open_utf8(int num_img,
-        const char **images, TSK_IMG_TYPE_ENUM type);
+        const char *const images[], TSK_IMG_TYPE_ENUM type);
 
     extern void tsk_img_close(TSK_IMG_INFO *);
 

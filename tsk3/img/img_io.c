@@ -48,7 +48,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
      * we'll use this length when checking the cache. */
     len2 = a_len;
     if (a_off + len2 > a_img_info->size)
-        len2 = (size_t)(a_img_info->size - a_off);
+        len2 = (size_t) (a_img_info->size - a_off);
 
     // check if it is in the cache
     for (i = 0; i < TSK_IMG_INFO_CACHE_NUM; i++) {
@@ -62,16 +62,16 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
                     a_off + len2)) {
 
                 /*
-                if (tsk_verbose)
-                    fprintf(stderr,
-                        "tsk_img_read: Read found in cache %d\n", i);
+                   if (tsk_verbose)
+                   fprintf(stderr,
+                   "tsk_img_read: Read found in cache %d\n", i);
                  */
 
                 // We found it...
                 memcpy(a_buf,
                     &a_img_info->cache[i][a_off -
                         a_img_info->cache_off[i]], len2);
-                retval = (ssize_t)len2;
+                retval = (ssize_t) len2;
 
                 // reset its "age" since it was useful
                 a_img_info->cache_age[i] = CACHE_AGE;
@@ -104,16 +104,18 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         a_img_info->cache_off[cache_next] = (a_off / 512) * 512;
 
         /*
-        if (tsk_verbose)
-            fprintf(stderr,
-                "tsk_img_read: Loading data into cache %d (%" PRIuOFF
-                ")\n", cache_next, a_img_info->cache_off[cache_next]);
+           if (tsk_verbose)
+           fprintf(stderr,
+           "tsk_img_read: Loading data into cache %d (%" PRIuOFF
+           ")\n", cache_next, a_img_info->cache_off[cache_next]);
          */
 
         // figure out the length to read into the cache
         rlen = TSK_IMG_INFO_CACHE_LEN;
         if (a_img_info->cache_off[cache_next] + rlen > a_img_info->size) {
-            rlen = (size_t)(a_img_info->size - a_img_info->cache_off[cache_next]);
+            rlen =
+                (size_t) (a_img_info->size -
+                a_img_info->cache_off[cache_next]);
         }
 
         retval =
@@ -127,12 +129,14 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
             // update the length we can actually copy (in case we did not get to read all that we wanted)
             if (a_off + len2 > a_img_info->cache_off[cache_next] + retval)
-                len2 = (size_t)(a_img_info->cache_off[cache_next] + retval - a_off);
+                len2 =
+                    (size_t) (a_img_info->cache_off[cache_next] + retval -
+                    a_off);
 
             memcpy(a_buf,
                 &a_img_info->cache[cache_next][a_off -
                     a_img_info->cache_off[cache_next]], len2);
-            retval = (ssize_t)len2;
+            retval = (ssize_t) len2;
         }
         else {
             a_img_info->cache_len[cache_next] = 0;

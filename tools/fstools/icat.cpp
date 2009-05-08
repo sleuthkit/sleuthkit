@@ -53,7 +53,7 @@ usage()
 }
 
 int
-main(int argc, char ** argv1)
+main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_IMG_INFO *img;
@@ -71,17 +71,17 @@ main(int argc, char ** argv1)
     int retval;
     int suppress_recover_error = 0;
     TSK_TCHAR **argv;
-    
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if( argv == NULL) {    
+    if (argv == NULL) {
         fprintf(stderr, "Error getting wide arguments\n");
         exit(1);
     }
 #else
-    argv = (TSK_TCHAR **)argv1;
-#endif    
+    argv = (TSK_TCHAR **) argv1;
+#endif
 
     progname = argv[0];
     setlocale(LC_ALL, "");
@@ -151,15 +151,16 @@ main(int argc, char ** argv1)
     }
 
     /* Get the inode address */
-    if (tsk_fs_parse_inum(argv[argc - 1], &inum, &type, &type_used, &id, &id_used)) {
+    if (tsk_fs_parse_inum(argv[argc - 1], &inum, &type, &type_used, &id,
+            &id_used)) {
         TFPRINTF(stderr, _TSK_T("Invalid inode address: %s\n"),
             argv[argc - 1]);
         usage();
     }
 
     if ((img =
-            tsk_img_open(argc - OPTIND - 1,
-                (const TSK_TCHAR **) &argv[OPTIND], imgtype)) == NULL) {
+            tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
+                imgtype)) == NULL) {
         tsk_error_print(stderr);
         exit(1);
     }
@@ -194,7 +195,9 @@ main(int argc, char ** argv1)
         exit(1);
     }
 
-    retval = tsk_fs_icat(fs, inum, type, type_used, id, id_used, (TSK_FS_FILE_WALK_FLAG_ENUM)fw_flags);
+    retval =
+        tsk_fs_icat(fs, inum, type, type_used, id, id_used,
+        (TSK_FS_FILE_WALK_FLAG_ENUM) fw_flags);
     if (retval) {
         if ((suppress_recover_error == 1)
             && (tsk_errno == TSK_ERR_FS_RECOVER)) {

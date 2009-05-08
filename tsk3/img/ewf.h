@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-    extern TSK_IMG_INFO *ewf_open(int, const TSK_TCHAR **);
+    extern TSK_IMG_INFO *ewf_open(int, const TSK_TCHAR * const images[]);
 
     typedef struct {
         TSK_IMG_INFO img_info;

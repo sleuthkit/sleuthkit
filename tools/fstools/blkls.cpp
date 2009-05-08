@@ -64,7 +64,7 @@ usage()
 /* main - open file system, list block info */
 
 int
-main(int argc, char ** argv1)
+main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_IMG_INFO *img;
@@ -82,18 +82,18 @@ main(int argc, char ** argv1)
 
     char lclflags = TSK_FS_BLKLS_CAT, set_bounds = 1;
     TSK_TCHAR **argv;
-    
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if( argv == NULL) {    
+    if (argv == NULL) {
         fprintf(stderr, "Error getting wide arguments\n");
         exit(1);
     }
 #else
-    argv = (TSK_TCHAR **)argv1;
+    argv = (TSK_TCHAR **) argv1;
 #endif
-    
+
     progname = argv[0];
     setlocale(LC_ALL, "");
 
@@ -174,9 +174,7 @@ main(int argc, char ** argv1)
         }
 
         /* There should be no other arguments */
-        img =
-            tsk_img_open(argc - OPTIND,
-            (const TSK_TCHAR **) &argv[OPTIND], imgtype);
+        img = tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype);
 
         if (img == NULL) {
             tsk_error_print(stderr);
@@ -203,8 +201,7 @@ main(int argc, char ** argv1)
         if ((dash = TSTRCHR(argv[argc - 1], _TSK_T('-'))) == NULL) {
             /* No dash in arg - therefore it is an image file name */
             if ((img =
-                    tsk_img_open(argc - OPTIND,
-                        (const TSK_TCHAR **) &argv[OPTIND],
+                    tsk_img_open(argc - OPTIND, &argv[OPTIND],
                         imgtype)) == NULL) {
                 tsk_error_print(stderr);
                 exit(1);
@@ -227,8 +224,7 @@ main(int argc, char ** argv1)
                 /* Not a number - consider it a file name */
                 *dash = _TSK_T('-');
                 if ((img =
-                        tsk_img_open(argc - OPTIND,
-                            (const TSK_TCHAR **) &argv[OPTIND],
+                        tsk_img_open(argc - OPTIND, &argv[OPTIND],
                             imgtype)) == NULL) {
                     tsk_error_print(stderr);
                     exit(1);
@@ -251,8 +247,7 @@ main(int argc, char ** argv1)
                     dash--;
                     *dash = _TSK_T('-');
                     if ((img =
-                            tsk_img_open(argc - OPTIND,
-                                (const TSK_TCHAR **) &argv[OPTIND],
+                            tsk_img_open(argc - OPTIND, &argv[OPTIND],
                                 imgtype)) == NULL) {
                         tsk_error_print(stderr);
                         exit(1);
@@ -271,8 +266,7 @@ main(int argc, char ** argv1)
                     set_bounds = 0;
                     /* It was a block range, so do not include it in the open */
                     if ((img =
-                            tsk_img_open(argc - OPTIND - 1,
-                                (const TSK_TCHAR **) &argv[OPTIND],
+                            tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
                                 imgtype)) == NULL) {
                         tsk_error_print(stderr);
                         exit(1);

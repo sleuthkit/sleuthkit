@@ -142,7 +142,7 @@ print_header(const TSK_VS_INFO * vs)
 
 
 int
-main(int argc, char ** argv1)
+main(int argc, char **argv1)
 {
     TSK_VS_INFO *vs;
     int ch;
@@ -153,18 +153,18 @@ main(int argc, char ** argv1)
     TSK_VS_TYPE_ENUM vstype = TSK_VS_TYPE_DETECT;
     uint8_t hide_meta = 0;
     TSK_TCHAR **argv;
-    
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if( argv == NULL) {    
+    if (argv == NULL) {
         fprintf(stderr, "Error getting wide arguments\n");
         exit(1);
     }
 #else
-    argv = (TSK_TCHAR **)argv1;
+    argv = (TSK_TCHAR **) argv1;
 #endif
-    
+
 
     progname = argv[0];
 
@@ -251,9 +251,7 @@ main(int argc, char ** argv1)
     }
 
     /* open the image */
-    img =
-        tsk_img_open(argc - OPTIND,
-        (const TSK_TCHAR **) &argv[OPTIND], imgtype);
+    img = tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype);
 
     if (img == NULL) {
         tsk_error_print(stderr);

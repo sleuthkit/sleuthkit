@@ -42,7 +42,7 @@ usage()
 
 
 int
-main(int argc, char ** argv1)
+main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_IMG_INFO *img;
@@ -56,17 +56,17 @@ main(int argc, char ** argv1)
     TSK_DADDR_T blk;
     TSK_TCHAR *cp;
     TSK_TCHAR **argv;
-    
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if( argv == NULL) {    
+    if (argv == NULL) {
         fprintf(stderr, "Error getting wide arguments\n");
         exit(1);
     }
 #else
-    argv = (TSK_TCHAR **)argv1;
-#endif    
+    argv = (TSK_TCHAR **) argv1;
+#endif
 
     progname = argv[0];
     setlocale(LC_ALL, "");
@@ -133,8 +133,7 @@ main(int argc, char ** argv1)
     if (tsk_fs_parse_inum(argv[argc - 2], &inum, NULL, NULL, NULL, NULL)) {
         /* Not a number therefore an image */
         if ((img =
-                tsk_img_open(argc - OPTIND - 1,
-                    (const TSK_TCHAR **) &argv[OPTIND],
+                tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
                     imgtype)) == NULL) {
             tsk_error_print(stderr);
             exit(1);
@@ -157,8 +156,7 @@ main(int argc, char ** argv1)
     }
     else {
         if ((img =
-                tsk_img_open(argc - OPTIND - 2,
-                    (const TSK_TCHAR **) &argv[OPTIND],
+                tsk_img_open(argc - OPTIND - 2, &argv[OPTIND],
                     imgtype)) == NULL) {
             tsk_error_print(stderr);
             exit(1);

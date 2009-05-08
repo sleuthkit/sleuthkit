@@ -40,18 +40,18 @@ main(int argc, char **argv)
 
     int ch;
     TSK_TCHAR **argv;
-    
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if( argv == NULL) {    
+    if (argv == NULL) {
         fprintf(stderr, "Error getting wide arguments\n");
         exit(1);
     }
 #else
-    argv = (TSK_TCHAR **)argv1;
+    argv = (TSK_TCHAR **) argv1;
 #endif
-    
+
 
     progname = argv[0];
 

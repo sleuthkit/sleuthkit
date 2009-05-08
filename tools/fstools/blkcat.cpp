@@ -57,7 +57,7 @@ usage()
 
 
 int
-main(int argc, char ** argv1)
+main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_IMG_INFO *img;
@@ -74,18 +74,18 @@ main(int argc, char ** argv1)
     char format = 0;
     extern int OPTIND;
     TSK_TCHAR **argv;
-    
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if( argv == NULL) {    
+    if (argv == NULL) {
         fprintf(stderr, "Error getting wide arguments\n");
         exit(1);
     }
 #else
-    argv = (TSK_TCHAR **)argv1;
+    argv = (TSK_TCHAR **) argv1;
 #endif
-    
+
 
     progname = argv[0];
     setlocale(LC_ALL, "");
@@ -100,8 +100,8 @@ main(int argc, char ** argv1)
                 fstype = TSK_FS_TYPE_RAW;
             }
             else if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
-                tsk_fprintf(stderr, "\t%"PRIttocTSK" (Unallocated Space)\n",
-                    BLKLS_TYPE);
+                tsk_fprintf(stderr,
+                    "\t%" PRIttocTSK " (Unallocated Space)\n", BLKLS_TYPE);
                 tsk_fs_type_print(stderr);
                 exit(1);
             }
@@ -195,8 +195,7 @@ main(int argc, char ** argv1)
     /* Get the block address */
     if (format & TSK_FS_BLKCAT_STAT) {
         if ((img =
-                tsk_img_open(argc - OPTIND,
-                    (const TSK_TCHAR **) &argv[OPTIND],
+                tsk_img_open(argc - OPTIND, &argv[OPTIND],
                     imgtype)) == NULL) {
             tsk_error_print(stderr);
             exit(1);
@@ -222,8 +221,7 @@ main(int argc, char ** argv1)
             }
 
             if ((img =
-                    tsk_img_open(argc - OPTIND - 1,
-                        (const TSK_TCHAR **) &argv[OPTIND],
+                    tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
                         imgtype)) == NULL) {
                 tsk_error_print(stderr);
                 exit(1);
@@ -251,8 +249,7 @@ main(int argc, char ** argv1)
             }
 
             if ((img =
-                    tsk_img_open(argc - OPTIND - 2,
-                        (const TSK_TCHAR **) &argv[OPTIND],
+                    tsk_img_open(argc - OPTIND - 2, &argv[OPTIND],
                         imgtype)) == NULL) {
 
                 tsk_error_print(stderr);

@@ -60,16 +60,18 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
 
 #ifdef TSK_WIN32
         if ((cimg->fd = CreateFile(split_info->images[idx], FILE_READ_DATA,
-                    FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) == INVALID_HANDLE_VALUE) {
+                    FILE_SHARE_READ, NULL, OPEN_EXISTING, 0,
+                    NULL)) == INVALID_HANDLE_VALUE) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_IMG_OPEN;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
                 "split_read file: %" PRIttocTSK " msg: %d",
-                split_info->images[idx], (int)GetLastError());
+                split_info->images[idx], (int) GetLastError());
             return -1;
         }
 #else
-        if ((cimg->fd = open(split_info->images[idx], O_RDONLY | O_BINARY)) < 0) {
+        if ((cimg->fd =
+                open(split_info->images[idx], O_RDONLY | O_BINARY)) < 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_IMG_OPEN;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -333,7 +335,7 @@ split_close(TSK_IMG_INFO * img_info)
  * @return NULL on error
  */
 TSK_IMG_INFO *
-split_open(int num_img, const TSK_TCHAR ** images)
+split_open(int num_img, const TSK_TCHAR * const images[])
 {
     IMG_SPLIT_INFO *split_info;
     TSK_IMG_INFO *img_info;

@@ -31,7 +31,7 @@ usage()
 
 
 int
-main(int argc, char ** argv1)
+main(int argc, char **argv1)
 {
     TSK_IMG_INFO *img;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
@@ -39,16 +39,16 @@ main(int argc, char ** argv1)
     TSK_OFF_T done;
     ssize_t cnt;
     TSK_TCHAR **argv;
-    
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-    if( argv == NULL) {    
+    if (argv == NULL) {
         fprintf(stderr, "Error getting wide arguments\n");
         exit(1);
     }
 #else
-    argv = (TSK_TCHAR **)argv1;
+    argv = (TSK_TCHAR **) argv1;
 #endif
 
     progname = argv[0];
@@ -91,17 +91,15 @@ main(int argc, char ** argv1)
     }
 
     if ((img =
-            tsk_img_open(argc - OPTIND,
-                (const TSK_TCHAR **) &argv[OPTIND], imgtype)) == NULL) {
+            tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype)) == NULL) {
         tsk_error_print(stderr);
         exit(1);
     }
 
 #ifdef TSK_WIN32
     if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
-        fprintf(stderr, 
-            "error setting stdout to binary: %s",
-            strerror(errno));
+        fprintf(stderr,
+            "error setting stdout to binary: %s", strerror(errno));
         exit(1);
     }
 #endif
@@ -110,7 +108,7 @@ main(int argc, char ** argv1)
         char buf[16 * 1024];
         size_t len;
 
-        if (done + (TSK_OFF_T)sizeof(buf) > img->size) {
+        if (done + (TSK_OFF_T) sizeof(buf) > img->size) {
             len = (size_t) (img->size - done);
         }
         else {
@@ -118,7 +116,7 @@ main(int argc, char ** argv1)
         }
 
         cnt = tsk_img_read(img, done, buf, len);
-        if (cnt != (ssize_t)len) {
+        if (cnt != (ssize_t) len) {
             if (cnt >= 0) {
                 tsk_fprintf(stderr,
                     "img_cat: Error reading image file at offset: %"
@@ -133,7 +131,7 @@ main(int argc, char ** argv1)
         }
 
         if (fwrite(buf, cnt, 1, stdout) != 1) {
-            fprintf(stderr, 
+            fprintf(stderr,
                 "img_cat: Error writing to stdout:  %s", strerror(errno));
             tsk_img_close(img);
             exit(1);

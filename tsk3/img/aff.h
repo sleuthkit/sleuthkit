@@ -19,7 +19,7 @@
 #include <afflib/afflib.h>
 #include <afflib/afflib_i.h>
 
-extern TSK_IMG_INFO *aff_open(const char **);
+extern TSK_IMG_INFO *aff_open(const char *const images[]);
 
 /** \internal
  * Stores AFF-specific data

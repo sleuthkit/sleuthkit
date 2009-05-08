@@ -307,12 +307,12 @@ raw_open(const TSK_TCHAR * image)
             }
         }
     }
-#else 
+#else
     /* We don't use the stat output because it doesn't work on raw
      * devices and such */
     img_info->size = lseek(raw_info->fd, 0, SEEK_END);
     lseek(raw_info->fd, 0, SEEK_SET);
-#endif                          
+#endif
 
 #endif
     raw_info->seek_pos = 0;

@@ -124,7 +124,7 @@ img_file_header_signature_ncmp(const char *filename,
 
 
 TSK_IMG_INFO *
-ewf_open(int num_img, const TSK_TCHAR ** images)
+ewf_open(int num_img, const TSK_TCHAR * const images[])
 {
     IMG_EWF_INFO *ewf_info;
     TSK_IMG_INFO *img_info;

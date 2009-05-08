@@ -45,7 +45,8 @@ typedef int bool;
 TSK_IMG_INFO *
 tsk_img_open_sing(const TSK_TCHAR * a_image, TSK_IMG_TYPE_ENUM type)
 {
-    return tsk_img_open(1, &a_image, type);
+    const TSK_TCHAR *const a = a_image;
+    return tsk_img_open(1, &a, type);
 }
 
 
@@ -68,7 +69,7 @@ tsk_img_open_sing(const TSK_TCHAR * a_image, TSK_IMG_TYPE_ENUM type)
  */
 TSK_IMG_INFO *
 tsk_img_open(int num_img,
-    const TSK_TCHAR ** images, TSK_IMG_TYPE_ENUM type)
+    const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM type)
 {
     TSK_IMG_INFO *img_info = NULL;
 
@@ -269,7 +270,8 @@ tsk_img_open(int num_img,
 TSK_IMG_INFO *
 tsk_img_open_utf8_sing(const char *a_image, TSK_IMG_TYPE_ENUM type)
 {
-    return tsk_img_open_utf8(1, &a_image, type);
+    const char *const a = a_image;
+    return tsk_img_open_utf8(1, &a, type);
 }
 
 
@@ -287,7 +289,8 @@ tsk_img_open_utf8_sing(const char *a_image, TSK_IMG_TYPE_ENUM type)
  * @return Pointer to TSK_IMG_INFO or NULL on error
  */
 TSK_IMG_INFO *
-tsk_img_open_utf8(int num_img, const char **images, TSK_IMG_TYPE_ENUM type)
+tsk_img_open_utf8(int num_img, const char *const images[],
+    TSK_IMG_TYPE_ENUM type)
 {
 #ifdef TSK_WIN32
     {
@@ -362,7 +365,7 @@ tsk_img_open_utf8(int num_img, const char **images, TSK_IMG_TYPE_ENUM type)
  */
 TSK_IMG_INFO *
 tsk_img_open_utf16(int num_img,
-    const wchar_t ** images, TSK_IMG_TYPE_ENUM type)
+    wchar_t * const images[], TSK_IMG_TYPE_ENUM type)
 {
 #if TSK_WIN32
     return tsk_img_open(num_img, images, type);

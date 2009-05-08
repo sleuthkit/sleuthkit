@@ -217,7 +217,7 @@ aff_close(TSK_IMG_INFO * img_info)
 
 
 TSK_IMG_INFO *
-aff_open(const char **images)
+aff_open(const char *const images[])
 {
     IMG_AFF_INFO *aff_info;
     TSK_IMG_INFO *img_info;
