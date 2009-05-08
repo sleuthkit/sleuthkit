@@ -74,6 +74,9 @@ by Charlie Daly .  Bug 2645156.
 5/6/09: Bug Fix: Fixed part of bug 2367426 that addressed writing zeros
 after the initialized part of an NTFS file (VDL Slack). 
 
+5/7/09: Update: Finish rest of 2367426 so that uninitialized file
+space is shown if slack space is requested.
+
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.

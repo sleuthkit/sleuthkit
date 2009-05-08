@@ -817,7 +817,8 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                 }
 
                 // we return 0s for reads past the initsize
-                else if (off > fs_attr->nrd.initsize) {
+                else if ((off >= fs_attr->nrd.initsize)
+                    && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
                     memset(buf, 0, fs->block_size);
                 }
                 else {
@@ -835,8 +836,8 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                             PRIuDADDR, addr + len_idx);
                         return 1;
                     }
-
-                    if (off + fs->block_size > fs_attr->nrd.initsize) {
+                    if ((off + fs->block_size > fs_attr->nrd.initsize)
+                        && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
                         memset(&buf[fs_attr->nrd.initsize - off], 0,
                             fs->block_size - (fs_attr->nrd.initsize -
                                 off));
@@ -1020,110 +1021,93 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
 
     /* For resident data, copy data from the local buffer */
     else if (a_fs_attr->flags & TSK_FS_ATTR_RES) {
-        size_t read_len;
+        size_t len_toread;
 
         if (a_offset > a_fs_attr->size) {
             return 0;
         }
 
-        if (a_offset + a_len > a_fs_attr->size)
-            read_len = (size_t) (a_fs_attr->size - a_offset);
-        else
-            read_len = a_len;
+        len_toread = a_len;
+        if (a_offset + a_len > a_fs_attr->size) {
+            len_toread = (size_t) (a_fs_attr->size - a_offset);
+            memset(&a_buf[len_toread], 0, a_len - len_toread);
+        }
 
-        memcpy(a_buf, &a_fs_attr->rd.buf[a_offset], read_len);
-        return (ssize_t) read_len;
+        memcpy(a_buf, &a_fs_attr->rd.buf[a_offset], len_toread);
+
+        return (ssize_t) len_toread;
     }
 
     /* For non-resident data, load the needed block and copy the data */
     else if (a_fs_attr->flags & TSK_FS_ATTR_NONRES) {
         TSK_FS_ATTR_RUN *data_run_cur;
-        TSK_DADDR_T blkoffset;  // block offset of where we want to start reading from
-        size_t byteoffset;      // byte offset in blkoffset of where we want to start reading from
-        size_t size_remain;     // length remaining to copy
-        size_t size_tocopy;     // length total to copy
+        TSK_DADDR_T blkoffset_toread;   // block offset of where we want to start reading from
+        size_t byteoffset_toread;       // byte offset in blkoffset_toread of where we want to start reading from
+        size_t len_remain;      // length remaining to copy
+        size_t len_toread;      // length total to copy
 
         if (a_offset > a_fs_attr->nrd.allocsize) {
             return 0;
         }
 
-        // we return 0s for reads past the initsize
-        if (a_offset >= a_fs_attr->nrd.initsize) {
-            ssize_t len;
-
-            if (tsk_verbose)
-                fprintf(stderr,
-                    "tsk_fs_attr_read: Returning 0s for read past end of initsize (%"
-                    PRIuINUM ")\n", ((a_fs_attr->fs_file)
-                        && (a_fs_attr->fs_file->meta)) ? a_fs_attr->
-                    fs_file->meta->addr : 0);
-
-            if (a_offset + a_len > a_fs_attr->nrd.allocsize)
-                len = (ssize_t) (a_fs_attr->nrd.allocsize - a_offset);
-            else
-                len = (ssize_t) a_len;
-            memset(a_buf, 0, a_len);
-            return len;
-        }
-
-        blkoffset = a_offset / fs->block_size;
-        byteoffset = (size_t) (a_offset % fs->block_size);
+        blkoffset_toread = a_offset / fs->block_size;
+        byteoffset_toread = (size_t) (a_offset % fs->block_size);
 
         // determine how many bytes we can copy
+        len_toread = a_len;
         if (a_flags & TSK_FS_FILE_READ_FLAG_SLACK) {
             if (a_offset + a_len > a_fs_attr->nrd.allocsize)
-                size_tocopy =
+                len_toread =
                     (size_t) (a_fs_attr->nrd.allocsize - a_offset);
-            else
-                size_tocopy = a_len;
         }
         else {
             if (a_offset + a_len > a_fs_attr->size)
-                size_tocopy = (size_t) (a_fs_attr->size - a_offset);
-            else
-                size_tocopy = a_len;
+                len_toread = (size_t) (a_fs_attr->size - a_offset);
         }
-        size_remain = size_tocopy;
+        // wipe the buffer we won't read into
+        if (len_toread < a_len)
+            memset(&a_buf[len_toread], 0, a_len - len_toread);
+
+        len_remain = len_toread;
 
         // cycle through the run until we find where we can start to process the clusters
         for (data_run_cur = a_fs_attr->nrd.run; data_run_cur;
             data_run_cur = data_run_cur->next) {
-            TSK_DADDR_T run_offset;
-            size_t run_len;
+            TSK_DADDR_T blkoffset_inrun;
+            size_t len_inrun;
 
-            if (size_remain <= 0)
+            // we are done
+            if (len_remain <= 0)
                 break;
 
             // See if this run contains the starting offset they requested
-            if (data_run_cur->offset + data_run_cur->len < blkoffset)
+            if (data_run_cur->offset + data_run_cur->len <
+                blkoffset_toread)
                 continue;
 
             // block offset into this run
-            if (data_run_cur->offset <= blkoffset)
-                run_offset = blkoffset - data_run_cur->offset;
-            else
-                run_offset = 0;
+            blkoffset_inrun = 0;
+            if (data_run_cur->offset <= blkoffset_toread)
+                blkoffset_inrun = blkoffset_toread - data_run_cur->offset;
+
 
             // see if we need to read the rest of this run and into the next or if it is all here
-            if (fs->block_size * (data_run_cur->len - run_offset) >=
-                size_remain) {
-                run_len = size_remain;
-            }
-            else {
-                run_len =
-                    (size_t) (fs->block_size * (data_run_cur->len -
-                        run_offset));
-            }
+            len_inrun = len_remain;
+            if ((data_run_cur->len - blkoffset_inrun) * fs->block_size <
+                len_remain)
+                len_inrun =
+                    (size_t) ((data_run_cur->len -
+                        blkoffset_inrun) * fs->block_size);
 
-            /* sparse files just get 0s */
+            /* sparse files/runs just get 0s */
             if (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE) {
-                memset(&a_buf[size_tocopy - size_remain], 0, run_len);
+                memset(&a_buf[len_toread - len_remain], 0, len_inrun);
             }
             /* FILLER entries exist when the source file system can store run
              * info out of order and we did not get all of the run info.  We
              * return 0s if data is read from this type of run. */
             else if (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) {
-                memset(&a_buf[size_tocopy - size_remain], 0, run_len);
+                memset(&a_buf[len_toread - len_remain], 0, len_inrun);
                 if (tsk_verbose)
                     fprintf(stderr,
                         "tsk_fs_attr_read_type: File %" PRIuINUM
@@ -1131,38 +1115,67 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                         (a_fs_attr->fs_file->meta) ? a_fs_attr->fs_file->
                         meta->addr : 0);
             }
+            // we return 0s for reads past the initsize (unless they want slack space)
+            else if (((data_run_cur->offset +
+                        blkoffset_inrun) * fs->block_size +
+                    byteoffset_toread >= a_fs_attr->nrd.initsize)
+                && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
+                memset(&a_buf[len_toread - len_remain], 0, len_inrun);
+                if (tsk_verbose)
+                    fprintf(stderr,
+                        "tsk_fs_attr_read: Returning 0s for read past end of initsize (%"
+                        PRIuINUM ")\n", ((a_fs_attr->fs_file)
+                            && (a_fs_attr->fs_file->meta)) ? a_fs_attr->
+                        fs_file->meta->addr : 0);
+            }
             else {
                 TSK_OFF_T fs_offset_b;
                 ssize_t cnt;
 
                 // calcuate the byte offset in the file system
                 fs_offset_b =
-                    (data_run_cur->addr + run_offset) * fs->block_size;
+                    (data_run_cur->addr +
+                    blkoffset_inrun) * fs->block_size;
 
                 // add the byte offset in the block
-                fs_offset_b += byteoffset;
+                fs_offset_b += byteoffset_toread;
 
                 // reset this in case we need to also read from the next run 
-                byteoffset = 0;
+                byteoffset_toread = 0;
 
                 cnt =
                     tsk_fs_read(fs, fs_offset_b,
-                    &a_buf[size_tocopy - size_remain], run_len);
-                if (cnt != run_len) {
+                    &a_buf[len_toread - len_remain], len_inrun);
+                if (cnt != len_inrun) {
                     if (cnt >= 0) {
                         tsk_error_reset();
                         tsk_errno = TSK_ERR_FS_READ;
                     }
                     snprintf(tsk_errstr2, TSK_ERRSTR_L,
                         "tsk_fs_attr_read_type: offset: %" PRIuOFF
-                        "  Len: %" PRIuSIZE "", fs_offset_b, run_len);
+                        "  Len: %" PRIuSIZE "", fs_offset_b, len_inrun);
                     return cnt;
                 }
-            }
-            size_remain -= run_len;
-        }
 
-        return (ssize_t) (size_tocopy - size_remain);
+                // see if part of the data is in the non-initialized space
+                if (((data_run_cur->offset +
+                            blkoffset_inrun) * fs->block_size +
+                        byteoffset_toread + len_inrun >
+                        a_fs_attr->nrd.initsize)
+                    && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
+                    size_t off =
+                        (data_run_cur->offset +
+                        blkoffset_inrun) * fs->block_size +
+                        byteoffset_toread + len_inrun -
+                        a_fs_attr->nrd.initsize;
+                    memset(&a_buf[len_toread - len_remain + off], 0,
+                        len_inrun - off);
+                }
+
+            }
+            len_remain -= len_inrun;
+        }
+        return (ssize_t) (len_toread - len_remain);
     }
 
     tsk_errno = TSK_ERR_FS_ARG;
