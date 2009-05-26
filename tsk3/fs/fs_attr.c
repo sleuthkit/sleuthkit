@@ -431,8 +431,8 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
             tsk_fprintf(stderr,
                 "tsk_fs_attr_add: %" PRIuOFF "@%" PRIuOFF
                 " (Filler: %s)\n", data_run_cur->offset, data_run_cur->len,
-                (data_run_cur->
-                    flags & TSK_FS_ATTR_RUN_FLAG_FILLER) ? "Yes" : "No");
+                (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) ? "Yes"
+                : "No");
 
         /* Do we replace this filler spot? */
         if (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) {
@@ -677,11 +677,11 @@ tsk_fs_attr_walk_res(const TSK_FS_ATTR * fs_attr,
     }
 
     /* Allocate a buffer that is at most a block size in length */
-    if ((a_flags & TSK_FS_FILE_WALK_FLAG_AONLY) == 0) {
-        buf_len = (size_t) fs_attr->size;
-        if (buf_len > fs->block_size)
-            buf_len = fs->block_size;
+    buf_len = (size_t) fs_attr->size;
+    if (buf_len > fs->block_size)
+        buf_len = fs->block_size;
 
+    if ((a_flags & TSK_FS_FILE_WALK_FLAG_AONLY) == 0) {
         if ((buf = tsk_malloc(buf_len)) == NULL) {
             return 1;
         }
@@ -786,8 +786,8 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
 
             /* If the address is too large then give an error */
             if (addr + len_idx > fs->last_block) {
-                if (fs_attr->fs_file->meta->
-                    flags & TSK_FS_META_FLAG_UNALLOC)
+                if (fs_attr->fs_file->
+                    meta->flags & TSK_FS_META_FLAG_UNALLOC)
                     tsk_errno = TSK_ERR_FS_RECOVER;
                 else
                     tsk_errno = TSK_ERR_FS_BLK_NUM;
@@ -839,8 +839,8 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                     if ((off + fs->block_size > fs_attr->nrd.initsize)
                         && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
                         memset(&buf[fs_attr->nrd.initsize - off], 0,
-                            fs->block_size - (size_t)(fs_attr->nrd.initsize -
-                                off));
+                            fs->block_size -
+                            (size_t) (fs_attr->nrd.initsize - off));
                     }
                 }
             }
@@ -1112,21 +1112,22 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                     fprintf(stderr,
                         "tsk_fs_attr_read_type: File %" PRIuINUM
                         " has FILLER entry, using 0s\n",
-                        (a_fs_attr->fs_file->meta) ? a_fs_attr->fs_file->
-                        meta->addr : 0);
+                        (a_fs_attr->fs_file->meta) ? a_fs_attr->
+                        fs_file->meta->addr : 0);
             }
             // we return 0s for reads past the initsize (unless they want slack space)
-            else if (((TSK_OFF_T)((data_run_cur->offset +
-                        blkoffset_inrun) * fs->block_size +
-                    byteoffset_toread) >= a_fs_attr->nrd.initsize)
+            else if (((TSK_OFF_T) ((data_run_cur->offset +
+                            blkoffset_inrun) * fs->block_size +
+                        byteoffset_toread) >= a_fs_attr->nrd.initsize)
                 && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
                 memset(&a_buf[len_toread - len_remain], 0, len_inrun);
                 if (tsk_verbose)
                     fprintf(stderr,
                         "tsk_fs_attr_read: Returning 0s for read past end of initsize (%"
                         PRIuINUM ")\n", ((a_fs_attr->fs_file)
-                            && (a_fs_attr->fs_file->meta)) ? a_fs_attr->
-                        fs_file->meta->addr : 0);
+                            && (a_fs_attr->fs_file->
+                                meta)) ? a_fs_attr->fs_file->meta->
+                        addr : 0);
             }
             else {
                 TSK_OFF_T fs_offset_b;
@@ -1158,14 +1159,14 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                 }
 
                 // see if part of the data is in the non-initialized space
-                if (((TSK_OFF_T)((data_run_cur->offset +
-                            blkoffset_inrun) * fs->block_size +
-                        byteoffset_toread + len_inrun) >
+                if (((TSK_OFF_T) ((data_run_cur->offset +
+                                blkoffset_inrun) * fs->block_size +
+                            byteoffset_toread + len_inrun) >
                         a_fs_attr->nrd.initsize)
                     && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
                     size_t off =
-                        (size_t)((data_run_cur->offset +
-                        blkoffset_inrun) * fs->block_size +
+                        (size_t) ((data_run_cur->offset +
+                            blkoffset_inrun) * fs->block_size +
                         byteoffset_toread + len_inrun -
                         a_fs_attr->nrd.initsize);
                     memset(&a_buf[len_toread - len_remain + off], 0,

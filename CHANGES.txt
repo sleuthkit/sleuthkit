@@ -80,6 +80,9 @@ space is shown if slack space is requested.
 5/8/09: Update: Resolved issue 2596153 by changing arguments to the
 img_open functions.
 
+5/26/09: Bug Fix. Resolved issue 2796945 for inifite loop in fs_attr. 
+Reported by Simson Garfinkel.
+
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.
