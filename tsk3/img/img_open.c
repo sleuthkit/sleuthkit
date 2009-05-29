@@ -100,51 +100,6 @@ tsk_img_open(int num_img,
 #endif
         struct STAT_STR stat_buf;
 
-        /* First verify that the image file exists */
-        if (TSTAT(images[0], &stat_buf) < 0) {
-
-            // special case to handle windows objects
-#if defined(TSK_WIN32) || defined(__CYGWIN__)
-            if (TSTRNCMP(_TSK_T("\\\\.\\"), images[0], 4) == 0) {
-                if (tsk_verbose)
-                    TFPRINTF(stderr,
-                        _TSK_T
-                        ("tsk_img_open: Ignoring stat error because of windows object: %s\n"),
-                        images[0]);
-            }
-#endif
-
-            // AFFLIB supports s3 storage on Amazon, so skip those 'file' paths 
-#if HAVE_LIBAFFLIB
-
-            // make it an "else if" instead of  just "if" if we did the device check
-#if defined(TSK_WIN32) || defined(__CYGWIN__)
-            else
-#endif
-            if ((TSTRNCMP(_TSK_T("s3://"), images[0], 5) == 0) ||
-                (TSTRNCMP(_TSK_T("http://"), images[0], 7) == 0)) {
-                if (tsk_verbose)
-                    TFPRINTF(stderr,
-                        _TSK_T
-                        ("tsk_img_open: Ignoring stat error because of s3/http object: %s\n"),
-                        images[0]);
-            }
-
-#endif
-
-#if HAVE_LIBAFFLIB || defined(TSK_WIN32) || defined (__CYGWIN__)
-            else {
-#endif
-                tsk_error_reset();
-                tsk_errno = TSK_ERR_IMG_STAT;
-                snprintf(tsk_errstr, TSK_ERRSTR_L, "%" PRIttocTSK " : %s",
-                    images[0], strerror(errno));
-                return NULL;
-#if HAVE_LIBAFFLIB || defined(TSK_WIN32) || defined (__CYGWIN__)
-            }
-#endif
-        }
-
         // we rely on tsk_errno, so make sure it is 0
         tsk_error_reset();
 
@@ -185,6 +140,7 @@ tsk_img_open(int num_img,
             tsk_error_reset();
         }
 #endif
+        // if any of the non-raw formats were detected, then use it. 
         if (img_set != NULL)
             return img_set;
 
@@ -205,6 +161,30 @@ tsk_img_open(int num_img,
                 return NULL;
             }
         }
+
+        /* To improve the error message, verify the file can be read. */
+        if (TSTAT(images[0], &stat_buf) < 0) {
+            // special case to handle windows objects
+#if defined(TSK_WIN32) || defined(__CYGWIN__)
+            if (TSTRNCMP(_TSK_T("\\\\.\\"), images[0], 4) == 0) {
+                if (tsk_verbose)
+                    TFPRINTF(stderr,
+                        _TSK_T
+                        ("tsk_img_open: Ignoring stat error because of windows object: %s\n"),
+                        images[0]);
+            }
+            else {
+#endif
+                tsk_error_reset();
+                tsk_errno = TSK_ERR_IMG_STAT;
+                snprintf(tsk_errstr, TSK_ERRSTR_L, "%" PRIttocTSK " : %s",
+                    images[0], strerror(errno));
+                return NULL;
+#if defined(TSK_WIN32) || defined(__CYGWIN__)
+            }
+#endif
+        }
+
         tsk_errno = TSK_ERR_IMG_UNKTYPE;
         tsk_errstr[0] = '\0';
         tsk_errstr2[0] = '\0';
@@ -346,8 +326,7 @@ tsk_img_open_utf8(int num_img, const char *const images[],
             *utf16 = '\0';
         }
 
-        retval =
-            tsk_img_open(num_img, images16, type);
+        retval = tsk_img_open(num_img, images16, type);
 
         // free up the memory
       tsk_utf8_cleanup:

@@ -86,6 +86,10 @@ Reported by Simson Garfinkel.
 5/29/09: Update: Added feature 2677107 that allows support for all
 image formats supported by AFFLIB.
 
+5/29/09: Update: Added feature 2790367 to move the 'stat' function
+until after all image format open calls to support formats that do
+not use actual files. 
+
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.

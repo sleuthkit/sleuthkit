@@ -178,7 +178,7 @@ raw_open(const TSK_TCHAR * image)
             tsk_error_reset();
             tsk_errno = TSK_ERR_IMG_STAT;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
-                "raw_open directory check: %s", strerror(errno));
+                "raw_open: %s", strerror(errno));
             return NULL;
         }
         else if ((stat_buf.st_mode & S_IFMT) == S_IFDIR) {
@@ -189,7 +189,7 @@ raw_open(const TSK_TCHAR * image)
             tsk_error_reset();
             tsk_errno = TSK_ERR_IMG_MAGIC;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
-                "raw_open: Image is a directory");
+                "raw_open: path is for a directory");
             return NULL;
         }
     }
