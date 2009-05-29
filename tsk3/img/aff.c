@@ -98,11 +98,15 @@ aff_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
         tsk_fprintf(hFile, "AFM\n");
         break;
     default:
-        tsk_fprintf(hFile, "?\n");
+        tsk_fprintf(hFile, "AFFLIB (%d)\n", aff_info->type);
         break;
     }
 
     tsk_fprintf(hFile, "\nSize in bytes: %" PRIuOFF "\n", img_info->size);
+    
+    // we won't have the rest of the info for the non-AFF formats.
+    if (img_info->itype == TSK_IMG_TYPE_AFF_ANY)
+        return;
 
     tsk_fprintf(hFile, "\nMD5: ");
     if (af_get_seg(aff_info->af_file, AF_MD5, NULL, buf, &buf_len) == 0) {
@@ -260,19 +264,8 @@ aff_open(const char *const images[])
     else if (type == AF_IDENTIFY_AFM) {
         img_info->itype = TSK_IMG_TYPE_AFF_AFM;
     }
-//    else if ((type == AF_IDENTIFY_EVF) || (type ==AF_IDENTIFY_EVD  )) {
-//      img_info->itype = TSK_IMG_TYPE_AFF_AFF;
-    //   }
     else {
-        tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "aff_open: Not an AFF, AFD, or AFM file");
-        free(aff_info);
-        if (tsk_verbose)
-            tsk_fprintf(stderr, "Not an AFF/AFD/AFM file\n");
-
-        return NULL;
+        img_info->itype = TSK_IMG_TYPE_AFF_ANY;
     }
 
     aff_info->af_file = af_open(images[0], O_RDONLY | O_BINARY, 0);

@@ -151,8 +151,15 @@ tsk_img_open(int num_img,
         /* Try the non-raw formats first */
 #if HAVE_LIBAFFLIB
         if ((img_info = aff_open(images)) != NULL) {
-            set = "AFF";
-            img_set = img_info;
+            /* we don't allow the "ANY" when autodetect is used because
+             * we only want to detect the tested formats. */
+            if (img_info->itype == TSK_IMG_TYPE_AFF_ANY) {
+                img_info->close(img_info);
+            }
+            else {
+                set = "AFF";
+                img_set = img_info;
+            }
         }
         else {
             tsk_error_reset();
@@ -234,6 +241,7 @@ tsk_img_open(int num_img,
     case TSK_IMG_TYPE_AFF_AFF:
     case TSK_IMG_TYPE_AFF_AFD:
     case TSK_IMG_TYPE_AFF_AFM:
+    case TSK_IMG_TYPE_AFF_ANY:
         img_info = aff_open(images);
         break;
 #endif

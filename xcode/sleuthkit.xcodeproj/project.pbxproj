@@ -475,9 +475,11 @@
 		026FB3830D19C831000434C7 /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 026FB3840D19C831000434C7 /* Build configuration list for PBXProject "sleuthkit" */;
+			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 0;
 			mainGroup = 026FB3810D19C831000434C7;
 			projectDirPath = "";
+			projectRoot = "";
 			targets = (
 				02DC8CFF0ED0A60E00BFCE0B /* libtsk */,
 				02DC8D4E0ED0A7AF00BFCE0B /* tools */,

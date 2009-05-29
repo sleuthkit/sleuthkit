@@ -83,6 +83,9 @@ img_open functions.
 5/26/09: Bug Fix. Resolved issue 2796945 for inifite loop in fs_attr. 
 Reported by Simson Garfinkel.
 
+5/29/09: Update: Added feature 2677107 that allows support for all
+image formats supported by AFFLIB.
+
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.

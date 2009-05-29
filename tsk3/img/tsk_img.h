@@ -37,7 +37,8 @@ extern "C" {
      * Macro that takes a image type and returns 1 if the type
      * is for an AFF file format. */
 #define TSK_IMG_TYPE_ISAFF(t) \
-    ((((t) & TSK_IMG_TYPE_AFF_AFF) || ((t) & TSK_IMG_TYPE_AFF_AFD)  || ((t) & TSK_IMG_TYPE_AFF_AFM))?1:0)
+    ((((t) & TSK_IMG_TYPE_AFF_AFF) || ((t) & TSK_IMG_TYPE_AFF_AFD)  || ((t) & TSK_IMG_TYPE_AFF_AFM) || \
+    ((t) & TSK_IMG_TYPE_AFF_ANY))?1:0)
 
     /**
      * \ingroup imglib
@@ -61,8 +62,9 @@ extern "C" {
         TSK_IMG_TYPE_AFF_AFF = 0x0004,  ///< AFF AFF Format
         TSK_IMG_TYPE_AFF_AFD = 0x0008,  ///< AFD AFF Format
         TSK_IMG_TYPE_AFF_AFM = 0x0010,  ///< AFM AFF Format
+        TSK_IMG_TYPE_AFF_ANY = 0x0020,  ///< Any format supported by AFFLIB (including beta ones)
 
-        TSK_IMG_TYPE_EWF_EWF = 0x0020,  ///< EWF version
+        TSK_IMG_TYPE_EWF_EWF = 0x0040,  ///< EWF version
 
         TSK_IMG_TYPE_UNSUPP = 0xffff,   ///< Unsupported disk image type
     } TSK_IMG_TYPE_ENUM;
@@ -85,7 +87,7 @@ extern "C" {
         int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used
         size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used)
 
-         ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read() 
+        ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read() 
         void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close()
         void (*imgstat) (TSK_IMG_INFO *, FILE *);       ///< Pointer to file type specific function
     };
