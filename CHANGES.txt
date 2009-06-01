@@ -90,6 +90,9 @@ image formats supported by AFFLIB.
 until after all image format open calls to support formats that do
 not use actual files. 
 
+6/1/09: Update: Added feature 2206265 to add imgtools layer support
+to sigfind.
+
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.

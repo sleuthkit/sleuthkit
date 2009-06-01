@@ -46,9 +46,10 @@ main(int argc, char **argv)
     uint8_t block[1024];
 
     char **err = NULL;
-    int fd;
-    int offset = 0, rel_offset = 0;
-    int read_size = 512, bs = 512;
+    TSK_IMG_INFO *img_info;
+    TSK_OFF_T cur_offset;
+    int sig_offset = 0, rel_offset = 0;
+    int read_size, bs = 512;
     daddr_t i, prev_hit;
     int sig_size = 0;
     uint8_t lit_end = 0;
@@ -78,9 +79,9 @@ main(int argc, char **argv)
 
         case 'o':
 
-            /* Get the offset in the sector */
-            offset = strtol(optarg, err, 10);
-            if ((offset == 0) || (errno == EINVAL)) {
+            /* Get the sig_offset in the sector */
+            sig_offset = strtol(optarg, err, 10);
+            if ((sig_offset == 0) || (errno == EINVAL)) {
                 fprintf(stderr, "Error converting offset value: %s\n",
                         optarg);
                 exit(1);
@@ -94,7 +95,7 @@ main(int argc, char **argv)
                 sig[0] = 0x53;
                 sig[1] = 0xef;
                 sig_size = 2;
-                offset = 56;
+                sig_offset = 56;
                 bs = 512;
             }
             else if ((strcmp(optarg, "dospart") == 0) ||
@@ -104,7 +105,7 @@ main(int argc, char **argv)
                 sig[0] = 0x55;
                 sig[1] = 0xaa;
                 sig_size = 2;
-                offset = 510;
+                sig_offset = 510;
                 bs = 512;
             }
             else if (strcmp(optarg, "ufs1") == 0) {
@@ -115,7 +116,7 @@ main(int argc, char **argv)
                 sig[3] = 0x00;
                 sig_size = 4;
                 /* Located 1372 into SB */
-                offset = 348;
+                sig_offset = 348;
                 bs = 512;
             }
             else if (strcmp(optarg, "ufs2") == 0) {
@@ -126,7 +127,7 @@ main(int argc, char **argv)
                 sig[3] = 0x19;
                 sig_size = 4;
                 /* Located 1372 into SB */
-                offset = 348;
+                sig_offset = 348;
                 bs = 512;
             }
             else if (strcmp(optarg, "hfs+") == 0) {
@@ -137,7 +138,7 @@ main(int argc, char **argv)
                 sig[3] = 0x04;
                 sig_size = 4;
                 /* Located 1024 into image */
-                offset = 0;
+                sig_offset = 0;
                 bs = 512;
             }
             else if (strcmp(optarg, "hfs") == 0) {
@@ -146,7 +147,7 @@ main(int argc, char **argv)
                 sig[1] = 0x44;
                 sig_size = 2;
                 /* Located 1024 into image */
-                offset = 0;
+                sig_offset = 0;
                 bs = 512;
             }
             else {
@@ -245,67 +246,60 @@ main(int argc, char **argv)
         }
     }
 
-    if (offset < 0) {
-        fprintf(stderr, "Error: negative offset\n");
+    if (sig_offset < 0) {
+        fprintf(stderr, "Error: negative signature offset\n");
         exit(1);
     }
 
 
     /* Check that the signature and offset are not larger than a block */
-    if ((offset + sig_size) > bs) {
+    if ((sig_offset + sig_size) > bs) {
         fprintf(stderr,
                 "Error: The offset and signature sizes are greater than the block size\n");
         exit(1);
     }
 
+    read_size = 512;
     /* If our signature crosses the 512 boundary, then read 1k at a time */
-    if ((offset / 512) != ((offset + sig_size - 1) / 512)) {
+    if ((sig_offset / 512) != ((sig_offset + sig_size - 1) / 512)) {
         read_size = 1024;
     }
-
-    rel_offset = offset % 512;
-
 
     /* Get the image */
     if (optind + 1 != argc) {
         usage();
     }
 
-    fd = open(argv[optind], O_RDONLY);
-    if (fd == -1) {
-        fprintf(stderr, "error opening: %s\n", argv[optind]);
+    if ((img_info =
+         tsk_img_open_utf8_sing(argv[optind],
+                      TSK_IMG_TYPE_DETECT)) == NULL) {
+        tsk_error_print(stderr);
         exit(1);
     }
-
-    /* Seek to the correct block */
-    if (offset > 512) {
-        if (-1 == lseek(fd, (offset / 512) * 512, SEEK_SET)) {
-            fprintf(stderr, "error doing initial seek\n");
-            exit(1);
-        }
-    }
-
 
     /* Make a version that can be more easily printed */
     for (i = 0; i < sig_size; i++) {
         sig_print |= (sig[i] << ((sig_size - 1 - i) * 8));
     }
 
-    printf("Block size: %d  Offset: %d  Signature: %X\n", bs, offset,
+    printf("Block size: %d  Offset: %d  Signature: %X\n", bs, sig_offset,
            sig_print);
 
     /* Loop through by blocks  - we will read in block sized chunks
      * so that we can be used on raw devices 
      */
+    cur_offset = (sig_offset / 512) * 512;
+    rel_offset = sig_offset % 512;
     prev_hit = -1;
     for (i = 0;; i++) {
-        int retval;
+        ssize_t retval;
 
         /* Read the signature area */
-        retval = read(fd, (void *) block, read_size);
-        if (retval == 0)
+        retval = tsk_img_read(img_info, cur_offset,
+                                    (char *)block, read_size);
+        if (retval == 0) {
             break;
-
+        }
         else if (retval == -1) {
             fprintf(stderr, "error reading bytes %lu\n",
                     (unsigned long) i);
@@ -325,13 +319,9 @@ main(int argc, char **argv)
 
             prev_hit = i;
         }
-
-        /* Seek ahead another block */
-        if (-1 == lseek(fd, bs - read_size, SEEK_CUR)) {
-            break;
-        }
+        cur_offset += bs;
     }
 
-    close(fd);
+    tsk_img_close(img_info);
     exit(0);
 }
