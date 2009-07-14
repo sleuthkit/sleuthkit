@@ -93,6 +93,8 @@ not use actual files.
 6/1/09: Update: Added feature 2206265 to add imgtools layer support
 to sigfind.
 
+7/13/09: Bug Fix: Fixed issue  2821031 re: missing fls -m fields.
+
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.

@@ -536,7 +536,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
         tsk_fprintf(hFile, "-/");
 
     if (!fs_file->meta) {
-        tsk_fprintf(hFile, "----------|0|0|0|0|0|0\n");
+        tsk_fprintf(hFile, "----------|0|0|0|0|0|0|0\n");
     }
     else {
 
