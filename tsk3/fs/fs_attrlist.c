@@ -167,7 +167,8 @@ tsk_fs_attrlist_getnew(TSK_FS_ATTRLIST * a_fs_attrlist,
                 return NULL;
 
             // add it to the list
-            tsk_fs_attrlist_add(a_fs_attrlist, fs_attr_cur);
+            if (tsk_fs_attrlist_add(a_fs_attrlist, fs_attr_cur))
+                return NULL;
         }
     }
 

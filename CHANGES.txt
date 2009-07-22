@@ -95,6 +95,9 @@ to sigfind.
 
 7/13/09: Bug Fix: Fixed issue  2821031 re: missing fls -m fields.
 
+7/21/09: Update: Resolved Feature request 2206331 re: indirect blocks
+in UFS/Ext2.
+
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.

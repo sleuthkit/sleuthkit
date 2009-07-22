@@ -109,6 +109,7 @@ unix_make_data_run_direct(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
  *
  * @param fs File system to analyze
  * @param fs_attr Structure to save run data into
+ * @param fs_attr_indir Structure to save addresses of indirect block pointers in
  * @param buf Buffers to read block data into (0 is block sized, 1+ are DADDR_T arrays based on FS type)
  * @param level Indirection level that this will process at (1+)
  * @param addr Address of block to read
@@ -118,7 +119,8 @@ unix_make_data_run_direct(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
  */
 static TSK_OFF_T
 unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
-    char *buf[], int level, TSK_DADDR_T addr, TSK_OFF_T length)
+    TSK_FS_ATTR * fs_attr_indir, char *buf[], int level, TSK_DADDR_T addr,
+    TSK_OFF_T length)
 {
     char *myname = "unix_make_data_run_indirect";
     size_t addr_cnt = 0;
@@ -126,17 +128,21 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
     TSK_OFF_T length_remain = length;
     TSK_OFF_T retval;
     size_t fs_bufsize;
+    size_t fs_blen;
+    TSK_FS_ATTR_RUN *data_run;
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "%s: level %d block %" PRIuDADDR "\n", myname,
             level, addr);
 
+    // block_size is a fragment size in UFS, so we need to maintain length in fragments
     if (TSK_FS_TYPE_ISFFS(fs->ftype)) {
         FFS_INFO *ffs = (FFS_INFO *) fs;
-
+        fs_blen = ffs->ffsbsize_f;
         fs_bufsize = ffs->ffsbsize_b;
     }
     else {
+        fs_blen = 1;
         fs_bufsize = fs->block_size;
     }
 
@@ -149,12 +155,21 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
         return -1;
     }
 
+    // make a non-resident run
+    data_run = tsk_fs_attr_run_alloc();
+    if (data_run == NULL)
+        return -1;
+
+    data_run->addr = addr;
+    data_run->len = fs_blen;
+
     /*
      * Read a block of disk addresses.
      */
     // sparse
     if (addr == 0) {
         memset(buf[0], 0, fs_bufsize);
+        data_run->flags = TSK_FS_ATTR_RUN_FLAG_SPARSE;
     }
     else {
         ssize_t cnt;
@@ -169,9 +184,10 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
                 "unix_make_data_run_indir: Block %" PRIuDADDR, addr);
             return -1;
         }
-
-        // @@@ what do we do about META....
     }
+
+    // save the run
+    tsk_fs_attr_append_run(fs, fs_attr_indir, data_run);
 
     // convert the raw addresses to the correct endian ordering
     if ((fs->ftype == TSK_FS_TYPE_FFS1)
@@ -207,8 +223,8 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
         retval = 0;
         for (i = 0; i < addr_cnt && retval != -1; i++) {
             retval =
-                unix_make_data_run_indirect(fs, fs_attr, buf, level - 1,
-                myaddrs[i], length_remain);
+                unix_make_data_run_indirect(fs, fs_attr, fs_attr_indir,
+                buf, level - 1, myaddrs[i], length_remain);
             if (retval == -1) {
                 break;
             }
@@ -235,6 +251,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
     TSK_OFF_T length = 0;
     TSK_OFF_T read_b = 0;
     TSK_FS_ATTR *fs_attr;
+    TSK_FS_ATTR *fs_attr_indir;
     TSK_FS_META *fs_meta = fs_file->meta;
     TSK_FS_INFO *fs = fs_file->fs_info;
 
@@ -304,6 +321,12 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
         char **buf;
         size_t fs_bufsize0;
         size_t fs_bufsize1;
+        int ptrsperblock;
+        int numBlocks = 0;
+        int numSingIndirect = 0;
+        int numDblIndirect = 0;
+        int numTripIndirect = 0;
+
 
         /* With FFS/UFS a full block contains the addresses, but block_size is
          * only a fragment.  Figure out the scratch buffer size and the buffers to 
@@ -313,15 +336,18 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
 
             fs_bufsize0 = ffs->ffsbsize_b;
             if ((fs->ftype == TSK_FS_TYPE_FFS1)
-                || (fs->ftype == TSK_FS_TYPE_FFS1B))
-                fs_bufsize1 = sizeof(TSK_DADDR_T) * ffs->ffsbsize_b / 4;
-            else
-                fs_bufsize1 = sizeof(TSK_DADDR_T) * ffs->ffsbsize_b / 8;
+                || (fs->ftype == TSK_FS_TYPE_FFS1B)) {
+                ptrsperblock = fs_bufsize0 / 4;
+            }
+            else {
+                ptrsperblock = fs_bufsize0 / 8;
+            }
         }
         else {
             fs_bufsize0 = fs->block_size;
-            fs_bufsize1 = sizeof(TSK_DADDR_T) * fs->block_size / 4;
+            ptrsperblock = fs_bufsize0 / 4;
         }
+        fs_bufsize1 = sizeof(TSK_DADDR_T) * ptrsperblock;
 
         /*
          * Initialize a buffer for the 3 levels of indirection that are supported by
@@ -335,6 +361,42 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
             return 1;
 
         if ((buf[0] = (char *) tsk_malloc(fs_bufsize0)) == NULL) {
+            free(buf);
+            return 1;
+        }
+
+        if ((fs_attr_indir =
+                tsk_fs_attrlist_getnew(fs_meta->attr,
+                    TSK_FS_ATTR_NONRES)) == NULL) {
+            free(buf);
+            return 1;
+        }
+
+        // determine number of indirect lbocks needed for file size...
+        numBlocks = ((fs_meta->size + fs_bufsize0 - 1) / fs_bufsize0) - 12;
+        numSingIndirect = (numBlocks + ptrsperblock - 1) / ptrsperblock;
+        numDblIndirect = 0;
+        numTripIndirect = 0;
+
+        // double block pointer?
+        if (numSingIndirect > 1) {
+            numDblIndirect =
+                (numSingIndirect - 1 + ptrsperblock - 1) / ptrsperblock;
+            if (numDblIndirect > 1) {
+                numTripIndirect =
+                    (numDblIndirect - 1 + ptrsperblock - 1) / ptrsperblock;
+            }
+        }
+
+        // initialize the data run
+        if (tsk_fs_attr_set_run(fs_file, fs_attr_indir, NULL, NULL,
+                TSK_FS_ATTR_TYPE_UNIX_INDIR, TSK_FS_ATTR_ID_DEFAULT,
+                fs_bufsize0 * (numSingIndirect + numDblIndirect +
+                    numTripIndirect),
+                fs_bufsize0 * (numSingIndirect + numDblIndirect +
+                    numTripIndirect),
+                fs_bufsize0 * (numSingIndirect + numDblIndirect +
+                    numTripIndirect), 0, 0)) {
             free(buf);
             return 1;
         }
@@ -353,8 +415,8 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
             /* the indirect addresses are stored in addr_ptr after the 12
              * direct addresses */
             read_b =
-                unix_make_data_run_indirect(fs, fs_attr, buf, level,
-                addr_ptr[12 + level - 1], length);
+                unix_make_data_run_indirect(fs, fs_attr, fs_attr_indir,
+                buf, level, addr_ptr[12 + level - 1], length);
             if (read_b == -1)
                 break;
             length -= read_b;

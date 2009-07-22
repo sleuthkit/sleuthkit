@@ -552,13 +552,12 @@ ifind_data_act(TSK_FS_FILE * fs_file, void *ptr)
             data->curtype = fs_attr->type;
             data->curid = fs_attr->id;
             if (fs_attr->flags & TSK_FS_ATTR_NONRES) {
-                if (tsk_fs_file_walk_type(fs_file, fs_attr->type,
-                        fs_attr->id, file_flags, ifind_data_file_ntfs_act,
-                        ptr)) {
+                if (tsk_fs_attr_walk(fs_attr,
+                        file_flags, ifind_data_file_ntfs_act, ptr)) {
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
-                            "Error walking file %" PRIuINUM,
-                            fs_file->meta->addr);
+                            "Error walking file %" PRIuINUM
+                            " Attribute: %i", fs_file->meta->addr, i);
 
                     /* Ignore these errors */
                     tsk_error_reset();
@@ -584,7 +583,8 @@ ifind_data_act(TSK_FS_FILE * fs_file, void *ptr)
      * correlated with the incorrect inode
      */
     else {
-        // @@@ Need to add handling back in here to find indirect blocks (once a soln is found)
+        const TSK_FS_ATTR *fs_attr;
+
         if (tsk_fs_file_walk(fs_file, file_flags,
                 ifind_data_file_act, ptr)) {
             if (tsk_verbose)
@@ -593,6 +593,25 @@ ifind_data_act(TSK_FS_FILE * fs_file, void *ptr)
 
             /* Ignore these errors */
             tsk_error_reset();
+        }
+
+
+        // try the indirect blocks
+        fs_attr = tsk_fs_file_attr_get_type(fs_file,
+            TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
+        if (fs_attr) {
+            data->curtype = fs_attr->type;
+            data->curid = fs_attr->id;
+
+            if (tsk_fs_attr_walk(fs_attr,
+                    file_flags, ifind_data_file_act, ptr)) {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                        "Error walking file %" PRIuINUM
+                        " Indirect Attribute", fs_file->meta->addr);
+                /* Ignore these errors */
+                tsk_error_reset();
+            }
         }
     }
 

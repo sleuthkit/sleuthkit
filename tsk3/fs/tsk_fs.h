@@ -201,7 +201,7 @@ extern "C" {
      * These are based on the NTFS type values. 
      */
     typedef enum {
-        TSK_FS_ATTR_TYPE_DEFAULT = 0x0, // 16
+        TSK_FS_ATTR_TYPE_DEFAULT = 0x01,        // 1
         TSK_FS_ATTR_TYPE_NTFS_SI = 0x10,        // 16
         TSK_FS_ATTR_TYPE_NTFS_ATTRLIST = 0x20,  // 32
         TSK_FS_ATTR_TYPE_NTFS_FNAME = 0x30,     // 48
@@ -219,7 +219,8 @@ extern "C" {
         TSK_FS_ATTR_TYPE_NTFS_EAINFO = 0xD0,    // 208
         TSK_FS_ATTR_TYPE_NTFS_EA = 0xE0,        // 224
         TSK_FS_ATTR_TYPE_NTFS_PROP = 0xF0,      //  (NT)
-        TSK_FS_ATTR_TYPE_NTFS_LOG = 0x100       //  (2K)
+        TSK_FS_ATTR_TYPE_NTFS_LOG = 0x100,      //  (2K)
+        TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001    //  Indirect blocks for UFS and ExtX file systems
     } TSK_FS_ATTR_TYPE_ENUM;
 
 #define TSK_FS_ATTR_ID_DEFAULT  0       ///< Default Data ID used if file system does not assign one.

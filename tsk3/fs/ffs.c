@@ -1642,6 +1642,7 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     TSK_FS_FILE *fs_file;
     char ls[12];
     FFS_PRINT_ADDR print;
+    const TSK_FS_ATTR *fs_attr_indir;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -1824,6 +1825,24 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     if (print.idx != 0)
         tsk_fprintf(hFile, "\n");
+
+    fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
+        TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
+    if (fs_attr_indir) {
+        tsk_fprintf(hFile, "\nIndirect Blocks:\n");
+
+        print.idx = 0;
+
+        if (tsk_fs_attr_walk(fs_attr_indir, TSK_FS_FILE_WALK_FLAG_AONLY,
+                print_addr_act, (void *) &print)) {
+            tsk_fprintf(hFile, "\nError reading indirect attribute:  ");
+            tsk_error_print(hFile);
+            tsk_error_reset();
+        }
+        else if (print.idx != 0) {
+            tsk_fprintf(hFile, "\n");
+        }
+    }
 
     tsk_fs_file_close(fs_file);
     return 0;

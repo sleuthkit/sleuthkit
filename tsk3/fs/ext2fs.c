@@ -111,8 +111,7 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
         tsk_fprintf(stderr,
             "\tgroup %" PRI_EXT2GRP ": %" PRIu16 "/%" PRIu16
             " free blocks/inodes\n", grp_num, tsk_getu16(fs->endian,
-                gd->
-                bg_free_blocks_count),
+                gd->bg_free_blocks_count),
             tsk_getu16(fs->endian, gd->bg_free_inodes_count));
     }
 
@@ -1375,8 +1374,7 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
                 (cg_base != tsk_getu32(fs->endian,
                         ext2fs->grp_buf->bg_block_bitmap)))
             || ((tsk_getu32(fs->endian,
-                        ext2fs->fs->
-                        s_feature_ro_compat) &
+                        ext2fs->fs->s_feature_ro_compat) &
                     EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER) == 0)) {
 
             TSK_OFF_T boff;
@@ -1597,6 +1595,7 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     TSK_FS_FILE *fs_file;
     char ls[12];
     EXT2FS_PRINT_ADDR print;
+    const TSK_FS_ATTR *fs_attr_indir;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -1958,6 +1957,24 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "\n");
     }
 
+    fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
+        TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
+    if (fs_attr_indir) {
+        tsk_fprintf(hFile, "\nIndirect Blocks:\n");
+
+        print.idx = 0;
+
+        if (tsk_fs_attr_walk(fs_attr_indir, TSK_FS_FILE_WALK_FLAG_AONLY,
+                print_addr_act, (void *) &print)) {
+            tsk_fprintf(hFile, "\nError reading indirect attribute:  ");
+            tsk_error_print(hFile);
+            tsk_error_reset();
+        }
+        else if (print.idx != 0) {
+            tsk_fprintf(hFile, "\n");
+        }
+    }
+
     tsk_fs_file_close(fs_file);
     return 0;
 }
@@ -2230,8 +2247,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_fprintf(stderr,
             "inodes %" PRIu32 " root ino %" PRIuINUM " blocks %" PRIu32
             " blocks/group %" PRIu32 "\n", tsk_getu32(fs->endian,
-                ext2fs->fs->
-                s_inodes_count),
+                ext2fs->fs->s_inodes_count),
             fs->root_inum, tsk_getu32(fs->endian,
                 ext2fs->fs->s_blocks_count), tsk_getu32(fs->endian,
                 ext2fs->fs->s_blocks_per_group));
