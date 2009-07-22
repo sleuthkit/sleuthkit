@@ -456,8 +456,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         tsk_UTF16toUTF8(fs->endian,
                         (const UTF16 **) &name16,
                         (UTF16 *) & buf[b_offs + dentry->fi_len], &name8,
-                        (UTF8 *) ((uintptr_t) & in_node->inode.
-                            fn[ISO9660_MAXNAMLEN_STD]),
+                        (UTF8 *) ((uintptr_t) & in_node->
+                            inode.fn[ISO9660_MAXNAMLEN_STD]),
                         TSKlenientConversion);
                     if (retVal != TSKconversionOK) {
                         if (tsk_verbose)

@@ -1220,8 +1220,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (fs_attr_run->addr != 0) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->meta->
-                        flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->
+                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_GENFS;
@@ -1248,8 +1248,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (addr > fs->last_block) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->meta->
-                        flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->
+                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_BLK_NUM;
@@ -1289,8 +1289,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             TSK_FS_BLOCK_FLAG_COMP;
                         retval = is_clustalloc(ntfs, comp_unit[i]);
                         if (retval == -1) {
-                            if (fs_attr->fs_file->meta->
-                                flags & TSK_FS_META_FLAG_UNALLOC)
+                            if (fs_attr->fs_file->
+                                meta->flags & TSK_FS_META_FLAG_UNALLOC)
                                 tsk_errno = TSK_ERR_FS_RECOVER;
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -1348,8 +1348,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                  * it remains 0 */
                 if (((fs_attr_run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE) ==
                         0)
-                    && ((fs_attr_run->
-                            flags & TSK_FS_ATTR_RUN_FLAG_FILLER) == 0))
+                    && ((fs_attr_run->flags & TSK_FS_ATTR_RUN_FLAG_FILLER)
+                        == 0))
                     addr++;
             }
 
@@ -1513,8 +1513,8 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                         (a_fs_attr->fs_file->meta->size - (a_offset +
                                 buf_idx)))
                         cpylen =
-                            (size_t)(a_fs_attr->fs_file->meta->size - (a_offset +
-                                buf_idx));
+                            (size_t) (a_fs_attr->fs_file->meta->size -
+                            (a_offset + buf_idx));
 
                     memcpy(&a_buf[buf_idx], &comp.uncomp_buf[byteoffset],
                         cpylen);
@@ -1528,8 +1528,8 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                  * it remains 0 */
                 if (((data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE) ==
                         0)
-                    && ((data_run_cur->
-                            flags & TSK_FS_ATTR_RUN_FLAG_FILLER) == 0))
+                    && ((data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_FILLER)
+                        == 0))
                     addr++;
             }
         }
@@ -2611,8 +2611,7 @@ ntfs_attrname_lookup(TSK_FS_INFO * fs, uint16_t type, char *name, int len)
             retVal =
                 tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
                 (UTF16 *) ((uintptr_t) name16 +
-                    sizeof(attrdef->
-                        label)),
+                    sizeof(attrdef->label)),
                 &name8,
                 (UTF8 *) ((uintptr_t) name8 + len), TSKlenientConversion);
             if (retVal != TSKconversionOK) {
@@ -3633,8 +3632,7 @@ ntfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         retVal =
             tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
             (UTF16 *) ((uintptr_t) name16 +
-                (int) fs_attr->
-                size), &name8,
+                (int) fs_attr->size), &name8,
             (UTF8 *) ((uintptr_t) name8 + sizeof(asc)),
             TSKlenientConversion);
         if (retVal != TSKconversionOK) {
@@ -3715,8 +3713,7 @@ ntfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         retVal =
             tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
             (UTF16 *) ((uintptr_t) name16 +
-                sizeof(attrdeftmp->
-                    label)),
+                sizeof(attrdeftmp->label)),
             &name8,
             (UTF8 *) ((uintptr_t) name8 + sizeof(asc)),
             TSKlenientConversion);
@@ -3751,8 +3748,7 @@ ntfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             (tsk_getu32(fs->endian, attrdeftmp->flags) &
                 NTFS_ATTRDEF_FLAGS_RES ? "Resident" :
                 ""), (tsk_getu32(fs->endian,
-                    attrdeftmp->
-                    flags) &
+                    attrdeftmp->flags) &
                 NTFS_ATTRDEF_FLAGS_NONRES ?
                 "Non-resident" : ""),
             (tsk_getu32(fs->endian, attrdeftmp->flags) &
@@ -3829,11 +3825,10 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
         "$LogFile Sequence Number: %" PRIu64
         "\n", tsk_getu64(fs->endian, ntfs->mft->lsn));
     tsk_fprintf(hFile, "%sAllocated %s\n",
-        (fs_file->meta->
-            flags & TSK_FS_META_FLAG_ALLOC) ? "" :
+        (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC) ? "" :
         "Not ",
-        (fs_file->meta->
-            type == TSK_FS_META_TYPE_DIR) ? "Directory" : "File");
+        (fs_file->meta->type ==
+            TSK_FS_META_TYPE_DIR) ? "Directory" : "File");
     tsk_fprintf(hFile, "Links: %u\n", fs_file->meta->nlink);
 
     /* STANDARD_INFORMATION info */
@@ -4174,17 +4169,13 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                 ")   Name: %s   %sResident%s%s%s   size: %"
                 PRIuOFF "\n", type, fs_attr->type,
                 fs_attr->id, fs_attr->name,
-                (fs_attr->
-                    flags & TSK_FS_ATTR_NONRES) ? "Non-" :
+                (fs_attr->flags & TSK_FS_ATTR_NONRES) ? "Non-" :
                 "",
-                (fs_attr->
-                    flags & TSK_FS_ATTR_ENC) ? ", Encrypted"
+                (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted"
                 : "",
-                (fs_attr->
-                    flags & TSK_FS_ATTR_COMP) ?
+                (fs_attr->flags & TSK_FS_ATTR_COMP) ?
                 ", Compressed" : "",
-                (fs_attr->
-                    flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" : "",
+                (fs_attr->flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" : "",
                 fs_attr->size);
 
             /* print the layout if it is non-resident and not "special" */

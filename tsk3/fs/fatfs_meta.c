@@ -349,9 +349,8 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
         retVal = tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
             (UTF16 *) & lfn->part2[12],
             &name8,
-            (UTF8 *) ((uintptr_t) fs_meta->name2->
-                name + sizeof(fs_meta->name2->name)),
-            TSKlenientConversion);
+            (UTF8 *) ((uintptr_t) fs_meta->name2->name +
+                sizeof(fs_meta->name2->name)), TSKlenientConversion);
 
         if (retVal != TSKconversionOK) {
             tsk_error_reset();
@@ -369,9 +368,8 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
         retVal = tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
             (UTF16 *) & lfn->part3[4],
             &name8,
-            (UTF8 *) ((uintptr_t) fs_meta->name2->
-                name + sizeof(fs_meta->name2->name)),
-            TSKlenientConversion);
+            (UTF8 *) ((uintptr_t) fs_meta->name2->name +
+                sizeof(fs_meta->name2->name)), TSKlenientConversion);
 
         if (retVal != TSKconversionOK) {
             tsk_error_reset();

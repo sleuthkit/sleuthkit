@@ -35,7 +35,7 @@ static IMG_TYPES img_open_table[] = {
     {"afd", TSK_IMG_TYPE_AFF_AFD, "AFF Multiple File"},
     {"afm", TSK_IMG_TYPE_AFF_AFM, "AFF with external metadata"},
     {"afflib", TSK_IMG_TYPE_AFF_ANY,
-            "All AFFLIB image formats (including beta ones)"},
+        "All AFFLIB image formats (including beta ones)"},
 #endif
 #if HAVE_LIBEWF
     {"ewf", TSK_IMG_TYPE_EWF_EWF, "Expert Witness format (encase)"},

@@ -400,8 +400,8 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
                     break;
 
                 /* If the SAMEID value is set, then we advance by the size of the entry, otherwise add 16 for the ID */
-                else if (big_tsk_getu32(dentry->
-                        flag) & EXT2_J_DENTRY_SAMEID)
+                else if (big_tsk_getu32(dentry->flag) &
+                    EXT2_J_DENTRY_SAMEID)
                     dentry =
                         (ext2fs_journ_dentry *) ((uintptr_t) dentry +
                         sizeof(ext2fs_journ_dentry));

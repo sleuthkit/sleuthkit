@@ -95,14 +95,12 @@ fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum,
     if (fatfs->dir_buf_next == fatfs->dir_buf_size) {
         fatfs->dir_buf_size += 256;
         if ((fatfs->dir_buf =
-                (TSK_INUM_T *) tsk_realloc(fatfs->
-                    dir_buf,
+                (TSK_INUM_T *) tsk_realloc(fatfs->dir_buf,
                     fatfs->dir_buf_size * sizeof(TSK_INUM_T))) == NULL) {
             return 1;
         }
         if ((fatfs->par_buf =
-                (TSK_INUM_T *) tsk_realloc(fatfs->
-                    par_buf,
+                (TSK_INUM_T *) tsk_realloc(fatfs->par_buf,
                     fatfs->dir_buf_size * sizeof(TSK_INUM_T))) == NULL) {
             return 1;
         }
@@ -291,8 +289,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
                     /* Convert the UTF16 to UTF8 */
                     UTF16 *name16 =
-                        (UTF16 *) ((uintptr_t) & lfninfo.
-                        name[lfninfo.start + 1]);
+                        (UTF16 *) ((uintptr_t) & lfninfo.name[lfninfo.
+                            start + 1]);
                     UTF8 *name8 = (UTF8 *) fs_name->name;
 
                     retVal =

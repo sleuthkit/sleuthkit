@@ -194,7 +194,7 @@ tsk_getopt(int argc, TSK_TCHAR * const argv[], const TSK_TCHAR * optstring)
     }
 
     c = *next++;
-    cp = (TSK_TCHAR *)TSTRCHR(optstring, c);
+    cp = (TSK_TCHAR *) TSTRCHR(optstring, c);
 
     if (cp == NULL || c == _TSK_T(':'))
         return _TSK_T('?');

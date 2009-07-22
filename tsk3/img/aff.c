@@ -103,7 +103,7 @@ aff_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     }
 
     tsk_fprintf(hFile, "\nSize in bytes: %" PRIuOFF "\n", img_info->size);
-    
+
     // we won't have the rest of the info for the non-AFF formats.
     if (img_info->itype == TSK_IMG_TYPE_AFF_ANY)
         return;

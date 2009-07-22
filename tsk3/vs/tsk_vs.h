@@ -71,7 +71,7 @@ extern "C" {
 
         TSK_PNUM_T part_count;  ///< number of partitions 
 
-        void (*close) (TSK_VS_INFO *); ///< \internal Progs should call tsk_vs_close().
+        void (*close) (TSK_VS_INFO *);  ///< \internal Progs should call tsk_vs_close().
     };
 
 
