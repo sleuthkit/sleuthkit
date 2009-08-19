@@ -54,14 +54,18 @@ Lastly, it works on non-Linux systems.
 
 If none of -a, -A, -m, or -M are given then all volume types will
 be listed.  If any of them are given, then only the types specified
-on the command line will be listed.  Allocated volumes are those
-that are listed in a partition table in the volume system.  Unallocated
-volumes are virtually created by mmls to show you which sectors
-have not been allocated to a volume.  The metadata volumes overlap
-the allocated and unallocated volumes and describe where the partition
-tables and other metadata structures are located.  In some volume
-systems, these structures are in allocated space and in others they
-are in unallocated space.  They can be hidden with -M.
+on the command line will be listed.  
+
+Allocated volumes are those that are listed in a partition table
+in the volume system AND can store data.  Unallocated volumes are
+virtually created by mmls to show you which sectors have not been
+allocated to a volume.  The metadata volumes overlap the allocated
+and unallocated volumes and describe where the partition tables and
+other metadata structures are located.  In some volume systems,
+these structures are in allocated space and in others they are in
+unallocated space.  In some volume systems, their location is
+explicitly given in the partition tables and in others they are
+not.
 
 .SH "EXAMPLES"
 To list the partition table of a Windows system using autodetect:

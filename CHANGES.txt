@@ -98,6 +98,8 @@ to sigfind.
 7/21/09: Update: Resolved Feature request 2206331 re: indirect blocks
 in UFS/Ext2.
 
+8/19/09: Bug Fix: Fixed part of 2840345 where extended DOS partitions
+in extended partitions were not marked as Meta. 
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.

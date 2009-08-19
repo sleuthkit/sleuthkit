@@ -763,7 +763,7 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
 
             if (NULL == tsk_vs_part_add(vs,
                     (TSK_DADDR_T) (sect_ext_base + part_start),
-                    (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
+                    (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_META,
                     dos_get_desc(part->ptype), table, i))
                 return 1;
 
