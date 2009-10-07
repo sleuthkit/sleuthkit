@@ -108,6 +108,9 @@ mac_load_table(TSK_VS_INFO * vs)
             tsk_errno = TSK_ERR_VS_BLK_NUM;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
                 "mac_load_table: Starting sector too large for image");
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "mac_load: Starting sector too large for image (%"PRIu32" vs %"PRIu32")\n",
+                        part_start, max_addr);
             return 1;
         }
 
