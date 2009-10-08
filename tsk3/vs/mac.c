@@ -74,6 +74,8 @@ mac_load_table(TSK_VS_INFO * vs)
                     "Mac partition table entry (Sector: %"
                     PRIuDADDR ") %" PRIx16,
                     (taddr + idx), tsk_getu16(vs->endian, part.magic));
+                if (tsk_verbose)
+                    tsk_fprintf(stderr, "mac_load: Missing initial magic value\n");
                 return 1;
             }
 
@@ -87,6 +89,9 @@ mac_load_table(TSK_VS_INFO * vs)
                 "Mac partition table entry (Sector: %"
                 PRIuDADDR ") %" PRIx16, (taddr + idx),
                 tsk_getu16(vs->endian, part.magic));
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "mac_load: Missing magic value in entry %"PRIu32"\n",
+                        idx);
             return 1;
         }
 
