@@ -8,7 +8,7 @@ icat \- Output the contents of a file based on its inode number.
 .I imgtype
 .B ] [-o 
 .I imgoffset
-.B ]
+.B ] [-b dev_sector_size] 
 .I image [images] inode 
 .SH DESCRIPTION
 .B icat
@@ -36,6 +36,8 @@ If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  Non-512 byte
 sectors can be specified using '@' (32@2048).
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
 .IP -v
 Enable verbose mode, output to stderr.
 .IP -V

@@ -4,7 +4,7 @@ blkcalc \- Converts between unallocated disk unit numbers and regular
 disk unit numbers.  
 .SH SYNOPSIS
 .B blkcalc 
-[-dsu unit_addr] [-vV] [-i imgtype] [-o imgoffset] [-f fstype] image [images]
+[-dsu unit_addr] [-vV] [-i imgtype] [-o imgoffset] [-b dev_sector_size] [-f fstype] image [images]
 .SH DESCRIPTION
 .B blkcalc
 creates a disk unit number mapping between two images, one normal and 
@@ -53,6 +53,8 @@ If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  Non-512 byte
 sectors can be specified using '@' (32@2048)
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed. 
 .IP -v
 Verbose output to STDERR.
 .IP -V

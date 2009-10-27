@@ -4,7 +4,7 @@ jls \- List the contents of a file system journal
 .SH SYNOPSIS
 .B jls [-f
 .I fstype
-.B ] [-vV]  [-i imgtype] [-o imgoffset]
+.B ] [-vV]  [-i imgtype] [-o imgoffset] [-b dev_sector_size] 
 .I image [images] [inode] 
 
 .SH DESCRIPTION
@@ -23,6 +23,8 @@ Identify the type of image file, such as raw or split.  Use '-i list' to list th
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  Non-512 byte
 sectors can be specified using '@' (32@2048).
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
 .IP -V
 Display version
 .IP -v

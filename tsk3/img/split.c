@@ -331,11 +331,13 @@ split_close(TSK_IMG_INFO * img_info)
  *
  * @param num_img Number of images in set
  * @param images List of disk image paths (in sorted order)
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
  *
  * @return NULL on error
  */
 TSK_IMG_INFO *
-split_open(int num_img, const TSK_TCHAR * const images[])
+split_open(int num_img, const TSK_TCHAR * const images[],
+    unsigned int a_ssize)
 {
     IMG_SPLIT_INFO *split_info;
     TSK_IMG_INFO *img_info;
@@ -351,6 +353,10 @@ split_open(int num_img, const TSK_TCHAR * const images[])
     img_info->read = split_read;
     img_info->close = split_close;
     img_info->imgstat = split_imgstat;
+
+    img_info->sector_size = 512;
+    if (a_ssize)
+        img_info->sector_size = a_ssize;
 
     /* Open the files */
     if ((split_info->cptr =

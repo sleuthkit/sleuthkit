@@ -1220,8 +1220,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (fs_attr_run->addr != 0) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_GENFS;
@@ -1248,8 +1248,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (addr > fs->last_block) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_BLK_NUM;
@@ -1289,8 +1289,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             TSK_FS_BLOCK_FLAG_COMP;
                         retval = is_clustalloc(ntfs, comp_unit[i]);
                         if (retval == -1) {
-                            if (fs_attr->fs_file->
-                                meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                            if (fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_UNALLOC)
                                 tsk_errno = TSK_ERR_FS_RECOVER;
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -4328,7 +4328,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->bmap_buf = NULL;
 
     /* Read the boot sector */
-    len = roundup(sizeof(ntfs_sb), NTFS_DEV_BSIZE);
+    len = roundup(sizeof(ntfs_sb), img_info->sector_size);
     ntfs->fs = (ntfs_sb *) tsk_malloc(len);
     if (ntfs->fs == NULL) {
         fs->tag = 0;
@@ -4418,7 +4418,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     fs->last_block = fs->last_block_act = fs->block_count - 1;
     fs->block_size = ntfs->csize_b;
-    fs->dev_bsize = NTFS_DEV_BSIZE;
+    fs->dev_bsize = img_info->sector_size;
 
     // determine the last block we have in this image
     if ((TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <

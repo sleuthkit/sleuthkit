@@ -29,7 +29,6 @@ extern "C" {
 
 //#define NTFS_FS_MAGIC 0x5346544E      /* "NTFS" in little endian */
 #define NTFS_FS_MAGIC	0xAA55
-#define NTFS_DEV_BSIZE	512
 
 #define NTFS_MAXNAMLEN	256
 #define NTFS_MAXNAMLEN_UTF8	4 * NTFS_MAXNAMLEN

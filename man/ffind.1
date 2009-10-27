@@ -2,7 +2,7 @@
 .SH NAME
 ffind \- Finds the name of the file or directory using a given inode
 .SH SYNOPSIS
-.B ffind [-aduvV] [-f fstype] [-i imgtype] [-o imgoffset]
+.B ffind [-aduvV] [-f fstype] [-i imgtype] [-o imgoffset] [-b dev_sector_size] 
 .I image inode
 .SH DESCRIPTION
 .B ffind
@@ -36,6 +36,8 @@ If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  Non-512 byte
 sectors can be specified using '@' (32@2048).
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
 .IP -v
 Verbose output to stderr.
 .IP -V

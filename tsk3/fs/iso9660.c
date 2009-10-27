@@ -456,8 +456,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         tsk_UTF16toUTF8(fs->endian,
                         (const UTF16 **) &name16,
                         (UTF16 *) & buf[b_offs + dentry->fi_len], &name8,
-                        (UTF8 *) ((uintptr_t) & in_node->
-                            inode.fn[ISO9660_MAXNAMLEN_STD]),
+                        (UTF8 *) ((uintptr_t) & in_node->inode.
+                            fn[ISO9660_MAXNAMLEN_STD]),
                         TSKlenientConversion);
                     if (retVal != TSKconversionOK) {
                         if (tsk_verbose)
@@ -1965,7 +1965,7 @@ load_vol_desc(TSK_FS_INFO * fs)
     iso->pvd = NULL;
     iso->svd = NULL;
     fs->block_size = 0;
-    fs->dev_bsize = 512;
+    fs->dev_bsize = fs->img_info->sector_size;
 
 #if 0
     b = (iso_bootrec *) tsk_malloc(sizeof(iso_bootrec));

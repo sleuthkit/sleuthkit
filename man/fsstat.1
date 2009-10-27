@@ -4,7 +4,7 @@ fsstat \- Display general details of a file system
 .SH SYNOPSIS
 .B  fsstat [-f 
 .I fstype 
-.B ] [-i imgtype] [-o imgoffset] [-tvV] 
+.B ] [-i imgtype] [-o imgoffset] [-b dev_sector_size] [-tvV] 
 .I image [images] 
 .SH DESCRIPTION
 .B fsstat
@@ -31,6 +31,8 @@ If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  Non-512 byte
 sectors can be specified using '@' (32@2048).
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
 .IP -v
 Verbose output of debugging statements to stderr
 .IP -V

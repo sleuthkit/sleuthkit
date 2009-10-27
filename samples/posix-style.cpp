@@ -329,7 +329,7 @@ main(int argc, char **argv1)
     // open the disk image
     img_info =
         tsk_img_open_sing((const TSK_TCHAR *) argv[1],
-        TSK_IMG_TYPE_DETECT);
+        TSK_IMG_TYPE_DETECT, 0);
     if (img_info == NULL) {
         fprintf(stderr, "Error opening file\n");
         tsk_error_print(stderr);

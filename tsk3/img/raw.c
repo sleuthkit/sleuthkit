@@ -142,10 +142,11 @@ raw_close(TSK_IMG_INFO * img_info)
  * \internal
  * Open the file as a raw image.  
  * @param image Path to disk image to open.
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
  * @returns NULL on error.
  */
 TSK_IMG_INFO *
-raw_open(const TSK_TCHAR * image)
+raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
 {
     IMG_RAW_INFO *raw_info;
     TSK_IMG_INFO *img_info;
@@ -162,6 +163,10 @@ raw_open(const TSK_TCHAR * image)
     img_info->read = raw_read;
     img_info->close = raw_close;
     img_info->imgstat = raw_imgstat;
+
+    img_info->sector_size = 512;
+    if (a_ssize)
+        img_info->sector_size = a_ssize;
 
 
 #if defined(TSK_WIN32) || defined(__CYGWIN__)

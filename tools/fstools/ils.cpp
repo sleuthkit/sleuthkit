@@ -34,7 +34,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-emOpvV] [-aAlLzZ] [-f fstype] [-i imgtype] [-o imgoffset] [-s seconds] image [images] [inum[-end]]\n"),
+        ("usage: %s [-emOpvV] [-aAlLzZ] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-s seconds] image [images] [inum[-end]]\n"),
         progname);
     tsk_fprintf(stderr, "\t-e: Display all inodes\n");
     tsk_fprintf(stderr, "\t-m: Display output in the mactime format\n");
@@ -52,6 +52,8 @@ usage()
     tsk_fprintf(stderr, "\t-Z: Used inodes (ctime is not 0)\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -83,6 +85,7 @@ main(int argc, char **argv1)
     TSK_TCHAR *image = NULL;
     int32_t sec_skew = 0;
     TSK_TCHAR **argv;
+    unsigned int ssize = 0;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -102,13 +105,24 @@ main(int argc, char **argv1)
      * Provide convenience options for the most commonly selected feature
      * combinations.
      */
-    while ((ch = GETOPT(argc, argv, _TSK_T("aAef:i:lLmo:Oprs:vVzZ"))) > 0) {
+    while ((ch =
+            GETOPT(argc, argv, _TSK_T("aAb:ef:i:lLmo:Oprs:vVzZ"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
+        case _TSK_T('b'):
+            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || ssize < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector size must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
+            break;
         case _TSK_T('f'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_fs_type_print(stderr);
@@ -213,7 +227,7 @@ main(int argc, char **argv1)
             image = argv[OPTIND];
             if ((img =
                     tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                        imgtype)) == NULL) {
+                        imgtype, ssize)) == NULL) {
                 tsk_error_print(stderr);
                 exit(1);
             }
@@ -231,7 +245,7 @@ main(int argc, char **argv1)
             image = argv[OPTIND];
             if ((img =
                     tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                        imgtype)) == NULL) {
+                        imgtype, ssize)) == NULL) {
                 tsk_error_print(stderr);
                 exit(1);
             }
@@ -254,7 +268,7 @@ main(int argc, char **argv1)
             image = argv[OPTIND];
             if ((img =
                     tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                        imgtype)) == NULL) {
+                        imgtype, ssize)) == NULL) {
                 tsk_error_print(stderr);
                 exit(1);
             }
@@ -275,7 +289,7 @@ main(int argc, char **argv1)
                 image = argv[OPTIND];
                 if ((img =
                         tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                            imgtype)) == NULL) {
+                            imgtype, ssize)) == NULL) {
                     tsk_error_print(stderr);
                     exit(1);
                 }
@@ -292,7 +306,7 @@ main(int argc, char **argv1)
                 image = argv[OPTIND];
                 if ((img =
                         tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                            imgtype)) == NULL) {
+                            imgtype, ssize)) == NULL) {
                     tsk_error_print(stderr);
                     exit(1);
                 }

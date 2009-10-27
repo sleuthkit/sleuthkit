@@ -24,13 +24,15 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-f fstype] [-i imgtype] [-o imgoffset] [-vV] image [images] [inode] blk\n"),
+        ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] image [images] [inode] blk\n"),
         progname);
     tsk_fprintf(stderr, "\tblk: The journal block to view\n");
     tsk_fprintf(stderr,
         "\tinode: The file system inode where the journal is located\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -56,6 +58,7 @@ main(int argc, char **argv1)
     TSK_DADDR_T blk;
     TSK_TCHAR *cp;
     TSK_TCHAR **argv;
+    unsigned int ssize = 0;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -71,13 +74,23 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("f:i:o:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
+        case _TSK_T('b'):
+            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || ssize < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector size must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
+            break;
         case _TSK_T('f'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_fs_type_print(stderr);
@@ -134,7 +147,7 @@ main(int argc, char **argv1)
         /* Not a number therefore an image */
         if ((img =
                 tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                    imgtype)) == NULL) {
+                    imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
             exit(1);
         }
@@ -157,7 +170,7 @@ main(int argc, char **argv1)
     else {
         if ((img =
                 tsk_img_open(argc - OPTIND - 2, &argv[OPTIND],
-                    imgtype)) == NULL) {
+                    imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
             exit(1);
         }

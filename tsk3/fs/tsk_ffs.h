@@ -47,11 +47,6 @@ extern "C" {
 
 #define FFS_FILE_CONTENT_LEN     ((FFS_NDADDR + FFS_NIADDR) * sizeof(TSK_DADDR_T))
 
-
-
-#define FFS_DEV_BSIZE	512
-
-
     typedef struct {
         uint8_t dir_num[4];
         uint8_t blk_free[4];

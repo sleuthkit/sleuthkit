@@ -35,7 +35,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-aAelvV] [-f fstype] [-i imgtype] [-o imgoffset] image [images] [start-stop]\n"),
+        ("usage: %s [-aAelvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images] [start-stop]\n"),
         progname);
     tsk_fprintf(stderr, "\t-e: every block\n");
     tsk_fprintf(stderr,
@@ -46,6 +46,8 @@ usage()
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
         "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
     tsk_fprintf(stderr,
@@ -82,6 +84,7 @@ main(int argc, char **argv1)
 
     char lclflags = TSK_FS_BLKLS_CAT, set_bounds = 1;
     TSK_TCHAR **argv;
+    unsigned int ssize = 0;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -97,7 +100,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("aAef:i:lo:svV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:ef:i:lo:svV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -109,6 +112,16 @@ main(int argc, char **argv1)
             break;
         case _TSK_T('A'):
             flags |= TSK_FS_BLOCK_FLAG_UNALLOC;
+            break;
+        case _TSK_T('b'):
+            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || ssize < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector size must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
             break;
         case _TSK_T('e'):
             flags |= (TSK_FS_BLOCK_FLAG_ALLOC | TSK_FS_BLOCK_FLAG_UNALLOC);
@@ -174,7 +187,7 @@ main(int argc, char **argv1)
         }
 
         /* There should be no other arguments */
-        img = tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype);
+        img = tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize);
 
         if (img == NULL) {
             tsk_error_print(stderr);
@@ -202,7 +215,7 @@ main(int argc, char **argv1)
             /* No dash in arg - therefore it is an image file name */
             if ((img =
                     tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                        imgtype)) == NULL) {
+                        imgtype, ssize)) == NULL) {
                 tsk_error_print(stderr);
                 exit(1);
             }
@@ -225,7 +238,7 @@ main(int argc, char **argv1)
                 *dash = _TSK_T('-');
                 if ((img =
                         tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                            imgtype)) == NULL) {
+                            imgtype, ssize)) == NULL) {
                     tsk_error_print(stderr);
                     exit(1);
                 }
@@ -248,7 +261,7 @@ main(int argc, char **argv1)
                     *dash = _TSK_T('-');
                     if ((img =
                             tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                                imgtype)) == NULL) {
+                                imgtype, ssize)) == NULL) {
                         tsk_error_print(stderr);
                         exit(1);
                     }
@@ -267,7 +280,7 @@ main(int argc, char **argv1)
                     /* It was a block range, so do not include it in the open */
                     if ((img =
                             tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                                imgtype)) == NULL) {
+                                imgtype, ssize)) == NULL) {
                         tsk_error_print(stderr);
                         exit(1);
                     }

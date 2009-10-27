@@ -46,9 +46,6 @@ extern "C" {
 #define FATFS_FAT2NAME  "$FAT2"
 
 
-
-
-#define FATFS_DEV_BSIZE 512
 #define FATFS_SBOFF		0
 #define FATFS_FS_MAGIC	0xaa55
 #define FATFS_MAXNAMLEN	256

@@ -2149,7 +2149,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     /* 
      * Calculate the block info 
      */
-    fs->dev_bsize = EXT2FS_DEV_BSIZE;
+    fs->dev_bsize = img_info->sector_size;
     fs->block_count = tsk_getu32(fs->endian, ext2fs->fs->s_blocks_count);
     fs->first_block = 0;
     fs->last_block_act = fs->last_block = fs->block_count - 1;

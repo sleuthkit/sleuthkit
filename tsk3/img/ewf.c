@@ -124,7 +124,8 @@ img_file_header_signature_ncmp(const char *filename,
 
 
 TSK_IMG_INFO *
-ewf_open(int num_img, const TSK_TCHAR * const images[])
+ewf_open(int num_img, const TSK_TCHAR * const images[],
+    unsigned int a_ssize)
 {
     IMG_EWF_INFO *ewf_info;
     TSK_IMG_INFO *img_info;
@@ -218,6 +219,10 @@ ewf_open(int num_img, const TSK_TCHAR * const images[])
         ewf_info->md5hash_isset = 1;
     }
 #endif
+    img_info->sector_size = 512;
+    if (a_ssize)
+        img_info->sector_size = a_ssize;
+
 
     img_info->itype = TSK_IMG_TYPE_EWF_EWF;
     img_info->read = ewf_image_read;

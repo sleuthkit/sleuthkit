@@ -8,7 +8,7 @@ mmcat \- Output the contents of a partition to stdout
 .I offset
 .B ] [ -i
 .I imgtype
-.B ] [-vV] 
+.B ] [-b dev_sector_size]  [-vV] 
 .I image [images] part_num
 .SH DESCRIPTION
 .B mmcat
@@ -22,6 +22,8 @@ Specify the media management type.  Use '-t list' to list the supported types. I
 Specify the offset into the image where the volume containing the
 partition system starts.  The relative offset of the partition system
 will be added to this value.
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
 .IP "-i imgtype"
 Identify the type of image file, such as raw or split.  If not given, autodetection methods are used.
 .IP -v

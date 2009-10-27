@@ -39,14 +39,16 @@ typedef int bool;
  *
  * @param a_image The path to the image file 
  * @param type The disk image type (can be autodetection)
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
  *
  * @return Pointer to TSK_IMG_INFO or NULL on error
  */
 TSK_IMG_INFO *
-tsk_img_open_sing(const TSK_TCHAR * a_image, TSK_IMG_TYPE_ENUM type)
+tsk_img_open_sing(const TSK_TCHAR * a_image, TSK_IMG_TYPE_ENUM type,
+    unsigned int a_ssize)
 {
     const TSK_TCHAR *const a = a_image;
-    return tsk_img_open(1, &a, type);
+    return tsk_img_open(1, &a, type, a_ssize);
 }
 
 
@@ -64,12 +66,14 @@ tsk_img_open_sing(const TSK_TCHAR * a_image, TSK_IMG_TYPE_ENUM type)
  * @param images The path to the image files (the number of files must
  * be equal to num_img and they must be in a sorted order)
  * @param type The disk image type (can be autodetection)
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
  *
  * @return Pointer to TSK_IMG_INFO or NULL on error
  */
 TSK_IMG_INFO *
 tsk_img_open(int num_img,
-    const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM type)
+    const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM type,
+    unsigned int a_ssize)
 {
     TSK_IMG_INFO *img_info = NULL;
 
@@ -105,7 +109,7 @@ tsk_img_open(int num_img,
 
         /* Try the non-raw formats first */
 #if HAVE_LIBAFFLIB
-        if ((img_info = aff_open(images)) != NULL) {
+        if ((img_info = aff_open(images, a_ssize)) != NULL) {
             /* we don't allow the "ANY" when autodetect is used because
              * we only want to detect the tested formats. */
             if (img_info->itype == TSK_IMG_TYPE_AFF_ANY) {
@@ -122,7 +126,7 @@ tsk_img_open(int num_img,
 #endif
 
 #if HAVE_LIBEWF
-        if ((img_info = ewf_open(num_img, images)) != NULL) {
+        if ((img_info = ewf_open(num_img, images, a_ssize)) != NULL) {
             if (set == NULL) {
                 set = "EWF";
                 img_set = img_info;
@@ -146,7 +150,7 @@ tsk_img_open(int num_img,
 
         /* We'll use the raw format */
         if (num_img == 1) {
-            if ((img_info = raw_open(images[0])) != NULL) {
+            if ((img_info = raw_open(images[0], a_ssize)) != NULL) {
                 return img_info;
             }
             else if (tsk_errno) {
@@ -154,7 +158,7 @@ tsk_img_open(int num_img,
             }
         }
         else {
-            if ((img_info = split_open(num_img, images)) != NULL) {
+            if ((img_info = split_open(num_img, images, a_ssize)) != NULL) {
                 return img_info;
             }
             else if (tsk_errno) {
@@ -202,9 +206,9 @@ tsk_img_open(int num_img,
         /* If we have more than one image name, and raw was the only
          * type given, then use split */
         if (num_img > 1)
-            img_info = split_open(num_img, images);
+            img_info = split_open(num_img, images, a_ssize);
         else
-            img_info = raw_open(images[0]);
+            img_info = raw_open(images[0], a_ssize);
         break;
 
     case TSK_IMG_TYPE_RAW_SPLIT:
@@ -212,9 +216,9 @@ tsk_img_open(int num_img,
         /* If only one image file is given, and only one type was
          * given then use raw */
         if (num_img == 1)
-            img_info = raw_open(images[0]);
+            img_info = raw_open(images[0], a_ssize);
         else
-            img_info = split_open(num_img, images);
+            img_info = split_open(num_img, images, a_ssize);
         break;
 
 #if HAVE_LIBAFFLIB
@@ -222,13 +226,13 @@ tsk_img_open(int num_img,
     case TSK_IMG_TYPE_AFF_AFD:
     case TSK_IMG_TYPE_AFF_AFM:
     case TSK_IMG_TYPE_AFF_ANY:
-        img_info = aff_open(images);
+        img_info = aff_open(images, a_ssize);
         break;
 #endif
 
 #if HAVE_LIBEWF
     case TSK_IMG_TYPE_EWF_EWF:
-        img_info = ewf_open(num_img, images);
+        img_info = ewf_open(num_img, images, a_ssize);
         break;
 #endif
 
@@ -252,14 +256,16 @@ tsk_img_open(int num_img,
  *
  * @param a_image The UTF-8 path to the image file 
  * @param type The disk image type (can be autodetection)
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
  *
  * @return Pointer to TSK_IMG_INFO or NULL on error
  */
 TSK_IMG_INFO *
-tsk_img_open_utf8_sing(const char *a_image, TSK_IMG_TYPE_ENUM type)
+tsk_img_open_utf8_sing(const char *a_image, TSK_IMG_TYPE_ENUM type,
+    unsigned int a_ssize)
 {
     const char *const a = a_image;
-    return tsk_img_open_utf8(1, &a, type);
+    return tsk_img_open_utf8(1, &a, type, a_ssize);
 }
 
 
@@ -273,12 +279,13 @@ tsk_img_open_utf8_sing(const char *a_image, TSK_IMG_TYPE_ENUM type)
  * @param images The path to the UTF-8 encoded image files (the number of files must
  * be equal to num_img and they must be in a sorted order)
  * @param type The disk image type (can be autodetection)
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
  *
  * @return Pointer to TSK_IMG_INFO or NULL on error
  */
 TSK_IMG_INFO *
 tsk_img_open_utf8(int num_img, const char *const images[],
-    TSK_IMG_TYPE_ENUM type)
+    TSK_IMG_TYPE_ENUM type, unsigned int a_ssize)
 {
 #ifdef TSK_WIN32
     {
@@ -339,7 +346,7 @@ tsk_img_open_utf8(int num_img, const char *const images[],
         return retval;
     }
 #else
-    return tsk_img_open(num_img, images, type);
+    return tsk_img_open(num_img, images, type, a_ssize);
 #endif
 }
 

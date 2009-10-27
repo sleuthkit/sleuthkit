@@ -991,8 +991,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* process the list of index entries */
             retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
-                (fs_dir->fs_file->
-                    meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
+                (fs_dir->fs_file->meta->
+                    flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
                 list_len, tsk_getu32(a_fs->endian,
                     idxelist->seqend_off) - tsk_getu32(a_fs->endian,
                     idxelist->begin_off));
@@ -1056,8 +1056,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* process the list of index entries */
             retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
-                (fs_dir->fs_file->
-                    meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
+                (fs_dir->fs_file->meta->
+                    flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
                 list_len, tsk_getu32(a_fs->endian,
                     idxelist->seqend_off) - tsk_getu32(a_fs->endian,
                     idxelist->begin_off));
@@ -1368,8 +1368,8 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
     fs_file->name->meta_seq = 0;
     fs_file->name->flags =
         ((tsk_getu16(fs->endian,
-                ntfs->
-                mft->flags) & NTFS_MFT_INUSE) ? TSK_FS_NAME_FLAG_ALLOC :
+                ntfs->mft->
+                flags) & NTFS_MFT_INUSE) ? TSK_FS_NAME_FLAG_ALLOC :
         TSK_FS_NAME_FLAG_UNALLOC);
 
     memset(&dinfo, 0, sizeof(NTFS_DINFO));

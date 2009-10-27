@@ -1389,7 +1389,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         }
     }
 
-    fs->dev_bsize = FATFS_DEV_BSIZE;
+    fs->dev_bsize = img_info->sector_size;
 
     /* Calculate block sizes and layout info */
     // sector size

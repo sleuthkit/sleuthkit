@@ -81,6 +81,7 @@ extern "C" {
 
         TSK_IMG_TYPE_ENUM itype;        ///< Type of disk image format
         TSK_OFF_T size;         ///< Total size of image in bytes
+        unsigned int sector_size;       ///< sector size of device in bytes (typically 512)
 
         char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache
         TSK_OFF_T cache_off[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry
@@ -94,13 +95,13 @@ extern "C" {
 
     // open and close functions
     extern TSK_IMG_INFO *tsk_img_open_sing(const TSK_TCHAR * a_image,
-        TSK_IMG_TYPE_ENUM type);
+        TSK_IMG_TYPE_ENUM type, unsigned int);
     extern TSK_IMG_INFO *tsk_img_open(int,
-        const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM);
+        const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM, unsigned int);
     extern TSK_IMG_INFO *tsk_img_open_utf8_sing(const char *a_image,
-        TSK_IMG_TYPE_ENUM type);
+        TSK_IMG_TYPE_ENUM type, unsigned int);
     extern TSK_IMG_INFO *tsk_img_open_utf8(int num_img,
-        const char *const images[], TSK_IMG_TYPE_ENUM type);
+        const char *const images[], TSK_IMG_TYPE_ENUM type, unsigned int);
 
     extern void tsk_img_close(TSK_IMG_INFO *);
 

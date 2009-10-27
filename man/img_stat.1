@@ -2,7 +2,7 @@
 .SH NAME
 img_stat \- Display details of an image file
 .SH SYNOPSIS
-.B img_stat [-i imgtype] [-tvV] 
+.B img_stat [-i imgtype] [-b dev_sector_size] [-tvV] 
 .I image [images] 
 .SH DESCRIPTION
 .B img_stat
@@ -13,6 +13,8 @@ and the byte range of each file will be given for split image formats.
 .SH ARGUMENTS
 .IP "-i imgtype"
 Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. If not given, autodetection methods are used.
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
 .IP "-t"
 Print the image type only. 
 .IP -v

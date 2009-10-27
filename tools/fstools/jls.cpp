@@ -20,10 +20,12 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-f fstype] [-i imgtype] [-o imgoffset] [-vV] image [inode]\n"),
+        ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-vV] image [inode]\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -47,6 +49,8 @@ main(int argc, char **argv1)
     TSK_INUM_T inum;
     int ch;
     TSK_TCHAR **argv;
+    unsigned int ssize = 0;
+    TSK_TCHAR *cp;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -62,13 +66,23 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("f:i:o:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
+        case _TSK_T('b'):
+            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || ssize < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector size must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
+            break;
         case _TSK_T('f'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_fs_type_print(stderr);
@@ -123,7 +137,7 @@ main(int argc, char **argv1)
         /* Not an inode at the end */
         if ((img =
                 tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                    imgtype)) == NULL) {
+                    imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
             exit(1);
         }
@@ -147,7 +161,7 @@ main(int argc, char **argv1)
     else {
         if ((img =
                 tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                    imgtype)) == NULL) {
+                    imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
             exit(1);
         }

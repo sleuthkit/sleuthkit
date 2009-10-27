@@ -18,7 +18,8 @@
 extern "C" {
 #endif
 
-    extern TSK_IMG_INFO *split_open(int, const TSK_TCHAR * const images[]);
+    extern TSK_IMG_INFO *split_open(int, const TSK_TCHAR * const images[],
+        unsigned int a_ssize);
 
 #define SPLIT_CACHE	15
 

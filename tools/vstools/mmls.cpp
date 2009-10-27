@@ -24,15 +24,17 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("%s [-i imgtype] [-o imgoffset] [-brvV] [-aAmM] [-t vstype] image [images]\n"),
+        ("%s [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-BrvV] [-aAmM] [-t vstype] image [images]\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-t vstype: The type of volume system (use '-t list' for list of supported types)\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for list supported types)\n");
     tsk_fprintf(stderr,
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
+    tsk_fprintf(stderr,
         "\t-o imgoffset: Offset to the start of the volume that contains the partition system (in sectors)\n");
-    tsk_fprintf(stderr, "\t-b: print the rounded length in bytes\n");
+    tsk_fprintf(stderr, "\t-B: print the rounded length in bytes\n");
     tsk_fprintf(stderr,
         "\t-r: recurse and look for other partition tables in partitions (DOS Only)\n");
     tsk_fprintf(stderr, "\t-v: verbose output\n");
@@ -153,6 +155,8 @@ main(int argc, char **argv1)
     TSK_VS_TYPE_ENUM vstype = TSK_VS_TYPE_DETECT;
     uint8_t hide_meta = 0;
     TSK_TCHAR **argv;
+    unsigned int ssize = 0;
+    TSK_TCHAR *cp;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -168,7 +172,7 @@ main(int argc, char **argv1)
 
     progname = argv[0];
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("aAbi:mMo:rt:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("aAb:Bi:mMo:rt:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             flags |= TSK_VS_PART_FLAG_ALLOC;
@@ -176,8 +180,18 @@ main(int argc, char **argv1)
         case _TSK_T('A'):
             flags |= TSK_VS_PART_FLAG_UNALLOC;
             break;
-        case _TSK_T('b'):
+        case _TSK_T('B'):
             print_bytes = 1;
+            break;
+        case _TSK_T('b'):
+            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || ssize < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector size must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
             break;
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
@@ -251,7 +265,7 @@ main(int argc, char **argv1)
     }
 
     /* open the image */
-    img = tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype);
+    img = tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype, ssize);
 
     if (img == NULL) {
         tsk_error_print(stderr);

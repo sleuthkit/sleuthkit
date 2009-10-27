@@ -13,9 +13,11 @@ static void
 usage()
 {
     fprintf(stderr,
-        "usage: %s [-vV] [-f fstype] [-i imgtype] [-o imgoffset] image [images]\n",
+        "usage: %s [-vV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images]\n",
         progname);
     fprintf(stderr, "\t-i imgtype: The format of the image file\n");
+    tsk_fprintf(stderr,
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     fprintf(stderr,
         "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
     fprintf(stderr, "\t-v: verbose output to stderr\n");
@@ -40,6 +42,8 @@ main(int argc, char **argv)
 
     int ch;
     TSK_TCHAR **argv;
+    unsigned int ssize = 0;
+    TSK_TCHAR *cp;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -55,13 +59,22 @@ main(int argc, char **argv)
 
     progname = argv[0];
 
-    while ((ch = GETOPT(argc, argv, "f:i:o:vV")) > 0) {
+    while ((ch = GETOPT(argc, argv, "b:f:i:o:vV")) > 0) {
         switch (ch) {
         case '?':
         default:
             fprintf(stderr, "Invalid argument: %s\n", argv[OPTIND]);
             usage();
-
+        case _TSK_T('b'):
+            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || ssize < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector size must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
+            break;
         case 'f':
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_fs_type_print(stderr);
@@ -113,7 +126,7 @@ main(int argc, char **argv)
 
     img =
         img_open(imgoff, argc - OPTIND,
-        (const char **) &argv[OPTIND], imgtype);
+        (const char **) &argv[OPTIND], imgtype, ssize);
     if (img == NULL) {
         tsk_error_print(stderr);
         exit(1);

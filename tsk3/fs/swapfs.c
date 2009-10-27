@@ -66,7 +66,7 @@ swapfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset)
     fs->first_block = 0;
     fs->last_block = fs->last_block_act = fs->block_count - 1;
     fs->block_size = 4096;
-    fs->dev_bsize = 512;
+    fs->dev_bsize = img_info->sector_size;
 
     /* Pointers to functions */
     fs->close = tsk_fs_nofs_close;

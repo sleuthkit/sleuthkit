@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-    extern TSK_IMG_INFO *raw_open(const TSK_TCHAR *);
+    extern TSK_IMG_INFO *raw_open(const TSK_TCHAR *, unsigned int a_ssize);
 
     typedef struct {
         TSK_IMG_INFO img_info;

@@ -15,11 +15,15 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    TFPRINTF(stderr, _TSK_T("usage: %s [-tvV] [-i imgtype] image\n"),
+    TFPRINTF(stderr,
+        _TSK_T
+        ("usage: %s [-tvV] [-i imgtype] [-b dev_sector_size] image\n"),
         progname);
     tsk_fprintf(stderr, "\t-t: display type only\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for list of supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
 
@@ -35,6 +39,8 @@ main(int argc, char **argv1)
     int ch;
     uint8_t type = 0;
     TSK_TCHAR **argv;
+    unsigned int ssize = 0;
+    TSK_TCHAR *cp;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -49,14 +55,23 @@ main(int argc, char **argv1)
 
     progname = argv[0];
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("i:tvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:i:tvV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
-
+        case _TSK_T('b'):
+            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || ssize < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector size must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
+            break;
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
                 tsk_img_type_print(stderr);
@@ -91,7 +106,8 @@ main(int argc, char **argv1)
     }
 
     if ((img =
-            tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype)) == NULL) {
+            tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype,
+                ssize)) == NULL) {
         tsk_error_print(stderr);
         exit(1);
     }

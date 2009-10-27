@@ -8,7 +8,7 @@ mmls \- Display the partition layout of a volume system  (partition tables)
 .I offset
 .B ] [ -i
 .I imgtype
-.B ] [-brvV]  [-aAmM]
+.B ] [-b dev_sector_size] [-BrvV]  [-aAmM]
 .I image [images]
 .SH DESCRIPTION
 .B mmls
@@ -22,9 +22,11 @@ Specify the media management type.  Use '-t list' to list the supported types. I
 Specify the offset into the image where the volume containing the
 partition system starts.  The relative offset of the partition system
 will be added to this value.
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
 .IP "-i imgtype"
 Identify the type of image file, such as raw or split.  If not given, autodetection methods are used.
-.IP -b
+.IP -B
 Include a column with the partition sizes in bytes
 .IP -r
 Recurse into DOS partitions and look for other partition tables.  This setup frequently occurs when Unix is installed on x86 systems.  

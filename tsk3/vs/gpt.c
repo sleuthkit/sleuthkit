@@ -256,7 +256,7 @@ tsk_vs_gpt_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
     vs->part_list = NULL;
     vs->part_count = 0;
     vs->endian = 0;
-    vs->block_size = 512;
+    vs->block_size = img_info->sector_size;
 
     /* Assign functions */
     vs->close = gpt_close;

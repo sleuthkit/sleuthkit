@@ -30,7 +30,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-adDFlpruvV] [-f fstype] [-i imgtype] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]\n"),
+        ("usage: %s [-adDFlpruvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]\n"),
         progname);
     tsk_fprintf(stderr,
         "\tIf [inode] is not given, the root directory is used\n");
@@ -41,6 +41,8 @@ usage()
     tsk_fprintf(stderr, "\t-l: Display long version (like ls -l)\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: Format of image file (use '-i list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -80,6 +82,8 @@ main(int argc, char **argv1)
     int32_t sec_skew = 0;
     static TSK_TCHAR *macpre = NULL;
     TSK_TCHAR **argv;
+    unsigned int ssize = 0;
+    TSK_TCHAR *cp;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -97,7 +101,8 @@ main(int argc, char **argv1)
 
     fls_flags = TSK_FS_FLS_DIR | TSK_FS_FLS_FILE;
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("adDf:Fi:m:lo:prs:uvVz:"))) > 0) {
+    while ((ch =
+            GETOPT(argc, argv, _TSK_T("ab:dDf:Fi:m:lo:prs:uvVz:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -106,6 +111,16 @@ main(int argc, char **argv1)
             usage();
         case _TSK_T('a'):
             fls_flags |= TSK_FS_FLS_DOT;
+            break;
+        case _TSK_T('b'):
+            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || ssize < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector size must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
             break;
         case _TSK_T('d'):
             name_flags &= ~TSK_FS_NAME_FLAG_ALLOC;
@@ -235,7 +250,7 @@ main(int argc, char **argv1)
         /* Not an inode at the end */
         if ((img =
                 tsk_img_open(argc - OPTIND, &argv[OPTIND],
-                    imgtype)) == NULL) {
+                    imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
             exit(1);
         }
@@ -264,7 +279,7 @@ main(int argc, char **argv1)
 
         if ((img =
                 tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                    imgtype)) == NULL) {
+                    imgtype, ssize)) == NULL) {
             tsk_error_print(stderr);
             exit(1);
         }

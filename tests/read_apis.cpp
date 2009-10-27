@@ -207,7 +207,7 @@ test_fat12()
     char fname[512];
 
     snprintf(fname, 512, "%s/fat12.dd", s_root);
-    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0, 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();
@@ -246,7 +246,7 @@ test_fat_slack()
     ssize_t retval;
 
     snprintf(fname, 512, "%s/fat-img-kw.dd", s_root);
-    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0, 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();
@@ -340,7 +340,7 @@ test_fat_recover()
     ssize_t retval;
 
     snprintf(fname, 512, "%s/fe_test_1.img", s_root);
-    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0, 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();
@@ -480,7 +480,7 @@ test_ntfs_slack_ads()
     ssize_t retval;
 
     snprintf(fname, 512, "%s/ntfs-img-kw-1.dd", s_root);
-    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0, 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();
@@ -627,7 +627,7 @@ test_ntfs_fe()
     char fname[512];
 
     snprintf(fname, 512, "%s/fe_test_1.img", s_root);
-    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0, 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();
@@ -665,7 +665,7 @@ test_ntfs_comp()
     char fname[512];
 
     snprintf(fname, 512, "%s/ntfs-comp-1.img", s_root);
-    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0)) == NULL) {
+    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0, 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         tsk_error_reset();

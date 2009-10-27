@@ -30,16 +30,18 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-b num] [-f fstype] [-i imgtype] [-o imgoffset] [-z zone] [-s seconds] [-vV] image inum\n"),
+        ("usage: %s [-B num] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-z zone] [-s seconds] [-vV] image inum\n"),
         progname);
     tsk_fprintf(stderr,
-        "\t-b num: force the display of NUM address of block pointers\n");
+        "\t-B num: force the display of NUM address of block pointers\n");
     tsk_fprintf(stderr,
         "\t-z zone: time zone of original machine (i.e. EST5EDT or GMT)\n");
     tsk_fprintf(stderr,
         "\t-s seconds: Time skew of original machine (in seconds)\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -65,9 +67,10 @@ main(int argc, char **argv1)
     TSK_TCHAR *cp;
     int32_t sec_skew = 0;
 
-    /* When > 0 this is the number of blocks to print, used for -b arg */
+    /* When > 0 this is the number of blocks to print, used for -B arg */
     TSK_DADDR_T numblock = 0;
     TSK_TCHAR **argv;
+    unsigned int ssize = 0;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -83,19 +86,29 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:s:vVz:"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:B:f:i:o:s:vVz:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
-        case _TSK_T('b'):
+        case _TSK_T('B'):
             numblock = TSTRTOULL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || numblock < 1) {
                 TFPRINTF(stderr,
                     _TSK_T
                     ("invalid argument: block count must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
+            break;
+        case _TSK_T('b'):
+            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || ssize < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector size must be positive: %s\n"),
                     OPTARG);
                 usage();
             }
@@ -175,7 +188,7 @@ main(int argc, char **argv1)
      */
     if ((img =
             tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
-                imgtype)) == NULL) {
+                imgtype, ssize)) == NULL) {
         tsk_error_print(stderr);
         exit(1);
     }

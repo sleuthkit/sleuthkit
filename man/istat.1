@@ -2,11 +2,11 @@
 .SH NAME
 istat \- Display details of a meta-data structure (i.e. inode)
 .SH SYNOPSIS
-.B  istat [-b 
+.B  istat [-B 
 .I num
 .B ] [-f
 .I fstype 
-.B ] [-i imgtype] [-o imgoffset] [-vV] [-z
+.B ] [-i imgtype] [-o imgoffset] [-b dev_sector_size] [-vV] [-z
 .I zone
 .B ] [-s
 .I seconds
@@ -18,7 +18,7 @@ displays the uid, gid, mode, size, link number, modified , accessed,
 changed times, and all the disk units a structure has allocated.
 
 The options are as follows:
-.IP "-b num"
+.IP "-B num"
 Display the addresses of num disk units.  Useful when the inode is 
 unallocated with size 0, but still has block pointers.
 .IP "-f fstype"
@@ -34,6 +34,8 @@ If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  Non-512 byte
 sectors can be specified using '@' (32@2048).
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
 .IP -v
 Verbose output of debugging statements to stderr
 .IP -V

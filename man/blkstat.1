@@ -4,7 +4,7 @@ blkstat \- Display details of a file system data unit (i.e. block or sector)
 .SH SYNOPSIS
 .B blkstat [-f
 .I fstype 
-.B ] [-i imgtype] [-o imgoffset] [-vV] 
+.B ] [-i imgtype] [-o imgoffset] [-b dev_sector_size]  [-vV] 
 .I image [images] addr
 .SH DESCRIPTION
 .B blkstat
@@ -24,6 +24,8 @@ If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  Non-512 byte
 sectors can be specified using '@' (32@2048).
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
 .IP -v
 Verbose output of debugging statements to stderr
 .IP -V

@@ -221,7 +221,7 @@ aff_close(TSK_IMG_INFO * img_info)
 
 
 TSK_IMG_INFO *
-aff_open(const char *const images[])
+aff_open(const char *const images[], unsigned int a_ssize)
 {
     IMG_AFF_INFO *aff_info;
     TSK_IMG_INFO *img_info;
@@ -238,6 +238,9 @@ aff_open(const char *const images[])
     img_info->close = aff_close;
     img_info->imgstat = aff_imgstat;
 
+    img_info->sector_size = 512;
+    if (a_ssize)
+        img_info->sector_size = a_ssize;
 
     type = af_identify_file_type(images[0], 1);
     if ((type == AF_IDENTIFY_ERR) || (type == AF_IDENTIFY_NOEXIST)) {

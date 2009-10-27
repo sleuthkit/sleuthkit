@@ -297,7 +297,7 @@ main(int argc, char **argv1)
     hdb_info = NULL;
 #endif
 
-    img_info = tsk_img_open_sing(argv[1], TSK_IMG_TYPE_DETECT);
+    img_info = tsk_img_open_sing(argv[1], TSK_IMG_TYPE_DETECT, 0);
     if (img_info == NULL) {
         fprintf(stderr, "Error opening file\n");
         tsk_error_print(stderr);

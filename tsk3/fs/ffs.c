@@ -1947,7 +1947,7 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype)
     fs->offset = offset;
 
     /* Both sbs are the same size */
-    len = roundup(sizeof(ffs_sb1), FFS_DEV_BSIZE);
+    len = roundup(sizeof(ffs_sb1), img_info->sector_size);
     ffs->fs.sb1 = (ffs_sb1 *) tsk_malloc(len);
     if (ffs->fs.sb1 == NULL) {
         fs->tag = 0;
@@ -2061,7 +2061,7 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype)
      */
     fs->first_block = 0;
     fs->last_block = fs->last_block_act = fs->block_count - 1;
-    fs->dev_bsize = FFS_DEV_BSIZE;
+    fs->dev_bsize = img_info->sector_size;
 
     // determine the last block we have in this image
     if ((TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <

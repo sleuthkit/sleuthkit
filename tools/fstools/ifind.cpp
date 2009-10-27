@@ -31,7 +31,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-alvV] [-f fstype] [-i imgtype] [-o imgoffset] [-d unit_addr] [-n file] [-p par_addr] [-z ZONE] image [images]\n"),
+        ("usage: %s [-alvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-d unit_addr] [-n file] [-p par_addr] [-z ZONE] image [images]\n"),
         progname);
     tsk_fprintf(stderr, "\t-a: find all inodes\n");
     tsk_fprintf(stderr,
@@ -43,6 +43,8 @@ usage()
         "\t-p par_addr: Find UNALLOCATED MFT entries given the parent's meta address (NTFS only)\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -77,6 +79,7 @@ main(int argc, char **argv1)
     TSK_INUM_T parinode = 0;
     TSK_TCHAR *path = NULL;
     TSK_TCHAR **argv;
+    unsigned int ssize = 0;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -94,10 +97,20 @@ main(int argc, char **argv1)
 
     localflags = 0;
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ad:f:i:ln:o:p:vVz:"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:d:f:i:ln:o:p:vVz:"))) > 0) {
         switch (ch) {
         case _TSK_T('a'):
             localflags |= TSK_FS_IFIND_ALL;
+            break;
+        case _TSK_T('b'):
+            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || ssize < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector size must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
             break;
         case _TSK_T('d'):
             if (type) {
@@ -218,7 +231,8 @@ main(int argc, char **argv1)
 
 
     if ((img =
-            tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype)) == NULL) {
+            tsk_img_open(argc - OPTIND, &argv[OPTIND], imgtype,
+                ssize)) == NULL) {
         tsk_error_print(stderr);
         if (path)
             free(path);

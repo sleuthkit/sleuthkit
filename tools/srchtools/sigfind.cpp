@@ -272,7 +272,7 @@ main(int argc, char **argv)
 
     if ((img_info =
          tsk_img_open_utf8_sing(argv[optind],
-                      TSK_IMG_TYPE_DETECT)) == NULL) {
+                      TSK_IMG_TYPE_DETECT, 0)) == NULL) {
         tsk_error_print(stderr);
         exit(1);
     }

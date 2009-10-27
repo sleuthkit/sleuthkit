@@ -2,7 +2,7 @@
 .SH NAME
 blkcat \- Display the contents of file system data unit in a disk image.
 .SH SYNOPSIS
-.B blkcat [-ahswvV] [-f fstype] [-u unit_size] [-i imgtype] [-o imgoffset] image [images] unit_addr [num]
+.B blkcat [-ahswvV] [-f fstype] [-u unit_size] [-i imgtype] [-o imgoffset] [-b dev_sector_size] image [images] unit_addr [num]
 
 .SH DESCRIPTION
 .B blkcat
@@ -42,6 +42,8 @@ If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  Non-512 byte
 sectors can be specified using '@' (32@2048).
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
 .IP -v
 Verbose output to stderr.
 .IP -V
