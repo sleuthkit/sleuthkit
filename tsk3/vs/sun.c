@@ -208,43 +208,44 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
 static uint8_t
 sun_load_table(TSK_VS_INFO * vs)
 {
-/* this will need to change if any of the disk label structures change */
-#define LABEL_BUF_SIZE	512
-
     sun_dlabel_sparc *dlabel_sp;
     sun_dlabel_i386 *dlabel_x86;
-    char buf[LABEL_BUF_SIZE];
+    char *buf;
     ssize_t cnt;
     TSK_DADDR_T taddr =
         vs->offset / vs->block_size + SUN_SPARC_PART_SOFFSET;
 
 
     /* Sanity check in case label sizes change */
-    if ((sizeof(*dlabel_sp) > LABEL_BUF_SIZE) ||
-        (sizeof(*dlabel_x86) > LABEL_BUF_SIZE)) {
+    if ((sizeof(*dlabel_sp) > vs->block_size) ||
+        (sizeof(*dlabel_x86) > vs->block_size)) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_VS_BUF;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "sun_load_table: Buffer smaller than label sizes");
+            "sun_load_table: disk labels bigger than block size");
         return 1;
     }
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "sun_load_table: Trying sector: %" PRIuDADDR "\n", taddr);
-
+    
+    if ((buf = tsk_malloc(vs->block_size)) == NULL)
+        return 1;
+    
     /* Try the given offset */
     cnt = tsk_vs_read_block
-        (vs, SUN_SPARC_PART_SOFFSET, (char *) &buf, LABEL_BUF_SIZE);
+        (vs, SUN_SPARC_PART_SOFFSET, buf, vs->block_size);
 
     /* If -1 is returned, tsk_errno is already set */
-    if (cnt != LABEL_BUF_SIZE) {
+    if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_READ;
         }
         snprintf(tsk_errstr2, TSK_ERRSTR_L,
             "SUN Disk Label in Sector: %" PRIuDADDR, taddr);
+        free(buf);
         return 1;
     }
 
@@ -259,9 +260,11 @@ sun_load_table(TSK_VS_INFO * vs)
     dlabel_x86 = (sun_dlabel_i386 *) buf;
     if (tsk_vs_guessu16(vs, dlabel_sp->magic, SUN_MAGIC) == 0) {
         if (tsk_getu32(vs->endian, dlabel_sp->sanity) == SUN_SANITY) {
+            free(buf);
             return sun_load_table_sparc(vs, dlabel_sp);
         }
         else if (tsk_getu32(vs->endian, dlabel_x86->sanity) == SUN_SANITY) {
+            free(buf);
             return sun_load_table_i386(vs, dlabel_x86);
         }
     }
@@ -276,15 +279,16 @@ sun_load_table(TSK_VS_INFO * vs)
             "sun_load_table: Trying sector: %" PRIuDADDR "\n", taddr + 1);
 
     cnt = tsk_vs_read_block
-        (vs, SUN_I386_PART_SOFFSET, (char *) &buf, LABEL_BUF_SIZE);
+        (vs, SUN_I386_PART_SOFFSET, buf, vs->block_size);
 
-    if (cnt != LABEL_BUF_SIZE) {
+    if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_READ;
         }
         snprintf(tsk_errstr2, TSK_ERRSTR_L,
             "SUN (Intel) Disk Label in Sector: %" PRIuDADDR, taddr);
+        free(buf);
         return 1;
     }
 
@@ -296,6 +300,7 @@ sun_load_table(TSK_VS_INFO * vs)
             "SUN (intel) partition table (Sector: %"
             PRIuDADDR ") %x", taddr, tsk_getu16(vs->endian,
                 dlabel_sp->magic));
+        free(buf);
         return 1;
     }
 
@@ -305,9 +310,11 @@ sun_load_table(TSK_VS_INFO * vs)
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "SUN (intel) sanity value (Sector: %" PRIuDADDR
             ") %x", taddr, tsk_getu16(vs->endian, dlabel_sp->magic));
+        free(buf);
         return 1;
     }
-
+    
+    free(buf);
     return sun_load_table_i386(vs, dlabel_x86);
 }
 

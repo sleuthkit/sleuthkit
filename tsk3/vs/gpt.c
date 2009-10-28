@@ -24,13 +24,14 @@
 static uint8_t
 gpt_load_table(TSK_VS_INFO * vs)
 {
-    gpt_head head;
+    gpt_head *head;
     gpt_entry *ent;
-    dos_sect dos_part;
+    dos_sect *dos_part;
     unsigned int i, a;
     uint32_t ent_size;
     char *safe_str, *head_str, *tab_str, *ent_buf;
     ssize_t cnt;
+    char *sect_buf; 
     TSK_DADDR_T taddr = vs->offset / vs->block_size + GPT_PART_SOFFSET;
     TSK_DADDR_T max_addr = (vs->img_info->size - vs->offset) / vs->block_size;  // max sector
 
@@ -38,10 +39,14 @@ gpt_load_table(TSK_VS_INFO * vs)
         tsk_fprintf(stderr, "gpt_load_table: Sector: %" PRIuDADDR "\n",
             taddr);
 
+    if ((sect_buf = tsk_malloc(vs->block_size)) == NULL)
+        return 1;
+    dos_part = (dos_sect *)sect_buf;
+    
     cnt = tsk_vs_read_block
-        (vs, GPT_PART_SOFFSET, (char *) &dos_part, sizeof(dos_part));
+        (vs, GPT_PART_SOFFSET, sect_buf, vs->block_size);
     /* if -1, then tsk_errno is already set */
-    if (cnt != sizeof(dos_part)) {
+    if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_READ;
@@ -49,104 +54,125 @@ gpt_load_table(TSK_VS_INFO * vs)
         snprintf(tsk_errstr2, TSK_ERRSTR_L,
             "Error reading DOS safety partition table in Sector: %"
             PRIuDADDR, taddr);
+        free(sect_buf);
         return 1;
     }
 
     /* Sanity Check */
-    if (tsk_vs_guessu16(vs, dos_part.magic, DOS_MAGIC)) {
+    if (tsk_vs_guessu16(vs, dos_part->magic, DOS_MAGIC)) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_VS_MAGIC;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "Missing DOS safety partition (invalid magic) (Sector: %"
             PRIuDADDR ")", taddr);
+        free(sect_buf);
         return 1;
     }
 
-    if (dos_part.ptable[0].ptype != GPT_DOS_TYPE) {
+    if (dos_part->ptable[0].ptype != GPT_DOS_TYPE) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_VS_MAGIC;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "Missing DOS safety partition (invalid type in table: %d)",
-            dos_part.ptable[0].ptype);
+            dos_part->ptable[0].ptype);
+        free(sect_buf);
         return 1;
     }
 
-    if ((safe_str = tsk_malloc(16)) == NULL)
+    if ((safe_str = tsk_malloc(16)) == NULL) {
+        free(sect_buf);
         return 1;
+    }
 
     snprintf(safe_str, 16, "Safety Table");
     if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) 0, (TSK_DADDR_T) 1,
-            TSK_VS_PART_FLAG_META, safe_str, -1, -1))
+                                TSK_VS_PART_FLAG_META, safe_str, -1, -1)) {
+        free(sect_buf);
         return 1;
+    }
 
 
     /* Read the GPT header */
+    head = (gpt_head *)sect_buf;
     cnt = tsk_vs_read_block
-        (vs, GPT_PART_SOFFSET + 1, (char *) &head, sizeof(head));
-    if (cnt != sizeof(head)) {
+        (vs, GPT_PART_SOFFSET + 1, sect_buf, vs->block_size);
+    if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_READ;
         }
         snprintf(tsk_errstr2, TSK_ERRSTR_L,
             "GPT Header structure in Sector: %" PRIuDADDR, taddr + 1);
+        free(sect_buf);
         return 1;
     }
 
 
-    if (tsk_getu64(vs->endian, &head.signature) != GPT_HEAD_SIG) {
+    if (tsk_getu64(vs->endian, &head->signature) != GPT_HEAD_SIG) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_VS_MAGIC;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "GPT Header: %" PRIx64, tsk_getu64(vs->endian,
-                &head.signature));
+                &head->signature));
+        free(sect_buf);
         return 1;
     }
 
-    if ((head_str = tsk_malloc(16)) == NULL)
+    if ((head_str = tsk_malloc(16)) == NULL) {
+        free(sect_buf);
         return 1;
+    }
 
     snprintf(head_str, 16, "GPT Header");
     if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) 1,
             (TSK_DADDR_T) ((tsk_getu32(vs->endian,
-                        &head.head_size_b) + 511) / 512),
-            TSK_VS_PART_FLAG_META, head_str, -1, -1))
+                        &head->head_size_b) + 511) / 512),
+                                TSK_VS_PART_FLAG_META, head_str, -1, -1)) {
+        free(sect_buf);
         return 1;
+    }
 
     /* Allocate a buffer for each table entry */
-    ent_size = tsk_getu32(vs->endian, &head.tab_size_b);
+    ent_size = tsk_getu32(vs->endian, &head->tab_size_b);
     if (ent_size < sizeof(gpt_entry)) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_VS_MAGIC;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "Header reports partition entry size of %" PRIu32
             " and not %" PRIuSIZE "", ent_size, sizeof(gpt_entry));
+        free(sect_buf);
         return 1;
     }
 
-    if ((tab_str = tsk_malloc(20)) == NULL)
+    if ((tab_str = tsk_malloc(20)) == NULL) {
+        free(sect_buf);
         return 1;
+    }
 
     snprintf(tab_str, 20, "Partition Table");
     if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) tsk_getu64(vs->endian,
-                &head.tab_start_lba),
+                &head->tab_start_lba),
             (TSK_DADDR_T) ((ent_size * tsk_getu32(vs->endian,
-                        &head.tab_num_ent) + 511) / 512),
-            TSK_VS_PART_FLAG_META, tab_str, -1, -1))
+                        &head->tab_num_ent) + 511) / 512),
+                                TSK_VS_PART_FLAG_META, tab_str, -1, -1)) {
+        free(sect_buf);
         return 1;
+    }
 
 
     /* Process the partition table */
-    if ((ent_buf = tsk_malloc(vs->block_size)) == NULL)
+    if ((ent_buf = tsk_malloc(vs->block_size)) == NULL) {
+        free(sect_buf);
         return 1;
+    }
 
     i = 0;
-    for (a = 0; i < tsk_getu32(vs->endian, &head.tab_num_ent); a++) {
+    for (a = 0; i < tsk_getu32(vs->endian, &head->tab_num_ent); a++) {
         char *name;
 
         /* Read a sector */
         cnt = tsk_vs_read_block(vs,
-            tsk_getu64(vs->endian, &head.tab_start_lba) + a,
+            tsk_getu64(vs->endian, &head->tab_start_lba) + a,
             ent_buf, vs->block_size);
         if (cnt != vs->block_size) {
             if (cnt >= 0) {
@@ -156,14 +182,16 @@ gpt_load_table(TSK_VS_INFO * vs)
             snprintf(tsk_errstr2, TSK_ERRSTR_L,
                 "Error reading GPT partition table sector : %"
                 PRIuDADDR, tsk_getu64(vs->endian,
-                    &head.tab_start_lba) + a);
+                    &head->tab_start_lba) + a);
+            free(ent_buf);
+            free(sect_buf);
             return 1;
         }
 
         /* Process the sector */
         ent = (gpt_entry *) ent_buf;
         for (; (uintptr_t) ent < (uintptr_t) ent_buf + vs->block_size &&
-            i < tsk_getu32(vs->endian, &head.tab_num_ent); i++) {
+            i < tsk_getu32(vs->endian, &head->tab_num_ent); i++) {
 
             UTF16 *name16;
             UTF8 *name8;
@@ -188,12 +216,17 @@ gpt_load_table(TSK_VS_INFO * vs)
                 tsk_errno = TSK_ERR_VS_BLK_NUM;
                 snprintf(tsk_errstr, TSK_ERRSTR_L,
                     "gpt_load_table: Starting sector too large for image");
+                free(sect_buf);
+                free(ent_buf);
                 return 1;
             }
 
 
-            if ((name = tsk_malloc(256)) == NULL)
+            if ((name = tsk_malloc(256)) == NULL) {
+                free(sect_buf);
+                free(ent_buf);
                 return 1;
+            }
 
             name16 = (UTF16 *) ((uintptr_t) ent->name);
             name8 = (UTF8 *) name;
@@ -217,13 +250,18 @@ gpt_load_table(TSK_VS_INFO * vs)
                     (TSK_DADDR_T) (tsk_getu64(vs->endian,
                             ent->end_lba) - tsk_getu64(vs->endian,
                             ent->start_lba) + 1), TSK_VS_PART_FLAG_ALLOC,
-                    name, -1, i))
+                                        name, -1, i)) {
+                free(sect_buf);
+                free(ent_buf);
                 return 1;
+            }
 
             ent++;
         }
     }
 
+    free(sect_buf);
+    free(ent_buf);
     return 0;
 }
 

@@ -672,7 +672,8 @@ static uint8_t
 dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
     TSK_DADDR_T sect_ext_base, int table)
 {
-    dos_sect sect;
+    dos_sect *sect;
+    char *sect_buf;
     int i;
     char *table_str;
     ssize_t cnt;
@@ -684,37 +685,45 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
             ", Primary Base Sector: %" PRIuDADDR "\n", sect_cur,
             sect_ext_base);
 
+    if ((sect_buf = tsk_malloc(vs->block_size)) == NULL)
+        return 1;
+    sect = (dos_sect *)sect_buf;
+    
     /* Read the partition table sector */
-    cnt = tsk_vs_read_block(vs, sect_cur, (char *) &sect, sizeof(sect));
-    if (cnt != sizeof(sect)) {
+    cnt = tsk_vs_read_block(vs, sect_cur, sect_buf, vs->block_size);
+    if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_READ;
         }
         snprintf(tsk_errstr2, TSK_ERRSTR_L,
             "Extended DOS table sector %" PRIuDADDR, sect_cur);
+        free(sect_buf);
         return 1;
     }
 
     /* Sanity Check */
-    if (tsk_getu16(vs->endian, sect.magic) != DOS_MAGIC) {
+    if (tsk_getu16(vs->endian, sect->magic) != DOS_MAGIC) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_VS_MAGIC;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "Extended DOS partition table in sector %"
             PRIuDADDR, sect_cur);
-        tsk_errstr2[0] = '\0';
+        free(sect_buf);
         return 1;
     }
 
     /* Add an entry of 1 length for the table  to the internal structure */
-    if ((table_str = tsk_malloc(32)) == NULL)
+    if ((table_str = tsk_malloc(32)) == NULL) {
+        free(sect_buf);
         return 1;
+    }
 
     snprintf(table_str, 32, "Extended Table (#%d)", table);
     if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) sect_cur,
             (TSK_DADDR_T) 1, TSK_VS_PART_FLAG_META, table_str, table,
             -1)) {
+        free(sect_buf);
         return 1;
     }
 
@@ -724,7 +733,7 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
      * inside of the loop
      */
     for (i = 0; i < 4; i++) {
-        dos_part *part = &sect.ptable[i];
+        dos_part *part = &sect->ptable[i];
 
         /* Get the starting sector and size, we currently
          * ignore CHS */
@@ -758,20 +767,25 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
                         "Starting sector %" PRIuDADDR
                         " too large for image\n",
                         sect_ext_base + part_start);
+                free(sect_buf);
                 return 1;
             }
 
             if (NULL == tsk_vs_part_add(vs,
                     (TSK_DADDR_T) (sect_ext_base + part_start),
                     (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_META,
-                    dos_get_desc(part->ptype), table, i))
+                                        dos_get_desc(part->ptype), table, i)) {
+                free(sect_buf);
                 return 1;
+            }
 
 
             /* Process the extended partition */
             if (dos_load_ext_table(vs, sect_ext_base + part_start,
-                    sect_ext_base, table + 1))
+                                   sect_ext_base, table + 1)) {
+                free(sect_buf);
                 return 1;
+            }
         }
 
         else {
@@ -788,16 +802,20 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
                     tsk_fprintf(stderr,
                         "Starting sector %" PRIuDADDR
                         " too large for image\n", sect_cur + part_start);
+                free(sect_buf);
                 return 1;
             }
             if (NULL == tsk_vs_part_add(vs,
                     (TSK_DADDR_T) (sect_cur + part_start),
                     (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
-                    dos_get_desc(part->ptype), table, i))
+                                        dos_get_desc(part->ptype), table, i)) {
+                free(sect_buf);
                 return 1;
+            }
         }
     }
-
+    
+    free(sect_buf);
     return 0;
 }
 
@@ -816,7 +834,8 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
 static uint8_t
 dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
 {
-    dos_sect sect;
+    dos_sect *sect;
+    char *sect_buf;
     int i, added = 0;
     char *table_str;
     ssize_t cnt;
@@ -827,28 +846,34 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         tsk_fprintf(stderr,
             "dos_load_prim: Table Sector: %" PRIuDADDR "\n", taddr);
 
+    if ((sect_buf = tsk_malloc(vs->block_size)) == NULL)
+        return 1;
+    sect = (dos_sect *)sect_buf;
+
     /* Read the table */
     cnt = tsk_vs_read_block
-        (vs, DOS_PART_SOFFSET, (char *) &sect, sizeof(sect));
+        (vs, DOS_PART_SOFFSET, sect_buf, vs->block_size);
 
-    if (cnt != sizeof(sect)) {
+    if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_READ;
         }
         snprintf(tsk_errstr2, TSK_ERRSTR_L,
             "Primary DOS table sector %" PRIuDADDR, taddr);
+        free(sect_buf);
         return 1;
     }
 
 
     /* Sanity Check */
-    if (tsk_vs_guessu16(vs, sect.magic, DOS_MAGIC)) {
+    if (tsk_vs_guessu16(vs, sect->magic, DOS_MAGIC)) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_VS_MAGIC;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "File is not a DOS partition (invalid primary magic) (Sector: %"
             PRIuDADDR ")", taddr);
+        free(sect_buf);
         return 1;
     }
 
@@ -862,7 +887,7 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
             tsk_fprintf(stderr,
                 "dos_load_prim_table: Testing FAT/NTFS conditions\n");
 
-        if (strncmp("MSDOS", sect.oemname, 5) == 0) {
+        if (strncmp("MSDOS", sect->oemname, 5) == 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_MAGIC;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -870,9 +895,10 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "dos_load_prim_table: MSDOS OEM name exists\n");
+            free(sect_buf);
             return 1;
         }
-        else if (strncmp("MSWIN", sect.oemname, 5) == 0) {
+        else if (strncmp("MSWIN", sect->oemname, 5) == 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_MAGIC;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -880,9 +906,10 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "dos_load_prim_table: MSWIN OEM name exists\n");
+            free(sect_buf);
             return 1;
         }
-        else if (strncmp("NTFS", sect.oemname, 4) == 0) {
+        else if (strncmp("NTFS", sect->oemname, 4) == 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_MAGIC;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -890,9 +917,10 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "dos_load_prim_table: NTFS OEM name exists\n");
+            free(sect_buf);
             return 1;
         }
-        else if (strncmp("FAT", sect.oemname, 4) == 0) {
+        else if (strncmp("FAT", sect->oemname, 4) == 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_MAGIC;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -900,22 +928,27 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "dos_load_prim_table: FAT OEM name exists\n");
+            free(sect_buf);
             return 1;
         }
     }
 
     /* Add an entry of 1 sector for the table  to the internal structure */
-    if ((table_str = tsk_malloc(32)) == NULL)
+    if ((table_str = tsk_malloc(32)) == NULL) {
+        free(sect_buf);
         return 1;
+    }
 
     snprintf(table_str, 32, "Primary Table (#0)");
     if (NULL == tsk_vs_part_add(vs, DOS_PART_SOFFSET, (TSK_DADDR_T) 1,
-            TSK_VS_PART_FLAG_META, table_str, -1, -1))
+                                TSK_VS_PART_FLAG_META, table_str, -1, -1)) {
+        free(sect_buf);
         return 1;
+    }
 
     /* Cycle through the partition table */
     for (i = 0; i < 4; i++) {
-        dos_part *part = &sect.ptable[i];
+        dos_part *part = &sect->ptable[i];
 
         /* We currently ignore CHS */
         uint32_t part_start = tsk_getu32(vs->endian, part->start_sec);
@@ -938,7 +971,7 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
                 tsk_fprintf(stderr,
                     "Starting sector %" PRIu32 " too large for image\n",
                     part_start);
-
+            free(sect_buf);
             return 1;
         }
 #if 0
@@ -959,19 +992,27 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         if (dos_is_ext(part->ptype)) {
             if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
                     (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_META,
-                    dos_get_desc(part->ptype), 0, i))
+                                        dos_get_desc(part->ptype), 0, i)) {
+                free(sect_buf);
                 return 1;
+            }
 
-            if (dos_load_ext_table(vs, part_start, part_start, 1))
+            if (dos_load_ext_table(vs, part_start, part_start, 1)) {
+                free(sect_buf);
                 return 1;
+            }
         }
         else {
             if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
                     (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
-                    dos_get_desc(part->ptype), 0, i))
+                                        dos_get_desc(part->ptype), 0, i)) {
+                free(sect_buf);
                 return 1;
+            }
         }
     }
+    free(sect_buf);
+    
     if (added == 0) {
         if (tsk_verbose)
             tsk_fprintf(stderr, "dos_load_prim: No valid entries\n");
@@ -982,7 +1023,6 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
             "dos_load_prim_table: No valid entries in primary table");
         return 1;
     }
-
     return 0;
 }
 

@@ -708,15 +708,15 @@ fatfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     // clean up any error messages that are lying around
     tsk_error_reset();
 
-    if ((data_buf = (char *) tsk_malloc(fatfs->ssize)) == NULL) {
+    if ((data_buf = (char *) tsk_malloc(fs->block_size)) == NULL) {
         return 1;
     }
 
 
     /* Read the root directory sector so that we can get the volume
      * label from it */
-    cnt = tsk_fs_read_block(fs, fatfs->rootsect, data_buf, fatfs->ssize);
-    if (cnt != fatfs->ssize) {
+    cnt = tsk_fs_read_block(fs, fatfs->rootsect, data_buf, fs->block_size);
+    if (cnt != fs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_FS_READ;

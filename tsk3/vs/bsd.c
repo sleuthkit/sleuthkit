@@ -89,8 +89,8 @@ bsd_get_desc(uint8_t fstype)
 static uint8_t
 bsd_load_table(TSK_VS_INFO * a_vs)
 {
-
-    bsd_disklabel dlabel;
+    char *sect_buf;
+    bsd_disklabel *dlabel;
     uint32_t idx = 0;
     ssize_t cnt;
     char *table_str;
@@ -101,65 +101,75 @@ bsd_load_table(TSK_VS_INFO * a_vs)
         tsk_fprintf(stderr,
             "bsd_load_table: Table Sector: %" PRIuDADDR "\n", laddr);
 
+    if ((sect_buf = tsk_malloc(a_vs->block_size)) == NULL)
+        return 1;
+    dlabel = (bsd_disklabel *)sect_buf;
+    
     /* read the block */
     cnt = tsk_vs_read_block
-        (a_vs, BSD_PART_SOFFSET, (char *) &dlabel, sizeof(dlabel));
-    if (cnt != sizeof(dlabel)) {
+        (a_vs, BSD_PART_SOFFSET, sect_buf, a_vs->block_size);
+    if (cnt != a_vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_READ;
         }
         snprintf(tsk_errstr2, TSK_ERRSTR_L,
             "BSD Disk Label in Sector: %" PRIuDADDR, laddr);
+        free(sect_buf);
         return 1;
     }
 
     /* Check the magic  */
-    if (tsk_vs_guessu32(a_vs, dlabel.magic, BSD_MAGIC)) {
+    if (tsk_vs_guessu32(a_vs, dlabel->magic, BSD_MAGIC)) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_VS_MAGIC;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "BSD partition table (magic #1) (Sector: %"
             PRIuDADDR ") %" PRIx32, laddr, tsk_getu32(a_vs->endian,
-                dlabel.magic));
+                dlabel->magic));
+        free(sect_buf);
         return 1;
     }
 
     /* Check the second magic value */
-    if (tsk_getu32(a_vs->endian, dlabel.magic2) != BSD_MAGIC) {
+    if (tsk_getu32(a_vs->endian, dlabel->magic2) != BSD_MAGIC) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_VS_MAGIC;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "BSD disk label (magic #2) (Sector: %"
             PRIuDADDR ")  %" PRIx32, laddr, tsk_getu32(a_vs->endian,
-                dlabel.magic2));
+                dlabel->magic2));
+        free(sect_buf);
         return 1;
     }
 
     /* Add an entry of 1 length for the table  to the internal structure */
-    if ((table_str = tsk_malloc(32)) == NULL)
+    if ((table_str = tsk_malloc(32)) == NULL) {
+        free(sect_buf);
         return 1;
+    }
 
     snprintf(table_str, 32, "Partition Table");
     if (NULL == tsk_vs_part_add(a_vs, BSD_PART_SOFFSET,
             (TSK_DADDR_T) 1, TSK_VS_PART_FLAG_META, table_str, -1, -1)) {
+        free(sect_buf);
         return 1;
     }
 
     /* Cycle through the partitions, there are either 8 or 16 */
-    for (idx = 0; idx < tsk_getu16(a_vs->endian, dlabel.num_parts); idx++) {
+    for (idx = 0; idx < tsk_getu16(a_vs->endian, dlabel->num_parts); idx++) {
 
         uint32_t part_start;
         uint32_t part_size;
 
-        part_start = tsk_getu32(a_vs->endian, dlabel.part[idx].start_sec);
-        part_size = tsk_getu32(a_vs->endian, dlabel.part[idx].size_sec);
+        part_start = tsk_getu32(a_vs->endian, dlabel->part[idx].start_sec);
+        part_size = tsk_getu32(a_vs->endian, dlabel->part[idx].size_sec);
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "load_table: %" PRIu32 "  Starting Sector: %" PRIu32
                 "  Size: %" PRIu32 "  Type: %d\n", idx, part_start,
-                part_size, dlabel.part[idx].fstype);
+                part_size, dlabel->part[idx].fstype);
 
         if (part_size == 0)
             continue;
@@ -169,6 +179,7 @@ bsd_load_table(TSK_VS_INFO * a_vs)
             tsk_errno = TSK_ERR_VS_BLK_NUM;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
                 "bsd_load_table: Starting sector too large for image");
+            free(sect_buf);
             return 1;
         }
 
@@ -176,11 +187,13 @@ bsd_load_table(TSK_VS_INFO * a_vs)
         /* Add the partition to the internal sorted list */
         if (NULL == tsk_vs_part_add(a_vs, (TSK_DADDR_T) part_start,
                 (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
-                bsd_get_desc(dlabel.part[idx].fstype), -1, idx)) {
+                bsd_get_desc(dlabel->part[idx].fstype), -1, idx)) {
+            free(sect_buf);
             return 1;
         }
     }
 
+    free(sect_buf);
     return 0;
 }
 
