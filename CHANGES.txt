@@ -111,6 +111,8 @@ solves bug 2874854.
 10/28/09: Update: Changed command line format for '-o' so that sector size
 is specified only via -b and not using '-o 62@4096'.
 
+10/28/09: Bug Fix: Fixed issue in reading attributes at offsets that are on boundary of run fragment.  Issue 2848162. 
+
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.
 Bug: 2265927

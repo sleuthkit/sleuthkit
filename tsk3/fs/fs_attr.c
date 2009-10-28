@@ -1081,15 +1081,12 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                 break;
 
             // See if this run contains the starting offset they requested
-            if (data_run_cur->offset + data_run_cur->len <
+            if (data_run_cur->offset + data_run_cur->len <=
                 blkoffset_toread)
                 continue;
 
             // block offset into this run
-            blkoffset_inrun = 0;
-            if (data_run_cur->offset <= blkoffset_toread)
-                blkoffset_inrun = blkoffset_toread - data_run_cur->offset;
-
+            blkoffset_inrun = blkoffset_toread - data_run_cur->offset;
 
             // see if we need to read the rest of this run and into the next or if it is all here
             len_inrun = len_remain;
