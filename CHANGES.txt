@@ -103,9 +103,13 @@ in extended partitions were not marked as Meta.
 
 10/27/09: Update: 'mmls -b' is now 'mmls -B'.  Similarly with istat -b.
 
-10/27/09: Update: Added sector_size value to IMG_INFO and file and volume
+10/27/09: Update/Fix: Added sector_size value to IMG_INFO and file and volume
 systems now use it instead of assuming 512. Also added -b options to all
-command line tools to allow user to specify the device sector size. 
+command line tools to allow user to specify the device sector size.  This
+solves bug 2874854. 
+
+10/28/09: Update: Changed command line format for '-o' so that sector size
+is specified only via -b and not using '-o 62@4096'.
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.

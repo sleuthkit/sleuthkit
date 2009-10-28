@@ -17,22 +17,20 @@
 
 /**
  * \ingroup baselib
- * Parse a TSK_TCHAR block address string in the cnt\@size or 
- * cnt format.  If size is not given, 512 is used. 
- * Return the byte offset in an integer format. 
+ * Parse a TSK_TCHAR block address string. 
+ * Note that the cnt\@size format is no longer supported.
+ * Set the device sector size in img_open to set the block size. 
  *
  * @param [in] a_offset_str The string version of the offset
- * @return -1 on error or byte offset on success
+ * @return -1 on error or block offset on success
  */
 TSK_OFF_T
 tsk_parse_offset(const TSK_TCHAR * a_offset_str)
 {
     TSK_TCHAR offset_lcl[64], *offset_lcl_p;
     TSK_DADDR_T num_blk;
-    TSK_TCHAR *cp, *at;
-    int bsize;
-    TSK_OFF_T offset_b;
-
+    TSK_TCHAR *cp;
+    
     if (a_offset_str == NULL) {
         return 0;
     }
@@ -49,41 +47,23 @@ tsk_parse_offset(const TSK_TCHAR * a_offset_str)
     TSTRNCPY(offset_lcl, a_offset_str, 64);
     offset_lcl_p = offset_lcl;
 
-    /* Check for the x@y setup  and set
-     * bsize if it exists
-     */
-    if ((at = TSTRCHR(offset_lcl_p, '@')) != NULL) {
-        *at = '\0';
-        at++;
-
-        bsize = TSTRTOUL(at, &cp, 0);
-        if (*cp || *cp == *at) {
-            tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_OFFSET;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
-                "tsk_parse: block size: %" PRIttocTSK, at);
-            return -1;
-        }
-        else if (bsize % 512) {
-            tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_OFFSET;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
-                "tsk_parse: block size not multiple of 512");
-            return -1;
-        }
-    }
-    else {
-        bsize = 512;
+    /* Check for the old x@y setup */
+    if (TSTRCHR(offset_lcl_p, '@') != NULL) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_IMG_OFFSET;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+                 "tsk_parse: offset string format no longer supported.  Use -b to specify sector size: %" PRIttocTSK,
+                 a_offset_str);
+        return -1;
     }
 
-
-    /* Now we address the sector offset */
     offset_lcl_p = offset_lcl;
 
     /* remove leading 0s */
     while ((offset_lcl_p[0] != '\0') && (offset_lcl_p[0] == '0'))
         offset_lcl_p++;
 
+    num_blk = 0;
     if (offset_lcl_p[0] != '\0') {
         num_blk = TSTRTOULL(offset_lcl_p, &cp, 0);
         if (*cp || *cp == *offset_lcl_p) {
@@ -94,18 +74,11 @@ tsk_parse_offset(const TSK_TCHAR * a_offset_str)
                 offset_lcl_p);
             return -1;
         }
-        offset_b = num_blk * bsize;
-    }
-    else {
-        offset_b = 0;
     }
 
-    if (tsk_verbose)
-        tsk_fprintf(stderr,
-            "tsk_parse_offset: Offset set to %" PRIuOFF "\n", offset_b);
-
-    return offset_b;
+    return num_blk;
 }
+
 
 
 

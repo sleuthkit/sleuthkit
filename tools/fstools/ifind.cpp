@@ -67,7 +67,7 @@ main(int argc, char **argv1)
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_IMG_INFO *img;
 
-    TSK_OFF_T imgoff = 0;
+    TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_FS_INFO *fs;
     uint8_t type = 0;
@@ -171,7 +171,7 @@ main(int argc, char **argv1)
                 break;
             }
         case 'o':
-            if ((imgoff = tsk_parse_offset(OPTARG)) == -1) {
+            if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
                 tsk_error_print(stderr);
                 exit(1);
             }
@@ -238,14 +238,14 @@ main(int argc, char **argv1)
             free(path);
         exit(1);
     }
-    if (imgoff >= img->size) {
+    if ((imgaddr * img->sector_size) >= img->size) {
         tsk_fprintf(stderr,
             "Sector offset supplied is larger than disk image (maximum: %"
             PRIu64 ")\n", img->size / 512);
         exit(1);
     }
 
-    if ((fs = tsk_fs_open_img(img, imgoff, fstype)) == NULL) {
+    if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
         tsk_error_print(stderr);
         if (tsk_errno == TSK_ERR_FS_UNSUPTYPE)
             tsk_fs_type_print(stderr);

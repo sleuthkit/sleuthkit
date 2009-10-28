@@ -36,7 +36,7 @@ main(int argc, char **argv)
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_IMG_INFO *img;
 
-    TSK_OFF_T imgoff = 0;
+    TSK_OFF_T imgaddr = 0;
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_FS_INFO *fs;
 
@@ -102,7 +102,7 @@ main(int argc, char **argv)
             break;
 
         case 'o':
-            if ((imgoff = tsk_parse_offset(OPTARG)) == -1) {
+            if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
                 tsk_error_print(stderr);
                 exit(1);
             }

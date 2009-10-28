@@ -93,6 +93,14 @@ tsk_img_open(int num_img,
         snprintf(tsk_errstr, TSK_ERRSTR_L, "sector size is less than 512 bytes (%d)", a_ssize);
         return NULL;
     }
+    
+    if ((a_ssize % 512) != 0) {
+        tsk_error_reset(); 
+        tsk_errno = TSK_ERR_IMG_ARG;
+        snprintf(tsk_errstr, TSK_ERRSTR_L, "sector size is not a multiple of 512 (%d)", a_ssize);
+        return NULL;
+    }
+    
 
     if (tsk_verbose)
         TFPRINTF(stderr,

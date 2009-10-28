@@ -41,7 +41,7 @@ main(int argc, char **argv1)
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     TSK_VS_TYPE_ENUM vstype = TSK_VS_TYPE_DETECT;
     int ch;
-    TSK_OFF_T imgoff = 0;
+    TSK_OFF_T imgaddr = 0;
     TSK_IMG_INFO *img;
     TSK_PNUM_T pnum;
     TSK_DADDR_T addr;
@@ -91,7 +91,7 @@ main(int argc, char **argv1)
             break;
 
         case _TSK_T('o'):
-            if ((imgoff = tsk_parse_offset(OPTARG)) == -1) {
+            if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
                 tsk_error_print(stderr);
                 exit(1);
             }
@@ -136,7 +136,7 @@ main(int argc, char **argv1)
         tsk_error_print(stderr);
         exit(1);
     }
-    if (imgoff >= img->size) {
+    if ((imgaddr * img->sector_size) >= img->size) {
         tsk_fprintf(stderr,
             "Sector offset supplied is larger than disk image (maximum: %"
             PRIu64 ")\n", img->size / 512);
@@ -149,7 +149,7 @@ main(int argc, char **argv1)
     }
 
     /* process the partition tables */
-    if ((vs = tsk_vs_open(img, imgoff, vstype)) == NULL) {
+    if ((vs = tsk_vs_open(img, imgaddr * img->sector_size, vstype)) == NULL) {
         tsk_error_print(stderr);
         if (tsk_errno == TSK_ERR_VS_UNSUPTYPE)
             tsk_vs_type_print(stderr);
