@@ -66,7 +66,7 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
         return 0;
     }
 
-    if (addr + read_num_units > fs->last_block) {
+    if (addr + read_num_units - 1 > fs->last_block) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_FS_ARG;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
