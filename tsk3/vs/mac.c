@@ -25,7 +25,8 @@
 static uint8_t
 mac_load_table(TSK_VS_INFO * vs)
 {
-    mac_part part;
+    char *part_buf;
+    mac_part *part;
     char *table_str;
     uint32_t idx, max_part;
     TSK_DADDR_T taddr = vs->offset / vs->block_size + MAC_PART_SOFFSET;
@@ -37,8 +38,11 @@ mac_load_table(TSK_VS_INFO * vs)
 
     /* The table can be variable length, so we loop on it 
      * The idx variable shows which round it is
-     * Each structure is 512-bytes each
+     * Each structure is a block size
      */
+    if ((part_buf = tsk_malloc(vs->block_size)) == NULL)
+        return 1;
+    part = (mac_part *)part_buf;
 
     max_part = 1;               /* set it to 1 and it will be set in the first loop */
     for (idx = 0; idx < max_part; idx++) {
@@ -50,16 +54,17 @@ mac_load_table(TSK_VS_INFO * vs)
 
         /* Read the entry */
         cnt = tsk_vs_read_block
-            (vs, MAC_PART_SOFFSET + idx, (char *) &part, sizeof(part));
+            (vs, MAC_PART_SOFFSET + idx, part_buf, vs->block_size);
 
         /* If -1, then tsk_errno is already set */
-        if (cnt != sizeof(part)) {
+        if (cnt != vs->block_size) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_errno = TSK_ERR_VS_READ;
             }
             snprintf(tsk_errstr2, TSK_ERRSTR_L,
                 "MAC Partition entry %" PRIuDADDR, taddr + idx);
+            free(part_buf);
             return 1;
         }
 
@@ -67,43 +72,45 @@ mac_load_table(TSK_VS_INFO * vs)
         /* Sanity Check */
         if (idx == 0) {
             /* Set the endian ordering the first time around */
-            if (tsk_vs_guessu16(vs, part.magic, MAC_MAGIC)) {
+            if (tsk_vs_guessu16(vs, part->magic, MAC_MAGIC)) {
                 tsk_error_reset();
                 tsk_errno = TSK_ERR_VS_MAGIC;
                 snprintf(tsk_errstr, TSK_ERRSTR_L,
                     "Mac partition table entry (Sector: %"
                     PRIuDADDR ") %" PRIx16,
-                    (taddr + idx), tsk_getu16(vs->endian, part.magic));
+                    (taddr + idx), tsk_getu16(vs->endian, part->magic));
                 if (tsk_verbose)
                     tsk_fprintf(stderr, "mac_load: Missing initial magic value\n");
+                free(part_buf);
                 return 1;
             }
 
             /* Get the number of partitions */
-            max_part = tsk_getu32(vs->endian, part.pmap_size);
+            max_part = tsk_getu32(vs->endian, part->pmap_size);
         }
-        else if (tsk_getu16(vs->endian, part.magic) != MAC_MAGIC) {
+        else if (tsk_getu16(vs->endian, part->magic) != MAC_MAGIC) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_MAGIC;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
                 "Mac partition table entry (Sector: %"
                 PRIuDADDR ") %" PRIx16, (taddr + idx),
-                tsk_getu16(vs->endian, part.magic));
+                tsk_getu16(vs->endian, part->magic));
             if (tsk_verbose)
                 tsk_fprintf(stderr, "mac_load: Missing magic value in entry %"PRIu32"\n",
                         idx);
+            free(part_buf);
             return 1;
         }
 
 
-        part_start = tsk_getu32(vs->endian, part.start_sec);
-        part_size = tsk_getu32(vs->endian, part.size_sec);
+        part_start = tsk_getu32(vs->endian, part->start_sec);
+        part_size = tsk_getu32(vs->endian, part->size_sec);
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "mac_load: %" PRIu32 "  Starting Sector: %" PRIu32
                 "  Size: %" PRIu32 " Type: %s\n", idx, part_start,
-                part_size, part.type);
+                part_size, part->type);
 
         if (part_size == 0)
             continue;
@@ -116,29 +123,36 @@ mac_load_table(TSK_VS_INFO * vs)
             if (tsk_verbose)
                 tsk_fprintf(stderr, "mac_load: Starting sector too large for image (%"PRIu32" vs %"PRIu32")\n",
                         part_start, max_addr);
+            free(part_buf);
             return 1;
         }
 
 
-        if ((str = tsk_malloc(sizeof(part.name))) == NULL)
+        if ((str = tsk_malloc(sizeof(part->name))) == NULL) {
+            free(part_buf);
             return 1;
+        }
 
-        strncpy(str, (char *) part.type, sizeof(part.name));
+        strncpy(str, (char *) part->type, sizeof(part->name));
 
         if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
                 (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC, str, -1,
                 idx))
             return 1;
     }
+    free(part_buf);
+    part_buf = NULL;
 
     /* Add an entry for the table length */
-    if ((table_str = tsk_malloc(16)) == NULL)
+    if ((table_str = tsk_malloc(16)) == NULL) {
         return 1;
+    }
 
     snprintf(table_str, 16, "Table");
     if (NULL == tsk_vs_part_add(vs, taddr, max_part, TSK_VS_PART_FLAG_META,
-            table_str, -1, -1))
+            table_str, -1, -1)) {
         return 1;
+    }
 
     return 0;
 }
