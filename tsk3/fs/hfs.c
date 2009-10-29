@@ -2955,6 +2955,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             uint16_t startBlock = tsk_getu16(fs->endian,
                 wrapper_sb->drEmbedExtent_startBlock);
 
+            // @@@ VERIFY THE USE OF 512 here instead of something else....
             TSK_OFF_T hfsplus_offset =
                 (drAlBlSt * (TSK_OFF_T) 512) +
                 (drAlBlkSiz * (TSK_OFF_T) startBlock);

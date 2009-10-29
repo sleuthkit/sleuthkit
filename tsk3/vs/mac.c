@@ -200,8 +200,26 @@ tsk_vs_mac_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
 
     /* Load the partitions into the sorted list */
     if (mac_load_table(vs)) {
-        mac_close(vs);
-        return NULL;
+        
+        // try some other sector sizes
+        uint8_t returnNull = 1;
+        if (vs->block_size == 512) {
+            if (tsk_verbose) 
+                tsk_fprintf(stderr, "mac_open: Trying 4096-byte sector size instead of 512-byte");
+            vs->block_size = 4096;
+            returnNull = mac_load_table(vs);
+        }
+        else if (vs->block_size == 4096) {
+            if (tsk_verbose) 
+                tsk_fprintf(stderr, "mac_open: Trying 512-byte sector size instead of 4096-byte");
+            vs->block_size = 512;
+            returnNull = mac_load_table(vs);
+        }
+        
+        if (returnNull) {
+            mac_close(vs);
+            return NULL;
+        }
     }
 
     /* fill in the sorted list with the 'unknown' values */
