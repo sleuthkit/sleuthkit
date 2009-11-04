@@ -103,8 +103,8 @@ bsd_load_table(TSK_VS_INFO * a_vs)
 
     if ((sect_buf = tsk_malloc(a_vs->block_size)) == NULL)
         return 1;
-    dlabel = (bsd_disklabel *)sect_buf;
-    
+    dlabel = (bsd_disklabel *) sect_buf;
+
     /* read the block */
     cnt = tsk_vs_read_block
         (a_vs, BSD_PART_SOFFSET, sect_buf, a_vs->block_size);
@@ -174,7 +174,8 @@ bsd_load_table(TSK_VS_INFO * a_vs)
         if (part_size == 0)
             continue;
 
-        if (part_start > max_addr) {
+        // make sure the first couple are in the image bounds
+        if ((idx < 2) && (part_start > max_addr)) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_BLK_NUM;
             snprintf(tsk_errstr, TSK_ERRSTR_L,

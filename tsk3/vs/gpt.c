@@ -31,7 +31,7 @@ gpt_load_table(TSK_VS_INFO * vs)
     uint32_t ent_size;
     char *safe_str, *head_str, *tab_str, *ent_buf;
     ssize_t cnt;
-    char *sect_buf; 
+    char *sect_buf;
     TSK_DADDR_T taddr = vs->offset / vs->block_size + GPT_PART_SOFFSET;
     TSK_DADDR_T max_addr = (vs->img_info->size - vs->offset) / vs->block_size;  // max sector
 
@@ -41,8 +41,8 @@ gpt_load_table(TSK_VS_INFO * vs)
 
     if ((sect_buf = tsk_malloc(vs->block_size)) == NULL)
         return 1;
-    dos_part = (dos_sect *)sect_buf;
-    
+    dos_part = (dos_sect *) sect_buf;
+
     cnt = tsk_vs_read_block
         (vs, GPT_PART_SOFFSET, sect_buf, vs->block_size);
     /* if -1, then tsk_errno is already set */
@@ -86,14 +86,14 @@ gpt_load_table(TSK_VS_INFO * vs)
 
     snprintf(safe_str, 16, "Safety Table");
     if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) 0, (TSK_DADDR_T) 1,
-                                TSK_VS_PART_FLAG_META, safe_str, -1, -1)) {
+            TSK_VS_PART_FLAG_META, safe_str, -1, -1)) {
         free(sect_buf);
         return 1;
     }
 
 
     /* Read the GPT header */
-    head = (gpt_head *)sect_buf;
+    head = (gpt_head *) sect_buf;
     cnt = tsk_vs_read_block
         (vs, GPT_PART_SOFFSET + 1, sect_buf, vs->block_size);
     if (cnt != vs->block_size) {
@@ -127,7 +127,7 @@ gpt_load_table(TSK_VS_INFO * vs)
     if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) 1,
             (TSK_DADDR_T) ((tsk_getu32(vs->endian,
                         &head->head_size_b) + 511) / 512),
-                                TSK_VS_PART_FLAG_META, head_str, -1, -1)) {
+            TSK_VS_PART_FLAG_META, head_str, -1, -1)) {
         free(sect_buf);
         return 1;
     }
@@ -154,7 +154,7 @@ gpt_load_table(TSK_VS_INFO * vs)
                 &head->tab_start_lba),
             (TSK_DADDR_T) ((ent_size * tsk_getu32(vs->endian,
                         &head->tab_num_ent) + 511) / 512),
-                                TSK_VS_PART_FLAG_META, tab_str, -1, -1)) {
+            TSK_VS_PART_FLAG_META, tab_str, -1, -1)) {
         free(sect_buf);
         return 1;
     }
@@ -211,7 +211,9 @@ gpt_load_table(TSK_VS_INFO * vs)
                 continue;
             }
 
-            if (tsk_getu64(vs->endian, ent->start_lba) > max_addr) {
+            // make sure the first couple are in the image bounds
+            if ((i < 2)
+                && (tsk_getu64(vs->endian, ent->start_lba) > max_addr)) {
                 tsk_error_reset();
                 tsk_errno = TSK_ERR_VS_BLK_NUM;
                 snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -250,7 +252,7 @@ gpt_load_table(TSK_VS_INFO * vs)
                     (TSK_DADDR_T) (tsk_getu64(vs->endian,
                             ent->end_lba) - tsk_getu64(vs->endian,
                             ent->start_lba) + 1), TSK_VS_PART_FLAG_ALLOC,
-                                        name, -1, i)) {
+                    name, -1, i)) {
                 free(sect_buf);
                 free(ent_buf);
                 return 1;

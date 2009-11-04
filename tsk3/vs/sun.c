@@ -102,8 +102,9 @@ sun_load_table_i386(TSK_VS_INFO * vs, sun_dlabel_i386 * dlabel_x86)
         if (tsk_getu32(vs->endian, dlabel_x86->part[idx].size_sec) == 0)
             continue;
 
-        if (tsk_getu32(vs->endian,
-                dlabel_x86->part[idx].start_sec) > max_addr) {
+        // make sure the first couple are in the image bounds
+        if ((idx < 2) && (tsk_getu32(vs->endian,
+                    dlabel_x86->part[idx].start_sec) > max_addr)) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_BLK_NUM;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -171,7 +172,8 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
         if (part_size == 0)
             continue;
 
-        if (part_start > max_addr) {
+        // make sure the first couple are in the image bounds
+        if ((idx < 2) && (part_start > max_addr)) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_BLK_NUM;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -229,10 +231,10 @@ sun_load_table(TSK_VS_INFO * vs)
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "sun_load_table: Trying sector: %" PRIuDADDR "\n", taddr);
-    
+
     if ((buf = tsk_malloc(vs->block_size)) == NULL)
         return 1;
-    
+
     /* Try the given offset */
     cnt = tsk_vs_read_block
         (vs, SUN_SPARC_PART_SOFFSET, buf, vs->block_size);
@@ -313,7 +315,7 @@ sun_load_table(TSK_VS_INFO * vs)
         free(buf);
         return 1;
     }
-    
+
     free(buf);
     return sun_load_table_i386(vs, dlabel_x86);
 }

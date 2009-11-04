@@ -687,8 +687,8 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
 
     if ((sect_buf = tsk_malloc(vs->block_size)) == NULL)
         return 1;
-    sect = (dos_sect *)sect_buf;
-    
+    sect = (dos_sect *) sect_buf;
+
     /* Read the partition table sector */
     cnt = tsk_vs_read_block(vs, sect_cur, sect_buf, vs->block_size);
     if (cnt != vs->block_size) {
@@ -757,32 +757,24 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
              * first extended partition (the primary
              * extended partition) */
 
-            if (sect_ext_base + part_start > max_addr) {
-                tsk_error_reset();
-                tsk_errno = TSK_ERR_VS_BLK_NUM;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
-                    "dos_load_ext_table: Starting sector too large for image");
-                if (tsk_verbose)
-                    tsk_fprintf(stderr,
-                        "Starting sector %" PRIuDADDR
-                        " too large for image\n",
-                        sect_ext_base + part_start);
-                free(sect_buf);
-                return 1;
-            }
-
             if (NULL == tsk_vs_part_add(vs,
                     (TSK_DADDR_T) (sect_ext_base + part_start),
                     (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_META,
-                                        dos_get_desc(part->ptype), table, i)) {
+                    dos_get_desc(part->ptype), table, i)) {
                 free(sect_buf);
                 return 1;
             }
 
-
+            if (sect_ext_base + part_start > max_addr) {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                        "Starting sector %" PRIuDADDR
+                        " of extended partition too large for image\n",
+                        sect_ext_base + part_start);
+            }
             /* Process the extended partition */
-            if (dos_load_ext_table(vs, sect_ext_base + part_start,
-                                   sect_ext_base, table + 1)) {
+            else if (dos_load_ext_table(vs, sect_ext_base + part_start,
+                    sect_ext_base, table + 1)) {
                 free(sect_buf);
                 return 1;
             }
@@ -793,28 +785,18 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
              * current partition for the actual
              * starting location */
 
-            if (sect_cur + part_start > max_addr) {
-                tsk_error_reset();
-                tsk_errno = TSK_ERR_VS_BLK_NUM;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
-                    "dos_load_ext_table: Starting sector too large for image");
-                if (tsk_verbose)
-                    tsk_fprintf(stderr,
-                        "Starting sector %" PRIuDADDR
-                        " too large for image\n", sect_cur + part_start);
-                free(sect_buf);
-                return 1;
-            }
+            // we ignore the max_addr checks on extended partitions... 
+
             if (NULL == tsk_vs_part_add(vs,
                     (TSK_DADDR_T) (sect_cur + part_start),
                     (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
-                                        dos_get_desc(part->ptype), table, i)) {
+                    dos_get_desc(part->ptype), table, i)) {
                 free(sect_buf);
                 return 1;
             }
         }
     }
-    
+
     free(sect_buf);
     return 0;
 }
@@ -848,7 +830,7 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
 
     if ((sect_buf = tsk_malloc(vs->block_size)) == NULL)
         return 1;
-    sect = (dos_sect *)sect_buf;
+    sect = (dos_sect *) sect_buf;
 
     /* Read the table */
     cnt = tsk_vs_read_block
@@ -882,7 +864,6 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
      * really test the table entries.  
      */
     if (test) {
-
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "dos_load_prim_table: Testing FAT/NTFS conditions\n");
@@ -941,7 +922,7 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
 
     snprintf(table_str, 32, "Primary Table (#0)");
     if (NULL == tsk_vs_part_add(vs, DOS_PART_SOFFSET, (TSK_DADDR_T) 1,
-                                TSK_VS_PART_FLAG_META, table_str, -1, -1)) {
+            TSK_VS_PART_FLAG_META, table_str, -1, -1)) {
         free(sect_buf);
         return 1;
     }
@@ -962,7 +943,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         if (part_size == 0)
             continue;
 
-        if (part_start > max_addr) {
+        // make sure the first couple are in the image bounds
+        if ((i < 2) && (part_start > max_addr)) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_BLK_NUM;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -992,7 +974,7 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         if (dos_is_ext(part->ptype)) {
             if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
                     (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_META,
-                                        dos_get_desc(part->ptype), 0, i)) {
+                    dos_get_desc(part->ptype), 0, i)) {
                 free(sect_buf);
                 return 1;
             }
@@ -1005,14 +987,14 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         else {
             if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
                     (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC,
-                                        dos_get_desc(part->ptype), 0, i)) {
+                    dos_get_desc(part->ptype), 0, i)) {
                 free(sect_buf);
                 return 1;
             }
         }
     }
     free(sect_buf);
-    
+
     if (added == 0) {
         if (tsk_verbose)
             tsk_fprintf(stderr, "dos_load_prim: No valid entries\n");
@@ -1042,7 +1024,8 @@ dos_close(TSK_VS_INFO * vs)
  * offset is the byte offset to the start of the volume system
  *
  * If test is 1 then additional tests are performed to make sure 
- * it isn't a FAT or NTFS file system
+ * it isn't a FAT or NTFS file system. This is used when autodetection
+ * is being used to detect the volume system type. 
  */
 TSK_VS_INFO *
 tsk_vs_dos_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset, uint8_t test)

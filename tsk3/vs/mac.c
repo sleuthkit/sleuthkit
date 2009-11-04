@@ -42,7 +42,7 @@ mac_load_table(TSK_VS_INFO * vs)
      */
     if ((part_buf = tsk_malloc(vs->block_size)) == NULL)
         return 1;
-    part = (mac_part *)part_buf;
+    part = (mac_part *) part_buf;
 
     max_part = 1;               /* set it to 1 and it will be set in the first loop */
     for (idx = 0; idx < max_part; idx++) {
@@ -80,7 +80,8 @@ mac_load_table(TSK_VS_INFO * vs)
                     PRIuDADDR ") %" PRIx16,
                     (taddr + idx), tsk_getu16(vs->endian, part->magic));
                 if (tsk_verbose)
-                    tsk_fprintf(stderr, "mac_load: Missing initial magic value\n");
+                    tsk_fprintf(stderr,
+                        "mac_load: Missing initial magic value\n");
                 free(part_buf);
                 return 1;
             }
@@ -96,8 +97,9 @@ mac_load_table(TSK_VS_INFO * vs)
                 PRIuDADDR ") %" PRIx16, (taddr + idx),
                 tsk_getu16(vs->endian, part->magic));
             if (tsk_verbose)
-                tsk_fprintf(stderr, "mac_load: Missing magic value in entry %"PRIu32"\n",
-                        idx);
+                tsk_fprintf(stderr,
+                    "mac_load: Missing magic value in entry %" PRIu32 "\n",
+                    idx);
             free(part_buf);
             return 1;
         }
@@ -115,14 +117,16 @@ mac_load_table(TSK_VS_INFO * vs)
         if (part_size == 0)
             continue;
 
-        if (part_start > max_addr) {
+        // make sure the first couple are within the bounds of the image.
+        if ((idx < 2) && (part_start > max_addr)) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_VS_BLK_NUM;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
                 "mac_load_table: Starting sector too large for image");
             if (tsk_verbose)
-                tsk_fprintf(stderr, "mac_load: Starting sector too large for image (%"PRIu32" vs %"PRIu32")\n",
-                        part_start, max_addr);
+                tsk_fprintf(stderr,
+                    "mac_load: Starting sector too large for image (%"
+                    PRIu32 " vs %" PRIu32 ")\n", part_start, max_addr);
             free(part_buf);
             return 1;
         }
@@ -200,22 +204,24 @@ tsk_vs_mac_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
 
     /* Load the partitions into the sorted list */
     if (mac_load_table(vs)) {
-        
+
         // try some other sector sizes
         uint8_t returnNull = 1;
         if (vs->block_size == 512) {
-            if (tsk_verbose) 
-                tsk_fprintf(stderr, "mac_open: Trying 4096-byte sector size instead of 512-byte");
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "mac_open: Trying 4096-byte sector size instead of 512-byte\n");
             vs->block_size = 4096;
             returnNull = mac_load_table(vs);
         }
         else if (vs->block_size == 4096) {
-            if (tsk_verbose) 
-                tsk_fprintf(stderr, "mac_open: Trying 512-byte sector size instead of 4096-byte");
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "mac_open: Trying 512-byte sector size instead of 4096-byte\n");
             vs->block_size = 512;
             returnNull = mac_load_table(vs);
         }
-        
+
         if (returnNull) {
             mac_close(vs);
             return NULL;
