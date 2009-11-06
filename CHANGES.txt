@@ -115,7 +115,12 @@ is specified only via -b and not using '-o 62@4096'.
 
 10/28/09: Bug Fix: Fixed issue reading last block of file system with blkcat.  Issue 2824457. 
 
-11/3/09: Relaxed partition sanity checking so that only first couple of partitions are checked to make sure that they fit in the image bounds. Issue 2874852.
+11/3/09: Relaxed partition sanity checking so that only first couple
+of partitions are checked to make sure that they fit in the image
+bounds. Issue 2874852.
+
+11/6/09: Fixed issue 2891285 that prevented reads from the last
+block of a file system when using the POSIX-style API.
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.
