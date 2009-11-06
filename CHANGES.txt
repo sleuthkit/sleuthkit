@@ -122,6 +122,8 @@ bounds. Issue 2874852.
 11/6/09: Fixed issue 2891285 that prevented reads from the last
 block of a file system when using the POSIX-style API.
 
+11/6/09: Fixed issue 2825690 that prevented blkls -A from working.  
+
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.
 Bug: 2265927

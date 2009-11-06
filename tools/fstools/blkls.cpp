@@ -109,9 +109,11 @@ main(int argc, char **argv1)
             usage();
         case _TSK_T('a'):
             flags |= TSK_FS_BLOCK_FLAG_ALLOC;
+            flags &= ~TSK_FS_BLOCK_FLAG_UNALLOC;
             break;
         case _TSK_T('A'):
             flags |= TSK_FS_BLOCK_FLAG_UNALLOC;
+            flags &= ~TSK_FS_BLOCK_FLAG_ALLOC;
             break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
