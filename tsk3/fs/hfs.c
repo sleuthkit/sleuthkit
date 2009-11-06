@@ -2550,8 +2550,9 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
 
     // Dates
+    // (creation date is in local time zone, not UTC, according to TN 1150)
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->cr_date));
-    tsk_fprintf(hFile, "\nCreation Date: \t%s", ctime(&mac_time));
+    tsk_fprintf(hFile, "\nCreation Date: \t%s", asctime(gmtime(&mac_time)));
 
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->m_date));
     tsk_fprintf(hFile, "Last Written Date: \t%s", ctime(&mac_time));

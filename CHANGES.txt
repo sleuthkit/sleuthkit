@@ -124,6 +124,8 @@ block of a file system when using the POSIX-style API.
 
 11/6/09: Fixed issue 2825690 that prevented blkls -A from working.  
 
+11/6/09: Applied patch in 2890983 for HFS timezone. 
+
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.
 Bug: 2265927
