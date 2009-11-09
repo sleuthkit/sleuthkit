@@ -126,6 +126,8 @@ block of a file system when using the POSIX-style API.
 
 11/6/09: Applied patch in 2890983 for HFS timezone. 
 
+11/9/09: Applied patch from 2857258 for HFS permission flags. 
+
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.
 Bug: 2265927

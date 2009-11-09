@@ -2552,7 +2552,8 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     // Dates
     // (creation date is in local time zone, not UTC, according to TN 1150)
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->cr_date));
-    tsk_fprintf(hFile, "\nCreation Date: \t%s", asctime(gmtime(&mac_time)));
+    tsk_fprintf(hFile, "\nCreation Date: \t%s",
+        asctime(gmtime(&mac_time)));
 
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->m_date));
     tsk_fprintf(hFile, "Last Written Date: \t%s", ctime(&mac_time));
@@ -2737,6 +2738,36 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             tsk_fprintf(hFile, "Hard link inode number\t %" PRIu32 "\n",
                 tsk_getu32(fs->endian, entry.cat.std.perm.special.inum));
         }
+
+        tsk_fprintf(hFile, "Admin flags: %" PRIu8,
+            entry.cat.std.perm.a_flags);
+        if (entry.cat.std.perm.a_flags != 0) {
+            tsk_fprintf(hFile, " - ");
+            if (entry.cat.std.perm.a_flags & HFS_PERM_AFLAG_ARCHIVED)
+                tsk_fprintf(hFile, "archived ");
+            if (entry.cat.std.perm.a_flags & HFS_PERM_AFLAG_IMMUTABLE)
+                tsk_fprintf(hFile, "immutable ");
+            if (entry.cat.std.perm.a_flags & HFS_PERM_AFLAG_APPEND)
+                tsk_fprintf(hFile, "append-only ");
+        }
+        tsk_fprintf(hFile, "\n");
+
+        tsk_fprintf(hFile, "Owner flags: %" PRIu8,
+            entry.cat.std.perm.o_flags);
+        if (entry.cat.std.perm.o_flags != 0) {
+            tsk_fprintf(hFile, " - ");
+            if (entry.cat.std.perm.o_flags & HFS_PERM_OFLAG_NODUMP)
+                tsk_fprintf(hFile, "no-dump ");
+            if (entry.cat.std.perm.o_flags & HFS_PERM_OFLAG_IMMUTABLE)
+                tsk_fprintf(hFile, "immutable ");
+            if (entry.cat.std.perm.o_flags & HFS_PERM_OFLAG_APPEND)
+                tsk_fprintf(hFile, "append-only ");
+            if (entry.cat.std.perm.o_flags & HFS_PERM_OFLAG_OPAQUE)
+                tsk_fprintf(hFile, "opaque ");
+            if (entry.cat.std.perm.o_flags & HFS_PERM_OFLAG_COMPRESSED)
+                tsk_fprintf(hFile, "compressed ");
+        }
+        tsk_fprintf(hFile, "\n");
 
         if (tsk_getu16(fs->endian,
                 entry.cat.std.flags) & HFS_FILE_FLAG_LOCKED)

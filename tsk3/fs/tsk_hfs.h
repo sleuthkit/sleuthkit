@@ -140,20 +140,21 @@ typedef struct {
     uint8_t unicode[510];
 } hfs_uni_str;
 
-/* access permissions */
-typedef struct {
-    uint8_t owner[4];           /* file owner */
-    uint8_t group[4];           /* file group */
-    uint8_t a_flags;            /* admin flags */
-    uint8_t o_flags;            /* owner flags */
-    uint8_t mode[2];            /* file mode */
-    union {
-        uint8_t inum[4];        /* inode number (for hard link files) */
-        uint8_t nlink[4];       /* link count (for direct node files) */
-        uint8_t raw[4];         /* device id (for block and char device files) */
-    } special;
-} hfs_access_perm;
 
+/* access permissions */
+// admin flag values
+#define HFS_PERM_AFLAG_ARCHIVED   0x01  /* file has been archived */
+#define HFS_PERM_AFLAG_IMMUTABLE  0x02  /* file may not be changed */
+#define HFS_PERM_AFLAG_APPEND     0x04  /* writes to file may only append */
+
+// owner flag values
+#define HFS_PERM_OFLAG_NODUMP     0x01  /* do not dump (back up or archive) this file */
+#define HFS_PERM_OFLAG_IMMUTABLE  0x02  /* file may not be changed */
+#define HFS_PERM_OFLAG_APPEND     0x04  /* writes to file may only append */
+#define HFS_PERM_OFLAG_OPAQUE     0x08  /* directory is opaque */
+#define HFS_PERM_OFLAG_COMPRESSED 0x20  /* file is HFS-compressed (see 10.6 sys/stat.h) */
+
+// mode flag values
 #define HFS_IN_ISUID   0004000  /* set user id */
 #define HFS_IN_ISGID   0002000  /* set group id */
 #define HFS_IN_ISVTX   0001000  /* sticky bit (directories only) */
@@ -177,6 +178,22 @@ typedef struct {
 #define HFS_IN_IFSOCK  0140000  /* socket */
 #define HFS_IFWHT      0160000  /* whiteout */
 #define HFS_IFXATTR    0200000  /* extended attributes */
+
+typedef struct {
+    uint8_t owner[4];           /* file owner */
+    uint8_t group[4];           /* file group */
+    uint8_t a_flags;            /* admin flags */
+    uint8_t o_flags;            /* owner flags */
+    uint8_t mode[2];            /* file mode */
+    union {
+        uint8_t inum[4];        /* inode number (for hard link files) */
+        uint8_t nlink[4];       /* link count (for direct node files) */
+        uint8_t raw[4];         /* device id (for block and char device files) */
+    } special;
+} hfs_access_perm;
+
+
+
 
 /* HFS extent descriptor */
 typedef struct {
