@@ -209,6 +209,9 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
     int i;
     TSK_OFF_T cur_off = a_start_off;
 
+    // since tsk_errno is checked as a return value, make sure it is clean.
+    tsk_error_reset();
+    
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "hfs_extents_to_attr: Converting extents from offset %" PRIuOFF
@@ -249,7 +252,9 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
 
 
 /**
- * Look in the extents catalog for entries for a given file.
+ * Look in the extents catalog for entries for a given file. Add the runs
+ * to the passed attribute structure. 
+ *
  * @param hfs File system being analyzed
  * @param cnid file id of file to search for
  * @param a_attr Attribute to add extents runs to 
@@ -279,7 +284,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         if ((hfs->extents_file =
                 tsk_fs_file_open_meta(fs, NULL,
                     HFS_EXTENTS_FILE_ID)) == NULL) {
-            return 0;
+            return 1;
         }
 
         /* cache the data attribute */
@@ -290,7 +295,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             strncat(tsk_errstr2,
                 " - Default Attribute not found in Extents File",
                 TSK_ERRSTR_L - strlen(tsk_errstr2));
-            return 0;
+            return 1;
         }
 
         // cache the extents file header
@@ -304,7 +309,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             }
             snprintf(tsk_errstr2, TSK_ERRSTR_L,
                 "hfs_ext_find_extent_record_attr: Error reading header");
-            return 0;
+            return 1;
         }
     }
 
