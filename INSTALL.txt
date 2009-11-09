@@ -53,7 +53,13 @@ script in the root TSK directory.
 
     $ ./configure
 
-If there were no errors, then run 'make'.
+If you installed the optional libraries, then check the output of
+'configure' to make sure that the script found them.  If you installed
+the libraries in a non-standard location, such as in a home directory,
+then re-run 'configure' and specify the installed directory using
+the '--prefix' argument (for example, --prefix=/dir).
+
+If there were no errors from 'configure', then run 'make'.
 
     $ make
 
