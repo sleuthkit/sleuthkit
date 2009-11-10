@@ -71,50 +71,57 @@ fi
 
 # Checks for libraries.
 
-# Check if we should link afflib.  Some installations
-# have only the tools install and the library exists,
-# but the header file does not.  We now check for both.
-AC_CHECK_HEADERS([afflib/afflib.h], 
-    [AC_ARG_ENABLE(afflib, 
-        [  --disable-afflib  Do not use AFFLIB even if it is installed],
-# Action if they gave this argument
-        [ if test "x$enableval" = "xyes" ; then
-            AC_CHECK_LIB([afflib], [af_open])
-          elif test "x$enableval" = "xno" ; then
-            echo "Ignoring AFFLIB."
-          else
-            echo "Error: Unknown enable-afflib argument."
-            exit -1
-          fi
-        ],
-# if they did not specify aff, look for it
-        [AC_CHECK_LIB([afflib], [af_open])]
-        )
-    # if afflib/afflib.h was not found, then do nothing
-    ], 
+# Check if we should link afflib.  
+AC_ARG_WITH([afflib],
+    [AS_HELP_STRING([--without-afflib],[Do not use AFFLIB even if it is installed])]
+    [AS_HELP_STRING([--with-afflib=dir],[Specify that AFFLIB is installed in directory 'dir'])],
+    # If --with-afflib or --without-afflib is given
+    [],
+    # if nothing was specified, default to a test
+    [with_afflib=yes])
+
+# check for the lib if they did not specify no
+AS_IF([test "x$with_afflib" != "xno"],
+    # Test the dir if they specified something beyond yes/no
+    [AS_IF([test "x$with_afflib" != "xyes"],
+        [AS_IF([test -d ${with_afflib}/include],
+            [CFLAGS="$CFLAGS -I${with_afflib}/include"
+                LDFLAGS="$LDFLAGS -L${with_afflib}/lib"],
+            # Dir given was not correct
+            [AC_MSG_FAILURE([AFFLIB directory not found at ${with_afflib}])])
+        ]
+    )]
+    # Check for the header file first to make sure they have the dev install
+    [AC_CHECK_HEADERS([afflib/afflib.h], 
+      [AC_CHECK_LIB([afflib], [af_open])]
+    )]
 )
 
-# Check if we should link libewf.  Some installations
-# have only the tools install of libewf and the library exists,
-# but the header file does not.  We now check for both.
-AC_CHECK_HEADERS([libewf.h], 
-    [AC_ARG_ENABLE(ewf, 
-        [  --disable-ewf  Do not use libewf even if it is installed],
-        # Action if they gave this argument
-        [ if test "x$enableval" = "xyes" ; then
-            AC_CHECK_LIB([ewf], [libewf_open])
-          elif test "x$enableval" = "xno" ; then
-            echo "Ignoring LibEWF."
-          else
-            echo "Error: Unknown enable-ewf argument."
-            exit -1
-          fi
-        ],
-        # if they did not specify ewf, look for it
-        [AC_CHECK_LIB([ewf], [libewf_open])]
-        )
-    # if libewf.h was not found, then do nothing
-    ], 
+
+# Check if we should link libewf.  
+AC_ARG_WITH([libewf],
+    [AS_HELP_STRING([--without-libewf],[Do not use libewf even if it is installed])]
+    [AS_HELP_STRING([--with-libewf=dir],[Specify that libewf is installed in directory 'dir'])],
+    # If --with-libewf or --without-libewf is given
+    [],
+    # if nothing was specified, default to a test
+    [with_libewf=yes])
+
+# check for the lib if they did not specify no
+AS_IF([test "x$with_libewf" != "xno"],
+    # Test the dir if they specified something beyond yes/no
+    [AS_IF([test "x$with_libewf" != "xyes"],
+        [AS_IF([test -d ${with_libewf}/include],
+            [CFLAGS="$CFLAGS -I${with_libewf}/include"
+                LDFLAGS="$LDFLAGS -L${with_libewf}/lib"],
+            # Dir given was not correct
+            [AC_MSG_FAILURE([libewf directory not found at ${with_libewf}])])
+        ]
+    )]
+    # Check for the header file first to make sure they have the dev install
+    [AC_CHECK_HEADERS([libewf.h], 
+      [AC_CHECK_LIB([ewf], [libewf_open])]
+    )]
 )
 
 

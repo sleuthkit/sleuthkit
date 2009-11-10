@@ -47,9 +47,10 @@ INSTALLATION
 
 Refer to the README_win32.txt file for details on Windows.
 
-The Sleuth Kit uses the GNU autotools for building and installation. 
+The Sleuth Kit uses the GNU autotools for building and installation.
 There are a few steps to this process.  First, run the 'configure'
-script in the root TSK directory.
+script in the root TSK directory.  See the CONFIGURE OPTIONS section
+for useful arguments that can be given to 'configure.
 
     $ ./configure
 
@@ -76,12 +77,19 @@ There are some arguments to 'configure' that you can supply to
 customize the setup. Currently, they focus on the optional disk
 image format libraries.
 
---disable-afflib: Supply this if you want TSK to ignore AFFLIB even
+--without-afflib: Supply this if you want TSK to ignore AFFLIB even
 if it is installed.
 
---disable-ewf: Supply this if you want TSK to ignore libewf even
+--with-afflib=dir: Supply this if you want TSK to look in 'dir' for
+the AFFLIB installation (the directory should have 'lib' and 'include'
+directories in it).
+
+--without-ewf: Supply this if you want TSK to ignore libewf even
 if it is installed.
 
+--with-libewf=dir: Supply this if you want TSK to look in 'dir' for
+the libewf installation (the directory should have 'lib' and 'include'
+directories in it).
 
 -----------------------------------------------------------------------------
 Brian Carrier
