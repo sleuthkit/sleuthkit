@@ -774,7 +774,8 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de)
         else if ((tsk_getu16(fs->endian, de->adate) != 0) &&
             (FATFS_ISDATE(tsk_getu16(fs->endian, de->adate)) == 0))
             return 0;
-        else if (FATFS_ISDATE(tsk_getu16(fs->endian, de->wdate)) == 0)
+        else if ((tsk_getu16(fs->endian, de->wdate) != 0) &&
+            (FATFS_ISDATE(tsk_getu16(fs->endian, de->wdate)) == 0))
             return 0;
 
         /* verify the starting cluster is small enough */

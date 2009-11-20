@@ -128,6 +128,8 @@ block of a file system when using the POSIX-style API.
 
 11/9/09: Applied patch from 2857258 for HFS permission flags. 
 
+11/20/09: Allow FAT files to have a 0 wdate to address issue 2901365.
+
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.
 Bug: 2265927

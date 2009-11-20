@@ -193,8 +193,13 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
             int i;
 
             /* is it a valid dentry? */
-            if (0 == fatfs_isdentry(fatfs, dep))
+            if (0 == fatfs_isdentry(fatfs, dep)) {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                        "fatfs_dent_parse_buf: Entry %ui is invalid\n",
+                        idx);
                 continue;
+            }
 
             /* Copy the directory entry into the TSK_FS_NAME structure */
             dir = (fatfs_dentry *) dep;
@@ -289,8 +294,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
                     /* Convert the UTF16 to UTF8 */
                     UTF16 *name16 =
-                        (UTF16 *) ((uintptr_t) & lfninfo.
-                        name[lfninfo.start + 1]);
+                        (UTF16 *) ((uintptr_t) & lfninfo.name[lfninfo.
+                            start + 1]);
                     UTF8 *name8 = (UTF8 *) fs_name->name;
 
                     retVal =
