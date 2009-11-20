@@ -294,8 +294,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
                     /* Convert the UTF16 to UTF8 */
                     UTF16 *name16 =
-                        (UTF16 *) ((uintptr_t) & lfninfo.name[lfninfo.
-                            start + 1]);
+                        (UTF16 *) ((uintptr_t) & lfninfo.
+                        name[lfninfo.start + 1]);
                     UTF8 *name8 = (UTF8 *) fs_name->name;
 
                     retVal =
@@ -425,6 +425,14 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                          * then we do not care about the value of '..' and this can only cause
                          * infinite loop problems */
                         inode = fs_name->meta_addr = 0;
+                        dir_found = 1;
+                    }
+                    if ((dir_found == 0)
+                        && (addrs[0] == fatfs->firstdatasect)) {
+                        /* if we are currently in the root directory, we aren't going to find
+                         * a parent.  This shouldn't happen, but could result in an infinite loop. */
+                        inode = fs_name->meta_addr = 0;
+                        dir_found = 1;
                     }
                     if (dir_found == 0) {
                         /* The parent directory is not in the list.  We are going to walk

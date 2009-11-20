@@ -130,6 +130,9 @@ block of a file system when using the POSIX-style API.
 
 11/20/09: Allow FAT files to have a 0 wdate to address issue 2901365.
 
+11/20/09: Added FAT directory sanity checks to prevent infinite loops for
+issue 2900761.
+
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.
 Bug: 2265927
