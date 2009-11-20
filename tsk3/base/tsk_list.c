@@ -50,8 +50,10 @@ tsk_list_add(TSK_LIST ** a_tsk_list_head, uint64_t a_key)
     /* If the head is NULL, then create an entry */
     if (*a_tsk_list_head == NULL) {
         TSK_LIST *ent;
-        if (tsk_verbose)
-            fprintf(stderr, "entry %" PRIu64 " is first on list\n", a_key);
+        /*
+           if (tsk_verbose)
+           fprintf(stderr, "entry %" PRIu64 " is first on list\n", a_key);
+         */
         if ((ent = tsk_list_create(a_key)) == NULL)
             return 1;
 
@@ -61,10 +63,12 @@ tsk_list_add(TSK_LIST ** a_tsk_list_head, uint64_t a_key)
 
     /* If the new key is larger than the head, make it the head */
     if (a_key > (*a_tsk_list_head)->key) {
-        if (tsk_verbose)
-            fprintf(stderr,
-                "entry %" PRIu64 " added to head before %" PRIu64 "\n",
-                a_key, (*a_tsk_list_head)->key);
+        /*
+           if (tsk_verbose)
+           fprintf(stderr,
+           "entry %" PRIu64 " added to head before %" PRIu64 "\n",
+           a_key, (*a_tsk_list_head)->key);
+         */
 
         // If we can, update the length of the existing list entry
         if (a_key == (*a_tsk_list_head)->key + 1) {
@@ -110,9 +114,11 @@ tsk_list_add(TSK_LIST ** a_tsk_list_head, uint64_t a_key)
         else if (tmp->next == NULL) {
             TSK_LIST *ent;
 
-            if (tsk_verbose)
-                fprintf(stderr, "entry %" PRIu64 " added to tail\n",
-                    a_key);
+            /*
+               if (tsk_verbose)
+               fprintf(stderr, "entry %" PRIu64 " added to tail\n",
+               a_key);
+             */
 
             if ((ent = tsk_list_create(a_key)) == NULL)
                 return 1;
@@ -129,10 +135,12 @@ tsk_list_add(TSK_LIST ** a_tsk_list_head, uint64_t a_key)
         else if (a_key > tmp->next->key) {
             TSK_LIST *ent;
 
-            if (tsk_verbose)
-                fprintf(stderr,
-                    "entry %" PRIu64 " added before %" PRIu64 "\n",
-                    a_key, tmp->next->key);
+            /*
+               if (tsk_verbose)
+               fprintf(stderr,
+               "entry %" PRIu64 " added before %" PRIu64 "\n",
+               a_key, tmp->next->key);
+             */
 
             if ((ent = tsk_list_create(a_key)) == NULL)
                 return 1;
