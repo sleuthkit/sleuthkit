@@ -59,7 +59,7 @@ tsk_fs_file_reset(TSK_FS_FILE * a_fs_file)
 void
 tsk_fs_file_close(TSK_FS_FILE * a_fs_file)
 {
-    if (a_fs_file->tag != TSK_FS_FILE_TAG)
+    if ((a_fs_file == NULL) || (a_fs_file->tag != TSK_FS_FILE_TAG))
         return;
 
     a_fs_file->tag = 0;
@@ -151,8 +151,8 @@ tsk_fs_file_open(TSK_FS_INFO * a_fs,
 {
     TSK_INUM_T inum;
     int8_t retval;
-    TSK_FS_FILE *fs_file;
-    TSK_FS_NAME *fs_name;
+    TSK_FS_FILE *fs_file = NULL;
+    TSK_FS_NAME *fs_name = NULL;
 
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
         tsk_errno = TSK_ERR_FS_ARG;
@@ -168,9 +168,11 @@ tsk_fs_file_open(TSK_FS_INFO * a_fs,
 
     retval = tsk_fs_path2inum(a_fs, a_path, &inum, fs_name);
     if (retval == -1) {
+        tsk_fs_name_free(fs_name);
         return NULL;
     }
     else if (retval == 1) {
+        tsk_fs_name_free(fs_name);
         tsk_errno = TSK_ERR_FS_ARG;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "tsk_fs_file_open: path not found: %s", a_path);
@@ -182,6 +184,9 @@ tsk_fs_file_open(TSK_FS_INFO * a_fs,
     if (fs_file) {
         // Add the name to the structure
         fs_file->name = fs_name;
+    }
+    else {
+        tsk_fs_name_free(fs_name);
     }
 
     return fs_file;
