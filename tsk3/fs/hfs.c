@@ -2072,7 +2072,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             tsk_getu64(fs->endian, fork->logic_sz),
             tsk_getu64(fs->endian, fork->logic_sz),
-            tsk_getu32(fs->endian, fork->total_blk) * fs->block_size, 0,
+            (TSK_OFF_T)tsk_getu32(fs->endian, fork->total_blk) * fs->block_size, 0,
             0)) {
         strncat(tsk_errstr2, " - hfs_load_attrs",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
