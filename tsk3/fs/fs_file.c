@@ -476,6 +476,35 @@ tsk_fs_file_read_type(TSK_FS_FILE * a_fs_file,
 }
 
 
+/**
+ * Returns a string representation of the security attributes of a file.
+ *
+ * @param a_fs_file The file to get security info about.
+ * @param sid_str A pointer to a pointer that will contain the SID string.  This function will allocate the string and the caller must free it. 
+ * @returns 0 on success or 1 on error.
+ */
+uint8_t
+tsk_fs_file_read_owner_sid(TSK_FS_FILE * a_fs_file, char **sid_str)
+{
+    if ((a_fs_file == NULL) || (a_fs_file->fs_info == NULL)
+        || (a_fs_file->meta == NULL) || (sid_str == NULL)) {
+        tsk_errno = TSK_ERR_FS_ARG;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "tsk_fs_file_read_owner_sid: fs_info is NULL");
+        return 1;
+    }
+
+    // Make sure the function pointer is not NULL.
+    // This function will only work on NTFS filesystems. 
+    if (!a_fs_file->fs_info->fread_owner_sid) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_FS_UNSUPFUNC;
+        snprintf(tsk_errstr, TSK_ERRSTR_L, "Unsupported function");
+        return 1;
+    }
+
+    return a_fs_file->fs_info->fread_owner_sid(a_fs_file, sid_str);
+}
 
 /**
  * \ingroup fslib

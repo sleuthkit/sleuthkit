@@ -2,7 +2,7 @@
 ** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+** Copyright (c) 2003-2009 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
@@ -25,7 +25,7 @@ extern "C" {
 
 // the SID code has been buggy on some systems and byitself it does
 // not provide much security info.  It is being disabled until fixed. 
-#define TSK_USE_SID 0
+#define TSK_USE_SID 1
 
 //#define NTFS_FS_MAGIC 0x5346544E      /* "NTFS" in little endian */
 #define NTFS_FS_MAGIC	0xAA55
@@ -541,29 +541,6 @@ extern "C" {
         uint32_t sub_auth[1];   /* At least one sub_auth */
     } ntfs_sid;
 
-    void ntfs_print_sid(TSK_FS_INFO * fs, FILE * hFile);
-
-    char *ntfs_get_sid_as_string(TSK_FS_INFO * fs, uint32_t security_id);
-
-
-
-#define NTFS_ACE_SIZE	16      /* Size in bytes of ACE information proceeding
-
-                                   the SID.  Since we don't current require
-
-                                   the ACE information, we will use this as an
-
-                                   offset to get to the start of the SID */
-
-    typedef struct NTFS_SID_ENTRY NTFS_SID_ENTRY;
-
-    struct NTFS_SID_ENTRY {
-        NTFS_SID_ENTRY *next;
-        ntfs_sid *data;         /* ntfs_sid record */
-        uint32_t sec_id;        /* Security ID */
-        char *sid_str;          /* SID string representation */
-    };
-
 
 
 /************************************************************************
@@ -577,18 +554,6 @@ extern "C" {
         uint8_t ent_size[4];    /* Size of this entry */
         ntfs_self_relative_security_descriptor self_rel_sec_desc;       /* Self-relative Security Descriptor */
     } ntfs_attr_sds;
-
-
-#define NTFS_SDS_BLOCK_OFFSET	262144  /* Data offset within $SDS (1024x256) */
-
-    typedef struct NTFS_SDS_ENTRY NTFS_SDS_ENTRY;
-
-    struct NTFS_SDS_ENTRY {
-        NTFS_SDS_ENTRY *next;
-        uint32_t len;           /* Length of data */
-        uint8_t *data;          /* Raw data */
-    };
-
 
 
 /************************************************************************
@@ -613,14 +578,6 @@ extern "C" {
         uint8_t pad3[4];        /* Padding */
     } ntfs_attr_sdh;
 
-    typedef struct NTFS_SDH_ENTRY NTFS_SDH_ENTRY;
-
-    struct NTFS_SDH_ENTRY {
-        NTFS_SDH_ENTRY *next;
-        ntfs_attr_sdh *data;    /* ntfs_attr_sdh record */
-    };
-
-
 
 /************************************************************************
  * SII attribute
@@ -642,14 +599,10 @@ extern "C" {
 
     } ntfs_attr_sii;
 
-    typedef struct NTFS_SII_ENTRY NTFS_SII_ENTRY;
-
-    struct NTFS_SII_ENTRY {
-        NTFS_SII_ENTRY *next;
-        ntfs_attr_sii *data;    /* ntfs_attr_sii record */
-    };
+    
 #endif
 
+    
     typedef struct NTFS_PAR_MAP NTFS_PAR_MAP;
     struct NTFS_PAR_MAP {
         TSK_INUM_T par_addr;    // parent dir address this structure is for
@@ -686,16 +639,12 @@ extern "C" {
         NTFS_PAR_MAP *orphan_map;       // map that lists par directory to its orphans.
 
 #if TSK_USE_SID
-        NTFS_SDS_ENTRY *sds;    /* Data run of ntfs_attr_sds */
-        //NTFS_SDH_ENTRY *sdh;  /* Data run of ntfs_attr_sdh */
-        //NTFS_SII_ENTRY *sii;  /* Data run of ntfs_attr_sii */
-        NTFS_SID_ENTRY *sid;    /* Data run of ntfs_sid */
+        NTFS_SXX_BUFFER sii_data;
+        NTFS_SXX_BUFFER sds_data;
 #endif
     } NTFS_INFO;
 
-//    extern uint8_t
-    //      ntfs_attr_walk(NTFS_INFO *, TSK_INUM_T, TSK_FS_ATTR *, int,
-    //     TSK_FS_FILE_WALK_CB, void *);
+
     extern uint32_t nt2unixtime(uint64_t ntdate);
     extern uint8_t ntfs_attrname_lookup(TSK_FS_INFO *, uint16_t, char *,
         int);
@@ -706,6 +655,7 @@ extern "C" {
     extern void ntfs_orphan_map_free(NTFS_INFO * a_ntfs);
 
     extern int ntfs_name_cmp(TSK_FS_INFO *, const char *, const char *);
+    
 #ifdef __cplusplus
 }
 #endif

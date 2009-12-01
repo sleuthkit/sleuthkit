@@ -651,6 +651,9 @@ extern "C" {
     extern ssize_t tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr,
         TSK_OFF_T a_offset, char *a_buf, size_t a_len,
         TSK_FS_FILE_READ_FLAG_ENUM a_flags);
+
+    extern uint8_t tsk_fs_file_read_owner_sid(TSK_FS_FILE *, char **);
+
     //@}
 
 
@@ -862,6 +865,8 @@ extern "C" {
          uint8_t(*fscheck) (TSK_FS_INFO *, FILE *);     ///< \internal
 
         void (*close) (TSK_FS_INFO * fs);       ///< FS-specific function: Call tsk_fs_close() instead. 
+
+         uint8_t(*fread_owner_sid) (TSK_FS_FILE *, char **);    // FS-specific function. Call tsk_fs_file_read_owner_sid() instead.
     };
 
 

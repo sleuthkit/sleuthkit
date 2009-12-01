@@ -116,6 +116,8 @@ extern "C" {
         TSK_FS_ATTR_TYPE_ENUM);
     extern const TSK_FS_ATTR *tsk_fs_attrlist_get_id(const TSK_FS_ATTRLIST
         *, TSK_FS_ATTR_TYPE_ENUM, uint16_t);
+    extern const TSK_FS_ATTR *tsk_fs_attrlist_get_name_type(const
+        TSK_FS_ATTRLIST *, TSK_FS_ATTR_TYPE_ENUM, const char *);
     extern const TSK_FS_ATTR *tsk_fs_attrlist_get_idx(const TSK_FS_ATTRLIST
         *, int);
     extern int tsk_fs_attrlist_get_len(const TSK_FS_ATTRLIST *
