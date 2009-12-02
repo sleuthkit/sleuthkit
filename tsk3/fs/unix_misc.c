@@ -321,7 +321,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
         char **buf;
         size_t fs_bufsize0;
         size_t fs_bufsize1;
-        int ptrsperblock;
+        size_t ptrsperblock;
         int numBlocks = 0;
         int numSingIndirect = 0;
         int numDblIndirect = 0;
@@ -373,18 +373,18 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
         }
 
         // determine number of indirect lbocks needed for file size...
-        numBlocks = ((fs_meta->size + fs_bufsize0 - 1) / fs_bufsize0) - 12;
-        numSingIndirect = (numBlocks + ptrsperblock - 1) / ptrsperblock;
+        numBlocks = (int)(((fs_meta->size + fs_bufsize0 - 1) / fs_bufsize0) - 12);
+        numSingIndirect = (int)((numBlocks + ptrsperblock - 1) / ptrsperblock);
         numDblIndirect = 0;
         numTripIndirect = 0;
 
         // double block pointer?
         if (numSingIndirect > 1) {
-            numDblIndirect =
-                (numSingIndirect - 1 + ptrsperblock - 1) / ptrsperblock;
+            numDblIndirect = (int)
+                ((numSingIndirect - 1 + ptrsperblock - 1) / ptrsperblock);
             if (numDblIndirect > 1) {
-                numTripIndirect =
-                    (numDblIndirect - 1 + ptrsperblock - 1) / ptrsperblock;
+                numTripIndirect = (int)
+                    ((numDblIndirect - 1 + ptrsperblock - 1) / ptrsperblock);
             }
         }
 

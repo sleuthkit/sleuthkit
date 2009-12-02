@@ -3003,11 +3003,12 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
 static uint8_t
 ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
 {
-    *sid_str = NULL;
 #if TSK_USE_SID
     const TSK_FS_ATTR *fs_data;
     ntfs_attr_si *si;
     const ntfs_attr_sds *sds;
+
+    *sid_str = NULL;
 
     if (!a_fs_file->meta->attr) {
         // @@@ 
@@ -3038,8 +3039,9 @@ ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
         // @@@@
         return 1;
     }
-
+    return 0;
 #else
+    *sid_str = NULL;
     tsk_error_reset();
     tsk_errno = TSK_ERR_FS_UNSUPFUNC;
     snprintf(tsk_errstr, TSK_ERRSTR_L, "Unsupported function");
