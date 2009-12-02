@@ -44,6 +44,14 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         return a_img_info->read(a_img_info, a_off, a_buf, a_len);
     }
 
+    if (a_off >= a_img_info->size) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_IMG_READ_OFF;
+        snprintf(tsk_errstr, TSK_ERRSTR_L, "tsk_img_read - %" PRIuOFF,
+            a_off);
+        return -1;
+    }
+
     /* See if the requested length is going to be too long.
      * we'll use this length when checking the cache. */
     len2 = a_len;
