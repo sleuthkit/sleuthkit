@@ -991,7 +991,7 @@ tsk_fs_attr_walk(const TSK_FS_ATTR * a_fs_attr,
  * @param a_buf The buffer to read the data into.
  * @param a_len The number of bytes to read from the file.
  * @param a_flags Flags to use while reading
- * @returns The number of bytes read or -1 on error.
+ * @returns The number of bytes read or -1 on error (incl if offset is past end of file).
  */
 ssize_t
 tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
@@ -1023,8 +1023,12 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
     else if (a_fs_attr->flags & TSK_FS_ATTR_RES) {
         size_t len_toread;
 
-        if (a_offset > a_fs_attr->size) {
-            return 0;
+        if (a_offset >= a_fs_attr->size) {
+            tsk_error_reset();
+            tsk_errno = TSK_ERR_FS_READ_OFF;
+            snprintf(tsk_errstr, TSK_ERRSTR_L, "tsk_fs_attr_read - %" PRIuOFF,
+                a_offset);
+            return -1;
         }
 
         len_toread = a_len;
@@ -1046,8 +1050,12 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
         size_t len_remain;      // length remaining to copy
         size_t len_toread;      // length total to copy
 
-        if (a_offset > a_fs_attr->nrd.allocsize) {
-            return 0;
+        if (a_offset >= a_fs_attr->nrd.allocsize) {
+            tsk_error_reset();
+            tsk_errno = TSK_ERR_FS_READ_OFF;
+            snprintf(tsk_errstr, TSK_ERRSTR_L, "tsk_fs_attr_read - %" PRIuOFF,
+                a_offset);
+            return -1;
         }
 
         blkoffset_toread = a_offset / fs->block_size;

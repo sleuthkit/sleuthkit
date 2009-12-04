@@ -1375,6 +1375,10 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
 }
 
 
+/** \internal
+ *
+ * @returns number of bytes read or -1 on error (incl if offset is past EOF)
+ */
 ssize_t
 ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T a_offset, char *a_buf, size_t a_len)
@@ -1410,8 +1414,12 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
             return -1;
         }
 
-        if (a_offset > a_fs_attr->nrd.allocsize) {
-            return 0;
+        if (a_offset >= a_fs_attr->nrd.allocsize) {
+            tsk_error_reset();
+            tsk_errno = TSK_ERR_FS_READ_OFF;
+            snprintf(tsk_errstr, TSK_ERRSTR_L, "ntfs_file_read_special - %" PRIuOFF,
+                a_offset);
+            return -1;
         }
 
         // we return 0s for reads past the initsize

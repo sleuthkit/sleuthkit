@@ -92,17 +92,18 @@ static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
     "Function/Feature not supported",
     "Invalid walk range",
     "Error reading image file",
-    "Invalid API argument",     // 5
+    "Invalid file offset",  // 5
+    "Invalid API argument",     
     "Invalid block address",
     "Invalid metadata address",
     "Error in metadata structure",
-    "Invalid magic value",
-    "Error extracting file from image", // 10
+    "Invalid magic value",  // 10
+    "Error extracting file from image", 
     "Error writing data",
     "Error converting Unicode",
     "Error recovering deleted file",
-    "General file system error",
-    "File system is corrupt",   // 15
+    "General file system error", // 15
+    "File system is corrupt",   
     "Attribute not found in file",
 };
 
