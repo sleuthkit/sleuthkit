@@ -195,7 +195,7 @@ test_fat12()
 {
     TSK_FS_INFO *fs;
     TSK_IMG_INFO *img;
-    char *tname = "fat12.dd";
+    const char *tname = "fat12.dd";
     char fname[512];
 
     snprintf(fname, 512, "%s/fat12.dd", s_root);
@@ -234,7 +234,7 @@ test_ntfs_fe()
 {
     TSK_FS_INFO *fs;
     TSK_IMG_INFO *img;
-    char *tname = "fe_test_1-NTFS";
+    const char *tname = "fe_test_1-NTFS";
     char fname[512];
 
     snprintf(fname, 512, "%s/fe_test_1.img", s_root);

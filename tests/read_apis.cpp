@@ -203,7 +203,7 @@ test_fat12()
 {
     TSK_FS_INFO *fs;
     TSK_IMG_INFO *img;
-    char *tname = "fat12.dd";
+    const char *tname = "fat12.dd";
     char fname[512];
 
     snprintf(fname, 512, "%s/fat12.dd", s_root);
@@ -239,7 +239,7 @@ test_fat_slack()
 {
     TSK_FS_INFO *fs;
     TSK_IMG_INFO *img;
-    char *tname = "fat-img-kw";
+    const char *tname = "fat-img-kw";
     char fname[512];
     TSK_FS_FILE *file1;
     char buf[512];
@@ -332,7 +332,7 @@ test_fat_recover()
 {
     TSK_FS_INFO *fs;
     TSK_IMG_INFO *img;
-    char *tname = "fe_test_1.img-FAT";
+    const char *tname = "fe_test_1.img-FAT";
     char fname[512];
     TSK_FS_FILE *file1;
     TSK_FS_FILE *file2;
@@ -358,7 +358,7 @@ test_fat_recover()
 
 
     // fragmented.html
-    char *fname2 = "fragmented.html";
+    const char *fname2 = "fragmented.html";
     file1 = tsk_fs_file_open_meta(fs, NULL, 1162);
     if (file1 == NULL) {
         fprintf(stderr, "Error opening %s (%s)\n", fname2, tname);
@@ -473,7 +473,7 @@ test_ntfs_slack_ads()
 {
     TSK_FS_INFO *fs;
     TSK_IMG_INFO *img;
-    char *tname = "ntfs-img-kw";
+    const char *tname = "ntfs-img-kw";
     char fname[512];
     TSK_FS_FILE *file1;
     char buf[512];
@@ -623,7 +623,7 @@ test_ntfs_fe()
 {
     TSK_FS_INFO *fs;
     TSK_IMG_INFO *img;
-    char *tname = "fe_test_1-NTFS";
+    const char *tname = "fe_test_1-NTFS";
     char fname[512];
 
     snprintf(fname, 512, "%s/fe_test_1.img", s_root);
@@ -661,7 +661,7 @@ test_ntfs_comp()
 {
     TSK_FS_INFO *fs;
     TSK_IMG_INFO *img;
-    char *tname = "ntfs-comp-1";
+    const char *tname = "ntfs-comp-1";
     char fname[512];
 
     snprintf(fname, 512, "%s/ntfs-comp-1.img", s_root);
