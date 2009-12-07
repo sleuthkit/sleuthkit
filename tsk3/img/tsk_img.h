@@ -95,13 +95,15 @@ extern "C" {
 
     // open and close functions
     extern TSK_IMG_INFO *tsk_img_open_sing(const TSK_TCHAR * a_image,
-        TSK_IMG_TYPE_ENUM type, unsigned int);
+        TSK_IMG_TYPE_ENUM type, unsigned int a_ssize);
     extern TSK_IMG_INFO *tsk_img_open(int,
-        const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM, unsigned int);
+        const TSK_TCHAR * const images[], TSK_IMG_TYPE_ENUM, 
+        unsigned int a_ssize);
     extern TSK_IMG_INFO *tsk_img_open_utf8_sing(const char *a_image,
-        TSK_IMG_TYPE_ENUM type, unsigned int);
+        TSK_IMG_TYPE_ENUM type, unsigned int a_ssize);
     extern TSK_IMG_INFO *tsk_img_open_utf8(int num_img,
-        const char *const images[], TSK_IMG_TYPE_ENUM type, unsigned int);
+        const char *const images[], TSK_IMG_TYPE_ENUM type, 
+        unsigned int a_ssize);
 
     extern void tsk_img_close(TSK_IMG_INFO *);
 
