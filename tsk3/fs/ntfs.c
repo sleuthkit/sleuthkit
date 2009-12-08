@@ -1417,8 +1417,8 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         if (a_offset >= a_fs_attr->nrd.allocsize) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_FS_READ_OFF;
-            snprintf(tsk_errstr, TSK_ERRSTR_L, "ntfs_file_read_special - %" PRIuOFF,
-                a_offset);
+            snprintf(tsk_errstr, TSK_ERRSTR_L,
+                "ntfs_file_read_special - %" PRIuOFF, a_offset);
             return -1;
         }
 
@@ -2890,7 +2890,10 @@ ntfs_sds_to_str(TSK_FS_INFO * a_fs, const ntfs_attr_sds * a_sds,
         //tsk_fprintf(stderr, "SID: %s\n", sid_str);
     }
     else {
-        // @@@ ERROR MSG
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_FS_GENFS;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "ntfs_sds_to_str: Invalid SID revision (%d)", sid->revision);
         return 1;               // Invalid revision number in the SID.
     }
 
@@ -2949,7 +2952,10 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     }
 
     if (sii == NULL) {
-        // @@@
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_FS_GENFS;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "ntfs_get_sds: SII entry not found (%" PRIu32 ")", secid);
         return NULL;
     }
 
@@ -2960,7 +2966,11 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
 
     // Check that we do not go out of bounds.
     if ((uint32_t) sii_sds_file_off > ntfs->sds_data.size) {
-        // @@@
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_FS_GENFS;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "ntfs_get_sds: SII offset too large (%" PRIu64 ")",
+            sii_sds_file_off);
         return NULL;
     }
 
@@ -2989,7 +2999,11 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
             //printf("secid %d hash %x offset %I64x size %x\n", sds_secid, sds_sechash, sds_file_off, sds_ent_size);
         }
     }
-    // @@@ ERROR...
+
+    tsk_error_reset();
+    tsk_errno = TSK_ERR_FS_GENFS;
+    snprintf(tsk_errstr, TSK_ERRSTR_L,
+        "ntfs_get_sds: Got to end w/out data");
     return NULL;
 }
 #endif
@@ -3019,7 +3033,10 @@ ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
     *sid_str = NULL;
 
     if (!a_fs_file->meta->attr) {
-        // @@@ 
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_FS_GENFS;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "ntfs_file_get_sidstr: file argument has no meta data");
         return 1;
     }
 
@@ -3027,24 +3044,30 @@ ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
     fs_data = tsk_fs_attrlist_get(a_fs_file->meta->attr,
         TSK_FS_ATTR_TYPE_NTFS_SI);
     if (!fs_data) {
-        // @@@
+        snprintf(tsk_errstr2, TSK_ERRSTR_L,
+            "- ntfs_file_get_sidstr:SI attribute");
         return 1;
     }
 
     si = (ntfs_attr_si *) fs_data->rd.buf;
     if (!si) {
-        // @@@
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_FS_GENFS;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "ntfs_file_get_sidstr: SI buf is NULL");
         return 1;
     }
     sds =
         ntfs_get_sds(a_fs_file->fs_info,
         tsk_getu32(a_fs_file->fs_info->endian, si->sec_id));
     if (!sds) {
-        // @@@
+        snprintf(tsk_errstr2, TSK_ERRSTR_L,
+            "- ntfs_file_get_sidstr:SI attribute");
         return 1;
     }
     if (ntfs_sds_to_str(a_fs_file->fs_info, sds, sid_str)) {
-        // @@@@
+        snprintf(tsk_errstr2, TSK_ERRSTR_L,
+            "- ntfs_file_get_sidstr:SI attribute");
         return 1;
     }
     return 0;
@@ -3128,8 +3151,9 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 
 /*
  * Load the $Secure attributes so that we can identify the user.
+ * @returns 1 on error (which occurs only if malloc or other system error). 
  */
-static int
+static uint8_t
 ntfs_load_secure(NTFS_INFO * ntfs)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & ntfs->fs_info;
@@ -3139,53 +3163,59 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     NTFS_SXX_BUFFER sds_buffer;
     NTFS_SXX_BUFFER sii_buffer;
     TSK_FS_FILE *secure = NULL;
+    ssize_t cnt;
 
     ntfs->sii_data.buffer = NULL;
     ntfs->sii_data.size = 0;
     ntfs->sii_data.used = 0;
+    ntfs->sds_data.buffer = NULL;
+    ntfs->sds_data.size = 0;
+    ntfs->sds_data.used = 0;
+
 
     // Open $Secure. The $SDS stream contains all the security descriptors
     // and is indexed by $SII and $SDH.
     secure = tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_SECURE);
     if (!secure) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_load_secure: error opening $Secure file: %s\n",
+                tsk_errstr);
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_NUM;
-        strncat(tsk_errstr2,
-            " - load_secure: Error finding $Secure MFT Entry",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
-        return 1;
+        return 0;
     }
     // Make sure the TSK_FS_META is not NULL. We need it to get the
     // $SII and $SDH attributes.
     fs_meta = secure->meta;
     if (!fs_meta) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_load_secure: $Secure file has no attributes\n");
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_NUM;
-        strncat(tsk_errstr2,
-            " - load_secure: Error finding $Secure MFT Entry",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
-        return 1;
+        return 0;
     }
     // Get the $SII attribute.
     fs_attr_sii =
         tsk_fs_attrlist_get_name_type(fs_meta->attr, NTFS_ATYPE_IDXALLOC,
         "$SII\0");
     if (!fs_attr_sii) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_load_secure: error getting $Secure:$SII IDX_ALLOC attribute\n");
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "ntfs_load_secure: Error finding $SII attribute");
-        return 1;
+        return 0;
+
     }
     // Get the $SDS attribute.
     fs_attr = tsk_fs_attrlist_get(fs_meta->attr, NTFS_ATYPE_DATA);
     if (!fs_attr) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_load_secure: error getting $Secure:$SDS $Data attribute\n");
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "ntfs_load_secure: Error finding $Data attribute");
-        return 1;
+        return 0;
     }
+
     // Allocate space for the entire $SII stream.
     sii_buffer.size = (size_t) roundup(fs_attr_sii->size, fs->block_size);
     sii_buffer.used = 0;
@@ -3200,7 +3230,6 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         if (sii_buffer.buffer)
             free(sii_buffer.buffer);
         sii_buffer.buffer = NULL;
-
         return 1;
     }
 
@@ -3220,26 +3249,42 @@ ntfs_load_secure(NTFS_INFO * ntfs)
 
         return 1;
     }
+
     // Read in the raw $SII stream.
-    tsk_fs_file_read_type(secure, fs_attr_sii->type, fs_attr_sii->id, 0,
-        sii_buffer.buffer, sii_buffer.size,
-        (TSK_FS_FILE_READ_FLAG_ENUM) 0);
+    cnt =
+        tsk_fs_attr_read(fs_attr_sii, 0, sii_buffer.buffer,
+        sii_buffer.size, (TSK_FS_FILE_READ_FLAG_ENUM) 0);
+    if (cnt != sii_buffer.size) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_load_secure: error reading $Secure:$SII attribute: %s\n",
+                tsk_errstr);
+        tsk_error_reset();
+        return 0;
+    }
 
     // Read in the raw $SDS ($DATA) stream.
-    tsk_fs_file_read(secure, (TSK_OFF_T) sds_buffer.used, sds_buffer.buffer, sds_buffer.size, (TSK_FS_FILE_READ_FLAG_ENUM) 0);  //TSK_FS_FILE_READ_FLAG_SLACK);
+    cnt =
+        tsk_fs_attr_read(fs_attr, (TSK_OFF_T) sds_buffer.used,
+        sds_buffer.buffer, sds_buffer.size,
+        (TSK_FS_FILE_READ_FLAG_ENUM) 0);
+    if (cnt != sds_buffer.size) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_load_secure: error reading $Secure:$SDS attribute: %s\n",
+                tsk_errstr);
+        tsk_error_reset();
+        return 0;
+    }
 
     // Process all the $SII entries into a single array by removing all the Attribute Headers.
     ntfs_proc_sii(fs, &sii_buffer);
 
     // Initialize our global to hold the raw $SDS stream.
-    ntfs->sds_data.buffer = NULL;
-    ntfs->sds_data.size = 0;
-    ntfs->sds_data.used = 0;
     ntfs->sds_data = sds_buffer;
 
     if (sii_buffer.buffer)
         free(sii_buffer.buffer);
-
 
     tsk_fs_meta_close(fs_meta);
     return 0;
