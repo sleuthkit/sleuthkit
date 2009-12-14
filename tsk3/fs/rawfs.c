@@ -61,13 +61,13 @@ rawfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset)
     fs->last_inum = 0;
 
     len = img_info->size;
-    fs->block_count = len / 512;
-    if (len % 512)
+    fs->block_size = 512;
+    fs->block_count = len / fs->block_size;
+    if (len % fs->block_size)
         fs->block_count++;
 
     fs->first_block = 0;
     fs->last_block = fs->last_block_act = fs->block_count - 1;
-    fs->block_size = 512;
     fs->dev_bsize = img_info->sector_size;
 
     /* Pointer to functions */

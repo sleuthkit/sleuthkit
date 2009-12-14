@@ -80,26 +80,25 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void *ptr)
     if (print_bytes) {
         TSK_OFF_T size;
         char unit = ' ';
-        size = part->len;
+        size = part->len * part->vs->block_size;
 
-        if (part->len < 2) {
-            size = 512 * part->len;
+        if (part->len < 1024) {
             unit = 'B';
         }
-        else if (size < (2 << 10)) {
-            size = part->len / 2;
+        else if (size < 512*1024) {
+            size = part->len / 1024;
             unit = 'K';
         }
-        else if (size < (2 << 20)) {
-            size = part->len / (2 << 10);
+        else if (size < (512*1048576)) {
+            size = part->len / 1048576;
             unit = 'M';
         }
-        else if (size < ((TSK_OFF_T) 2 << 30)) {
-            size = part->len / (2 << 20);
+        else if (size < (512*(TSK_OFF_T)1073741824)) {
+            size = part->len / ((TSK_OFF_T)1073741824);
             unit = 'G';
         }
-        else if (size < ((TSK_OFF_T) 2 << 40)) {
-            size = part->len / (2 << 30);
+        else if (size < (512*(TSK_OFF_T)1099511627776)) {
+            size = part->len / ((TSK_OFF_T)1099511627776);
             unit = 'T';
         }
 
@@ -119,9 +118,8 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void *ptr)
 
     if ((recurse) && (vs->vstype == TSK_VS_TYPE_DOS)
         && (part->flags == TSK_VS_PART_FLAG_ALLOC)) {
-        // @@@ This assumes 512-byte sectors
         if (recurse_cnt < 64)
-            recurse_list[recurse_cnt++] = part->start * 512;
+            recurse_list[recurse_cnt++] = part->start * part->vs->block_size;
     }
 
     return TSK_WALK_CONT;
@@ -274,7 +272,7 @@ main(int argc, char **argv1)
     if ((imgaddr * img->sector_size) >= img->size) {
         tsk_fprintf(stderr,
             "Sector offset supplied is larger than disk image (maximum: %"
-            PRIu64 ")\n", img->size / 512);
+            PRIu64 ")\n", img->size / img->sector_size);
         exit(1);
     }
 

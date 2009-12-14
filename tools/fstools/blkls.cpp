@@ -198,7 +198,7 @@ main(int argc, char **argv1)
         if ((imgaddr * img->sector_size) >= img->size) {
             tsk_fprintf(stderr,
                 "Sector offset supplied is larger than disk image (maximum: %"
-                PRIu64 ")\n", img->size / 512);
+                PRIu64 ")\n", img->size / img->sector_size);
             exit(1);
         }
 
@@ -224,7 +224,7 @@ main(int argc, char **argv1)
             if ((imgaddr * img->sector_size) >= img->size) {
                 tsk_fprintf(stderr,
                     "Sector offset supplied is larger than disk image (maximum: %"
-                    PRIu64 ")\n", img->size / 512);
+                    PRIu64 ")\n", img->size / img->sector_size);
                 exit(1);
             }
 
@@ -247,7 +247,7 @@ main(int argc, char **argv1)
                 if ((imgaddr * img->sector_size) >= img->size) {
                     tsk_fprintf(stderr,
                         "Sector offset supplied is larger than disk image (maximum: %"
-                        PRIu64 ")\n", img->size / 512);
+                        PRIu64 ")\n", img->size / img->sector_size);
                     exit(1);
                 }
 
@@ -270,7 +270,7 @@ main(int argc, char **argv1)
                     if ((imgaddr * img->sector_size) >= img->size) {
                         tsk_fprintf(stderr,
                             "Sector offset supplied is larger than disk image (maximum: %"
-                            PRIu64 ")\n", img->size / 512);
+                            PRIu64 ")\n", img->size / img->sector_size);
                         exit(1);
                     }
 
@@ -289,7 +289,7 @@ main(int argc, char **argv1)
                     if ((imgaddr * img->sector_size) >= img->size) {
                         tsk_fprintf(stderr,
                             "Sector offset supplied is larger than disk image (maximum: %"
-                            PRIu64 ")\n", img->size / 512);
+                            PRIu64 ")\n", img->size / img->sector_size);
                         exit(1);
                     }
                 }
