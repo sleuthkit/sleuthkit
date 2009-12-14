@@ -2486,7 +2486,7 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     tsk_fprintf(hFile, "FILE SYSTEM INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
 
-    tsk_fprintf(hFile, "File System Signature: ");
+    tsk_fprintf(hFile, "File System Type: ");
     if (tsk_getu16(fs->endian, hfs->fs->signature) == HFS_VH_SIG_HFSPLUS)
         tsk_fprintf(hFile, "HFS+\n");
     else if (tsk_getu16(fs->endian, hfs->fs->signature) == HFS_VH_SIG_HFSX)
