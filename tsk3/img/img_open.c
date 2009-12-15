@@ -135,6 +135,10 @@ tsk_img_open(int num_img,
             }
         }
         else {
+            // If AFF is otherwise happy except for a password, stop trying to guess
+            if (tsk_errno == TSK_ERR_IMG_PASSWD) {
+                return NULL;
+            }
             tsk_error_reset();
         }
 #endif

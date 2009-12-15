@@ -71,7 +71,8 @@ static const char *tsk_err_img_str[TSK_ERR_IMG_MAX] = {
     "Invalid API argument",
     "Invalid magic value",      // 10
     "Error writing data",
-    "Error converting file name"
+    "Error converting file name",
+    "Incorrect or missing password"
 };
 
 

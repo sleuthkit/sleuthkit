@@ -251,6 +251,7 @@ aff_open(const char *const images[], unsigned int a_ssize)
             perror("aff_open");
         }
         tsk_error_reset();
+        tsk_errno = TSK_ERR_IMG_OPEN;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "aff_open file: %" PRIttocTSK ": Error checking type",
             images[0]);
@@ -273,6 +274,7 @@ aff_open(const char *const images[], unsigned int a_ssize)
 
     aff_info->af_file = af_open(images[0], O_RDONLY | O_BINARY, 0);
     if (!aff_info->af_file) {
+        // @@@ Need to check here if the open failed because of an incorrect password. 
         tsk_error_reset();
         tsk_errno = TSK_ERR_IMG_OPEN;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -285,6 +287,19 @@ aff_open(const char *const images[], unsigned int a_ssize)
         }
         return NULL;
     }
+    // verify that a password was given and we can read encrypted data. 
+    if (af_cannot_decrypt(aff_info->af_file)) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_IMG_PASSWD;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+                 "aff_open file: %" PRIttocTSK, images[0]);
+        free(aff_info);
+        if (tsk_verbose) {
+            tsk_fprintf(stderr, "Error opening AFF/AFD/AFM file (incorrect password)\n");
+        }
+        return NULL;
+    }
+    
     aff_info->type = type;
 
     img_info->size = af_imagesize(aff_info->af_file);
