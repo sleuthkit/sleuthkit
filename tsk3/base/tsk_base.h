@@ -26,6 +26,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+/** Version of code in number form. Upper byte not used. 
+ * Next byte is A, next is B, and lower byte is C in version A.B.C.
+ * For example, 3.1.2 would be stored as 0x00030102.  See
+ * TSK_VERSION_STR for string form. */ 
+#define TSK_VERSION_NUM 0x00000000  
+
+/** Version of code in string form. See TSK_VERSION_NUM for 
+ * integer form. */
+#define TSK_VERSION_STR "0.0.0"
+
+
 /* include the TSK-specific header file that we created in autoconf
  * On Win32 (Visual Studio) though, we will not have this file...
  */

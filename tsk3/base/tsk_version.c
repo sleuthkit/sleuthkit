@@ -21,12 +21,7 @@
 void
 tsk_version_print(FILE * hFile)
 {
-    char *str = "The Sleuth Kit";
-#ifdef PACKAGE_VERSION
-    tsk_fprintf(hFile, "%s ver %s\n", str, PACKAGE_VERSION);
-#else
-    tsk_fprintf(hFile, "%s\n", str);
-#endif
+    tsk_fprintf(hFile, "The Sleuth Kit ver %s\n", TSK_VERSION_STR);
     return;
 }
 
@@ -38,9 +33,5 @@ tsk_version_print(FILE * hFile)
 const char *
 tsk_version_get_str()
 {
-#ifdef PACKAGE_VERSION
-    return PACKAGE_VERSION;
-#else
-    return "0.0";
-#endif
+    return TSK_VERSION_STR;
 }
