@@ -5,7 +5,7 @@
 
                Brian Carrier [carrier@sleuthkit.org]
 
-                     Last Updated: Sept 2008
+                     Last Updated: Dec 2009
 
 
 ======================================================================
@@ -18,6 +18,19 @@ http://www.sleuthkit.org
 
 These are distributed under the IBM Public License and the Common 
 Public License, which can be found in the licenses folder. 
+
+
+NOTES
+
+The dll files in the zip file are required to run the executables. They
+must be either in the same directory as the executables or in the path.
+
+mactime.pl requires a Windows port of Perl to be installed. If you have 
+the ".pl" extension associated with Perl, you should be able to run
+"mactime.pl" from the command line. Otherwise, you may need to run it
+as "perl mactime.pl".  Examples of Windows ports of Perl include:
+- ActivePerl (http://www.activestate.com/activeperl/)
+- Strawberry Perl (http://strawberryperl.com/)
 
 
 CURRENT LIMITATIONS
