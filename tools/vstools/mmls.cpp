@@ -97,8 +97,9 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void *ptr)
             size = part->len / ((TSK_OFF_T)1073741824);
             unit = 'G';
         }
-        else if (size < (512*(TSK_OFF_T)1099511627776)) {
-            size = part->len / ((TSK_OFF_T)1099511627776);
+        // 1099511627776
+        else if (size < (512*((TSK_OFF_T)1<<40))) {
+            size = part->len / ((TSK_OFF_T)1<<40);
             unit = 'T';
         }
 
