@@ -177,7 +177,6 @@ extern "C" {
     extern void tsk_fs_name_reset(TSK_FS_NAME * a_fs_name);
 
     /* Utilities */
-    extern void tsk_fs_make_ls(TSK_FS_META *, char *);
     extern uint8_t tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file);
     extern TSK_FS_ATTR_TYPE_ENUM tsk_fs_unix_get_default_attr_type(const
         TSK_FS_FILE * a_file);

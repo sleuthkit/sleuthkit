@@ -192,7 +192,7 @@ ils_mac_act(TSK_FS_FILE * fs_file, void *ptr)
         fs_file->meta->addr, fs_file->meta->addr);
 
     /* Print the "ls" mode in ascii format */
-    tsk_fs_make_ls(fs_file->meta, ls);
+    tsk_fs_meta_make_ls(fs_file->meta, ls, sizeof(ls));
 
     if (data->sec_skew != 0) {
         fs_file->meta->mtime -= data->sec_skew;

@@ -2713,7 +2713,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     else
         tsk_fprintf(hFile, "\n");
 
-    tsk_fs_make_ls(fs_file->meta, hfs_mode);
+    tsk_fs_meta_make_ls(fs_file->meta, hfs_mode,  sizeof(hfs_mode));
     tsk_fprintf(hFile, "Mode:\t%s\n", hfs_mode);
     tsk_fprintf(hFile, "Size:\t%" PRIuOFF "\n", fs_file->meta->size);
 

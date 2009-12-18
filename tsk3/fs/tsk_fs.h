@@ -473,6 +473,8 @@ extern "C" {
         TSK_INUM_T a_end, TSK_FS_META_FLAG_ENUM a_flags,
         TSK_FS_META_WALK_CB a_cb, void *a_ptr);
 
+    extern uint8_t tsk_fs_meta_make_ls(TSK_FS_META * a_fs_meta, char *a_buf, size_t a_len);
+    
     //@}
 
     /************* NAME / DIR structures **********/

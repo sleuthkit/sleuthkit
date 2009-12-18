@@ -1622,7 +1622,7 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fprintf(hFile, "uid / gid: %" PRIuUID " / %" PRIuGID "\n",
         fs_meta->uid, fs_meta->gid);
 
-    tsk_fs_make_ls(fs_meta, ls);
+    tsk_fs_meta_make_ls(fs_meta, ls, sizeof(ls));
     tsk_fprintf(hFile, "mode: %s\n", ls);
 
     if (ext2fs->dino_buf) {

@@ -205,65 +205,72 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
  ***********************************************************************/
 
 /**
- * \internal 
- * make the ls -l output from the mode 
+ * \ingroup fslib
+ * Makes the "ls -l" permissions string for a file. 
  *
- * ls must be 12 bytes or more!
+ * @param a_fs_meta File to be processed
+ * @param a_buf [out] Buffer to write results to (must be 12 bytes or longer)
+ * @param a_len Length of buffer
  */
-void
-tsk_fs_make_ls(TSK_FS_META * a_fs_meta, char *ls)
+uint8_t
+tsk_fs_meta_make_ls(TSK_FS_META * a_fs_meta, char *a_buf, size_t a_len)
 {
+    if (a_len < 12) {
+        return 1;
+    }
+    
     /* put the default values in */
-    strcpy(ls, "----------");
+    strcpy(a_buf, "----------");
 
     if (a_fs_meta->type < TSK_FS_META_TYPE_STR_MAX)
-        ls[0] = tsk_fs_meta_type_str[a_fs_meta->type][0];
+        a_buf[0] = tsk_fs_meta_type_str[a_fs_meta->type][0];
 
     /* user perms */
     if (a_fs_meta->mode & TSK_FS_META_MODE_IRUSR)
-        ls[1] = 'r';
+        a_buf[1] = 'r';
     if (a_fs_meta->mode & TSK_FS_META_MODE_IWUSR)
-        ls[2] = 'w';
+        a_buf[2] = 'w';
     /* set uid */
     if (a_fs_meta->mode & TSK_FS_META_MODE_ISUID) {
         if (a_fs_meta->mode & TSK_FS_META_MODE_IXUSR)
-            ls[3] = 's';
+            a_buf[3] = 's';
         else
-            ls[3] = 'S';
+            a_buf[3] = 'S';
     }
     else if (a_fs_meta->mode & TSK_FS_META_MODE_IXUSR)
-        ls[3] = 'x';
+        a_buf[3] = 'x';
 
     /* group perms */
     if (a_fs_meta->mode & TSK_FS_META_MODE_IRGRP)
-        ls[4] = 'r';
+        a_buf[4] = 'r';
     if (a_fs_meta->mode & TSK_FS_META_MODE_IWGRP)
-        ls[5] = 'w';
+        a_buf[5] = 'w';
     /* set gid */
     if (a_fs_meta->mode & TSK_FS_META_MODE_ISGID) {
         if (a_fs_meta->mode & TSK_FS_META_MODE_IXGRP)
-            ls[6] = 's';
+            a_buf[6] = 's';
         else
-            ls[6] = 'S';
+            a_buf[6] = 'S';
     }
     else if (a_fs_meta->mode & TSK_FS_META_MODE_IXGRP)
-        ls[6] = 'x';
+        a_buf[6] = 'x';
 
     /* other perms */
     if (a_fs_meta->mode & TSK_FS_META_MODE_IROTH)
-        ls[7] = 'r';
+        a_buf[7] = 'r';
     if (a_fs_meta->mode & TSK_FS_META_MODE_IWOTH)
-        ls[8] = 'w';
+        a_buf[8] = 'w';
 
     /* sticky bit */
     if (a_fs_meta->mode & TSK_FS_META_MODE_ISVTX) {
         if (a_fs_meta->mode & TSK_FS_META_MODE_IXOTH)
-            ls[9] = 't';
+            a_buf[9] = 't';
         else
-            ls[9] = 'T';
+            a_buf[9] = 'T';
     }
     else if (a_fs_meta->mode & TSK_FS_META_MODE_IXOTH)
-        ls[9] = 'x';
+        a_buf[9] = 'x';
+    return 0;
 }
 
 
@@ -541,7 +548,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     else {
 
         /* mode as string */
-        tsk_fs_make_ls(fs_file->meta, ls);
+        tsk_fs_meta_make_ls(fs_file->meta, ls,  sizeof(ls));
         tsk_fprintf(hFile, "%s|", ls);
 
         /* uid, gid */
