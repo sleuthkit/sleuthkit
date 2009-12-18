@@ -211,7 +211,7 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
 
     // since tsk_errno is checked as a return value, make sure it is clean.
     tsk_error_reset();
-    
+
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "hfs_extents_to_attr: Converting extents from offset %" PRIuOFF
@@ -1304,6 +1304,8 @@ hfs_make_specialbase(TSK_FS_FILE * fs_file)
     fs_file->meta->uid = fs_file->meta->gid = 0;
     fs_file->meta->mtime = fs_file->meta->atime = fs_file->meta->ctime =
         fs_file->meta->crtime = 0;
+    fs_file->meta->mtime_nano = fs_file->meta->atime_nano =
+        fs_file->meta->ctime_nano = fs_file->meta->crtime_nano = 0;
 
     if (fs_file->meta->name2 == NULL) {
         if ((fs_file->meta->name2 = (TSK_FS_META_NAME_LIST *)
@@ -1845,6 +1847,10 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file_folder * a_entry,
     a_fs_meta->ctime = hfs2unixtime(tsk_getu32(fs->endian, std->amtime));
     a_fs_meta->time2.hfs.bkup_time =
         hfs2unixtime(tsk_getu32(fs->endian, std->bkup_date));
+    a_fs_meta->mtime_nano = a_fs_meta->atime_nano = a_fs_meta->ctime_nano =
+        a_fs_meta->crtime_nano = 0;
+    a_fs_meta->time2.hfs.bkup_time_nano = 0;
+
 
     a_fs_meta->addr = tsk_getu32(fs->endian, std->cnid);
 
@@ -2072,8 +2078,8 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             tsk_getu64(fs->endian, fork->logic_sz),
             tsk_getu64(fs->endian, fork->logic_sz),
-            (TSK_OFF_T)tsk_getu32(fs->endian, fork->total_blk) * fs->block_size, 0,
-            0)) {
+            (TSK_OFF_T) tsk_getu32(fs->endian,
+                fork->total_blk) * fs->block_size, 0, 0)) {
         strncat(tsk_errstr2, " - hfs_load_attrs",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         tsk_fs_attr_run_free(attr_run);
@@ -2686,7 +2692,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;
     TSK_FS_FILE *fs_file;
-    char hfs_mode[11];
+    char hfs_mode[12];
     HFS_PRINT_ADDR print;
     HFS_ENTRY entry;
 
@@ -2713,7 +2719,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     else
         tsk_fprintf(hFile, "\n");
 
-    tsk_fs_meta_make_ls(fs_file->meta, hfs_mode,  sizeof(hfs_mode));
+    tsk_fs_meta_make_ls(fs_file->meta, hfs_mode, sizeof(hfs_mode));
     tsk_fprintf(hFile, "Mode:\t%s\n", hfs_mode);
     tsk_fprintf(hFile, "Size:\t%" PRIuOFF "\n", fs_file->meta->size);
 

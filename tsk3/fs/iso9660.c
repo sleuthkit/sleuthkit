@@ -456,8 +456,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         tsk_UTF16toUTF8(fs->endian,
                         (const UTF16 **) &name16,
                         (UTF16 *) & buf[b_offs + dentry->fi_len], &name8,
-                        (UTF8 *) ((uintptr_t) & in_node->inode.
-                            fn[ISO9660_MAXNAMLEN_STD]),
+                        (UTF8 *) ((uintptr_t) & in_node->
+                            inode.fn[ISO9660_MAXNAMLEN_STD]),
                         TSKlenientConversion);
                     if (retVal != TSKconversionOK) {
                         if (tsk_verbose)
@@ -928,6 +928,8 @@ iso9660_dinode_copy(ISO_INFO * iso, TSK_FS_META * fs_meta)
 
     fs_meta->crtime = mktime(&t);
     fs_meta->mtime = fs_meta->atime = fs_meta->ctime = 0;
+    fs_meta->crtime_nano = fs_meta->mtime_nano = fs_meta->atime_nano =
+        fs_meta->ctime_nano = 0;
 
     if (iso->dinode->dr.flags & ISO9660_FLAG_DIR)
         fs_meta->type = TSK_FS_META_TYPE_DIR;

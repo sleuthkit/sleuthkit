@@ -357,6 +357,8 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta)
         fs_meta->atime = tsk_gets32(fs->endian, in->di_atime);
         fs_meta->ctime = tsk_gets32(fs->endian, in->di_ctime);
         fs_meta->crtime = 0;
+        fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
+            fs_meta->crtime_nano = 0;
 
         if (fs_meta->content_len < FFS_FILE_CONTENT_LEN) {
             if ((fs_meta =
@@ -492,6 +494,8 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta)
         fs_meta->atime = tsk_gets32(fs->endian, in->di_atime);
         fs_meta->ctime = tsk_gets32(fs->endian, in->di_ctime);
         fs_meta->crtime = 0;
+        fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
+            fs_meta->crtime_nano = 0;
 
         if (fs_meta->content_len < FFS_FILE_CONTENT_LEN) {
             if ((fs_meta =
@@ -614,6 +618,10 @@ ffs_dinode_copy(FFS_INFO * ffs, TSK_FS_META * fs_meta)
         fs_meta->atime = (time_t) tsk_gets64(fs->endian, in->di_atime);
         fs_meta->ctime = (time_t) tsk_gets64(fs->endian, in->di_ctime);
         fs_meta->crtime = 0;
+        fs_meta->mtime_nano = tsk_getu32(fs->endian, in->di_mtimensec);
+        fs_meta->atime_nano = tsk_getu32(fs->endian, in->di_atimensec);
+        fs_meta->ctime_nano = tsk_getu32(fs->endian, in->di_ctimensec);
+        fs_meta->crtime_nano = tsk_getu32(fs->endian, in->di_crtimensec);
 
         if (fs_meta->content_len < FFS_FILE_CONTENT_LEN) {
             if ((fs_meta =

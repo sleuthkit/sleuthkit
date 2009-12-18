@@ -158,6 +158,13 @@ dos2unixtime(uint16_t date, uint16_t time, uint8_t timetens)
     return ret;
 }
 
+/* timetens is number of tenths of a second for a 2 second range (values 0 to 199) */
+static uint32_t
+dos2nanosec(uint8_t timetens)
+{
+    timetens %= 100;
+    return timetens * 10000000;
+}
 
 
 /* 
@@ -266,6 +273,8 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
         fs_meta->atime = 0;
         fs_meta->ctime = 0;
         fs_meta->crtime = 0;
+        fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
+            fs_meta->crtime_nano = 0;
     }
     else {
         /* There is no notion of link in FAT, just deleted or not */
@@ -279,27 +288,34 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
                 tsk_getu16(fs->endian, in->wtime), 0);
         else
             fs_meta->mtime = 0;
+        fs_meta->mtime_nano = 0;
 
         if (FATFS_ISDATE(tsk_getu16(fs->endian, in->adate)))
             fs_meta->atime =
                 dos2unixtime(tsk_getu16(fs->endian, in->adate), 0, 0);
         else
             fs_meta->atime = 0;
+        fs_meta->atime_nano = 0;
 
 
         /* cdate is the creation date in FAT and there is no change,
          * so we just put in into change and set create to 0.  The other
          * front-end code knows how to handle it and display it
          */
-        if (FATFS_ISDATE(tsk_getu16(fs->endian, in->cdate)))
+        if (FATFS_ISDATE(tsk_getu16(fs->endian, in->cdate))) {
             fs_meta->crtime =
                 dos2unixtime(tsk_getu16(fs->endian, in->cdate),
                 tsk_getu16(fs->endian, in->ctime), in->ctimeten);
-        else
+            fs_meta->crtime_nano = dos2nanosec(in->ctimeten);
+        }
+        else {
             fs_meta->crtime = 0;
+            fs_meta->crtime_nano = 0;
+        }
 
         // FAT does not have a changed time
         fs_meta->ctime = 0;
+        fs_meta->ctime_nano = 0;
     }
 
     /* Values that do not exist in FAT */
@@ -540,6 +556,8 @@ fatfs_make_root(FATFS_INFO * fatfs, TSK_FS_META * fs_meta)
     fs_meta->flags = (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
     fs_meta->uid = fs_meta->gid = 0;
     fs_meta->mtime = fs_meta->atime = fs_meta->ctime = fs_meta->crtime = 0;
+    fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
+        fs_meta->crtime_nano = 0;
 
     if (fs_meta->name2 == NULL) {
         if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST *)
@@ -633,6 +651,8 @@ fatfs_make_mbr(FATFS_INFO * fatfs, TSK_FS_META * fs_meta)
     fs_meta->flags = (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
     fs_meta->uid = fs_meta->gid = 0;
     fs_meta->mtime = fs_meta->atime = fs_meta->ctime = fs_meta->crtime = 0;
+    fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
+        fs_meta->crtime_nano = 0;
 
     if (fs_meta->name2 == NULL) {
         if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST *)
@@ -677,6 +697,8 @@ fatfs_make_fat(FATFS_INFO * fatfs, uint8_t a_which, TSK_FS_META * fs_meta)
     fs_meta->flags = (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
     fs_meta->uid = fs_meta->gid = 0;
     fs_meta->mtime = fs_meta->atime = fs_meta->ctime = fs_meta->crtime = 0;
+    fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
+        fs_meta->crtime_nano = 0;
 
     if (fs_meta->name2 == NULL) {
         if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST *)

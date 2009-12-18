@@ -523,10 +523,10 @@ tsk_fs_file_get_owner_sid(TSK_FS_FILE * a_fs_file, char **sid_str)
         || (a_fs_file->meta == NULL) || (sid_str == NULL)) {
         tsk_errno = TSK_ERR_FS_ARG;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-                 "tsk_fs_file_get_owner_sid: fs_info is NULL");
+            "tsk_fs_file_get_owner_sid: fs_info is NULL");
         return 1;
     }
-    
+
     // Make sure the function pointer is not NULL.
     // This function will only work on NTFS filesystems. 
     if (!a_fs_file->fs_info->fread_owner_sid) {
@@ -535,7 +535,6 @@ tsk_fs_file_get_owner_sid(TSK_FS_FILE * a_fs_file, char **sid_str)
         snprintf(tsk_errstr, TSK_ERRSTR_L, "Unsupported function");
         return 1;
     }
-    
+
     return a_fs_file->fs_info->fread_owner_sid(a_fs_file, sid_str);
 }
-

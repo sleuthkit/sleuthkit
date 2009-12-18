@@ -45,13 +45,14 @@ tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
     // note that this could prevent us from viewing the FS slack...
     if ((a_fs->last_block_act > 0)
         && ((TSK_DADDR_T) a_off >=
-            ((a_fs->last_block_act+1) * a_fs->block_size))) {
+            ((a_fs->last_block_act + 1) * a_fs->block_size))) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_FS_READ;
-        if ((TSK_DADDR_T) a_off < ((a_fs->last_block+1) * a_fs->block_size))
+        if ((TSK_DADDR_T) a_off <
+            ((a_fs->last_block + 1) * a_fs->block_size))
             snprintf(tsk_errstr, TSK_ERRSTR_L,
-                "tsk_fs_read: Offset missing in partial image: %"
-                PRIuDADDR ")", a_off);
+                "tsk_fs_read: Offset missing in partial image: %" PRIuDADDR
+                ")", a_off);
         else
             snprintf(tsk_errstr, TSK_ERRSTR_L,
                 "tsk_fs_read: Offset is too large for image: %"

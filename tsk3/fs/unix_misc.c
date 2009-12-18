@@ -373,8 +373,10 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
         }
 
         // determine number of indirect lbocks needed for file size...
-        numBlocks = (int)(((fs_meta->size + fs_bufsize0 - 1) / fs_bufsize0) - 12);
-        numSingIndirect = (int)((numBlocks + ptrsperblock - 1) / ptrsperblock);
+        numBlocks =
+            (int) (((fs_meta->size + fs_bufsize0 - 1) / fs_bufsize0) - 12);
+        numSingIndirect =
+            (int) ((numBlocks + ptrsperblock - 1) / ptrsperblock);
         numDblIndirect = 0;
         numTripIndirect = 0;
 
@@ -384,7 +386,8 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
                 ((numSingIndirect - 1 + ptrsperblock - 1) / ptrsperblock);
             if (numDblIndirect > 1) {
                 numTripIndirect = (int)
-                    ((numDblIndirect - 1 + ptrsperblock - 1) / ptrsperblock);
+                    ((numDblIndirect - 1 + ptrsperblock -
+                        1) / ptrsperblock);
             }
         }
 

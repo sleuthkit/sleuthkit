@@ -99,6 +99,15 @@ nt2unixtime(uint64_t ntdate)
     return (uint32_t) ntdate;
 }
 
+/* convert the NT Time (UTC hundred nanoseconds from 1/1/1601)
+ * to only the nanoseconds
+ *
+ */
+uint32_t
+nt2nano(uint64_t ntdate)
+{
+    return (uint32_t) (ntdate % 10000000);
+}
 
 
 /**********************************************************************
@@ -1220,8 +1229,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (fs_attr_run->addr != 0) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->meta->
-                        flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->
+                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_GENFS;
@@ -1248,8 +1257,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (addr > fs->last_block) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->meta->
-                        flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->
+                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_BLK_NUM;
@@ -1289,8 +1298,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             TSK_FS_BLOCK_FLAG_COMP;
                         retval = is_clustalloc(ntfs, comp_unit[i]);
                         if (retval == -1) {
-                            if (fs_attr->fs_file->meta->
-                                flags & TSK_FS_META_FLAG_UNALLOC)
+                            if (fs_attr->fs_file->
+                                meta->flags & TSK_FS_META_FLAG_UNALLOC)
                                 tsk_errno = TSK_ERR_FS_RECOVER;
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -1937,12 +1946,24 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 tsk_getu16(fs->endian, attr->c.r.soff));
             fs_file->meta->mtime =
                 nt2unixtime(tsk_getu64(fs->endian, si->mtime));
+            fs_file->meta->mtime_nano =
+                nt2nano(tsk_getu64(fs->endian, si->mtime));
+
             fs_file->meta->atime =
                 nt2unixtime(tsk_getu64(fs->endian, si->atime));
+            fs_file->meta->atime_nano =
+                nt2nano(tsk_getu64(fs->endian, si->atime));
+
             fs_file->meta->ctime =
                 nt2unixtime(tsk_getu64(fs->endian, si->ctime));
+            fs_file->meta->ctime_nano =
+                nt2nano(tsk_getu64(fs->endian, si->ctime));
+
             fs_file->meta->crtime =
                 nt2unixtime(tsk_getu64(fs->endian, si->crtime));
+            fs_file->meta->crtime_nano =
+                nt2nano(tsk_getu64(fs->endian, si->crtime));
+
             fs_file->meta->uid = tsk_getu32(fs->endian, si->own_id);
             fs_file->meta->mode |=
                 (TSK_FS_META_MODE_IXUSR | TSK_FS_META_MODE_IXGRP |
@@ -2388,9 +2409,13 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file)
     a_fs_file->meta->gid = 0;
     a_fs_file->meta->size = 0;
     a_fs_file->meta->mtime = 0;
+    a_fs_file->meta->mtime_nano = 0;
     a_fs_file->meta->atime = 0;
+    a_fs_file->meta->atime_nano = 0;
     a_fs_file->meta->ctime = 0;
+    a_fs_file->meta->ctime_nano = 0;
     a_fs_file->meta->crtime = 0;
+    a_fs_file->meta->crtime_nano = 0;
 
     /* add the flags */
     a_fs_file->meta->flags =
@@ -2944,8 +2969,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     // versions of NTFS.
     for (i = 0; i < ntfs->sii_data.used; i++) {
         if (tsk_getu32(fs->endian,
-                ((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i].
-                key_sec_id) == secid) {
+                ((ntfs_attr_sii *) (ntfs->sii_data.
+                        buffer))[i].key_sec_id) == secid) {
             sii = &((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i];
             break;
         }

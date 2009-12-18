@@ -218,7 +218,7 @@ tsk_fs_meta_make_ls(TSK_FS_META * a_fs_meta, char *a_buf, size_t a_len)
     if (a_len < 12) {
         return 1;
     }
-    
+
     /* put the default values in */
     strcpy(a_buf, "----------");
 
@@ -383,8 +383,9 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
 
     tsk_fprintf(hFile, "%s:\t",
         ((fs_file->meta) && (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)
-            && (fs_file->name->
-                flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" : "");
+            && (fs_file->
+                name->flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" :
+        "");
 
     if ((print_path) && (a_path != NULL))
         tsk_fprintf(hFile, "%s", a_path);
@@ -523,8 +524,9 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
      * allocated, then add realloc comment */
     if (fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC)
         tsk_fprintf(hFile, " (deleted%s)", ((fs_file->meta)
-                && (fs_file->meta->
-                    flags & TSK_FS_META_FLAG_ALLOC)) ? "-realloc" : "");
+                && (fs_file->
+                    meta->flags & TSK_FS_META_FLAG_ALLOC)) ? "-realloc" :
+            "");
 
     /* inode */
     tsk_fprintf(hFile, "|%" PRIuINUM, fs_file->name->meta_addr);
@@ -548,7 +550,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     else {
 
         /* mode as string */
-        tsk_fs_meta_make_ls(fs_file->meta, ls,  sizeof(ls));
+        tsk_fs_meta_make_ls(fs_file->meta, ls, sizeof(ls));
         tsk_fprintf(hFile, "%s|", ls);
 
         /* uid, gid */

@@ -421,17 +421,23 @@ extern "C" {
 
         /* @@@ Need to make these 64-bits ... ? */
         time_t mtime;           ///< last file content modification time (stored in number of seconds since Jan 1, 1970 UTC)
+        uint32_t mtime_nano;    ///< nano-second resolution in addition to m_time
         time_t atime;           ///< last file content accessed time (stored in number of seconds since Jan 1, 1970 UTC)
+        uint32_t atime_nano;    ///< nano-second resolution in addition to a_time
         time_t ctime;           ///< last file / metadata status change time (stored in number of seconds since Jan 1, 1970 UTC)
+        uint32_t ctime_nano;    ///< nano-second resolution in addition to c_time
         time_t crtime;          ///< Created time (stored in number of seconds since Jan 1, 1970 UTC)
+        uint32_t crtime_nano;   ///< nano-second resolution in addition to cr_time
 
         /* filesystem specific times */
         union {
             struct {
                 time_t dtime;   ///< Linux deletion time
+                uint32_t dtime_nano;    ///< nano-second resolution in addition to d_time
             } ext2;
             struct {
                 time_t bkup_time;       ///< HFS+ backup time
+                uint32_t bkup_time_nano;        ///< nano-second resolution in addition to bkup_time
             } hfs;
         } time2;
 
@@ -473,8 +479,9 @@ extern "C" {
         TSK_INUM_T a_end, TSK_FS_META_FLAG_ENUM a_flags,
         TSK_FS_META_WALK_CB a_cb, void *a_ptr);
 
-    extern uint8_t tsk_fs_meta_make_ls(TSK_FS_META * a_fs_meta, char *a_buf, size_t a_len);
-    
+    extern uint8_t tsk_fs_meta_make_ls(TSK_FS_META * a_fs_meta,
+        char *a_buf, size_t a_len);
+
     //@}
 
     /************* NAME / DIR structures **********/

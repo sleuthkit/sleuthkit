@@ -599,10 +599,10 @@ extern "C" {
 
     } ntfs_attr_sii;
 
-    
+
 #endif
 
-    
+
     typedef struct NTFS_PAR_MAP NTFS_PAR_MAP;
     struct NTFS_PAR_MAP {
         TSK_INUM_T par_addr;    // parent dir address this structure is for
@@ -655,7 +655,7 @@ extern "C" {
     extern void ntfs_orphan_map_free(NTFS_INFO * a_ntfs);
 
     extern int ntfs_name_cmp(TSK_FS_INFO *, const char *, const char *);
-    
+
 #ifdef __cplusplus
 }
 #endif

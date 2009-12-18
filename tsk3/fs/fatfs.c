@@ -1350,7 +1350,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         if (i == 0)
             sb_off = 0;
         else
-            sb_off = 6 * img_info->sector_size;   // the backup is located in sector 6
+            sb_off = 6 * img_info->sector_size; // the backup is located in sector 6
 
         cnt = tsk_fs_read(fs, sb_off, (char *) fatsb, len);
         if (cnt != len) {

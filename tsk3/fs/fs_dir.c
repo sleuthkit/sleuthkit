@@ -677,6 +677,8 @@ tsk_fs_dir_make_orphan_dir_meta(TSK_FS_INFO * a_fs,
     a_fs_meta->uid = a_fs_meta->gid = 0;
     a_fs_meta->mtime = a_fs_meta->atime = a_fs_meta->ctime =
         a_fs_meta->crtime = 0;
+    a_fs_meta->mtime_nano = a_fs_meta->atime_nano = a_fs_meta->ctime_nano =
+        a_fs_meta->crtime_nano = 0;
 
     if (a_fs_meta->name2 == NULL) {
         if ((a_fs_meta->name2 = (TSK_FS_META_NAME_LIST *)
