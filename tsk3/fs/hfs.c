@@ -612,8 +612,11 @@ hfs_cat_compare_keys(HFS_INFO * hfs, const hfs_btree_key_cat * key1,
 }
 
 
-/**
+/** \internal
+ * @param hfs File system
  * @param targ_data can be null
+ * @param a_cb callback 
+ * @param ptr Pointer to pass to callback
  * @returns 1 on error
  */
 uint8_t

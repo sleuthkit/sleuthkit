@@ -29,10 +29,15 @@
 
 /** Version of code in number form.  
  * Upper byte is A, next is B, and next byte is C in version A.B.C.
- * lowest byte is not 0xff only for beta releases, in which case it 
- * increments from 1. 
- * For example, 3.1.2 would be stored as 0x030102FF.  See
- * TSK_VERSION_STR for string form. */ 
+ * Lowest byte is 0xff, except in beta releases, in which case it 
+ * increments from 1.  Nightly snapshots will have upper byte as
+ * 0xff and next bytes with year, month, and date, respectively. 
+ * Note that you will not be able to differentiate between snapshots
+ * from the trunk or branches with this method...
+ * For example, 3.1.2 would be stored as 0x030102FF.  
+ * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
+ * 0xFF030102. 
+ * See TSK_VERSION_STR for string form. */ 
 #define TSK_VERSION_NUM 0x00000000  
 
 /** Version of code in string form. See TSK_VERSION_NUM for 
