@@ -846,11 +846,10 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
             return TSK_ERR;
         }
 
+        // were there any unallocated meta structures with names?
         if (a_fs->list_inum_named == NULL) {
-            tsk_errno = TSK_ERR_FS_ARG;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
-                "tsk_fs_dir_find_orphans: list_inum_named still NULL after dir_walk");
-            return TSK_ERR;
+            a_fs_dir->names_used = 0;
+            return TSK_OK;
         }
     }
 
