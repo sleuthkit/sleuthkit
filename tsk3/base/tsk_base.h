@@ -27,9 +27,11 @@
 #include <stdlib.h>
 
 
-/** Version of code in number form. Upper byte not used. 
- * Next byte is A, next is B, and lower byte is C in version A.B.C.
- * For example, 3.1.2 would be stored as 0x00030102.  See
+/** Version of code in number form.  
+ * Upper byte is A, next is B, and next byte is C in version A.B.C.
+ * lowest byte is not 0xff only for beta releases, in which case it 
+ * increments from 1. 
+ * For example, 3.1.2 would be stored as 0x030102FF.  See
  * TSK_VERSION_STR for string form. */ 
 #define TSK_VERSION_NUM 0x00000000  
 
