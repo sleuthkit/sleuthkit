@@ -31,13 +31,14 @@ There are optional features that TSK can use if you have installed
 them before you build and install TSK. 
 
 - AFFLIB: Allows you to process disk images that are stored in the
-AFF format. Version 3.3.4 has been tested to compile and work with this
+AFF format. Version 3.3.6 has been tested to compile and work with this
 release. 
     Available at: http://www.afflib.org
 
 - LibEWF: Allows you to process disk images that are stored in the
-Expert Witness format (EnCase Format).  Version 20080501 has been
-tested to compile and work with this release.
+Expert Witness format (EnCase Format).  Version 20091128 has been
+tested to compile and work with this release. NOTE that this does
+not include the experimental V2 API. 
     Available at: http://sourceforge.net/projects/libewf/
 
 

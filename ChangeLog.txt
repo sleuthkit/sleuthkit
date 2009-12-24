@@ -1,0 +1,12 @@
+This program does not distribute an official ChangeLog file. You
+can generate one from the subversion repository though using the
+following command:
+
+    svn log http://svn.sleuthkit.org/repos/sleuthkit/
+
+For a specific release, try something like:
+
+    svn log http://svn.sleuthkit.org/repos/sleuthkit/tags/sleuthkit-3.0.0
+
+and replace 3.0.0 with the version you are interested in. 
+
