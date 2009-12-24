@@ -1,137 +1,87 @@
+Numbers refer to SourceForge.net tracker IDs:
+    http://sourceforge.net/tracker/?group_id=55685
+
 ---------------- VERSION 3.1.0 --------------
-10/26/08: Update: Removed 'docs' files and moved them to the wiki.
 
-11/16/08: Update: Added more HFS error checking and better loading
+New Features and Changes
+- 2206285: HFS+ can now be read.  Lots of tracker items about this.
+Thanks to Rob Joyce and ATC-NY for many of the patches and reports.
+- 2677069: DOS Safety Partitions in GPT Volume Systems are better
+detected instead of reporting multiple VSs.
+- Windows executables can be build in Visual Studio w/out needing
+other image format libraries.
+- 2367426: Uninitialized file space is shown if slack space is
+requested.
+- 2677107 All image formats supported by AFFLIB can be accessed by
+specifying the "afflib" type.
+- 2206265: sigfind can now process non-raw files. 
+- 2206331: Indirect block addresses are now available in the library
+and command line tools.  They are stored in a different attribute.
+- Removed 'docs' files and moved them to the wiki.
+- Removed disk_stat and disk_sreset because they were out of date
+and hdparm now has the same functionality.
+- 2874854: Image layer tools now support non-512 byte device sector
+sizes.  Users can specify sector size using the -b argument to the
+command line tools. This has several consequences: 
+-- 'mmls -b' is now 'mmls -B'.  Similarly with istat -b.
+-- Changed command line format for '-o' so that sector size is
+specified only via -b and not using '-o 62@4096'.
+- 2874852: Sanity checking on partition table entires is relaxed
+and only first couple of partitions are checked to make sure that
+they can fit into the image.
+- 2895607: NTFS SID data is available in the library and 'istat'.
+- 2206341: AFF encrypted images now give more proper error message
+if password is not given.
+- 2351426: mactime is now distributed with Windows execs. 
 
-1/11/09: Update: Support for HFS Wrappers was added.  Patch by Rob Joyce.
 
-1/11/09: Update: Lots of bug fixes in HFS code from Rob Joyce.
+Developer-level Changes
+- Abstracted name comparison to file system-specific function.
+- Added support in mactime to read body files with comment lines.
+- 2596153: Changed img_open arguments, similar to getopt().
+- 2797169: tsk_fs_make_ls is now supported as an external library
+function. Now named tsk_fs_meta_make_ls.
+- 2908510: Nanosecond resolution of timestamps is now available.
+- 2914255: Version info is now available in .h files in both string
+and integer form.
 
-2/6/09: Bug Fix: Fixed bug 2568528, which was caused by incorrect 
-adjustment of attribute FILLER offset.  Reported by Andy Bontoft.
+Bug Fixes:
+- 2568528: incorrect adjustment of attribute FILLER offset.  
+- 2596397: Incorrect date sorting in mactime. 
+- 2708195: Errors when doing long reads in fragmented attributes.
+- Fixed typo bugs in sorter (reported via e-mail by Drew Hunt). 
+- 2734458: added orphan cache map to prevent slow NTFS listing times.
+- 2655831: Sorter now knows about the ext2 and ext3 types. 
+- 2725799: ifind not converting UTF16 names properly on Windows
+because it was using endian ordering of file system and not local
+system.
+- 2662168: warning messages on macs when reading the raw character
+device.
+- 2778170: incorrect read size on resident attributes.
+- 2777633: missing second resolution on FAT creation times.
+- Added the READ_SHARE option to the CreateFile command for split
+image files.  Patch by Christopher Siwy.
+- 2786963: NTFS compression infinite loop fix.
+- 2645156: FAT / blkls error getting slack because allocsize was 
+being set too small (and other values were not being reset).  
+- 2367426: Zeros are set for VDL slack on NTFS files.  
+- 2796945: Inifite loop in fs_attr. 
+- 2821031: Missing fls -m fields.
+- 2840345: Extended DOS partitions in extended partitions are now
+marked as Meta.
+- 2848162: Reading attributes at offsets that are on boundary of
+run fragment.
+- 2824457: Fixed issue reading last block of file system with blkcat. 
+- 2891285: Fixed issue that prevented reads from the last block of
+a file system when using the POSIX-style API.
+- 2825690: Fixed issue that prevented blkls -A from working.  
+- 2901365: Allow FAT files to have a 0 wdate.
+- 2900761: Added FAT directory sanity checks to prevent infinite loops.
+- 2895607: Fixed various memory leaks. 
+- 2907248: Fixed image layer cache crash.
+- 2905750: all file system read() functions now return -1 when
+offset given is past end of file.
 
-2/13/09: Bug Fix: Fixed bug 2596397, which was caused by mactime
-doing text-based sorting on dates of different lengths (fix was to
-pad with 0s).  Fix by Bruce Nikkel.
-
-3/23/09: Bug Fix: Fixed bug  2708195, for long reads in fragmented
-attributes.  Reported and patch by Jamie Butler (Mandiant).
-
-4/8/09: Fixed typo bugs in sorter as reported by Drew Hunt. 
-
-4/11/09: Feature. Addressed issue 2734458 regarding slow NTFS listing
-time by adding a orphan cache map.
-
-4/11/09: Feature.  Addressed issue 2677069 regarding VS type
-collisions with GPT and the DOS safety partition table.  DOS partition
-table ignored if it seems to be the safety partition.  Based on a
-variation of a patch submitted by Aaron Burghardt.
-
-4/11/09: Bug Fix: Fixed issue 2655831 regarding sorter not knowing
-about the ext2 and ext3 types (it knew about ext and the older
-forms).  Also added support for ufs1, ufs2, iso, and hfs. reported
-by Vinogratzky.
-
-4/11/09: Bug Fix: Fixed issue 2725799 regarding ifind not converting
-UTF16 names properly on Windows because it was using endian ordering
-of file system and not local system.  Created new conversion function
-and changed a couple of other spots that had similar bug.  Reported
-by Rob Joyce.
-
-4/11/09: Bug Fix: Fixed issue 2662168 re: warning messages on macs
-when reading the raw character device.  patch by Rob Joyce. 
-
-4/21/09: Bug Fix. Fixed issue 2778170 re: incorrect read size on resident
-attributes.  Patch by Jamie Butler. 
-
-4/21/09: Bug Fix. Fixed issue 2777633 re: missing second resolution on FAT
-creation times.  Reported by Eoghan Casey.
-
-4/21/09: Bug Fix: Fixed issue 2706862 re: default assignment of HFS
-permissions and type.  Patch by Rob Joyce.
-
-4/26/09: Update: Removed disk_stat and disk_sreset because they were out
-of date and hdparm now has the same functionality. 
-
-4/27/09: Update: Added support in mactime to read body files with comment
-lines.  Suggested by Simson Garfinkel. 
-
-4/28/09: Update: Added ability to build windows executables in VS w/out
-needing other image format  libraries.  
-
-4/29/09: Bug Fix: Added the READ_SHARE option to the CreateFile command
-for split image files.  Patch by Christopher Siwy. 
-
-5/3/09: Update: Abstracted name comparison to file system-specific function.
-
-5/4/09: Bug Fix: NTFS compression infinite loop fix by Jamie Butler.
-Bug 2786963.
-
-5/5/09: Bug Fix: FAT / blkls error getting slack because allocsize was 
-being set too small (and other values were not being reset).  Reported
-by Charlie Daly .  Bug 2645156.
-
-5/6/09: Bug Fix: Fixed part of bug 2367426 that addressed writing zeros
-after the initialized part of an NTFS file (VDL Slack). 
-
-5/7/09: Update: Finish rest of 2367426 so that uninitialized file
-space is shown if slack space is requested.
-
-5/8/09: Update: Resolved issue 2596153 by changing arguments to the
-img_open functions.
-
-5/26/09: Bug Fix. Resolved issue 2796945 for inifite loop in fs_attr. 
-Reported by Simson Garfinkel.
-
-5/29/09: Update: Added feature 2677107 that allows support for all
-image formats supported by AFFLIB.
-
-5/29/09: Update: Added feature 2790367 to move the 'stat' function
-until after all image format open calls to support formats that do
-not use actual files. 
-
-6/1/09: Update: Added feature 2206265 to add imgtools layer support
-to sigfind.
-
-7/13/09: Bug Fix: Fixed issue  2821031 re: missing fls -m fields.
-
-7/21/09: Update: Resolved Feature request 2206331 re: indirect blocks
-in UFS/Ext2.
-
-8/19/09: Bug Fix: Fixed part of 2840345 where extended DOS partitions
-in extended partitions were not marked as Meta. 
-
-10/27/09: Update: 'mmls -b' is now 'mmls -B'.  Similarly with istat -b.
-
-10/27/09: Update/Fix: Added sector_size value to IMG_INFO and file and volume
-systems now use it instead of assuming 512. Also added -b options to all
-command line tools to allow user to specify the device sector size.  This
-solves bug 2874854. 
-
-10/28/09: Update: Changed command line format for '-o' so that sector size
-is specified only via -b and not using '-o 62@4096'.
-
-10/28/09: Bug Fix: Fixed issue in reading attributes at offsets that are on boundary of run fragment.  Issue 2848162. 
-
-10/28/09: Bug Fix: Fixed issue reading last block of file system with blkcat.  Issue 2824457. 
-
-11/3/09: Relaxed partition sanity checking so that only first couple
-of partitions are checked to make sure that they fit in the image
-bounds. Issue 2874852.
-
-11/6/09: Fixed issue 2891285 that prevented reads from the last
-block of a file system when using the POSIX-style API.
-
-11/6/09: Fixed issue 2825690 that prevented blkls -A from working.  
-
-11/6/09: Applied patch in 2890983 for HFS timezone. 
-
-11/9/09: Applied patch from 2857258 for HFS permission flags. 
-
-11/20/09: Allow FAT files to have a 0 wdate to address issue 2901365.
-
-11/20/09: Added FAT directory sanity checks to prevent infinite loops for
-issue 2900761.
 
 ---------------- VERSION 3.0.1 -------------- 
 11/11/08: Bug Fix: Fixed crashing bug in ifind on FAT file system.
