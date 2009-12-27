@@ -105,7 +105,7 @@ Note that there are several ways of storing file content. For example, NTFS can 
 
 
 	\subsection fs_file_attrs Attributes 
-TSK allows each file to have multiple attributes.  An attribute is simply a data container.  Files in most file systems will have only one attribute, which stores the file content.  NTFS files will have multiple attributes because NTFS stores the file name, dates, and other information in different attributes. TSK allows you to read from all of the attributes. 
+TSK allows each file to have multiple attributes.  An attribute is simply a data container.  Files in most file systems will have only one attribute, which stores the file content.  NTFS files will have multiple attributes because NTFS stores the file name, dates, and other information in different attributes. TSK stores UFS and ExtX indirect blocks in separate attribute. TSK allows you to read from all of the attributes. 
 
 Each attribute has a type and an ID.  The types are defined in the TSK_FS_ATTR_TYPE_ENUM structure and the ID is an integer that is unique to the file. A file can have multiple attributes with the same type, but it can have only one attribute with a given id. 
 

@@ -111,6 +111,12 @@ proc_dir(TSK_FS_INFO * fs_info, TSK_STACK * stack,
         if (fs_file->meta) {
             ssize_t cnt;
 
+            /* Note that we could also cycle through all of the attributes in the
+             * file by using one of the tsk_fs_attr_get() functions and reading it
+             * with tsk_fs_attr_read().  See the File Systems section of the Library
+             * User's Guide for more details: 
+             * http://www.sleuthkit.org/sleuthkit/docs/api-docs/ */
+            
             // read file contents
             if (fs_file->meta->type == TSK_FS_META_TYPE_REG) {
                 int myflags = 0;

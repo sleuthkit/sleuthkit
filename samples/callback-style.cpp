@@ -85,6 +85,11 @@ proc_file(TSK_FS_FILE * fs_file, const char *path)
 
     TSK_MD5_Init(&md);
 
+    /* Note that we could also cycle through all of the attributes in the
+     * file by using one of the tsk_fs_attr_get() functions and walking it
+     * with tsk_fs_attr_walk(). See the File Systems section of the Library
+     * User's Guide for more details: 
+     * http://www.sleuthkit.org/sleuthkit/docs/api-docs/ */
     if (tsk_fs_file_walk
         (fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) myflags, file_act,
             (void *) &md)) {
