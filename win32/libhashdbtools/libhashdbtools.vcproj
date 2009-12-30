@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="9.00"
 	Name="libhashdbtools"
 	ProjectGUID="{01C4C49B-5B89-4049-8F9E-1906F82B798D}"
 	RootNamespace="libhashdbtools"
 	Keyword="Win32Proj"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform

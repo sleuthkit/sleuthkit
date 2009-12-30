@@ -19,9 +19,7 @@
 #if HAVE_LIBEWF
 
 #if defined(TSK_WIN32)
-#define HAVE_WIDE_CHARACTER_TYPE 1
-#define HAVE_WIDE_CHARACTER_SUPPORT_FUNCTIONS 1
-#include <config_windows.h>
+#include <config_msc.h>
 #endif
 
 #include <libewf.h>

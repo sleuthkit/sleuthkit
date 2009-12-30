@@ -143,8 +143,11 @@ ewf_open(int num_img, const TSK_TCHAR * const images[],
     /* check the magic before we call the library open */
     //if (img_file_header_signature_ncmp(images[0],
     //        "\x45\x56\x46\x09\x0d\x0a\xff\x00", 8) != 1) {
+#if defined (TSK_WIN32)
+    if (libewf_check_file_signature_wide(images[0]) == 0) {
+#else
     if (libewf_check_file_signature(images[0]) == 0) {
-
+#endif
         tsk_error_reset();
         tsk_errno = TSK_ERR_IMG_MAGIC;
         snprintf(tsk_errstr, TSK_ERRSTR_L, "ewf_open: Not an EWF file");
@@ -157,7 +160,7 @@ ewf_open(int num_img, const TSK_TCHAR * const images[],
 
 #if defined (TSK_WIN32)
     ewf_info->handle =
-        libewf_open((wchar_t * const *) images, num_img, LIBEWF_OPEN_READ);
+        libewf_open_wide((wchar_t * const *) images, num_img, LIBEWF_OPEN_READ);
 #else
     ewf_info->handle =
         libewf_open((char *const *) images, num_img, LIBEWF_OPEN_READ);

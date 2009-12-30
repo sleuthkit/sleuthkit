@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual C++ Express 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libauxtools", "libauxtools\libauxtools.vcproj", "{F12AA46A-EA91-4AB6-8246-7800DF6128A4}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libimgtools", "libimgtools\libimgtools.vcproj", "{47E72886-0B51-4098-BAF4-68B4494F0872}"

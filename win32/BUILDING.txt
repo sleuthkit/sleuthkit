@@ -1,53 +1,25 @@
 This file describes how to build TSK using Visual Studio (see README_win32.txt for instructions on building the win32 libraries and executables from Linux).  If you do not have a copy of Visual Studio, you can use the free Express Edition:
 
-
     http://www.microsoft.com/express/vc/
-
-
 
 The Visual Studio Solution file has three build targets: Debug, Debug_NoLibs, and Release.  Debug and Release require that libewf exist and be compiled (libewf provides support for E01 image files).   Debug_NoLibs does not require libewf and you should be able to compile Debug_NoLibs without any additional setup.
 
-The steps below outline the process required to compile the Debug and Release targets. 
+The steps below outline the process required to compile the Debug and Release targets.
 
-
-
-1) Download latest libewf from:
-
+1) Download libewf-20091128 or later from:
     http://sourceforge.net/projects/libewf/
 
-2) Open archive file, rename directory from libewf-200XXXX to libewf, and move the libewf directory to the win32 subdirectory.  For example, the result should be something like: sleuthkit-3.0.0\win32\libewf.
+2) Open archive file, rename directory from libewf-2009XXXX to libewf, and move the libewf directory to the win32 TSK subdirectory.  For example, the result should be something like: sleuthkit-3.0.0\win32\libewf.
 
-
-
-3) Follow the README instructions in libewf to build libewf_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use both the Debug and Release versions of libewf, depending on the current build type of TSK. So, you may want to build both versions of libewf_dll at the same time. 
-
-
-4) You will need to add to Preprocessor defines to libewf_dll.  To do so, open libewf in Visual Studio and right click on the libewf_dll project to open its properties.  Configuration Properties-> C/C++ -> Preprocessor -> Preprocessor Defines.  Add the following two to both the debug and release versions:
-
-
-    HAVE_WIDE_CHARACTER_SUPPORT_FUNCTIONS
-
-    HAVE_WIDE_CHARACTER_TYPE
-
-
-Build the dll after adding these options.
-
-
+3) Follow the README instructions in libewf to build libewf_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libewf_dll.
 
 5) Open the TSK Visual Studio Solution file in the win32 directory. 
 
-
-
 6) Compile a Debug or Release version of the libraries or executables. 
 
-
-
-7) Note that the libraries and executables will depend on the libewf and zlib dll files (which are located in libewf/msvscpp/release (or debug) and libewf/msvscpp/zlib). 
-
+7) Note that the libraries and executables will depend on the libewf and zlib dll files (which are located in libewf/msvscpp/release  and libewf/msvscpp/zlib). 
 
 
 -------------------------------------------------------------------
-
 carrier <at> sleuthkit <dot> org
-
 Brian Carrier
