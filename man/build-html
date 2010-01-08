@@ -1,5 +1,11 @@
 #!/usr/bin/perl -w
 
+# Creates HTML versions of the man pages and stores them in the 
+# local www directory. 
+#
+# NOTE: This has been hard coded to work on one of my development
+# systems.  It will need to be updated to be more general. 
+
 use strict;
 
 my $BACK = "";
