@@ -58,7 +58,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir /usr/share/tsk3
 %dir /usr/share/tsk3/sorter
 /usr/share/tsk3/sorter/*
-%doc CHANGES.txt INSTALL.txt README.txt README_win32.txt
+%doc ChangeLog.txt NEWS.txt INSTALL.txt README.txt README_win32.txt
 
 
 
