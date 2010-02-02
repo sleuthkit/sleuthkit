@@ -176,6 +176,18 @@ main(int argc, char **argv1)
         exit(1);
     }
 
+#ifdef TSK_WIN32
+    if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_FS_WRITE;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "mmcat: error setting stdout to binary: %s",
+            strerror(errno));
+        return 1;
+    }
+#endif
+
+
     for (addr = 0; addr < vs_part->len; addr++) {
         ssize_t retval;
         retval =
