@@ -1229,8 +1229,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (fs_attr_run->addr != 0) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_GENFS;
@@ -1257,8 +1257,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (addr > fs->last_block) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_BLK_NUM;
@@ -1298,8 +1298,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             TSK_FS_BLOCK_FLAG_COMP;
                         retval = is_clustalloc(ntfs, comp_unit[i]);
                         if (retval == -1) {
-                            if (fs_attr->fs_file->
-                                meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                            if (fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_UNALLOC)
                                 tsk_errno = TSK_ERR_FS_RECOVER;
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -2969,8 +2969,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     // versions of NTFS.
     for (i = 0; i < ntfs->sii_data.used; i++) {
         if (tsk_getu32(fs->endian,
-                ((ntfs_attr_sii *) (ntfs->sii_data.
-                        buffer))[i].key_sec_id) == secid) {
+                ((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i].
+                key_sec_id) == secid) {
             sii = &((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i];
             break;
         }
@@ -4274,23 +4274,24 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                 tsk_fprintf(hFile, "error looking attribute name\n");
                 break;
             }
-            tsk_fprintf(hFile,
-                "Type: %s (%" PRIu32 "-%" PRIu16
-                ")   Name: %s   %sResident%s%s%s   size: %"
-                PRIuOFF "\n", type, fs_attr->type,
-                fs_attr->id, fs_attr->name,
-                (fs_attr->flags & TSK_FS_ATTR_NONRES) ? "Non-" :
-                "",
-                (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted"
-                : "",
-                (fs_attr->flags & TSK_FS_ATTR_COMP) ?
-                ", Compressed" : "",
-                (fs_attr->flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" : "",
-                fs_attr->size);
 
             /* print the layout if it is non-resident and not "special" */
             if (fs_attr->flags & TSK_FS_ATTR_NONRES) {
                 NTFS_PRINT_ADDR print_addr;
+
+                tsk_fprintf(hFile,
+                    "Type: %s (%" PRIu32 "-%" PRIu16
+                    ")   Name: %s   Non-Resident%s%s%s   size: %"
+                    PRIuOFF "  init_size: %" PRIuOFF "\n", type,
+                    fs_attr->type, fs_attr->id, fs_attr->name,
+                    (fs_attr->
+                        flags & TSK_FS_ATTR_ENC) ? ", Encrypted" : "",
+                    (fs_attr->
+                        flags & TSK_FS_ATTR_COMP) ? ", Compressed" : "",
+                    (fs_attr->
+                        flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" : "",
+                    fs_attr->size, fs_attr->nrd.initsize);
+
                 print_addr.idx = 0;
                 print_addr.hFile = hFile;
                 if (tsk_fs_file_walk_type(fs_file, fs_attr->type,
@@ -4304,6 +4305,21 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                 }
                 if (print_addr.idx != 0)
                     tsk_fprintf(hFile, "\n");
+            }
+            else {
+                tsk_fprintf(hFile,
+                    "Type: %s (%" PRIu32 "-%" PRIu16
+                    ")   Name: %s   Resident%s%s%s   size: %"
+                    PRIuOFF "\n", type, fs_attr->type,
+                    fs_attr->id, fs_attr->name,
+                    (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted"
+                    : "",
+                    (fs_attr->flags & TSK_FS_ATTR_COMP) ?
+                    ", Compressed" : "",
+                    (fs_attr->
+                        flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" : "",
+                    fs_attr->size);
+
             }
         }
     }
