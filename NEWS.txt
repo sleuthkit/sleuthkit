@@ -1,6 +1,13 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 3.1.1 --------------
+
+Bug Fixes
+- 2954703: ISO9660 missing files because duplicate files
+had same starting block. 
+
+
 ---------------- VERSION 3.1.0 --------------
 
 New Features and Changes

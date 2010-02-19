@@ -105,6 +105,11 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
         if ((a_fs_name->meta_addr == a_fs_dir->names[i].meta_addr) &&
             (strcmp(a_fs_name->name, a_fs_dir->names[i].name) == 0)) {
 
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "tsk_fs_dir_add: removing duplicate entry: %s (%"
+                    PRIuINUM ")\n", a_fs_name->name, a_fs_name->meta_addr);
+
             /* We do not check type because then we cannot detect NTFS orphan file
              * duplicates that are added as "-/r" while a similar entry exists as "r/r"  
              (a_fs_name->type == a_fs_dir->names[i].type)) { */
