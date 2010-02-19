@@ -68,7 +68,7 @@
 
 
 /* free all memory used by inode linked list */
-void
+static void
 iso9660_inode_list_free(TSK_FS_INFO * fs)
 {
     ISO_INFO *iso = (ISO_INFO *) fs;
@@ -93,7 +93,7 @@ iso9660_inode_list_free(TSK_FS_INFO * fs)
  * @param hFile File handle to print details to  (or NULL for no printing)
  * @returns NULL on error
  */
-rockridge_ext *
+static rockridge_ext *
 parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
 {
     rockridge_ext *rr;
@@ -341,7 +341,30 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
     return rr;
 }
 
-/* get directory entries from current directory and add them to the inode list.
+
+///////////////////////////////////////////////////////////////////////////
+// The following functions are responsible for loading all of the file metadata into memory.
+// The process is that the Path table is processed first.  It contains an entry for each
+// directory.  That info is then used to locate the directory contents and those contents
+// are then processed. 
+//
+// Files do not have a corresponding metadata entry, so we assign them based
+// on the order that they are loaded. 
+///////////////////////////////////////////////////////////////////////////
+
+
+/* XXX Instead of loading all of the file metadata, we could instead save a mapping
+ * between inode number and the byte offset of the metadata (and any other data
+ * needed for fast lookups).
+ */
+
+/** \internal
+ * Process the contents of a directory and load the
+ * information about files in that directory into ISO_INFO.  This is called
+ * by the methods that process the path table (which contains pointers to the 
+ * various directories).  The results in ISO_INFO are used to identify the
+ * inode address of files found from dent_walk and for file lookups. 
+ *
  * Type: ISO9660_TYPE_PVD for primary volume descriptor, ISO9660_TYPE_SVD for
  * supplementary volume descriptor (do Joliet utf-8 conversion).
  *
@@ -353,8 +376,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
  *
  * @returns total number of files or -1 on error
  */
-
-int
+static int
 iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
     int ctype, char *a_fn)
 {
@@ -456,8 +478,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         tsk_UTF16toUTF8(fs->endian,
                         (const UTF16 **) &name16,
                         (UTF16 *) & buf[b_offs + dentry->fi_len], &name8,
-                        (UTF8 *) ((uintptr_t) & in_node->
-                            inode.fn[ISO9660_MAXNAMLEN_STD]),
+                        (UTF8 *) ((uintptr_t) & in_node->inode.
+                            fn[ISO9660_MAXNAMLEN_STD]),
                         TSKlenientConversion);
                     if (retVal != TSKconversionOK) {
                         if (tsk_verbose)
@@ -548,39 +570,40 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 in_node->inode.susp_len = 0;
             }
 
-
             /* add inode to the list */
-            /* list not empty */
             if (iso->in_list) {
-                iso9660_inode_node *tmp;
-                tmp = iso->in_list;
-                while ((tmp->next)
-                    && ((in_node->offset != tmp->offset)
-                        || (!in_node->size)
-                        || (!tmp->size)))
-                    tmp = tmp->next;
+                iso9660_inode_node *tmp, *prev_tmp;
 
-                /* see if the file is already in list */
-                if ((in_node->offset == tmp->offset) && (in_node->size)
-                    && (tmp->size)) {
-                    if ((in_node->inode.rr) && (!tmp->inode.rr)) {
-                        tmp->inode.rr = in_node->inode.rr;
-                        in_node->inode.rr = NULL;
+                for (tmp = iso->in_list; tmp; tmp = tmp->next) {
+                    /* if it already exists, get rid of the new one. 
+                     * It may already exist from a previous volume descriptor. */
+                    if ((in_node->offset == tmp->offset)
+                        && (in_node->size == tmp->size)
+                        && (in_node->size)) {
+                        if ((in_node->inode.rr) && (!tmp->inode.rr)) {
+                            tmp->inode.rr = in_node->inode.rr;
+                            in_node->inode.rr = NULL;
+                        }
+                        if (in_node->inode.rr)
+                            free(in_node->inode.rr);
+
+                        if (tsk_verbose)
+                            tsk_fprintf(stderr,
+                                "iso9660_load_inodes_dir: Removing duplicate entry for: %s\n",
+                                in_node->inode.fn);
+                        free(in_node);
+                        in_node = NULL;
+                        count--;
+                        break;
                     }
-                    if (in_node->inode.rr)
-                        free(in_node->inode.rr);
-
-                    free(in_node);
-                    count--;
-
+                    prev_tmp = tmp;
                 }
-                /* file wasn't in list, add it */
-                else {
-                    tmp->next = in_node;
+
+                // add it to the end (if we didn't get rid of it above)
+                if (in_node) {
+                    prev_tmp->next = in_node;
                     in_node->next = NULL;
                 }
-
-                /* list is empty */
             }
             else {
                 iso->in_list = in_node;
@@ -595,9 +618,10 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
 
 
 /**
- * Process the path table for a joliet secondary volume descriptor.
- * This will load each
- * of the directories in the table pointed to by he SVD.
+ * Process the path table for a joliet secondary volume descriptor
+ * and load all of the files pointed to it.
+ * The path table contains an entry for each directory.  This code
+ * then locates each of the diretories and proceses the contents. 
  *
  * @param fs File system to process
  * @param svd Pointer to the secondary volume descriptor
@@ -629,7 +653,7 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
         UTF16 *name16;
         UTF8 *name8;
 
-        // read the next entry
+        // Read the path table entry
         cnt = tsk_fs_read(fs, pt_offs, (char *) &dir, (int) sizeof(dir));
         if (cnt != sizeof(dir)) {
             if (cnt >= 0) {
@@ -695,6 +719,7 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
             (TSK_OFF_T) (tsk_getu32(fs->endian,
                 dir.ext_loc) * fs->block_size);
 
+        // process the directory contents
         count =
             iso9660_load_inodes_dir(fs, extent, count,
             ISO9660_CTYPE_UTF16, utf8buf);
@@ -707,8 +732,8 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
 }
 
 /**
- * Proces the path table and identify the directories that are listed.  The contents of each directory will also
- * be processed.  The result will be that the list of inodes in the image will be loaded in ISO_INFO.
+ * Proces the path table and the directories that are listed in it.  
+ * The files in each directory will be stored in ISO_INFO. 
  *
  * @param iso File system to analyze and store results in
  * @returns -1 on error or count of inodes found.
@@ -763,7 +788,7 @@ iso9660_load_inodes_pt(ISO_INFO * iso)
         while (pt_len > 0) {
             int readlen;
 
-            /* get next dir... */
+            /* get next path table entry... */
             cnt = tsk_fs_read(fs, pt_offs, (char *) &dir, sizeof(dir));
             if (cnt != sizeof(dir)) {
                 if (cnt >= 0) {
@@ -805,6 +830,7 @@ iso9660_load_inodes_pt(ISO_INFO * iso)
                 (TSK_OFF_T) (tsk_getu32(fs->endian,
                     dir.ext_loc) * fs->block_size);
 
+            // process the directory contents
             count =
                 iso9660_load_inodes_dir(fs, extent, count,
                 ISO9660_CTYPE_ASCII, fn);

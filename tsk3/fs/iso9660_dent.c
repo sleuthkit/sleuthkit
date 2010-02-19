@@ -74,7 +74,18 @@
 
 
 
-uint8_t
+/** \internal
+ * process the data from inside of a directory and load the corresponding
+ * file data into a TSK_FS_DIR structure.
+ *
+ * @param a_fs File system
+ * @param a_fs_dir Structore to store file names into
+ * @param buf Buffer that contains the directory content
+ * @param a_length Number of bytes in buffer
+ * @param a_addr The metadata address for the directory being processed
+ * @returns TSK_ERR on error and TSK_OK otherwise
+ */
+static uint8_t
 iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
     size_t a_length, TSK_INUM_T a_addr)
 {
@@ -132,33 +143,36 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
         if ((dd->entry_len) && (buf_idx + dd->entry_len < a_length)) {
             int i;
 
-            // find the corresponding entry in the inode/file list
-            in = iso->in_list;
-            while ((in)
-                && (tsk_getu32(a_fs->endian,
-                        in->inode.dr.ext_loc_m) != tsk_getu32(a_fs->endian,
-                        dd->ext_loc_m))) {
-                in = in->next;
+            /* We need to find the data in the pre-processed list because that
+             * contains the meta data address that TSK assigned to this file.  
+             * We find the entry by looking for one 
+             * that starts with the same block and has the same size.  We used to 
+             * not use the size, but we found an image
+             * that had a file with 0 bytes with the same starting block as another
+             * file. */
+            for (in = iso->in_list; in; in = in->next) {
+                if ((tsk_getu32(a_fs->endian,
+                            in->inode.dr.ext_loc_m) ==
+                        tsk_getu32(a_fs->endian, dd->ext_loc_m))
+                    && (in->size == tsk_getu32(a_fs->endian,
+                            dd->data_len_m)))
+                    break;
             }
 
             // we may have not found it because we are reading corrupt data...
-            if ((!in)
-                || (tsk_getu32(a_fs->endian,
-                        in->inode.dr.ext_loc_m) != tsk_getu32(a_fs->endian,
-                        dd->ext_loc_m))) {
+            if (!in) {
                 buf_idx++;
                 continue;
             }
 
+            // copy the data in fs_name for loading
             fs_name->meta_addr = in->inum;
             strncpy(fs_name->name, in->inode.fn, ISO9660_MAXNAMLEN);
 
             /* Clean up name */
-            i = 0;
-            while (fs_name->name[i] != '\0') {
+            for (i = 0; fs_name->name[i] != '\0'; i++) {
                 if (TSK_IS_CNTRL(fs_name->name[i]))
                     fs_name->name[i] = '^';
-                i++;
             }
 
             if (dd->flags & ISO9660_FLAG_DIR)
@@ -175,24 +189,23 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
          * directory.  The contents are  block aligned. So, we 
          * scan ahead until we get either a non-zero entry or the block boundary */
         else {
-
-            while (buf_idx < a_length - sizeof(iso9660_dentry)) {
+            for (; buf_idx < a_length - sizeof(iso9660_dentry); buf_idx++) {
                 if (buf[buf_idx] != 0) {
                     dd = (iso9660_dentry *) & buf[buf_idx];
                     if ((dd->entry_len)
                         && (buf_idx + dd->entry_len < a_length))
                         break;
                 }
+
                 if (buf_idx % a_fs->block_size == 0)
                     break;
-
-                buf_idx++;
             }
         }
     }
 
     free(buf);
     tsk_fs_name_free(fs_name);
+
     return TSK_OK;
 }
 
@@ -279,6 +292,7 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_ERR;
     }
 
+    // process the contents
     retval = iso9660_proc_dir(a_fs, fs_dir, buf, length, a_addr);
 
     return retval;

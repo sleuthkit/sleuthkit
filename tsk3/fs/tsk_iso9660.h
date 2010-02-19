@@ -350,7 +350,6 @@ typedef struct {
 
 /** \internal
  * Internally used structure to hold basic inode information.
- *
  */
 typedef struct {
     iso9660_dentry dr;          /* directory record */
@@ -365,9 +364,9 @@ typedef struct {
 /* inode linked list node */
 typedef struct iso9660_inode_node {
     iso9660_inode inode;
-    TSK_OFF_T offset;           /* byte offset of inode into disk */
-    TSK_INUM_T inum;            /* identifier of inode */
-    int size;                   /* kludge: used to flag fifos, etc */
+    TSK_OFF_T offset;           /* byte offset of first block of file on disk */
+    TSK_INUM_T inum;            /* identifier of inode (assigned by TSK) */
+    int size;                   /* number of bytes in file */
     int ea_size;                /* length of ext attributes */
     struct iso9660_inode_node *next;
 } iso9660_inode_node;
