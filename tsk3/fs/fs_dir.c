@@ -783,7 +783,8 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
     /* We want only orphans, then check if this
      * inode is in the seen list 
      */
-    if (tsk_list_find(fs->list_inum_named, a_fs_file->meta->addr)) {
+    if ((fs->list_inum_named)
+        && (tsk_list_find(fs->list_inum_named, a_fs_file->meta->addr))) {
         return TSK_WALK_CONT;
     }
 
@@ -850,12 +851,8 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
         if (tsk_fs_dir_load_inum_named(a_fs) != TSK_OK) {
             return TSK_ERR;
         }
-
-        // were there any unallocated meta structures with names?
-        if (a_fs->list_inum_named == NULL) {
-            a_fs_dir->names_used = 0;
-            return TSK_OK;
-        }
+        a_fs->isOrphanHunting = 1;
+        // note that list_inum_named could still be NULL if there are no deleted names.
     }
 
     /* Now we walk the unallocated metadata structures and find ones that are 
