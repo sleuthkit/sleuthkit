@@ -9,6 +9,7 @@ had same starting block.
 - 2954707: ISO9660 missing some files with zero length and
 duplicate starting block. Also changed behavior of how
 multiple volume descriptors are processed. 
+- 2955898: Orphan files not found if no deleted file names exist. 
 
 
 ---------------- VERSION 3.1.0 --------------
