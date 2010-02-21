@@ -1229,8 +1229,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (fs_attr_run->addr != 0) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->meta->
-                        flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->
+                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_GENFS;
@@ -1257,8 +1257,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (addr > fs->last_block) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->meta->
-                        flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->
+                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_BLK_NUM;
@@ -1298,8 +1298,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             TSK_FS_BLOCK_FLAG_COMP;
                         retval = is_clustalloc(ntfs, comp_unit[i]);
                         if (retval == -1) {
-                            if (fs_attr->fs_file->meta->
-                                flags & TSK_FS_META_FLAG_UNALLOC)
+                            if (fs_attr->fs_file->
+                                meta->flags & TSK_FS_META_FLAG_UNALLOC)
                                 tsk_errno = TSK_ERR_FS_RECOVER;
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -2436,10 +2436,13 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file)
     }
 
     /* The entry has been 'used' if it has attributes */
-    if (a_fs_file->meta->attr != NULL)
-        a_fs_file->meta->flags |= TSK_FS_META_FLAG_USED;
-    else
+
+    if ((a_fs_file->meta->attr == NULL)
+        || (a_fs_file->meta->attr->head == NULL)
+        || ((a_fs_file->meta->attr->head->flags & TSK_FS_ATTR_INUSE) == 0))
         a_fs_file->meta->flags |= TSK_FS_META_FLAG_UNUSED;
+    else
+        a_fs_file->meta->flags |= TSK_FS_META_FLAG_USED;
 
     return 0;
 }
@@ -2969,8 +2972,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     // versions of NTFS.
     for (i = 0; i < ntfs->sii_data.used; i++) {
         if (tsk_getu32(fs->endian,
-                ((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i].
-                key_sec_id) == secid) {
+                ((ntfs_attr_sii *) (ntfs->sii_data.
+                        buffer))[i].key_sec_id) == secid) {
             sii = &((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i];
             break;
         }
@@ -3595,15 +3598,6 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 NTFS_MFT_INUSE) ? TSK_FS_META_FLAG_ALLOC :
             TSK_FS_META_FLAG_UNALLOC);
 
-        /* We consider USED entries to be ones with attributes */
-        if (tsk_getu16(fs->endian, ntfs->mft->attr_off) == 0)
-            myflags |= TSK_FS_META_FLAG_UNUSED;
-        else
-            myflags |= TSK_FS_META_FLAG_USED;
-
-        if ((flags & myflags) != myflags)
-            continue;
-
         /* If we want only orphans, then check if this
          * inode is in the seen list
          * */
@@ -3612,7 +3606,6 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             (tsk_list_find(fs->list_inum_named, mftnum))) {
             continue;
         }
-
 
         /* copy into generic format */
         if ((retval = ntfs_dinode_copy(ntfs, fs_file)) != TSK_OK) {
@@ -3626,6 +3619,12 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             tsk_fs_file_close(fs_file);
             return 1;
         }
+
+        myflags |=
+            (fs_file->meta->
+            flags & (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED));
+        if ((flags & myflags) != myflags)
+            continue;
 
         /* call action */
         retval = a_action(fs_file, ptr);
@@ -4284,13 +4283,12 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                     ")   Name: %s   Non-Resident%s%s%s   size: %"
                     PRIuOFF "  init_size: %" PRIuOFF "\n", type,
                     fs_attr->type, fs_attr->id, fs_attr->name,
-                    (fs_attr->
-                        flags & TSK_FS_ATTR_ENC) ? ", Encrypted" : "",
-                    (fs_attr->
-                        flags & TSK_FS_ATTR_COMP) ? ", Compressed" : "",
-                    (fs_attr->
-                        flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" : "",
-                    fs_attr->size, fs_attr->nrd.initsize);
+                    (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted" :
+                    "",
+                    (fs_attr->flags & TSK_FS_ATTR_COMP) ? ", Compressed" :
+                    "",
+                    (fs_attr->flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" :
+                    "", fs_attr->size, fs_attr->nrd.initsize);
 
                 print_addr.idx = 0;
                 print_addr.hFile = hFile;
@@ -4316,9 +4314,8 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                     : "",
                     (fs_attr->flags & TSK_FS_ATTR_COMP) ?
                     ", Compressed" : "",
-                    (fs_attr->
-                        flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" : "",
-                    fs_attr->size);
+                    (fs_attr->flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" :
+                    "", fs_attr->size);
 
             }
         }
