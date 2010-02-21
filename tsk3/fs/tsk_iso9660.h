@@ -132,6 +132,10 @@
 #define ISO9660_CTYPE_ASCII 0
 #define ISO9660_CTYPE_UTF16 1
 
+
+
+
+
 /* recording date and time */
 typedef struct {
     uint8_t year;               /* years since 1900 */
@@ -143,20 +147,6 @@ typedef struct {
     int8_t gmt_off;             /* greenwich mean time offset (in 15 minute intervals) */
 } record_data;
 
-/* data and time format
- * all are stored as "digits" according to specifications for iso9660
- */
-typedef struct {
-    uint8_t year[4];            /* 1 to 9999 */
-    uint8_t month[2];           /* 1 to 12 */
-    uint8_t day[2];             /* 1 to 31 */
-    uint8_t hour[2];            /* 0 to 23 */
-    uint8_t min[2];             /* 0 to 59 */
-    uint8_t sec[2];             /* 0 to 59 */
-    uint8_t hun[2];             /* hundredths of a second */
-    uint8_t gmt_off;            /* GMT offset */
-} date_time;
-
 /* iso 9660 directory record */
 typedef struct {
     uint8_t entry_len;          /* length of directory record */
@@ -165,7 +155,7 @@ typedef struct {
     uint8_t ext_loc_m[4];       /* location of extent - be */
     uint8_t data_len_l[4];      /* data length - le */
     uint8_t data_len_m[4];      /* data length - be */
-    record_data rec_time;       /* recording date and time */
+    record_data rec_time;       /* recording date and time (7 bytes) */
     int8_t flags;               /* file flags */
     uint8_t unit_sz;            /* file unit size */
     uint8_t gap_sz;             /* interleave gap size */
@@ -192,6 +182,22 @@ typedef struct {
     uint8_t len;                /* length of file identifier */
     char name;
 } iso9660_root_dentry;
+
+
+/* data and time format
+ * all are stored as "digits" according to specifications for iso9660
+ */
+typedef struct {
+    uint8_t year[4];            /* 1 to 9999 */
+    uint8_t month[2];           /* 1 to 12 */
+    uint8_t day[2];             /* 1 to 31 */
+    uint8_t hour[2];            /* 0 to 23 */
+    uint8_t min[2];             /* 0 to 59 */
+    uint8_t sec[2];             /* 0 to 59 */
+    uint8_t hun[2];             /* hundredths of a second */
+    uint8_t gmt_off;            /* GMT offset */
+} date_time;
+
 
 /* generic volume descriptor */
 typedef struct {
@@ -291,7 +297,7 @@ typedef struct {
     uint8_t len_di;             /* length of directory identifier */
     uint8_t attr_len;           /* extended attribute record length */
     uint8_t ext_loc[4];         /* location of extent */
-    uint8_t par_dir[2];         /* parent directory number */
+    uint8_t par_dir[2];         /* parent directory number (its entry in the path table) */
 } path_table_rec;
 
 /* extended attribute record */
@@ -357,6 +363,7 @@ typedef struct {
     char fn[ISO9660_MAXNAMLEN + 1];     /* file name */
     rockridge_ext *rr;          /* RockRidge Extensions */
     int version;
+    uint8_t is_orphan;          /* 1 if the file was found from processing other volume descriptors besides the first one, 0 otherwise */
     TSK_OFF_T susp_off;         ///< Byte offset in image of SUSP (or NULL)
     TSK_OFF_T susp_len;         ///< Length in bytes of SUSP
 } iso9660_inode;
@@ -364,7 +371,8 @@ typedef struct {
 /* inode linked list node */
 typedef struct iso9660_inode_node {
     iso9660_inode inode;
-    TSK_OFF_T offset;           /* byte offset of first block of file on disk */
+    TSK_OFF_T offset;           /* byte offset of first block of file in file system */
+    TSK_OFF_T dentry_offset;    /* byte offset of directory entry structure in file system */
     TSK_INUM_T inum;            /* identifier of inode (assigned by TSK) */
     int size;                   /* number of bytes in file */
     int ea_size;                /* length of ext attributes */
