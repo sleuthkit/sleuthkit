@@ -6,6 +6,9 @@ Numbers refer to SourceForge.net tracker IDs:
 Bug Fixes
 - 2954703: ISO9660 missing files because duplicate files
 had same starting block. 
+- 2954707: ISO9660 missing some files with zero length and
+duplicate starting block. Also changed behavior of how
+multiple volume descriptors are processed. 
 
 
 ---------------- VERSION 3.1.0 --------------
