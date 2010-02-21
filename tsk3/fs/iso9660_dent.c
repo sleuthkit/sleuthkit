@@ -83,11 +83,12 @@
  * @param buf Buffer that contains the directory content
  * @param a_length Number of bytes in buffer
  * @param a_addr The metadata address for the directory being processed
+ * @param a_dir_addr The block offset where this directory starts
  * @returns TSK_ERR on error and TSK_OK otherwise
  */
 static uint8_t
 iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
-    size_t a_length, TSK_INUM_T a_addr)
+    size_t a_length, TSK_INUM_T a_addr, TSK_OFF_T a_dir_addr)
 {
     ISO_INFO *iso = (ISO_INFO *) a_fs;
     TSK_FS_NAME *fs_name;
@@ -95,6 +96,7 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
 
     iso9660_dentry *dd;         /* directory descriptor */
     iso9660_inode_node *in;
+    TSK_OFF_T dir_offs = a_dir_addr * a_fs->block_size;
 
     if ((fs_name = tsk_fs_name_alloc(ISO9660_MAXNAMLEN + 1, 0)) == NULL)
         return TSK_ERR;
@@ -145,17 +147,13 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
 
             /* We need to find the data in the pre-processed list because that
              * contains the meta data address that TSK assigned to this file.  
-             * We find the entry by looking for one 
-             * that starts with the same block and has the same size.  We used to 
-             * not use the size, but we found an image
+             * We find the entry by looking for one that was stored at the same
+             * byte offset that we now are.  We used to use the extent location, but 
+             * we found an image
              * that had a file with 0 bytes with the same starting block as another
              * file. */
             for (in = iso->in_list; in; in = in->next) {
-                if ((tsk_getu32(a_fs->endian,
-                            in->inode.dr.ext_loc_m) ==
-                        tsk_getu32(a_fs->endian, dd->ext_loc_m))
-                    && (in->size == tsk_getu32(a_fs->endian,
-                            dd->data_len_m)))
+                if (in->dentry_offset == dir_offs + buf_idx)
                     break;
             }
 
@@ -265,6 +263,10 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         }
     }
 
+    //  handle the orphan directory if its contents were requested
+    if (a_addr == TSK_FS_ORPHANDIR_INUM(a_fs)) {
+        return tsk_fs_dir_find_orphans(a_fs, fs_dir);
+    }
 
     fs_dir->fs_file = tsk_fs_file_open_meta(a_fs, NULL, a_addr);
     if (fs_dir->fs_file == NULL) {
@@ -293,7 +295,26 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     }
 
     // process the contents
-    retval = iso9660_proc_dir(a_fs, fs_dir, buf, length, a_addr);
+    retval = iso9660_proc_dir(a_fs, fs_dir, buf, length, a_addr,
+        fs_dir->fs_file->meta->attr->head->nrd.run->addr);
+
+    // if we are listing the root directory, add the Orphan directory entry
+    if (a_addr == a_fs->root_inum) {
+        TSK_FS_NAME *fs_name = tsk_fs_name_alloc(256, 0);
+        if (fs_name == NULL)
+            return TSK_ERR;
+
+        if (tsk_fs_dir_make_orphan_dir_name(a_fs, fs_name)) {
+            tsk_fs_name_free(fs_name);
+            return TSK_ERR;
+        }
+
+        if (tsk_fs_dir_add(fs_dir, fs_name)) {
+            tsk_fs_name_free(fs_name);
+            return TSK_ERR;
+        }
+        tsk_fs_name_free(fs_name);
+    }
 
     return retval;
 }

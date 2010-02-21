@@ -372,13 +372,13 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
  * @param a_offs Byte offset of directory start
  * @param count previous file count
  * @param ctype Character set used for the names
- * @param a_fn Name of the directory  (in UTF-8)
+ * @param a_fn Name of the directory to use for the "." entry (in UTF-8)
  *
  * @returns total number of files or -1 on error
  */
 static int
 iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
-    int ctype, char *a_fn)
+    int ctype, const char *a_fn, uint8_t is_first)
 {
     ISO_INFO *iso = (ISO_INFO *) fs;
     int s_cnt = 1;              // count of sectors needed for dir
@@ -419,7 +419,15 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 b_offs += 2;
                 continue;
             }
-            b_offs += sizeof(iso9660_dentry);
+
+            /* when processing the other volume descriptor directories, we ignore the 
+             * directories because we have no way of detecting if it is a duplicate of
+             * a directory from the other volume descriptor (they use different blocks).
+             * We will see the contents of this directory from the path table anyway. */
+            if ((dentry->flags & ISO9660_FLAG_DIR) && (is_first == 0)) {
+                b_offs += dentry->entry_len;
+                continue;
+            }
 
             // allocate a node for this entry
             in_node = (iso9660_inode_node *)
@@ -429,7 +437,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
             }
 
             // the first entry should have no name and is for the current directory
-            if ((i == 0) && (b_offs == sizeof(iso9660_dentry))) {
+            if ((i == 0) && (b_offs == 0)) {
                 if (dentry->fi_len != 0) {
                     // XXX
                 }
@@ -450,8 +458,17 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 strncpy(in_node->inode.fn, a_fn,
                     ISO9660_MAXNAMLEN_STD + 1);
 
-                if (sizeof(iso9660_dentry) % 2)
-                    b_offs++;
+                /* for all directories except the root, we skip processing the "." and ".." entries because
+                 * they duplicate the other entires and the dent_walk code will rely on the offset 
+                 * for the entry in the parent directory. */
+                if (count != 0) {
+                    free(in_node);
+                    in_node = NULL;
+                    b_offs += dentry->entry_len;
+                    dentry = (iso9660_dentry *) & buf[b_offs];
+                    b_offs += dentry->entry_len;
+                    continue;
+                }
             }
             else {
                 char *file_ver;
@@ -462,7 +479,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     UTF8 *name8;
                     int retVal;
 
-                    name16 = (UTF16 *) & buf[b_offs];
+                    name16 =
+                        (UTF16 *) & buf[b_offs + sizeof(iso9660_dentry)];
                     // the name is in UTF-16 BE -- convert to LE if needed
                     if (fs->endian & TSK_LIT_ENDIAN) {
                         int a;
@@ -477,9 +495,10 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     retVal =
                         tsk_UTF16toUTF8(fs->endian,
                         (const UTF16 **) &name16,
-                        (UTF16 *) & buf[b_offs + dentry->fi_len], &name8,
-                        (UTF8 *) ((uintptr_t) & in_node->inode.
-                            fn[ISO9660_MAXNAMLEN_STD]),
+                        (UTF16 *) & buf[b_offs + sizeof(iso9660_dentry) +
+                            dentry->fi_len], &name8,
+                        (UTF8 *) ((uintptr_t) & in_node->
+                            inode.fn[ISO9660_MAXNAMLEN_STD]),
                         TSKlenientConversion);
                     if (retVal != TSKconversionOK) {
                         if (tsk_verbose)
@@ -498,7 +517,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     if (readlen > ISO9660_MAXNAMLEN_STD)
                         readlen = ISO9660_MAXNAMLEN_STD;
 
-                    memcpy(in_node->inode.fn, &buf[b_offs], readlen);
+                    memcpy(in_node->inode.fn,
+                        &buf[b_offs + sizeof(iso9660_dentry)], readlen);
                     in_node->inode.fn[readlen] = '\0';
                 }
                 else {
@@ -522,13 +542,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     '.')
                     in_node->inode.fn[strlen(in_node->inode.fn) - 1] =
                         '\0';
-
-                /* skip past padding byte */
-                b_offs += dentry->fi_len;
-                if (!(dentry->fi_len % 2)) {
-                    b_offs++;
-                }
             }
+
 
             // copy the raw dentry data into the node
             memcpy(&(in_node->inode.dr), dentry, sizeof(iso9660_dentry));
@@ -537,6 +552,12 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
             in_node->offset =
                 tsk_getu32(fs->endian, dentry->ext_loc_m) * fs->block_size;
             in_node->ea_size = dentry->ext_len;
+            in_node->dentry_offset = s_offs + b_offs;
+
+            if (is_first)
+                in_node->inode.is_orphan = 0;
+            else
+                in_node->inode.is_orphan = 1;
 
             /* record size to make sure fifos show up as unique files */
             in_node->size =
@@ -549,21 +570,20 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 int extra_bytes =
                     dentry->entry_len - sizeof(iso9660_dentry) -
                     dentry->fi_len;
-                // this takes care of the length adjustment that we already did
-                // on offs
-                if (extra_bytes % 2)
-                    extra_bytes--;
 
                 in_node->inode.rr =
-                    parse_susp(fs, &buf[b_offs], extra_bytes, NULL);
-                in_node->inode.susp_off = b_offs + s_offs;
+                    parse_susp(fs,
+                    &buf[b_offs + sizeof(iso9660_dentry) + dentry->fi_len],
+                    extra_bytes, NULL);
+                in_node->inode.susp_off =
+                    b_offs + sizeof(iso9660_dentry) + dentry->fi_len +
+                    s_offs;
                 in_node->inode.susp_len = extra_bytes;
 
                 if (in_node->inode.rr == NULL) {
                     // return -1;
                     // @@@ Verbose error
                 }
-                b_offs += extra_bytes;
             }
             else {
                 in_node->inode.susp_off = 0;
@@ -575,17 +595,25 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 iso9660_inode_node *tmp, *prev_tmp;
 
                 for (tmp = iso->in_list; tmp; tmp = tmp->next) {
-                    /* if it already exists, get rid of the new one. 
-                     * It may already exist from a previous volume descriptor. */
+                    /* When processing the "first" volume descriptor, all entries get added to the list.
+                     * for the later ones, we skip duplicate ones that overlap with entries from a 
+                     * previous volume descriptor. */
                     if ((in_node->offset == tmp->offset)
                         && (in_node->size == tmp->size)
-                        && (in_node->size)) {
-                        if ((in_node->inode.rr) && (!tmp->inode.rr)) {
-                            tmp->inode.rr = in_node->inode.rr;
-                            in_node->inode.rr = NULL;
+                        && (in_node->size) && (is_first == 0)) {
+                        if (in_node->inode.rr) {
+                            if (tmp->inode.rr == NULL) {
+                                tmp->inode.rr = in_node->inode.rr;
+                                tmp->inode.susp_off =
+                                    in_node->inode.susp_off;
+                                tmp->inode.susp_len =
+                                    in_node->inode.susp_len;
+                                in_node->inode.rr = NULL;
+                            }
+                            else {
+                                free(in_node->inode.rr);
+                            }
                         }
-                        if (in_node->inode.rr)
-                            free(in_node->inode.rr);
 
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
@@ -609,10 +637,16 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 iso->in_list = in_node;
                 in_node->next = NULL;
             }
+
+            // skip two entries if this was the root directory (the . and ..).
+            if ((i == 0) && (b_offs == 0) && (count == 1)) {
+                b_offs += dentry->entry_len;
+                dentry = (iso9660_dentry *) & buf[b_offs];
+            }
+            b_offs += dentry->entry_len;
         }
         s_offs += cnt1;
     }
-
     return count;
 }
 
@@ -630,7 +664,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
  */
 static int
 iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
-    int count)
+    int count, uint8_t is_first)
 {
     TSK_OFF_T pt_offs;          /* offset of where we are in path table */
     size_t pt_len;              /* bytes left in path table */
@@ -670,6 +704,7 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
         if (dir.len_di > ISO9660_MAXNAMLEN_JOL)
             readlen = ISO9660_MAXNAMLEN_JOL;
 
+        memset(utf16_buf, 0, ISO9660_MAXNAMLEN_JOL);
         /* get UCS-2 filename for the entry */
         cnt = tsk_fs_read(fs, pt_offs, (char *) utf16_buf, readlen);
         if (cnt != dir.len_di) {
@@ -722,7 +757,7 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
         // process the directory contents
         count =
             iso9660_load_inodes_dir(fs, extent, count,
-            ISO9660_CTYPE_UTF16, utf8buf);
+            ISO9660_CTYPE_UTF16, utf8buf, is_first);
 
         if (count == -1) {
             return -1;
@@ -751,6 +786,7 @@ iso9660_load_inodes_pt(ISO_INFO * iso)
     size_t pt_len;              /* bytes left in path table */
     TSK_OFF_T extent;           /* offset of extent for current directory */
     ssize_t cnt;
+    uint8_t is_first = 1;
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "iso9660_load_inodes_pt: iso: %lu\n",
@@ -769,10 +805,13 @@ iso9660_load_inodes_pt(ISO_INFO * iso)
         if ((s->svd.esc_seq[0] == 0x25) && (s->svd.esc_seq[1] == 0x2F) &&
             ((s->svd.esc_seq[2] == 0x40) || (s->svd.esc_seq[2] == 0x43)
                 || (s->svd.esc_seq[2] == 0x45))) {
-            count = iso9660_load_inodes_pt_joliet(fs, &(s->svd), count);
+            count =
+                iso9660_load_inodes_pt_joliet(fs, &(s->svd), count,
+                is_first);
             if (count == -1) {
                 return -1;
             }
+            is_first = 0;
         }
     }
 
@@ -833,7 +872,7 @@ iso9660_load_inodes_pt(ISO_INFO * iso)
             // process the directory contents
             count =
                 iso9660_load_inodes_dir(fs, extent, count,
-                ISO9660_CTYPE_ASCII, fn);
+                ISO9660_CTYPE_ASCII, fn, is_first);
 
             if (count == -1) {
                 return -1;
@@ -856,10 +895,6 @@ uint8_t
 iso9660_dinode_load(ISO_INFO * iso, TSK_INUM_T inum)
 {
     iso9660_inode_node *n;
-
-    if (tsk_verbose)
-        tsk_fprintf(stderr, "iso9660_dinode_load: iso: %lu"
-            " inum: %" PRIuINUM "\n", (uintptr_t) iso, inum);
 
     n = iso->in_list;
     while (n && (n->inum != inum))
@@ -915,10 +950,6 @@ iso9660_dinode_copy(ISO_INFO * iso, TSK_FS_META * fs_meta)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & iso->fs_info;
     struct tm t;
-
-    if (tsk_verbose)
-        tsk_fprintf(stderr, "iso9660_dinode_copy: iso: %lu"
-            " inode: %lu\n", (uintptr_t) iso, (uintptr_t) fs_meta);
 
     if (fs_meta == NULL) {
         tsk_errno = TSK_ERR_FS_ARG;
@@ -979,7 +1010,12 @@ iso9660_dinode_copy(ISO_INFO * iso, TSK_FS_META * fs_meta)
     ((TSK_DADDR_T *) fs_meta->content_ptr)[0] =
         (TSK_DADDR_T) tsk_getu32(fs->endian, iso->dinode->dr.ext_loc_m);
 
-    fs_meta->flags = TSK_FS_META_FLAG_ALLOC;
+    // mark files that were found from other volume descriptors as unalloc so that they 
+    // come up as orphan files. 
+    if (iso->dinode->is_orphan)
+        fs_meta->flags = TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_USED;
+    else
+        fs_meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
     return 0;
 }
 
@@ -1002,11 +1038,6 @@ iso9660_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
         return 1;
     }
 
-    // load the inode into the ISO buffer
-    if (iso9660_dinode_load(iso, inum)) {
-        return 1;
-    }
-
     if (a_fs_file->meta == NULL) {
         if ((a_fs_file->meta =
                 tsk_fs_meta_alloc(ISO9660_FILE_CONTENT_LEN)) == NULL)
@@ -1016,9 +1047,23 @@ iso9660_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
         tsk_fs_meta_reset(a_fs_file->meta);
     }
 
-    // copy into the FS_META structure
-    if (iso9660_dinode_copy(iso, a_fs_file->meta)) {
-        return 1;
+    // see if they are looking for the special "orphans" directory
+    if (inum == TSK_FS_ORPHANDIR_INUM(fs)) {
+        if (tsk_fs_dir_make_orphan_dir_meta(fs, a_fs_file->meta))
+            return 1;
+        else
+            return 0;
+    }
+    else {
+        // load the inode into the ISO buffer
+        if (iso9660_dinode_load(iso, inum)) {
+            return 1;
+        }
+
+        // copy into the FS_META structure
+        if (iso9660_dinode_copy(iso, a_fs_file->meta)) {
+            return 1;
+        }
     }
 
     return 0;
@@ -1030,7 +1075,7 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
 {
     char *myname = "iso9660_inode_walk";
     ISO_INFO *iso = (ISO_INFO *) fs;
-    TSK_INUM_T inum;
+    TSK_INUM_T inum, end_inum_tmp;
     TSK_FS_FILE *fs_file;
     int myflags;
 
@@ -1064,8 +1109,12 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
         return 1;
     }
 
+    /* If ORPHAN is wanted, then make sure that the flags are correct */
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
-        return 0;
+        flags |= TSK_FS_META_FLAG_UNALLOC;
+        flags &= ~TSK_FS_META_FLAG_ALLOC;
+        flags |= TSK_FS_META_FLAG_USED;
+        flags &= ~TSK_FS_META_FLAG_UNUSED;
     }
     else if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
         ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
@@ -1080,6 +1129,20 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
         flags |= (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
     }
 
+    /* If we are looking for orphan files and have not yet filled
+     * in the list of unalloc inodes that are pointed to, then fill
+     * in the list
+     * */
+    if ((flags & TSK_FS_META_FLAG_ORPHAN)
+        && (fs->list_inum_named == NULL)) {
+        if (tsk_fs_dir_load_inum_named(fs) != TSK_OK) {
+            strncat(tsk_errstr2,
+                " - iso9660_inode_walk: identifying inodes allocated by file names",
+                TSK_ERRSTR_L);
+            return 1;
+        }
+    }
+
 
     if ((fs_file = tsk_fs_file_alloc(fs)) == NULL)
         return 1;
@@ -1088,21 +1151,39 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
             tsk_fs_meta_alloc(ISO9660_FILE_CONTENT_LEN)) == NULL)
         return 1;
 
+    // we need to handle fs->last_inum specially because it is for the 
+    // virtual ORPHANS directory.  Handle it outside of the loop.
+    if (last == TSK_FS_ORPHANDIR_INUM(fs))
+        end_inum_tmp = last - 1;
+    else
+        end_inum_tmp = last;
+
     /*
      * Iterate.
      */
-    for (inum = start; inum <= last; inum++) {
+    for (inum = start; inum <= end_inum_tmp; inum++) {
         int retval;
         if (iso9660_dinode_load(iso, inum)) {
             tsk_fs_file_close(fs_file);
             return 1;
         }
 
+        if (iso9660_dinode_copy(iso, fs_file->meta))
+            return 1;
+
+        myflags = fs_file->meta->flags;
+
         if ((flags & myflags) != myflags)
             continue;
 
-        if (iso9660_dinode_copy(iso, fs_file->meta))
-            return 1;
+        /* If we want only orphans, then check if this
+         * inode is in the seen list
+         * */
+        if ((myflags & TSK_FS_META_FLAG_UNALLOC) &&
+            (flags & TSK_FS_META_FLAG_ORPHAN) &&
+            (tsk_list_find(fs->list_inum_named, inum))) {
+            continue;
+        }
 
         retval = action(fs_file, ptr);
         if (retval == TSK_WALK_ERROR) {
@@ -1113,6 +1194,29 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
             break;
         }
     }
+
+    // handle the virtual orphans folder if they asked for it
+    if ((last == TSK_FS_ORPHANDIR_INUM(fs))
+        && (flags & TSK_FS_META_FLAG_ALLOC)
+        && (flags & TSK_FS_META_FLAG_USED)) {
+        int retval;
+
+        if (tsk_fs_dir_make_orphan_dir_meta(fs, fs_file->meta)) {
+            tsk_fs_file_close(fs_file);
+            return 1;
+        }
+        /* call action */
+        retval = action(fs_file, ptr);
+        if (retval == TSK_WALK_STOP) {
+            tsk_fs_file_close(fs_file);
+            return 0;
+        }
+        else if (retval == TSK_WALK_ERROR) {
+            tsk_fs_file_close(fs_file);
+            return 1;
+        }
+    }
+
 
     /*
      * Cleanup.
@@ -2276,6 +2380,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         iso9660_close(fs);
         return NULL;
     }
+    fs->inum_count++;           // account for the orphan directory
 
     fs->last_inum = fs->inum_count - 1;
     fs->first_inum = ISO9660_FIRSTINO;
