@@ -10,6 +10,7 @@ had same starting block.
 duplicate starting block. Also changed behavior of how
 multiple volume descriptors are processed. 
 - 2955898: Orphan files not found if no deleted file names exist. 
+- 2955899: NTFS internal setting of USED flag. 
 
 
 ---------------- VERSION 3.1.0 --------------
