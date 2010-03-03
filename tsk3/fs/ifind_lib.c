@@ -86,7 +86,7 @@ ifind_par_act(TSK_FS_FILE * fs_file, void *ptr)
 
                     if (data->flags & TSK_FS_IFIND_PAR_LONG) {
                         tsk_fs_name_print_long(stdout, fs_file, NULL,
-                            fs_file->fs_info, fs_attr, 0);
+                            fs_file->fs_info, fs_attr, 0, 0);
                     }
                     else {
                         tsk_fs_name_print(stdout, fs_file, NULL,
@@ -101,7 +101,7 @@ ifind_par_act(TSK_FS_FILE * fs_file, void *ptr)
             if (printed == 0) {
                 if (data->flags & TSK_FS_IFIND_PAR_LONG) {
                     tsk_fs_name_print_long(stdout, fs_file, NULL,
-                        fs_file->fs_info, NULL, 0);
+                        fs_file->fs_info, NULL, 0, 0);
                 }
                 else {
                     tsk_fs_name_print(stdout, fs_file, NULL,

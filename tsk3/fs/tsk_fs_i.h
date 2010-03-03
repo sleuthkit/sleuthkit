@@ -168,10 +168,9 @@ extern "C" {
     extern void tsk_fs_name_print(FILE *, const TSK_FS_FILE *,
         const char *, TSK_FS_INFO *, const TSK_FS_ATTR *, uint8_t);
     extern void tsk_fs_name_print_long(FILE *, const TSK_FS_FILE *,
-        const char *, TSK_FS_INFO *, const TSK_FS_ATTR *, uint8_t);
+        const char *, TSK_FS_INFO *, const TSK_FS_ATTR *, uint8_t, int32_t);
     extern void tsk_fs_name_print_mac(FILE *, const TSK_FS_FILE *,
-        const char *, TSK_FS_INFO *, const TSK_FS_ATTR * fs_attr,
-        const char *);
+        const char *, const TSK_FS_ATTR * fs_attr, const char *, int32_t);
     extern uint8_t tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
         const TSK_FS_NAME * a_fs_name_from);
     extern void tsk_fs_name_reset(TSK_FS_NAME * a_fs_name);

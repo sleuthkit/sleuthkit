@@ -44,7 +44,7 @@ typedef struct {
 /* this is a wrapper type function that takes care of the runtime
  * flags
  * 
- * fs_attr should be set to NULL for all NTFS file systems
+ * fs_attr should be set to NULL for all non-NTFS file systems
  */
 static void
 printit(TSK_FS_FILE * fs_file, const char *a_path,
@@ -67,37 +67,12 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
 
 
     if (fls_data->flags & TSK_FS_FLS_MAC) {
-        if ((fls_data->sec_skew != 0) && (fs_file->meta)) {
-            fs_file->meta->mtime -= fls_data->sec_skew;
-            fs_file->meta->atime -= fls_data->sec_skew;
-            fs_file->meta->ctime -= fls_data->sec_skew;
-        }
-
-        tsk_fs_name_print_mac(stdout, fs_file, a_path, fs_file->fs_info,
-            fs_attr, fls_data->macpre);
-
-        if ((fls_data->sec_skew != 0) && (fs_file->meta)) {
-            fs_file->meta->mtime += fls_data->sec_skew;
-            fs_file->meta->atime += fls_data->sec_skew;
-            fs_file->meta->ctime += fls_data->sec_skew;
-        }
+        tsk_fs_name_print_mac(stdout, fs_file, a_path, 
+            fs_attr, fls_data->macpre, fls_data->sec_skew);
     }
-
     else if (fls_data->flags & TSK_FS_FLS_LONG) {
-        if ((fls_data->sec_skew != 0) && (fs_file->meta)) {
-            fs_file->meta->mtime -= fls_data->sec_skew;
-            fs_file->meta->atime -= fls_data->sec_skew;
-            fs_file->meta->ctime -= fls_data->sec_skew;
-        }
-
         tsk_fs_name_print_long(stdout, fs_file, a_path, fs_file->fs_info,
-            fs_attr, TSK_FS_FLS_FULL & fls_data->flags ? 1 : 0);
-
-        if ((fls_data->sec_skew != 0) && (fs_file->meta)) {
-            fs_file->meta->mtime += fls_data->sec_skew;
-            fs_file->meta->atime += fls_data->sec_skew;
-            fs_file->meta->ctime += fls_data->sec_skew;
-        }
+            fs_attr, TSK_FS_FLS_FULL & fls_data->flags ? 1 : 0, fls_data->sec_skew);
     }
     else {
         tsk_fs_name_print(stdout, fs_file, a_path, fs_file->fs_info,

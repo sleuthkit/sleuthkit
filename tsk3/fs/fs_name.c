@@ -421,7 +421,7 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
 void
 tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, TSK_FS_INFO * fs, const TSK_FS_ATTR * fs_attr,
-    uint8_t print_path)
+    uint8_t print_path, int32_t sec_skew)
 {
     tsk_fs_name_print(hFile, fs_file, a_path, fs, fs_attr, print_path);
 
@@ -443,20 +443,20 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
 
         /* MAC times */
         tsk_fprintf(hFile, "\t");
-        tsk_fs_print_time(hFile, fs_file->meta->mtime);
+        tsk_fs_print_time(hFile, fs_file->meta->mtime - sec_skew);
 
         tsk_fprintf(hFile, "\t");
         /* FAT only gives the day of last access */
         if (TSK_FS_TYPE_ISFAT(fs->ftype))
             tsk_fs_print_day(hFile, fs_file->meta->atime);
         else
-            tsk_fs_print_time(hFile, fs_file->meta->atime);
+            tsk_fs_print_time(hFile, fs_file->meta->atime - sec_skew);
 
         tsk_fprintf(hFile, "\t");
-        tsk_fs_print_time(hFile, fs_file->meta->ctime);
+        tsk_fs_print_time(hFile, fs_file->meta->ctime - sec_skew);
 
         tsk_fprintf(hFile, "\t");
-        tsk_fs_print_time(hFile, fs_file->meta->crtime);
+        tsk_fs_print_time(hFile, fs_file->meta->crtime - sec_skew);
 
         /* use the stream size if one was given */
         if (fs_attr)
@@ -476,25 +476,23 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
  * \internal
  *
 ** Print output in the format that mactime reads.
-** This allows the deleted files to be inserted to get a better
-** picture of what happened
-**
-** Prepend a_path when printing full file name
-**  dir needs to end with "/" 
-**
-** prepend *prefix to path as the mounting point that the original
-** grave-robber was run on
 **
 ** If the flags in the fs_file->meta structure are set to FS_FLAG_ALLOC
 ** then it is assumed that the inode has been reallocated and the
 ** contents are not displayed
 **
-** fs is not required (only used for block size).  
+** fs is not required (only used for block size).
+ * @param hFile handle to print results to
+ * @param fs_file File to print details about
+ * @param a_path Parent directory of file (needs to end with "/")
+ * @param fs_attr Attribute in file that is being called for (NULL for non-NTFS)
+ * @param prefix Path of mounting point for image
+ * @param time_skew number of seconds skew to adjust time
 */
 void
 tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
-    const char *a_path, TSK_FS_INFO * fs, const TSK_FS_ATTR * fs_attr,
-    const char *prefix)
+    const char *a_path, const TSK_FS_ATTR * fs_attr,
+    const char *prefix, int32_t time_skew)
 {
     char ls[12];
 
@@ -562,13 +560,13 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
             tsk_fprintf(hFile, "%" PRIuOFF "|", fs_attr->size);
         else
             tsk_fprintf(hFile, "%" PRIuOFF "|", fs_file->meta->size);
-
+        
         /* atime, mtime, ctime, crtime */
         tsk_fprintf(hFile,
             "%" PRIu32 "|%" PRIu32 "|%" PRIu32 "|%" PRIu32 "\n",
-            (uint32_t) fs_file->meta->atime,
-            (uint32_t) fs_file->meta->mtime,
-            (uint32_t) fs_file->meta->ctime,
-            (uint32_t) fs_file->meta->crtime);
+            (uint32_t) (fs_file->meta->atime - time_skew),
+            (uint32_t) (fs_file->meta->mtime - time_skew),
+            (uint32_t) (fs_file->meta->ctime - time_skew),
+            (uint32_t) (fs_file->meta->crtime - time_skew));
     }
 }
