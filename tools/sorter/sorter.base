@@ -678,11 +678,13 @@ sub analyze_file {
             $sha1 =
 `\"$SK_ICAT\" $IMGTYPE -o $IMGOFF $FSTYPE $recflag $IMG \"$inode\" | \"$SK_SHA1\"`;
             chomp $sha1;
+            $sha1 = $1 if ($sha1 =~ /^([A-Fa-f0-9]+)\s+.*$/);
         }
         if ($DO_MD5 == 1) {
             $md5 =
 `\"$SK_ICAT\" $IMGTYPE -o $IMGOFF $FSTYPE $recflag $IMG \"$inode\" | \"$SK_MD5\"`;
             chomp $md5;
+            $md5 = $1 if ($md5 =~ /^([A-Fa-f0-9]+)\s+.*$/);
         }
     }
 

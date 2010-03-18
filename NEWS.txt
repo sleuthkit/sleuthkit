@@ -11,6 +11,7 @@ duplicate starting block. Also changed behavior of how
 multiple volume descriptors are processed. 
 - 2955898: Orphan files not found if no deleted file names exist. 
 - 2955899: NTFS internal setting of USED flag. 
+- 2972721: Sorter fails with hash lookup if '-l' is given. 
 
 
 ---------------- VERSION 3.1.0 --------------
