@@ -196,7 +196,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
             if (0 == fatfs_isdentry(fatfs, dep)) {
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
-                        "fatfs_dent_parse_buf: Entry %u is invalid\n",
+                        "fatfs_dent_parse_buf: Entry %ui is invalid\n",
                         idx);
                 continue;
             }

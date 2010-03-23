@@ -17,7 +17,7 @@ tables and disk labels.
 
 .SH ARGUMENTS
 .IP "-t mmtype"
-Specify the media management type.  Use '-t list' to list the supported types. If not given, autodetection methods are used.
+Specify the media management type.  Use '\-t list' to list the supported types. If not given, autodetection methods are used.
 .IP "-o offset"
 Specify the offset into the image where the volume containing the
 partition system starts.  The relative offset of the partition system
@@ -43,10 +43,10 @@ Show metadata volumes
 .IP -M
 Hide metadata volumes
 .IP "image [images]"
-One (or more if split) disk images whose format is given with '-i'.
+One (or more if split) disk images whose format is given with '\-i'.
 
 .PP
-\'mmls\' is similar to 'fdisk -lu' in Linux with a few differences.  
+\'mmls\' is similar to 'fdisk \-lu' in Linux with a few differences.
 Namely, it will show which sectors are not being used so that those
 can be searched for hidden data.  It also gives the length value so
 that it can be plugged into 'dd' more easily for extracting the
@@ -54,7 +54,7 @@ partitions.  It also will show BSD disk labels for Free, Open, and
 NetBSD and will display the output in sectors and not cylinders.  
 Lastly, it works on non-Linux systems.
 
-If none of -a, -A, -m, or -M are given then all volume types will
+If none of \-a, \-A, \-m, or \-M are given then all volume types will
 be listed.  If any of them are given, then only the types specified
 on the command line will be listed.  
 
@@ -76,7 +76,7 @@ To list the partition table of a Windows system using autodetect:
 
 To list the contents of a BSD system that starts in sector 12345 of a split image:
 
-# mmls -t bsd -o 12345 -i split disk-1.dd disk-2.dd
+# mmls \-t bsd \-o 12345 \-i split disk-1.dd disk-2.dd
 
 .SH AUTHOR
 Brian Carrier <carrier at sleuthkit dot org>

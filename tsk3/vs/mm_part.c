@@ -215,7 +215,7 @@ tsk_vs_part_get(const TSK_VS_INFO * a_vs, TSK_PNUM_T a_idx)
         tsk_error_reset();
         tsk_errno = TSK_ERR_VS_ARG;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "tsk_vs_part_get: Volume adress is too big");
+            "tsk_vs_part_get: Volume address is too big");
         return NULL;
     }
 

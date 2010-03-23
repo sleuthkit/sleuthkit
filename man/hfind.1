@@ -16,7 +16,7 @@ is known or not.  It works with the NIST National Software Reference
 Library (NSRL) and the output of 'md5sum'.  
 
 Before the database can be used by 'hfind', an index file must be created
-with the '-i' option.  
+with the '\-i' option.
 
 This tool is needed for efficiency.  Most text-based databases do
 not have fixed length entries and are sometimes not sorted.  The
@@ -53,7 +53,7 @@ types of hashes can be given at runtime.
 uses an index file to perform a binary search for a hash value. This
 is much faster than using 'grep', which will do a linear search.  Before
 a hash database is used, a corresponding index file must be created.
-This is done with the '-i' option to hfind.  
+This is done with the '\-i' option to hfind.
 
 The resulting index file will be named based on the database file name.
 The name will have the original name following by the hash type (sha1 
@@ -81,7 +81,7 @@ and
 .SH EXAMPLES
 To create an MD5 index file for NIST NSRL:
 
-	# hfind -i nsrl-md5 /usr/local/hash/nsrl/NSRLFile.txt
+	# hfind \-i nsrl-md5 /usr/local/hash/nsrl/NSRLFile.txt
 
 To lookup a value in the NSRL:
 
@@ -91,10 +91,11 @@ To lookup a value in the NSRL:
 
 You can even do both SHA-1 and MD5 if you want:
 
-	# hfind -i nsrl-sha1 /usr/local/hash/nsrl/NSRLFile.txt
+	# hfind \-i nsrl-sha1 /usr/local/hash/nsrl/NSRLFile.txt
 
-	# hfind /usr/local/hash/nsrl/NSRLFile.txt 
-	76b1f4de1522c20b67acc132937cf82e 80001A80B3F1B80076B297CEE8805AAA04E1B5BA
+	# hfind /usr/local/hash/nsrl/NSRLFile.txt
+	76b1f4de1522c20b67acc132937cf82e
+	80001A80B3F1B80076B297CEE8805AAA04E1B5BA
 
 	76b1f4de1522c20b67acc132937cf82e  Hash Not Found
 
@@ -104,7 +105,7 @@ To make a database of critical binaries of a trusted system, use 'md5sum':
 
 	# md5sum /bin/* /sbin/* /usr/bin/* /usr/bin/* /usr/local/bin/* /usr/local/sbin/* > system.md5
 
-	# hfind -i md5sum system.md5
+	# hfind \-i md5sum system.md5
 
 To look entries up, the following will work:
 
@@ -114,7 +115,7 @@ To look entries up, the following will work:
 
 or
 
-	# md5sum -q /bin/* | hfind system.md5
+	# md5sum \-q /bin/* | hfind system.md5
 
 	928682269cd3edb1acdf9a7f7e606ff2  /bin/bash
 
@@ -122,17 +123,18 @@ or
 
 or
 
-	# md5sum -q /bin/* > bin.md5
+	# md5sum \-q /bin/* > bin.md5
 
-	# hfind -f bin.md5 system.md5
+	# hfind \-f bin.md5 system.md5
 
 	928682269cd3edb1acdf9a7f7e606ff2  /bin/bash
 
 	<...>
 
 
-.SH REQUIREMENTS
-hfind needs the UNIX sorter program located in /usr/bin/.
+.SH "SEE ALSO"
+.BR sorter (1)
+.P
 The NIST National Software Reference Library (NSRL) can be found at
 www.nsrl.nist.gov.
 

@@ -23,13 +23,13 @@ Display the addresses of num disk units.  Useful when the inode is
 unallocated with size 0, but still has block pointers.
 .IP "-f fstype"
 Specify the file system type.  
-Use '-f list' to list the supported file system types.
+Use '\-f list' to list the supported file system types.
 If not given, autodetection methods are used.
 .IP "-s seconds"
 The time skew of the original system in seconds.  For example, if the
-original system was 100 seconds slow, this value would be -100.
+original system was 100 seconds slow, this value would be \-100.
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
@@ -44,7 +44,7 @@ An ASCII string of the original system's time zone.  For example, EST5EDT or
 GMT.  These strings are defined by the operating system and may
 vary.  NOTE: This has changed since TCTUTILs.  
 .IP "image [images]"
-One (or more if split) disk or partition images whose format is given with '-i'.
+One (or more if split) disk or partition images whose format is given with '\-i'.
 .IP inode
 Meta-data number to display stats on
 

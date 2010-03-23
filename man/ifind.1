@@ -17,7 +17,7 @@ the results.
 .SH ARGUMENTS
 There are several required and optional arguments.  The image file names must be specified each time:
 .IP "image [images]"
-One (or more if split) disk or partition images whose format is given with '-i'..PP
+One (or more if split) disk or partition images whose format is given with '\-i'..PP
 
 You must also specify what you are looking for and include one of the following:
 .IP "-d data_unit"
@@ -29,7 +29,7 @@ Finds the meta data structure that is pointed to by the given file name.
 
 .IP "-p par_inode"
 Finds the unallocated MFT entries in an NTFS image that have the given
-inode as the parent.  Can be used with '-l and -z'.  
+inode as the parent.  Can be used with '\-l and \-z'.
 
 .PP 
 There are also several optional arguments:
@@ -37,12 +37,12 @@ There are also several optional arguments:
 Find all meta-data structures (only works when looking with a data_unit).
 .IP "-f fstype"
 Specify the file system type.  
-Use '-f list' to list the supported file system types.
+Use '\-f list' to list the supported file system types.
 If not given, autodetection methods are used.
 .IP "-l"
-List the details of each file found with '-p', like 'fls -l'.
+List the details of each file found with '\-p', like 'fls \-l'.
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
@@ -52,16 +52,16 @@ The size, in bytes, of the underlying device sectors.  If not given, the value i
 Verbose output to stderr.
 .IP -V
 Display version.
-.IP -z ZONE
-If '-p -l' were given, this will set the timezone for the correct times.
+.IP "-z ZONE"
+If '\-p \-l' were given, this will set the timezone for the correct times.
 
 .SH "EXAMPLES"
 
-# ifind -f fat -d 456 fat-img.dd
+# ifind \-f fat \-d 456 fat-img.dd
 
-# ifind -f linux-ext2 -n "/etc/" linux-img.dd
+# ifind \-f linux-ext2 \-n "/etc/" linux-img.dd
 
-# ifind -f ntfs -p 5 -l -z EST5EDT ntfs-img.dd
+# ifind \-f ntfs \-p 5 \-l \-z EST5EDT ntfs-img.dd
 
 .SH AUTHOR
 Brian Carrier <carrier at sleuthkit dot org>

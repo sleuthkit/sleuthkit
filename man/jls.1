@@ -17,9 +17,9 @@ description.
 .SH ARGUMENTS
 .IP "-f fstype"
 Specify the file system type.  
-Use '-f list' to list the supported file system types. If not given, autodetection methods are used.
+Use '\-f list' to list the supported file system types. If not given, autodetection methods are used.
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. If not given, autodetection methods are used.
+Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types. If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
 .IP "-b dev_sector_size"
@@ -29,13 +29,13 @@ Display version
 .IP -v
 verbose output
 .IP "image [images]"
-One (or more if split) disk or partition images whose format is given with '-i'.
+One (or more if split) disk or partition images whose format is given with '\-i'.
 .IP [inode]
 The inode where the file system journal can be found. 
 
 .SH "EXAMPLES"
 
-jls -f linux-ext3 img.dd
+jls \-f linux-ext3 img.dd
 
 .SH AUTHOR
 Brian Carrier <carrier at sleuthkit dot org>

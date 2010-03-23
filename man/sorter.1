@@ -37,17 +37,17 @@ system.
 
 .SH ARGUMENTS
 The required arguments are as follows.  This will analyze one or more 
-images and either save the results in the '-d' directory or list
-the results to STDOUT (if '-l' is given).  
+images and either save the results in the '\-d' directory or list
+the results to STDOUT (if '\-l' is given).
 
 .IP "-d dir"
 Specify the location of where all files should be written.  This includes
-the index files and subdirectories if the '-s' flag is given.  
-This MUST be given, unless the '-l' list flag is given.  
+the index files and subdirectories if the '\-s' flag is given.
+This MUST be given, unless the '\-l' list flag is given.
 .IP -l
 List information to STDOUT (no files are ever written).  This is useful
 for Incident Response, with the use of 'netcat'.  This cannot be used
-if '-d' is used.  
+if '\-d' is used.
 .IP images
 The file names of the image(s) to analyze.  
 
@@ -77,7 +77,7 @@ have priority over the standard files.
 Specify the location of the ONLY configuration file.  The standard config
 files will not be loaded if this option is given.  For example, in the
 \'share/sort\' directory there is a file called 'images.sort'.  This file
-contains only rules about graphic images.  If it is specified with -C, then
+contains only rules about graphic images.  If it is specified with \-C, then
 only images will be saved about the image.  
 .IP "-m mnt"
 Specify the mounting point of the image being analyzed.  This is only
@@ -119,8 +119,8 @@ This will be done automatically when any of the databases are given.
 Calculate the SHA-1 value for each file and save it in the category file.
 .IP -s
 Save the actual file content to sub-directories in the directory 
-specified by '-d'.  For example, all JPG and GIF files would actually be
-saved in the 'images' directory.  If '-h' is also given, thumbnails of
+specified by '\-d'.  For example, all JPG and GIF files would actually be
+saved in the 'images' directory.  If '\-h' is also given, thumbnails of
 graphic images are also created.  
 .IP -v
 Display verbose information
@@ -136,7 +136,7 @@ can be given.
 is a Perl script that interacts with other The Sleuth Kit tools.  It starts
 by reading the configuration files from the installation directory.
 There is a general configuration file and a specific one for each
-operating system.  The specific one is determined from the '-f'
+operating system.  The specific one is determined from the '\-f'
 flag.  Each configuration file contains rules for processing the
 output of the 'file' command.  One type of line identifies which
 category (i.e. 'images') a given 'file' output belongs to (i.e.
@@ -157,7 +157,7 @@ The 'file' command is then run to identify the file type (based on
 header information).
 The configuration file rules are used to identify which category
 it belongs to.  An entry is added to the corresponding category
-file (in the '-d dir' directory).  If the '-s' flag is given, then
+file (in the '\-d dir' directory).  If the '\-s' flag is given, then
 a copy of the file is saved in a subdirectory of the same name as
 the category.  If the HTML format is used, then hyper-links will
 allow one to easily view saved files and view what is in each
@@ -168,9 +168,9 @@ category and the 'data' category.  'data' is for files with a
 structure that 'file' does not know and 'unknown' is for files with
 a structure that 'file' knows about.  These are saved for future
 reference, but the unknown category can be ignored by using
-the '-U' flag.
+the '\-U' flag.
 
-A copy of the files can be saved by using the '-s' flag.  If so,
+A copy of the files can be saved by using the '\-s' flag.  If so,
 then the files are saved in a subdirectory that is named with
 the category name.  Each file is named using the file system image
 name followed by the meta data address and the original file
@@ -207,7 +207,7 @@ The 'default.sort' file is used by any file system type.  It contains
 entries for common file types.  A specific operating system file also
 exists, which is useful for extensions that are specific to a given OS.  
 By default, the default file and the OS specific one will be used.  Using
-the '-c' flag, an additional file can be used.  If the '-C' flag is used,
+the '\-c' flag, an additional file can be used.  If the '\-C' flag is used,
 then only the supplied configuration file is used.
 
 There are two rule types in the configuration files.  Each rule starts
@@ -262,22 +262,22 @@ and I will incorporate them into future releases (carrier at sleuthkit dot org).
 .SH EXAMPLES
 To run sorter with no hash databases, the following can be used:
 
-    # sorter -f ntfs -d data/sorter images/hda1.dd
+    # sorter \-f ntfs \-d data/sorter images/hda1.dd
 	
-    # sorter -d data/sorter images/hda1.dd
+    # sorter \-d data/sorter images/hda1.dd
 
-    # sorter -i raw -f ntfs -o 63 -d data/sorter images/hda.dd
+    # sorter \-i raw \-f ntfs \-o 63 \-d data/sorter images/hda.dd
 
 To include the NSRL, an exclude, and an alert hash database:
 
-    # sorter -f ntfs -d data/sorter -a /usr/hash/rootkit.db \
-	  -x /usr/hash/win2k.db -n /usr/hash/nsrl/NSRLFile.txt \
+    # sorter \-f ntfs \-d data/sorter \-a /usr/hash/rootkit.db \
+	  \-x /usr/hash/win2k.db \-n /usr/hash/nsrl/NSRLFile.txt \
 	  images/hda1.dd
 
 To just identify images using the supplied 'images.sort' file:
 
-    # sorter -f ntfs -C /usr/local/sleuthkit/share/sort/images.sort \
-	  -d data/sorter -h -s images/hda1.dd
+    # sorter \-f ntfs \-C /usr/local/sleuthkit/share/sort/images.sort \
+	  \-d data/sorter \-h \-s images/hda1.dd
 
 .SH REQUIREMENTS
 The NIST National Software Reference Library (NSRL) can be found at
