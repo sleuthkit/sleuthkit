@@ -3130,9 +3130,9 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         hfs->is_case_sensitive = 0;
     else if (tsk_getu16(fs->endian, hfs->fs->version) == HFS_VH_VER_HFSX) {
         if (hfs->catalog_header.compType == HFS_BT_HEAD_COMP_SENS)
-            hfs->is_case_sensitive = 0;
-        else if (hfs->catalog_header.compType == HFS_BT_HEAD_COMP_INSENS)
             hfs->is_case_sensitive = 1;
+        else if (hfs->catalog_header.compType == HFS_BT_HEAD_COMP_INSENS)
+            hfs->is_case_sensitive = 0;
         else {
             tsk_fprintf(stderr,
                 "hfs_open: invalid value (0x%02" PRIx8
