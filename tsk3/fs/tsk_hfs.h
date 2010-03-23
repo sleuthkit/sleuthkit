@@ -367,8 +367,8 @@ typedef struct {
 #define HFS_BT_HEAD_TYPE_RSV    255
 
 // compType values
-#define HFS_BT_HEAD_COMP_SENS    0xCF   // case sensitive
-#define HFS_BT_HEAD_COMP_INSENS    0xBC // case insensitive
+#define HFS_BT_HEAD_COMP_SENS    0xBC   // case sensitive
+#define HFS_BT_HEAD_COMP_INSENS    0xC7 // case insensitive
 
 // attr values
 #define HFS_BT_HEAD_ATTR_BIGKEYS 0x00000002     /* key length field is 16 bits (req'd for HFS+) */
