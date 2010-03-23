@@ -15,7 +15,7 @@ some file systems, this will find deleted file names.
 
 .SH ARGUMENTS
 .IP "image [images]"
-One (or more if split) disk or partition images whose format is given with '-i'.
+One (or more if split) disk or partition images whose format is given with '\-i'.
 .IP inode
 Integer of inode to find.
 
@@ -26,12 +26,12 @@ Find all occurrences of inode.
 Find deleted entries only.
 .IP "-f fstype"
 Identify the file system type of the image.  
-Use '-f list' to list the supported file system types.
+Use '\-f list' to list the supported file system types.
 If not given, autodetection methods are used.
 .IP -u
 Find undeleted entries only.
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
@@ -49,7 +49,7 @@ from a disk unit address using
 .BR ifind(1).
 
 .SH EXAMPLE
-# ffind -a image 212
+# ffind \-a image 212
 .SH "SEE ALSO"
 .BR ifind (1)
 .SH AUTHOR

@@ -2669,8 +2669,8 @@ ntfs_attrname_lookup(TSK_FS_INFO * fs, uint16_t type, char *name, int len)
             }
 
             /* Make sure it is NULL Terminated */
-            else if ((uintptr_t) name8 > (uintptr_t) name + len)
-                name[len] = '\0';
+            else if ((uintptr_t) name8 >= (uintptr_t) name + len)
+                name[len-1] = '\0';
             else
                 *name8 = '\0';
             return 0;

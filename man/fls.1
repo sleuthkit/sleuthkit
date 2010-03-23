@@ -37,7 +37,7 @@ Display deleted entries only
 Display directory entries only
 .IP "-f fstype"
 The type of file system.  
-Use '-f list' to list the supported file system types.
+Use '\-f list' to list the supported file system types.
 If not given, autodetection methods are used.
 .IP -F  
 Display file (all non-directory) entries only.  
@@ -60,10 +60,10 @@ Recursively display directories.  This will not
 follow deleted directories, because it can't. 
 .IP "-s seconds"
 The time skew of the original system in seconds.  For example, if the
-original system was 100 seconds slow, this value would be -100.  This 
-is only used if -l or -m are given.
+original system was 100 seconds slow, this value would be \-100.  This
+is only used if \-l or \-m are given.
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
@@ -80,7 +80,7 @@ The ASCII string of the time zone of the original system.  For
 example, EST or GMT.  These strings must be defined by your operating
 system and may vary.  
 .IP "image [images]"
-One (or more if split) disk or partition images whose format is given with '-i'.
+One (or more if split) disk or partition images whose format is given with '\-i'.
 
 .PP
 Once the inode has been determined, the file can be recovered using
@@ -95,27 +95,27 @@ find what file name belongs to an inode, it is easier to use
 .SH EXAMPLES
 To get a list of all files and directories in an image use:
 
-	# fls -r image 2
+	# fls \-r image 2
 
 	or just (if no inode is specified, the root directory inode is used):
 
-	# fls -r image 
+	# fls \-r image
 
 To get the full path of deleted files in a given directory:
 
-	# fls -d -p image 29
+	# fls \-d \-p image 29
 
 To get the mactime output do:
 
-	# fls -m /usr/local image 2
+	# fls \-m /usr/local image 2
 
 If you have a disk image and the file system starts in sector 63, use:
 
-	# fls -o 63 disk-img.dd 
+	# fls \-o 63 disk-img.dd
 
 If you have a disk image that is split use:
 
-	# fls -i "split" -o 63 disk-1.dd disk-2.dd disk-3.dd
+	# fls \-i "split" \-o 63 disk-1.dd disk-2.dd disk-3.dd
 
 
 .SH "SEE ALSO"

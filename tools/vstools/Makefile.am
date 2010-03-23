@@ -1,6 +1,6 @@
 AM_CPPFLAGS = -I../.. -Wall 
 LDADD = ../../tsk3/libtsk3.la
-LDFLAGS = -static
+LDFLAGS += -static
 EXTRA_DIST = .indent.pro
 
 bin_PROGRAMS = mmls mmstat mmcat

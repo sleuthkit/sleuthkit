@@ -21,23 +21,23 @@ in TSK versions prior to 3.0.0.
 .SH ARGUMENTS
 .IP -a
 Display the contents in ASCII
-.IP -f fstype
+.IP "-f fstype"
 Specify image as a specific file type.  If 'swap' is given
 here, the image will be displayed in pages of size 4096 bytes.  If 'raw'
-is given, then 512-bytes is used as the default size.  The '-u' flag
+is given, then 512-bytes is used as the default size.  The '\-u' flag
 can change the default size.  
-Use '-f list' to list the supported file system types.
+Use '\-f list' to list the supported file system types.
 If not given, autodetection methods are used.
 .IP -h  
 Display the contents in hexdump 
 .IP -s
 Display statistics on the image (unit size, file block size,  \
 and number of fragments).
-.IP -u unit_size
+.IP "-u unit_size"
 Specify the size of the default data unit for raw, blkls, and swap 
 images.
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
@@ -50,10 +50,10 @@ Display version.
 .IP -w  
 Display the contents in an HTML table format.  
 .IP "image [images]"
-One (or more if split) disk or partition images whose format is given with '-i'.
+One (or more if split) disk or partition images whose format is given with '\-i'.
 .IP unit_addr
 Address of the disk unit to display.  The size of a unit on this 
-file system can be determined using the -s option.  
+file system can be determined using the \-s option.
 .IP num 
 Number of data units to display.
 

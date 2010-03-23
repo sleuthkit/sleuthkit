@@ -3,8 +3,7 @@
 blkcalc \- Converts between unallocated disk unit numbers and regular
 disk unit numbers.  
 .SH SYNOPSIS
-.B blkcalc 
-[-dsu unit_addr] [-vV] [-i imgtype] [-o imgoffset] [-b dev_sector_size] [-f fstype] image [images]
+.B blkcalc [-dsu unit_addr] [-vV] [-i imgtype] [-o imgoffset] [-b dev_sector_size] [-f fstype] image [images]
 .SH DESCRIPTION
 .B blkcalc
 creates a disk unit number mapping between two images, one normal and 
@@ -34,7 +33,7 @@ from
 .B -s
 option is given, then the
 .B unit_addr
-value is the disk unit address in the slack image (i.e. from blkls -s).  
+value is the disk unit address in the slack image (i.e. from blkls \-s).
 The
 .B image
 is the full, original image (i.e. from dd).
@@ -44,11 +43,11 @@ was called
 in TSK versions prior to 3.0.0.
 
 .IP "-f fstype"
-Identify the File System type of the image.  
-Use '-f list' to list the supported file system types.
+Identify the File System type of the image.
+Use '\-f list' to list the supported file system types.
 If not given, autodetection methods are used.
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
@@ -67,7 +66,7 @@ This allows one to identify the original unit address and provides
 better documentation.
 
 .SH EXAMPLE
-# blkcalc -u 64 images/wd0e  
+# blkcalc \-u 64 images/wd0e
 
 .SH "SEE ALSO"
 .BR blkls (1),

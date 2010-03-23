@@ -36,18 +36,18 @@ Arguments:
 List every inode in the file system.
 .IP "\fB-f\fI fstype\fR"
 Specifies the file system type.  
-Use '-f list' to list the supported file system types.
+Use '\-f list' to list the supported file system types.
 If not given, autodetection methods are used.
 .IP "\fB-s\fI seconds\fR"
 The time skew of the original system in seconds.  For example, if the
-original system was 100 seconds slow, this value would be -100. 
+original system was 100 seconds slow, this value would be \-100.
 .IP \fB-m\fR
 Display the inode details in the format that the mactime program reads
 (replaces the ils2mac script from TCT)
 .IP \fB-O\fR
 List only inodes of removed files that are still open or executing.
 This option is short-hand notation for \fB-aL\fR
-"(see the \fBfine controls\fR section below). (this used to be -o).
+"(see the \fBfine controls\fR section below). (this used to be \-o).
 .IP \fB-p\fR
 Display orphan inodes (unallocated with no file name)
 .IP \fB-r\fR
@@ -55,7 +55,7 @@ Display orphan inodes (unallocated with no file name)
 for \fB-LZ\fR
 (see the \fBfine controls\fR section below).
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '-i list' to list the supported types. 
+Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
@@ -66,7 +66,7 @@ Turn on verbose mode, output to stderr.
 .IP \fB-V\fR
 Display Version.
 .IP "image [images]"
-One (or more if split) disk or partition images whose format is given with '-i'.
+One (or more if split) disk or partition images whose format is given with '\-i'.
 .IP "\fIstart-stop\fR"
 Examine the specified inode number or number range. 
 .PP
