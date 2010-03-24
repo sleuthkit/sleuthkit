@@ -53,6 +53,7 @@ my $IMG_PAGE = 100;
 # Globals
 my $alloc_cnt   = 0;    # Number of allocated files processed
 my $dirskip_cnt = 0;    # Files skipped because dir or null size
+my $realloc_cnt = 0;    # Files skipped because they were marked as realloc
 my $ignore_cnt  = 0;    # Files skipped bc in ignore category
 my $alert_cnt   = 0;    # number of files flagged by hash
 my $excl_cnt    = 0;    # number of files skipped bc known good
@@ -590,16 +591,23 @@ sub analyze_img {
         # Extract the file name and inode, skip if it is a directory
         # TYPE/TYPE * INUM (realloc): NAME
         if (
-/^([\w\-])\/[\w\-]\s+(\*?)\s*([\d\-]+)[\(\)\w]*:\s+(.*)\s+$REG_DATE\s+$REG_DATE\s+$REG_DATE\s+$REG_DATE\s+(\d+)\s+\d+\s+\d+\s*$/
+/^([\w\-])\/[\w\-]\s+(\*?)\s*([\d\-]+)([\(\)\w]*):\s+(.*)\s+$REG_DATE\s+$REG_DATE\s+$REG_DATE\s+$REG_DATE\s+(\d+)\s+\d+\s+\d+\s*$/
           )
         {
             if (($1 ne "r") && ($1 ne "-")) {
                 $dirskip_cnt++;
                 next;
             }
+            # skip the realloc entries because we'll process the
+            # allocated name that points to the content.
+            if ($4 eq "(realloc)") {
+                $realloc_cnt++;
+                next;
+            }
+
             $inode = $3;
-            $path  = $4;
-            $size  = $5;
+            $path  = $5;
+            $size  = $6;
             $del   = ($2 eq '*') ? $DEL_DEL : $DEL_ALLOC;
         }
         else {
@@ -1498,8 +1506,9 @@ sub print_summary {
 
     $str .=
         "Files Skipped ("
-      . ($dirskip_cnt + $ignore_cnt) . ")\n"
+      . ($dirskip_cnt + $ignore_cnt + $realloc_cnt) . ")\n"
       . "- Non-Files ($dirskip_cnt)\n"
+      . "- Reallocated Name Files ($realloc_cnt)\n"
       . "- 'ignore' category ($ignore_cnt)\n\n";
 
     if (("$EXCLUDE_DB" ne "") || ("$NSRL" ne "") || ("$ALERT_DB" ne "")) {
@@ -1572,6 +1581,7 @@ sub print_index {
       . ($dirskip_cnt + $ignore_cnt)
       . ")\n<UL>\n"
       . "  <LI>Non-Files ($dirskip_cnt)\n"
+      . "  <LI>Reallocated Name Files ($realloc_cnt)\n"
       . "  <LI>'ignore' category ($ignore_cnt)\n"
       . "</UL>\n";
 
