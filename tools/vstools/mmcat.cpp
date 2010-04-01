@@ -11,6 +11,10 @@
 
 #include "tsk3/tsk_tools_i.h"
 
+#ifdef TSK_WIN32
+#include <fcntl.h>
+#endif
+
 static TSK_TCHAR *progname;
 
 void
