@@ -3,7 +3,7 @@
 
                     Installation Instructions
 
-                     Last Modified: Sept 2008
+                     Last Modified: March 2010
 
 
 REQUIREMENTS
@@ -36,7 +36,7 @@ release.
     Available at: http://www.afflib.org
 
 - LibEWF: Allows you to process disk images that are stored in the
-Expert Witness format (EnCase Format).  Version 20091128 has been
+Expert Witness format (EnCase Format).  Version 20100226 has been
 tested to compile and work with this release. NOTE that this does
 not include the experimental V2 API. 
     Available at: http://sourceforge.net/projects/libewf/
