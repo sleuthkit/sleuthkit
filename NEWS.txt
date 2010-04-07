@@ -1,6 +1,11 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 3.1.2 --------------
+Bug Fixes
+- 2982426: FAT directory listings were slow because the entire
+image was being scanned for parent directory information. 
+
 ---------------- VERSION 3.1.1 --------------
 
 Bug Fixes
