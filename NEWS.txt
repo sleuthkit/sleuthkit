@@ -5,6 +5,7 @@ Numbers refer to SourceForge.net tracker IDs:
 Bug Fixes
 - 2982426: FAT directory listings were slow because the entire
 image was being scanned for parent directory information. 
+- 2982965: fs_attr length bug fix.
 
 ---------------- VERSION 3.1.1 --------------
 

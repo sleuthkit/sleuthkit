@@ -1094,15 +1094,18 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                 continue;
 
             // block offset into this run
-            blkoffset_inrun = blkoffset_toread - data_run_cur->offset;
+            if (data_run_cur->offset < blkoffset_toread)
+                blkoffset_inrun = blkoffset_toread - data_run_cur->offset;
+            else
+                blkoffset_inrun = 0;
 
             // see if we need to read the rest of this run and into the next or if it is all here
             len_inrun = len_remain;
-            if ((data_run_cur->len - blkoffset_inrun) * fs->block_size <
+            if ((data_run_cur->len - blkoffset_inrun) * fs->block_size - byteoffset_toread <
                 len_remain)
                 len_inrun =
                     (size_t) ((data_run_cur->len -
-                        blkoffset_inrun) * fs->block_size);
+                        blkoffset_inrun) * fs->block_size - byteoffset_toread) ;
 
             /* sparse files/runs just get 0s */
             if (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE) {
