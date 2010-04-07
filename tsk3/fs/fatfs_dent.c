@@ -71,8 +71,7 @@ find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
         return TSK_WALK_CONT;
 
     if (fs_file->meta->addr == par_inum)
-        //return TSK_WALK_STOP;
-        return TSK_WALK_CONT;
+        return TSK_WALK_STOP;
 
     return TSK_WALK_CONT;
 }
