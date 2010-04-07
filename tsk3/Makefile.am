@@ -1,11 +1,12 @@
 # Compile the sub directories
-SUBDIRS = base img vs fs hashdb
+SUBDIRS = base img vs fs hashdb auto
 
 # Merge the libraries into one
 lib_LTLIBRARIES = libtsk3.la
 libtsk3_la_SOURCES =
 libtsk3_la_LIBADD = base/libtskbase.la img/libtskimg.la \
-    vs/libtskvs.la fs/libtskfs.la hashdb/libtskhashdb.la
+    vs/libtskvs.la fs/libtskfs.la hashdb/libtskhashdb.la \
+    auto/libtskauto.la
 # current:revision:age
 libtsk3_la_LDFLAGS = -version-info 0:0:0
 

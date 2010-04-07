@@ -10,5 +10,6 @@
 #include "tsk3/vs/tsk_vs.h"
 #include "tsk3/fs/tsk_fs.h"
 #include "tsk3/hashdb/tsk_hashdb.h"
+#include "tsk3/auto/tsk_auto.h"
 
 #endif

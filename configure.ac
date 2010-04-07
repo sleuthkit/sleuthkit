@@ -158,12 +158,14 @@ AC_CONFIG_FILES([Makefile
                  tsk3/vs/Makefile
                  tsk3/fs/Makefile
                  tsk3/hashdb/Makefile
+                 tsk3/auto/Makefile
                  tools/Makefile
                  tools/imgtools/Makefile
                  tools/vstools/Makefile
                  tools/fstools/Makefile
                  tools/hashtools/Makefile
                  tools/srchtools/Makefile
+                 tools/autotools/Makefile
                  tools/sorter/Makefile
                  tools/timeline/Makefile
                  tests/Makefile

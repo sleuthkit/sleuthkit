@@ -24,6 +24,10 @@
 		02260C790D64895B0027BE02 /* Makefile.in */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Makefile.in; sourceTree = "<group>"; };
 		0229714A0EBD0AC0001AC9C7 /* hfs_unicompare.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = hfs_unicompare.c; sourceTree = "<group>"; };
 		022B139A0DB6486D00C4BE09 /* nofs_misc.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = nofs_misc.c; sourceTree = "<group>"; };
+		024D5A7A1166D46E00299079 /* auto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = auto.cpp; sourceTree = "<group>"; };
+		024D5A7D11677D4D00299079 /* tsk_auto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tsk_auto.h; sourceTree = "<group>"; };
+		024D5A8211678B0D00299079 /* tsk_recover.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tsk_recover.cpp; sourceTree = "<group>"; };
+		024D5A8311678CD400299079 /* tsk_recover.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tsk_recover.h; sourceTree = "<group>"; };
 		025328FF0E59B5ED000595D8 /* img_io.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = img_io.c; sourceTree = "<group>"; };
 		025558630DA1C67E00A635EC /* fs_block.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fs_block.c; sourceTree = "<group>"; };
 		025D0FC30DBCDDBF00A9420F /* hfind.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = hfind.cpp; sourceTree = "<group>"; };
@@ -211,9 +215,31 @@
 			path = ../tools/timeline;
 			sourceTree = SOURCE_ROOT;
 		};
+		024D5A781166D46E00299079 /* auto */ = {
+			isa = PBXGroup;
+			children = (
+				024D5A7D11677D4D00299079 /* tsk_auto.h */,
+				024D5A7A1166D46E00299079 /* auto.cpp */,
+			);
+			name = auto;
+			path = ../tsk3/auto;
+			sourceTree = SOURCE_ROOT;
+		};
+		024D5A7E11678B0D00299079 /* autotools */ = {
+			isa = PBXGroup;
+			children = (
+				024D5A8311678CD400299079 /* tsk_recover.h */,
+				024D5A8211678B0D00299079 /* tsk_recover.cpp */,
+			);
+			name = autotools;
+			path = ../tools/autotools;
+			sourceTree = SOURCE_ROOT;
+		};
 		026FB3810D19C831000434C7 = {
 			isa = PBXGroup;
 			children = (
+				024D5A7E11678B0D00299079 /* autotools */,
+				024D5A781166D46E00299079 /* auto */,
 				029B610D0E1D373600AF156D /* samples */,
 				029B49E50E154FE200AF156D /* tests */,
 				026FB38C0D19C867000434C7 /* base */,
