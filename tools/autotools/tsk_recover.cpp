@@ -1,8 +1,19 @@
-
+/*
+ ** tsk_recover
+ ** The Sleuth Kit 
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2010 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ **
+ */
 
 #include "tsk3/tsk_tools_i.h"
 #include "tsk_recover.h"
 #include <locale.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 static TSK_TCHAR *progname;
 
@@ -12,17 +23,14 @@ usage()
     // @@@ UPDATE ME
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-tvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image\n"),
+        ("usage: %s [-vV] [-f fstype] [-i imgtype] [-b dev_sector_size] output_dir image\n"),
         progname);
-    tsk_fprintf(stderr, "\t-t: display type only\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
-    tsk_fprintf(stderr,
-        "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
 
@@ -35,10 +43,82 @@ TskRecover::TskRecover(TSK_TCHAR *a_base_dir)
     m_base_dir = a_base_dir;
 }
 
+
+static TSK_WALK_RET_ENUM 
+file_walk_cb(TSK_FS_FILE *a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr, char *a_buf,
+     size_t a_len, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
+{
+#ifdef TSK_WIN32
+    
+#else
+    FILE *hFile = (FILE *)a_ptr;
+    if (fwrite(a_buf, a_len, 1, hFile) != 1) {
+        fprintf(stderr, "Error writing file content\n");
+        return TSK_WALK_STOP;
+    }
+#endif
+    return TSK_WALK_CONT;
+}
+
+
 uint8_t 
 TskRecover::writeFile(TSK_FS_FILE *a_fs_file, const char *a_path)
 {
-    printf ("Got File %s%s (%"PRIuINUM")\n", a_path, a_fs_file->name->name, a_fs_file->name->meta_addr);
+#ifdef TSK_WIN32
+    printf("Error: Windows not supported yet!\n");
+#else
+    struct stat statds;
+    char fbuf[PATH_MAX];
+    FILE *hFile;
+    
+    snprintf(fbuf, PATH_MAX, "%s/%s", (char *)m_base_dir, a_path);
+    
+    // see if the directory already exists. Create, if not.
+    if (0 != lstat(fbuf, &statds)) {
+        size_t len = strlen(fbuf);
+        for (size_t i = 0; i < len; i++) {
+            if ( ((i > 0) && (fbuf[i] == '/') && (fbuf[i-1] != '/')) || ((fbuf[i] != '/') && (i == len-1)) ) {
+                uint8_t replaced = 0;
+                
+                if (fbuf[i] == '/') {
+                    fbuf[i] = '\0';
+                    replaced = 1;
+                }
+                if (0 != lstat(fbuf, &statds)) {
+                    if (mkdir (fbuf, 0775)) {
+                        fprintf(stderr, "Error making directory (%s) (%x)\n", fbuf, errno);
+                        return 1;
+                    }
+                }
+                if (replaced)
+                    fbuf[i] = '/';
+            }
+        }
+    }
+    
+    if (fbuf[strlen(fbuf)-1] != '/')
+        strncat(fbuf, "/", PATH_MAX);
+    strncat(fbuf, a_fs_file->name->name, PATH_MAX);
+    
+    // open the file
+    if ((hFile = fopen(fbuf, "w+")) == NULL) {
+        fprintf(stderr, "Error opening file for writing (%s)\n", fbuf);
+        return 1;
+    }
+    
+    if (tsk_fs_file_walk(a_fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM)0, file_walk_cb, hFile)) {
+        fprintf(stderr, "Error walking: %s\n", fbuf);
+        tsk_error_print(stderr);
+        fclose(hFile);
+        return 1;
+    }
+    
+    fclose(hFile);
+    
+#endif
+    
+    printf ("Recovered file %s%s (%"PRIuINUM")\n", a_path, a_fs_file->name->name, a_fs_file->name->meta_addr);
+    
     return 0;
 }
 
@@ -55,6 +135,9 @@ TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
     if (isNtfsSystemFiles(fs_file, path))
         return 0;
     
+    if ((!fs_file->meta) || (fs_file->meta->size == 0)) 
+        return 0;
+    
     writeFile(fs_file, path);
     
     return 0;
@@ -67,11 +150,10 @@ main(int argc, char **argv1)
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 
     int ch;
-    uint8_t type = 0;
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
-
+    
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -117,11 +199,6 @@ main(int argc, char **argv1)
             }
             break;
 
-
-        case _TSK_T('t'):
-            type = 1;
-            break;
-
         case _TSK_T('v'):
             tsk_verbose++;
             break;
@@ -133,19 +210,20 @@ main(int argc, char **argv1)
     }
 
     /* We need at least one more argument */
-    if (OPTIND >= argc) {
-        tsk_fprintf(stderr, "Missing image name\n");
+    if (OPTIND + 1 >= argc) {
+        tsk_fprintf(stderr, "Missing output directory and/or image name\n");
         usage();
     }
     
-    TskRecover tskRecover(_TSK_T(""));
+    TskRecover tskRecover(_TSK_T(argv[OPTIND]));
     
     tskRecover.setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_UNALLOC);
-    if (tskRecover.openImage(argc - OPTIND,  &argv[OPTIND], imgtype,
+    if (tskRecover.openImage(argc - OPTIND - 1,  &argv[OPTIND+1], imgtype,
                       ssize)) {
         tsk_error_print(stderr);
         exit(1);
     }
+    
     if (tskRecover.findFilesInImg()) {
         tsk_error_print(stderr);
         exit(1);
@@ -165,18 +243,6 @@ main(int argc, char **argv1)
             tsk_fs_type_print(stderr);
         img->close(img);
         exit(1);
-    }
-
-    if (type) {
-        tsk_printf("%s\n", tsk_fs_type_toname(fs->ftype));
-    }
-    else {
-        if (fs->fsstat(fs, stdout)) {
-            tsk_error_print(stderr);
-            fs->close(fs);
-            img->close(img);
-            exit(1);
-        }
     }
 
     fs->close(fs);
