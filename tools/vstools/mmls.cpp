@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2006-2010 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
  *
  * mmls - list media management structure contents
@@ -79,30 +79,30 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void *ptr)
 
     if (print_bytes) {
         TSK_OFF_T size;
-        char unit = ' ';
+        char unit = 'B';
         size = part->len * part->vs->block_size;
 
-        if (part->len < 1024) {
-            unit = 'B';
-        }
-        else if (size < 512*1024) {
-            size = part->len / 1024;
+        if (size > 1024) {
+            size /= 1024;
             unit = 'K';
         }
-        else if (size < (512*1048576)) {
-            size = part->len / 1048576;
+        
+        if (size > 1024) {
+            size /= 1024;
             unit = 'M';
         }
-        else if (size < (512*(TSK_OFF_T)1073741824)) {
-            size = part->len / ((TSK_OFF_T)1073741824);
+        
+        if (size > 1024) {
+            size /= 1024;
             unit = 'G';
         }
-        // 1099511627776
-        else if (size < (512*((TSK_OFF_T)1<<40))) {
-            size = part->len / ((TSK_OFF_T)1<<40);
+
+        if (size > 1024) {
+            size /= 1024;
             unit = 'T';
         }
-
+        
+        
         /* Print the layout */
         tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
             "   %.4" PRIuOFF "%c   %s\n", part->start,
