@@ -5,7 +5,7 @@
 ** Content and meta data layer support for the NTFS file system
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2009 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2010 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
@@ -3126,7 +3126,7 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 
     /* Loop by cluster size */
     for (sii_buffer_offset = 0; sii_buffer_offset < sii_buffer->size;
-        sii_buffer_offset += ntfs->csize_b) {
+        sii_buffer_offset += ntfs->idx_rsize_b) {
         ntfs_idxrec *idxrec =
             (ntfs_idxrec *) & sii_buffer->buffer[sii_buffer_offset];
 

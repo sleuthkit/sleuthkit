@@ -7,6 +7,7 @@ Bug Fixes
 image was being scanned for parent directory information. 
 - 2982965: fs_attr length bug fix.
 - 2988619: mmls -B display error.
+- 2988330: ntfs SII cluster size increment bug.
 
 
 ---------------- VERSION 3.1.1 --------------
