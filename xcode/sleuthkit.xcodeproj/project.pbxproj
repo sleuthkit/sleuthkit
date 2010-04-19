@@ -140,6 +140,8 @@
 		029B4ADB0E15672900AF156D /* fs_file.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fs_file.c; sourceTree = "<group>"; };
 		029B61140E1D37CF00AF156D /* callback-style.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; name = "callback-style.cpp"; path = "../samples/callback-style.cpp"; sourceTree = SOURCE_ROOT; };
 		029B61150E1D37DE00AF156D /* posix-style.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; name = "posix-style.cpp"; path = "../samples/posix-style.cpp"; sourceTree = SOURCE_ROOT; };
+		02DE5E43117A8A4500D94722 /* auto_db.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = auto_db.cpp; sourceTree = "<group>"; };
+		02DE5E44117B925700D94722 /* tsk_loaddb.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tsk_loaddb.cpp; sourceTree = "<group>"; };
 		02F9DE1C0D9BF030009C3F0E /* ffind.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = ffind.cpp; sourceTree = "<group>"; };
 		02F9DE1D0D9BF030009C3F0E /* fls.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = fls.cpp; sourceTree = "<group>"; };
 		02F9DE1E0D9BF030009C3F0E /* fscheck.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = fscheck.cpp; sourceTree = "<group>"; };
@@ -218,6 +220,7 @@
 		024D5A781166D46E00299079 /* auto */ = {
 			isa = PBXGroup;
 			children = (
+				02DE5E43117A8A4500D94722 /* auto_db.cpp */,
 				024D5A7D11677D4D00299079 /* tsk_auto.h */,
 				024D5A7A1166D46E00299079 /* auto.cpp */,
 			);
@@ -228,6 +231,7 @@
 		024D5A7E11678B0D00299079 /* autotools */ = {
 			isa = PBXGroup;
 			children = (
+				02DE5E44117B925700D94722 /* tsk_loaddb.cpp */,
 				024D5A8311678CD400299079 /* tsk_recover.h */,
 				024D5A8211678B0D00299079 /* tsk_recover.cpp */,
 			);

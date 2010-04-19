@@ -3,7 +3,7 @@ EXTRA_DIST = .indent.pro
 
 noinst_LTLIBRARIES = libtskauto.la
 # Note that the .h files are in the top-level Makefile
-libtskauto_la_SOURCES = auto.cpp tsk_auto.h
+libtskauto_la_SOURCES = auto.cpp tsk_auto.h auto_db.cpp sqlite3.c sqlite3.h
 
 indent:
 	indent *.cpp *.h

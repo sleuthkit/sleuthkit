@@ -27,9 +27,9 @@ class TskAuto {
      TskAuto();
      virtual ~ TskAuto();
 
-    uint8_t openImage(int, const TSK_TCHAR * const images[],
+    virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
-    void closeImage();
+    virtual void closeImage();
     
     uint8_t findFilesInImg();
     uint8_t findFilesInVs(TSK_OFF_T start);
@@ -68,8 +68,6 @@ class TskAuto {
         0;
 
   private:
-    TSK_IMG_INFO * m_img_info;
-    
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
     TSK_FS_DIR_WALK_FLAG_ENUM m_fileFilterFlags;
 
@@ -79,9 +77,29 @@ class TskAuto {
         const TSK_VS_PART_INFO * vs_part, void *ptr);
 
   protected:
+    TSK_IMG_INFO * m_img_info;
     uint8_t isNtfsSystemFiles(TSK_FS_FILE * fs_file, const char *path);
     uint8_t isDotDir(TSK_FS_FILE * fs_file, const char *path);
     uint8_t isDir(TSK_FS_FILE * fs_file);
+};
+
+typedef struct sqlite3 sqlite3;
+
+class TskAutoDb : public TskAuto {
+public:
+    TskAutoDb();
+    virtual ~ TskAutoDb();
+    virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
+                              TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
+    virtual void closeImage();
+    
+    virtual uint8_t filterVol(const TSK_VS_PART_INFO * vs_part);
+    virtual uint8_t filterFs(TSK_FS_INFO * fs_info);
+    virtual uint8_t processFile(TSK_FS_FILE * fs_file, const char *path);
+private:
+    sqlite3 *m_db;
+    int m_curFsId;
+    int m_curVsId;
 };
 
 #endif
