@@ -109,27 +109,23 @@ ntfs_orphan_map_add(NTFS_INFO * ntfs, TSK_INUM_T par, TSK_INUM_T child)
             ntfs->orphan_map = map;
         }
         else {
-            // head of the list
-            if (ntfs->orphan_map->par_addr > par) {
-                map->next = ntfs->orphan_map;
-                ntfs->orphan_map = map;
-            }
-            else {
-                NTFS_PAR_MAP *prev = NULL;
-                // somewhere in the middle of the list
-                for (tmp = ntfs->orphan_map; tmp; tmp = tmp->next) {
-                    if (tmp->par_addr > par) {
-                        map->next = tmp;
-                        prev->next = map;
-                        break;
-                    }
-                    prev = tmp;
-                }
+            NTFS_PAR_MAP *prev = NULL;
 
-                // at the end of the list
-                if (map->next == NULL)
-                    prev->next = map;
+            for (tmp = ntfs->orphan_map; tmp; tmp = tmp->next) {
+                if (tmp->par_addr > par) {
+                    map->next = tmp;
+                    if (prev == NULL)
+                        ntfs->orphan_map = map;
+                    else
+                        prev->next = map;
+                    break;
+                }
+                prev = tmp;
             }
+
+            // at the end of the list
+            if (map->next == NULL)
+                prev->next = map;
         }
     }
 
