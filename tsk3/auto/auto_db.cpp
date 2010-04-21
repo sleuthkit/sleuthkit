@@ -10,6 +10,8 @@
 #include "tsk_auto.h"
 #include "sqlite3.h"
 
+#define TSK_SCHEMA_VER 1
+
 TskAutoDb::TskAutoDb()
 {
     m_db = NULL;
@@ -54,13 +56,26 @@ TskAutoDb::openImage(int num, const TSK_TCHAR * const images[],
     }
     
     char *errmsg;
+    if (sqlite3_exec(m_db, "CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);", NULL, NULL, &errmsg) != SQLITE_OK) {
+        fprintf(stderr, "Error creating tsk_db_info table: %s\n", errmsg);
+        sqlite3_free(errmsg);
+        return 1;
+    }
+    
+    snprintf(foo, 1024, "INSERT INTO tsk_db_info (schema_ver, tsk_ver) VALUES (%d, %d);", TSK_SCHEMA_VER, TSK_VERSION_NUM);
+    if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
+        fprintf(stderr, "Error adding data to tsk_db_info table: %s\n", errmsg);
+        sqlite3_free(errmsg);
+        return 1;
+    }
+    
     if (sqlite3_exec(m_db, "CREATE TABLE tsk_image_info (type INTEGER, ssize INTEGER);", NULL, NULL, &errmsg) != SQLITE_OK) {
         fprintf(stderr, "Error creating tsk_image_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
     }
     
-    snprintf(foo, 1024, "INSERT INTO tsk_image_info VALUES (%d, %u);", (int)type, m_img_info->sector_size);
+    snprintf(foo, 1024, "INSERT INTO tsk_image_info (type, ssize) VALUES (%d, %u);", (int)type, m_img_info->sector_size);
     if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
         fprintf(stderr, "Error adding data to tsk_image_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
@@ -102,7 +117,7 @@ TskAutoDb::openImage(int num, const TSK_TCHAR * const images[],
         return 1;
     }
     
-    if (sqlite3_exec(m_db, "CREATE TABLE tsk_fs_files (fs_id INTEGER NOT NULL, file_id INTEGER NOT NULL, name TEXT NOT NULL, par_file_id INTEGER);", NULL, NULL, &errmsg) != SQLITE_OK) {
+    if (sqlite3_exec(m_db, "CREATE TABLE tsk_fs_files (fs_id INTEGER NOT NULL, file_id INTEGER NOT NULL, name TEXT NOT NULL, par_file_id INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER);", NULL, NULL, &errmsg) != SQLITE_OK) {
         fprintf(stderr, "Error creating tsk_fs_files table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
@@ -141,6 +156,8 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
     
     return 0;
 }
+
+
 uint8_t
 TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 {
@@ -173,14 +190,33 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
     char foo[1024];
     char *errmsg;
+    int mtime = 0;
+    int crtime = 0;
+    int ctime = 0;
+    int atime = 0;
+    TSK_OFF_T size = 0;
+    int meta_type = 0;
+    int meta_flags = 0;
+    int meta_mode = 0;
     
     if (fs_file->name == NULL) 
         return 0;
     
+    if (fs_file->meta) {
+        mtime = fs_file->meta->mtime;
+        atime = fs_file->meta->atime;
+        ctime = fs_file->meta->ctime;
+        crtime = fs_file->meta->crtime;
+        size = fs_file->meta->size;
+        meta_type = fs_file->meta->type;
+        meta_flags = fs_file->meta->flags;
+        meta_mode = fs_file->meta->mode;
+    }
+    
     
     // @@@ need par_file_id
-    snprintf(foo, 1024, "INSERT INTO tsk_fs_files (fs_id, file_id, name, par_file_id) VALUES (%d,%"PRIuINUM",'%s',%"PRIuINUM")", 
-             m_curFsId, fs_file->name->meta_addr, fs_file->name->name, (TSK_INUM_T)0);
+    snprintf(foo, 1024, "INSERT INTO tsk_fs_files (fs_id, file_id, name, par_file_id, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode) VALUES (%d,%"PRIuINUM",'%s',%"PRIuINUM",%d,%d,%d,%d,%"PRIuOFF",%d,%d,%d,%d,%d)", 
+             m_curFsId, fs_file->name->meta_addr, fs_file->name->name, (TSK_INUM_T)0, fs_file->name->type, meta_type, fs_file->name->flags, meta_flags, size, crtime, ctime, atime, mtime, meta_mode);
     
     if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
         fprintf(stderr, "Error adding data to tsk_fs_info table: %s\n", errmsg);
