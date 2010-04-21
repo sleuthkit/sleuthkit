@@ -105,6 +105,8 @@ hfs_checked_read_random(TSK_FS_INFO * fs, char *buf, size_t len,
 uint32_t
 hfs2unixtime(uint32_t hfsdate)
 {
+    if (hfsdate < NSEC_BTWN_1904_1970)
+        return 0;
     return (uint32_t) (hfsdate - NSEC_BTWN_1904_1970);
 }
 

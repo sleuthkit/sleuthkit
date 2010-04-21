@@ -125,7 +125,7 @@ hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
     if (r != TSKconversionOK) {
         tsk_errno = TSK_ERR_FS_UNICODE;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "hfs_uni2ascii: unicode conversion failed (%" PRIu8 ")", r);
+            "hfs_uni2ascii: unicode conversion failed (%d)", (int)r);
         free(uniclean);
         return 1;
     }
