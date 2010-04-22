@@ -12,13 +12,18 @@
 #ifndef _TSK_AUTO_H
 #define _TSK_AUTO_H
 
+#ifdef __cplusplus
+
 // Include the other internal TSK header files
 #include "tsk3/base/tsk_base_i.h"
 #include "tsk3/img/tsk_img_i.h"
 #include "tsk3/vs/tsk_vs_i.h"
 #include "tsk3/fs/tsk_fs_i.h"
+#include <map>
+#include <string>
 
 #define TSK_AUTO_TAG 0x9191ABAB
+
 
 class TskAuto {
   public:
@@ -100,6 +105,11 @@ private:
     sqlite3 *m_db;
     int m_curFsId;
     int m_curVsId;
+    
+    // maps dir name to its inode.  Used to find parent dir inum based on name. 
+    std::map<std::string, TSK_INUM_T> m_par_inodes;
 };
+
+#endif
 
 #endif
