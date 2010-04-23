@@ -1171,13 +1171,13 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                             byteoffset_toread + len_inrun) >
                         a_fs_attr->nrd.initsize)
                     && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
-                    size_t off =
-                        (size_t) ((data_run_cur->offset +
-                            blkoffset_inrun) * fs->block_size +
-                        byteoffset_toread + len_inrun -
-                        a_fs_attr->nrd.initsize);
-                    memset(&a_buf[len_toread - len_remain + off], 0,
-                        len_inrun - off);
+                    
+                    size_t uninit_off = a_fs_attr->nrd.initsize - 
+                        ((data_run_cur->offset + blkoffset_inrun) * fs->block_size +
+                        byteoffset_toread);
+
+                    memset(&a_buf[len_toread - len_remain + uninit_off], 0,
+                        len_inrun - uninit_off);
                 }
 
             }
