@@ -497,8 +497,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         (const UTF16 **) &name16,
                         (UTF16 *) & buf[b_offs + sizeof(iso9660_dentry) +
                             dentry->fi_len], &name8,
-                        (UTF8 *) ((uintptr_t) & in_node->
-                            inode.fn[ISO9660_MAXNAMLEN_STD]),
+                        (UTF8 *) ((uintptr_t) & in_node->inode.
+                            fn[ISO9660_MAXNAMLEN_STD]),
                         TSKlenientConversion);
                     if (retVal != TSKconversionOK) {
                         if (tsk_verbose)
@@ -1490,11 +1490,10 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
     for (p = iso->pvd; p != NULL; p = p->next) {
         i++;
-        tsk_fprintf(hFile, "\nPRIMARY VOLUME DESCRIPTOR %d\n", i);
-        tsk_fprintf(hFile, "\nFILE SYSTEM INFORMATION\n");
+        tsk_fprintf(hFile, "\n=== PRIMARY VOLUME DESCRIPTOR %d ===\n", i);
+        tsk_fprintf(hFile, "FILE SYSTEM INFORMATION\n");
         tsk_fprintf(hFile,
             "--------------------------------------------\n");
-        tsk_fprintf(hFile, "Read from Primary Volume Descriptor\n");
         tsk_fprintf(hFile, "File System Type: ISO9660\n");
         tsk_fprintf(hFile, "Volume Name: %s\n", p->pvd.vol_id);
         tsk_fprintf(hFile, "Volume Set Size: %d\n",
@@ -1571,6 +1570,8 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
         tsk_fprintf(hFile, "Inode Range: %" PRIuINUM " - %" PRIuINUM "\n",
             fs->first_inum, fs->last_inum);
+        tsk_fprintf(hFile, "Root Directory Block: %" PRIuDADDR "\n",
+            tsk_getu32(fs->endian, p->pvd.dir_rec.ext_loc_m));
 
         tsk_fprintf(hFile, "\nCONTENT INFORMATION\n");
         tsk_fprintf(hFile,
@@ -1591,11 +1592,11 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
     for (s = iso->svd; s != NULL; s = s->next) {
         i++;
-        tsk_fprintf(hFile, "\nSUPPLEMENTARY VOLUME DESCRIPTOR %d\n", i);
-        tsk_fprintf(hFile, "\nFILE SYSTEM INFORMATION\n");
+        tsk_fprintf(hFile,
+            "\n=== SUPPLEMENTARY VOLUME DESCRIPTOR %d ===\n", i);
+        tsk_fprintf(hFile, "FILE SYSTEM INFORMATION\n");
         tsk_fprintf(hFile,
             "--------------------------------------------\n");
-        tsk_fprintf(hFile, "Read from Supplementary Volume Descriptor\n");
         tsk_fprintf(hFile, "File System Type: ISO9660\n");
         tsk_fprintf(hFile, "Volume Name: %s\n", s->svd.vol_id);
         tsk_fprintf(hFile, "Volume Set Size: %d\n",
@@ -1671,6 +1672,9 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             tsk_getu32(fs->endian, s->svd.pt_loc_m), tsk_getu32(fs->endian,
                 s->svd.pt_loc_m) + tsk_getu32(fs->endian,
                 s->svd.pt_size_m) / fs->block_size);
+
+        tsk_fprintf(hFile, "Root Directory Block: %" PRIuDADDR "\n",
+            tsk_getu32(fs->endian, s->svd.dir_rec.ext_loc_m));
 
         /* learn joliet level (1-3) */
         if (!strncmp((char *) s->svd.esc_seq, "%/E", 3))
