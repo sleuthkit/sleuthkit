@@ -67,7 +67,7 @@ find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
 {
     TSK_INUM_T par_inum = *(TSK_INUM_T *) ptr;
 
-    if (fs_file->meta == NULL)
+    if ((fs_file->meta == NULL) || (fs_file->meta->type != TSK_FS_META_TYPE_DIR))
         return TSK_WALK_CONT;
 
     if (fs_file->meta->addr == par_inum)
@@ -438,7 +438,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                          * the directory until we hit this directory. This process will
                          * populate the buffer table and we will then rescan it */
                         if (tsk_fs_dir_walk(fs, fs->root_inum,
-                                TSK_FS_DIR_WALK_FLAG_ALLOC |
+                                TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC | 
                                 TSK_FS_DIR_WALK_FLAG_RECURSE,
                                 find_parent_act,
                                 (void *) &a_fs_dir->fs_file->meta->addr)) {

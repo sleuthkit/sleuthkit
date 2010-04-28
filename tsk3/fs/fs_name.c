@@ -166,6 +166,8 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
     else {
         if (a_fs_name_to->name_size > 0)
             a_fs_name_to->name[0] = '\0';
+        else 
+            a_fs_name_to->name = NULL;
     }
 
     // copy the short name, if one exists
@@ -186,6 +188,8 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
     else {
         if (a_fs_name_to->shrt_name_size > 0)
             a_fs_name_to->shrt_name[0] = '\0';
+        else 
+            a_fs_name_to->shrt_name = NULL;
     }
 
     a_fs_name_to->meta_addr = a_fs_name_from->meta_addr;

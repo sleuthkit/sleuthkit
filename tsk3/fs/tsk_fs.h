@@ -830,6 +830,7 @@ extern "C" {
                      * or when a full name_walk is performed. 
 					 */
 
+        TSK_FS_DIR *orphan_dir;         ///< Files and dirs in the top level of the $OrphanFiles directory.  NULL if orphans have not been hunted for yet. 
         uint8_t isOrphanHunting;        ///< Set to 1 if TSK is currently looking for Orphan files
 
          uint8_t(*block_walk) (TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end, TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb, void *ptr);    ///< FS-specific function: Call tsk_fs_block_walk() instead. 
