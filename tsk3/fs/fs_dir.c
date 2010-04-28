@@ -26,6 +26,7 @@ TSK_FS_DIR *
 tsk_fs_dir_alloc(TSK_FS_INFO * a_fs, size_t a_cnt)
 {
     TSK_FS_DIR *fs_dir;
+    size_t i;
 
     // allocate and initialize the structure
     if ((fs_dir = (TSK_FS_DIR *) tsk_malloc(sizeof(TSK_FS_DIR))) == NULL) {
@@ -42,6 +43,9 @@ tsk_fs_dir_alloc(TSK_FS_INFO * a_fs, size_t a_cnt)
     }
     fs_dir->fs_info = a_fs;
     fs_dir->tag = TSK_FS_DIR_TAG;
+    for (i = 0; i < a_cnt; i++) {
+        fs_dir->names[i].tag = TSK_FS_NAME_TAG;
+    }
 
     return fs_dir;
 }
@@ -57,14 +61,24 @@ tsk_fs_dir_alloc(TSK_FS_INFO * a_fs, size_t a_cnt)
 uint8_t
 tsk_fs_dir_realloc(TSK_FS_DIR * a_fs_dir, size_t a_cnt)
 {
+    size_t prev_cnt, i;
     if ((a_fs_dir == NULL) || (a_fs_dir->tag != TSK_FS_DIR_TAG))
         return 1;
-
+    
+    if (a_fs_dir->names_alloc >= a_cnt)
+        return 0;
+    prev_cnt = a_fs_dir->names_alloc;
+    
     a_fs_dir->names_alloc = a_cnt;
     if ((a_fs_dir->names =
             (TSK_FS_NAME *) tsk_realloc((void *) a_fs_dir->names,
                 sizeof(TSK_FS_NAME) * a_fs_dir->names_alloc)) == NULL) {
         return 1;
+    }
+    
+    memset(&a_fs_dir->names[prev_cnt], 0, (a_cnt-prev_cnt)*sizeof(TSK_FS_NAME));
+    for (i = prev_cnt; i < a_cnt; i++) {
+        a_fs_dir->names[i].tag = TSK_FS_NAME_TAG;
     }
     return 0;
 }
@@ -85,6 +99,38 @@ tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir)
     }
     a_fs_dir->names_used = 0;
 }
+
+
+
+/** \internal
+ * Copy the contents of one directory structure to another. 
+ * Note that this currently does not copy the FS_FILE info.
+ * It is only used to make a copy of the orphan directory.
+ * It does not check for duplicate entries. 
+ * @returns 1 on error
+ */
+static uint8_t
+tsk_fs_dir_copy(const TSK_FS_DIR *a_src_dir, TSK_FS_DIR *a_dst_dir)
+{
+    size_t i;
+    
+    a_dst_dir->names_used = 0;
+    
+    // make sure we got the room
+    if (a_src_dir->names_used > a_dst_dir->names_alloc) {
+        if (tsk_fs_dir_realloc(a_dst_dir, a_src_dir->names_used))
+            return 1;
+    }
+    
+    for (i = 0; i < a_src_dir->names_used; i++) {
+        if (tsk_fs_name_copy(&a_dst_dir->names[i], &a_src_dir->names[i]))
+            return 1;
+    }
+    
+    a_dst_dir->names_used = a_src_dir->names_used;
+    return 0;        
+}
+
 
 /** \internal
  * Add a FS_DENT structure to a FS_DIR structure by copying its
@@ -146,42 +192,10 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
 
         fs_name_dest = &a_fs_dir->names[a_fs_dir->names_used++];
     }
-
-    fs_name_dest->flags = a_fs_name->flags;
-    fs_name_dest->type = a_fs_name->type;
-    fs_name_dest->meta_addr = a_fs_name->meta_addr;
-    fs_name_dest->tag = a_fs_name->tag;
-
-    // if there is a name, then copy it in
-    if (a_fs_name->name) {
-        if ((fs_name_dest->name =
-                (char *) tsk_malloc(a_fs_name->name_size)) == NULL) {
-            return 1;
-        }
-        fs_name_dest->name_size = a_fs_name->name_size;
-        strncpy(fs_name_dest->name, a_fs_name->name,
-            fs_name_dest->name_size);
-    }
-    else {
-        fs_name_dest->name = NULL;
-        fs_name_dest->name_size = 0;
-    }
-
-    // copy in a short name if it exists
-    if (a_fs_name->shrt_name) {
-        if ((fs_name_dest->shrt_name =
-                (char *) tsk_malloc(a_fs_name->shrt_name_size)) == NULL) {
-            return 1;
-        }
-        fs_name_dest->shrt_name_size = a_fs_name->shrt_name_size;
-        strncpy(fs_name_dest->shrt_name, a_fs_name->shrt_name,
-            fs_name_dest->shrt_name_size);
-    }
-    else {
-        fs_name_dest->shrt_name = NULL;
-        fs_name_dest->shrt_name_size = 0;
-    }
-
+    
+    if (tsk_fs_name_copy(fs_name_dest, a_fs_name))
+        return 1;
+    
     return 0;
 }
 
@@ -753,8 +767,8 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
 
 /* Used to keep state while populating the orphan directory */
 typedef struct {
-    TSK_FS_NAME *fs_name;
-    TSK_FS_DIR *fs_dir;
+    TSK_FS_NAME *fs_name;   // temp name structure used when adding entries to fs_dir
+    TSK_FS_DIR *fs_dir;     // unique names are added to this.  represents contents of OrphanFiles directory
     TSK_LIST *orphan_subdir_list;       // keep track of files that can already be accessed via orphan directory
 } FIND_ORPHAN_DATA;
 
@@ -837,6 +851,12 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
     FIND_ORPHAN_DATA data;
     size_t i;
 
+    if (a_fs->orphan_dir != NULL) {
+        if (tsk_fs_dir_copy(a_fs->orphan_dir, a_fs_dir))
+            return TSK_ERR;
+        return TSK_OK;
+    }
+    
     if (a_fs->isOrphanHunting) {
         return TSK_OK;
     }
@@ -890,7 +910,19 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
             a_fs_dir->names_used--;
         }
     }
-
+    
+    // make copy of this so that we don't need to do it again. 
+    if ((a_fs->orphan_dir = tsk_fs_dir_alloc(a_fs, a_fs_dir->names_used)) == NULL) {
+        a_fs->isOrphanHunting = 0;
+        return TSK_ERR;
+    }
+    
+    if (tsk_fs_dir_copy(a_fs_dir, a_fs->orphan_dir)) {
+        tsk_fs_dir_close(a_fs->orphan_dir);
+        a_fs->orphan_dir = NULL;
+        a_fs->isOrphanHunting = 0;
+        return TSK_ERR;
+    }
 
     // populate the fake FS_FILE structure for the "Orphan Directory"
     /* Get the inode and verify it has attributes */
