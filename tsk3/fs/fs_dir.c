@@ -170,10 +170,12 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
                 if (fs_name_dest->name) {
                     free(fs_name_dest->name);
                     fs_name_dest->name = NULL;
+                    fs_name_dest->name_size = 0;
                 }
                 if (fs_name_dest->shrt_name) {
                     free(fs_name_dest->shrt_name);
                     fs_name_dest->shrt_name = NULL;
+                    fs_name_dest->shrt_name_size = 0;
                 }
                 break;
             }
