@@ -13,6 +13,7 @@ image was being scanned for parent directory information.
 directory resulted in many searches for OrphanFiles.  Added cache
 of OrphanFiles.
 - 2999567: ifind was not stopping after first hit.
+- 2993804: read past end of file did not always return -1.
 
 ---------------- VERSION 3.1.1 --------------
 
