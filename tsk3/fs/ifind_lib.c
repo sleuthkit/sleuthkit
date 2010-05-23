@@ -5,7 +5,7 @@
 ** Given an image  and block number, identify which inode it is used by
 ** 
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2010 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
@@ -490,10 +490,7 @@ ifind_data_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
             (addr + (size + fs->block_size - 1) / fs->block_size))) {
         tsk_printf("%" PRIuINUM "\n", data->curinode);
         data->found = 1;
-
-        if (!(data->flags & TSK_FS_IFIND_ALL))
-            return TSK_WALK_STOP;
-
+        return TSK_WALK_STOP;
     }
     return TSK_WALK_CONT;
 }
@@ -514,10 +511,7 @@ ifind_data_file_ntfs_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
         tsk_printf("%" PRIuINUM "-%" PRIu32 "-%" PRIu16 "\n",
             data->curinode, data->curtype, data->curid);
         data->found = 1;
-
-        if (!(data->flags & TSK_FS_IFIND_ALL)) {
-            return TSK_WALK_STOP;
-        }
+        return TSK_WALK_STOP;
     }
     return TSK_WALK_CONT;
 }
@@ -562,6 +556,9 @@ ifind_data_act(TSK_FS_FILE * fs_file, void *ptr)
                     /* Ignore these errors */
                     tsk_error_reset();
                 }
+                
+                if ((data->found) && (!(data->flags & TSK_FS_IFIND_ALL)))
+                    break;
             }
         }
         return TSK_WALK_CONT;
@@ -615,7 +612,10 @@ ifind_data_act(TSK_FS_FILE * fs_file, void *ptr)
         }
     }
 
-    return TSK_WALK_CONT;
+    if ((data->found) && (!(data->flags & TSK_FS_IFIND_ALL)))
+        return TSK_WALK_STOP;
+    else
+        return TSK_WALK_CONT;
 }
 
 
