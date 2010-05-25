@@ -1050,7 +1050,8 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
         size_t len_remain;      // length remaining to copy
         size_t len_toread;      // length total to copy
 
-        if (a_offset >= a_fs_attr->nrd.allocsize) {
+        if (((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) && (a_offset >= a_fs_attr->nrd.allocsize)) ||
+            (!(a_flags & TSK_FS_FILE_READ_FLAG_SLACK) && (a_offset >= a_fs_attr->size))) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_FS_READ_OFF;
             snprintf(tsk_errstr, TSK_ERRSTR_L,

@@ -1423,7 +1423,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
             return -1;
         }
 
-        if (a_offset >= a_fs_attr->nrd.allocsize) {
+        if (a_offset >= a_fs_attr->size) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_FS_READ_OFF;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -1532,11 +1532,9 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                     }
                     // Make sure not to return more bytes than are in the file
                     if (cpylen >
-                        (a_fs_attr->fs_file->meta->size - (a_offset +
-                                buf_idx)))
+                        (a_fs_attr->size - (a_offset + buf_idx)))
                         cpylen =
-                            (size_t) (a_fs_attr->fs_file->meta->size -
-                            (a_offset + buf_idx));
+                            (size_t) (a_fs_attr->size - (a_offset + buf_idx));
 
                     memcpy(&a_buf[buf_idx], &comp.uncomp_buf[byteoffset],
                         cpylen);
