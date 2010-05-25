@@ -1,6 +1,11 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 3.1.3 --------------
+Bug Fixes
+- 3006733: FAT directory listings were slow because the inner
+code was not stopping when it found the parent directory.
+
 ---------------- VERSION 3.1.2 --------------
 Bug Fixes
 - 2982426: FAT directory listings were slow because the entire

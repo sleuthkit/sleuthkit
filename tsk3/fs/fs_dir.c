@@ -64,19 +64,20 @@ tsk_fs_dir_realloc(TSK_FS_DIR * a_fs_dir, size_t a_cnt)
     size_t prev_cnt, i;
     if ((a_fs_dir == NULL) || (a_fs_dir->tag != TSK_FS_DIR_TAG))
         return 1;
-    
+
     if (a_fs_dir->names_alloc >= a_cnt)
         return 0;
     prev_cnt = a_fs_dir->names_alloc;
-    
+
     a_fs_dir->names_alloc = a_cnt;
     if ((a_fs_dir->names =
             (TSK_FS_NAME *) tsk_realloc((void *) a_fs_dir->names,
                 sizeof(TSK_FS_NAME) * a_fs_dir->names_alloc)) == NULL) {
         return 1;
     }
-    
-    memset(&a_fs_dir->names[prev_cnt], 0, (a_cnt-prev_cnt)*sizeof(TSK_FS_NAME));
+
+    memset(&a_fs_dir->names[prev_cnt], 0,
+        (a_cnt - prev_cnt) * sizeof(TSK_FS_NAME));
     for (i = prev_cnt; i < a_cnt; i++) {
         a_fs_dir->names[i].tag = TSK_FS_NAME_TAG;
     }
@@ -110,25 +111,25 @@ tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir)
  * @returns 1 on error
  */
 static uint8_t
-tsk_fs_dir_copy(const TSK_FS_DIR *a_src_dir, TSK_FS_DIR *a_dst_dir)
+tsk_fs_dir_copy(const TSK_FS_DIR * a_src_dir, TSK_FS_DIR * a_dst_dir)
 {
     size_t i;
-    
+
     a_dst_dir->names_used = 0;
-    
+
     // make sure we got the room
     if (a_src_dir->names_used > a_dst_dir->names_alloc) {
         if (tsk_fs_dir_realloc(a_dst_dir, a_src_dir->names_used))
             return 1;
     }
-    
+
     for (i = 0; i < a_src_dir->names_used; i++) {
         if (tsk_fs_name_copy(&a_dst_dir->names[i], &a_src_dir->names[i]))
             return 1;
     }
-    
+
     a_dst_dir->names_used = a_src_dir->names_used;
-    return 0;        
+    return 0;
 }
 
 
@@ -194,10 +195,10 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
 
         fs_name_dest = &a_fs_dir->names[a_fs_dir->names_used++];
     }
-    
+
     if (tsk_fs_name_copy(fs_name_dest, a_fs_name))
         return 1;
-    
+
     return 0;
 }
 
@@ -416,7 +417,7 @@ typedef struct {
 
 /* dir_walk local function that is used for recursive calls.  Callers
  * should initially call the non-local version. */
-static uint8_t
+static TSK_WALK_RET_ENUM
 tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     TSK_INUM_T a_addr, TSK_FS_DIR_WALK_FLAG_ENUM a_flags,
     TSK_FS_DIR_WALK_CB a_action, void *a_ptr)
@@ -427,7 +428,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
 
     // get the list of entries in the directory 
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs, a_addr)) == NULL) {
-        return 1;
+        return TSK_WALK_ERROR;
     }
 
     /* Allocate a file structure for the callbacks.  We
@@ -435,7 +436,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
      * point into the fs_dir structure for the names. */
     if ((fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
         tsk_fs_dir_close(fs_dir);
-        return 1;
+        return TSK_WALK_ERROR;
     }
 
     for (i = 0; i < fs_dir->names_used; i++) {
@@ -475,11 +476,13 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     a_dinfo->save_inum_named = 0;
                 }
 
-                return 0;
+                return TSK_WALK_STOP;
             }
             else if (retval == TSK_WALK_ERROR) {
                 tsk_fs_dir_close(fs_dir);
-                return 1;
+                fs_file->name = NULL;
+                tsk_fs_file_close(fs_file);
+                return TSK_WALK_ERROR;
             }
         }
 
@@ -525,7 +528,9 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 if (tsk_stack_push(a_dinfo->stack_seen,
                         fs_file->name->meta_addr)) {
                     tsk_fs_dir_close(fs_dir);
-                    return 1;
+                    fs_file->name = NULL;
+                    tsk_fs_file_close(fs_file);
+                    return TSK_WALK_ERROR;
                 }
 
                 if ((a_dinfo->depth < MAX_DEPTH) &&
@@ -552,9 +557,10 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     a_dinfo->save_inum_named = 0;
                 }
 
-                if (tsk_fs_dir_walk_lcl(a_fs,
-                        a_dinfo, fs_file->name->meta_addr, a_flags,
-                        a_action, a_ptr)) {
+                retval = tsk_fs_dir_walk_lcl(a_fs,
+                    a_dinfo, fs_file->name->meta_addr, a_flags,
+                    a_action, a_ptr);
+                if (retval == TSK_WALK_ERROR) {
                     /* If this fails because the directory could not be 
                      * loaded, then we still continue */
                     if (tsk_verbose) {
@@ -565,6 +571,12 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     }
 
                     tsk_error_reset();
+                }
+                else if (retval == TSK_WALK_STOP) {
+                    tsk_fs_dir_close(fs_dir);
+                    fs_file->name = NULL;
+                    tsk_fs_file_close(fs_file);
+                    return TSK_WALK_STOP;
                 }
 
                 // reset the save status
@@ -591,8 +603,9 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     }
 
     tsk_fs_dir_close(fs_dir);
+    fs_file->name = NULL;
     tsk_fs_file_close(fs_file);
-    return 0;
+    return TSK_WALK_CONT;
 }
 
 
@@ -648,14 +661,17 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     /* If there was an error, then we stopped early and we should get
      * rid of the partial list we were making.
      */
-    if ((retval != TSK_OK) && (dinfo.save_inum_named == 1)) {
+    if ((retval != TSK_WALK_CONT) && (dinfo.save_inum_named == 1)) {
         tsk_list_free(a_fs->list_inum_named);
         a_fs->list_inum_named = NULL;
     }
 
     tsk_stack_free(dinfo.stack_seen);
 
-    return retval;
+    if (retval == TSK_WALK_ERROR)
+        return 1;
+    else
+        return 0;
 }
 
 
@@ -769,8 +785,8 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
 
 /* Used to keep state while populating the orphan directory */
 typedef struct {
-    TSK_FS_NAME *fs_name;   // temp name structure used when adding entries to fs_dir
-    TSK_FS_DIR *fs_dir;     // unique names are added to this.  represents contents of OrphanFiles directory
+    TSK_FS_NAME *fs_name;       // temp name structure used when adding entries to fs_dir
+    TSK_FS_DIR *fs_dir;         // unique names are added to this.  represents contents of OrphanFiles directory
     TSK_LIST *orphan_subdir_list;       // keep track of files that can already be accessed via orphan directory
 } FIND_ORPHAN_DATA;
 
@@ -858,7 +874,7 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
             return TSK_ERR;
         return TSK_OK;
     }
-    
+
     if (a_fs->isOrphanHunting) {
         return TSK_OK;
     }
@@ -912,13 +928,14 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
             a_fs_dir->names_used--;
         }
     }
-    
+
     // make copy of this so that we don't need to do it again. 
-    if ((a_fs->orphan_dir = tsk_fs_dir_alloc(a_fs, a_fs_dir->names_used)) == NULL) {
+    if ((a_fs->orphan_dir =
+            tsk_fs_dir_alloc(a_fs, a_fs_dir->names_used)) == NULL) {
         a_fs->isOrphanHunting = 0;
         return TSK_ERR;
     }
-    
+
     if (tsk_fs_dir_copy(a_fs_dir, a_fs->orphan_dir)) {
         tsk_fs_dir_close(a_fs->orphan_dir);
         a_fs->orphan_dir = NULL;
