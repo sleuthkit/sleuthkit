@@ -215,7 +215,7 @@ main(int argc, char **argv1)
         usage();
     }
     
-    TskRecover tskRecover(_TSK_T(argv[OPTIND]));
+    TskRecover tskRecover(argv[OPTIND]);
     
     tskRecover.setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_UNALLOC);
     if (tskRecover.openImage(argc - OPTIND - 1,  &argv[OPTIND+1], imgtype,

@@ -46,8 +46,8 @@ uint8_t
     }
 
 
-#if TSK_WIN32
-    CONVERT to UTF - 8
+#ifdef TSK_WIN32
+    // @@@ CONVERT to UTF - 8
 #else
     snprintf(foo, 1024, "%s.db", images[0]);
 #endif
