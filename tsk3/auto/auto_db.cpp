@@ -29,7 +29,8 @@ uint8_t
     TskAutoDb::openImage(int num, const TSK_TCHAR * const images[],
     TSK_IMG_TYPE_ENUM type, unsigned int a_ssize)
 {
-    char foo[1024];
+    TSK_TCHAR img[1024];
+	char foo[1024];
 
     if (m_db) {
         sqlite3_close(m_db);
@@ -45,19 +46,26 @@ uint8_t
         return retval;
     }
 
-
+	// make name of database
+	
 #ifdef TSK_WIN32
-    // @@@ CONVERT to UTF - 8
-#else
-    snprintf(foo, 1024, "%s.db", images[0]);
-#endif
-    // @@@ TEST IF IT EXISTS...
-
-    if (sqlite3_open(foo, &m_db)) {
+	_snwprintf(img, 1024, _TSK_T("%S.db"), images[0]);
+	if (sqlite3_open16(img, &m_db)) {
         fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(m_db));
         sqlite3_close(m_db);
         return 1;
     }
+#else
+	snprintf(img, 1024, "%s.db", images[0]);
+	if (sqlite3_open(img, &m_db)) {
+        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(m_db));
+        sqlite3_close(m_db);
+        return 1;
+    }
+#endif
+    // @@@ TEST IF IT EXISTS...
+
+    
 
     char *errmsg;
     if (sqlite3_exec(m_db,
@@ -97,6 +105,7 @@ uint8_t
         return 1;
     }
 
+	// Create the images table and add the image names
     if (sqlite3_exec(m_db, "CREATE TABLE tsk_image_names (name TEXT);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         fprintf(stderr, "Error creating tsk_image_names table: %s\n",
@@ -107,15 +116,38 @@ uint8_t
 
     for (int i = 0; i < num; i++) {
         int a;
-        for (a = strlen(images[i]) - 1; a > 0; a--) {
-            if ((images[i][a] == '/') || (images[i][a] == '\\')) {
+		char *img_ptr = NULL;
+#ifdef TSK_WIN32
+		char img2[1024];
+		UTF8 *ptr8;
+        UTF16 *ptr16;
+
+        ptr8 = (UTF8 *) img2;
+        ptr16 = (UTF16 *) images[i];
+
+        retval =
+            tsk_UTF16toUTF8_lclorder((const UTF16 **) &ptr16, (UTF16 *)
+            & ptr16[TSTRLEN(images[i]) + 1], &ptr8,
+            (UTF8 *) ((uintptr_t) ptr8 + 1024), TSKlenientConversion);
+        if (retval != TSKconversionOK) {
+            fprintf(stderr, "Error converting image to UTF-8\n");
+			return 1;
+        }
+		img_ptr = img2;
+#else
+		img_ptr = images[i];
+#endif
+
+		// get only the file name (ignore the directory name)
+        for (a = strlen(img_ptr) - 1; a > 0; a--) {
+            if ((img_ptr[a] == '/') || (img_ptr[a] == '\\')) {
                 a++;
                 break;
             }
         }
         snprintf(foo, 1024,
             "INSERT INTO tsk_image_names (name) VALUES ('%s')",
-            &images[i][a]);
+            &img_ptr[a]);
         if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
             fprintf(stderr,
                 "Error adding data to tsk_image_names table: %s\n",

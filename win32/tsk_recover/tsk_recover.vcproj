@@ -63,7 +63,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libewf.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="$(ProjectDir)\..\libewf\msvscpp\debug\"
+				AdditionalLibraryDirectories="$(ProjectDir)\..\libewf\msvscpp\release\"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -169,6 +169,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug_NoLibs|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
 			>
 			<Tool
@@ -188,6 +190,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="$(ProjectDir)\..\..\"
+				RuntimeLibrary="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"

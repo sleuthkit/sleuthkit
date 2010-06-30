@@ -49,7 +49,7 @@ file_walk_cb(TSK_FS_FILE *a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr, char *
      size_t a_len, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
 {
 #ifdef TSK_WIN32
-    
+    // @@@ Write to Win32 file
 #else
     FILE *hFile = (FILE *)a_ptr;
     if (fwrite(a_buf, a_len, 1, hFile) != 1) {
@@ -66,6 +66,7 @@ TskRecover::writeFile(TSK_FS_FILE *a_fs_file, const char *a_path)
 {
 #ifdef TSK_WIN32
     printf("Error: Windows not supported yet!\n");
+    // @@@ Open win32 file here using CreateFile
 #else
     struct stat statds;
     char fbuf[PATH_MAX];
