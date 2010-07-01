@@ -207,9 +207,13 @@ ffs_dent_parse_block(FFS_INFO * ffs, TSK_FS_DIR * fs_dir, uint8_t a_is_del,
             return TSK_ERR;
         }
 
-        /* If we have some slack, the set dellen */
-        if ((reclen != minreclen) && (dellen <= 0))
-            dellen = reclen - minreclen;
+        /* If we have some slack and an entry could exist in it, the set dellen */
+        if (dellen <= 0) {
+            if (reclen - minreclen >= FFS_DIRSIZ_lcl(1))
+                dellen = reclen - minreclen;
+            else 
+                minreclen = reclen;
+        }
     }
 
     tsk_fs_name_free(fs_name);
