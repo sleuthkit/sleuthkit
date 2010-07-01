@@ -135,7 +135,7 @@ uint8_t
         }
 		img_ptr = img2;
 #else
-		img_ptr = images[i];
+		img_ptr = (char *)images[i];
 #endif
 
 		// get only the file name (ignore the directory name)
