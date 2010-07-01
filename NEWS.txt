@@ -8,6 +8,7 @@ code was not stopping when it found the parent directory.
 - Adjusted sanity / testing code on FAT directory entries to allow
 non-ascii in extensions and reject entries with lots of 0s.
 - 3023606: Ext2 / ffs corrupted file names. 
+- Applied NTFS SID fixes from Mandiant. 
 
 ---------------- VERSION 3.1.2 --------------
 Bug Fixes

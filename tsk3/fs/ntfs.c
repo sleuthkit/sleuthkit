@@ -2953,7 +2953,7 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     uint32_t sii_sds_ent_size = 0;
 
 
-    if (fs == NULL) {
+    if ((fs == NULL) || (secid == 0)) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_FS_ARG;
         snprintf(tsk_errstr, TSK_ERRSTR_L, "Invalid argument");
@@ -2997,6 +2997,14 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "ntfs_get_sds: SII offset too large (%" PRIu64 ")",
             sii_sds_file_off);
+        return NULL;
+    }
+    else if (!sii_sds_ent_size) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_FS_GENFS;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+                 "ntfs_get_sds: SII entry size is invalid (%" PRIu32 ")",
+                 sii_sds_ent_size);
         return NULL;
     }
 
