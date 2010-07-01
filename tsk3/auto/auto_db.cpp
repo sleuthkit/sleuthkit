@@ -167,7 +167,7 @@ uint8_t
     }
 
     if (sqlite3_exec(m_db,
-            "CREATE TABLE tsk_fs_info (fs_id INTEGER PRIMARY KEY, img_offset INTEGER, vol_id INTEGER NOT NULL, fs_type INTEGER, block_size INTEGER);",
+            "CREATE TABLE tsk_fs_info (fs_id INTEGER PRIMARY KEY, img_offset INTEGER, vol_id INTEGER NOT NULL, fs_type INTEGER, block_size INTEGER, block_count INTEGER, root_inum INTEGER, first_inum INTEGER, last_inum INTEGER);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         fprintf(stderr, "Error creating tsk_fs_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
@@ -200,7 +200,7 @@ void
 uint8_t TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     char
-        foo[1024];
+     foo[1024];
     char *
         errmsg;
 
@@ -222,21 +222,22 @@ uint8_t TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 }
 
 
-// TODO:
-// - save root directory addr in tsk_fs_info table
 uint8_t TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 {
     char
-        foo[1024];
+     foo[1024];
     char *
         errmsg;
 
     m_curFsId++;
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_fs_info (fs_id, img_offset, vol_id, fs_type, block_size) VALUES (%d,%"
-        PRIuOFF ",%d,'%d',%d)", m_curFsId, fs_info->offset, m_curVsId,
-        (int) fs_info->ftype, fs_info->block_size);
+        "INSERT INTO tsk_fs_info (fs_id, img_offset, vol_id, fs_type, block_size, "
+        "block_count, root_inum, first_inum, last_inum) VALUES (%d,%"
+        PRIuOFF ",%d,'%d',%d,%" PRIuDADDR ",%" PRIuINUM ",%" PRIuINUM ",%"
+        PRIuINUM ")", m_curFsId, fs_info->offset, m_curVsId,
+        (int) fs_info->ftype, fs_info->block_size, fs_info->block_count,
+        fs_info->root_inum, fs_info->first_inum, fs_info->last_inum);
 
     if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
         fprintf(stderr, "Error adding data to tsk_fs_info table: %s\n",
@@ -245,7 +246,8 @@ uint8_t TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
         return 1;
     }
 
-    // make sure that flags are set to get all files -- we need this to find parent directory
+    // make sure that flags are set to get all files -- we need this to
+    // find parent directory
     setFileFilterFlags((TSK_FS_DIR_WALK_FLAG_ENUM)
         (TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC));
 
@@ -256,25 +258,25 @@ uint8_t TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
     char
-        foo[1024];
+     foo[1024];
     char *
         errmsg;
     int
-        mtime = 0;
+     mtime = 0;
     int
-        crtime = 0;
+     crtime = 0;
     int
-        ctime = 0;
+     ctime = 0;
     int
-        atime = 0;
+     atime = 0;
     TSK_OFF_T
         size = 0;
     int
-        meta_type = 0;
+     meta_type = 0;
     int
-        meta_flags = 0;
+     meta_flags = 0;
     int
-        meta_mode = 0;
+     meta_mode = 0;
     TSK_INUM_T
         par_inode;
 
@@ -291,7 +293,8 @@ uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         meta_flags = fs_file->meta->flags;
         meta_mode = fs_file->meta->mode;
 
-        // add the info the parent dir record so that we can later find this dir by name
+        // add the info the parent dir record so that we can later find
+        // this dir by name
         if ((meta_type & TSK_FS_META_TYPE_DIR)
             && (isDotDir(fs_file, path) == 0)) {
             std::string full = path;
