@@ -41,31 +41,78 @@ is_83_name(fatfs_dentry * de)
     /* The IS_NAME macro will fail if the value is 0x05, which is only
      * valid in name[0], similarly with '.' */
     if ((de->name[0] != FATFS_SLOT_E5) && (de->name[0] != '.') &&
-        (FATFS_IS_83_NAME(de->name[0]) == 0))
+        (FATFS_IS_83_NAME(de->name[0]) == 0)) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: name[0] is invalid\n");
         return 0;
+    }
 
     // the name cannot start with 0x20
-    if (de->name[0] == 0x20)
+    else if (de->name[0] == 0x20) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: name[0] has 0x20\n");
         return 0;
+    }
 
     /* the second name field can only be . if the first one is a . */
     if (de->name[1] == '.') {
-        if (de->name[0] != '.')
+        if (de->name[0] != '.') {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_is_83_name: name[1] is .\n");
             return 0;
+        }
     }
-    else if (FATFS_IS_83_NAME(de->name[1]) == 0)
+    else if (FATFS_IS_83_NAME(de->name[1]) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: name[1] is invalid\n");
         return 0;
+    }
 
-    if ((FATFS_IS_83_NAME(de->name[2]) == 0) ||
-        (FATFS_IS_83_NAME(de->name[3]) == 0) ||
-        (FATFS_IS_83_NAME(de->name[4]) == 0) ||
-        (FATFS_IS_83_NAME(de->name[5]) == 0) ||
-        (FATFS_IS_83_NAME(de->name[6]) == 0) ||
-        (FATFS_IS_83_NAME(de->name[7]) == 0) ||
-        (FATFS_IS_83_EXT(de->ext[0]) == 0) ||
-        (FATFS_IS_83_EXT(de->ext[1]) == 0) ||
-        (FATFS_IS_83_EXT(de->ext[2]) == 0))
+    if (FATFS_IS_83_NAME(de->name[2]) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: name[2] is invalid\n");
         return 0;
+    }
+    else if (FATFS_IS_83_NAME(de->name[3]) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: name[3] is invalid\n");
+        return 0;
+    }
+    else if (FATFS_IS_83_NAME(de->name[4]) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: name[4] is invalid\n");
+        return 0;
+    }
+    else if (FATFS_IS_83_NAME(de->name[5]) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: name[5] is invalid\n");
+        return 0;
+    }
+    else if (FATFS_IS_83_NAME(de->name[6]) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: name[6] is invalid\n");
+        return 0;
+    }
+    else if (FATFS_IS_83_NAME(de->name[7]) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: name[7] is invalid\n");
+        return 0;
+    }
+    else if (FATFS_IS_83_NAME(de->ext[0]) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: ext[0] is invalid\n");
+        return 0;
+    }
+    else if (FATFS_IS_83_NAME(de->ext[1]) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: ext[1] is invalid\n");
+        return 0;
+    }
+    else if (FATFS_IS_83_NAME(de->ext[2]) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_is_83_name: ext[2] is invalid\n");
+        return 0;
+    }
 
     /* Ensure that if we get a "space", that the rest of the
      * name is spaces.  This is not in the spec, but is how
@@ -79,8 +126,12 @@ is_83_name(fatfs_dentry * de)
             ((de->name[4] == 0x20) && (de->name[5] != 0x20)) ||
             ((de->name[5] == 0x20) && (de->name[6] != 0x20)) ||
             ((de->name[6] == 0x20) && (de->name[7] != 0x20)) ||
-            ((de->ext[1] == 0x20) && (de->ext[2] != 0x20)))
+            ((de->ext[1] == 0x20) && (de->ext[2] != 0x20))) {
+            if (tsk_verbose)
+                fprintf(stderr,
+                    "fatfs_is_83_name: space before non-space\n");
             return 0;
+        }
     }
 
     return 1;
@@ -755,63 +806,128 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de)
         fatfs_dentry_lfn *de_lfn = (fatfs_dentry_lfn *) de;
 
         if ((de_lfn->seq > (FATFS_LFN_SEQ_FIRST | 0x0f))
-            && (de_lfn->seq != FATFS_SLOT_DELETED))
+            && (de_lfn->seq != FATFS_SLOT_DELETED)) {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_isdentry: LFN seq\n");
             return 0;
+        }
 
         return 1;
     }
     else {
-        if (de->lowercase & ~(FATFS_CASE_LOWER_ALL))
+        if (de->lowercase & ~(FATFS_CASE_LOWER_ALL)) {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_isdentry: lower case all\n");
             return 0;
-        else if (de->attrib & ~(FATFS_ATTR_ALL))
+        }
+        else if (de->attrib & ~(FATFS_ATTR_ALL)) {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_isdentry: attribute all\n");
             return 0;
+        }
 
         // verify we do not have too many flags set
         if (de->attrib & FATFS_ATTR_NORMAL) {
             if ((de->attrib & FATFS_ATTR_VOLUME) ||
-                (de->attrib & FATFS_ATTR_DIRECTORY))
+                (de->attrib & FATFS_ATTR_DIRECTORY)) {
+                if (tsk_verbose)
+                    fprintf(stderr,
+                        "fatfs_isdentry: Normal and Vol/Dir\n");
                 return 0;
+            }
         }
         if (de->attrib & FATFS_ATTR_VOLUME) {
             if ((de->attrib & FATFS_ATTR_DIRECTORY) ||
                 (de->attrib & FATFS_ATTR_READONLY) ||
-                (de->attrib & FATFS_ATTR_ARCHIVE))
+                (de->attrib & FATFS_ATTR_ARCHIVE)) {
+                if (tsk_verbose)
+                    fprintf(stderr,
+                        "fatfs_isdentry: Vol and Dir/RO/Arch\n");
                 return 0;
+            }
         }
 
         /* The ctime, cdate, and adate fields are optional and 
          * therefore 0 is a valid value
          */
         if ((tsk_getu16(fs->endian, de->ctime) != 0) &&
-            (FATFS_ISTIME(tsk_getu16(fs->endian, de->ctime)) == 0))
+            (FATFS_ISTIME(tsk_getu16(fs->endian, de->ctime)) == 0)) {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_isdentry: ctime\n");
             return 0;
+        }
         else if ((tsk_getu16(fs->endian, de->wtime) != 0) &&
-            (FATFS_ISTIME(tsk_getu16(fs->endian, de->wtime)) == 0))
+            (FATFS_ISTIME(tsk_getu16(fs->endian, de->wtime)) == 0)) {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_isdentry: wtime\n");
             return 0;
+        }
         else if ((tsk_getu16(fs->endian, de->cdate) != 0) &&
-            (FATFS_ISDATE(tsk_getu16(fs->endian, de->cdate)) == 0))
+            (FATFS_ISDATE(tsk_getu16(fs->endian, de->cdate)) == 0)) {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_isdentry: cdate\n");
             return 0;
-        else if (de->ctimeten > 200)
+        }
+        else if (de->ctimeten > 200) {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_isdentry: ctimeten\n");
             return 0;
+        }
         else if ((tsk_getu16(fs->endian, de->adate) != 0) &&
-            (FATFS_ISDATE(tsk_getu16(fs->endian, de->adate)) == 0))
+            (FATFS_ISDATE(tsk_getu16(fs->endian, de->adate)) == 0)) {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_isdentry: adate\n");
             return 0;
+        }
         else if ((tsk_getu16(fs->endian, de->wdate) != 0) &&
-            (FATFS_ISDATE(tsk_getu16(fs->endian, de->wdate)) == 0))
+            (FATFS_ISDATE(tsk_getu16(fs->endian, de->wdate)) == 0)) {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_isdentry: wdate\n");
             return 0;
+        }
 
         /* verify the starting cluster is small enough */
         else if ((FATFS_DENTRY_CLUST(fs, de) > (fatfs->lastclust)) &&
-            (FATFS_ISEOF(FATFS_DENTRY_CLUST(fs, de), fatfs->mask) == 0))
+            (FATFS_ISEOF(FATFS_DENTRY_CLUST(fs, de), fatfs->mask) == 0)) {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_isdentry: start cluster\n");
             return 0;
+        }
 
         /* Verify the file size is smaller than the data area */
         else if (tsk_getu32(fs->endian, de->size) >
-            ((fatfs->clustcnt * fatfs->csize) << fatfs->ssize_sh))
+            ((fatfs->clustcnt * fatfs->csize) << fatfs->ssize_sh)) {
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_isdentry: size\n");
+            return 0;
+        }
+
+        else if ((tsk_getu32(fs->endian, de->size) > 0)
+            && (FATFS_DENTRY_CLUST(fs, de) == 0)) {
+            if (tsk_verbose)
+                fprintf(stderr,
+                    "fatfs_isdentry: non-zero size and NULL starting cluster\n");
+            return 0;
+        }
+
+        else if (is_83_name(de) == 0)
             return 0;
 
-        return is_83_name(de);
-        //return 1;
+        // basic sanity check on values
+        else if ((tsk_getu16(fs->endian, de->ctime) == 0)
+            && (tsk_getu16(fs->endian, de->wtime) == 0)
+            && (tsk_getu16(fs->endian, de->cdate) == 0)
+            && (tsk_getu16(fs->endian, de->adate) == 0)
+            && (tsk_getu16(fs->endian, de->wdate) == 0)
+            && (FATFS_DENTRY_CLUST(fs, de) == 0)
+            && (tsk_getu32(fs->endian, de->size) == 0)) {
+            if (tsk_verbose)
+                fprintf(stderr,
+                    "fatfs_isdentry: nearly all values zero\n");
+            return 0;
+        }
+
+        return 1;
     }
 }
 

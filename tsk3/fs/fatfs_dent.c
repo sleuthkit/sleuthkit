@@ -67,7 +67,8 @@ find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
 {
     TSK_INUM_T par_inum = *(TSK_INUM_T *) ptr;
 
-    if ((fs_file->meta == NULL) || (fs_file->meta->type != TSK_FS_META_TYPE_DIR))
+    if ((fs_file->meta == NULL)
+        || (fs_file->meta->type != TSK_FS_META_TYPE_DIR))
         return TSK_WALK_CONT;
 
     if (fs_file->meta->addr == par_inum)
@@ -293,8 +294,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
                     /* Convert the UTF16 to UTF8 */
                     UTF16 *name16 =
-                        (UTF16 *) ((uintptr_t) & lfninfo.name[lfninfo.
-                            start + 1]);
+                        (UTF16 *) ((uintptr_t) & lfninfo.
+                        name[lfninfo.start + 1]);
                     UTF8 *name8 = (UTF8 *) fs_name->name;
 
                     retVal =
@@ -434,16 +435,25 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                         dir_found = 1;
                     }
                     if (dir_found == 0) {
+                        if (tsk_verbose)
+                            fprintf(stderr,
+                                "fatfs_dent_parse_buf: Walking directory to find parent\n");
+
                         /* The parent directory is not in the list.  We are going to walk
                          * the directory until we hit this directory. This process will
                          * populate the buffer table and we will then rescan it */
                         if (tsk_fs_dir_walk(fs, fs->root_inum,
-                                TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC | 
+                                TSK_FS_DIR_WALK_FLAG_ALLOC |
+                                TSK_FS_DIR_WALK_FLAG_UNALLOC |
                                 TSK_FS_DIR_WALK_FLAG_RECURSE,
                                 find_parent_act,
                                 (void *) &a_fs_dir->fs_file->meta->addr)) {
                             return 0;
                         }
+
+                        if (tsk_verbose)
+                            fprintf(stderr,
+                                "fatfs_dent_parse_buf: Finished walking directory to find parent\n");
 
                         for (q = 0; q < fatfs->dir_buf_next; q++) {
                             if (fatfs->dir_buf[q] ==
@@ -709,6 +719,11 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         free(addrbuf);
         return TSK_COR;
     }
+
+    if (tsk_verbose)
+        fprintf(stderr,
+            "fatfs_dir_open_meta: Parsing directory %" PRIuINUM "\n",
+            a_addr);
 
     retval = fatfs_dent_parse_buf(fatfs, fs_dir, dirbuf, len, addrbuf);
 

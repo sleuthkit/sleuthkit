@@ -5,6 +5,8 @@ Numbers refer to SourceForge.net tracker IDs:
 Bug Fixes
 - 3006733: FAT directory listings were slow because the inner
 code was not stopping when it found the parent directory.
+- Adjusted sanity / testing code on FAT directory entries to allow
+non-ascii in extensions and reject entries with lots of 0s.
 
 ---------------- VERSION 3.1.2 --------------
 Bug Fixes
