@@ -217,9 +217,12 @@ ext2fs_dent_parse_block(EXT2FS_INFO * ext2fs, TSK_FS_DIR * a_fs_dir,
          ** see if the difference is less than a possible entry
          ** before we waste time searching it
          */
-        if ((reclen - minreclen >= EXT2FS_DIRSIZ_lcl(1))
-            && (dellen <= 0))
-            dellen = reclen - minreclen;
+        if (dellen <= 0) {
+            if (reclen - minreclen >= EXT2FS_DIRSIZ_lcl(1))
+                dellen = reclen - minreclen;
+            else 
+                minreclen = reclen;
+        }
     }
 
     tsk_fs_name_free(fs_name);

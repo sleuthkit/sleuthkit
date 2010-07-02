@@ -1,6 +1,17 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 3.1.3 --------------
+Bug Fixes
+- 3006733: FAT directory listings were slow because the inner
+code was not stopping when it found the parent directory.
+- Adjusted sanity / testing code on FAT directory entries to allow
+non-ascii in extensions and reject entries with lots of 0s.
+- 3023606: Ext2 / ffs corrupted file names.
+- Applied NTFS SID fixes from Mandiant.
+- ntfs_load_secure() memory leak patch from Michael Cohen
+
+
 ---------------- VERSION 3.1.2 --------------
 Bug Fixes
 - 2982426: FAT directory listings were slow because the entire
@@ -12,6 +23,8 @@ image was being scanned for parent directory information.
 - 2993767: Slow FAT listings of OrphanFiles because hunt for parent
 directory resulted in many searches for OrphanFiles.  Added cache
 of OrphanFiles.
+- 2999567: ifind was not stopping after first hit.
+- 2993804: read past end of file did not always return -1.
 
 ---------------- VERSION 3.1.1 --------------
 

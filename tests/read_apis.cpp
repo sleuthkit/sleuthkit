@@ -4,7 +4,7 @@
 *
 *
 * Brian Carrier [carrier <at> sleuthkit [dot] org]
-* Copyright (c) 2008 Brian Carrier.  All Rights reserved
+* Copyright (c) 2008-2010 Brian Carrier.  All Rights reserved
 *
 * This software is distributed under the Common Public License 1.0
 */
@@ -557,6 +557,20 @@ test_ntfs_slack_ads()
             buf[491], tname);
         return 1;
     }
+
+
+    // try to read past end of file 
+    retval =
+        tsk_fs_file_read(file1, 2001, buf, 32,
+        (TSK_FS_FILE_READ_FLAG_ENUM) 0);
+    if (retval != -1) {
+        fprintf(stderr,
+            "Unexpected return value from reading file-n-4.dat after end of file (%s).\n",
+            tname);
+        fprintf(stderr, "Expected: -1.  Got: %zd\n", retval);
+        return 1;
+    }
+
 
     tsk_fs_file_close(file1);
 
