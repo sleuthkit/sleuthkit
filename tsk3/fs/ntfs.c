@@ -3226,6 +3226,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: $Secure file has no attributes\n");
         tsk_error_reset();
+        tsk_fs_file_close(secure);
         return 0;
     }
     // Get the $SII attribute.
@@ -3237,6 +3238,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: error getting $Secure:$SII IDX_ALLOC attribute\n");
         tsk_error_reset();
+        tsk_fs_file_close(secure);
         return 0;
 
     }
@@ -3247,6 +3249,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: error getting $Secure:$SDS $Data attribute\n");
         tsk_error_reset();
+        tsk_fs_file_close(secure);
         return 0;
     }
 
@@ -3261,9 +3264,8 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     ntfs->sii_data.size = 0;
     ntfs->sii_data.used = 0;    // use this to count the number of $SII entries
     if ((ntfs->sii_data.buffer = tsk_malloc(sii_buffer.size)) == NULL) {
-        if (sii_buffer.buffer)
-            free(sii_buffer.buffer);
-        sii_buffer.buffer = NULL;
+        free(sii_buffer.buffer);
+        tsk_fs_file_close(secure);
         return 1;
     }
 
@@ -3273,14 +3275,12 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     sds_buffer.size = (size_t) roundup(fs_attr->size, fs->block_size);
     sds_buffer.used = 0;
     if ((sds_buffer.buffer = tsk_malloc(sds_buffer.size)) == NULL) {
-        if (sii_buffer.buffer)
-            free(sii_buffer.buffer);
-        sii_buffer.buffer = NULL;
-
+        free(sii_buffer.buffer);
         if (ntfs->sii_data.buffer)
             free(ntfs->sii_data.buffer);
         ntfs->sii_data.buffer = NULL;
 
+        tsk_fs_file_close(secure);
         return 1;
     }
 
@@ -3294,6 +3294,14 @@ ntfs_load_secure(NTFS_INFO * ntfs)
                 "ntfs_load_secure: error reading $Secure:$SII attribute: %s\n",
                 tsk_errstr);
         tsk_error_reset();
+        
+        free(sii_buffer.buffer);
+        free(sds_buffer.buffer);
+        if (ntfs->sii_data.buffer)
+            free(ntfs->sii_data.buffer);
+        ntfs->sii_data.buffer = NULL;
+        
+        tsk_fs_file_close(secure);
         return 0;
     }
 
@@ -3308,6 +3316,14 @@ ntfs_load_secure(NTFS_INFO * ntfs)
                 "ntfs_load_secure: error reading $Secure:$SDS attribute: %s\n",
                 tsk_errstr);
         tsk_error_reset();
+        
+        free(sii_buffer.buffer);
+        free(sds_buffer.buffer);
+        if (ntfs->sii_data.buffer)
+            free(ntfs->sii_data.buffer);
+        ntfs->sii_data.buffer = NULL;
+        
+        tsk_fs_file_close(secure);
         return 0;
     }
 
@@ -3317,10 +3333,10 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     // Initialize our global to hold the raw $SDS stream.
     ntfs->sds_data = sds_buffer;
 
-    if (sii_buffer.buffer)
-        free(sii_buffer.buffer);
+    free(sii_buffer.buffer);
+    free(sds_buffer.buffer);
 
-    tsk_fs_meta_close(fs_meta);
+    tsk_fs_file_close(secure);
     return 0;
 }
 
