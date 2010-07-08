@@ -37,7 +37,7 @@ usage()
         _TSK_T
         ("usage: %s [-aAelvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images] [start-stop]\n"),
         progname);
-    tsk_fprintf(stderr, "\t-e: every block\n");
+    tsk_fprintf(stderr, "\t-e: every block (including file system metadata blocks)\n");
     tsk_fprintf(stderr,
         "\t-l: print details in time machine list format\n");
     tsk_fprintf(stderr, "\t-a: Display allocated blocks\n");
