@@ -10,10 +10,12 @@
  */
 
 #include "tsk3/tsk_tools_i.h"
-#include "tsk_recover.h"
 #include <locale.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <stdio.h>
+
+#include "tsk_recover.h"
 
 static TSK_TCHAR *progname;
 
@@ -23,7 +25,7 @@ usage()
     // @@@ UPDATE ME
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vV] [-f fstype] [-i imgtype] [-b dev_sector_size] output_dir image\n"),
+        ("usage: %s [-vVA] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] output_dir image\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
@@ -33,25 +35,42 @@ usage()
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
+    tsk_fprintf(stderr,
+        "\t-A: Recover all files (allocated and unallocated)\n");
+    tsk_fprintf(stderr,
+        "\t-o sector_offset: sector offset for a volume to recover (recovers only that volume)\n");
 
     exit(1);
 }
 
 
-TskRecover::TskRecover(TSK_TCHAR *a_base_dir)
+TskRecover::TskRecover(TSK_TCHAR * a_base_dir)
 {
     m_base_dir = a_base_dir;
+#ifdef TSK_WIN32
+    m_vsName[0] = L'\0';
+#else
+    m_vsName[0] = '\0';
+#endif
+    m_vsCount = 0;
+    m_writeVolumeDir = false;
 }
 
 
-static TSK_WALK_RET_ENUM 
-file_walk_cb(TSK_FS_FILE *a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr, char *a_buf,
-     size_t a_len, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
+static TSK_WALK_RET_ENUM
+file_walk_cb(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
+    char *a_buf, size_t a_len, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
 {
 #ifdef TSK_WIN32
-    // @@@ Write to Win32 file
+    DWORD written = 0;
+    //write to the file
+    if (!WriteFile((HANDLE) a_ptr, a_buf, a_len, &written, NULL)) {
+        fprintf(stderr, "Error writing file content\n");
+        return TSK_WALK_STOP;
+    }
+
 #else
-    FILE *hFile = (FILE *)a_ptr;
+    FILE *hFile = (FILE *) a_ptr;
     if (fwrite(a_buf, a_len, 1, hFile) != 1) {
         fprintf(stderr, "Error writing file content\n");
         return TSK_WALK_STOP;
@@ -61,33 +80,149 @@ file_walk_cb(TSK_FS_FILE *a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr, char *
 }
 
 
-uint8_t 
-TskRecover::writeFile(TSK_FS_FILE *a_fs_file, const char *a_path)
+uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 {
 #ifdef TSK_WIN32
-    printf("Error: Windows not supported yet!\n");
-    // @@@ Open win32 file here using CreateFile
+    UTF16 *
+        utf16;
+    UTF8 *
+        utf8;
+    TSKConversionResult
+        retval2;
+    wchar_t
+        path16[FILENAME_MAX];
+    wchar_t
+        name[FILENAME_MAX];
+    wchar_t
+        path[FILENAME_MAX];
+    size_t
+        ilen;
+
+    ilen = strlen(a_path);
+
+    //converting path from utf8 to utf16
+    utf8 = (UTF8 *) a_path;
+    utf16 = (UTF16 *) path16;
+    TSKConversionResult
+        retVal =
+        tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen], &utf16,
+        &utf16[FILENAME_MAX], TSKlenientConversion);
+
+    if (retVal != TSKconversionOK) {
+        fprintf(stderr, "Error Converting file path");
+        return 1;
+    }
+    *utf16 = '\0';
+
+    //combining base path with path of current file
+    wsnprintf(path, FILENAME_MAX, (wchar_t *) m_base_dir);
+    wcsncat(path, L"\\", FILENAME_MAX);
+    wcsncat(path, m_vsName, FILENAME_MAX);
+    wcsncat(path, path16, FILENAME_MAX);
+
+    //build up directory structure
+    size_t
+        len = wcslen((const wchar_t *) path);
+    for (size_t i = 0; i < len; i++) {
+        if (path[i] == L'/')
+            path[i] = L'\\';
+        if (((i > 0) && (path[i] == L'\\') && (path[i - 1] != L'\\'))
+            || ((path[i] != L'\\') && (i == len - 1))) {
+            uint8_t
+                replaced = 0;
+            if (path[i] == L'\\') {
+                path[i] = L'\0';
+                replaced = 1;
+            }
+            bool
+                result = CreateDirectoryW((LPCTSTR) path, NULL);
+            if (!result) {
+                if (GetLastError() == ERROR_PATH_NOT_FOUND) {
+                    fprintf(stderr, "Error Creating Directory (%S)", path);
+                    return 1;
+                }
+            }
+            if (replaced)
+                path[i] = L'\\';
+        }
+    }
+
+    //fix the end of the path so that the file name can be appended
+    if (path[len - 1] != L'\\')
+        path[len] = L'\\';
+
+    //convert file name from utf8 to utf16
+    char
+        name8[FILENAME_MAX];
+    snprintf(name8, FILENAME_MAX, a_fs_file->name->name);
+
+    ilen = strlen(name8);
+    utf8 = (UTF8 *) name8;
+    utf16 = (UTF16 *) name;
+
+    retVal = tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
+        &utf16, &utf16[FILENAME_MAX], TSKlenientConversion);
+    *utf16 = '\0';
+
+    if (retVal != TSKconversionOK) {
+        fprintf(stderr, "Error Converting file name to UTF-16");
+        return 1;
+    }
+
+    //append the file name onto the path
+    wcsncat(path, name, FILENAME_MAX);
+
+    //create the file
+    HANDLE
+        handle =
+        CreateFileW((LPCTSTR) path, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL, NULL);
+    if (handle == INVALID_HANDLE_VALUE) {
+        fprintf(stderr, "Error Creating File (%S)", path);
+        return 1;
+    }
+
+    //try to write to the file
+    if (tsk_fs_file_walk(a_fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) 0,
+            file_walk_cb, handle)) {
+        fprintf(stderr, "Error walking file\n");
+        tsk_error_print(stderr);
+        CloseHandle(handle);
+        return 1;
+    }
+
+    CloseHandle(handle);
+
 #else
-    struct stat statds;
-    char fbuf[PATH_MAX];
-    FILE *hFile;
-    
-    snprintf(fbuf, PATH_MAX, "%s/%s", (char *)m_base_dir, a_path);
-    
+    struct stat
+        statds;
+    char
+        fbuf[PATH_MAX];
+    FILE *
+        hFile;
+
+    snprintf(fbuf, PATH_MAX, "%s/%s/%s", (char *) m_base_dir, m_vsName,
+        a_path);
+
     // see if the directory already exists. Create, if not.
     if (0 != lstat(fbuf, &statds)) {
-        size_t len = strlen(fbuf);
+        size_t
+            len = strlen(fbuf);
         for (size_t i = 0; i < len; i++) {
-            if ( ((i > 0) && (fbuf[i] == '/') && (fbuf[i-1] != '/')) || ((fbuf[i] != '/') && (i == len-1)) ) {
-                uint8_t replaced = 0;
-                
+            if (((i > 0) && (fbuf[i] == '/') && (fbuf[i - 1] != '/'))
+                || ((fbuf[i] != '/') && (i == len - 1))) {
+                uint8_t
+                    replaced = 0;
+
                 if (fbuf[i] == '/') {
                     fbuf[i] = '\0';
                     replaced = 1;
                 }
                 if (0 != lstat(fbuf, &statds)) {
-                    if (mkdir (fbuf, 0775)) {
-                        fprintf(stderr, "Error making directory (%s) (%x)\n", fbuf, errno);
+                    if (mkdir(fbuf, 0775)) {
+                        fprintf(stderr,
+                            "Error making directory (%s) (%x)\n", fbuf,
+                            errno);
                         return 1;
                     }
                 }
@@ -96,54 +231,89 @@ TskRecover::writeFile(TSK_FS_FILE *a_fs_file, const char *a_path)
             }
         }
     }
-    
-    if (fbuf[strlen(fbuf)-1] != '/')
+
+    if (fbuf[strlen(fbuf) - 1] != '/')
         strncat(fbuf, "/", PATH_MAX);
     strncat(fbuf, a_fs_file->name->name, PATH_MAX);
-    
+
     // open the file
     if ((hFile = fopen(fbuf, "w+")) == NULL) {
         fprintf(stderr, "Error opening file for writing (%s)\n", fbuf);
         return 1;
     }
-    
-    if (tsk_fs_file_walk(a_fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM)0, file_walk_cb, hFile)) {
+
+    if (tsk_fs_file_walk(a_fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) 0,
+            file_walk_cb, hFile)) {
         fprintf(stderr, "Error walking: %s\n", fbuf);
         tsk_error_print(stderr);
         fclose(hFile);
         return 1;
     }
-    
+
     fclose(hFile);
-    
+
 #endif
-    
-    printf ("Recovered file %s%s (%"PRIuINUM")\n", a_path, a_fs_file->name->name, a_fs_file->name->meta_addr);
-    
+
+    printf("Recovered file %s%s (%" PRIuINUM ")\n", a_path,
+        a_fs_file->name->name, a_fs_file->name->meta_addr);
+
     return 0;
 }
 
 
-uint8_t 
-TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
+uint8_t TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
     if (isDotDir(fs_file, path))
         return 0;
-    
+
     if (isDir(fs_file))
         return 0;
-    
+
     if (isNtfsSystemFiles(fs_file, path))
         return 0;
-    
-    if ((!fs_file->meta) || (fs_file->meta->size == 0)) 
+
+    if ((!fs_file->meta) || (fs_file->meta->size == 0))
         return 0;
-    
+
+    if (isFATSystemFiles(fs_file))
+        return 0;
+
     writeFile(fs_file, path);
-    
+
     return 0;
 }
 
+uint8_t
+TskRecover::filterVol(const TSK_VS_PART_INFO * vs_part)
+{
+    m_writeVolumeDir = true;
+    return 0;
+
+}
+
+uint8_t
+TskRecover::filterFs(TSK_FS_INFO * fs_info)
+{
+    if (m_writeVolumeDir) {
+        m_vsCount++;
+#ifdef TSK_WIN32
+        wsnprintf(m_vsName, FILENAME_MAX, (LPCWSTR) L"volume%d\\", m_vsCount);
+#else
+        snprintf(m_vsName, FILENAME_MAX, "volume%d/", m_vsCount);
+#endif
+    }
+    return 0;
+
+}
+
+bool
+TskRecover::findFiles(bool all, TSK_OFF_T soffset)
+{
+    if (!all)
+        return findFilesInFs(soffset * m_img_info->sector_size);
+    else
+        return findFilesInImg();
+}
 
 int
 main(int argc, char **argv1)
@@ -151,10 +321,13 @@ main(int argc, char **argv1)
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 
     int ch;
+    bool all = true;
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
+    TSK_OFF_T soffset = 0;
     TSK_TCHAR *cp;
-    
+    TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_ALLOC;
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -169,7 +342,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:tvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:tvVA"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -185,6 +358,19 @@ main(int argc, char **argv1)
                     OPTARG);
                 usage();
             }
+            break;
+
+        case _TSK_T('o'):
+            soffset = (TSK_OFF_T) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || soffset < 0) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: sector offset must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
+            else
+                all = false;
             break;
 
         case _TSK_T('i'):
@@ -207,47 +393,35 @@ main(int argc, char **argv1)
         case _TSK_T('V'):
             tsk_version_print(stdout);
             exit(0);
+            break;
+
+        case _TSK_T('A'):
+            walkflag =
+                (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_UNALLOC |
+                TSK_FS_DIR_WALK_FLAG_ALLOC);
         }
     }
 
     /* We need at least one more argument */
     if (OPTIND + 1 >= argc) {
-        tsk_fprintf(stderr, "Missing output directory and/or image name\n");
+        tsk_fprintf(stderr,
+            "Missing output directory and/or image name\n");
         usage();
     }
-    
+
     TskRecover tskRecover(argv[OPTIND]);
-    
-    tskRecover.setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_UNALLOC);
-    if (tskRecover.openImage(argc - OPTIND - 1,  &argv[OPTIND+1], imgtype,
-                      ssize)) {
+
+    tskRecover.setFileFilterFlags(walkflag);
+    if (tskRecover.openImage(argc - OPTIND - 1, &argv[OPTIND + 1], imgtype,
+            ssize)) {
         tsk_error_print(stderr);
-        exit(1);
-    }
-    
-    if (tskRecover.findFilesInImg()) {
-        tsk_error_print(stderr);
-        exit(1);
-    }
-    
-#if 0
-    if ((imgaddr * img->sector_size) >= img->size) {
-        tsk_fprintf(stderr,
-            "Sector offset supplied is larger than disk image (maximum: %"
-            PRIu64 ")\n", img->size / img->sector_size);
         exit(1);
     }
 
-    if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
+    if (tskRecover.findFiles(all, soffset)) {
         tsk_error_print(stderr);
-        if (tsk_errno == TSK_ERR_FS_UNSUPTYPE)
-            tsk_fs_type_print(stderr);
-        img->close(img);
         exit(1);
     }
 
-    fs->close(fs);
-    img->close(img);
-#endif
     exit(0);
 }

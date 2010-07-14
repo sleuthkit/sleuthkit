@@ -35,11 +35,11 @@ class TskAuto {
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     virtual void closeImage();
-    
+
     uint8_t findFilesInImg();
     uint8_t findFilesInVs(TSK_OFF_T start);
     uint8_t findFilesInFs(TSK_OFF_T start);
-    
+
     void setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_ENUM);
     void setVolFilterFlags(TSK_VS_PART_FLAG_ENUM);
 
@@ -84,30 +84,31 @@ class TskAuto {
   protected:
     TSK_IMG_INFO * m_img_info;
     uint8_t isNtfsSystemFiles(TSK_FS_FILE * fs_file, const char *path);
+    uint8_t isFATSystemFiles(TSK_FS_FILE * fs_file);
     uint8_t isDotDir(TSK_FS_FILE * fs_file, const char *path);
     uint8_t isDir(TSK_FS_FILE * fs_file);
 };
 
 typedef struct sqlite3 sqlite3;
 
-class TskAutoDb : public TskAuto {
-public:
+class TskAutoDb:public TskAuto {
+  public:
     TskAutoDb();
     virtual ~ TskAutoDb();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
-                              TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     virtual void closeImage();
-    
+
     virtual uint8_t filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual uint8_t filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t processFile(TSK_FS_FILE * fs_file, const char *path);
-private:
-    sqlite3 *m_db;
+  private:
+     sqlite3 * m_db;
     int m_curFsId;
     int m_curVsId;
-    
+
     // maps dir name to its inode.  Used to find parent dir inum based on name. 
-    std::map<std::string, TSK_INUM_T> m_par_inodes;
+     std::map < std::string, TSK_INUM_T > m_par_inodes;
 };
 
 #endif
