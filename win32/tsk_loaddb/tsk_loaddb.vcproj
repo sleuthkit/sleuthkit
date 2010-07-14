@@ -58,6 +58,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="libewf.lib"
+				AdditionalLibraryDirectories="$(ProjectDir)\..\libewf\msvscpp\release\"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -126,6 +128,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="libewf.lib"
+				AdditionalLibraryDirectories="$(ProjectDir)\..\libewf\msvscpp\release\"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

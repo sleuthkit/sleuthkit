@@ -178,10 +178,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_recover", "tsk_recover\
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_loaddb", "tsk_loaddb\tsk_loaddb.vcproj", "{96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}"
-   ProjectSection(ProjectDependencies) = postProject
-       {88B5F49E-6EBE-4FEA-8E5B-BE1F0DF7E8E8} = {88B5F49E-6EBE-4FEA-8E5B-BE1F0DF7E8E8}
-   EndProjectSection
-+EndProject
+	ProjectSection(ProjectDependencies) = postProject
+		{F12AA46A-EA91-4AB6-8246-7800DF6128A4} = {F12AA46A-EA91-4AB6-8246-7800DF6128A4}
+		{47901C6F-77EC-4753-A83A-F6AE975851B9} = {47901C6F-77EC-4753-A83A-F6AE975851B9}
+		{47E72886-0B51-4098-BAF4-68B4494F0872} = {47E72886-0B51-4098-BAF4-68B4494F0872}
+		{88B5F49E-6EBE-4FEA-8E5B-BE1F0DF7E8E8} = {88B5F49E-6EBE-4FEA-8E5B-BE1F0DF7E8E8}
+		{2D0B32C2-B035-4873-8E9A-4D4221D93F68} = {2D0B32C2-B035-4873-8E9A-4D4221D93F68}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_NoLibs|Win32 = Debug_NoLibs|Win32
@@ -357,12 +361,12 @@ Global
 		{06D707E5-68FF-4FC4-AFD0-C84584E32F47}.Debug|Win32.Build.0 = Debug|Win32
 		{06D707E5-68FF-4FC4-AFD0-C84584E32F47}.Release|Win32.ActiveCfg = Release|Win32
 		{06D707E5-68FF-4FC4-AFD0-C84584E32F47}.Release|Win32.Build.0 = Release|Win32
-        {96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Debug_NoLibs|Win32.ActiveCfg = Debug_NoLibs|Win32
-        {96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Debug_NoLibs|Win32.Build.0 = Debug_NoLibs|Win32
-        {96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Debug|Win32.ActiveCfg = Debug|Win32
-        {96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Debug|Win32.Build.0 = Debug|Win32
-        {96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Release|Win32.ActiveCfg = Release|Win32
-        {96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Release|Win32.Build.0 = Release|Win32
+		{96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Debug_NoLibs|Win32.ActiveCfg = Debug_NoLibs|Win32
+		{96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Debug_NoLibs|Win32.Build.0 = Debug_NoLibs|Win32
+		{96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Debug|Win32.Build.0 = Debug|Win32
+		{96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Release|Win32.ActiveCfg = Release|Win32
+		{96AFC6D4-A3DC-44D4-8F55-F74E1D21798C}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -21,7 +21,7 @@ class TskRecover:public TskAuto {
     virtual uint8_t processFile(TSK_FS_FILE * fs_file, const char *path);
     virtual uint8_t filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual uint8_t filterFs(TSK_FS_INFO * fs_info);
-    bool findFiles(bool all, TSK_OFF_T soffset);
+    uint8_t findFiles(bool all, TSK_OFF_T soffset);
 
 
   private:

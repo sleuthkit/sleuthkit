@@ -87,8 +87,6 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
         utf16;
     UTF8 *
         utf8;
-    TSKConversionResult
-        retval2;
     wchar_t
         path16[FILENAME_MAX];
     wchar_t
@@ -115,7 +113,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     *utf16 = '\0';
 
     //combining base path with path of current file
-    wsnprintf(path, FILENAME_MAX, (wchar_t *) m_base_dir);
+    _snwprintf(path, FILENAME_MAX, (wchar_t *) m_base_dir);
     wcsncat(path, L"\\", FILENAME_MAX);
     wcsncat(path, m_vsName, FILENAME_MAX);
     wcsncat(path, path16, FILENAME_MAX);
@@ -134,7 +132,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
                 path[i] = L'\0';
                 replaced = 1;
             }
-            bool
+            BOOL
                 result = CreateDirectoryW((LPCTSTR) path, NULL);
             if (!result) {
                 if (GetLastError() == ERROR_PATH_NOT_FOUND) {
@@ -297,7 +295,7 @@ TskRecover::filterFs(TSK_FS_INFO * fs_info)
     if (m_writeVolumeDir) {
         m_vsCount++;
 #ifdef TSK_WIN32
-        wsnprintf(m_vsName, FILENAME_MAX, (LPCWSTR) L"volume%d\\", m_vsCount);
+        _snwprintf(m_vsName, FILENAME_MAX, (LPCWSTR) L"volume%d\\", m_vsCount);
 #else
         snprintf(m_vsName, FILENAME_MAX, "volume%d/", m_vsCount);
 #endif
@@ -306,7 +304,7 @@ TskRecover::filterFs(TSK_FS_INFO * fs_info)
 
 }
 
-bool
+uint8_t
 TskRecover::findFiles(bool all, TSK_OFF_T soffset)
 {
     if (!all)
