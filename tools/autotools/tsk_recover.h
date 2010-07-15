@@ -27,7 +27,7 @@ class TskRecover:public TskAuto {
   private:
      TSK_TCHAR * m_base_dir;
     uint8_t writeFile(TSK_FS_FILE * a_fs_file, const char *a_path);
-    int m_vsCount;
     TSK_TCHAR m_vsName[FILENAME_MAX];
     bool m_writeVolumeDir;
+    int m_fileCount;
 };

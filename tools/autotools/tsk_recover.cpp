@@ -22,10 +22,9 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    // @@@ UPDATE ME
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vVA] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] output_dir image\n"),
+        ("usage: %s [-vVa] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] output_dir image\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
@@ -36,7 +35,7 @@ usage()
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     tsk_fprintf(stderr,
-        "\t-A: Recover all files (allocated and unallocated)\n");
+        "\t-a: Recover all files (allocated and unallocated)\n");
     tsk_fprintf(stderr,
         "\t-o sector_offset: sector offset for a volume to recover (recovers only that volume)\n");
 
@@ -52,8 +51,8 @@ TskRecover::TskRecover(TSK_TCHAR * a_base_dir)
 #else
     m_vsName[0] = '\0';
 #endif
-    m_vsCount = 0;
     m_writeVolumeDir = false;
+    m_fileCount = 0;
 }
 
 
@@ -252,8 +251,10 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 
 #endif
 
-    printf("Recovered file %s%s (%" PRIuINUM ")\n", a_path,
-        a_fs_file->name->name, a_fs_file->name->meta_addr);
+    m_fileCount++;
+    if (tsk_verbose) 
+        tsk_fprintf(stderr, "Recovered file %s%s (%" PRIuINUM ")\n", a_path,
+            a_fs_file->name->name, a_fs_file->name->meta_addr);
 
     return 0;
 }
@@ -284,20 +285,19 @@ uint8_t TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
 uint8_t
 TskRecover::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
+    // if this is method was called, we know the image has a volume system. 
     m_writeVolumeDir = true;
     return 0;
-
 }
 
 uint8_t
 TskRecover::filterFs(TSK_FS_INFO * fs_info)
 {
     if (m_writeVolumeDir) {
-        m_vsCount++;
 #ifdef TSK_WIN32
-        _snwprintf(m_vsName, FILENAME_MAX, (LPCWSTR) L"volume%d\\", m_vsCount);
+        _snwprintf(m_vsName, FILENAME_MAX, (LPCWSTR) L"vol_%"PRIuOFF"\\", fs_info->offset / m_img_info->sector_size);
 #else
-        snprintf(m_vsName, FILENAME_MAX, "volume%d/", m_vsCount);
+        snprintf(m_vsName, FILENAME_MAX, "vol_%"PRIuOFF"/", fs_info->offset / m_img_info->sector_size);
 #endif
     }
     return 0;
@@ -307,10 +307,15 @@ TskRecover::filterFs(TSK_FS_INFO * fs_info)
 uint8_t
 TskRecover::findFiles(bool all, TSK_OFF_T soffset)
 {
+    uint8_t retval;
+    
     if (!all)
-        return findFilesInFs(soffset * m_img_info->sector_size);
+        retval = findFilesInFs(soffset * m_img_info->sector_size);
     else
-        return findFilesInImg();
+        retval = findFilesInImg();
+    
+    printf("Files Recovered: %d\n", m_fileCount);
+    return retval;
 }
 
 int
@@ -319,12 +324,12 @@ main(int argc, char **argv1)
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 
     int ch;
-    bool all = true;
+    bool allImgs = true;
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
     TSK_OFF_T soffset = 0;
     TSK_TCHAR *cp;
-    TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_ALLOC;
+    TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_UNALLOC;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -340,13 +345,14 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:tvVA"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:tvVa"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
+                
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -368,7 +374,7 @@ main(int argc, char **argv1)
                 usage();
             }
             else
-                all = false;
+                allImgs = false;
             break;
 
         case _TSK_T('i'):
@@ -393,10 +399,11 @@ main(int argc, char **argv1)
             exit(0);
             break;
 
-        case _TSK_T('A'):
+        case _TSK_T('a'):
             walkflag =
                 (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_UNALLOC |
                 TSK_FS_DIR_WALK_FLAG_ALLOC);
+            break;
         }
     }
 
@@ -416,7 +423,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (tskRecover.findFiles(all, soffset)) {
+    if (tskRecover.findFiles(allImgs, soffset)) {
         tsk_error_print(stderr);
         exit(1);
     }
