@@ -30,7 +30,7 @@ uint8_t
     TSK_IMG_TYPE_ENUM type, unsigned int a_ssize)
 {
     TSK_TCHAR img[1024];
-	char foo[1024];
+    char foo[1024];
 
     if (m_db) {
         sqlite3_close(m_db);
@@ -46,18 +46,18 @@ uint8_t
         return retval;
     }
 
-	// make name of database
-	
+    // make name of database
+
 #ifdef TSK_WIN32
-	_snwprintf(img, 1024, _TSK_T("%S.db"), images[0]);
-	if (sqlite3_open16(img, &m_db)) {
+    _snwprintf(img, 1024, _TSK_T("%S.db"), images[0]);
+    if (sqlite3_open16(img, &m_db)) {
         fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(m_db));
         sqlite3_close(m_db);
         return 1;
     }
 #else
-	snprintf(img, 1024, "%s.db", images[0]);
-	if (sqlite3_open(img, &m_db)) {
+    snprintf(img, 1024, "%s.db", images[0]);
+    if (sqlite3_open(img, &m_db)) {
         fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(m_db));
         sqlite3_close(m_db);
         return 1;
@@ -65,7 +65,7 @@ uint8_t
 #endif
     // @@@ TEST IF IT EXISTS...
 
-    
+
 
     char *errmsg;
     if (sqlite3_exec(m_db,
@@ -105,7 +105,7 @@ uint8_t
         return 1;
     }
 
-	// Create the images table and add the image names
+    // Create the images table and add the image names
     if (sqlite3_exec(m_db, "CREATE TABLE tsk_image_names (name TEXT);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         fprintf(stderr, "Error creating tsk_image_names table: %s\n",
@@ -116,10 +116,10 @@ uint8_t
 
     for (int i = 0; i < num; i++) {
         int a;
-		char *img_ptr = NULL;
+        char *img_ptr = NULL;
 #ifdef TSK_WIN32
-		char img2[1024];
-		UTF8 *ptr8;
+        char img2[1024];
+        UTF8 *ptr8;
         UTF16 *ptr16;
 
         ptr8 = (UTF8 *) img2;
@@ -131,14 +131,14 @@ uint8_t
             (UTF8 *) ((uintptr_t) ptr8 + 1024), TSKlenientConversion);
         if (retval != TSKconversionOK) {
             fprintf(stderr, "Error converting image to UTF-8\n");
-			return 1;
+            return 1;
         }
-		img_ptr = img2;
+        img_ptr = img2;
 #else
-		img_ptr = (char *)images[i];
+        img_ptr = (char *) images[i];
 #endif
 
-		// get only the file name (ignore the directory name)
+        // get only the file name (ignore the directory name)
         for (a = strlen(img_ptr) - 1; a > 0; a--) {
             if ((img_ptr[a] == '/') || (img_ptr[a] == '\\')) {
                 a++;
@@ -175,7 +175,7 @@ uint8_t
     }
 
     if (sqlite3_exec(m_db,
-            "CREATE TABLE tsk_fs_files (fs_id INTEGER NOT NULL, file_id INTEGER NOT NULL, name TEXT NOT NULL, par_file_id INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER);",
+            "CREATE TABLE tsk_fs_files (fs_id INTEGER NOT NULL, file_id INTEGER NOT NULL, name TEXT NOT NULL, par_file_id INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         fprintf(stderr, "Error creating tsk_fs_files table: %s\n", errmsg);
         sqlite3_free(errmsg);
@@ -197,12 +197,12 @@ void
 }
 
 
-uint8_t TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
+uint8_t
+TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     char
      foo[1024];
-    char *
-        errmsg;
+    char *errmsg;
 
     snprintf(foo, 1024,
         "INSERT INTO tsk_vol_info (vol_id, start, length, desc, flags) VALUES (%d,%"
@@ -222,12 +222,12 @@ uint8_t TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 }
 
 
-uint8_t TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
+uint8_t
+TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 {
     char
      foo[1024];
-    char *
-        errmsg;
+    char *errmsg;
 
     m_curFsId++;
 
@@ -255,12 +255,12 @@ uint8_t TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 }
 
 
-uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
+uint8_t
+TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
     char
      foo[1024];
-    char *
-        errmsg;
+    char *errmsg;
     int
      mtime = 0;
     int
@@ -269,16 +269,16 @@ uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
      ctime = 0;
     int
      atime = 0;
-    TSK_OFF_T
-        size = 0;
+    TSK_OFF_T size = 0;
     int
      meta_type = 0;
     int
      meta_flags = 0;
     int
      meta_mode = 0;
-    TSK_INUM_T
-        par_inode;
+    int gid = 0;
+    int uid = 0;
+    TSK_INUM_T par_inode;
 
     if (fs_file->name == NULL)
         return 0;
@@ -292,6 +292,8 @@ uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         meta_type = fs_file->meta->type;
         meta_flags = fs_file->meta->flags;
         meta_mode = fs_file->meta->mode;
+        gid = fs_file->meta->gid;
+        uid = fs_file->meta->uid;
 
         // add the info the parent dir record so that we can later find
         // this dir by name
@@ -318,15 +320,15 @@ uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     }
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_fs_files (fs_id, file_id, name, par_file_id, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode) VALUES (%d,%"
+        "INSERT INTO tsk_fs_files (fs_id, file_id, name, par_file_id, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) VALUES (%d,%"
         PRIuINUM ",'%s',%" PRIuINUM ",%d,%d,%d,%d,%" PRIuOFF
-        ",%d,%d,%d,%d,%d)", m_curFsId, fs_file->name->meta_addr,
+        ",%d,%d,%d,%d,%d,%d,%d)", m_curFsId, fs_file->name->meta_addr,
         fs_file->name->name, par_inode, fs_file->name->type, meta_type,
         fs_file->name->flags, meta_flags, size, crtime, ctime, atime,
-        mtime, meta_mode);
+        mtime, meta_mode, uid, gid);
 
     if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
-        fprintf(stderr, "Error adding data to tsk_fs_info table: %s\n",
+        fprintf(stderr, "Error adding data to tsk_fs_files table: %s\n",
             errmsg);
         sqlite3_free(errmsg);
         return 1;
