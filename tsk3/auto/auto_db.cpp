@@ -197,7 +197,7 @@ void
 }
 
 
-uint8_t
+TSK_FILTER_ENUM
 TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     char
@@ -213,16 +213,16 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
         fprintf(stderr, "Error adding data to tsk_vol_info table: %s\n",
             errmsg);
         sqlite3_free(errmsg);
-        return 1;
+        return TSK_FILTER_STOP;
     }
 
     m_curVsId = vs_part->addr;
 
-    return 0;
+    return TSK_FILTER_CONT;
 }
 
 
-uint8_t
+TSK_FILTER_ENUM
 TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 {
     char
@@ -243,7 +243,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
         fprintf(stderr, "Error adding data to tsk_fs_info table: %s\n",
             errmsg);
         sqlite3_free(errmsg);
-        return 1;
+        return TSK_FILTER_STOP;
     }
 
     // make sure that flags are set to get all files -- we need this to
@@ -251,7 +251,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     setFileFilterFlags((TSK_FS_DIR_WALK_FLAG_ENUM)
         (TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC));
 
-    return 0;
+    return TSK_FILTER_CONT;
 }
 
 

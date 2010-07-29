@@ -67,7 +67,8 @@ extern "C" {
     typedef enum {
         TSK_OK,                 ///< Ok -- success
         TSK_ERR,                ///< System error -- should abort
-        TSK_COR                 ///< Data is corrupt, can still process another set of data
+        TSK_COR,                 ///< Data is corrupt, can still process another set of data
+        TSK_STOP                ///< Stop further processing, not an error though. 
     } TSK_RETVAL_ENUM;
 
 

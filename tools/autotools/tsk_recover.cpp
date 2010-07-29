@@ -150,7 +150,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 
     //convert file name from utf8 to utf16
     char
-        name8[FILENAME_MAX];
+     name8[FILENAME_MAX];
     snprintf(name8, FILENAME_MAX, a_fs_file->name->name);
 
     ilen = strlen(name8);
@@ -192,9 +192,9 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 
 #else
     struct stat
-        statds;
+     statds;
     char
-        fbuf[PATH_MAX];
+     fbuf[PATH_MAX];
     FILE *
         hFile;
 
@@ -252,9 +252,9 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 #endif
 
     m_fileCount++;
-    if (tsk_verbose) 
-        tsk_fprintf(stderr, "Recovered file %s%s (%" PRIuINUM ")\n", a_path,
-            a_fs_file->name->name, a_fs_file->name->meta_addr);
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "Recovered file %s%s (%" PRIuINUM ")\n",
+            a_path, a_fs_file->name->name, a_fs_file->name->meta_addr);
 
     return 0;
 }
@@ -282,38 +282,40 @@ uint8_t TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
     return 0;
 }
 
-uint8_t
+TSK_FILTER_ENUM
 TskRecover::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     // if this is method was called, we know the image has a volume system. 
     m_writeVolumeDir = true;
-    return 0;
+    return TSK_FILTER_CONT;
 }
 
-uint8_t
+TSK_FILTER_ENUM
 TskRecover::filterFs(TSK_FS_INFO * fs_info)
 {
     if (m_writeVolumeDir) {
 #ifdef TSK_WIN32
-        _snwprintf(m_vsName, FILENAME_MAX, (LPCWSTR) L"vol_%"PRIuOFF"\\", fs_info->offset / m_img_info->sector_size);
+        _snwprintf(m_vsName, FILENAME_MAX, (LPCWSTR) L"vol_%" PRIuOFF "\\",
+            fs_info->offset / m_img_info->sector_size);
 #else
-        snprintf(m_vsName, FILENAME_MAX, "vol_%"PRIuOFF"/", fs_info->offset / m_img_info->sector_size);
+        snprintf(m_vsName, FILENAME_MAX, "vol_%" PRIuOFF "/",
+            fs_info->offset / m_img_info->sector_size);
 #endif
     }
-    return 0;
 
+    return TSK_FILTER_CONT;
 }
 
 uint8_t
 TskRecover::findFiles(bool all, TSK_OFF_T soffset)
 {
     uint8_t retval;
-    
+
     if (!all)
         retval = findFilesInFs(soffset * m_img_info->sector_size);
     else
         retval = findFilesInImg();
-    
+
     printf("Files Recovered: %d\n", m_fileCount);
     return retval;
 }
@@ -323,10 +325,12 @@ main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
 
-    int ch;
+    int
+     ch;
     bool allImgs = true;
     TSK_TCHAR **argv;
-    unsigned int ssize = 0;
+    unsigned int
+     ssize = 0;
     TSK_OFF_T soffset = 0;
     TSK_TCHAR *cp;
     TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_UNALLOC;
@@ -352,7 +356,7 @@ main(int argc, char **argv1)
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
-                
+
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {

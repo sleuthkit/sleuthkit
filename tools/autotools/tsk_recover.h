@@ -19,10 +19,9 @@ class TskRecover:public TskAuto {
   public:
     TskRecover(TSK_TCHAR * a_base_dir);
     virtual uint8_t processFile(TSK_FS_FILE * fs_file, const char *path);
-    virtual uint8_t filterVol(const TSK_VS_PART_INFO * vs_part);
-    virtual uint8_t filterFs(TSK_FS_INFO * fs_info);
+    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
+    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     uint8_t findFiles(bool all, TSK_OFF_T soffset);
-
 
   private:
      TSK_TCHAR * m_base_dir;

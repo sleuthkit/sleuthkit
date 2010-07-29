@@ -46,7 +46,7 @@ main(int argc, char **argv1)
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
-    
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -103,24 +103,23 @@ main(int argc, char **argv1)
     }
 
     /* We need at least one more argument */
-    if (OPTIND  >= argc) {
+    if (OPTIND >= argc) {
         tsk_fprintf(stderr, "Missing image names\n");
         usage();
     }
-    
+
     TskAutoDb tskDb;
-    
+
     //tskRecover.setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_UNALLOC);
-    if (tskDb.openImage(argc - OPTIND,  &argv[OPTIND], imgtype,
-                      ssize)) {
+    if (tskDb.openImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
         tsk_error_print(stderr);
         exit(1);
     }
-    
+
     if (tskDb.findFilesInImg()) {
         tsk_error_print(stderr);
         exit(1);
     }
-    
+
     exit(0);
 }

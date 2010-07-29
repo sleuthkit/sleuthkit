@@ -25,6 +25,12 @@
 #define TSK_AUTO_TAG 0x9191ABAB
 
 
+typedef enum {
+    TSK_FILTER_CONT = 0x00,    ///< Framework should continue to process this object
+    TSK_FILTER_STOP = 0x01,    ///< Framework should stop processing the image
+    TSK_FILTER_SKIP = 0x02,   ///< Framework should skip this object and go on to the next
+} TSK_FILTER_ENUM;
+
 class TskAuto {
   public:
     unsigned int m_tag;
@@ -39,6 +45,8 @@ class TskAuto {
     uint8_t findFilesInImg();
     uint8_t findFilesInVs(TSK_OFF_T start);
     uint8_t findFilesInFs(TSK_OFF_T start);
+    uint8_t findFilesInFs(TSK_OFF_T start, TSK_INUM_T inum);
+    TSK_RETVAL_ENUM findFilesInFsRet(TSK_OFF_T start);
 
     void setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_ENUM);
     void setVolFilterFlags(TSK_VS_PART_FLAG_ENUM);
@@ -46,19 +54,19 @@ class TskAuto {
     /**
      * Gets called for each partition that is found in a volume system.
      * @param vs_part Parition details
-     * @returns 1 if volume should not be processed further or 0 if it should.
+     * @returns Value to show if volume should be processed, skipped, or process should stop.
      */
-    virtual uint8_t filterVol(const TSK_VS_PART_INFO * vs_part) {
-        return 0;
+    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part) {
+        return TSK_FILTER_CONT;
     };
 
     /**
      * Gets called for each file system that is found.
      * @param fs_info file system details
-     * @returns 1 if file system should not be processed further or 0 if it should.
+     * @returns Value to show if FS should be processed, skipped, or process should stop.
      */
-    virtual uint8_t filterFs(TSK_FS_INFO * fs_info) {
-        return 0;
+    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info) {
+        return TSK_FILTER_CONT;
     };
 
     /**
@@ -80,6 +88,10 @@ class TskAuto {
         const char *path, void *ptr);
     static TSK_WALK_RET_ENUM vsWalkCb(TSK_VS_INFO * vs_info,
         const TSK_VS_PART_INFO * vs_part, void *ptr);
+    
+    TSK_RETVAL_ENUM findFilesInFsInt(TSK_FS_INFO *, TSK_INUM_T inum);
+    
+
 
   protected:
     TSK_IMG_INFO * m_img_info;
@@ -99,8 +111,8 @@ class TskAutoDb:public TskAuto {
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     virtual void closeImage();
 
-    virtual uint8_t filterVol(const TSK_VS_PART_INFO * vs_part);
-    virtual uint8_t filterFs(TSK_FS_INFO * fs_info);
+    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
+    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t processFile(TSK_FS_FILE * fs_file, const char *path);
   private:
      sqlite3 * m_db;

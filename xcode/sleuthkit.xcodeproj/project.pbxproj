@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		0211CC4D120211BD0047194A /* tsk_comparedir.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tsk_comparedir.cpp; sourceTree = "<group>"; };
+		0211CC4E120211BD0047194A /* tsk_comparedir.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tsk_comparedir.h; sourceTree = "<group>"; };
 		02260C4B0D64895B0027BE02 /* md5.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = md5.c; sourceTree = "<group>"; };
 		02260C4C0D64895B0027BE02 /* sha1.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = sha1.c; sourceTree = "<group>"; };
 		02260C5E0D64895B0027BE02 /* .perltidyrc */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = .perltidyrc; sourceTree = "<group>"; };
@@ -231,6 +233,8 @@
 		024D5A7E11678B0D00299079 /* autotools */ = {
 			isa = PBXGroup;
 			children = (
+				0211CC4D120211BD0047194A /* tsk_comparedir.cpp */,
+				0211CC4E120211BD0047194A /* tsk_comparedir.h */,
 				02DE5E44117B925700D94722 /* tsk_loaddb.cpp */,
 				024D5A8311678CD400299079 /* tsk_recover.h */,
 				024D5A8211678B0D00299079 /* tsk_recover.cpp */,

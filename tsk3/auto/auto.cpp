@@ -143,14 +143,65 @@ TSK_WALK_RET_ENUM
 
 /** 
  * Analyze the volume starting at byte offset 'start' 
- * and walk each file that can be found.
+ * and walk each file that can be found. This will 
+ * start at the root directory of the file system. 
  *
- * @param a_start Byte offset of volume starting location.
+ * @param a_start Byte offset of file system starting location.
  *
- * @return 1 on error and 0 on success
+ * @returns values that allow the caller to differentiate stop from ok.  
+ */
+
+TSK_RETVAL_ENUM
+TskAuto::findFilesInFsRet(TSK_OFF_T a_start){
+    if (!m_img_info) {
+        // @@@
+        return TSK_ERR;
+    }
+    
+    TSK_FS_INFO *fs_info;
+    /* Try it as a file system */
+    if ((fs_info =
+         tsk_fs_open_img(m_img_info, a_start,
+                         TSK_FS_TYPE_DETECT)) == NULL) {
+             tsk_error_print(stderr);
+             
+             /* We could do some carving on the volume data at this point */
+             
+             return TSK_ERR;
+    }
+    TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+    tsk_fs_close(fs_info);
+    return retval;
+}
+
+/** 
+ * Analyze the volume starting at byte offset 'start' 
+ * and walk each file that can be found. This will 
+ * start at the root directory of the file system. 
+ *
+ * @param a_start Byte offset of file system starting location.
+ *
+ * @returns 1 on error and 0 on success
  */
 uint8_t
-TskAuto::findFilesInFs(TSK_OFF_T a_start)
+TskAuto::findFilesInFs(TSK_OFF_T a_start) {
+    if (findFilesInFsRet(a_start) == TSK_ERR)
+        return 1;
+    else 
+        return 0;
+}
+
+
+/** 
+ * Analyze the volume starting at byte offset 'start' 
+ * and walk each file that can be found.
+ *
+ * @param a_start Byte offset of file system starting location.
+ * @param inum inum to start walking files system at
+ * @ returns 1 on error, 0 on success
+ */
+uint8_t
+TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
 {
     if (!m_img_info) {
         // @@@
@@ -168,25 +219,37 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start)
 
         return 1;
     }
-
-    if (filterFs(fs_info)) {
+    TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, a_inum);
+    tsk_fs_close(fs_info);
+    if (retval == TSK_ERR)
         return 1;
-    }
+    else 
+        return 0;
+}
 
-    /* Walk the files, starting at the root directory */
-    if (tsk_fs_dir_walk(fs_info, fs_info->root_inum,
+/* Internal method that the other findFilesInFs can call after they
+ * have opened FS_INFO. 
+ */
+TSK_RETVAL_ENUM 
+TskAuto::findFilesInFsInt(TSK_FS_INFO *a_fs_info, TSK_INUM_T a_inum)
+{
+    TSK_FILTER_ENUM retval = filterFs(a_fs_info);
+    if (retval == TSK_FILTER_STOP)
+        return TSK_STOP;
+    else if (retval == TSK_FILTER_SKIP)
+        return TSK_OK;    
+
+    /* Walk the files, starting at the given inum */
+    if (tsk_fs_dir_walk(a_fs_info, a_inum,
             (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_RECURSE |
                 m_fileFilterFlags), dirWalkCb, this)) {
         tsk_error_print(stderr);
-        tsk_fs_close(fs_info);
-        return 1;
+        return TSK_ERR;
     }
 
     /* We could do some analysis of unallocated blocks at this point...  */
 
-
-    tsk_fs_close(fs_info);
-    return 0;
+    return TSK_OK;
 }
 
 
@@ -203,15 +266,21 @@ TSK_WALK_RET_ENUM
     if (tsk->m_tag != TSK_AUTO_TAG)
         return TSK_WALK_STOP;
 
-    if (tsk->filterVol(a_vs_part))
+    TSK_FILTER_ENUM retval1 = tsk->filterVol(a_vs_part);
+    if (retval1 == TSK_FILTER_SKIP)
         return TSK_WALK_CONT;
+    else if (retval1 == TSK_FILTER_STOP)
+        return TSK_WALK_STOP;
 
-    if (tsk->findFilesInFs(a_vs_part->start * a_vs_part->vs->block_size)) {
+    TSK_RETVAL_ENUM retval2 = tsk->findFilesInFsRet(a_vs_part->start * a_vs_part->vs->block_size);
+    if (retval2 == TSK_STOP) {
+        return TSK_WALK_STOP;
+    }
+    else if (retval2 != TSK_OK) {
         // if we return ERROR here, then the walk will stop.  But, the 
         // error could just be because we looked into an unallocated volume.
         // do any special error handling / reporting here.
         tsk_error_reset();
-        return TSK_WALK_CONT;
     }
 
     return TSK_WALK_CONT;
