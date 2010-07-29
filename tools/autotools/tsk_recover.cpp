@@ -295,7 +295,7 @@ TskRecover::filterFs(TSK_FS_INFO * fs_info)
 {
     if (m_writeVolumeDir) {
 #ifdef TSK_WIN32
-        _snwprintf(m_vsName, FILENAME_MAX, (LPCWSTR) L"vol_%" PRIuOFF "\\",
+        _snwprintf(m_vsName, FILENAME_MAX, (LPCWSTR) ("vol_%" PRIuOFF "\\"),
             fs_info->offset / m_img_info->sector_size);
 #else
         snprintf(m_vsName, FILENAME_MAX, "vol_%" PRIuOFF "/",
