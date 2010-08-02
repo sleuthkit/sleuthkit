@@ -39,7 +39,7 @@ The TSK_STACK structure is used to prevent infinite loops when recursing into di
 The TSK library includes support to calculate MD5 and SHA-1 hashes.  To calculate the MD5 hash, a context must be first initialized with TSK_MD5_Init(). Data is added to the context with TSK_MD5_Update() and the hash is calculated with a call to TSK_MD5_Final().  A similar process is used for SHA-1 hashes using TSK_SHA_Init(), TSK_SHA_Update(), and TSK_SHA_Final(). 
 
 \section basic_version Version
-To get the version number of the TSK library, you can all the tsk_version_get_str() function to get a string representation.  Or, you can call tsk_version_print() to print the library name and version to a FILE handle. 
+To get the version number of the TSK library as a string, you can all the tsk_version_get_str() function to get a string representation.  Or, you can call tsk_version_print() to print the library name and version to a FILE handle.  There are also \#defines for the version as a string (in TSK_VERSION_STR) and as a number (in TSK_VERSION_NUM). 
 
 Next to \ref imgpage
 

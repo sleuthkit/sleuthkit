@@ -23,5 +23,7 @@ An indexed database can be searched using either tsk_hdb_lookup_raw() or tsk_hdb
 
 Both functions can call a callback with details of entries that are found, or the QUICK flag can be given in which case the callback is not called and instead the return value of the function identifies if the hash is in the database or not. 
 
+Next to \ref autopage
+
 Back to \ref users_guide "Table of Contents"
 */

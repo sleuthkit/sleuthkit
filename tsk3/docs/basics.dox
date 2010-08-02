@@ -16,27 +16,37 @@ The next layer up is the <b>File System Layer</b>.  This layer focuses on proces
 
 There is an independent <b>Hash Database Layer</b> that handles hash databases, such as NSRL and md5sum outputs.  This API allows you to create an index of hashes and perform fast lookups of them.  These functions do not depend on the Disk Image, Volume System, or File System Layers. 
 
+There is also an <b>Automation Layer</b> that integrates all of the previous layers in an automated fashion.  It defines a C++ class named TskAuto that hides a lot of the details about analyzing file and volume systems. 
+
 A basic diagram of the relationship between these layers is shown here. Note that if a disk image file does not have a volume system, then we can use the File System Layer functions directly on it. 
 
 <pre>
-                        +================+
-                        |      Base      |
-                        +================+
-                          /            \  
-                         /              \
-               +==============+      +==================+
-               |  Disk Image  |      |   Hash Database  |
-               +==============+      +==================+
-                  /       |   
-                 /        | 
-    +===============+     |
-    | Volume System |     |
-    +===============+     | 
-                \         |
-                 \        |
-                +===============+  
-                |  File System  | 
-                +===============+ 
+
+ +==========================================================+
+ |                                                          | 
+ |                       +================+                 |
+ |                       |      Base      |                 |
+ |                       +================+                 |
+ |                         /            \                   |
+ |                        /              \                  |
+ |              +==============+      +==================+  |
+ |              |  Disk Image  |      |   Hash Database  |  |
+ |              +==============+      +==================+  |
+ |                 /       |                                |
+ |                /        |                                |
+ |   +===============+     |                                |
+ |   | Volume System |     |                                |
+ |   +===============+     |                                |
+ |               \         |                                |
+ |                \        |                                |
+ |               +===============+                          |
+ |               |  File System  |                          |
+ |               +===============+                          |
+ |                                                          |
+ |                                                          |
+ |                        Automation                        |
+ +==========================================================+
+
 </pre>
  
 

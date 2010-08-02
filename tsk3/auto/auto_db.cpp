@@ -7,6 +7,12 @@
  ** This software is distributed under the Common Public License 1.0
  **
  */
+
+/**
+ * \file auto_db.cpp
+ * Contains code to populate SQLite database with volume and file system information. 
+ */
+
 #include "tsk_auto.h"
 #include "sqlite3.h"
 
@@ -197,12 +203,12 @@ void
 }
 
 
-TSK_FILTER_ENUM
-TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
+TSK_FILTER_ENUM TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     char
      foo[1024];
-    char *errmsg;
+    char *
+        errmsg;
 
     snprintf(foo, 1024,
         "INSERT INTO tsk_vol_info (vol_id, start, length, desc, flags) VALUES (%d,%"
@@ -222,12 +228,12 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 }
 
 
-TSK_FILTER_ENUM
-TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
+TSK_FILTER_ENUM TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 {
     char
      foo[1024];
-    char *errmsg;
+    char *
+        errmsg;
 
     m_curFsId++;
 
@@ -255,12 +261,12 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 }
 
 
-uint8_t
-TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
+uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
     char
      foo[1024];
-    char *errmsg;
+    char *
+        errmsg;
     int
      mtime = 0;
     int
@@ -269,16 +275,20 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
      ctime = 0;
     int
      atime = 0;
-    TSK_OFF_T size = 0;
+    TSK_OFF_T
+        size = 0;
     int
      meta_type = 0;
     int
      meta_flags = 0;
     int
      meta_mode = 0;
-    int gid = 0;
-    int uid = 0;
-    TSK_INUM_T par_inode;
+    int
+        gid = 0;
+    int
+        uid = 0;
+    TSK_INUM_T
+        par_inode;
 
     if (fs_file->name == NULL)
         return 0;

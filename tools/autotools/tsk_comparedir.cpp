@@ -1,5 +1,5 @@
 /*
- ** tsk_loaddb
+ ** tsk_comparedir
  ** The Sleuth Kit 
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]

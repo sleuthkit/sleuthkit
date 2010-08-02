@@ -1,0 +1,44 @@
+/*! \page autopage File Extraction Automation
+   
+This section describes the TskAuto C++ superclass that can be used to easily build automated applications that analyze a disk image and extract files from it. 
+
+\section auto_over Overview
+
+The TSK API described in the previous sections of this User's Guide allows you to manually open a volume or file system and browse its contents to look at volumes and files.  While this fine grained access is useful in some situations, there are others where you simply want to rip apart a disk image and see all of the files without worrying about how you get the files.
+
+The TskAuto class was designed to help in these situations.  It is a C++ superclass that knows how to analyze a disk image.  All you need to do is implement the TskAuto::processFile() method, which will get called for each file.  Other methods in the class can also be implemented to get more details about the data being analyzed. 
+
+\section auto_basics Basics
+
+To use TskAuto, you first need to create a C++ subclass of it and implement the TskAuto::processFile() method.  The instructions in \ref basic_build will provide access to this class. 
+
+To use your new TskAuto-based class, you must first open the disk images. This can be done with TskAuto::openImage().  Once you are done with the object, it should be closed with TskAuto::closeImage().  These methods have been defined as virtual so that you can override them if your class needs access to the list of image names (for a report, for example). 
+
+To start the analysis after the image files have been opened, you must call either TskAuto::findFilesInImg(), TskAuto::findFilesInVs(), or TskAuto::findFilesInFs().  TskAuto::findFilesInImg() starts at sector 0 of the disk image and starts to analyze it.  It looks for a volume system and, if it finds one, will examine the contents of each volume.  If it doesn't find a volume system, it will assume that the image is of a volume and will analyze sector 0 as a file system. 
+
+TskAuto::findFilesInVs() allows you to specify the sector offset where the volume system is located.  It does the same analysis as TskAuto::findFilesInImg(), except that it doesn't always start in sector 0.  In fact, TskAuto::findFilesInImg() simply calls TskAuto::findFilesInVs() with a starting offset of 0. 
+
+TskAuto::findFilesInFs() allows you to specify the offset of a file system to process.  This method will not look for a volume system, only a file system.  Internally, this method is called from TskAuto::findFilesInVs() after a volume has been found.  There is also a version that allows you to specify the directory start processing from. 
+
+Regardless of the method that you use to start the processing, the TskAuto::processFile() method will be called for each file and directory that is found. You can specify if this method should be called for only allocated or unallocated files using the TskAuto::setFileFilterFlags() method.  You can also specify what types of volumes to process by using the TskAuto::setVolFilterFlags() method. 
+
+Inside of your TskAuto::processFile() method, you can read the contents of the file using either tsk_fs_file_read() or tsk_fs_file_walk(). 
+
+\section auto_filter Filtering Results
+
+With the methods defined above, TskAuto::processFile() will get called for all files and directories in an image.  This maybe more files than you want though.  There are two methods that will alert you when TskAuto is about to process a new volume or file system and will allow you to not process the volume or file system. 
+
+You can implement the TskAuto::filterVol() method to learn about each volume before it is processed.  The return value of this method can cause TskAuto to skip the volume or stop processing the disk image entirely. 
+
+You can implement the TskAuto::filterFs() method to learn about each file system before it is processed.  The return value of this method can cause TskAuto to skip the file system or stop processing the disk image entirely. 
+
+There are also a series of protected methods in TskAuto that will help you to skip files that may not be relevant to you.  For example, TskAuto::isNtfsSystemFiles() will tell you if a file is one of the NTFS file system files (such as $MFT) that you may want to skip. You can use this method in TskAuto::processFile() to skip the big NTFS files.  Refer to the protected methods in TskAuto for others that are defined for this purpose (they all begin with "is"). 
+
+
+\section auto_examples Examples
+
+Refer to the source code in the tools/autotools directory of the distribution for examples of TskAuto-based classes.  Files in this directory all use TskAuto to do things like recover deleted files or load data into a SQLite database. 
+
+Back to \ref users_guide "Table of Contents"
+
+*/

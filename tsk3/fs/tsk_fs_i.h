@@ -151,12 +151,6 @@ extern "C" {
         TSK_FS_NAME * a_fs_name);
     extern TSK_RETVAL_ENUM tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs,
         TSK_FS_DIR * a_fs_dir);
-    /* we are using the last inode as the special inode for the orphan directory.  Note that this
-     * macro is defined to abstract this convention, but there are many places in the code where
-     * there is implied logic about this convention. For example, inode_walks will stop before
-     * this value so that special handling can occur. */
-#define TSK_FS_ORPHANDIR_INUM(fs_info) \
-    (fs_info->last_inum)
 
 
 

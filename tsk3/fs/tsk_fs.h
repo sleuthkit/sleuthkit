@@ -463,6 +463,13 @@ extern "C" {
  * name is known, but the parent is not */
 #define TSK_FS_ORPHAN_STR "-ORPHAN_FILE-"
 
+    /* we are using the last inode as the special inode for the orphan directory.  Note that this
+     * macro is defined to abstract this convention, but there are many places in the code where
+     * there is implied logic about this convention. For example, inode_walks will stop before
+     * this value so that special handling can occur. */
+#define TSK_FS_ORPHANDIR_INUM(fs_info) \
+(fs_info->last_inum)
+    
 
     /** 
         * inode walk callback function definition.  This is called for every file

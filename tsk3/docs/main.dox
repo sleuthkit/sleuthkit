@@ -16,6 +16,7 @@ The User's Guide describes the various components of TSK and how to use them.  I
   - \subpage vspage 
   - \subpage fspage 
   - \subpage hashdbpage
+  - \subpage autopage
 
 <h3>API Reference</h3>
 The API Reference lists the public API functions and the arguments and return values.  The Users's Guide should be read first so that the interaction and use of the functions are understood.  These pages can also be found in the <a href="modules.html">Modules</a> section.  
@@ -24,5 +25,7 @@ The API Reference lists the public API functions and the arguments and return va
   - \ref vslib
   - \ref fslib
   - \ref hashdblib
+  - \ref autolib
+
 */
 
