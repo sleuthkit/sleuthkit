@@ -477,45 +477,21 @@ ifind_data_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
     TSK_FS_INFO *fs = fs_file->fs_info;
     IFIND_DATA_DATA *data = (IFIND_DATA_DATA *) ptr;
 
-    /* Drop references to block zero (sparse)
-     * This becomes an issue with fragments and looking for fragments
-     * within the first block.  They will be triggered by sparse 
-     * entries, even though the first block can not be allocated
-     */
-    if (!addr)
+    /* Ignore sparse blocks because they do not reside on disk */
+    if (flags & TSK_FS_BLOCK_FLAG_SPARSE)
         return TSK_WALK_CONT;
-
-    if ((data->block >= addr) &&
-        (data->block <
-            (addr + (size + fs->block_size - 1) / fs->block_size))) {
-        tsk_printf("%" PRIuINUM "\n", data->curinode);
-        data->found = 1;
-        return TSK_WALK_STOP;
-    }
-    return TSK_WALK_CONT;
-}
-
-
-/* 
- * file_walk action callback for ntfs  
- *
- */
-static TSK_WALK_RET_ENUM
-ifind_data_file_ntfs_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
-    TSK_DADDR_T addr, char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags,
-    void *ptr)
-{
-    IFIND_DATA_DATA *data = (IFIND_DATA_DATA *) ptr;
-
+    
     if (addr == data->block) {
-        tsk_printf("%" PRIuINUM "-%" PRIu32 "-%" PRIu16 "\n",
-            data->curinode, data->curtype, data->curid);
+        if (TSK_FS_TYPE_ISNTFS(fs->ftype)) 
+            tsk_printf("%" PRIuINUM "-%" PRIu32 "-%" PRIu16 "\n",
+                   data->curinode, data->curtype, data->curid);
+        else 
+            tsk_printf("%" PRIuINUM "\n", data->curinode);
         data->found = 1;
         return TSK_WALK_STOP;
-    }
+    }    
     return TSK_WALK_CONT;
 }
-
 
 
 /*
@@ -527,88 +503,36 @@ static TSK_WALK_RET_ENUM
 ifind_data_act(TSK_FS_FILE * fs_file, void *ptr)
 {
     IFIND_DATA_DATA *data = (IFIND_DATA_DATA *) ptr;
-    int file_flags = (TSK_FS_FILE_WALK_FLAG_AONLY);
-
+    int file_flags = (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK);
+    int i, cnt;
+    
     data->curinode = fs_file->meta->addr;
 
-    /* NT Specific Stuff: search all ADS */
-    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype)) {
-        int i, cnt;
+    /* Search all attrributes */
+    cnt = tsk_fs_file_attr_getsize(fs_file);
+    for (i = 0; i < cnt; i++) {
+        const TSK_FS_ATTR *fs_attr =
+            tsk_fs_file_attr_get_idx(fs_file, i);
+        if (!fs_attr)
+            continue;
 
-        file_flags |= TSK_FS_FILE_WALK_FLAG_SLACK;
-        cnt = tsk_fs_file_attr_getsize(fs_file);
-        for (i = 0; i < cnt; i++) {
-            const TSK_FS_ATTR *fs_attr =
-                tsk_fs_file_attr_get_idx(fs_file, i);
-            if (!fs_attr)
-                continue;
-
-            data->curtype = fs_attr->type;
-            data->curid = fs_attr->id;
-            if (fs_attr->flags & TSK_FS_ATTR_NONRES) {
-                if (tsk_fs_attr_walk(fs_attr,
-                        file_flags, ifind_data_file_ntfs_act, ptr)) {
-                    if (tsk_verbose)
-                        tsk_fprintf(stderr,
-                            "Error walking file %" PRIuINUM
-                            " Attribute: %i", fs_file->meta->addr, i);
-
-                    /* Ignore these errors */
-                    tsk_error_reset();
-                }
-                
-                if ((data->found) && (!(data->flags & TSK_FS_IFIND_ALL)))
-                    break;
-            }
-        }
-        return TSK_WALK_CONT;
-    }
-    else if (TSK_FS_TYPE_ISFAT(fs_file->fs_info->ftype)) {
-        file_flags |= (TSK_FS_FILE_WALK_FLAG_SLACK);
-        if (tsk_fs_file_walk(fs_file, file_flags,
-                ifind_data_file_act, ptr)) {
-            if (tsk_verbose)
-                tsk_fprintf(stderr, "Error walking file %" PRIuINUM,
-                    fs_file->meta->addr);
-
-            /* Ignore these errors */
-            tsk_error_reset();
-        }
-    }
-    /* UNIX do not need the SLACK flag because they use fragments - if the
-     * SLACK flag exists then any unused fragments in a block will be 
-     * correlated with the incorrect inode
-     */
-    else {
-        const TSK_FS_ATTR *fs_attr;
-
-        if (tsk_fs_file_walk(fs_file, file_flags,
-                ifind_data_file_act, ptr)) {
-            if (tsk_verbose)
-                tsk_fprintf(stderr, "Error walking file %" PRIuINUM,
-                    fs_file->meta->addr);
-
-            /* Ignore these errors */
-            tsk_error_reset();
-        }
-
-
-        // try the indirect blocks
-        fs_attr = tsk_fs_file_attr_get_type(fs_file,
-            TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
-        if (fs_attr) {
-            data->curtype = fs_attr->type;
-            data->curid = fs_attr->id;
-
+        data->curtype = fs_attr->type;
+        data->curid = fs_attr->id;
+        if (fs_attr->flags & TSK_FS_ATTR_NONRES) {            
             if (tsk_fs_attr_walk(fs_attr,
                     file_flags, ifind_data_file_act, ptr)) {
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "Error walking file %" PRIuINUM
-                        " Indirect Attribute", fs_file->meta->addr);
+                        " Attribute: %i", fs_file->meta->addr, i);
+
                 /* Ignore these errors */
                 tsk_error_reset();
             }
+
+            // stop if we only want one hit
+            if ((data->found) && (!(data->flags & TSK_FS_IFIND_ALL)))
+                break;
         }
     }
 
@@ -639,16 +563,13 @@ tsk_fs_ifind_data(TSK_FS_INFO * fs, TSK_FS_IFIND_FLAG_ENUM lclflags,
             ifind_data_act, &data)) {
         return 1;
     }
-
-    /* 
-     * If we did not find an inode yet, we call block_walk for the 
-     * block to find out the associated flags so we can identify it as
-     * a meta data block */
+ 
+    /* If we did not find an inode yet, get the block's
+     * flags so we can identify it as a meta data block */
     if (!data.found) {
         TSK_FS_BLOCK *fs_block;
 
         if ((fs_block = tsk_fs_block_get(fs, NULL, blk)) != NULL) {
-
             if (fs_block->flags & TSK_FS_BLOCK_FLAG_META) {
                 tsk_printf("Meta Data\n");
                 data.found = 1;
@@ -656,6 +577,7 @@ tsk_fs_ifind_data(TSK_FS_INFO * fs, TSK_FS_IFIND_FLAG_ENUM lclflags,
             tsk_fs_block_free(fs_block);
         }
     }
+    
     if (!data.found) {
         tsk_printf("Inode not found\n");
     }

@@ -265,12 +265,6 @@ main(int argc, char **argv1)
             img->close(img);
             exit(1);
         }
-        else if (block == 0) {
-            tsk_printf("Inode not found\n");
-            fs->close(fs);
-            img->close(img);
-            exit(1);
-        }
         if (tsk_fs_ifind_data(fs, (TSK_FS_IFIND_FLAG_ENUM) localflags,
                 block)) {
             tsk_error_print(stderr);
