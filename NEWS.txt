@@ -6,6 +6,10 @@ Numbers refer to SourceForge.net tracker IDs:
 Bug Fixes
 - 3043092: Minor logic errors with ifind code. 
 
+New Features:
+- 3012324: Name mangling moved out of library into outer tools
+  so that they can see control characters if they want to. 
+
 ---------------- VERSION 3.1.3 --------------
 Bug Fixes
 - 3006733: FAT directory listings were slow because the inner

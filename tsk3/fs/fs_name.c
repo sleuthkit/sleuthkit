@@ -166,7 +166,7 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
     else {
         if (a_fs_name_to->name_size > 0)
             a_fs_name_to->name[0] = '\0';
-        else 
+        else
             a_fs_name_to->name = NULL;
     }
 
@@ -188,7 +188,7 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
     else {
         if (a_fs_name_to->shrt_name_size > 0)
             a_fs_name_to->shrt_name[0] = '\0';
-        else 
+        else
             a_fs_name_to->shrt_name = NULL;
     }
 
@@ -338,6 +338,8 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, TSK_FS_INFO * fs, const TSK_FS_ATTR * fs_attr,
     uint8_t print_path)
 {
+    int i;
+
     /* type of file - based on dentry type */
     if (fs_file->name->type < TSK_FS_NAME_TYPE_STR_MAX)
         tsk_fprintf(hFile, "%s/",
@@ -387,14 +389,24 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
 
     tsk_fprintf(hFile, "%s:\t",
         ((fs_file->meta) && (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)
-            && (fs_file->
-                name->flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" :
-        "");
+            && (fs_file->name->
+                flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" : "");
 
-    if ((print_path) && (a_path != NULL))
-        tsk_fprintf(hFile, "%s", a_path);
+    if ((print_path) && (a_path != NULL)) {
+        for (i = 0; i < strlen(a_path); i++) {
+            if (TSK_IS_CNTRL(a_path[i]))
+                tsk_fprintf(hFile, "^");
+            else
+                tsk_fprintf(hFile, "%c", a_path[i]);
+        }
+    }
 
-    tsk_fprintf(hFile, "%s", fs_file->name->name);
+    for (i = 0; i < strlen(fs_file->name->name); i++) {
+        if (TSK_IS_CNTRL(fs_file->name->name[i]))
+            tsk_fprintf(hFile, "^");
+        else
+            tsk_fprintf(hFile, "%c", fs_file->name->name[i]);
+    }
 
 /*  This will add the short name in parentheses
     if (fs_file->name->shrt_name != NULL && fs_file->name->shrt_name[0] != '\0')
@@ -406,8 +418,15 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
         if (((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_DATA) &&
                 (strcmp(fs_attr->name, "$Data") != 0)) ||
             ((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_IDXROOT) &&
-                (strcmp(fs_attr->name, "$I30") != 0)))
-            tsk_fprintf(hFile, ":%s", fs_attr->name);
+                (strcmp(fs_attr->name, "$I30") != 0))) {
+            tsk_fprintf(hFile, ":");
+            for (i = 0; i < strlen(fs_attr->name); i++) {
+                if (TSK_IS_CNTRL(fs_attr->name[i]))
+                    tsk_fprintf(hFile, "^");
+                else
+                    tsk_fprintf(hFile, "%c", fs_attr->name[i]);
+            }
+        }
     }
 
     return;
@@ -499,6 +518,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *prefix, int32_t time_skew)
 {
     char ls[12];
+    int i;
 
     if ((!hFile) || (!fs_file))
         return;
@@ -507,14 +527,38 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     tsk_fprintf(hFile, "0|");
 
     /* file name */
-    tsk_fprintf(hFile, "%s%s%s", prefix, a_path, fs_file->name->name);
+    tsk_fprintf(hFile, "%s", prefix);
+
+    // remove any control chars as we print the names
+    if (a_path != NULL) {
+        for (i = 0; i < strlen(a_path); i++) {
+            if (TSK_IS_CNTRL(a_path[i]))
+                tsk_fprintf(hFile, "^");
+            else
+                tsk_fprintf(hFile, "%c", a_path[i]);
+        }
+    }
+
+    for (i = 0; i < strlen(fs_file->name->name); i++) {
+        if (TSK_IS_CNTRL(fs_file->name->name[i]))
+            tsk_fprintf(hFile, "^");
+        else
+            tsk_fprintf(hFile, "%c", fs_file->name->name[i]);
+    }
 
     /* print the data stream name if it exists and is not the default NTFS */
     if ((fs_attr) && (((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_DATA) &&
                 (strcmp(fs_attr->name, "$Data") != 0)) ||
             ((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_IDXROOT) &&
-                (strcmp(fs_attr->name, "$I30") != 0))))
-        tsk_fprintf(hFile, ":%s", fs_attr->name);
+                (strcmp(fs_attr->name, "$I30") != 0)))) {
+        tsk_fprintf(hFile, ":");
+        for (i = 0; i < strlen(fs_attr->name); i++) {
+            if (TSK_IS_CNTRL(fs_attr->name[i]))
+                tsk_fprintf(hFile, "^");
+            else
+                tsk_fprintf(hFile, "%c", fs_attr->name[i]);
+        }
+    }
 
     if ((fs_file->meta)
         && (fs_file->meta->type == TSK_FS_META_TYPE_LNK)
@@ -526,9 +570,8 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
      * allocated, then add realloc comment */
     if (fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC)
         tsk_fprintf(hFile, " (deleted%s)", ((fs_file->meta)
-                && (fs_file->
-                    meta->flags & TSK_FS_META_FLAG_ALLOC)) ? "-realloc" :
-            "");
+                && (fs_file->meta->
+                    flags & TSK_FS_META_FLAG_ALLOC)) ? "-realloc" : "");
 
     /* inode */
     tsk_fprintf(hFile, "|%" PRIuINUM, fs_file->name->meta_addr);
@@ -564,7 +607,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
             tsk_fprintf(hFile, "%" PRIuOFF "|", fs_attr->size);
         else
             tsk_fprintf(hFile, "%" PRIuOFF "|", fs_file->meta->size);
-        
+
         /* atime, mtime, ctime, crtime */
         tsk_fprintf(hFile,
             "%" PRIu32 "|%" PRIu32 "|%" PRIu32 "|%" PRIu32 "\n",

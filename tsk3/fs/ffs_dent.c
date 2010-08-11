@@ -33,7 +33,6 @@ static uint8_t
 ffs_dent_copy(FFS_INFO * ffs, char *ffs_dent, TSK_FS_NAME * fs_name)
 {
     TSK_FS_INFO *a_fs = &(ffs->fs_info);
-    int i;
 
     /* this one has the type field */
     if ((a_fs->ftype == TSK_FS_TYPE_FFS1)
@@ -102,14 +101,6 @@ ffs_dent_copy(FFS_INFO * ffs, char *ffs_dent, TSK_FS_NAME * fs_name)
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "ffs_dent_copy: Unknown FS type");
         return 1;
-    }
-
-    /* Clean up name */
-    i = 0;
-    while (fs_name->name[i] != '\0') {
-        if (TSK_IS_CNTRL(fs_name->name[i]))
-            fs_name->name[i] = '^';
-        i++;
     }
 
     fs_name->flags = 0;

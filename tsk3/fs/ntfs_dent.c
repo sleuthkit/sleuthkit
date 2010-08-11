@@ -215,8 +215,7 @@ ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
     UTF16 *name16;
     UTF8 *name8;
     int retVal;
-    int i;
-
+    
     fs_name->meta_addr = tsk_getu48(fs->endian, idxe->file_ref);
     fs_name->meta_seq = tsk_getu16(fs->endian, idxe->seq_num);
 
@@ -242,14 +241,6 @@ ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
         fs_name->name[fs_name->name_size] = '\0';
     else
         *name8 = '\0';
-
-    /* Clean up name */
-    i = 0;
-    while (fs_name->name[i] != '\0') {
-        if (TSK_IS_CNTRL(fs_name->name[i]))
-            fs_name->name[i] = '^';
-        i++;
-    }
 
     if (tsk_getu64(fs->endian, fname->flags) & NTFS_FNAME_FLAGS_DIR)
         fs_name->type = TSK_FS_NAME_TYPE_DIR;

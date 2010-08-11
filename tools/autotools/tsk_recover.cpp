@@ -82,24 +82,23 @@ file_walk_cb(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
 uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 {
 #ifdef TSK_WIN32
-    UTF16 *
-        utf16;
-    UTF8 *
-        utf8;
-    wchar_t
-        path16[FILENAME_MAX];
-    wchar_t
-        name[FILENAME_MAX];
-    wchar_t
-        path[FILENAME_MAX];
-    size_t
-        ilen;
 
-    ilen = strlen(a_path);
+    // combine the volume name and path
+    char path8[FILENAME_MAX];
+    strncpy(path8, m_vsName, FILENAME_MAX);
+    strncat(path8, a_path, FILENAME_MAX); 
+    size_t ilen = strlen(path8);
+    
+    // clean up any control characters
+    for (int i = 0; i < ilen; i++) {
+        if (TSK_IS_CNTRL(path8[i]))
+            path8[i] = '^';
+    }
 
-    //converting path from utf8 to utf16
-    utf8 = (UTF8 *) a_path;
-    utf16 = (UTF16 *) path16;
+    //convert path from utf8 to utf16
+    wchar_t path16[FILENAME_MAX];
+    UTF8 *utf8 = (UTF8 *) path8;
+    UTF16 *utf16 = (UTF16 *) path16;
     TSKConversionResult
         retVal =
         tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen], &utf16,
@@ -111,51 +110,57 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
     *utf16 = '\0';
 
-    //combining base path with path of current file
-    _snwprintf(path, FILENAME_MAX, (wchar_t *) m_base_dir);
-    wcsncat(path, L"\\", FILENAME_MAX);
-    wcsncat(path, m_vsName, FILENAME_MAX);
-    wcsncat(path, path16, FILENAME_MAX);
+    //combine the target directory with volume name and path
+    wchar_t path16full[FILENAME_MAX];
+    wcsncpy(path16full, (wchar_t *) m_base_dir, FILENAME_MAX);
+    wcsncat(path16full, L"\\", FILENAME_MAX);
+    wcsncat(path16full, path16, FILENAME_MAX);
 
     //build up directory structure
     size_t
-        len = wcslen((const wchar_t *) path);
+        len = wcslen((const wchar_t *) path16full);
     for (size_t i = 0; i < len; i++) {
-        if (path[i] == L'/')
-            path[i] = L'\\';
-        if (((i > 0) && (path[i] == L'\\') && (path[i - 1] != L'\\'))
-            || ((path[i] != L'\\') && (i == len - 1))) {
+        if (path16full[i] == L'/')
+            path16full[i] = L'\\';
+        if (((i > 0) && (path16full[i] == L'\\') && (path16full[i - 1] != L'\\'))
+            || ((path16full[i] != L'\\') && (i == len - 1))) {
             uint8_t
                 replaced = 0;
-            if (path[i] == L'\\') {
-                path[i] = L'\0';
+            if (path16full[i] == L'\\') {
+                path16full[i] = L'\0';
                 replaced = 1;
             }
             BOOL
-                result = CreateDirectoryW((LPCTSTR) path, NULL);
+                result = CreateDirectoryW((LPCTSTR) path16full, NULL);
             if (!result) {
                 if (GetLastError() == ERROR_PATH_NOT_FOUND) {
-                    fprintf(stderr, "Error Creating Directory (%S)", path);
+                    fprintf(stderr, "Error Creating Directory (%S)", path16full);
                     return 1;
                 }
             }
             if (replaced)
-                path[i] = L'\\';
+                path16full[i] = L'\\';
         }
     }
 
     //fix the end of the path so that the file name can be appended
-    if (path[len - 1] != L'\\')
-        path[len] = L'\\';
+    if (path16full[len - 1] != L'\\')
+        path16full[len] = L'\\';
+
+    //do name mangling
+    char name8[FILENAME_MAX];
+    strncpy(name8, a_fs_file->name->name, FILENAME_MAX);
+    for (int i = 0; name8[i] != '\0'; i++) {
+        if (TSK_IS_CNTRL(name8[i]))
+            name8[i] = '^';
+    }
 
     //convert file name from utf8 to utf16
-    char
-     name8[FILENAME_MAX];
-    snprintf(name8, FILENAME_MAX, a_fs_file->name->name);
+    wchar_t name16[FILENAME_MAX];
 
     ilen = strlen(name8);
     utf8 = (UTF8 *) name8;
-    utf16 = (UTF16 *) name;
+    utf16 = (UTF16 *) name16;
 
     retVal = tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
         &utf16, &utf16[FILENAME_MAX], TSKlenientConversion);
@@ -167,15 +172,15 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
 
     //append the file name onto the path
-    wcsncat(path, name, FILENAME_MAX);
+    wcsncat(path16full, name16, FILENAME_MAX);
 
     //create the file
     HANDLE
         handle =
-        CreateFileW((LPCTSTR) path, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS,
+        CreateFileW((LPCTSTR) path16full, GENERIC_WRITE, 0, NULL, OPEN_ALWAYS,
         FILE_ATTRIBUTE_NORMAL, NULL);
     if (handle == INVALID_HANDLE_VALUE) {
-        fprintf(stderr, "Error Creating File (%S)", path);
+        fprintf(stderr, "Error Creating File (%S)", path16full);
         return 1;
     }
 
@@ -201,6 +206,12 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     snprintf(fbuf, PATH_MAX, "%s/%s/%s", (char *) m_base_dir, m_vsName,
         a_path);
 
+    // clean up any control characters in path
+    for (size_t i = 0; i < strlen(fbuf); i++) {
+        if (TSK_IS_CNTRL(fbuf[i]))
+            fbuf[i] = '^';
+    }
+    
     // see if the directory already exists. Create, if not.
     if (0 != lstat(fbuf, &statds)) {
         size_t
@@ -231,7 +242,15 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 
     if (fbuf[strlen(fbuf) - 1] != '/')
         strncat(fbuf, "/", PATH_MAX);
+
     strncat(fbuf, a_fs_file->name->name, PATH_MAX);
+    
+    //do name mangling of the file name that was just added
+    for (int i = strlen(fbuf); fbuf[i] != '/'; i--) {
+        if (TSK_IS_CNTRL(fbuf[i]))
+            fbuf[i] = '^';
+    }
+
 
     // open the file
     if ((hFile = fopen(fbuf, "w+")) == NULL) {
@@ -294,13 +313,8 @@ TSK_FILTER_ENUM
 TskRecover::filterFs(TSK_FS_INFO * fs_info)
 {
     if (m_writeVolumeDir) {
-#ifdef TSK_WIN32
-        _snwprintf(m_vsName, FILENAME_MAX, (LPCWSTR) ("vol_%" PRIuOFF "\\"),
-            fs_info->offset / m_img_info->sector_size);
-#else
         snprintf(m_vsName, FILENAME_MAX, "vol_%" PRIuOFF "/",
             fs_info->offset / m_img_info->sector_size);
-#endif
     }
 
     return TSK_FILTER_CONT;
@@ -333,7 +347,7 @@ main(int argc, char **argv1)
      ssize = 0;
     TSK_OFF_T soffset = 0;
     TSK_TCHAR *cp;
-    TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_UNALLOC;
+    TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_ALLOC;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)

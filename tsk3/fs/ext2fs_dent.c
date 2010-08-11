@@ -35,7 +35,6 @@ ext2fs_dent_copy(EXT2FS_INFO * ext2fs,
     char *ext2_dent, TSK_FS_NAME * fs_name)
 {
     TSK_FS_INFO *fs = &(ext2fs->fs_info);
-    int i;
 
     if (ext2fs->deentry_type == EXT2_DE_V1) {
         ext2fs_dentry1 *dir = (ext2fs_dentry1 *) ext2_dent;
@@ -105,14 +104,6 @@ ext2fs_dent_copy(EXT2FS_INFO * ext2fs,
             fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
             break;
         }
-    }
-
-    /* Clean up name */
-    i = 0;
-    while (fs_name->name[i] != '\0') {
-        if (TSK_IS_CNTRL(fs_name->name[i]))
-            fs_name->name[i] = '^';
-        i++;
     }
 
     fs_name->flags = 0;

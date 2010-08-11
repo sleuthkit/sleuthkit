@@ -190,7 +190,6 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
         /* cycle through the directory entries */
         for (idx = 0; idx < fatfs->dentry_cnt_se; idx++, dep++) {
             fatfs_dentry *dir;
-            int i;
 
             /* is it a valid dentry? */
             if (0 == fatfs_isdentry(fatfs, dep)) {
@@ -322,14 +321,6 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     else
                         *name8 = '\0';
 
-                    /* Clean up name */
-                    i = 0;
-                    while (fs_name->name[i] != '\0') {
-                        if (TSK_IS_CNTRL(fs_name->name[i]))
-                            fs_name->name[i] = '^';
-                        i++;
-                    }
-
                     lfninfo.start = FATFS_MAXNAMLEN_UTF8 - 1;
                     name_ptr = fs_name->shrt_name;      // put 8.3 into shrt_name
                 }
@@ -376,14 +367,6 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     }
                 }
                 name_ptr[a] = '\0';
-            }
-
-            /* Clean up name to remove control chars */
-            i = 0;
-            while (fs_name->name[i] != '\0') {
-                if (TSK_IS_CNTRL(fs_name->name[i]))
-                    fs_name->name[i] = '^';
-                i++;
             }
 
             /* file type: FAT only knows DIR and FILE */

@@ -143,7 +143,6 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
 
         // process the entry (if it has a defined and valid length)
         if ((dd->entry_len) && (buf_idx + dd->entry_len < a_length)) {
-            int i;
 
             /* We need to find the data in the pre-processed list because that
              * contains the meta data address that TSK assigned to this file.  
@@ -166,12 +165,6 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
             // copy the data in fs_name for loading
             fs_name->meta_addr = in->inum;
             strncpy(fs_name->name, in->inode.fn, ISO9660_MAXNAMLEN);
-
-            /* Clean up name */
-            for (i = 0; fs_name->name[i] != '\0'; i++) {
-                if (TSK_IS_CNTRL(fs_name->name[i]))
-                    fs_name->name[i] = '^';
-            }
 
             if (dd->flags & ISO9660_FLAG_DIR)
                 fs_name->type = TSK_FS_NAME_TYPE_DIR;
