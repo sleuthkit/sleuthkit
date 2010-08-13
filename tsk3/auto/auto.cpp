@@ -13,7 +13,7 @@
  * Contains C++ code that creates the base file extraction automation class. 
  */
 
-#include "tsk_auto.h"
+#include "tsk_auto_i.h"
 #include "tsk3/fs/tsk_fatfs.h"
 
 

@@ -13,7 +13,7 @@
  * Contains code to populate SQLite database with volume and file system information. 
  */
 
-#include "tsk_auto.h"
+#include "tsk_auto_i.h"
 #include "sqlite3.h"
 #include <string.h>
 
