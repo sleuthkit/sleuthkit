@@ -238,6 +238,10 @@
 				RelativePath="..\..\tsk3\auto\tsk_auto.h"
 				>
 			</File>
+			<File
+				RelativePath="..\..\tsk3\auto\tsk_auto_i.h"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

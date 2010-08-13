@@ -338,7 +338,7 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, TSK_FS_INFO * fs, const TSK_FS_ATTR * fs_attr,
     uint8_t print_path)
 {
-    int i;
+    size_t i;
 
     /* type of file - based on dentry type */
     if (fs_file->name->type < TSK_FS_NAME_TYPE_STR_MAX)
@@ -518,7 +518,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *prefix, int32_t time_skew)
 {
     char ls[12];
-    int i;
+    size_t i;
 
     if ((!hFile) || (!fs_file))
         return;
