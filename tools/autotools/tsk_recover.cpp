@@ -86,7 +86,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     // combine the volume name and path
     char path8[FILENAME_MAX];
     strncpy(path8, m_vsName, FILENAME_MAX);
-    strncat(path8, a_path, FILENAME_MAX); 
+    strncat(path8, a_path, FILENAME_MAX-strlen(path8)); 
     size_t ilen = strlen(path8);
     
     // clean up any control characters
@@ -113,8 +113,8 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     //combine the target directory with volume name and path
     wchar_t path16full[FILENAME_MAX];
     wcsncpy(path16full, (wchar_t *) m_base_dir, FILENAME_MAX);
-    wcsncat(path16full, L"\\", FILENAME_MAX);
-    wcsncat(path16full, path16, FILENAME_MAX);
+    wcsncat(path16full, L"\\", FILENAME_MAX-wcslen(path16full));
+    wcsncat(path16full, path16, FILENAME_MAX-wcslen(path16full));
 
     //build up directory structure
     size_t
@@ -172,7 +172,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
 
     //append the file name onto the path
-    wcsncat(path16full, name16, FILENAME_MAX);
+    wcsncat(path16full, name16, FILENAME_MAX-wcslen(path16full));
 
     //create the file
     HANDLE
@@ -241,9 +241,9 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
 
     if (fbuf[strlen(fbuf) - 1] != '/')
-        strncat(fbuf, "/", PATH_MAX);
+        strncat(fbuf, "/", PATH_MAX - strlen(fbuf));
 
-    strncat(fbuf, a_fs_file->name->name, PATH_MAX);
+    strncat(fbuf, a_fs_file->name->name, PATH_MAX - strlen(fbuf));
     
     //do name mangling of the file name that was just added
     for (int i = strlen(fbuf); fbuf[i] != '/'; i--) {

@@ -15,6 +15,7 @@
 
 #include "tsk_auto.h"
 #include "sqlite3.h"
+#include <string.h>
 
 #define TSK_SCHEMA_VER 1
 
