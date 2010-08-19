@@ -199,7 +199,7 @@ test_fat12()
     char fname[512];
 
     snprintf(fname, 512, "%s/fat12.dd", s_root);
-    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0, 0)) == NULL) {
+    if ((img = tsk_img_open_sing((const TSK_TCHAR *)fname, (TSK_IMG_TYPE_ENUM) 0, 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         return 1;
@@ -238,7 +238,7 @@ test_ntfs_fe()
     char fname[512];
 
     snprintf(fname, 512, "%s/fe_test_1.img", s_root);
-    if ((img = tsk_img_open_sing(fname, (TSK_IMG_TYPE_ENUM) 0, 0)) == NULL) {
+    if ((img = tsk_img_open_sing((const TSK_TCHAR *)fname, (TSK_IMG_TYPE_ENUM) 0, 0)) == NULL) {
         fprintf(stderr, "Error opening %s image\n", tname);
         tsk_error_print(stderr);
         return 1;
