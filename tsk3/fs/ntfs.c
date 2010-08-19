@@ -3287,7 +3287,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     // Read in the raw $SII stream.
     cnt =
         tsk_fs_attr_read(fs_attr_sii, 0, sii_buffer.buffer,
-        sii_buffer.size, (TSK_FS_FILE_READ_FLAG_ENUM) 0);
+        sii_buffer.size, TSK_FS_FILE_READ_FLAG_NONE);
     if (cnt != sii_buffer.size) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
@@ -3309,7 +3309,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     cnt =
         tsk_fs_attr_read(fs_attr, (TSK_OFF_T) sds_buffer.used,
         sds_buffer.buffer, sds_buffer.size,
-        (TSK_FS_FILE_READ_FLAG_ENUM) 0);
+        TSK_FS_FILE_READ_FLAG_NONE);
     if (cnt != sds_buffer.size) {
         if (tsk_verbose)
             tsk_fprintf(stderr,

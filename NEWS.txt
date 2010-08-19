@@ -8,7 +8,10 @@ Bug Fixes
 
 New Features:
 - 3012324: Name mangling moved out of library into outer tools
-  so that they can see control characters if they want to. 
+  so that they can see control characters if they want to.  Patch
+  by Anthony Lawrence. 
+- 2993806: ENUM values have a specified NONE value if you don't
+  want to specify any special flags. Patch by Anthony Lawrence.
 
 ---------------- VERSION 3.1.3 --------------
 Bug Fixes

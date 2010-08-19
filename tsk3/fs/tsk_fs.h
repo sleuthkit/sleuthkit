@@ -77,6 +77,7 @@ extern "C" {
     * Flags that are used to specify which blocks to call the tsk_fs_block_walk() callback function with.
      */
     enum TSK_FS_BLOCK_WALK_FLAG_ENUM {
+        TSK_FS_BLOCK_WALK_FLAG_NONE = 0x00,     ///< No Flags
         TSK_FS_BLOCK_WALK_FLAG_ALLOC = 0x01,    ///< Allocated blocks
         TSK_FS_BLOCK_WALK_FLAG_UNALLOC = 0x02,  ///< Unallocated blocks
         TSK_FS_BLOCK_WALK_FLAG_CONT = 0x04,     ///< Blocks that could store file content
@@ -133,6 +134,7 @@ extern "C" {
      * Flags used for a TSK_FS_ATTR_RUN entry. 
      */
     typedef enum {
+        TSK_FS_ATTR_RUN_FLAG_NONE = 0x00,       ///< No Flag
         TSK_FS_ATTR_RUN_FLAG_FILLER = 0x01,     ///< Entry is a filler for a run that has not been seen yet in the processing (or has been lost)
         TSK_FS_ATTR_RUN_FLAG_SPARSE = 0x02      ///< Entry is a sparse run where all data in the run is zeros
     } TSK_FS_ATTR_RUN_FLAG_ENUM;
@@ -161,6 +163,7 @@ extern "C" {
      * store file content metadata. 
      */
     typedef enum {
+        TSK_FS_ATTR_FLAG_NONE = 0x00,   ///< No Flag
         TSK_FS_ATTR_INUSE = 0x01,       ///< data structure is in use
         TSK_FS_ATTR_NONRES = 0x02,      ///< Contains non-resident data (i.e. located in blocks)
         TSK_FS_ATTR_RES = 0x04, ///< Contains resident data (i.e. in a small buffer)
@@ -190,6 +193,7 @@ extern "C" {
      * Flags used by tsk_fs_file_walk to determine when the callback function should
      * be used. */
     typedef enum {
+        TSK_FS_FILE_WALK_FLAG_NONE = 0x00,      ///< No Flag
         TSK_FS_FILE_WALK_FLAG_SLACK = 0x01,     ///< Include the file's slack space in the callback.
         TSK_FS_FILE_WALK_FLAG_NOID = 0x02,      ///< Ignore the Id argument given in the API (use only the type)
         TSK_FS_FILE_WALK_FLAG_AONLY = 0x04,     ///< Provide callback with only addresses and no file content.
@@ -469,7 +473,7 @@ extern "C" {
      * this value so that special handling can occur. */
 #define TSK_FS_ORPHANDIR_INUM(fs_info) \
 (fs_info->last_inum)
-    
+
 
     /** 
         * inode walk callback function definition.  This is called for every file
@@ -585,6 +589,7 @@ extern "C" {
      * which files to call the callback function on. 
      */
     typedef enum {
+        TSK_FS_DIR_WALK_FLAG_NONE = 0x00,       ///< No Flags
         TSK_FS_DIR_WALK_FLAG_ALLOC = 0x01,      ///< Return allocated names in callback
         TSK_FS_DIR_WALK_FLAG_UNALLOC = 0x02,    ///< Return unallocated names in callback
         TSK_FS_DIR_WALK_FLAG_RECURSE = 0x04,    ///< Recurse into sub-directories 
@@ -633,6 +638,7 @@ extern "C" {
     /**
      * Flags used by tsk_fs_file_read */
     typedef enum {
+        TSK_FS_FILE_READ_FLAG_NONE = 0x00,      ///< No Flags
         TSK_FS_FILE_READ_FLAG_SLACK = 0x01,     ///< Allow read access into slack space
         TSK_FS_FILE_READ_FLAG_NOID = 0x02,      ///< Ignore the Id argument given in the API (use only the type)
     } TSK_FS_FILE_READ_FLAG_ENUM;
@@ -788,6 +794,7 @@ extern "C" {
      * Flags for the FS_INFO structure 
      */
     enum TSK_FS_INFO_FLAG_ENUM {
+        TSK_FS_INFO_FLAG_NONE = 0x00,   ///< No Flags
         TSK_FS_INFO_FLAG_HAVE_SEQ = 0x01        ///< File system has sequence numbers in the inode addresses.
     };
     typedef enum TSK_FS_INFO_FLAG_ENUM TSK_FS_INFO_FLAG_ENUM;
@@ -837,7 +844,7 @@ extern "C" {
                      * or when a full name_walk is performed. 
 					 */
 
-        TSK_FS_DIR *orphan_dir;         ///< Files and dirs in the top level of the $OrphanFiles directory.  NULL if orphans have not been hunted for yet. 
+        TSK_FS_DIR *orphan_dir; ///< Files and dirs in the top level of the $OrphanFiles directory.  NULL if orphans have not been hunted for yet. 
         uint8_t isOrphanHunting;        ///< Set to 1 if TSK is currently looking for Orphan files
 
          uint8_t(*block_walk) (TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end, TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb, void *ptr);    ///< FS-specific function: Call tsk_fs_block_walk() instead. 
@@ -919,6 +926,7 @@ extern "C" {
 
 
     enum TSK_FS_BLKCAT_FLAG_ENUM {
+        TSK_FS_BLKCAT_NONE = 0x00,
         TSK_FS_BLKCAT_HEX = 0x01,
         TSK_FS_BLKCAT_ASCII = 0x02,
         TSK_FS_BLKCAT_HTML = 0x04,
@@ -931,6 +939,7 @@ extern "C" {
 
 
     enum TSK_FS_BLKLS_FLAG_ENUM {
+        TSK_FS_BLKLS_NONE = 0x00,
         TSK_FS_BLKLS_CAT = 0x01,
         TSK_FS_BLKLS_LIST = 0x02,
         TSK_FS_BLKLS_SLACK = 0x04,
@@ -954,6 +963,7 @@ extern "C" {
 
 
     enum TSK_FS_FLS_FLAG_ENUM {
+        TSK_FS_FLS_NONE = 0x00,
         TSK_FS_FLS_DOT = 0x01,
         TSK_FS_FLS_LONG = 0x02,
         TSK_FS_FLS_FILE = 0x04,
@@ -973,6 +983,7 @@ extern "C" {
 
 
     enum TSK_FS_IFIND_FLAG_ENUM {
+        TSK_FS_IFIND_NONE = 0x00,
         TSK_FS_IFIND_ALL = 0x01,
         TSK_FS_IFIND_PAR_LONG = 0x02,
     };
@@ -986,6 +997,7 @@ extern "C" {
 
 
     enum TSK_FS_ILS_FLAG_ENUM {
+        TSK_FS_ILS_NONE = 0x00,
         TSK_FS_ILS_OPEN = 0x01,
         TSK_FS_ILS_MAC = 0x02,
         TSK_FS_ILS_LINK = 0x04,
