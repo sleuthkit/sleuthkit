@@ -69,11 +69,14 @@ uint8_t
 #endif
 
     //create the full path
-    char *fullPath = (char *) malloc(PATH_MAX);
+    size_t len = strlen(a_fs_file->name->name) + strlen(a_path) + 1;
+    char *fullPath = (char *) tsk_malloc(len);
+    if (fullPath == NULL)
+        return 1;
 
-    snprintf(fullPath, PATH_MAX, "/");
-    strncat(fullPath, a_path, PATH_MAX);
-    strncat(fullPath, a_fs_file->name->name, PATH_MAX);
+    snprintf(fullPath, len, "/");
+    strncat(fullPath, a_path, len-strlen(len));
+    strncat(fullPath, a_fs_file->name->name, len-strlen(len));
 
     //convert path for win32
 #ifdef WIN32
