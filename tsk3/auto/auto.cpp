@@ -106,7 +106,8 @@ void
  * that is found. 
  * @return 1 on error, 0 on success
  */
-uint8_t TskAuto::findFilesInImg()
+uint8_t
+TskAuto::findFilesInImg()
 {
     if (!m_img_info) {
         // @@@
@@ -163,15 +164,15 @@ TSK_WALK_RET_ENUM
  * @param a_start Byte offset to start analyzing from. 
  * @return 1 on error, 0 on success
  */
-uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
+uint8_t
+TskAuto::findFilesInVs(TSK_OFF_T a_start)
 {
     if (!m_img_info) {
         // @@@
         return 1;
     }
 
-    TSK_VS_INFO *
-        vs_info;
+    TSK_VS_INFO *vs_info;
     // USE mm_walk to get the volumes 
     if ((vs_info =
             tsk_vs_open(m_img_info, a_start,
@@ -206,15 +207,15 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
  * @param a_start Byte offset to start analyzing from. 
  * @returns values that allow the caller to differentiate stop from ok.  
  */
-TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start)
+TSK_RETVAL_ENUM
+TskAuto::findFilesInFsRet(TSK_OFF_T a_start)
 {
     if (!m_img_info) {
         // @@@
         return TSK_ERR;
     }
 
-    TSK_FS_INFO *
-        fs_info;
+    TSK_FS_INFO *fs_info;
     /* Try it as a file system */
     if ((fs_info =
             tsk_fs_open_img(m_img_info, a_start,
@@ -225,8 +226,7 @@ TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start)
 
         return TSK_ERR;
     }
-    TSK_RETVAL_ENUM
-        retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+    TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
     tsk_fs_close(fs_info);
     return retval;
 }
@@ -240,7 +240,8 @@ TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start)
  *
  * @returns 1 on error and 0 on success
  */
-uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start)
+uint8_t
+TskAuto::findFilesInFs(TSK_OFF_T a_start)
 {
     if (findFilesInFsRet(a_start) == TSK_ERR)
         return 1;
@@ -260,15 +261,15 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start)
  *
  * @returns 1 on error and 0 on success
  */
-uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
+uint8_t
+TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
 {
     if (!m_img_info) {
         // @@@
         return 1;
     }
 
-    TSK_FS_INFO *
-        fs_info;
+    TSK_FS_INFO *fs_info;
     /* Try it as a file system */
     if ((fs_info =
             tsk_fs_open_img(m_img_info, a_start,
@@ -279,8 +280,7 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
 
         return 1;
     }
-    TSK_RETVAL_ENUM
-        retval = findFilesInFsInt(fs_info, a_inum);
+    TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, a_inum);
     tsk_fs_close(fs_info);
     if (retval == TSK_ERR)
         return 1;
@@ -342,8 +342,7 @@ TSK_RETVAL_ENUM
  * @param path full path of parent directory
  * @returns 1 if the file system processing should stop and not process more files. 
  */
-uint8_t
-TskAuto::processAttributes(TSK_FS_FILE * fs_file, const char *path)
+uint8_t TskAuto::processAttributes(TSK_FS_FILE * fs_file, const char *path)
 {
     int
      count = tsk_fs_file_attr_getsize(fs_file), i;
@@ -378,7 +377,8 @@ uint8_t
  *
  * @returns 1 if the file is an FAT System file, 0 if not. 
  */
-uint8_t TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
+uint8_t
+TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
 {
     if ((a_fs_file) && (a_fs_file->fs_info)
         && (TSK_FS_TYPE_ISFAT(a_fs_file->fs_info->ftype))
@@ -398,7 +398,8 @@ uint8_t TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
  *
  * @returns 1 if the file is a dot directory, 0 if not. 
  */
-uint8_t TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
+uint8_t
+TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
 {
     if ((!a_fs_file) || (!a_fs_file->name)
         || ((a_fs_file->name->flags & TSK_FS_NAME_TYPE_DIR) == 0))
@@ -420,7 +421,8 @@ uint8_t TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
  *
  * @returns 1 if the file is a directory, 0 if not. 
  */
-uint8_t TskAuto::isDir(TSK_FS_FILE * a_fs_file)
+uint8_t
+TskAuto::isDir(TSK_FS_FILE * a_fs_file)
 {
     if ((a_fs_file) && (a_fs_file->name)
         && (a_fs_file->name->type == TSK_FS_NAME_TYPE_DIR))
@@ -434,10 +436,42 @@ uint8_t TskAuto::isDir(TSK_FS_FILE * a_fs_file)
  *
  * @returns 1 if the file is a file, 0 if not. 
  */
-uint8_t TskAuto::isFile(TSK_FS_FILE * a_fs_file)
+uint8_t
+TskAuto::isFile(TSK_FS_FILE * a_fs_file)
 {
     if ((a_fs_file) && (a_fs_file->name)
         && (a_fs_file->name->type == TSK_FS_NAME_TYPE_REG))
+        return 1;
+    else
+        return 0;
+}
+
+/**
+ * Utility method to help determine if an attribute is the default type for the file/dir.
+ *
+ * @returns 1 if the attribute is a default type, 0 if not. 
+ */
+uint8_t
+TskAuto::isDefaultType(TSK_FS_FILE * a_fs_file,
+    const TSK_FS_ATTR * a_fs_attr)
+{
+    if ((a_fs_file) && (a_fs_file->fs_info)
+        && (a_fs_file->fs_info->get_default_attr_type(a_fs_file) ==
+            a_fs_attr->type))
+        return 1;
+    else
+        return 0;
+}
+
+/**
+ * Utility method to help determine if an attribute is non-resident (meaning it uses blocks to store data)
+ *
+ * @returns 1 if the attribute is non-resident, 0 if not. 
+ */
+uint8_t
+TskAuto::isNonResident(const TSK_FS_ATTR * a_fs_attr)
+{
+    if ((a_fs_attr) && (a_fs_attr->flags & TSK_FS_ATTR_NONRES))
         return 1;
     else
         return 0;

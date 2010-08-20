@@ -224,12 +224,12 @@ void
 }
 
 
-TSK_FILTER_ENUM TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
+TSK_FILTER_ENUM
+TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     char
      foo[1024];
-    char *
-        errmsg;
+    char *errmsg;
 
     snprintf(foo, 1024,
         "INSERT INTO tsk_vol_info (vol_id, start, length, desc, flags) VALUES (%d,%"
@@ -249,12 +249,12 @@ TSK_FILTER_ENUM TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 }
 
 
-TSK_FILTER_ENUM TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
+TSK_FILTER_ENUM
+TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 {
     char
      foo[1024];
-    char *
-        errmsg;
+    char *errmsg;
 
     m_curFsId++;
 
@@ -411,6 +411,10 @@ file_walk_cb(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
     char *errmsg;
     FWALK_CB_STRUCT *a_cb_struct = (FWALK_CB_STRUCT *) a_ptr;
 
+    // ignore sparse blocks
+    if (a_flags & TSK_FS_BLOCK_FLAG_SPARSE)
+        return TSK_WALK_CONT;
+
     snprintf(foo, 1024,
         "INSERT INTO tsk_fs_blocks (fs_id, blk_addr, file_id, attr_type, attr_id) VALUES (%d,%"
         PRIuDADDR ",%" PRIuINUM ",%d,%d)", a_cb_struct->fsId, a_addr,
@@ -431,10 +435,10 @@ file_walk_cb(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
 /**
  * does an attribute walk and adds data to the block map table.
  */
-uint8_t
-TskAutoDb::insertBlockData(const TSK_FS_ATTR * fs_attr)
+uint8_t TskAutoDb::insertBlockData(const TSK_FS_ATTR * fs_attr)
 {
-    FWALK_CB_STRUCT cb_struct;
+    FWALK_CB_STRUCT
+        cb_struct;
 
     cb_struct.db = m_db;
     cb_struct.fsId = m_curFsId;
@@ -451,17 +455,18 @@ TskAutoDb::insertBlockData(const TSK_FS_ATTR * fs_attr)
 }
 
 
-uint8_t
-TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
+uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
-    char *errmsg;
+    char *
+        errmsg;
     if (sqlite3_exec(m_db, "BEGIN", NULL, NULL, &errmsg) != SQLITE_OK) {
         fprintf(stderr, "BEGIN Error: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
     }
 
-    uint8_t retval;
+    uint8_t
+        retval;
     int
      count = tsk_fs_file_attr_getsize(fs_file);
     if (count > 0)
@@ -483,15 +488,15 @@ uint8_t
     TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path)
 {
-    // add the file metadata
-    uint8_t retval = insertFileData(fs_attr->fs_file, fs_attr, path);
-    if (retval)
-        return 1;
+    // add the file metadata for the default attribute type
+    if (isDefaultType(fs_file, fs_attr)) {
+        if (insertFileData(fs_attr->fs_file, fs_attr, path))
+            return 1;
+    }
 
-    // add the block map, if requested
-    if (m_blkMapFlag) {
-        retval = insertBlockData(fs_attr);
-        if (retval)
+    // add the block map, if requested and the file is non-resident
+    if ((m_blkMapFlag) && (isNonResident(fs_attr))) {
+        if (insertBlockData(fs_attr))
             return 1;
     }
 
