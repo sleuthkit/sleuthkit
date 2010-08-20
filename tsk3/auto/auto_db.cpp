@@ -24,6 +24,7 @@ TskAutoDb::TskAutoDb()
     m_db = NULL;
     m_curFsId = 0;
     m_curVsId = 0;
+    m_blkMapFlag = false;
 }
 
 TskAutoDb::~TskAutoDb()
@@ -31,6 +32,13 @@ TskAutoDb::~TskAutoDb()
 
 }
 
+
+
+void
+ TskAutoDb::createBlockMap(bool flag)
+{
+    m_blkMapFlag = flag;
+}
 
 uint8_t
     TskAutoDb::openImage(int num, const TSK_TCHAR * const images[],
@@ -56,7 +64,8 @@ uint8_t
     // make name of database
 
 #ifdef TSK_WIN32
-    _snwprintf(img, 1024, _TSK_T("%S.db"), images[0]);
+    wcsncpy(img, images[0], 1024);
+    wcsncat(img, L".db", 1024);
     if (sqlite3_open16(img, &m_db)) {
         fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(m_db));
         sqlite3_close(m_db);
@@ -182,11 +191,22 @@ uint8_t
     }
 
     if (sqlite3_exec(m_db,
-            "CREATE TABLE tsk_fs_files (fs_id INTEGER NOT NULL, file_id INTEGER NOT NULL, name TEXT NOT NULL, par_file_id INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER);",
+            "CREATE TABLE tsk_fs_files (fs_id INTEGER NOT NULL, file_id INTEGER NOT NULL, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, par_file_id INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         fprintf(stderr, "Error creating tsk_fs_files table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
+    }
+
+    if (m_blkMapFlag) {
+        if (sqlite3_exec(m_db,
+                "CREATE TABLE tsk_fs_blocks (fs_id INTEGER NOT NULL, blk_addr INTEGER NOT NULL, file_id INTEGER NOT NULL, attr_type INTEGER, attr_id INTEGER);",
+                NULL, NULL, &errmsg) != SQLITE_OK) {
+            fprintf(stderr, "Error creating tsk_fs_files table: %s\n",
+                errmsg);
+            sqlite3_free(errmsg);
+            return 1;
+        }
     }
 
     return 0;
@@ -262,12 +282,17 @@ TSK_FILTER_ENUM TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 }
 
 
-uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
+
+/* Insert the file data into the file table.  
+ * Returns 1 on error.
+ */
+uint8_t
+    TskAutoDb::insertFileData(TSK_FS_FILE * fs_file,
+    const TSK_FS_ATTR * fs_attr, const char *path)
 {
     char
      foo[1024];
-    char *
-        errmsg;
+    char *errmsg;
     int
      mtime = 0;
     int
@@ -276,8 +301,7 @@ uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
      ctime = 0;
     int
      atime = 0;
-    TSK_OFF_T
-        size = 0;
+    TSK_OFF_T size = 0;
     int
      meta_type = 0;
     int
@@ -285,11 +309,12 @@ uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     int
      meta_mode = 0;
     int
-        gid = 0;
+     gid = 0;
     int
-        uid = 0;
-    TSK_INUM_T
-        par_inode;
+     uid = 0;
+    TSK_INUM_T par_inode;
+    int type = 0;
+    int idx = 0;
 
     if (fs_file->name == NULL)
         return 0;
@@ -306,6 +331,7 @@ uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         gid = fs_file->meta->gid;
         uid = fs_file->meta->uid;
 
+
         // add the info the parent dir record so that we can later find
         // this dir by name
         if ((meta_type & TSK_FS_META_TYPE_DIR)
@@ -316,6 +342,26 @@ uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
             m_par_inodes[full] = fs_file->name->meta_addr;
         }
     }
+    if (fs_attr) {
+        type = fs_attr->type;
+        idx = fs_attr->id;
+    }
+
+    // clean up special characters in name before we insert
+    size_t len = strlen(fs_file->name->name);
+    char *name;
+    if ((name = (char *) tsk_malloc(2 * len)) == NULL) {
+        return 1;
+    }
+
+    int j = 0;
+    for (unsigned i = 0; i < len; i++) {
+        if (fs_file->name->name[i] == '\'')
+            name[j++] = '\'';
+        else
+            name[j++] = fs_file->name->name[i];
+    }
+
 
     if ((path == NULL) || (strcmp(path, "") == 0)) {
         par_inode = fs_file->fs_info->root_inum;
@@ -331,10 +377,10 @@ uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     }
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_fs_files (fs_id, file_id, name, par_file_id, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) VALUES (%d,%"
-        PRIuINUM ",'%s',%" PRIuINUM ",%d,%d,%d,%d,%" PRIuOFF
+        "INSERT INTO tsk_fs_files (fs_id, file_id, attr_type, attr_id, name, par_file_id, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) VALUES (%d,%"
+        PRIuINUM ",%d,%d,'%s',%" PRIuINUM ",%d,%d,%d,%d,%" PRIuOFF
         ",%d,%d,%d,%d,%d,%d,%d)", m_curFsId, fs_file->name->meta_addr,
-        fs_file->name->name, par_inode, fs_file->name->type, meta_type,
+        type, idx, name, par_inode, fs_file->name->type, meta_type,
         fs_file->name->flags, meta_flags, size, crtime, ctime, atime,
         mtime, meta_mode, uid, gid);
 
@@ -343,6 +389,110 @@ uint8_t TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
             errmsg);
         sqlite3_free(errmsg);
         return 1;
+    }
+
+    return 0;
+}
+
+// structure used to store data during file walk
+typedef struct {
+    sqlite3 *db;                // database to insert into
+    int fsId;                   // ID of current file system
+    uint16_t type;              // type of attribute being walked
+    uint16_t id;                // id of attribute being walked
+} FWALK_CB_STRUCT;
+
+
+static TSK_WALK_RET_ENUM
+file_walk_cb(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
+    char *a_buf, size_t a_len, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
+{
+    char foo[1024];
+    char *errmsg;
+    FWALK_CB_STRUCT *a_cb_struct = (FWALK_CB_STRUCT *) a_ptr;
+
+    snprintf(foo, 1024,
+        "INSERT INTO tsk_fs_blocks (fs_id, blk_addr, file_id, attr_type, attr_id) VALUES (%d,%"
+        PRIuDADDR ",%" PRIuINUM ",%d,%d)", a_cb_struct->fsId, a_addr,
+        a_fs_file->name->meta_addr, a_cb_struct->type, a_cb_struct->id);
+
+    if (sqlite3_exec(a_cb_struct->db, foo, NULL, NULL,
+            &errmsg) != SQLITE_OK) {
+        fprintf(stderr, "Error adding data to tsk_fs_info table: %s\n",
+            errmsg);
+        sqlite3_free(errmsg);
+        return TSK_WALK_ERROR;
+    }
+
+    return TSK_WALK_CONT;
+}
+
+
+/**
+ * does an attribute walk and adds data to the block map table.
+ */
+uint8_t
+TskAutoDb::insertBlockData(const TSK_FS_ATTR * fs_attr)
+{
+    FWALK_CB_STRUCT cb_struct;
+
+    cb_struct.db = m_db;
+    cb_struct.fsId = m_curFsId;
+    cb_struct.type = fs_attr->type;
+    cb_struct.id = fs_attr->id;
+
+    if (tsk_fs_attr_walk(fs_attr, TSK_FS_FILE_WALK_FLAG_NONE,
+            file_walk_cb, &cb_struct)) {
+        fprintf(stderr, "Error walking file\n");
+        tsk_error_print(stderr);
+        return 1;
+    }
+    return 0;
+}
+
+
+uint8_t
+TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
+{
+    char *errmsg;
+    if (sqlite3_exec(m_db, "BEGIN", NULL, NULL, &errmsg) != SQLITE_OK) {
+        fprintf(stderr, "BEGIN Error: %s\n", errmsg);
+        sqlite3_free(errmsg);
+        return 1;
+    }
+
+    uint8_t retval;
+    int
+     count = tsk_fs_file_attr_getsize(fs_file);
+    if (count > 0)
+        retval = processAttributes(fs_file, path);
+    else {
+        retval = insertFileData(fs_file, NULL, path);
+    }
+
+    if (sqlite3_exec(m_db, "COMMIT", NULL, NULL, &errmsg) != SQLITE_OK) {
+        fprintf(stderr, "COMMIT Error: %s\n", errmsg);
+        sqlite3_free(errmsg);
+        return 1;
+    }
+
+    return retval;
+}
+
+uint8_t
+    TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
+    const TSK_FS_ATTR * fs_attr, const char *path)
+{
+    // add the file metadata
+    uint8_t retval = insertFileData(fs_attr->fs_file, fs_attr, path);
+    if (retval)
+        return 1;
+
+    // add the block map, if requested
+    if (m_blkMapFlag) {
+        retval = insertBlockData(fs_attr);
+        if (retval)
+            return 1;
     }
 
     return 0;

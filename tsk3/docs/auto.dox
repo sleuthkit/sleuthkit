@@ -22,7 +22,7 @@ TskAuto::findFilesInFs() allows you to specify the offset of a file system to pr
 
 Regardless of the method that you use to start the processing, the TskAuto::processFile() method will be called for each file and directory that is found. You can specify if this method should be called for only allocated or unallocated files using the TskAuto::setFileFilterFlags() method.  You can also specify what types of volumes to process by using the TskAuto::setVolFilterFlags() method. 
 
-Inside of your TskAuto::processFile() method, you can read the contents of the file using either tsk_fs_file_read() or tsk_fs_file_walk(). 
+Inside of your TskAuto::processFile() method, you can read the contents of the file using either tsk_fs_file_read() or tsk_fs_file_walk(). If you want to see each attribute in a file, then you should call processAttributes() and implement the processAttribute() method, which will be called for each attribute. 
 
 \section auto_filter Filtering Results
 

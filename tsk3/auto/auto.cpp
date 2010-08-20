@@ -334,6 +334,28 @@ TSK_RETVAL_ENUM
 }
 
 
+/** 
+ * Method that can be used from within processFile() to look at each 
+ * attribute that a file may have.  This will call the processAttribute()
+ * method (which you must implement) on each of the attributes in the file.
+ * @param fs_file file  details
+ * @param path full path of parent directory
+ * @returns 1 if the file system processing should stop and not process more files. 
+ */
+uint8_t
+TskAuto::processAttributes(TSK_FS_FILE * fs_file, const char *path)
+{
+    int
+     count = tsk_fs_file_attr_getsize(fs_file), i;
+    for (i = 0; i < count; i++) {
+        if (processAttribute(fs_file, tsk_fs_file_attr_get_idx(fs_file, i),
+                path))
+            return 1;
+    }
+    return 0;
+}
+
+
 /**
  * Utility method to help determine if a file is an NTFS file system file (such as $MFT). 
  *

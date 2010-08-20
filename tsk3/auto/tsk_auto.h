@@ -111,6 +111,7 @@ class TskAuto {
     virtual uint8_t processFile(TSK_FS_FILE * fs_file, const char *path) =
         0;
 
+
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
     TSK_FS_DIR_WALK_FLAG_ENUM m_fileFilterFlags;
@@ -130,6 +131,25 @@ class TskAuto {
     uint8_t isDotDir(TSK_FS_FILE * fs_file, const char *path);
     uint8_t isDir(TSK_FS_FILE * fs_file);
     uint8_t isFile(TSK_FS_FILE * fs_file);
+
+    uint8_t processAttributes(TSK_FS_FILE * fs_file, const char *path);
+
+    /** 
+     * Method that is called from processAttributes() for each attribute that a file
+     * has.  processAttributes() is not called by default.  It exists so that implementations
+     * of processFile() can choose to call it if they want to look at all of the attributes. 
+     * You must implement this method to see each attribute and modify processFile() so that
+     * it calls processAttributes().
+     *
+     * @param fs_file File being analyzed.
+     * @param fs_attr Attribute of the file.
+     * @param path full path of parent directory
+     * @returns 1 if the file system processing should stop and not process more files. 
+     */
+    virtual uint8_t processAttribute(TSK_FS_FILE * fs_file,
+        const TSK_FS_ATTR * fs_attr, const char *path) {
+        return 0;
+    };
 };
 
 
@@ -149,14 +169,22 @@ class TskAutoDb:public TskAuto {
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t processFile(TSK_FS_FILE * fs_file, const char *path);
+    virtual void createBlockMap(bool flag);
 
   private:
      sqlite3 * m_db;
     int m_curFsId;
     int m_curVsId;
+    bool m_blkMapFlag;
 
     // maps dir name to its inode.  Used to find parent dir inum based on name. 
      std::map < std::string, TSK_INUM_T > m_par_inodes;
+
+    uint8_t insertFileData(TSK_FS_FILE * fs_file,
+        const TSK_FS_ATTR *, const char *path);
+    uint8_t insertBlockData(const TSK_FS_ATTR * fs_attr);
+    virtual uint8_t processAttribute(TSK_FS_FILE *,
+        const TSK_FS_ATTR * fs_attr, const char *path);
 };
 
 #endif

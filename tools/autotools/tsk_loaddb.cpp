@@ -17,11 +17,11 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    // @@@ UPDATE ME
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vV] [-f fstype] [-i imgtype] [-b dev_sector_size] image\n"),
+        ("usage: %s [-vVk] [-f fstype] [-i imgtype] [-b dev_sector_size] image\n"),
         progname);
+    tsk_fprintf(stderr, "\t-k: Create block data table\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -30,7 +30,7 @@ usage()
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
-
+    
     exit(1);
 }
 
@@ -46,6 +46,7 @@ main(int argc, char **argv1)
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
+    bool blkMapFlag = false;   // true if we are going to write the block map
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -61,7 +62,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:tvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:tvVk"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -96,6 +97,10 @@ main(int argc, char **argv1)
             tsk_verbose++;
             break;
 
+        case _TSK_T('k'):
+            blkMapFlag = true;
+            break;
+        
         case _TSK_T('V'):
             tsk_version_print(stdout);
             exit(0);
@@ -109,6 +114,7 @@ main(int argc, char **argv1)
     }
 
     TskAutoDb tskDb;
+    tskDb.createBlockMap(blkMapFlag);
 
     //tskRecover.setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_UNALLOC);
     if (tskDb.openImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
