@@ -75,8 +75,8 @@ uint8_t
         return 1;
 
     snprintf(fullPath, len, "/");
-    strncat(fullPath, a_path, len-strlen(len));
-    strncat(fullPath, a_fs_file->name->name, len-strlen(len));
+    strncat(fullPath, a_path, len-strlen(fullPath));
+    strncat(fullPath, a_fs_file->name->name, len-strlen(fullPath));
 
     //convert path for win32
 #ifdef WIN32
