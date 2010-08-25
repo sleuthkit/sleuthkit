@@ -704,8 +704,6 @@ uint8_t
 tsk_fs_dir_make_orphan_dir_meta(TSK_FS_INFO * a_fs,
     TSK_FS_META * a_fs_meta)
 {
-    TSK_DADDR_T *addr_ptr;
-
     a_fs_meta->type = TSK_FS_META_TYPE_DIR;
     a_fs_meta->mode = 0;
     a_fs_meta->nlink = 1;
@@ -733,7 +731,7 @@ tsk_fs_dir_make_orphan_dir_meta(TSK_FS_INFO * a_fs,
     strncpy(a_fs_meta->name2->name, "$OrphanFiles",
         TSK_FS_META_NAME_LIST_NSIZE);
     if (a_fs_meta->content_len) {
-        addr_ptr = (TSK_DADDR_T *) a_fs_meta->content_ptr;
+        TSK_DADDR_T *addr_ptr = (TSK_DADDR_T *) a_fs_meta->content_ptr;
         addr_ptr[0] = 0;
     }
     a_fs_meta->size = 0;
