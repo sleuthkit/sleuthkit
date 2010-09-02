@@ -170,6 +170,7 @@ class TskAutoDb:public TskAuto {
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     virtual void closeImage();
 
+    uint8_t addFilesInImgToDB();
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual uint8_t processFile(TSK_FS_FILE * fs_file, const char *path);
@@ -189,6 +190,7 @@ class TskAutoDb:public TskAuto {
     uint8_t insertBlockData(const TSK_FS_ATTR * fs_attr);
     virtual uint8_t processAttribute(TSK_FS_FILE *,
         const TSK_FS_ATTR * fs_attr, const char *path);
+    uint8_t createParentDirIndex();
 };
 
 #endif
