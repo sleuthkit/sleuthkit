@@ -122,7 +122,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (tskDb.findFilesInImg()) {
+    if (tskDb.addFilesInImgToDB()) {
         tsk_error_print(stderr);
         exit(1);
     }
