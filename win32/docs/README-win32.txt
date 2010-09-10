@@ -5,7 +5,7 @@
 
                Brian Carrier [carrier@sleuthkit.org]
 
-                     Last Updated: Dec 2009
+                     Last Updated: Sept 2010
 
 
 ======================================================================
@@ -24,6 +24,15 @@ NOTES
 
 The dll files in the zip file are required to run the executables. They
 must be either in the same directory as the executables or in the path.
+
+There have been reports of the exe files not running on some systems
+and they give the error "The system cannot execute the specified program".
+This occurs because the system can't find the needed dll files. Installing
+the "Microsoft Visual C++ 2008 SP1 Redistributable Package (x86)" seems
+to fix the problem.  It can be downloaded from Microsoft:
+
+http://www.microsoft.com/downloads/en/confirmation.aspx?FamilyID=A5C84275-3B97-4AB7-A40D-3802B2AF5FC2&displaylang=en
+
 
 mactime.pl requires a Windows port of Perl to be installed. If you have 
 the ".pl" extension associated with Perl, you should be able to run
