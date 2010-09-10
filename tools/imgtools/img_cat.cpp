@@ -21,12 +21,16 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vV] [-i imgtype] [-b dev_sector_size] image\n"),
+        ("usage: %s [-vV] [-i imgtype] [-b dev_sector_size] [-b start_sector] [-e stop_sector] image\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use 'i list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
+    tsk_fprintf(stderr,
+        "\t-s start_sector: The sector number to start at (optional)\n");
+    tsk_fprintf(stderr,
+        "\t-e stop_sector:  The sector number to stop at (optional)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
 
@@ -40,7 +44,8 @@ main(int argc, char **argv1)
     TSK_IMG_INFO *img;
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
     int ch;
-    TSK_OFF_T done;
+    TSK_OFF_T start_sector = 0;
+    TSK_OFF_T end_sector = 0;
     ssize_t cnt;
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
@@ -59,7 +64,7 @@ main(int argc, char **argv1)
 
     progname = argv[0];
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:i:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:i:vVs:e:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -88,6 +93,29 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
+
+        case _TSK_T('s'):
+            start_sector = TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || start_sector < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: start sector must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
+            break;
+
+        case _TSK_T('e'):
+            end_sector = TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || end_sector < 1) {
+                TFPRINTF(stderr,
+                    _TSK_T
+                    ("invalid argument: end sector must be positive: %s\n"),
+                    OPTARG);
+                usage();
+            }
+            break;
+
 
         case _TSK_T('v'):
             tsk_verbose++;
@@ -120,12 +148,23 @@ main(int argc, char **argv1)
     }
 #endif
 
-    for (done = 0; done < img->size; done += cnt) {
+    TSK_OFF_T start_byte = 0;
+    if (start_sector)
+        start_byte = start_sector * img->sector_size;
+
+    TSK_OFF_T end_byte = 0;
+    if (end_sector)
+        end_byte = (end_sector + 1) * img->sector_size;
+    else
+        end_byte = img->size;
+
+
+    for (TSK_OFF_T done = start_byte; done < end_byte; done += cnt) {
         char buf[16 * 1024];
         size_t len;
 
-        if (done + (TSK_OFF_T) sizeof(buf) > img->size) {
-            len = (size_t) (img->size - done);
+        if (done + (TSK_OFF_T) sizeof(buf) > end_byte) {
+            len = (size_t) (end_byte - done);
         }
         else {
             len = sizeof(buf);

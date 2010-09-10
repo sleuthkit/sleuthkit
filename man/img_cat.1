@@ -2,7 +2,7 @@
 .SH NAME
 img_cat \- Output contents of an image file.
 .SH SYNOPSIS
-.B img_cat [-i imgtype] [-b dev_sector_size]  [-vV] 
+.B img_cat [-i imgtype] [-b dev_sector_size] [-b start_sector] [-e stop_sector] [-vV] 
 .I image [images] 
 .SH DESCRIPTION
 .B img_cat
@@ -16,6 +16,10 @@ the appropriate tool.
 Identify the type of image file, such as raw, split, or aff.  Use '\-i list' to list the supported types.  If not given, autodetection methods are used.
 .IP "-b dev_sector_size"
 The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
+.IP "-s start_sector"
+The sector number to start at.
+.IP "-e stop_sector"
+The sector number to stop at.
 .IP -v
 Verbose output of debugging statements to stderr
 .IP -V
