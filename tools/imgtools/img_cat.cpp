@@ -28,9 +28,9 @@ usage()
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
     tsk_fprintf(stderr,
-        "\t-s start_sector: The sector number to start at (optional)\n");
+        "\t-s start_sector: The sector number to start at\n");
     tsk_fprintf(stderr,
-        "\t-e stop_sector:  The sector number to stop at (optional)\n");
+        "\t-e stop_sector:  The sector number to stop at\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
 

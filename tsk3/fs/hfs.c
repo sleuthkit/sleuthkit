@@ -2509,17 +2509,21 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     tsk_fprintf(hFile, "File System Version: ");
     switch (tsk_getu16(fs->endian, hfs->fs->version)) {
     case 4:
-        tsk_fprintf(hFile, " HFS+\n");
+        tsk_fprintf(hFile, "HFS+\n");
         break;
     case 5:
-        tsk_fprintf(hFile, " HFSX\n");
+        tsk_fprintf(hFile, "HFSX\n");
         break;
     default:
-        tsk_fprintf(hFile, " Unknown (%" PRIu16 ")\n",
+        tsk_fprintf(hFile, "Unknown (%" PRIu16 ")\n",
             tsk_getu16(fs->endian, hfs->fs->version));
         break;
     }
 
+    if (tsk_getu16(fs->endian, hfs->fs->signature) == HFS_VH_SIG_HFSX) {
+        tsk_fprintf(hFile, "Case Sensitive: %s\n",
+            hfs->is_case_sensitive ? "yes" : "no");
+    }
 
     if (hfs->hfs_wrapper_offset > 0) {
         tsk_fprintf(hFile,
