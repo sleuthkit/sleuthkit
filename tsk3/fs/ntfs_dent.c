@@ -1397,7 +1397,7 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
         }
 
         /* only add the attribute name if it is the non-default data stream */
-        if (strcmp(fs_attr->name, "$Data") != 0)
+        if (fs_attr->name != NULL)
             attr = fs_attr->name;
     }
 

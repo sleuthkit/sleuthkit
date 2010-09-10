@@ -253,7 +253,7 @@ extern "C" {
         TSK_FS_ATTR *next;      ///< Pointer to next attribute in list
         TSK_FS_FILE *fs_file;   ///< Pointer to the file that this is from
         TSK_FS_ATTR_FLAG_ENUM flags;    ///< Flags for attribute
-        char *name;             ///< Name of attribute (could be NULL) (in UTF-8)
+        char *name;             ///< Name of attribute (in UTF-8).  Will be NULL if attribute doesn't have a name. 
         size_t name_size;       ///< Number of bytes allocated to name
         TSK_FS_ATTR_TYPE_ENUM type;     ///< Type of attribute
         uint16_t id;            ///< Id of attribute

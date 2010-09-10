@@ -414,11 +414,9 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
 */
 
     /* print the data stream name if we the non-data NTFS stream */
-    if (fs_attr) {
-        if (((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_DATA) &&
-                (strcmp(fs_attr->name, "$Data") != 0)) ||
-            ((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_IDXROOT) &&
-                (strcmp(fs_attr->name, "$I30") != 0))) {
+    if ((fs_attr) && (fs_attr->name)) {
+        if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
+                (strcmp(fs_attr->name, "$I30") != 0)) {
             tsk_fprintf(hFile, ":");
             for (i = 0; i < strlen(fs_attr->name); i++) {
                 if (TSK_IS_CNTRL(fs_attr->name[i]))
@@ -547,10 +545,9 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     }
 
     /* print the data stream name if it exists and is not the default NTFS */
-    if ((fs_attr) && (((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_DATA) &&
-                (strcmp(fs_attr->name, "$Data") != 0)) ||
-            ((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_IDXROOT) &&
-                (strcmp(fs_attr->name, "$I30") != 0)))) {
+    if ((fs_attr) && (fs_attr->name) && 
+            ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
+                (strcmp(fs_attr->name, "$I30") != 0))) {
         tsk_fprintf(hFile, ":");
         for (i = 0; i < strlen(fs_attr->name); i++) {
             if (TSK_IS_CNTRL(fs_attr->name[i]))

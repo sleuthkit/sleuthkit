@@ -231,8 +231,7 @@ tsk_fs_attrlist_get(const TSK_FS_ATTRLIST * a_fs_attrlist,
             /* If we are looking for NTFS $Data, 
              * then return default when we see it */
             if ((fs_attr_cur->type == TSK_FS_ATTR_TYPE_NTFS_DATA) &&
-                (fs_attr_cur->name_size > 5) &&
-                (strncmp(fs_attr_cur->name, "$Data", 5) == 0)) {
+                (fs_attr_cur->name == NULL)) {
                 return fs_attr_cur;
             }
 
@@ -304,7 +303,7 @@ tsk_fs_attrlist_get_id(const TSK_FS_ATTRLIST * a_fs_attrlist,
  *
  * @param a_fs_attrlist Data list structure to search in
  * @param a_type Type of attribute to find
- * @param name Name of the attribute to find
+ * @param name Name of the attribute to find (NULL for an entry with no name)
  *
  * @return NULL is returned on error and if an entry could not be found.
  * tsk_errno will be set to TSK_ERR_FS_ATTR_NOTFOUND if entry could not be
@@ -317,7 +316,7 @@ tsk_fs_attrlist_get_name_type(const TSK_FS_ATTRLIST * a_fs_attrlist,
     TSK_FS_ATTR *fs_attr_cur;
     TSK_FS_ATTR *fs_attr_ok = NULL;
 
-    if ((!a_fs_attrlist) || (name == NULL)) {
+    if (!a_fs_attrlist) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_FS_ARG;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -329,21 +328,24 @@ tsk_fs_attrlist_get_name_type(const TSK_FS_ATTRLIST * a_fs_attrlist,
     for (fs_attr_cur = a_fs_attrlist->head; fs_attr_cur; fs_attr_cur =
         fs_attr_cur->next) {
         if ((fs_attr_cur->flags & TSK_FS_ATTR_INUSE) &&
-            (fs_attr_cur->type == a_type) &&
-            (fs_attr_cur->name_size > 0) &&
-            (!strcmp(fs_attr_cur->name, name))) {
+            (fs_attr_cur->type == a_type)) {
 
-            /* If we are looking for NTFS $Data,
-             * then return default when we see it */
-            if ((fs_attr_cur->type == TSK_FS_ATTR_TYPE_NTFS_DATA) &&
-                (fs_attr_cur->name_size > 5) &&
-                (strncmp(fs_attr_cur->name, "$Data", 5) == 0)) {
-                return fs_attr_cur;
+            if (((name == NULL) && (fs_attr_cur->name == NULL)) ||
+                ((name) && (fs_attr_cur->name)
+                    && (!strcmp(fs_attr_cur->name, name)))) {
+
+                /* If we are looking for NTFS $Data,
+                 * then return default when we see it */
+                if ((fs_attr_cur->type == TSK_FS_ATTR_TYPE_NTFS_DATA) &&
+                    (fs_attr_cur->name == NULL)) {
+                    return fs_attr_cur;
+                }
+
+                // make sure we return the lowest if multiple exist
+                if ((fs_attr_ok == NULL)
+                    || (fs_attr_ok->id > fs_attr_cur->id))
+                    fs_attr_ok = fs_attr_cur;
             }
-
-            // make sure we return the lowest if multiple exist
-            if ((fs_attr_ok == NULL) || (fs_attr_ok->id > fs_attr_cur->id))
-                fs_attr_ok = fs_attr_cur;
         }
     }
 

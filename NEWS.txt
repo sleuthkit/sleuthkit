@@ -14,6 +14,8 @@ New Features:
   want to specify any special flags. Patch by Anthony Lawrence.
 - 3026989: Add -e and -s flags to img_cat.  patch by Simson Garfinkel. 
 - 2941805: Add case sensitive flag to fsstat in HFS.  Patch by Rob Joyce. 
+- 3017764: Changed how default NTFS $DATA attribute was named.  Now it 
+  has no name, while it previously had a fake name of "$Data". 
 
 ---------------- VERSION 3.1.3 --------------
 Bug Fixes

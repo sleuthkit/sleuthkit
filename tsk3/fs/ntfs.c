@@ -1229,8 +1229,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (fs_attr_run->addr != 0) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_GENFS;
@@ -1257,8 +1257,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (addr > fs->last_block) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_BLK_NUM;
@@ -1298,8 +1298,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             TSK_FS_BLOCK_FLAG_COMP;
                         retval = is_clustalloc(ntfs, comp_unit[i]);
                         if (retval == -1) {
-                            if (fs_attr->fs_file->
-                                meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                            if (fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_UNALLOC)
                                 tsk_errno = TSK_ERR_FS_RECOVER;
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -1531,10 +1531,10 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                         cpylen = a_len - buf_idx;
                     }
                     // Make sure not to return more bytes than are in the file
-                    if (cpylen >
-                        (a_fs_attr->size - (a_offset + buf_idx)))
+                    if (cpylen > (a_fs_attr->size - (a_offset + buf_idx)))
                         cpylen =
-                            (size_t) (a_fs_attr->size - (a_offset + buf_idx));
+                            (size_t) (a_fs_attr->size - (a_offset +
+                                buf_idx));
 
                     memcpy(&a_buf[buf_idx], &comp.uncomp_buf[byteoffset],
                         cpylen);
@@ -1612,10 +1612,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         (ntfs_attr *) ((uintptr_t) attr + tsk_getu32(fs->endian,
                 attr->len))) {
 
-        UTF16 *name16;
-        UTF8 *name8;
         int retVal;
-        uint8_t isDefaultData = 0;
 
         /* Get the type of this attribute */
         uint32_t type = tsk_getu32(fs->endian, attr->type);
@@ -1623,6 +1620,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         /* Copy the name and convert it to UTF8 */
         if (attr->nlen) {
             int i;
+            UTF8 *name8;
+            UTF16 *name16;
 
             name8 = (UTF8 *) name;
             name16 =
@@ -1659,23 +1658,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 i++;
             }
         }
-        /* Call the unnamed $Data attribute, $Data */
-        else if (type == NTFS_ATYPE_DATA) {
-            name[0] = '$';
-            name[1] = 'D';
-            name[2] = 'a';
-            name[3] = 't';
-            name[4] = 'a';
-            name[5] = '\0';
-            isDefaultData = 1;  // save this so we know later in the loop
-        }
         else {
-            name[0] = 'N';
-            name[1] = '/';
-            name[2] = 'A';
-            name[3] = '\0';
+            name[0] = '\0';
         }
-
 
         /* For resident attributes, we will copy the buffer into
          * a TSK_FS_ATTR buffer, which is stored in the TSK_FS_META
@@ -1735,7 +1720,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     tsk_getu32(fs->endian, attr->c.r.ssize);
             }
             else if ((fs_file->meta->type == TSK_FS_META_TYPE_REG)
-                && (type == NTFS_ATYPE_DATA) && (isDefaultData)) {
+                && (type == NTFS_ATYPE_DATA) && (name[0] == '\0')) {
                 fs_file->meta->size =
                     tsk_getu32(fs->endian, attr->c.r.ssize);
             }
@@ -1812,14 +1797,17 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                         continue;
 
                     /* We found an attribute with the same name and type */
-                    if ((fs_attr2->type == type) &&
-                        (strcmp(fs_attr2->name, name) == 0)) {
-                        id = fs_attr2->id;
-                        if (tsk_verbose)
-                            tsk_fprintf(stderr,
-                                "ntfs_proc_attrseq: Updating id from 0 to %"
-                                PRIu16 "\n", id);
-                        break;
+                    if (fs_attr2->type == type) {
+                        if (((name[0] == '\0') && (fs_attr2->name == NULL))
+                            || ((fs_attr2->name)
+                                && (strcmp(fs_attr2->name, name) == 0))) {
+                            id = fs_attr2->id;
+                            if (tsk_verbose)
+                                tsk_fprintf(stderr,
+                                    "ntfs_proc_attrseq: Updating id from 0 to %"
+                                    PRIu16 "\n", id);
+                            break;
+                        }
                     }
                 }
             }
@@ -1888,7 +1876,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
                 // update the meta->size value if this is the default $Data attribute
                 if ((fs_file->meta->type == TSK_FS_META_TYPE_REG)
-                    && (type == NTFS_ATYPE_DATA) && (isDefaultData)) {
+                    && (type == NTFS_ATYPE_DATA) && (name[0] == '\0')) {
                     fs_file->meta->size = ssize;
                 }
 
@@ -2095,8 +2083,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 if (!fs_attr)
                     continue;
 
+                // get the default attribute
                 if ((fs_attr->type == NTFS_ATYPE_DATA) &&
-                    (strcmp(fs_attr->name, "$Data") == 0)) {
+                    (fs_attr->name == NULL)) {
                     ntfs->mft_data = fs_attr;
                     break;
                 }
@@ -2668,7 +2657,7 @@ ntfs_attrname_lookup(TSK_FS_INFO * fs, uint16_t type, char *name, int len)
 
             /* Make sure it is NULL Terminated */
             else if ((uintptr_t) name8 >= (uintptr_t) name + len)
-                name[len-1] = '\0';
+                name[len - 1] = '\0';
             else
                 *name8 = '\0';
             return 0;
@@ -2970,8 +2959,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     // versions of NTFS.
     for (i = 0; i < ntfs->sii_data.used; i++) {
         if (tsk_getu32(fs->endian,
-                ((ntfs_attr_sii *) (ntfs->sii_data.
-                        buffer))[i].key_sec_id) == secid) {
+                ((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i].
+                key_sec_id) == secid) {
             sii = &((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i];
             break;
         }
@@ -3003,8 +2992,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
         tsk_error_reset();
         tsk_errno = TSK_ERR_FS_GENFS;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-                 "ntfs_get_sds: SII entry size is invalid (%" PRIu32 ")",
-                 sii_sds_ent_size);
+            "ntfs_get_sds: SII entry size is invalid (%" PRIu32 ")",
+            sii_sds_ent_size);
         return NULL;
     }
 
@@ -3294,13 +3283,13 @@ ntfs_load_secure(NTFS_INFO * ntfs)
                 "ntfs_load_secure: error reading $Secure:$SII attribute: %s\n",
                 tsk_errstr);
         tsk_error_reset();
-        
+
         free(sii_buffer.buffer);
         free(sds_buffer.buffer);
         if (ntfs->sii_data.buffer)
             free(ntfs->sii_data.buffer);
         ntfs->sii_data.buffer = NULL;
-        
+
         tsk_fs_file_close(secure);
         return 0;
     }
@@ -3308,21 +3297,20 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     // Read in the raw $SDS ($DATA) stream.
     cnt =
         tsk_fs_attr_read(fs_attr, (TSK_OFF_T) sds_buffer.used,
-        sds_buffer.buffer, sds_buffer.size,
-        TSK_FS_FILE_READ_FLAG_NONE);
+        sds_buffer.buffer, sds_buffer.size, TSK_FS_FILE_READ_FLAG_NONE);
     if (cnt != sds_buffer.size) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: error reading $Secure:$SDS attribute: %s\n",
                 tsk_errstr);
         tsk_error_reset();
-        
+
         free(sii_buffer.buffer);
         free(sds_buffer.buffer);
         if (ntfs->sii_data.buffer)
             free(ntfs->sii_data.buffer);
         ntfs->sii_data.buffer = NULL;
-        
+
         tsk_fs_file_close(secure);
         return 0;
     }
@@ -3643,8 +3631,9 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         }
 
         myflags |=
-            (fs_file->meta->
-            flags & (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED));
+            (fs_file->
+            meta->flags & (TSK_FS_META_FLAG_USED |
+                TSK_FS_META_FLAG_UNUSED));
         if ((flags & myflags) != myflags)
             continue;
 
@@ -4304,7 +4293,8 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                     "Type: %s (%" PRIu32 "-%" PRIu16
                     ")   Name: %s   Non-Resident%s%s%s   size: %"
                     PRIuOFF "  init_size: %" PRIuOFF "\n", type,
-                    fs_attr->type, fs_attr->id, fs_attr->name,
+                    fs_attr->type, fs_attr->id,
+                    (fs_attr->name) ? fs_attr->name : "N/A",
                     (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted" :
                     "",
                     (fs_attr->flags & TSK_FS_ATTR_COMP) ? ", Compressed" :
@@ -4331,7 +4321,8 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                     "Type: %s (%" PRIu32 "-%" PRIu16
                     ")   Name: %s   Resident%s%s%s   size: %"
                     PRIuOFF "\n", type, fs_attr->type,
-                    fs_attr->id, fs_attr->name,
+                    fs_attr->id,
+                    (fs_attr->name) ? fs_attr->name : "N/A",
                     (fs_attr->flags & TSK_FS_ATTR_ENC) ? ", Encrypted"
                     : "",
                     (fs_attr->flags & TSK_FS_ATTR_COMP) ?

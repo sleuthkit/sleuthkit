@@ -181,10 +181,12 @@ tsk_fs_attr_clear(TSK_FS_ATTR * a_fs_attr)
 static uint8_t
 fs_attr_put_name(TSK_FS_ATTR * fs_attr, const char *name)
 {
-    if (name == NULL) {
+    if ((name == NULL) || (strlen(name) == 0)) {
         if (fs_attr->name_size > 0) {
-            fs_attr->name[0] = '\0';
+            free(fs_attr->name);
+            fs_attr->name_size = 0;
         }
+        fs_attr->name = NULL;
         return 0;
     }
 
@@ -786,8 +788,8 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
 
             /* If the address is too large then give an error */
             if (addr + len_idx > fs->last_block) {
-                if (fs_attr->fs_file->meta->
-                    flags & TSK_FS_META_FLAG_UNALLOC)
+                if (fs_attr->fs_file->
+                    meta->flags & TSK_FS_META_FLAG_UNALLOC)
                     tsk_errno = TSK_ERR_FS_RECOVER;
                 else
                     tsk_errno = TSK_ERR_FS_BLK_NUM;
@@ -1050,8 +1052,10 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
         size_t len_remain;      // length remaining to copy
         size_t len_toread;      // length total to copy
 
-        if (((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) && (a_offset >= a_fs_attr->nrd.allocsize)) ||
-            (!(a_flags & TSK_FS_FILE_READ_FLAG_SLACK) && (a_offset >= a_fs_attr->size))) {
+        if (((a_flags & TSK_FS_FILE_READ_FLAG_SLACK)
+                && (a_offset >= a_fs_attr->nrd.allocsize))
+            || (!(a_flags & TSK_FS_FILE_READ_FLAG_SLACK)
+                && (a_offset >= a_fs_attr->size))) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_FS_READ_OFF;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -1102,11 +1106,12 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
 
             // see if we need to read the rest of this run and into the next or if it is all here
             len_inrun = len_remain;
-            if ((data_run_cur->len - blkoffset_inrun) * fs->block_size - byteoffset_toread <
-                len_remain)
+            if ((data_run_cur->len - blkoffset_inrun) * fs->block_size -
+                byteoffset_toread < len_remain)
                 len_inrun =
                     (size_t) ((data_run_cur->len -
-                        blkoffset_inrun) * fs->block_size - byteoffset_toread) ;
+                        blkoffset_inrun) * fs->block_size -
+                    byteoffset_toread);
 
             /* sparse files/runs just get 0s */
             if (data_run_cur->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE) {
@@ -1121,8 +1126,8 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                     fprintf(stderr,
                         "tsk_fs_attr_read_type: File %" PRIuINUM
                         " has FILLER entry, using 0s\n",
-                        (a_fs_attr->fs_file->meta) ? a_fs_attr->fs_file->
-                        meta->addr : 0);
+                        (a_fs_attr->fs_file->meta) ? a_fs_attr->
+                        fs_file->meta->addr : 0);
             }
             // we return 0s for reads past the initsize (unless they want slack space)
             else if (((TSK_OFF_T) ((data_run_cur->offset +
@@ -1134,8 +1139,9 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                     fprintf(stderr,
                         "tsk_fs_attr_read: Returning 0s for read past end of initsize (%"
                         PRIuINUM ")\n", ((a_fs_attr->fs_file)
-                            && (a_fs_attr->fs_file->meta)) ? a_fs_attr->
-                        fs_file->meta->addr : 0);
+                            && (a_fs_attr->fs_file->
+                                meta)) ? a_fs_attr->fs_file->meta->
+                        addr : 0);
             }
             else {
                 TSK_OFF_T fs_offset_b;
@@ -1172,9 +1178,10 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                             byteoffset_toread + len_inrun) >
                         a_fs_attr->nrd.initsize)
                     && ((a_flags & TSK_FS_FILE_READ_FLAG_SLACK) == 0)) {
-                    
-                    size_t uninit_off = a_fs_attr->nrd.initsize - 
-                        ((data_run_cur->offset + blkoffset_inrun) * fs->block_size +
+
+                    size_t uninit_off = a_fs_attr->nrd.initsize -
+                        ((data_run_cur->offset +
+                            blkoffset_inrun) * fs->block_size +
                         byteoffset_toread);
 
                     memset(&a_buf[len_toread - len_remain + uninit_off], 0,
