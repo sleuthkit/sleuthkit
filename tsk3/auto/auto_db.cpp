@@ -380,22 +380,22 @@ uint8_t
         }
     }
 
-    size_t attr_len = 0;
+    size_t attr_nlen = 0;
     if (fs_attr) {
         type = fs_attr->type;
         idx = fs_attr->id;
-        if (((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_DATA) &&
-                (strcmp(fs_attr->name, "$Data") != 0)) ||
-            ((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_IDXROOT) &&
-                (strcmp(fs_attr->name, "$I30") != 0))) {
-            attr_len = strlen(fs_attr->name);
+        if (fs_attr->name) {
+            if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
+                (strcmp(fs_attr->name, "$I30") != 0)) {
+                attr_nlen = strlen(fs_attr->name);
+            }
         }
     }
 
     // clean up special characters in name before we insert
     size_t len = strlen(fs_file->name->name);
     char *name;
-    size_t nlen = 2 * (len + attr_len);
+    size_t nlen = 2 * (len + attr_nlen);
     if ((name = (char *) tsk_malloc(nlen + 1)) == NULL) {
         return 1;
     }
@@ -413,10 +413,10 @@ uint8_t
     }
 
     // Add the attribute name
-    if (attr_len > 0) {
+    if (attr_nlen > 0) {
         name[j++] = ':';
 
-        for (unsigned i = 0; i < attr_len && j < nlen; i++) {
+        for (unsigned i = 0; i < attr_nlen && j < nlen; i++) {
             // ' is special in SQLite
             if (fs_attr->name[i] == '\'') {
                 name[j++] = '\'';
