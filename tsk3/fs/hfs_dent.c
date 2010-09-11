@@ -89,15 +89,18 @@ uint8_t
 hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
     int alen)
 {
-    char *aptr;
+    UTF8 *ptr8;
     uint8_t *uniclean;
-    uint8_t *uptr;
+    UTF16 *ptr16;
     int i;
     TSKConversionResult r;
 
     // remove nulls from the Unicode string
     // convert / to :
     uniclean = (uint8_t *) tsk_malloc(ulen * 2);
+    if (!uniclean)
+        return 1;
+    
     memcpy(uniclean, uni, ulen * 2);
     for (i = 0; i < ulen; ++i) {
         uint16_t uc = tsk_getu16(fs->endian, uniclean + i * 2);
@@ -115,22 +118,22 @@ hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
                 tsk_getu16(fs->endian, (uint8_t *) & uc);
     }
 
+    // convert to UTF-8
     memset(asc, 0, alen);
-    aptr = asc;
-    uptr = uniclean;
-    r = tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &uptr,
-        (const UTF16 *) (uptr + ulen * 2), (UTF8 **) & aptr,
-        (UTF8 *) aptr + alen - 1, TSKstrictConversion);
+    ptr8 = (UTF8 *)asc;
+    ptr16 = (UTF16 *)uniclean;
+    r = tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &ptr16,
+        (const UTF16 *) (&uniclean[ulen * 2]), &ptr8,
+        (UTF8 *) &asc[alen], TSKstrictConversion);
 
+    free(uniclean);
     if (r != TSKconversionOK) {
         tsk_errno = TSK_ERR_FS_UNICODE;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "hfs_uni2ascii: unicode conversion failed (%d)", (int)r);
-        free(uniclean);
         return 1;
     }
 
-    free(uniclean);
     return 0;
 }
 
