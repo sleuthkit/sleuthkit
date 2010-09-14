@@ -246,7 +246,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     strncat(fbuf, a_fs_file->name->name, PATH_MAX - strlen(fbuf));
     
     //do name mangling of the file name that was just added
-    for (int i = strlen(fbuf); fbuf[i] != '/'; i--) {
+    for (int i = strlen(fbuf)-1; fbuf[i] != '/'; i--) {
         if (TSK_IS_CNTRL(fbuf[i]))
             fbuf[i] = '^';
     }

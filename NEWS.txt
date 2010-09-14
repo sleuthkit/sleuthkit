@@ -5,6 +5,8 @@ Numbers refer to SourceForge.net tracker IDs:
 ---------------- VERSION 3.2.0 --------------
 Bug Fixes
 - 3043092: Minor logic errors with ifind code. 
+- FAT performance fix when looking for parent directories
+  in $OrphanFiles. 
 
 New Features:
 - 3012324: Name mangling moved out of library into outer tools
