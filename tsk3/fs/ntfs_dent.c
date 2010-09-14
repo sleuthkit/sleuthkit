@@ -110,7 +110,7 @@ ntfs_orphan_map_add(NTFS_INFO * ntfs, TSK_INUM_T par, TSK_INUM_T child)
         }
         else {
             NTFS_PAR_MAP *prev = NULL;
-            
+
             for (tmp = ntfs->orphan_map; tmp; tmp = tmp->next) {
                 if (tmp->par_addr > par) {
                     map->next = tmp;
@@ -122,10 +122,10 @@ ntfs_orphan_map_add(NTFS_INFO * ntfs, TSK_INUM_T par, TSK_INUM_T child)
                 }
                 prev = tmp;
             }
-            
+
             // at the end of the list
             if (map->next == NULL)
-                prev->next = map;            
+                prev->next = map;
         }
     }
 
@@ -215,7 +215,7 @@ ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
     UTF16 *name16;
     UTF8 *name8;
     int retVal;
-    
+
     fs_name->meta_addr = tsk_getu48(fs->endian, idxe->file_ref);
     fs_name->meta_seq = tsk_getu16(fs->endian, idxe->seq_num);
 
@@ -461,6 +461,10 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
                     tsk_getu16(fs->endian, a_idxe->idxlen)),
                 fs_name->flags);
 
+        // set the parent directory info if we have '..'
+        if ((fs_name->name_size > 2) && (fs_name->name[0] == '.')
+            && (fs_name->name[1] == '.') && (fs_name->name[2] == '\0'))
+            tsk_fs_dir_set_par_addr(a_fs_dir, fs_name->meta_addr);
 
         if (tsk_fs_dir_add(a_fs_dir, fs_name)) {
             tsk_fs_name_free(fs_name);
@@ -978,8 +982,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* process the list of index entries */
             retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
-                (fs_dir->fs_file->
-                    meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
+                (fs_dir->fs_file->meta->
+                    flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
                 list_len, tsk_getu32(a_fs->endian,
                     idxelist->seqend_off) - tsk_getu32(a_fs->endian,
                     idxelist->begin_off));
@@ -1043,8 +1047,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* process the list of index entries */
             retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
-                (fs_dir->fs_file->
-                    meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
+                (fs_dir->fs_file->meta->
+                    flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
                 list_len, tsk_getu32(a_fs->endian,
                     idxelist->seqend_off) - tsk_getu32(a_fs->endian,
                     idxelist->begin_off));
@@ -1355,8 +1359,8 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
     fs_file->name->meta_seq = 0;
     fs_file->name->flags =
         ((tsk_getu16(fs->endian,
-                ntfs->
-                mft->flags) & NTFS_MFT_INUSE) ? TSK_FS_NAME_FLAG_ALLOC :
+                ntfs->mft->
+                flags) & NTFS_MFT_INUSE) ? TSK_FS_NAME_FLAG_ALLOC :
         TSK_FS_NAME_FLAG_UNALLOC);
 
     memset(&dinfo, 0, sizeof(NTFS_DINFO));

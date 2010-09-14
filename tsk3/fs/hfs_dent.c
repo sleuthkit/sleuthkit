@@ -100,7 +100,7 @@ hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
     uniclean = (uint8_t *) tsk_malloc(ulen * 2);
     if (!uniclean)
         return 1;
-    
+
     memcpy(uniclean, uni, ulen * 2);
     for (i = 0; i < ulen; ++i) {
         uint16_t uc = tsk_getu16(fs->endian, uniclean + i * 2);
@@ -120,17 +120,17 @@ hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
 
     // convert to UTF-8
     memset(asc, 0, alen);
-    ptr8 = (UTF8 *)asc;
-    ptr16 = (UTF16 *)uniclean;
+    ptr8 = (UTF8 *) asc;
+    ptr16 = (UTF16 *) uniclean;
     r = tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &ptr16,
         (const UTF16 *) (&uniclean[ulen * 2]), &ptr8,
-        (UTF8 *) &asc[alen], TSKstrictConversion);
+        (UTF8 *) & asc[alen], TSKstrictConversion);
 
     free(uniclean);
     if (r != TSKconversionOK) {
         tsk_errno = TSK_ERR_FS_UNICODE;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "hfs_uni2ascii: unicode conversion failed (%d)", (int)r);
+            "hfs_uni2ascii: unicode conversion failed (%d)", (int) r);
         return 1;
     }
 
@@ -238,6 +238,10 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
                 tsk_getu32(hfs->fs_info.endian, thread->parent_cnid);
             info->fs_name->type = TSK_FS_NAME_TYPE_DIR;
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+
+            // set the parent directory info if we have '..'
+            tsk_fs_dir_set_par_addr(info->fs_dir,
+                info->fs_name->meta_addr);
         }
 
         /* This is a folder in the folder */

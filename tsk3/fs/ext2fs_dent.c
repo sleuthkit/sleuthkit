@@ -183,6 +183,11 @@ ext2fs_dent_parse_block(EXT2FS_INFO * ext2fs, TSK_FS_DIR * a_fs_dir,
             return TSK_ERR;
         }
 
+        // set the parent directory info if we have '..'
+        if ((fs_name->name_size > 2) && (fs_name->name[0] == '.')
+            && (fs_name->name[1] == '.') && (fs_name->name[2] == '\0'))
+            tsk_fs_dir_set_par_addr(a_fs_dir, fs_name->meta_addr);
+
         /* Do we have a deleted entry? */
         if ((dellen > 0) || (inode == 0) || (a_is_del)) {
             fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
@@ -211,7 +216,7 @@ ext2fs_dent_parse_block(EXT2FS_INFO * ext2fs, TSK_FS_DIR * a_fs_dir,
         if (dellen <= 0) {
             if (reclen - minreclen >= EXT2FS_DIRSIZ_lcl(1))
                 dellen = reclen - minreclen;
-            else 
+            else
                 minreclen = reclen;
         }
     }
@@ -332,9 +337,9 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         retval_tmp =
             ext2fs_dent_parse_block(ext2fs, fs_dir,
-            (fs_dir->fs_file->
-                meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
-            &list_seen, dirptr, len);
+            (fs_dir->fs_file->meta->
+                flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, &list_seen,
+            dirptr, len);
 
         if (retval_tmp == TSK_ERR) {
             retval_final = TSK_ERR;

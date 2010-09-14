@@ -480,16 +480,16 @@ ifind_data_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
     /* Ignore sparse blocks because they do not reside on disk */
     if (flags & TSK_FS_BLOCK_FLAG_SPARSE)
         return TSK_WALK_CONT;
-    
+
     if (addr == data->block) {
-        if (TSK_FS_TYPE_ISNTFS(fs->ftype)) 
+        if (TSK_FS_TYPE_ISNTFS(fs->ftype))
             tsk_printf("%" PRIuINUM "-%" PRIu32 "-%" PRIu16 "\n",
-                   data->curinode, data->curtype, data->curid);
-        else 
+                data->curinode, data->curtype, data->curid);
+        else
             tsk_printf("%" PRIuINUM "\n", data->curinode);
         data->found = 1;
         return TSK_WALK_STOP;
-    }    
+    }
     return TSK_WALK_CONT;
 }
 
@@ -503,22 +503,22 @@ static TSK_WALK_RET_ENUM
 ifind_data_act(TSK_FS_FILE * fs_file, void *ptr)
 {
     IFIND_DATA_DATA *data = (IFIND_DATA_DATA *) ptr;
-    int file_flags = (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK);
+    int file_flags =
+        (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK);
     int i, cnt;
-    
+
     data->curinode = fs_file->meta->addr;
 
     /* Search all attrributes */
     cnt = tsk_fs_file_attr_getsize(fs_file);
     for (i = 0; i < cnt; i++) {
-        const TSK_FS_ATTR *fs_attr =
-            tsk_fs_file_attr_get_idx(fs_file, i);
+        const TSK_FS_ATTR *fs_attr = tsk_fs_file_attr_get_idx(fs_file, i);
         if (!fs_attr)
             continue;
 
         data->curtype = fs_attr->type;
         data->curid = fs_attr->id;
-        if (fs_attr->flags & TSK_FS_ATTR_NONRES) {            
+        if (fs_attr->flags & TSK_FS_ATTR_NONRES) {
             if (tsk_fs_attr_walk(fs_attr,
                     file_flags, ifind_data_file_act, ptr)) {
                 if (tsk_verbose)
@@ -563,7 +563,7 @@ tsk_fs_ifind_data(TSK_FS_INFO * fs, TSK_FS_IFIND_FLAG_ENUM lclflags,
             ifind_data_act, &data)) {
         return 1;
     }
- 
+
     /* If we did not find an inode yet, get the block's
      * flags so we can identify it as a meta data block */
     if (!data.found) {
@@ -577,7 +577,7 @@ tsk_fs_ifind_data(TSK_FS_INFO * fs, TSK_FS_IFIND_FLAG_ENUM lclflags,
             tsk_fs_block_free(fs_block);
         }
     }
-    
+
     if (!data.found) {
         tsk_printf("Inode not found\n");
     }

@@ -78,7 +78,7 @@ find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
 }
 
 
-static uint8_t
+uint8_t
 fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum,
     TSK_INUM_T dir_inum)
 {
@@ -293,8 +293,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
                     /* Convert the UTF16 to UTF8 */
                     UTF16 *name16 =
-                        (UTF16 *) ((uintptr_t) & lfninfo.
-                        name[lfninfo.start + 1]);
+                        (UTF16 *) ((uintptr_t) & lfninfo.name[lfninfo.
+                            start + 1]);
                     UTF8 *name8 = (UTF8 *) fs_name->name;
 
                     retVal =
@@ -453,6 +453,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                             inode = fs_name->meta_addr =
                                 TSK_FS_ORPHANDIR_INUM(fs);
                     }
+                    tsk_fs_dir_set_par_addr(a_fs_dir, inode);
                 }
             }
             else {
@@ -619,14 +620,6 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         if (retval2 == TSK_ERR)
             return retval2;
 
-        // update the directory to parent mapping (since we bypassed the code that does this in parse)
-        for (i = 0; i < fs_dir->names_used; i++) {
-            if (fs_dir->names[i].type == TSK_FS_NAME_TYPE_DIR) {
-                if (fatfs_dir_buf_add(fatfs, a_addr,
-                        fs_dir->names[i].meta_addr))
-                    return TSK_ERR;
-            }
-        }
         return retval2;
     }
 

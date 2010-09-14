@@ -142,6 +142,8 @@ extern "C" {
     extern uint8_t tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir,
         const TSK_FS_NAME * a_fs_dent);
     extern void tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir);
+    extern void tsk_fs_dir_set_par_addr(TSK_FS_DIR * a_fs_dir,
+        TSK_INUM_T a_inum);
 
     /* Orphan Directory Support */
     TSK_RETVAL_ENUM tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs);
@@ -162,7 +164,8 @@ extern "C" {
     extern void tsk_fs_name_print(FILE *, const TSK_FS_FILE *,
         const char *, TSK_FS_INFO *, const TSK_FS_ATTR *, uint8_t);
     extern void tsk_fs_name_print_long(FILE *, const TSK_FS_FILE *,
-        const char *, TSK_FS_INFO *, const TSK_FS_ATTR *, uint8_t, int32_t);
+        const char *, TSK_FS_INFO *, const TSK_FS_ATTR *, uint8_t,
+        int32_t);
     extern void tsk_fs_name_print_mac(FILE *, const TSK_FS_FILE *,
         const char *, const TSK_FS_ATTR * fs_attr, const char *, int32_t);
     extern uint8_t tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,

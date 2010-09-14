@@ -1229,8 +1229,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (fs_attr_run->addr != 0) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->meta->
-                        flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->
+                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_GENFS;
@@ -1257,8 +1257,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (addr > fs->last_block) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->meta->
-                        flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->
+                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_errno = TSK_ERR_FS_RECOVER;
                     else
                         tsk_errno = TSK_ERR_FS_BLK_NUM;
@@ -1298,8 +1298,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             TSK_FS_BLOCK_FLAG_COMP;
                         retval = is_clustalloc(ntfs, comp_unit[i]);
                         if (retval == -1) {
-                            if (fs_attr->fs_file->meta->
-                                flags & TSK_FS_META_FLAG_UNALLOC)
+                            if (fs_attr->fs_file->
+                                meta->flags & TSK_FS_META_FLAG_UNALLOC)
                                 tsk_errno = TSK_ERR_FS_RECOVER;
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -2959,8 +2959,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     // versions of NTFS.
     for (i = 0; i < ntfs->sii_data.used; i++) {
         if (tsk_getu32(fs->endian,
-                ((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i].
-                key_sec_id) == secid) {
+                ((ntfs_attr_sii *) (ntfs->sii_data.
+                        buffer))[i].key_sec_id) == secid) {
             sii = &((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i];
             break;
         }
@@ -3631,8 +3631,7 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         }
 
         myflags |=
-            (fs_file->
-            meta->flags & (TSK_FS_META_FLAG_USED |
+            (fs_file->meta->flags & (TSK_FS_META_FLAG_USED |
                 TSK_FS_META_FLAG_UNUSED));
         if ((flags & myflags) != myflags)
             continue;

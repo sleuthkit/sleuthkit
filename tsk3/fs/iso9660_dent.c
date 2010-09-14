@@ -166,6 +166,11 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
             fs_name->meta_addr = in->inum;
             strncpy(fs_name->name, in->inode.fn, ISO9660_MAXNAMLEN);
 
+            // set the parent directory info if we have '..'
+            if ((fs_name->name_size > 2) && (fs_name->name[0] == '.')
+                && (fs_name->name[1] == '.') && (fs_name->name[2] == '\0'))
+                tsk_fs_dir_set_par_addr(a_fs_dir, fs_name->meta_addr);
+
             if (dd->flags & ISO9660_FLAG_DIR)
                 fs_name->type = TSK_FS_NAME_TYPE_DIR;
             else

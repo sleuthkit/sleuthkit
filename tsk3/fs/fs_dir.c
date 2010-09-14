@@ -15,9 +15,12 @@
  */
 
 #include "tsk_fs_i.h"
+#include "tsk_fatfs.h"
 
 /** \internal
-* Allocate a FS_DIR structure to load names into
+* Allocate a FS_DIR structure to load names into.  Make sure to call
+* tsk_fs_dir_set_par_addr at some point to add the parent directory of this
+* directory so that the name structures can store the same value. 
 * 
 * @param a_cnt target number of FS_DENT entries to fit in
 * @returns NULL on error
@@ -99,6 +102,7 @@ tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir)
         a_fs_dir->fs_file = NULL;
     }
     a_fs_dir->names_used = 0;
+    a_fs_dir->par_addr = 0;
 }
 
 
@@ -129,6 +133,7 @@ tsk_fs_dir_copy(const TSK_FS_DIR * a_src_dir, TSK_FS_DIR * a_dst_dir)
     }
 
     a_dst_dir->names_used = a_src_dir->names_used;
+    a_dst_dir->par_addr = a_src_dir->par_addr;
     return 0;
 }
 
@@ -199,9 +204,31 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
     if (tsk_fs_name_copy(fs_name_dest, a_fs_name))
         return 1;
 
+    // add the parent address if we have it defined
+    if (a_fs_dir->par_addr)
+        fs_name_dest->par_addr = a_fs_dir->par_addr;
+
     return 0;
 }
 
+/** \internal
+ * Set the parent directory for the directory and copy that value to the
+ * name structures that have already been added. Later names that are added
+ * will have the value automatically added to it. If this function is never 
+ * called, then the names will not have the parent directory value set. 
+ * 
+ * @param a_fs_dir Directory to add the parent directory value to
+ * @param a_inum Address of parent directory.
+ */
+void
+tsk_fs_dir_set_par_addr(TSK_FS_DIR * a_fs_dir, TSK_INUM_T a_inum)
+{
+    int i;
+    a_fs_dir->par_addr = a_inum;
+    for (i = 0; i < a_fs_dir->names_used; i++) {
+        a_fs_dir->names[i].par_addr = a_inum;
+    }
+}
 
 
 /** \ingroup fslib
@@ -797,8 +824,19 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
     FIND_ORPHAN_DATA *data = (FIND_ORPHAN_DATA *) a_ptr;
 
     // add this entry to the orphan list
-    if (a_fs_file->meta)
+    if (a_fs_file->meta) {
         tsk_list_add(&data->orphan_subdir_list, a_fs_file->meta->addr);
+
+        /* FAT file systems spend a lot of time hunting for parent 
+         * directory addresses, so we put this code in here to save
+         * the info when we have it. */
+        if ((a_fs_file->meta->type == TSK_FS_META_TYPE_DIR)
+            && (TSK_FS_TYPE_ISFAT(a_fs_file->fs_info->ftype))) {
+            if (fatfs_dir_buf_add((FATFS_INFO *) a_fs_file->fs_info,
+                    a_fs_file->name->par_addr, a_fs_file->meta->addr))
+                return TSK_WALK_ERROR;
+        }
+    }
 
     return TSK_WALK_CONT;
 }
@@ -838,6 +876,15 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
 
     if (tsk_fs_dir_add(data->fs_dir, data->fs_name))
         return TSK_WALK_ERROR;
+
+    /* FAT file systems spend a lot of time hunting for parent 
+     * directory addresses, so we put this code in here to save
+     * the info when we have it. */
+    if (TSK_FS_TYPE_ISFAT(fs->ftype)) {
+        if (fatfs_dir_buf_add((FATFS_INFO *) fs,
+                TSK_FS_ORPHANDIR_INUM(fs), a_fs_file->meta->addr))
+            return TSK_WALK_ERROR;
+    }
 
     /* Go into directories to mark their contents as "seen" */
     if (a_fs_file->meta->type == TSK_FS_META_TYPE_DIR) {
