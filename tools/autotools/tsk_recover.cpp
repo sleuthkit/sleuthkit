@@ -279,26 +279,26 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 }
 
 
-uint8_t TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
+TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
     if (isDotDir(fs_file, path))
-        return 0;
+        return TSK_OK;
 
     if (isDir(fs_file))
-        return 0;
+        return TSK_OK;
 
     if (isNtfsSystemFiles(fs_file, path))
-        return 0;
+        return TSK_OK;
 
     if ((!fs_file->meta) || (fs_file->meta->size == 0))
-        return 0;
+        return TSK_OK;
 
     if (isFATSystemFiles(fs_file))
-        return 0;
+        return TSK_OK;
 
     writeFile(fs_file, path);
 
-    return 0;
+    return TSK_OK;
 }
 
 TSK_FILTER_ENUM

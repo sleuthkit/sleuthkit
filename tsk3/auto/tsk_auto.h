@@ -106,10 +106,10 @@ class TskAuto {
      *
      * @param fs_file file  details
      * @param path full path of parent directory
-     * @returns 1 if the file system processing should stop and not process more files. 
+     * @returns Whether to stop processing, an error occured, or if the processing should continue
      */
-    virtual uint8_t processFile(TSK_FS_FILE * fs_file, const char *path) =
-        0;
+    virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
+        const char *path) = 0;
 
 
   private:
@@ -136,7 +136,8 @@ class TskAuto {
     uint8_t isNonResident(const TSK_FS_ATTR * fs_attr);
 
 
-    uint8_t processAttributes(TSK_FS_FILE * fs_file, const char *path);
+    TSK_RETVAL_ENUM processAttributes(TSK_FS_FILE * fs_file,
+        const char *path);
 
     /** 
      * Method that is called from processAttributes() for each attribute that a file
@@ -148,11 +149,11 @@ class TskAuto {
      * @param fs_file File being analyzed.
      * @param fs_attr Attribute of the file.
      * @param path full path of parent directory
-     * @returns 1 if the file system processing should stop and not process more files. 
+     * @returns Whether to stop processing, an error occured, or if the processing should continue. 
      */
-    virtual uint8_t processAttribute(TSK_FS_FILE * fs_file,
+    virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR * fs_attr, const char *path) {
-        return 0;
+        return TSK_OK;
     };
 };
 
@@ -173,7 +174,8 @@ class TskAutoDb:public TskAuto {
     uint8_t addFilesInImgToDB();
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
-    virtual uint8_t processFile(TSK_FS_FILE * fs_file, const char *path);
+    virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
+        const char *path);
     virtual void createBlockMap(bool flag);
 
   private:
@@ -185,10 +187,10 @@ class TskAutoDb:public TskAuto {
     // maps dir name to its inode.  Used to find parent dir inum based on name. 
      std::map < std::string, TSK_INUM_T > m_par_inodes;
 
-    uint8_t insertFileData(TSK_FS_FILE * fs_file,
+    TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path);
-    uint8_t insertBlockData(const TSK_FS_ATTR * fs_attr);
-    virtual uint8_t processAttribute(TSK_FS_FILE *,
+    TSK_RETVAL_ENUM insertBlockData(const TSK_FS_ATTR * fs_attr);
+    virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
         const TSK_FS_ATTR * fs_attr, const char *path);
     uint8_t createParentDirIndex();
 };

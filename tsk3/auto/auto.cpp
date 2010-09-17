@@ -300,9 +300,13 @@ TSK_WALK_RET_ENUM
     TskAuto *tsk = (TskAuto *) a_ptr;
     if (tsk->m_tag != TSK_AUTO_TAG)
         return TSK_WALK_STOP;
-
-    if (tsk->processFile(a_fs_file, a_path))
-        return TSK_WALK_STOP;
+    TSK_RETVAL_ENUM retval = tsk->processFile(a_fs_file, a_path);
+    if (retval != TSK_OK){
+            if(retval == TSK_STOP)
+                return TSK_WALK_STOP;
+            else
+                return TSK_WALK_ERROR;
+    }
     else
         return TSK_WALK_CONT;
 }
@@ -342,17 +346,18 @@ TSK_RETVAL_ENUM
  * @param path full path of parent directory
  * @returns 1 if the file system processing should stop and not process more files. 
  */
-uint8_t
+TSK_RETVAL_ENUM
 TskAuto::processAttributes(TSK_FS_FILE * fs_file, const char *path)
 {
     int
      count = tsk_fs_file_attr_getsize(fs_file), i;
     for (i = 0; i < count; i++) {
-        if (processAttribute(fs_file, tsk_fs_file_attr_get_idx(fs_file, i),
-                path))
-            return 1;
+        TSK_RETVAL_ENUM retval = processAttribute(fs_file, tsk_fs_file_attr_get_idx(fs_file, i),
+                path);
+        if (retval != TSK_OK)
+            return retval;
     }
-    return 0;
+    return TSK_OK;
 }
 
 

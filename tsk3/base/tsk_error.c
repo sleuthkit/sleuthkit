@@ -93,18 +93,18 @@ static const char *tsk_err_fs_str[TSK_ERR_FS_MAX] = {
     "Function/Feature not supported",
     "Invalid walk range",
     "Error reading image file",
-    "Invalid file offset",  // 5
-    "Invalid API argument",     
+    "Invalid file offset",      // 5
+    "Invalid API argument",
     "Invalid block address",
     "Invalid metadata address",
     "Error in metadata structure",
-    "Invalid magic value",  // 10
-    "Error extracting file from image", 
+    "Invalid magic value",      // 10
+    "Error extracting file from image",
     "Error writing data",
     "Error converting Unicode",
     "Error recovering deleted file",
-    "General file system error", // 15
-    "File system is corrupt",   
+    "General file system error",        // 15
+    "File system is corrupt",
     "Attribute not found in file",
 };
 
@@ -121,6 +121,12 @@ static const char *tsk_err_hdb_str[TSK_ERR_HDB_MAX] = {
     "Error creating process",
     "Error opening file",       // 10
     "Corrupt hash database"
+};
+
+static const char *tsk_err_auto_str[TSK_ERR_AUTO_MAX] = {
+    "Database Error",
+    "Corrupt file data",
+    "Error converting Unicode"
 };
 
 
@@ -179,6 +185,14 @@ tsk_error_get()
         else
             snprintf(&tsk_errstr_print[pidx], TSK_ERRSTR_PR_L - pidx,
                 "hashtools error: %" PRIu32, TSK_ERR_MASK & tsk_errno);
+    }
+    else if (tsk_errno & TSK_ERR_AUTO) {
+        if ((TSK_ERR_MASK & tsk_errno) < TSK_ERR_AUTO_MAX)
+            snprintf(&tsk_errstr_print[pidx], TSK_ERRSTR_PR_L - pidx,
+                "%s", tsk_err_auto_str[tsk_errno & TSK_ERR_MASK]);
+        else
+            snprintf(&tsk_errstr_print[pidx], TSK_ERRSTR_PR_L - pidx,
+                "auto error: %" PRIu32, TSK_ERR_MASK & tsk_errno);
     }
     else {
         snprintf(&tsk_errstr_print[pidx], TSK_ERRSTR_PR_L - pidx,

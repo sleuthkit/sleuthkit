@@ -239,6 +239,7 @@ extern "C" {
 #define TSK_ERR_VS	0x04000000
 #define TSK_ERR_FS	0x08000000
 #define TSK_ERR_HDB	0x10000000
+#define TSK_ERR_AUTO 0x20000000
 #define TSK_ERR_MASK	0x00ffffff
 
 #define TSK_ERR_AUX_MALLOC	(TSK_ERR_AUX | 0)
@@ -305,6 +306,10 @@ extern "C" {
 #define TSK_ERR_HDB_CORRUPT     (TSK_ERR_HDB | 11)
 #define TSK_ERR_HDB_MAX		12
 
+#define TSK_ERR_AUTO_DB (TSK_ERR_AUTO | 0)
+#define TSK_ERR_AUTO_CORRUPT (TSK_ERR_AUTO | 1)
+#define TSK_ERR_AUTO_UNICODE (TSK_ERR_AUTO | 2)
+#define TSK_ERR_AUTO_MAX 3
 //@}
 
 

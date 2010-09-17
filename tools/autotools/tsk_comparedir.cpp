@@ -45,24 +45,24 @@ usage()
 
 
 
-uint8_t
+TSK_RETVAL_ENUM
     TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 {
     //exclude certain types
     if (isDotDir(a_fs_file, a_path))
-        return 0;
+        return TSK_OK;
 
     if (isDir(a_fs_file))
-        return 0;
+        return TSK_OK;
 
     if (isNtfsSystemFiles(a_fs_file, a_path))
-        return 0;
+        return TSK_OK;
 
     if ((!a_fs_file->meta) || (a_fs_file->meta->size == 0))
-        return 0;
+        return TSK_OK;
 
     if (isFATSystemFiles(a_fs_file))
-        return 0;
+        return TSK_OK;
 
 #ifdef WIN32
     size_t PATH_MAX = FILENAME_MAX;
@@ -72,7 +72,7 @@ uint8_t
     size_t len = strlen(a_fs_file->name->name) + strlen(a_path) + 1;
     char *fullPath = (char *) tsk_malloc(len);
     if (fullPath == NULL)
-        return 1;
+        return TSK_ERR;
 
     snprintf(fullPath, len, "/");
     strncat(fullPath, a_path, len-strlen(fullPath));
@@ -88,7 +88,7 @@ uint8_t
 
     //add the path to the set
     m_filesInImg.insert(fullPath);
-    return 0;
+    return TSK_OK;
 }
 
 TSK_FILTER_ENUM
