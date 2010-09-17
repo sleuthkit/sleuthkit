@@ -137,13 +137,11 @@ extern "C" {
     extern TSK_FS_FILE *tsk_fs_file_alloc(TSK_FS_INFO *);
 
     /* FS_DIR */
-    extern TSK_FS_DIR *tsk_fs_dir_alloc(TSK_FS_INFO * a_fs, size_t a_cnt);
+    extern TSK_FS_DIR *tsk_fs_dir_alloc(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, size_t a_cnt);
     extern uint8_t tsk_fs_dir_realloc(TSK_FS_DIR * a_fs_dir, size_t a_cnt);
     extern uint8_t tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir,
         const TSK_FS_NAME * a_fs_dent);
     extern void tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir);
-    extern void tsk_fs_dir_set_par_addr(TSK_FS_DIR * a_fs_dir,
-        TSK_INUM_T a_inum);
 
     /* Orphan Directory Support */
     TSK_RETVAL_ENUM tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs);

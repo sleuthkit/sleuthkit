@@ -461,11 +461,6 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
                     tsk_getu16(fs->endian, a_idxe->idxlen)),
                 fs_name->flags);
 
-        // set the parent directory info if we have '..'
-        if ((fs_name->name_size > 2) && (fs_name->name[0] == '.')
-            && (fs_name->name[1] == '.') && (fs_name->name[2] == '\0'))
-            tsk_fs_dir_set_par_addr(a_fs_dir, fs_name->meta_addr);
-
         if (tsk_fs_dir_add(a_fs_dir, fs_name)) {
             tsk_fs_name_free(fs_name);
             return TSK_ERR;
@@ -653,7 +648,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         tsk_fs_dir_reset(fs_dir);
     }
     else {
-        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, 128)) == NULL) {
+        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
             return TSK_ERR;
         }
     }
@@ -784,6 +779,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         tsk_fs_name_free(fs_name);
         fs_name = NULL;
     }
+    
 
     /* Now we return to processing the Index Root Attribute */
     if (tsk_verbose)

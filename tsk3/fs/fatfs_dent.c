@@ -453,7 +453,6 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                             inode = fs_name->meta_addr =
                                 TSK_FS_ORPHANDIR_INUM(fs);
                     }
-                    tsk_fs_dir_set_par_addr(a_fs_dir, inode);
                 }
             }
             else {
@@ -607,7 +606,7 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         tsk_fs_dir_reset(fs_dir);
     }
     else {
-        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, 128)) == NULL) {
+        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
             return TSK_ERR;
         }
     }

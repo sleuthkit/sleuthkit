@@ -184,10 +184,6 @@ ffs_dent_parse_block(FFS_INFO * ffs, TSK_FS_DIR * fs_dir, uint8_t a_is_del,
             return TSK_ERR;
         }
 
-        // set the parent directory info if we have '..'
-        if ((fs_name->name_size > 2) && (fs_name->name[0] == '.')
-            && (fs_name->name[1] == '.') && (fs_name->name[2] == '\0'))
-            tsk_fs_dir_set_par_addr(fs_dir, fs_name->meta_addr);
 
         /* Do we have a deleted entry? (are we in a deleted space) */
         if ((dellen > 0) || (inode == 0) || (a_is_del)) {
@@ -272,7 +268,7 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         tsk_fs_dir_reset(fs_dir);
     }
     else {
-        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, 128)) == NULL) {
+        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
             return TSK_ERR;
         }
     }

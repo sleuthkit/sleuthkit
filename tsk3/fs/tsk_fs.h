@@ -582,7 +582,7 @@ extern "C" {
         size_t names_used;      ///< Number of name structures in queue being used
         size_t names_alloc;     ///< Number of name structures that were allocated
 
-        TSK_INUM_T par_addr;    ///< Metadata address of parent directory 
+        TSK_INUM_T addr;    ///< Metadata address of this directory 
 
         TSK_FS_INFO *fs_info;   ///< Pointer to file system the directory is located in
     } TSK_FS_DIR;

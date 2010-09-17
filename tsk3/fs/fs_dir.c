@@ -18,15 +18,14 @@
 #include "tsk_fatfs.h"
 
 /** \internal
-* Allocate a FS_DIR structure to load names into.  Make sure to call
-* tsk_fs_dir_set_par_addr at some point to add the parent directory of this
-* directory so that the name structures can store the same value. 
+* Allocate a FS_DIR structure to load names into.  
 * 
+* @param a_addr Address of this directory. 
 * @param a_cnt target number of FS_DENT entries to fit in
 * @returns NULL on error
 */
 TSK_FS_DIR *
-tsk_fs_dir_alloc(TSK_FS_INFO * a_fs, size_t a_cnt)
+tsk_fs_dir_alloc(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, size_t a_cnt)
 {
     TSK_FS_DIR *fs_dir;
     size_t i;
@@ -45,6 +44,7 @@ tsk_fs_dir_alloc(TSK_FS_INFO * a_fs, size_t a_cnt)
         return NULL;
     }
     fs_dir->fs_info = a_fs;
+    fs_dir->addr = a_addr;
     fs_dir->tag = TSK_FS_DIR_TAG;
     for (i = 0; i < a_cnt; i++) {
         fs_dir->names[i].tag = TSK_FS_NAME_TAG;
@@ -102,7 +102,7 @@ tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir)
         a_fs_dir->fs_file = NULL;
     }
     a_fs_dir->names_used = 0;
-    a_fs_dir->par_addr = 0;
+    a_fs_dir->addr = 0;
 }
 
 
@@ -133,7 +133,7 @@ tsk_fs_dir_copy(const TSK_FS_DIR * a_src_dir, TSK_FS_DIR * a_dst_dir)
     }
 
     a_dst_dir->names_used = a_src_dir->names_used;
-    a_dst_dir->par_addr = a_src_dir->par_addr;
+    a_dst_dir->addr = a_src_dir->addr;
     return 0;
 }
 
@@ -204,31 +204,13 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
     if (tsk_fs_name_copy(fs_name_dest, a_fs_name))
         return 1;
 
-    // add the parent address if we have it defined
-    if (a_fs_dir->par_addr)
-        fs_name_dest->par_addr = a_fs_dir->par_addr;
+    // add the parent address 
+    if (a_fs_dir->addr)
+        fs_name_dest->par_addr = a_fs_dir->addr;
 
     return 0;
 }
 
-/** \internal
- * Set the parent directory for the directory and copy that value to the
- * name structures that have already been added. Later names that are added
- * will have the value automatically added to it. If this function is never 
- * called, then the names will not have the parent directory value set. 
- * 
- * @param a_fs_dir Directory to add the parent directory value to
- * @param a_inum Address of parent directory.
- */
-void
-tsk_fs_dir_set_par_addr(TSK_FS_DIR * a_fs_dir, TSK_INUM_T a_inum)
-{
-    int i;
-    a_fs_dir->par_addr = a_inum;
-    for (i = 0; i < a_fs_dir->names_used; i++) {
-        a_fs_dir->names[i].par_addr = a_inum;
-    }
-}
 
 
 /** \ingroup fslib
@@ -976,7 +958,7 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
 
     // make copy of this so that we don't need to do it again. 
     if ((a_fs->orphan_dir =
-            tsk_fs_dir_alloc(a_fs, a_fs_dir->names_used)) == NULL) {
+            tsk_fs_dir_alloc(a_fs, a_fs_dir->addr, a_fs_dir->names_used)) == NULL) {
         a_fs->isOrphanHunting = 0;
         return TSK_ERR;
     }

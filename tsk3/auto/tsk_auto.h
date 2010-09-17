@@ -184,9 +184,6 @@ class TskAutoDb:public TskAuto {
     int m_curVsId;
     bool m_blkMapFlag;
 
-    // maps dir name to its inode.  Used to find parent dir inum based on name. 
-     std::map < std::string, TSK_INUM_T > m_par_inodes;
-
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path);
     TSK_RETVAL_ENUM insertBlockData(const TSK_FS_ATTR * fs_attr);

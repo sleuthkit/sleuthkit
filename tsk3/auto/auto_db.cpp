@@ -49,7 +49,6 @@ uint8_t
         sqlite3_close(m_db);
         m_db = NULL;
     }
-    m_par_inodes.clear();
     m_curFsId = 0;
     m_curVsId = 0;
 
@@ -245,7 +244,6 @@ void
         sqlite3_close(m_db);
         m_db = NULL;
     }
-    m_par_inodes.clear();
 }
 
 
@@ -385,7 +383,6 @@ TSK_RETVAL_ENUM
      gid = 0;
     int
      uid = 0;
-    TSK_INUM_T par_inode;
     int type = 0;
     int idx = 0;
 
@@ -403,17 +400,6 @@ TSK_RETVAL_ENUM
         meta_mode = fs_file->meta->mode;
         gid = fs_file->meta->gid;
         uid = fs_file->meta->uid;
-
-
-        // add the info the parent dir record so that we can later find
-        // this dir by name
-        if ((meta_type & TSK_FS_META_TYPE_DIR)
-            && (isDotDir(fs_file, path) == 0)) {
-            std::string full = path;
-            full += fs_file->name->name;
-            full += "/";
-            m_par_inodes[full] = fs_file->name->meta_addr;
-        }
     }
 
     size_t attr_nlen = 0;
@@ -464,29 +450,11 @@ TSK_RETVAL_ENUM
         }
     }
 
-
-    if ((path == NULL) || (strcmp(path, "") == 0)) {
-        par_inode = fs_file->fs_info->root_inum;
-    }
-    else if (m_par_inodes.count(path) > 0) {
-        par_inode = m_par_inodes[path];
-    }
-    else {
-        tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_CORRUPT;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "Error finding parent directory info on %s for %s\n", path,
-            fs_file->name->name);
-        free(name);
-        return TSK_ERR;
-    }
-
-
     snprintf(foo, 1024,
         "INSERT INTO tsk_fs_files (fs_id, file_id, attr_type, attr_id, name, par_file_id, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) VALUES (%d,%"
         PRIuINUM ",%d,%d,'%s',%" PRIuINUM ",%d,%d,%d,%d,%" PRIuOFF
         ",%d,%d,%d,%d,%d,%d,%d)", m_curFsId, fs_file->name->meta_addr,
-        type, idx, name, par_inode, fs_file->name->type, meta_type,
+        type, idx, name, fs_file->name->par_addr, fs_file->name->type, meta_type,
         fs_file->name->flags, meta_flags, size, crtime, ctime, atime,
         mtime, meta_mode, gid, uid);
 

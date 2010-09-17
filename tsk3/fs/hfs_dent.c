@@ -238,10 +238,6 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
                 tsk_getu32(hfs->fs_info.endian, thread->parent_cnid);
             info->fs_name->type = TSK_FS_NAME_TYPE_DIR;
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-
-            // set the parent directory info if we have '..'
-            tsk_fs_dir_set_par_addr(info->fs_dir,
-                info->fs_name->meta_addr);
         }
 
         /* This is a folder in the folder */
@@ -347,7 +343,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
     if (fs_dir) {
         tsk_fs_dir_reset(fs_dir);
     }
-    else if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(fs, 128)) == NULL) {
+    else if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(fs, a_addr, 128)) == NULL) {
         return TSK_ERR;
     }
 
