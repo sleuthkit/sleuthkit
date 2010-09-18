@@ -186,7 +186,6 @@ class TskAutoDb:public TskAuto {
 
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path);
-    TSK_RETVAL_ENUM insertBlockData(const TSK_FS_ATTR * fs_attr);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
         const TSK_FS_ATTR * fs_attr, const char *path);
     uint8_t createParentDirIndex();

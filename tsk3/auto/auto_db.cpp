@@ -81,6 +81,27 @@ uint8_t
 
 
     char *errmsg;
+    // disable synchronous for loading the DB since we have no crash recovery anyway...
+    if (sqlite3_exec(m_db,
+                     "PRAGMA synchronous =  OFF;", NULL, NULL, &errmsg) != SQLITE_OK) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_DB;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+                 "Error setting PRAGMA synchronous: %s\n", errmsg);
+        sqlite3_free(errmsg);
+        return 1;
+    }
+    // We don't care about the return values of inserts etc.
+    if (sqlite3_exec(m_db,
+                     "PRAGMA count_changes = false;", NULL, NULL, &errmsg) != SQLITE_OK) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_DB;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+                 "Error setting PRAGMA count changes: %s\n", errmsg);
+        sqlite3_free(errmsg);
+        return 1;
+    }
+    
     if (sqlite3_exec(m_db,
             "CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
@@ -222,12 +243,12 @@ uint8_t
 
     if (m_blkMapFlag) {
         if (sqlite3_exec(m_db,
-                "CREATE TABLE tsk_fs_blocks (fs_id INTEGER NOT NULL, blk_addr INTEGER NOT NULL, file_id INTEGER NOT NULL, attr_type INTEGER, attr_id INTEGER);",
+                "CREATE TABLE tsk_fs_blocks (fs_id INTEGER NOT NULL, blk_start INTEGER NOT NULL, blk_len INTEGER NOT NULL, file_id INTEGER NOT NULL, attr_type INTEGER, attr_id INTEGER);",
                 NULL, NULL, &errmsg) != SQLITE_OK) {
             tsk_error_reset();
             tsk_errno = TSK_ERR_AUTO_DB;
             snprintf(tsk_errstr, TSK_ERRSTR_L,
-                "Error creating tsk_fs_files table: %s\n", errmsg);
+                "Error creating tsk_fs_blocks table: %s\n", errmsg);
             sqlite3_free(errmsg);
             return 1;
         }
@@ -326,6 +347,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     char
      foo[1024];
     char *errmsg;
+    TSK_FS_FILE *file_root;
 
     m_curFsId++;
 
@@ -346,6 +368,11 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
         return TSK_FILTER_STOP;
     }
 
+    // We won't hit the root directory on the walk, so open it now 
+    if ((file_root = tsk_fs_file_open_meta(fs_info, NULL, fs_info->root_inum)) != NULL) {
+        processAttributes(file_root, "");
+    }
+    
     // make sure that flags are set to get all files -- we need this to
     // find parent directory
     setFileFilterFlags((TSK_FS_DIR_WALK_FLAG_ENUM)
@@ -472,67 +499,8 @@ TSK_RETVAL_ENUM
     return TSK_OK;
 }
 
-// structure used to store data during file walk
-typedef struct {
-    sqlite3 *db;                // database to insert into
-    int fsId;                   // ID of current file system
-    uint16_t type;              // type of attribute being walked
-    uint16_t id;                // id of attribute being walked
-} FWALK_CB_STRUCT;
 
 
-static TSK_WALK_RET_ENUM
-file_walk_cb(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
-    char *a_buf, size_t a_len, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
-{
-    char foo[1024];
-    char *errmsg;
-    FWALK_CB_STRUCT *a_cb_struct = (FWALK_CB_STRUCT *) a_ptr;
-
-    // ignore sparse blocks
-    if (a_flags & TSK_FS_BLOCK_FLAG_SPARSE)
-        return TSK_WALK_CONT;
-
-    snprintf(foo, 1024,
-        "INSERT INTO tsk_fs_blocks (fs_id, blk_addr, file_id, attr_type, attr_id) VALUES (%d,%"
-        PRIuDADDR ",%" PRIuINUM ",%d,%d)", a_cb_struct->fsId, a_addr,
-        a_fs_file->name->meta_addr, a_cb_struct->type, a_cb_struct->id);
-
-    if (sqlite3_exec(a_cb_struct->db, foo, NULL, NULL,
-            &errmsg) != SQLITE_OK) {
-        tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "Error adding data to tsk_fs_info table: %s\n", errmsg);
-        sqlite3_free(errmsg);
-        return TSK_WALK_ERROR;
-    }
-
-    return TSK_WALK_CONT;
-}
-
-
-/**
- * does an attribute walk and adds data to the block map table.
- */
-TSK_RETVAL_ENUM TskAutoDb::insertBlockData(const TSK_FS_ATTR * fs_attr)
-{
-    FWALK_CB_STRUCT
-        cb_struct;
-
-    cb_struct.db = m_db;
-    cb_struct.fsId = m_curFsId;
-    cb_struct.type = fs_attr->type;
-    cb_struct.id = fs_attr->id;
-
-    if (tsk_fs_attr_walk(fs_attr, TSK_FS_FILE_WALK_FLAG_NONE,
-            file_walk_cb, &cb_struct)) {
-        fprintf(stderr, "Error walking file\n");
-        tsk_error_print(stderr);
-        return TSK_ERR;
-    }
-    return TSK_OK;
-}
 
 
 TSK_RETVAL_ENUM
@@ -549,13 +517,11 @@ TSK_RETVAL_ENUM
     }
 
     TSK_RETVAL_ENUM retval;
-    int
-     count = tsk_fs_file_attr_getsize(fs_file);
-    if (count > 0)
-        retval = processAttributes(fs_file, path);
-    else {
+    // process the attributes if there are more than 1
+    if (tsk_fs_file_attr_getsize(fs_file) == 0)
         retval = insertFileData(fs_file, NULL, path);
-    }
+    else
+        retval = processAttributes(fs_file, path);
 
     if (sqlite3_exec(m_db, "COMMIT", NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
@@ -569,6 +535,7 @@ TSK_RETVAL_ENUM
     return retval;
 }
 
+
 TSK_RETVAL_ENUM
     TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path)
@@ -580,9 +547,31 @@ TSK_RETVAL_ENUM
     }
 
     // add the block map, if requested and the file is non-resident
-    if ((m_blkMapFlag) && (isNonResident(fs_attr))) {
-        if (insertBlockData(fs_attr))
-            return TSK_ERR;
+    if ((m_blkMapFlag) && (isNonResident(fs_attr)) && (isDotDir(fs_file, path) == 0)) {
+        TSK_FS_ATTR_RUN *run;
+        for (run = fs_attr->nrd.run; run != NULL; run = run->next) {
+            char foo[1024];
+            char *errmsg;            
+            
+            // ignore sparse blocks
+            if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
+                continue;
+            
+            snprintf(foo, 1024,
+                     "INSERT INTO tsk_fs_blocks (fs_id, blk_start, blk_len, file_id, attr_type, attr_id) VALUES (%d,%"
+                     PRIuDADDR ",%"PRIuDADDR ",%" PRIuINUM ",%d,%d)", m_curFsId, run->addr, run->len,
+                     fs_file->meta->addr, fs_attr->type, fs_attr->id);
+            
+            if (sqlite3_exec(m_db, foo, NULL, NULL,
+                             &errmsg) != SQLITE_OK) {
+                tsk_error_reset();
+                tsk_errno = TSK_ERR_AUTO_DB;
+                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                         "Error adding data to tsk_fs_info table: %s\n", errmsg);
+                sqlite3_free(errmsg);
+                return TSK_ERR;
+            }
+        }
     }
 
     return TSK_OK;

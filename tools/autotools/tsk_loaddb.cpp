@@ -21,7 +21,7 @@ usage()
         _TSK_T
         ("usage: %s [-vVk] [-f fstype] [-i imgtype] [-b dev_sector_size] image\n"),
         progname);
-    tsk_fprintf(stderr, "\t-k: Create block data table\n");
+    tsk_fprintf(stderr, "\t-k: Don't create block data table\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -46,7 +46,7 @@ main(int argc, char **argv1)
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
-    bool blkMapFlag = false;   // true if we are going to write the block map
+    bool blkMapFlag = true;   // true if we are going to write the block map
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -98,7 +98,7 @@ main(int argc, char **argv1)
             break;
 
         case _TSK_T('k'):
-            blkMapFlag = true;
+            blkMapFlag = false;
             break;
         
         case _TSK_T('V'):
