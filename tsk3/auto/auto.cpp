@@ -30,7 +30,7 @@ TskAuto::TskAuto()
 TskAuto::~TskAuto()
 {
     closeImage();
-    m_tag = NULL;
+    m_tag = 0;
 }
 
 

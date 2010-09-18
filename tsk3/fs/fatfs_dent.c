@@ -613,15 +613,8 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     //  handle the orphan directory if its contents were requested
     if (a_addr == TSK_FS_ORPHANDIR_INUM(a_fs)) {
-        size_t i;
-        TSK_RETVAL_ENUM retval2 = tsk_fs_dir_find_orphans(a_fs, fs_dir);
-
-        if (retval2 == TSK_ERR)
-            return retval2;
-
-        return retval2;
+        return tsk_fs_dir_find_orphans(a_fs, fs_dir);
     }
-
 
     fs_dir->fs_file = tsk_fs_file_open_meta(a_fs, NULL, a_addr);
     if (fs_dir->fs_file == NULL) {
