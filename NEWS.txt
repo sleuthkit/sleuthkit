@@ -7,6 +7,8 @@ Bug Fixes
 - 3043092: Minor logic errors with ifind code. 
 - FAT performance fix when looking for parent directories
   in $OrphanFiles. 
+- 3052302: Crash on NTFS/UFS detection test because of
+  corrupt data -- tsk_malloc error. 
 
 New Features:
 - 3012324: Name mangling moved out of library into outer tools

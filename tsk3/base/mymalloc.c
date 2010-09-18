@@ -73,7 +73,9 @@ tsk_malloc(size_t len)
         snprintf(tsk_errstr, TSK_ERRSTR_L, "tsk_malloc: %s",
             strerror(errno));
     }
-    memset(ptr, 0, len);
+    else {
+        memset(ptr, 0, len);
+    }
     return (ptr);
 }
 
