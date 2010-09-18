@@ -55,6 +55,8 @@ rm -rf $RPM_BUILD_ROOT
 /usr/include/tsk3/img/*
 %dir /usr/include/tsk3/vs
 /usr/include/tsk3/vs/*
+%dir /usr/include/tsk3/auto
+/usr/include/tsk3/auto/*
 %dir /usr/share/tsk3
 %dir /usr/share/tsk3/sorter
 /usr/share/tsk3/sorter/*

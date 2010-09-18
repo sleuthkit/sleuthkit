@@ -12,4 +12,4 @@ libtsk3_la_LDFLAGS = -version-info 0:0:0
 
 EXTRA_DIST = tsk_tools_i.h docs/Doxyfile docs/main.dox \
     docs/basics.dox docs/img.dox docs/vs.dox docs/fs.dox \
-    docs/base.dox docs/hashdb.dox docs/footer.html
+    docs/base.dox docs/hashdb.dox docs/footer.html docs/auto.dox
