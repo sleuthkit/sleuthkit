@@ -37,7 +37,7 @@ nobase_include_HEADERS = tsk3/libtsk.h tsk3/tsk_incs.h \
     tsk3/vs/tsk_mac.h tsk3/vs/tsk_sun.h \
     tsk3/fs/tsk_fs.h tsk3/fs/tsk_ffs.h tsk3/fs/tsk_ext2fs.h tsk3/fs/tsk_fatfs.h \
     tsk3/fs/tsk_ntfs.h tsk3/fs/tsk_iso9660.h tsk3/fs/tsk_hfs.h \
-    tsk3/hashdb/tsk_hashdb.h
+    tsk3/hashdb/tsk_hashdb.h tsk3/auto/tsk_auto.h
 
 nobase_dist_data_DATA = tsk3/sorter/default.sort tsk3/sorter/freebsd.sort \
     tsk3/sorter/images.sort tsk3/sorter/linux.sort tsk3/sorter/openbsd.sort \
