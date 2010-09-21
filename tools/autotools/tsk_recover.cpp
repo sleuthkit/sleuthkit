@@ -24,14 +24,12 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vVa] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] output_dir image\n"),
+        ("usage: %s [-vVa] [-i imgtype] [-b dev_sector_size] [-o sector_offset] output_dir image\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
-    tsk_fprintf(stderr,
-        "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     tsk_fprintf(stderr,
@@ -347,7 +345,7 @@ main(int argc, char **argv1)
      ssize = 0;
     TSK_OFF_T soffset = 0;
     TSK_TCHAR *cp;
-    TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_ALLOC;
+    TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_UNALLOC;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -391,8 +389,7 @@ main(int argc, char **argv1)
                     OPTARG);
                 usage();
             }
-            else
-                allImgs = false;
+            allImgs = false;
             break;
 
         case _TSK_T('i'):
