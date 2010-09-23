@@ -67,9 +67,12 @@ class TskAuto {
 
     uint8_t findFilesInImg();
     uint8_t findFilesInVs(TSK_OFF_T start);
+    uint8_t findFilesInVs(TSK_OFF_T start, TSK_VS_TYPE_ENUM vtype);
     uint8_t findFilesInFs(TSK_OFF_T start);
+    uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_INUM_T inum);
-    TSK_RETVAL_ENUM findFilesInFsRet(TSK_OFF_T start);
+    uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype, TSK_INUM_T inum);
+    TSK_RETVAL_ENUM findFilesInFsRet(TSK_OFF_T start, TSK_FS_TYPE_ENUM a_ftype);
 
     void setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_ENUM);
     void setVolFilterFlags(TSK_VS_PART_FLAG_ENUM);

@@ -126,7 +126,8 @@ static const char *tsk_err_hdb_str[TSK_ERR_HDB_MAX] = {
 static const char *tsk_err_auto_str[TSK_ERR_AUTO_MAX] = {
     "Database Error",
     "Corrupt file data",
-    "Error converting Unicode"
+    "Error converting Unicode",
+    "Image not opened yet"
 };
 
 

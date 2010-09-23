@@ -19,21 +19,18 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vVk] [-f fstype] [-i imgtype] [-b dev_sector_size] image\n"),
+        ("usage: %s [-vVk] [-i imgtype] [-b dev_sector_size] image [image]\n"),
         progname);
     tsk_fprintf(stderr, "\t-k: Don't create block data table\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
-    tsk_fprintf(stderr,
-        "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     
     exit(1);
 }
-
 
 
 
@@ -62,7 +59,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:tvVk"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:i:vVk"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -92,13 +89,13 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
+                
+        case _TSK_T('k'):
+            blkMapFlag = false;
+            break;
 
         case _TSK_T('v'):
             tsk_verbose++;
-            break;
-
-        case _TSK_T('k'):
-            blkMapFlag = false;
             break;
         
         case _TSK_T('V'):

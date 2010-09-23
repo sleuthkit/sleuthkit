@@ -13,7 +13,6 @@
 #include <locale.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <stdio.h>
 
 #include "tsk_recover.h"
 
@@ -24,16 +23,19 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vVa] [-i imgtype] [-b dev_sector_size] [-o sector_offset] output_dir image\n"),
+        ("usage: %s [-vVae] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] image [image] output_dir\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
+    tsk_fprintf(stderr,
+        "\t-f fstype: The file system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
+    tsk_fprintf(stderr, "\t-a: Recover allocated files only\n");
     tsk_fprintf(stderr,
-        "\t-a: Recover all files (allocated and unallocated)\n");
+        "\t-e: Recover all files (allocated and unallocated)\n");
     tsk_fprintf(stderr,
         "\t-o sector_offset: sector offset for a volume to recover (recovers only that volume)\n");
 
@@ -53,34 +55,42 @@ TskRecover::TskRecover(TSK_TCHAR * a_base_dir)
     m_fileCount = 0;
 }
 
-
+/** \internal
+ * Callback used to walk file content and write the results to the recovery file.
+ */
 static TSK_WALK_RET_ENUM
 file_walk_cb(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr,
     char *a_buf, size_t a_len, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
 {
+    //write to the file
 #ifdef TSK_WIN32
     DWORD written = 0;
-    //write to the file
     if (!WriteFile((HANDLE) a_ptr, a_buf, a_len, &written, NULL)) {
         fprintf(stderr, "Error writing file content\n");
-        return TSK_WALK_STOP;
+        return TSK_WALK_ERROR;
     }
 
 #else
     FILE *hFile = (FILE *) a_ptr;
     if (fwrite(a_buf, a_len, 1, hFile) != 1) {
         fprintf(stderr, "Error writing file content\n");
-        return TSK_WALK_STOP;
+        return TSK_WALK_ERROR;
     }
 #endif
     return TSK_WALK_CONT;
 }
 
 
+/**
+ * @returns 1 on error.
+ */
 uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 {
+    
 #ifdef TSK_WIN32
-
+    /* Step 1 is to make the full path in UTF-16 and create the 
+     * needed directories. */
+    
     // combine the volume name and path
     char path8[FILENAME_MAX];
     strncpy(path8, m_vsName, FILENAME_MAX);
@@ -185,7 +195,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     //try to write to the file
     if (tsk_fs_file_walk(a_fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) 0,
             file_walk_cb, handle)) {
-        fprintf(stderr, "Error walking file\n");
+        fprintf(stderr, "Error writing file %S\n", path16full);
         tsk_error_print(stderr);
         CloseHandle(handle);
         return 1;
@@ -258,7 +268,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 
     if (tsk_fs_file_walk(a_fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) 0,
             file_walk_cb, hFile)) {
-        fprintf(stderr, "Error walking: %s\n", fbuf);
+        fprintf(stderr, "Error writing file: %s\n", fbuf);
         tsk_error_print(stderr);
         fclose(hFile);
         return 1;
@@ -279,30 +289,26 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 
 TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
+    // skip a bunch of the files that we don't want to write
     if (isDotDir(fs_file, path))
         return TSK_OK;
-
-    if (isDir(fs_file))
+    else if (isDir(fs_file))
         return TSK_OK;
-
-    if (isNtfsSystemFiles(fs_file, path))
+    else if ((isNtfsSystemFiles(fs_file, path)) || (isFATSystemFiles(fs_file)))
         return TSK_OK;
-
-    if ((!fs_file->meta) || (fs_file->meta->size == 0))
-        return TSK_OK;
-
-    if (isFATSystemFiles(fs_file))
+    else if ((!fs_file->meta) || (fs_file->meta->size == 0))
         return TSK_OK;
 
     writeFile(fs_file, path);
-
     return TSK_OK;
 }
+
 
 TSK_FILTER_ENUM
 TskRecover::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
-    // if this is method was called, we know the image has a volume system. 
+    /* Set the flag to show that we have a volume system so that we
+     * make a volume directory. */
     m_writeVolumeDir = true;
     return TSK_FILTER_CONT;
 }
@@ -310,6 +316,7 @@ TskRecover::filterVol(const TSK_VS_PART_INFO * vs_part)
 TSK_FILTER_ENUM
 TskRecover::filterFs(TSK_FS_INFO * fs_info)
 {
+    // make a volume directory if we analyzing a volume system
     if (m_writeVolumeDir) {
         snprintf(m_vsName, FILENAME_MAX, "vol_%" PRIuOFF "/",
             fs_info->offset / m_img_info->sector_size);
@@ -319,12 +326,12 @@ TskRecover::filterFs(TSK_FS_INFO * fs_info)
 }
 
 uint8_t
-TskRecover::findFiles(bool all, TSK_OFF_T soffset)
+TskRecover::findFiles(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM a_ftype)
 {
     uint8_t retval;
 
-    if (!all)
-        retval = findFilesInFs(soffset * m_img_info->sector_size);
+    if (a_soffset)
+        retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_ftype);
     else
         retval = findFilesInImg();
 
@@ -336,13 +343,10 @@ int
 main(int argc, char **argv1)
 {
     TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
-
-    int
-     ch;
-    bool allImgs = true;
+    TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
+    int ch;
     TSK_TCHAR **argv;
-    unsigned int
-     ssize = 0;
+    unsigned int ssize = 0;
     TSK_OFF_T soffset = 0;
     TSK_TCHAR *cp;
     TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_UNALLOC;
@@ -361,7 +365,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:tvVa"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:ef:i:o:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -369,6 +373,10 @@ main(int argc, char **argv1)
                 argv[OPTIND]);
             usage();
 
+        case _TSK_T('a'):
+            walkflag = TSK_FS_DIR_WALK_FLAG_ALLOC;
+            break;
+            
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -379,18 +387,26 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
-
-        case _TSK_T('o'):
-            soffset = (TSK_OFF_T) TSTRTOUL(OPTARG, &cp, 0);
-            if (*cp || *cp == *OPTARG || soffset < 0) {
+                
+        case _TSK_T('e'):
+            walkflag =
+            (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_UNALLOC |
+                                         TSK_FS_DIR_WALK_FLAG_ALLOC);
+            break;
+                
+        case _TSK_T('f'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_fs_type_print(stderr);
+                exit(1);
+            }
+            fstype = tsk_fs_type_toid(OPTARG);
+            if (fstype == TSK_FS_TYPE_UNSUPP) {
                 TFPRINTF(stderr,
-                    _TSK_T
-                    ("invalid argument: sector offset must be positive: %s\n"),
-                    OPTARG);
+                         _TSK_T("Unsupported file system type: %s\n"), OPTARG);
                 usage();
             }
-            allImgs = false;
             break;
+
 
         case _TSK_T('i'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
@@ -404,6 +420,17 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
+                
+        case _TSK_T('o'):
+            soffset = (TSK_OFF_T) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || soffset < 0) {
+                TFPRINTF(stderr,
+                         _TSK_T
+                         ("invalid argument: sector offset must be positive: %s\n"),
+                         OPTARG);
+                usage();
+            }
+            break;
 
         case _TSK_T('v'):
             tsk_verbose++;
@@ -412,13 +439,6 @@ main(int argc, char **argv1)
         case _TSK_T('V'):
             tsk_version_print(stdout);
             exit(0);
-            break;
-
-        case _TSK_T('a'):
-            walkflag =
-                (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_UNALLOC |
-                TSK_FS_DIR_WALK_FLAG_ALLOC);
-            break;
         }
     }
 
@@ -429,16 +449,16 @@ main(int argc, char **argv1)
         usage();
     }
 
-    TskRecover tskRecover(argv[OPTIND]);
+    TskRecover tskRecover(argv[argc-1]);
 
-    tskRecover.setFileFilterFlags(walkflag);
-    if (tskRecover.openImage(argc - OPTIND - 1, &argv[OPTIND + 1], imgtype,
+    tskRecover.setFileFilterFlags(walkflag);    
+    if (tskRecover.openImage(argc - OPTIND - 1, &argv[OPTIND], imgtype,
             ssize)) {
         tsk_error_print(stderr);
         exit(1);
     }
 
-    if (tskRecover.findFiles(allImgs, soffset)) {
+    if (tskRecover.findFiles(soffset, fstype)) {
         tsk_error_print(stderr);
         exit(1);
     }

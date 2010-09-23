@@ -21,7 +21,7 @@ class TskRecover:public TskAuto {
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
-    uint8_t findFiles(bool all, TSK_OFF_T soffset);
+    uint8_t findFiles(TSK_OFF_T soffset, TSK_FS_TYPE_ENUM a_ftype);
 
   private:
      TSK_TCHAR * m_base_dir;

@@ -14,9 +14,7 @@
 #include <locale.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include <stdio.h>
 #include <set>
-#include <stdlib.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -25,6 +23,11 @@
 #include <dirent.h>
 #endif
 
+/* The general concept of this procedure is to walk the image and load the file and dir names
+ * into a structure.  Then, analyze the directory to see if the name is in there or not. If it
+ * was found, remove it.  At the end, we'll have a list of names that were in either the image
+ * or dir, but not both. */
+
 static TSK_TCHAR *progname;
 
 static void
@@ -32,76 +35,34 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-o sector_offset] [-n start_inum] image comparison_directory\n"),
+        ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-n start_inum] [-vV] image [image] comparison_directory\n"),
         progname);
 
+    tsk_fprintf(stderr,
+        "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
+    tsk_fprintf(stderr,
+        "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");    
+    tsk_fprintf(stderr,
+        "\t-f fstype: The file system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-o sector_offset: sector offset for file system to compare\n");
     tsk_fprintf(stderr,
         "\t-n start_inum: inum for directory in image file to start compare at\n");
+    tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
+    tsk_fprintf(stderr, "\t-V: Print version\n");
 
     exit(1);
 }
 
 
-
-TSK_RETVAL_ENUM
-    TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
-{
-    //exclude certain types
-    if (isDotDir(a_fs_file, a_path))
-        return TSK_OK;
-
-    if (isDir(a_fs_file))
-        return TSK_OK;
-
-    if (isNtfsSystemFiles(a_fs_file, a_path))
-        return TSK_OK;
-
-    if ((!a_fs_file->meta) || (a_fs_file->meta->size == 0))
-        return TSK_OK;
-
-    if (isFATSystemFiles(a_fs_file))
-        return TSK_OK;
-
-#ifdef WIN32
-    size_t PATH_MAX = FILENAME_MAX;
-#endif
-
-    //create the full path
-    size_t len = strlen(a_fs_file->name->name) + strlen(a_path) + 1;
-    char *fullPath = (char *) tsk_malloc(len);
-    if (fullPath == NULL)
-        return TSK_ERR;
-
-    snprintf(fullPath, len, "/");
-    strncat(fullPath, a_path, len-strlen(fullPath));
-    strncat(fullPath, a_fs_file->name->name, len-strlen(fullPath));
-
-    //convert path for win32
-#ifdef WIN32
-    for (int i = 0; i < strlen(fullPath); i++) {
-        if (fullPath[i] == '/')
-            fullPath[i] = '\\';
-    }
-#endif
-
-    //add the path to the set
-    m_filesInImg.insert(fullPath);
-    return TSK_OK;
-}
-
-TSK_FILTER_ENUM
-    TskCompareDir::filterVol(const TSK_VS_PART_INFO * a_vs_part)
-{
-    fprintf(stderr, "Given image with volumes without specifying offset");
-    return TSK_FILTER_STOP;
-}
-
-
+/**
+ * Process a local directory and compare its contents with the image.
+ * This will recursively call itself on subdirectories. 
+ * @param a_dir Subdirectory of m_lclDir to process. 
+ * @returns 1 on error
+ */
 uint8_t
-    TskCompareDir::compareLclFiles(const TSK_TCHAR * a_base_dir,
-    const TSK_TCHAR * dir)
+    TskCompareDir::processLclDir(const TSK_TCHAR * a_dir)
 {
     std::set < char *, ltstr >::iterator it;
 
@@ -114,9 +75,9 @@ uint8_t
     char file8[FILENAME_MAX];
 
     //create the full path (utf16)
-    wcsncpy(fullpath, (wchar_t *) a_base_dir, FILENAME_MAX);
-    if (wcslen((wchar_t *) dir) > 0)
-        wcsncat(fullpath, dir, FILENAME_MAX);
+    wcsncpy(fullpath, (wchar_t *) m_lclDir, FILENAME_MAX);
+    if (wcslen((wchar_t *) a_dir) > 0)
+        wcsncat(fullpath, a_dir, FILENAME_MAX);
 
     wcsncat(fullpath, L"\\*", FILENAME_MAX);
 
@@ -137,17 +98,20 @@ uint8_t
 
     do {
         wchar_t file[FILENAME_MAX];
-        wcsncpy(file, dir, FILENAME_MAX);
+        wcsncpy(file, a_dir, FILENAME_MAX);
         wcsncat(file, L"\\", FILENAME_MAX);
         wcsncat(file, ffd.cFileName, FILENAME_MAX);
         //if the file is a directory make recursive call
         if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            if (file[wcslen(file) - 1] != L'.')
-                if (compareLclFiles(a_base_dir, file))
-                    return 1;
+            // skip the '.' and '..' entries
+            if ((file[0] == L'.') && ((file[1] == '\0') || ((file[1] == L'.') && (file[2] == '\0')))) {
+                // do nothing
+            }
+            else if (processLclDir(file))
+                return 1;
+            }
         }
         else {
-
             /* convert from utf16 to utf8 to try to find the file in the set
              * of names that were found in the image file. */
             utf8 = (UTF8 *) file8;
@@ -187,27 +151,32 @@ uint8_t
     char fullPath[PATH_MAX];
     struct stat status;
 
-    strncpy(fullPath, a_base_dir, PATH_MAX);
-    strncat(fullPath, dir, PATH_MAX);
+    strncpy(fullPath, m_lclDir, PATH_MAX);
+    strncat(fullPath, a_dir, PATH_MAX);
     if ((dp = opendir(fullPath)) == NULL) {
         fprintf(stderr, "Error opening directory");
         return 1;
     }
     while ((dirp = readdir(dp)) != NULL) {
-        strncpy(file, dir, PATH_MAX);
+        strncpy(file, a_dir, PATH_MAX);
         strncat(file, "/", PATH_MAX);
         strncat(file, dirp->d_name, PATH_MAX);
 
-        strncpy(fullPath, a_base_dir, PATH_MAX);
+        strncpy(fullPath, m_lclDir, PATH_MAX);
         strncat(fullPath, file, PATH_MAX);
 
         stat(fullPath, &status);
         if (S_ISDIR(status.st_mode)) {
-            if (file[strlen(file) - 1] != '.')
-                if (compareLclFiles(a_base_dir, file))
-                    return 1;
+            // skip the '.' and '..' entries
+            if ((file[0] == '.') && ((file[1] == '\0') || ((file[1] == '.') && (file[2] == '\0')))) {
+                // do nothing
+            }
+            else if (processLclDir(file)) {
+                return 1;
+            }
         }
         else {
+            // see if we already saw this file in the image
             it = m_filesInImg.find(file);
             if (it != m_filesInImg.end()) {
                 m_filesInImg.erase(it);
@@ -224,6 +193,59 @@ uint8_t
 }
 
 
+/********** Methods that load the internal list / set with info from the image **********/
+
+TSK_RETVAL_ENUM
+TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
+{
+    //exclude certain types
+    if (isDotDir(a_fs_file, a_path))
+        return TSK_OK;
+    
+    if (isDir(a_fs_file))
+        return TSK_OK;
+    
+    if ((isNtfsSystemFiles(a_fs_file, a_path)) || (isFATSystemFiles(a_fs_file)))
+        return TSK_OK;
+    
+    if (!a_fs_file->meta)
+        return TSK_OK;
+    
+#ifdef WIN32
+    size_t PATH_MAX = FILENAME_MAX;
+#endif
+    
+    //create the full path
+    size_t len = strlen(a_fs_file->name->name) + strlen(a_path) + 1;
+    char *fullPath = (char *) tsk_malloc(len);
+    if (fullPath == NULL)
+        return TSK_ERR;
+    
+    snprintf(fullPath, len, "/");
+    strncat(fullPath, a_path, len-strlen(fullPath));
+    strncat(fullPath, a_fs_file->name->name, len-strlen(fullPath));
+    
+    //convert path for win32
+#ifdef WIN32
+    for (int i = 0; i < strlen(fullPath); i++) {
+        if (fullPath[i] == '/')
+            fullPath[i] = '\\';
+    }
+#endif
+    
+    //add the path to the internal list/set
+    m_filesInImg.insert(fullPath);
+    return TSK_OK;
+}
+
+TSK_FILTER_ENUM
+TskCompareDir::filterVol(const TSK_VS_PART_INFO * a_vs_part)
+{
+    fprintf(stderr, "Error: volume system detected.  You must specify a specific file system using '-o'\n");
+    return TSK_FILTER_STOP;
+}
+
+
 
 /*
  * @param a_soffset Sector offset where file system to analyze is located
@@ -233,24 +255,25 @@ uint8_t
  */
 uint8_t
     TskCompareDir::compareDirs(TSK_OFF_T a_soffset, TSK_INUM_T a_inum,
-    const TSK_TCHAR * a_lcl_dir)
+    TSK_FS_TYPE_ENUM a_fstype, const TSK_TCHAR * a_lcl_dir)
 {
     uint8_t retval;
 
     // collect the file names that are in the disk image
     if (a_inum != 0)
         retval =
-            findFilesInFs(a_soffset * m_img_info->sector_size, a_inum);
+            findFilesInFs(a_soffset * m_img_info->sector_size, a_fstype, a_inum);
     else
-        retval = findFilesInFs(a_soffset * m_img_info->sector_size);
+        retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_fstype);
 
     if (retval)
         return 1;
 
     m_missDirFile = false;
+    m_lclDir = a_lcl_dir;
 
-    // compare with the local files
-    if (compareLclFiles(a_lcl_dir, (TSK_TCHAR *) _TSK_T("")))
+    // process the local directory
+    if (processLclDir(_TSK_T("")))
         return 1;
 
     if (!m_missDirFile)
@@ -274,6 +297,10 @@ int
 main(int argc, char **argv1)
 {
     TSK_TCHAR **argv;
+    TSK_IMG_TYPE_ENUM imgtype = TSK_IMG_TYPE_DETECT;
+    TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
+    unsigned int ssize = 0;
+    
 #ifdef WIN32
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if (argv == NULL) {
@@ -292,7 +319,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("o:n:"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:n:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -300,16 +327,44 @@ main(int argc, char **argv1)
                 argv[OPTIND]);
             usage();
 
-        case _TSK_T('o'):
-            soffset = (TSK_OFF_T) TSTRTOUL(OPTARG, &cp, 0);
-            if (*cp || *cp == *OPTARG || soffset < 0) {
+        case _TSK_T('b'):
+            ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || ssize < 1) {
                 TFPRINTF(stderr,
-                    _TSK_T
-                    ("invalid argument: sector offset must be positive: %s\n"),
-                    OPTARG);
+                         _TSK_T
+                         ("invalid argument: sector size must be positive: %s\n"),
+                         OPTARG);
                 usage();
             }
             break;
+                
+        case _TSK_T('f'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_fs_type_print(stderr);
+                exit(1);
+            }
+            fstype = tsk_fs_type_toid(OPTARG);
+            if (fstype == TSK_FS_TYPE_UNSUPP) {
+                TFPRINTF(stderr,
+                         _TSK_T("Unsupported file system type: %s\n"), OPTARG);
+                usage();
+            }
+            break;
+            
+            
+        case _TSK_T('i'):
+            if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
+                tsk_img_type_print(stderr);
+                exit(1);
+            }
+            imgtype = tsk_img_type_toid(OPTARG);
+            if (imgtype == TSK_IMG_TYPE_UNSUPP) {
+                TFPRINTF(stderr, _TSK_T("Unsupported image type: %s\n"),
+                         OPTARG);
+                usage();
+            }
+            break;
+            
 
         case _TSK_T('n'):
             inum = (TSK_INUM_T) TSTRTOUL(OPTARG, &cp, 0);
@@ -321,10 +376,29 @@ main(int argc, char **argv1)
                 usage();
             }
             break;
+        
+        case _TSK_T('o'):
+            soffset = (TSK_OFF_T) TSTRTOUL(OPTARG, &cp, 0);
+            if (*cp || *cp == *OPTARG || soffset < 0) {
+                TFPRINTF(stderr,
+                     _TSK_T
+                     ("invalid argument: sector offset must be positive: %s\n"),
+                     OPTARG);
+                usage();
+            }
+            break;
+        
+        case _TSK_T('v'):
+            tsk_verbose++;
+            break;
+            
+        case _TSK_T('V'):
+            tsk_version_print(stdout);
+            exit(0);
         }
     }
 
-    /* We need at least one more argument */
+    /* We need at least two more argument */
     if (OPTIND + 1 >= argc) {
         tsk_fprintf(stderr,
             "Missing output directory and/or image name\n");
@@ -335,12 +409,12 @@ main(int argc, char **argv1)
 
     tskCompareDir.setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_ALLOC);
 
-    if (tskCompareDir.openImage(1, &argv[OPTIND], TSK_IMG_TYPE_DETECT, 0)) {
+    if (tskCompareDir.openImage(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize)) {
         tsk_error_print(stderr);
         exit(1);
     }
 
-    if (tskCompareDir.compareDirs(soffset, inum, argv[OPTIND + 1])) {
+    if (tskCompareDir.compareDirs(soffset, inum, fstype, argv[argc - 1])) {
         tsk_error_print(stderr);
         exit(1);
     }

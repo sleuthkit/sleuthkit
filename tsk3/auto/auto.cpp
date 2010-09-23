@@ -109,7 +109,9 @@ void
 uint8_t TskAuto::findFilesInImg()
 {
     if (!m_img_info) {
-        // @@@
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_NOTOPEN;
+        snprintf(tsk_errstr, TSK_ERRSTR_L, "findFilesInImg\n");
         return 1;
     }
     if (findFilesInVs(0)) {
@@ -141,7 +143,7 @@ TSK_WALK_RET_ENUM
 
     TSK_RETVAL_ENUM retval2 =
         tsk->findFilesInFsRet(a_vs_part->start *
-        a_vs_part->vs->block_size);
+        a_vs_part->vs->block_size, TSK_FS_TYPE_DETECT);
     if (retval2 == TSK_STOP) {
         return TSK_WALK_STOP;
     }
@@ -158,15 +160,18 @@ TSK_WALK_RET_ENUM
 
 /**
  * Starts in a specified sector of the opened disk images and looks for a 
- * volume or file system. Will call processFile() on each file
+ * volume system or file system. Will call processFile() on each file
  * that is found. 
  * @param a_start Byte offset to start analyzing from. 
+ * @param a_vtype Volume system type to analyze
  * @return 1 on error, 0 on success
  */
-uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
+uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
 {
     if (!m_img_info) {
-        // @@@
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_NOTOPEN;
+        snprintf(tsk_errstr, TSK_ERRSTR_L, "findFilesInVs\n");
         return 1;
     }
 
@@ -175,7 +180,7 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
     // USE mm_walk to get the volumes 
     if ((vs_info =
             tsk_vs_open(m_img_info, a_start,
-                TSK_VS_TYPE_DETECT)) == NULL) {
+                a_vtype)) == NULL) {
         if (tsk_verbose)
             fprintf(stderr,
                 "Error determining volume system -- trying file systems\n");
@@ -198,18 +203,32 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
     return 0;
 }
 
-
 /**
  * Starts in a specified sector of the opened disk images and looks for a 
- * file system. Will call processFile() on each file
+ * volume system or file system. Will call processFile() on each file
  * that is found. 
+ * @param a_start Byte offset to start analyzing from. 
+ * @return 1 on error, 0 on success
+ */
+uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
+{
+    return findFilesInVs(a_start, TSK_VS_TYPE_DETECT);
+}
+
+
+/** 
+ * Starts in a specified sector of the opened disk images and looks for a 
+ * file system. Will call processFile() on each file
+ * that is found.  Same as findFilesInFs, but gives more detailed return values.
  * @param a_start Byte offset to start analyzing from. 
  * @returns values that allow the caller to differentiate stop from ok.  
  */
-TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start)
+TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
 {
     if (!m_img_info) {
-        // @@@
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_NOTOPEN;
+        snprintf(tsk_errstr, TSK_ERRSTR_L, "findFilesInFsRet\n");        
         return TSK_ERR;
     }
 
@@ -217,14 +236,14 @@ TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start)
         fs_info;
     /* Try it as a file system */
     if ((fs_info =
-            tsk_fs_open_img(m_img_info, a_start,
-                TSK_FS_TYPE_DETECT)) == NULL) {
+            tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
         tsk_error_print(stderr);
 
         /* We could do some carving on the volume data at this point */
 
         return TSK_ERR;
     }
+    
     TSK_RETVAL_ENUM
         retval = findFilesInFsInt(fs_info, fs_info->root_inum);
     tsk_fs_close(fs_info);
@@ -242,7 +261,7 @@ TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start)
  */
 uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start)
 {
-    if (findFilesInFsRet(a_start) == TSK_ERR)
+    if (findFilesInFsRet(a_start, TSK_FS_TYPE_DETECT) == TSK_ERR)
         return 1;
     else
         return 0;
@@ -251,19 +270,40 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start)
 
 /** 
  * Starts in a specified sector of the opened disk images and looks for a 
+ * file system. Will call processFile() on each file
+ * that is found. 
+ *
+ * @param a_start Byte offset of file system starting location.
+ * @param a_ftype Type of file system that is located at the offset.
+ *
+ * @returns 1 on error and 0 on success
+ */
+uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
+{
+    if (findFilesInFsRet(a_start, a_ftype) == TSK_ERR)
+        return 1;
+    else
+        return 0;
+}
+
+/** 
+ * Starts in a specified sector of the opened disk images and looks for a 
  * file system. Will start processing the file system at a specified 
  * file system. Will call processFile() on each file
  * that is found in that directory. 
  *
  * @param a_start Byte offset of file system starting location.
- * @param a_inum inum to start walking files system at
+ * @param a_ftype Type of file system that will be analyzed.
+ * @param a_inum inum to start walking files system at.
  *
  * @returns 1 on error and 0 on success
  */
-uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
+uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype, TSK_INUM_T a_inum)
 {
     if (!m_img_info) {
-        // @@@
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_NOTOPEN;
+        snprintf(tsk_errstr, TSK_ERRSTR_L, "findFilesInFs\n");        
         return 1;
     }
 
@@ -272,7 +312,7 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
     /* Try it as a file system */
     if ((fs_info =
             tsk_fs_open_img(m_img_info, a_start,
-                TSK_FS_TYPE_DETECT)) == NULL) {
+                a_ftype)) == NULL) {
         tsk_error_print(stderr);
 
         /* We could do some carving on the volume data at this point */
@@ -286,6 +326,23 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
         return 1;
     else
         return 0;
+}
+
+
+/** 
+ * Starts in a specified sector of the opened disk images and looks for a 
+ * file system. Will start processing the file system at a specified 
+ * file system. Will call processFile() on each file
+ * that is found in that directory. 
+ *
+ * @param a_start Byte offset of file system starting location.
+ * @param a_inum inum to start walking files system at.
+ *
+ * @returns 1 on error and 0 on success
+ */
+uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
+{
+    return TskAuto::findFilesInFs(a_start, TSK_FS_TYPE_DETECT, a_inum);
 }
 
 

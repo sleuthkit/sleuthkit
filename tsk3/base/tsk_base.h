@@ -309,7 +309,8 @@ extern "C" {
 #define TSK_ERR_AUTO_DB (TSK_ERR_AUTO | 0)
 #define TSK_ERR_AUTO_CORRUPT (TSK_ERR_AUTO | 1)
 #define TSK_ERR_AUTO_UNICODE (TSK_ERR_AUTO | 2)
-#define TSK_ERR_AUTO_MAX 3
+#define TSK_ERR_AUTO_NOTOPEN (TSK_ERR_AUTO | 3)
+#define TSK_ERR_AUTO_MAX 4
 //@}
 
 
