@@ -107,7 +107,7 @@ uint8_t
             if ((file[0] == L'.') && ((file[1] == '\0') || ((file[1] == L'.') && (file[2] == '\0')))) {
                 // do nothing
             }
-            else if (processLclDir(file))
+            else if (processLclDir(file)) {
                 return 1;
             }
         }
