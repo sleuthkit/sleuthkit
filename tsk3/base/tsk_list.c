@@ -130,6 +130,7 @@ tsk_list_add(TSK_LIST ** a_tsk_list_head, uint64_t a_key)
         else if (a_key == tmp->next->key + 1) {
             tmp->next->key++;
             tmp->next->len++;
+            return 0;
         }
         // do we need a new bucket in between?
         else if (a_key > tmp->next->key) {
@@ -172,7 +173,8 @@ tsk_list_find(TSK_LIST * a_tsk_list_head, uint64_t a_key)
     tmp = a_tsk_list_head;
     while (tmp != NULL) {
         // check this bucket
-        if ((a_key <= tmp->key) && (a_key > tmp->key - tmp->len))
+        // use the key+1 and then subtract for unsigned cases when key-len == -1
+        if ((a_key <= tmp->key) && (a_key >= tmp->key + 1 - tmp->len))
             return 1;
 
         // Have we passed any potential buckets?
