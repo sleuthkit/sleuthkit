@@ -227,7 +227,7 @@ TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     
     //convert path for win32
 #ifdef WIN32
-    for (int i = 0; i < strlen(fullPath); i++) {
+    for (size_t i = 0; i < strlen(fullPath); i++) {
         if (fullPath[i] == '/')
             fullPath[i] = '\\';
     }
