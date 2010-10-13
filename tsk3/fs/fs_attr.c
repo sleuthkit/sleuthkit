@@ -364,6 +364,19 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     return 0;
 }
 
+static void
+dump_attr(TSK_FS_ATTR *a_fs_attr)
+{
+    TSK_FS_ATTR_RUN *cur_run;
+    cur_run = a_fs_attr->nrd.run;
+
+    fprintf(stderr, "Attribute Run Dump:\n");
+    for (cur_run = a_fs_attr->nrd.run; cur_run; cur_run = cur_run->next) {
+        fprintf(stderr, "  %"PRIuDADDR" to %"PRIuDADDR" %sFiller\n", 
+                cur_run->offset, cur_run->offset + cur_run->len - 1,
+                (cur_run->flags & TSK_FS_ATTR_RUN_FLAG_FILLER)?"":"Not");
+    }
+}
 
 /**
  * \internal
@@ -449,6 +462,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
                     PRIuOFF ") is larger than FILLER (%" PRIuOFF ") (%"
                     PRIuINUM ")", a_data_run_new->offset,
                     data_run_cur->offset, a_fs_attr->fs_file->meta->addr);
+                dump_attr(a_fs_attr);
                 return 1;
             }
 
@@ -532,7 +546,6 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
      * At this point data_run_prev is the end of the existing list or
      * 0 if there is no list
      */
-
     /* This is an error condition.  
      * It means that we cycled through the existing runs,
      * ended at a VCN that is larger than what we are adding,
@@ -557,6 +570,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
             "): No filler entry for %" PRIuDADDR ". Final: %" PRIuDADDR,
             a_fs_attr->fs_file->meta->addr, a_data_run_new->offset,
             data_run_prev->offset + data_run_prev->len);
+        dump_attr(a_fs_attr);
         return 1;
     }
 
