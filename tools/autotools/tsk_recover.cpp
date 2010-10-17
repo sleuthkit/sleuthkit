@@ -42,6 +42,28 @@ usage()
     exit(1);
 }
 
+#ifdef TSK_WIN32
+#include <windows.h>
+#include "shlobj.h"
+#endif
+
+
+class TskRecover:public TskAuto {
+public:
+    TskRecover(TSK_TCHAR * a_base_dir);
+    virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
+    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
+    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
+    uint8_t findFiles(TSK_OFF_T soffset, TSK_FS_TYPE_ENUM a_ftype);
+    
+private:
+    TSK_TCHAR * m_base_dir;
+    uint8_t writeFile(TSK_FS_FILE * a_fs_file, const char *a_path);
+    char m_vsName[FILENAME_MAX];
+    bool m_writeVolumeDir;
+    int m_fileCount;
+};
+
 
 TskRecover::TskRecover(TSK_TCHAR * a_base_dir)
 {
