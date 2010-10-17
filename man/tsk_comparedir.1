@@ -1,0 +1,48 @@
+.TH TSK_COMPAREDIR 1 
+.SH NAME
+tsk_comparedir - compare the contents of a directory with the contents of an image or local device. 
+.SH SYNOPSIS
+.B tsk_comparedir [-vV] [-n
+.I start_inum
+.B ][ -i
+.I imgtype
+.B ][ -b
+.I dev_sector_size
+.B ][-o
+.I sector_offset
+.B ]
+.I image comparison_directory
+.SH DESCRIPTION
+.B tsk_loaddb
+compare the contents of
+.I image
+to the contents of
+.I comparison_directory.
+This can be useful for detecting rootkits and when testing.  Rootkits can be detected by comparing the contents of a local directory and a local raw device.  The rootkits typically don't hide data when it is read directly from the raw device. 
+
+The arguments are as follows:
+.IP "-o sector_offset"
+Sector offset for a partition in the image or device to compare with.
+.IP "-n start_inum"
+Starting inum for a directory in the image to start the comparison at.
+.IP -v
+verbose output to stderr
+.IP -V
+Print version
+.IP "-i imgtype"
+The format of the image file (use '-i list' for supported types)
+If not given, autodetection methods are used.
+.IP "-b dev_sector_size"
+The size (in bytes) of the device sectors
+If not given, autodetection methods are used.
+
+.SH EXAMPLES
+To compare the directories in image.dd to those in directory:
+
+	# tsk_comparedir ./image.dd ./directory
+
+
+.SH AUTHOR
+Brian Carrier <carrier at sleuthkit dot org>
+
+Send documentation updates to <doc-updates at sleuthkit dot org>
