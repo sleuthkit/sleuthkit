@@ -43,6 +43,8 @@ main(int argc, char **argv1)
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
+    TSK_TCHAR *output_dir = NULL;
+    
     bool blkMapFlag = true;   // true if we are going to write the block map
 
 #ifdef TSK_WIN32
@@ -59,13 +61,14 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:i:vVk"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:d:i:vVk"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
+                
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -94,6 +97,10 @@ main(int argc, char **argv1)
             blkMapFlag = false;
             break;
 
+        case _TSK_T('d'):
+            output_dir = OPTARG;
+            break;
+
         case _TSK_T('v'):
             tsk_verbose++;
             break;
@@ -114,7 +121,7 @@ main(int argc, char **argv1)
     tskDb.createBlockMap(blkMapFlag);
 
     //tskRecover.setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_UNALLOC);
-    if (tskDb.openImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
+    if (tskDb.openImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize, output_dir)) {
         tsk_error_print(stderr);
         exit(1);
     }

@@ -38,11 +38,37 @@ void
     m_blkMapFlag = flag;
 }
 
+/**
+ * Open the image to be analyzed.  Creates the database in the same
+ * directory as the image (with .db appended to the name).
+ * @param a_num Number of images
+ * @param a_images Images to open
+ * @param a_type Image file format
+ * @param a_ssize Sector size in bytes
+ * @return Resturns 1 on error
+ */
 uint8_t
-    TskAutoDb::openImage(int num, const TSK_TCHAR * const images[],
-    TSK_IMG_TYPE_ENUM type, unsigned int a_ssize)
+TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
+                     TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize)
 {
-    TSK_TCHAR img[1024];
+    return openImage(a_num, a_images, a_type, a_ssize, NULL);    
+}
+
+/**
+ * Open the image to be analyzed.  Creates the database in the specified
+ * directory (with .db appended to the name).
+ * @param a_num Number of images
+ * @param a_images Images to open
+ * @param a_type Image file format
+ * @param a_ssize Sector size in bytes
+ * @param a_output_dir Output directory to place database into or NULL to place it in the same directory as the image. 
+ * @return Resturns 1 on error
+ */
+uint8_t
+    TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, TSK_TCHAR * a_output_dir)
+{
+    TSK_TCHAR dbFile[1024];
     char foo[1024];
 
     if (m_db) {
@@ -52,25 +78,66 @@ uint8_t
     m_curFsId = 0;
     m_curVsId = 0;
 
-    uint8_t retval = TskAuto::openImage(num, images, type, a_ssize);
+    uint8_t retval = TskAuto::openImage(a_num, a_images, a_type, a_ssize);
     // open the DB
     if (retval != 0) {
         return retval;
     }
 
     // make name of database
-
 #ifdef TSK_WIN32
-    wcsncpy(img, images[0], 1024);
-    wcsncat(img, L".db", 1024);
-    if (sqlite3_open16(img, &m_db)) {
+    if (a_output_dir != NULL){
+        wcsncpy(dbFile, a_output_dir, 1024);
+        
+        if(dbFile[wcslen(dbFile) - 1] != '/' && dbFile[wcslen(dbFile) - 1] != '\\')
+            wcsncat(dbFile, L"\\", 1024-wcslen(dbFiel));
+        
+        // get the image name w/out the path
+        size_t j;
+        for (j = wcslen(a_images[0]) - 1; j > 0; j--) {
+            if ((a_images[0][j] == '/') || (a_images[0][j] == '\\')) {
+                j++;
+                break;
+            }
+        }
+        
+        wcsncat(dbFile, &a_images[0][j], 1024-wcslen(dbFiel));
+        wcsncat(dbFile, L".db", 1024-wcslen(dbFiel));
+    }
+    else{
+        wcsncpy(dbFile, a_images[0], 1024);
+        wcsncat(dbFile, L".db", 1024-wcslen(dbFile));
+    }
+    
+    if (sqlite3_open16(dbFile, &m_db)) {
         fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(m_db));
         sqlite3_close(m_db);
         return 1;
     }
 #else
-    snprintf(img, 1024, "%s.db", images[0]);
-    if (sqlite3_open(img, &m_db)) {
+    if (a_output_dir != NULL){
+        strncpy(dbFile, a_output_dir, 1024);
+        
+        if(dbFile[strlen(dbFile) - 1] != '/')
+            strncat(dbFile, "/", 1024-strlen(dbFile));
+        
+        // get the image name
+        size_t j;
+        for (j = strlen(a_images[0]) - 1; j > 0; j--) {
+            if ((a_images[0][j] == '/') || (a_images[0][j] == '\\')) {
+                j++;
+                break;
+            }
+        }        
+        
+        strncat(dbFile, &a_images[0][j], 1024-strlen(dbFile));
+        strncat(dbFile, ".db", 1024-strlen(dbFile));
+    }
+    else {
+        snprintf(dbFile, 1024, "%s.db", a_images[0]);
+    }
+    
+    if (sqlite3_open(dbFile, &m_db)) {
         fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(m_db));
         sqlite3_close(m_db);
         return 1;
@@ -138,7 +205,7 @@ uint8_t
 
     snprintf(foo, 1024,
         "INSERT INTO tsk_image_info (type, ssize) VALUES (%d, %u);",
-        (int) type, m_img_info->sector_size);
+        (int) a_type, m_img_info->sector_size);
     if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_AUTO_DB;
@@ -159,7 +226,7 @@ uint8_t
         return 1;
     }
 
-    for (int i = 0; i < num; i++) {
+    for (int i = 0; i < a_num; i++) {
         int a;
         char *img_ptr = NULL;
 #ifdef TSK_WIN32
@@ -168,11 +235,11 @@ uint8_t
         UTF16 *ptr16;
 
         ptr8 = (UTF8 *) img2;
-        ptr16 = (UTF16 *) images[i];
+        ptr16 = (UTF16 *) a_images[i];
 
         retval =
             tsk_UTF16toUTF8_lclorder((const UTF16 **) &ptr16, (UTF16 *)
-            & ptr16[TSTRLEN(images[i]) + 1], &ptr8,
+            & ptr16[TSTRLEN(a_images[i]) + 1], &ptr8,
             (UTF8 *) ((uintptr_t) ptr8 + 1024), TSKlenientConversion);
         if (retval != TSKconversionOK) {
             tsk_error_reset();
@@ -183,7 +250,7 @@ uint8_t
         }
         img_ptr = img2;
 #else
-        img_ptr = (char *) images[i];
+        img_ptr = (char *) a_images[i];
 #endif
 
         // get only the file name (ignore the directory name)

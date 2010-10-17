@@ -512,7 +512,14 @@
 			isa = PBXProject;
 			buildConfigurationList = 026FB3840D19C831000434C7 /* Build configuration list for PBXProject "sleuthkit" */;
 			compatibilityVersion = "Xcode 2.4";
+			developmentRegion = English;
 			hasScannedForEncodings = 0;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 026FB3810D19C831000434C7;
 			projectDirPath = "";
 			projectRoot = "";
