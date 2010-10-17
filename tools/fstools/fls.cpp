@@ -75,7 +75,7 @@ main(int argc, char **argv1)
     TSK_FS_INFO *fs;
 
     TSK_INUM_T inode;
-    int name_flags = TSK_FS_NAME_FLAG_ALLOC | TSK_FS_NAME_FLAG_UNALLOC;
+    int name_flags = TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC;
     int ch;
     extern int OPTIND;
     int fls_flags;
@@ -123,7 +123,7 @@ main(int argc, char **argv1)
             }
             break;
         case _TSK_T('d'):
-            name_flags &= ~TSK_FS_NAME_FLAG_ALLOC;
+            name_flags &= TSK_FS_DIR_WALK_FLAG_ALLOC;
             break;
         case _TSK_T('D'):
             fls_flags &= ~TSK_FS_FLS_FILE;
@@ -180,7 +180,7 @@ main(int argc, char **argv1)
             sec_skew = TATOI(OPTARG);
             break;
         case _TSK_T('u'):
-            name_flags &= ~TSK_FS_NAME_FLAG_UNALLOC;
+            name_flags &= TSK_FS_DIR_WALK_FLAG_UNALLOC;
             break;
         case _TSK_T('v'):
             tsk_verbose++;
@@ -216,8 +216,8 @@ main(int argc, char **argv1)
      ** set and we are only displaying files or deleted files
      */
     if ((name_flags & TSK_FS_DIR_WALK_FLAG_RECURSE)
-        && (((name_flags & TSK_FS_NAME_FLAG_UNALLOC)
-                && (!(name_flags & TSK_FS_NAME_FLAG_ALLOC)))
+        && (((name_flags & TSK_FS_DIR_WALK_FLAG_UNALLOC)
+                && (!(name_flags & TSK_FS_DIR_WALK_FLAG_ALLOC)))
             || ((fls_flags & TSK_FS_FLS_FILE)
                 && (!(fls_flags & TSK_FS_FLS_DIR))))) {
 
@@ -301,7 +301,7 @@ main(int argc, char **argv1)
     }
 
     if (tsk_fs_fls(fs, (TSK_FS_FLS_FLAG_ENUM) fls_flags, inode,
-            (TSK_FS_NAME_FLAG_ENUM) name_flags, macpre, sec_skew)) {
+            (TSK_FS_DIR_WALK_FLAG_ENUM) name_flags, macpre, sec_skew)) {
         tsk_error_print(stderr);
         fs->close(fs);
         img->close(img);

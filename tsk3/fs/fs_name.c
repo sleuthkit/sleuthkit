@@ -467,20 +467,29 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
 
         /* MAC times */
         tsk_fprintf(hFile, "\t");
-        tsk_fs_print_time(hFile, fs_file->meta->mtime - sec_skew);
+        if (fs_file->meta->mtime)
+            tsk_fs_print_time(hFile, fs_file->meta->mtime - sec_skew);
+        else
+            tsk_fs_print_time(hFile, fs_file->meta->mtime);
 
         tsk_fprintf(hFile, "\t");
         /* FAT only gives the day of last access */
-        if (TSK_FS_TYPE_ISFAT(fs->ftype))
+        if ((TSK_FS_TYPE_ISFAT(fs->ftype)) || (fs_file->meta->atime == 0))
             tsk_fs_print_day(hFile, fs_file->meta->atime);
         else
             tsk_fs_print_time(hFile, fs_file->meta->atime - sec_skew);
 
         tsk_fprintf(hFile, "\t");
-        tsk_fs_print_time(hFile, fs_file->meta->ctime - sec_skew);
+        if (fs_file->meta->ctime)
+            tsk_fs_print_time(hFile, fs_file->meta->ctime - sec_skew);
+        else
+            tsk_fs_print_time(hFile, fs_file->meta->ctime);
 
         tsk_fprintf(hFile, "\t");
-        tsk_fs_print_time(hFile, fs_file->meta->crtime - sec_skew);
+        if (fs_file->meta->crtime)
+            tsk_fs_print_time(hFile, fs_file->meta->crtime - sec_skew);
+        else
+            tsk_fs_print_time(hFile, fs_file->meta->crtime);
 
         /* use the stream size if one was given */
         if (fs_attr)
@@ -610,11 +619,24 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
             tsk_fprintf(hFile, "%" PRIuOFF "|", fs_file->meta->size);
 
         /* atime, mtime, ctime, crtime */
-        tsk_fprintf(hFile,
-            "%" PRIu32 "|%" PRIu32 "|%" PRIu32 "|%" PRIu32 "\n",
-            (uint32_t) (fs_file->meta->atime - time_skew),
-            (uint32_t) (fs_file->meta->mtime - time_skew),
-            (uint32_t) (fs_file->meta->ctime - time_skew),
-            (uint32_t) (fs_file->meta->crtime - time_skew));
+        if (fs_file->meta->atime)
+            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->atime - time_skew);
+        else
+            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->atime);
+
+        if (fs_file->meta->mtime)
+            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->mtime - time_skew);
+        else
+            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->mtime);
+        
+        if (fs_file->meta->ctime)
+            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->ctime - time_skew);
+        else
+            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->ctime);
+        
+        if (fs_file->meta->crtime)
+            tsk_fprintf(hFile, "%" PRIu32 "\n", fs_file->meta->crtime - time_skew);
+        else
+            tsk_fprintf(hFile, "%" PRIu32 "\n", fs_file->meta->crtime);
     }
 }
