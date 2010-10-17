@@ -1,0 +1,54 @@
+.TH TSK_GETTIMES 1 
+.SH NAME
+tsk_gettimes - Collect MAC times from a disk image into a body file.
+.SH SYNOPSIS
+.B tsk_gettiemes [-vV] [-i
+.I imgtype
+.B ] [-b
+.I dev_sector_size
+.B ] [-z
+.I zone
+.B ] [-f
+.I fstype
+.B ] [-s
+.I seconds
+.B ] 
+.I image
+.SH DESCRIPTION
+.B tsk_gettimes
+examines each of the file systems in a disk image and returns the data about them in the MACtime body format (the same as running 'fls -m' on each file system).  The output of this can be used as input to mactime to make a timeline of file activity. The data is printed to STDOUT, which can then be redirected to a file.
+
+The arguments are as follows:
+.IP -v
+verbose output to stderr
+.IP -V
+Print version
+.IP "-i imgtype"
+The format of the image file (use '-i list' for supported types)
+If not given, autodetection methods are used.
+.IP "-b dev_sector_size"
+The size (in bytes) of the device sectors
+If not given, autodetection methods are used.  
+.IP "-o sector_offset"
+Sector offset for a volume to recover (recovers only that volume)
+If not given, will attempt to recover all volumes in image and save them
+to different folders. 
+.IP "-s seconds"
+The time skew of the original system in seconds.  For example, if the
+original system was 100 seconds slow, this value would be \-100.  
+.IP "-z zone"
+The ASCII string of the time zone of the original system.  For
+example, EST or GMT.  These strings must be defined by your operating
+system and may vary.
+.IP "-s sec_skew" T
+
+.SH EXAMPLES
+To collect data about image image.dd:
+
+	# tsk_gettimes ./image.dd > body.txt
+
+.SH AUTHOR
+Brian Carrier <carrier at sleuthkit dot org>
+
+Send documentation updates to <doc-updates at sleuthkit dot org>
+

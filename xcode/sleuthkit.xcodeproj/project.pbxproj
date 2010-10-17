@@ -29,7 +29,6 @@
 		024D5A7A1166D46E00299079 /* auto.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = auto.cpp; sourceTree = "<group>"; };
 		024D5A7D11677D4D00299079 /* tsk_auto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tsk_auto.h; sourceTree = "<group>"; };
 		024D5A8211678B0D00299079 /* tsk_recover.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tsk_recover.cpp; sourceTree = "<group>"; };
-		024D5A8311678CD400299079 /* tsk_recover.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tsk_recover.h; sourceTree = "<group>"; };
 		025328FF0E59B5ED000595D8 /* img_io.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = img_io.c; sourceTree = "<group>"; };
 		025558630DA1C67E00A635EC /* fs_block.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = fs_block.c; sourceTree = "<group>"; };
 		025D0FC30DBCDDBF00A9420F /* hfind.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = hfind.cpp; sourceTree = "<group>"; };
@@ -157,6 +156,7 @@
 		02F9DE660D9BFCF2009C3F0E /* mmcat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = mmcat.cpp; sourceTree = "<group>"; };
 		02F9DE670D9BFCF2009C3F0E /* mmls.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = mmls.cpp; sourceTree = "<group>"; };
 		02F9DE680D9BFCF2009C3F0E /* mmstat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = mmstat.cpp; sourceTree = "<group>"; };
+		D721CF8A126B5A3500AA2B16 /* tsk_gettimes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tsk_gettimes.cpp; sourceTree = "<group>"; };
 		D79CAB5F1215B2A4004F70CE /* tsk_auto_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tsk_auto_i.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -235,10 +235,10 @@
 		024D5A7E11678B0D00299079 /* autotools */ = {
 			isa = PBXGroup;
 			children = (
+				D721CF8A126B5A3500AA2B16 /* tsk_gettimes.cpp */,
 				0211CC4D120211BD0047194A /* tsk_comparedir.cpp */,
 				0211CC4E120211BD0047194A /* tsk_comparedir.h */,
 				02DE5E44117B925700D94722 /* tsk_loaddb.cpp */,
-				024D5A8311678CD400299079 /* tsk_recover.h */,
 				024D5A8211678B0D00299079 /* tsk_recover.cpp */,
 			);
 			name = autotools;
