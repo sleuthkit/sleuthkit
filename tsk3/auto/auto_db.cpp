@@ -90,7 +90,7 @@ uint8_t
         wcsncpy(dbFile, a_output_dir, 1024);
         
         if(dbFile[wcslen(dbFile) - 1] != '/' && dbFile[wcslen(dbFile) - 1] != '\\')
-            wcsncat(dbFile, L"\\", 1024-wcslen(dbFiel));
+            wcsncat(dbFile, L"\\", 1024-wcslen(dbFile));
         
         // get the image name w/out the path
         size_t j;
@@ -101,8 +101,8 @@ uint8_t
             }
         }
         
-        wcsncat(dbFile, &a_images[0][j], 1024-wcslen(dbFiel));
-        wcsncat(dbFile, L".db", 1024-wcslen(dbFiel));
+        wcsncat(dbFile, &a_images[0][j], 1024-wcslen(dbFile));
+        wcsncat(dbFile, L".db", 1024-wcslen(dbFile));
     }
     else{
         wcsncpy(dbFile, a_images[0], 1024);

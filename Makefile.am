@@ -15,7 +15,8 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     win32/jls/jls.vcproj win32/mmls/mmls.vcproj \
     win32/mmstat/mmstat.vcproj win32/mmcat/mmcat.vcproj \
     win32/tsk_recover/tsk_recover.vcproj win32/tsk_loaddb/tsk_loaddb.vcproj \
-    win32/tsk_comparedir/tsk_compare.vcproj win32/tsk_loaddb/tsk_loaddb.vcproj \
+    win32/tsk_comparedir/tsk_compare.vcproj \
+    win32/tsk_gettimes/tsk_gettimes.vcproj \
     win32/tsk-win.sln \
     win32/libauxtools/libauxtools.vcproj \
     win32/libfstools/libfstools.vcproj \

@@ -195,6 +195,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_comparedir", "tsk_compa
 		{2D0B32C2-B035-4873-8E9A-4D4221D93F68} = {2D0B32C2-B035-4873-8E9A-4D4221D93F68}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_gettimes", "tsk_gettimes\tsk_gettimes.vcproj", "{11A8927C-F971-4104-A286-5DC11C25E2EC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{88B5F49E-6EBE-4FEA-8E5B-BE1F0DF7E8E8} = {88B5F49E-6EBE-4FEA-8E5B-BE1F0DF7E8E8}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_NoLibs|Win32 = Debug_NoLibs|Win32
@@ -382,6 +387,12 @@ Global
 		{8EE881F4-78DC-49C7-8845-E842358AC0FA}.Debug|Win32.Build.0 = Debug|Win32
 		{8EE881F4-78DC-49C7-8845-E842358AC0FA}.Release|Win32.ActiveCfg = Release|Win32
 		{8EE881F4-78DC-49C7-8845-E842358AC0FA}.Release|Win32.Build.0 = Release|Win32
+		{11A8927C-F971-4104-A286-5DC11C25E2EC}.Debug_NoLibs|Win32.ActiveCfg = Debug|Win32
+		{11A8927C-F971-4104-A286-5DC11C25E2EC}.Debug_NoLibs|Win32.Build.0 = Debug|Win32
+		{11A8927C-F971-4104-A286-5DC11C25E2EC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{11A8927C-F971-4104-A286-5DC11C25E2EC}.Debug|Win32.Build.0 = Debug|Win32
+		{11A8927C-F971-4104-A286-5DC11C25E2EC}.Release|Win32.ActiveCfg = Release|Win32
+		{11A8927C-F971-4104-A286-5DC11C25E2EC}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

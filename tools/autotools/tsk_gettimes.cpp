@@ -11,8 +11,8 @@
 
 #include "tsk3/tsk_tools_i.h"
 #include <locale.h>
-#include <sys/stat.h>
-#include <errno.h>
+#include <time.h>
+
 
 static TSK_TCHAR *progname;
 

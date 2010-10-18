@@ -14,8 +14,6 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-#include "tsk_recover.h"
-
 static TSK_TCHAR *progname;
 
 static void
@@ -120,7 +118,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     size_t ilen = strlen(path8);
     
     // clean up any control characters
-    for (int i = 0; i < ilen; i++) {
+    for (size_t i = 0; i < ilen; i++) {
         if (TSK_IS_CNTRL(path8[i]))
             path8[i] = '^';
     }
