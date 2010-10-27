@@ -1647,7 +1647,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         if (a_attr_map) {
             for (i = 0; i < a_attr_map->num_used; i++) {
                 if ((a_attr_map->type[i] == type) &&
-                    (memcmp(a_attr_map->name[i], (void *)(uintptr_t)attr+tsk_getu16(fs->endian, attr->name_off), attr->nlen*2) == 0)) {
+                    (memcmp(a_attr_map->name[i], (void *)((uintptr_t)attr+tsk_getu16(fs->endian, attr->name_off)), attr->nlen*2) == 0)) {
                     id_new = a_attr_map->newId[i];
                     break;
                 }
@@ -2195,7 +2195,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     TSK_INUM_T mftToDo[256];
     uint16_t mftToDoCnt = 0;
     NTFS_ATTRLIST_MAP *map;
-    uint8_t nextid = 0;
+    uint16_t nextid = 0;
     int a;
 
     if (tsk_verbose)
@@ -2261,7 +2261,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         (ntfs_attrlist *) ((uintptr_t) list + tsk_getu16(fs->endian,
                 list->len))) {
         uint8_t found;
-        uint32_t i;
+        int i;
 
         TSK_INUM_T mftnum = tsk_getu48(fs->endian, list->file_ref);
         uint32_t type = tsk_getu32(fs->endian, list->type);
