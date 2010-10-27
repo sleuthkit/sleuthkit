@@ -2192,8 +2192,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & ntfs->fs_info;
     ntfs_mft *mft;
     TSK_FS_LOAD_FILE load_file;
-    TSK_INUM_T hist[256];
-    uint16_t histcnt = 0;
+    TSK_INUM_T mftToDo[256];
+    uint16_t mftToDoCnt = 0;
     NTFS_ATTRLIST_MAP *map;
     uint8_t nextid = 0;
     int a;
@@ -2212,12 +2212,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         return 1;
     }
 
-    /* Clear the contents of the history buffer */
-    memset(hist, 0, sizeof(hist));
-
-    /* add ourselves to the history */
-    hist[histcnt++] = ntfs->mnum;
-
+    /* Clear the contents of the todo buffer */
+    memset(mftToDo, 0, sizeof(mftToDo));
 
     /* Get a copy of the attribute list stream using the above action */
     load_file.left = load_file.total = (size_t) fs_attr_attrlist->size;
@@ -2254,7 +2250,9 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
 
     /* The TSK design requres that each attribute have its own ID.
      * Therefore, we need to identify all of the unique attributes
-     * so that we can assign a unique ID to them. */
+     * so that we can assign a unique ID to them. 
+     * In this process, we will also identify the unique MFT entries to
+     * process. */
     nextid = fs_attr_attrlist->id;  // we won't see this entry in the list
     for (list = (ntfs_attrlist *) buf;
         (list) && ((uintptr_t) list < endaddr)
@@ -2268,12 +2266,21 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         TSK_INUM_T mftnum = tsk_getu48(fs->endian, list->file_ref);
         uint32_t type = tsk_getu32(fs->endian, list->type);
         uint16_t id = tsk_getu16(fs->endian, list->id);
+        
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_proc_attrlist: mft: %" PRIuINUM
+                " type %" PRIu32 " id %" PRIu16
+                "  VCN: %" PRIu64 "\n", mftnum, type,
+                id, tsk_getu64(fs->endian, list->start_vcn));
+        
 
         // keep track of the biggest ID that we saw.
         if (id > nextid)
             nextid = id;
 
-        // we can have duplicate entries at different VCNs.  Ignore those.
+        /* First identify the unique attributes.  
+         * we can have duplicate entries at different VCNs.  Ignore those. */
         found = 0;
         for (i = 0; i < map->num_used; i++) {
             if ((map->type[i] == type) && (memcmp(map->name[i], &list->name, list->nlen*2) == 0)) {
@@ -2291,6 +2298,22 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             if (map->num_used < 255)
                 map->num_used++;
         }
+        
+        /* also check the todo list -- skip the base entry 
+         * the goal here is to get a unique list of MFT entries
+         * to later process. */
+        if (mftnum != ntfs->mnum) {
+            found = 0;
+            for (i = 0; i < mftToDoCnt; i++) {
+                if (mftToDo[i] == mftnum) {
+                    found = 1;
+                    break;
+                }
+            }
+            if ((found == 0) && (mftToDoCnt < 256)) {
+                mftToDo[mftToDoCnt++] = mftnum;
+            }
+        }
     }
 
     // update the map and assign unique IDs
@@ -2302,42 +2325,13 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     }
 
 
-    /* Process the list & and call ntfs_proc_attr */
-    for (a = 0; a < map->num_used; a++) {
-  
-        uint16_t i;
+    /* Process the ToDo list & and call ntfs_proc_attr */
+    for (a = 0; a < mftToDoCnt; a++) {  
         TSK_RETVAL_ENUM retval;
-
-
-        /* Check the history to see if we have already processed this
-         * one before (if we have then we can skip it as we grabbed all
-         * of them last time
-         */
-        for (i = 0; i < histcnt; i++) {
-            if (hist[i] == map->extMft[a])
-                break;
-        }
-
-        if (hist[i] == map->extMft[a])
-            continue;
         
-        /* This is a new one, add it to the history, and process it */
-        if (histcnt < 256)
-            hist[histcnt++] = map->extMft[a];
-        
-
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "ntfs_proc_attrlist: mft: %" PRIuINUM
-                " type %" PRIu32 " id %" PRIu16
-                "  VCN: %" PRIu64 "\n", map->extMft[a], map->type[a],
-                map->newId[a], tsk_getu64(fs->endian, list->start_vcn));
-        /* 
-         * Read the MFT entry 
-         */
         /* Sanity check. */
-        if (map->extMft[a] < ntfs->fs_info.first_inum ||
-            map->extMft[a] > ntfs->fs_info.last_inum) {
+        if (mftToDo[a] < ntfs->fs_info.first_inum ||
+            mftToDo[a] > ntfs->fs_info.last_inum) {
 
             if (tsk_verbose) {
                 /* this case can easily occur if the attribute list was non-resident and the cluster has been reallocated */
@@ -2346,13 +2340,12 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                     "Invalid MFT file reference (%"
                     PRIuINUM
                     ") in the unallocated attribute list of MFT %"
-                    PRIuINUM "", map->extMft[a], ntfs->mnum);
+                    PRIuINUM "", mftToDo[a], ntfs->mnum);
             }
-
             continue;
         }
 
-        if ((retval = ntfs_dinode_lookup(ntfs, mft, map->extMft[a])) != TSK_OK) {
+        if ((retval = ntfs_dinode_lookup(ntfs, mft, mftToDo[a])) != TSK_OK) {
             // if the entry is corrupt, then continue
             if (retval == TSK_COR) {
                 if (tsk_verbose)
@@ -2387,7 +2380,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                     "Extension record %" PRIuINUM
                     " (file ref = %" PRIuINUM
                     ") is not for attribute list of %"
-                    PRIuINUM "", map->extMft[a], tsk_getu48(fs->endian,
+                    PRIuINUM "", mftToDo[a], tsk_getu48(fs->endian,
                         mft->base_ref), ntfs->mnum);
                 free(mft);
                 free(map);
@@ -2395,16 +2388,15 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                 return 1;
             }
         }
-        /* 
-         * Process the attribute seq for this MFT entry and add them
+         
+        /* Process the attribute seq for this MFT entry and add them
          * to the TSK_FS_META structure
          */
-
         if ((retval =
                 ntfs_proc_attrseq(ntfs, fs_file, (ntfs_attr *) ((uintptr_t)
                         mft + tsk_getu16(fs->endian, mft->attr_off)),
                     ntfs->mft_rsize_b - tsk_getu16(fs->endian,
-                        mft->attr_off), map->extMft[a], map)) != TSK_OK) {
+                        mft->attr_off), mftToDo[a], map)) != TSK_OK) {
 
             if (retval == TSK_COR) {
                 if (tsk_verbose)
