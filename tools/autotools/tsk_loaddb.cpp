@@ -19,9 +19,10 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vVk] [-i imgtype] [-b dev_sector_size] image [image]\n"),
+        ("usage: %s [-vVk] [-i imgtype] [-b dev_sector_size] [-d output_dir] image [image]\n"),
         progname);
     tsk_fprintf(stderr, "\t-k: Don't create block data table\n");
+    tsk_fprintf(stderr, "\t-d output_dir: The directory to store the database in (default is the same directory as the image)\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
