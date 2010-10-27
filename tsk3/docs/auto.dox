@@ -26,7 +26,9 @@ Inside of your TskAuto::processFile() method, you can read the contents of the f
 
 \section auto_filter Filtering Results
 
-With the methods defined above, TskAuto::processFile() will get called for all files and directories in an image.  This maybe more files than you want though.  There are two methods that will alert you when TskAuto is about to process a new volume or file system and will allow you to not process the volume or file system. 
+With the methods defined above, TskAuto::processFile() will get called for all files and directories in an image.  This maybe more files than you want though.  There are thtree methods that will alert you when TskAuto is about to process a new volume or file system and will allow you to not process the volume or file system. 
+
+You can implement the TskAuto::filterVs() method to learn about the volume system before it is processed.  The return value of this method can cause TskAuto to skip the volume system or stop processing the disk image entirely. 
 
 You can implement the TskAuto::filterVol() method to learn about each volume before it is processed.  The return value of this method can cause TskAuto to skip the volume or stop processing the disk image entirely. 
 

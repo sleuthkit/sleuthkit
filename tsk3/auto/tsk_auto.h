@@ -78,6 +78,17 @@ class TskAuto {
     void setVolFilterFlags(TSK_VS_PART_FLAG_ENUM);
 
     /**
+     * TskAuto calls this method before it processes the volume system that is found in an 
+     * image. You can use this to learn about the volume system before it is processed
+     * and you can force TskAuto to skip this volume system. 
+     * @param vs_info volume system details
+     * @returns Value to show if Vs should be processed, skipped, or process should stop.
+     */
+    virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info) {
+        return TSK_FILTER_CONT;
+    };
+    
+    /**
      * TskAuto calls this method before it processes each volume that is found in a 
      * volume system. You can use this to learn about each volume before it is processed
      * and you can force TskAuto to skip this volume.  The setvolFilterFlags() method can be
@@ -177,6 +188,7 @@ class TskAutoDb:public TskAuto {
     virtual void closeImage();
 
     uint8_t addFilesInImgToDB();
+    virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,

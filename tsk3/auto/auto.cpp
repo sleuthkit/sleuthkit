@@ -192,6 +192,12 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
         }
     }
     else {
+        TSK_FILTER_ENUM retval = filterVs(vs_info);
+        if (retval == TSK_FILTER_STOP)
+            return TSK_STOP;
+        else if (retval == TSK_FILTER_SKIP)
+            return TSK_OK;
+        
         /* Walk the allocated volumes (skip metadata and unallocated volumes) */
         if (tsk_vs_part_walk(vs_info, 0, vs_info->part_count - 1,
                 m_volFilterFlags, vsWalkCb, this)) {

@@ -274,14 +274,24 @@ uint8_t
         }
     }
 
-
     if (sqlite3_exec(m_db,
-            "CREATE TABLE tsk_vol_info (vol_id INTEGER PRIMARY KEY, start INTEGER NOT NULL, length INTEGER NOT NULL, desc TEXT, flags INTEGER);",
+            "CREATE TABLE tsk_vs_info (vs_type INTEGER, img_offset INTEGER NOT NULL, block_size INTEGER NOT NULL);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_AUTO_DB;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "Error creating tsk_vol_info table: %s\n", errmsg);
+            "Error creating tsk_vs_info table: %s\n", errmsg);
+        sqlite3_free(errmsg);
+        return 1;
+    }
+
+    if (sqlite3_exec(m_db,
+            "CREATE TABLE tsk_vs_parts (vol_id INTEGER PRIMARY KEY, start INTEGER NOT NULL, length INTEGER NOT NULL, desc TEXT, flags INTEGER);",
+            NULL, NULL, &errmsg) != SQLITE_OK) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_DB;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "Error creating tsk_vs_parts table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
     }
@@ -380,6 +390,25 @@ uint8_t TskAutoDb::addFilesInImgToDB()
     return 0;
 }
 
+TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info) {
+    char statement[1024];
+    char *errmsg;
+
+    snprintf(statement, 1024,
+        "INSERT INTO tsk_vs_info (vs_type, img_offset, block_size) VALUES (%d,%"
+        PRIuOFF ",%d)", vs_info->vstype, vs_info->offset, vs_info->block_size);
+
+    if (sqlite3_exec(m_db, statement, NULL, NULL, &errmsg) != SQLITE_OK) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_DB;
+        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            "Error adding data to tsk_vs_info table: %s\n", errmsg);
+        sqlite3_free(errmsg);
+        return TSK_FILTER_STOP;
+    }
+    
+    return TSK_FILTER_CONT;
+}
 
 TSK_FILTER_ENUM
 TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
@@ -389,7 +418,7 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
     char *errmsg;
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_vol_info (vol_id, start, length, desc, flags) VALUES (%d,%"
+        "INSERT INTO tsk_vs_parts (vol_id, start, length, desc, flags) VALUES (%d,%"
         PRIuOFF ",%" PRIuOFF ",'%s',%d)", (int) vs_part->addr,
         vs_part->start, vs_part->len, vs_part->desc, vs_part->flags);
 
@@ -397,7 +426,7 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
         tsk_error_reset();
         tsk_errno = TSK_ERR_AUTO_DB;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "Error adding data to tsk_vol_info table: %s\n", errmsg);
+            "Error adding data to tsk_vs_parts table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return TSK_FILTER_STOP;
     }
