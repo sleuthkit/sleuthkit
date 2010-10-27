@@ -9,6 +9,8 @@ Bug Fixes
   in $OrphanFiles. 
 - 3052302: Crash on NTFS/UFS detection test because of
   corrupt data -- tsk_malloc error. 
+- 3088447: Error adding attribute because of run collision.  
+  Solved by assigning unique IDs.
 
 New Features:
 - 3012324: Name mangling moved out of library into outer tools
@@ -20,6 +22,8 @@ New Features:
 - 2941805: Add case sensitive flag to fsstat in HFS.  Patch by Rob Joyce. 
 - 3017764: Changed how default NTFS $DATA attribute was named.  Now it 
   has no name, while it previously had a fake name of "$Data". 
+- New TskAuto class.
+- New tsk_loaddb, tsk_recover, tsk_comparedir, and tsk_gettimes tools. 
 
 ---------------- VERSION 3.1.3 --------------
 Bug Fixes

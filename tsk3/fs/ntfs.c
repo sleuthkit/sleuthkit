@@ -36,9 +36,6 @@
  */
 
 
-/* needs to be predefined for proc_attrseq */
-static uint8_t ntfs_proc_attrlist(NTFS_INFO *, TSK_FS_FILE *,
-    const TSK_FS_ATTR *);
 
 
 
@@ -1568,6 +1565,27 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 }
 
 
+/* needs to be predefined for proc_attrseq */
+static uint8_t ntfs_proc_attrlist(NTFS_INFO *, TSK_FS_FILE *,
+                                  const TSK_FS_ATTR *);
+
+
+/* This structure is used when processing attrlist attributes.
+ * The Id part of the MFTNUM-TYPE-ID triple is unique only to a given
+ * MFTNUM. With the case of attribute lists, a file may use multiple
+ * MFT entires and therefore have multiple attributes with the same
+ * type and id pair (if they are in different MFT entries). This map
+ * is created by proc_attrlist when it assigns unique IDs to the 
+ * other entries.  proc_attrseq uses this when it adds the attributes. 
+ */
+typedef struct {
+    int num_used;
+    TSK_INUM_T extMft[256];
+    uint32_t type[256];
+    uint32_t extId[256];
+    uint8_t name[256][512];
+    uint32_t newId[256];
+} NTFS_ATTRLIST_MAP;
 
 /* 
  * Process an NTFS attribute sequence and load the data into data
@@ -1579,13 +1597,16 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
  * @param fs_file Generic metadata structure to add the attribute info to
  * @param attrseq Start of the attribute sequence to analyze
  * @param len Length of the attribute sequence buffer
+ * @param a_attrinum MFT entry address that the attribute sequence came from (diff from fs_file for attribute lists)
+ * @param a_attr_map List that maps to new IDs that were assigned by processing 
+ * the attribute list attribute (if it exists) or NULL if there is no attrlist.
  * @returns Error code
  */
 static TSK_RETVAL_ENUM
 ntfs_proc_attrseq(NTFS_INFO * ntfs,
-    TSK_FS_FILE * fs_file, ntfs_attr * attrseq, size_t len)
+    TSK_FS_FILE * fs_file, const ntfs_attr * a_attrseq, size_t len, TSK_INUM_T a_attrinum, const NTFS_ATTRLIST_MAP *a_attr_map)
 {
-    ntfs_attr *attr = attrseq;
+    const ntfs_attr *attr;
     const TSK_FS_ATTR *fs_attr_attrl = NULL;
     char name[NTFS_MAXNAMLEN_UTF8 + 1];
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & ntfs->fs_info;
@@ -1603,8 +1624,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         return TSK_ERR;
     }
     /* Cycle through the list of attributes */
-    for (; ((uintptr_t) attr >= (uintptr_t) attrseq)
-        && ((uintptr_t) attr <= ((uintptr_t) attrseq + len))
+    for (attr = a_attrseq; ((uintptr_t) attr >= (uintptr_t) a_attrseq)
+        && ((uintptr_t) attr <= ((uintptr_t) a_attrseq + len))
         && (tsk_getu32(fs->endian, attr->len) > 0
             && (tsk_getu32(fs->endian, attr->type) !=
                 0xffffffff));
@@ -1613,9 +1634,26 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 attr->len))) {
 
         int retVal;
+        int i;
 
         /* Get the type of this attribute */
         uint32_t type = tsk_getu32(fs->endian, attr->type);
+        uint16_t id = tsk_getu16(fs->endian, attr->id);
+        uint16_t id_new = id;
+
+        /* If the map was supplied, search through it to see if this 
+         * entry is in there.  Use that ID instead so that we always have
+         * unique IDs for each attribute -- even if it spans multiple MFT entries. */
+        if (a_attr_map) {
+            for (i = 0; i < a_attr_map->num_used; i++) {
+                if ((a_attr_map->extMft[i] == a_attrinum) && (a_attr_map->type[i] == type) &&
+                    (a_attr_map->extId[i] == id) && 
+                    (memcmp(a_attr_map->name[i], (void *)(uintptr_t)attr+tsk_getu16(fs->endian, attr->name_off), attr->nlen*2) == 0)) {
+                    id_new = a_attr_map->newId[i];
+                    break;
+                }
+            }
+        }
 
         /* Copy the name and convert it to UTF8 */
         if (attr->nlen) {
@@ -1672,17 +1710,17 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "ntfs_proc_attrseq: Resident Attribute in Type: %"
-                    PRIu32 " Id: %" PRIu16 " Name: %s\n", type,
-                    tsk_getu16(fs->endian, attr->id), name);
+                    PRIu32 " Id: %" PRIu16 " IdNew: %"PRIu16 " Name: %s\n", type,
+                    id, id_new, name);
 
             /* Validate the offset lengths */
             if (((tsk_getu16(fs->endian,
                             attr->c.r.soff) + (uintptr_t) attr) >
-                    ((uintptr_t) attrseq + len))
+                    ((uintptr_t) a_attrseq + len))
                 || ((tsk_getu16(fs->endian,
                             attr->c.r.soff) + tsk_getu32(fs->endian,
                             attr->c.r.ssize) + (uintptr_t) attr) >
-                    ((uintptr_t) attrseq + len))) {
+                    ((uintptr_t) a_attrseq + len))) {
                 tsk_error_reset();
                 tsk_errno = TSK_ERR_FS_CORRUPT;
                 snprintf(tsk_errstr, TSK_ERRSTR_L,
@@ -1703,8 +1741,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
             // set the details in the fs_attr structure
             if (tsk_fs_attr_set_str(fs_file, fs_attr, name, type,
-                    tsk_getu16(fs->endian, attr->id),
-                    (void *) ((uintptr_t) attr +
+                    id_new, (void *) ((uintptr_t) attr +
                         tsk_getu16(fs->endian,
                             attr->c.r.soff)), tsk_getu32(fs->endian,
                         attr->c.r.ssize))) {
@@ -1734,15 +1771,14 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             TSK_FS_ATTR *fs_attr = NULL;
             TSK_FS_ATTR_RUN *fs_attr_run = NULL;
             uint8_t data_flag = 0;
-            uint16_t id = tsk_getu16(fs->endian, attr->id);
             uint32_t compsize = 0;
             TSK_RETVAL_ENUM retval;
 
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "ntfs_proc_attrseq: Non-Resident Attribute Type: %"
-                    PRIu32 " Id: %" PRIu16 " Name: %s  Start VCN: %" PRIu64
-                    "\n", type, id, name, tsk_getu64(fs->endian,
+                    PRIu32 " Id: %" PRIu16 " IdNew: %"PRIu16 " Name: %s  Start VCN: %" PRIu64
+                    "\n", type, id, id_new, name, tsk_getu64(fs->endian,
                         attr->c.nr.start_vcn));
 
             /* convert the run to generic form */
@@ -1782,9 +1818,12 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
              * and get its ID
              *
              * We could also check for a start_vcn if this does
-             * not fix the problem
+             * not fix the problem.
+             *
+             * NOTE: This should not be needed now that TSK assigns 
+             * unique ID values to the extended attributes. 
              */
-            if (id == 0) {
+            if (id_new == 0) {
                 int cnt, i;
 
                 // cycle through the attributes
@@ -1801,11 +1840,11 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                         if (((name[0] == '\0') && (fs_attr2->name == NULL))
                             || ((fs_attr2->name)
                                 && (strcmp(fs_attr2->name, name) == 0))) {
-                            id = fs_attr2->id;
+                            id_new = fs_attr2->id;
                             if (tsk_verbose)
                                 tsk_fprintf(stderr,
                                     "ntfs_proc_attrseq: Updating id from 0 to %"
-                                    PRIu16 "\n", id);
+                                    PRIu16 "\n", id_new);
                             break;
                         }
                     }
@@ -1841,7 +1880,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             // @@@ This is bad design, we are casting away the const...
             fs_attr =
                 (TSK_FS_ATTR *) tsk_fs_attrlist_get_id(fs_file->meta->attr,
-                type, id);
+                type, id_new);
             if (fs_attr == NULL) {
                 uint64_t ssize; // size
                 uint64_t alen;  // allocated length
@@ -1889,7 +1928,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
                 if (tsk_fs_attr_set_run(fs_file, fs_attr,
                         fs_attr_run, name,
-                        type, id, ssize,
+                        type, id_new, ssize,
                         tsk_getu64(fs->endian, attr->c.nr.initsize),
                         alen, data_flag, compsize)) {
                     strncat(tsk_errstr2, " - proc_attrseq: set run",
@@ -2054,7 +2093,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 return TSK_ERR;
             }
             fs_attr_attrl = tsk_fs_attrlist_get_id(fs_file->meta->attr,
-                NTFS_ATYPE_ATTRLIST, tsk_getu16(fs->endian, attr->id));
+                NTFS_ATYPE_ATTRLIST, id_new);
             if (fs_attr_attrl == NULL) {
                 strncat(tsk_errstr2,
                     " - proc_attrseq: getting attribute list",
@@ -2130,12 +2169,17 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 /********   Attribute List Action and Function ***********/
 
 
+
 /*
  * Attribute lists are used when all of the attribute  headers can not
  * fit into one MFT entry.  This contains an entry for every attribute
  * and where they are located.  We process this to get the locations
  * and then call proc_attrseq on each of those, which adds the data
  * to the fs_file structure.
+ *
+ * @param ntfs File system being analyzed
+ * @param fs_file Main file that will have attributes added to it.
+ * @param fs_attr_attrlist Attrlist attribute that needs to be parsed. 
  *
  * Return 1 on error and 0 on success
  */
@@ -2151,6 +2195,9 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     TSK_FS_LOAD_FILE load_file;
     TSK_INUM_T hist[256];
     uint16_t histcnt = 0;
+    NTFS_ATTRLIST_MAP *map;
+    uint8_t nextid = 0;
+    int a;
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
@@ -2161,11 +2208,17 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         return 1;
     }
 
+    if ((map = (NTFS_ATTRLIST_MAP *)tsk_malloc(sizeof(NTFS_ATTRLIST_MAP))) == NULL) {
+        free(mft);
+        return 1;
+    }
+
     /* Clear the contents of the history buffer */
     memset(hist, 0, sizeof(hist));
 
     /* add ourselves to the history */
     hist[histcnt++] = ntfs->mnum;
+
 
     /* Get a copy of the attribute list stream using the above action */
     load_file.left = load_file.total = (size_t) fs_attr_attrlist->size;
@@ -2173,6 +2226,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         tsk_malloc((size_t) fs_attr_attrlist->size);
     if (buf == NULL) {
         free(mft);
+        free(map);
         return 1;
     }
     endaddr = (uintptr_t) buf + (uintptr_t) fs_attr_attrlist->size;
@@ -2181,6 +2235,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         strncat(tsk_errstr2, " - processing attrlist",
             TSK_ERRSTR_L - strlen(tsk_errstr2));
         free(mft);
+        free(map);
         return 1;
     }
 
@@ -2194,52 +2249,96 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             "processing attrlist of entry %" PRIuINUM, ntfs->mnum);
         free(mft);
         free(buf);
+        free(map);
         return 1;
     }
 
-
-    /* Process the list & and call ntfs_proc_attr */
+    /* The TSK design requres that each attribute have its own ID.
+     * Therefore, we need to identify all of the unique attributes
+     * so that we can assign a unique ID to them. */
+    nextid = fs_attr_attrlist->id;  // we won't see this entry in the list
     for (list = (ntfs_attrlist *) buf;
         (list) && ((uintptr_t) list < endaddr)
         && (tsk_getu16(fs->endian, list->len) > 0);
         list =
         (ntfs_attrlist *) ((uintptr_t) list + tsk_getu16(fs->endian,
                 list->len))) {
-        TSK_INUM_T mftnum;
-        uint32_t type;
-        uint16_t id, i;
+        uint8_t found;
+        uint32_t i;
+
+        TSK_INUM_T mftnum = tsk_getu48(fs->endian, list->file_ref);
+        uint32_t type = tsk_getu32(fs->endian, list->type);
+        uint16_t id = tsk_getu16(fs->endian, list->id);
+
+        // keep track of the biggest ID that we saw.
+        if (id > nextid)
+            nextid = id;
+
+        // we can have duplicate entries at different VCNs.  Ignore those.
+        found = 0;
+        for (i = 0; i < map->num_used; i++) {
+            if ((map->extMft[i] == mftnum) && (map->type[i] == type) && (memcmp(map->name[i], &list->name, list->nlen*2) == 0)) {
+                found=1;
+                break;
+            }
+        }
+
+        // add it to the list
+        if (found == 0) {
+            map->extMft[map->num_used] = mftnum;
+            map->type[map->num_used] = type;
+            map->extId[map->num_used] = id;
+            memcpy(map->name[map->num_used], &list->name, list->nlen*2);
+            if (map->num_used < 255)
+                map->num_used++;
+        }
+    }
+
+    // update the map and assign unique IDs
+    for (a = 0; a < map->num_used; a++) {
+        // skip the base entry attributes -- they have unique attribute IDs
+        if (map->extMft[a] == ntfs->mnum)
+            continue;
+        map->newId[a] = ++nextid;
+    }
+
+
+    /* Process the list & and call ntfs_proc_attr */
+    for (a = 0; a < map->num_used; a++) {
+  
+        uint16_t i;
         TSK_RETVAL_ENUM retval;
 
-        /* Which MFT is this attribute in? */
-        mftnum = tsk_getu48(fs->endian, list->file_ref);
+
         /* Check the history to see if we have already processed this
          * one before (if we have then we can skip it as we grabbed all
          * of them last time
          */
         for (i = 0; i < histcnt; i++) {
-            if (hist[i] == mftnum)
+            if (hist[i] == map->extMft[a])
                 break;
         }
 
-        if (hist[i] == mftnum)
+        if (hist[i] == map->extMft[a])
             continue;
+        
         /* This is a new one, add it to the history, and process it */
         if (histcnt < 256)
-            hist[histcnt++] = mftnum;
-        type = tsk_getu32(fs->endian, list->type);
-        id = tsk_getu16(fs->endian, list->id);
+            hist[histcnt++] = map->extMft[a];
+        
+
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_proc_attrlist: mft: %" PRIuINUM
                 " type %" PRIu32 " id %" PRIu16
-                "  VCN: %" PRIu64 "\n", mftnum, type,
-                id, tsk_getu64(fs->endian, list->start_vcn));
+                "  VCN: %" PRIu64 "\n", map->extMft[a], map->type[a],
+                map->newId[a], tsk_getu64(fs->endian, list->start_vcn));
         /* 
          * Read the MFT entry 
          */
         /* Sanity check. */
-        if (mftnum < ntfs->fs_info.first_inum ||
-            mftnum > ntfs->fs_info.last_inum) {
+        if (map->extMft[a] < ntfs->fs_info.first_inum ||
+            map->extMft[a] > ntfs->fs_info.last_inum) {
 
             if (tsk_verbose) {
                 /* this case can easily occur if the attribute list was non-resident and the cluster has been reallocated */
@@ -2248,13 +2347,13 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                     "Invalid MFT file reference (%"
                     PRIuINUM
                     ") in the unallocated attribute list of MFT %"
-                    PRIuINUM "", mftnum, ntfs->mnum);
+                    PRIuINUM "", map->extMft[a], ntfs->mnum);
             }
 
             continue;
         }
 
-        if ((retval = ntfs_dinode_lookup(ntfs, mft, mftnum)) != TSK_OK) {
+        if ((retval = ntfs_dinode_lookup(ntfs, mft, map->extMft[a])) != TSK_OK) {
             // if the entry is corrupt, then continue
             if (retval == TSK_COR) {
                 if (tsk_verbose)
@@ -2264,6 +2363,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             }
 
             free(mft);
+            free(map);
             free(buf);
             strncat(tsk_errstr2, " - proc_attrlist",
                 TSK_ERRSTR_L - strlen(tsk_errstr2));
@@ -2288,9 +2388,10 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                     "Extension record %" PRIuINUM
                     " (file ref = %" PRIuINUM
                     ") is not for attribute list of %"
-                    PRIuINUM "", mftnum, tsk_getu48(fs->endian,
+                    PRIuINUM "", map->extMft[a], tsk_getu48(fs->endian,
                         mft->base_ref), ntfs->mnum);
                 free(mft);
+                free(map);
                 free(buf);
                 return 1;
             }
@@ -2304,7 +2405,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                 ntfs_proc_attrseq(ntfs, fs_file, (ntfs_attr *) ((uintptr_t)
                         mft + tsk_getu16(fs->endian, mft->attr_off)),
                     ntfs->mft_rsize_b - tsk_getu16(fs->endian,
-                        mft->attr_off))) != TSK_OK) {
+                        mft->attr_off), map->extMft[a], map)) != TSK_OK) {
 
             if (retval == TSK_COR) {
                 if (tsk_verbose)
@@ -2315,12 +2416,14 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             strncat(tsk_errstr2, "- proc_attrlist",
                 TSK_ERRSTR_L - strlen(tsk_errstr2));
             free(mft);
+            free(map);
             free(buf);
             return 1;
         }
     }
 
     free(mft);
+    free(map);
     free(buf);
     return 0;
 }
@@ -2418,7 +2521,7 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file)
             mft->attr_off));
     if ((retval = ntfs_proc_attrseq(ntfs, a_fs_file, attr,
                 ntfs->mft_rsize_b - tsk_getu16(fs->endian,
-                    mft->attr_off))) != TSK_OK) {
+                    mft->attr_off), a_fs_file->meta->addr, NULL)) != TSK_OK) {
         return retval;
     }
 
