@@ -1646,8 +1646,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
          * unique IDs for each attribute -- even if it spans multiple MFT entries. */
         if (a_attr_map) {
             for (i = 0; i < a_attr_map->num_used; i++) {
-                if ((a_attr_map->extMft[i] == a_attrinum) && (a_attr_map->type[i] == type) &&
-                    (a_attr_map->extId[i] == id) && 
+                if ((a_attr_map->type[i] == type) &&
                     (memcmp(a_attr_map->name[i], (void *)(uintptr_t)attr+tsk_getu16(fs->endian, attr->name_off), attr->nlen*2) == 0)) {
                     id_new = a_attr_map->newId[i];
                     break;
@@ -2277,7 +2276,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         // we can have duplicate entries at different VCNs.  Ignore those.
         found = 0;
         for (i = 0; i < map->num_used; i++) {
-            if ((map->extMft[i] == mftnum) && (map->type[i] == type) && (memcmp(map->name[i], &list->name, list->nlen*2) == 0)) {
+            if ((map->type[i] == type) && (memcmp(map->name[i], &list->name, list->nlen*2) == 0)) {
                 found=1;
                 break;
             }
