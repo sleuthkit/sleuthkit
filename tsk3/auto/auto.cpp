@@ -227,6 +227,7 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
  * file system. Will call processFile() on each file
  * that is found.  Same as findFilesInFs, but gives more detailed return values.
  * @param a_start Byte offset to start analyzing from. 
+ * @param a_ftype File system type.
  * @returns values that allow the caller to differentiate stop from ok.  
  */
 TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
