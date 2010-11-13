@@ -8,8 +8,6 @@ tsk_gettimes - Collect MAC times from a disk image into a body file.
 .I dev_sector_size
 .B ] [-z
 .I zone
-.B ] [-f
-.I fstype
 .B ] [-s
 .I seconds
 .B ] 
@@ -29,10 +27,6 @@ If not given, autodetection methods are used.
 .IP "-b dev_sector_size"
 The size (in bytes) of the device sectors
 If not given, autodetection methods are used.  
-.IP "-o sector_offset"
-Sector offset for a volume to recover (recovers only that volume)
-If not given, will attempt to recover all volumes in image and save them
-to different folders. 
 .IP "-s seconds"
 The time skew of the original system in seconds.  For example, if the
 original system was 100 seconds slow, this value would be \-100.  
@@ -40,7 +34,6 @@ original system was 100 seconds slow, this value would be \-100.
 The ASCII string of the time zone of the original system.  For
 example, EST or GMT.  These strings must be defined by your operating
 system and may vary.
-.IP "-s sec_skew" T
 
 .SH EXAMPLES
 To collect data about image image.dd:
