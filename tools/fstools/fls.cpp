@@ -123,7 +123,7 @@ main(int argc, char **argv1)
             }
             break;
         case _TSK_T('d'):
-            name_flags &= TSK_FS_DIR_WALK_FLAG_ALLOC;
+            name_flags &= ~TSK_FS_DIR_WALK_FLAG_ALLOC;
             break;
         case _TSK_T('D'):
             fls_flags &= ~TSK_FS_FLS_FILE;
@@ -180,7 +180,7 @@ main(int argc, char **argv1)
             sec_skew = TATOI(OPTARG);
             break;
         case _TSK_T('u'):
-            name_flags &= TSK_FS_DIR_WALK_FLAG_UNALLOC;
+            name_flags &= ~TSK_FS_DIR_WALK_FLAG_UNALLOC;
             break;
         case _TSK_T('v'):
             tsk_verbose++;
