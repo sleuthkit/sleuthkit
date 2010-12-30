@@ -136,7 +136,9 @@ AC_CONFIG_COMMANDS([tsk3/tsk_incs.h],
             echo "#include <unistd.h>" >> tsk3/tsk_incs.h
           fi
           if test x$ac_cv_header_inttypes_h = xyes; then
+            echo "#ifndef __STDC_FORMAT_MACROS" >> tsk3/tsk_incs.h
             echo "#define  __STDC_FORMAT_MACROS" >> tsk3/tsk_incs.h
+            echo "#endif" >> tsk3/tsk_incs.h
             echo "#include <inttypes.h>" >> tsk3/tsk_incs.h
           fi
           if test x$ac_cv_header_sys_param_h = xyes; then
