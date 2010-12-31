@@ -108,6 +108,9 @@ tsk_vs_type_toname(TSK_VS_TYPE_ENUM type)
             return types->name;
         }
     }
+    if (type == TSK_VS_TYPE_DBFILLER) {
+        return "DB Filler";
+    }
     return NULL;
 }
 

@@ -5,6 +5,11 @@ Numbers refer to SourceForge.net tracker IDs:
 Bug Fixes
 - 3108272: fls arguments for -d and -u
 
+New Features:
+- A single dummy entry is added to the SQlite DB if no volume exists
+so that all programs can assume that there will be at least one
+volume in the table.
+
 ---------------- VERSION 3.2.0 --------------
 Bug Fixes
 - 3043092: Minor logic errors with ifind code. 

@@ -25,6 +25,8 @@ TskAutoDb::TskAutoDb()
     m_curFsId = 0;
     m_curVsId = 0;
     m_blkMapFlag = false;
+    m_vsFound = false;
+    m_volFound = false;
 }
 
 TskAutoDb::~TskAutoDb()
@@ -378,6 +380,8 @@ uint8_t TskAutoDb::addFilesInImgToDB()
         return 1;
     }
 
+    setVolFilterFlags((TSK_VS_PART_FLAG_ENUM)(TSK_VS_PART_FLAG_ALLOC | TSK_VS_PART_FLAG_UNALLOC));
+
     uint8_t
         retval = findFilesInImg();
     if (retval)
@@ -394,6 +398,7 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info) {
     char statement[1024];
     char *errmsg;
 
+    m_vsFound = true;
     snprintf(statement, 1024,
         "INSERT INTO tsk_vs_info (vs_type, img_offset, block_size) VALUES (%d,%"
         PRIuOFF ",%d)", vs_info->vstype, vs_info->offset, vs_info->block_size);
@@ -417,6 +422,7 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
      foo[1024];
     char *errmsg;
 
+    m_volFound = true;
     snprintf(foo, 1024,
         "INSERT INTO tsk_vs_parts (vol_id, start, length, desc, flags) VALUES (%d,%"
         PRIuOFF ",%" PRIuOFF ",'%s',%d)", (int) vs_part->addr,
@@ -446,6 +452,44 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     TSK_FS_FILE *file_root;
 
     m_curFsId++;
+
+    /* if we have a disk with no volume system, make a dummy entry.
+     * we only do this so that we can have a dummy volume in vs_part so that
+     * programs that use this can assume that there will be at least one 
+     * volume. */
+    if(!m_vsFound){
+        m_vsFound = true;
+        snprintf(foo, 1024,
+            "INSERT INTO tsk_vs_info (vs_type, img_offset, block_size) VALUES (%d,%"
+            PRIuOFF ", 512)", TSK_VS_TYPE_DBFILLER, fs_info->offset);
+
+        if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
+            tsk_error_reset();
+            tsk_errno = TSK_ERR_AUTO_DB;
+            snprintf(tsk_errstr, TSK_ERRSTR_L,
+                "Error adding data to tsk_vs_info table: %s\n", errmsg);
+            sqlite3_free(errmsg);
+            return TSK_FILTER_STOP;
+        }
+    }
+
+    if(!m_volFound){
+        m_volFound = true;
+        snprintf(foo, 1024,
+            "INSERT INTO tsk_vs_parts (vol_id, start, length, desc, flags) VALUES (%d,%"
+            PRIuOFF ",%" PRIuOFF ",'%s',%d)", 0,
+            fs_info->offset, fs_info->block_count * fs_info->block_size, "", TSK_VS_PART_FLAG_ALLOC);
+
+        m_curVsId = 0;
+        if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
+            tsk_error_reset();
+            tsk_errno = TSK_ERR_AUTO_DB;
+            snprintf(tsk_errstr, TSK_ERRSTR_L,
+                "Error adding data to tsk_vs_parts table: %s\n", errmsg);
+            sqlite3_free(errmsg);
+            return TSK_FILTER_STOP;
+        }
+    }
 
     snprintf(foo, 1024,
         "INSERT INTO tsk_fs_info (fs_id, img_offset, vol_id, fs_type, block_size, "
