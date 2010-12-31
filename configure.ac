@@ -11,6 +11,7 @@ AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([foreign])
 AM_PROG_LIBTOOL
 AM_MAINTAINER_MODE
+AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -124,6 +125,9 @@ AS_IF([test "x$with_libewf" != "xno"],
     )]
 )
 
+# sqlite requires pthread libraries - this was copied from its configure.ac
+AC_SEARCH_LIBS(pthread_create, pthread)
+AC_SEARCH_LIBS(dlopen, dl)
 
 AC_CONFIG_COMMANDS([tsk3/tsk_incs.h],
         [
