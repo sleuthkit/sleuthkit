@@ -200,6 +200,8 @@ class TskAutoDb:public TskAuto {
     int m_curFsId;
     int m_curVsId;
     bool m_blkMapFlag;
+    bool m_vsFound;
+    bool m_volFound;
 
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path);
