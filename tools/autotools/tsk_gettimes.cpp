@@ -21,7 +21,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vV] [-i imgtype] [-b dev_sector_size]image [image] output_dir\n"),
+        ("usage: %s [-vV] [-i imgtype] [-b dev_sector_size] [-z zone] [-s seconds] image [image]\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
@@ -115,7 +115,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:ei:s:vVz:"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:i:s:vVz:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
