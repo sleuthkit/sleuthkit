@@ -27,6 +27,7 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     win32/posix-sample/posix-sample.vcproj \
     win32/callback-sample/callback-sample.vcproj
 
+CLEANFILES = tsk3/tsk_incs.h
 
 # directories to compile
 SUBDIRS = tsk3 tools tests samples man
