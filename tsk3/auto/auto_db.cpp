@@ -110,9 +110,21 @@ uint8_t
         wcsncpy(dbFile, a_images[0], 1024);
         wcsncat(dbFile, L".db", 1024-wcslen(dbFile));
     }
+
+    struct STAT_STR stat_buf;
+    if (TSTAT(dbFile, &stat_buf) == 0) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_DB;
+        snprintf(tsk_errstr, TSK_ERRSTR_L, 
+                "Database %S already exists.  Must be deleted first.", dbFile);
+        return 1;
+    }
     
     if (sqlite3_open16(dbFile, &m_db)) {
-        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(m_db));
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_DB;
+        snprintf(tsk_errstr, TSK_ERRSTR_L, 
+            "Can't open database: %s\n", sqlite3_errmsg(m_db));
         sqlite3_close(m_db);
         return 1;
     }
@@ -138,14 +150,26 @@ uint8_t
     else {
         snprintf(dbFile, 1024, "%s.db", a_images[0]);
     }
+
+    struct STAT_STR stat_buf;
+    if (TSTAT(dbFile, &stat_buf) == 0) {
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_DB;
+        snprintf(tsk_errstr, TSK_ERRSTR_L, 
+                "Database %s already exists.  Must be deleted first.", dbFile);
+        return 1;
+    }
     
     if (sqlite3_open(dbFile, &m_db)) {
-        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(m_db));
+        tsk_error_reset();
+        tsk_errno = TSK_ERR_AUTO_DB;
+        snprintf(tsk_errstr, TSK_ERRSTR_L, 
+            "Can't open database: %s\n", sqlite3_errmsg(m_db));
         sqlite3_close(m_db);
         return 1;
     }
+
 #endif
-    // @@@ TEST IF IT EXISTS...
 
 
 
@@ -509,7 +533,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     }
 
     // We won't hit the root directory on the walk, so open it now 
-    if ((file_root = tsk_fs_file_open_meta(fs_info, NULL, fs_info->root_inum)) != NULL) {
+    if ((file_root = tsk_fs_file_open(fs_info, NULL, "/")) != NULL) {
         processAttributes(file_root, "");
     }
     
