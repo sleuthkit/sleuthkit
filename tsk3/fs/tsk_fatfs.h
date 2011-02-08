@@ -357,7 +357,7 @@ extern "C" {
     extern int8_t fatfs_is_clustalloc(FATFS_INFO * fatfs,
         TSK_DADDR_T clust);
 
-    extern uint8_t fatfs_isdentry(FATFS_INFO *, fatfs_dentry *);
+    extern uint8_t fatfs_isdentry(FATFS_INFO *, fatfs_dentry *, uint8_t);
     extern uint8_t fatfs_make_root(FATFS_INFO *, TSK_FS_META *);
     extern TSK_RETVAL_ENUM fatfs_dinode_copy(FATFS_INFO *, TSK_FS_META *,
         fatfs_dentry *, TSK_DADDR_T, TSK_INUM_T);
