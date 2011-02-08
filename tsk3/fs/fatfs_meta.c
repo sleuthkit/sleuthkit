@@ -791,10 +791,11 @@ fatfs_make_fat(FATFS_INFO * fatfs, uint8_t a_which, TSK_FS_META * fs_meta)
 /* 
  * Is the pointed to buffer a directory entry buffer? 
  *
+ * @param a_basic 1 if only basic tests should be performed. 
  * Returns 1 if it is, 0 if not
  */
 uint8_t
-fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de)
+fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de, uint8_t a_basic)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
     if (!de)
@@ -815,79 +816,83 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de)
         return 1;
     }
     else {
-        if (de->lowercase & ~(FATFS_CASE_LOWER_ALL)) {
-            if (tsk_verbose)
-                fprintf(stderr, "fatfs_isdentry: lower case all\n");
-            return 0;
-        }
-        else if (de->attrib & ~(FATFS_ATTR_ALL)) {
-            if (tsk_verbose)
-                fprintf(stderr, "fatfs_isdentry: attribute all\n");
-            return 0;
-        }
-
-        // verify we do not have too many flags set
-        if (de->attrib & FATFS_ATTR_NORMAL) {
-            if ((de->attrib & FATFS_ATTR_VOLUME) ||
-                (de->attrib & FATFS_ATTR_DIRECTORY)) {
+        // the basic test is only for the 'essential data'.
+        if (a_basic == 0) {
+            if (de->lowercase & ~(FATFS_CASE_LOWER_ALL)) {
                 if (tsk_verbose)
-                    fprintf(stderr,
-                        "fatfs_isdentry: Normal and Vol/Dir\n");
+                    fprintf(stderr, "fatfs_isdentry: lower case all\n");
                 return 0;
             }
-        }
-        if (de->attrib & FATFS_ATTR_VOLUME) {
-            if ((de->attrib & FATFS_ATTR_DIRECTORY) ||
-                (de->attrib & FATFS_ATTR_READONLY) ||
-                (de->attrib & FATFS_ATTR_ARCHIVE)) {
+            else if (de->attrib & ~(FATFS_ATTR_ALL)) {
                 if (tsk_verbose)
-                    fprintf(stderr,
-                        "fatfs_isdentry: Vol and Dir/RO/Arch\n");
+                    fprintf(stderr, "fatfs_isdentry: attribute all\n");
                 return 0;
             }
-        }
 
-        /* The ctime, cdate, and adate fields are optional and 
-         * therefore 0 is a valid value
-         */
-        if ((tsk_getu16(fs->endian, de->ctime) != 0) &&
-            (FATFS_ISTIME(tsk_getu16(fs->endian, de->ctime)) == 0)) {
-            if (tsk_verbose)
-                fprintf(stderr, "fatfs_isdentry: ctime\n");
-            return 0;
-        }
-        else if ((tsk_getu16(fs->endian, de->wtime) != 0) &&
-            (FATFS_ISTIME(tsk_getu16(fs->endian, de->wtime)) == 0)) {
-            if (tsk_verbose)
-                fprintf(stderr, "fatfs_isdentry: wtime\n");
-            return 0;
-        }
-        else if ((tsk_getu16(fs->endian, de->cdate) != 0) &&
-            (FATFS_ISDATE(tsk_getu16(fs->endian, de->cdate)) == 0)) {
-            if (tsk_verbose)
-                fprintf(stderr, "fatfs_isdentry: cdate\n");
-            return 0;
-        }
-        else if (de->ctimeten > 200) {
-            if (tsk_verbose)
-                fprintf(stderr, "fatfs_isdentry: ctimeten\n");
-            return 0;
-        }
-        else if ((tsk_getu16(fs->endian, de->adate) != 0) &&
-            (FATFS_ISDATE(tsk_getu16(fs->endian, de->adate)) == 0)) {
-            if (tsk_verbose)
-                fprintf(stderr, "fatfs_isdentry: adate\n");
-            return 0;
-        }
-        else if ((tsk_getu16(fs->endian, de->wdate) != 0) &&
-            (FATFS_ISDATE(tsk_getu16(fs->endian, de->wdate)) == 0)) {
-            if (tsk_verbose)
-                fprintf(stderr, "fatfs_isdentry: wdate\n");
-            return 0;
+            // verify we do not have too many flags set
+            if (de->attrib & FATFS_ATTR_NORMAL) {
+                if ((de->attrib & FATFS_ATTR_VOLUME) ||
+                    (de->attrib & FATFS_ATTR_DIRECTORY)) {
+                    if (tsk_verbose)
+                        fprintf(stderr,
+                            "fatfs_isdentry: Normal and Vol/Dir\n");
+                    return 0;
+                }
+            }
+            if (de->attrib & FATFS_ATTR_VOLUME) {
+                if ((de->attrib & FATFS_ATTR_DIRECTORY) ||
+                    (de->attrib & FATFS_ATTR_READONLY) ||
+                    (de->attrib & FATFS_ATTR_ARCHIVE)) {
+                    if (tsk_verbose)
+                        fprintf(stderr,
+                            "fatfs_isdentry: Vol and Dir/RO/Arch\n");
+                    return 0;
+                }
+            }
+        
+
+            /* The ctime, cdate, and adate fields are optional and 
+             * therefore 0 is a valid value
+             */
+            if ((tsk_getu16(fs->endian, de->ctime) != 0) &&
+                (FATFS_ISTIME(tsk_getu16(fs->endian, de->ctime)) == 0)) {
+                if (tsk_verbose)
+                    fprintf(stderr, "fatfs_isdentry: ctime\n");
+                return 0;
+            }
+            else if ((tsk_getu16(fs->endian, de->wtime) != 0) &&
+                (FATFS_ISTIME(tsk_getu16(fs->endian, de->wtime)) == 0)) {
+                if (tsk_verbose)
+                    fprintf(stderr, "fatfs_isdentry: wtime\n");
+                return 0;
+            }
+            else if ((tsk_getu16(fs->endian, de->cdate) != 0) &&
+                (FATFS_ISDATE(tsk_getu16(fs->endian, de->cdate)) == 0)) {
+                if (tsk_verbose)
+                    fprintf(stderr, "fatfs_isdentry: cdate\n");
+                return 0;
+            }
+            else if (de->ctimeten > 200) {
+                if (tsk_verbose)
+                    fprintf(stderr, "fatfs_isdentry: ctimeten\n");
+                return 0;
+            }
+            else if ((tsk_getu16(fs->endian, de->adate) != 0) &&
+                (FATFS_ISDATE(tsk_getu16(fs->endian, de->adate)) == 0)) {
+                if (tsk_verbose)
+                    fprintf(stderr, "fatfs_isdentry: adate\n");
+                return 0;
+            }
+            else if ((tsk_getu16(fs->endian, de->wdate) != 0) &&
+                (FATFS_ISDATE(tsk_getu16(fs->endian, de->wdate)) == 0)) {
+                if (tsk_verbose)
+                    fprintf(stderr, "fatfs_isdentry: wdate\n");
+                return 0;
+            }
         }
 
         /* verify the starting cluster is small enough */
-        else if ((FATFS_DENTRY_CLUST(fs, de) > (fatfs->lastclust)) &&
+        if ((FATFS_DENTRY_CLUST(fs, de) > (fatfs->lastclust)) &&
             (FATFS_ISEOF(FATFS_DENTRY_CLUST(fs, de), fatfs->mask) == 0)) {
             if (tsk_verbose)
                 fprintf(stderr, "fatfs_isdentry: start cluster\n");
@@ -1292,8 +1297,9 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
             /* if we know it is not part of a directory and it is not valid dentires,
              * then skip it */
-            if ((isset(sect_alloc, sect) == 0) &&
-                (fatfs_isdentry(fatfs, dep) == 0)) {
+            uint8_t isInDir = isset(sect_alloc, sect);
+            if ((isInDir == 0) &&
+                (fatfs_isdentry(fatfs, dep, 0) == 0)) {
                 sect++;
                 continue;
             }
@@ -1378,7 +1384,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 }
 
                 /* Do a final sanity check */
-                if (0 == fatfs_isdentry(fatfs, dep))
+                if (0 == fatfs_isdentry(fatfs, dep, isInDir))
                     continue;
 
                 if ((retval2 =
@@ -1598,7 +1604,7 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     }
 
     fatfs->dep = (fatfs_dentry *) & fatfs->dinodes[off];
-    if (fatfs_isdentry(fatfs, fatfs->dep)) {
+    if (fatfs_isdentry(fatfs, fatfs->dep, 1)) {
         if ((retval =
                 fatfs_dinode_copy(fatfs, a_fs_file->meta, fatfs->dep, sect,
                     inum)) != TSK_OK) {
