@@ -30,6 +30,8 @@
 
 static TSK_TCHAR *progname;
 
+#define TSK_CD_BUFSIZE  1024
+
 static void
 usage()
 {
@@ -69,17 +71,17 @@ uint8_t
 #ifdef TSK_WIN32
     WIN32_FIND_DATA ffd;
     HANDLE hFind = INVALID_HANDLE_VALUE;
-    wchar_t fullpath[FILENAME_MAX];
+    wchar_t fullpath[TSK_CD_BUFSIZE];
     UTF16 *utf16;
     UTF8 *utf8;
-    char file8[FILENAME_MAX];
+    char file8[TSK_CD_BUFSIZE];
 
     //create the full path (utf16)
-    wcsncpy(fullpath, (wchar_t *) m_lclDir, FILENAME_MAX);
+    wcsncpy(fullpath, (wchar_t *) m_lclDir, TSK_CD_BUFSIZE);
     if (wcslen((wchar_t *) a_dir) > 0)
-        wcsncat(fullpath, a_dir, FILENAME_MAX);
+        wcsncat(fullpath, a_dir, TSK_CD_BUFSIZE);
 
-    wcsncat(fullpath, L"\\*", FILENAME_MAX);
+    wcsncat(fullpath, L"\\*", TSK_CD_BUFSIZE);
 
 
     //start the directory walk
@@ -97,10 +99,10 @@ uint8_t
     }
 
     do {
-        wchar_t file[FILENAME_MAX];
-        wcsncpy(file, a_dir, FILENAME_MAX);
-        wcsncat(file, L"\\", FILENAME_MAX);
-        wcsncat(file, ffd.cFileName, FILENAME_MAX);
+        wchar_t file[TSK_CD_BUFSIZE];
+        wcsncpy(file, a_dir, TSK_CD_BUFSIZE);
+        wcsncat(file, L"\\", TSK_CD_BUFSIZE);
+        wcsncat(file, ffd.cFileName, TSK_CD_BUFSIZE);
         //if the file is a directory make recursive call
         if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             // skip the '.' and '..' entries
@@ -122,7 +124,7 @@ uint8_t
             TSKConversionResult retVal =
                 tsk_UTF16toUTF8_lclorder((const UTF16 **) &utf16,
                 &utf16[ilen], &utf8,
-                &utf8[FILENAME_MAX], TSKlenientConversion);
+                &utf8[TSK_CD_BUFSIZE], TSKlenientConversion);
 
             *utf8 = '\0';
             if (retVal != TSKconversionOK) {
@@ -147,23 +149,23 @@ uint8_t
 #else
     DIR *dp;
     struct dirent *dirp;
-    char file[PATH_MAX];
-    char fullPath[PATH_MAX];
+    char file[TSK_CD_BUFSIZE];
+    char fullPath[TSK_CD_BUFSIZE];
     struct stat status;
 
-    strncpy(fullPath, m_lclDir, PATH_MAX);
-    strncat(fullPath, a_dir, PATH_MAX);
+    strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE);
+    strncat(fullPath, a_dir, TSK_CD_BUFSIZE);
     if ((dp = opendir(fullPath)) == NULL) {
         fprintf(stderr, "Error opening directory");
         return 1;
     }
     while ((dirp = readdir(dp)) != NULL) {
-        strncpy(file, a_dir, PATH_MAX);
-        strncat(file, "/", PATH_MAX);
-        strncat(file, dirp->d_name, PATH_MAX);
+        strncpy(file, a_dir, TSK_CD_BUFSIZE);
+        strncat(file, "/", TSK_CD_BUFSIZE);
+        strncat(file, dirp->d_name, TSK_CD_BUFSIZE);
 
-        strncpy(fullPath, m_lclDir, PATH_MAX);
-        strncat(fullPath, file, PATH_MAX);
+        strncpy(fullPath, m_lclDir, TSK_CD_BUFSIZE);
+        strncat(fullPath, file, TSK_CD_BUFSIZE);
 
         stat(fullPath, &status);
         if (S_ISDIR(status.st_mode)) {
@@ -210,10 +212,6 @@ TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     
     if (!a_fs_file->meta)
         return TSK_OK;
-    
-#ifdef WIN32
-    size_t PATH_MAX = FILENAME_MAX;
-#endif
     
     //create the full path
     size_t len = strlen(a_fs_file->name->name) + strlen(a_path) + 1;
