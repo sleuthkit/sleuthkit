@@ -1291,13 +1291,14 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         // cycle through the sectors read
         for (sidx = 0; sidx < sect_proc; sidx++) {
             TSK_INUM_T inum;
+            uint8_t isInDir;
 
             dep =
                 (fatfs_dentry *) & fatfs->dinodes[sidx << fatfs->ssize_sh];
 
             /* if we know it is not part of a directory and it is not valid dentires,
              * then skip it */
-            uint8_t isInDir = isset(sect_alloc, sect);
+            isInDir = isset(sect_alloc, sect);
             if ((isInDir == 0) &&
                 (fatfs_isdentry(fatfs, dep, 0) == 0)) {
                 sect++;
