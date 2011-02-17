@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I../.. -Wall 
+AM_CPPFLAGS = -I../.. -I$(srcdir)/../.. -Wall 
 EXTRA_DIST = .indent.pro
 
 noinst_LTLIBRARIES = libtskauto.la
