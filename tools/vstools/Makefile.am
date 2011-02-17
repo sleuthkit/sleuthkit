@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I../.. -Wall 
+AM_CPPFLAGS = -I../.. -I$(srcdir)/../.. -Wall 
 LDADD = ../../tsk3/libtsk3.la
 LDFLAGS += -static
 EXTRA_DIST = .indent.pro

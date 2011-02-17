@@ -12,6 +12,7 @@ New Features:
 - A single dummy entry is added to the SQlite DB if no volume exists
 so that all programs can assume that there will be at least one
 volume in the table.
+- 3184455: allow srcdir != builddir
 
 ---------------- VERSION 3.2.0 --------------
 Bug Fixes

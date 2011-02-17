@@ -1,4 +1,4 @@
-AM_CFLAGS = -I../.. -Wall 
+AM_CFLAGS = -I../.. -I$(srcdir)/../.. -Wall 
 EXTRA_DIST = .indent.pro
 
 noinst_LTLIBRARIES = libtskhashdb.la
