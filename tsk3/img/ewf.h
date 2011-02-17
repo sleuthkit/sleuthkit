@@ -18,7 +18,8 @@
 
 #if HAVE_LIBEWF
 
-#if defined(TSK_WIN32)
+// we used to check only for TSK_WIN32, but that fails on mingw
+#if defined(_MSC_VER)
 #include <config_msc.h>
 #endif
 
