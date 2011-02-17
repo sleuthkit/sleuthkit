@@ -29,8 +29,6 @@
 #include "tsk3/img/tsk_img.h"
 #include "tsk3/vs/tsk_vs.h"
 #include "tsk3/fs/tsk_fs.h"
-#include <map>
-#include <string>
 
 #define TSK_AUTO_TAG 0x9191ABAB
 

@@ -6,6 +6,7 @@ Bug Fixes
 - 3108272: fls arguments for -d and -u
 - 3105539: compile error issues because of SQlite and pthreads
 - 3173095: missing FAT files because of invalid dates. 
+- 3184419: mingew compile errors.
 
 New Features:
 - A single dummy entry is added to the SQlite DB if no volume exists
