@@ -643,9 +643,12 @@ sub print_tl {
                 $file);
         }
         else {
-            printf("%s,%s,%s,%s,%s,%s,%s,%s\n",
+            # escape any quotes in filename
+            my $file_tmp = $file;
+            $file_tmp =~ s/\"/\"\"/g;
+            printf("%s,%s,%s,%s,%s,%s,%s,\"%s\"\n",
                 $old_date_string, $size, $mactime, $ls, $uids, $groups, $inode,
-                $file);
+                $file_tmp);
         }
     }
 

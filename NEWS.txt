@@ -7,6 +7,7 @@ Bug Fixes
 - 3105539: compile error issues because of SQlite and pthreads
 - 3173095: missing FAT files because of invalid dates. 
 - 3184419: mingew compile errors.
+- 3191391: surround file name in quotes in mactime -d csv output
 
 New Features:
 - A single dummy entry is added to the SQlite DB if no volume exists
