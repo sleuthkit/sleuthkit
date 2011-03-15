@@ -60,7 +60,15 @@ tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
         return -1;
     }
 
-    off = a_off + a_fs->offset;
+    off = a_off + a_fs->offset; 
+    if (((a_fs->block_pre_size) || (a_fs->block_post_size)) && (a_fs->block_size)) {
+        TSK_DADDR_T blk = a_off / a_fs->block_size;
+        if (a_fs->block_pre_size)
+            off += ((blk+1) * a_fs->block_pre_size);
+        if (a_fs->block_post_size) 
+            off += (blk * a_fs->block_post_size);
+    }
+
     return tsk_img_read(a_fs->img_info, off, a_buf, a_len);
 }
 
@@ -82,6 +90,8 @@ ssize_t
 tsk_fs_read_block(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
     size_t a_len)
 {
+    TSK_OFF_T off = 0;
+
     if (a_len % a_fs->block_size) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_FS_READ;
@@ -105,7 +115,11 @@ tsk_fs_read_block(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
         return -1;
     }
 
-    return tsk_img_read(a_fs->img_info,
-        a_fs->offset + (TSK_OFF_T) a_addr * a_fs->block_size, a_buf,
-        a_len);
+    off = a_fs->offset + (TSK_OFF_T) a_addr * a_fs->block_size;
+    if (a_fs->block_pre_size)
+        off += ((a_addr+1) * a_fs->block_pre_size);
+    if (a_fs->block_post_size) 
+        off += (a_addr * a_fs->block_post_size);
+
+    return tsk_img_read(a_fs->img_info, off, a_buf, a_len);
 }

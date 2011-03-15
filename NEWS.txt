@@ -1,6 +1,13 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 3.2.2 --------------
+Bug Fixes
+- 3213886: ISO9660 directory hole not advancing
+
+New Features:
+- 3213888: RAW CD format
+
 ---------------- VERSION 3.2.1 --------------
 Bug Fixes
 - 3108272: fls arguments for -d and -u

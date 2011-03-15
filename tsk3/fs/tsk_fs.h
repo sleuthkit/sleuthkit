@@ -830,6 +830,13 @@ extern "C" {
         unsigned int block_size;        ///< Size of each block (in bytes)
         unsigned int dev_bsize; ///< Size of device block (typically always 512)
 
+        /* The following are used for really RAW images that contain data
+           before and after the actual user sector. For example, a raw cd
+           image may have 16 bytes before the start of each sector.
+         */
+        unsigned int block_pre_size;    ///< Number of bytes that preceed each block (currently only used for RAW CDs)
+        unsigned int block_post_size;    ///< Number of bytes that follow each block (currently only used for RAW CDs)
+
         /* Journal */
         TSK_INUM_T journ_inum;  ///< Address of journal inode
 
