@@ -2097,10 +2097,11 @@ load_vol_desc(TSK_FS_INFO * fs)
     ssize_t cnt;
     iso9660_pvd_node *p;
     iso9660_svd_node *s;
+    uint8_t magic_seen = 0;
 
     iso->pvd = NULL;
     iso->svd = NULL;
-    fs->block_size = 0;
+    //fs->block_size = 0;
     fs->dev_bsize = fs->img_info->sector_size;
 
 #if 0
@@ -2122,6 +2123,8 @@ load_vol_desc(TSK_FS_INFO * fs)
             return -1;
         }
 
+ISO_RETRY_MAGIC:
+
         // read the full descriptor
         cnt = tsk_fs_read(fs, offs, (char *) vd, sizeof(iso9660_gvd));
         if (cnt != sizeof(iso9660_gvd)) {
@@ -2138,11 +2141,28 @@ load_vol_desc(TSK_FS_INFO * fs)
         // verify the magic value
         if (strncmp(vd->magic, ISO9660_MAGIC, 5)) {
             if (tsk_verbose)
-                tsk_fprintf(stderr, "%s: Bad volume descriptor: \
-                         Magic number is not CD001\n", myname);
+                tsk_fprintf(stderr, "%s: Bad volume descriptor: Magic number is not CD001\n",
+                        myname);
+
+            // see if we have a RAW image
+            if (magic_seen == 0) {
+                if (fs->block_pre_size == 0) {
+                    if (tsk_verbose) 
+                        tsk_fprintf(stderr, "Trying RAW ISO9660 with 16-byte pre-block size\n");
+                    fs->block_pre_size = 16;
+                    // 304 = 2352 - 2048
+                    fs->block_post_size = 304 - fs->block_pre_size;
+                    goto ISO_RETRY_MAGIC;
+                }
+                else {
+                    fs->block_pre_size = 0;
+                    fs->block_post_size = 0;
+                }
+            }
             free(vd);
             return -1;
         }
+        magic_seen = 1;
 
         // see if we are done
         if (vd->type == ISO9660_VOL_DESC_SET_TERM)
@@ -2331,6 +2351,9 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     tmpguess[2] = 0;
     tmpguess[3] = 1;
     tsk_fs_guessu32(fs, tmpguess, 1);
+
+    // we need a value here to test for RAW images. So, start with 2048
+    fs->block_size = 2048;
 
     /* load_vol_descs checks magic value */
     if (load_vol_desc(fs) == -1) {

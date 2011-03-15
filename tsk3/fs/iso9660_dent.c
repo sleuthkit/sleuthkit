@@ -180,6 +180,7 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
          * directory.  The contents are  block aligned. So, we 
          * scan ahead until we get either a non-zero entry or the block boundary */
         else {
+            buf_idx++;
             for (; buf_idx < a_length - sizeof(iso9660_dentry); buf_idx++) {
                 if (buf[buf_idx] != 0) {
                     dd = (iso9660_dentry *) & buf[buf_idx];
