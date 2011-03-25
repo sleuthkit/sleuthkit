@@ -192,7 +192,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
             fatfs_dentry *dir;
 
             /* is it a valid dentry? */
-            if (0 == fatfs_isdentry(fatfs, dep, 1)) {
+            if (0 == fatfs_isdentry(fatfs, dep, (sectalloc)?1:0)) {
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "fatfs_dent_parse_buf: Entry %u is invalid\n",
