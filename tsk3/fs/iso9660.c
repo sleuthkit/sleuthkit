@@ -2154,6 +2154,13 @@ ISO_RETRY_MAGIC:
                     fs->block_post_size = 304 - fs->block_pre_size;
                     goto ISO_RETRY_MAGIC;
                 }
+                else if (fs->block_pre_size == 16) {
+                    if (tsk_verbose) 
+                        tsk_fprintf(stderr, "Trying RAW ISO9660 with 24-byte pre-block size\n");
+                    fs->block_pre_size = 24;
+                    fs->block_post_size = 304 - fs->block_pre_size;
+                    goto ISO_RETRY_MAGIC;
+                }
                 else {
                     fs->block_pre_size = 0;
                     fs->block_post_size = 0;
