@@ -114,16 +114,16 @@ uint8_t
     struct STAT_STR stat_buf;
     if (TSTAT(dbFile, &stat_buf) == 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, 
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr( 
                 "Database %S already exists.  Must be deleted first.", dbFile);
         return 1;
     }
     
     if (sqlite3_open16(dbFile, &m_db)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, 
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr( 
             "Can't open database: %s\n", sqlite3_errmsg(m_db));
         sqlite3_close(m_db);
         return 1;
