@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2010 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
  *
  * mmls - list media management structure contents
@@ -281,7 +281,7 @@ main(int argc, char **argv1)
     vs = tsk_vs_open(img, imgaddr * img->sector_size, vstype);
     if (vs == NULL) {
         tsk_error_print(stderr);
-        if (tsk_errno == TSK_ERR_VS_UNSUPTYPE)
+        if (tsk_error_get_errno() == TSK_ERR_VS_UNSUPTYPE)
             tsk_vs_type_print(stderr);
         tsk_img_close(img);
         exit(1);

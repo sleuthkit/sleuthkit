@@ -12,7 +12,7 @@
 ** 14900 Conference Center Drive
 ** Chantilly, VA 20151
 **
-** Copyright (c) 2007-2008 Brian Carrier.  All rights reserved
+** Copyright (c) 2007-2011 Brian Carrier.  All rights reserved
 **
 ** Wyatt Banks [wbanks@crucialsecurity.com]
 ** Copyright (c) 2005 Crucial Security Inc.  All rights reserved.
@@ -65,7 +65,7 @@
 
 /**
  * \file iso9660_dent.c
- * Contains the internal TSK ISO9660 file system code to handle the parsing of 
+ * Contains the internal TSK ISO9660 file system code to handle the parsing of
  * file names and directory structures.
  */
 
@@ -145,9 +145,9 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
         if ((dd->entry_len) && (buf_idx + dd->entry_len < a_length)) {
 
             /* We need to find the data in the pre-processed list because that
-             * contains the meta data address that TSK assigned to this file.  
+             * contains the meta data address that TSK assigned to this file.
              * We find the entry by looking for one that was stored at the same
-             * byte offset that we now are.  We used to use the extent location, but 
+             * byte offset that we now are.  We used to use the extent location, but
              * we found an image
              * that had a file with 0 bytes with the same starting block as another
              * file. */
@@ -177,7 +177,7 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
             buf_idx += dd->entry_len;
         }
         /* If the length was not defined, we are probably in a hole in the
-         * directory.  The contents are  block aligned. So, we 
+         * directory.  The contents are  block aligned. So, we
          * scan ahead until we get either a non-zero entry or the block boundary */
         else {
             buf_idx++;
@@ -206,15 +206,15 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
 /** \internal
  * Process a directory and load up FS_DIR with the entries. If a pointer to
  * an already allocated FS_DIR struture is given, it will be cleared.  If no existing
- * FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return 
- * value is error or corruption, then the FS_DIR structure could  
- * have entries (depending on when the error occured). 
+ * FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return
+ * value is error or corruption, then the FS_DIR structure could
+ * have entries (depending on when the error occured).
  *
  * @param a_fs File system to analyze
  * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
- * structure or a new structure. 
+ * structure or a new structure.
  * @param a_addr Address of directory to process.
- * @returns error, corruption, ok etc. 
+ * @returns error, corruption, ok etc.
  */
 TSK_RETVAL_ENUM
 iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
@@ -228,16 +228,16 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     if (a_addr < a_fs->first_inum || a_addr > a_fs->last_inum) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr(
             "iso9660_dir_open_meta: Invalid inode value: %" PRIuINUM,
             a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "iso9660_dir_open_meta: NULL fs_attr argument given");
         return TSK_ERR;
     }
@@ -265,8 +265,8 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     fs_dir->fs_file = tsk_fs_file_open_meta(a_fs, NULL, a_addr);
     if (fs_dir->fs_file == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_NUM;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr(
             "iso9660_dir_open_meta: %" PRIuINUM " is not a valid inode",
             a_addr);
         return TSK_COR;
@@ -281,10 +281,9 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (cnt != length) {
         if (cnt >= 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_READ;
-            tsk_errstr[0] = '\0';
+            tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        snprintf(tsk_errstr2, TSK_ERRSTR_L, "iso9660_dir_open_meta");
+        tsk_error_set_errstr2( "iso9660_dir_open_meta");
         return TSK_ERR;
     }
 

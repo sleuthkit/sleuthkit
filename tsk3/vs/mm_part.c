@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
@@ -205,16 +205,16 @@ tsk_vs_part_get(const TSK_VS_INFO * a_vs, TSK_PNUM_T a_idx)
 
     if (a_vs == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_ARG);
+        tsk_error_set_errstr(
             "tsk_vs_part_get: pointer is NULL");
         return NULL;
     }
 
     if (a_idx >= a_vs->part_count) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_ARG);
+        tsk_error_set_errstr(
             "tsk_vs_part_get: Volume address is too big");
         return NULL;
     }
@@ -249,8 +249,8 @@ tsk_vs_part_walk(TSK_VS_INFO * a_vs, TSK_PNUM_T a_start, TSK_PNUM_T a_last,
 
     if (a_start >= a_vs->part_count) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_WALK_RNG);
+        tsk_error_set_errstr(
             "tsk_vs_part_walk: Start partition too large: %" PRIuPNUM "",
             a_start);
         return 1;
@@ -258,8 +258,8 @@ tsk_vs_part_walk(TSK_VS_INFO * a_vs, TSK_PNUM_T a_start, TSK_PNUM_T a_last,
 
     if (a_last >= a_vs->part_count) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_WALK_RNG);
+        tsk_error_set_errstr(
             "tsk_vs_part_walk: End partition too large: %" PRIuPNUM "",
             a_last);
         return 1;

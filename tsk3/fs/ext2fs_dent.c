@@ -1,12 +1,12 @@
 /*
 ** ext2fs_dent
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** File name layer support for an Ext2 / Ext3 FS
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2006 Brian Carrier.  All rights reserved 
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2003-2006 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -44,8 +44,8 @@ ext2fs_dent_copy(EXT2FS_INFO * ext2fs,
         /* ext2 does not null terminate */
         if (tsk_getu16(fs->endian, dir->name_len) >= fs_name->name_size) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_ARG;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_ARG);
+            tsk_error_set_errstr(
                 "ext2fs_dent_copy: Name Space too Small %d %" PRIuSIZE "",
                 tsk_getu16(fs->endian, dir->name_len), fs_name->name_size);
             return 1;
@@ -66,8 +66,8 @@ ext2fs_dent_copy(EXT2FS_INFO * ext2fs,
         /* ext2 does not null terminate */
         if (dir->name_len >= fs_name->name_size) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_ARG;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_ARG);
+            tsk_error_set_errstr(
                 "ext2_dent_copy: Name Space too Small %d %" PRIuSIZE "",
                 dir->name_len, fs_name->name_size);
             return 1;
@@ -114,7 +114,7 @@ ext2fs_dent_copy(EXT2FS_INFO * ext2fs,
 
 
 /*
- * @param a_is_del Set to 1 if block is from a deleted directory. 
+ * @param a_is_del Set to 1 if block is from a deleted directory.
  */
 static TSK_RETVAL_ENUM
 ext2fs_dent_parse_block(EXT2FS_INFO * ext2fs, TSK_FS_DIR * a_fs_dir,
@@ -134,7 +134,7 @@ ext2fs_dent_parse_block(EXT2FS_INFO * ext2fs, TSK_FS_DIR * a_fs_dir,
         return TSK_ERR;
 
     /* update each time by the actual length instead of the
-     ** recorded length so we can view the deleted entries 
+     ** recorded length so we can view the deleted entries
      */
     for (idx = 0; idx <= len - EXT2FS_DIRSIZ_lcl(1); idx += minreclen) {
 
@@ -156,9 +156,9 @@ ext2fs_dent_parse_block(EXT2FS_INFO * ext2fs, TSK_FS_DIR * a_fs_dir,
 
         minreclen = EXT2FS_DIRSIZ_lcl(namelen);
 
-        /* 
+        /*
          ** Check if we may have a valid directory entry.  If we don't,
-         ** then increment to the next word and try again.  
+         ** then increment to the next word and try again.
          */
         if ((inode > fs->last_inum) ||  // inode is unsigned
             (namelen > EXT2FS_MAXNAMLEN) || (namelen == 0) ||   // namelen is unsigned
@@ -198,9 +198,9 @@ ext2fs_dent_parse_block(EXT2FS_INFO * ext2fs, TSK_FS_DIR * a_fs_dir,
             return TSK_ERR;
         }
 
-        /* If the actual length is shorter then the 
-         ** recorded length, then the next entry(ies) have been 
-         ** deleted.  Set dellen to the length of data that 
+        /* If the actual length is shorter then the
+         ** recorded length, then the next entry(ies) have been
+         ** deleted.  Set dellen to the length of data that
          ** has been deleted
          **
          ** Because we aren't guaranteed with Ext2FS that the next
@@ -224,15 +224,15 @@ ext2fs_dent_parse_block(EXT2FS_INFO * ext2fs, TSK_FS_DIR * a_fs_dir,
 /** \internal
 * Process a directory and load up FS_DIR with the entries. If a pointer to
 * an already allocated FS_DIR struture is given, it will be cleared.  If no existing
-* FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return 
-* value is error or corruption, then the FS_DIR structure could  
-* have entries (depending on when the error occured). 
+* FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return
+* value is error or corruption, then the FS_DIR structure could
+* have entries (depending on when the error occured).
 *
 * @param a_fs File system to analyze
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
-* structure or a new structure. 
+* structure or a new structure.
 * @param a_addr Address of directory to process.
-* @returns error, corruption, ok etc. 
+* @returns error, corruption, ok etc.
 */
 
 TSK_RETVAL_ENUM
@@ -254,15 +254,15 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     if (a_addr < a_fs->first_inum || a_addr > a_fs->last_inum) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr(
             "ext2fs_dir_open_meta: inode value: %" PRIuINUM "\n", a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "ext2fs_dir_open_meta: NULL fs_attr argument given");
         return TSK_ERR;
     }
@@ -290,8 +290,7 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if ((fs_dir->fs_file =
             tsk_fs_file_open_meta(a_fs, NULL, a_addr)) == NULL) {
         tsk_error_reset();
-        strncat(tsk_errstr2, " - ext2fs_dir_open_meta",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_error_errstr2_concat("- ext2fs_dir_open_meta");
         return TSK_COR;
     }
 
@@ -308,8 +307,7 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             TSK_FS_FILE_WALK_FLAG_SLACK,
             tsk_fs_load_file_action, (void *) &load_file)) {
         tsk_error_reset();
-        strncat(tsk_errstr2, " - ext2fs_dir_open_meta",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_error_errstr2_concat("- ext2fs_dir_open_meta");
         free(dirbuf);
         return TSK_COR;
     }
@@ -317,8 +315,8 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     /* Not all of the directory was copied, so we exit */
     if (load_file.left > 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_FWALK;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+        tsk_error_set_errstr(
             "ext2fs_dir_open_meta: Error reading directory contents: %"
             PRIuINUM "\n", a_addr);
         free(dirbuf);

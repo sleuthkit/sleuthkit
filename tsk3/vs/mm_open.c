@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
  *
  * tsk_vs_open - wrapper function for specific partition type
  *
@@ -64,8 +64,8 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
                vs_set->close(vs_set);
                vs->close(vs);
                tsk_error_reset();
-               tsk_errno = TSK_ERR_VS_UNKTYPE;
-               snprintf(tsk_errstr, TSK_ERRSTR_L,
+               tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+               tsk_error_set_errstr(
                "BSD or %s at %" PRIuDADDR, set, offset);
                tsk_errstr2[0] = '\0';
                return NULL;
@@ -112,8 +112,8 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
                     vs_set->close(vs_set);
                     vs->close(vs);
                     tsk_error_reset();
-                    tsk_errno = TSK_ERR_VS_UNKTYPE;
-                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                    tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+                    tsk_error_set_errstr(
                         "GPT or %s at %" PRIuDADDR, set, offset);
                     return NULL;
                 }
@@ -134,8 +134,8 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
                 vs_set->close(vs_set);
                 vs->close(vs);
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_VS_UNKTYPE;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+                tsk_error_set_errstr(
                     "Sun or %s at %" PRIuDADDR, set, offset);
                 return NULL;
             }
@@ -153,8 +153,8 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
                 vs_set->close(vs_set);
                 vs->close(vs);
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_VS_UNKTYPE;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+                tsk_error_set_errstr(
                     "Mac or %s at %" PRIuDADDR, set, offset);
                 return NULL;
             }
@@ -165,7 +165,7 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
 
         if (vs_set == NULL) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_UNKTYPE;
+            tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
             return NULL;
         }
 
@@ -187,8 +187,8 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
         case TSK_VS_TYPE_UNSUPP:
         default:
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_UNSUPTYPE;
-            snprintf(tsk_errstr, TSK_ERRSTR_L, "%d", type);
+            tsk_error_set_errno(TSK_ERR_VS_UNSUPTYPE);
+            tsk_error_set_errstr("%d", type);
             return NULL;
         }
     }

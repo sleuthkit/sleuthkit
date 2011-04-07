@@ -5,7 +5,7 @@
 * There are also callback-style functions that can be used to read
 * the data and partitions.
 *
-* Copyright (c) 2008>, Brian Carrier <carrier <at> sleuthkit <dot> org>
+* Copyright (c) 2008-2011  Brian Carrier <carrier <at> sleuthkit <dot> org>
 * All rights reserved.
 * 
 * Redistribution and use in source and binary forms, with or without
@@ -94,7 +94,7 @@ proc_file(TSK_FS_FILE * fs_file, const char *path)
         (fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) myflags, file_act,
             (void *) &md)) {
         // ignore errors from deleted files that were being recovered
-        if (tsk_errno != TSK_ERR_FS_RECOVER) {
+        if (tsk_error_get_errno() != TSK_ERR_FS_RECOVER) {
             printf("Processing: %s/%s (%" PRIuINUM ")\n", path,
                 fs_file->name->name, fs_file->meta->addr);
             tsk_error_print(stderr);
@@ -142,6 +142,9 @@ proc_file(TSK_FS_FILE * fs_file, const char *path)
 static TSK_WALK_RET_ENUM
 dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
 {
+	fprintf(stdout,
+		"file systems file name: %s\n", fs_file->name->name);
+
     /* Ignore NTFS System files */
     if ((TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))
         && (fs_file->name->name[0] == '$'))

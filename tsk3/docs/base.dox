@@ -24,7 +24,7 @@ Note that in some environments, the TSK_TCHAR design is difficult to work with. 
 
 \section basic_error Error Handling
 
-The public API functions all return a value to indicate when an error occurs. More details about the error can be learned by reading the global tsk_errno value. This will be one of several predefined error codes.  A description of the error can be obtained using the tsk_error_get() function or the error can be printed to a FILE handle using tsk_error_print().  
+The public API functions all return a value to indicate when an error occurs. More details about the error can be learned by reading the global tsk_errno value. This will be one of several predefined error codes.  A description of the error can be obtained using the tsk_error_get() function or the error can be printed to a FILE handle using tsk_error_print().  The C++ wrapper is the TskError class.
 
 
 \section basic_misc Miscellaneous Utilities

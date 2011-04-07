@@ -3,7 +3,7 @@
 ** The Sleuth Kit 
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
 **
 ** TASK
@@ -108,8 +108,8 @@ tsk_fs_attr_alloc(TSK_FS_ATTR_FLAG_ENUM type)
     }
     else {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attr_alloc: Invalid Type: %d\n", type);
         return NULL;
     }
@@ -220,8 +220,8 @@ tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
 {
     if (a_fs_attr == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "Null fs_attr in tsk_fs_attr_set_str");
         return 1;
     }
@@ -284,15 +284,15 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
 
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "Null fs_file in tsk_fs_attr_set_run");
         return 1;
     }
     if (a_fs_attr == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "Null fs_attr in tsk_fs_attr_set_run");
         return 1;
     }
@@ -301,8 +301,8 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
 
     if (alloc_size < size) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attr_set_run: alloc_size (%" PRIuOFF
             ") is less than size (%" PRIuOFF ")", alloc_size, size);
         return 1;
@@ -400,8 +400,8 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
 
     if (a_fs_attr == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attr_add_run: Error, a_fs_attr is NULL");
         return 1;
     }
@@ -409,8 +409,8 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
     // we only support the case of a null run if it is the only run...
     if (a_data_run_new == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attr_add_run: Error, a_data_run_new is NULL (%"
             PRIuINUM ")", a_fs_attr->fs_file->meta->addr);
         return 1;
@@ -456,8 +456,8 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
              * the filler to start from VCN 0 */
             if (data_run_cur->offset > a_data_run_new->offset) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_GENFS;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                tsk_error_set_errstr(
                     "tsk_fs_attr_add_run: could not add data_run b.c. offset (%"
                     PRIuOFF ") is larger than FILLER (%" PRIuOFF ") (%"
                     PRIuINUM ")", a_data_run_new->offset,
@@ -564,8 +564,8 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
         }
 
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_GENFS;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_GENFS);
+        tsk_error_set_errstr(
             "fs_attr_add_run: error adding additional run (%" PRIuINUM
             "): No filler entry for %" PRIuDADDR ". Final: %" PRIuDADDR,
             a_fs_attr->fs_file->meta->addr, a_data_run_new->offset,
@@ -686,8 +686,8 @@ tsk_fs_attr_walk_res(const TSK_FS_ATTR * fs_attr,
     fs = fs_attr->fs_file->fs_info;
 
     if ((fs_attr->flags & TSK_FS_ATTR_RES) == 0) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_walk_res: called with non-resident data");
         return 1;
     }
@@ -766,8 +766,8 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
     uint8_t stop_loop = 0;
 
     if ((fs_attr->flags & TSK_FS_ATTR_NONRES) == 0) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_walk_nonres: called with non-non-resident data");
         return 1;
     }
@@ -804,10 +804,10 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
             if (addr + len_idx > fs->last_block) {
                 if (fs_attr->fs_file->meta->
                     flags & TSK_FS_META_FLAG_UNALLOC)
-                    tsk_errno = TSK_ERR_FS_RECOVER;
+                    tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                 else
-                    tsk_errno = TSK_ERR_FS_BLK_NUM;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                    tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
+                tsk_error_set_errstr(
                     "Invalid address in run (too large): %"
                     PRIuDADDR "", addr + len_idx);
                 return 1;
@@ -845,9 +845,9 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                     if (cnt != fs->block_size) {
                         if (cnt >= 0) {
                             tsk_error_reset();
-                            tsk_errno = TSK_ERR_FS_READ;
+                            tsk_error_set_errno(TSK_ERR_FS_READ);
                         }
-                        snprintf(tsk_errstr2, TSK_ERRSTR_L,
+                        tsk_error_set_errstr2(
                             "tsk_fs_file_walk: Error reading block at %"
                             PRIuDADDR, addr + len_idx);
                         return 1;
@@ -955,8 +955,8 @@ tsk_fs_attr_walk(const TSK_FS_ATTR * a_fs_attr,
     if ((a_fs_attr == NULL) || (a_fs_attr->fs_file == NULL)
         || (a_fs_attr->fs_file->meta == NULL)
         || (a_fs_attr->fs_file->fs_info == NULL)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attr_walk: called with NULL pointers");
         return 1;
     }
@@ -964,15 +964,15 @@ tsk_fs_attr_walk(const TSK_FS_ATTR * a_fs_attr,
 
     if (fs->tag != TSK_FS_INFO_TAG) {
 //        || (a_fs_attr->id != TSK_FS_ATTR_ID)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attr_walk: called with unallocated structures");
         return 1;
     }
     if (a_fs_attr->flags & TSK_FS_ATTR_COMP) {
         if (a_fs_attr->w == NULL) {
-            tsk_errno = TSK_ERR_FS_ARG;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_ARG);
+            tsk_error_set_errstr(
                 "tsk_fs_attr_walk: compressed attribute found, but special function not defined");
             return 1;
         }
@@ -988,8 +988,8 @@ tsk_fs_attr_walk(const TSK_FS_ATTR * a_fs_attr,
             a_ptr);
     }
 
-    tsk_errno = TSK_ERR_FS_ARG;
-    snprintf(tsk_errstr, TSK_ERRSTR_L,
+    tsk_error_set_errno(TSK_ERR_FS_ARG);
+    tsk_error_set_errstr(
         "tsk_fs_attr_walk: called with unknown attribute type: %x",
         a_fs_attr->flags);
     return 1;
@@ -1017,8 +1017,8 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
 
     if ((a_fs_attr == NULL) || (a_fs_attr->fs_file == NULL)
         || (a_fs_attr->fs_file->fs_info == NULL)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attr_read: Attribute has null pointers.");
         return -1;
     }
@@ -1027,8 +1027,8 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
     /* for compressed data, call the specialized function */
     if (a_fs_attr->flags & TSK_FS_ATTR_COMP) {
         if (a_fs_attr->r == NULL) {
-            tsk_errno = TSK_ERR_FS_ARG;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_ARG);
+            tsk_error_set_errstr(
                 "tsk_fs_attr_read: Attribute has compressed type set, but no compressed read function defined");
             return -1;
         }
@@ -1041,8 +1041,8 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
 
         if (a_offset >= a_fs_attr->size) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_READ_OFF;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
+            tsk_error_set_errstr(
                 "tsk_fs_attr_read - %" PRIuOFF, a_offset);
             return -1;
         }
@@ -1071,8 +1071,8 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
             || (!(a_flags & TSK_FS_FILE_READ_FLAG_SLACK)
                 && (a_offset >= a_fs_attr->size))) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_READ_OFF;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
+            tsk_error_set_errstr(
                 "tsk_fs_attr_read - %" PRIuOFF, a_offset);
             return -1;
         }
@@ -1177,9 +1177,9 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                 if (cnt != len_inrun) {
                     if (cnt >= 0) {
                         tsk_error_reset();
-                        tsk_errno = TSK_ERR_FS_READ;
+                        tsk_error_set_errno(TSK_ERR_FS_READ);
                     }
-                    snprintf(tsk_errstr2, TSK_ERRSTR_L,
+                    tsk_error_set_errstr2(
                         "tsk_fs_attr_read_type: offset: %" PRIuOFF
                         "  Len: %" PRIuSIZE "", fs_offset_b, len_inrun);
                     return cnt;
@@ -1207,8 +1207,8 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
         return (ssize_t) (len_toread - len_remain);
     }
 
-    tsk_errno = TSK_ERR_FS_ARG;
-    snprintf(tsk_errstr, TSK_ERRSTR_L,
+    tsk_error_set_errno(TSK_ERR_FS_ARG);
+    tsk_error_set_errstr(
         "tsk_fs_attr_read: Unknown attribute type: %x", a_fs_attr->flags);
     return -1;
 }

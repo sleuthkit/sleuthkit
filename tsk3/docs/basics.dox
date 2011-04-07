@@ -77,6 +77,9 @@ To link with the libraries, you must configure your environment to include the l
 
 Note that your Windows application must have UNICODE support enabled. 
 
+\section basic_cpp C++ Wrapers
+Nearly all of the TSK code is written in C and the original API is a collection of C functions and structs.  There are also C++ classes that are wrappers around the C code.  The C++ class allocates the C structs and provides getter and setter methods to access the public data.  The remainder of this doc primarily refers to the C functions, but will provide a link to the corresponding C++ class when one exists. 
+
 Next to \ref basepage
 
 Back to \ref users_guide "Table of Contents"

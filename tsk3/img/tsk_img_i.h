@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2005-2008 Brian Carrier.  All rights reserved 
+ * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved 
  *
  * This software is distributed under the Common Public License 1.0
  */
@@ -31,5 +31,6 @@
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
-
+    extern void *tsk_img_malloc(size_t);
+    extern void tsk_img_free(void *);
 #endif

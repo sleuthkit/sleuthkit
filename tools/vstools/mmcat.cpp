@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2008 Brian Carrier.  All rights reserved
+ * Copyright (c) 2008-2011 Brian Carrier.  All rights reserved
  *
  * Output the contents of a partition
  *
@@ -155,7 +155,7 @@ main(int argc, char **argv1)
     /* process the partition tables */
     if ((vs = tsk_vs_open(img, imgaddr * img->sector_size, vstype)) == NULL) {
         tsk_error_print(stderr);
-        if (tsk_errno == TSK_ERR_VS_UNSUPTYPE)
+        if (tsk_error_get_errno() == TSK_ERR_VS_UNSUPTYPE)
             tsk_vs_type_print(stderr);
 
         exit(1);
@@ -181,12 +181,13 @@ main(int argc, char **argv1)
     }
 
 #ifdef TSK_WIN32
+    char strerror_buffer[1024];
     if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WRITE;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WRITE);
+        tsk_error_set_errstr(
             "mmcat: error setting stdout to binary: %s",
-            strerror(errno));
+            strerror_s(strerror_buffer, 1024, errno));
         return 1;
     }
 #endif

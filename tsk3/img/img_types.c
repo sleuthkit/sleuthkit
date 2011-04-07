@@ -5,7 +5,7 @@
 ** Identify the type of image file being used
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier.  All rights reserved 
+** Copyright (c) 2006-2011 Brian Carrier.  All rights reserved 
 **
 ** This software is distributed under the Common Public License 1.0
 */

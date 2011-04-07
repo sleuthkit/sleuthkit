@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
@@ -33,8 +33,8 @@ tsk_vs_read_block(TSK_VS_INFO * a_vs, TSK_DADDR_T a_addr, char *a_buf,
 {
     if (a_len % a_vs->block_size) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_READ;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_READ);
+        tsk_error_set_errstr(
             "tsk_vs_read_block: length %" PRIuSIZE ""
             " not a multiple of %d", a_len, a_vs->block_size);
         return -1;
@@ -85,8 +85,8 @@ tsk_vs_part_read_block(const TSK_VS_PART_INFO * a_vs_part,
 
     if (a_len % vs->block_size) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_READ;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_READ);
+        tsk_error_set_errstr(
             "tsk_vs_part_read_block: length %" PRIuSIZE ""
             " not a multiple of %d", a_len, vs->block_size);
         return -1;

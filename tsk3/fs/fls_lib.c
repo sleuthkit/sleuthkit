@@ -6,7 +6,7 @@
 ** directories that exist (both active and deleted)
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carier.  All rights reserved
 **
 ** TASK
@@ -201,8 +201,8 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
                 (UTF8 *) ((uintptr_t) ptr8 + clen), TSKlenientConversion);
             if (retval != TSKconversionOK) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_UNICODE;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_FS_UNICODE);
+                tsk_error_set_errstr(
                     "Error converting fls mactime pre-text to UTF-8 %d\n",
                     retval);
                 return 1;

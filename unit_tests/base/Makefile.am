@@ -1,0 +1,15 @@
+AM_CPPFLAGS = -I../.. -Wall $(CPPUNIT_CFLAGS) 
+LDADD = ../../tsk3/libtsk3.la $(CPPUNIT_LIBS)
+LDFLAGS = -static 
+
+noinst_PROGRAMS = test_base
+test_base_SOURCES= test_base.cpp errors_test.cpp
+
+indent:
+	indent *.cpp *.h
+
+clean-local:
+	-rm -f *.cpp~ *.h~
+	
+check:
+	./test_base

@@ -12,7 +12,7 @@
 ** Copyright (c) 2005 Crucial Security Inc.  All rights reserved.
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
+** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
 ** Copyright (c) 1997,1998,1999, International Business Machines
 ** Corporation and others. All Rights Reserved.
@@ -382,8 +382,6 @@ typedef struct iso9660_inode_node {
 /* The all important ISO_INFO struct */
 typedef struct {
     TSK_FS_INFO fs_info;        /* SUPER CLASS */
-    TSK_INUM_T dinum;           /* cached inode number */
-    iso9660_inode *dinode;      /* cached disk inode */
     uint32_t path_tab_addr;     /* address of path table */
     uint32_t root_addr;         /* address of root dir extent */
     iso9660_pvd_node *pvd;      ///< Head of primary volume descriptor list (there should be only one...)
@@ -395,7 +393,7 @@ typedef struct {
 extern TSK_RETVAL_ENUM iso9660_dir_open_meta(TSK_FS_INFO * a_fs,
     TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_addr);
 
-extern uint8_t iso9660_dinode_load(ISO_INFO * iso, TSK_INUM_T inum);
+extern uint8_t iso9660_dinode_load(ISO_INFO * iso, TSK_INUM_T inum, iso9660_inode *dinode);
 
 extern int iso9660_name_cmp(TSK_FS_INFO *, const char *, const char *);
 

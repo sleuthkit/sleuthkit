@@ -8,13 +8,13 @@
 ** 14900 Conference Center Drive
 ** Chantilly, VA 20151
 **
-** Copyright (c) 2009 Brian Carrier.  All rights reserved.
+** Copyright (c) 2009-2011 Brian Carrier.  All rights reserved.
 **
 ** Judson Powers [jpowers@atc-nycorp.com]
 ** Copyright (c) 2008 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
 ** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
-** 
+**
 ** Wyatt Banks [wbanks@crucialsecurity.com]
 ** Copyright (c) 2005 Crucial Security Inc.  All rights reserved.
 **
@@ -128,8 +128,8 @@ hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
 
     free(uniclean);
     if (r != TSKconversionOK) {
-        tsk_errno = TSK_ERR_FS_UNICODE;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_UNICODE);
+        tsk_error_set_errstr(
             "hfs_uni2ascii: unicode conversion failed (%d)", (int) r);
         return 1;
     }
@@ -211,8 +211,8 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
         // @@@ NEED TO REPLACE THIS SOMEHOW, but need to figure out the max length
         /*
            if (rec_off2 > nodesize) {
-           tsk_errno = TSK_ERR_FS_GENFS;
-           snprintf(tsk_errstr, TSK_ERRSTR_L,
+           tsk_error_set_errno(TSK_ERR_FS_GENFS);
+           tsk_error_set_errstr(
            "hfs_dir_open_meta: offset of record+keylen %d in leaf node %d too large (%zu vs %"
            PRIu16 ")", rec, cur_node, rec_off2, nodesize);
            tsk_fs_name_free(fs_name);
@@ -224,8 +224,8 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
         // Catalog entry is for a file
         if (rec_type == HFS_FILE_THREAD) {
-            tsk_errno = TSK_ERR_FS_GENFS;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_GENFS);
+            tsk_error_set_errstr(
                 "hfs_dir_open_meta: Entry" " is a file, not a folder");
             return HFS_BTREE_CB_ERR;
         }
@@ -273,9 +273,9 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             }
         }
         else {
-            tsk_errno = TSK_ERR_FS_GENFS;
+            tsk_error_set_errno(TSK_ERR_FS_GENFS);
             // @@@ MAY NEED TO IMPROVE BELOW MESSAGE
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errstr(
                 "hfs_dir_open_meta: Unknown record type %d in leaf node",
                 rec_type);
             return HFS_BTREE_CB_ERR;
@@ -291,15 +291,15 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 /** \internal
 * Process a directory and load up FS_DIR with the entries. If a pointer to
 * an already allocated FS_DIR struture is given, it will be cleared.  If no existing
-* FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return 
-* value is error or corruption, then the FS_DIR structure could  
-* have entries (depending on when the error occured). 
+* FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return
+* value is error or corruption, then the FS_DIR structure could
+* have entries (depending on when the error occured).
 *
 * @param a_fs File system to analyze
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
-* structure or a new structure. 
+* structure or a new structure.
 * @param a_addr Address of directory to process.
-* @returns error, corruption, ok etc. 
+* @returns error, corruption, ok etc.
 */
 TSK_RETVAL_ENUM
 hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
@@ -321,15 +321,15 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
 
     if (a_addr < fs->first_inum || a_addr > fs->last_inum) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr(
             "hfs_dir_open_meta: Invalid inode value: %" PRIuINUM, a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "hfs_dir_open_meta: NULL fs_dir argument given");
         return TSK_ERR;
     }
@@ -355,8 +355,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
 
     if ((fs_dir->fs_file =
             tsk_fs_file_open_meta(fs, NULL, a_addr)) == NULL) {
-        strncat(tsk_errstr2, " - hfs_dir_open_meta",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_error_errstr2_concat(" - hfs_dir_open_meta");
         tsk_fs_name_free(fs_name);
         return TSK_ERR;
     }
@@ -404,7 +403,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                    case 7:
                    strncpy(fs_name->name, HFS_BOGUS_EXTENT_FILE_NAME, fs_name->name_size);
                    fs_name->meta_addr = HFS_BOGUS_EXTENT_FILE_ID;
-                   break;                    
+                   break;
                  */
             }
             fs_name->type = TSK_FS_NAME_TYPE_REG;

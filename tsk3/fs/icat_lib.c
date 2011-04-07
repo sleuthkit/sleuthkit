@@ -3,7 +3,7 @@
 ** The Sleuth Kit 
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
 **
 ** TASK
@@ -42,8 +42,8 @@ icat_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 
     if (fwrite(buf, size, 1, stdout) != 1) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WRITE;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WRITE);
+        tsk_error_set_errstr(
             "icat_action: error writing to stdout: %s", strerror(errno));
         return TSK_WALK_ERROR;
     }
@@ -62,8 +62,8 @@ tsk_fs_icat(TSK_FS_INFO * fs, TSK_INUM_T inum,
 #ifdef TSK_WIN32
     if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WRITE;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WRITE);
+        tsk_error_set_errstr(
             "icat_lib: error setting stdout to binary: %s",
             strerror(errno));
         return 1;

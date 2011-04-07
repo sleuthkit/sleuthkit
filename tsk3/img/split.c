@@ -1,6 +1,6 @@
 /*
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2005 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
@@ -63,8 +63,8 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
                     FILE_SHARE_READ, NULL, OPEN_EXISTING, 0,
                     NULL)) == INVALID_HANDLE_VALUE) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_OPEN;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+            tsk_error_set_errstr(
                 "split_read file: %" PRIttocTSK " msg: %d",
                 split_info->images[idx], (int) GetLastError());
             return -1;
@@ -73,8 +73,8 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
         if ((cimg->fd =
                 open(split_info->images[idx], O_RDONLY | O_BINARY)) < 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_OPEN;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+            tsk_error_set_errstr(
                 "split_read file: %" PRIttocTSK " msg: %s",
                 split_info->images[idx], strerror(errno));
             return -1;
@@ -104,8 +104,8 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
             if ((li.LowPart == INVALID_SET_FILE_POINTER) &&
                 (GetLastError() != NO_ERROR)) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_IMG_SEEK;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_IMG_SEEK);
+                tsk_error_set_errstr(
                     "split_read - %" PRIuOFF, rel_offset);
                 return -1;
             }
@@ -114,8 +114,8 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
 
         if (FALSE == ReadFile(cimg->fd, buf, (DWORD) len, &nread, NULL)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_READ;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_IMG_READ);
+            tsk_error_set_errstr(
                 "split_read - offset: %" PRIuOFF " - len: %" PRIuSIZE "",
                 rel_offset, len);
             return -1;
@@ -126,8 +126,8 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
     if (cimg->seek_pos != rel_offset) {
         if (lseek(cimg->fd, rel_offset, SEEK_SET) != rel_offset) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_SEEK;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_IMG_SEEK);
+            tsk_error_set_errstr(
                 "split_read - %s - %" PRIuOFF " - %s",
                 split_info->images[idx], rel_offset, strerror(errno));
             return -1;
@@ -138,8 +138,8 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
     cnt = read(cimg->fd, buf, len);
     if (cnt < 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_READ;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_IMG_READ);
+        tsk_error_set_errstr(
             "split_read - offset: %" PRIuOFF
             " - len: %" PRIuSIZE " - %s", rel_offset, len,
             strerror(errno));
@@ -155,6 +155,8 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
  * \internal
  * Read data from a split disk image.  The offset to start reading from is 
  * equal to the volume offset plus the read offset.
+ *
+ * Note: The routine -assumes- we are under a lock on &(img_info->cache_lock))
  *
  * @param img_info Disk image to read from
  * @param offset Byte offset in image to start reading from
@@ -176,8 +178,8 @@ split_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
 
     if (offset > img_info->size) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_READ_OFF;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
+        tsk_error_set_errstr(
             "split_read - %" PRIuOFF, offset);
         return -1;
     }
@@ -215,11 +217,12 @@ split_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
             cnt =
                 split_read_segment(split_info, i, buf, read_len,
                 rel_offset);
-            if (cnt < 0)
+            if (cnt < 0){
                 return -1;
-
-            if ((TSK_OFF_T) cnt != read_len)
+            }
+            if ((TSK_OFF_T) cnt != read_len){
                 return cnt;
+            }
 
             /* Go to the next image(s) */
             if (((TSK_OFF_T) cnt == read_len) && (read_len != len)) {
@@ -248,24 +251,25 @@ split_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
                     cnt2 =
                         split_read_segment(split_info, i, &buf[cnt],
                         read_len, 0);
-                    if (cnt2 < 0)
+                    if (cnt2 < 0){
                         return -1;
+                    }
                     cnt += cnt2;
 
-                    if ((TSK_OFF_T) cnt2 != read_len)
+                    if ((TSK_OFF_T) cnt2 != read_len){
                         return cnt;
+                    }
 
                     len -= cnt2;
                 }
             }
-
             return cnt;
         }
     }
 
     tsk_error_reset();
-    tsk_errno = TSK_ERR_IMG_READ_OFF;
-    snprintf(tsk_errstr, TSK_ERRSTR_L,
+    tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
+    tsk_error_set_errstr(
         "split_read - %" PRIuOFF " - %s", offset, strerror(errno));
     return -1;
 }
@@ -320,6 +324,7 @@ split_close(TSK_IMG_INFO * img_info)
             close(split_info->cache[i].fd);
 #endif
     }
+    free(split_info->max_off);
     free(split_info->cptr);
     free(split_info);
 }
@@ -344,7 +349,7 @@ split_open(int num_img, const TSK_TCHAR * const images[],
     int i;
 
     if ((split_info =
-            (IMG_SPLIT_INFO *) tsk_malloc(sizeof(IMG_SPLIT_INFO))) == NULL)
+            (IMG_SPLIT_INFO *) tsk_img_malloc(sizeof(IMG_SPLIT_INFO))) == NULL)
         return NULL;
 
     img_info = (TSK_IMG_INFO *) split_info;
@@ -361,7 +366,7 @@ split_open(int num_img, const TSK_TCHAR * const images[],
     /* Open the files */
     if ((split_info->cptr =
             (int *) tsk_malloc(num_img * sizeof(int))) == NULL) {
-        free(split_info);
+        tsk_img_free(split_info);
         return NULL;
     }
 
@@ -373,7 +378,7 @@ split_open(int num_img, const TSK_TCHAR * const images[],
         (TSK_OFF_T *) tsk_malloc(num_img * sizeof(TSK_OFF_T));
     if (split_info->max_off == NULL) {
         free(split_info->cptr);
-        free(split_info);
+        tsk_img_free(split_info);
         return NULL;
     }
     img_info->size = 0;
@@ -391,13 +396,13 @@ split_open(int num_img, const TSK_TCHAR * const images[],
         split_info->cptr[i] = -1;
         if (TSTAT(images[i], &sb) < 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_STAT;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_IMG_STAT);
+            tsk_error_set_errstr(
                 "split_open - %" PRIttocTSK " - %s", images[i],
                 strerror(errno));
             free(split_info->max_off);
             free(split_info->cptr);
-            free(split_info);
+            tsk_img_free(split_info);
             return NULL;
         }
         else if ((sb.st_mode & S_IFMT) == S_IFDIR) {
@@ -407,9 +412,12 @@ split_open(int num_img, const TSK_TCHAR * const images[],
                     images[i]);
 
             tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_MAGIC;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
+            tsk_error_set_errstr(
                 "split_open: Image is a directory");
+            free(split_info->max_off);
+            free(split_info->cptr);
+            tsk_img_free(split_info);
             return NULL;
         }
 

@@ -1,9 +1,9 @@
 /*
  * fs_dir
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2008-2009 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2008-2011 Brian Carrier.  All Rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  *
@@ -11,16 +11,16 @@
 
 /**
  * \file fs_dir.c
- * Create, manage, etc. the TSK_FS_DIR structures. 
+ * Create, manage, etc. the TSK_FS_DIR structures.
  */
 
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
 /** \internal
-* Allocate a FS_DIR structure to load names into.  
-* 
-* @param a_addr Address of this directory. 
+* Allocate a FS_DIR structure to load names into.
+*
+* @param a_addr Address of this directory.
 * @param a_cnt target number of FS_DENT entries to fit in
 * @returns NULL on error
 */
@@ -56,7 +56,7 @@ tsk_fs_dir_alloc(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, size_t a_cnt)
 
 /** \internal
 * Make the buffer in the FS_DIR structure larger.
-* 
+*
 * @param a_fs_dir Structure to enhance
 * @param a_cnt target number of FS_DENT entries to fit in
 * @returns 1 on error and 0 on success
@@ -108,10 +108,10 @@ tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir)
 
 
 /** \internal
- * Copy the contents of one directory structure to another. 
+ * Copy the contents of one directory structure to another.
  * Note that this currently does not copy the FS_FILE info.
  * It is only used to make a copy of the orphan directory.
- * It does not check for duplicate entries. 
+ * It does not check for duplicate entries.
  * @returns 1 on error
  */
 static uint8_t
@@ -140,7 +140,7 @@ tsk_fs_dir_copy(const TSK_FS_DIR * a_src_dir, TSK_FS_DIR * a_dst_dir)
 
 /** \internal
  * Add a FS_DENT structure to a FS_DIR structure by copying its
- * contents into the internal buffer. Checks for 
+ * contents into the internal buffer. Checks for
  * duplicates and expands buffer as needed.
  * @param a_fs_dir DIR to add to
  * @param a_fs_name DENT to add
@@ -163,7 +163,7 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
                     PRIuINUM ")\n", a_fs_name->name, a_fs_name->meta_addr);
 
             /* We do not check type because then we cannot detect NTFS orphan file
-             * duplicates that are added as "-/r" while a similar entry exists as "r/r"  
+             * duplicates that are added as "-/r" while a similar entry exists as "r/r"
              (a_fs_name->type == a_fs_dir->names[i].type)) { */
 
             // if the one in the list is unalloc and we have an alloc, replace it
@@ -204,7 +204,7 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
     if (tsk_fs_name_copy(fs_name_dest, a_fs_name))
         return 1;
 
-    // add the parent address 
+    // add the parent address
     if (a_fs_dir->addr)
         fs_name_dest->par_addr = a_fs_dir->addr;
 
@@ -227,8 +227,8 @@ tsk_fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr)
 
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)
         || (a_fs->dir_open_meta == NULL)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_dir_open_meta: called with NULL or unallocated structures");
         return NULL;
     }
@@ -256,8 +256,8 @@ tsk_fs_dir_open(TSK_FS_INFO * a_fs, const char *a_dir)
     TSK_FS_NAME *fs_name;
 
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_dir_open: called with NULL or unallocated structures");
         return NULL;
     }
@@ -272,8 +272,8 @@ tsk_fs_dir_open(TSK_FS_INFO * a_fs, const char *a_dir)
         return NULL;
     }
     else if (retval == 1) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_dir_open: path not found: %s", a_dir);
         return NULL;
     }
@@ -332,8 +332,8 @@ size_t
 tsk_fs_dir_getsize(const TSK_FS_DIR * a_fs_dir)
 {
     if ((a_fs_dir == NULL) || (a_fs_dir->tag != TSK_FS_DIR_TAG)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_dir_getsize: called with NULL or unallocated structures");
         return 0;
     }
@@ -341,7 +341,7 @@ tsk_fs_dir_getsize(const TSK_FS_DIR * a_fs_dir)
 }
 
 /** \ingroup fslib
-* Return a specific file or subdirectory from an open directory. 
+* Return a specific file or subdirectory from an open directory.
  * @param a_fs_dir Directory to analyze
  * @param a_idx Index of file in directory to open (0-based)
  * @returns NULL on error
@@ -354,14 +354,14 @@ tsk_fs_dir_get(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
 
     if ((a_fs_dir == NULL) || (a_fs_dir->tag != TSK_FS_DIR_TAG)
         || (a_fs_dir->fs_info == NULL)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_dir_get: called with NULL or unallocated structures");
         return NULL;
     }
     if (a_fs_dir->names_used <= a_idx) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_dir_get: Index (%" PRIuSIZE ") too large (%" PRIuSIZE
             ")", a_idx, a_fs_dir->names_used);
         return NULL;
@@ -421,6 +421,14 @@ typedef struct {
     /* Set to one to collect inode info that can be used for orphan listing */
     uint8_t save_inum_named;
 
+    /* We keep list_inum_named inside DENT_DINFO so different threads
+     * have their own copies.  On successful completion of the dir
+     * walk we reassigned ownership of this pointer into the shared
+     * TSK_FS_INFO list_inum_named field.  We're trading off the extra
+     * work in each thread for cleaner locking code.
+     */
+    TSK_LIST * list_inum_named;
+
 } DENT_DINFO;
 
 
@@ -435,7 +443,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     TSK_FS_FILE *fs_file;
     size_t i;
 
-    // get the list of entries in the directory 
+    // get the list of entries in the directory
     if ((fs_dir = tsk_fs_dir_open_meta(a_fs, a_addr)) == NULL) {
         return TSK_WALK_ERROR;
     }
@@ -467,7 +475,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
             }
         }
 
-        // call the action if we have the right flags. 
+        // call the action if we have the right flags.
         if ((fs_file->name->flags & a_flags) == fs_file->name->flags) {
 
             retval = a_action(fs_file, a_dinfo->dirs, a_ptr);
@@ -480,8 +488,8 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                  * of knowing that we stopped early w/out error.
                  */
                 if (a_dinfo->save_inum_named) {
-                    tsk_list_free(a_fs->list_inum_named);
-                    a_fs->list_inum_named = NULL;
+                    tsk_list_free(a_dinfo->list_inum_named);
+                    a_dinfo->list_inum_named = NULL;
                     a_dinfo->save_inum_named = 0;
                 }
 
@@ -498,16 +506,17 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
         // save the inode info for orphan finding - if requested
         if ((a_dinfo->save_inum_named) && (fs_file->meta)
             && (fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)) {
-            if (tsk_list_add(&a_fs->list_inum_named, fs_file->meta->addr)) {
+
+            if (tsk_list_add(&a_dinfo->list_inum_named, fs_file->meta->addr)) {
 
                 // if there is an error, then clear the list
-                tsk_list_free(a_fs->list_inum_named);
-                a_fs->list_inum_named = NULL;
+                tsk_list_free(a_dinfo->list_inum_named);
+                a_dinfo->list_inum_named = NULL;
                 a_dinfo->save_inum_named = 0;
             }
         }
 
-        /* Recurse into a directory if: 
+        /* Recurse into a directory if:
          * - Both dir entry and inode have DIR type (or name is undefined)
          * - Recurse flag is set
          * - dir entry is allocated OR both are unallocated
@@ -570,7 +579,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     a_dinfo, fs_file->name->meta_addr, a_flags,
                     a_action, a_ptr);
                 if (retval == TSK_WALK_ERROR) {
-                    /* If this fails because the directory could not be 
+                    /* If this fails because the directory could not be
                      * loaded, then we still continue */
                     if (tsk_verbose) {
                         tsk_fprintf(stderr,
@@ -619,7 +628,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
 
 
 /** \ingroup fslib
-* Walk the file names in a directory and obtain the details of the files via a callback. 
+* Walk the file names in a directory and obtain the details of the files via a callback.
 *
 * @param a_fs File system to analyze
 * @param a_addr Metadata address of the directory to analyze
@@ -637,8 +646,8 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     TSK_RETVAL_ENUM retval;
 
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_dir_walk: called with NULL or unallocated structures");
         return 1;
     }
@@ -657,22 +666,40 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
 
     /* if the flags are right, we can collect info that may be needed
      * for an orphan walk.  If the walk fails or stops, the code that
-     * calls the action will clear this stuff. 
+     * calls the action will clear this stuff.
      */
+    tsk_take_lock(&a_fs->list_inum_named_lock);
     if ((a_fs->list_inum_named == NULL) && (a_addr == a_fs->root_inum)
         && (a_flags & TSK_FS_DIR_WALK_FLAG_RECURSE)) {
         dinfo.save_inum_named = 1;
     }
+    tsk_release_lock(&a_fs->list_inum_named_lock);
 
     retval = tsk_fs_dir_walk_lcl(a_fs, &dinfo, a_addr, a_flags,
         a_action, a_ptr);
 
-    /* If there was an error, then we stopped early and we should get
-     * rid of the partial list we were making.
-     */
-    if ((retval != TSK_WALK_CONT) && (dinfo.save_inum_named == 1)) {
-        tsk_list_free(a_fs->list_inum_named);
-        a_fs->list_inum_named = NULL;
+    if (dinfo.save_inum_named == 1) {
+        if (retval != TSK_WALK_CONT) {
+            /* There was an error and we stopped early, so we should get
+             * rid of the partial list we were making.
+             */
+            tsk_list_free(dinfo.list_inum_named);
+            dinfo.list_inum_named = NULL;
+        } else {
+            /* We finished the dir walk successfully, so reassign
+             * ownership of the dinfo's list_inum_named to the shared
+             * list_inum_named in TSK_FS_INFO, under a lock, if
+             * another thread hasn't already done so.
+             */
+            tsk_take_lock(&a_fs->list_inum_named_lock);
+            if (a_fs->list_inum_named == NULL) {
+                a_fs->list_inum_named = dinfo.list_inum_named;
+            } else {
+                tsk_list_free(dinfo.list_inum_named);
+            }
+            tsk_release_lock(&a_fs->list_inum_named_lock);
+            dinfo.list_inum_named = NULL;
+        }
     }
 
     tsk_stack_free(dinfo.stack_seen);
@@ -747,7 +774,25 @@ tsk_fs_dir_make_orphan_dir_meta(TSK_FS_INFO * a_fs,
     return 0;
 }
 
-
+/** \internal
+ * Searches the list of metadata addresses that are pointed to
+ * by unallocated names.  Used to find orphan files. 
+ * @param a_fs File system being analyzed.
+ * @param a_inum Metadata address to lookup in list.
+ * @returns 1 if metadata address is pointed to by an unallocated
+ * file name or 0 if not.
+ */
+uint8_t
+tsk_fs_dir_find_inum_named(TSK_FS_INFO *a_fs, TSK_INUM_T a_inum)
+{
+    uint8_t retval = 0;
+    tsk_take_lock(&a_fs->list_inum_named_lock);
+    // list can be null if no unallocated file names exist
+    if (a_fs->list_inum_named)
+        retval = tsk_list_find(a_fs->list_inum_named, a_inum);
+    tsk_release_lock(&a_fs->list_inum_named_lock);
+    return retval;
+}
 
 
 /* callback that is used by tsk_fs_dir_load_inum_named.  It does nothing
@@ -762,27 +807,30 @@ load_named_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
 
 /** \internal
  * Proces a file system and populate a list of the metadata structures
- * that are reachable by file names. This is used to find orphan files. 
- * Each file system has code that does the populating. 
+ * that are reachable by file names. This is used to find orphan files.
+ * Each file system has code that does the populating.
  */
 TSK_RETVAL_ENUM
 tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
 {
-    if (a_fs->list_inum_named != NULL)
+    tsk_take_lock(&a_fs->list_inum_named_lock);
+    if (a_fs->list_inum_named != NULL) {
+        tsk_release_lock(&a_fs->list_inum_named_lock);
         return TSK_OK;
+    }
+    tsk_release_lock(&a_fs->list_inum_named_lock);
 
     /* Do a dir_walk.  There is internal caching code that will populate
      * the structure.  The callback is really a dummy call.  This could
      * be made more effecient in the future (not do callbacks...).  We
-     * specify UNALLOC only as a flag on the assumption that there will 
-     * be fewer callbacks for UNALLOC than ALLOC. 
+     * specify UNALLOC only as a flag on the assumption that there will
+     * be fewer callbacks for UNALLOC than ALLOC.
      */
     if (tsk_fs_dir_walk(a_fs, a_fs->root_inum,
             TSK_FS_NAME_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE |
             TSK_FS_DIR_WALK_FLAG_NOORPHAN, load_named_dir_walk_cb, NULL)) {
-        strncat(tsk_errstr2,
-            " - tsk_fs_dir_load_inum_named: identifying inodes allocated by file names",
-            TSK_ERRSTR_L);
+        tsk_error_errstr2_concat(
+            "- tsk_fs_dir_load_inum_named: identifying inodes allocated by file names");
         return TSK_ERR;
     }
 
@@ -805,11 +853,16 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
 {
     FIND_ORPHAN_DATA *data = (FIND_ORPHAN_DATA *) a_ptr;
 
+    // ignore DOT entries
+    if ((a_fs_file->name) && (a_fs_file->name->name) && 
+            (TSK_FS_ISDOT(a_fs_file->name->name)))
+        return TSK_WALK_CONT;
+
     // add this entry to the orphan list
     if (a_fs_file->meta) {
         tsk_list_add(&data->orphan_subdir_list, a_fs_file->meta->addr);
 
-        /* FAT file systems spend a lot of time hunting for parent 
+        /* FAT file systems spend a lot of time hunting for parent
          * directory addresses, so we put this code in here to save
          * the info when we have it. */
         if ((a_fs_file->meta->type == TSK_FS_META_TYPE_DIR)
@@ -831,12 +884,15 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
     TSK_FS_INFO *fs = a_fs_file->fs_info;
 
     /* We want only orphans, then check if this
-     * inode is in the seen list 
+     * inode is in the seen list
      */
+    tsk_take_lock(&fs->list_inum_named_lock);
     if ((fs->list_inum_named)
         && (tsk_list_find(fs->list_inum_named, a_fs_file->meta->addr))) {
+        tsk_release_lock(&fs->list_inum_named_lock);
         return TSK_WALK_CONT;
     }
+    tsk_release_lock(&fs->list_inum_named_lock);
 
     // check if we have already added it as an orphan (in a subdirectory)
     if (tsk_list_find(data->orphan_subdir_list, a_fs_file->meta->addr)) {
@@ -859,7 +915,7 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
     if (tsk_fs_dir_add(data->fs_dir, data->fs_name))
         return TSK_WALK_ERROR;
 
-    /* FAT file systems spend a lot of time hunting for parent 
+    /* FAT file systems spend a lot of time hunting for parent
      * directory addresses, so we put this code in here to save
      * the info when we have it. */
     if (TSK_FS_TYPE_ISFAT(fs->ftype)) {
@@ -875,9 +931,8 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
                 TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE
                 | TSK_FS_DIR_WALK_FLAG_NOORPHAN, load_orphan_dir_walk_cb,
                 data)) {
-            strncat(tsk_errstr2,
-                " - tsk_fs_dir_load_inum_named: identifying inodes allocated by file names",
-                TSK_ERRSTR_L);
+            tsk_error_errstr2_concat(
+                " - tsk_fs_dir_load_inum_named: identifying inodes allocated by file names");
             return TSK_ERR;
         }
     }
@@ -885,8 +940,33 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
     return TSK_WALK_CONT;
 }
 
+
 /** \internal
- * Search the file system for orphan files and create the orphan file directory. 
+ * Adds the fake metadata entry in the FS_DIR->fs_file struct for the orphan files directory
+ *
+ * @returns 1 on error
+ */
+static uint8_t
+tsk_fs_dir_add_orphan_dir_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR *a_fs_dir)
+{
+    // populate the fake FS_FILE structure for the "Orphan Directory"
+    if ((a_fs_dir->fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
+        return 1;
+    }
+    
+    if ((a_fs_dir->fs_file->meta =
+         tsk_fs_meta_alloc(sizeof(TSK_DADDR_T))) == NULL) {
+        return 1;
+    }
+    
+    if (tsk_fs_dir_make_orphan_dir_meta(a_fs, a_fs_dir->fs_file->meta)) {
+        return 1;
+    }
+    return 0;
+}
+
+/** \internal
+ * Search the file system for orphan files and create the orphan file directory.
  * @param a_fs File system to search
  * @param a_fs_dir Structure to store the orphan file directory info in.
  */
@@ -896,50 +976,55 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
     FIND_ORPHAN_DATA data;
     size_t i;
 
+    tsk_take_lock(&a_fs->orphan_dir_lock);
+
     if (a_fs->orphan_dir != NULL) {
-        if (tsk_fs_dir_copy(a_fs->orphan_dir, a_fs_dir))
+        if (tsk_fs_dir_copy(a_fs->orphan_dir, a_fs_dir)) {
+            tsk_release_lock(&a_fs->orphan_dir_lock);
             return TSK_ERR;
+        }
+        
+        if (tsk_fs_dir_add_orphan_dir_meta(a_fs, a_fs_dir)) {
+            tsk_release_lock(&a_fs->orphan_dir_lock);
+            return TSK_ERR;
+        }
+        
+        tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_OK;
     }
 
-    if (a_fs->isOrphanHunting) {
-        return TSK_OK;
-    }
-    a_fs->isOrphanHunting = 1;
     memset(&data, 0, sizeof(FIND_ORPHAN_DATA));
 
     /* We first need to determine which of the unallocated meta structures
-     * have a name pointing to them.  We cache this data, so see if it is 
+     * have a name pointing to them.  We cache this data, so see if it is
      * already known. */
-    if (a_fs->list_inum_named == NULL) {
-        a_fs->isOrphanHunting = 0;
-        if (tsk_fs_dir_load_inum_named(a_fs) != TSK_OK) {
-            return TSK_ERR;
-        }
-        a_fs->isOrphanHunting = 1;
-        // note that list_inum_named could still be NULL if there are no deleted names.
+    if (tsk_fs_dir_load_inum_named(a_fs) != TSK_OK) {
+        tsk_release_lock(&a_fs->orphan_dir_lock);
+        return TSK_ERR;
     }
+    // note that list_inum_named could still be NULL if there are no deleted names.
 
-    /* Now we walk the unallocated metadata structures and find ones that are 
-     * not named.  The callback will add the names to the FS_DIR structure. 
+    /* Now we walk the unallocated metadata structures and find ones that are
+     * not named.  The callback will add the names to the FS_DIR structure.
      */
     data.fs_dir = a_fs_dir;
 
     // allocate a name once so that we will reuse for each name we add to FS_DIR
     if ((data.fs_name = tsk_fs_name_alloc(256, 0)) == NULL) {
-        a_fs->isOrphanHunting = 0;
+        tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_ERR;
     }
 
     if (tsk_fs_meta_walk(a_fs, a_fs->first_inum, a_fs->last_inum,
             TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_USED,
             find_orphan_meta_walk_cb, &data)) {
-        a_fs->isOrphanHunting = 0;
         tsk_fs_name_free(data.fs_name);
+        tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_ERR;
     }
 
     tsk_fs_name_free(data.fs_name);
+    data.fs_name = NULL;
 
     /* do some cleanup on the final list. This cleanup will compare the
      * entries in the root orphan directory with files that can be accessed
@@ -956,41 +1041,30 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
         }
     }
 
-    // make copy of this so that we don't need to do it again. 
+    if (data.orphan_subdir_list) {
+        tsk_list_free(data.orphan_subdir_list);
+        data.orphan_subdir_list = NULL;
+    }
+
+
+    // make copy of this so that we don't need to do it again.
     if ((a_fs->orphan_dir =
             tsk_fs_dir_alloc(a_fs, a_fs_dir->addr, a_fs_dir->names_used)) == NULL) {
-        a_fs->isOrphanHunting = 0;
+        tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_ERR;
     }
 
     if (tsk_fs_dir_copy(a_fs_dir, a_fs->orphan_dir)) {
-        tsk_fs_dir_close(a_fs->orphan_dir);
-        a_fs->orphan_dir = NULL;
-        a_fs->isOrphanHunting = 0;
+        tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_ERR;
     }
 
-    // populate the fake FS_FILE structure for the "Orphan Directory"
-    /* Get the inode and verify it has attributes */
-    if ((a_fs_dir->fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
-        a_fs->isOrphanHunting = 0;
+    // populate the fake FS_FILE structure in the struct to be returned for the "Orphan Directory"
+    if (tsk_fs_dir_add_orphan_dir_meta(a_fs, a_fs_dir)) {
+        tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_ERR;
     }
-
-    if ((a_fs_dir->fs_file->meta =
-            tsk_fs_meta_alloc(sizeof(TSK_DADDR_T))) == NULL) {
-        a_fs->isOrphanHunting = 0;
-        return TSK_ERR;
-    }
-
-    if (tsk_fs_dir_make_orphan_dir_meta(a_fs, a_fs_dir->fs_file->meta)) {
-        a_fs->isOrphanHunting = 0;
-        return TSK_ERR;
-    }
-
-    if (data.orphan_subdir_list)
-        tsk_list_free(data.orphan_subdir_list);
-
-    a_fs->isOrphanHunting = 0;
+    
+    tsk_release_lock(&a_fs->orphan_dir_lock);
     return TSK_OK;
 }

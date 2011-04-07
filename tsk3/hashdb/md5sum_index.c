@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -71,8 +71,8 @@ md5sum_parse_md5(char *str, char **md5, char **name)
 
     if (strlen(str) < TSK_HDB_HTYPE_MD5_LEN + 1) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_CORRUPT;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+        tsk_error_set_errstr(
                  "md5sum_parse_md5: String is too short: %s", str);
         return 1;
     }
@@ -131,8 +131,8 @@ md5sum_parse_md5(char *str, char **md5, char **name)
 
         if (NULL == (ptr = strchr(ptr, ')'))) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_CORRUPT;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+            tsk_error_set_errstr(
                      "md5sum_parse_md5: Missing ) in name: %s", str);
             return 1;
         }
@@ -142,8 +142,8 @@ md5sum_parse_md5(char *str, char **md5, char **name)
 
         if (4 + TSK_HDB_HTYPE_MD5_LEN > strlen(ptr)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_CORRUPT;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+            tsk_error_set_errstr(
                      "md5sum_parse_md5: Invalid MD5 value: %s", ptr);
             return 1;
         }
@@ -152,8 +152,8 @@ md5sum_parse_md5(char *str, char **md5, char **name)
             (*(++ptr) != ' ') || (!isxdigit((int) *(++ptr))) ||
             (ptr[TSK_HDB_HTYPE_MD5_LEN] != '\n')) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_CORRUPT;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+            tsk_error_set_errstr(
                      "md5sum_parse_md5: Invalid hash value %s", ptr);
             return 1;
         }
@@ -164,8 +164,8 @@ md5sum_parse_md5(char *str, char **md5, char **name)
 
     else {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_CORRUPT;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+        tsk_error_set_errstr(
                  "md5sum_parse_md5: Invalid md5sum format in file: %s\n",
                  str);
         return 1;
@@ -197,7 +197,7 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 
     /* Initialize the TSK index file */
     if (tsk_hdb_idxinitialize(hdb_info, dbtype)) {
-        snprintf(tsk_errstr2, TSK_ERRSTR_L, "md5sum_makeindex");
+        tsk_error_set_errstr2( "md5sum_makeindex");
         return 1;
     }
 
@@ -230,7 +230,7 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 
         /* Add the entry to the index */
         if (tsk_hdb_idxaddentry(hdb_info, hash, offset)) {
-            snprintf(tsk_errstr2, TSK_ERRSTR_L, "md5sum_makeindex");
+            tsk_error_set_errstr2( "md5sum_makeindex");
             return 1;
         }
 
@@ -253,14 +253,14 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 
         /* Close and sort the index */
         if (tsk_hdb_idxfinalize(hdb_info)) {
-            snprintf(tsk_errstr2, TSK_ERRSTR_L, "md5sum_makeindex");
+            tsk_error_set_errstr2( "md5sum_makeindex");
             return 1;
         }
     }
     else {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_CORRUPT;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+        tsk_error_set_errstr(
                  "md5sum_makeindex: No valid entries found in database");
         return 1;
     }
@@ -300,8 +300,8 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
 
     if (strlen(hash) != TSK_HDB_HTYPE_MD5_LEN) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr(
                  "md5sum_getentry: Invalid hash value: %s", hash);
         return 1;
     }
@@ -314,8 +314,8 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
 
         if (0 != fseeko(hdb_info->hDb, offset, SEEK_SET)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_READDB;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_READDB);
+            tsk_error_set_errstr(
                      "md5sum_getentry: Error seeking to get file name: %lu",
                      (unsigned long) offset);
             return 1;
@@ -326,8 +326,8 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
                 break;
             }
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_READDB;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_READDB);
+            tsk_error_set_errstr(
                      "md5sum_getentry: Error reading database");
             return 1;
         }
@@ -335,8 +335,8 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
         len = strlen(buf);
         if (len < TSK_HDB_HTYPE_MD5_LEN) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_CORRUPT;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+            tsk_error_set_errstr(
                      "md5sum_getentry: Invalid entry in database (too short): %s",
                      buf);
             return 1;
@@ -344,8 +344,8 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
 
         if (md5sum_parse_md5(buf, &ptr, &name)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_CORRUPT;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+            tsk_error_set_errstr(
                      "md5sum_getentry: Invalid entry in database: %s",
                      buf);
             return 1;
@@ -375,8 +375,8 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
 
     if (found == 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr(
                  "md5sum_getentry: Hash not found in file at offset: %lu",
                  (unsigned long) offset);
         return 1;

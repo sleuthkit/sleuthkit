@@ -376,6 +376,10 @@
 				RelativePath="..\..\tsk3\fs\unix_misc.c"
 				>
 			</File>
+			<File
+				RelativePath="..\..\tsk3\fs\walk_cpp.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

@@ -1,7 +1,7 @@
 /*
  * The Sleuth Kit
  *
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
  *
  * LICENSE
  *	This software is distributed under the IBM Public License.

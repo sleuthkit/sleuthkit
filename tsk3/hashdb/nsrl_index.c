@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -52,8 +52,8 @@ lCode"
         return TSK_HDB_NSRL_FORM2;
 
     tsk_error_reset();
-    tsk_errno = TSK_ERR_HDB_CORRUPT;
-    snprintf(tsk_errstr, TSK_ERRSTR_L,
+    tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+    tsk_error_set_errstr(
              "nsrl: Unknown header format: %s\n", str);
     return -1;
 }
@@ -121,8 +121,8 @@ nsrl_parse_sha1(char *str, char **sha1, char **name, int ver)
     /* Sanity check */
     if (is_valid_nsrl(str) == 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_CORRUPT;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+        tsk_error_set_errstr(
                  "nsrl_parse_sha1: Invalid string to parse: %s", str);
         return 1;
     }
@@ -136,8 +136,8 @@ nsrl_parse_sha1(char *str, char **sha1, char **name, int ver)
         /* Final sanity check to make sure there are no ',' in hash */
         if (NULL != strchr(ptr, ',')) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_CORRUPT;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+            tsk_error_set_errstr(
                      "nsrl_parse_sha1: Invalid string to parse (commas after SHA1): %s",
                      ptr);
             return 1;
@@ -156,8 +156,8 @@ nsrl_parse_sha1(char *str, char **sha1, char **name, int ver)
 
             if (NULL == (ptr = strchr(ptr, ','))) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_HDB_CORRUPT;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+                tsk_error_set_errstr(
                          "nsrl_parse_sha1: Invalid string to parse (commas after name): %s",
                          ptr);
                 return 1;
@@ -176,8 +176,8 @@ nsrl_parse_sha1(char *str, char **sha1, char **name, int ver)
 
             if (NULL == (ptr = strchr(ptr, ','))) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_HDB_CORRUPT;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+                tsk_error_set_errstr(
                          "nsrl_parse_sha1: Invalid string to parse (commas after name): %s",
                          ptr);
                 return 1;
@@ -211,8 +211,8 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
     /* Sanity check */
     if (is_valid_nsrl(str) == 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_CORRUPT;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+        tsk_error_set_errstr(
                  "nsrl_parse_md5: Invalid string to parse: %s", str);
         return 1;
     }
@@ -246,8 +246,8 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
             else if ((cnt == 2) && (name != NULL)) {
                 if (ptr[-1] != '"') {
                     tsk_error_reset();
-                    tsk_errno = TSK_ERR_HDB_CORRUPT;
-                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                    tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+                    tsk_error_set_errstr(
                              "nsrl_parse_md5: Missing Quote after name: %s",
                              (char *) name);
                     return 1;
@@ -265,8 +265,8 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
                     || (ptr[1] != '"')
                     || (ptr[2 + TSK_HDB_HTYPE_MD5_LEN] != '"')) {
                     tsk_error_reset();
-                    tsk_errno = TSK_ERR_HDB_CORRUPT;
-                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                    tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+                    tsk_error_set_errstr(
                              "nsrl_parse_md5: Invalid MD5 value: %s", ptr);
                     return 1;
                 }
@@ -279,8 +279,8 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
                 /* Final sanity check */
                 if (NULL != strchr(ptr, ',')) {
                     tsk_error_reset();
-                    tsk_errno = TSK_ERR_HDB_CORRUPT;
-                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                    tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+                    tsk_error_set_errstr(
                              "nsrl_parse_md5: Missing comma after MD5: %s",
                              (char *) md5);
                     return 1;
@@ -295,8 +295,8 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
             if (ptr[1] == '"') {
                 if (NULL == (ptr = strchr(&ptr[2], '"'))) {
                     tsk_error_reset();
-                    tsk_errno = TSK_ERR_HDB_CORRUPT;
-                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                    tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+                    tsk_error_set_errstr(
                              "nsrl_parse_md5: Error advancing past quote");
                     return 1;
                 }
@@ -316,8 +316,8 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
             /* Final sanity check to make sure there are no ',' in hash */
             if (NULL != strchr(ptr, ',')) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_HDB_CORRUPT;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+                tsk_error_set_errstr(
                          "nsrl_parse_md5: Comma in MD5 value: %s", ptr);
                 return 1;
             }
@@ -335,8 +335,8 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
 
             if (NULL == (ptr = strchr(ptr, ','))) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_HDB_CORRUPT;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+                tsk_error_set_errstr(
                          "nsrl_parse_md5: Missing comma after name: %s",
                          (char *) name);
                 return 1;
@@ -349,8 +349,8 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
         return 0;
     }
     tsk_error_reset();
-    tsk_errno = TSK_ERR_HDB_ARG;
-    snprintf(tsk_errstr, TSK_ERRSTR_L,
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr(
              "nsrl_parse_md5: Invalid version: %d\n", ver);
     return 1;
 }
@@ -379,7 +379,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     int db_cnt = 0, idx_cnt = 0, ig_cnt = 0;
 
     if (tsk_hdb_idxinitialize(hdb_info, dbtype)) {
-        snprintf(tsk_errstr2, TSK_ERRSTR_L, "nsrl_makeindex");
+        tsk_error_set_errstr2( "nsrl_makeindex");
         return 1;
     }
 
@@ -430,7 +430,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 
         /* Add the entry to the index */
         if (tsk_hdb_idxaddentry(hdb_info, hash, offset)) {
-            snprintf(tsk_errstr2, TSK_ERRSTR_L, "nsrl_makeindex");
+            tsk_error_set_errstr2( "nsrl_makeindex");
             return 1;
         }
 
@@ -452,14 +452,14 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 
         /* Close and sort the index */
         if (tsk_hdb_idxfinalize(hdb_info)) {
-            snprintf(tsk_errstr2, TSK_ERRSTR_L, "nsrl_makeindex");
+            tsk_error_set_errstr2( "nsrl_makeindex");
             return 1;
         }
     }
     else {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_CORRUPT;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+        tsk_error_set_errstr(
                  "nsrl_makeindex: No valid entries found in database");
         return 1;
     }
@@ -502,8 +502,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
     if ((hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID)
         && (strlen(hash) != TSK_HDB_HTYPE_MD5_LEN)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr(
                  "nsrl_getentry: Invalid hash value (expected to be MD5): %s\n",
                  hash);
         return 1;
@@ -511,8 +511,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
     else if ((hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID)
              && (strlen(hash) != TSK_HDB_HTYPE_SHA1_LEN)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr(
                  "nsrl_getentry: Invalid hash value (expected to be SHA1): %s\n",
                  hash);
         return 1;
@@ -522,14 +522,14 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
     fseeko(hdb_info->hDb, 0, SEEK_SET);
     if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_READDB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_READDB);
+        tsk_error_set_errstr(
                  "nsrl_getentry: Error reading NSRLFile.txt header\n");
         return 1;
     }
 
     if ((ver = get_format_ver(buf)) == -1) {
-        snprintf(tsk_errstr2, TSK_ERRSTR_L, "nsrl_getentry");
+        tsk_error_set_errstr2( "nsrl_getentry");
         return 1;
     }
 
@@ -541,8 +541,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
 
         if (0 != fseeko(hdb_info->hDb, offset, SEEK_SET)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_READDB;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_READDB);
+            tsk_error_set_errstr(
                      "nsrl_getentry: Error seeking to get file name: %lu",
                      (unsigned long) offset);
             return 1;
@@ -553,8 +553,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
                 break;
 
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_READDB;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_READDB);
+            tsk_error_set_errstr(
                      "nsrl_getentry: Error reading database");
             return 1;
         }
@@ -562,8 +562,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
         len = strlen(buf);
         if (len < TSK_HDB_HTYPE_SHA1_LEN + 5) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_CORRUPT;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+            tsk_error_set_errstr(
                      "nsrl_getentry: Invalid entry in database (too short): %s",
                      buf);
             return 1;
@@ -573,8 +573,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
         if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
             if (nsrl_parse_sha1(buf, &cur_hash, &name, ver)) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_HDB_CORRUPT;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+                tsk_error_set_errstr(
                          "nsrl_getentry: Invalid entry in database: %s",
                          buf);
                 return 1;
@@ -583,8 +583,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
         else if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
             if (nsrl_parse_md5(buf, &cur_hash, &name, ver)) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_HDB_CORRUPT;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+                tsk_error_set_errstr(
                          "nsrl_getentry: Invalid entry in database: %s",
                          buf);
                 return 1;
@@ -615,8 +615,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
 
     if (found == 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr(
                  "nsrl_getentry: Hash not found in file at offset: %lu",
                  (unsigned long) offset);
         return 1;

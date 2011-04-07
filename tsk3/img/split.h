@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2005-2008 Brian Carrier.  All rights reserved 
+ * Copyright (c) 2005-2011 Brian Carrier.  All rights reserved 
  *
  * This software is distributed under the Common Public License 1.0
  */
@@ -36,10 +36,12 @@ extern "C" {
     typedef struct {
         TSK_IMG_INFO img_info;
         int num_img;
-        const TSK_TCHAR *const *images;
+
+        // the following are protected by cache_lock in IMG_INFO
+        const TSK_TCHAR *const *images;  
         TSK_OFF_T *max_off;
-        int *cptr;              /* exists for each image - points to entry in cache */
-        IMG_SPLIT_CACHE cache[SPLIT_CACHE];     /* small number of fds for open images */
+        int *cptr;              /* exists for each image - points to entry in cache */ 
+        IMG_SPLIT_CACHE cache[SPLIT_CACHE];     /* small number of fds for open images */ 
         int next_slot;
     } IMG_SPLIT_INFO;
 

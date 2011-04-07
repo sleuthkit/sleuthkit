@@ -5,7 +5,7 @@
 ** name layer support for the NTFS file system
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2009 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
@@ -76,10 +76,13 @@ ntfs_orphan_map_alloc()
 
 /** \internal
  * Add a parent and child pair to the map stored in NTFS_INFO
+ *
+ * Note: This routine assumes &ntfs->orhpan_map_lock is locked by the caller.
+ *
  * @param ntfs structure to add the pair to
  * @param par Parent address
  * @param child Child address
- * @returns 1 on error 
+ * @returns 1 on error
  */
 static uint8_t
 ntfs_orphan_map_add(NTFS_INFO * ntfs, TSK_INUM_T par, TSK_INUM_T child)
@@ -141,10 +144,13 @@ ntfs_orphan_map_add(NTFS_INFO * ntfs, TSK_INUM_T par, TSK_INUM_T child)
 }
 
 /** \internal
- * Look up a map entry by the parent address. 
+ * Look up a map entry by the parent address.
+ *
+ * Note: This routine assumes &ntfs->orhpan_map_lock is locked by the caller.
+ *
  * @param ntfs File system that has already been analyzed
  * @param par Parent inode to find child files for
- * @returns NULL on error 
+ * @returns NULL on error
  */
 static NTFS_PAR_MAP *
 ntfs_orphan_map_get(NTFS_INFO * ntfs, TSK_INUM_T par)
@@ -168,8 +174,17 @@ ntfs_orphan_map_free(NTFS_INFO * a_ntfs)
 {
     NTFS_PAR_MAP *tmp = NULL;
 
-    if (a_ntfs->orphan_map == NULL)
+    // This routine is only called from ntfs_close, so it wouldn't
+    // normally need a lock.  However, it's an extern function, so be
+    // safe in case someone else calls it.  (Perhaps it's extern by
+    // mistake?)
+
+    tsk_take_lock(&a_ntfs->orphan_map_lock);
+
+    if (a_ntfs->orphan_map == NULL) {
+        tsk_release_lock(&a_ntfs->orphan_map_lock);
         return;
+    }
 
     tmp = a_ntfs->orphan_map;
     while (tmp) {
@@ -180,6 +195,7 @@ ntfs_orphan_map_free(NTFS_INFO * a_ntfs)
         tmp = tmp2;
     }
     a_ntfs->orphan_map = NULL;
+    tsk_release_lock(&a_ntfs->orphan_map_lock);
 }
 
 
@@ -256,7 +272,7 @@ ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
 
 
 /* This is a sanity check to see if the time is valid
- * it is divided by 100 to keep it in a 32-bit integer 
+ * it is divided by 100 to keep it in a 32-bit integer
  */
 
 static uint8_t
@@ -281,7 +297,7 @@ is_time(uint64_t t)
 
 
 
-/** 
+/**
  * Process a lsit of index entries and add to FS_DIR
  *
  * @param a_is_del Set to 1 if these entries are for a deleted directory
@@ -316,8 +332,8 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
     /* Sanity check */
     if (a_idxe_len < a_used_len) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "ntfs_proc_idxentry: Allocated length of index entries is larger than buffer length");
         return TSK_ERR;
     }
@@ -402,13 +418,13 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
             }
         }
 
-        /* For all fname entries, there will exist a DOS style 8.3 
+        /* For all fname entries, there will exist a DOS style 8.3
          * entry.  We don't process those because we already processed
-         * them before in their full version.  If the type is 
-         * full POSIX or WIN32 that does not satisfy DOS, then a 
+         * them before in their full version.  If the type is
+         * full POSIX or WIN32 that does not satisfy DOS, then a
          * type NTFS_FNAME_DOS will exist.  If the name is WIN32,
          * but already satisfies DOS, then a type NTFS_FNAME_WINDOS
-         * will exist 
+         * will exist
          *
          * Note that we could be missing some info from deleted files
          * if the windows version was deleted and the DOS wasn't...
@@ -434,10 +450,10 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
             goto incr_entry;
         }
 
-        /* 
+        /*
          * Check if this entry is deleted
          *
-         * The final check is to see if the end of this entry is 
+         * The final check is to see if the end of this entry is
          * within the space that the idxallocbuf claimed was valid OR
          * if the parent directory is deleted
          */
@@ -501,8 +517,8 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
 
 
 /*
- * remove the update sequence values that are changed in the last two 
- * bytes of each sector 
+ * remove the update sequence values that are changed in the last two
+ * bytes of each sector
  *
  * return 1 on error and 0 on success
  */
@@ -523,8 +539,8 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
     if ((unsigned int) ((tsk_getu16(fs->endian, idxrec->upd_cnt) - 1) *
             ntfs->ssize_b) > len) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_COR;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr(
             "fix_idxrec: More Update Sequence Entries than idx record size");
         return 1;
     }
@@ -554,8 +570,8 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
                 tsk_getu16(fs->endian, &upd->upd_seq + (i - 1) * 2);
 
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_INODE_COR;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr(
                 "fix_idxrec: Incorrect update sequence value in index buffer\nUpdate Value: 0x%"
                 PRIx16 " Actual Value: 0x%" PRIx16
                 " Replacement Value: 0x%" PRIx16
@@ -587,15 +603,15 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
 /** \internal
 * Process a directory and load up FS_DIR with the entries. If a pointer to
 * an already allocated FS_DIR struture is given, it will be cleared.  If no existing
-* FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return 
-* value is error or corruption, then the FS_DIR structure could  
-* have entries (depending on when the error occured). 
+* FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return
+* value is error or corruption, then the FS_DIR structure could
+* have entries (depending on when the error occured).
 *
 * @param a_fs File system to analyze
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
-* structure or a new structure. 
+* structure or a new structure.
 * @param a_addr Address of directory to process.
-* @returns error, corruption, ok etc. 
+* @returns error, corruption, ok etc.
 */
 TSK_RETVAL_ENUM
 ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
@@ -617,7 +633,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     /* In this function, we will return immediately if we get an error.
      * If we get corruption though, we will record that in 'retval_final'
-     * and continue processing. 
+     * and continue processing.
      */
     TSK_RETVAL_ENUM retval_final = TSK_OK;
     TSK_RETVAL_ENUM retval_tmp;
@@ -625,15 +641,15 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     /* sanity check */
     if (a_addr < a_fs->first_inum || a_addr > a_fs->last_inum) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr(
             "ntfs_dir_open_meta: inode value: %" PRIuINUM "\n", a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "ntfs_dir_open_meta: NULL fs_attr argument given");
         return TSK_ERR;
     }
@@ -661,22 +677,21 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     /* Get the inode and verify it has attributes */
     if ((fs_dir->fs_file =
             tsk_fs_file_open_meta(a_fs, NULL, a_addr)) == NULL) {
-        strncat(tsk_errstr2, " - ntfs_dir_open_meta",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_error_errstr2_concat("- ntfs_dir_open_meta");
         return TSK_COR;
     }
 
     if (!(fs_dir->fs_file->meta->attr)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_COR;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr(
             "dent_walk: Error: Directory address %" PRIuINUM
             " has no attributes", a_addr);
         return TSK_COR;
     }
 
 
-    /* 
+    /*
      * Read the Index Root Attribute  -- we do some sanity checking here
      * to report errors before we start to make up data for the "." and ".."
      * entries
@@ -685,15 +700,14 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         tsk_fs_attrlist_get(fs_dir->fs_file->meta->attr,
         NTFS_ATYPE_IDXROOT);
     if (!fs_attr_root) {
-        strncat(tsk_errstr2, " - dent_walk: $IDX_ROOT not found",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_error_errstr2_concat(" - dent_walk: $IDX_ROOT not found");
         return TSK_COR;
     }
 
     if (fs_attr_root->flags & TSK_FS_ATTR_NONRES) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_COR;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr(
             "dent_walk: $IDX_ROOT is not resident - it should be");
         return TSK_COR;
     }
@@ -702,15 +716,15 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     /* Verify that the attribute type is $FILE_NAME */
     if (tsk_getu32(a_fs->endian, idxroot->type) == 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_COR;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr(
             "dent_walk: Attribute type in index root is 0");
         return TSK_COR;
     }
     else if (tsk_getu32(a_fs->endian, idxroot->type) != NTFS_ATYPE_FNAME) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_COR;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr(
             "ERROR: Directory index is sorted by type: %" PRIu32
             ".\nOnly $FNAME is currently supported",
             tsk_getu32(a_fs->endian, idxroot->type));
@@ -724,10 +738,10 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     idxe = (ntfs_idxentry *) ((uintptr_t) idxelist +
         tsk_getu32(a_fs->endian, idxelist->begin_off));
 
-    /* 
+    /*
      * NTFS does not have "." and ".." entries in the index trees
      * (except for a "." entry in the root directory)
-     * 
+     *
      * So, we'll make 'em up by making a TSK_FS_NAME structure for
      * a '.' and '..' entry and call the action
      */
@@ -742,8 +756,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         if ((fs_name = tsk_fs_name_alloc(16, 0)) == NULL) {
             return TSK_ERR;
         }
-        /* 
-         * "." 
+        /*
+         * "."
          */
         fs_name->meta_addr = a_addr;
         fs_name->meta_seq = fs_dir->fs_file->meta->seq;
@@ -763,7 +777,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         strcpy(fs_name->name, "..");
         fs_name->type = TSK_FS_NAME_TYPE_DIR;
 
-        /* The fs_name structure holds the parent inode value, so we 
+        /* The fs_name structure holds the parent inode value, so we
          * just cycle using those
          */
         for (fs_name_list = fs_dir->fs_file->meta->name2;
@@ -779,7 +793,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         tsk_fs_name_free(fs_name);
         fs_name = NULL;
     }
-    
+
 
     /* Now we return to processing the Index Root Attribute */
     if (tsk_verbose)
@@ -797,8 +811,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             ((uintptr_t) fs_attr_root->rd.buf +
                 fs_attr_root->rd.buf_size))) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_COR;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr(
             "Error: Index list offsets are invalid on entry: %" PRIuINUM,
             fs_dir->fs_file->meta->addr);
         return TSK_COR;
@@ -820,9 +834,9 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         retval_final = TSK_COR;
     }
 
-    /* 
-     * get the index allocation attribute if it exists (it doesn't for 
-     * small directories 
+    /*
+     * get the index allocation attribute if it exists (it doesn't for
+     * small directories
      */
     fs_attr_idx =
         tsk_fs_attrlist_get(fs_dir->fs_file->meta->attr,
@@ -830,14 +844,14 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
 
     /* if we don't have an index alloc then return, we have processed
-     * all of the entries 
+     * all of the entries
      */
     if (!fs_attr_idx) {
         if (tsk_getu32(a_fs->endian,
                 idxelist->flags) & NTFS_IDXELIST_CHILD) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_INODE_COR;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr(
                 "Error: $IDX_ROOT says there should be children, but there isn't");
             return TSK_COR;
         }
@@ -846,13 +860,13 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         if (fs_attr_idx->flags & TSK_FS_ATTR_RES) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_INODE_COR;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr(
                 "$IDX_ALLOC is Resident - it shouldn't be");
             return TSK_COR;
         }
 
-        /* 
+        /*
          * Copy the index allocation run into a big buffer
          */
         idxalloc_len = fs_attr_idx->nrd.allocsize;
@@ -872,8 +886,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 TSK_FS_FILE_WALK_FLAG_SLACK, tsk_fs_load_file_action,
                 (void *) &load_file)) {
             free(idxalloc);
-            strncat(tsk_errstr2, " - ntfs_dir_open_meta",
-                TSK_ERRSTR_L - strlen(tsk_errstr2));
+            tsk_error_errstr2_concat(" - ntfs_dir_open_meta");
             return TSK_COR;     // this could be an error though
         }
 
@@ -882,8 +895,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             free(idxalloc);
 
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_FWALK;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_FWALK);
+            tsk_error_set_errstr(
                 "Error reading directory contents: %" PRIuINUM "\n",
                 a_addr);
             return TSK_COR;
@@ -891,7 +904,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         /*
          * The idxalloc is a big buffer that contains one or more
-         * idx buffer structures.  Each idxrec is a node in the B-Tree.  
+         * idx buffer structures.  Each idxrec is a node in the B-Tree.
          * We do not process the tree as a tree because then we could
          * not find the deleted file names.
          *
@@ -923,7 +936,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 continue;
 
 
-            /* idxrec_p is only NULL for the first time 
+            /* idxrec_p is only NULL for the first time
              * Set it and start again to find the next one */
             if (idxrec_p == NULL) {
                 idxrec_p = idxrec;
@@ -967,8 +980,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     tsk_getu32(a_fs->endian,
                         idxelist->seqend_off) > (uintptr_t) idxrec)) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_INODE_COR;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr(
                     "Error: Index list offsets are invalid on entry: %"
                     PRIuINUM, fs_dir->fs_file->meta->addr);
                 free(idxalloc);
@@ -1033,8 +1046,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     tsk_getu32(a_fs->endian, idxelist->seqend_off) >
                     (uintptr_t) idxalloc + idxalloc_len)) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_INODE_COR;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr(
                     "Error: Index list offsets are invalid on entry: %"
                     PRIuINUM, fs_dir->fs_file->meta->addr);
                 free(idxalloc);
@@ -1064,9 +1077,11 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     // get the orphan files
     // load and cache the map if it has not already been done
+    tsk_take_lock(&ntfs->orphan_map_lock);
     if (ntfs->orphan_map == NULL) {
         if (a_fs->inode_walk(a_fs, a_fs->first_inum, a_fs->last_inum,
                 TSK_FS_META_FLAG_UNALLOC, ntfs_orphan_act, NULL)) {
+            tsk_release_lock(&ntfs->orphan_map_lock);
             return TSK_ERR;
         }
     }
@@ -1085,7 +1100,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
 
         for (a = 0; a < map->used_cnt; a++) {
-            /* Fill in the basics of the fs_name entry 
+            /* Fill in the basics of the fs_name entry
              * so we can print in the fls formats */
             fs_name->meta_addr = map->addrs[a];
 
@@ -1107,6 +1122,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         }
         tsk_fs_name_free(fs_name);
     }
+    tsk_release_lock(&ntfs->orphan_map_lock);
 
     // if we are listing the root directory, add the Orphan directory entry
     if (a_addr == a_fs->root_inum) {
@@ -1156,8 +1172,8 @@ typedef struct {
 } NTFS_DINFO;
 
 
-/* 
- * Looks up the parent inode described in fs_name. 
+/*
+ * Looks up the parent inode described in fs_name.
  *
  * fs_name was filled in by ntfs_find_file and will get the final path
  * added to it before action is called
@@ -1180,8 +1196,8 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
     if (fs_name_list->par_inode < fs->first_inum ||
         fs_name_list->par_inode > fs->last_inum) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "invalid inode value: %" PRIuINUM "\n",
             fs_name_list->par_inode);
         return 1;
@@ -1189,15 +1205,14 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
 
     fs_file_par = tsk_fs_file_open_meta(fs, NULL, fs_name_list->par_inode);
     if (fs_file_par == NULL) {
-        strncat(tsk_errstr2, " - ntfs_find_file_rec",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_error_errstr2_concat(" - ntfs_find_file_rec");
         return 1;
     }
 
-    /* 
+    /*
      * Orphan File
      * This occurs when the file is deleted and either:
-     * - The parent is no longer a directory 
+     * - The parent is no longer a directory
      * - The sequence number of the parent is no longer correct
      */
     if ((fs_file_par->meta->type != TSK_FS_META_TYPE_DIR)
@@ -1205,7 +1220,7 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
         char *str = TSK_FS_ORPHAN_STR;
         len = strlen(str);
 
-        /* @@@ There should be a sanity check here to verify that the 
+        /* @@@ There should be a sanity check here to verify that the
          * previous name was unallocated ... but how do I get it again?
          */
         if ((((uintptr_t) dinfo->didx[dinfo->depth - 1] - len) >=
@@ -1236,7 +1251,7 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
 
         len = strlen(fs_name_list_par->name);
 
-        /* do some length checks on the dir structure 
+        /* do some length checks on the dir structure
          * if we can't fit it then forget about it */
         if ((((uintptr_t) dinfo->didx[dinfo->depth - 1] - len - 1) >=
                 (uintptr_t) & dinfo->dirs[0])
@@ -1259,11 +1274,11 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
 
 
         /* if we are at the root, then fill out the rest of fs_name with
-         * the full path and call the action 
+         * the full path and call the action
          */
         if (fs_name_list_par->par_inode == NTFS_ROOTINO) {
             /* increase the path by one so that we do not pass the '/'
-             * if we do then the printed result will have '//' at 
+             * if we do then the printed result will have '//' at
              * the beginning
              */
             if (TSK_WALK_ERROR == action(fs_file,
@@ -1292,8 +1307,8 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
     return 0;
 }
 
-/* 
- * this is a much faster way of doing it in NTFS 
+/*
+ * this is a much faster way of doing it in NTFS
  *
  * the inode that is passed in this case is the one to find the name
  * for
@@ -1309,27 +1324,36 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
     void *ptr)
 {
     TSK_FS_META_NAME_LIST *fs_name_list;
-    NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     char *attr = NULL;
     NTFS_DINFO dinfo;
     TSK_FS_FILE *fs_file;
+    ntfs_mft *mft;
+    TSK_RETVAL_ENUM r_enum;
+    NTFS_INFO *ntfs = (NTFS_INFO *)fs;
 
     /* sanity check */
     if (inode_toid < fs->first_inum || inode_toid > fs->last_inum) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "ntfs_find_file: invalid inode value: %" PRIuINUM "\n",
             inode_toid);
         return 1;
     }
-
+    if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
+        return 1;
+    }
+    r_enum = ntfs_dinode_lookup(ntfs, (char *)mft, inode_toid);
+    if (r_enum == TSK_ERR){
+        free(mft);
+        return 1;
+    }
     // open the file to ID
     fs_file = tsk_fs_file_open_meta(fs, NULL, inode_toid);
     if (fs_file == NULL) {
-        strncat(tsk_errstr2, " - ntfs_find_file",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_error_errstr2_concat("- ntfs_find_file");
         tsk_fs_file_close(fs_file);
+        free(mft);
         return 1;
     }
 
@@ -1337,11 +1361,13 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
     if ((fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)
         && ((dir_walk_flags & TSK_FS_DIR_WALK_FLAG_ALLOC) == 0)) {
         tsk_fs_file_close(fs_file);
+        free(mft);
         return 1;
     }
     else if ((fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)
         && ((dir_walk_flags & TSK_FS_DIR_WALK_FLAG_UNALLOC) == 0)) {
         tsk_fs_file_close(fs_file);
+        free(mft);
         return 1;
     }
 
@@ -1349,14 +1375,14 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
     /* Allocate a name and fill in some details  */
     if ((fs_file->name =
             tsk_fs_name_alloc(NTFS_MAXNAMLEN_UTF8, 0)) == NULL) {
+        free(mft);
         return 1;
     }
     fs_file->name->meta_addr = inode_toid;
     fs_file->name->meta_seq = 0;
     fs_file->name->flags =
         ((tsk_getu16(fs->endian,
-                ntfs->mft->
-                flags) & NTFS_MFT_INUSE) ? TSK_FS_NAME_FLAG_ALLOC :
+                mft->flags) & NTFS_MFT_INUSE) ? TSK_FS_NAME_FLAG_ALLOC :
         TSK_FS_NAME_FLAG_UNALLOC);
 
     memset(&dinfo, 0, sizeof(NTFS_DINFO));
@@ -1387,12 +1413,13 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
 
         if (!fs_attr) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_INODE_COR;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr(
                 "find_file: Type %" PRIu32 " Id %" PRIu16
                 " not found in MFT %" PRIuINUM "", type_toid, id_toid,
                 inode_toid);
             tsk_fs_file_close(fs_file);
+            free(mft);
             return 1;
         }
 
@@ -1422,10 +1449,12 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
             retval = action(fs_file, dinfo.didx[0], ptr);
             if (retval == TSK_WALK_STOP) {
                 tsk_fs_file_close(fs_file);
+                free(mft);
                 return 0;
             }
             else if (retval == TSK_WALK_ERROR) {
                 tsk_fs_file_close(fs_file);
+                free(mft);
                 return 1;
             }
         }
@@ -1434,12 +1463,14 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
             if (ntfs_find_file_rec(fs, &dinfo, fs_file, fs_name_list,
                     action, ptr)) {
                 tsk_fs_file_close(fs_file);
+                free(mft);
                 return 1;
             }
         }
     }                           /* end of name loop */
 
     tsk_fs_file_close(fs_file);
+    free(mft);
     return 0;
 }
 

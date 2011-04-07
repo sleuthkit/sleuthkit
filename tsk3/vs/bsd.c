@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
@@ -81,8 +81,8 @@ bsd_get_desc(uint8_t fstype)
     return str;
 }
 
-/* 
- * Process the partition table at the sector address 
+/*
+ * Process the partition table at the sector address
  *
  * Return 1 on error and 0 if no error
  */
@@ -111,10 +111,9 @@ bsd_load_table(TSK_VS_INFO * a_vs)
     if (cnt != a_vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_READ;
+            tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        snprintf(tsk_errstr2, TSK_ERRSTR_L,
-            "BSD Disk Label in Sector: %" PRIuDADDR, laddr);
+        tsk_error_set_errstr2("BSD Disk Label in Sector: %" PRIuDADDR, laddr);
         free(sect_buf);
         return 1;
     }
@@ -122,9 +121,8 @@ bsd_load_table(TSK_VS_INFO * a_vs)
     /* Check the magic  */
     if (tsk_vs_guessu32(a_vs, dlabel->magic, BSD_MAGIC)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "BSD partition table (magic #1) (Sector: %"
+        tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+        tsk_error_set_errstr("BSD partition table (magic #1) (Sector: %"
             PRIuDADDR ") %" PRIx32, laddr, tsk_getu32(a_vs->endian,
                 dlabel->magic));
         free(sect_buf);
@@ -134,8 +132,8 @@ bsd_load_table(TSK_VS_INFO * a_vs)
     /* Check the second magic value */
     if (tsk_getu32(a_vs->endian, dlabel->magic2) != BSD_MAGIC) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+        tsk_error_set_errstr(
             "BSD disk label (magic #2) (Sector: %"
             PRIuDADDR ")  %" PRIx32, laddr, tsk_getu32(a_vs->endian,
                 dlabel->magic2));
@@ -177,8 +175,8 @@ bsd_load_table(TSK_VS_INFO * a_vs)
         // make sure the first couple are in the image bounds
         if ((idx < 2) && (part_start > max_addr)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_BLK_NUM;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
+            tsk_error_set_errstr(
                 "bsd_load_table: Starting sector too large for image");
             free(sect_buf);
             return 1;
@@ -210,7 +208,7 @@ bsd_close(TSK_VS_INFO * a_vs)
  * analyze the image in img_info and process it as BSD
  * Initialize the TSK_VS_INFO structure
  *
- * Return TSK_VS_INFO or NULL if not BSD or an error 
+ * Return TSK_VS_INFO or NULL if not BSD or an error
  */
 TSK_VS_INFO *
 tsk_vs_bsd_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)

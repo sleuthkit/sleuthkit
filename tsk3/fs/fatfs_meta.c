@@ -1,12 +1,12 @@
 /*
 ** fatfs
-** The Sleuth Kit 
+** The Sleuth Kit
 **
-** Content and meta data layer support for the FAT file system 
+** Content and meta data layer support for the FAT file system
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -20,14 +20,12 @@
 
 /**
  * \file fatfs_meta.c
- * Contains the internal TSK FAT file system code to handle metadata structures. 
+ * Contains the internal TSK FAT file system code to handle metadata structures.
  */
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
-
-
-/* 
+/*
  * Identify if the dentry is a valid 8.3 name
  *
  * returns 1 if it is, 0 if it does not
@@ -116,8 +114,8 @@ is_83_name(fatfs_dentry * de)
 
     /* Ensure that if we get a "space", that the rest of the
      * name is spaces.  This is not in the spec, but is how
-     * windows operates and serves as a good check to remove 
-     * false positives.  We do not do this check for the 
+     * windows operates and serves as a good check to remove
+     * false positives.  We do not do this check for the
      * volume label though. */
     if ((de->attrib & FATFS_ATTR_VOLUME) != FATFS_ATTR_VOLUME) {
         if (((de->name[1] == 0x20) && (de->name[2] != 0x20)) ||
@@ -140,10 +138,10 @@ is_83_name(fatfs_dentry * de)
 
 /*
 ** Convert the DOS time to the UNIX version
-** 
+**
 ** UNIX stores the time in seconds from 1970 in UTC
 ** FAT dates are the actual date with the year relative to 1980
-** 
+**
 */
 static time_t
 dos2unixtime(uint16_t date, uint16_t time, uint8_t timetens)
@@ -180,7 +178,7 @@ dos2unixtime(uint16_t date, uint16_t time, uint8_t timetens)
         tm1.tm_mon = 0;
 
     /* There is a limit to the year because the UNIX time value is
-     * a 32-bit value 
+     * a 32-bit value
      * the maximum UNIX time is Tue Jan 19 03:14:07 2038
      */
     tm1.tm_year = ((date & FATFS_YEAR_MASK) >> FATFS_YEAR_SHIFT) + 80;
@@ -218,8 +216,8 @@ dos2nanosec(uint8_t timetens)
 }
 
 
-/* 
- * convert the attribute list in FAT to a UNIX mode 
+/*
+ * convert the attribute list in FAT to a UNIX mode
  */
 static TSK_FS_META_TYPE_ENUM
 attr2type(uint16_t attr)
@@ -255,7 +253,7 @@ attr2mode(uint16_t attr)
 }
 
 
-/** 
+/**
  * \internal
  * Copy the contents of a raw directry entry into a TSK_FS_INFO structure.
  *
@@ -268,7 +266,7 @@ attr2mode(uint16_t attr)
  *
  * @returns 1 on error and 0 on success.  Errors should only occur for
  * Unicode conversion problems and when this occurs the name will be
- * NULL terminated (but with unknown contents). 
+ * NULL terminated (but with unknown contents).
  *
  */
 TSK_RETVAL_ENUM
@@ -402,8 +400,8 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
 
         if (retVal != TSKconversionOK) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_UNICODE;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_UNICODE);
+            tsk_error_set_errstr(
                 "fatfs_dinode_copy: Error converting FAT LFN (1) to UTF8: %d",
                 retVal);
             *name8 = '\0';
@@ -421,8 +419,8 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
 
         if (retVal != TSKconversionOK) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_UNICODE;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_UNICODE);
+            tsk_error_set_errstr(
                 "fatfs_dinode_copy: Error converting FAT LFN (2) to UTF8: %d",
                 retVal);
             *name8 = '\0';
@@ -440,8 +438,8 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
 
         if (retVal != TSKconversionOK) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_UNICODE;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_UNICODE);
+            tsk_error_set_errstr(
                 "fatfs_dinode_copy: Error converting FAT LFN (3) to UTF8: %d",
                 retVal);
             *name8 = '\0';
@@ -458,7 +456,7 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
             *name8 = '\0';
     }
     /* If the entry is for a volume label, then copy the name and
-     * append a special label 
+     * append a special label
      */
     else if ((in->attrib & FATFS_ATTR_VOLUME) == FATFS_ATTR_VOLUME) {
         int a;
@@ -523,7 +521,7 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
     }
 
     /* FAT does not store a size for its directories so make one based
-     * on the number of allocated sectors 
+     * on the number of allocated sectors
      */
     if ((in->attrib & FATFS_ATTR_DIRECTORY) &&
         ((in->attrib & FATFS_ATTR_LFN) != FATFS_ATTR_LFN)) {
@@ -567,7 +565,7 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
         /* if the dir is unallocated, then assume 0 or cluster size
          * Ideally, we would have a smart algo here to do recovery
          * and look for dentries.  However, we do not have that right
-         * now and if we do not add this special check then it can 
+         * now and if we do not add this special check then it can
          * assume that an allocated file cluster chain belongs to the
          * directory */
         else {
@@ -588,7 +586,7 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
  * \internal
  * Create an FS_INODE structure for the root directory.  FAT does
  * not have a directory entry for the root directory, but this
- * function collects the needed data to make one. 
+ * function collects the needed data to make one.
  *
  * @param fatfs File system to analyze
  * @param fs_meta Inode structure to copy root directory information into.
@@ -624,13 +622,13 @@ fatfs_make_root(FATFS_INFO * fatfs, TSK_FS_META * fs_meta)
     }
     addr_ptr = (TSK_DADDR_T *) fs_meta->content_ptr;
 
-    /* TSK_FS_TYPE_FAT12 and TSK_FS_TYPE_FAT16 don't use the FAT for root directory, so 
+    /* TSK_FS_TYPE_FAT12 and TSK_FS_TYPE_FAT16 don't use the FAT for root directory, so
      * we will have to fake it.
      */
     if (fatfs->fs_info.ftype != TSK_FS_TYPE_FAT32) {
         TSK_DADDR_T snum;
 
-        /* Other code will have to check this as a special condition 
+        /* Other code will have to check this as a special condition
          */
         addr_ptr[0] = 1;
 
@@ -683,7 +681,7 @@ fatfs_make_root(FATFS_INFO * fatfs, TSK_FS_META * fs_meta)
 
 /**
 * \internal
- * Create an FS_INODE structure for the master boot record. 
+ * Create an FS_INODE structure for the master boot record.
  *
  * @param fatfs File system to analyze
  * @param fs_meta Inode structure to copy file information into.
@@ -728,7 +726,7 @@ fatfs_make_mbr(FATFS_INFO * fatfs, TSK_FS_META * fs_meta)
 
 /**
 * \internal
- * Create an FS_INODE structure for the FAT tables. 
+ * Create an FS_INODE structure for the FAT tables.
  *
  * @param fatfs File system to analyze
  * @param a_which 1 or 2 to choose between defining FAT1 or FAT2
@@ -773,7 +771,7 @@ fatfs_make_fat(FATFS_INFO * fatfs, uint8_t a_which, TSK_FS_META * fs_meta)
         addr_ptr[0] = fatfs->firstfatsect + fatfs->sectperfat;
     }
     else {
-        ////@@@ 
+        ////@@@
     }
 
     fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
@@ -788,8 +786,8 @@ fatfs_make_fat(FATFS_INFO * fatfs, uint8_t a_which, TSK_FS_META * fs_meta)
 
 
 
-/* 
- * Is the pointed to buffer a directory entry buffer? 
+/*
+ * Is the pointed to buffer a directory entry buffer?
  *
  * @param a_basic 1 if only basic tests should be performed. 
  * Returns 1 if it is, 0 if not
@@ -941,7 +939,7 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de, uint8_t a_basic)
 /**************************************************************************
  *
  * INODE WALKING
- * 
+ *
  *************************************************************************/
 /* Mark the sector used in the bitmap */
 static TSK_WALK_RET_ENUM
@@ -971,7 +969,56 @@ inode_walk_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *a_ptr)
     return TSK_WALK_CONT;
 }
 
+/* fatfs_dinode_load - look up disk inode & load into fatfs_dentry structure
+ *
+ * return 1 on error and 0 on success
+ * */
 
+uint8_t
+fatfs_dinode_load(TSK_FS_INFO *fs, fatfs_dentry *dep, TSK_INUM_T inum){
+
+    FATFS_INFO *fatfs = (FATFS_INFO *)fs;
+    ssize_t cnt;
+    size_t off;
+    TSK_DADDR_T sect;
+
+   /*
+     * Sanity check.
+     * Account for virtual Orphan directory and virtual files
+     */
+    if ((inum < fs->first_inum) || (inum > fs->last_inum - FATFS_NUM_SPECFILE)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr(
+            "fatfs_dinode_load: address: %" PRIuINUM, inum);
+        return 1;
+    }    /* Get the sector that this inode would be in and its offset */
+    sect = FATFS_INODE_2_SECT(fatfs, inum);
+    off = FATFS_INODE_2_OFF(fatfs, inum);
+
+    if (sect > fs->last_block) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr(
+            "fatfs_inode_load Inode %" PRIuINUM
+            " in sector too big for image: %" PRIuDADDR, inum, sect);
+        return 1;
+    }
+
+
+    cnt = tsk_fs_read(fs, sect*fs->block_size+off, (char *)dep, sizeof(fatfs_dentry)); //a_len = fatfs->ssize?
+    if (cnt != sizeof(fatfs_dentry)) {
+        if (cnt >= 0) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_READ);
+        }
+        tsk_error_set_errstr2(
+            "fatfs_inode_load: block: %" PRIuDADDR, sect);
+        return 1;
+    }
+
+    return 0;
+}
 /*
  * walk the inodes
  *
@@ -989,6 +1036,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T end_inum_tmp;
     TSK_FS_FILE *fs_file;
     TSK_DADDR_T sect, ssect, lsect;
+    char * dino_buf;
     fatfs_dentry *dep;
     unsigned int myflags, didx;
     uint8_t *sect_alloc;
@@ -1003,16 +1051,16 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
      */
     if (start_inum < fs->first_inum || start_inum > fs->last_inum) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr(
             "%s: Start inode:  %" PRIuINUM "", myname, start_inum);
         return 1;
     }
     else if (end_inum < fs->first_inum || end_inum > fs->last_inum
         || end_inum < start_inum) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr(
             "%s: End inode: %" PRIuINUM "", myname, end_inum);
         return 1;
     }
@@ -1036,7 +1084,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             a_flags |= (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
         }
 
-        /* If neither of the USED or UNUSED a_flags are set, then set them 
+        /* If neither of the USED or UNUSED a_flags are set, then set them
          * both
          */
         if (((a_flags & TSK_FS_META_FLAG_USED) == 0) &&
@@ -1048,15 +1096,12 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
     /* If we are looking for orphan files and have not yet filled
      * in the list of unalloc inodes that are pointed to, then fill
-     * in the list 
+     * in the list
      */
-    if ((a_flags & TSK_FS_META_FLAG_ORPHAN)
-        && (fs->list_inum_named == NULL)) {
-
+    if ((a_flags & TSK_FS_META_FLAG_ORPHAN)) {
         if (tsk_fs_dir_load_inum_named(fs) != TSK_OK) {
-            strncat(tsk_errstr2,
-                " - fatfs_inode_walk: identifying inodes allocated by file names",
-                TSK_ERRSTR_L);
+            tsk_error_errstr2_concat(
+                "- fatfs_inode_walk: identifying inodes allocated by file names");
             return 1;
         }
     }
@@ -1095,7 +1140,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         /* advance it so that it is a valid starting point */
         start_inum++;
 
-        // exit if that is all that was requested 
+        // exit if that is all that was requested
         if (start_inum == end_inum) {
             tsk_fs_file_close(fs_file);
             return 0;
@@ -1106,9 +1151,9 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
      * entries.  We can make mistakes and ignore sectors that have valid
      * entries in them.  To make sure we at least get all sectors that
      * are allocated by directories in the directory tree, we will
-     * run name_walk and then a file walk on each dir. 
+     * run name_walk and then a file walk on each dir.
      * We'll be make sure to print those.  We skip this for ORPHAN hunting
-     * because it doesn't help and can introduce infinite loop situations  
+     * because it doesn't help and can introduce infinite loop situations
      * inode_walk was called by the function that determines which inodes
      * are orphans. */
     if (tsk_verbose)
@@ -1138,31 +1183,30 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             return 1;
         }
 
-        // now get the rest of the directories. 
+        // now get the rest of the directories.
         if (tsk_fs_dir_walk(fs, fs->root_inum,
                 TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE |
                 TSK_FS_DIR_WALK_FLAG_NOORPHAN, inode_walk_dent_act,
                 (void *) sect_alloc)) {
-            strncat(tsk_errstr2,
-                " - fatfs_inode_walk: mapping directories", TSK_ERRSTR_L);
+            tsk_error_errstr2_concat(
+                "- fatfs_inode_walk: mapping directories");
             tsk_fs_file_close(fs_file);
             free(sect_alloc);
             return 1;
         }
     }
 
-
     /* start analyzing each sector
      *
      * Perform a test on the first 32 bytes of each sector to identify if
      * the sector contains directory entries.  If it does, then continue
-     * to analyze it.  If not, then read the next sector 
+     * to analyze it.  If not, then read the next sector
      */
 
     /* identify the starting and ending inodes sector addrs */
 
-    /* we need to handle end_inum specially if it is for the 
-     * virtual ORPHANS directory or virtual FAT files.  
+    /* we need to handle end_inum specially if it is for the
+     * virtual ORPHANS directory or virtual FAT files.
      * Handle these outside of the loop. */
     if (end_inum > fs->last_inum - FATFS_NUM_SPECFILE)
         end_inum_tmp = fs->last_inum - FATFS_NUM_SPECFILE;
@@ -1174,8 +1218,8 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
     if (ssect > fs->last_block) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr(
             "fatfs_inode_walk: Starting inode in sector too big for image: %"
             PRIuDADDR, ssect);
         tsk_fs_file_close(fs_file);
@@ -1184,8 +1228,8 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     }
     else if (lsect > fs->last_block) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr(
             "fatfs_inode_walk: Ending inode in sector too big for image: %"
             PRIuDADDR, lsect);
         tsk_fs_file_close(fs_file);
@@ -1194,13 +1238,18 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     }
 
     sect = ssect;
+    if ((dino_buf = (char *) tsk_malloc(fatfs->csize << fatfs->ssize_sh)) == NULL){
+        tsk_fs_file_close(fs_file);
+        free(sect_alloc);
+        return 1;
+    }
     while (sect <= lsect) {
         int clustalloc;         // 1 if current sector / cluster is allocated
         size_t sect_proc;       // number of sectors read for this loop
         size_t sidx;            // sector index for loop
 
-        /* This occurs for the root directory of TSK_FS_TYPE_FAT12/16 
-         * 
+        /* This occurs for the root directory of TSK_FS_TYPE_FAT12/16
+         *
          * We are going to process the image in clusters, so take care of the root
          * directory seperately.
          */
@@ -1216,17 +1265,18 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
             /* read the sector */
             cnt =
-                tsk_fs_read_block(fs, sect, fatfs->dinodes, fatfs->ssize);
+                tsk_fs_read_block(fs, sect, dino_buf, fatfs->ssize);
             if (cnt != fatfs->ssize) {
                 if (cnt >= 0) {
                     tsk_error_reset();
-                    tsk_errno = TSK_ERR_FS_READ;
+                    tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                snprintf(tsk_errstr2, TSK_ERRSTR_L,
+                tsk_error_set_errstr2(
                     "fatfs_inode_walk (root dir): sector: %" PRIuDADDR,
                     sect);
                 tsk_fs_file_close(fs_file);
                 free(sect_alloc);
+                free(dino_buf);
                 return 1;
             }
             sect_proc = 1;
@@ -1240,7 +1290,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 FATFS_CLUST_2_SECT(fatfs, (FATFS_SECT_2_CLUST(fatfs,
                         sect)));
 
-            /* if the cluster is not allocated, then do not go into it if we 
+            /* if the cluster is not allocated, then do not go into it if we
              * only want allocated/link entries
              * If it is allocated, then go into it no matter what
              */
@@ -1248,6 +1298,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             if (clustalloc == -1) {
                 tsk_fs_file_close(fs_file);
                 free(sect_alloc);
+                free(dino_buf);
                 return 1;
             }
             else if ((clustalloc == 0)
@@ -1274,16 +1325,17 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
             /* read the full cluster */
             cnt = tsk_fs_read_block
-                (fs, sect, fatfs->dinodes, sect_proc << fatfs->ssize_sh);
+                (fs, sect, dino_buf, sect_proc << fatfs->ssize_sh);
             if (cnt != (sect_proc << fatfs->ssize_sh)) {
                 if (cnt >= 0) {
                     tsk_error_reset();
-                    tsk_errno = TSK_ERR_FS_READ;
+                    tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                snprintf(tsk_errstr2, TSK_ERRSTR_L,
+                tsk_error_set_errstr2(
                     "fatfs_inode_walk: sector: %" PRIuDADDR, sect);
                 tsk_fs_file_close(fs_file);
                 free(sect_alloc);
+                free(dino_buf);
                 return 1;
             }
         }
@@ -1293,8 +1345,8 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             TSK_INUM_T inum;
             uint8_t isInDir;
 
-            dep =
-                (fatfs_dentry *) & fatfs->dinodes[sidx << fatfs->ssize_sh];
+            dep = 
+               (fatfs_dentry *) & dino_buf[sidx << fatfs->ssize_sh];
 
             /* if we know it is not part of a directory and it is not valid dentires,
              * then skip it */
@@ -1320,6 +1372,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                     " starting at inode %" PRIuINUM "\n", sect, inum);
 
             /* cycle through the directory entries */
+            
             for (didx = 0; didx < fatfs->dentry_cnt_se;
                 didx++, inum++, dep++) {
                 int retval;
@@ -1336,7 +1389,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 }
 
 
-                /* if this is a long file name entry, then skip it and 
+                /* if this is a long file name entry, then skip it and
                  * wait for the short name */
                 if ((dep->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN)
                     continue;
@@ -1350,7 +1403,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                     continue;
 
 
-                /* Allocation status 
+                /* Allocation status
                  * This is determined first by the sector allocation status
                  * an then the dentry flag.  When a directory is deleted, the
                  * contents are not always set to unallocated
@@ -1376,11 +1429,11 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                     continue;
 
                 /* If we want only orphans, then check if this
-                 * inode is in the seen list 
+                 * inode is in the seen list
                  */
                 if ((myflags & TSK_FS_META_FLAG_UNALLOC) &&
                     (a_flags & TSK_FS_META_FLAG_ORPHAN) &&
-                    (tsk_list_find(fs->list_inum_named, inum))) {
+                    (tsk_fs_dir_find_inum_named(fs, inum))) {
                     continue;
                 }
 
@@ -1401,6 +1454,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                     else {
                         tsk_fs_file_close(fs_file);
                         free(sect_alloc);
+                        free(dino_buf);
                         return 1;
                     }
                 }
@@ -1415,11 +1469,13 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 if (retval == TSK_WALK_STOP) {
                     tsk_fs_file_close(fs_file);
                     free(sect_alloc);
+                    free(dino_buf);
                     return 0;
                 }
                 else if (retval == TSK_WALK_ERROR) {
                     tsk_fs_file_close(fs_file);
                     free(sect_alloc);
+                    free(dino_buf);
                     return 1;
                 }
             }                   /* dentries */
@@ -1433,6 +1489,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
 
     free(sect_alloc);
+    free(dino_buf);
 
 
     // handle the virtual orphans folder and FAT files if they asked for them
@@ -1491,6 +1548,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 }                               /* end of inode_walk */
 
 
+
 /*
  * return the contents of a specific inode
  *
@@ -1502,32 +1560,30 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     TSK_INUM_T inum)
 {
     FATFS_INFO *fatfs = (FATFS_INFO *) fs;
-    ssize_t cnt;
     TSK_DADDR_T sect;
-    size_t off;
     TSK_RETVAL_ENUM retval;
+    fatfs_dentry dep;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
 
-    /* 
+    /*
      * Sanity check.
      */
     if (inum < fs->first_inum || inum > fs->last_inum) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_NUM;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr(
             "fatfs_inode_lookup: %" PRIuINUM " too large/small", inum);
         return 1;
     }
 
     if (a_fs_file == NULL) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "fatfs_inode_lookup: fs_file is NULL");
         return 1;
     }
-
     if (a_fs_file->meta == NULL) {
         if ((a_fs_file->meta =
                 tsk_fs_meta_alloc(FATFS_FILE_CONTENT_LEN)) == NULL)
@@ -1539,35 +1595,30 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 
     /* As there is no real root inode in FAT, use the made up one */
     if (inum == FATFS_ROOTINO) {
-        fatfs->dep = NULL;
         if (fatfs_make_root(fatfs, a_fs_file->meta))
             return 1;
         else
             return 0;
     }
     else if (inum == FATFS_MBRINO(fs)) {
-        fatfs->dep = NULL;
         if (fatfs_make_mbr(fatfs, a_fs_file->meta))
             return 1;
         else
             return 0;
     }
     else if (inum == FATFS_FAT1INO(fs)) {
-        fatfs->dep = NULL;
         if (fatfs_make_fat(fatfs, 1, a_fs_file->meta))
             return 1;
         else
             return 0;
     }
     else if (inum == FATFS_FAT2INO(fs)) {
-        fatfs->dep = NULL;
         if (fatfs_make_fat(fatfs, 2, a_fs_file->meta))
             return 1;
         else
             return 0;
     }
     else if (inum == TSK_FS_ORPHANDIR_INUM(fs)) {
-        fatfs->dep = NULL;
         if (tsk_fs_dir_make_orphan_dir_meta(fs, a_fs_file->meta))
             return 1;
         else
@@ -1576,13 +1627,12 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 
     /* Get the sector that this inode would be in and its offset */
     sect = FATFS_INODE_2_SECT(fatfs, inum);
-    off = FATFS_INODE_2_OFF(fatfs, inum);
 
     if (sect > fs->last_block) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_NUM;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "fatfs_inode_lookup: Inode %" PRIuINUM
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr(
+            "fatfs_inode_lookup Inode %" PRIuINUM
             " in sector too big for image: %" PRIuDADDR, inum, sect);
         return 1;
     }
@@ -1593,23 +1643,17 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
             "fatfs_inode_lookup: reading sector %" PRIuDADDR
             " for inode %" PRIuINUM "\n", sect, inum);
 
-    cnt = tsk_fs_read_block(fs, sect, fatfs->dinodes, fatfs->ssize);
-    if (cnt != fatfs->ssize) {
-        if (cnt >= 0) {
-            tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_READ;
-        }
-        snprintf(tsk_errstr2, TSK_ERRSTR_L,
-            "fatfs_inode_lookup: block: %" PRIuDADDR, sect);
+    if (fatfs_dinode_load(fs, &dep, inum)) {
         return 1;
     }
 
-    fatfs->dep = (fatfs_dentry *) & fatfs->dinodes[off];
-    if (fatfs_isdentry(fatfs, fatfs->dep, 1)) {
+
+    //dep = (fatfs_dentry *) & dino_buf[off];
+    if (fatfs_isdentry(fatfs, &dep, 1)) {
         if ((retval =
-                fatfs_dinode_copy(fatfs, a_fs_file->meta, fatfs->dep, sect,
+                fatfs_dinode_copy(fatfs, a_fs_file->meta, &dep, sect,
                     inum)) != TSK_OK) {
-            /* If there was a unicode conversion error, 
+            /* If there was a unicode conversion error,
              * then still return the inode */
             if (retval == TSK_ERR) {
                 return 1;
@@ -1622,18 +1666,18 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
         }
         return 0;
     }
+
     else {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_NUM;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr(
             "fatfs_inode_lookup: %" PRIuINUM " is not an inode", inum);
         return 1;
     }
 }
 
-
 /** \internal
- * Process the file and load up the clusters into the FS_DATA attribute 
+ * Process the file and load up the clusters into the FS_DATA attribute
  * in fs_meta. The run will list the starting sector and length in sectors
  *
  * @param a_fs_file File to process and structore to store results in
@@ -1652,8 +1696,8 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
 
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
         || (a_fs_file->fs_info == NULL)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "fatfs_make_data_run: called with NULL pointers");
         return 1;
     }
@@ -1686,17 +1730,17 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
         tsk_error_reset();
         if (a_fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)
-            tsk_errno = TSK_ERR_FS_RECOVER;
+            tsk_error_set_errno(TSK_ERR_FS_RECOVER);
         else
-            tsk_errno = TSK_ERR_FS_INODE_COR;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr(
             "fatfs_make_data_run: Starting cluster address too large: %"
             PRIuDADDR, clust);
         return 1;
     }
 
 
-    /* We need to handle the special files specially because they 
+    /* We need to handle the special files specially because they
      * are not in the FAT.  Except for FAT32 root dirs, those are normal.
      */
     if ((a_fs_file->meta->addr == FATFS_ROOTINO)
@@ -1772,7 +1816,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
     }
 
 
-    /* A deleted file that we want to recover 
+    /* A deleted file that we want to recover
      * In this case, we could get a lot of errors because of inconsistent
      * data.  TO make it clear that these are from a recovery, we set most
      * error codes to _RECOVER so that they can be more easily suppressed.
@@ -1804,8 +1848,8 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
 
         if (sbase > fs->last_block) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_RECOVER;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_RECOVER);
+            tsk_error_set_errstr(
                 "fatfs_make_data_run: Starting cluster address too large (recovery): %"
                 PRIuDADDR, sbase);
             fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
@@ -1823,7 +1867,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
 
 
         /* Part 1 is to make sure there are enough unallocated clusters
-         * for the size of the file 
+         * for the size of the file
          */
         clust = startclust;
         size_remain = recoversize;
@@ -1833,7 +1877,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
             int retval;
             sbase = FATFS_CLUST_2_SECT(fatfs, clust);
 
-            /* Are we past the end of the FS? 
+            /* Are we past the end of the FS?
              * that means we could not find enough unallocated clusters
              * for the file size */
             if (sbase > fs->last_block) {
@@ -1959,8 +2003,8 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
                 fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
                 tsk_error_reset();
 
-                tsk_errno = TSK_ERR_FS_INODE_COR;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr(
                     "fatfs_make_data_run: Invalid sector address in FAT (too large): %"
                     PRIuDADDR, sbase);
                 return 1;
@@ -1999,7 +2043,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
             if ((int64_t) size_remain > 0) {
                 TSK_DADDR_T nxt;
                 if (fatfs_getFAT(fatfs, clust, &nxt)) {
-                    snprintf(tsk_errstr2, TSK_ERRSTR_L,
+                    tsk_error_set_errstr2(
                         "file walk: Inode: %" PRIuINUM "  cluster: %"
                         PRIuDADDR, fs_meta->addr, clust);
                     fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;

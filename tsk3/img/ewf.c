@@ -25,14 +25,14 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "ewf_read: byte offset: %" PRIuOFF " len: %" PRIuSIZE "\n",
+            "ewf_image_read: byte offset: %" PRIuOFF " len: %" PRIuSIZE "\n",
             offset, len);
 
     if (offset > img_info->size) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_READ_OFF;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "split_read - %" PRIuOFF, offset);
+        tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
+        tsk_error_set_errstr(
+            "ewf_image_read - %" PRIuOFF, offset);
         return -1;
     }
 
@@ -41,9 +41,9 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
         tsk_error_reset();
         // @@@ Add more specific error message
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_READ;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "ewf_read - offset: %" PRIuOFF " - len: %" PRIuSIZE " - %s",
+        tsk_error_set_errno(TSK_ERR_IMG_READ);
+        tsk_error_set_errstr(
+            "ewf_image_read - offset: %" PRIuOFF " - len: %" PRIuSIZE " - %s",
             offset, len, strerror(errno));
         return -1;
     }
@@ -100,8 +100,8 @@ img_file_header_signature_ncmp(const char *filename,
 
     if ((fd = open(filename, O_RDONLY | O_BINARY)) < 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_OPEN;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "ewf magic testing: %s",
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr("ewf magic testing: %s",
             filename);
         return -1;
     }
@@ -109,8 +109,8 @@ img_file_header_signature_ncmp(const char *filename,
 
     if (read_count != 512) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_READ;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "ewf magic testing: %s",
+        tsk_error_set_errno(TSK_ERR_IMG_READ);
+        tsk_error_set_errstr("ewf magic testing: %s",
             filename);
         return -1;
     }
@@ -132,9 +132,8 @@ ewf_open(int num_img, const TSK_TCHAR * const images[],
 #if !defined( LIBEWF_STRING_DIGEST_HASH_LENGTH_MD5 )
     uint8_t md5_hash[16];
 #endif
-
     if ((ewf_info =
-            (IMG_EWF_INFO *) tsk_malloc(sizeof(IMG_EWF_INFO))) == NULL) {
+            (IMG_EWF_INFO *) tsk_img_malloc(sizeof(IMG_EWF_INFO))) == NULL) {
         return NULL;
     }
 
@@ -149,8 +148,8 @@ ewf_open(int num_img, const TSK_TCHAR * const images[],
     if (libewf_check_file_signature(images[0]) == 0) {
 #endif
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "ewf_open: Not an EWF file");
+        tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
+        tsk_error_set_errstr("ewf_open: Not an EWF file");
         free(ewf_info);
         if (tsk_verbose)
             tsk_fprintf(stderr, "Not an EWF file\n");
@@ -167,8 +166,8 @@ ewf_open(int num_img, const TSK_TCHAR * const images[],
 #endif
     if (ewf_info->handle == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_OPEN;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr(
             "ewf_open file: %" PRIttocTSK ": Error opening", images[0]);
         free(ewf_info);
         if (tsk_verbose) {
@@ -188,8 +187,8 @@ ewf_open(int num_img, const TSK_TCHAR * const images[],
             (size64_t *) & (img_info->size))
         != 1) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_OPEN;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr(
             "ewf_open file: %" PRIttocTSK ": Error getting size of image",
             images[0]);
         free(ewf_info);

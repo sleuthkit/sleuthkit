@@ -133,7 +133,7 @@ main(int argc, char **argv)
     }
 
     if (fs = fs_open(img, fstype)) {
-        if (tsk_errno == TSK_ERR_FS_UNSUPTYPE)
+        if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
             tsk_print_types(stderr);
 
         tsk_error_print(stderr);

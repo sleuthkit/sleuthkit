@@ -17,14 +17,15 @@ The User's Guide describes the various components of TSK and how to use them.  I
   - \subpage fspage 
   - \subpage hashdbpage
   - \subpage autopage
+  - \subpage cpppage
 
 <h3>API Reference</h3>
-The API Reference lists the public API functions and the arguments and return values.  The Users's Guide should be read first so that the interaction and use of the functions are understood.  These pages can also be found in the <a href="modules.html">Modules</a> section.  
-  - \ref baselib
-  - \ref imglib
-  - \ref vslib
-  - \ref fslib
-  - \ref hashdblib
+The API Reference lists the public C and C++ API functions with their arguments and return values.  The Users's Guide should be read first so that the interaction and use of the functions are understood.  These pages can also be found in the <a href="modules.html">Modules</a> section.  
+  - \ref baselib and \ref baselib_cpp
+  - \ref imglib and \ref imglib_cpp
+  - \ref vslib and \ref vslib_cpp
+  - \ref fslib and \ref fslib_cpp
+  - \ref hashdblib and \ref hashdblib_cpp
   - \ref autolib
 
 */

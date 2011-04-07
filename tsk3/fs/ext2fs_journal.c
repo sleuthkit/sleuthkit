@@ -6,7 +6,7 @@
 ** Journaling code for TSK_FS_INFO_TYPE_EXT_3 image
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2004-2005 Brian Carrier.  All rights reserved 
 **
 **
@@ -46,8 +46,8 @@ load_sb_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 
     if (size < 1024) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_UNSUPFUNC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
+        tsk_error_set_errstr(
             "FS block size is less than 1024, not supported in journal yet");
         return TSK_WALK_ERROR;
     }
@@ -56,8 +56,8 @@ load_sb_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 
     if (big_tsk_getu32(sb->magic) != EXT2_JMAGIC) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+        tsk_error_set_errstr(
             "Journal inode %" PRIuINUM
             " does not have a valid magic value: %" PRIx32,
             jinfo->j_inum, big_tsk_getu32(sb->magic));
@@ -88,8 +88,8 @@ ext2fs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
 
     if (!fs) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "ext2fs_jopen: fs is null");
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("ext2fs_jopen: fs is null");
         return 1;
     }
 
@@ -109,8 +109,8 @@ ext2fs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
 
     if (tsk_fs_file_walk(jinfo->fs_file, 0, load_sb_action, NULL)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_FWALK;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "Error loading ext3 journal");
+        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+        tsk_error_set_errstr("Error loading ext3 journal");
         tsk_fs_file_close(jinfo->fs_file);
         free(jinfo);
         return 1;
@@ -148,8 +148,8 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
     if ((jinfo == NULL) || (jinfo->fs_file == NULL)
         || (jinfo->fs_file->meta == NULL)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "ext2fs_jentry_walk: journal is not open");
         return 1;
     }
@@ -157,8 +157,8 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
     if (jinfo->fs_file->meta->size !=
         (jinfo->last_block + 1) * jinfo->bsize) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "ext2fs_jentry_walk: journal file size is different from \nsize reported in journal super block");
         return 1;
     }
@@ -178,8 +178,8 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
 
     if (buf1.left > 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_FWALK;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+        tsk_error_set_errstr(
             "ext2fs_jentry_walk: Buffer not fully copied");
         free(journ);
         return 1;
@@ -444,24 +444,24 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
     if ((jinfo == NULL) || (jinfo->fs_file == NULL)
         || (jinfo->fs_file->meta == NULL)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "ext2fs_jblk_walk: journal is not open");
         return 1;
     }
 
     if (jinfo->last_block < end) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr(
             "ext2fs_jblk_walk: end is too large ");
         return 1;
     }
 
     if (start != end) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "ext2fs_blk_walk: only start == end is currently supported");
         return 1;
     }
@@ -469,8 +469,8 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
     if (jinfo->fs_file->meta->size !=
         (jinfo->last_block + 1) * jinfo->bsize) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_UNSUPFUNC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
+        tsk_error_set_errstr(
             "ext2fs_jblk_walk: journal file size is different from size reported in journal super block");
         return 1;
     }
@@ -493,8 +493,8 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
 
     if (buf1.left > 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_FWALK;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+        tsk_error_set_errstr(
             "ext2fs_jblk_walk: Buffer not fully copied");
         free(journ);
         return 1;
@@ -573,8 +573,8 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
 
     if (fwrite(&journ[end * jinfo->bsize], jinfo->bsize, 1, stdout) != 1) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WRITE;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WRITE);
+        tsk_error_set_errstr(
             "ext2fs_jblk_walk: error writing buffer block");
         free(journ);
         return 1;

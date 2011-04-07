@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
  *
  * SUN - Sun VTOC code
@@ -106,8 +106,8 @@ sun_load_table_i386(TSK_VS_INFO * vs, sun_dlabel_i386 * dlabel_x86)
         if ((idx < 2) && (tsk_getu32(vs->endian,
                     dlabel_x86->part[idx].start_sec) > max_addr)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_BLK_NUM;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
+            tsk_error_set_errstr(
                 "sun_load_i386: Starting sector too large for image");
             return 1;
         }
@@ -175,8 +175,8 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
         // make sure the first couple are in the image bounds
         if ((idx < 2) && (part_start > max_addr)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_BLK_NUM;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
+            tsk_error_set_errstr(
                 "sun_load_sparc: Starting sector too large for image");
             return 1;
         }
@@ -222,8 +222,8 @@ sun_load_table(TSK_VS_INFO * vs)
     if ((sizeof(*dlabel_sp) > vs->block_size) ||
         (sizeof(*dlabel_x86) > vs->block_size)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_BUF;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_BUF);
+        tsk_error_set_errstr(
             "sun_load_table: disk labels bigger than block size");
         return 1;
     }
@@ -243,9 +243,9 @@ sun_load_table(TSK_VS_INFO * vs)
     if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_READ;
+            tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        snprintf(tsk_errstr2, TSK_ERRSTR_L,
+        tsk_error_set_errstr2(
             "SUN Disk Label in Sector: %" PRIuDADDR, taddr);
         free(buf);
         return 1;
@@ -286,9 +286,9 @@ sun_load_table(TSK_VS_INFO * vs)
     if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_READ;
+            tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        snprintf(tsk_errstr2, TSK_ERRSTR_L,
+        tsk_error_set_errstr2(
             "SUN (Intel) Disk Label in Sector: %" PRIuDADDR, taddr);
         free(buf);
         return 1;
@@ -297,8 +297,8 @@ sun_load_table(TSK_VS_INFO * vs)
     dlabel_x86 = (sun_dlabel_i386 *) buf;
     if (tsk_vs_guessu16(vs, dlabel_x86->magic, SUN_MAGIC)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+        tsk_error_set_errstr(
             "SUN (intel) partition table (Sector: %"
             PRIuDADDR ") %x", taddr, tsk_getu16(vs->endian,
                 dlabel_sp->magic));
@@ -308,8 +308,8 @@ sun_load_table(TSK_VS_INFO * vs)
 
     if (tsk_getu32(vs->endian, dlabel_x86->sanity) != SUN_SANITY) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+        tsk_error_set_errstr(
             "SUN (intel) sanity value (Sector: %" PRIuDADDR
             ") %x", taddr, tsk_getu16(vs->endian, dlabel_sp->magic));
         free(buf);

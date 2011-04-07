@@ -51,6 +51,8 @@ The tsk_fs_open_img() function allows you to open a file system using only a TSK
 
 Both of these functions return a TSK_FS_INFO structure that is used as a handle for more detailed file system analysis.  Close the file system with the tsk_fs_close() function.   The TSK_FS_INFO structure contains data regarding the number of data units, the number of metadata structures, etc. 
 
+The C++ wrappers use the TskFsInfo class and it has open methods to open the file system. 
+
     \subsection fs_types File System Types
 
     The functions that open the file system can detect the file system type, but sometimes you may need to specify it (if for example TSK detects multiple file system structures).   Internally, TSK uses a numerical ID (TSK_FS_TYPE_ENUM) for each file system type, which is stored in TSK_FS_INFO::ftype.  
@@ -70,6 +72,7 @@ To map from the numerical ID to a short name (such as "ntfs"), the tsk_fs_type_t
  	\subsection fs_read Reading General File System Data
 As you will see, there are many ways to access file system data from the different categories. One of the most generic methods is using the tsk_fs_read() function.  It simply takes a byte offset relative to the start of the file system and a buffer to read the data into.  It does not care about block addresses or files.  In the following sections, there are smarter versions of this function that will take block addresses as an argument, instead of a byte offset. 
 
+The TskFsInfo::read() method allows data to be read using the C++ classes. 
 
 \section fs_block_open Opening and Reading File System Blocks
 TSK allows you to read the contents of any block in the file system. The size of each data unit is defined in the TSK_FS_INFO::block_size field and the number of data units (as defined by the file system) is defined in the TSK_FS_INFO::block_count field.  The address of the first block is defined in TSK_FS_INFO::first_block and the last block address (as defined by the file system structures) is defined in TSK_FS_INFO::last_block.  In some cases, the image may not be complete and the last block that can be read is less than TSK_FS_INFO::last_block.  In that case, TSK_FS_INFO::last_block_act contains the actual last block in the image.  When last_block_act is less than last_block, it means that the image is not complete. 
@@ -79,6 +82,8 @@ You can obtain the contents of a specific block by calling the tsk_fs_block_get(
 You can also walk the data units by calling tsk_fs_block_walk().  This function will call a callback function on data units that meet a certain criteria.  Walking is useful if, for example, you want to focus on only allocated or unallocated data units.  
 
 You can also read the contents of a data unit using the tsk_fs_read_block() function, which reads a block of data (given its data unit address) into a buffer.  tsk_fs_read_block() does not provide the data unit's allocation status and is therefore more efficient than tsk_fs_block_get() if you want only the content. 
+
+Similar methods exist in the TskFsInfo C++ class.  The C++ wrapper to TSK_FS_BLOCK is the TskFsBlock class. 
 
 One FAT file system specific thing should be mentioned here. FAT stores its file content in clusters, but the first cluster does not start at the beginning of the file system.  There is typically many megabytes of data (FAT tables) before it.  If TSK were to use clusters as the standard data unit, it would have no way of addressing the sectors prior to the first cluster and a confusing addressing scheme would need to exist so that all data could be accessed.  For simplicity, TSK uses sector addresses everywhere with FAT file systems. All data unit addresses used by the TSK API are in 512-byte sectors (and TSK_FS_INFO::block_size is 512 and not the original cluster size).  
 
@@ -98,6 +103,8 @@ The tsk_fs_file_open() function takes a file name as an argument and first ident
  
 The TSK_FS_FILE structure can be used to read file content and its fields can be used for processing. The  structure must be closed with tsk_fs_file_close().
 
+The C++ wrappers use the TskFsFile class.  It has open methods that allow a file to be opened and read from. 
+
 	\subsection Reading File Content
 There are two basic approaches to reading file content after you have a TSK_FS_FILE structure.  You can read data into a buffer from a specific offset in a file using tsk_fs_file_read().  You can also use  the tsk_fs_file_walk() function, which takes a callback function as an argument and will call the callback with the contents of each data unit in the file. 
 
@@ -114,7 +121,7 @@ The TSK APIs that have been previously presented will use the default attribute.
 	\subsection fs_file_attr_read Accessing Attributes
 The previous section outlined that some API functions allow you to access a specific attribute.  Sometimes though, you may want access to the attribute, which is stored in a TSK_FS_ATTR structure. 
 
-To access the default attribute use tsk_fs_file_attr_get().  If you know the type that you want to access, you can use the tsk_fs_file_attr_get_type() function.
+To access the default attribute use tsk_fs_file_attr_get().  If you know the type that you want to access, you can use the tsk_fs_file_attr_get_type() function.  The C++ class has similar methods, TskFsFile::getAttr() for example. 
 
 If you want to figure out what types exist or want to cycle through all of the attributes, you can use the tsk_fs_file_attr_getsize() function to get the number of attributes and the tsk_fs_file_attr_get_idx() function to get an attribute based on a 0 to n-1 based index. For example:
 
@@ -131,7 +138,7 @@ If you want to figure out what types exist or want to cycle through all of the a
 \endcode
 
 Once you have a TSK_FS_ATTR structure, you can read from it using the tsk_fs_attr_read() and tsk_fs_attr_walk() functions.  These operate just like the
-tsk_fs_file_read() and tsk_fs_file_walk() functions and in fact the file-based functions simply load the relevant attribute and call the corresponding attribute-based function. 
+tsk_fs_file_read() and tsk_fs_file_walk() functions and in fact the file-based functions simply load the relevant attribute and call the corresponding attribute-based function.   Similar methods exist in the TskFsAttr class. 
 
 	\subsection fs_file_runs Data Runs
 This section provides some details on how the file content is stored in TSK.  If you use the APIs previously described, you will not need to read this section.  It is more of an FYI. 
@@ -156,7 +163,7 @@ These approaches all return a TSK_FS_FILE structure and these will all have the 
 
 Another way to browse the files is using the tsk_fs_meta_walk() function, which will process a range of metadata structures and call a callback function on each one.  The callback gets the corresponding TSK_FS_FILE structure with the file's metadata in TSK_FS_FILE::meta and TSK_FS_FILE::name set to NULL. 
 
-
+This functionality also exists in the TskFsDir C++ class.  
 
 	\subsection fs_dir_spec Virtual Files
 When browsing the file system, using the directory structure is most convenient and therefore special files and directories were added to make finding all relevant data easier.  Orphan files, which were discussed in \ref fs_del, can be accessed from the <tt>/$OrphanFiles</tt> directory. This is a virtual directory, but TSK allows you to treat it as a normal directory (its flags in TSK_FS_META::flags will show that it is virtual though). 
@@ -166,7 +173,7 @@ TSK also provides special files so that you can access the boot sector and FATs 
 \section fs_map Mapping Data
 In some cases, you may want to identify which file has allocated a given block or which name points to a meta data structure. This can typically be done by using the tsk_fs_meta_walk() or tsk_fs_dir_walk() functions, respectively.  But, there are some convenience functions to make this easier. 
 
-The tsk_fs_path2inum() function takes a UTF-8 path as an argument and will identify the meta data address that it points to.   
+The tsk_fs_path2inum() function takes a UTF-8 path as an argument and will identify the meta data address that it points to.    This exists in the C++ class as TskFsInfo::path2Inum().
 
 Next to \ref hashdbpage
  

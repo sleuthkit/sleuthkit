@@ -7,7 +7,7 @@
 ** depending on the file system type.
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
 **
 ** TASK
@@ -219,7 +219,7 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
  * @param a_len Length of buffer
  */
 uint8_t
-tsk_fs_meta_make_ls(TSK_FS_META * a_fs_meta, char *a_buf, size_t a_len)
+tsk_fs_meta_make_ls(const TSK_FS_META * a_fs_meta, char *a_buf, size_t a_len)
 {
     if (a_len < 12) {
         return 1;

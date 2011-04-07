@@ -1,12 +1,12 @@
 /*
 ** blkcat
-** The  Sleuth Kit 
+** The  Sleuth Kit
 **
 ** Given an image , block number, and size, display the contents
 ** of the block to stdout.
-** 
+**
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
@@ -68,9 +68,8 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
 
     if (addr + read_num_units - 1 > fs->last_block) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "tsk_fs_blkcat: requested size is larger than last block in image (%"
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("tsk_fs_blkcat: requested size is larger than last block in image (%"
             PRIuDADDR ")", fs->last_block);
         return 1;
     }
@@ -78,8 +77,8 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
 #ifdef TSK_WIN32
     if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WRITE;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WRITE);
+        tsk_error_set_errstr(
             "blkcat_lib: error setting stdout to binary: %s",
             strerror(errno));
         return 1;
@@ -109,10 +108,9 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
         if (cnt != fs->block_size) {
             if (cnt >= 0) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_READ;
+                tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            snprintf(tsk_errstr2, TSK_ERRSTR_L,
-                "blkcat: Error reading block at %" PRIuDADDR, addr);
+            tsk_error_set_errstr("blkcat: Error reading block at %" PRIuDADDR, addr);
             return 1;
         }
 
@@ -200,8 +198,8 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
         else {
             if (fwrite(buf, fs->block_size, 1, stdout) != 1) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_WRITE;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_FS_WRITE);
+                tsk_error_set_errstr(
                     "blkcat_lib: error writing to stdout: %s",
                     strerror(errno));
                 free(buf);

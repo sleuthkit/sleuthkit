@@ -3,7 +3,7 @@
  * The Sleuth Kit 
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2008 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2008-2011 Brian Carrier.  All Rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  *
@@ -102,8 +102,8 @@ tsk_fs_file_open_meta(TSK_FS_INFO * a_fs,
     TSK_FS_FILE *fs_file;
 
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_open_meta: called with NULL or unallocated structures");
         return NULL;
     }
@@ -155,8 +155,8 @@ tsk_fs_file_open(TSK_FS_INFO * a_fs,
     TSK_FS_NAME *fs_name = NULL;
 
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_open: called with NULL or unallocated structures");
         return NULL;
     }
@@ -173,8 +173,8 @@ tsk_fs_file_open(TSK_FS_INFO * a_fs,
     }
     else if (retval == 1) {
         tsk_fs_name_free(fs_name);
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_open: path not found: %s", a_path);
         return NULL;
     }
@@ -207,14 +207,14 @@ tsk_fs_file_attr_check(TSK_FS_FILE * a_fs_file, char *a_func)
     // check the FS_INFO, FS_FILE structures
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
         || (a_fs_file->fs_info == NULL)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "%s: called with NULL pointers", a_func);
         return 1;
     }
     else if (a_fs_file->meta->tag != TSK_FS_META_TAG) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "%s: called with unallocated structures", a_func);
         return 1;
     }
@@ -222,8 +222,8 @@ tsk_fs_file_attr_check(TSK_FS_FILE * a_fs_file, char *a_func)
 
     // If the attributes haven't been loaded, then load them.
     if (a_fs_file->meta->attr_state == TSK_FS_META_ATTR_ERROR) {
-        tsk_errno = TSK_ERR_FS_INODE_COR;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr(
             "%s: called for file with corrupt data", a_func);
         return 1;
     }
@@ -341,15 +341,15 @@ tsk_fs_file_walk_type(TSK_FS_FILE * a_fs_file,
     // check the FS_INFO, FS_FILE structures
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
         || (a_fs_file->fs_info == NULL)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_walk: called with NULL pointers");
         return 1;
     }
     else if ((a_fs_file->fs_info->tag != TSK_FS_INFO_TAG)
         || (a_fs_file->meta->tag != TSK_FS_META_TAG)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_walk: called with unallocated structures");
         return 1;
     }
@@ -397,15 +397,15 @@ tsk_fs_file_walk(TSK_FS_FILE * a_fs_file,
     // check the FS_INFO, FS_FILE structures
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
         || (a_fs_file->fs_info == NULL)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_walk: called with NULL pointers");
         return 1;
     }
     else if ((a_fs_file->fs_info->tag != TSK_FS_INFO_TAG)
         || (a_fs_file->meta->tag != TSK_FS_META_TAG)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_walk: called with unallocated structures");
         return 1;
     }
@@ -452,15 +452,15 @@ tsk_fs_file_read_type(TSK_FS_FILE * a_fs_file,
     // check the FS_INFO, FS_FILE structures
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
         || (a_fs_file->fs_info == NULL)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_read: called with NULL pointers");
         return -1;
     }
     else if ((a_fs_file->fs_info->tag != TSK_FS_INFO_TAG)
         || (a_fs_file->meta->tag != TSK_FS_META_TAG)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_read: called with unallocated structures");
         return -1;
     }
@@ -496,8 +496,8 @@ tsk_fs_file_read(TSK_FS_FILE * a_fs_file,
     const TSK_FS_ATTR *fs_attr;
 
     if ((a_fs_file == NULL) || (a_fs_file->fs_info == NULL)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_read: fs_info is NULL");
         return -1;
     }
@@ -521,8 +521,8 @@ tsk_fs_file_get_owner_sid(TSK_FS_FILE * a_fs_file, char **sid_str)
 {
     if ((a_fs_file == NULL) || (a_fs_file->fs_info == NULL)
         || (a_fs_file->meta == NULL) || (sid_str == NULL)) {
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_file_get_owner_sid: fs_info is NULL");
         return 1;
     }
@@ -531,8 +531,8 @@ tsk_fs_file_get_owner_sid(TSK_FS_FILE * a_fs_file, char **sid_str)
     // This function will only work on NTFS filesystems. 
     if (!a_fs_file->fs_info->fread_owner_sid) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_UNSUPFUNC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "Unsupported function");
+        tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
+        tsk_error_set_errstr("Unsupported function");
         return 1;
     }
 

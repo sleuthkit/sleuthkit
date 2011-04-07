@@ -5,7 +5,7 @@
 ** Display all inode info about a given inode.
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
@@ -201,7 +201,7 @@ main(int argc, char **argv1)
 
     if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
         tsk_error_print(stderr);
-        if (tsk_errno == TSK_ERR_FS_UNSUPTYPE)
+        if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
             tsk_fs_type_print(stderr);
         img->close(img);
         exit(1);

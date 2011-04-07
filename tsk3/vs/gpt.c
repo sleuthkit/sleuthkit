@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2004-2005 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
@@ -49,9 +49,9 @@ gpt_load_table(TSK_VS_INFO * vs)
     if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_READ;
+            tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        snprintf(tsk_errstr2, TSK_ERRSTR_L,
+        tsk_error_set_errstr2(
             "Error reading DOS safety partition table in Sector: %"
             PRIuDADDR, taddr);
         free(sect_buf);
@@ -61,8 +61,8 @@ gpt_load_table(TSK_VS_INFO * vs)
     /* Sanity Check */
     if (tsk_vs_guessu16(vs, dos_part->magic, DOS_MAGIC)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+        tsk_error_set_errstr(
             "Missing DOS safety partition (invalid magic) (Sector: %"
             PRIuDADDR ")", taddr);
         free(sect_buf);
@@ -71,8 +71,8 @@ gpt_load_table(TSK_VS_INFO * vs)
 
     if (dos_part->ptable[0].ptype != GPT_DOS_TYPE) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+        tsk_error_set_errstr(
             "Missing DOS safety partition (invalid type in table: %d)",
             dos_part->ptable[0].ptype);
         free(sect_buf);
@@ -99,9 +99,9 @@ gpt_load_table(TSK_VS_INFO * vs)
     if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_READ;
+            tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        snprintf(tsk_errstr2, TSK_ERRSTR_L,
+        tsk_error_set_errstr2(
             "GPT Header structure in Sector: %" PRIuDADDR, taddr + 1);
         free(sect_buf);
         return 1;
@@ -110,8 +110,8 @@ gpt_load_table(TSK_VS_INFO * vs)
 
     if (tsk_getu64(vs->endian, &head->signature) != GPT_HEAD_SIG) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+        tsk_error_set_errstr(
             "GPT Header: %" PRIx64, tsk_getu64(vs->endian,
                 &head->signature));
         free(sect_buf);
@@ -136,8 +136,8 @@ gpt_load_table(TSK_VS_INFO * vs)
     ent_size = tsk_getu32(vs->endian, &head->tab_size_b);
     if (ent_size < sizeof(gpt_entry)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+        tsk_error_set_errstr(
             "Header reports partition entry size of %" PRIu32
             " and not %" PRIuSIZE "", ent_size, sizeof(gpt_entry));
         free(sect_buf);
@@ -177,9 +177,9 @@ gpt_load_table(TSK_VS_INFO * vs)
         if (cnt != vs->block_size) {
             if (cnt >= 0) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_VS_READ;
+                tsk_error_set_errno(TSK_ERR_VS_READ);
             }
-            snprintf(tsk_errstr2, TSK_ERRSTR_L,
+            tsk_error_set_errstr2(
                 "Error reading GPT partition table sector : %"
                 PRIuDADDR, tsk_getu64(vs->endian,
                     &head->tab_start_lba) + a);
@@ -215,8 +215,8 @@ gpt_load_table(TSK_VS_INFO * vs)
             if ((i < 2)
                 && (tsk_getu64(vs->endian, ent->start_lba) > max_addr)) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_VS_BLK_NUM;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
+                tsk_error_set_errstr(
                     "gpt_load_table: Starting sector too large for image");
                 free(sect_buf);
                 free(ent_buf);

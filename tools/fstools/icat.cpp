@@ -3,7 +3,7 @@
 ** The Sleuth Kit 
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
 **
 ** TASK
@@ -186,7 +186,7 @@ main(int argc, char **argv1)
     }
     if ((fs = tsk_fs_open_img(img, imgaddr * img->sector_size, fstype)) == NULL) {
         tsk_error_print(stderr);
-        if (tsk_errno == TSK_ERR_FS_UNSUPTYPE)
+        if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
             tsk_fs_type_print(stderr);
         img->close(img);
         exit(1);
@@ -214,7 +214,7 @@ main(int argc, char **argv1)
         (TSK_FS_FILE_WALK_FLAG_ENUM) fw_flags);
     if (retval) {
         if ((suppress_recover_error == 1)
-            && (tsk_errno == TSK_ERR_FS_RECOVER)) {
+            && (tsk_error_get_errno() == TSK_ERR_FS_RECOVER)) {
             tsk_error_reset();
         }
         else {

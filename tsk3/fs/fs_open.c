@@ -1,15 +1,15 @@
 /*
 ** tsk_fs_open_img
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
-** 
-** Copyright (c) 1997,1998,1999, International Business Machines          
+**
+** Copyright (c) 1997,1998,1999, International Business Machines
 ** Corporation and others. All Rights Reserved.
 */
 
@@ -29,19 +29,19 @@
 /**
  * \file fs_open.c
  * Contains the general code to open a file system -- this calls
- * the file system -specific opening routines. 
+ * the file system -specific opening routines.
  */
 
 
 /**
  * \ingroup fslib
- * Tries to process data in a volume as a file system. 
- * Returns a structure that can be used for analysis and reporting. 
+ * Tries to process data in a volume as a file system.
+ * Returns a structure that can be used for analysis and reporting.
  *
  * @param a_part_info Open volume to read from and analyze
  * @param a_ftype Type of file system (or autodetect)
  *
- * @return NULL on error 
+ * @return NULL on error
  */
 TSK_FS_INFO *
 tsk_fs_open_vol(const TSK_VS_PART_INFO * a_part_info,
@@ -50,15 +50,15 @@ tsk_fs_open_vol(const TSK_VS_PART_INFO * a_part_info,
     TSK_OFF_T offset;
     if (a_part_info == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_open_vol: Null vpart handle");
         return NULL;
     }
     else if (a_part_info->vs == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_open_vol: Null vs handle");
         return NULL;
     }
@@ -71,14 +71,14 @@ tsk_fs_open_vol(const TSK_VS_PART_INFO * a_part_info,
 
 /**
  * \ingroup fslib
- * Tries to process data in a disk image at a given offset as a file system. 
- * Returns a structure that can be used for analysis and reporting. 
+ * Tries to process data in a disk image at a given offset as a file system.
+ * Returns a structure that can be used for analysis and reporting.
  *
  * @param a_img_info Disk image to analyze
  * @param a_offset Byte offset to start analyzing from
  * @param a_ftype Type of file system (or autodetect)
  *
- * @return NULL on error 
+ * @return NULL on error
  */
 TSK_FS_INFO *
 tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
@@ -86,13 +86,13 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
 {
     if (a_img_info == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_open_img: Null image handle");
         return NULL;
     }
 
-    /* We will try different file systems ... 
+    /* We will try different file systems ...
      * We need to try all of them in case more than one matches
      */
     if (a_ftype == TSK_FS_TYPE_DETECT) {
@@ -125,8 +125,8 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                 fs_set->close(fs_set);
                 fs_info->close(fs_info);
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_UNKTYPE;
-                snprintf(tsk_errstr, TSK_ERRSTR_L, "FAT or %s", set);
+                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                tsk_error_set_errstr("FAT or %s", set);
                 return NULL;
             }
         }
@@ -145,8 +145,8 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                 fs_set->close(fs_set);
                 fs_info->close(fs_info);
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_UNKTYPE;
-                snprintf(tsk_errstr, TSK_ERRSTR_L, "EXT2/3 or %s", set);
+                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                tsk_error_set_errstr("EXT2/3 or %s", set);
                 return NULL;
             }
         }
@@ -165,8 +165,8 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                 fs_set->close(fs_set);
                 fs_info->close(fs_info);
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_UNKTYPE;
-                snprintf(tsk_errstr, TSK_ERRSTR_L, "UFS or %s", set);
+                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                tsk_error_set_errstr("UFS or %s", set);
                 return NULL;
             }
         }
@@ -187,8 +187,8 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                 fs_set->close(fs_set);
                 fs_info->close(fs_info);
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_UNKTYPE;
-                snprintf(tsk_errstr, TSK_ERRSTR_L, "HFS or %s", set);
+                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                tsk_error_set_errstr("HFS or %s", set);
                 return NULL;
             }
         }
@@ -204,8 +204,8 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
                 fs_set->close(fs_set);
                 fs_info->close(fs_info);
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_UNKTYPE;
-                snprintf(tsk_errstr, TSK_ERRSTR_L, "ISO9660 or %s", set);
+                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                tsk_error_set_errstr("ISO9660 or %s", set);
                 return NULL;
             }
             fs_set = fs_info;
@@ -217,9 +217,7 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
 
         if (fs_set == NULL) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_UNKTYPE;
-            tsk_errstr[0] = '\0';
-            tsk_errstr2[0] = '\0';
+            tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
             return NULL;
         }
         return fs_set;
@@ -243,8 +241,8 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             return swapfs_open(a_img_info, a_offset);
         else {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_UNSUPTYPE;
-            snprintf(tsk_errstr, TSK_ERRSTR_L, "%X", (int) a_ftype);
+            tsk_error_set_errno(TSK_ERR_FS_UNSUPTYPE);
+            tsk_error_set_errstr("%X", (int) a_ftype);
             return NULL;
         }
     }
@@ -261,4 +259,39 @@ tsk_fs_close(TSK_FS_INFO * a_fs)
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG))
         return;
     a_fs->close(a_fs);
+}
+
+/* tsk_fs_malloc - init lock after tsk_malloc 
+ * This is for fs module and all it's inheritances
+ */
+TSK_FS_INFO *
+tsk_fs_malloc(size_t a_len)
+{
+    TSK_FS_INFO * fs_info;
+    if ((fs_info =
+            (TSK_FS_INFO *) tsk_malloc(a_len)) == NULL)
+        return NULL;
+    tsk_init_lock(&fs_info->list_inum_named_lock);
+    tsk_init_lock(&fs_info->orphan_dir_lock);
+    
+    fs_info->list_inum_named = NULL;
+
+    return fs_info;
+}
+
+/* tsk_fs_free - deinit lock before free memory 
+ * This is for fs module and all it's inheritances
+ */
+void
+tsk_fs_free(TSK_FS_INFO * a_fs_info)
+{
+    if (a_fs_info->list_inum_named) {
+        tsk_list_free(a_fs_info->list_inum_named);
+        a_fs_info->list_inum_named = NULL;
+    }
+    
+    tsk_deinit_lock(&a_fs_info->list_inum_named_lock);
+    tsk_deinit_lock(&a_fs_info->orphan_dir_lock);
+
+    free(a_fs_info);
 }

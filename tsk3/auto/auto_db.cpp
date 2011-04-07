@@ -1,8 +1,8 @@
 /*
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -10,7 +10,7 @@
 
 /**
  * \file auto_db.cpp
- * Contains code to populate SQLite database with volume and file system information. 
+ * Contains code to populate SQLite database with volume and file system information.
  */
 
 #include "tsk_auto_i.h"
@@ -154,16 +154,16 @@ uint8_t
     struct STAT_STR stat_buf;
     if (TSTAT(dbFile, &stat_buf) == 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, 
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr( 
                 "Database %s already exists.  Must be deleted first.", dbFile);
         return 1;
     }
     
     if (sqlite3_open(dbFile, &m_db)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, 
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr( 
             "Can't open database: %s\n", sqlite3_errmsg(m_db));
         sqlite3_close(m_db);
         return 1;
@@ -172,14 +172,13 @@ uint8_t
 #endif
 
 
-
     char *errmsg;
     // disable synchronous for loading the DB since we have no crash recovery anyway...
     if (sqlite3_exec(m_db,
                      "PRAGMA synchronous =  OFF;", NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
                  "Error setting PRAGMA synchronous: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
@@ -188,19 +187,19 @@ uint8_t
     if (sqlite3_exec(m_db,
                      "PRAGMA count_changes = false;", NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
                  "Error setting PRAGMA count changes: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
     }
-    
+
     if (sqlite3_exec(m_db,
             "CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error creating tsk_db_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
@@ -211,8 +210,8 @@ uint8_t
         TSK_SCHEMA_VER, TSK_VERSION_NUM);
     if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error adding data to tsk_db_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
@@ -222,8 +221,8 @@ uint8_t
             "CREATE TABLE tsk_image_info (type INTEGER, ssize INTEGER);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error creating tsk_image_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
@@ -234,8 +233,8 @@ uint8_t
         (int) a_type, m_img_info->sector_size);
     if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error adding data to tsk_image_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
@@ -245,8 +244,8 @@ uint8_t
     if (sqlite3_exec(m_db, "CREATE TABLE tsk_image_names (name TEXT);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error creating tsk_image_names table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
@@ -269,8 +268,8 @@ uint8_t
             (UTF8 *) ((uintptr_t) ptr8 + 1024), TSKlenientConversion);
         if (retval != TSKconversionOK) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_AUTO_UNICODE;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
+            tsk_error_set_errstr(
                 "Error converting image to UTF-8\n");
             return 1;
         }
@@ -291,8 +290,8 @@ uint8_t
             &img_ptr[a]);
         if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_AUTO_DB;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr(
                 "Error adding data to tsk_image_names table: %s\n",
                 errmsg);
             sqlite3_free(errmsg);
@@ -304,8 +303,8 @@ uint8_t
             "CREATE TABLE tsk_vs_info (vs_type INTEGER, img_offset INTEGER NOT NULL, block_size INTEGER NOT NULL);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error creating tsk_vs_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
@@ -315,9 +314,9 @@ uint8_t
             "CREATE TABLE tsk_vs_parts (vol_id INTEGER PRIMARY KEY, start INTEGER NOT NULL, length INTEGER NOT NULL, desc TEXT, flags INTEGER);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "Error creating tsk_vs_parts table: %s\n", errmsg);
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
+            "Error creating tsk_vol_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
     }
@@ -326,8 +325,8 @@ uint8_t
             "CREATE TABLE tsk_fs_info (fs_id INTEGER PRIMARY KEY, img_offset INTEGER, vol_id INTEGER NOT NULL, fs_type INTEGER, block_size INTEGER, block_count INTEGER, root_inum INTEGER, first_inum INTEGER, last_inum INTEGER);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error creating tsk_fs_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
@@ -337,8 +336,8 @@ uint8_t
             "CREATE TABLE tsk_fs_files (fs_id INTEGER NOT NULL, file_id INTEGER NOT NULL, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, par_file_id INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error creating tsk_fs_files table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return 1;
@@ -349,8 +348,8 @@ uint8_t
                 "CREATE TABLE tsk_fs_blocks (fs_id INTEGER NOT NULL, blk_start INTEGER NOT NULL, blk_len INTEGER NOT NULL, file_id INTEGER NOT NULL, attr_type INTEGER, attr_id INTEGER);",
                 NULL, NULL, &errmsg) != SQLITE_OK) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_AUTO_DB;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr(
                 "Error creating tsk_fs_blocks table: %s\n", errmsg);
             sqlite3_free(errmsg);
             return 1;
@@ -379,8 +378,8 @@ TskAutoDb::createParentDirIndex()
             "CREATE INDEX parentDir ON tsk_fs_files(par_file_id, fs_id);",
             NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error creating tsk_fs_files index on par_file_id: %s\n",
             errmsg);
         sqlite3_free(errmsg);
@@ -398,8 +397,8 @@ uint8_t TskAutoDb::addFilesInImgToDB()
 {
     if (m_db == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "addFilesInImgToDB: m_db not open\n");
         return 1;
     }
@@ -429,8 +428,8 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info) {
 
     if (sqlite3_exec(m_db, statement, NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error adding data to tsk_vs_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return TSK_FILTER_STOP;
@@ -454,9 +453,9 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 
     if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "Error adding data to tsk_vs_parts table: %s\n", errmsg);
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
+            "Error adding data to tsk_vol_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return TSK_FILTER_STOP;
     }
@@ -489,8 +488,8 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 
         if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_AUTO_DB;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr(
                 "Error adding data to tsk_vs_info table: %s\n", errmsg);
             sqlite3_free(errmsg);
             return TSK_FILTER_STOP;
@@ -507,8 +506,8 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
         m_curVsId = 0;
         if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_AUTO_DB;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr(
                 "Error adding data to tsk_vs_parts table: %s\n", errmsg);
             sqlite3_free(errmsg);
             return TSK_FILTER_STOP;
@@ -525,8 +524,8 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 
     if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error adding data to tsk_fs_info table: %s\n", errmsg);
         sqlite3_free(errmsg);
         return TSK_FILTER_STOP;
@@ -536,7 +535,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     if ((file_root = tsk_fs_file_open(fs_info, NULL, "/")) != NULL) {
         processAttributes(file_root, "");
     }
-    
+
     // make sure that flags are set to get all files -- we need this to
     // find parent directory
     setFileFilterFlags((TSK_FS_DIR_WALK_FLAG_ENUM)
@@ -545,7 +544,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     return TSK_FILTER_CONT;
 }
 
-/* Insert the file data into the file table.  
+/* Insert the file data into the file table.
  * Returns 1 on error.
  */
 TSK_RETVAL_ENUM
@@ -651,8 +650,8 @@ TSK_RETVAL_ENUM
 
     if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error adding data to tsk_fs_files table: %s\n", errmsg);
         sqlite3_free(errmsg);
         free(name);
@@ -673,8 +672,8 @@ TSK_RETVAL_ENUM
     char *errmsg;
     if (sqlite3_exec(m_db, "BEGIN", NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error using BEGIN for insert transaction: %s\n", errmsg);
         sqlite3_free(errmsg);
         return TSK_ERR;
@@ -689,8 +688,8 @@ TSK_RETVAL_ENUM
 
     if (sqlite3_exec(m_db, "COMMIT", NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_DB;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(
             "Error using COMMIT for insert transaction: %s\n", errmsg);
         sqlite3_free(errmsg);
         return TSK_ERR;
@@ -715,22 +714,22 @@ TSK_RETVAL_ENUM
         TSK_FS_ATTR_RUN *run;
         for (run = fs_attr->nrd.run; run != NULL; run = run->next) {
             char foo[1024];
-            char *errmsg;            
-            
+            char *errmsg;
+
             // ignore sparse blocks
             if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
                 continue;
-            
+
             snprintf(foo, 1024,
                      "INSERT INTO tsk_fs_blocks (fs_id, blk_start, blk_len, file_id, attr_type, attr_id) VALUES (%d,%"
                      PRIuDADDR ",%"PRIuDADDR ",%" PRIuINUM ",%d,%d)", m_curFsId, run->addr, run->len,
                      fs_file->meta->addr, fs_attr->type, fs_attr->id);
-            
+
             if (sqlite3_exec(m_db, foo, NULL, NULL,
                              &errmsg) != SQLITE_OK) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_AUTO_DB;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_AUTO_DB);
+                tsk_error_set_errstr(
                          "Error adding data to tsk_fs_info table: %s\n", errmsg);
                 sqlite3_free(errmsg);
                 return TSK_ERR;

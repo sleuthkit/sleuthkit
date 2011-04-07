@@ -1,9 +1,9 @@
 /*
- * The Sleuth Kit 
+ * The Sleuth Kit
  *
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All rights reserved.
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved.
  */
 
 /** \file mymalloc.c
@@ -69,9 +69,8 @@ tsk_malloc(size_t len)
 
     if ((ptr = malloc(len)) == 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUX_MALLOC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "tsk_malloc: %s",
-            strerror(errno));
+        tsk_error_set_errno(TSK_ERR_AUX_MALLOC);
+        tsk_error_set_errstr("tsk_malloc: %s", strerror(errno));
     }
     else {
         memset(ptr, 0, len);
@@ -85,9 +84,8 @@ tsk_realloc(void *ptr, size_t len)
 {
     if ((ptr = realloc(ptr, len)) == 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUX_MALLOC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "tsk_realloc: %s",
-            strerror(errno));
+        tsk_error_set_errno(TSK_ERR_AUX_MALLOC);
+        tsk_error_set_errstr("tsk_realloc: %s", strerror(errno));
     }
     return (ptr);
 }

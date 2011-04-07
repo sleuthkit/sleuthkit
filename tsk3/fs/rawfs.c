@@ -2,7 +2,7 @@
 ** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2004-2005 Brian Carrier.  All rights reserved 
 **
 **
@@ -41,7 +41,7 @@ rawfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset)
     // clean up any error messages that are lying around
     tsk_error_reset();
 
-    fs = (TSK_FS_INFO *) tsk_malloc(sizeof(TSK_FS_INFO));
+    fs = (TSK_FS_INFO *) tsk_fs_malloc(sizeof(TSK_FS_INFO));
     if (fs == NULL)
         return NULL;
 

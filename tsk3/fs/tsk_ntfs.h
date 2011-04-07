@@ -2,7 +2,7 @@
 ** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2003-2009 Brian Carrier.  All rights reserved
+** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
@@ -621,8 +621,6 @@ extern "C" {
         uint8_t ver;            /* version of NTFS - uses the VINFO flag */
         TSK_FS_FILE *mft_file;  /* contains the data for the mft entry for the mft */
         const TSK_FS_ATTR *mft_data;    /* Data run for MFT entry for MFT */
-        ntfs_mft *mft;          /* cache for on-disk inode */
-        TSK_INUM_T mnum;        /* number of above cached mft */
         uint32_t csize_b;       /* number of bytes in a cluster */
         uint16_t ssize_b;       /* number of bytes in a sector */
         uint32_t mft_rsize_b;   /* number of bytes per mft record */
@@ -632,15 +630,24 @@ extern "C" {
         uint8_t loading_the_MFT;        /* set to 1 when initializing the setup */
 
         TSK_FS_ATTR_RUN *bmap;  /* Run of bitmap for clusters (linked list) */
-        char *bmap_buf;         /* buffer to hold cached copy of bitmap */
-        TSK_DADDR_T bmap_buf_off;       /* offset cluster in cached bitmap */
+
+        /* lock protects bmap_buf, bmap_buf_off */
+        tsk_lock_t lock;
+        char *bmap_buf;         /* buffer to hold cached copy of bitmap (r/w shared - lock)  */
+        TSK_DADDR_T bmap_buf_off;       /* offset cluster in cached bitmap  (r/w shared - lock) */
+
         ntfs_attrdef *attrdef;  // buffer of attrdef file contents
         size_t attrdef_len;     // length of addrdef buffer
-        NTFS_PAR_MAP *orphan_map;       // map that lists par directory to its orphans.
+
+        /* orphan_map_lock protects orphan_map */
+        tsk_lock_t orphan_map_lock;
+        NTFS_PAR_MAP *orphan_map;       // map that lists par directory to its orphans. (r/w shared - lock) 
 
 #if TSK_USE_SID
-        NTFS_SXX_BUFFER sii_data;
-        NTFS_SXX_BUFFER sds_data;
+        /* sid_lock protects sii_data, sds_data */
+        tsk_lock_t sid_lock;
+        NTFS_SXX_BUFFER sii_data; // (r/w shared - lock) 
+        NTFS_SXX_BUFFER sds_data; // (r/w shared - lock) 
 #endif
     } NTFS_INFO;
 
@@ -648,6 +655,7 @@ extern "C" {
     extern uint32_t nt2unixtime(uint64_t ntdate);
     extern uint8_t ntfs_attrname_lookup(TSK_FS_INFO *, uint16_t, char *,
         int);
+    extern TSK_RETVAL_ENUM ntfs_dinode_lookup(NTFS_INFO *, char *, TSK_INUM_T);
     extern TSK_RETVAL_ENUM
         ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         TSK_INUM_T a_addr);

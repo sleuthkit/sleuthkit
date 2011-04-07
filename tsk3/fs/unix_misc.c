@@ -2,7 +2,7 @@
  * The Sleuth Kit 
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2008 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2008-2011 Brian Carrier.  All Rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
@@ -148,8 +148,8 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
 
     if (addr > fs->last_block) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_COR;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr(
             "unix: Indirect block address too large: %" PRIuDADDR "",
             addr);
         return -1;
@@ -178,9 +178,9 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
         if (cnt != fs_bufsize) {
             if (cnt >= 0) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_READ;
+                tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            snprintf(tsk_errstr2, TSK_ERRSTR_L,
+            tsk_error_set_errstr2(
                 "unix_make_data_run_indir: Block %" PRIuDADDR, addr);
             return -1;
         }
@@ -281,8 +281,8 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
 
     if ((TSK_FS_TYPE_ISFFS(fs->ftype) == 0)
         && (TSK_FS_TYPE_ISEXT(fs->ftype) == 0)) {
-        tsk_errno = TSK_ERR_FS_INODE_COR;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr(
             "unix_make_run: Called with non-Unix file system: %x",
             fs->ftype);
         return 1;
@@ -310,7 +310,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
     if (read_b == -1) {
         fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
         if (fs_meta->flags & TSK_FS_META_FLAG_UNALLOC)
-            tsk_errno = TSK_ERR_FS_RECOVER;
+            tsk_error_set_errno(TSK_ERR_FS_RECOVER);
         return 1;
     }
     length -= read_b;
@@ -437,7 +437,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
     if (read_b == -1) {
         fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
         if (fs_meta->flags & TSK_FS_META_FLAG_UNALLOC)
-            tsk_errno = TSK_ERR_FS_RECOVER;
+            tsk_error_set_errno(TSK_ERR_FS_RECOVER);
         return 1;
     }
 

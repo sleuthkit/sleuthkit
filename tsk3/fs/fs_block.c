@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2008 Brian Carrier, Basis Technology.  All Rights reserved
+ * Copyright (c) 2008-2011 Brian Carrier, Basis Technology.  All Rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
@@ -79,8 +79,8 @@ tsk_fs_block_get(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
 
     if (a_fs == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_READ;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_READ);
+        tsk_error_set_errstr(
             "tsk_fs_block_get: fs unallocated");
         return NULL;
     }
@@ -90,8 +90,8 @@ tsk_fs_block_get(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
     else if ((a_fs_block->tag != TSK_FS_BLOCK_TAG)
         || (a_fs_block->buf == NULL)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_READ;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_READ);
+        tsk_error_set_errstr(
             "tsk_fs_block_get: fs_block unallocated");
         return NULL;
     }
@@ -100,13 +100,13 @@ tsk_fs_block_get(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
 
     if (a_addr > a_fs->last_block_act) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_READ;
+        tsk_error_set_errno(TSK_ERR_FS_READ);
         if (a_addr <= a_fs->last_block)
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errstr(
                 "tsk_fs_block_get: Address missing in partial image: %"
                 PRIuDADDR ")", a_addr);
         else
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errstr(
                 "tsk_fs_block_get: Address is too large for image: %"
                 PRIuDADDR ")", a_addr);
         return NULL;
@@ -147,15 +147,15 @@ tsk_fs_block_set(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
 {
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_READ;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_READ);
+        tsk_error_set_errstr(
             "tsk_fs_block_set: fs_info unallocated");
         return 1;
     }
     if ((a_fs_block->tag != TSK_FS_BLOCK_TAG) || (a_fs_block->buf == NULL)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_READ;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_READ);
+        tsk_error_set_errstr(
             "tsk_fs_block_set: fs_block unallocated");
         return 1;
     }
@@ -189,8 +189,8 @@ tsk_fs_block_walk(TSK_FS_INFO * a_fs,
 {
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_block_walk: FS_INFO structure is not allocated");
         return 1;
     }

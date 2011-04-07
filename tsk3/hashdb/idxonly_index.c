@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2007 Brian Carrier.  All rights reserved
+ * Copyright (c) 2007-2011 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
@@ -33,8 +33,8 @@ uint8_t
 idxonly_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 {
     tsk_error_reset();
-    tsk_errno = TSK_ERR_HDB_ARG;
-    snprintf(tsk_errstr, TSK_ERRSTR_L,
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr(
              "idxonly_makeindex: Make index not supported when INDEX ONLY option is used");
     return 1;
 }
@@ -60,8 +60,8 @@ idxonly_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
                  TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
     tsk_error_reset();
-    tsk_errno = TSK_ERR_HDB_ARG;
-    snprintf(tsk_errstr, TSK_ERRSTR_L,
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr(
              "idxonly_getentry: Not supported when INDEX ONLY option is used");
     return 1;
 }

@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
@@ -60,9 +60,9 @@ mac_load_table(TSK_VS_INFO * vs)
         if (cnt != vs->block_size) {
             if (cnt >= 0) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_VS_READ;
+                tsk_error_set_errno(TSK_ERR_VS_READ);
             }
-            snprintf(tsk_errstr2, TSK_ERRSTR_L,
+            tsk_error_set_errstr2(
                 "MAC Partition entry %" PRIuDADDR, taddr + idx);
             free(part_buf);
             return 1;
@@ -74,8 +74,8 @@ mac_load_table(TSK_VS_INFO * vs)
             /* Set the endian ordering the first time around */
             if (tsk_vs_guessu16(vs, part->magic, MAC_MAGIC)) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_VS_MAGIC;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+                tsk_error_set_errstr(
                     "Mac partition table entry (Sector: %"
                     PRIuDADDR ") %" PRIx16,
                     (taddr + idx), tsk_getu16(vs->endian, part->magic));
@@ -91,8 +91,8 @@ mac_load_table(TSK_VS_INFO * vs)
         }
         else if (tsk_getu16(vs->endian, part->magic) != MAC_MAGIC) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_MAGIC;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+            tsk_error_set_errstr(
                 "Mac partition table entry (Sector: %"
                 PRIuDADDR ") %" PRIx16, (taddr + idx),
                 tsk_getu16(vs->endian, part->magic));
@@ -120,8 +120,8 @@ mac_load_table(TSK_VS_INFO * vs)
         // make sure the first couple are within the bounds of the image.
         if ((idx < 2) && (part_start > max_addr)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_BLK_NUM;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
+            tsk_error_set_errstr(
                 "mac_load_table: Starting sector too large for image");
             if (tsk_verbose)
                 tsk_fprintf(stderr,

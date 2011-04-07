@@ -1,6 +1,6 @@
 /*
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2005 Brian Carrier.  All rights reserved
  *
  * raw
@@ -30,7 +30,7 @@
 /**
  * Read an arbitrary amount of data from a specific location in a raw image file.
  * This takes two offsets are arguments.  The first is the offset of the volume in the
- * image file and the second is the offset in the volume.  Both are added to find the 
+ * image file and the second is the offset in the volume.  Both are added to find the
  * actual offset.
  *
  * @param img_info The image to read from.
@@ -52,8 +52,8 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 
     if (offset > img_info->size) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_READ_OFF;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "raw_read - %" PRIuOFF, offset);
+        tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
+        tsk_error_set_errstr("raw_read - %" PRIuOFF, offset);
         return -1;
     }
 
@@ -71,8 +71,8 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
             if ((li.LowPart == INVALID_SET_FILE_POINTER) && (GetLastError()
                     != NO_ERROR)) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_IMG_SEEK;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_IMG_SEEK);
+                tsk_error_set_errstr(
                     "raw_read - %" PRIuOFF, offset);
                 return -1;
             }
@@ -82,8 +82,8 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
         if (FALSE == ReadFile(raw_info->fd, buf, (DWORD) len,
                 &nread, NULL)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_READ;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_IMG_READ);
+            tsk_error_set_errstr(
                 "raw_read - offset: %" PRIuOFF " - len: %zu", offset, len);
             return -1;
         }
@@ -93,8 +93,8 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
     if (raw_info->seek_pos != offset) {
         if (lseek(raw_info->fd, offset, SEEK_SET) != offset) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_SEEK;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_IMG_SEEK);
+            tsk_error_set_errstr(
                 "raw_read - %" PRIuOFF " - %s", offset, strerror(errno));
             return -1;
         }
@@ -104,8 +104,8 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
     cnt = read(raw_info->fd, buf, len);
     if (cnt < 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_READ;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_IMG_READ);
+        tsk_error_set_errstr(
             "raw_read - offset: %" PRIuOFF " - len: %" PRIuSIZE " - %s",
             offset, len, strerror(errno));
         return -1;
@@ -134,13 +134,13 @@ raw_close(TSK_IMG_INFO * img_info)
 #else
     close(raw_info->fd);
 #endif
-    free(raw_info);
+    tsk_img_free(raw_info);
 }
 
 
 /**
  * \internal
- * Open the file as a raw image.  
+ * Open the file as a raw image.
  * @param image Path to disk image to open.
  * @param a_ssize Size of device sector in bytes (or 0 for default)
  * @returns NULL on error.
@@ -154,7 +154,7 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
     int is_winobj = 0;
 
     if ((raw_info =
-            (IMG_RAW_INFO *) tsk_malloc(sizeof(IMG_RAW_INFO))) == NULL)
+            (IMG_RAW_INFO *) tsk_img_malloc(sizeof(IMG_RAW_INFO))) == NULL)
         return NULL;
 
     img_info = (TSK_IMG_INFO *) raw_info;
@@ -181,8 +181,8 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
         /* Exit if we are given a directory */
         if (TSTAT(image, &stat_buf) < 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_STAT;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_IMG_STAT);
+            tsk_error_set_errstr(
                 "raw_open: %s", strerror(errno));
             return NULL;
         }
@@ -192,8 +192,8 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
                     _TSK_T("raw_open: image %s is a directory\n"), image);
 
             tsk_error_reset();
-            tsk_errno = TSK_ERR_IMG_MAGIC;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
+            tsk_error_set_errstr(
                 "raw_open: path is for a directory");
             return NULL;
         }
@@ -221,25 +221,25 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
 
             if (raw_info->fd == INVALID_HANDLE_VALUE) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_IMG_OPEN;
+                tsk_error_set_errno(TSK_ERR_IMG_OPEN);
                 // print string of commonly found errors
                 if (GetLastError() == ERROR_ACCESS_DENIED) {
-                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                    tsk_error_set_errstr(
                         "raw_open file: %" PRIttocTSK " (Access Denied)",
                         image);
                 }
                 else if (GetLastError() == ERROR_SHARING_VIOLATION) {
-                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                    tsk_error_set_errstr(
                         "raw_open file: %" PRIttocTSK
                         " (Sharing Violation)", image);
                 }
                 else if (GetLastError() == ERROR_FILE_NOT_FOUND) {
-                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                    tsk_error_set_errstr(
                         "raw_open file: %" PRIttocTSK " (File not found)",
                         image);
                 }
                 else {
-                    snprintf(tsk_errstr, TSK_ERRSTR_L,
+                    tsk_error_set_errstr(
                         "raw_open file: %" PRIttocTSK " (%d)", image,
                         (int) GetLastError());
                 }
@@ -254,8 +254,8 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
             dwLo = GetFileSize(raw_info->fd, &dwHi);
             if (dwLo == 0xffffffff) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_IMG_OPEN;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+                tsk_error_set_errstr(
                     "raw_open file: %" PRIttocTSK " GetFileSize: %d",
                     image, (int) GetLastError());
                 return NULL;
@@ -271,8 +271,8 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
                     NULL, 0, &pdg, sizeof(pdg), &junk,
                     (LPOVERLAPPED) NULL)) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_IMG_OPEN;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+                tsk_error_set_errstr(
                     "raw_open file: %" PRIttocTSK
                     " DeviceIoControl: %d", image, (int) GetLastError());
                 return NULL;
@@ -288,8 +288,8 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
 #else
     if ((raw_info->fd = open(image, O_RDONLY | O_BINARY)) < 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_OPEN;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr(
             "raw_open file: %" PRIttocTSK " msg: %s", image,
             strerror(errno));
         return NULL;
@@ -323,4 +323,34 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
     raw_info->seek_pos = 0;
 
     return img_info;
+}
+
+/* tsk_img_malloc - init lock after tsk_malloc 
+ * This is for img module and all it's inheritances
+ */
+void *
+tsk_img_malloc(size_t a_len)
+{
+    TSK_IMG_INFO * imgInfo;
+    if ((imgInfo =
+            (TSK_IMG_INFO *) tsk_malloc(a_len)) == NULL)
+        return NULL;
+    //init lock
+    tsk_init_lock(&(imgInfo->cache_lock));
+
+    return (void*) imgInfo;
+}
+
+/* tsk_img_free - deinit lock  before free memory 
+ * This is for img module and all it's inheritances
+ */
+void
+tsk_img_free(void * a_ptr)
+{
+    TSK_IMG_INFO * imgInfo = (TSK_IMG_INFO *)a_ptr;
+
+    //deinit lock
+    tsk_deinit_lock(&(imgInfo->cache_lock));
+
+    free(imgInfo);
 }

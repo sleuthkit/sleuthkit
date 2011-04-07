@@ -8,7 +8,7 @@
 ** 14900 Conference Center Drive
 ** Chantilly, VA 20151
 **
-** Copyright (c) 2009 Brian Carrier.  All rights reserved.
+** Copyright (c) 2009-2011 Brian Carrier.  All rights reserved.
 ** 
 ** Judson Powers [jpowers@atc-nycorp.com]
 ** Copyright (c) 2008 ATC-NY.  All rights reserved.
@@ -516,11 +516,14 @@ typedef struct {
 
     char is_case_sensitive;
 
-    TSK_FS_FILE *blockmap_file;
-    const TSK_FS_ATTR *blockmap_attr;
-    char blockmap_cache[4096];  ///< Cache for blockmap
-    TSK_OFF_T blockmap_cache_start;     ///< Byte offset of blockmap where cache starts
-    size_t blockmap_cache_len;  ///< Length of cache that is being used
+    /* lock protects blockmap_file, blockmap_attr, blockmap_cache, blockmap_cache_start, blockmap_cache_len */
+    tsk_lock_t lock;
+
+    TSK_FS_FILE *blockmap_file; //(r/w shared - lock) 
+    const TSK_FS_ATTR *blockmap_attr; // (r/w shared - lock) 
+    char blockmap_cache[4096];  ///< Cache for blockmap (r/w shared - lock) 
+    TSK_OFF_T blockmap_cache_start;     ///< Byte offset of blockmap where cache starts (r/w shared - lock) 
+    size_t blockmap_cache_len;  ///< Length of cache that is being used (r/w shared - lock) 
 
     TSK_FS_FILE *catalog_file;
     const TSK_FS_ATTR *catalog_attr;

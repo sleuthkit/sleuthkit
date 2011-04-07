@@ -2,7 +2,7 @@
 ** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
 **
 ** TASK
@@ -89,8 +89,8 @@ print_block(const TSK_FS_BLOCK * fs_block, void *ptr)
     if (fwrite(fs_block->buf, fs_block->fs_info->block_size, 1,
             stdout) != 1) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WRITE;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WRITE);
+        tsk_error_set_errstr(
             "blkls_lib: error writing to stdout: %s", strerror(errno));
         return TSK_WALK_ERROR;
     }
@@ -129,8 +129,8 @@ slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     else if (data->flen == 0) {
         if (fwrite(buf, size, 1, stdout) != 1) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_WRITE;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_WRITE);
+            tsk_error_set_errstr(
                 "blkls_lib: error writing to stdout: %s", strerror(errno));
             return TSK_WALK_ERROR;
         }
@@ -141,8 +141,8 @@ slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
         memset(buf, 0, (size_t) data->flen);
         if (fwrite(buf, size, 1, stdout) != 1) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_WRITE;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_WRITE);
+            tsk_error_set_errstr(
                 "blkls_lib: error writing to stdout: %s", strerror(errno));
             return TSK_WALK_ERROR;
         }
@@ -219,7 +219,7 @@ tsk_fs_blkls(TSK_FS_INFO * fs, TSK_FS_BLKLS_FLAG_ENUM a_blklsflags,
     if (a_blklsflags & TSK_FS_BLKLS_SLACK) {
         /* get the info on each allocated inode */
         if (fs->inode_walk(fs, fs->first_inum, fs->last_inum,
-                TSK_FS_META_FLAG_ALLOC, slack_inode_act, &data))
+                TSK_FS_META_FLAG_ALLOC,slack_inode_act, &data))
             return 1;
     }
     else if (a_blklsflags & TSK_FS_BLKLS_LIST) {
@@ -234,8 +234,8 @@ tsk_fs_blkls(TSK_FS_INFO * fs, TSK_FS_BLKLS_FLAG_ENUM a_blklsflags,
 #ifdef TSK_WIN32
         if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_WRITE;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_WRITE);
+            tsk_error_set_errstr(
                 "blkls_lib: error setting stdout to binary: %s",
                 strerror(errno));
             return 1;

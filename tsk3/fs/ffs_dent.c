@@ -1,12 +1,12 @@
 /*
 ** ffs_dent
-** The  Sleuth Kit 
+** The  Sleuth Kit
 **
-** File name layer for a FFS/UFS image 
+** File name layer for a FFS/UFS image
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2006 Brian Carrier.  All rights reserved 
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2003-2006 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -97,8 +97,8 @@ ffs_dent_copy(FFS_INFO * ffs, char *ffs_dent, TSK_FS_NAME * fs_name)
     }
     else {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "ffs_dent_copy: Unknown FS type");
         return 1;
     }
@@ -109,7 +109,7 @@ ffs_dent_copy(FFS_INFO * ffs, char *ffs_dent, TSK_FS_NAME * fs_name)
 
 
 /*
- * @param a_is_del Set to 1 if block is from a deleted directory. 
+ * @param a_is_del Set to 1 if block is from a deleted directory.
  */
 static TSK_RETVAL_ENUM
 ffs_dent_parse_block(FFS_INFO * ffs, TSK_FS_DIR * fs_dir, uint8_t a_is_del,
@@ -127,7 +127,7 @@ ffs_dent_parse_block(FFS_INFO * ffs, TSK_FS_DIR * fs_dir, uint8_t a_is_del,
         return TSK_ERR;
 
     /* update each time by the actual length instead of the
-     ** recorded length so we can view the deleted entries 
+     ** recorded length so we can view the deleted entries
      */
     for (idx = 0; idx <= len - FFS_DIRSIZ_lcl(1); idx += minreclen) {
         unsigned int namelen = 0;
@@ -153,10 +153,10 @@ ffs_dent_parse_block(FFS_INFO * ffs, TSK_FS_DIR * fs_dir, uint8_t a_is_del,
         /* what is the minimum size needed for this entry */
         minreclen = FFS_DIRSIZ_lcl(namelen);
 
-        /* Perform a couple sanity checks 
+        /* Perform a couple sanity checks
          ** OpenBSD never zeros the inode number, but solaris
          ** does.  These checks will hopefully catch all non
-         ** entries 
+         ** entries
          */
         if ((inode > fs->last_inum) ||  // inode is unsigned
             (namelen > FFS_MAXNAMLEN) ||        // namelen is unsigned
@@ -215,15 +215,15 @@ ffs_dent_parse_block(FFS_INFO * ffs, TSK_FS_DIR * fs_dir, uint8_t a_is_del,
 /** \internal
  * Process a directory and load up FS_DIR with the entries. If a pointer to
  * an already allocated FS_DIR struture is given, it will be cleared.  If no existing
- * FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return 
- * value is error or corruption, then the FS_DIR structure could  
- * have entries (depending on when the error occured). 
+ * FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return
+ * value is error or corruption, then the FS_DIR structure could
+ * have entries (depending on when the error occured).
  *
  * @param a_fs File system to analyze
  * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
- * structure or a new structure. 
+ * structure or a new structure.
  * @param a_addr Address of directory to process.
- * @returns error, corruption, ok etc. 
+ * @returns error, corruption, ok etc.
  */
 TSK_RETVAL_ENUM
 ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
@@ -245,15 +245,15 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     if (a_addr < a_fs->first_inum || a_addr > a_fs->last_inum) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr(
             "ffs_dir_open_meta: Invalid inode value: %" PRIuINUM, a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "ffs_dir_open_meta: NULL fs_attr argument given");
         return TSK_ERR;
     }
@@ -281,8 +281,7 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if ((fs_dir->fs_file =
             tsk_fs_file_open_meta(a_fs, NULL, a_addr)) == NULL) {
         tsk_error_reset();
-        strncat(tsk_errstr2, " - ffs_dir_open_meta",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_error_errstr2_concat("- ffs_dir_open_meta");
         return TSK_COR;
     }
 
@@ -300,8 +299,7 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             TSK_FS_FILE_WALK_FLAG_SLACK,
             tsk_fs_load_file_action, (void *) &load_file)) {
         tsk_error_reset();
-        strncat(tsk_errstr2, " - ffs_dir_open_meta",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_error_errstr2_concat("- ffs_dir_open_meta");
         free(dirbuf);
         return TSK_COR;
     }
@@ -309,8 +307,8 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     /* Not all of the directory was copied, so we return */
     if (load_file.left > 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_FWALK;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+        tsk_error_set_errstr(
             "ffs_dir_open_meta: Error reading directory %" PRIuINUM,
             a_addr);
         free(dirbuf);

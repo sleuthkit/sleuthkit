@@ -157,6 +157,7 @@
 		02F9DE670D9BFCF2009C3F0E /* mmls.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = mmls.cpp; sourceTree = "<group>"; };
 		02F9DE680D9BFCF2009C3F0E /* mmstat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = mmstat.cpp; sourceTree = "<group>"; };
 		D721CF8A126B5A3500AA2B16 /* tsk_gettimes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tsk_gettimes.cpp; sourceTree = "<group>"; };
+		D7864D7A134E2EFC00036A41 /* tsk_lock.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = tsk_lock.c; sourceTree = "<group>"; };
 		D79CAB5F1215B2A4004F70CE /* tsk_auto_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tsk_auto_i.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -271,6 +272,7 @@
 		026FB38C0D19C867000434C7 /* base */ = {
 			isa = PBXGroup;
 			children = (
+				D7864D7A134E2EFC00036A41 /* tsk_lock.c */,
 				026FB3B20D19C868000434C7 /* md5c.c */,
 				026FB3B50D19C868000434C7 /* mymalloc.c */,
 				026FB3B80D19C868000434C7 /* sha1c.c */,

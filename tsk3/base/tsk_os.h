@@ -2,7 +2,7 @@
 ** The Sleuth Kit 
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2004-2005 Brian Carrier.  All rights reserved
+** Copyright (c) 2004-2011 Brian Carrier.  All rights reserved
 */
 
 /** \file tsk_os.h
@@ -60,6 +60,7 @@
 // Visual Studio / Windows
 #ifdef _MSC_VER
 #define TSK_WIN32
+#define TSK_MULTITHREAD_LIB
 
 #ifndef UNICODE
 #define UNICODE

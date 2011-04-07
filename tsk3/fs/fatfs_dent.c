@@ -1,12 +1,12 @@
 /*
 ** fatfs_dent
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** file name layer support for the FAT file system
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -32,13 +32,13 @@
  * the basic goal of this code is to parse directory entry structures for
  * file names.  The main function is fatfs_parse_buf, which parses
  * a buffer and stores the entries in FS_DIR.  That structure is then
- * used by dir_get() or dir_walk() to provide the data back to the user. 
+ * used by dir_get() or dir_walk() to provide the data back to the user.
  *
  * One of the odd aspects of this code is that the 'inode' values are
  * the 'slot-address'.  Refer to the document on how FAT was implemented
  * for more details. This means that we need to search for the actual
  * 'inode' address for the '.' and '..' entries though!  The search
- * for '..' is quite painful if this code is called from a random 
+ * for '..' is quite painful if this code is called from a random
  * location.  It does save what the parent is though, so the search
  * only has to be done once per session.
  */
@@ -84,8 +84,10 @@ fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum,
 {
     size_t q;
 
+    tsk_take_lock(&fatfs->dir_lock);
     for (q = 0; q < fatfs->dir_buf_next; q++) {
         if (fatfs->dir_buf[q] == dir_inum) {
+            tsk_release_lock(&fatfs->dir_lock);
             return 0;
         }
     }
@@ -97,11 +99,13 @@ fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum,
         if ((fatfs->dir_buf =
                 (TSK_INUM_T *) tsk_realloc(fatfs->dir_buf,
                     fatfs->dir_buf_size * sizeof(TSK_INUM_T))) == NULL) {
+            tsk_release_lock(&fatfs->dir_lock);
             return 1;
         }
         if ((fatfs->par_buf =
                 (TSK_INUM_T *) tsk_realloc(fatfs->par_buf,
                     fatfs->dir_buf_size * sizeof(TSK_INUM_T))) == NULL) {
+            tsk_release_lock(&fatfs->dir_lock);
             return 1;
         }
     }
@@ -110,19 +114,20 @@ fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum,
     fatfs->dir_buf[fatfs->dir_buf_next] = dir_inum;
     fatfs->par_buf[fatfs->dir_buf_next] = par_inum;
     fatfs->dir_buf_next++;
+    tsk_release_lock(&fatfs->dir_lock);
     return 0;
 }
 
-/* 
- * Process the contents of a directory and add them to FS_DIR. 
- * 
+/*
+ * Process the contents of a directory and add them to FS_DIR.
+ *
  * @param fatfs File system information structure
- * @param a_fs_dir Structure to store the files in. 
+ * @param a_fs_dir Structure to store the files in.
  * @param list_seen List of directory inodes that have been seen thus far in
- * directory walking (can be a pointer to a NULL pointer on first call). 
- * @param buf Buffer that contains the directory contents. 
+ * directory walking (can be a pointer to a NULL pointer on first call).
+ * @param buf Buffer that contains the directory contents.
  * @param len Length of buffer in bytes (must be a multiple of sector size)
- * @param addrs Array where each element is the original address of the 
+ * @param addrs Array where each element is the original address of the
  * corresponding block in buf (size of array is number of blocks in directory).
  *
  * @return -1 on error, 0 on success, and 1 to stop
@@ -142,8 +147,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
     if (buf == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "fatfs_dent_parse_buf: buffer is NULL");
         return TSK_ERR;
     }
@@ -164,8 +169,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
         if (ibase > fs->last_inum) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_ARG;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_ARG);
+            tsk_error_set_errstr(
                 "fatfs_parse: inode address is too large");
             tsk_fs_name_free(fs_name);
             return TSK_COR;
@@ -205,14 +210,14 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
             inode = ibase + idx;
 
-            /* Take care of the name 
+            /* Take care of the name
              * Copy a long name to a buffer and take action if it
              * is a small name */
             if ((dir->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
                 fatfs_dentry_lfn *dirl = (fatfs_dentry_lfn *) dir;
 
-                /* Store the name in dinfo until we get the 8.3 name 
-                 * Use the checksum to identify a new sequence 
+                /* Store the name in dinfo until we get the 8.3 name
+                 * Use the checksum to identify a new sequence
                  * */
                 if (((dirl->seq & FATFS_LFN_SEQ_FIRST)
                         && (dirl->seq != FATFS_SLOT_DELETED))
@@ -307,8 +312,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
                     if (retVal != TSKconversionOK) {
                         tsk_error_reset();
-                        tsk_errno = TSK_ERR_FS_UNICODE;
-                        snprintf(tsk_errstr, TSK_ERRSTR_L,
+                        tsk_error_set_errno(TSK_ERR_FS_UNICODE);
+                        tsk_error_set_errstr(
                             "fatfs_parse: Error converting FAT LFN to UTF8: %d",
                             retVal);
                         continue;
@@ -324,7 +329,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     lfninfo.start = FATFS_MAXNAMLEN_UTF8 - 1;
                     name_ptr = fs_name->shrt_name;      // put 8.3 into shrt_name
                 }
-                /* We don't have a LFN, so put the short name in 
+                /* We don't have a LFN, so put the short name in
                  * fs_name->name */
                 else {
                     fs_name->shrt_name[0] = '\0';
@@ -332,7 +337,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                 }
 
 
-                /* copy in the short name into the place specified above. 
+                /* copy in the short name into the place specified above.
                  * Skip spaces and put in the . */
                 a = 0;
                 for (b = 0; b < 8; b++) {
@@ -382,18 +387,20 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
             /* Handle the . and .. entries specially
              * The current inode 'address' they have is for the current
              * slot in the cluster, but it needs to refer to the original
-             * slot 
+             * slot
              */
             if (TSK_FS_ISDOT(fs_name->name)) {
                 if (fs_name->name[1] == '\0') {
                     inode = fs_name->meta_addr =
                         a_fs_dir->fs_file->meta->addr;
                 }
-                /* for the parent directory, look up in the list that 
+                /* for the parent directory, look up in the list that
                  * is maintained in fafs_info */
                 else if (fs_name->name[1] == '.') {
                     size_t q;
                     uint8_t dir_found = 0;
+
+                    tsk_take_lock(&fatfs->dir_lock);
                     for (q = 0; q < fatfs->dir_buf_next; q++) {
                         if (fatfs->dir_buf[q] ==
                             a_fs_dir->fs_file->meta->addr) {
@@ -402,14 +409,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                             break;
                         }
                     }
+                    tsk_release_lock(&fatfs->dir_lock);
 
-                    if ((dir_found == 0) && (fs->isOrphanHunting)) {
-                        /* if we are currently scanning the fs to determine the orphan files,
-                         * then we do not care about the value of '..' and this can only cause
-                         * infinite loop problems */
-                        inode = fs_name->meta_addr = 0;
-                        dir_found = 1;
-                    }
                     if ((dir_found == 0)
                         && (addrs[0] == fatfs->firstdatasect)) {
                         /* if we are currently in the root directory, we aren't going to find
@@ -438,6 +439,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                             fprintf(stderr,
                                 "fatfs_dent_parse_buf: Finished walking directory to find parent\n");
 
+                        tsk_take_lock(&fatfs->dir_lock);
                         for (q = 0; q < fatfs->dir_buf_next; q++) {
                             if (fatfs->dir_buf[q] ==
                                 a_fs_dir->fs_file->meta->addr) {
@@ -447,7 +449,9 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                                 break;
                             }
                         }
-                        // if we did not find it, then it was probably 
+                        tsk_release_lock(&fatfs->dir_lock);
+
+                        // if we did not find it, then it was probably
                         // from the orphan directory...
                         if (dir_found == 0)
                             inode = fs_name->meta_addr =
@@ -536,13 +540,13 @@ fatfs_dent_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     load->curdirptr = (char *) ((uintptr_t) load->curdirptr + len);
     load->dirleft -= len;
 
-    /* fill in the stack of addresses of sectors 
+    /* fill in the stack of addresses of sectors
      *
      * if we are at the last entry, then realloc more */
     if (load->addridx == load->addrsize) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "fatfs_dent_walk: Trying to put more sector address in stack than were allocated (%lu)",
             (long) load->addridx);
         return TSK_WALK_ERROR;
@@ -561,15 +565,15 @@ fatfs_dent_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 /** \internal
 * Process a directory and load up FS_DIR with the entries. If a pointer to
 * an already allocated FS_DIR struture is given, it will be cleared.  If no existing
-* FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return 
-* value is error or corruption, then the FS_DIR structure could  
-* have entries (depending on when the error occured). 
+* FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return
+* value is error or corruption, then the FS_DIR structure could
+* have entries (depending on when the error occured).
 *
 * @param a_fs File system to analyze
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
-* structure or a new structure. 
+* structure or a new structure.
 * @param a_addr Address of directory to process.
-* @returns error, corruption, ok etc. 
+* @returns error, corruption, ok etc.
 */
 
 TSK_RETVAL_ENUM
@@ -587,16 +591,16 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     if ((a_addr < a_fs->first_inum) || (a_addr > a_fs->last_inum)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_WALK_RNG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr(
             "fatfs_dir_open_meta: invalid a_addr value: %" PRIuINUM "\n",
             a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "fatfs_dir_open_meta: NULL fs_attr argument given");
         return TSK_ERR;
     }
@@ -619,8 +623,8 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     fs_dir->fs_file = tsk_fs_file_open_meta(a_fs, NULL, a_addr);
     if (fs_dir->fs_file == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_INODE_NUM;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr(
             "fatfs_dir_open_meta: %" PRIuINUM " is not a valid inode",
             a_addr);
         return TSK_COR;
@@ -649,7 +653,7 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     load.dirleft = (size_t) size;
 
     /* We are going to save the address of each sector in the directory
-     * in a stack - they are needed to determine the inode address.  
+     * in a stack - they are needed to determine the inode address.
      */
     load.addrsize = (size_t) (len / fatfs->ssize);
     addrbuf =
@@ -667,8 +671,7 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (tsk_fs_file_walk(fs_dir->fs_file,
             TSK_FS_FILE_WALK_FLAG_SLACK,
             fatfs_dent_action, (void *) &load)) {
-        strncat(tsk_errstr2, " - fatfs_dir_open_meta",
-            TSK_ERRSTR_L - strlen(tsk_errstr2));
+        tsk_error_errstr2_concat("- fatfs_dir_open_meta");
         free(dirbuf);
         free(addrbuf);
         return TSK_COR;
@@ -677,8 +680,8 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     /* We did not copy the entire directory, which occurs if an error occured */
     if (load.dirleft > 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_FWALK;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+        tsk_error_set_errstr(
             "fatfs_dir_open_meta: Error reading directory %" PRIuINUM,
             a_addr);
 
@@ -704,7 +707,7 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         if (fs_name == NULL)
             return TSK_ERR;
 
-        // MBR Entry 
+        // MBR Entry
         strncpy(fs_name->name, FATFS_MBRNAME, fs_name->name_size);
         fs_name->meta_addr = FATFS_MBRINO(a_fs);
         fs_name->type = TSK_FS_NAME_TYPE_VIRT;
@@ -714,7 +717,7 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             return TSK_ERR;
         }
 
-        // FAT1 Entry 
+        // FAT1 Entry
         strncpy(fs_name->name, FATFS_FAT1NAME, fs_name->name_size);
         fs_name->meta_addr = FATFS_FAT1INO(a_fs);
         fs_name->type = TSK_FS_NAME_TYPE_VIRT;
@@ -724,7 +727,7 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             return TSK_ERR;
         }
 
-        // FAT2 Entry 
+        // FAT2 Entry
         strncpy(fs_name->name, FATFS_FAT2NAME, fs_name->name_size);
         fs_name->meta_addr = FATFS_FAT2INO(a_fs);
         fs_name->type = TSK_FS_NAME_TYPE_VIRT;

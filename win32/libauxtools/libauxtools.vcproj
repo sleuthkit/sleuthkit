@@ -230,7 +230,15 @@
 				>
 			</File>
 			<File
+				RelativePath="$(ProjectDir)\..\..\tsk3\base\tsk_error_win32.cpp"
+				>
+			</File>
+			<File
 				RelativePath="$(ProjectDir)\..\..\tsk3\base\tsk_list.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\tsk3\base\tsk_lock.c"
 				>
 			</File>
 			<File

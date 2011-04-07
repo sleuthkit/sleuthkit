@@ -1,8 +1,8 @@
 /*
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -10,7 +10,7 @@
 
 /**
  * \file auto.cpp
- * Contains C++ code that creates the base file extraction automation class. 
+ * Contains C++ code that creates the base file extraction automation class.
  */
 
 #include "tsk_auto_i.h"
@@ -36,7 +36,7 @@ TskAuto::~TskAuto()
 
 /**
  * Opens the disk image to be analyzed.  This must be called before any
- * of the findFilesInXXX() methods. 
+ * of the findFilesInXXX() methods.
  *
  * @param a_numImg The number of images to open (will be > 1 for split images).
  * @param a_images The path to the image files (the number of files must
@@ -60,7 +60,7 @@ uint8_t
 }
 
 
-/** 
+/**
  * Closes the handles to the open disk image. Should be called after
  * you have completed analysis of the image.
  */
@@ -76,7 +76,7 @@ void
 
 /**
  * Set the attributes for the volumes that should be processed.
- * The default settings are for Allocated Non-Meta volumes only. 
+ * The default settings are for Allocated Non-Meta volumes only.
  * This must be called before the findFilesInXX() method.
  * @param vs_flags Flags to use for filtering
  */
@@ -101,17 +101,17 @@ void
 
 
 /**
- * Starts in sector 0 of the opened disk images and looks for a 
+ * Starts in sector 0 of the opened disk images and looks for a
  * volume or file system. Will call processFile() on each file
- * that is found. 
+ * that is found.
  * @return 1 on error, 0 on success
  */
 uint8_t TskAuto::findFilesInImg()
 {
     if (!m_img_info) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_NOTOPEN;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "findFilesInImg\n");
+        tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
+        tsk_error_set_errstr("findFilesInImg\n");
         return 1;
     }
     if (findFilesInVs(0)) {
@@ -124,7 +124,7 @@ uint8_t TskAuto::findFilesInImg()
 
 
 /** \internal
- * Volume system walk callback function that will analyze 
+ * Volume system walk callback function that will analyze
  * each volume to find a file system.
  */
 TSK_WALK_RET_ENUM
@@ -148,7 +148,7 @@ TSK_WALK_RET_ENUM
         return TSK_WALK_STOP;
     }
     else if (retval2 != TSK_OK) {
-        // if we return ERROR here, then the walk will stop.  But, the 
+        // if we return ERROR here, then the walk will stop.  But, the
         // error could just be because we looked into an unallocated volume.
         // do any special error handling / reporting here.
         tsk_error_reset();
@@ -159,10 +159,10 @@ TSK_WALK_RET_ENUM
 
 
 /**
- * Starts in a specified sector of the opened disk images and looks for a 
+ * Starts in a specified sector of the opened disk images and looks for a
  * volume system or file system. Will call processFile() on each file
- * that is found. 
- * @param a_start Byte offset to start analyzing from. 
+ * that is found.
+ * @param a_start Byte offset to start analyzing from.
  * @param a_vtype Volume system type to analyze
  * @return 1 on error, 0 on success
  */
@@ -170,14 +170,14 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
 {
     if (!m_img_info) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_NOTOPEN;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "findFilesInVs\n");
+        tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
+        tsk_error_set_errstr("findFilesInVs\n");
         return 1;
     }
 
     TSK_VS_INFO *
         vs_info;
-    // USE mm_walk to get the volumes 
+    // USE mm_walk to get the volumes
     if ((vs_info =
             tsk_vs_open(m_img_info, a_start,
                 a_vtype)) == NULL) {
@@ -210,10 +210,10 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
 }
 
 /**
- * Starts in a specified sector of the opened disk images and looks for a 
+ * Starts in a specified sector of the opened disk images and looks for a
  * volume system or file system. Will call processFile() on each file
- * that is found. 
- * @param a_start Byte offset to start analyzing from. 
+ * that is found.
+ * @param a_start Byte offset to start analyzing from.
  * @return 1 on error, 0 on success
  */
 uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
@@ -222,8 +222,8 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
 }
 
 
-/** 
- * Starts in a specified sector of the opened disk images and looks for a 
+/**
+ * Starts in a specified sector of the opened disk images and looks for a
  * file system. Will call processFile() on each file
  * that is found.  Same as findFilesInFs, but gives more detailed return values.
  * @param a_start Byte offset to start analyzing from. 
@@ -234,8 +234,8 @@ TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_
 {
     if (!m_img_info) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_NOTOPEN;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "findFilesInFsRet\n");        
+        tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
+        tsk_error_set_errstr( "findFilesInFsRet\n");
         return TSK_ERR;
     }
 
@@ -250,17 +250,17 @@ TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_
 
         return TSK_ERR;
     }
-    
+
     TSK_RETVAL_ENUM
         retval = findFilesInFsInt(fs_info, fs_info->root_inum);
     tsk_fs_close(fs_info);
     return retval;
 }
 
-/** 
- * Starts in a specified sector of the opened disk images and looks for a 
+/**
+ * Starts in a specified sector of the opened disk images and looks for a
  * file system. Will call processFile() on each file
- * that is found. 
+ * that is found.
  *
  * @param a_start Byte offset of file system starting location.
  *
@@ -275,10 +275,10 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start)
 }
 
 
-/** 
- * Starts in a specified sector of the opened disk images and looks for a 
+/**
+ * Starts in a specified sector of the opened disk images and looks for a
  * file system. Will call processFile() on each file
- * that is found. 
+ * that is found.
  *
  * @param a_start Byte offset of file system starting location.
  * @param a_ftype Type of file system that is located at the offset.
@@ -293,11 +293,11 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
         return 0;
 }
 
-/** 
- * Starts in a specified sector of the opened disk images and looks for a 
- * file system. Will start processing the file system at a specified 
+/**
+ * Starts in a specified sector of the opened disk images and looks for a
+ * file system. Will start processing the file system at a specified
  * file system. Will call processFile() on each file
- * that is found in that directory. 
+ * that is found in that directory.
  *
  * @param a_start Byte offset of file system starting location.
  * @param a_ftype Type of file system that will be analyzed.
@@ -309,8 +309,8 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype, TSK_
 {
     if (!m_img_info) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_AUTO_NOTOPEN;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "findFilesInFs\n");        
+        tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
+        tsk_error_set_errstr( "findFilesInFs\n");
         return 1;
     }
 
@@ -336,11 +336,11 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype, TSK_
 }
 
 
-/** 
- * Starts in a specified sector of the opened disk images and looks for a 
- * file system. Will start processing the file system at a specified 
+/**
+ * Starts in a specified sector of the opened disk images and looks for a
+ * file system. Will start processing the file system at a specified
  * file system. Will call processFile() on each file
- * that is found in that directory. 
+ * that is found in that directory.
  *
  * @param a_start Byte offset of file system starting location.
  * @param a_inum inum to start walking files system at.
@@ -354,7 +354,7 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
 
 
 /** \internal
- * file name walk callback.  Walk the contents of each file 
+ * file name walk callback.  Walk the contents of each file
  * that is found.
  */
 TSK_WALK_RET_ENUM
@@ -377,7 +377,7 @@ TSK_WALK_RET_ENUM
 
 
 /* Internal method that the other findFilesInFs can call after they
- * have opened FS_INFO. 
+ * have opened FS_INFO.
  */
 TSK_RETVAL_ENUM
     TskAuto::findFilesInFsInt(TSK_FS_INFO * a_fs_info, TSK_INUM_T a_inum)
@@ -402,13 +402,13 @@ TSK_RETVAL_ENUM
 }
 
 
-/** 
- * Method that can be used from within processFile() to look at each 
+/**
+ * Method that can be used from within processFile() to look at each
  * attribute that a file may have.  This will call the processAttribute()
  * method (which you must implement) on each of the attributes in the file.
  * @param fs_file file  details
  * @param path full path of parent directory
- * @returns 1 if the file system processing should stop and not process more files. 
+ * @returns 1 if the file system processing should stop and not process more files.
  */
 TSK_RETVAL_ENUM
 TskAuto::processAttributes(TSK_FS_FILE * fs_file, const char *path)
@@ -426,9 +426,9 @@ TskAuto::processAttributes(TSK_FS_FILE * fs_file, const char *path)
 
 
 /**
- * Utility method to help determine if a file is an NTFS file system file (such as $MFT). 
+ * Utility method to help determine if a file is an NTFS file system file (such as $MFT).
  *
- * @returns 1 if the file is an NTFS System file, 0 if not. 
+ * @returns 1 if the file is an NTFS System file, 0 if not.
  */
 uint8_t
     TskAuto::isNtfsSystemFiles(TSK_FS_FILE * a_fs_file, const char *a_path)
@@ -443,9 +443,9 @@ uint8_t
 }
 
 /**
- * Utility method to help determine if a file is a FAT file system file (such as $MBR). 
+ * Utility method to help determine if a file is a FAT file system file (such as $MBR).
  *
- * @returns 1 if the file is an FAT System file, 0 if not. 
+ * @returns 1 if the file is an FAT System file, 0 if not.
  */
 uint8_t TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
 {
@@ -465,7 +465,7 @@ uint8_t TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
 /**
  * Utility method to help determine if a file is a . or .. directory.
  *
- * @returns 1 if the file is a dot directory, 0 if not. 
+ * @returns 1 if the file is a dot directory, 0 if not.
  */
 uint8_t TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
 {
@@ -487,7 +487,7 @@ uint8_t TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
 /**
  * Utility method to help determine if a file is a directory.
  *
- * @returns 1 if the file is a directory, 0 if not. 
+ * @returns 1 if the file is a directory, 0 if not.
  */
 uint8_t TskAuto::isDir(TSK_FS_FILE * a_fs_file)
 {
@@ -501,7 +501,7 @@ uint8_t TskAuto::isDir(TSK_FS_FILE * a_fs_file)
 /**
  * Utility method to help determine if a file is a file (and not a directory).
  *
- * @returns 1 if the file is a file, 0 if not. 
+ * @returns 1 if the file is a file, 0 if not.
  */
 uint8_t TskAuto::isFile(TSK_FS_FILE * a_fs_file)
 {
@@ -515,7 +515,7 @@ uint8_t TskAuto::isFile(TSK_FS_FILE * a_fs_file)
 /**
  * Utility method to help determine if an attribute is the default type for the file/dir.
  *
- * @returns 1 if the attribute is a default type, 0 if not. 
+ * @returns 1 if the attribute is a default type, 0 if not.
  */
 uint8_t
     TskAuto::isDefaultType(TSK_FS_FILE * a_fs_file,
@@ -532,7 +532,7 @@ uint8_t
 /**
  * Utility method to help determine if an attribute is non-resident (meaning it uses blocks to store data)
  *
- * @returns 1 if the attribute is non-resident, 0 if not. 
+ * @returns 1 if the attribute is non-resident, 0 if not.
  */
 uint8_t TskAuto::isNonResident(const TSK_FS_ATTR * a_fs_attr)
 {

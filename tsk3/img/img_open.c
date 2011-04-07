@@ -1,6 +1,6 @@
 /*
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All Rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
  * Copyright (c) 2005 Brian Carrier.  All rights reserved
  *
  * tsk_img_open
@@ -32,12 +32,12 @@ typedef int bool;
 
 /**
  * \ingroup imglib
- * Opens a single (non-split) disk image file so that it can be read.  This is a 
+ * Opens a single (non-split) disk image file so that it can be read.  This is a
  * wrapper around tsk_img_open().  See it for more details on detection etc. See
  * tsk_img_open_sing_utf8() for a version of this function that always takes
- * UTF-8 as input. 
+ * UTF-8 as input.
  *
- * @param a_image The path to the image file 
+ * @param a_image The path to the image file
  * @param type The disk image type (can be autodetection)
  * @param a_ssize Size of device sector in bytes (or 0 for default)
  *
@@ -57,10 +57,10 @@ tsk_img_open_sing(const TSK_TCHAR * a_image, TSK_IMG_TYPE_ENUM type,
  * Opens one or more disk image files so that they can be read.  If a file format
  * type is specified, this function will call the specific routine to open the file.
  * Otherwise, it will detect the type (it will default to raw if no specific type can
- * be detected).   This function must be called before a disk image can be read from. 
+ * be detected).   This function must be called before a disk image can be read from.
  * Note that the data type used to store the image paths is a TSK_TCHAR, which changes
  * depending on a Unix or Windows build.  If you will always have UTF8, then consider
- * using tsk_img_open_utf8(). 
+ * using tsk_img_open_utf8().
  *
  * @param num_img The number of images to open (will be > 1 for split images).
  * @param images The path to the image files (the number of files must
@@ -82,34 +82,34 @@ tsk_img_open(int num_img,
 
     if ((num_img == 0) || (images[0] == NULL)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_NOFILE;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "tsk_img_open");
+        tsk_error_set_errno(TSK_ERR_IMG_NOFILE);
+        tsk_error_set_errstr("tsk_img_open");
         return NULL;
     }
-    
+
     if ((a_ssize > 0) && (a_ssize < 512)) {
-        tsk_error_reset(); 
-        tsk_errno = TSK_ERR_IMG_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "sector size is less than 512 bytes (%d)", a_ssize);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("sector size is less than 512 bytes (%d)", a_ssize);
         return NULL;
     }
-    
+
     if ((a_ssize % 512) != 0) {
-        tsk_error_reset(); 
-        tsk_errno = TSK_ERR_IMG_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "sector size is not a multiple of 512 (%d)", a_ssize);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("sector size is not a multiple of 512 (%d)", a_ssize);
         return NULL;
     }
-    
+
 
     if (tsk_verbose)
         TFPRINTF(stderr,
             _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %s\n"),
             type, num_img, images[0]);
 
-    /* If no type is given, then we use the autodetection methods 
+    /* If no type is given, then we use the autodetection methods
      * In case the image file matches the signatures of multiple formats,
-     * we try all of the embedded formats 
+     * we try all of the embedded formats
      */
     if (type == TSK_IMG_TYPE_DETECT) {
         TSK_IMG_INFO *img_set = NULL;
@@ -136,7 +136,7 @@ tsk_img_open(int num_img,
         }
         else {
             // If AFF is otherwise happy except for a password, stop trying to guess
-            if (tsk_errno == TSK_ERR_IMG_PASSWD) {
+            if (tsk_error_get_errno() == TSK_ERR_IMG_PASSWD) {
                 return NULL;
             }
             tsk_error_reset();
@@ -153,8 +153,8 @@ tsk_img_open(int num_img,
                 img_set->close(img_set);
                 img_info->close(img_info);
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_IMG_UNKTYPE;
-                snprintf(tsk_errstr, TSK_ERRSTR_L, "EWF or %s", set);
+                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+                tsk_error_set_errstr("EWF or %s", set);
                 return NULL;
             }
         }
@@ -162,7 +162,7 @@ tsk_img_open(int num_img,
             tsk_error_reset();
         }
 #endif
-        // if any of the non-raw formats were detected, then use it. 
+        // if any of the non-raw formats were detected, then use it.
         if (img_set != NULL)
             return img_set;
 
@@ -171,7 +171,7 @@ tsk_img_open(int num_img,
             if ((img_info = raw_open(images[0], a_ssize)) != NULL) {
                 return img_info;
             }
-            else if (tsk_errno) {
+            else if (tsk_error_get_errno() != 0) {
                 return NULL;
             }
         }
@@ -179,7 +179,7 @@ tsk_img_open(int num_img,
             if ((img_info = split_open(num_img, images, a_ssize)) != NULL) {
                 return img_info;
             }
-            else if (tsk_errno) {
+            else if (tsk_error_get_errno() != 0) {
                 return NULL;
             }
         }
@@ -198,18 +198,16 @@ tsk_img_open(int num_img,
             else {
 #endif
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_IMG_STAT;
-                snprintf(tsk_errstr, TSK_ERRSTR_L, "%" PRIttocTSK " : %s",
+                tsk_error_set_errno(TSK_ERR_IMG_STAT);
+                tsk_error_set_errstr("%" PRIttocTSK " : %s",
                     images[0], strerror(errno));
                 return NULL;
 #if defined(TSK_WIN32) || defined(__CYGWIN__)
             }
 #endif
         }
-
-        tsk_errno = TSK_ERR_IMG_UNKTYPE;
-        tsk_errstr[0] = '\0';
-        tsk_errstr2[0] = '\0';
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
         return NULL;
     }
 
@@ -256,8 +254,8 @@ tsk_img_open(int num_img,
 
     default:
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_UNSUPTYPE;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "%d", type);
+        tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
+        tsk_error_set_errstr("%d", type);
         return NULL;
     }
 
@@ -269,10 +267,10 @@ tsk_img_open(int num_img,
 * \ingroup imglib
  * Opens a single (non-split) disk image file so that it can be read.  This version
  * always takes a UTF-8 encoding of the disk image.  See tsk_img_open_sing() for a
- * version that takes a wchar_t or char depending on the platform. 
- * This is a wrapper around tsk_img_open().  See it for more details on detection etc. 
+ * version that takes a wchar_t or char depending on the platform.
+ * This is a wrapper around tsk_img_open().  See it for more details on detection etc.
  *
- * @param a_image The UTF-8 path to the image file 
+ * @param a_image The UTF-8 path to the image file
  * @param type The disk image type (can be autodetection)
  * @param a_ssize Size of device sector in bytes (or 0 for default)
  *
@@ -290,8 +288,8 @@ tsk_img_open_utf8_sing(const char *a_image, TSK_IMG_TYPE_ENUM type,
 /**
  * \ingroup imglib
  * Opens one or more disk image files so that they can be read.  This is a wrapper
- * around tsk_img_open() and this version always takes a UTF-8 encoding of the 
- * image files.  See its description for more details. 
+ * around tsk_img_open() and this version always takes a UTF-8 encoding of the
+ * image files.  See its description for more details.
  *
  * @param num_img The number of images to open (will be > 1 for split images).
  * @param images The path to the UTF-8 encoded image files (the number of files must
@@ -314,7 +312,7 @@ tsk_img_open_utf8(int num_img, const char *const images[],
         wchar_t **images16;
         int i;
 
-        // allocate a buffer to store the UTF-16 version of the images. 
+        // allocate a buffer to store the UTF-16 version of the images.
         if ((images16 =
                 (wchar_t **) tsk_malloc(sizeof(wchar_t *) * num_img)) ==
             NULL) {
@@ -342,8 +340,8 @@ tsk_img_open_utf8(int num_img, const char *const images[],
                 tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
                 &utf16, &utf16[ilen], TSKlenientConversion);
             if (retval2 != TSKconversionOK) {
-                tsk_errno = TSK_ERR_IMG_CONVERT;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+                tsk_error_set_errstr(
                     "tsk_img_open_utf8: Error converting image %s %d",
                     images[i], retval2);
                 goto tsk_utf8_cleanup;
@@ -372,7 +370,7 @@ tsk_img_open_utf8(int num_img, const char *const images[],
 #if 0
 /* This interface needs some more thought because the size of wchar is not standard.
  * If the goal i to provide a constant wchar interface, then we need to incorporate
- * UTF-32 to UTF-8 support as well.  If the goal is to provide a standard UTF-16 
+ * UTF-32 to UTF-8 support as well.  If the goal is to provide a standard UTF-16
  * interface, we should use another type besiddes wchar_t.
  */
 TSK_IMG_INFO *
@@ -413,7 +411,7 @@ tsk_img_open_utf16(int num_img,
             TSKConversionResult retval2;
 
 
-            // we allocate the buffer to be four times the utf-16 length. 
+            // we allocate the buffer to be four times the utf-16 length.
             ilen = wcslen(images[i]);
             ilen <<= 2;
 
@@ -429,8 +427,8 @@ tsk_img_open_utf16(int num_img,
                 &utf16[wcslen(images[i]) + 1], &utf8,
                 &utf8[ilen + 1], TSKlenientConversion);
             if (retval2 != TSKconversionOK) {
-                tsk_errno = TSK_ERR_IMG_CONVERT;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+                tsk_error_set_errstr(
                     "tsk_img_open_utf16: Error converting image %d %d", i,
                     retval2);
                 return NULL;

@@ -5,7 +5,7 @@
  * There are also callback-style functions that can be used to read
  * the data and partitions.
  *
- * Copyright (c) 2008>, Brian Carrier <carrier <at> sleuthkit <dot> org>
+ * Copyright (c) 2008-2011, Brian Carrier <carrier <at> sleuthkit <dot> org>
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without

@@ -2,7 +2,7 @@
 ** The Sleuth Kit 
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
@@ -31,9 +31,6 @@
 #ifndef _TSK_FS_I_H
 #define _TSK_FS_I_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 // Include the other internal TSK header files
 #include "tsk3/base/tsk_base_i.h"
@@ -45,6 +42,10 @@ extern "C" {
 
 #include <time.h>
 #include <locale.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #if !defined (TSK_WIN32)
 #include <sys/fcntl.h>
@@ -145,6 +146,7 @@ extern "C" {
 
     /* Orphan Directory Support */
     TSK_RETVAL_ENUM tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs);
+    uint8_t tsk_fs_dir_find_inum_named(TSK_FS_INFO *a_fs, TSK_INUM_T a_inum);
     extern uint8_t tsk_fs_dir_make_orphan_dir_meta(TSK_FS_INFO * a_fs,
         TSK_FS_META * a_fs_meta);
     extern uint8_t tsk_fs_dir_make_orphan_dir_name(TSK_FS_INFO * a_fs,
@@ -227,6 +229,11 @@ extern "C" {
     extern uint8_t tsk_fs_nofs_jblk_walk(TSK_FS_INFO * a_fs,
         TSK_INUM_T start, TSK_INUM_T end, int a_flags,
         TSK_FS_JBLK_WALK_CB a_action, void *a_ptr);
+
+    /* malloc/free with lock init/deinit */
+    extern TSK_FS_INFO *tsk_fs_malloc(size_t);
+    extern void tsk_fs_free(TSK_FS_INFO*);
+
 
 // Endian macros - actual functions in misc/
 

@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -266,7 +266,7 @@ hk_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     int db_cnt = 0, idx_cnt = 0, ig_cnt = 0;
 
     if (tsk_hdb_idxinitialize(hdb_info, dbtype)) {
-        snprintf(tsk_errstr2, TSK_ERRSTR_L, "hk_makeindex");
+        tsk_error_set_errstr2( "hk_makeindex");
         return 1;
     }
     fseek(hdb_info->hDb, 0, SEEK_SET);
@@ -301,7 +301,7 @@ hk_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 
         /* Add the entry to the index */
         if (tsk_hdb_idxaddentry(hdb_info, hash, offset)) {
-            snprintf(tsk_errstr2, TSK_ERRSTR_L, "hk_makeindex");
+            tsk_error_set_errstr2( "hk_makeindex");
             return 1;
         }
 
@@ -323,14 +323,14 @@ hk_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 
         /* Finish the index making process */
         if (tsk_hdb_idxfinalize(hdb_info)) {
-            snprintf(tsk_errstr2, TSK_ERRSTR_L, "hk_makeindex");
+            tsk_error_set_errstr2( "hk_makeindex");
             return 1;
         }
     }
     else {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_CORRUPT;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+        tsk_error_set_errstr(
                  "hk_makeindex: No valid entries found in database");
         return 1;
     }
@@ -345,6 +345,8 @@ hk_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
  * The entries in the DB following the one specified are also processed
  * if they have the same hash value and their name is different. 
  * The callback is called for each entry. 
+ *
+ * Note: This routine assumes that &hdb_info->lock is locked by the caller.
  *
  * @param hdb_info Data base to get data from.
  * @param hash MD5 hash value that was searched for
@@ -371,8 +373,8 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
 
     if (strlen(hash) != TSK_HDB_HTYPE_MD5_LEN) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr(
                  "hk_getentry: Invalid hash value: %s", hash);
         return 1;
     }
@@ -385,8 +387,8 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
 
         if (0 != fseeko(hdb_info->hDb, offset, SEEK_SET)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_READDB;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_READDB);
+            tsk_error_set_errstr(
                      "hk_getentry: Error seeking to get file name: %lu",
                      (unsigned long) offset);
             return 1;
@@ -398,8 +400,8 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
                 break;
             }
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_READDB;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_READDB);
+            tsk_error_set_errstr(
                      "hk_getentry: Error reading database");
             return 1;
         }
@@ -407,8 +409,8 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
         len = strlen(buf);
         if (len < TSK_HDB_HTYPE_MD5_LEN) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_CORRUPT;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+            tsk_error_set_errstr(
                      "hk_getentry: Invalid entry in database (too short): %s",
                      buf);
             return 1;
@@ -419,8 +421,8 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
                          ((flags & TSK_HDB_FLAG_EXT) ? TSK_HDB_MAXLEN :
                           0))) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_HDB_CORRUPT;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+            tsk_error_set_errstr(
                      "hk_getentry: Invalid entry in database: %s", buf);
             return 1;
         }
@@ -454,8 +456,8 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
 
     if (found == 0) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_HDB_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr(
                  "hk_getentry: Hash not found in file at offset: %lu",
                  (unsigned long) offset);
         return 1;

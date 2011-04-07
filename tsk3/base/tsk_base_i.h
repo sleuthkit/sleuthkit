@@ -1,16 +1,16 @@
 /*
  * The Sleuth Kit
- * 
+ *
  */
 
 /** \file tsk_base_i.h
- * Contains the general internal TSK type and function definitions.  
- * This is needed by the library as it is built. 
+ * Contains the general internal TSK type and function definitions.
+ * This is needed by the library as it is built.
  */
 #ifndef _TSK_BASE_I_H
 #define _TSK_BASE_I_H
 
-// include the autoconf header file 
+// include the autoconf header file
 #if HAVE_CONFIG_H
 #include "tsk3/tsk_config.h"
 #endif
@@ -33,6 +33,12 @@
 extern "C" {
 #endif
 
+
+extern void tsk_init_lock(tsk_lock_t *);
+extern void tsk_deinit_lock(tsk_lock_t *);
+extern void tsk_take_lock(tsk_lock_t *);
+extern void tsk_release_lock(tsk_lock_t *);
+
 #ifndef rounddown
 #define rounddown(x, y)	\
     ((((x) % (y)) == 0) ? (x) : \
@@ -50,15 +56,6 @@ extern "C" {
         const TSK_TCHAR * optstring);
 #endif
 
-
-
-/* Error handling */
-#define TSK_ERRSTR_L	512
-#define TSK_ERRSTR_PR_L	((TSK_ERRSTR_L << 2) + 64)
-
-    extern char tsk_errstr[TSK_ERRSTR_L];
-    extern char tsk_errstr2[TSK_ERRSTR_L];
-    extern char tsk_errstr_print[TSK_ERRSTR_PR_L];
 
 
 
@@ -188,16 +185,16 @@ extern "C" {
 
 /** \name Unicode */
 //@{
-    // basic check to see if a Unicode file has been included 
+    // basic check to see if a Unicode file has been included
     // in an app that is using this as a library
 #ifndef TSK_UNI_REPLACEMENT_CHAR
 
 /**************** UNICODE *******************/
 /*
  * Copyright 2001-2004 Unicode, Inc.
- * 
+ *
  * Disclaimer
- * 
+ *
  * This source code is provided as is by Unicode, Inc. No claims are
  * made as to fitness for any particular purpose. No warranties of any
  * kind are expressed or implied. The recipient agrees to determine
@@ -205,9 +202,9 @@ extern "C" {
  * purchased on magnetic or optical media from Unicode, Inc., the
  * sole remedy for any claim will be exchange of defective media
  * within 90 days of receipt.
- * 
+ *
  * Limitations on Rights to Redistribute This Code
- * 
+ *
  * Unicode, Inc. hereby grants the right to freely use the information
  * supplied in this file in the creation of products supporting the
  * Unicode Standard, and to make copies of this file in any form
@@ -228,7 +225,7 @@ extern "C" {
 
     Each routine converts the text between *sourceStart and sourceEnd,
     putting the result into the buffer between *targetStart and
-    targetEnd. Note: the end pointers are *after* the last item: e.g. 
+    targetEnd. Note: the end pointers are *after* the last item: e.g.
     *(sourceEnd - 1) is the last item.
 
     The return result indicates whether the conversion was successful,
@@ -266,7 +263,7 @@ extern "C" {
 	sequence is malformed.  When "TSKsourceIllegal" is returned, the source
 	value will point to the illegal value that caused the problem. E.g.,
 	in UTF-8 when a sequence is malformed, it points to the start of the
-	malformed sequence.  
+	malformed sequence.
 
     Author: Mark E. Davis, 1994.
     Rev History: Rick McGowan, fixes & updates May 2001.
@@ -290,9 +287,9 @@ extern "C" {
 
     typedef enum {
         TSKconversionOK,        ///< conversion successful
-        TSKsourceExhausted,     ///< partial character in source, but hit end 
-        TSKtargetExhausted,     ///< insuff. room in target for conversion 
-        TSKsourceIllegal        ///< source sequence is illegal/malformed 
+        TSKsourceExhausted,     ///< partial character in source, but hit end
+        TSKtargetExhausted,     ///< insuff. room in target for conversion
+        TSKsourceIllegal        ///< source sequence is illegal/malformed
     } TSKConversionResult;
 
     typedef enum {

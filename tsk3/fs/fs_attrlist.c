@@ -1,17 +1,17 @@
 /*
  ** fs_attrlist
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2008 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2008-2011 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  */
 
 /**
  * \file fs_attrlist.c
- * File that contains functions to process TSK_FS_ATTRLIST structures, which 
- * hold a linked list of TSK_FS_ATTR attribute structures. 
+ * File that contains functions to process TSK_FS_ATTRLIST structures, which
+ * hold a linked list of TSK_FS_ATTR attribute structures.
  */
 
 #include "tsk_fs_i.h"
@@ -53,7 +53,7 @@ tsk_fs_attrlist_free(TSK_FS_ATTRLIST * a_fs_attrlist)
 }
 
 /** \internal
- * Add a new attribute to the list.  
+ * Add a new attribute to the list.
  *
  * @param a_fs_attrlist List structure to add to
  * @param a_fs_attr Data attribute to add
@@ -65,8 +65,8 @@ tsk_fs_attrlist_add(TSK_FS_ATTRLIST * a_fs_attrlist,
 {
     if (a_fs_attrlist == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "Null list in tsk_fs_attrlist_add");
         return 1;
     }
@@ -85,8 +85,8 @@ tsk_fs_attrlist_add(TSK_FS_ATTRLIST * a_fs_attrlist,
             if ((fs_attr_cur->type == a_fs_attr->type)
                 && (fs_attr_cur->id == a_fs_attr->id)) {
                 tsk_error_reset();
-                tsk_errno = TSK_ERR_FS_ARG;
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+                tsk_error_set_errno(TSK_ERR_FS_ARG);
+                tsk_error_set_errstr(
                     "datalist_add: Type %d and Id %d already in list",
                     a_fs_attr->type, a_fs_attr->id);
                 return 1;
@@ -103,7 +103,7 @@ tsk_fs_attrlist_add(TSK_FS_ATTRLIST * a_fs_attrlist,
 
 
 
-/** 
+/**
  * \internal
  * Return either an empty element in the list or create a new one at the end
  *
@@ -124,16 +124,16 @@ tsk_fs_attrlist_getnew(TSK_FS_ATTRLIST * a_fs_attrlist,
 
     if (a_fs_attrlist == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "Null list in tsk_fs_attrlist_getnew()");
         return NULL;
     }
 
     if ((a_atype != TSK_FS_ATTR_NONRES) && (a_atype != TSK_FS_ATTR_RES)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "Invalid Type in tsk_fs_attrlist_getnew()");
         return NULL;
     }
@@ -197,9 +197,9 @@ tsk_fs_attrlist_markunused(TSK_FS_ATTRLIST * a_fs_attrlist)
 
 /**
  * \internal
- * Search the attribute list of TSK_FS_ATTR structures for an entry with a given 
- * type (no ID).  If more than one entry with the same type exists, the one with 
- * the lowest ID will be returned. 
+ * Search the attribute list of TSK_FS_ATTR structures for an entry with a given
+ * type (no ID).  If more than one entry with the same type exists, the one with
+ * the lowest ID will be returned.
  *
  * @param a_fs_attrlist Data list structure to search in
  * @param a_type Type of attribute to find
@@ -216,10 +216,9 @@ tsk_fs_attrlist_get(const TSK_FS_ATTRLIST * a_fs_attrlist,
 
     if (!a_fs_attrlist) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attrlist_get: Null list pointer");
-        tsk_errstr2[0] = '\0';
         return NULL;
     }
 
@@ -228,7 +227,7 @@ tsk_fs_attrlist_get(const TSK_FS_ATTRLIST * a_fs_attrlist,
         if ((fs_attr_cur->flags & TSK_FS_ATTR_INUSE)
             && (fs_attr_cur->type == a_type)) {
 
-            /* If we are looking for NTFS $Data, 
+            /* If we are looking for NTFS $Data,
              * then return default when we see it */
             if ((fs_attr_cur->type == TSK_FS_ATTR_TYPE_NTFS_DATA) &&
                 (fs_attr_cur->name == NULL)) {
@@ -242,8 +241,8 @@ tsk_fs_attrlist_get(const TSK_FS_ATTRLIST * a_fs_attrlist,
     }
 
     if (!fs_attr_ok) {
-        tsk_errno = TSK_ERR_FS_ATTR_NOTFOUND;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ATTR_NOTFOUND);
+        tsk_error_set_errstr(
             "tsk_fs_attrlist_get: Attribute %d not found", a_type);
         return NULL;
     }
@@ -254,12 +253,12 @@ tsk_fs_attrlist_get(const TSK_FS_ATTRLIST * a_fs_attrlist,
 
 /**
  * \internal
- * Search the attribute list of TSK_FS_ATTR structures for an entry with a given 
- * type and id.  
+ * Search the attribute list of TSK_FS_ATTR structures for an entry with a given
+ * type and id.
  *
  * @param a_fs_attrlist Data list structure to search in
  * @param a_type Type of attribute to find
- * @param a_id Id of attribute to find. 
+ * @param a_id Id of attribute to find.
  *
  * @return NULL is returned on error and if an entry could not be found.
  * tsk_errno will be set to TSK_ERR_FS_ATTR_NOTFOUND if entry could not be found.
@@ -272,10 +271,9 @@ tsk_fs_attrlist_get_id(const TSK_FS_ATTRLIST * a_fs_attrlist,
 
     if (!a_fs_attrlist) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attrlist_get_id: Null list pointer");
-        tsk_errstr2[0] = '\0';
         return NULL;
     }
 
@@ -286,8 +284,8 @@ tsk_fs_attrlist_get_id(const TSK_FS_ATTRLIST * a_fs_attrlist,
             return fs_attr_cur;
     }
 
-    tsk_errno = TSK_ERR_FS_ATTR_NOTFOUND;
-    snprintf(tsk_errstr, TSK_ERRSTR_L,
+    tsk_error_set_errno(TSK_ERR_FS_ATTR_NOTFOUND);
+    tsk_error_set_errstr(
         "tsk_fs_attrlist_get_id: Attribute %d-%d not found", a_type, a_id);
     return NULL;
 }
@@ -318,10 +316,9 @@ tsk_fs_attrlist_get_name_type(const TSK_FS_ATTRLIST * a_fs_attrlist,
 
     if (!a_fs_attrlist) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attrlist_get_name_type: Null list pointer");
-        tsk_errstr2[0] = '\0';
         return NULL;
     }
 
@@ -350,8 +347,8 @@ tsk_fs_attrlist_get_name_type(const TSK_FS_ATTRLIST * a_fs_attrlist,
     }
 
     if (!fs_attr_ok) {
-        tsk_errno = TSK_ERR_FS_ATTR_NOTFOUND;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ATTR_NOTFOUND);
+        tsk_error_set_errstr(
             "tsk_fs_attrlist_get: Attribute %d not found", a_type);
         return NULL;
     }
@@ -363,7 +360,7 @@ tsk_fs_attrlist_get_name_type(const TSK_FS_ATTRLIST * a_fs_attrlist,
 
 /**
  * \internal
- * Return the a_idx'th attribute in the attribute list. 
+ * Return the a_idx'th attribute in the attribute list.
  *
  * @param a_fs_attrlist Data list structure to search in
  * @param a_idx 0-based index of attribute to return
@@ -379,10 +376,9 @@ tsk_fs_attrlist_get_idx(const TSK_FS_ATTRLIST * a_fs_attrlist, int a_idx)
 
     if (!a_fs_attrlist) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attrlist_get_idx: Null list pointer");
-        tsk_errstr2[0] = '\0';
         return NULL;
     }
 
@@ -396,8 +392,8 @@ tsk_fs_attrlist_get_idx(const TSK_FS_ATTRLIST * a_fs_attrlist, int a_idx)
         }
     }
 
-    tsk_errno = TSK_ERR_FS_ATTR_NOTFOUND;
-    snprintf(tsk_errstr, TSK_ERRSTR_L,
+    tsk_error_set_errno(TSK_ERR_FS_ATTR_NOTFOUND);
+    tsk_error_set_errstr(
         "tsk_fs_attrlist_get_idx: Attribute index %d not found", a_idx);
     return NULL;
 }
@@ -405,7 +401,7 @@ tsk_fs_attrlist_get_idx(const TSK_FS_ATTRLIST * a_fs_attrlist, int a_idx)
 
 /**
  * \internal
- * Return the number of attributes in the attribute list 
+ * Return the number of attributes in the attribute list
  *
  * @param a_fs_attrlist Data list structure to analyze
  *
@@ -419,10 +415,9 @@ tsk_fs_attrlist_get_len(const TSK_FS_ATTRLIST * a_fs_attrlist)
 
     if (!a_fs_attrlist) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_FS_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr(
             "tsk_fs_attrlist_get_len: Null list pointer");
-        tsk_errstr2[0] = '\0';
         return 0;
     }
 

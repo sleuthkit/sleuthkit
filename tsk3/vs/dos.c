@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2006-2008 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All rights reserved
  * Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
@@ -20,12 +20,12 @@
 #define dos_is_ext(x)	\
 	((((x) == 0x05) || ((x) == 0x0F) || ((x) == 0x85)) ? 1 : 0)
 
-/* 
+/*
  * dos_get_desc
  *
  * Return a buffer with a string description of the partition type
- * 
- * From: http://www.win.tue.nl/~aeb/partitions/partition_types-1.html 
+ *
+ * From: http://www.win.tue.nl/~aeb/partitions/partition_types-1.html
  */
 static char *
 dos_get_desc(uint8_t ptype)
@@ -257,7 +257,7 @@ dos_get_desc(uint8_t ptype)
     case 0x38:
         snprintf(str, DESC_LEN, "THEOS v3.2 2gb (0x38)");
         break;
-        /*      
+        /*
            case 0x39:
            snprintf(str, DESC_LEN, "Plan 9 (0x39)");
            break;
@@ -284,7 +284,7 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN,
             "Linux/MINIX (Sharing Disk with DR-DOS) (0x41)");
         break;
-        /*      
+        /*
            case 0x41:
            snprintf(str, DESC_LEN, "Personal RISC Boot (0x41)");
            break;
@@ -654,16 +654,16 @@ dos_get_desc(uint8_t ptype)
     return str;
 }
 
-/* 
+/*
  * Load an extended partition table into the structure in TSK_VS_INFO.
  *
  * sect_cur: The sector where the extended table is located
  * sect_ext_base: The sector of the primary extended table (this does
  *   not change for recursive calls)
- * table: a counter that identifies the table depth 
+ * table: a counter that identifies the table depth
  *   (increases by 1 for each recursive call)
- * 
- * For the primary extended table, sect_cur == sect_ext_base 
+ *
+ * For the primary extended table, sect_cur == sect_ext_base
  *
  * Return 1 on error and 0 on success
  *
@@ -694,9 +694,9 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
     if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_READ;
+            tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        snprintf(tsk_errstr2, TSK_ERRSTR_L,
+        tsk_error_set_errstr2(
             "Extended DOS table sector %" PRIuDADDR, sect_cur);
         free(sect_buf);
         return 1;
@@ -705,8 +705,8 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
     /* Sanity Check */
     if (tsk_getu16(vs->endian, sect->magic) != DOS_MAGIC) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+        tsk_error_set_errstr(
             "Extended DOS partition table in sector %"
             PRIuDADDR, sect_cur);
         free(sect_buf);
@@ -727,7 +727,7 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
         return 1;
     }
 
-    /* Cycle through the four partitions in the table 
+    /* Cycle through the four partitions in the table
      *
      * When another extended partition is found, it is processed
      * inside of the loop
@@ -749,7 +749,7 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
         if (part_size == 0)
             continue;
 
-        /* partitions are addressed differently 
+        /* partitions are addressed differently
          * in extended partitions */
         if (dos_is_ext(part->ptype)) {
 
@@ -781,11 +781,11 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
         }
 
         else {
-            /* part_start is added to the start of the 
+            /* part_start is added to the start of the
              * current partition for the actual
              * starting location */
 
-            // we ignore the max_addr checks on extended partitions... 
+            // we ignore the max_addr checks on extended partitions...
 
             if (NULL == tsk_vs_part_add(vs,
                     (TSK_DADDR_T) (sect_cur + part_start),
@@ -802,7 +802,7 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
 }
 
 
-/* 
+/*
  * Load the primary partition table (MBR) into the internal
  * data structures in TSK_VS_INFO
  *
@@ -839,9 +839,9 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
     if (cnt != vs->block_size) {
         if (cnt >= 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_READ;
+            tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        snprintf(tsk_errstr2, TSK_ERRSTR_L,
+        tsk_error_set_errstr2(
             "Primary DOS table sector %" PRIuDADDR, taddr);
         free(sect_buf);
         return 1;
@@ -851,8 +851,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
     /* Sanity Check */
     if (tsk_vs_guessu16(vs, sect->magic, DOS_MAGIC)) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+        tsk_error_set_errstr(
             "File is not a DOS partition (invalid primary magic) (Sector: %"
             PRIuDADDR ")", taddr);
         free(sect_buf);
@@ -860,8 +860,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
     }
 
     /* Because FAT and NTFS use the same magic - check for a
-     * standard MS OEM name and sizes.  Not a great check, but we can't 
-     * really test the table entries.  
+     * standard MS OEM name and sizes.  Not a great check, but we can't
+     * really test the table entries.
      */
     if (test) {
         if (tsk_verbose)
@@ -870,8 +870,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
 
         if (strncmp("MSDOS", sect->oemname, 5) == 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_MAGIC;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+            tsk_error_set_errstr(
                 "dos_load_prim_table: MSDOS OEM name exists");
             if (tsk_verbose)
                 tsk_fprintf(stderr,
@@ -881,8 +881,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         }
         else if (strncmp("MSWIN", sect->oemname, 5) == 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_MAGIC;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+            tsk_error_set_errstr(
                 "dos_load_prim_table: MSWIN OEM name exists");
             if (tsk_verbose)
                 tsk_fprintf(stderr,
@@ -892,8 +892,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         }
         else if (strncmp("NTFS", sect->oemname, 4) == 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_MAGIC;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+            tsk_error_set_errstr(
                 "dos_load_prim_table: NTFS OEM name exists");
             if (tsk_verbose)
                 tsk_fprintf(stderr,
@@ -903,8 +903,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         }
         else if (strncmp("FAT", sect->oemname, 4) == 0) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_MAGIC;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+            tsk_error_set_errstr(
                 "dos_load_prim_table: FAT OEM name exists");
             if (tsk_verbose)
                 tsk_fprintf(stderr,
@@ -946,8 +946,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         // make sure the first couple are in the image bounds
         if ((i < 2) && (part_start > max_addr)) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_BLK_NUM;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
+            tsk_error_set_errstr(
                 "dos_load_prim_table: Starting sector too large for image");
             if (tsk_verbose)
                 tsk_fprintf(stderr,
@@ -960,8 +960,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
 // I'm not sure if this is too strict ...
         else if ((part_start + part_size) > max_addr) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_VS_BLK_NUM
-                snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
+                tsk_error_set_errstr(
                 "dos_load_prim_table: Partition ends after image");
             return 1;
         }
@@ -969,7 +969,7 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
 
         added = 1;
 
-        /* Add the partition to the internal structure 
+        /* Add the partition to the internal structure
          * If it is an extended partition, process it now */
         if (dos_is_ext(part->ptype)) {
             if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
@@ -1000,8 +1000,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
             tsk_fprintf(stderr, "dos_load_prim: No valid entries\n");
 
         tsk_error_reset();
-        tsk_errno = TSK_ERR_VS_MAGIC;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+        tsk_error_set_errstr(
             "dos_load_prim_table: No valid entries in primary table");
         return 1;
     }
@@ -1017,15 +1017,15 @@ dos_close(TSK_VS_INFO * vs)
 }
 
 
-/* 
+/*
  * Given the path to the file, open it and load the internal
  * partition table structure
  *
  * offset is the byte offset to the start of the volume system
  *
- * If test is 1 then additional tests are performed to make sure 
+ * If test is 1 then additional tests are performed to make sure
  * it isn't a FAT or NTFS file system. This is used when autodetection
- * is being used to detect the volume system type. 
+ * is being used to detect the volume system type.
  */
 TSK_VS_INFO *
 tsk_vs_dos_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset, uint8_t test)

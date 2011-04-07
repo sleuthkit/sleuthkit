@@ -1,8 +1,8 @@
 /*
-* The Sleuth Kit 
+* The Sleuth Kit
 *
 * Brian Carrier [carrier <at> sleuthkit [dot] org]
-* Copyright (c) 2008 Brian Carrier.  All Rights reserved
+* Copyright (c) 2008-2011 Brian Carrier.  All Rights reserved
 *
 *
 * This software is distributed under the Common Public License 1.0
@@ -54,7 +54,7 @@ test_get_type(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
 
 /* Verify that all attributes can be accessed from both get_idx and get_type...
  * @param a_addr The metadata address of the file to analyze
- * @param a_len Expected number of attributes in file. 
+ * @param a_len Expected number of attributes in file.
  * @returns 1 if a test failed
  */
 static int
@@ -152,10 +152,10 @@ test_get_apis(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, int a_len)
             tsk_error_print(stderr);
             return 1;
         }
-        else if (tsk_errno != TSK_ERR_FS_ATTR_NOTFOUND) {
+        else if (tsk_error_get_errno() != TSK_ERR_FS_ATTR_NOTFOUND) {
             fprintf(stderr,
                 "Unexpected error code %x from getting %d-0xfd (random ID) from %"
-                PRIuINUM "\n", (int) tsk_errno, fs_attr->type, a_addr);
+                PRIuINUM "\n", (int)tsk_error_get_errno(), fs_attr->type, a_addr);
             tsk_error_print(stderr);
             return 1;
         }
@@ -172,10 +172,10 @@ test_get_apis(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, int a_len)
             tsk_error_print(stderr);
             return 1;
         }
-        else if (tsk_errno != TSK_ERR_FS_ATTR_NOTFOUND) {
+        else if (tsk_error_get_errno() != TSK_ERR_FS_ATTR_NOTFOUND) {
             fprintf(stderr,
                 "Unexpected error code %x from getting %d-X (random type, no id) from %"
-                PRIuINUM "\n", (int) tsk_errno, fs_attr->type, a_addr);
+                PRIuINUM "\n", (int)tsk_error_get_errno(), fs_attr->type, a_addr);
             tsk_error_print(stderr);
             return 1;
         }

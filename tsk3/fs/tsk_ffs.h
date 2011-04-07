@@ -2,7 +2,7 @@
 ** The Sleuth Kit 
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
@@ -309,6 +309,14 @@ extern "C" {
         uint8_t f2[24];         /* s32 */
     } ffs_inode2;
 
+    typedef struct {
+        union {
+            ffs_inode1 in1;
+            ffs_inode1b in1b;
+            ffs_inode2 in2;
+        } in;
+    } ffs_inode;
+
 #define FFS_IN_FMT       0170000        /* Mask of file type. */
 #define FFS_IN_FIFO      0010000        /* Named pipe (fifo). */
 #define FFS_IN_CHR       0020000        /* Character device. */
@@ -473,15 +481,15 @@ extern "C" {
             ffs_sb2 *sb2;       /* super block buffer */
         } fs;
 
-        char *dino_buf;         /* cached disk inode */
-        TSK_INUM_T dino_inum;   /* address of cached disk inode */
+        /* lock protects itbl_buf, itbl_addr, grp_buf, grp_num, grp_addr */
+        tsk_lock_t lock;
 
-        char *itbl_buf;         ///< Cached inode block buffer
-        TSK_DADDR_T itbl_addr;  ///< Address where inode block buf was read from:w
+        char *itbl_buf;         ///< Cached inode block buffer (r/w shared - lock)
+        TSK_DADDR_T itbl_addr;  ///< Address where inode block buf was read from (r/w shared - lock)
 
-        char *grp_buf;          ///< Cached cylinder group buffer
-        FFS_GRPNUM_T grp_num;   ///< Cyl grp num that is cached
-        TSK_DADDR_T grp_addr;   ///< Address where cached cyl grp data was read from
+        char *grp_buf;          ///< Cached cylinder group buffer (r/w shared - lock)
+        FFS_GRPNUM_T grp_num;   ///< Cyl grp num that is cached (r/w shared - lock)
+        TSK_DADDR_T grp_addr;   ///< Address where cached cyl grp data was read from (r/w shared - lock)
 
         FFS_GRPNUM_T groups_count;      /* nr of descriptor group blocks */
 

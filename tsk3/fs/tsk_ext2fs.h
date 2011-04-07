@@ -2,7 +2,7 @@
 ** The Sleuth Kit 
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -409,17 +409,17 @@ extern "C" {
         TSK_FS_INFO fs_info;    /* super class */
         ext2fs_sb *fs;          /* super block */
 
-        ext2fs_gd *grp_buf;     /* cached group descriptor */
-        EXT2_GRPNUM_T grp_num;  /* cached group number */
+        /* lock protects grp_buf, grp_num, bmap_buf, bmap_grp_num, imap_buf, imap_grp_num */
+        tsk_lock_t lock;
 
-        uint8_t *bmap_buf;      /* cached block allocation bitmap */
-        EXT2_GRPNUM_T bmap_grp_num;     /* cached block bitmap nr */
+        ext2fs_gd *grp_buf;     /* cached group descriptor r/w shared - lock */ 
+        EXT2_GRPNUM_T grp_num;  /* cached group number r/w shared - lock */
 
-        uint8_t *imap_buf;      /* cached inode allocation bitmap */
-        EXT2_GRPNUM_T imap_grp_num;     /* cached inode bitmap nr */
+        uint8_t *bmap_buf;      /* cached block allocation bitmap r/w shared - lock */
+        EXT2_GRPNUM_T bmap_grp_num;     /* cached block bitmap nr r/w shared - lock*/
 
-        ext2fs_inode *dino_buf; /* cached disk inode */
-        TSK_INUM_T dino_inum;   /* cached inode number */
+        uint8_t *imap_buf;      /* cached inode allocation bitmap r/w shared - lock*/
+        EXT2_GRPNUM_T imap_grp_num;     /* cached inode bitmap nr r/w shared - lock */
 
         TSK_OFF_T groups_offset;        /* offset to first group desc */
         EXT2_GRPNUM_T groups_count;     /* nr of descriptor group blocks */

@@ -5,7 +5,7 @@
 ** Given an image  and block number, identify which inode it is used by
 ** 
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2010 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
@@ -140,7 +140,7 @@ tsk_fs_ifind_par(TSK_FS_INFO * fs, TSK_FS_IFIND_FLAG_ENUM lclflags,
 
     /* Walk unallocated MFT entries */
     if (fs->inode_walk(fs, fs->first_inum, fs->last_inum,
-            TSK_FS_META_FLAG_UNALLOC, ifind_par_act, &data)) {
+            TSK_FS_META_FLAG_UNALLOC,ifind_par_act, &data)) {
         return 1;
     }
 
@@ -432,8 +432,8 @@ tsk_fs_ifind_path(TSK_FS_INFO * fs, TSK_TCHAR * tpath, TSK_INUM_T * result)
             (UTF8 *) ((uintptr_t) ptr8 + clen), TSKlenientConversion);
         if (retval != TSKconversionOK) {
             tsk_error_reset();
-            tsk_errno = TSK_ERR_FS_UNICODE;
-            snprintf(tsk_errstr, TSK_ERRSTR_L,
+            tsk_error_set_errno(TSK_ERR_FS_UNICODE);
+            tsk_error_set_errstr(
                 "tsk_fs_ifind_path: Error converting path to UTF-8: %d",
                 retval);
             free(cpath);

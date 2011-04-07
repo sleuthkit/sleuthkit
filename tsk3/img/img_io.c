@@ -1,6 +1,6 @@
 /*
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2008 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2011 Brian Carrier.  All Rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
@@ -33,21 +33,30 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
     if (a_img_info == NULL) {
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_ARG;
-        snprintf(tsk_errstr, TSK_ERRSTR_L,
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr(
             "tsk_img_read: pointer is NULL");
         return -1;
     }
 
+    /* cache_lock is used for both the cache in IMG_INFO and 
+     * the shared variables in the img type specific INFO structs.
+     * grab it now so that it is held before any reads.
+     */
+    tsk_take_lock(&(a_img_info->cache_lock));
+
     // if they ask for more than the cache length, skip the cache
     if (a_len > TSK_IMG_INFO_CACHE_LEN) {
-        return a_img_info->read(a_img_info, a_off, a_buf, a_len);
+        ssize_t nbytes = a_img_info->read(a_img_info, a_off, a_buf, a_len);
+        tsk_release_lock(&(a_img_info->cache_lock));
+        return nbytes;
     }
 
     if (a_off >= a_img_info->size) {
+        tsk_release_lock(&(a_img_info->cache_lock));
         tsk_error_reset();
-        tsk_errno = TSK_ERR_IMG_READ_OFF;
-        snprintf(tsk_errstr, TSK_ERRSTR_L, "tsk_img_read - %" PRIuOFF,
+        tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
+        tsk_error_set_errstr("tsk_img_read - %" PRIuOFF,
             a_off);
         return -1;
     }
@@ -153,5 +162,6 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         }
     }
 
+    tsk_release_lock(&(a_img_info->cache_lock));
     return retval;
 }

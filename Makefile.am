@@ -30,7 +30,10 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
 CLEANFILES = tsk3/tsk_incs.h
 
 # directories to compile
-SUBDIRS = tsk3 tools tests samples man
+if CPPUNIT
+  UNIT_TESTS=unit_tests
+endif
+SUBDIRS = tsk3 tools tests samples man $(UNIT_TESTS)
 
 nobase_include_HEADERS = tsk3/libtsk.h tsk3/tsk_incs.h \
     tsk3/base/tsk_base.h tsk3/base/tsk_os.h \

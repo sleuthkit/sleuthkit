@@ -5,10 +5,15 @@
 AC_PREREQ(2.59)
 
 AC_INIT(sleuthkit, 0.0.0)
+m4_include([ax_pthread.m4])
+# include the version from 1.12.1. This will work for 
+m4_include([cppunit.m4])
 AC_CONFIG_SRCDIR([tsk3/base/tsk_base.h])
 AM_CONFIG_HEADER([tsk3/tsk_config.h])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([foreign])
+AM_PATH_CPPUNIT(1.12.1)
+AM_CONDITIONAL([CPPUNIT],[test "x$no_cppunit" = x])
 AM_PROG_LIBTOOL
 AM_MAINTAINER_MODE
 AC_CONFIG_MACRO_DIR([m4])
@@ -63,7 +68,12 @@ AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_UTIME_NULL
 AC_FUNC_VPRINTF
 #AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
-
+AX_PTHREAD( [
+            AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
+            CLIBS="$PTHREAD_LIBS $LIBS"
+            CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+            LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
+            CC="$PTHREAD_CC"],[])
 # Not all compilers include /usr/local in the include and link path
 if test -d /usr/local/include; then
     CFLAGS="$CFLAGS -I/usr/local/include"
@@ -72,7 +82,7 @@ fi
 
 # Checks for libraries.
 
-# Check if we should link afflib.  
+# Check if we should link afflib.
 AC_ARG_WITH([afflib],
     [AS_HELP_STRING([--without-afflib],[Do not use AFFLIB even if it is installed])]
     [AS_HELP_STRING([--with-afflib=dir],[Specify that AFFLIB is installed in directory 'dir'])],
@@ -93,13 +103,15 @@ AS_IF([test "x$with_afflib" != "xno"],
         ]
     )]
     # Check for the header file first to make sure they have the dev install
-    [AC_CHECK_HEADERS([afflib/afflib.h], 
+    [AC_CHECK_HEADERS([afflib/afflib.h],
       [AC_CHECK_LIB([afflib], [af_open])]
     )]
 )
+#needed for sqllite
+AC_CHECK_LIB(dl, dlopen) 
 
 
-# Check if we should link libewf.  
+# Check if we should link libewf.
 AC_ARG_WITH([libewf],
     [AS_HELP_STRING([--without-libewf],[Do not use libewf even if it is installed])]
     [AS_HELP_STRING([--with-libewf=dir],[Specify that libewf is installed in directory 'dir'])],
@@ -120,13 +132,13 @@ AS_IF([test "x$with_libewf" != "xno"],
         ]
     )]
     # Check for the header file first to make sure they have the dev install
-    [AC_CHECK_HEADERS([libewf.h], 
+    [AC_CHECK_HEADERS([libewf.h],
       [AC_CHECK_LIB([ewf], [libewf_open])]
     )]
 )
 
 # sqlite requires pthread libraries - this was copied from its configure.ac
-AC_SEARCH_LIBS(pthread_create, pthread)
+# AC_SEARCH_LIBS(pthread_create, pthread)
 AC_SEARCH_LIBS(dlopen, dl)
 
 AC_CONFIG_COMMANDS([tsk3/tsk_incs.h],
@@ -148,6 +160,11 @@ AC_CONFIG_COMMANDS([tsk3/tsk_incs.h],
           if test x$ac_cv_header_sys_param_h = xyes; then
             echo "#include <sys/param.h>" >> tsk3/tsk_incs.h
           fi
+
+          if test x$ax_pthread_ok = xyes; then
+            echo "#define TSK_MULTITHREAD_LIB" >> tsk3/tsk_incs.h
+          fi
+
           echo "" >> tsk3/tsk_incs.h
           echo "#endif" >> tsk3/tsk_incs.h
         ],
@@ -155,6 +172,7 @@ AC_CONFIG_COMMANDS([tsk3/tsk_incs.h],
           ac_cv_header_unistd_h=$ac_cv_header_unistd_h
           ac_cv_header_inttypes_h=$ac_cv_header_inttypes_h
           ac_cv_header_sys_param_h=$ac_cv_header_sys_param_h
+          ax_pthread_ok=$ax_pthread_ok
         ])
 
 AC_CONFIG_FILES([Makefile
@@ -176,7 +194,9 @@ AC_CONFIG_FILES([Makefile
                  tools/timeline/Makefile
                  tests/Makefile
                  samples/Makefile
-                 man/Makefile])
+                 man/Makefile
+                 unit_tests/Makefile
+                 unit_tests/base/Makefile])
 AC_OUTPUT
 
 

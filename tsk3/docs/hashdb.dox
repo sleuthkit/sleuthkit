@@ -13,6 +13,8 @@ Before a database can be indexed or searched, it must first be opened.  Use the 
 
 The tsk_hdb_open() function will return a TSK_HDB_INFO structure that will be used as a handle to index and search the database. An open hash database can be closed with tsk_hdb_close(). 
 
+This functionality also exists in the TskHdbInfo C++ class. 
+
 \section hash_index Indexing a Hash Database
 A single database can have more than one index if the database contains multiple hash types.  For example, both MD5 and SHA-1 indexes can be made for the NSRL database.  Because multiple indexes can exist, you must specify the type when making or testing for an index. 
 

@@ -2,21 +2,22 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2007-2010 Brian Carrier.  All Rights reserved
+ * Copyright (c) 2007-2011 Brian Carrier.  All Rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
 
 /** \file tsk_base.h
  * Contains the type and function definitions that are needed
- * by external programs to use the TSK library.  
- * Note that this file is not meant to be directly included.   
+ * by external programs to use the TSK library.
+ * Note that this file is not meant to be directly included.
  * It is included by both libtsk.h and tsk_base_i.h.
  */
 
 
 /**
- * \defgroup baselib Base TSK Library Functions
+ * \defgroup baselib C Base TSK Library Functions
+ * \defgroup baselib_cpp C++ Base TSK Library Classes
  */
 
 #ifndef _TSK_BASE_H
@@ -25,22 +26,22 @@
 // standard C header files
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
-
-/** Version of code in number form.  
+/** Version of code in number form.
  * Upper byte is A, next is B, and next byte is C in version A.B.C.
- * Lowest byte is 0xff, except in beta releases, in which case it 
+ * Lowest byte is 0xff, except in beta releases, in which case it
  * increments from 1.  Nightly snapshots will have upper byte as
- * 0xff and next bytes with year, month, and date, respectively. 
+ * 0xff and next bytes with year, month, and date, respectively.
  * Note that you will not be able to differentiate between snapshots
  * from the trunk or branches with this method...
- * For example, 3.1.2 would be stored as 0x030102FF.  
+ * For example, 3.1.2 would be stored as 0x030102FF.
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
- * 0xFF030102. 
- * See TSK_VERSION_STR for string form. */ 
-#define TSK_VERSION_NUM 0x00000000  
+ * 0xFF030102.
+ * See TSK_VERSION_STR for string form. */
+#define TSK_VERSION_NUM 0x00000000
 
-/** Version of code in string form. See TSK_VERSION_NUM for 
+/** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
 #define TSK_VERSION_STR "0.0.0"
 
@@ -59,7 +60,56 @@
 extern "C" {
 #endif
 
+#define TSK_ERROR_STRING_MAX_LENGTH 1024
 
+    typedef struct {
+    	uint32_t t_errno;
+    	char errstr[TSK_ERROR_STRING_MAX_LENGTH+1];
+    	char errstr2[TSK_ERROR_STRING_MAX_LENGTH+1];
+    	char errstr_print[TSK_ERROR_STRING_MAX_LENGTH+1];
+    } TSK_ERROR_INFO;
+
+    /* The core function here is to retrieve the per-thread error structure. Other functions to follow
+     * are for convenience of performing common operations. */
+    extern TSK_ERROR_INFO* tsk_error_get_info();
+
+    extern uint32_t tsk_error_get_errno();
+    extern void tsk_error_set_errno(uint32_t t_errno);
+
+#ifdef __GNUC__
+#define TSK_ERROR_FORMAT_ATTRIBUTE(n,m) __attribute__((format (printf, n, m)))
+#else
+#define TSK_ERROR_FORMAT_ATTRIBUTE(n,m)
+#endif
+
+    extern char *tsk_error_get_errstr();
+    extern void tsk_error_set_errstr(char const * format, ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
+    extern void tsk_error_vset_errstr(char const * format, va_list args);
+    extern char *tsk_error_get_errstr2();
+    extern void tsk_error_set_errstr2(char const * format, ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
+    extern void tsk_error_vset_errstr2(char const * format, va_list args);
+    extern void tsk_error_errstr2_concat(char const * format, ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
+
+    /** Return a human-readable form of tsk_error_get_errno **/
+    extern const char *tsk_error_get();
+
+    extern void tsk_error_print(FILE *);
+    extern void tsk_error_reset();
+
+
+#ifdef TSK_MULTITHREAD_LIB
+#ifdef TSK_WIN32
+    void *tsk_error_win32_get_per_thread_(unsigned struct_size);
+    typedef struct { CRITICAL_SECTION critical_section; } tsk_lock_t;
+#else
+#include <pthread.h>
+    typedef struct { pthread_mutex_t mutex; } tsk_lock_t;
+#endif
+
+    // single threaded lib
+#else
+    typedef struct { void *dummy; } tsk_lock_t;
+#endif
 
 /**
  * Return values for some TSK functions that need to differentiate between errors and corrupt data.
@@ -68,20 +118,20 @@ extern "C" {
         TSK_OK,                 ///< Ok -- success
         TSK_ERR,                ///< System error -- should abort
         TSK_COR,                 ///< Data is corrupt, can still process another set of data
-        TSK_STOP                ///< Stop further processing, not an error though. 
+        TSK_STOP                ///< Stop further processing, not an error though.
     } TSK_RETVAL_ENUM;
 
 
     typedef struct TSK_LIST TSK_LIST;
-    /** 
-    * Linked list structure that holds a 'key' and optional 'length'. 
+    /**
+    * Linked list structure that holds a 'key' and optional 'length'.
     * Note that the data is stored in reverse sort order so that inserts
     * are faster.  Also note that the length is a negative number. A key of
-    * '6' and a len of '2' means that the run contains 6 and 5. 
+    * '6' and a len of '2' means that the run contains 6 and 5.
     */
     struct TSK_LIST {
         TSK_LIST *next;         ///< Pointer to next entry in list
-        uint64_t key;           ///< Largest value in this run 
+        uint64_t key;           ///< Largest value in this run
         uint64_t len;           ///< Length of run (negative number, stored as positive)
     };
     extern uint8_t tsk_list_find(TSK_LIST * list, uint64_t key);
@@ -90,7 +140,7 @@ extern "C" {
 
 
     // note that the stack code is in this file and not internal for convenience to users
-    /** 
+    /**
      * Basic stack structure to push and pop (used for finding loops in recursion).
      */
     typedef struct {
@@ -200,7 +250,7 @@ extern "C" {
 #define PRIxOFF		PRIx64
 #define PRIdOFF		PRId64
 
-    typedef uint32_t TSK_PNUM_T;        ///< Data type used to internally store partition addresses 
+    typedef uint32_t TSK_PNUM_T;        ///< Data type used to internally store partition addresses
 #define PRIuPNUM	PRIu32
 #define PRIxPNUM	PRIx32
 #define PRIdPNUM	PRId32
@@ -214,7 +264,7 @@ extern "C" {
 /*********** RETURN VALUES ************/
 
 /**
- * Values that callback functions can return to calling walk function. 
+ * Values that callback functions can return to calling walk function.
  */
     typedef enum {
         TSK_WALK_CONT = 0x0,    ///< Walk function should continue to next object
@@ -224,15 +274,13 @@ extern "C" {
 
 
 /************ ERROR HANDLING *************/
+    //TODO: make this per-thread?
     extern int tsk_verbose;     ///< Set to 1 to have verbose debug messages printed to stderr
 
     /** \name Error Handling */
 //@{
 
-    extern uint32_t tsk_errno;
-    extern const char *tsk_error_get();
-    extern void tsk_error_print(FILE *);
-    extern void tsk_error_reset();
+
 
 #define TSK_ERR_AUX	0x01000000
 #define TSK_ERR_IMG	0x02000000
@@ -277,7 +325,7 @@ extern "C" {
 #define TSK_ERR_FS_WALK_RNG	(TSK_ERR_FS | 3)
 #define TSK_ERR_FS_READ		(TSK_ERR_FS | 4)
 #define TSK_ERR_FS_READ_OFF	(TSK_ERR_FS | 5)
-#define TSK_ERR_FS_ARG		(TSK_ERR_FS | 6)    
+#define TSK_ERR_FS_ARG		(TSK_ERR_FS | 6)
 #define TSK_ERR_FS_BLK_NUM	(TSK_ERR_FS | 7)
 #define TSK_ERR_FS_INODE_NUM	(TSK_ERR_FS | 8)
 #define TSK_ERR_FS_INODE_COR	(TSK_ERR_FS | 9)
@@ -316,7 +364,7 @@ extern "C" {
 
 /** \name Endian Ordering Functions */
 //@{
-    /** 
+    /**
      * Flag that identifies the endian ordering of the data being read.
      */
     typedef enum {
@@ -414,5 +462,95 @@ documentation and/or software.
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef __cplusplus
+#if 0
+class TskStack{
+private:
+    TSK_STACK *m_stack;
+    
+public:
+    /**
+    * Create a TSK_STACK structure. See tsk_stack_create() for details.
+    * @returns Pointer to structure or NULL on error
+    */
+   TskStack(){
+       m_stack = tsk_stack_create();
+    };
+   /**
+   * Free an allocated TSK_STACK structure. See tsk_stack_free() for details.
+   */
+    ~TskStack(){
+        tsk_stack_free(m_stack);
+    };
+    /**
+    * Pop a value from the top of the stack. See tsk_stack_pop() for details.
+    */
+    void pop(){
+        tsk_stack_pop(m_stack);
+    };
+    /**
+    * Push a value to the top of TSK_STACK. See tsk_stack_push() for details.
+    * @param a_val Value to push on
+    * @returns 1 on error 
+    */
+    uint8_t push(uint64_t a_val){
+        return tsk_stack_push(m_stack, a_val);
+    };
+    /**
+    * Search a TSK_STACK for a given value. See tsk_stack_find() for details.
+    * @param a_val Value to search for 
+    * @returns 1 if found and 0 if not
+    */
+    uint8_t find(uint64_t a_val){
+        return tsk_stack_find(m_stack, a_val);
+    };
+     /**
+    * Return Number of entries in the stack
+    * @returns number of entries in the stack
+    */
+   size_t length(){
+       if (m_stack != NULL)
+        return m_stack->len;
+       else
+           return 0;
+    };            
+};
+#endif
+
+/**
+ * \ingroup baselib_cpp
+ * Allows access to most recent error message and code in the thread.
+ */
+class TskError{ 
+public:
+    /**
+    * Return the string with the current error message.  The string does not end with a 
+    * newline. See tsk_error_get() for details.
+    *
+    * @returns String with error message or NULL if there is no error
+    */
+   static const char *get(){
+        return tsk_error_get();
+    };
+    
+   /**
+   * Print the current error message to a file. See tsk_error_print() for details.
+   *
+   * @param a_hFile File to print message to
+   */
+    static void print(FILE *a_hFile){
+        tsk_error_print(a_hFile);
+    };
+
+    /**
+    * Clear the error number and error message. See tsk_error_reset() for details.
+    */
+    static void reset(){
+        tsk_error_reset();
+    };
+};
+
 #endif
 #endif
