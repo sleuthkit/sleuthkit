@@ -59,6 +59,23 @@ uint8_t
         return 1;
 }
 
+/**
+ * Uses the already opened image for future analysis. This must be called before any
+ * of the findFilesInXXX() methods. 
+ * @param a_img_info Handle to an already opened disk image.
+ * @returns 1 on error and 0 on success
+ */
+uint8_t
+TskAuto::openImage(TSK_IMG_INFO *a_img_info)
+{
+    if (m_img_info)
+        closeImage();
+    
+    m_img_info = a_img_info;
+    return 0;
+}
+
+
 
 /**
  * Closes the handles to the open disk image. Should be called after

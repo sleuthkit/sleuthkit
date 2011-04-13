@@ -61,6 +61,7 @@ class TskAuto {
 
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
+    virtual uint8_t openImage(TSK_IMG_INFO *);
     virtual void closeImage();
 
     uint8_t findFilesInImg();
