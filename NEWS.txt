@@ -1,13 +1,17 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+
 ---------------- VERSION 3.2.2 --------------
 Bug Fixes
 - 3213886: ISO9660 directory hole not advancing
-- 3173095 contd: Updated checks so that tougher FAT checks are applied to deleted directories.
+- 3173095 contd: Updated checks so that tougher FAT checks are
+applied to deleted directories.
 
 New Features:
 - 3213888: RAW CD format
+- Auto class accepts TSK_IMG_INFO as argument
+
 
 ---------------- VERSION 3.2.1 --------------
 Bug Fixes
