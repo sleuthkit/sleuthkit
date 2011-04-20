@@ -98,8 +98,7 @@ ffs_dent_copy(FFS_INFO * ffs, char *ffs_dent, TSK_FS_NAME * fs_name)
     else {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ffs_dent_copy: Unknown FS type");
+        tsk_error_set_errstr("ffs_dent_copy: Unknown FS type");
         return 1;
     }
 
@@ -246,15 +245,15 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (a_addr < a_fs->first_inum || a_addr > a_fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "ffs_dir_open_meta: Invalid inode value: %" PRIuINUM, a_addr);
+        tsk_error_set_errstr("ffs_dir_open_meta: Invalid inode value: %"
+            PRIuINUM, a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ffs_dir_open_meta: NULL fs_attr argument given");
+        tsk_error_set_errstr
+            ("ffs_dir_open_meta: NULL fs_attr argument given");
         return TSK_ERR;
     }
 
@@ -268,7 +267,8 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         tsk_fs_dir_reset(fs_dir);
     }
     else {
-        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
+        if ((*a_fs_dir = fs_dir =
+                tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
             return TSK_ERR;
         }
     }
@@ -308,9 +308,8 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (load_file.left > 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_FWALK);
-        tsk_error_set_errstr(
-            "ffs_dir_open_meta: Error reading directory %" PRIuINUM,
-            a_addr);
+        tsk_error_set_errstr("ffs_dir_open_meta: Error reading directory %"
+            PRIuINUM, a_addr);
         free(dirbuf);
         return TSK_COR;
     }
@@ -328,8 +327,8 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         retval_tmp =
             ffs_dent_parse_block(ffs, fs_dir,
-            (fs_dir->fs_file->meta->
-                flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
+            (fs_dir->fs_file->
+                meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
             dirbuf + cidx * FFS_DIRBLKSIZ, len);
 
         if (retval_tmp == TSK_ERR) {

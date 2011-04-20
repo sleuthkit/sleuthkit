@@ -294,8 +294,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             tsk_fs_attrlist_get(hfs->extents_file->meta->attr,
             TSK_FS_ATTR_TYPE_DEFAULT);
         if (!hfs->extents_attr) {
-            tsk_error_errstr2_concat(
-                "- Default Attribute not found in Extents File");
+            tsk_error_errstr2_concat
+                ("- Default Attribute not found in Extents File");
             return 1;
         }
 
@@ -308,8 +308,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2(
-                "hfs_ext_find_extent_record_attr: Error reading header");
+            tsk_error_set_errstr2
+                ("hfs_ext_find_extent_record_attr: Error reading header");
             return 1;
         }
     }
@@ -352,8 +352,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         if (cur_node > tsk_getu32(fs->endian,
                 hfs->extents_header.totalNodes)) {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
-            tsk_error_set_errstr(
-                "hfs_ext_find_extent_record_attr: Node %d too large for file",
+            tsk_error_set_errstr
+                ("hfs_ext_find_extent_record_attr: Node %d too large for file",
                 cur_node);
             free(node);
             return 1;
@@ -373,8 +373,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2(
-                "hfs_ext_find_extent_record_attr: Error reading node %d at offset %"
+            tsk_error_set_errstr2
+                ("hfs_ext_find_extent_record_attr: Error reading node %d at offset %"
                 PRIuOFF, cur_node, cur_off);
             free(node);
             return 1;
@@ -386,8 +386,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
 
         if (num_rec == 0) {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
-            tsk_error_set_errstr(
-                "hfs_ext_find_extent_record: zero records in node %"
+            tsk_error_set_errstr
+                ("hfs_ext_find_extent_record: zero records in node %"
                 PRIu32, cur_node);
             free(node);
             return 1;
@@ -417,8 +417,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     &node[nodesize - (rec + 1) * 2]);
                 if (rec_off > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                    tsk_error_set_errstr(
-                        "hfs_ext_find_extent_record_attr: offset of record %d in index node %d too large (%zu vs %"
+                    tsk_error_set_errstr
+                        ("hfs_ext_find_extent_record_attr: offset of record %d in index node %d too large (%zu vs %"
                         PRIu16 ")", rec, cur_node, rec_off, nodesize);
                     free(node);
                     return 1;
@@ -445,10 +445,10 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                             key->key_len), &(hfs->extents_header));
                     if (rec_off + keylen > nodesize) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                        tsk_error_set_errstr(
-                            "hfs_ext_find_extent_record_attr: offset and keylenth of record %d in index node %d too large (%zu vs %"
-                            PRIu16 ")", rec, cur_node,
-                            rec_off + keylen, nodesize);
+                        tsk_error_set_errstr
+                            ("hfs_ext_find_extent_record_attr: offset and keylenth of record %d in index node %d too large (%zu vs %"
+                            PRIu16 ")", rec, cur_node, rec_off + keylen,
+                            nodesize);
                         free(node);
                         return 1;
                     }
@@ -501,8 +501,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     &node[nodesize - (rec + 1) * 2]);
                 if (rec_off > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                    tsk_error_set_errstr(
-                        "hfs_ext_find_extent_record_attr: offset of record %d in leaf node %d too large (%zu vs %"
+                    tsk_error_set_errstr
+                        ("hfs_ext_find_extent_record_attr: offset of record %d in leaf node %d too large (%zu vs %"
                         PRIu16 ")", rec, cur_node, rec_off, nodesize);
                     free(node);
                     return 1;
@@ -534,8 +534,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 keylen = 2 + tsk_getu16(fs->endian, key->key_len);
                 if (rec_off + keylen > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                    tsk_error_set_errstr(
-                        "hfs_ext_find_extent_record_attr: offset and keylenth of record %d in leaf node %d too large (%zu vs %"
+                    tsk_error_set_errstr
+                        ("hfs_ext_find_extent_record_attr: offset and keylenth of record %d in leaf node %d too large (%zu vs %"
                         PRIu16 ")", rec, cur_node, rec_off + keylen,
                         nodesize);
                     free(node);
@@ -551,15 +551,15 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 attr_run =
                     hfs_extents_to_attr(fs, extents->extents, ext_off);
                 if ((attr_run == NULL) && (tsk_error_get_errno() != 0)) {
-                    tsk_error_errstr2_concat(
-                        "- hfs_ext_find_extent_record_attr");
+                    tsk_error_errstr2_concat
+                        ("- hfs_ext_find_extent_record_attr");
                     free(node);
                     return 1;
                 }
 
                 if (tsk_fs_attr_add_run(fs, a_attr, attr_run)) {
-                    tsk_error_errstr2_concat(
-                        "- hfs_ext_find_extent_record_attr");
+                    tsk_error_errstr2_concat
+                        ("- hfs_ext_find_extent_record_attr");
                     free(node);
                     return 1;
                 }
@@ -572,10 +572,9 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         }
         else {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
-            tsk_error_set_errstr(
-                "hfs_ext_find_extent_record: btree node %" PRIu32
-                " (%" PRIuOFF ") is neither index nor leaf (%" PRIu8 ")",
-                cur_node, cur_off, node_desc->type);
+            tsk_error_set_errstr("hfs_ext_find_extent_record: btree node %"
+                PRIu32 " (%" PRIuOFF ") is neither index nor leaf (%" PRIu8
+                ")", cur_node, cur_off, node_desc->type);
             free(node);
             return 1;
         }
@@ -667,8 +666,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
         if (cur_node > tsk_getu32(fs->endian,
                 hfs->catalog_header.totalNodes)) {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
-            tsk_error_set_errstr(
-                "hfs_cat_traverse: Node %d too large for file", cur_node);
+            tsk_error_set_errstr
+                ("hfs_cat_traverse: Node %d too large for file", cur_node);
             free(node);
             return 1;
         }
@@ -682,8 +681,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2(
-                "hfs_cat_traverse: Error reading node %d at offset %"
+            tsk_error_set_errstr2
+                ("hfs_cat_traverse: Error reading node %d at offset %"
                 PRIuOFF, cur_node, cur_off);
             free(node);
             return 1;
@@ -700,8 +699,7 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
 
         if (num_rec == 0) {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
-            tsk_error_set_errstr(
-                "hfs_cat_traverse: zero records in node %"
+            tsk_error_set_errstr("hfs_cat_traverse: zero records in node %"
                 PRIu32, cur_node);
             free(node);
             return 1;
@@ -724,8 +722,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                     &node[nodesize - (rec + 1) * 2]);
                 if (rec_off > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                    tsk_error_set_errstr(
-                        "hfs_cat_traverse: offset of record %d in index node %d too large (%zu vs %"
+                    tsk_error_set_errstr
+                        ("hfs_cat_traverse: offset of record %d in index node %d too large (%zu vs %"
                         PRIu16 ")", rec, cur_node, rec_off, nodesize);
                     free(node);
                     return 1;
@@ -747,8 +745,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                     cur_off + rec_off, ptr);
                 if (retval == HFS_BTREE_CB_ERR) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                    tsk_error_set_errstr2(
-                        "hfs_cat_traverse: Callback returned error");
+                    tsk_error_set_errstr2
+                        ("hfs_cat_traverse: Callback returned error");
                     free(node);
                     return 1;
                 }
@@ -761,8 +759,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                             key->key_len), &(hfs->catalog_header));
                     if (rec_off + keylen > nodesize) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                        tsk_error_set_errstr(
-                            "hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%zu vs %"
+                        tsk_error_set_errstr
+                            ("hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%zu vs %"
                             PRIu16 ")", rec, cur_node, rec_off + keylen,
                             nodesize);
                         free(node);
@@ -781,8 +779,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
             // check if we found a relevant node
             if (next_node == 0) {
                 tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                tsk_error_set_errstr(
-                    "hfs_cat_traverse: did not find any keys in index node %d",
+                tsk_error_set_errstr
+                    ("hfs_cat_traverse: did not find any keys in index node %d",
                     cur_node);
                 is_done = 1;
                 break;
@@ -805,8 +803,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                     &node[nodesize - (rec + 1) * 2]);
                 if (rec_off > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                    tsk_error_set_errstr(
-                        "hfs_cat_traverse: offset of record %d in leaf node %d too large (%zu vs %"
+                    tsk_error_set_errstr
+                        ("hfs_cat_traverse: offset of record %d in leaf node %d too large (%zu vs %"
                         PRIu16 ")", rec, cur_node, rec_off, nodesize);
                     free(node);
                     return 1;
@@ -832,8 +830,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                 }
                 else if (retval == HFS_BTREE_CB_ERR) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                    tsk_error_set_errstr2(
-                        "hfs_cat_traverse: Callback returned error");
+                    tsk_error_set_errstr2
+                        ("hfs_cat_traverse: Callback returned error");
                     free(node);
                     return 1;
                 }
@@ -852,8 +850,7 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
         }
         else {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
-            tsk_error_set_errstr(
-                "hfs_cat_traverse: btree node %" PRIu32
+            tsk_error_set_errstr("hfs_cat_traverse: btree node %" PRIu32
                 " (%" PRIu64 ") is neither index nor leaf (%" PRIu8 ")",
                 cur_node, cur_off, node_desc->type);
             free(node);
@@ -947,8 +944,8 @@ hfs_cat_read_thread_record(HFS_INFO * hfs, TSK_OFF_T off,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2(
-            "hfs_cat_read_thread_record: Error reading catalog offset %"
+        tsk_error_set_errstr2
+            ("hfs_cat_read_thread_record: Error reading catalog offset %"
             PRIuOFF " (header)", off);
         return 1;
     }
@@ -956,8 +953,8 @@ hfs_cat_read_thread_record(HFS_INFO * hfs, TSK_OFF_T off,
     if ((tsk_getu16(fs->endian, thread->rec_type) != HFS_FOLDER_THREAD)
         && (tsk_getu16(fs->endian, thread->rec_type) != HFS_FILE_THREAD)) {
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-        tsk_error_set_errstr(
-            "hfs_cat_read_thread_record: unexpected record type %" PRIu16,
+        tsk_error_set_errstr
+            ("hfs_cat_read_thread_record: unexpected record type %" PRIu16,
             tsk_getu16(fs->endian, thread->rec_type));
         return 1;
     }
@@ -966,8 +963,8 @@ hfs_cat_read_thread_record(HFS_INFO * hfs, TSK_OFF_T off,
 
     if (uni_len > 255) {
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "hfs_cat_read_thread_record: invalid string length (%" PRIu16
+        tsk_error_set_errstr
+            ("hfs_cat_read_thread_record: invalid string length (%" PRIu16
             ")", uni_len);
         return 1;
     }
@@ -980,8 +977,8 @@ hfs_cat_read_thread_record(HFS_INFO * hfs, TSK_OFF_T off,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2(
-            "hfs_cat_read_thread_record: Error reading catalog offset %"
+        tsk_error_set_errstr2
+            ("hfs_cat_read_thread_record: Error reading catalog offset %"
             PRIuOFF " (name)", off + 10);
         return 1;
     }
@@ -1013,8 +1010,8 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2(
-            "hfs_cat_read_file_folder_record: Error reading record type from catalog offset %"
+        tsk_error_set_errstr2
+            ("hfs_cat_read_file_folder_record: Error reading record type from catalog offset %"
             PRIuOFF " (header)", off);
         return 1;
     }
@@ -1028,8 +1025,8 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2(
-                "hfs_cat_read_file_folder_record: Error reading catalog offset %"
+            tsk_error_set_errstr2
+                ("hfs_cat_read_file_folder_record: Error reading catalog offset %"
                 PRIuOFF " (folder)", off);
             return 1;
         }
@@ -1043,16 +1040,16 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2(
-                "hfs_cat_read_file_folder_record: Error reading catalog offset %"
+            tsk_error_set_errstr2
+                ("hfs_cat_read_file_folder_record: Error reading catalog offset %"
                 PRIuOFF " (file)", off);
             return 1;
         }
     }
     else {
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-        tsk_error_set_errstr(
-            "hfs_cat_read_file_folder_record: unexpected record type %"
+        tsk_error_set_errstr
+            ("hfs_cat_read_file_folder_record: unexpected record type %"
             PRIu16, tsk_getu16(fs->endian, rec_type));
         return 1;
     }
@@ -1093,8 +1090,8 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
         (inum == HFS_STARTUP_FILE_ID) ||
         (inum == HFS_ATTRIBUTES_FILE_ID)) {
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-        tsk_error_set_errstr(
-            "hfs_cat_file_lookup: Called on special file: %" PRIuINUM,
+        tsk_error_set_errstr
+            ("hfs_cat_file_lookup: Called on special file: %" PRIuINUM,
             inum);
         return 1;
     }
@@ -1116,13 +1113,13 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
         // no parsing error, just not found
         if (tsk_error_get_errno() == 0) {
             tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-            tsk_error_set_errstr(
-                "hfs_cat_file_lookup: Error finding thread node for file (%"
+            tsk_error_set_errstr
+                ("hfs_cat_file_lookup: Error finding thread node for file (%"
                 PRIuINUM ")", inum);
         }
         else {
-            tsk_error_set_errstr2(
-                " hfs_cat_file_lookup: thread for file (%" PRIuINUM ")",
+            tsk_error_set_errstr2
+                (" hfs_cat_file_lookup: thread for file (%" PRIuINUM ")",
                 inum);
         }
         return 1;
@@ -1130,8 +1127,8 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
 
     /* read the thread record */
     if (hfs_cat_read_thread_record(hfs, off, &thread)) {
-        tsk_error_set_errstr2(
-            " hfs_cat_file_lookup: file (%" PRIuINUM ")", inum);
+        tsk_error_set_errstr2(" hfs_cat_file_lookup: file (%" PRIuINUM ")",
+            inum);
         return 1;
     }
 
@@ -1154,21 +1151,21 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
         // no parsing error, just not found
         if (tsk_error_get_errno() == 0) {
             tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-            tsk_error_set_errstr(
-                "hfs_cat_file_lookup: Error finding record node %"
+            tsk_error_set_errstr
+                ("hfs_cat_file_lookup: Error finding record node %"
                 PRIuINUM, inum);
         }
         else {
-            tsk_error_set_errstr2(
-                " hfs_cat_file_lookup: file (%" PRIuINUM ")", inum);
+            tsk_error_set_errstr2(" hfs_cat_file_lookup: file (%" PRIuINUM
+                ")", inum);
         }
         return 1;
     }
 
     /* read the record */
     if (hfs_cat_read_file_folder_record(hfs, off, &record)) {
-        tsk_error_set_errstr2(
-            " hfs_cat_file_lookup: file (%" PRIuINUM ")", inum);
+        tsk_error_set_errstr2(" hfs_cat_file_lookup: file (%" PRIuINUM ")",
+            inum);
         return 1;
     }
 
@@ -1743,8 +1740,7 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file_folder * a_entry,
 
     if (a_fs_meta == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "hfs_dinode_copy: a_fs_meta is NULL");
+        tsk_error_set_errstr("hfs_dinode_copy: a_fs_meta is NULL");
         return 1;
     }
 
@@ -1871,8 +1867,7 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 
     if (a_fs_file == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "hfs_inode_lookup: fs_file is NULL");
+        tsk_error_set_errstr("hfs_inode_lookup: fs_file is NULL");
         return 1;
     }
 
@@ -1965,14 +1960,12 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
     if ((fs_file == NULL) || (fs_file->meta == NULL)
         || (fs_file->fs_info == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "hfs_load_attrs: fs_file or meta is NULL");
+        tsk_error_set_errstr("hfs_load_attrs: fs_file or meta is NULL");
         return 1;
     }
     if (fs_file->meta->content_ptr == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "hfs_load_attrs: content_ptr is NULL");
+        tsk_error_set_errstr("hfs_load_attrs: content_ptr is NULL");
         return 1;
     }
     fs = (TSK_FS_INFO *) fs_file->fs_info;
@@ -2115,8 +2108,8 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
             TSK_FS_ATTR_TYPE_DEFAULT);
         if (!hfs->blockmap_attr) {
             tsk_release_lock(&hfs->lock);
-            tsk_error_errstr2_concat(
-                "- Data Attribute not found in blockmap File");
+            tsk_error_errstr2_concat
+                ("- Data Attribute not found in blockmap File");
             return -1;
         }
         hfs->blockmap_cache_start = -1;
@@ -2128,8 +2121,7 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
     if (b > hfs->blockmap_file->meta->size) {
         tsk_release_lock(&hfs->lock);
         tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
-        tsk_error_set_errstr(
-            "hfs_block_is_alloc: block %" PRIuDADDR
+        tsk_error_set_errstr("hfs_block_is_alloc: block %" PRIuDADDR
             " is too large for bitmap (%" PRIuOFF ")", a_addr,
             hfs->blockmap_file->meta->size);
         return -1;
@@ -2144,8 +2136,8 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
             sizeof(hfs->blockmap_cache), 0);
         if (cnt < 1) {
             tsk_release_lock(&hfs->lock);
-            tsk_error_set_errstr2(
-                "hfs_block_is_alloc: Error reading block bitmap at offset %"
+            tsk_error_set_errstr2
+                ("hfs_block_is_alloc: Error reading block bitmap at offset %"
                 PRIuOFF, b);
             return -1;
         }
@@ -2192,16 +2184,14 @@ hfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start_blk,
      */
     if (start_blk < fs->first_block || start_blk > fs->last_block) {
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "%s: invalid start block number: %" PRIuDADDR "", myname,
-            start_blk);
+        tsk_error_set_errstr("%s: invalid start block number: %" PRIuDADDR
+            "", myname, start_blk);
         return 1;
     }
     if (end_blk < fs->first_block || end_blk > fs->last_block) {
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "%s: invalid last block number: %" PRIuDADDR "", myname,
-            end_blk);
+        tsk_error_set_errstr("%s: invalid last block number: %" PRIuDADDR
+            "", myname, end_blk);
         return 1;
     }
 
@@ -2408,8 +2398,8 @@ print_parent_path(FILE * hFile, TSK_FS_INFO * fs, TSK_INUM_T inum)
 
     if (inum <= HFS_ROOT_INUM) {
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr(
-            "print_parent_path: out-of-range inode %" PRIuINUM, inum);
+        tsk_error_set_errstr("print_parent_path: out-of-range inode %"
+            PRIuINUM, inum);
         return 1;
     }
 
@@ -2454,8 +2444,7 @@ hfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "fscheck not implemented for HFS yet");
+    tsk_error_set_errstr("fscheck not implemented for HFS yet");
     return 1;
 }
 
@@ -2936,7 +2925,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     if (hfs_checked_read_random(fs, (char *) hfs->fs, len,
             (TSK_OFF_T) HFS_VH_OFF)) {
-        tsk_error_set_errstr2( "hfs_open: superblock");
+        tsk_error_set_errstr2("hfs_open: superblock");
         fs->tag = 0;
         free(hfs->fs);
         free(hfs);
@@ -2954,8 +2943,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(hfs->fs);
         free(hfs);
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr(
-            "not an HFS+ file system (magic)");
+        tsk_error_set_errstr("not an HFS+ file system (magic)");
         return NULL;
     }
 
@@ -3017,8 +3005,8 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             free(hfs->fs);
             free(hfs);
             tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-            tsk_error_set_errstr(
-                "HFS file systems (other than wrappers HFS+/HFSX file systems) are not supported");
+            tsk_error_set_errstr
+                ("HFS file systems (other than wrappers HFS+/HFSX file systems) are not supported");
             return NULL;
         }
     }
@@ -3091,7 +3079,8 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_fs_file_close(hfs->catalog_file);
         free(hfs->fs);
         free(hfs);
-        tsk_error_errstr2_concat("- Data Attribute not found in Catalog File");
+        tsk_error_errstr2_concat
+            ("- Data Attribute not found in Catalog File");
         return NULL;
     }
 
@@ -3104,8 +3093,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2(
-            "hfs_open: Error reading catalog header");
+        tsk_error_set_errstr2("hfs_open: Error reading catalog header");
         fs->tag = 0;
         free(hfs->fs);
         free(hfs);

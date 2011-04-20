@@ -520,7 +520,7 @@ typedef struct {
     tsk_lock_t lock;
 
     TSK_FS_FILE *blockmap_file; //(r/w shared - lock) 
-    const TSK_FS_ATTR *blockmap_attr; // (r/w shared - lock) 
+    const TSK_FS_ATTR *blockmap_attr;   // (r/w shared - lock) 
     char blockmap_cache[4096];  ///< Cache for blockmap (r/w shared - lock) 
     TSK_OFF_T blockmap_cache_start;     ///< Byte offset of blockmap where cache starts (r/w shared - lock) 
     size_t blockmap_cache_len;  ///< Length of cache that is being used (r/w shared - lock) 

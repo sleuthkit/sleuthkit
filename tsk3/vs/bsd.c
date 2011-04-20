@@ -113,7 +113,8 @@ bsd_load_table(TSK_VS_INFO * a_vs)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        tsk_error_set_errstr2("BSD Disk Label in Sector: %" PRIuDADDR, laddr);
+        tsk_error_set_errstr2("BSD Disk Label in Sector: %" PRIuDADDR,
+            laddr);
         free(sect_buf);
         return 1;
     }
@@ -133,8 +134,7 @@ bsd_load_table(TSK_VS_INFO * a_vs)
     if (tsk_getu32(a_vs->endian, dlabel->magic2) != BSD_MAGIC) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-        tsk_error_set_errstr(
-            "BSD disk label (magic #2) (Sector: %"
+        tsk_error_set_errstr("BSD disk label (magic #2) (Sector: %"
             PRIuDADDR ")  %" PRIx32, laddr, tsk_getu32(a_vs->endian,
                 dlabel->magic2));
         free(sect_buf);
@@ -176,8 +176,8 @@ bsd_load_table(TSK_VS_INFO * a_vs)
         if ((idx < 2) && (part_start > max_addr)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
-            tsk_error_set_errstr(
-                "bsd_load_table: Starting sector too large for image");
+            tsk_error_set_errstr
+                ("bsd_load_table: Starting sector too large for image");
             free(sect_buf);
             return 1;
         }

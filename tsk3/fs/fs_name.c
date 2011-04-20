@@ -219,7 +219,8 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
  * @param a_len Length of buffer
  */
 uint8_t
-tsk_fs_meta_make_ls(const TSK_FS_META * a_fs_meta, char *a_buf, size_t a_len)
+tsk_fs_meta_make_ls(const TSK_FS_META * a_fs_meta, char *a_buf,
+    size_t a_len)
 {
     if (a_len < 12) {
         return 1;
@@ -391,9 +392,8 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
 
     tsk_fprintf(hFile, "%s:\t",
         ((fs_file->meta) && (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)
-            && (fs_file->
-                name->flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" :
-        "");
+            && (fs_file->name->
+                flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" : "");
 
     if ((print_path) && (a_path != NULL)) {
         for (i = 0; i < strlen(a_path); i++) {
@@ -579,9 +579,8 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
      * allocated, then add realloc comment */
     if (fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC)
         tsk_fprintf(hFile, " (deleted%s)", ((fs_file->meta)
-                && (fs_file->
-                    meta->flags & TSK_FS_META_FLAG_ALLOC)) ? "-realloc" :
-            "");
+                && (fs_file->meta->
+                    flags & TSK_FS_META_FLAG_ALLOC)) ? "-realloc" : "");
 
     /* inode */
     tsk_fprintf(hFile, "|%" PRIuINUM, fs_file->name->meta_addr);
@@ -620,22 +619,26 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
 
         /* atime, mtime, ctime, crtime */
         if (fs_file->meta->atime)
-            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->atime - time_skew);
+            tsk_fprintf(hFile, "%" PRIu32 "|",
+                fs_file->meta->atime - time_skew);
         else
             tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->atime);
 
         if (fs_file->meta->mtime)
-            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->mtime - time_skew);
+            tsk_fprintf(hFile, "%" PRIu32 "|",
+                fs_file->meta->mtime - time_skew);
         else
             tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->mtime);
-        
+
         if (fs_file->meta->ctime)
-            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->ctime - time_skew);
+            tsk_fprintf(hFile, "%" PRIu32 "|",
+                fs_file->meta->ctime - time_skew);
         else
             tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->ctime);
-        
+
         if (fs_file->meta->crtime)
-            tsk_fprintf(hFile, "%" PRIu32 "\n", fs_file->meta->crtime - time_skew);
+            tsk_fprintf(hFile, "%" PRIu32 "\n",
+                fs_file->meta->crtime - time_skew);
         else
             tsk_fprintf(hFile, "%" PRIu32 "\n", fs_file->meta->crtime);
     }

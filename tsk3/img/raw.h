@@ -27,7 +27,7 @@ extern "C" {
 #else
         int fd;
 #endif
-        TSK_OFF_T seek_pos; // shared and protected by cache_lock in IMG_INFO
+        TSK_OFF_T seek_pos;     // shared and protected by cache_lock in IMG_INFO
     } IMG_RAW_INFO;
 
 #ifdef __cplusplus

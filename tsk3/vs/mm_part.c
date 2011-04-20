@@ -206,16 +206,14 @@ tsk_vs_part_get(const TSK_VS_INFO * a_vs, TSK_PNUM_T a_idx)
     if (a_vs == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_ARG);
-        tsk_error_set_errstr(
-            "tsk_vs_part_get: pointer is NULL");
+        tsk_error_set_errstr("tsk_vs_part_get: pointer is NULL");
         return NULL;
     }
 
     if (a_idx >= a_vs->part_count) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_ARG);
-        tsk_error_set_errstr(
-            "tsk_vs_part_get: Volume address is too big");
+        tsk_error_set_errstr("tsk_vs_part_get: Volume address is too big");
         return NULL;
     }
 
@@ -250,8 +248,8 @@ tsk_vs_part_walk(TSK_VS_INFO * a_vs, TSK_PNUM_T a_start, TSK_PNUM_T a_last,
     if (a_start >= a_vs->part_count) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_WALK_RNG);
-        tsk_error_set_errstr(
-            "tsk_vs_part_walk: Start partition too large: %" PRIuPNUM "",
+        tsk_error_set_errstr
+            ("tsk_vs_part_walk: Start partition too large: %" PRIuPNUM "",
             a_start);
         return 1;
     }
@@ -259,9 +257,8 @@ tsk_vs_part_walk(TSK_VS_INFO * a_vs, TSK_PNUM_T a_start, TSK_PNUM_T a_last,
     if (a_last >= a_vs->part_count) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_WALK_RNG);
-        tsk_error_set_errstr(
-            "tsk_vs_part_walk: End partition too large: %" PRIuPNUM "",
-            a_last);
+        tsk_error_set_errstr("tsk_vs_part_walk: End partition too large: %"
+            PRIuPNUM "", a_last);
         return 1;
     }
 

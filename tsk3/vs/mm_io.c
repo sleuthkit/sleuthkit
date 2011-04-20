@@ -34,8 +34,7 @@ tsk_vs_read_block(TSK_VS_INFO * a_vs, TSK_DADDR_T a_addr, char *a_buf,
     if (a_len % a_vs->block_size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_READ);
-        tsk_error_set_errstr(
-            "tsk_vs_read_block: length %" PRIuSIZE ""
+        tsk_error_set_errstr("tsk_vs_read_block: length %" PRIuSIZE ""
             " not a multiple of %d", a_len, a_vs->block_size);
         return -1;
     }
@@ -86,8 +85,7 @@ tsk_vs_part_read_block(const TSK_VS_PART_INFO * a_vs_part,
     if (a_len % vs->block_size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_READ);
-        tsk_error_set_errstr(
-            "tsk_vs_part_read_block: length %" PRIuSIZE ""
+        tsk_error_set_errstr("tsk_vs_part_read_block: length %" PRIuSIZE ""
             " not a multiple of %d", a_len, vs->block_size);
         return -1;
     }

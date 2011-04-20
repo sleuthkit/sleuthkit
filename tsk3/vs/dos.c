@@ -696,8 +696,8 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        tsk_error_set_errstr2(
-            "Extended DOS table sector %" PRIuDADDR, sect_cur);
+        tsk_error_set_errstr2("Extended DOS table sector %" PRIuDADDR,
+            sect_cur);
         free(sect_buf);
         return 1;
     }
@@ -706,8 +706,7 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
     if (tsk_getu16(vs->endian, sect->magic) != DOS_MAGIC) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-        tsk_error_set_errstr(
-            "Extended DOS partition table in sector %"
+        tsk_error_set_errstr("Extended DOS partition table in sector %"
             PRIuDADDR, sect_cur);
         free(sect_buf);
         return 1;
@@ -841,8 +840,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        tsk_error_set_errstr2(
-            "Primary DOS table sector %" PRIuDADDR, taddr);
+        tsk_error_set_errstr2("Primary DOS table sector %" PRIuDADDR,
+            taddr);
         free(sect_buf);
         return 1;
     }
@@ -852,8 +851,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
     if (tsk_vs_guessu16(vs, sect->magic, DOS_MAGIC)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-        tsk_error_set_errstr(
-            "File is not a DOS partition (invalid primary magic) (Sector: %"
+        tsk_error_set_errstr
+            ("File is not a DOS partition (invalid primary magic) (Sector: %"
             PRIuDADDR ")", taddr);
         free(sect_buf);
         return 1;
@@ -871,8 +870,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         if (strncmp("MSDOS", sect->oemname, 5) == 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-            tsk_error_set_errstr(
-                "dos_load_prim_table: MSDOS OEM name exists");
+            tsk_error_set_errstr
+                ("dos_load_prim_table: MSDOS OEM name exists");
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "dos_load_prim_table: MSDOS OEM name exists\n");
@@ -882,8 +881,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         else if (strncmp("MSWIN", sect->oemname, 5) == 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-            tsk_error_set_errstr(
-                "dos_load_prim_table: MSWIN OEM name exists");
+            tsk_error_set_errstr
+                ("dos_load_prim_table: MSWIN OEM name exists");
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "dos_load_prim_table: MSWIN OEM name exists\n");
@@ -893,8 +892,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         else if (strncmp("NTFS", sect->oemname, 4) == 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-            tsk_error_set_errstr(
-                "dos_load_prim_table: NTFS OEM name exists");
+            tsk_error_set_errstr
+                ("dos_load_prim_table: NTFS OEM name exists");
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "dos_load_prim_table: NTFS OEM name exists\n");
@@ -904,8 +903,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         else if (strncmp("FAT", sect->oemname, 4) == 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-            tsk_error_set_errstr(
-                "dos_load_prim_table: FAT OEM name exists");
+            tsk_error_set_errstr
+                ("dos_load_prim_table: FAT OEM name exists");
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "dos_load_prim_table: FAT OEM name exists\n");
@@ -947,8 +946,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         if ((i < 2) && (part_start > max_addr)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
-            tsk_error_set_errstr(
-                "dos_load_prim_table: Starting sector too large for image");
+            tsk_error_set_errstr
+                ("dos_load_prim_table: Starting sector too large for image");
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "Starting sector %" PRIu32 " too large for image\n",
@@ -961,8 +960,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         else if ((part_start + part_size) > max_addr) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
-                tsk_error_set_errstr(
-                "dos_load_prim_table: Partition ends after image");
+            tsk_error_set_errstr
+                ("dos_load_prim_table: Partition ends after image");
             return 1;
         }
 #endif
@@ -1001,8 +1000,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
 
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-        tsk_error_set_errstr(
-            "dos_load_prim_table: No valid entries in primary table");
+        tsk_error_set_errstr
+            ("dos_load_prim_table: No valid entries in primary table");
         return 1;
     }
     return 0;

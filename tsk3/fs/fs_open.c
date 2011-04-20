@@ -51,15 +51,13 @@ tsk_fs_open_vol(const TSK_VS_PART_INFO * a_part_info,
     if (a_part_info == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_open_vol: Null vpart handle");
+        tsk_error_set_errstr("tsk_fs_open_vol: Null vpart handle");
         return NULL;
     }
     else if (a_part_info->vs == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_open_vol: Null vs handle");
+        tsk_error_set_errstr("tsk_fs_open_vol: Null vs handle");
         return NULL;
     }
 
@@ -87,8 +85,7 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     if (a_img_info == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_open_img: Null image handle");
+        tsk_error_set_errstr("tsk_fs_open_img: Null image handle");
         return NULL;
     }
 
@@ -267,13 +264,12 @@ tsk_fs_close(TSK_FS_INFO * a_fs)
 TSK_FS_INFO *
 tsk_fs_malloc(size_t a_len)
 {
-    TSK_FS_INFO * fs_info;
-    if ((fs_info =
-            (TSK_FS_INFO *) tsk_malloc(a_len)) == NULL)
+    TSK_FS_INFO *fs_info;
+    if ((fs_info = (TSK_FS_INFO *) tsk_malloc(a_len)) == NULL)
         return NULL;
     tsk_init_lock(&fs_info->list_inum_named_lock);
     tsk_init_lock(&fs_info->orphan_dir_lock);
-    
+
     fs_info->list_inum_named = NULL;
 
     return fs_info;
@@ -289,7 +285,7 @@ tsk_fs_free(TSK_FS_INFO * a_fs_info)
         tsk_list_free(a_fs_info->list_inum_named);
         a_fs_info->list_inum_named = NULL;
     }
-    
+
     tsk_deinit_lock(&a_fs_info->list_inum_named_lock);
     tsk_deinit_lock(&a_fs_info->orphan_dir_lock);
 

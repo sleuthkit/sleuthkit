@@ -140,7 +140,7 @@ tsk_fs_ifind_par(TSK_FS_INFO * fs, TSK_FS_IFIND_FLAG_ENUM lclflags,
 
     /* Walk unallocated MFT entries */
     if (fs->inode_walk(fs, fs->first_inum, fs->last_inum,
-            TSK_FS_META_FLAG_UNALLOC,ifind_par_act, &data)) {
+            TSK_FS_META_FLAG_UNALLOC, ifind_par_act, &data)) {
         return 1;
     }
 
@@ -433,8 +433,8 @@ tsk_fs_ifind_path(TSK_FS_INFO * fs, TSK_TCHAR * tpath, TSK_INUM_T * result)
         if (retval != TSKconversionOK) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_UNICODE);
-            tsk_error_set_errstr(
-                "tsk_fs_ifind_path: Error converting path to UTF-8: %d",
+            tsk_error_set_errstr
+                ("tsk_fs_ifind_path: Error converting path to UTF-8: %d",
                 retval);
             free(cpath);
             return -1;

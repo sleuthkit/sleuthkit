@@ -202,8 +202,8 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
             if (retval != TSKconversionOK) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_UNICODE);
-                tsk_error_set_errstr(
-                    "Error converting fls mactime pre-text to UTF-8 %d\n",
+                tsk_error_set_errstr
+                    ("Error converting fls mactime pre-text to UTF-8 %d\n",
                     retval);
                 return 1;
             }

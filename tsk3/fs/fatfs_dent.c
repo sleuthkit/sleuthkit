@@ -148,8 +148,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
     if (buf == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "fatfs_dent_parse_buf: buffer is NULL");
+        tsk_error_set_errstr("fatfs_dent_parse_buf: buffer is NULL");
         return TSK_ERR;
     }
 
@@ -170,8 +169,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
         if (ibase > fs->last_inum) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_ARG);
-            tsk_error_set_errstr(
-                "fatfs_parse: inode address is too large");
+            tsk_error_set_errstr
+                ("fatfs_parse: inode address is too large");
             tsk_fs_name_free(fs_name);
             return TSK_COR;
         }
@@ -197,7 +196,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
             fatfs_dentry *dir;
 
             /* is it a valid dentry? */
-            if (0 == fatfs_isdentry(fatfs, dep, (sectalloc)?1:0)) {
+            if (0 == fatfs_isdentry(fatfs, dep, (sectalloc) ? 1 : 0)) {
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "fatfs_dent_parse_buf: Entry %u is invalid\n",
@@ -298,8 +297,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
                     /* Convert the UTF16 to UTF8 */
                     UTF16 *name16 =
-                        (UTF16 *) ((uintptr_t) & lfninfo.name[lfninfo.
-                            start + 1]);
+                        (UTF16 *) ((uintptr_t) & lfninfo.
+                        name[lfninfo.start + 1]);
                     UTF8 *name8 = (UTF8 *) fs_name->name;
 
                     retVal =
@@ -313,8 +312,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     if (retVal != TSKconversionOK) {
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_FS_UNICODE);
-                        tsk_error_set_errstr(
-                            "fatfs_parse: Error converting FAT LFN to UTF8: %d",
+                        tsk_error_set_errstr
+                            ("fatfs_parse: Error converting FAT LFN to UTF8: %d",
                             retVal);
                         continue;
                     }
@@ -546,8 +545,8 @@ fatfs_dent_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     if (load->addridx == load->addrsize) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "fatfs_dent_walk: Trying to put more sector address in stack than were allocated (%lu)",
+        tsk_error_set_errstr
+            ("fatfs_dent_walk: Trying to put more sector address in stack than were allocated (%lu)",
             (long) load->addridx);
         return TSK_WALK_ERROR;
     }
@@ -592,16 +591,15 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if ((a_addr < a_fs->first_inum) || (a_addr > a_fs->last_inum)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "fatfs_dir_open_meta: invalid a_addr value: %" PRIuINUM "\n",
-            a_addr);
+        tsk_error_set_errstr("fatfs_dir_open_meta: invalid a_addr value: %"
+            PRIuINUM "\n", a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "fatfs_dir_open_meta: NULL fs_attr argument given");
+        tsk_error_set_errstr
+            ("fatfs_dir_open_meta: NULL fs_attr argument given");
         return TSK_ERR;
     }
 
@@ -610,7 +608,8 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         tsk_fs_dir_reset(fs_dir);
     }
     else {
-        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
+        if ((*a_fs_dir = fs_dir =
+                tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
             return TSK_ERR;
         }
     }
@@ -624,9 +623,8 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (fs_dir->fs_file == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr(
-            "fatfs_dir_open_meta: %" PRIuINUM " is not a valid inode",
-            a_addr);
+        tsk_error_set_errstr("fatfs_dir_open_meta: %" PRIuINUM
+            " is not a valid inode", a_addr);
         return TSK_COR;
     }
 
@@ -681,8 +679,8 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (load.dirleft > 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_FWALK);
-        tsk_error_set_errstr(
-            "fatfs_dir_open_meta: Error reading directory %" PRIuINUM,
+        tsk_error_set_errstr
+            ("fatfs_dir_open_meta: Error reading directory %" PRIuINUM,
             a_addr);
 
         /* Free the local buffers */

@@ -28,7 +28,7 @@ extern TSK_IMG_INFO *aff_open(const char *const images[],
 typedef struct {
     TSK_IMG_INFO img_info;
     AFFILE *af_file;
-    TSK_OFF_T seek_pos; // shared and protected by cache_lock in IMG_INFO
+    TSK_OFF_T seek_pos;         // shared and protected by cache_lock in IMG_INFO
     uint16_t type;              /* TYPE - uses AF_IDENTIFY_x values */
 } IMG_AFF_INFO;
 

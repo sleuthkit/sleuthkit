@@ -304,9 +304,9 @@ extern "C" {
         /* FAT cache */
         /* cache_lock protects fatc_buf, fatc_addr, fatc_ttl */
         tsk_lock_t cache_lock;
-        char fatc_buf[FAT_CACHE_N][FAT_CACHE_B]; //r/w shared - lock
-        TSK_DADDR_T fatc_addr[FAT_CACHE_N]; // r/w shared - lock
-        uint8_t fatc_ttl[FAT_CACHE_N]; //r/w shared - lock
+        char fatc_buf[FAT_CACHE_N][FAT_CACHE_B];        //r/w shared - lock
+        TSK_DADDR_T fatc_addr[FAT_CACHE_N];     // r/w shared - lock
+        uint8_t fatc_ttl[FAT_CACHE_N];  //r/w shared - lock
 
         fatfs_sb *sb;
 
@@ -360,7 +360,8 @@ extern "C" {
     extern uint8_t fatfs_make_root(FATFS_INFO *, TSK_FS_META *);
     extern TSK_RETVAL_ENUM fatfs_dinode_copy(FATFS_INFO *, TSK_FS_META *,
         fatfs_dentry *, TSK_DADDR_T, TSK_INUM_T);
-    extern uint8_t fatfs_dinode_load(TSK_FS_INFO *, fatfs_dentry *, TSK_INUM_T);
+    extern uint8_t fatfs_dinode_load(TSK_FS_INFO *, fatfs_dentry *,
+        TSK_INUM_T);
 
     extern uint8_t fatfs_inode_lookup(TSK_FS_INFO * fs,
         TSK_FS_FILE * a_fs_file, TSK_INUM_T inum);

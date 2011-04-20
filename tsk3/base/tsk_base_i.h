@@ -34,10 +34,10 @@ extern "C" {
 #endif
 
 
-extern void tsk_init_lock(tsk_lock_t *);
-extern void tsk_deinit_lock(tsk_lock_t *);
-extern void tsk_take_lock(tsk_lock_t *);
-extern void tsk_release_lock(tsk_lock_t *);
+    extern void tsk_init_lock(tsk_lock_t *);
+    extern void tsk_deinit_lock(tsk_lock_t *);
+    extern void tsk_take_lock(tsk_lock_t *);
+    extern void tsk_release_lock(tsk_lock_t *);
 
 #ifndef rounddown
 #define rounddown(x, y)	\

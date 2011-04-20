@@ -50,19 +50,20 @@ tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
         tsk_error_set_errno(TSK_ERR_FS_READ);
         if ((TSK_DADDR_T) a_off <
             ((a_fs->last_block + 1) * a_fs->block_size))
-            tsk_error_set_errstr(
-                "tsk_fs_read: Offset missing in partial image: %" PRIuDADDR
-                ")", a_off);
-        else
-            tsk_error_set_errstr(
-                "tsk_fs_read: Offset is too large for image: %"
+            tsk_error_set_errstr
+                ("tsk_fs_read: Offset missing in partial image: %"
                 PRIuDADDR ")", a_off);
+        else
+            tsk_error_set_errstr
+                ("tsk_fs_read: Offset is too large for image: %" PRIuDADDR
+                ")", a_off);
         return -1;
     }
 
-    off = a_off + a_fs->offset; 
-    
-    if (((a_fs->block_pre_size) || (a_fs->block_post_size)) && (a_fs->block_size)) {
+    off = a_off + a_fs->offset;
+
+    if (((a_fs->block_pre_size) || (a_fs->block_post_size))
+        && (a_fs->block_size)) {
         TSK_OFF_T cur_off = a_off;
         ssize_t retval = 0;
         TSK_OFF_T end_addr = a_off + a_len;
@@ -72,18 +73,21 @@ tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
             TSK_DADDR_T blk = cur_off / a_fs->block_size;
             TSK_OFF_T read_off = off;
             ssize_t retval2 = 0;
-            size_t read_len = a_fs->block_size - cur_off % a_fs->block_size;
-            
-            if (read_len + cur_off > end_addr) 
+            size_t read_len =
+                a_fs->block_size - cur_off % a_fs->block_size;
+
+            if (read_len + cur_off > end_addr)
                 read_len = end_addr - cur_off;
-                        
+
             if (a_fs->block_pre_size)
-                read_off += ((blk+1) * a_fs->block_pre_size);
-            if (a_fs->block_post_size) 
+                read_off += ((blk + 1) * a_fs->block_pre_size);
+            if (a_fs->block_post_size)
                 read_off += (blk * a_fs->block_post_size);
-            
-            retval2 = tsk_img_read(a_fs->img_info, read_off, &a_buf[retval], read_len);
-            if (retval2 == -1) 
+
+            retval2 =
+                tsk_img_read(a_fs->img_info, read_off, &a_buf[retval],
+                read_len);
+            if (retval2 == -1)
                 return -1;
             else if (retval2 == 0)
                 break;
@@ -111,15 +115,15 @@ tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
  * @return The number of bytes read or -1 on error. 
  */
 ssize_t
-tsk_fs_read_block(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf, size_t a_len)
+tsk_fs_read_block(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
+    size_t a_len)
 {
     TSK_OFF_T off = 0;
 
     if (a_len % a_fs->block_size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_READ);
-        tsk_error_set_errstr(
-            "tsk_fs_read_block: length %" PRIuSIZE ""
+        tsk_error_set_errstr("tsk_fs_read_block: length %" PRIuSIZE ""
             " not a multiple of %d", a_len, a_fs->block_size);
         return -1;
     }
@@ -128,16 +132,16 @@ tsk_fs_read_block(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf, size_t a_
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_READ);
         if (a_addr <= a_fs->last_block)
-            tsk_error_set_errstr(
-                "tsk_fs_read_block: Address missing in partial image: %"
+            tsk_error_set_errstr
+                ("tsk_fs_read_block: Address missing in partial image: %"
                 PRIuDADDR ")", a_addr);
         else
-            tsk_error_set_errstr(
-                "tsk_fs_read_block: Address is too large for image: %"
+            tsk_error_set_errstr
+                ("tsk_fs_read_block: Address is too large for image: %"
                 PRIuDADDR ")", a_addr);
         return -1;
     }
-    
+
     off = a_fs->offset + (TSK_OFF_T) (a_addr) * a_fs->block_size;
     if ((a_fs->block_pre_size == 0) && (a_fs->block_post_size == 0)) {
         return tsk_img_read(a_fs->img_info, off, a_buf, a_len);
@@ -148,11 +152,13 @@ tsk_fs_read_block(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf, size_t a_
 
         for (i = 0; i < a_len; i++) {
             ssize_t retval2;
-            TSK_OFF_T off2 = off + i*a_fs->block_size;
-            off += ((a_addr+1) * a_fs->block_pre_size);
+            TSK_OFF_T off2 = off + i * a_fs->block_size;
+            off += ((a_addr + 1) * a_fs->block_pre_size);
             off += (a_addr * a_fs->block_post_size);
-            
-            retval2 = tsk_img_read(a_fs->img_info, off2, &a_buf[retval], a_fs->block_size);
+
+            retval2 =
+                tsk_img_read(a_fs->img_info, off2, &a_buf[retval],
+                a_fs->block_size);
             if (retval2 == -1)
                 return -1;
             else if (retval2 == 0)

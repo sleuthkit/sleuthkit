@@ -66,8 +66,7 @@ tsk_fs_attrlist_add(TSK_FS_ATTRLIST * a_fs_attrlist,
     if (a_fs_attrlist == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "Null list in tsk_fs_attrlist_add");
+        tsk_error_set_errstr("Null list in tsk_fs_attrlist_add");
         return 1;
     }
 
@@ -86,8 +85,8 @@ tsk_fs_attrlist_add(TSK_FS_ATTRLIST * a_fs_attrlist,
                 && (fs_attr_cur->id == a_fs_attr->id)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_ARG);
-                tsk_error_set_errstr(
-                    "datalist_add: Type %d and Id %d already in list",
+                tsk_error_set_errstr
+                    ("datalist_add: Type %d and Id %d already in list",
                     a_fs_attr->type, a_fs_attr->id);
                 return 1;
             }
@@ -125,16 +124,14 @@ tsk_fs_attrlist_getnew(TSK_FS_ATTRLIST * a_fs_attrlist,
     if (a_fs_attrlist == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "Null list in tsk_fs_attrlist_getnew()");
+        tsk_error_set_errstr("Null list in tsk_fs_attrlist_getnew()");
         return NULL;
     }
 
     if ((a_atype != TSK_FS_ATTR_NONRES) && (a_atype != TSK_FS_ATTR_RES)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "Invalid Type in tsk_fs_attrlist_getnew()");
+        tsk_error_set_errstr("Invalid Type in tsk_fs_attrlist_getnew()");
         return NULL;
     }
 
@@ -217,8 +214,7 @@ tsk_fs_attrlist_get(const TSK_FS_ATTRLIST * a_fs_attrlist,
     if (!a_fs_attrlist) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_attrlist_get: Null list pointer");
+        tsk_error_set_errstr("tsk_fs_attrlist_get: Null list pointer");
         return NULL;
     }
 
@@ -242,8 +238,8 @@ tsk_fs_attrlist_get(const TSK_FS_ATTRLIST * a_fs_attrlist,
 
     if (!fs_attr_ok) {
         tsk_error_set_errno(TSK_ERR_FS_ATTR_NOTFOUND);
-        tsk_error_set_errstr(
-            "tsk_fs_attrlist_get: Attribute %d not found", a_type);
+        tsk_error_set_errstr("tsk_fs_attrlist_get: Attribute %d not found",
+            a_type);
         return NULL;
     }
     else {
@@ -272,8 +268,7 @@ tsk_fs_attrlist_get_id(const TSK_FS_ATTRLIST * a_fs_attrlist,
     if (!a_fs_attrlist) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_attrlist_get_id: Null list pointer");
+        tsk_error_set_errstr("tsk_fs_attrlist_get_id: Null list pointer");
         return NULL;
     }
 
@@ -285,8 +280,9 @@ tsk_fs_attrlist_get_id(const TSK_FS_ATTRLIST * a_fs_attrlist,
     }
 
     tsk_error_set_errno(TSK_ERR_FS_ATTR_NOTFOUND);
-    tsk_error_set_errstr(
-        "tsk_fs_attrlist_get_id: Attribute %d-%d not found", a_type, a_id);
+    tsk_error_set_errstr
+        ("tsk_fs_attrlist_get_id: Attribute %d-%d not found", a_type,
+        a_id);
     return NULL;
 }
 
@@ -317,8 +313,8 @@ tsk_fs_attrlist_get_name_type(const TSK_FS_ATTRLIST * a_fs_attrlist,
     if (!a_fs_attrlist) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_attrlist_get_name_type: Null list pointer");
+        tsk_error_set_errstr
+            ("tsk_fs_attrlist_get_name_type: Null list pointer");
         return NULL;
     }
 
@@ -348,8 +344,8 @@ tsk_fs_attrlist_get_name_type(const TSK_FS_ATTRLIST * a_fs_attrlist,
 
     if (!fs_attr_ok) {
         tsk_error_set_errno(TSK_ERR_FS_ATTR_NOTFOUND);
-        tsk_error_set_errstr(
-            "tsk_fs_attrlist_get: Attribute %d not found", a_type);
+        tsk_error_set_errstr("tsk_fs_attrlist_get: Attribute %d not found",
+            a_type);
         return NULL;
     }
     else {
@@ -377,8 +373,7 @@ tsk_fs_attrlist_get_idx(const TSK_FS_ATTRLIST * a_fs_attrlist, int a_idx)
     if (!a_fs_attrlist) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_attrlist_get_idx: Null list pointer");
+        tsk_error_set_errstr("tsk_fs_attrlist_get_idx: Null list pointer");
         return NULL;
     }
 
@@ -393,8 +388,8 @@ tsk_fs_attrlist_get_idx(const TSK_FS_ATTRLIST * a_fs_attrlist, int a_idx)
     }
 
     tsk_error_set_errno(TSK_ERR_FS_ATTR_NOTFOUND);
-    tsk_error_set_errstr(
-        "tsk_fs_attrlist_get_idx: Attribute index %d not found", a_idx);
+    tsk_error_set_errstr
+        ("tsk_fs_attrlist_get_idx: Attribute index %d not found", a_idx);
     return NULL;
 }
 
@@ -416,8 +411,7 @@ tsk_fs_attrlist_get_len(const TSK_FS_ATTRLIST * a_fs_attrlist)
     if (!a_fs_attrlist) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_attrlist_get_len: Null list pointer");
+        tsk_error_set_errstr("tsk_fs_attrlist_get_len: Null list pointer");
         return 0;
     }
 

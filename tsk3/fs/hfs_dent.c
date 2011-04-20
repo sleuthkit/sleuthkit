@@ -129,8 +129,8 @@ hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
     free(uniclean);
     if (r != TSKconversionOK) {
         tsk_error_set_errno(TSK_ERR_FS_UNICODE);
-        tsk_error_set_errstr(
-            "hfs_uni2ascii: unicode conversion failed (%d)", (int) r);
+        tsk_error_set_errstr
+            ("hfs_uni2ascii: unicode conversion failed (%d)", (int) r);
         return 1;
     }
 
@@ -225,8 +225,8 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
         // Catalog entry is for a file
         if (rec_type == HFS_FILE_THREAD) {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
-            tsk_error_set_errstr(
-                "hfs_dir_open_meta: Entry" " is a file, not a folder");
+            tsk_error_set_errstr("hfs_dir_open_meta: Entry"
+                " is a file, not a folder");
             return HFS_BTREE_CB_ERR;
         }
 
@@ -275,8 +275,8 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
         else {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             // @@@ MAY NEED TO IMPROVE BELOW MESSAGE
-            tsk_error_set_errstr(
-                "hfs_dir_open_meta: Unknown record type %d in leaf node",
+            tsk_error_set_errstr
+                ("hfs_dir_open_meta: Unknown record type %d in leaf node",
                 rec_type);
             return HFS_BTREE_CB_ERR;
         }
@@ -322,15 +322,15 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
     if (a_addr < fs->first_inum || a_addr > fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "hfs_dir_open_meta: Invalid inode value: %" PRIuINUM, a_addr);
+        tsk_error_set_errstr("hfs_dir_open_meta: Invalid inode value: %"
+            PRIuINUM, a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "hfs_dir_open_meta: NULL fs_dir argument given");
+        tsk_error_set_errstr
+            ("hfs_dir_open_meta: NULL fs_dir argument given");
         return TSK_ERR;
     }
 
@@ -343,7 +343,8 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
     if (fs_dir) {
         tsk_fs_dir_reset(fs_dir);
     }
-    else if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(fs, a_addr, 128)) == NULL) {
+    else if ((*a_fs_dir = fs_dir =
+            tsk_fs_dir_alloc(fs, a_addr, 128)) == NULL) {
         return TSK_ERR;
     }
 

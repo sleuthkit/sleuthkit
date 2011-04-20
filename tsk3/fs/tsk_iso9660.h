@@ -393,7 +393,8 @@ typedef struct {
 extern TSK_RETVAL_ENUM iso9660_dir_open_meta(TSK_FS_INFO * a_fs,
     TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_addr);
 
-extern uint8_t iso9660_dinode_load(ISO_INFO * iso, TSK_INUM_T inum, iso9660_inode *dinode);
+extern uint8_t iso9660_dinode_load(ISO_INFO * iso, TSK_INUM_T inum,
+    iso9660_inode * dinode);
 
 extern int iso9660_name_cmp(TSK_FS_INFO *, const char *, const char *);
 

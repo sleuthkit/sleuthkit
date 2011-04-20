@@ -228,8 +228,8 @@ tsk_fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr)
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)
         || (a_fs->dir_open_meta == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_dir_open_meta: called with NULL or unallocated structures");
+        tsk_error_set_errstr
+            ("tsk_fs_dir_open_meta: called with NULL or unallocated structures");
         return NULL;
     }
 
@@ -257,8 +257,8 @@ tsk_fs_dir_open(TSK_FS_INFO * a_fs, const char *a_dir)
 
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_dir_open: called with NULL or unallocated structures");
+        tsk_error_set_errstr
+            ("tsk_fs_dir_open: called with NULL or unallocated structures");
         return NULL;
     }
 
@@ -273,8 +273,7 @@ tsk_fs_dir_open(TSK_FS_INFO * a_fs, const char *a_dir)
     }
     else if (retval == 1) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_dir_open: path not found: %s", a_dir);
+        tsk_error_set_errstr("tsk_fs_dir_open: path not found: %s", a_dir);
         return NULL;
     }
 
@@ -333,8 +332,8 @@ tsk_fs_dir_getsize(const TSK_FS_DIR * a_fs_dir)
 {
     if ((a_fs_dir == NULL) || (a_fs_dir->tag != TSK_FS_DIR_TAG)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_dir_getsize: called with NULL or unallocated structures");
+        tsk_error_set_errstr
+            ("tsk_fs_dir_getsize: called with NULL or unallocated structures");
         return 0;
     }
     return a_fs_dir->names_used;
@@ -355,15 +354,14 @@ tsk_fs_dir_get(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
     if ((a_fs_dir == NULL) || (a_fs_dir->tag != TSK_FS_DIR_TAG)
         || (a_fs_dir->fs_info == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_dir_get: called with NULL or unallocated structures");
+        tsk_error_set_errstr
+            ("tsk_fs_dir_get: called with NULL or unallocated structures");
         return NULL;
     }
     if (a_fs_dir->names_used <= a_idx) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_dir_get: Index (%" PRIuSIZE ") too large (%" PRIuSIZE
-            ")", a_idx, a_fs_dir->names_used);
+        tsk_error_set_errstr("tsk_fs_dir_get: Index (%" PRIuSIZE
+            ") too large (%" PRIuSIZE ")", a_idx, a_fs_dir->names_used);
         return NULL;
     }
 
@@ -427,7 +425,7 @@ typedef struct {
      * TSK_FS_INFO list_inum_named field.  We're trading off the extra
      * work in each thread for cleaner locking code.
      */
-    TSK_LIST * list_inum_named;
+    TSK_LIST *list_inum_named;
 
 } DENT_DINFO;
 
@@ -507,7 +505,8 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
         if ((a_dinfo->save_inum_named) && (fs_file->meta)
             && (fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)) {
 
-            if (tsk_list_add(&a_dinfo->list_inum_named, fs_file->meta->addr)) {
+            if (tsk_list_add(&a_dinfo->list_inum_named,
+                    fs_file->meta->addr)) {
 
                 // if there is an error, then clear the list
                 tsk_list_free(a_dinfo->list_inum_named);
@@ -647,8 +646,8 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
 
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_dir_walk: called with NULL or unallocated structures");
+        tsk_error_set_errstr
+            ("tsk_fs_dir_walk: called with NULL or unallocated structures");
         return 1;
     }
 
@@ -685,7 +684,8 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
              */
             tsk_list_free(dinfo.list_inum_named);
             dinfo.list_inum_named = NULL;
-        } else {
+        }
+        else {
             /* We finished the dir walk successfully, so reassign
              * ownership of the dinfo's list_inum_named to the shared
              * list_inum_named in TSK_FS_INFO, under a lock, if
@@ -694,7 +694,8 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
             tsk_take_lock(&a_fs->list_inum_named_lock);
             if (a_fs->list_inum_named == NULL) {
                 a_fs->list_inum_named = dinfo.list_inum_named;
-            } else {
+            }
+            else {
                 tsk_list_free(dinfo.list_inum_named);
             }
             tsk_release_lock(&a_fs->list_inum_named_lock);
@@ -783,7 +784,7 @@ tsk_fs_dir_make_orphan_dir_meta(TSK_FS_INFO * a_fs,
  * file name or 0 if not.
  */
 uint8_t
-tsk_fs_dir_find_inum_named(TSK_FS_INFO *a_fs, TSK_INUM_T a_inum)
+tsk_fs_dir_find_inum_named(TSK_FS_INFO * a_fs, TSK_INUM_T a_inum)
 {
     uint8_t retval = 0;
     tsk_take_lock(&a_fs->list_inum_named_lock);
@@ -829,8 +830,8 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
     if (tsk_fs_dir_walk(a_fs, a_fs->root_inum,
             TSK_FS_NAME_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE |
             TSK_FS_DIR_WALK_FLAG_NOORPHAN, load_named_dir_walk_cb, NULL)) {
-        tsk_error_errstr2_concat(
-            "- tsk_fs_dir_load_inum_named: identifying inodes allocated by file names");
+        tsk_error_errstr2_concat
+            ("- tsk_fs_dir_load_inum_named: identifying inodes allocated by file names");
         return TSK_ERR;
     }
 
@@ -854,8 +855,8 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
     FIND_ORPHAN_DATA *data = (FIND_ORPHAN_DATA *) a_ptr;
 
     // ignore DOT entries
-    if ((a_fs_file->name) && (a_fs_file->name->name) && 
-            (TSK_FS_ISDOT(a_fs_file->name->name)))
+    if ((a_fs_file->name) && (a_fs_file->name->name) &&
+        (TSK_FS_ISDOT(a_fs_file->name->name)))
         return TSK_WALK_CONT;
 
     // add this entry to the orphan list
@@ -931,8 +932,8 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
                 TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE
                 | TSK_FS_DIR_WALK_FLAG_NOORPHAN, load_orphan_dir_walk_cb,
                 data)) {
-            tsk_error_errstr2_concat(
-                " - tsk_fs_dir_load_inum_named: identifying inodes allocated by file names");
+            tsk_error_errstr2_concat
+                (" - tsk_fs_dir_load_inum_named: identifying inodes allocated by file names");
             return TSK_ERR;
         }
     }
@@ -947,18 +948,18 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
  * @returns 1 on error
  */
 static uint8_t
-tsk_fs_dir_add_orphan_dir_meta(TSK_FS_INFO *a_fs, TSK_FS_DIR *a_fs_dir)
+tsk_fs_dir_add_orphan_dir_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
 {
     // populate the fake FS_FILE structure for the "Orphan Directory"
     if ((a_fs_dir->fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
         return 1;
     }
-    
+
     if ((a_fs_dir->fs_file->meta =
-         tsk_fs_meta_alloc(sizeof(TSK_DADDR_T))) == NULL) {
+            tsk_fs_meta_alloc(sizeof(TSK_DADDR_T))) == NULL) {
         return 1;
     }
-    
+
     if (tsk_fs_dir_make_orphan_dir_meta(a_fs, a_fs_dir->fs_file->meta)) {
         return 1;
     }
@@ -983,12 +984,12 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
             tsk_release_lock(&a_fs->orphan_dir_lock);
             return TSK_ERR;
         }
-        
+
         if (tsk_fs_dir_add_orphan_dir_meta(a_fs, a_fs_dir)) {
             tsk_release_lock(&a_fs->orphan_dir_lock);
             return TSK_ERR;
         }
-        
+
         tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_OK;
     }
@@ -1049,7 +1050,8 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
 
     // make copy of this so that we don't need to do it again.
     if ((a_fs->orphan_dir =
-            tsk_fs_dir_alloc(a_fs, a_fs_dir->addr, a_fs_dir->names_used)) == NULL) {
+            tsk_fs_dir_alloc(a_fs, a_fs_dir->addr,
+                a_fs_dir->names_used)) == NULL) {
         tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_ERR;
     }
@@ -1064,7 +1066,7 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
         tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_ERR;
     }
-    
+
     tsk_release_lock(&a_fs->orphan_dir_lock);
     return TSK_OK;
 }

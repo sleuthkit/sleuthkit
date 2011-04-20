@@ -56,10 +56,9 @@ tsk_fs_nofs_make_data_run(TSK_FS_FILE * a_fs_file)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "Illegal analysis method for %s data ",
-        (a_fs_file->fs_info) ? tsk_fs_type_toname(a_fs_file->fs_info->
-            ftype) : "");
+    tsk_error_set_errstr("Illegal analysis method for %s data ",
+        (a_fs_file->fs_info) ? tsk_fs_type_toname(a_fs_file->
+            fs_info->ftype) : "");
     return 1;
 }
 
@@ -106,9 +105,8 @@ tsk_fs_nofs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     if (a_start_blk < fs->first_block || a_start_blk > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "nofs_block_walk: Start block number: %" PRIuDADDR,
-            a_start_blk);
+        tsk_error_set_errstr("nofs_block_walk: Start block number: %"
+            PRIuDADDR, a_start_blk);
         return 1;
     }
 
@@ -116,8 +114,8 @@ tsk_fs_nofs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
         || a_end_blk < a_start_blk) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "nofs_block_walk: Last block number: %" PRIuDADDR, a_end_blk);
+        tsk_error_set_errstr("nofs_block_walk: Last block number: %"
+            PRIuDADDR, a_end_blk);
         return 1;
     }
 
@@ -142,8 +140,8 @@ tsk_fs_nofs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
         int retval;
 
         if (tsk_fs_block_get(fs, fs_block, addr) == NULL) {
-            tsk_error_set_errstr2(
-                "nofs_block_walk: Block %" PRIuDADDR, addr);
+            tsk_error_set_errstr2("nofs_block_walk: Block %" PRIuDADDR,
+                addr);
             tsk_fs_block_free(fs_block);
             return 1;
         }
@@ -178,8 +176,7 @@ tsk_fs_nofs_inode_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_start_inum,
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "Illegal analysis method for %s data ",
+    tsk_error_set_errstr("Illegal analysis method for %s data ",
         tsk_fs_type_toname(a_fs->ftype));
     return 1;
 }
@@ -192,8 +189,7 @@ tsk_fs_nofs_file_add_meta(TSK_FS_INFO * a_fs, TSK_FS_FILE * a_fs_file,
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "Illegal analysis method for %s data ",
+    tsk_error_set_errstr("Illegal analysis method for %s data ",
         tsk_fs_type_toname(a_fs->ftype));
     return 1;
 }
@@ -206,8 +202,7 @@ tsk_fs_nofs_istat(TSK_FS_INFO * a_fs, FILE * hFile, TSK_INUM_T inum,
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "Illegal analysis method for %s data ",
+    tsk_error_set_errstr("Illegal analysis method for %s data ",
         tsk_fs_type_toname(a_fs->ftype));
     return 1;
 }
@@ -224,8 +219,7 @@ tsk_fs_nofs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "Illegal analysis method for %s data ",
+    tsk_error_set_errstr("Illegal analysis method for %s data ",
         tsk_fs_type_toname(a_fs->ftype));
     return TSK_ERR;
 }
@@ -239,8 +233,7 @@ tsk_fs_nofs_jopen(TSK_FS_INFO * a_fs, TSK_INUM_T inum)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "Illegal analysis method for %s data ",
+    tsk_error_set_errstr("Illegal analysis method for %s data ",
         tsk_fs_type_toname(a_fs->ftype));
     return 1;
 }
@@ -253,8 +246,7 @@ tsk_fs_nofs_jentry_walk(TSK_FS_INFO * a_fs, int a_flags,
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "Illegal analysis method for %s data ",
+    tsk_error_set_errstr("Illegal analysis method for %s data ",
         tsk_fs_type_toname(a_fs->ftype));
     return 1;
 }
@@ -268,8 +260,7 @@ tsk_fs_nofs_jblk_walk(TSK_FS_INFO * a_fs, TSK_INUM_T start, TSK_INUM_T end,
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "Illegal analysis method for %s data ",
+    tsk_error_set_errstr("Illegal analysis method for %s data ",
         tsk_fs_type_toname(a_fs->ftype));
     return 1;
 }

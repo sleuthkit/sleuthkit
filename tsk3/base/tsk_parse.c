@@ -37,8 +37,8 @@ tsk_parse_offset(const TSK_TCHAR * a_offset_str)
     if (TSTRLEN(a_offset_str) > 63) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OFFSET);
-        tsk_error_set_errstr("tsk_parse: offset string is too long: %" PRIttocTSK,
-            a_offset_str);
+        tsk_error_set_errstr("tsk_parse: offset string is too long: %"
+            PRIttocTSK, a_offset_str);
         return -1;
     }
 
@@ -50,8 +50,9 @@ tsk_parse_offset(const TSK_TCHAR * a_offset_str)
     if (TSTRCHR(offset_lcl_p, '@') != NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OFFSET);
-        tsk_error_set_errstr("tsk_parse: offset string format no longer supported.  Use -b to specify sector size: %" PRIttocTSK,
-                 a_offset_str);
+        tsk_error_set_errstr
+            ("tsk_parse: offset string format no longer supported.  Use -b to specify sector size: %"
+            PRIttocTSK, a_offset_str);
         return -1;
     }
 
@@ -67,8 +68,8 @@ tsk_parse_offset(const TSK_TCHAR * a_offset_str)
         if (*cp || *cp == *offset_lcl_p) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OFFSET);
-            tsk_error_set_errstr("tsk_parse: invalid image offset: %" PRIttocTSK,
-                offset_lcl_p);
+            tsk_error_set_errstr("tsk_parse: invalid image offset: %"
+                PRIttocTSK, offset_lcl_p);
             return -1;
         }
     }
@@ -101,8 +102,8 @@ tsk_parse_pnum(const TSK_TCHAR * a_pnum_str, TSK_PNUM_T * a_pnum)
     if (*cp || *cp == *a_pnum_str) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OFFSET);
-        tsk_error_set_errstr("tsk_parse: invalid partition address: %" PRIttocTSK,
-            a_pnum_str);
+        tsk_error_set_errstr("tsk_parse: invalid partition address: %"
+            PRIttocTSK, a_pnum_str);
         return 1;
     }
 

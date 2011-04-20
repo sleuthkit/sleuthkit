@@ -403,7 +403,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2( "iso_get_dentries");
+            tsk_error_set_errstr2("iso_get_dentries");
             return -1;
         }
 
@@ -451,8 +451,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 if (strlen(a_fn) > ISO9660_MAXNAMLEN_STD) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_ARG);
-                    tsk_error_set_errstr(
-                        "iso9660_load_inodes_dir: Name argument specified is too long");
+                    tsk_error_set_errstr
+                        ("iso9660_load_inodes_dir: Name argument specified is too long");
                     return -1;
                 }
                 strncpy(in_node->inode.fn, a_fn,
@@ -497,8 +497,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         (const UTF16 **) &name16,
                         (UTF16 *) & buf[b_offs + sizeof(iso9660_dentry) +
                             dentry->fi_len], &name8,
-                        (UTF8 *) ((uintptr_t) & in_node->
-                            inode.fn[ISO9660_MAXNAMLEN_STD]),
+                        (UTF8 *) ((uintptr_t) & in_node->inode.
+                            fn[ISO9660_MAXNAMLEN_STD]),
                         TSKlenientConversion);
                     if (retVal != TSKconversionOK) {
                         if (tsk_verbose)
@@ -524,8 +524,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 else {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_ARG);
-                    tsk_error_set_errstr(
-                        "Invalid ctype in iso9660_load_inodes_dir");
+                    tsk_error_set_errstr
+                        ("Invalid ctype in iso9660_load_inodes_dir");
                     return -1;
                 }
 
@@ -694,7 +694,7 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2( "iso9660_load_inodes_pt");
+            tsk_error_set_errstr2("iso9660_load_inodes_pt");
             return -1;
         }
         pt_len -= cnt;
@@ -712,7 +712,7 @@ iso9660_load_inodes_pt_joliet(TSK_FS_INFO * fs, iso9660_svd * svd,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2( "iso_find_inodes");
+            tsk_error_set_errstr2("iso_find_inodes");
             return -1;
         }
         pt_len -= cnt;
@@ -834,7 +834,7 @@ iso9660_load_inodes_pt(ISO_INFO * iso)
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                tsk_error_set_errstr2( "iso_find_inodes");
+                tsk_error_set_errstr2("iso_find_inodes");
                 return -1;
             }
             pt_len -= cnt;
@@ -851,7 +851,7 @@ iso9660_load_inodes_pt(ISO_INFO * iso)
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                tsk_error_set_errstr2( "iso_find_inodes");
+                tsk_error_set_errstr2("iso_find_inodes");
                 return -1;
             }
             fn[cnt] = '\0';
@@ -892,7 +892,8 @@ iso9660_load_inodes_pt(ISO_INFO * iso)
  * @returns 1 if not found and 0 on succuss
  */
 uint8_t
-iso9660_dinode_load(ISO_INFO * iso, TSK_INUM_T inum, iso9660_inode *dinode)
+iso9660_dinode_load(ISO_INFO * iso, TSK_INUM_T inum,
+    iso9660_inode * dinode)
 {
     iso9660_inode_node *n;
 
@@ -945,15 +946,16 @@ isomode2tskmode(uint16_t a_mode)
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-iso9660_dinode_copy(ISO_INFO * iso, TSK_FS_META * fs_meta, TSK_INUM_T inum, iso9660_inode *dinode)
+iso9660_dinode_copy(ISO_INFO * iso, TSK_FS_META * fs_meta, TSK_INUM_T inum,
+    iso9660_inode * dinode)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & iso->fs_info;
     struct tm t;
 
     if (fs_meta == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "iso9660_dinode_copy: fs_file or meta is NULL");
+        tsk_error_set_errstr
+            ("iso9660_dinode_copy: fs_file or meta is NULL");
         return 1;
     }
 
@@ -970,7 +972,7 @@ iso9660_dinode_copy(ISO_INFO * iso, TSK_FS_META * fs_meta, TSK_INUM_T inum, iso9
         }
     }
 
-    fs_meta->addr =inum;
+    fs_meta->addr = inum;
     fs_meta->size = tsk_getu32(fs->endian, dinode->dr.data_len_m);
 
     memset(&t, 0, sizeof(struct tm));
@@ -1055,8 +1057,7 @@ iso9660_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 
     if (a_fs_file == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "iso9660_inode_lookup: fs_file is NULL");
+        tsk_error_set_errstr("iso9660_inode_lookup: fs_file is NULL");
         return 1;
     }
 
@@ -1071,10 +1072,10 @@ iso9660_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 
     // see if they are looking for the special "orphans" directory
     if (inum == TSK_FS_ORPHANDIR_INUM(fs)) {
-        if (tsk_fs_dir_make_orphan_dir_meta(fs, a_fs_file->meta)){
+        if (tsk_fs_dir_make_orphan_dir_meta(fs, a_fs_file->meta)) {
             return 1;
         }
-        else{
+        else {
             return 0;
         }
     }
@@ -1134,15 +1135,14 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
     if (start < fs->first_inum || start > fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "%s: Start inode:  %" PRIuINUM "", myname, start);
+        tsk_error_set_errstr("%s: Start inode:  %" PRIuINUM "", myname,
+            start);
         return 1;
     }
     if (last < fs->first_inum || last > fs->last_inum || last < start) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "%s: End inode: %" PRIuINUM "", myname, last);
+        tsk_error_set_errstr("%s: End inode: %" PRIuINUM "", myname, last);
         return 1;
     }
 
@@ -1172,8 +1172,8 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
      * */
     if ((flags & TSK_FS_META_FLAG_ORPHAN)) {
         if (tsk_fs_dir_load_inum_named(fs) != TSK_OK) {
-            tsk_error_errstr2_concat(
-                "- iso9660_inode_walk: identifying inodes allocated by file names");
+            tsk_error_errstr2_concat
+                ("- iso9660_inode_walk: identifying inodes allocated by file names");
             return 1;
         }
     }
@@ -1212,7 +1212,7 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
             return 1;
         }
 
-        if (iso9660_dinode_copy(iso, fs_file->meta, inum, dinode)){
+        if (iso9660_dinode_copy(iso, fs_file->meta, inum, dinode)) {
             free(dinode);
             return 1;
         }
@@ -1272,7 +1272,7 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
      */
     tsk_fs_file_close(fs_file);
     if (dinode != NULL)
-        free((char *)dinode);
+        free((char *) dinode);
     return 0;
 }
 
@@ -1305,8 +1305,8 @@ iso9660_is_block_alloc(TSK_FS_INFO * fs, TSK_DADDR_T blk_num)
 }
 
 
-TSK_FS_BLOCK_FLAG_ENUM
-static iso9660_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
+TSK_FS_BLOCK_FLAG_ENUM static
+iso9660_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 {
     return (iso9660_is_block_alloc(a_fs, a_addr)) ?
         TSK_FS_BLOCK_FLAG_ALLOC : TSK_FS_BLOCK_FLAG_UNALLOC;
@@ -1342,15 +1342,15 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
     if (start < fs->first_block || start > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "%s: Start block: %" PRIuDADDR "", myname, start);
+        tsk_error_set_errstr("%s: Start block: %" PRIuDADDR "", myname,
+            start);
         return 1;
     }
     if (last < fs->first_block || last > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "%s: End block: %" PRIuDADDR "", myname, last);
+        tsk_error_set_errstr("%s: End block: %" PRIuDADDR "", myname,
+            last);
         return 1;
     }
 
@@ -1390,7 +1390,7 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
             continue;
 
         if (tsk_fs_block_get(fs, fs_block, addr) == NULL) {
-            tsk_error_set_errstr2( "iso_block_walk");
+            tsk_error_set_errstr2("iso_block_walk");
             tsk_fs_block_free(fs_block);
             return 1;
         }
@@ -1427,8 +1427,8 @@ iso9660_make_data_run(TSK_FS_FILE * a_fs_file)
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
         || (a_fs_file->fs_info == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "iso9660_make_data_run: fs_file or meta is NULL");
+        tsk_error_set_errstr
+            ("iso9660_make_data_run: fs_file or meta is NULL");
         return 1;
     }
     fs = a_fs_file->fs_info;
@@ -1452,7 +1452,8 @@ iso9660_make_data_run(TSK_FS_FILE * a_fs_file)
 
     /* allocate cache buffers */
     /* dinode */
-    if ((dinode = (iso9660_inode *) tsk_malloc(sizeof(iso9660_inode))) == NULL){
+    if ((dinode =
+            (iso9660_inode *) tsk_malloc(sizeof(iso9660_inode))) == NULL) {
         fs->tag = 0;
         iso9660_close(fs);
         return 1;
@@ -1460,7 +1461,7 @@ iso9660_make_data_run(TSK_FS_FILE * a_fs_file)
 
     // copy the raw data
     if (iso9660_dinode_load(iso, a_fs_file->meta->addr, dinode)) {
-        tsk_error_set_errstr2( "iso9660_make_data_run");
+        tsk_error_set_errstr2("iso9660_make_data_run");
         a_fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
         free(dinode);
         return 1;
@@ -1472,8 +1473,8 @@ iso9660_make_data_run(TSK_FS_FILE * a_fs_file)
     if (dd.gap_sz) {
         a_fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
         tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-        tsk_error_set_errstr(
-            "file %" PRIuINUM " has an interleave gap -- not supported",
+        tsk_error_set_errstr("file %" PRIuINUM
+            " has an interleave gap -- not supported",
             a_fs_file->meta->addr);
         return 1;
     }
@@ -1481,12 +1482,12 @@ iso9660_make_data_run(TSK_FS_FILE * a_fs_file)
     if ((fs_attr =
             tsk_fs_attrlist_getnew(a_fs_file->meta->attr,
                 TSK_FS_ATTR_NONRES)) == NULL) {
-       return 1;
+        return 1;
     }
 
     // make a non-resident run
     data_run = tsk_fs_attr_run_alloc();
-    if (data_run == NULL){
+    if (data_run == NULL) {
         return -1;
     }
     data_run->addr = ((TSK_DADDR_T *) a_fs_file->meta->content_ptr)[0];
@@ -1518,8 +1519,7 @@ iso9660_fscheck(TSK_FS_INFO * fs, FILE * hFile)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "fscheck not implemented for iso9660 yet");
+    tsk_error_set_errstr("fscheck not implemented for iso9660 yet");
     return 1;
 }
 
@@ -1773,8 +1773,9 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
  * the cached inode in fs, storing results in perm.  Caller must
  * ensure perm can hold 10 chars plus one null char.
  */
-static char*
-make_unix_perm(TSK_FS_INFO * fs, iso9660_dentry * dd, iso9660_inode *dinode, char* perm)
+static char *
+make_unix_perm(TSK_FS_INFO * fs, iso9660_dentry * dd,
+    iso9660_inode * dinode, char *perm)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "make_unix_perm: fs: %lu"
@@ -1933,7 +1934,7 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     }
 
     if (iso9660_dinode_load(iso, inum, dinode)) {
-        tsk_error_set_errstr2( "iso9660_istat");
+        tsk_error_set_errstr2("iso9660_istat");
         tsk_fs_file_close(fs_file);
         free(dinode);
         return 1;
@@ -1989,7 +1990,8 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             tsk_getu32(fs->endian, dinode->ea->uid));
         tsk_fprintf(hFile, "Group-ID: %" PRIu32 "\n",
             tsk_getu32(fs->endian, dinode->ea->gid));
-        tsk_fprintf(hFile, "Mode: %s\n", make_unix_perm(fs, &dd, dinode, perm_buf));
+        tsk_fprintf(hFile, "Mode: %s\n", make_unix_perm(fs, &dd, dinode,
+                perm_buf));
     }
     else if (dinode->susp_off) {
         char *buf2 = (char *) tsk_malloc((size_t) dinode->susp_len);
@@ -2027,7 +2029,8 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         char perm_buf[11];
         tsk_fprintf(hFile, "Owner-ID: 0\n");
         tsk_fprintf(hFile, "Group-ID: 0\n");
-        tsk_fprintf(hFile, "Mode: %s\n", make_unix_perm(fs, &dd, dinode, perm_buf));
+        tsk_fprintf(hFile, "Mode: %s\n", make_unix_perm(fs, &dd, dinode,
+                perm_buf));
     }
 
     if (sec_skew != 0) {
@@ -2075,8 +2078,8 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     }
 
     tsk_fs_file_close(fs_file);
-    if(dinode != NULL)
-        free((char *)dinode);
+    if (dinode != NULL)
+        free((char *) dinode);
     return 0;
 }
 
@@ -2167,7 +2170,7 @@ load_vol_desc(TSK_FS_INFO * fs)
             return -1;
         }
 
-ISO_RETRY_MAGIC:
+      ISO_RETRY_MAGIC:
 
         // read the full descriptor
         cnt = tsk_fs_read(fs, offs, (char *) vd, sizeof(iso9660_gvd));
@@ -2176,8 +2179,7 @@ ISO_RETRY_MAGIC:
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2(
-                "iso_load_vol_desc: Error reading");
+            tsk_error_set_errstr2("iso_load_vol_desc: Error reading");
             free(vd);
             return -1;
         }
@@ -2185,22 +2187,25 @@ ISO_RETRY_MAGIC:
         // verify the magic value
         if (strncmp(vd->magic, ISO9660_MAGIC, 5)) {
             if (tsk_verbose)
-                tsk_fprintf(stderr, "%s: Bad volume descriptor: Magic number is not CD001\n",
-                        myname);
+                tsk_fprintf(stderr,
+                    "%s: Bad volume descriptor: Magic number is not CD001\n",
+                    myname);
 
             // see if we have a RAW image
             if (magic_seen == 0) {
                 if (fs->block_pre_size == 0) {
-                    if (tsk_verbose) 
-                        tsk_fprintf(stderr, "Trying RAW ISO9660 with 16-byte pre-block size\n");
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                            "Trying RAW ISO9660 with 16-byte pre-block size\n");
                     fs->block_pre_size = 16;
                     // 304 = 2352 - 2048
                     fs->block_post_size = 304 - fs->block_pre_size;
                     goto ISO_RETRY_MAGIC;
                 }
                 else if (fs->block_pre_size == 16) {
-                    if (tsk_verbose) 
-                        tsk_fprintf(stderr, "Trying RAW ISO9660 with 24-byte pre-block size\n");
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                            "Trying RAW ISO9660 with 24-byte pre-block size\n");
                     fs->block_pre_size = 24;
                     fs->block_post_size = 304 - fs->block_pre_size;
                     goto ISO_RETRY_MAGIC;
@@ -2296,8 +2301,7 @@ ISO_RETRY_MAGIC:
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                tsk_error_set_errstr2(
-                    "iso_load_vol_desc: Error reading");
+                tsk_error_set_errstr2("iso_load_vol_desc: Error reading");
                 return -1;
             }
             offs += sizeof(iso_bootrec);
@@ -2338,8 +2342,8 @@ ISO_RETRY_MAGIC:
     if ((iso->pvd == NULL) && (iso->svd == NULL)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr(
-            "load_vol_desc: primary and secondary volume descriptors null");
+        tsk_error_set_errstr
+            ("load_vol_desc: primary and secondary volume descriptors null");
         return -1;
     }
 
@@ -2364,8 +2368,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if (TSK_FS_TYPE_ISISO9660(ftype) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "Invalid FS type in iso9660_open");
+        tsk_error_set_errstr("Invalid FS type in iso9660_open");
         return NULL;
     }
 
@@ -2415,8 +2418,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         else {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-            tsk_error_set_errstr(
-                "Invalid FS type in iso9660_open");
+            tsk_error_set_errstr("Invalid FS type in iso9660_open");
             return NULL;
         }
     }

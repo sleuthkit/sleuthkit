@@ -38,10 +38,10 @@ extern "C" {
         int num_img;
 
         // the following are protected by cache_lock in IMG_INFO
-        const TSK_TCHAR *const *images;  
+        const TSK_TCHAR *const *images;
         TSK_OFF_T *max_off;
-        int *cptr;              /* exists for each image - points to entry in cache */ 
-        IMG_SPLIT_CACHE cache[SPLIT_CACHE];     /* small number of fds for open images */ 
+        int *cptr;              /* exists for each image - points to entry in cache */
+        IMG_SPLIT_CACHE cache[SPLIT_CACHE];     /* small number of fds for open images */
         int next_slot;
     } IMG_SPLIT_INFO;
 

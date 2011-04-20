@@ -13,22 +13,26 @@
 
 #ifdef TSK_WIN32
 
-void tsk_init_lock(tsk_lock_t * lock)
+void
+tsk_init_lock(tsk_lock_t * lock)
 {
     InitializeCriticalSection(&lock->critical_section);
 }
 
-void tsk_deinit_lock(tsk_lock_t * lock)
+void
+tsk_deinit_lock(tsk_lock_t * lock)
 {
     DeleteCriticalSection(&lock->critical_section);
 }
 
-void tsk_take_lock(tsk_lock_t * lock)
+void
+tsk_take_lock(tsk_lock_t * lock)
 {
     EnterCriticalSection(&lock->critical_section);
 }
 
-void tsk_release_lock(tsk_lock_t *lock)
+void
+tsk_release_lock(tsk_lock_t * lock)
 {
     LeaveCriticalSection(&lock->critical_section);
 }
@@ -37,7 +41,8 @@ void tsk_release_lock(tsk_lock_t *lock)
 
 #include <assert.h>
 
-void tsk_init_lock(tsk_lock_t * lock)
+void
+tsk_init_lock(tsk_lock_t * lock)
 {
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
@@ -71,12 +76,14 @@ void tsk_init_lock(tsk_lock_t * lock)
     }
 }
 
-void tsk_deinit_lock(tsk_lock_t * lock)
+void
+tsk_deinit_lock(tsk_lock_t * lock)
 {
     pthread_mutex_destroy(&lock->mutex);
 }
 
-void tsk_take_lock(tsk_lock_t * lock)
+void
+tsk_take_lock(tsk_lock_t * lock)
 {
     int e = pthread_mutex_lock(&lock->mutex);
     if (e != 0) {
@@ -85,11 +92,13 @@ void tsk_take_lock(tsk_lock_t * lock)
     }
 }
 
-void tsk_release_lock(tsk_lock_t *lock)
+void
+tsk_release_lock(tsk_lock_t * lock)
 {
     int e = pthread_mutex_unlock(&lock->mutex);
     if (e != 0) {
-        fprintf(stderr, "tsk_release_lock: thread_mutex_unlock failed %d\n", e);
+        fprintf(stderr,
+            "tsk_release_lock: thread_mutex_unlock failed %d\n", e);
         assert(0);
     }
 }
@@ -98,9 +107,24 @@ void tsk_release_lock(tsk_lock_t *lock)
 
 #else
 
-void tsk_init_lock(tsk_lock_t * lock) {}
-void tsk_deinit_lock(tsk_lock_t * lock) {}
-void tsk_take_lock(tsk_lock_t * lock) {}
-void tsk_release_lock(tsk_lock_t *lock) {}
+void
+tsk_init_lock(tsk_lock_t * lock)
+{
+}
+
+void
+tsk_deinit_lock(tsk_lock_t * lock)
+{
+}
+
+void
+tsk_take_lock(tsk_lock_t * lock)
+{
+}
+
+void
+tsk_release_lock(tsk_lock_t * lock)
+{
+}
 
 #endif

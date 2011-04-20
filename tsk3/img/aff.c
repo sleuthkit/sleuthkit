@@ -42,8 +42,8 @@ aff_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
             tsk_error_reset();
             // @@@ ADD more specific error messages
             tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-            tsk_error_set_errstr(
-                "aff_read - %" PRIuOFF " - %s", offset, strerror(errno));
+            tsk_error_set_errstr("aff_read - %" PRIuOFF " - %s", offset,
+                strerror(errno));
             return -1;
 
         }
@@ -55,9 +55,8 @@ aff_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
         // @@@ Add more specific error message
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
-        tsk_error_set_errstr(
-            "aff_read - offset: %" PRIuOFF " - len: %" PRIuSIZE " - %s",
-            offset, len, strerror(errno));
+        tsk_error_set_errstr("aff_read - offset: %" PRIuOFF " - len: %"
+            PRIuSIZE " - %s", offset, len, strerror(errno));
         return -1;
     }
 
@@ -229,7 +228,8 @@ aff_open(const char *const images[], unsigned int a_ssize)
     int type;
 
     if ((aff_info =
-            (IMG_AFF_INFO *) tsk_img_malloc(sizeof(IMG_AFF_INFO))) == NULL) {
+            (IMG_AFF_INFO *) tsk_img_malloc(sizeof(IMG_AFF_INFO))) ==
+        NULL) {
         return NULL;
     }
 
@@ -252,9 +252,8 @@ aff_open(const char *const images[], unsigned int a_ssize)
         }
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-        tsk_error_set_errstr(
-            "aff_open file: %" PRIttocTSK ": Error checking type",
-            images[0]);
+        tsk_error_set_errstr("aff_open file: %" PRIttocTSK
+            ": Error checking type", images[0]);
         tsk_img_free(aff_info);
         return NULL;
     }
@@ -276,9 +275,8 @@ aff_open(const char *const images[], unsigned int a_ssize)
         // @@@ Need to check here if the open failed because of an incorrect password. 
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-        tsk_error_set_errstr(
-            "aff_open file: %" PRIttocTSK ": Error opening - %s",
-            images[0], strerror(errno));
+        tsk_error_set_errstr("aff_open file: %" PRIttocTSK
+            ": Error opening - %s", images[0], strerror(errno));
         tsk_img_free(aff_info);
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening AFF/AFD/AFM file\n");
@@ -290,15 +288,15 @@ aff_open(const char *const images[], unsigned int a_ssize)
     if (af_cannot_decrypt(aff_info->af_file)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_PASSWD);
-        tsk_error_set_errstr(
-                 "aff_open file: %" PRIttocTSK, images[0]);
+        tsk_error_set_errstr("aff_open file: %" PRIttocTSK, images[0]);
         tsk_img_free(aff_info);
         if (tsk_verbose) {
-            tsk_fprintf(stderr, "Error opening AFF/AFD/AFM file (incorrect password)\n");
+            tsk_fprintf(stderr,
+                "Error opening AFF/AFD/AFM file (incorrect password)\n");
         }
         return NULL;
     }
-    
+
     aff_info->type = type;
 
     img_info->size = af_imagesize(aff_info->af_file);

@@ -229,16 +229,16 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (a_addr < a_fs->first_inum || a_addr > a_fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "iso9660_dir_open_meta: Invalid inode value: %" PRIuINUM,
+        tsk_error_set_errstr
+            ("iso9660_dir_open_meta: Invalid inode value: %" PRIuINUM,
             a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "iso9660_dir_open_meta: NULL fs_attr argument given");
+        tsk_error_set_errstr
+            ("iso9660_dir_open_meta: NULL fs_attr argument given");
         return TSK_ERR;
     }
 
@@ -252,7 +252,8 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         tsk_fs_dir_reset(fs_dir);
     }
     else {
-        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
+        if ((*a_fs_dir = fs_dir =
+                tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
             return TSK_ERR;
         }
     }
@@ -266,9 +267,8 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (fs_dir->fs_file == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr(
-            "iso9660_dir_open_meta: %" PRIuINUM " is not a valid inode",
-            a_addr);
+        tsk_error_set_errstr("iso9660_dir_open_meta: %" PRIuINUM
+            " is not a valid inode", a_addr);
         return TSK_COR;
     }
 
@@ -283,7 +283,7 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2( "iso9660_dir_open_meta");
+        tsk_error_set_errstr2("iso9660_dir_open_meta");
         return TSK_ERR;
     }
 

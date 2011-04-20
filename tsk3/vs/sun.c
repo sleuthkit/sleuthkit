@@ -107,8 +107,8 @@ sun_load_table_i386(TSK_VS_INFO * vs, sun_dlabel_i386 * dlabel_x86)
                     dlabel_x86->part[idx].start_sec) > max_addr)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
-            tsk_error_set_errstr(
-                "sun_load_i386: Starting sector too large for image");
+            tsk_error_set_errstr
+                ("sun_load_i386: Starting sector too large for image");
             return 1;
         }
 
@@ -176,8 +176,8 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
         if ((idx < 2) && (part_start > max_addr)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
-            tsk_error_set_errstr(
-                "sun_load_sparc: Starting sector too large for image");
+            tsk_error_set_errstr
+                ("sun_load_sparc: Starting sector too large for image");
             return 1;
         }
 
@@ -223,8 +223,8 @@ sun_load_table(TSK_VS_INFO * vs)
         (sizeof(*dlabel_x86) > vs->block_size)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_BUF);
-        tsk_error_set_errstr(
-            "sun_load_table: disk labels bigger than block size");
+        tsk_error_set_errstr
+            ("sun_load_table: disk labels bigger than block size");
         return 1;
     }
 
@@ -245,8 +245,8 @@ sun_load_table(TSK_VS_INFO * vs)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        tsk_error_set_errstr2(
-            "SUN Disk Label in Sector: %" PRIuDADDR, taddr);
+        tsk_error_set_errstr2("SUN Disk Label in Sector: %" PRIuDADDR,
+            taddr);
         free(buf);
         return 1;
     }
@@ -288,8 +288,8 @@ sun_load_table(TSK_VS_INFO * vs)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_READ);
         }
-        tsk_error_set_errstr2(
-            "SUN (Intel) Disk Label in Sector: %" PRIuDADDR, taddr);
+        tsk_error_set_errstr2("SUN (Intel) Disk Label in Sector: %"
+            PRIuDADDR, taddr);
         free(buf);
         return 1;
     }
@@ -298,8 +298,7 @@ sun_load_table(TSK_VS_INFO * vs)
     if (tsk_vs_guessu16(vs, dlabel_x86->magic, SUN_MAGIC)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-        tsk_error_set_errstr(
-            "SUN (intel) partition table (Sector: %"
+        tsk_error_set_errstr("SUN (intel) partition table (Sector: %"
             PRIuDADDR ") %x", taddr, tsk_getu16(vs->endian,
                 dlabel_sp->magic));
         free(buf);
@@ -309,9 +308,9 @@ sun_load_table(TSK_VS_INFO * vs)
     if (tsk_getu32(vs->endian, dlabel_x86->sanity) != SUN_SANITY) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-        tsk_error_set_errstr(
-            "SUN (intel) sanity value (Sector: %" PRIuDADDR
-            ") %x", taddr, tsk_getu16(vs->endian, dlabel_sp->magic));
+        tsk_error_set_errstr("SUN (intel) sanity value (Sector: %"
+            PRIuDADDR ") %x", taddr, tsk_getu16(vs->endian,
+                dlabel_sp->magic));
         free(buf);
         return 1;
     }

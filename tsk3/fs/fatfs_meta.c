@@ -401,8 +401,8 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
         if (retVal != TSKconversionOK) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_UNICODE);
-            tsk_error_set_errstr(
-                "fatfs_dinode_copy: Error converting FAT LFN (1) to UTF8: %d",
+            tsk_error_set_errstr
+                ("fatfs_dinode_copy: Error converting FAT LFN (1) to UTF8: %d",
                 retVal);
             *name8 = '\0';
 
@@ -420,8 +420,8 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
         if (retVal != TSKconversionOK) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_UNICODE);
-            tsk_error_set_errstr(
-                "fatfs_dinode_copy: Error converting FAT LFN (2) to UTF8: %d",
+            tsk_error_set_errstr
+                ("fatfs_dinode_copy: Error converting FAT LFN (2) to UTF8: %d",
                 retVal);
             *name8 = '\0';
 
@@ -439,8 +439,8 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
         if (retVal != TSKconversionOK) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_UNICODE);
-            tsk_error_set_errstr(
-                "fatfs_dinode_copy: Error converting FAT LFN (3) to UTF8: %d",
+            tsk_error_set_errstr
+                ("fatfs_dinode_copy: Error converting FAT LFN (3) to UTF8: %d",
                 retVal);
             *name8 = '\0';
 
@@ -847,7 +847,7 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de, uint8_t a_basic)
                     return 0;
                 }
             }
-        
+
 
             /* The ctime, cdate, and adate fields are optional and 
              * therefore 0 is a valid value
@@ -975,50 +975,52 @@ inode_walk_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *a_ptr)
  * */
 
 uint8_t
-fatfs_dinode_load(TSK_FS_INFO *fs, fatfs_dentry *dep, TSK_INUM_T inum){
+fatfs_dinode_load(TSK_FS_INFO * fs, fatfs_dentry * dep, TSK_INUM_T inum)
+{
 
-    FATFS_INFO *fatfs = (FATFS_INFO *)fs;
+    FATFS_INFO *fatfs = (FATFS_INFO *) fs;
     ssize_t cnt;
     size_t off;
     TSK_DADDR_T sect;
 
-   /*
+    /*
      * Sanity check.
      * Account for virtual Orphan directory and virtual files
      */
-    if ((inum < fs->first_inum) || (inum > fs->last_inum - FATFS_NUM_SPECFILE)) {
+    if ((inum < fs->first_inum)
+        || (inum > fs->last_inum - FATFS_NUM_SPECFILE)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr(
-            "fatfs_dinode_load: address: %" PRIuINUM, inum);
+        tsk_error_set_errstr("fatfs_dinode_load: address: %" PRIuINUM,
+            inum);
         return 1;
-    }    /* Get the sector that this inode would be in and its offset */
+    }                           /* Get the sector that this inode would be in and its offset */
     sect = FATFS_INODE_2_SECT(fatfs, inum);
     off = FATFS_INODE_2_OFF(fatfs, inum);
 
     if (sect > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr(
-            "fatfs_inode_load Inode %" PRIuINUM
+        tsk_error_set_errstr("fatfs_inode_load Inode %" PRIuINUM
             " in sector too big for image: %" PRIuDADDR, inum, sect);
         return 1;
     }
 
 
-    cnt = tsk_fs_read(fs, sect*fs->block_size+off, (char *)dep, sizeof(fatfs_dentry)); //a_len = fatfs->ssize?
+    cnt = tsk_fs_read(fs, sect * fs->block_size + off, (char *) dep, sizeof(fatfs_dentry));     //a_len = fatfs->ssize?
     if (cnt != sizeof(fatfs_dentry)) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2(
-            "fatfs_inode_load: block: %" PRIuDADDR, sect);
+        tsk_error_set_errstr2("fatfs_inode_load: block: %" PRIuDADDR,
+            sect);
         return 1;
     }
 
     return 0;
 }
+
 /*
  * walk the inodes
  *
@@ -1036,7 +1038,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T end_inum_tmp;
     TSK_FS_FILE *fs_file;
     TSK_DADDR_T sect, ssect, lsect;
-    char * dino_buf;
+    char *dino_buf;
     fatfs_dentry *dep;
     unsigned int myflags, didx;
     uint8_t *sect_alloc;
@@ -1052,16 +1054,16 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     if (start_inum < fs->first_inum || start_inum > fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "%s: Start inode:  %" PRIuINUM "", myname, start_inum);
+        tsk_error_set_errstr("%s: Start inode:  %" PRIuINUM "", myname,
+            start_inum);
         return 1;
     }
     else if (end_inum < fs->first_inum || end_inum > fs->last_inum
         || end_inum < start_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "%s: End inode: %" PRIuINUM "", myname, end_inum);
+        tsk_error_set_errstr("%s: End inode: %" PRIuINUM "", myname,
+            end_inum);
         return 1;
     }
 
@@ -1100,8 +1102,8 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
      */
     if ((a_flags & TSK_FS_META_FLAG_ORPHAN)) {
         if (tsk_fs_dir_load_inum_named(fs) != TSK_OK) {
-            tsk_error_errstr2_concat(
-                "- fatfs_inode_walk: identifying inodes allocated by file names");
+            tsk_error_errstr2_concat
+                ("- fatfs_inode_walk: identifying inodes allocated by file names");
             return 1;
         }
     }
@@ -1188,8 +1190,8 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE |
                 TSK_FS_DIR_WALK_FLAG_NOORPHAN, inode_walk_dent_act,
                 (void *) sect_alloc)) {
-            tsk_error_errstr2_concat(
-                "- fatfs_inode_walk: mapping directories");
+            tsk_error_errstr2_concat
+                ("- fatfs_inode_walk: mapping directories");
             tsk_fs_file_close(fs_file);
             free(sect_alloc);
             return 1;
@@ -1219,8 +1221,8 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     if (ssect > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "fatfs_inode_walk: Starting inode in sector too big for image: %"
+        tsk_error_set_errstr
+            ("fatfs_inode_walk: Starting inode in sector too big for image: %"
             PRIuDADDR, ssect);
         tsk_fs_file_close(fs_file);
         free(sect_alloc);
@@ -1229,8 +1231,8 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     else if (lsect > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "fatfs_inode_walk: Ending inode in sector too big for image: %"
+        tsk_error_set_errstr
+            ("fatfs_inode_walk: Ending inode in sector too big for image: %"
             PRIuDADDR, lsect);
         tsk_fs_file_close(fs_file);
         free(sect_alloc);
@@ -1238,7 +1240,9 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     }
 
     sect = ssect;
-    if ((dino_buf = (char *) tsk_malloc(fatfs->csize << fatfs->ssize_sh)) == NULL){
+    if ((dino_buf =
+            (char *) tsk_malloc(fatfs->csize << fatfs->ssize_sh)) ==
+        NULL) {
         tsk_fs_file_close(fs_file);
         free(sect_alloc);
         return 1;
@@ -1264,15 +1268,14 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             clustalloc = 1;
 
             /* read the sector */
-            cnt =
-                tsk_fs_read_block(fs, sect, dino_buf, fatfs->ssize);
+            cnt = tsk_fs_read_block(fs, sect, dino_buf, fatfs->ssize);
             if (cnt != fatfs->ssize) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                tsk_error_set_errstr2(
-                    "fatfs_inode_walk (root dir): sector: %" PRIuDADDR,
+                tsk_error_set_errstr2
+                    ("fatfs_inode_walk (root dir): sector: %" PRIuDADDR,
                     sect);
                 tsk_fs_file_close(fs_file);
                 free(sect_alloc);
@@ -1331,8 +1334,8 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                tsk_error_set_errstr2(
-                    "fatfs_inode_walk: sector: %" PRIuDADDR, sect);
+                tsk_error_set_errstr2("fatfs_inode_walk: sector: %"
+                    PRIuDADDR, sect);
                 tsk_fs_file_close(fs_file);
                 free(sect_alloc);
                 free(dino_buf);
@@ -1345,14 +1348,12 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             TSK_INUM_T inum;
             uint8_t isInDir;
 
-            dep = 
-               (fatfs_dentry *) & dino_buf[sidx << fatfs->ssize_sh];
+            dep = (fatfs_dentry *) & dino_buf[sidx << fatfs->ssize_sh];
 
             /* if we know it is not part of a directory and it is not valid dentires,
              * then skip it */
             isInDir = isset(sect_alloc, sect);
-            if ((isInDir == 0) &&
-                (fatfs_isdentry(fatfs, dep, 0) == 0)) {
+            if ((isInDir == 0) && (fatfs_isdentry(fatfs, dep, 0) == 0)) {
                 sect++;
                 continue;
             }
@@ -1372,7 +1373,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                     " starting at inode %" PRIuINUM "\n", sect, inum);
 
             /* cycle through the directory entries */
-            
+
             for (didx = 0; didx < fatfs->dentry_cnt_se;
                 didx++, inum++, dep++) {
                 int retval;
@@ -1573,15 +1574,14 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     if (inum < fs->first_inum || inum > fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr(
-            "fatfs_inode_lookup: %" PRIuINUM " too large/small", inum);
+        tsk_error_set_errstr("fatfs_inode_lookup: %" PRIuINUM
+            " too large/small", inum);
         return 1;
     }
 
     if (a_fs_file == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "fatfs_inode_lookup: fs_file is NULL");
+        tsk_error_set_errstr("fatfs_inode_lookup: fs_file is NULL");
         return 1;
     }
     if (a_fs_file->meta == NULL) {
@@ -1631,8 +1631,7 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     if (sect > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr(
-            "fatfs_inode_lookup Inode %" PRIuINUM
+        tsk_error_set_errstr("fatfs_inode_lookup Inode %" PRIuINUM
             " in sector too big for image: %" PRIuDADDR, inum, sect);
         return 1;
     }
@@ -1670,8 +1669,8 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     else {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr(
-            "fatfs_inode_lookup: %" PRIuINUM " is not an inode", inum);
+        tsk_error_set_errstr("fatfs_inode_lookup: %" PRIuINUM
+            " is not an inode", inum);
         return 1;
     }
 }
@@ -1697,8 +1696,8 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
         || (a_fs_file->fs_info == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "fatfs_make_data_run: called with NULL pointers");
+        tsk_error_set_errstr
+            ("fatfs_make_data_run: called with NULL pointers");
         return 1;
     }
     fs_meta = a_fs_file->meta;
@@ -1733,8 +1732,8 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
             tsk_error_set_errno(TSK_ERR_FS_RECOVER);
         else
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "fatfs_make_data_run: Starting cluster address too large: %"
+        tsk_error_set_errstr
+            ("fatfs_make_data_run: Starting cluster address too large: %"
             PRIuDADDR, clust);
         return 1;
     }
@@ -1849,8 +1848,8 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         if (sbase > fs->last_block) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_RECOVER);
-            tsk_error_set_errstr(
-                "fatfs_make_data_run: Starting cluster address too large (recovery): %"
+            tsk_error_set_errstr
+                ("fatfs_make_data_run: Starting cluster address too large (recovery): %"
                 PRIuDADDR, sbase);
             fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
             return 1;
@@ -2004,8 +2003,8 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
                 tsk_error_reset();
 
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                tsk_error_set_errstr(
-                    "fatfs_make_data_run: Invalid sector address in FAT (too large): %"
+                tsk_error_set_errstr
+                    ("fatfs_make_data_run: Invalid sector address in FAT (too large): %"
                     PRIuDADDR, sbase);
                 return 1;
             }
@@ -2043,9 +2042,8 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
             if ((int64_t) size_remain > 0) {
                 TSK_DADDR_T nxt;
                 if (fatfs_getFAT(fatfs, clust, &nxt)) {
-                    tsk_error_set_errstr2(
-                        "file walk: Inode: %" PRIuINUM "  cluster: %"
-                        PRIuDADDR, fs_meta->addr, clust);
+                    tsk_error_set_errstr2("file walk: Inode: %" PRIuINUM
+                        "  cluster: %" PRIuDADDR, fs_meta->addr, clust);
                     fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
                     tsk_fs_attr_run_free(data_run_head);
                     tsk_list_free(list_seen);

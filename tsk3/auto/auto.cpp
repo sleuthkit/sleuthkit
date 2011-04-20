@@ -52,6 +52,7 @@ uint8_t
     if (m_img_info)
         closeImage();
 
+    m_internalOpen = true;
     m_img_info = tsk_img_open(a_numImg, a_images, a_imgType, a_sSize);
     if (m_img_info)
         return 0;
@@ -61,7 +62,8 @@ uint8_t
 
 /**
  * Uses the already opened image for future analysis. This must be called before any
- * of the findFilesInXXX() methods. 
+ * of the findFilesInXXX() methods. Note that the TSK_IMG_INFO will not
+ * be freed when the TskAuto class is closed.
  * @param a_img_info Handle to an already opened disk image.
  * @returns 1 on error and 0 on success
  */
@@ -71,6 +73,7 @@ TskAuto::openImage(TSK_IMG_INFO *a_img_info)
     if (m_img_info)
         closeImage();
     
+    m_internalOpen = false;
     m_img_info = a_img_info;
     return 0;
 }
@@ -84,10 +87,10 @@ TskAuto::openImage(TSK_IMG_INFO *a_img_info)
 void
  TskAuto::closeImage()
 {
-    if (m_img_info) {
+    if ((m_img_info) && (m_internalOpen)) {
         tsk_img_close(m_img_info);
-        m_img_info = NULL;
     }
+    m_img_info = NULL;
 }
 
 

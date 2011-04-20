@@ -45,8 +45,8 @@ ext2fs_dent_copy(EXT2FS_INFO * ext2fs,
         if (tsk_getu16(fs->endian, dir->name_len) >= fs_name->name_size) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_ARG);
-            tsk_error_set_errstr(
-                "ext2fs_dent_copy: Name Space too Small %d %" PRIuSIZE "",
+            tsk_error_set_errstr
+                ("ext2fs_dent_copy: Name Space too Small %d %" PRIuSIZE "",
                 tsk_getu16(fs->endian, dir->name_len), fs_name->name_size);
             return 1;
         }
@@ -67,8 +67,8 @@ ext2fs_dent_copy(EXT2FS_INFO * ext2fs,
         if (dir->name_len >= fs_name->name_size) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_ARG);
-            tsk_error_set_errstr(
-                "ext2_dent_copy: Name Space too Small %d %" PRIuSIZE "",
+            tsk_error_set_errstr
+                ("ext2_dent_copy: Name Space too Small %d %" PRIuSIZE "",
                 dir->name_len, fs_name->name_size);
             return 1;
         }
@@ -255,15 +255,15 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (a_addr < a_fs->first_inum || a_addr > a_fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "ext2fs_dir_open_meta: inode value: %" PRIuINUM "\n", a_addr);
+        tsk_error_set_errstr("ext2fs_dir_open_meta: inode value: %"
+            PRIuINUM "\n", a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ext2fs_dir_open_meta: NULL fs_attr argument given");
+        tsk_error_set_errstr
+            ("ext2fs_dir_open_meta: NULL fs_attr argument given");
         return TSK_ERR;
     }
 
@@ -277,7 +277,8 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         tsk_fs_dir_reset(fs_dir);
     }
     else {
-        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
+        if ((*a_fs_dir = fs_dir =
+                tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
             return TSK_ERR;
         }
     }
@@ -316,8 +317,8 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (load_file.left > 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_FWALK);
-        tsk_error_set_errstr(
-            "ext2fs_dir_open_meta: Error reading directory contents: %"
+        tsk_error_set_errstr
+            ("ext2fs_dir_open_meta: Error reading directory contents: %"
             PRIuINUM "\n", a_addr);
         free(dirbuf);
         return TSK_COR;
@@ -330,9 +331,9 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         retval_tmp =
             ext2fs_dent_parse_block(ext2fs, fs_dir,
-            (fs_dir->fs_file->meta->
-                flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, &list_seen,
-            dirptr, len);
+            (fs_dir->fs_file->
+                meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
+            &list_seen, dirptr, len);
 
         if (retval_tmp == TSK_ERR) {
             retval_final = TSK_ERR;

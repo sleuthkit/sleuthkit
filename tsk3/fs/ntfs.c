@@ -128,8 +128,7 @@ nt2nano(uint64_t ntdate)
  * @returns Error value
  */
 TSK_RETVAL_ENUM
-ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
-    TSK_INUM_T a_mftnum)
+ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
 {
     TSK_OFF_T mftaddr_b, mftaddr2_b, offset;
     size_t mftaddr_len = 0;
@@ -152,9 +151,8 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
     if (a_mftnum < fs->first_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "mft_lookup: inode number is too small (%" PRIuINUM ")",
-            a_mftnum);
+        tsk_error_set_errstr("mft_lookup: inode number is too small (%"
+            PRIuINUM ")", a_mftnum);
         return TSK_ERR;
     }
 
@@ -164,9 +162,8 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
     if (a_mftnum > fs->last_inum - 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "mft_lookup: inode number is too large (%" PRIuINUM ")",
-            a_mftnum);
+        tsk_error_set_errstr("mft_lookup: inode number is too large (%"
+            PRIuINUM ")", a_mftnum);
         return TSK_ERR;
     }
 
@@ -190,8 +187,8 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
         if (a_mftnum > NTFS_LAST_DEFAULT_INO) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_ARG);
-            tsk_error_set_errstr(
-                "Error trying to load a high MFT entry when the MFT itself has not been loaded (%"
+            tsk_error_set_errstr
+                ("Error trying to load a high MFT entry when the MFT itself has not been loaded (%"
                 PRIuINUM ")", a_mftnum);
             return TSK_ERR;
         }
@@ -246,8 +243,8 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
                     if (data_run->next == NULL) {
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                        tsk_error_set_errstr(
-                            "mft_lookup: MFT entry crosses a cluster and there are no more clusters!");
+                        tsk_error_set_errstr
+                            ("mft_lookup: MFT entry crosses a cluster and there are no more clusters!");
                         return TSK_COR;
                     }
 
@@ -274,8 +271,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
         if (!mftaddr_b) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-            tsk_error_set_errstr(
-                "mft_lookup: Error finding MFT entry %"
+            tsk_error_set_errstr("mft_lookup: Error finding MFT entry %"
                 PRIuINUM " in $MFT", a_mftnum);
             return TSK_ERR;
         }
@@ -286,16 +282,14 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
     if (mftaddr2_b) {
         ssize_t cnt;
         /* read the first part into mft */
-        cnt =
-            tsk_fs_read(&a_ntfs->fs_info, mftaddr_b, a_buf,
-            mftaddr_len);
+        cnt = tsk_fs_read(&a_ntfs->fs_info, mftaddr_b, a_buf, mftaddr_len);
         if (cnt != mftaddr_len) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2(
-                "ntfs_dinode_lookup: Error reading MFT Entry (part 1) at %"
+            tsk_error_set_errstr2
+                ("ntfs_dinode_lookup: Error reading MFT Entry (part 1) at %"
                 PRIuOFF, mftaddr_b);
             return TSK_ERR;
         }
@@ -310,8 +304,8 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2(
-                "ntfs_dinode_lookup: Error reading MFT Entry (part 2) at %"
+            tsk_error_set_errstr2
+                ("ntfs_dinode_lookup: Error reading MFT Entry (part 2) at %"
                 PRIuOFF, mftaddr2_b);
             return TSK_ERR;
         }
@@ -327,8 +321,8 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2(
-                "ntfs_dinode_lookup: Error reading MFT Entry at %"
+            tsk_error_set_errstr2
+                ("ntfs_dinode_lookup: Error reading MFT Entry at %"
                 PRIuOFF, mftaddr_b);
             return TSK_ERR;
         }
@@ -346,8 +340,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
         && (tsk_getu32(fs->endian, mft->magic) != NTFS_MFT_MAGIC_BAAD)
         && (tsk_getu32(fs->endian, mft->magic) != NTFS_MFT_MAGIC_ZERO)) {
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "entry %d has an invalid MFT magic: %x",
+        tsk_error_set_errstr("entry %d has an invalid MFT magic: %x",
             mftnum, tsk_getu32(fs->endian, mft->magic));
         return 1;
     }
@@ -361,22 +354,22 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
      * then replace it with what should be there
      */
     /* sanity check so we don't run over in the next loop */
-    mft = (ntfs_mft *)a_buf;
+    mft = (ntfs_mft *) a_buf;
     if ((tsk_getu16(fs->endian, mft->upd_cnt) > 0) &&
         (((uint32_t) (tsk_getu16(fs->endian,
                         mft->upd_cnt) - 1) * a_ntfs->ssize_b) >
             a_ntfs->mft_rsize_b)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "dinode_lookup: More Update Sequence Entries than MFT size");
+        tsk_error_set_errstr
+            ("dinode_lookup: More Update Sequence Entries than MFT size");
         return TSK_COR;
     }
     if (tsk_getu16(fs->endian, mft->upd_off) > a_ntfs->mft_rsize_b) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "dinode_lookup: Update sequence offset larger than MFT size");
+        tsk_error_set_errstr
+            ("dinode_lookup: Update sequence offset larger than MFT size");
         return TSK_COR;
     }
 
@@ -401,8 +394,8 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char * a_buf,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
 
-            tsk_error_set_errstr(
-                "Incorrect update sequence value in MFT entry\nSignature Value: 0x%"
+            tsk_error_set_errstr
+                ("Incorrect update sequence value in MFT entry\nSignature Value: 0x%"
                 PRIx16 " Actual Value: 0x%" PRIx16
                 " Replacement Value: 0x%" PRIx16
                 "\nThis is typically because of a corrupted entry",
@@ -452,9 +445,8 @@ is_clustalloc(NTFS_INFO * ntfs, TSK_DADDR_T addr)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
 
-        tsk_error_set_errstr(
-            "is_clustalloc: Bitmap pointer is null: %" PRIuDADDR
-            "\n", addr);
+        tsk_error_set_errstr("is_clustalloc: Bitmap pointer is null: %"
+            PRIuDADDR "\n", addr);
         return -1;
     }
 
@@ -462,8 +454,7 @@ is_clustalloc(NTFS_INFO * ntfs, TSK_DADDR_T addr)
     if (addr > ntfs->fs_info.last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "is_clustalloc: cluster too large");
+        tsk_error_set_errstr("is_clustalloc: cluster too large");
         return -1;
     }
 
@@ -495,17 +486,17 @@ is_clustalloc(NTFS_INFO * ntfs, TSK_DADDR_T addr)
             tsk_release_lock(&ntfs->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
-            tsk_error_set_errstr(
-                "is_clustalloc: cluster not found in bitmap: %"
-                PRIuDADDR "", c);
+            tsk_error_set_errstr
+                ("is_clustalloc: cluster not found in bitmap: %" PRIuDADDR
+                "", c);
             return -1;
         }
         if (fsaddr > ntfs->fs_info.last_block) {
             tsk_release_lock(&ntfs->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
-            tsk_error_set_errstr(
-                "is_clustalloc: Cluster in bitmap too large for image: %"
+            tsk_error_set_errstr
+                ("is_clustalloc: Cluster in bitmap too large for image: %"
                 PRIuDADDR, fsaddr);
             return -1;
         }
@@ -519,9 +510,9 @@ is_clustalloc(NTFS_INFO * ntfs, TSK_DADDR_T addr)
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2(
-                "is_clustalloc: Error reading bitmap at %"
-                PRIuDADDR, fsaddr);
+            tsk_error_set_errstr2
+                ("is_clustalloc: Error reading bitmap at %" PRIuDADDR,
+                fsaddr);
             return -1;
         }
     }
@@ -614,8 +605,8 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
         if (data_run->len > fs->block_count) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-            tsk_error_set_errstr(
-                "ntfs_make_run: Run length is larger than file system");
+            tsk_error_set_errstr
+                ("ntfs_make_run: Run length is larger than file system");
             tsk_fs_attr_run_free(*a_data_run_head);
             *a_data_run_head = NULL;
             return TSK_COR;
@@ -691,8 +682,8 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
             if (data_run->addr + data_run->len > fs->block_count) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                tsk_error_set_errstr(
-                    "ntfs_make_run: Run offset and length is larger than file system");
+                tsk_error_set_errstr
+                    ("ntfs_make_run: Run offset and length is larger than file system");
                 tsk_fs_attr_run_free(*a_data_run_head);
                 *a_data_run_head = NULL;
                 return TSK_COR;
@@ -860,8 +851,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
         blk_end = cl_index + blk_size;
         if (blk_end > comp->comp_len) {
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
-            tsk_error_set_errstr(
-                "ntfs_uncompress_compunit: Block length longer than buffer length: %"
+            tsk_error_set_errstr
+                ("ntfs_uncompress_compunit: Block length longer than buffer length: %"
                 PRIuSIZE "", blk_end);
             return 1;
         }
@@ -910,8 +901,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
                         if (comp->uncomp_idx >= comp->buf_size_b) {
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr(
-                                "ntfs_uncompress_compunit: Trying to write past end of uncompression buffer: %"
+                            tsk_error_set_errstr
+                                ("ntfs_uncompress_compunit: Trying to write past end of uncompression buffer: %"
                                 PRIuSIZE "", comp->uncomp_idx);
                             return 1;
                         }
@@ -935,8 +926,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
                         if (cl_index + 1 >= blk_end) {
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr(
-                                "ntfs_uncompress_compunit: Phrase token index is past end of block: %d",
+                            tsk_error_set_errstr
+                                ("ntfs_uncompress_compunit: Phrase token index is past end of block: %d",
                                 a);
                             return 1;
                         }
@@ -977,8 +968,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                         if (offset > comp->uncomp_idx) {
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr(
-                                "ntfs_uncompress_compunit: Phrase token offset is too large:  %d (max: %"
+                            tsk_error_set_errstr
+                                ("ntfs_uncompress_compunit: Phrase token offset is too large:  %d (max: %"
                                 PRIuSIZE ")", offset, comp->uncomp_idx);
                             return 1;
                         }
@@ -986,8 +977,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                             comp->buf_size_b) {
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr(
-                                "ntfs_uncompress_compunit: Phrase token length is too large:  %d (max: %zu)",
+                            tsk_error_set_errstr
+                                ("ntfs_uncompress_compunit: Phrase token length is too large:  %d (max: %zu)",
                                 length,
                                 comp->buf_size_b - start_position_index);
                             return 1;
@@ -997,8 +988,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                             comp->buf_size_b - comp->uncomp_idx) {
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr(
-                                "ntfs_uncompress_compunit: Phrase token length is too large for rest of uncomp buf:  %zu (max: %"
+                            tsk_error_set_errstr
+                                ("ntfs_uncompress_compunit: Phrase token length is too large for rest of uncomp buf:  %zu (max: %"
                                 PRIuSIZE ")",
                                 end_position_index - start_position_index +
                                 1, comp->buf_size_b - comp->uncomp_idx);
@@ -1029,8 +1020,8 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                 if (comp->uncomp_idx >= comp->buf_size_b) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                    tsk_error_set_errstr(
-                        "ntfs_uncompress_compunit: Trying to write past end of uncompression buffer (1) -- corrupt data?)");
+                    tsk_error_set_errstr
+                        ("ntfs_uncompress_compunit: Trying to write past end of uncompression buffer (1) -- corrupt data?)");
                     return 1;
                 }
 
@@ -1114,8 +1105,8 @@ ntfs_proc_compunit(NTFS_INFO * ntfs, NTFS_COMP_INFO * comp,
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                tsk_error_set_errstr2(
-                    "ntfs_proc_compunit: Error reading block at %"
+                tsk_error_set_errstr2
+                    ("ntfs_proc_compunit: Error reading block at %"
                     PRIuDADDR, comp_unit[a]);
                 return 1;
             }
@@ -1145,8 +1136,8 @@ ntfs_proc_compunit(NTFS_INFO * ntfs, NTFS_COMP_INFO * comp,
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                tsk_error_set_errstr2(
-                    "ntfs_proc_compunit: Error reading block at %"
+                tsk_error_set_errstr2
+                    ("ntfs_proc_compunit: Error reading block at %"
                     PRIuDADDR, comp_unit[a]);
                 return 1;
             }
@@ -1174,8 +1165,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
         || (fs_attr->fs_file->meta == NULL)
         || (fs_attr->fs_file->fs_info == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ntfs_attr_walk_special: Null arguments given\n");
+        tsk_error_set_errstr
+            ("ntfs_attr_walk_special: Null arguments given\n");
         return 1;
     }
 
@@ -1205,8 +1196,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
 
         if (fs_attr->nrd.compsize <= 0) {
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
-            tsk_error_set_errstr(
-                "ntfs_attrwalk_special: Compressed attribute has compsize of 0");
+            tsk_error_set_errstr
+                ("ntfs_attrwalk_special: Compressed attribute has compsize of 0");
             return 1;
         }
 
@@ -1237,16 +1228,16 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (fs_attr_run->addr != 0) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                     else
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                    tsk_error_set_errstr(
-                        "Filler Entry exists in fs_attr_run %"
-                        PRIuDADDR "@%" PRIuDADDR
-                        " - type: %" PRIu32 "  id: %d", fs_attr_run->len,
-                        fs_attr_run->addr, fs_attr->type, fs_attr->id);
+                    tsk_error_set_errstr
+                        ("Filler Entry exists in fs_attr_run %" PRIuDADDR
+                        "@%" PRIuDADDR " - type: %" PRIu32 "  id: %d",
+                        fs_attr_run->len, fs_attr_run->addr, fs_attr->type,
+                        fs_attr->id);
                     free(comp_unit);
                     ntfs_uncompress_done(&comp);
                     return 1;
@@ -1265,14 +1256,14 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (addr > fs->last_block) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                     else
                         tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
-                    tsk_error_set_errstr(
-                        "Invalid address in run (too large): %"
-                        PRIuDADDR "", addr);
+                    tsk_error_set_errstr
+                        ("Invalid address in run (too large): %" PRIuDADDR
+                        "", addr);
 
                     free(comp_unit);
                     ntfs_uncompress_done(&comp);
@@ -1306,8 +1297,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             TSK_FS_BLOCK_FLAG_COMP;
                         retval = is_clustalloc(ntfs, comp_unit[i]);
                         if (retval == -1) {
-                            if (fs_attr->fs_file->
-                                meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                            if (fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_UNALLOC)
                                 tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -1328,8 +1319,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                         if (i * fs->block_size + read_len >
                             comp.uncomp_idx) {
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr(
-                                "ntfs_attrwalk_special: Trying to read past end of uncompressed buffer: %"
+                            tsk_error_set_errstr
+                                ("ntfs_attrwalk_special: Trying to read past end of uncompressed buffer: %"
                                 PRIuSIZE " %" PRIuSIZE "",
                                 i * fs->block_size + read_len,
                                 comp.uncomp_idx);
@@ -1384,8 +1375,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     }
     else {
         tsk_error_set_errno(TSK_ERR_FS_FWALK);
-        tsk_error_set_errstr(
-            "ntfs_attrwalk_special: called with non-special attribute: %x",
+        tsk_error_set_errstr
+            ("ntfs_attrwalk_special: called with non-special attribute: %x",
             fs_attr->flags);
         return 1;
     }
@@ -1407,8 +1398,8 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         || (a_fs_attr->fs_file->meta == NULL)
         || (a_fs_attr->fs_file->fs_info == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ntfs_file_read_special: NULL parameters passed");
+        tsk_error_set_errstr
+            ("ntfs_file_read_special: NULL parameters passed");
         return -1;
     }
 
@@ -1426,16 +1417,16 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 
         if (a_fs_attr->nrd.compsize <= 0) {
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
-            tsk_error_set_errstr(
-                "ntfs_file_read_special: Compressed attribute has compsize of 0");
+            tsk_error_set_errstr
+                ("ntfs_file_read_special: Compressed attribute has compsize of 0");
             return -1;
         }
 
         if (a_offset >= a_fs_attr->size) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
-            tsk_error_set_errstr(
-                "ntfs_file_read_special - %" PRIuOFF, a_offset);
+            tsk_error_set_errstr("ntfs_file_read_special - %" PRIuOFF,
+                a_offset);
             return -1;
         }
 
@@ -1568,8 +1559,8 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     }
     else {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ntfs_file_read_special: called with non-special attribute: %x",
+        tsk_error_set_errstr
+            ("ntfs_file_read_special: called with non-special attribute: %x",
             a_fs_attr->flags);
         return -1;
     }
@@ -1578,7 +1569,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 
 /* needs to be predefined for proc_attrseq */
 static uint8_t ntfs_proc_attrlist(NTFS_INFO *, TSK_FS_FILE *,
-                                  const TSK_FS_ATTR *);
+    const TSK_FS_ATTR *);
 
 
 /* This structure is used when processing attrlist attributes.
@@ -1615,7 +1606,8 @@ typedef struct {
  */
 static TSK_RETVAL_ENUM
 ntfs_proc_attrseq(NTFS_INFO * ntfs,
-    TSK_FS_FILE * fs_file, const ntfs_attr * a_attrseq, size_t len, TSK_INUM_T a_attrinum, const NTFS_ATTRLIST_MAP *a_attr_map)
+    TSK_FS_FILE * fs_file, const ntfs_attr * a_attrseq, size_t len,
+    TSK_INUM_T a_attrinum, const NTFS_ATTRLIST_MAP * a_attr_map)
 {
     const ntfs_attr *attr;
     const TSK_FS_ATTR *fs_attr_attrl = NULL;
@@ -1630,8 +1622,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
     if (fs_file->meta->attr == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "Null attribute list in ntfs_proc_attrseq");
+        tsk_error_set_errstr("Null attribute list in ntfs_proc_attrseq");
         return TSK_ERR;
     }
     /* Cycle through the list of attributes */
@@ -1658,7 +1649,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         if (a_attr_map) {
             for (i = 0; i < a_attr_map->num_used; i++) {
                 if ((a_attr_map->type[i] == type) &&
-                    (memcmp(a_attr_map->name[i], (void *)((uintptr_t)attr+tsk_getu16(fs->endian, attr->name_off)), attr->nlen*2) == 0)) {
+                    (memcmp(a_attr_map->name[i],
+                            (void *) ((uintptr_t) attr +
+                                tsk_getu16(fs->endian, attr->name_off)),
+                            attr->nlen * 2) == 0)) {
                     id_new = a_attr_map->newId[i];
                     break;
                 }
@@ -1720,8 +1714,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "ntfs_proc_attrseq: Resident Attribute in Type: %"
-                    PRIu32 " Id: %" PRIu16 " IdNew: %"PRIu16 " Name: %s\n", type,
-                    id, id_new, name);
+                    PRIu32 " Id: %" PRIu16 " IdNew: %" PRIu16
+                    " Name: %s\n", type, id, id_new, name);
 
             /* Validate the offset lengths */
             if (((tsk_getu16(fs->endian,
@@ -1733,9 +1727,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     ((uintptr_t) a_attrseq + len))) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
-                tsk_error_set_errstr(
-                    "ntfs_attr_walk: Resident attribute %" PRIuINUM
-                    "-%" PRIu32 " starting offset and length too large",
+                tsk_error_set_errstr("ntfs_attr_walk: Resident attribute %"
+                    PRIuINUM "-%" PRIu32
+                    " starting offset and length too large",
                     fs_file->meta->addr, type);
                 return TSK_COR;
             }
@@ -1785,8 +1779,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "ntfs_proc_attrseq: Non-Resident Attribute Type: %"
-                    PRIu32 " Id: %" PRIu16 " IdNew: %"PRIu16 " Name: %s  Start VCN: %" PRIu64
-                    "\n", type, id, id_new, name, tsk_getu64(fs->endian,
+                    PRIu32 " Id: %" PRIu16 " IdNew: %" PRIu16
+                    " Name: %s  Start VCN: %" PRIu64 "\n", type, id,
+                    id_new, name, tsk_getu64(fs->endian,
                         attr->c.nr.start_vcn));
 
             /* convert the run to generic form */
@@ -1794,7 +1789,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 tsk_getu64(fs->endian, attr->c.nr.start_vcn),
                 (ntfs_runlist *) ((uintptr_t)
                     attr + tsk_getu16(fs->endian,
-                        attr->c.nr.run_off)), &fs_attr_run, NULL, a_attrinum);
+                        attr->c.nr.run_off)), &fs_attr_run, NULL,
+                a_attrinum);
             if (retval != TSK_OK) {
                 tsk_error_errstr2_concat(" - proc_attrseq");
                 return retval;
@@ -1966,8 +1962,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             if (attr->res != NTFS_MFT_RES) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                tsk_error_set_errstr(
-                    "proc_attrseq: Standard Information Attribute is not resident!");
+                tsk_error_set_errstr
+                    ("proc_attrseq: Standard Information Attribute is not resident!");
                 return TSK_COR;
             }
             si = (ntfs_attr_si *) ((uintptr_t) attr +
@@ -2015,8 +2011,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             if (attr->res != NTFS_MFT_RES) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                tsk_error_set_errstr(
-                    "proc_attr_seq: File Name Attribute is not resident!");
+                tsk_error_set_errstr
+                    ("proc_attr_seq: File Name Attribute is not resident!");
                 return TSK_COR;
             }
             fname =
@@ -2090,16 +2086,16 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             if (fs_attr_attrl) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-                tsk_error_set_errstr(
-                    "Multiple instances of attribute lists in the same MFT\n"
+                tsk_error_set_errstr
+                    ("Multiple instances of attribute lists in the same MFT\n"
                     "I didn't realize that could happen, contact the developers");
                 return TSK_ERR;
             }
             fs_attr_attrl = tsk_fs_attrlist_get_id(fs_file->meta->attr,
                 NTFS_ATYPE_ATTRLIST, id_new);
             if (fs_attr_attrl == NULL) {
-                tsk_error_errstr2_concat(
-                    "- proc_attrseq: getting attribute list");
+                tsk_error_errstr2_concat
+                    ("- proc_attrseq: getting attribute list");
                 return TSK_ERR;
             }
         }
@@ -2136,8 +2132,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             if (!ntfs->mft_data) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_GENFS);
-                tsk_error_set_errstr(
-                    "$Data not found while loading the MFT");
+                tsk_error_set_errstr
+                    ("$Data not found while loading the MFT");
                 return TSK_ERR;
             }
         }
@@ -2210,7 +2206,9 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         return 1;
     }
 
-    if ((map = (NTFS_ATTRLIST_MAP *)tsk_malloc(sizeof(NTFS_ATTRLIST_MAP))) == NULL) {
+    if ((map =
+            (NTFS_ATTRLIST_MAP *) tsk_malloc(sizeof(NTFS_ATTRLIST_MAP))) ==
+        NULL) {
         free(mft);
         return 1;
     }
@@ -2242,8 +2240,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     if (load_file.left > 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_FWALK);
-        tsk_error_set_errstr2(
-            "processing attrlist of entry %" PRIuINUM, fs_file->meta->addr);
+        tsk_error_set_errstr2("processing attrlist of entry %" PRIuINUM,
+            fs_file->meta->addr);
         free(mft);
         free(buf);
         free(map);
@@ -2255,7 +2253,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
      * so that we can assign a unique ID to them. 
      * In this process, we will also identify the unique MFT entries to
      * process. */
-    nextid = fs_attr_attrlist->id;  // we won't see this entry in the list
+    nextid = fs_attr_attrlist->id;      // we won't see this entry in the list
     for (list = (ntfs_attrlist *) buf;
         (list) && ((uintptr_t) list < endaddr)
         && (tsk_getu16(fs->endian, list->len) > 0);
@@ -2268,14 +2266,14 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         TSK_INUM_T mftnum = tsk_getu48(fs->endian, list->file_ref);
         uint32_t type = tsk_getu32(fs->endian, list->type);
         uint16_t id = tsk_getu16(fs->endian, list->id);
-        
+
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_proc_attrlist: mft: %" PRIuINUM
                 " type %" PRIu32 " id %" PRIu16
                 "  VCN: %" PRIu64 "\n", mftnum, type,
                 id, tsk_getu64(fs->endian, list->start_vcn));
-        
+
 
         // keep track of the biggest ID that we saw.
         if (id > nextid)
@@ -2285,8 +2283,10 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
          * we can have duplicate entries at different VCNs.  Ignore those. */
         found = 0;
         for (i = 0; i < map->num_used; i++) {
-            if ((map->type[i] == type) && (memcmp(map->name[i], &list->name, list->nlen*2) == 0)) {
-                found=1;
+            if ((map->type[i] == type)
+                && (memcmp(map->name[i], &list->name,
+                        list->nlen * 2) == 0)) {
+                found = 1;
                 break;
             }
         }
@@ -2296,11 +2296,11 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             map->extMft[map->num_used] = mftnum;
             map->type[map->num_used] = type;
             map->extId[map->num_used] = id;
-            memcpy(map->name[map->num_used], &list->name, list->nlen*2);
+            memcpy(map->name[map->num_used], &list->name, list->nlen * 2);
             if (map->num_used < 255)
                 map->num_used++;
         }
-        
+
         /* also check the todo list -- skip the base entry 
          * the goal here is to get a unique list of MFT entries
          * to later process. */
@@ -2328,9 +2328,9 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
 
 
     /* Process the ToDo list & and call ntfs_proc_attr */
-    for (a = 0; a < mftToDoCnt; a++) {  
+    for (a = 0; a < mftToDoCnt; a++) {
         TSK_RETVAL_ENUM retval;
-        
+
         /* Sanity check. */
         if (mftToDo[a] < ntfs->fs_info.first_inum ||
             mftToDo[a] > ntfs->fs_info.last_inum) {
@@ -2347,7 +2347,9 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             continue;
         }
 
-        if ((retval = ntfs_dinode_lookup(ntfs, (char *)mft, mftToDo[a])) != TSK_OK) {
+        if ((retval =
+                ntfs_dinode_lookup(ntfs, (char *) mft,
+                    mftToDo[a])) != TSK_OK) {
             // if the entry is corrupt, then continue
             if (retval == TSK_COR) {
                 if (tsk_verbose)
@@ -2370,15 +2372,13 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
              * unallocated.  If so, then the list entry could
              * have been reallocated, so we will just ignore it
              */
-            if ((tsk_getu16(fs->endian,
-                        mft->flags) & NTFS_MFT_INUSE) == 0) {
+            if ((tsk_getu16(fs->endian, mft->flags) & NTFS_MFT_INUSE) == 0) {
                 continue;
             }
             else {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                tsk_error_set_errstr(
-                    "Extension record %" PRIuINUM
+                tsk_error_set_errstr("Extension record %" PRIuINUM
                     " (file ref = %" PRIuINUM
                     ") is not for attribute list of %"
                     PRIuINUM "", mftToDo[a], tsk_getu48(fs->endian,
@@ -2389,7 +2389,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                 return 1;
             }
         }
-  
+
         /* Process the attribute seq for this MFT entry and add them
          * to the TSK_FS_META structure
          */
@@ -2432,18 +2432,18 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
  * @returns error code
  */
 static TSK_RETVAL_ENUM
-ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf, TSK_INUM_T a_mnum)
+ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
+    TSK_INUM_T a_mnum)
 {
     ntfs_attr *attr;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & ntfs->fs_info;
     TSK_RETVAL_ENUM retval;
-    ntfs_mft *mft = (ntfs_mft *)a_buf;
+    ntfs_mft *mft = (ntfs_mft *) a_buf;
 
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ntfs_dinode_copy: NULL fs_file given");
+        tsk_error_set_errstr("ntfs_dinode_copy: NULL fs_file given");
         return TSK_ERR;
     }
 
@@ -2514,7 +2514,8 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf, TSK_INU
             mft->attr_off));
     if ((retval = ntfs_proc_attrseq(ntfs, a_fs_file, attr,
                 ntfs->mft_rsize_b - tsk_getu16(fs->endian,
-                    mft->attr_off), a_fs_file->meta->addr, NULL)) != TSK_OK) {
+                    mft->attr_off), a_fs_file->meta->addr,
+                NULL)) != TSK_OK) {
         return retval;
     }
 
@@ -2543,8 +2544,7 @@ ntfs_load_attrs(TSK_FS_FILE * a_fs_file)
 {
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ntfs_load_attrs: called with NULL pointers");
+        tsk_error_set_errstr("ntfs_load_attrs: called with NULL pointers");
         return 1;
     }
 
@@ -2554,8 +2554,7 @@ ntfs_load_attrs(TSK_FS_FILE * a_fs_file)
             tsk_error_set_errno(TSK_ERR_FS_RECOVER);
         else
             tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ntfs_load_attrs: attributes are NULL");
+        tsk_error_set_errstr("ntfs_load_attrs: attributes are NULL");
         return 1;
     }
     return 0;
@@ -2580,8 +2579,7 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 
     if (a_fs_file == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ntfs_inode_lookup: fs_file is NULL");
+        tsk_error_set_errstr("ntfs_inode_lookup: fs_file is NULL");
         return 1;
     }
 
@@ -2601,10 +2599,10 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
         else
             return 0;
     }
-    
-     if ((mft = (char *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
+
+    if ((mft = (char *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
         return 1;
-     }
+    }
 
     /* Lookup inode and store it in the ntfs structure */
     if (ntfs_dinode_lookup(ntfs, mft, mftnum) != TSK_OK) {
@@ -2618,7 +2616,7 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
         return 1;
     }
 
-    free((char *)mft);
+    free((char *) mft);
     return 0;
 }
 
@@ -2683,8 +2681,8 @@ ntfs_load_attrdef(NTFS_INFO * ntfs)
     else if (load_file.left > 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_FWALK);
-        tsk_error_set_errstr(
-            "load_attrdef: space still left after walking $Attr data");
+        tsk_error_set_errstr
+            ("load_attrdef: space still left after walking $Attr data");
         tsk_fs_file_close(fs_file);
         free(ntfs->attrdef);
         ntfs->attrdef = NULL;
@@ -2769,7 +2767,7 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
     }
 
     /* Get data on the bitmap */
-    if (ntfs_dinode_lookup(ntfs, (char *)mft, NTFS_MFT_BMAP) != TSK_OK) {
+    if (ntfs_dinode_lookup(ntfs, (char *) mft, NTFS_MFT_BMAP) != TSK_OK) {
         free(mft);
         return 1;
     }
@@ -2793,8 +2791,7 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
     if (tsk_getu32(fs->endian, attr->type) != NTFS_ATYPE_DATA) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "Error Finding Bitmap Data Attribute");
+        tsk_error_set_errstr("Error Finding Bitmap Data Attribute");
         free(mft);
         return 1;
     }
@@ -2821,9 +2818,9 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
     if (ntfs->bmap->addr > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-        tsk_error_set_errstr(
-            "ntfs_load_bmap: Bitmap too large for image size: %"
-            PRIuDADDR "", ntfs->bmap->addr);
+        tsk_error_set_errstr
+            ("ntfs_load_bmap: Bitmap too large for image size: %" PRIuDADDR
+            "", ntfs->bmap->addr);
         free(mft);
         return 1;
     }
@@ -2835,14 +2832,13 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2(
-            "ntfs_load_bmap: Error reading block at %"
+        tsk_error_set_errstr2("ntfs_load_bmap: Error reading block at %"
             PRIuDADDR, ntfs->bmap->addr);
         free(mft);
         return 1;
     }
 
-    free((char *)mft);
+    free((char *) mft);
     return 0;
 }
 
@@ -2869,8 +2865,7 @@ ntfs_load_ver(NTFS_INFO * ntfs)
     if (!fs_attr) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "Volume Info attribute not found in $Volume");
+        tsk_error_set_errstr("Volume Info attribute not found in $Volume");
         tsk_fs_file_close(fs_file);
         return 1;
     }
@@ -2894,8 +2889,7 @@ ntfs_load_ver(NTFS_INFO * ntfs)
         else {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
-            tsk_error_set_errstr(
-                "unknown version: %d.%d\n",
+            tsk_error_set_errstr("unknown version: %d.%d\n",
                 vinfo->maj_ver, vinfo->min_ver);
             tsk_fs_file_close(fs_file);
             return 1;
@@ -2904,8 +2898,8 @@ ntfs_load_ver(NTFS_INFO * ntfs)
     else {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-        tsk_error_set_errstr(
-            "load_version: VINFO is a non-resident attribute");
+        tsk_error_set_errstr
+            ("load_version: VINFO is a non-resident attribute");
         return 1;
     }
 
@@ -2949,8 +2943,8 @@ ntfs_sds_to_str(TSK_FS_INFO * a_fs, const ntfs_attr_sds * a_sds,
         ((uintptr_t) a_sds + tsk_getu32(a_fs->endian, a_sds->ent_size))) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "ntfs_sds_to_str: owner offset larger than a_sds length");
+        tsk_error_set_errstr
+            ("ntfs_sds_to_str: owner offset larger than a_sds length");
         return 1;
     }
 
@@ -3002,8 +2996,8 @@ ntfs_sds_to_str(TSK_FS_INFO * a_fs, const ntfs_attr_sds * a_sds,
     else {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-        tsk_error_set_errstr(
-            "ntfs_sds_to_str: Invalid SID revision (%d)", sid->revision);
+        tsk_error_set_errstr("ntfs_sds_to_str: Invalid SID revision (%d)",
+            sid->revision);
         return 1;               // Invalid revision number in the SID.
     }
 
@@ -3056,8 +3050,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     // versions of NTFS.
     for (i = 0; i < ntfs->sii_data.used; i++) {
         if (tsk_getu32(fs->endian,
-                ((ntfs_attr_sii *) (ntfs->sii_data.
-                        buffer))[i].key_sec_id) == secid) {
+                ((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i].
+                key_sec_id) == secid) {
             sii = &((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i];
             break;
         }
@@ -3066,8 +3060,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     if (sii == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-        tsk_error_set_errstr(
-            "ntfs_get_sds: SII entry not found (%" PRIu32 ")", secid);
+        tsk_error_set_errstr("ntfs_get_sds: SII entry not found (%" PRIu32
+            ")", secid);
         return NULL;
     }
 
@@ -3080,17 +3074,15 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     if ((uint32_t) sii_sds_file_off > ntfs->sds_data.size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-        tsk_error_set_errstr(
-            "ntfs_get_sds: SII offset too large (%" PRIu64 ")",
-            sii_sds_file_off);
+        tsk_error_set_errstr("ntfs_get_sds: SII offset too large (%" PRIu64
+            ")", sii_sds_file_off);
         return NULL;
     }
     else if (!sii_sds_ent_size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-        tsk_error_set_errstr(
-            "ntfs_get_sds: SII entry size is invalid (%" PRIu32 ")",
-            sii_sds_ent_size);
+        tsk_error_set_errstr("ntfs_get_sds: SII entry size is invalid (%"
+            PRIu32 ")", sii_sds_ent_size);
         return NULL;
     }
 
@@ -3122,8 +3114,7 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
 
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_GENFS);
-    tsk_error_set_errstr(
-        "ntfs_get_sds: Got to end w/out data");
+    tsk_error_set_errstr("ntfs_get_sds: Got to end w/out data");
     return NULL;
 }
 #endif
@@ -3149,15 +3140,15 @@ ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
     const TSK_FS_ATTR *fs_data;
     ntfs_attr_si *si;
     const ntfs_attr_sds *sds;
-    NTFS_INFO *ntfs = (NTFS_INFO*)a_fs_file->fs_info;
+    NTFS_INFO *ntfs = (NTFS_INFO *) a_fs_file->fs_info;
 
     *sid_str = NULL;
 
     if (!a_fs_file->meta->attr) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-        tsk_error_set_errstr(
-            "ntfs_file_get_sidstr: file argument has no meta data");
+        tsk_error_set_errstr
+            ("ntfs_file_get_sidstr: file argument has no meta data");
         return 1;
     }
 
@@ -3165,8 +3156,7 @@ ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
     fs_data = tsk_fs_attrlist_get(a_fs_file->meta->attr,
         TSK_FS_ATTR_TYPE_NTFS_SI);
     if (!fs_data) {
-        tsk_error_set_errstr2(
-            "- ntfs_file_get_sidstr:SI attribute");
+        tsk_error_set_errstr2("- ntfs_file_get_sidstr:SI attribute");
         return 1;
     }
 
@@ -3174,8 +3164,7 @@ ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
     if (!si) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
-        tsk_error_set_errstr(
-            "ntfs_file_get_sidstr: SI buf is NULL");
+        tsk_error_set_errstr("ntfs_file_get_sidstr: SI buf is NULL");
         return 1;
     }
 
@@ -3186,14 +3175,12 @@ ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
         tsk_getu32(a_fs_file->fs_info->endian, si->sec_id));
     if (!sds) {
         tsk_release_lock(&ntfs->sid_lock);
-        tsk_error_set_errstr2(
-            "- ntfs_file_get_sidstr:SI attribute");
+        tsk_error_set_errstr2("- ntfs_file_get_sidstr:SI attribute");
         return 1;
     }
     if (ntfs_sds_to_str(a_fs_file->fs_info, sds, sid_str)) {
         tsk_release_lock(&ntfs->sid_lock);
-        tsk_error_set_errstr2(
-            "- ntfs_file_get_sidstr:SI attribute");
+        tsk_error_set_errstr2("- ntfs_file_get_sidstr:SI attribute");
         return 1;
     }
     tsk_release_lock(&ntfs->sid_lock);
@@ -3493,15 +3480,15 @@ ntfs_block_walk(TSK_FS_INFO * fs,
     if (a_start_blk < fs->first_block || a_start_blk > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "%s: start block: %" PRIuDADDR "", myname, a_start_blk);
+        tsk_error_set_errstr("%s: start block: %" PRIuDADDR "", myname,
+            a_start_blk);
         return 1;
     }
     else if (a_end_blk < fs->first_block || a_end_blk > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "%s: last block: %" PRIuDADDR "", myname, a_end_blk);
+        tsk_error_set_errstr("%s: last block: %" PRIuDADDR "", myname,
+            a_end_blk);
         return 1;
     }
 
@@ -3551,9 +3538,9 @@ ntfs_block_walk(TSK_FS_INFO * fs,
             continue;
 
         if (tsk_fs_block_get(fs, fs_block, addr) == NULL) {
-            tsk_error_set_errstr2(
-                "ntfs_block_walk: Error reading block at %"
-                PRIuDADDR, addr);
+            tsk_error_set_errstr2
+                ("ntfs_block_walk: Error reading block at %" PRIuDADDR,
+                addr);
             tsk_fs_block_free(fs_block);
             return 1;
         }
@@ -3586,7 +3573,7 @@ ntfs_block_walk(TSK_FS_INFO * fs,
  */
 static uint8_t
 ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
-    TSK_INUM_T end_inum, TSK_FS_META_FLAG_ENUM flags, 
+    TSK_INUM_T end_inum, TSK_FS_META_FLAG_ENUM flags,
     TSK_FS_META_WALK_CB a_action, void *ptr)
 {
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
@@ -3594,39 +3581,39 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T mftnum;
     TSK_FS_FILE *fs_file;
     TSK_INUM_T end_inum_tmp;
-    ntfs_mft * mft;
+    ntfs_mft *mft;
     /*
      * Sanity checks.
      */
     if (start_inum < fs->first_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "inode_walk: Starting inode number is too small (%"
-            PRIuINUM ")", start_inum);
+        tsk_error_set_errstr
+            ("inode_walk: Starting inode number is too small (%" PRIuINUM
+            ")", start_inum);
         return 1;
     }
     if (start_inum > fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "inode_walk: Starting inode number is too large (%"
-            PRIuINUM ")", start_inum);
+        tsk_error_set_errstr
+            ("inode_walk: Starting inode number is too large (%" PRIuINUM
+            ")", start_inum);
         return 1;
     }
     if (end_inum < fs->first_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "inode_walk: Ending inode number is too small (%"
-            PRIuINUM ")", end_inum);
+        tsk_error_set_errstr
+            ("inode_walk: Ending inode number is too small (%" PRIuINUM
+            ")", end_inum);
         return 1;
     }
     if (end_inum > fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "Ending inode number is too large (%" PRIuINUM ")", end_inum);
+        tsk_error_set_errstr("Ending inode number is too large (%" PRIuINUM
+            ")", end_inum);
         return 1;
     }
 
@@ -3661,8 +3648,8 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
      * */
     if ((flags & TSK_FS_META_FLAG_ORPHAN)) {
         if (tsk_fs_dir_load_inum_named(fs) != TSK_OK) {
-            tsk_error_errstr2_concat(
-                "- ntfs_inode_walk: identifying inodes allocated by file names");
+            tsk_error_errstr2_concat
+                ("- ntfs_inode_walk: identifying inodes allocated by file names");
             return 1;
         }
     }
@@ -3677,9 +3664,9 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         return 1;
     }
 
-    if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL){
-       tsk_fs_file_close(fs_file);
-       return 1;
+    if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
+        tsk_fs_file_close(fs_file);
+        return 1;
     }
     // we need to handle fs->last_inum specially because it is for the
     // virtual ORPHANS directory.  Handle it outside of the loop.
@@ -3694,7 +3681,9 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         TSK_RETVAL_ENUM retval2;
 
         /* read MFT entry in to NTFS_INFO */
-        if ((retval2 = ntfs_dinode_lookup(ntfs, (char *)mft, mftnum)) != TSK_OK) {
+        if ((retval2 =
+                ntfs_dinode_lookup(ntfs, (char *) mft,
+                    mftnum)) != TSK_OK) {
             // if the entry is corrupt, then skip to the next one
             if (retval2 == TSK_COR) {
                 if (tsk_verbose)
@@ -3732,7 +3721,9 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         }
 
         /* copy into generic format */
-        if ((retval = ntfs_dinode_copy(ntfs, fs_file, (char *)mft, mftnum)) != TSK_OK) {
+        if ((retval =
+                ntfs_dinode_copy(ntfs, fs_file, (char *) mft,
+                    mftnum)) != TSK_OK) {
             // continue on if there were only corruption problems
             if (retval == TSK_COR) {
                 if (tsk_verbose)
@@ -3791,7 +3782,7 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     }
 
     tsk_fs_file_close(fs_file);
-    free((char *)mft);
+    free((char *) mft);
     return 0;
 }
 
@@ -3802,8 +3793,7 @@ ntfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "fscheck not implemented for NTFS yet");
+    tsk_error_set_errstr("fscheck not implemented for NTFS yet");
     return 1;
 }
 
@@ -3844,7 +3834,8 @@ ntfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     if ((fs_file = tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_VOL)) == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_errstr2_concat(" - fsstat: Error finding Volume MFT Entry");
+        tsk_error_errstr2_concat
+            (" - fsstat: Error finding Volume MFT Entry");
         return 1;
     }
 
@@ -3852,8 +3843,7 @@ ntfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     if (!fs_attr) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "Volume Name attribute not found in $Volume");
+        tsk_error_set_errstr("Volume Name attribute not found in $Volume");
         return 1;
     }
 
@@ -4029,7 +4019,7 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-ntfs_istat(TSK_FS_INFO * fs, FILE * hFile, 
+ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
     TSK_INUM_T inum, TSK_DADDR_T numblock, int32_t sec_skew)
 {
     TSK_FS_FILE *fs_file;
@@ -4038,12 +4028,12 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
     ntfs_mft *mft;
     // clean up any error messages that are lying around
     tsk_error_reset();
-    
-    if ((mft = (ntfs_mft *)tsk_malloc(ntfs->mft_rsize_b)) == NULL){
+
+    if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
         return 1;
     }
 
-    if (ntfs_dinode_lookup(ntfs, (char *)mft, inum)) {
+    if (ntfs_dinode_lookup(ntfs, (char *) mft, inum)) {
         free(mft);
         return 1;
     }
@@ -4477,8 +4467,7 @@ ntfs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "NTFS Journal is not yet supported\n");
+    tsk_error_set_errstr("NTFS Journal is not yet supported\n");
     return 1;
 }
 
@@ -4488,8 +4477,7 @@ ntfs_jentry_walk(TSK_FS_INFO * fs, int flags,
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "NTFS Journal is not yet supported\n");
+    tsk_error_set_errstr("NTFS Journal is not yet supported\n");
     return 1;
 }
 
@@ -4500,8 +4488,7 @@ ntfs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start,
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr(
-        "NTFS Journal is not yet supported\n");
+    tsk_error_set_errstr("NTFS Journal is not yet supported\n");
     return 1;
 }
 
@@ -4620,8 +4607,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2(
-            "%s: Error reading boot sector.", myname);
+        tsk_error_set_errstr2("%s: Error reading boot sector.", myname);
         fs->tag = 0;
         free(ntfs->fs);
         free(ntfs);
@@ -4635,8 +4621,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr(
-            "Not a NTFS file system (magic)");
+        tsk_error_set_errstr("Not a NTFS file system (magic)");
         return NULL;
     }
 
@@ -4653,8 +4638,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr(
-            "Not a NTFS file system (invalid sector size)");
+        tsk_error_set_errstr
+            ("Not a NTFS file system (invalid sector size)");
         return NULL;
     }
 
@@ -4670,8 +4655,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr(
-            "Not a NTFS file system (invalid cluster size)");
+        tsk_error_set_errstr
+            ("Not a NTFS file system (invalid cluster size)");
         return NULL;
     }
 
@@ -4689,8 +4674,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr(
-            "Not a NTFS file system (volume size is 0)");
+        tsk_error_set_errstr("Not a NTFS file system (volume size is 0)");
         return NULL;
     }
 
@@ -4716,8 +4700,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr(
-            "Not a NTFS file system (invalid MFT entry size)");
+        tsk_error_set_errstr
+            ("Not a NTFS file system (invalid MFT entry size)");
         return NULL;
     }
 
@@ -4733,8 +4717,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr(
-            "Not a NTFS file system (invalid idx record size)");
+        tsk_error_set_errstr
+            ("Not a NTFS file system (invalid idx record size)");
         return NULL;
     }
 
@@ -4746,8 +4730,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr(
-            "Not a NTFS file system (invalid starting MFT clust)");
+        tsk_error_set_errstr
+            ("Not a NTFS file system (invalid starting MFT clust)");
         return NULL;
     }
 

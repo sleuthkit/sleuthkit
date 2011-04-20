@@ -72,8 +72,7 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
                     != NO_ERROR)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-                tsk_error_set_errstr(
-                    "raw_read - %" PRIuOFF, offset);
+                tsk_error_set_errstr("raw_read - %" PRIuOFF, offset);
                 return -1;
             }
             raw_info->seek_pos = offset;
@@ -83,8 +82,8 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
                 &nread, NULL)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_READ);
-            tsk_error_set_errstr(
-                "raw_read - offset: %" PRIuOFF " - len: %zu", offset, len);
+            tsk_error_set_errstr("raw_read - offset: %" PRIuOFF
+                " - len: %zu", offset, len);
             return -1;
         }
         cnt = (ssize_t) nread;
@@ -94,8 +93,8 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
         if (lseek(raw_info->fd, offset, SEEK_SET) != offset) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-            tsk_error_set_errstr(
-                "raw_read - %" PRIuOFF " - %s", offset, strerror(errno));
+            tsk_error_set_errstr("raw_read - %" PRIuOFF " - %s", offset,
+                strerror(errno));
             return -1;
         }
         raw_info->seek_pos = offset;
@@ -105,9 +104,8 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
     if (cnt < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
-        tsk_error_set_errstr(
-            "raw_read - offset: %" PRIuOFF " - len: %" PRIuSIZE " - %s",
-            offset, len, strerror(errno));
+        tsk_error_set_errstr("raw_read - offset: %" PRIuOFF " - len: %"
+            PRIuSIZE " - %s", offset, len, strerror(errno));
         return -1;
     }
 #endif
@@ -182,8 +180,7 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
         if (TSTAT(image, &stat_buf) < 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_STAT);
-            tsk_error_set_errstr(
-                "raw_open: %s", strerror(errno));
+            tsk_error_set_errstr("raw_open: %s", strerror(errno));
             return NULL;
         }
         else if ((stat_buf.st_mode & S_IFMT) == S_IFDIR) {
@@ -193,8 +190,7 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
 
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
-            tsk_error_set_errstr(
-                "raw_open: path is for a directory");
+            tsk_error_set_errstr("raw_open: path is for a directory");
             return NULL;
         }
     }
@@ -224,24 +220,20 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
                 tsk_error_set_errno(TSK_ERR_IMG_OPEN);
                 // print string of commonly found errors
                 if (GetLastError() == ERROR_ACCESS_DENIED) {
-                    tsk_error_set_errstr(
-                        "raw_open file: %" PRIttocTSK " (Access Denied)",
-                        image);
+                    tsk_error_set_errstr("raw_open file: %" PRIttocTSK
+                        " (Access Denied)", image);
                 }
                 else if (GetLastError() == ERROR_SHARING_VIOLATION) {
-                    tsk_error_set_errstr(
-                        "raw_open file: %" PRIttocTSK
+                    tsk_error_set_errstr("raw_open file: %" PRIttocTSK
                         " (Sharing Violation)", image);
                 }
                 else if (GetLastError() == ERROR_FILE_NOT_FOUND) {
-                    tsk_error_set_errstr(
-                        "raw_open file: %" PRIttocTSK " (File not found)",
-                        image);
+                    tsk_error_set_errstr("raw_open file: %" PRIttocTSK
+                        " (File not found)", image);
                 }
                 else {
-                    tsk_error_set_errstr(
-                        "raw_open file: %" PRIttocTSK " (%d)", image,
-                        (int) GetLastError());
+                    tsk_error_set_errstr("raw_open file: %" PRIttocTSK
+                        " (%d)", image, (int) GetLastError());
                 }
                 return NULL;
             }
@@ -255,9 +247,8 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
             if (dwLo == 0xffffffff) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-                tsk_error_set_errstr(
-                    "raw_open file: %" PRIttocTSK " GetFileSize: %d",
-                    image, (int) GetLastError());
+                tsk_error_set_errstr("raw_open file: %" PRIttocTSK
+                    " GetFileSize: %d", image, (int) GetLastError());
                 return NULL;
             }
             img_info->size = dwLo | ((TSK_OFF_T) dwHi << 32);
@@ -272,8 +263,7 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
                     (LPOVERLAPPED) NULL)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-                tsk_error_set_errstr(
-                    "raw_open file: %" PRIttocTSK
+                tsk_error_set_errstr("raw_open file: %" PRIttocTSK
                     " DeviceIoControl: %d", image, (int) GetLastError());
                 return NULL;
             }
@@ -289,9 +279,8 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
     if ((raw_info->fd = open(image, O_RDONLY | O_BINARY)) < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-        tsk_error_set_errstr(
-            "raw_open file: %" PRIttocTSK " msg: %s", image,
-            strerror(errno));
+        tsk_error_set_errstr("raw_open file: %" PRIttocTSK " msg: %s",
+            image, strerror(errno));
         return NULL;
     }
 
@@ -331,23 +320,22 @@ raw_open(const TSK_TCHAR * image, unsigned int a_ssize)
 void *
 tsk_img_malloc(size_t a_len)
 {
-    TSK_IMG_INFO * imgInfo;
-    if ((imgInfo =
-            (TSK_IMG_INFO *) tsk_malloc(a_len)) == NULL)
+    TSK_IMG_INFO *imgInfo;
+    if ((imgInfo = (TSK_IMG_INFO *) tsk_malloc(a_len)) == NULL)
         return NULL;
     //init lock
     tsk_init_lock(&(imgInfo->cache_lock));
 
-    return (void*) imgInfo;
+    return (void *) imgInfo;
 }
 
 /* tsk_img_free - deinit lock  before free memory 
  * This is for img module and all it's inheritances
  */
 void
-tsk_img_free(void * a_ptr)
+tsk_img_free(void *a_ptr)
 {
-    TSK_IMG_INFO * imgInfo = (TSK_IMG_INFO *)a_ptr;
+    TSK_IMG_INFO *imgInfo = (TSK_IMG_INFO *) a_ptr;
 
     //deinit lock
     tsk_deinit_lock(&(imgInfo->cache_lock));

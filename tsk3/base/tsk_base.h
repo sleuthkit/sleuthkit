@@ -63,15 +63,15 @@ extern "C" {
 #define TSK_ERROR_STRING_MAX_LENGTH 1024
 
     typedef struct {
-    	uint32_t t_errno;
-    	char errstr[TSK_ERROR_STRING_MAX_LENGTH+1];
-    	char errstr2[TSK_ERROR_STRING_MAX_LENGTH+1];
-    	char errstr_print[TSK_ERROR_STRING_MAX_LENGTH+1];
+        uint32_t t_errno;
+        char errstr[TSK_ERROR_STRING_MAX_LENGTH + 1];
+        char errstr2[TSK_ERROR_STRING_MAX_LENGTH + 1];
+        char errstr_print[TSK_ERROR_STRING_MAX_LENGTH + 1];
     } TSK_ERROR_INFO;
 
     /* The core function here is to retrieve the per-thread error structure. Other functions to follow
      * are for convenience of performing common operations. */
-    extern TSK_ERROR_INFO* tsk_error_get_info();
+    extern TSK_ERROR_INFO *tsk_error_get_info();
 
     extern uint32_t tsk_error_get_errno();
     extern void tsk_error_set_errno(uint32_t t_errno);
@@ -83,12 +83,15 @@ extern "C" {
 #endif
 
     extern char *tsk_error_get_errstr();
-    extern void tsk_error_set_errstr(char const * format, ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
-    extern void tsk_error_vset_errstr(char const * format, va_list args);
+    extern void tsk_error_set_errstr(char const *format,
+        ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
+    extern void tsk_error_vset_errstr(char const *format, va_list args);
     extern char *tsk_error_get_errstr2();
-    extern void tsk_error_set_errstr2(char const * format, ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
-    extern void tsk_error_vset_errstr2(char const * format, va_list args);
-    extern void tsk_error_errstr2_concat(char const * format, ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
+    extern void tsk_error_set_errstr2(char const *format,
+        ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
+    extern void tsk_error_vset_errstr2(char const *format, va_list args);
+    extern void tsk_error_errstr2_concat(char const *format,
+        ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
 
     /** Return a human-readable form of tsk_error_get_errno **/
     extern const char *tsk_error_get();
@@ -100,15 +103,21 @@ extern "C" {
 #ifdef TSK_MULTITHREAD_LIB
 #ifdef TSK_WIN32
     void *tsk_error_win32_get_per_thread_(unsigned struct_size);
-    typedef struct { CRITICAL_SECTION critical_section; } tsk_lock_t;
+    typedef struct {
+        CRITICAL_SECTION critical_section;
+    } tsk_lock_t;
 #else
 #include <pthread.h>
-    typedef struct { pthread_mutex_t mutex; } tsk_lock_t;
+    typedef struct {
+        pthread_mutex_t mutex;
+    } tsk_lock_t;
 #endif
 
     // single threaded lib
 #else
-    typedef struct { void *dummy; } tsk_lock_t;
+    typedef struct {
+        void *dummy;
+    } tsk_lock_t;
 #endif
 
 /**
@@ -117,7 +126,7 @@ extern "C" {
     typedef enum {
         TSK_OK,                 ///< Ok -- success
         TSK_ERR,                ///< System error -- should abort
-        TSK_COR,                 ///< Data is corrupt, can still process another set of data
+        TSK_COR,                ///< Data is corrupt, can still process another set of data
         TSK_STOP                ///< Stop further processing, not an error though.
     } TSK_RETVAL_ENUM;
 
@@ -463,31 +472,30 @@ documentation and/or software.
 #ifdef __cplusplus
 }
 #endif
-
 #ifdef __cplusplus
 #if 0
-class TskStack{
-private:
-    TSK_STACK *m_stack;
-    
-public:
+class TskStack {
+  private:
+    TSK_STACK * m_stack;
+
+  public:
     /**
     * Create a TSK_STACK structure. See tsk_stack_create() for details.
     * @returns Pointer to structure or NULL on error
     */
-   TskStack(){
-       m_stack = tsk_stack_create();
+    TskStack() {
+        m_stack = tsk_stack_create();
     };
    /**
    * Free an allocated TSK_STACK structure. See tsk_stack_free() for details.
    */
-    ~TskStack(){
+    ~TskStack() {
         tsk_stack_free(m_stack);
     };
     /**
     * Pop a value from the top of the stack. See tsk_stack_pop() for details.
     */
-    void pop(){
+    void pop() {
         tsk_stack_pop(m_stack);
     };
     /**
@@ -495,7 +503,7 @@ public:
     * @param a_val Value to push on
     * @returns 1 on error 
     */
-    uint8_t push(uint64_t a_val){
+    uint8_t push(uint64_t a_val) {
         return tsk_stack_push(m_stack, a_val);
     };
     /**
@@ -503,19 +511,19 @@ public:
     * @param a_val Value to search for 
     * @returns 1 if found and 0 if not
     */
-    uint8_t find(uint64_t a_val){
+    uint8_t find(uint64_t a_val) {
         return tsk_stack_find(m_stack, a_val);
     };
      /**
     * Return Number of entries in the stack
     * @returns number of entries in the stack
     */
-   size_t length(){
-       if (m_stack != NULL)
-        return m_stack->len;
-       else
-           return 0;
-    };            
+    size_t length() {
+        if (m_stack != NULL)
+            return m_stack->len;
+        else
+            return 0;
+    };
 };
 #endif
 
@@ -523,31 +531,31 @@ public:
  * \ingroup baselib_cpp
  * Allows access to most recent error message and code in the thread.
  */
-class TskError{ 
-public:
+class TskError {
+  public:
     /**
     * Return the string with the current error message.  The string does not end with a 
     * newline. See tsk_error_get() for details.
     *
     * @returns String with error message or NULL if there is no error
     */
-   static const char *get(){
+    static const char *get() {
         return tsk_error_get();
     };
-    
+
    /**
    * Print the current error message to a file. See tsk_error_print() for details.
    *
    * @param a_hFile File to print message to
    */
-    static void print(FILE *a_hFile){
+    static void print(FILE * a_hFile) {
         tsk_error_print(a_hFile);
     };
 
     /**
     * Clear the error number and error message. See tsk_error_reset() for details.
     */
-    static void reset(){
+    static void reset() {
         tsk_error_reset();
     };
 };

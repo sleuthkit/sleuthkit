@@ -159,19 +159,20 @@ class TskVsPartInfo;
 * continue, stop, or error. 
 */
 typedef TSK_WALK_RET_ENUM(*TSK_VS_PART_WALK_CPP_CB) (TskVsInfo *
-                                                     a_vs, const TskVsPartInfo * a_vs_part, void *a_ptr);
+    a_vs, const TskVsPartInfo * a_vs_part, void *a_ptr);
 /** \internal
 * Internal structure to pass C++ volume system part walk data into C block walk call back.
 */
 typedef struct {
     TSK_VS_PART_WALK_CPP_CB cppAction;  // pointer C++ callback
-    void *cPtr; // pointer to data that was passed into C++ walk method
+    void *cPtr;                 // pointer to data that was passed into C++ walk method
 } TSK_VS_PART_WALK_CPP_DATA;
 
 /** \internal
 * Internal function used to call C++ Block Walk callback from C callback.
 */
-extern TSK_WALK_RET_ENUM tsk_vs_part_walk_cpp_c_cb (TSK_VS_INFO *a_vs,const TSK_VS_PART_INFO * a_vs_part, void *a_ptr);
+extern TSK_WALK_RET_ENUM tsk_vs_part_walk_cpp_c_cb(TSK_VS_INFO * a_vs,
+    const TSK_VS_PART_INFO * a_vs_part, void *a_ptr);
 
 /** 
  * \ingroup vslib_cpp
@@ -180,20 +181,20 @@ extern TSK_WALK_RET_ENUM tsk_vs_part_walk_cpp_c_cb (TSK_VS_INFO *a_vs,const TSK_
 */
 class TskVsPartInfo {
     friend class TskFsInfo;
-    
-private:
-    TSK_VS_PART_INFO *m_vsPartInfo;
-    TskVsPartInfo(const TskVsPartInfo& rhs); 
-    TskVsPartInfo& operator=(const TskVsPartInfo& rhs);
-    
-public:
+
+  private:
+     TSK_VS_PART_INFO * m_vsPartInfo;
+     TskVsPartInfo(const TskVsPartInfo & rhs);
+     TskVsPartInfo & operator=(const TskVsPartInfo & rhs);
+
+  public:
 
     /**
      * Create an object from its C struct.
      * @param a_vsPartInfo Pointer to C struct for partition.  If NULL, the
      * remaining getX() methods will be undefined.
      */
-    TskVsPartInfo (TSK_VS_PART_INFO *a_vsPartInfo) {
+     TskVsPartInfo(TSK_VS_PART_INFO * a_vsPartInfo) {
         m_vsPartInfo = a_vsPartInfo;
     };
 
@@ -208,10 +209,10 @@ public:
     ssize_t read(TSK_OFF_T a_off, char *a_buf, size_t a_len) {
         if (m_vsPartInfo != NULL)
             return tsk_vs_part_read(m_vsPartInfo, a_off, a_buf, a_len);
-        else 
+        else
             return 0;
     };
-    
+
     /**
     * Reads one or more blocks of data with an address relative to the start of a VOLUME in a volume system.
     * See tsk_vs_part_read_block() for details.
@@ -222,86 +223,87 @@ public:
     */
     ssize_t readBlock(TSK_DADDR_T a_addr, char *a_buf, size_t a_len) {
         if (m_vsPartInfo != NULL)
-            return tsk_vs_part_read_block(m_vsPartInfo, a_addr, a_buf, a_len);
-        else 
+            return tsk_vs_part_read_block(m_vsPartInfo, a_addr, a_buf,
+                a_len);
+        else
             return 0;
     };
-    
+
     /**
     * Return sector offset of start of partition
     * @return sector offset of start of partition
     */
     TSK_DADDR_T getStart() const {
         if (m_vsPartInfo != NULL)
-            return m_vsPartInfo->start; 
+            return m_vsPartInfo->start;
         else
             return 0;
     };
-    
+
     /**
     * Return number of sectors in partition
     * @return number of sectors in partition
     */
     TSK_DADDR_T getLen() const {
         if (m_vsPartInfo != NULL)
-            return m_vsPartInfo->len; 
+            return m_vsPartInfo->len;
         else
             return 0;
     };
-    
+
     /**
     * Return UTF-8 description of partition (volume system type-specific)
     * @return description of partition
     */
-    const char * getDesc() const {
+    const char *getDesc() const {
         if (m_vsPartInfo != NULL)
-            return m_vsPartInfo->desc; 
-        else 
+            return m_vsPartInfo->desc;
+        else
             return NULL;
     };
-    
+
     /**
     * Return table address that describes this partition
     * @return table address that describes this partition
     */
     int8_t getTableNum() const {
         if (m_vsPartInfo != NULL)
-            return m_vsPartInfo->table_num; 
-        else 
+            return m_vsPartInfo->table_num;
+        else
             return 0;
     };
-    
+
     /**
     * Return entry in the table that describes this partition
     * @return entry in the table that describes this partition
     */
     int8_t getSlotNum() const {
         if (m_vsPartInfo != NULL)
-            return m_vsPartInfo->slot_num; 
-        else 
+            return m_vsPartInfo->slot_num;
+        else
             return 0;
     };
-    
+
     /**
     * Return address of this partition
     * @return address of this partition
     */
     TSK_PNUM_T getAddr() const {
         if (m_vsPartInfo != NULL)
-            return m_vsPartInfo->addr; 
+            return m_vsPartInfo->addr;
         else
             return 0;
     };
-    
+
     /**
     * Return flags for partition
     * @return flags for partition
     */
     TSK_VS_PART_FLAG_ENUM getFlags() const {
         if (m_vsPartInfo != NULL)
-            return m_vsPartInfo->flags; 
+            return m_vsPartInfo->flags;
         else
-            return (TSK_VS_PART_FLAG_ENUM)0;
+            return (TSK_VS_PART_FLAG_ENUM) 0;
     };
 };
 
@@ -311,25 +313,25 @@ public:
 * Stores information about an open volume system. 
 * To use this object, open() should be called first.
 */
-class TskVsInfo{
-private:
-    TSK_VS_INFO *m_vsInfo;
-    bool m_opened; // true if open() was called and we need to free it
-    TskVsInfo(const TskVsInfo& rhs); 
-    TskVsInfo& operator=(const TskVsInfo& rhs);
-    
-public:
-    TskVsInfo(TSK_VS_INFO *a_vsInfo) {
+class TskVsInfo {
+  private:
+    TSK_VS_INFO * m_vsInfo;
+    bool m_opened;              // true if open() was called and we need to free it
+     TskVsInfo(const TskVsInfo & rhs);
+     TskVsInfo & operator=(const TskVsInfo & rhs);
+
+  public:
+     TskVsInfo(TSK_VS_INFO * a_vsInfo) {
         m_vsInfo = a_vsInfo;
         m_opened = false;
     };
-    
+
     TskVsInfo() {
         m_vsInfo = NULL;
         m_opened = false;
     };
-    
-   ~TskVsInfo() {
+
+    ~TskVsInfo() {
         close();
     };
 
@@ -344,14 +346,15 @@ public:
     * @return 1 on error and 0 on success
     */
     uint8_t vsPartWalk(TSK_PNUM_T a_start, TSK_PNUM_T a_last,
-                       TSK_VS_PART_FLAG_ENUM a_flags, TSK_VS_PART_WALK_CPP_CB a_action, void *a_ptr) {
-            TSK_VS_PART_WALK_CPP_DATA vsPartData;
-            vsPartData.cppAction = a_action;
-            vsPartData.cPtr = a_ptr;
-            return tsk_vs_part_walk(m_vsInfo, a_start, a_last,
-                a_flags, tsk_vs_part_walk_cpp_c_cb, &vsPartData);
+        TSK_VS_PART_FLAG_ENUM a_flags, TSK_VS_PART_WALK_CPP_CB a_action,
+        void *a_ptr) {
+        TSK_VS_PART_WALK_CPP_DATA vsPartData;
+        vsPartData.cppAction = a_action;
+        vsPartData.cPtr = a_ptr;
+        return tsk_vs_part_walk(m_vsInfo, a_start, a_last,
+            a_flags, tsk_vs_part_walk_cpp_c_cb, &vsPartData);
     };
-    
+
     /**
     * Open a disk image and process the media management system
     * data. See tsk_vs_open() for details.
@@ -363,8 +366,10 @@ public:
     * @return 1 on error and 0 on success. 
     */
     uint8_t open(TskImgInfo * a_imgInfo, TSK_DADDR_T a_offset,
-        TSK_VS_TYPE_ENUM a_type) {        
-        if ((m_vsInfo = tsk_vs_open(a_imgInfo->m_imgInfo, a_offset,a_type)) != NULL) {
+        TSK_VS_TYPE_ENUM a_type) {
+        if ((m_vsInfo =
+                tsk_vs_open(a_imgInfo->m_imgInfo, a_offset,
+                    a_type)) != NULL) {
             m_opened = true;
             return 0;
         }
@@ -372,7 +377,7 @@ public:
             return 1;
         }
     };
-    
+
     /**
     * Reads one or more blocks of data with an address relative to the start of the volume system.
     * See tsk_vs_read_block() for details.
@@ -383,11 +388,11 @@ public:
     */
     ssize_t readBlock(TSK_DADDR_T a_addr, char *a_buf, size_t a_len) {
         if (m_vsInfo != NULL)
-            return tsk_vs_read_block(m_vsInfo, a_addr,a_buf, a_len);
-        else 
+            return tsk_vs_read_block(m_vsInfo, a_addr, a_buf, a_len);
+        else
             return 0;
     };
-    
+
     /**
     * Closes an open volume system. See for tsk_vs_close() details.
     */
@@ -407,18 +412,18 @@ public:
         else
             return 0;
     };
-    
+
     /**
     * Return size of volume system blocks in bytes
     * @return size of a block in bytes
     */
     unsigned int getBlockSize() const {
         if (m_vsInfo != NULL)
-            return m_vsInfo->block_size; 
-        else 
+            return m_vsInfo->block_size;
+        else
             return 0;
     };
-    
+
     /**
     * Return number of partitions
     * @return number of partitions
@@ -435,16 +440,17 @@ public:
     * See tsk_vs_part_get() for details.
     * @param a_idx Index for volume to return (0-based)
     * @return Pointer to partition or NULL on error.  Caller is responsible for freeing object.
-    */    
+    */
     const TskVsPartInfo *getPart(TSK_PNUM_T a_idx) const {
         // @@@ Error handling.
-        return new TskVsPartInfo(const_cast<TSK_VS_PART_INFO *>(tsk_vs_part_get(m_vsInfo, a_idx)));
+        return new TskVsPartInfo(const_cast <
+            TSK_VS_PART_INFO * >(tsk_vs_part_get(m_vsInfo, a_idx)));
     };
 
     /**
     * Get a reference to the parent image object. 
     * @return Pointer to object or NULL on error.  Caller is responsible for freeing object.
-    */    
+    */
     const TskImgInfo *getImgInfo() const {
         if (m_vsInfo == NULL)
             return 0;
@@ -459,9 +465,9 @@ public:
         if (m_vsInfo != NULL)
             return m_vsInfo->vstype;
         else
-            return (TSK_VS_TYPE_ENUM)0;
+            return (TSK_VS_TYPE_ENUM) 0;
     };
-    
+
     /**
      * Parse a string with the volume system type and return its internal ID.
      * See tsk_vs_type_toid() for details.
@@ -479,7 +485,7 @@ public:
     static void typePrint(FILE * a_hFile) {
         tsk_vs_type_print(a_hFile);
     };
-    
+
     /**
      * Return the supported volume system types. 
      * See tsk_vs_type_supported() for details.
@@ -488,24 +494,24 @@ public:
     static TSK_VS_TYPE_ENUM typeSupported() {
         return tsk_vs_type_supported();
     };
-    
+
     /**
      * Return the string name of a partition type ID.
      * See tsk_vs_type_toname() for details.
      * @param a_type Volume system type
      * @return name of type or NULL on error
      */
-    static const char * typeToName(TSK_VS_TYPE_ENUM a_type) {
+    static const char *typeToName(TSK_VS_TYPE_ENUM a_type) {
         return tsk_vs_type_toname(a_type);
     };
-    
+
     /**
      * Return the string description of a partition type ID.
      * See tsk_vs_type_todesc() for details.
      * @param a_type Volume system type
      * @return description of type or NULL on error
      */
-    static const char * typeToDesc(TSK_VS_TYPE_ENUM a_type) {
+    static const char *typeToDesc(TSK_VS_TYPE_ENUM a_type) {
         return tsk_vs_type_todesc(a_type);
     };
 };

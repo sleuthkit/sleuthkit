@@ -333,8 +333,8 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
     if (a_idxe_len < a_used_len) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ntfs_proc_idxentry: Allocated length of index entries is larger than buffer length");
+        tsk_error_set_errstr
+            ("ntfs_proc_idxentry: Allocated length of index entries is larger than buffer length");
         return TSK_ERR;
     }
 
@@ -540,8 +540,8 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
             ntfs->ssize_b) > len) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "fix_idxrec: More Update Sequence Entries than idx record size");
+        tsk_error_set_errstr
+            ("fix_idxrec: More Update Sequence Entries than idx record size");
         return 1;
     }
 
@@ -571,8 +571,8 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
 
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-            tsk_error_set_errstr(
-                "fix_idxrec: Incorrect update sequence value in index buffer\nUpdate Value: 0x%"
+            tsk_error_set_errstr
+                ("fix_idxrec: Incorrect update sequence value in index buffer\nUpdate Value: 0x%"
                 PRIx16 " Actual Value: 0x%" PRIx16
                 " Replacement Value: 0x%" PRIx16
                 "\nThis is typically because of a corrupted entry",
@@ -642,15 +642,15 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (a_addr < a_fs->first_inum || a_addr > a_fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr(
-            "ntfs_dir_open_meta: inode value: %" PRIuINUM "\n", a_addr);
+        tsk_error_set_errstr("ntfs_dir_open_meta: inode value: %" PRIuINUM
+            "\n", a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ntfs_dir_open_meta: NULL fs_attr argument given");
+        tsk_error_set_errstr
+            ("ntfs_dir_open_meta: NULL fs_attr argument given");
         return TSK_ERR;
     }
 
@@ -664,7 +664,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         tsk_fs_dir_reset(fs_dir);
     }
     else {
-        if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
+        if ((*a_fs_dir = fs_dir =
+                tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
             return TSK_ERR;
         }
     }
@@ -684,9 +685,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (!(fs_dir->fs_file->meta->attr)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "dent_walk: Error: Directory address %" PRIuINUM
-            " has no attributes", a_addr);
+        tsk_error_set_errstr("dent_walk: Error: Directory address %"
+            PRIuINUM " has no attributes", a_addr);
         return TSK_COR;
     }
 
@@ -707,8 +707,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (fs_attr_root->flags & TSK_FS_ATTR_NONRES) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "dent_walk: $IDX_ROOT is not resident - it should be");
+        tsk_error_set_errstr
+            ("dent_walk: $IDX_ROOT is not resident - it should be");
         return TSK_COR;
     }
     idxroot = (ntfs_idxroot *) fs_attr_root->rd.buf;
@@ -717,16 +717,15 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (tsk_getu32(a_fs->endian, idxroot->type) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "dent_walk: Attribute type in index root is 0");
+        tsk_error_set_errstr
+            ("dent_walk: Attribute type in index root is 0");
         return TSK_COR;
     }
     else if (tsk_getu32(a_fs->endian, idxroot->type) != NTFS_ATYPE_FNAME) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "ERROR: Directory index is sorted by type: %" PRIu32
-            ".\nOnly $FNAME is currently supported",
+        tsk_error_set_errstr("ERROR: Directory index is sorted by type: %"
+            PRIu32 ".\nOnly $FNAME is currently supported",
             tsk_getu32(a_fs->endian, idxroot->type));
         return TSK_COR;
     }
@@ -812,8 +811,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 fs_attr_root->rd.buf_size))) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "Error: Index list offsets are invalid on entry: %" PRIuINUM,
+        tsk_error_set_errstr
+            ("Error: Index list offsets are invalid on entry: %" PRIuINUM,
             fs_dir->fs_file->meta->addr);
         return TSK_COR;
     }
@@ -851,8 +850,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                 idxelist->flags) & NTFS_IDXELIST_CHILD) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-            tsk_error_set_errstr(
-                "Error: $IDX_ROOT says there should be children, but there isn't");
+            tsk_error_set_errstr
+                ("Error: $IDX_ROOT says there should be children, but there isn't");
             return TSK_COR;
         }
     }
@@ -861,8 +860,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         if (fs_attr_idx->flags & TSK_FS_ATTR_RES) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-            tsk_error_set_errstr(
-                "$IDX_ALLOC is Resident - it shouldn't be");
+            tsk_error_set_errstr
+                ("$IDX_ALLOC is Resident - it shouldn't be");
             return TSK_COR;
         }
 
@@ -896,9 +895,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
-            tsk_error_set_errstr(
-                "Error reading directory contents: %" PRIuINUM "\n",
-                a_addr);
+            tsk_error_set_errstr("Error reading directory contents: %"
+                PRIuINUM "\n", a_addr);
             return TSK_COR;
         }
 
@@ -981,8 +979,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                         idxelist->seqend_off) > (uintptr_t) idxrec)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                tsk_error_set_errstr(
-                    "Error: Index list offsets are invalid on entry: %"
+                tsk_error_set_errstr
+                    ("Error: Index list offsets are invalid on entry: %"
                     PRIuINUM, fs_dir->fs_file->meta->addr);
                 free(idxalloc);
                 return TSK_COR;
@@ -991,8 +989,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* process the list of index entries */
             retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
-                (fs_dir->fs_file->meta->
-                    flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
+                (fs_dir->fs_file->
+                    meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
                 list_len, tsk_getu32(a_fs->endian,
                     idxelist->seqend_off) - tsk_getu32(a_fs->endian,
                     idxelist->begin_off));
@@ -1047,8 +1045,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     (uintptr_t) idxalloc + idxalloc_len)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                tsk_error_set_errstr(
-                    "Error: Index list offsets are invalid on entry: %"
+                tsk_error_set_errstr
+                    ("Error: Index list offsets are invalid on entry: %"
                     PRIuINUM, fs_dir->fs_file->meta->addr);
                 free(idxalloc);
                 return TSK_COR;
@@ -1056,8 +1054,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* process the list of index entries */
             retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
-                (fs_dir->fs_file->meta->
-                    flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
+                (fs_dir->fs_file->
+                    meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
                 list_len, tsk_getu32(a_fs->endian,
                     idxelist->seqend_off) - tsk_getu32(a_fs->endian,
                     idxelist->begin_off));
@@ -1197,8 +1195,7 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
         fs_name_list->par_inode > fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "invalid inode value: %" PRIuINUM "\n",
+        tsk_error_set_errstr("invalid inode value: %" PRIuINUM "\n",
             fs_name_list->par_inode);
         return 1;
     }
@@ -1329,22 +1326,21 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
     TSK_FS_FILE *fs_file;
     ntfs_mft *mft;
     TSK_RETVAL_ENUM r_enum;
-    NTFS_INFO *ntfs = (NTFS_INFO *)fs;
+    NTFS_INFO *ntfs = (NTFS_INFO *) fs;
 
     /* sanity check */
     if (inode_toid < fs->first_inum || inode_toid > fs->last_inum) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "ntfs_find_file: invalid inode value: %" PRIuINUM "\n",
-            inode_toid);
+        tsk_error_set_errstr("ntfs_find_file: invalid inode value: %"
+            PRIuINUM "\n", inode_toid);
         return 1;
     }
     if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
         return 1;
     }
-    r_enum = ntfs_dinode_lookup(ntfs, (char *)mft, inode_toid);
-    if (r_enum == TSK_ERR){
+    r_enum = ntfs_dinode_lookup(ntfs, (char *) mft, inode_toid);
+    if (r_enum == TSK_ERR) {
         free(mft);
         return 1;
     }
@@ -1414,8 +1410,7 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
         if (!fs_attr) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-            tsk_error_set_errstr(
-                "find_file: Type %" PRIu32 " Id %" PRIu16
+            tsk_error_set_errstr("find_file: Type %" PRIu32 " Id %" PRIu16
                 " not found in MFT %" PRIuINUM "", type_toid, id_toid,
                 inode_toid);
             tsk_fs_file_close(fs_file);

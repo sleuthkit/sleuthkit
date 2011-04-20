@@ -62,8 +62,8 @@ mac_load_table(TSK_VS_INFO * vs)
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_VS_READ);
             }
-            tsk_error_set_errstr2(
-                "MAC Partition entry %" PRIuDADDR, taddr + idx);
+            tsk_error_set_errstr2("MAC Partition entry %" PRIuDADDR,
+                taddr + idx);
             free(part_buf);
             return 1;
         }
@@ -75,8 +75,7 @@ mac_load_table(TSK_VS_INFO * vs)
             if (tsk_vs_guessu16(vs, part->magic, MAC_MAGIC)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-                tsk_error_set_errstr(
-                    "Mac partition table entry (Sector: %"
+                tsk_error_set_errstr("Mac partition table entry (Sector: %"
                     PRIuDADDR ") %" PRIx16,
                     (taddr + idx), tsk_getu16(vs->endian, part->magic));
                 if (tsk_verbose)
@@ -92,8 +91,7 @@ mac_load_table(TSK_VS_INFO * vs)
         else if (tsk_getu16(vs->endian, part->magic) != MAC_MAGIC) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_MAGIC);
-            tsk_error_set_errstr(
-                "Mac partition table entry (Sector: %"
+            tsk_error_set_errstr("Mac partition table entry (Sector: %"
                 PRIuDADDR ") %" PRIx16, (taddr + idx),
                 tsk_getu16(vs->endian, part->magic));
             if (tsk_verbose)
@@ -121,8 +119,8 @@ mac_load_table(TSK_VS_INFO * vs)
         if ((idx < 2) && (part_start > max_addr)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
-            tsk_error_set_errstr(
-                "mac_load_table: Starting sector too large for image");
+            tsk_error_set_errstr
+                ("mac_load_table: Starting sector too large for image");
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "mac_load: Starting sector too large for image (%"

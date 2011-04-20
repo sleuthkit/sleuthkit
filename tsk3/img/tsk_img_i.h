@@ -31,6 +31,6 @@
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
-    extern void *tsk_img_malloc(size_t);
-    extern void tsk_img_free(void *);
+extern void *tsk_img_malloc(size_t);
+extern void tsk_img_free(void *);
 #endif

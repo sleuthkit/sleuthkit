@@ -103,8 +103,8 @@ tsk_fs_file_open_meta(TSK_FS_INFO * a_fs,
 
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_file_open_meta: called with NULL or unallocated structures");
+        tsk_error_set_errstr
+            ("tsk_fs_file_open_meta: called with NULL or unallocated structures");
         return NULL;
     }
 
@@ -156,8 +156,8 @@ tsk_fs_file_open(TSK_FS_INFO * a_fs,
 
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_file_open: called with NULL or unallocated structures");
+        tsk_error_set_errstr
+            ("tsk_fs_file_open: called with NULL or unallocated structures");
         return NULL;
     }
 
@@ -174,8 +174,8 @@ tsk_fs_file_open(TSK_FS_INFO * a_fs,
     else if (retval == 1) {
         tsk_fs_name_free(fs_name);
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_file_open: path not found: %s", a_path);
+        tsk_error_set_errstr("tsk_fs_file_open: path not found: %s",
+            a_path);
         return NULL;
     }
 
@@ -208,14 +208,13 @@ tsk_fs_file_attr_check(TSK_FS_FILE * a_fs_file, char *a_func)
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
         || (a_fs_file->fs_info == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "%s: called with NULL pointers", a_func);
+        tsk_error_set_errstr("%s: called with NULL pointers", a_func);
         return 1;
     }
     else if (a_fs_file->meta->tag != TSK_FS_META_TAG) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "%s: called with unallocated structures", a_func);
+        tsk_error_set_errstr("%s: called with unallocated structures",
+            a_func);
         return 1;
     }
     fs = a_fs_file->fs_info;
@@ -223,8 +222,8 @@ tsk_fs_file_attr_check(TSK_FS_FILE * a_fs_file, char *a_func)
     // If the attributes haven't been loaded, then load them.
     if (a_fs_file->meta->attr_state == TSK_FS_META_ATTR_ERROR) {
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-        tsk_error_set_errstr(
-            "%s: called for file with corrupt data", a_func);
+        tsk_error_set_errstr("%s: called for file with corrupt data",
+            a_func);
         return 1;
     }
     else if ((a_fs_file->meta->attr_state != TSK_FS_META_ATTR_STUDIED)
@@ -342,15 +341,15 @@ tsk_fs_file_walk_type(TSK_FS_FILE * a_fs_file,
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
         || (a_fs_file->fs_info == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_file_walk: called with NULL pointers");
+        tsk_error_set_errstr
+            ("tsk_fs_file_walk: called with NULL pointers");
         return 1;
     }
     else if ((a_fs_file->fs_info->tag != TSK_FS_INFO_TAG)
         || (a_fs_file->meta->tag != TSK_FS_META_TAG)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_file_walk: called with unallocated structures");
+        tsk_error_set_errstr
+            ("tsk_fs_file_walk: called with unallocated structures");
         return 1;
     }
     fs = a_fs_file->fs_info;
@@ -398,15 +397,15 @@ tsk_fs_file_walk(TSK_FS_FILE * a_fs_file,
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
         || (a_fs_file->fs_info == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_file_walk: called with NULL pointers");
+        tsk_error_set_errstr
+            ("tsk_fs_file_walk: called with NULL pointers");
         return 1;
     }
     else if ((a_fs_file->fs_info->tag != TSK_FS_INFO_TAG)
         || (a_fs_file->meta->tag != TSK_FS_META_TAG)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_file_walk: called with unallocated structures");
+        tsk_error_set_errstr
+            ("tsk_fs_file_walk: called with unallocated structures");
         return 1;
     }
     fs = a_fs_file->fs_info;
@@ -453,15 +452,15 @@ tsk_fs_file_read_type(TSK_FS_FILE * a_fs_file,
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
         || (a_fs_file->fs_info == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_file_read: called with NULL pointers");
+        tsk_error_set_errstr
+            ("tsk_fs_file_read: called with NULL pointers");
         return -1;
     }
     else if ((a_fs_file->fs_info->tag != TSK_FS_INFO_TAG)
         || (a_fs_file->meta->tag != TSK_FS_META_TAG)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_file_read: called with unallocated structures");
+        tsk_error_set_errstr
+            ("tsk_fs_file_read: called with unallocated structures");
         return -1;
     }
     fs = a_fs_file->fs_info;
@@ -497,8 +496,7 @@ tsk_fs_file_read(TSK_FS_FILE * a_fs_file,
 
     if ((a_fs_file == NULL) || (a_fs_file->fs_info == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_file_read: fs_info is NULL");
+        tsk_error_set_errstr("tsk_fs_file_read: fs_info is NULL");
         return -1;
     }
 
@@ -522,8 +520,7 @@ tsk_fs_file_get_owner_sid(TSK_FS_FILE * a_fs_file, char **sid_str)
     if ((a_fs_file == NULL) || (a_fs_file->fs_info == NULL)
         || (a_fs_file->meta == NULL) || (sid_str == NULL)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr(
-            "tsk_fs_file_get_owner_sid: fs_info is NULL");
+        tsk_error_set_errstr("tsk_fs_file_get_owner_sid: fs_info is NULL");
         return 1;
     }
 

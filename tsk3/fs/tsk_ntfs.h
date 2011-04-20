@@ -646,8 +646,8 @@ extern "C" {
 #if TSK_USE_SID
         /* sid_lock protects sii_data, sds_data */
         tsk_lock_t sid_lock;
-        NTFS_SXX_BUFFER sii_data; // (r/w shared - lock) 
-        NTFS_SXX_BUFFER sds_data; // (r/w shared - lock) 
+        NTFS_SXX_BUFFER sii_data;       // (r/w shared - lock) 
+        NTFS_SXX_BUFFER sds_data;       // (r/w shared - lock) 
 #endif
     } NTFS_INFO;
 
@@ -655,10 +655,10 @@ extern "C" {
     extern uint32_t nt2unixtime(uint64_t ntdate);
     extern uint8_t ntfs_attrname_lookup(TSK_FS_INFO *, uint16_t, char *,
         int);
-    extern TSK_RETVAL_ENUM ntfs_dinode_lookup(NTFS_INFO *, char *, TSK_INUM_T);
-    extern TSK_RETVAL_ENUM
-        ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-        TSK_INUM_T a_addr);
+    extern TSK_RETVAL_ENUM ntfs_dinode_lookup(NTFS_INFO *, char *,
+        TSK_INUM_T);
+    extern TSK_RETVAL_ENUM ntfs_dir_open_meta(TSK_FS_INFO * a_fs,
+        TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_addr);
 
     extern void ntfs_orphan_map_free(NTFS_INFO * a_ntfs);
 

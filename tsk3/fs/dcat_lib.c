@@ -69,7 +69,8 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
     if (addr + read_num_units - 1 > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("tsk_fs_blkcat: requested size is larger than last block in image (%"
+        tsk_error_set_errstr
+            ("tsk_fs_blkcat: requested size is larger than last block in image (%"
             PRIuDADDR ")", fs->last_block);
         return 1;
     }
@@ -78,8 +79,8 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
     if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WRITE);
-        tsk_error_set_errstr(
-            "blkcat_lib: error setting stdout to binary: %s",
+        tsk_error_set_errstr
+            ("blkcat_lib: error setting stdout to binary: %s",
             strerror(errno));
         return 1;
     }
@@ -110,7 +111,8 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr("blkcat: Error reading block at %" PRIuDADDR, addr);
+            tsk_error_set_errstr("blkcat: Error reading block at %"
+                PRIuDADDR, addr);
             return 1;
         }
 
@@ -199,8 +201,8 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
             if (fwrite(buf, fs->block_size, 1, stdout) != 1) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_WRITE);
-                tsk_error_set_errstr(
-                    "blkcat_lib: error writing to stdout: %s",
+                tsk_error_set_errstr
+                    ("blkcat_lib: error writing to stdout: %s",
                     strerror(errno));
                 free(buf);
                 return 1;

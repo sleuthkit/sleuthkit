@@ -128,8 +128,8 @@ extern "C" {
     //@{
 
     /* The location of "most" file content is stored in the generic TSK 
-    * data structures as runs (starting address and length). 
-    */
+     * data structures as runs (starting address and length). 
+     */
 
     /** 
     * Flags used for a TSK_FS_ATTR_RUN entry. 
@@ -284,9 +284,9 @@ extern "C" {
         } rd;
 
         /* Special file (compressed, encrypted, etc.) */
-        ssize_t(*r) (const TSK_FS_ATTR * fs_attr,
+         ssize_t(*r) (const TSK_FS_ATTR * fs_attr,
             TSK_OFF_T a_offset, char *a_buf, size_t a_len);
-        uint8_t(*w) (const TSK_FS_ATTR * fs_attr,
+         uint8_t(*w) (const TSK_FS_ATTR * fs_attr,
             int flags, TSK_FS_FILE_WALK_CB, void *);
     };
 
@@ -469,9 +469,9 @@ extern "C" {
 #define TSK_FS_ORPHAN_STR "-ORPHAN_FILE-"
 
     /* we are using the last inode as the special inode for the orphan directory.  Note that this
-    * macro is defined to abstract this convention, but there are many places in the code where
-    * there is implied logic about this convention. For example, inode_walks will stop before
-    * this value so that special handling can occur. */
+     * macro is defined to abstract this convention, but there are many places in the code where
+     * there is implied logic about this convention. For example, inode_walks will stop before
+     * this value so that special handling can occur. */
 #define TSK_FS_ORPHANDIR_INUM(fs_info) \
     (fs_info->last_inum)
 
@@ -583,7 +583,7 @@ extern "C" {
         size_t names_used;      ///< Number of name structures in queue being used
         size_t names_alloc;     ///< Number of name structures that were allocated
 
-        TSK_INUM_T addr;    ///< Metadata address of this directory 
+        TSK_INUM_T addr;        ///< Metadata address of this directory 
 
         TSK_FS_INFO *fs_info;   ///< Pointer to file system the directory is located in
     } TSK_FS_DIR;
@@ -839,7 +839,7 @@ extern "C" {
            image may have 16 bytes before the start of each sector.
          */
         unsigned int block_pre_size;    ///< Number of bytes that preceed each block (currently only used for RAW CDs)
-        unsigned int block_post_size;    ///< Number of bytes that follow each block (currently only used for RAW CDs)
+        unsigned int block_post_size;   ///< Number of bytes that follow each block (currently only used for RAW CDs)
 
         /* Journal */
         TSK_INUM_T journ_inum;  ///< Address of journal inode
@@ -853,7 +853,7 @@ extern "C" {
         TSK_ENDIAN_ENUM endian; ///< Endian order of data
 
         /* list_inum_named_lock protects list_inum_named */
-        tsk_lock_t list_inum_named_lock; // taken when r/w the list_inum_named list
+        tsk_lock_t list_inum_named_lock;        // taken when r/w the list_inum_named list
         TSK_LIST *list_inum_named;      /**< List of unallocated inodes that
                                         * are pointed to by a file name -- 
                                         * Used to find orphan files.  Is filled 
@@ -862,20 +862,20 @@ extern "C" {
                                         * (r/w shared - lock) */
 
         /* orphan_hunt_lock protects orphan_dir */
-        tsk_lock_t orphan_dir_lock; // taken for the duration of orphan hunting (not just when updating orphan_dir)
+        tsk_lock_t orphan_dir_lock;     // taken for the duration of orphan hunting (not just when updating orphan_dir)
         TSK_FS_DIR *orphan_dir; ///< Files and dirs in the top level of the $OrphanFiles directory.  NULL if orphans have not been hunted for yet. (r/w shared - lock) 
 
-        uint8_t(*block_walk) (TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end, TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb, void *ptr);    ///< FS-specific function: Call tsk_fs_block_walk() instead. 
+         uint8_t(*block_walk) (TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end, TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb, void *ptr);    ///< FS-specific function: Call tsk_fs_block_walk() instead. 
 
-        TSK_FS_BLOCK_FLAG_ENUM(*block_getflags) (TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr);      ///< \internal
+         TSK_FS_BLOCK_FLAG_ENUM(*block_getflags) (TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr);      ///< \internal
 
-        uint8_t(*inode_walk) (TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T end, TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB cb, void *ptr);     ///< FS-specific function: Call tsk_fs_meta_walk() instead. 
+         uint8_t(*inode_walk) (TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T end, TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB cb, void *ptr);     ///< FS-specific function: Call tsk_fs_meta_walk() instead. 
 
-        uint8_t(*file_add_meta) (TSK_FS_INFO * fs, TSK_FS_FILE * fs_file, TSK_INUM_T addr);    ///< \internal
+         uint8_t(*file_add_meta) (TSK_FS_INFO * fs, TSK_FS_FILE * fs_file, TSK_INUM_T addr);    ///< \internal
 
-        TSK_FS_ATTR_TYPE_ENUM(*get_default_attr_type) (const TSK_FS_FILE *);   ///< \internal
+         TSK_FS_ATTR_TYPE_ENUM(*get_default_attr_type) (const TSK_FS_FILE *);   ///< \internal
 
-        uint8_t(*load_attrs) (TSK_FS_FILE *);  ///< \internal
+         uint8_t(*load_attrs) (TSK_FS_FILE *);  ///< \internal
 
 
         /**
@@ -889,26 +889,26 @@ extern "C" {
         * 
         * @returns 1 on error and 0 on success
         */
-        uint8_t(*istat) (TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+         uint8_t(*istat) (TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             TSK_DADDR_T numblock, int32_t sec_skew);
 
-        TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode);  ///< \internal Call tsk_fs_dir_open_meta() instead. 
+         TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode);  ///< \internal Call tsk_fs_dir_open_meta() instead. 
 
-        uint8_t(*jopen) (TSK_FS_INFO *, TSK_INUM_T);   ///< \internal
+         uint8_t(*jopen) (TSK_FS_INFO *, TSK_INUM_T);   ///< \internal
 
-        uint8_t(*jblk_walk) (TSK_FS_INFO *, TSK_DADDR_T, TSK_DADDR_T, int, TSK_FS_JBLK_WALK_CB, void *);       ///< \internal
+         uint8_t(*jblk_walk) (TSK_FS_INFO *, TSK_DADDR_T, TSK_DADDR_T, int, TSK_FS_JBLK_WALK_CB, void *);       ///< \internal
 
-        uint8_t(*jentry_walk) (TSK_FS_INFO *, int, TSK_FS_JENTRY_WALK_CB, void *);     ///< \internal
+         uint8_t(*jentry_walk) (TSK_FS_INFO *, int, TSK_FS_JENTRY_WALK_CB, void *);     ///< \internal
 
-        uint8_t(*fsstat) (TSK_FS_INFO * fs, FILE * hFile);     ///< \internal
+         uint8_t(*fsstat) (TSK_FS_INFO * fs, FILE * hFile);     ///< \internal
 
         int (*name_cmp) (TSK_FS_INFO *, const char *, const char *);    ///< \internal
 
-        uint8_t(*fscheck) (TSK_FS_INFO *, FILE *);     ///< \internal
+         uint8_t(*fscheck) (TSK_FS_INFO *, FILE *);     ///< \internal
 
         void (*close) (TSK_FS_INFO * fs);       ///< FS-specific function: Call tsk_fs_close() instead. 
 
-        uint8_t(*fread_owner_sid) (TSK_FS_FILE *, char **);    // FS-specific function. Call tsk_fs_file_get_owner_sid() instead.
+         uint8_t(*fread_owner_sid) (TSK_FS_FILE *, char **);    // FS-specific function. Call tsk_fs_file_get_owner_sid() instead.
     };
 
 
@@ -1027,8 +1027,8 @@ extern "C" {
         TSK_FS_META_FLAG_ENUM flags, int32_t skew, const TSK_TCHAR * img);
 
     /*
-    ** Is this string a "." or ".."
-    */
+     ** Is this string a "." or ".."
+     */
 #define TSK_FS_ISDOT(str) ( ((str[0] == '.') && \
     ( ((str[1] == '.') && (str[2] == '\0')) || (str[1] == '\0') ) ) ? 1 : 0 )
 
@@ -1040,21 +1040,19 @@ extern "C" {
 }
 #endif
 #ifdef __cplusplus
-
 /**
  * \ingroup fslib_cpp
- */
-class TskFsJEntry{
-private:
-    TSK_FS_JENTRY *m_jEntry;
-    TskFsJEntry(const TskFsJEntry& rhs); 
-    TskFsJEntry& operator=(const TskFsJEntry& rhs);
-    
-public:
-    TskFsJEntry(TSK_FS_JENTRY *a_jEntry) {
+ */ class TskFsJEntry {
+  private:
+    TSK_FS_JENTRY * m_jEntry;
+    TskFsJEntry(const TskFsJEntry & rhs);
+     TskFsJEntry & operator=(const TskFsJEntry & rhs);
+
+  public:
+     TskFsJEntry(TSK_FS_JENTRY * a_jEntry) {
         m_jEntry = a_jEntry;
     };
-    
+
     ~TskFsJEntry() {
     };
 };
@@ -1067,19 +1065,19 @@ public:
 * The entries in the list must be stored in sequential order (based on offset in file).
 * See TSK_FS_ATTR_RUN for more details.
 */
-class TskFsAttrRun{
-private:
-    TSK_FS_ATTR_RUN * m_fsAttrRun; 
-    TskFsAttrRun(const TskFsAttrRun& rhs); 
-    TskFsAttrRun& operator=(const TskFsAttrRun& rhs);
+class TskFsAttrRun {
+  private:
+    TSK_FS_ATTR_RUN * m_fsAttrRun;
+    TskFsAttrRun(const TskFsAttrRun & rhs);
+     TskFsAttrRun & operator=(const TskFsAttrRun & rhs);
 
-public:
+  public:
     /**
         * construct a TskFsAttrRun object.
     * @param a_fsAttrRun pointer of TSK_FS_ATTR_RUN. If NULL, then the 
     * getX() method return values are undefined. 
     */
-    TskFsAttrRun(TSK_FS_ATTR_RUN * a_fsAttrRun) {
+     TskFsAttrRun(TSK_FS_ATTR_RUN * a_fsAttrRun) {
         m_fsAttrRun = a_fsAttrRun;
     };
 
@@ -1127,9 +1125,9 @@ public:
         if (m_fsAttrRun != NULL)
             return m_fsAttrRun->flags;
         else
-            return (TSK_FS_ATTR_RUN_FLAG_ENUM)0;
+            return (TSK_FS_ATTR_RUN_FLAG_ENUM) 0;
     };
-};//TskFsAttrRun
+};                              //TskFsAttrRun
 
 /**
 * \ingroup fslib_cpp
@@ -1140,18 +1138,18 @@ public:
 */
 class TskFsName {
     friend class TskFsInfo;
-    
-private:
-    TSK_FS_NAME *m_fsName;
-    TskFsName(const TskFsName& rhs); 
-    TskFsName& operator=(const TskFsName& rhs);
 
-public:
+  private:
+     TSK_FS_NAME * m_fsName;
+     TskFsName(const TskFsName & rhs);
+     TskFsName & operator=(const TskFsName & rhs);
+
+  public:
     /**
     * construct a TskFsName object
     * @param a_fsName a pointer of TSK_FS_NAME. If NULL, the getX() return values are undefined. 
     */
-    TskFsName(TSK_FS_NAME * a_fsName) {
+     TskFsName(TSK_FS_NAME * a_fsName) {
         m_fsName = a_fsName;
     };
 
@@ -1162,7 +1160,7 @@ public:
     * Return the name of the file (in UTF-8)
     * @return the name of the file
     */
-    const char * getName() const {
+    const char *getName() const {
         if (m_fsName != NULL)
             return m_fsName->name;
         else
@@ -1172,7 +1170,7 @@ public:
         * Return the short name of the file or null (in UTF-8)
     * @return the short name of the file
     */
-    const char * getShortName() const {
+    const char *getShortName() const {
         if (m_fsName != NULL)
             return m_fsName->shrt_name;
         else
@@ -1205,7 +1203,7 @@ public:
         * Return the metadata address of the parent directory (equal to meta_addr if this entry is for root directory). 
     * @return metadata address of parent directory 
     */
-    TSK_INUM_T getParentAddr() const  {
+    TSK_INUM_T getParentAddr() const {
         if (m_fsName != NULL)
             return m_fsName->par_addr;
         else
@@ -1216,22 +1214,22 @@ public:
         * Return the file type information (directory, file, etc.) 
     * @return file type information 
     */
-    TSK_FS_NAME_TYPE_ENUM  getType() const {
+    TSK_FS_NAME_TYPE_ENUM getType() const {
         if (m_fsName != NULL)
             return m_fsName->type;
-        else 
-            return (TSK_FS_NAME_TYPE_ENUM)0;
+        else
+            return (TSK_FS_NAME_TYPE_ENUM) 0;
     };
 
     /**
         * Return flags that describe allocation status etc. 
     * @return flags that describe allocation status 
     */
-    TSK_FS_NAME_FLAG_ENUM  getFlags() const {
+    TSK_FS_NAME_FLAG_ENUM getFlags() const {
         if (m_fsName != NULL)
             return m_fsName->flags;
         else
-            return (TSK_FS_NAME_FLAG_ENUM)0;
+            return (TSK_FS_NAME_FLAG_ENUM) 0;
     };
 };
 
@@ -1249,41 +1247,42 @@ class TskFsFile;
 * @returns Value that tells file walk to continue or stop
 */
 typedef TSK_WALK_RET_ENUM(*TSK_FS_FILE_WALK_CPP_CB) (TskFsFile *
-                                                     a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr, char *a_buf,
-                                                     size_t a_len, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr);
+    a_fs_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr, char *a_buf,
+    size_t a_len, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr);
 
 /** \internal
 * Internal structure to pass C++ file walk data into C file walk call back.
 */
 typedef struct {
     TSK_FS_FILE_WALK_CPP_CB cppAction;  // pointer C++ callback
-    void *cPtr; // pointer to data that was passed into C++ walk method
+    void *cPtr;                 // pointer to data that was passed into C++ walk method
 } TSK_FS_FILE_WALK_CPP_DATA;
 
 /** \internal
 * Internal function used to call C++ file Walk callback from C callback.
 */
-extern TSK_WALK_RET_ENUM tsk_fs_file_cpp_c_cb (TSK_FS_FILE *a_file, TSK_OFF_T a_off, TSK_DADDR_T a_addr, char *a_buf,
-                                        size_t a_len, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr);
+extern TSK_WALK_RET_ENUM tsk_fs_file_cpp_c_cb(TSK_FS_FILE * a_file,
+    TSK_OFF_T a_off, TSK_DADDR_T a_addr, char *a_buf, size_t a_len,
+    TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr);
 /**
 * \ingroup fslib_cpp
 * Stores information about a file attribute.  File attributes store data for a file.
 * Most files have at least one attribute that stores the file content.  See TSK_FS_ATTR for 
 * details on attributes. 
 */
-class TskFsAttribute{
-private:
+class TskFsAttribute {
+  private:
     const TSK_FS_ATTR *m_fsAttr;
-    TskFsAttribute(const TskFsAttribute& rhs); 
-    TskFsAttribute& operator=(const TskFsAttribute& rhs);
-    
-public:
+     TskFsAttribute(const TskFsAttribute & rhs);
+     TskFsAttribute & operator=(const TskFsAttribute & rhs);
+
+  public:
     /**
         * construct a TskFsAttribute object
     * @param a_fsAttr a pointer of TSK_FS_ATTR.  If NULL, the getX() return values are undefi
     ned.
     */
-    TskFsAttribute(const TSK_FS_ATTR *a_fsAttr) {
+     TskFsAttribute(const TSK_FS_ATTR * a_fsAttr) {
         m_fsAttr = a_fsAttr;
     };
 
@@ -1302,13 +1301,14 @@ public:
     * @param a_ptr Pointer that will passed to callback
     * @returns 1 on error and 0 on success.
     */
-    uint8_t walk(TSK_FS_FILE_WALK_FLAG_ENUM a_flags, TSK_FS_FILE_WALK_CPP_CB a_action,
-        void *a_ptr) {
+    uint8_t walk(TSK_FS_FILE_WALK_FLAG_ENUM a_flags,
+        TSK_FS_FILE_WALK_CPP_CB a_action, void *a_ptr) {
         TSK_FS_FILE_WALK_CPP_DATA fileData;
         fileData.cppAction = a_action;
         fileData.cPtr = a_ptr;
         if (m_fsAttr)
-            return tsk_fs_attr_walk(m_fsAttr, a_flags, tsk_fs_file_cpp_c_cb, &fileData);
+            return tsk_fs_attr_walk(m_fsAttr, a_flags,
+                tsk_fs_file_cpp_c_cb, &fileData);
         else
             return 1;
     };
@@ -1324,30 +1324,31 @@ public:
     * @param a_flags Flags to use while reading
     * @returns The number of bytes read or -1 on error (incl if offset is past end of file).
     */
-    ssize_t read(TSK_OFF_T a_offset,char *a_buf, size_t a_len,
+    ssize_t read(TSK_OFF_T a_offset, char *a_buf, size_t a_len,
         TSK_FS_FILE_READ_FLAG_ENUM a_flags) {
         if (m_fsAttr != NULL)
-            return tsk_fs_attr_read(m_fsAttr, a_offset,a_buf, a_len,a_flags);
+            return tsk_fs_attr_read(m_fsAttr, a_offset, a_buf, a_len,
+                a_flags);
         else
             return -1;
     };
-    
+
     /**
         * get the attribute's flags 
     * @return flags for attribute
     */
     TSK_FS_ATTR_FLAG_ENUM getFlags() const {
-        if ( m_fsAttr !=NULL )
+        if (m_fsAttr != NULL)
             return m_fsAttr->flags;
-        else 
-            return (TSK_FS_ATTR_FLAG_ENUM)0;
+        else
+            return (TSK_FS_ATTR_FLAG_ENUM) 0;
     };
     /**
         * get the attributes's name (in UTF-8).  
     * @return name of attribute (or NULL if attribute doesn't have one)
     */
-    const char* getName() const {
-        if ( m_fsAttr !=NULL )
+    const char *getName() const {
+        if (m_fsAttr != NULL)
             return m_fsAttr->name;
         else
             return NULL;
@@ -1358,10 +1359,10 @@ public:
     * @return type of attribute
     */
     TSK_FS_ATTR_TYPE_ENUM getType() const {
-        if ( m_fsAttr !=NULL )
+        if (m_fsAttr != NULL)
             return m_fsAttr->type;
         else
-            return (TSK_FS_ATTR_TYPE_ENUM)0;
+            return (TSK_FS_ATTR_TYPE_ENUM) 0;
     };
 
     /**
@@ -1369,7 +1370,7 @@ public:
     * @return id of attribute
     */
     uint16_t getId() const {
-        if ( m_fsAttr !=NULL )
+        if (m_fsAttr != NULL)
             return m_fsAttr->id;
         else
             return 0;
@@ -1380,7 +1381,7 @@ public:
     * @return size in bytes of attribute
     */
     TSK_OFF_T getSize() const {
-        if ( m_fsAttr !=NULL )
+        if (m_fsAttr != NULL)
             return m_fsAttr->size;
         else
             return 0;
@@ -1392,18 +1393,16 @@ public:
     * @param a_idx The index of the run to return.
     * @return A run in the attribute.
     */
-    const TskFsAttrRun * getRun(int a_idx) const {
+    const TskFsAttrRun *getRun(int a_idx) const {
         if (m_fsAttr != NULL) {
-            TSK_FS_ATTR_RUN *run =m_fsAttr->nrd.run;
+            TSK_FS_ATTR_RUN *run = m_fsAttr->nrd.run;
             int i = 0;
-            while(run != NULL) {
+            while (run != NULL) {
                 if (i == a_idx)
                     return new TskFsAttrRun(run);
                 i++;
                 run = run->next;
-            }
-        }
-        return NULL;
+        }} return NULL;
     };
 
     /**
@@ -1412,14 +1411,12 @@ public:
      */
     int getRunCount() const {
         int size = 0;
-        if (m_fsAttr !=NULL) {
+        if (m_fsAttr != NULL) {
             TSK_FS_ATTR_RUN *run = m_fsAttr->nrd.run;
             while (run != NULL) {
                 size++;
                 run = run->next;
-            }
-        }
-        return size; 
+        }} return size;
     }
 
     /**
@@ -1428,9 +1425,9 @@ public:
     * @return number of initial bytes in run to skip before content begins
     */
     uint32_t getSkipLen() const {
-        if ( m_fsAttr !=NULL )
+        if (m_fsAttr != NULL)
             return m_fsAttr->nrd.skiplen;
-        else 
+        else
             return 0;
     };
 
@@ -1441,9 +1438,9 @@ public:
     * @return number of bytes that are allocated in all clusters of non-resident run
     */
     TSK_OFF_T getAllocSize() const {
-        if ( m_fsAttr !=NULL )
+        if (m_fsAttr != NULL)
             return m_fsAttr->nrd.allocsize;
-        else 
+        else
             return 0;
     };
 
@@ -1454,7 +1451,7 @@ public:
     * @return number of bytes (starting from offset 0) that have data 
     */
     TSK_OFF_T getInitSize() const {
-        if ( m_fsAttr !=NULL )
+        if (m_fsAttr != NULL)
             return m_fsAttr->nrd.initsize;
         else
             return 0;
@@ -1465,7 +1462,7 @@ public:
     * @return size of compression units (needed only if NTFS file is compressed)
     */
     uint32_t getCompSize() const {
-        if ( m_fsAttr !=NULL )
+        if (m_fsAttr != NULL)
             return m_fsAttr->nrd.compsize;
         return 0;
     };
@@ -1474,14 +1471,14 @@ public:
         * Pointer to buffer with resident data.  Only getSize() bytes will be valid.
     * @return pointer to buffer with resident data.
     */
-    const uint8_t * getBuf() const {
-        if ( m_fsAttr !=NULL )
+    const uint8_t *getBuf() const {
+        if (m_fsAttr != NULL)
             return m_fsAttr->rd.buf;
         else
             return NULL;
     };
 
-};//TskfsAttr
+};                              //TskfsAttr
 
 
 class TskFsBlock;
@@ -1493,21 +1490,23 @@ class TskFsInfo;
 * @param a_ptr Pointer that was supplied by the caller who called tsk_fs_block_walk
 * @returns Value to identify if walk should continue, stop, or stop because of error
 */
-typedef TSK_WALK_RET_ENUM(*TSK_FS_BLOCK_WALK_CPP_CB) (const TskFsBlock *a_block, void *a_ptr);
+typedef TSK_WALK_RET_ENUM(*TSK_FS_BLOCK_WALK_CPP_CB) (const TskFsBlock *
+    a_block, void *a_ptr);
 
 
 /** \internal
 * Internal structure to pass C++ block walk data into C block walk call back.
 */
 typedef struct {
-    TSK_FS_BLOCK_WALK_CPP_CB cppAction;  // pointer C++ callback
-    void *cPtr; // pointer to data that was passed into C++ walk method
+    TSK_FS_BLOCK_WALK_CPP_CB cppAction; // pointer C++ callback
+    void *cPtr;                 // pointer to data that was passed into C++ walk method
 } TSK_FS_BLOCK_WALK_CPP_DATA;
 
 /** \internal
 * Internal function used to call C++ Block Walk callback from C callback.
 */
-extern TSK_WALK_RET_ENUM tsk_fs_block_cpp_c_cb (const TSK_FS_BLOCK *a_block, void *a_ptr);
+extern TSK_WALK_RET_ENUM tsk_fs_block_cpp_c_cb(const TSK_FS_BLOCK *
+    a_block, void *a_ptr);
 /**
 * Function definition for callback in TskFsInfo.jblkWalk(). 
 *
@@ -1517,22 +1516,22 @@ extern TSK_WALK_RET_ENUM tsk_fs_block_cpp_c_cb (const TSK_FS_BLOCK *a_block, voi
 * @param a_ptr Pointer that was supplied by the caller 
 * @returns Value to identify if walk should continue, stop, or stop because of error
 */
-typedef TSK_WALK_RET_ENUM(*TSK_FS_JBLK_WALK_CPP_CB) (TskFsInfo *a_fsInfo, char *a_string,
-                                                     int a_num, void *a_ptr);
+typedef TSK_WALK_RET_ENUM(*TSK_FS_JBLK_WALK_CPP_CB) (TskFsInfo * a_fsInfo,
+    char *a_string, int a_num, void *a_ptr);
 
 /** \internal
 * Internal structure to pass C++ JBLK walk data into C JBLK walk call back.
 */
 typedef struct {
     TSK_FS_JBLK_WALK_CPP_CB cppAction;  // pointer C++ callback
-    void *cPtr; // pointer to data that was passed into C++ walk method
+    void *cPtr;                 // pointer to data that was passed into C++ walk method
 } TSK_FS_JBLK_WALK_CPP_DATA;
 
 /** \internal
 * Internal function used to call C++ JBLK Walk callback from C callback.
 */
-extern TSK_WALK_RET_ENUM tsk_fs_jblk_walk_cpp_c_cb (TSK_FS_INFO *a_fsInfo, char *a_string,
-                                        int a_num, void *a_ptr);
+extern TSK_WALK_RET_ENUM tsk_fs_jblk_walk_cpp_c_cb(TSK_FS_INFO * a_fsInfo,
+    char *a_string, int a_num, void *a_ptr);
 
 /**
 * Function definition  for callback in TskFsInfo.jentryWalk().
@@ -1543,22 +1542,22 @@ extern TSK_WALK_RET_ENUM tsk_fs_jblk_walk_cpp_c_cb (TSK_FS_INFO *a_fsInfo, char 
 * @param a_ptr Pointer that was supplied by the caller. 
 * @returns Value to identify if walk should continue, stop, or stop because of error
 */
-    typedef TSK_WALK_RET_ENUM(*TSK_FS_JENTRY_WALK_CPP_CB) (TskFsInfo *a_fsInfo,
-        TskFsJEntry *a_jentry, int a_num, void * a_ptr);
+typedef TSK_WALK_RET_ENUM(*TSK_FS_JENTRY_WALK_CPP_CB) (TskFsInfo *
+    a_fsInfo, TskFsJEntry * a_jentry, int a_num, void *a_ptr);
 
 /** \internal
 * Internal structure to pass C++ JENTRY walk data into C JENTRY walk call back.
 */
 typedef struct {
-    TSK_FS_JENTRY_WALK_CPP_CB cppAction;  // pointer C++ callback
-    void *cPtr; // pointer to data that was passed into C++ walk method
+    TSK_FS_JENTRY_WALK_CPP_CB cppAction;        // pointer C++ callback
+    void *cPtr;                 // pointer to data that was passed into C++ walk method
 } TSK_FS_JENTRY_WALK_CPP_DATA;
 
 /** \internal
 * Internal function used to call C++ JENTRY Walk callback from C callback.
 */
-extern TSK_WALK_RET_ENUM tsk_fs_jentry_walk_cpp_c_cb (TSK_FS_INFO *a_fsInfo, TSK_FS_JENTRY *a_jentry,
-                                        int a_num, void *a_ptr);
+extern TSK_WALK_RET_ENUM tsk_fs_jentry_walk_cpp_c_cb(TSK_FS_INFO *
+    a_fsInfo, TSK_FS_JENTRY * a_jentry, int a_num, void *a_ptr);
 /** 
 * inode walk callback function definition.  This is called for every file
 * that meets the critera specified when inode_walk was called. 
@@ -1567,19 +1566,20 @@ extern TSK_WALK_RET_ENUM tsk_fs_jentry_walk_cpp_c_cb (TSK_FS_INFO *a_fsInfo, TSK
 * @returns Value that tells inode walk to continue or stop
 */
 typedef TSK_WALK_RET_ENUM(*TSK_FS_META_WALK_CPP_CB) (TskFsFile *
-                                                     a_fs_file, void *a_ptr);
+    a_fs_file, void *a_ptr);
 /** \internal
 * Internal structure to pass C++ metadata walk data into C metadata walk call back.
 */
 typedef struct {
     TSK_FS_META_WALK_CPP_CB cppAction;  // pointer C++ callback
-    void *cPtr; // pointer to data that was passed into C++ walk method
+    void *cPtr;                 // pointer to data that was passed into C++ walk method
 } TSK_FS_META_WALK_CPP_DATA;
 
 /** \internal
 * Internal function used to call C++ Meta Walk callback from C callback.
 */
-extern TSK_WALK_RET_ENUM tsk_fs_meta_walk_cpp_c_cb (TSK_FS_FILE *a_file, void *a_ptr);
+extern TSK_WALK_RET_ENUM tsk_fs_meta_walk_cpp_c_cb(TSK_FS_FILE * a_file,
+    void *a_ptr);
 /**
 * Definition of callback function that is used by tsk_fs_dir_walk().  This is
 * is called for each file in a directory. 
@@ -1589,20 +1589,21 @@ extern TSK_WALK_RET_ENUM tsk_fs_meta_walk_cpp_c_cb (TSK_FS_FILE *a_file, void *a
 * @returns Value to signal if tsk_fs_dir_walk should stop or continue. 
 */
 typedef TSK_WALK_RET_ENUM(*TSK_FS_DIR_WALK_CPP_CB) (TskFsFile *
-                                                    a_fs_file, const char *a_path, void *a_ptr);
+    a_fs_file, const char *a_path, void *a_ptr);
 
 /** \internal
 * Internal structure to pass C++ dir walk data into C block walk call back.
 */
 typedef struct {
-    TSK_FS_DIR_WALK_CPP_CB cppAction;  // pointer C++ callback
-    void *cPtr; // pointer to data that was passed into C++ walk method
+    TSK_FS_DIR_WALK_CPP_CB cppAction;   // pointer C++ callback
+    void *cPtr;                 // pointer to data that was passed into C++ walk method
 } TSK_FS_DIR_WALK_CPP_DATA;
 
 /** \internal
 * Internal function used to call C++ Dir Walk callback from C callback.
 */
-extern TSK_WALK_RET_ENUM tsk_fs_dir_walk_cpp_c_cb (TSK_FS_FILE *a_file,  const char *a_path, void *a_ptr);
+extern TSK_WALK_RET_ENUM tsk_fs_dir_walk_cpp_c_cb(TSK_FS_FILE * a_file,
+    const char *a_path, void *a_ptr);
 
 /**
 * \ingroup fslib_cpp
@@ -1614,21 +1615,21 @@ class TskFsInfo {
     friend class TskFsBlock;
     friend class TskFsFile;
     friend class TskFsDir;
-    
-private:
-    TSK_FS_INFO * m_fsInfo;
-    TskFsInfo(const TskFsInfo& rhs); 
-    TskFsInfo& operator=(const TskFsInfo& rhs);
 
-public:
-    TskFsInfo(TSK_FS_INFO *a_fsInfo) {
+  private:
+     TSK_FS_INFO * m_fsInfo;
+     TskFsInfo(const TskFsInfo & rhs);
+     TskFsInfo & operator=(const TskFsInfo & rhs);
+
+  public:
+     TskFsInfo(TSK_FS_INFO * a_fsInfo) {
         m_fsInfo = a_fsInfo;
     };
-    
+
     TskFsInfo() {
         m_fsInfo = NULL;
     };
-    
+
     ~TskFsInfo() {
         close();
     }
@@ -1656,10 +1657,9 @@ public:
     * @param a_len The number of bytes to read (must be a multiple of the block size)
     * @return The number of bytes read or -1 on error. 
     */
-    ssize_t readBlock(TSK_DADDR_T a_addr, char *a_buf,
-        size_t a_len) {
+    ssize_t readBlock(TSK_DADDR_T a_addr, char *a_buf, size_t a_len) {
         if (m_fsInfo)
-            return tsk_fs_read_block(m_fsInfo, a_addr, a_buf,a_len);
+            return tsk_fs_read_block(m_fsInfo, a_addr, a_buf, a_len);
         else
             return -1;
     };
@@ -1690,24 +1690,24 @@ public:
     };
 
     /*    * Walk the file names in a directory and obtain the details of the files via a callback. 
-    * See tsk_fs_dir_walk() for details
-    * @param a_addr Metadata address of the directory to analyze
-    * @param a_flags Flags used during analysis
-    * @param a_action Callback function that is called for each file name
-    * @param a_ptr Pointer to data that is passed to the callback function each time
-    * @returns 1 on error and 0 on success
-    */
+     * See tsk_fs_dir_walk() for details
+     * @param a_addr Metadata address of the directory to analyze
+     * @param a_flags Flags used during analysis
+     * @param a_action Callback function that is called for each file name
+     * @param a_ptr Pointer to data that is passed to the callback function each time
+     * @returns 1 on error and 0 on success
+     */
     uint8_t dirWalk(TSK_INUM_T a_addr,
         TSK_FS_DIR_WALK_FLAG_ENUM a_flags, TSK_FS_DIR_WALK_CPP_CB a_action,
         void *a_ptr) {
-            TSK_FS_DIR_WALK_CPP_DATA dirData;
-            dirData.cppAction = a_action;
-            dirData.cPtr = a_ptr;
-            if (m_fsInfo!=NULL)
-                return tsk_fs_dir_walk(m_fsInfo, a_addr,
+        TSK_FS_DIR_WALK_CPP_DATA dirData;
+        dirData.cppAction = a_action;
+        dirData.cPtr = a_ptr;
+        if (m_fsInfo != NULL)
+            return tsk_fs_dir_walk(m_fsInfo, a_addr,
                 a_flags, tsk_fs_dir_walk_cpp_c_cb, &dirData);
-            else
-                return 1;
+        else
+            return 1;
     };
 
     /** 
@@ -1722,16 +1722,15 @@ public:
     * @param a_ptr Pointer that will be passed to callback
     * @returns 1 on error and 0 on success
     */
-    uint8_t blockWalk(TSK_DADDR_T a_start_blk, 
-        TSK_DADDR_T a_end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags, 
+    uint8_t blockWalk(TSK_DADDR_T a_start_blk,
+        TSK_DADDR_T a_end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
         TSK_FS_BLOCK_WALK_CPP_CB a_action, void *a_ptr) {
 
-            TSK_FS_BLOCK_WALK_CPP_DATA blockData;
-            blockData.cppAction = a_action;
-            blockData.cPtr = a_ptr;
+        TSK_FS_BLOCK_WALK_CPP_DATA blockData;
+        blockData.cppAction = a_action;
+        blockData.cPtr = a_ptr;
 
-            return tsk_fs_block_walk(m_fsInfo, a_start_blk, a_end_blk,
-                a_flags, tsk_fs_block_cpp_c_cb, &blockData);//tsk_fs_block_walk will check the input data
+        return tsk_fs_block_walk(m_fsInfo, a_start_blk, a_end_blk, a_flags, tsk_fs_block_cpp_c_cb, &blockData); //tsk_fs_block_walk will check the input data
 
     };
 
@@ -1746,10 +1745,11 @@ public:
     */
     uint8_t open(const TskVsPartInfo * a_part_info,
         TSK_FS_TYPE_ENUM a_ftype) {
-            if ((m_fsInfo = tsk_fs_open_vol(a_part_info->m_vsPartInfo, a_ftype))
-                != NULL)
-                return 0;
-            return 1;
+        if ((m_fsInfo =
+                tsk_fs_open_vol(a_part_info->m_vsPartInfo, a_ftype))
+            != NULL)
+            return 0;
+        return 1;
     };
 
     /**
@@ -1762,8 +1762,10 @@ public:
     *
     * @return 1 on error 0 on success.
     */
-    uint8_t open(TskImgInfo * a_img_info, TSK_OFF_T a_offset,TSK_FS_TYPE_ENUM a_ftype) {
-        if ((m_fsInfo = tsk_fs_open_img(a_img_info->m_imgInfo, a_offset, a_ftype))
+    uint8_t open(TskImgInfo * a_img_info, TSK_OFF_T a_offset,
+        TSK_FS_TYPE_ENUM a_ftype) {
+        if ((m_fsInfo =
+                tsk_fs_open_img(a_img_info->m_imgInfo, a_offset, a_ftype))
             != NULL)
             return 0;
         return 1;
@@ -1774,35 +1776,39 @@ public:
     /**
     * \internal
     */
-    uint8_t jopen (TSK_INUM_T a_inum) {
+    uint8_t jopen(TSK_INUM_T a_inum) {
         if (m_fsInfo == NULL)
             return 0;
 
         return m_fsInfo->jopen(m_fsInfo, a_inum);
     }
-    
+
     /**
     * \internal 
     */
-    uint8_t jblkWalk (TSK_DADDR_T a_addr1, TSK_DADDR_T a_addr2, int a_num, TSK_FS_JBLK_WALK_CPP_CB a_action, void *a_ptr) {
+    uint8_t jblkWalk(TSK_DADDR_T a_addr1, TSK_DADDR_T a_addr2, int a_num,
+        TSK_FS_JBLK_WALK_CPP_CB a_action, void *a_ptr) {
         if (m_fsInfo == NULL)
             return 0;
         TSK_FS_JBLK_WALK_CPP_DATA jblkData;
         jblkData.cppAction = a_action;
         jblkData.cPtr = a_ptr;
-        return m_fsInfo->jblk_walk(m_fsInfo, a_addr1, a_addr2, a_num, tsk_fs_jblk_walk_cpp_c_cb, &jblkData);
+        return m_fsInfo->jblk_walk(m_fsInfo, a_addr1, a_addr2, a_num,
+            tsk_fs_jblk_walk_cpp_c_cb, &jblkData);
     };
 
     /**
     * \internal
     */
-    uint8_t jentryWalk(int a_num, TSK_FS_JENTRY_WALK_CPP_CB a_action, void *a_ptr) {
+    uint8_t jentryWalk(int a_num, TSK_FS_JENTRY_WALK_CPP_CB a_action,
+        void *a_ptr) {
         if (m_fsInfo == NULL)
             return 0;
         TSK_FS_JENTRY_WALK_CPP_DATA jentryData;
         jentryData.cppAction = a_action;
         jentryData.cPtr = a_ptr;
-        return m_fsInfo->jentry_walk(m_fsInfo, a_num, tsk_fs_jentry_walk_cpp_c_cb, &jentryData);
+        return m_fsInfo->jentry_walk(m_fsInfo, a_num,
+            tsk_fs_jentry_walk_cpp_c_cb, &jentryData);
 
     };
 
@@ -1822,7 +1828,7 @@ public:
     * @param a_ftype File system type id
     * @returns Name or NULL on error
     */
-    static const char * typeToName(TSK_FS_TYPE_ENUM a_ftype) {
+    static const char *typeToName(TSK_FS_TYPE_ENUM a_ftype) {
         return tsk_fs_type_toname(a_ftype);
     };
 
@@ -1856,10 +1862,11 @@ public:
     */
     int8_t path2INum(const char *a_path,
         TSK_INUM_T * a_result, TskFsName * a_fs_name) {
-            if (m_fsInfo!=NULL)
-                return tsk_fs_path2inum(m_fsInfo, a_path, a_result, a_fs_name->m_fsName);
-            else
-                return -1;
+        if (m_fsInfo != NULL)
+            return tsk_fs_path2inum(m_fsInfo, a_path, a_result,
+                a_fs_name->m_fsName);
+        else
+            return -1;
     };
 
     /**
@@ -1879,39 +1886,40 @@ public:
     * @return 1 on error or if not an inode and 0 on success
     */
     static int parseINum(const TSK_TCHAR * a_str, TSK_INUM_T * a_inum,
-        TSK_FS_ATTR_TYPE_ENUM * a_type, uint8_t * a_type_used, uint16_t * a_id,
-        uint8_t * a_id_used) {
-            return tsk_fs_parse_inum(a_str, a_inum, a_type, a_type_used, a_id, a_id_used);
+        TSK_FS_ATTR_TYPE_ENUM * a_type, uint8_t * a_type_used,
+        uint16_t * a_id, uint8_t * a_id_used) {
+        return tsk_fs_parse_inum(a_str, a_inum, a_type, a_type_used, a_id,
+            a_id_used);
     };
 
     /**
         * return byte offset in image that fs starts 
     * @return offset in bytes.
     */
-    TSK_OFF_T getOffset() const{
-        if (m_fsInfo!=NULL)
+    TSK_OFF_T getOffset() const {
+        if (m_fsInfo != NULL)
             return m_fsInfo->offset;
         else
             return 0;
     };
-    
+
     /**
         * return number of metadata addresses in FS
     * @return number of metatdata addresses 
     */
     TSK_INUM_T getINumCount() const {
-        if (m_fsInfo!=NULL)
+        if (m_fsInfo != NULL)
             return m_fsInfo->inum_count;
         else
             return 0;
     };
-    
+
     /**
         * return metadata address of root directory 
     * @return metadata address of root directory  
     */
     TSK_INUM_T getRootINum() const {
-        if (m_fsInfo!=NULL)
+        if (m_fsInfo != NULL)
             return m_fsInfo->root_inum;
         else
             return 0;
@@ -1921,7 +1929,7 @@ public:
     * @return first valid metadata address 
     */
     TSK_INUM_T getFirstINum() const {
-        if (m_fsInfo!=NULL)
+        if (m_fsInfo != NULL)
             return m_fsInfo->first_inum;
         else
             return 0;
@@ -1931,7 +1939,7 @@ public:
     * @return last valid metadata address 
     */
     TSK_INUM_T getLastINum() const {
-        if (m_fsInfo!=NULL)
+        if (m_fsInfo != NULL)
             return m_fsInfo->last_inum;
         else
             return 0;
@@ -1940,19 +1948,19 @@ public:
         * return address of journal inode
     * @return address of journal inode 
     */
-    TSK_INUM_T getJournalINum() const { 
-        if (m_fsInfo!=NULL)
+    TSK_INUM_T getJournalINum() const {
+        if (m_fsInfo != NULL)
             return m_fsInfo->journ_inum;
         else
             return 0;
     };
-    
+
     /**
         * return number of blocks in fs
     * @return number of blocks in fs 
     */
     TSK_DADDR_T getBlockCount() const {
-        if (m_fsInfo!=NULL)
+        if (m_fsInfo != NULL)
             return m_fsInfo->block_count;
         else
             return 0;
@@ -1962,7 +1970,7 @@ public:
     * @return address of first block 
     */
     TSK_DADDR_T getFirstBlock() const {
-        if (m_fsInfo!=NULL)
+        if (m_fsInfo != NULL)
             return m_fsInfo->first_block;
         else
             return 0;
@@ -1973,7 +1981,7 @@ public:
     * @return address of last block 
     */
     TSK_DADDR_T getLastBlockAct() const {
-        if (m_fsInfo!=NULL)
+        if (m_fsInfo != NULL)
             return m_fsInfo->last_block_act;
         else
             return 0;
@@ -1984,7 +1992,7 @@ public:
     * @return address of last block 
     */
     TSK_DADDR_T getLastBlock() const {
-        if (m_fsInfo!=NULL)
+        if (m_fsInfo != NULL)
             return m_fsInfo->last_block;
         else
             return 0;
@@ -1994,7 +2002,7 @@ public:
     * @return size of each block 
     */
     unsigned int getBlockSize() const {
-        if (m_fsInfo!=NULL)
+        if (m_fsInfo != NULL)
             return m_fsInfo->block_size;
         else
             return 0;
@@ -2004,7 +2012,7 @@ public:
     * @return size of device block 
     */
     unsigned int getDeviceSize() const {
-        if (m_fsInfo!=NULL)
+        if (m_fsInfo != NULL)
             return m_fsInfo->dev_bsize;
         else
             return 0;
@@ -2014,18 +2022,18 @@ public:
         * return type of file system 
     * @return type of file system 
     */
-    TSK_FS_TYPE_ENUM  getFsType() const {
-        if (m_fsInfo!=NULL)
+    TSK_FS_TYPE_ENUM getFsType() const {
+        if (m_fsInfo != NULL)
             return m_fsInfo->ftype;
-        else 
-            return (TSK_FS_TYPE_ENUM)0;
+        else
+            return (TSK_FS_TYPE_ENUM) 0;
     };
     /**
         * return the "name" of data unit type  as a string ("Cluster", for example)
     * @return string "name" of data unit type 
     */
-    const char * getDataUnitName() const {
-        if (m_fsInfo!=NULL)
+    const char *getDataUnitName() const {
+        if (m_fsInfo != NULL)
             return m_fsInfo->duname;
         else
             return NULL;
@@ -2035,18 +2043,18 @@ public:
         * return flags for file system
     * @return flags for file system 
     */
-    TSK_FS_INFO_FLAG_ENUM  getFlags() const {
-        if (m_fsInfo!=NULL)
+    TSK_FS_INFO_FLAG_ENUM getFlags() const {
+        if (m_fsInfo != NULL)
             return m_fsInfo->flags;
         else
-            return (TSK_FS_INFO_FLAG_ENUM)0;
+            return (TSK_FS_INFO_FLAG_ENUM) 0;
     };
     /**
         * return file system id (as reported in boot sector).  Use getFsIdLen() to determine how many byts in buffer are used. 
     * @return Buffer with file system id 
     */
     const uint8_t *getFsId() const {
-        if (m_fsInfo!=NULL)
+        if (m_fsInfo != NULL)
             return m_fsInfo->fs_id;
         else
             return 0;
@@ -2062,24 +2070,22 @@ public:
 
         return m_fsInfo->fs_id_used;
     };
-    
+
     /**
       * Close an open file system. See tsk_fs_close() for details.
      */
-    void close()
-    {
+    void close() {
         tsk_fs_close(m_fsInfo);
     };
 
 
-private:
-    const TSK_IMG_INFO * getTskImgInfo() const {
-        if (m_fsInfo!=NULL)
+  private:
+    const TSK_IMG_INFO *getTskImgInfo() const {
+        if (m_fsInfo != NULL)
             return m_fsInfo->img_info;
         else
             return NULL;
-    }
-};//TskFsInfo
+}};                             //TskFsInfo
 
 
 
@@ -2090,21 +2096,21 @@ private:
 * If NULL is passed to the contstructor and open() is not called, the other methods
 * return undefined data. See TSK_FS_BLOCK for more details.
 */
-class TskFsBlock{
-private:
+class TskFsBlock {
+  private:
     TSK_FS_BLOCK * m_fsBlock;
-    bool m_opened; // true if open() was called and we need to free it
-    
-    TskFsBlock(const TskFsBlock& rhs); 
-    TskFsBlock& operator=(const TskFsBlock& rhs);
-    
-public:
+    bool m_opened;              // true if open() was called and we need to free it
+
+     TskFsBlock(const TskFsBlock & rhs);
+     TskFsBlock & operator=(const TskFsBlock & rhs);
+
+  public:
     /**
     * constuct a TskFsBlock using a TSK_FS_BLOCK structure
     * @param a_fsBlock a pointer of TSK_FS_BLOCK.  If NULL, the getX() methods return undefined data. 
     */
-    TskFsBlock(const TSK_FS_BLOCK * a_fsBlock) {
-        m_fsBlock = const_cast<TSK_FS_BLOCK *> (a_fsBlock);
+     TskFsBlock(const TSK_FS_BLOCK * a_fsBlock) {
+        m_fsBlock = const_cast < TSK_FS_BLOCK * >(a_fsBlock);
         m_opened = false;
     };
 
@@ -2136,11 +2142,13 @@ public:
         if (m_fsBlock)
             return 1;
 
-        if (( m_fsBlock = tsk_fs_block_get(a_fs->m_fsInfo,m_fsBlock, a_addr)) != NULL) {
+        if ((m_fsBlock =
+                tsk_fs_block_get(a_fs->m_fsInfo, m_fsBlock,
+                    a_addr)) != NULL) {
             m_opened = true;
             return 0;
         }
-        else  {
+        else {
             return 1;
         }
     };
@@ -2150,8 +2158,8 @@ public:
     *
     * @return buffer with block data
     */
-    const char * getBuf() const {
-        if (m_fsBlock!=NULL)
+    const char *getBuf() const {
+        if (m_fsBlock != NULL)
             return m_fsBlock->buf;
         else
             return NULL;
@@ -2162,7 +2170,7 @@ public:
     * @return address of block
     */
     TSK_DADDR_T getAddr() const {
-        if (m_fsBlock!=NULL)
+        if (m_fsBlock != NULL)
             return m_fsBlock->addr;
         else
             return 0;
@@ -2173,19 +2181,19 @@ public:
     * @return flags for block 
     */
     TSK_FS_BLOCK_FLAG_ENUM getFlags() const {
-        if (m_fsBlock!=NULL)
+        if (m_fsBlock != NULL)
             return m_fsBlock->flags;
         else
-            return (TSK_FS_BLOCK_FLAG_ENUM)0;
+            return (TSK_FS_BLOCK_FLAG_ENUM) 0;
     };
 
-private:
+  private:
     /**
         * Get pointer to file system that block is from
     * @return pointer to file system that block is from
     */
-    const TSK_FS_INFO * getFsInfo() const {
-        if (m_fsBlock!=NULL)
+    const TSK_FS_INFO *getFsInfo() const {
+        if (m_fsBlock != NULL)
             return m_fsBlock->fs_info;
         else
             return NULL;
@@ -2200,20 +2208,20 @@ private:
  * TSK_FS_META_NAME for more details.
  */
 class TskFsMetaName {
-private:
-    TSK_FS_META_NAME_LIST *m_fsMetaNameList;
-    TskFsMetaName(const TskFsMetaName& rhs); 
-    TskFsMetaName& operator=(const TskFsMetaName& rhs);
-    
-public:
+  private:
+    TSK_FS_META_NAME_LIST * m_fsMetaNameList;
+    TskFsMetaName(const TskFsMetaName & rhs);
+    TskFsMetaName & operator=(const TskFsMetaName & rhs);
+
+  public:
     /**
      * Allocates an object based on a C struct.
      * @param a_fsMetaNameList C struct of name list. If NULL, get() methods return undefined values.
      */
-    TskFsMetaName (TSK_FS_META_NAME_LIST *a_fsMetaNameList) {
+     TskFsMetaName(TSK_FS_META_NAME_LIST * a_fsMetaNameList) {
         m_fsMetaNameList = a_fsMetaNameList;
     };
-    
+
     /**
      * Get the text name in UTF-8 (does not include parent directory name).
      * @returns name of file.
@@ -2224,7 +2232,7 @@ public:
         else
             return NULL;
     };
-    
+
     /**
      * Get the parent inode (NTFS Only)
      * @return Address of parent directory.
@@ -2235,7 +2243,7 @@ public:
         else
             return 0;
     };
-    
+
     /** 
      * get the parent sequence (NTFS Only)
      * @return Sequence of parent directory.
@@ -2249,41 +2257,40 @@ public:
  * \ingroup fslib_cpp
  * Stores metadata about a file. See TSK_FS_META for more details.
  */
-class TskFsMeta{
-private:
-    TSK_FS_META *m_fsMeta;
-    TskFsMeta(const TskFsMeta& rhs); 
-    TskFsMeta& operator=(const TskFsMeta& rhs);
-    
-public:
+class TskFsMeta {
+  private:
+    TSK_FS_META * m_fsMeta;
+    TskFsMeta(const TskFsMeta & rhs);
+    TskFsMeta & operator=(const TskFsMeta & rhs);
+
+  public:
     /**
           * construct a TskFsMeta object.  If NULL is passed as an argument, the getX() behavior
      * is not defined.
      * @param a_fsMeta a pointer of TSK_FS_META
      */
-    TskFsMeta(TSK_FS_META * a_fsMeta) {
+     TskFsMeta(TSK_FS_META * a_fsMeta) {
         m_fsMeta = a_fsMeta;
 #if 0
         if (m_fsMeta != NULL) {
             m_nameList = m_fsMeta->name2;
             size_t numOfList = 0;
-            TSK_FS_META_NAME_LIST * nameList = m_nameList;
-            while(nameList != NULL) {
+            TSK_FS_META_NAME_LIST *nameList = m_nameList;
+            while (nameList != NULL) {
                 nameList = nameList->next;
                 numOfList += 1;
-            }
-            m_nameListLen = numOfList;
+            } m_nameListLen = numOfList;
         }
-        else{
+        else {
             m_nameList = NULL;
             m_nameListLen = 0;
         }
 #endif
     };
-    
+
     ~TskFsMeta() {
     };
-    
+
     /**
           * Makes the "ls -l" permissions string for a file. 
      * See tsk_fs_meta_make_ls() for details
@@ -2302,15 +2309,14 @@ public:
      */
     TSK_FS_META_FLAG_ENUM getFlags() const {
         if (m_fsMeta != NULL)
-           return m_fsMeta->flags;
+            return m_fsMeta->flags;
         else
-            return (TSK_FS_META_FLAG_ENUM)0;
+            return (TSK_FS_META_FLAG_ENUM) 0;
     }
     /**
           * get address of the meta data structure for this file
      * @return address of the meta data structure for this file
-     */
-    TSK_INUM_T getAddr() const {
+     */ TSK_INUM_T getAddr() const {
         if (m_fsMeta != NULL)
             return m_fsMeta->addr;
         else
@@ -2324,7 +2330,7 @@ public:
         if (m_fsMeta != NULL)
             return m_fsMeta->type;
         else
-            return (TSK_FS_META_TYPE_ENUM)0;
+            return (TSK_FS_META_TYPE_ENUM) 0;
     };
     /**
           * get Unix-style permissions
@@ -2334,7 +2340,7 @@ public:
         if (m_fsMeta != NULL)
             return m_fsMeta->mode;
         else
-            return (TSK_FS_META_MODE_ENUM)0;
+            return (TSK_FS_META_MODE_ENUM) 0;
     };
     /**
           * get link count (number of file names pointing to this)
@@ -2353,20 +2359,20 @@ public:
     TSK_OFF_T getSize() const {
         if (m_fsMeta != NULL)
             return m_fsMeta->size;
-        else 
+        else
             return 0;
     };
     /**
           * get owner id
      * @return owner id
      */
-    TSK_UID_T  getUid() const {
+    TSK_UID_T getUid() const {
         if (m_fsMeta != NULL)
             return m_fsMeta->uid;
         else
             return 0;
     };
-    
+
     /**
           * get group id
      * @return group id
@@ -2377,7 +2383,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get last file content modification time (stored in number of seconds since Jan 1, 1970 UTC)
      * @return last file content modification time
@@ -2388,7 +2394,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get nano-second resolution of modification time
      * @return nano-second resolution of modification time
@@ -2399,7 +2405,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get last file content accessed time (stored in number of seconds since Jan 1, 1970 UTC)
      * @return last file content accessed time
@@ -2410,7 +2416,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get nano-second resolution of accessed time
      * @return nano-second resolution of accessed time
@@ -2421,7 +2427,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get last file / metadata status change time (stored in number of seconds since Jan 1, 1970 UTC)
      * @return last file / metadata status change time
@@ -2432,7 +2438,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get nano-second resolution of change time
      * @return nano-second resolution of change time
@@ -2443,7 +2449,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get created time (stored in number of seconds since Jan 1, 1970 UTC)
      * @return created time
@@ -2454,7 +2460,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get nano-second resolution of created time
      * @return nano-second resolution of created time
@@ -2465,7 +2471,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get linux deletion time
      * @return linux deletion time
@@ -2476,7 +2482,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get nano-second resolution of deletion time
      * @return nano-second resolution of deletion time
@@ -2487,7 +2493,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get HFS+ backup time
      * @return HFS+ backup time
@@ -2498,7 +2504,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get nano-second resolution of HFS+ backup time
      * @return nano-second resolution of HFS+ backup time
@@ -2509,7 +2515,7 @@ public:
         else
             return 0;
     };
-    
+
     /**
           * get sequence number for file (NTFS only, is incremented when entry is reallocated) 
      * @return sequence number for file
@@ -2519,18 +2525,18 @@ public:
             return m_fsMeta->seq;
         //zli: should we throw err msg
     };
-    
+
     /**
           * get name of target file if this is a symbolic link
      * @return name of target file if this is a symbolic link
      */
-    const char * getLink() const {
+    const char *getLink() const {
         if (m_fsMeta != NULL)
             return m_fsMeta->link;
         else
             return NULL;
     };
-    
+
     /**
      * Return the number of names that are stored in the metadata.
      * @returns number of names.
@@ -2539,14 +2545,12 @@ public:
         int size = 0;
         if (m_fsMeta != NULL) {
             TSK_FS_META_NAME_LIST *name = m_fsMeta->name2;
-            while(name != NULL) {
+            while (name != NULL) {
                 size++;
                 name = name->next;
-            }
-        }
-        return size;
+        }} return size;
     };
-    
+
     /**
      * Return a name that is stored in the metadata.  
      * @param a_idx Index of the name to return
@@ -2556,22 +2560,20 @@ public:
         if (m_fsMeta != NULL) {
             TSK_FS_META_NAME_LIST *name = m_fsMeta->name2;
             int i = 0;
-            while(name != NULL) {
+            while (name != NULL) {
                 if (i == a_idx)
                     return new TskFsMetaName(name);
                 i++;
                 name = name->next;
-            }
-        }
-        return NULL;
+        }} return NULL;
     };
-    
-private:
+
+  private:
     /**
           * get structure used as the head of an attribute list
      * @return structure used as the head of an attribute list
      */
-    const TSK_FS_ATTRLIST * getAttr() const {
+    const TSK_FS_ATTRLIST *getAttr() const {
         if (m_fsMeta != NULL)
             return m_fsMeta->attr;
         else
@@ -2586,19 +2588,19 @@ private:
 * open method must be called first.  otherwise, the results of the getX() methods are
 * undefined. See TSK_FS_FILE for more details. 
 */
-class TskFsFile{
-private:
+class TskFsFile {
+  private:
     TSK_FS_FILE * m_fsFile;
     bool m_opened;
-    TskFsFile(const TskFsFile& rhs); 
-    TskFsFile& operator=(const TskFsFile& rhs);
-    
-public:
+     TskFsFile(const TskFsFile & rhs);
+     TskFsFile & operator=(const TskFsFile & rhs);
+
+  public:
     /**
         * Construct a TskFsFile object from a C struct
     * @param a_fsFile a pointer of TSK_FS_FILE
     */
-    TskFsFile(TSK_FS_FILE *a_fsFile) {
+     TskFsFile(TSK_FS_FILE * a_fsFile) {
         m_fsFile = a_fsFile;
         m_opened = false;
     };
@@ -2644,9 +2646,11 @@ public:
     * @param a_addr Metadata address of file to lookup
     * @returns 1 on error and 0 on success.
     */
-    uint8_t open(TskFsInfo * a_fs, TskFsFile * a_fs_file, TSK_INUM_T a_addr) {
-        if ((m_fsFile = tsk_fs_file_open_meta(a_fs->m_fsInfo,
-            a_fs_file->m_fsFile, a_addr)) != NULL) {
+    uint8_t open(TskFsInfo * a_fs, TskFsFile * a_fs_file,
+        TSK_INUM_T a_addr) {
+        if ((m_fsFile =
+                tsk_fs_file_open_meta(a_fs->m_fsInfo, a_fs_file->m_fsFile,
+                    a_addr)) != NULL) {
             m_opened = true;
             return 0;
         }
@@ -2654,7 +2658,7 @@ public:
             return 1;
         }
     };
-    
+
     /** 
         * Return the handle structure for a specific file, given its full path. Note that
     * if you have the metadata address fo the file, then tsk_fs_file_open_meta() is a
@@ -2665,8 +2669,11 @@ public:
     * @param a_path Path of file to open
     * @returns 1 on error and 0 on success.
     */
-    uint8_t open(TskFsInfo * a_fs, TskFsFile * a_fs_file, const char *a_path) {
-        if ((m_fsFile = tsk_fs_file_open(a_fs->m_fsInfo, a_fs_file->m_fsFile, a_path))
+    uint8_t open(TskFsInfo * a_fs, TskFsFile * a_fs_file,
+        const char *a_path) {
+        if ((m_fsFile =
+                tsk_fs_file_open(a_fs->m_fsInfo, a_fs_file->m_fsFile,
+                    a_path))
             != NULL) {
             m_opened = true;
             return 0;
@@ -2677,47 +2684,47 @@ public:
     };
 
     /*    * Return the number of attributes in the file. 
-    * See tsk_fs_file_attr_getsize() for details
-    * @returns number of attributes in file
-    */
+     * See tsk_fs_file_attr_getsize() for details
+     * @returns number of attributes in file
+     */
     int getAttrSize() {
-        return tsk_fs_file_attr_getsize(m_fsFile);//m_fsFile is checked by this C function
+        return tsk_fs_file_attr_getsize(m_fsFile);      //m_fsFile is checked by this C function
     };
 
     /*    * Get a file's attribute based on the 0-based index in the list (and not type, id pair).
-    * It's caller's responsibility to free TskFsAttribute*
-    * See tsk_fs_file_attr_get_idx() for details
-    * @param a_idx 0-based index of attribute to return.
-    * @returns Pointer to attribute or NULL on error
-    */
-    const TskFsAttribute * getAttr(int a_idx) {
-        TskFsAttribute * fsAttr = new TskFsAttribute(tsk_fs_file_attr_get_idx(m_fsFile, a_idx));//m_fsFile is checked by this C function
+     * It's caller's responsibility to free TskFsAttribute*
+     * See tsk_fs_file_attr_get_idx() for details
+     * @param a_idx 0-based index of attribute to return.
+     * @returns Pointer to attribute or NULL on error
+     */
+    const TskFsAttribute *getAttr(int a_idx) {
+        TskFsAttribute *fsAttr = new TskFsAttribute(tsk_fs_file_attr_get_idx(m_fsFile, a_idx)); //m_fsFile is checked by this C function
         return fsAttr;
     };
 
     /*    * Return the default attribute for the file
-    * It's caller's responsibility to free TskFsAttribute*
-    * See tsk_fs_file_attr_get() for details
-    * @returns Pointer to attribute or NULL on error
-    */
-    const TskFsAttribute * getAttrDefault() {
-        TskFsAttribute * fsAttr = new TskFsAttribute(tsk_fs_file_attr_get(m_fsFile));//m_fsFile is checked by this C function
+     * It's caller's responsibility to free TskFsAttribute*
+     * See tsk_fs_file_attr_get() for details
+     * @returns Pointer to attribute or NULL on error
+     */
+    const TskFsAttribute *getAttrDefault() {
+        TskFsAttribute *fsAttr = new TskFsAttribute(tsk_fs_file_attr_get(m_fsFile));    //m_fsFile is checked by this C function
         return fsAttr;
     };
 
     /*    * Return a specific type and id attribute for the file.
-    * It's caller's responsibility to free TskFsAttribute*
-    * See tsk_fs_file_attr_get_type() for details
-    * @param a_type Type of attribute to load
-    * @param a_id Id of attribute to load 
-    * @param a_id_used Set to 1 if ID is actually set or 0 to use default
-    * @returns Pointer to attribute or NULL on error
-    */
-    const TskFsAttribute * getAttr(TSK_FS_ATTR_TYPE_ENUM a_type,
+     * It's caller's responsibility to free TskFsAttribute*
+     * See tsk_fs_file_attr_get_type() for details
+     * @param a_type Type of attribute to load
+     * @param a_id Id of attribute to load 
+     * @param a_id_used Set to 1 if ID is actually set or 0 to use default
+     * @returns Pointer to attribute or NULL on error
+     */
+    const TskFsAttribute *getAttr(TSK_FS_ATTR_TYPE_ENUM a_type,
         uint16_t a_id, uint8_t a_id_used) {
-            TskFsAttribute * fsAttr = new TskFsAttribute(tsk_fs_file_attr_get_type(m_fsFile,//m_fsFile is checked by this C function
+        TskFsAttribute *fsAttr = new TskFsAttribute(tsk_fs_file_attr_get_type(m_fsFile, //m_fsFile is checked by this C function
                 a_type, a_id, a_id_used));
-            return fsAttr;
+        return fsAttr;
     };
 
     /**
@@ -2731,12 +2738,12 @@ public:
     * @returns 1 on error and 0 on success.
     */
     uint8_t walk(TSK_FS_ATTR_TYPE_ENUM a_type, uint16_t a_id,
-        TSK_FS_FILE_WALK_FLAG_ENUM a_flags, TSK_FS_FILE_WALK_CPP_CB a_action, void *a_ptr) {
-            TSK_FS_FILE_WALK_CPP_DATA fileData;
-            fileData.cppAction = a_action;
-            fileData.cPtr = a_ptr;
-            return tsk_fs_file_walk_type(m_fsFile,a_type,  a_id,
-                a_flags, tsk_fs_file_cpp_c_cb,&fileData);//m_fsFile is checked by this C function
+        TSK_FS_FILE_WALK_FLAG_ENUM a_flags,
+        TSK_FS_FILE_WALK_CPP_CB a_action, void *a_ptr) {
+        TSK_FS_FILE_WALK_CPP_DATA fileData;
+        fileData.cppAction = a_action;
+        fileData.cPtr = a_ptr;
+        return tsk_fs_file_walk_type(m_fsFile, a_type, a_id, a_flags, tsk_fs_file_cpp_c_cb, &fileData); //m_fsFile is checked by this C function
     };
 
     /**
@@ -2749,10 +2756,10 @@ public:
     */
     uint8_t walk(TSK_FS_FILE_WALK_FLAG_ENUM a_flags,
         TSK_FS_FILE_WALK_CPP_CB a_action, void *a_ptr) {
-            TSK_FS_FILE_WALK_CPP_DATA fileData;
-            fileData.cppAction = a_action;
-            fileData.cPtr = a_ptr;
-            return tsk_fs_file_walk(m_fsFile, a_flags, tsk_fs_file_cpp_c_cb, &fileData);//m_fsFile is checked by this C function
+        TSK_FS_FILE_WALK_CPP_DATA fileData;
+        fileData.cppAction = a_action;
+        fileData.cPtr = a_ptr;
+        return tsk_fs_file_walk(m_fsFile, a_flags, tsk_fs_file_cpp_c_cb, &fileData);    //m_fsFile is checked by this C function
     };
 
     /**
@@ -2767,10 +2774,10 @@ public:
     * @param a_flags Flags to use while reading
     * @returns The number of bytes read or -1 on error (incl if offset is past EOF).
     */
-    ssize_t read(TSK_FS_ATTR_TYPE_ENUM a_type, uint16_t a_id, TSK_OFF_T a_offset,
-        char *a_buf, size_t a_len, TSK_FS_FILE_READ_FLAG_ENUM a_flags) {
-            return tsk_fs_file_read_type(m_fsFile,a_type, a_id, a_offset,
-                a_buf, a_len, a_flags);//m_fsFile is checked by this C function
+    ssize_t read(TSK_FS_ATTR_TYPE_ENUM a_type, uint16_t a_id,
+        TSK_OFF_T a_offset, char *a_buf, size_t a_len,
+        TSK_FS_FILE_READ_FLAG_ENUM a_flags) {
+        return tsk_fs_file_read_type(m_fsFile, a_type, a_id, a_offset, a_buf, a_len, a_flags);  //m_fsFile is checked by this C function
     };
     /**
      * Read the contents of the default attribute of a file using a typical read() type interface.
@@ -2784,14 +2791,14 @@ public:
     */
     ssize_t read(TSK_OFF_T a_offset, char *a_buf, size_t a_len,
         TSK_FS_FILE_READ_FLAG_ENUM a_flags) {
-            return tsk_fs_file_read(m_fsFile, a_offset,a_buf, a_len, a_flags);//m_fsFile is checked by this C function
+        return tsk_fs_file_read(m_fsFile, a_offset, a_buf, a_len, a_flags);     //m_fsFile is checked by this C function
     };
 
     /**
      * Return pointer to the file's name (or NULL if file was opened using metadata address)
     * @returns pointer to name of file.  It is the caller's responsibility to free this.
     */
-     TskFsName * getName() {
+    TskFsName *getName() {
         if (m_fsFile != NULL)
             return new TskFsName(m_fsFile->name);
         else
@@ -2802,7 +2809,7 @@ public:
      * Return pointer to the file's metadata (or NULL if name has invalid metadata address)
     * @returns pointer metadata of file. It is the caller's responsibility to free this.
     */
-     TskFsMeta * getMeta() {
+    TskFsMeta *getMeta() {
         if (m_fsFile != NULL)
             return new TskFsMeta(m_fsFile->meta);
         else
@@ -2813,13 +2820,13 @@ public:
     * Return pointer file system that the file is located in.
     * @returns pointer to file system that the file is located in.
     */
-    TskFsInfo * getFsInfo() {
+    TskFsInfo *getFsInfo() {
         if (m_fsFile != NULL)
             return new TskFsInfo(m_fsFile->fs_info);
         else
             return NULL;
     };
-};//TskFsFile
+};                              //TskFsFile
 
 /**
  * \ingroup fslib_cpp
@@ -2827,32 +2834,33 @@ public:
 * must be called before any of hte other methods return defined data. See
 * TSK_FS_DIR for more details.
 */
-class TskFsDir{
-private:
-    TSK_FS_DIR *m_fsDir;
-    TskFsDir(const TskFsDir& rhs); 
-    TskFsDir& operator=(const TskFsDir& rhs);
+class TskFsDir {
+  private:
+    TSK_FS_DIR * m_fsDir;
+    TskFsDir(const TskFsDir & rhs);
+    TskFsDir & operator=(const TskFsDir & rhs);
 
-public:
-    TskFsDir() {
+  public:
+     TskFsDir() {
         m_fsDir = NULL;
     };
     /*    
      * Close the directory that was opened with tsk_fs_dir_open()
-    */
+     */
     ~TskFsDir() {
         close();
     }
 
     /*    
      * Open a directory (using its metadata addr) so that each of the files in it can be accessed.
-    * See for tsk_fs_dir_open_meta() details.
-    * @param a_fs File system to analyze
-    * @param a_addr Metadata address of the directory to open
-    * @returns 1 on error and 0 on success
-    */
+     * See for tsk_fs_dir_open_meta() details.
+     * @param a_fs File system to analyze
+     * @param a_addr Metadata address of the directory to open
+     * @returns 1 on error and 0 on success
+     */
     uint8_t open(TskFsInfo * a_fs, TSK_INUM_T a_addr) {
-        if ((m_fsDir = tsk_fs_dir_open_meta(a_fs->m_fsInfo, a_addr)) != NULL)
+        if ((m_fsDir =
+                tsk_fs_dir_open_meta(a_fs->m_fsInfo, a_addr)) != NULL)
             return 0;
         else
             return 1;
@@ -2860,11 +2868,11 @@ public:
 
     /*    
      * Open a directory (using its path) so that each of the files in it can be accessed.
-    * See for tsk_fs_dir_open() details.
-    * @param a_fs File system to analyze
-    * @param a_dir Path of the directory to open
-    * @returns 1 on error and 0 on success
-    */
+     * See for tsk_fs_dir_open() details.
+     * @param a_fs File system to analyze
+     * @param a_dir Path of the directory to open
+     * @returns 1 on error and 0 on success
+     */
     uint8_t open(TskFsInfo * a_fs, const char *a_dir) {
         if ((m_fsDir = tsk_fs_dir_open(a_fs->m_fsInfo, a_dir)) != NULL)
             return 0;
@@ -2874,71 +2882,71 @@ public:
 
     /*    
      * Close the directory that was opened with tsk_fs_dir_open()
-    * See tsk_fs_dir_close() for details
-    */
+     * See tsk_fs_dir_close() for details
+     */
     void close() {
         tsk_fs_dir_close(m_fsDir);
     };
 
     /*    
      * Returns the number of files and subdirectories in a directory.
-    * See tsk_fs_dir_getsize() for details
-    * @returns Number of files and subdirectories (or 0 on error)
-    */
+     * See tsk_fs_dir_getsize() for details
+     * @returns Number of files and subdirectories (or 0 on error)
+     */
     size_t getSize() const {
-        return tsk_fs_dir_getsize(m_fsDir);//m_fsDir is checked by this C function
+        return tsk_fs_dir_getsize(m_fsDir);     //m_fsDir is checked by this C function
     };
 
     /*    
      * Return a specific file or subdirectory from an open directory. 
-    * It's caller's responsibility to free TskFsFile*
-    * See tsk_fs_dir_getsize() for details
-    * @param a_idx Index of file in directory to open (0-based)
-    * @returns NULL on error
-    */
-    TskFsFile * getFile(size_t a_idx) const {
+     * It's caller's responsibility to free TskFsFile*
+     * See tsk_fs_dir_getsize() for details
+     * @param a_idx Index of file in directory to open (0-based)
+     * @returns NULL on error
+     */
+    TskFsFile *getFile(size_t a_idx) const {
         TSK_FS_FILE *fs_file = tsk_fs_dir_get(m_fsDir, a_idx);
-        if (fs_file != NULL) 
-            return new TskFsFile(fs_file);
+        if (fs_file != NULL)
+             return new TskFsFile(fs_file);
         else
-            return NULL;
+             return NULL;
     };
 
     /*    
      * Return metadata address of this directory 
-    * @returns metadata address of this directory 
-    */
-     TSK_INUM_T getMetaAddr() const {
+     * @returns metadata address of this directory 
+     */
+    TSK_INUM_T getMetaAddr() const {
         if (m_fsDir != NULL)
             return m_fsDir->addr;
-        else 
+        else
             return 0;
     };
 
     /*    
      * Return pointer to the file structure for the directory.
-    * @returns NULL on error. it is the caller's responsibility to free this object.
-    */
-    const TskFsFile * getFsFile() const {
+     * @returns NULL on error. it is the caller's responsibility to free this object.
+     */
+    const TskFsFile *getFsFile() const {
         if (m_fsDir != NULL)
             return new TskFsFile(m_fsDir->fs_file);
         else
             return NULL;
     };
 
-private:
+  private:
 
     /*    
      * Return pointer to file system the directory is located in
-    * @returns NULL on error
-    */
-    const TSK_FS_INFO * getFsInfo() const {
+     * @returns NULL on error
+     */
+    const TSK_FS_INFO *getFsInfo() const {
         if (m_fsDir != NULL)
             return m_fsDir->fs_info;
         else
             return NULL;
     };
 };
- 
+
 #endif
 #endif

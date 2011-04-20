@@ -64,9 +64,8 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
                     NULL)) == INVALID_HANDLE_VALUE) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-            tsk_error_set_errstr(
-                "split_read file: %" PRIttocTSK " msg: %d",
-                split_info->images[idx], (int) GetLastError());
+            tsk_error_set_errstr("split_read file: %" PRIttocTSK
+                " msg: %d", split_info->images[idx], (int) GetLastError());
             return -1;
         }
 #else
@@ -74,9 +73,8 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
                 open(split_info->images[idx], O_RDONLY | O_BINARY)) < 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-            tsk_error_set_errstr(
-                "split_read file: %" PRIttocTSK " msg: %s",
-                split_info->images[idx], strerror(errno));
+            tsk_error_set_errstr("split_read file: %" PRIttocTSK
+                " msg: %s", split_info->images[idx], strerror(errno));
             return -1;
         }
 #endif
@@ -105,8 +103,7 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
                 (GetLastError() != NO_ERROR)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-                tsk_error_set_errstr(
-                    "split_read - %" PRIuOFF, rel_offset);
+                tsk_error_set_errstr("split_read - %" PRIuOFF, rel_offset);
                 return -1;
             }
             cimg->seek_pos = rel_offset;
@@ -115,9 +112,8 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
         if (FALSE == ReadFile(cimg->fd, buf, (DWORD) len, &nread, NULL)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_READ);
-            tsk_error_set_errstr(
-                "split_read - offset: %" PRIuOFF " - len: %" PRIuSIZE "",
-                rel_offset, len);
+            tsk_error_set_errstr("split_read - offset: %" PRIuOFF
+                " - len: %" PRIuSIZE "", rel_offset, len);
             return -1;
         }
         cnt = (ssize_t) nread;
@@ -127,8 +123,7 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
         if (lseek(cimg->fd, rel_offset, SEEK_SET) != rel_offset) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-            tsk_error_set_errstr(
-                "split_read - %s - %" PRIuOFF " - %s",
+            tsk_error_set_errstr("split_read - %s - %" PRIuOFF " - %s",
                 split_info->images[idx], rel_offset, strerror(errno));
             return -1;
         }
@@ -139,8 +134,7 @@ split_read_segment(IMG_SPLIT_INFO * split_info, int idx, char *buf,
     if (cnt < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
-        tsk_error_set_errstr(
-            "split_read - offset: %" PRIuOFF
+        tsk_error_set_errstr("split_read - offset: %" PRIuOFF
             " - len: %" PRIuSIZE " - %s", rel_offset, len,
             strerror(errno));
         return -1;
@@ -179,8 +173,7 @@ split_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
     if (offset > img_info->size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-        tsk_error_set_errstr(
-            "split_read - %" PRIuOFF, offset);
+        tsk_error_set_errstr("split_read - %" PRIuOFF, offset);
         return -1;
     }
 
@@ -217,10 +210,10 @@ split_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
             cnt =
                 split_read_segment(split_info, i, buf, read_len,
                 rel_offset);
-            if (cnt < 0){
+            if (cnt < 0) {
                 return -1;
             }
-            if ((TSK_OFF_T) cnt != read_len){
+            if ((TSK_OFF_T) cnt != read_len) {
                 return cnt;
             }
 
@@ -251,12 +244,12 @@ split_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
                     cnt2 =
                         split_read_segment(split_info, i, &buf[cnt],
                         read_len, 0);
-                    if (cnt2 < 0){
+                    if (cnt2 < 0) {
                         return -1;
                     }
                     cnt += cnt2;
 
-                    if ((TSK_OFF_T) cnt2 != read_len){
+                    if ((TSK_OFF_T) cnt2 != read_len) {
                         return cnt;
                     }
 
@@ -269,8 +262,8 @@ split_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
 
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-    tsk_error_set_errstr(
-        "split_read - %" PRIuOFF " - %s", offset, strerror(errno));
+    tsk_error_set_errstr("split_read - %" PRIuOFF " - %s", offset,
+        strerror(errno));
     return -1;
 }
 
@@ -349,7 +342,8 @@ split_open(int num_img, const TSK_TCHAR * const images[],
     int i;
 
     if ((split_info =
-            (IMG_SPLIT_INFO *) tsk_img_malloc(sizeof(IMG_SPLIT_INFO))) == NULL)
+            (IMG_SPLIT_INFO *) tsk_img_malloc(sizeof(IMG_SPLIT_INFO))) ==
+        NULL)
         return NULL;
 
     img_info = (TSK_IMG_INFO *) split_info;
@@ -397,9 +391,8 @@ split_open(int num_img, const TSK_TCHAR * const images[],
         if (TSTAT(images[i], &sb) < 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_STAT);
-            tsk_error_set_errstr(
-                "split_open - %" PRIttocTSK " - %s", images[i],
-                strerror(errno));
+            tsk_error_set_errstr("split_open - %" PRIttocTSK " - %s",
+                images[i], strerror(errno));
             free(split_info->max_off);
             free(split_info->cptr);
             tsk_img_free(split_info);
@@ -413,8 +406,7 @@ split_open(int num_img, const TSK_TCHAR * const images[],
 
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
-            tsk_error_set_errstr(
-                "split_open: Image is a directory");
+            tsk_error_set_errstr("split_open: Image is a directory");
             free(split_info->max_off);
             free(split_info->cptr);
             tsk_img_free(split_info);

@@ -90,14 +90,16 @@ tsk_img_open(int num_img,
     if ((a_ssize > 0) && (a_ssize < 512)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("sector size is less than 512 bytes (%d)", a_ssize);
+        tsk_error_set_errstr("sector size is less than 512 bytes (%d)",
+            a_ssize);
         return NULL;
     }
 
     if ((a_ssize % 512) != 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("sector size is not a multiple of 512 (%d)", a_ssize);
+        tsk_error_set_errstr("sector size is not a multiple of 512 (%d)",
+            a_ssize);
         return NULL;
     }
 
@@ -341,8 +343,8 @@ tsk_img_open_utf8(int num_img, const char *const images[],
                 &utf16, &utf16[ilen], TSKlenientConversion);
             if (retval2 != TSKconversionOK) {
                 tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
-                tsk_error_set_errstr(
-                    "tsk_img_open_utf8: Error converting image %s %d",
+                tsk_error_set_errstr
+                    ("tsk_img_open_utf8: Error converting image %s %d",
                     images[i], retval2);
                 goto tsk_utf8_cleanup;
             }
@@ -428,8 +430,8 @@ tsk_img_open_utf16(int num_img,
                 &utf8[ilen + 1], TSKlenientConversion);
             if (retval2 != TSKconversionOK) {
                 tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
-                tsk_error_set_errstr(
-                    "tsk_img_open_utf16: Error converting image %d %d", i,
+                tsk_error_set_errstr
+                    ("tsk_img_open_utf16: Error converting image %d %d", i,
                     retval2);
                 return NULL;
             }

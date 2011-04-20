@@ -90,8 +90,8 @@ print_block(const TSK_FS_BLOCK * fs_block, void *ptr)
             stdout) != 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WRITE);
-        tsk_error_set_errstr(
-            "blkls_lib: error writing to stdout: %s", strerror(errno));
+        tsk_error_set_errstr("blkls_lib: error writing to stdout: %s",
+            strerror(errno));
         return TSK_WALK_ERROR;
     }
 
@@ -130,8 +130,8 @@ slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
         if (fwrite(buf, size, 1, stdout) != 1) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_WRITE);
-            tsk_error_set_errstr(
-                "blkls_lib: error writing to stdout: %s", strerror(errno));
+            tsk_error_set_errstr("blkls_lib: error writing to stdout: %s",
+                strerror(errno));
             return TSK_WALK_ERROR;
         }
     }
@@ -142,8 +142,8 @@ slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
         if (fwrite(buf, size, 1, stdout) != 1) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_WRITE);
-            tsk_error_set_errstr(
-                "blkls_lib: error writing to stdout: %s", strerror(errno));
+            tsk_error_set_errstr("blkls_lib: error writing to stdout: %s",
+                strerror(errno));
             return TSK_WALK_ERROR;
         }
         data->flen = 0;
@@ -219,7 +219,7 @@ tsk_fs_blkls(TSK_FS_INFO * fs, TSK_FS_BLKLS_FLAG_ENUM a_blklsflags,
     if (a_blklsflags & TSK_FS_BLKLS_SLACK) {
         /* get the info on each allocated inode */
         if (fs->inode_walk(fs, fs->first_inum, fs->last_inum,
-                TSK_FS_META_FLAG_ALLOC,slack_inode_act, &data))
+                TSK_FS_META_FLAG_ALLOC, slack_inode_act, &data))
             return 1;
     }
     else if (a_blklsflags & TSK_FS_BLKLS_LIST) {
@@ -235,8 +235,8 @@ tsk_fs_blkls(TSK_FS_INFO * fs, TSK_FS_BLKLS_FLAG_ENUM a_blklsflags,
         if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_WRITE);
-            tsk_error_set_errstr(
-                "blkls_lib: error setting stdout to binary: %s",
+            tsk_error_set_errstr
+                ("blkls_lib: error setting stdout to binary: %s",
                 strerror(errno));
             return 1;
         }
