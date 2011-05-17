@@ -230,7 +230,7 @@ uint8_t
 
     snprintf(foo, 1024,
         "INSERT INTO tsk_image_info (type, ssize) VALUES (%d, %u);",
-        (int) a_type, m_img_info->sector_size);
+        (int) m_img_info->itype, m_img_info->sector_size);
     if (sqlite3_exec(m_db, foo, NULL, NULL, &errmsg) != SQLITE_OK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);

@@ -12,6 +12,7 @@ Bug Fixes
 - 3213886: ISO9660 directory hole not advancing
 - 3173095 contd: Updated checks so that tougher FAT checks are
 applied to deleted directories.
+- Image type in Sqlite DB is now not always 0
 
 New Features:
 - 3213888: RAW CD format
