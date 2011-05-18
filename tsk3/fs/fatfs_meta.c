@@ -263,7 +263,6 @@ attr2mode(uint16_t attr)
  * @param sect Sector address where directory entry is from -- used
  * to determine allocation status.
  * @param inum Address of the inode.
- * @param a_isInUnalloc 1 if the file is located in unallocated space and should get more cleanup
  *
  * @returns 1 on error and 0 on success.  Errors should only occur for
  * Unicode conversion problems and when this occurs the name will be
@@ -272,7 +271,7 @@ attr2mode(uint16_t attr)
  */
 static TSK_RETVAL_ENUM
 fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
-    fatfs_dentry * in, TSK_DADDR_T sect, TSK_INUM_T inum, uint8_t a_isInUnalloc)
+    fatfs_dentry * in, TSK_DADDR_T sect, TSK_INUM_T inum)
 {
     int retval;
     int i;
@@ -503,15 +502,13 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
         }
         fs_meta->name2->name[i] = '\0';
 
-        /* if in unalloc space, then clean up non-ASCII because we are
+        /* clean up non-ASCII because we are
          * copying it into a buffer that is supposed to be UTF-8 and
          * we don't know what encoding it is actually in or if it is 
          * simply junk. */
-        if (a_isInUnalloc) {
-            for (i = 0; fs_meta->name2->name[i] != '\0'; i++) {
-                if (fs_meta->name2->name[i] > 0x7e) {
-                    fs_meta->name2->name[i] = '^';
-                }
+        for (i = 0; fs_meta->name2->name[i] != '\0'; i++) {
+            if ((unsigned char)(fs_meta->name2->name[i]) > 0x7e) {
+                fs_meta->name2->name[i] = '^';
             }
         }
     }
@@ -1457,7 +1454,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
                 if ((retval2 =
                         fatfs_dinode_copy(fatfs, fs_file->meta, dep, sect,
-                            inum, !isInDir)) != TSK_OK) {
+                            inum)) != TSK_OK) {
                     /* Ignore this error and continue */
                     if (retval2 == TSK_COR) {
                         if (tsk_verbose)
@@ -1664,7 +1661,7 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     if (fatfs_isdentry(fatfs, &dep, 1)) {
         if ((retval =
                 fatfs_dinode_copy(fatfs, a_fs_file->meta, &dep, sect,
-                    inum, 0)) != TSK_OK) {
+                    inum)) != TSK_OK) {
             /* If there was a unicode conversion error,
              * then still return the inode */
             if (retval == TSK_ERR) {
