@@ -359,8 +359,6 @@ extern "C" {
 
     extern uint8_t fatfs_isdentry(FATFS_INFO *, fatfs_dentry *, uint8_t);
     extern uint8_t fatfs_make_root(FATFS_INFO *, TSK_FS_META *);
-    extern TSK_RETVAL_ENUM fatfs_dinode_copy(FATFS_INFO *, TSK_FS_META *,
-        fatfs_dentry *, TSK_DADDR_T, TSK_INUM_T);
 
     extern uint8_t fatfs_inode_lookup(TSK_FS_INFO * fs,
         TSK_FS_FILE * a_fs_file, TSK_INUM_T inum);
