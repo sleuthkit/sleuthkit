@@ -13,6 +13,7 @@ applied to deleted directories.
 New Features:
 - 3213888: RAW CD format
 - Auto class accepts TSK_IMG_INFO as argument
+- Copies of split image file names are stored in TSK so that the caller can free them before TSK_IMG_INFO is freed.
 
 
 ---------------- VERSION 3.2.1 --------------
