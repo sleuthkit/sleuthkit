@@ -317,8 +317,16 @@ split_close(TSK_IMG_INFO * img_info)
             close(split_info->cache[i].fd);
 #endif
     }
-    free(split_info->max_off);
-    free(split_info->cptr);
+    for(i = 0; i < split_info->num_img; i++){
+        if (split_info->images[i])
+            free(split_info->images[i]);
+    }
+    if (split_info->max_off)
+        free(split_info->max_off);
+    if (split_info->images)
+        free(split_info->images);
+    if (split_info->cptr)
+        free(split_info->cptr);
     free(split_info);
 }
 
@@ -376,9 +384,32 @@ split_open(int num_img, const TSK_TCHAR * const images[],
         return NULL;
     }
     img_info->size = 0;
-
+    
     split_info->num_img = num_img;
-    split_info->images = images;
+    
+    split_info->images = (TSK_TCHAR **) tsk_malloc(sizeof(TSK_TCHAR *) * num_img);
+    if(split_info->images == NULL){
+        free(split_info->max_off);
+        free(split_info->cptr);
+        free(split_info);
+        return NULL;
+    }
+    for(i=0; i < num_img; i++){
+        size_t len = TSTRLEN(images[i]);
+        split_info->images[i] = (TSK_TCHAR *) tsk_malloc(sizeof(TSK_TCHAR) * (len+1));
+        if(split_info->images == NULL){
+            while(i > 0){
+                i--;
+                free(split_info->images[i]);
+            }
+            free(split_info->images);
+            free(split_info->max_off);
+            free(split_info->cptr);
+            free(split_info);
+            return NULL;
+        }
+        TSTRNCPY(split_info->images[i], images[i], len);
+    }
 
     /* Get size info for each file - we do not open each one because that
      * could cause us to run out of file decsriptors when we only need a few.
