@@ -471,6 +471,16 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
                 fs_meta->name2->name[i++] = in->ext[a];
         }
         fs_meta->name2->name[i] = '\0';
+
+        /* clean up non-ASCII because we are
+         * copying it into a buffer that is supposed to be UTF-8 and
+         * we don't know what encoding it is actually in or if it is 
+         * simply junk. */
+        for (i = 0; fs_meta->name2->name[i] != '\0'; i++) {
+            if ((unsigned char)(fs_meta->name2->name[i]) > 0x7e) {
+                fs_meta->name2->name[i] = '^';
+            }
+        }
     }
     /* If the entry is a normal short entry, then copy the name
      * and add the '.' for the extension
