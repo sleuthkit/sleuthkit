@@ -1014,6 +1014,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     uint8_t *sect_alloc;
     ssize_t cnt;
     uint8_t done = 0;
+    char *dinode_buf = NULL;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -1213,6 +1214,12 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         return 1;
     }
 
+    if ((dinode_buf = tsk_malloc(fatfs->csize * fatfs->ssize)) == NULL) {
+        tsk_fs_file_close(fs_file);
+        free(sect_alloc);
+        return 1;
+    }
+
     sect = ssect;
     while (sect <= lsect) {
         int clustalloc;         // 1 if current sector / cluster is allocated
@@ -1236,7 +1243,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
             /* read the sector */
             cnt =
-                tsk_fs_read_block(fs, sect, fatfs->dinodes, fatfs->ssize);
+                tsk_fs_read_block(fs, sect, dinode_buf, fatfs->ssize);
             if (cnt != fatfs->ssize) {
                 if (cnt >= 0) {
                     tsk_error_reset();
@@ -1247,6 +1254,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                     sect);
                 tsk_fs_file_close(fs_file);
                 free(sect_alloc);
+                free(dinode_buf);
                 return 1;
             }
             sect_proc = 1;
@@ -1268,6 +1276,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             if (clustalloc == -1) {
                 tsk_fs_file_close(fs_file);
                 free(sect_alloc);
+                free(dinode_buf);
                 return 1;
             }
             else if ((clustalloc == 0)
@@ -1294,7 +1303,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
             /* read the full cluster */
             cnt = tsk_fs_read_block
-                (fs, sect, fatfs->dinodes, sect_proc << fatfs->ssize_sh);
+                (fs, sect, dinode_buf, sect_proc << fatfs->ssize_sh);
             if (cnt != (sect_proc << fatfs->ssize_sh)) {
                 if (cnt >= 0) {
                     tsk_error_reset();
@@ -1304,6 +1313,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                     "fatfs_inode_walk: sector: %" PRIuDADDR, sect);
                 tsk_fs_file_close(fs_file);
                 free(sect_alloc);
+                free(dinode_buf);
                 return 1;
             }
         }
@@ -1314,7 +1324,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             uint8_t isInDir;
 
             dep =
-                (fatfs_dentry *) & fatfs->dinodes[sidx << fatfs->ssize_sh];
+                (fatfs_dentry *) & dinode_buf[sidx << fatfs->ssize_sh];
 
             /* if we know it is not part of a directory and it is not valid dentires,
              * then skip it */
@@ -1421,6 +1431,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                     else {
                         tsk_fs_file_close(fs_file);
                         free(sect_alloc);
+                        free(dinode_buf);
                         return 1;
                     }
                 }
@@ -1435,11 +1446,13 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 if (retval == TSK_WALK_STOP) {
                     tsk_fs_file_close(fs_file);
                     free(sect_alloc);
+                    free(dinode_buf);
                     return 0;
                 }
                 else if (retval == TSK_WALK_ERROR) {
                     tsk_fs_file_close(fs_file);
                     free(sect_alloc);
+                    free(dinode_buf);
                     return 1;
                 }
             }                   /* dentries */
@@ -1453,6 +1466,8 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
 
     free(sect_alloc);
+    free(dinode_buf);
+    dinode_buf = NULL;
 
 
     // handle the virtual orphans folder and FAT files if they asked for them

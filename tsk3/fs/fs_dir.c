@@ -805,6 +805,12 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
 {
     FIND_ORPHAN_DATA *data = (FIND_ORPHAN_DATA *) a_ptr;
 
+    /* we don't want to add the dot entries to the seen list, 
+     * otherwise we'll lose directories in the later cleanup */
+    if ((a_fs_file->name) && (a_fs_file->name->name) &&
+        (TSK_FS_ISDOT(a_fs_file->name->name)))
+        return TSK_WALK_CONT;
+
     // add this entry to the orphan list
     if (a_fs_file->meta) {
         tsk_list_add(&data->orphan_subdir_list, a_fs_file->meta->addr);

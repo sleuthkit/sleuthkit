@@ -9,6 +9,8 @@ Bug Fixes
 applied to deleted directories.
 - 3303678: Image type in Sqlite DB is now not always 0
 - 3303679: Deleted FAT files have more name cleanup in short names
+- X: Fixed FAT orphan file problem (overwriting of dinodes and adding '.' to seen list.
+
 
 New Features:
 - 3213888: RAW CD format
