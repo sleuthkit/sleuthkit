@@ -61,6 +61,8 @@ class TskAuto {
 
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
+    virtual uint8_t openImageUtf8(int, const char *const images[],
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     virtual uint8_t openImage(TSK_IMG_INFO *);
     virtual void closeImage();
 
@@ -70,8 +72,10 @@ class TskAuto {
     uint8_t findFilesInFs(TSK_OFF_T start);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_INUM_T inum);
-    uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype, TSK_INUM_T inum);
-    TSK_RETVAL_ENUM findFilesInFsRet(TSK_OFF_T start, TSK_FS_TYPE_ENUM a_ftype);
+    uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype,
+        TSK_INUM_T inum);
+    TSK_RETVAL_ENUM findFilesInFsRet(TSK_OFF_T start,
+        TSK_FS_TYPE_ENUM a_ftype);
 
     void setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_ENUM);
     void setVolFilterFlags(TSK_VS_PART_FLAG_ENUM);
@@ -86,7 +90,7 @@ class TskAuto {
     virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info) {
         return TSK_FILTER_CONT;
     };
-    
+
     /**
      * TskAuto calls this method before it processes each volume that is found in a 
      * volume system. You can use this to learn about each volume before it is processed
@@ -139,7 +143,7 @@ class TskAuto {
 
   protected:
     TSK_IMG_INFO * m_img_info;
-    bool m_internalOpen; ///< True if m_img_info was opened in TskAuto and false if passed in
+    bool m_internalOpen;        ///< True if m_img_info was opened in TskAuto and false if passed in
     uint8_t isNtfsSystemFiles(TSK_FS_FILE * fs_file, const char *path);
     uint8_t isFATSystemFiles(TSK_FS_FILE * fs_file);
     uint8_t isDotDir(TSK_FS_FILE * fs_file, const char *path);
@@ -183,8 +187,12 @@ class TskAutoDb:public TskAuto {
     virtual ~ TskAutoDb();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
+    virtual uint8_t openImageUtf8(int, const char *const images[],
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize, TSK_TCHAR * output_dir);
+    uint8_t openImageUtf8(int, const char *const images[],
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, char *output_dir);
     virtual void closeImage();
 
     uint8_t addFilesInImgToDB();
@@ -203,6 +211,7 @@ class TskAutoDb:public TskAuto {
     bool m_vsFound;
     bool m_volFound;
 
+    uint8_t initDatabase(char **, int);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,

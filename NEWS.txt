@@ -6,6 +6,7 @@ Numbers refer to SourceForge.net tracker IDs:
 New Features:
 - Added multithreaded support
 - Added C++ wrapper classes
+- Added JNI bindings / Java data model classes
 
 ---------------- VERSION 3.2.2 --------------
 Bug Fixes

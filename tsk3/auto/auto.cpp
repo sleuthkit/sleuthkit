@@ -61,18 +61,44 @@ uint8_t
 }
 
 /**
+ * Opens the disk image to be analyzed.  This must be called before any
+ * of the findFilesInXXX() methods. Always uses the utf8 tsk_img_open
+ * even in windows.
+ *
+ * @param a_numImg The number of images to open (will be > 1 for split images).
+ * @param a_images The path to the image files (the number of files must
+ * be equal to num_img and they must be in a sorted order)
+ * @param a_imgType The disk image type (can be autodetection)
+ * @param a_sSize Size of device sector in bytes (or 0 for default)
+ * @returns 1 on error, 0 on success
+ */
+uint8_t
+    TskAuto::openImageUtf8(int a_numImg, const char *const a_images[],
+    TSK_IMG_TYPE_ENUM a_imgType, unsigned int a_sSize)
+{
+    if (m_img_info)
+        closeImage();
+
+    m_internalOpen = true;
+    m_img_info = tsk_img_open_utf8(a_numImg, a_images, a_imgType, a_sSize);
+    if (m_img_info)
+        return 0;
+    else
+        return 1;
+}
+
+/**
  * Uses the already opened image for future analysis. This must be called before any
  * of the findFilesInXXX() methods. Note that the TSK_IMG_INFO will not
  * be freed when the TskAuto class is closed.
  * @param a_img_info Handle to an already opened disk image.
  * @returns 1 on error and 0 on success
  */
-uint8_t
-TskAuto::openImage(TSK_IMG_INFO *a_img_info)
+uint8_t TskAuto::openImage(TSK_IMG_INFO * a_img_info)
 {
     if (m_img_info)
         closeImage();
-    
+
     m_internalOpen = false;
     m_img_info = a_img_info;
     return 0;
@@ -126,7 +152,8 @@ void
  * that is found.
  * @return 1 on error, 0 on success
  */
-uint8_t TskAuto::findFilesInImg()
+uint8_t
+TskAuto::findFilesInImg()
 {
     if (!m_img_info) {
         tsk_error_reset();
@@ -186,7 +213,8 @@ TSK_WALK_RET_ENUM
  * @param a_vtype Volume system type to analyze
  * @return 1 on error, 0 on success
  */
-uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
+uint8_t
+TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
 {
     if (!m_img_info) {
         tsk_error_reset();
@@ -195,12 +223,9 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
         return 1;
     }
 
-    TSK_VS_INFO *
-        vs_info;
+    TSK_VS_INFO *vs_info;
     // USE mm_walk to get the volumes
-    if ((vs_info =
-            tsk_vs_open(m_img_info, a_start,
-                a_vtype)) == NULL) {
+    if ((vs_info = tsk_vs_open(m_img_info, a_start, a_vtype)) == NULL) {
         if (tsk_verbose)
             fprintf(stderr,
                 "Error determining volume system -- trying file systems\n");
@@ -217,7 +242,7 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
             return TSK_STOP;
         else if (retval == TSK_FILTER_SKIP)
             return TSK_OK;
-        
+
         /* Walk the allocated volumes (skip metadata and unallocated volumes) */
         if (tsk_vs_part_walk(vs_info, 0, vs_info->part_count - 1,
                 m_volFilterFlags, vsWalkCb, this)) {
@@ -236,7 +261,8 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
  * @param a_start Byte offset to start analyzing from.
  * @return 1 on error, 0 on success
  */
-uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
+uint8_t
+TskAuto::findFilesInVs(TSK_OFF_T a_start)
 {
     return findFilesInVs(a_start, TSK_VS_TYPE_DETECT);
 }
@@ -250,20 +276,19 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
  * @param a_ftype File system type.
  * @returns values that allow the caller to differentiate stop from ok.  
  */
-TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
+TSK_RETVAL_ENUM
+TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
 {
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
-        tsk_error_set_errstr( "findFilesInFsRet\n");
+        tsk_error_set_errstr("findFilesInFsRet\n");
         return TSK_ERR;
     }
 
-    TSK_FS_INFO *
-        fs_info;
+    TSK_FS_INFO *fs_info;
     /* Try it as a file system */
-    if ((fs_info =
-            tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
+    if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
         tsk_error_print(stderr);
 
         /* We could do some carving on the volume data at this point */
@@ -271,8 +296,7 @@ TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_
         return TSK_ERR;
     }
 
-    TSK_RETVAL_ENUM
-        retval = findFilesInFsInt(fs_info, fs_info->root_inum);
+    TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
     tsk_fs_close(fs_info);
     return retval;
 }
@@ -286,7 +310,8 @@ TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_
  *
  * @returns 1 on error and 0 on success
  */
-uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start)
+uint8_t
+TskAuto::findFilesInFs(TSK_OFF_T a_start)
 {
     if (findFilesInFsRet(a_start, TSK_FS_TYPE_DETECT) == TSK_ERR)
         return 1;
@@ -305,7 +330,8 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start)
  *
  * @returns 1 on error and 0 on success
  */
-uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
+uint8_t
+TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
 {
     if (findFilesInFsRet(a_start, a_ftype) == TSK_ERR)
         return 1;
@@ -325,29 +351,27 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
  *
  * @returns 1 on error and 0 on success
  */
-uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype, TSK_INUM_T a_inum)
+uint8_t
+TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype,
+    TSK_INUM_T a_inum)
 {
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
-        tsk_error_set_errstr( "findFilesInFs\n");
+        tsk_error_set_errstr("findFilesInFs\n");
         return 1;
     }
 
-    TSK_FS_INFO *
-        fs_info;
+    TSK_FS_INFO *fs_info;
     /* Try it as a file system */
-    if ((fs_info =
-            tsk_fs_open_img(m_img_info, a_start,
-                a_ftype)) == NULL) {
+    if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
         tsk_error_print(stderr);
 
         /* We could do some carving on the volume data at this point */
 
         return 1;
     }
-    TSK_RETVAL_ENUM
-        retval = findFilesInFsInt(fs_info, a_inum);
+    TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, a_inum);
     tsk_fs_close(fs_info);
     if (retval == TSK_ERR)
         return 1;
@@ -367,7 +391,8 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype, TSK_
  *
  * @returns 1 on error and 0 on success
  */
-uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
+uint8_t
+TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
 {
     return TskAuto::findFilesInFs(a_start, TSK_FS_TYPE_DETECT, a_inum);
 }
@@ -385,11 +410,11 @@ TSK_WALK_RET_ENUM
     if (tsk->m_tag != TSK_AUTO_TAG)
         return TSK_WALK_STOP;
     TSK_RETVAL_ENUM retval = tsk->processFile(a_fs_file, a_path);
-    if (retval != TSK_OK){
-            if(retval == TSK_STOP)
-                return TSK_WALK_STOP;
-            else
-                return TSK_WALK_ERROR;
+    if (retval != TSK_OK) {
+        if (retval == TSK_STOP)
+            return TSK_WALK_STOP;
+        else
+            return TSK_WALK_ERROR;
     }
     else
         return TSK_WALK_CONT;
@@ -431,13 +456,14 @@ TSK_RETVAL_ENUM
  * @returns 1 if the file system processing should stop and not process more files.
  */
 TSK_RETVAL_ENUM
-TskAuto::processAttributes(TSK_FS_FILE * fs_file, const char *path)
+    TskAuto::processAttributes(TSK_FS_FILE * fs_file, const char *path)
 {
     int
      count = tsk_fs_file_attr_getsize(fs_file), i;
     for (i = 0; i < count; i++) {
-        TSK_RETVAL_ENUM retval = processAttribute(fs_file, tsk_fs_file_attr_get_idx(fs_file, i),
-                path);
+        TSK_RETVAL_ENUM retval =
+            processAttribute(fs_file, tsk_fs_file_attr_get_idx(fs_file, i),
+            path);
         if (retval != TSK_OK)
             return retval;
     }
@@ -467,7 +493,8 @@ uint8_t
  *
  * @returns 1 if the file is an FAT System file, 0 if not.
  */
-uint8_t TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
+uint8_t
+TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
 {
     if ((a_fs_file) && (a_fs_file->fs_info)
         && (TSK_FS_TYPE_ISFAT(a_fs_file->fs_info->ftype))
@@ -487,7 +514,8 @@ uint8_t TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
  *
  * @returns 1 if the file is a dot directory, 0 if not.
  */
-uint8_t TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
+uint8_t
+TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
 {
     if ((!a_fs_file) || (!a_fs_file->name)
         || ((a_fs_file->name->flags & TSK_FS_NAME_TYPE_DIR) == 0))
@@ -509,7 +537,8 @@ uint8_t TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
  *
  * @returns 1 if the file is a directory, 0 if not.
  */
-uint8_t TskAuto::isDir(TSK_FS_FILE * a_fs_file)
+uint8_t
+TskAuto::isDir(TSK_FS_FILE * a_fs_file)
 {
     if ((a_fs_file) && (a_fs_file->name)
         && (a_fs_file->name->type == TSK_FS_NAME_TYPE_DIR))
@@ -523,7 +552,8 @@ uint8_t TskAuto::isDir(TSK_FS_FILE * a_fs_file)
  *
  * @returns 1 if the file is a file, 0 if not.
  */
-uint8_t TskAuto::isFile(TSK_FS_FILE * a_fs_file)
+uint8_t
+TskAuto::isFile(TSK_FS_FILE * a_fs_file)
 {
     if ((a_fs_file) && (a_fs_file->name)
         && (a_fs_file->name->type == TSK_FS_NAME_TYPE_REG))
@@ -554,7 +584,8 @@ uint8_t
  *
  * @returns 1 if the attribute is non-resident, 0 if not.
  */
-uint8_t TskAuto::isNonResident(const TSK_FS_ATTR * a_fs_attr)
+uint8_t
+TskAuto::isNonResident(const TSK_FS_ATTR * a_fs_attr)
 {
     if ((a_fs_attr) && (a_fs_attr->flags & TSK_FS_ATTR_NONRES))
         return 1;

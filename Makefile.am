@@ -25,7 +25,24 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     win32/libmmtools/libmmtools.vcproj  \
     win32/libautotools/libautotools.vcproj  \
     win32/posix-sample/posix-sample.vcproj \
-    win32/callback-sample/callback-sample.vcproj
+    win32/callback-sample/callback-sample.vcproj \
+    bindings/java/README.txt \
+    bindings/java/build.xml \
+    bindings/java/jni/dataModel_SleuthkitJNI.cpp \
+    bindings/java/jni/dataModel_SleuthkitJNI.h \
+    bindings/java/jni/tskAutoDbJNI.h \
+    bindings/java/src/org/sleuthkit/datamodel/Content.java \
+    bindings/java/src/org/sleuthkit/datamodel/Directory.java \
+    bindings/java/src/org/sleuthkit/datamodel/File.java \
+    bindings/java/src/org/sleuthkit/datamodel/FileSystem.java \
+    bindings/java/src/org/sleuthkit/datamodel/FsContent.java \
+    bindings/java/src/org/sleuthkit/datamodel/Image.java \
+    bindings/java/src/org/sleuthkit/datamodel/Sleuthkit.java \
+    bindings/java/src/org/sleuthkit/datamodel/SleuthkitJNI.java \
+    bindings/java/src/org/sleuthkit/datamodel/TskData.java \
+    bindings/java/src/org/sleuthkit/datamodel/TskException.java \
+    bindings/java/src/org/sleuthkit/datamodel/Volume.java \
+    bindings/java/src/org/sleuthkit/datamodel/VolumeSystem.java 
 
 CLEANFILES = tsk3/tsk_incs.h
 

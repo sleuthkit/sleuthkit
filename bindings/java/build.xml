@@ -1,0 +1,98 @@
+<project name="DataModel" default="dist" basedir=".">
+    <description>
+        Sleuthkit Java DataModel 
+    </description>
+  <!-- set global properties for this build -->
+  <property name="src" location="src/org/sleuthkit/datamodel"/>
+  <property name="build" location="build/"/>
+  <property name="dist"  location="dist"/>
+  <property name="lib" location="lib"/>
+  
+  <path id="libraries">
+    <fileset dir="${lib}">
+      <include name="*.jar"/>
+    </fileset>
+	<pathelement path="${build}"/>
+  </path>
+
+
+  <target name="init">
+    <mkdir dir="${build}"/>
+	<mkdir dir="${dist}"/>
+  </target>
+ 
+  <target name="compile" depends="init"
+        description="compile the source " >
+    <!-- Compile the java code from ${src} into ${build} -->
+    <javac srcdir="${src}" destdir="${build}" classpathref="libraries"/>
+  </target>
+
+  <target name="dist" depends="jni"
+        description="generate the distribution" >
+    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+    <jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
+  </target>
+  
+  <target name="jni" depends="compile" description="make the jni.h file">
+    <javah classpath = "${build}" outputFile="jni/dataModel_SleuthkitJNI.h" force="yes">
+	  <class name="org.sleuthkit.datamodel.SleuthkitJNI"/>
+	</javah>
+  </target>
+  
+
+  <target name="clean"
+        description="clean up" >
+    <!-- Delete the ${build} and ${dist} directory trees -->
+    <delete dir="${build}"/>
+    <delete dir="${dist}"/>
+  </target>
+</project>
+<project name="DataModel" default="dist" basedir=".">
+    <description>
+        Sleuthkit Java DataModel 
+    </description>
+  <!-- set global properties for this build -->
+  <property name="src" location="src/org/sleuthkit/datamodel"/>
+  <property name="build" location="build/"/>
+  <property name="dist"  location="dist"/>
+  <property name="lib" location="lib"/>
+  
+  <path id="libraries">
+    <fileset dir="${lib}">
+      <include name="*.jar"/>
+    </fileset>
+	<pathelement path="${build}"/>
+  </path>
+
+
+  <target name="init">
+    <mkdir dir="${build}"/>
+	<mkdir dir="${dist}"/>
+  </target>
+ 
+  <target name="compile" depends="init"
+        description="compile the source " >
+    <!-- Compile the java code from ${src} into ${build} -->
+    <javac srcdir="${src}" destdir="${build}" classpathref="libraries"/>
+  </target>
+
+  <target name="dist" depends="jni"
+        description="generate the distribution" >
+    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+    <jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
+  </target>
+  
+  <target name="jni" depends="compile" description="make the jni.h file">
+    <javah classpath = "${build}" outputFile="jni/dataModel_SleuthkitJNI.h" force="yes">
+	  <class name="org.sleuthkit.datamodel.SleuthkitJNI"/>
+	</javah>
+  </target>
+  
+
+  <target name="clean"
+        description="clean up" >
+    <!-- Delete the ${build} and ${dist} directory trees -->
+    <delete dir="${build}"/>
+    <delete dir="${dist}"/>
+  </target>
+</project>
