@@ -64,6 +64,7 @@ class TskAuto {
     virtual uint8_t openImage(TSK_IMG_INFO *);
     virtual void closeImage();
 
+    TSK_OFF_T getImageSize() const;
     uint8_t findFilesInImg();
     uint8_t findFilesInVs(TSK_OFF_T start);
     uint8_t findFilesInVs(TSK_OFF_T start, TSK_VS_TYPE_ENUM vtype);
@@ -124,6 +125,15 @@ class TskAuto {
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
         const char *path) = 0;
 
+    /**
+     * TskAuto calls this method when it encounters issues while processing an image,
+     * e.g. when opening various volume and file systems fail. This method allows users
+     * of the TskAuto class to choose an appropriate mechanism to present this information.
+     * The implementation of this method in the base class is a no-op.
+     *
+     * @param msg A text message describing the issue that was encountered.
+     */
+    virtual void handleNotification(const char * msg) {};
 
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;

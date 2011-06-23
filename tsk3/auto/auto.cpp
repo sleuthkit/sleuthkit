@@ -119,6 +119,18 @@ void
 
 
 /**
+ * @return The size of the image in bytes or -1 if the 
+ * image is not open.
+ */
+TSK_OFF_T TskAuto::getImageSize() const
+{
+    if (m_img_info == NULL)
+        return -1;
+
+    return m_img_info->size;
+}
+
+/**
  * Starts in sector 0 of the opened disk images and looks for a 
  * volume or file system. Will call processFile() on each file
  * that is found. 
@@ -132,12 +144,8 @@ uint8_t TskAuto::findFilesInImg()
         snprintf(tsk_errstr, TSK_ERRSTR_L, "findFilesInImg\n");
         return 1;
     }
-    if (findFilesInVs(0)) {
-        tsk_error_print(stderr);
-        return 1;
-    }
 
-    return 0;
+    return findFilesInVs(0);
 }
 
 
@@ -199,9 +207,13 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
     if ((vs_info =
             tsk_vs_open(m_img_info, a_start,
                 a_vtype)) == NULL) {
+        char msg[1024];
+        snprintf(msg, 1024, "Unable to open volume system at offset %"PRIuOFF" (%s)",
+                a_start, tsk_error_get());
+
         if (tsk_verbose)
-            fprintf(stderr,
-                "Error determining volume system -- trying file systems\n");
+            fprintf(stderr, "%s\n", msg);
+        handleNotification(msg);
 
         /* There was no volume system, but there could be a file system */
         tsk_error_reset();
@@ -262,7 +274,13 @@ TSK_RETVAL_ENUM TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_
     /* Try it as a file system */
     if ((fs_info =
             tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        tsk_error_print(stderr);
+        char msg[1024];
+        snprintf(msg, 1024, "Unable to open file system at offset %"PRIuOFF" (%s)",
+                a_start, tsk_error_get());
+
+        if (tsk_verbose)
+            fprintf(stderr, "%s\n", msg);
+        handleNotification(msg);
 
         /* We could do some carving on the volume data at this point */
 
@@ -338,7 +356,14 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype, TSK_
     if ((fs_info =
             tsk_fs_open_img(m_img_info, a_start,
                 a_ftype)) == NULL) {
-        tsk_error_print(stderr);
+
+        char msg[1024];
+        snprintf(msg, 1024, "Unable to open file system at offset %"PRIuOFF" (%s)",
+                a_start, tsk_error_get());
+
+        if (tsk_verbose)
+            fprintf(stderr, "%s\n", msg);
+        handleNotification(msg);
 
         /* We could do some carving on the volume data at this point */
 
@@ -410,7 +435,15 @@ TSK_RETVAL_ENUM
     if (tsk_fs_dir_walk(a_fs_info, a_inum,
             (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_RECURSE |
                 m_fileFilterFlags), dirWalkCb, this)) {
-        tsk_error_print(stderr);
+
+        char msg[1024];
+        snprintf(msg, 1024, "Error walking directory in file system at offset %"PRIuOFF" (%s)",
+                a_fs_info->offset, tsk_error_get());
+
+        if (tsk_verbose)
+            fprintf(stderr, "%s\n", msg);
+        handleNotification(msg);
+
         return TSK_ERR;
     }
 
