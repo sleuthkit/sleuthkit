@@ -94,7 +94,8 @@ uint8_t
  * @param a_img_info Handle to an already opened disk image.
  * @returns 1 on error and 0 on success
  */
-uint8_t TskAuto::openImage(TSK_IMG_INFO * a_img_info)
+uint8_t
+TskAuto::openImage(TSK_IMG_INFO * a_img_info)
 {
     if (m_img_info)
         closeImage();
@@ -145,6 +146,19 @@ void
     m_fileFilterFlags = file_flags;
 }
 
+/**
+ * @return The size of the image in bytes or -1 if the 
+ * image is not open.
+ */
+TSK_OFF_T
+TskAuto::getImageSize() const
+{
+    if (m_img_info == NULL)
+        return -1;
+
+    return m_img_info->size;
+}
+
 
 /**
  * Starts in sector 0 of the opened disk images and looks for a
@@ -152,8 +166,7 @@ void
  * that is found.
  * @return 1 on error, 0 on success
  */
-uint8_t
-TskAuto::findFilesInImg()
+uint8_t TskAuto::findFilesInImg()
 {
     if (!m_img_info) {
         tsk_error_reset();
@@ -161,12 +174,8 @@ TskAuto::findFilesInImg()
         tsk_error_set_errstr("findFilesInImg\n");
         return 1;
     }
-    if (findFilesInVs(0)) {
-        tsk_error_print(stderr);
-        return 1;
-    }
 
-    return 0;
+    return findFilesInVs(0);
 }
 
 
@@ -213,8 +222,7 @@ TSK_WALK_RET_ENUM
  * @param a_vtype Volume system type to analyze
  * @return 1 on error, 0 on success
  */
-uint8_t
-TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
+uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
 {
     if (!m_img_info) {
         tsk_error_reset();
@@ -223,12 +231,19 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
         return 1;
     }
 
-    TSK_VS_INFO *vs_info;
+    TSK_VS_INFO *
+        vs_info;
     // USE mm_walk to get the volumes
     if ((vs_info = tsk_vs_open(m_img_info, a_start, a_vtype)) == NULL) {
+        char
+            msg[1024];
+        snprintf(msg, 1024,
+            "Unable to open volume system at offset %" PRIuOFF " (%s)",
+            a_start, tsk_error_get());
+
         if (tsk_verbose)
-            fprintf(stderr,
-                "Error determining volume system -- trying file systems\n");
+            fprintf(stderr, "%s\n", msg);
+        handleNotification(msg);
 
         /* There was no volume system, but there could be a file system */
         tsk_error_reset();
@@ -237,7 +252,8 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
         }
     }
     else {
-        TSK_FILTER_ENUM retval = filterVs(vs_info);
+        TSK_FILTER_ENUM
+            retval = filterVs(vs_info);
         if (retval == TSK_FILTER_STOP)
             return TSK_STOP;
         else if (retval == TSK_FILTER_SKIP)
@@ -261,8 +277,7 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
  * @param a_start Byte offset to start analyzing from.
  * @return 1 on error, 0 on success
  */
-uint8_t
-TskAuto::findFilesInVs(TSK_OFF_T a_start)
+uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
 {
     return findFilesInVs(a_start, TSK_VS_TYPE_DETECT);
 }
@@ -277,7 +292,7 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start)
  * @returns values that allow the caller to differentiate stop from ok.  
  */
 TSK_RETVAL_ENUM
-TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
+    TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
 {
     if (!m_img_info) {
         tsk_error_reset();
@@ -289,7 +304,15 @@ TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
     TSK_FS_INFO *fs_info;
     /* Try it as a file system */
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        tsk_error_print(stderr);
+        char msg[1024];
+        snprintf(msg, 1024,
+            "Unable to open file system at offset %" PRIuOFF " (%s)",
+            a_start, tsk_error_get());
+
+        if (tsk_verbose)
+            fprintf(stderr, "%s\n", msg);
+        handleNotification(msg);
+
 
         /* We could do some carving on the volume data at this point */
 
@@ -310,8 +333,7 @@ TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
  *
  * @returns 1 on error and 0 on success
  */
-uint8_t
-TskAuto::findFilesInFs(TSK_OFF_T a_start)
+uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start)
 {
     if (findFilesInFsRet(a_start, TSK_FS_TYPE_DETECT) == TSK_ERR)
         return 1;
@@ -330,8 +352,7 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start)
  *
  * @returns 1 on error and 0 on success
  */
-uint8_t
-TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
+uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
 {
     if (findFilesInFsRet(a_start, a_ftype) == TSK_ERR)
         return 1;
@@ -352,7 +373,7 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
  * @returns 1 on error and 0 on success
  */
 uint8_t
-TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype,
+    TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype,
     TSK_INUM_T a_inum)
 {
     if (!m_img_info) {
@@ -365,7 +386,15 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype,
     TSK_FS_INFO *fs_info;
     /* Try it as a file system */
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        tsk_error_print(stderr);
+        char msg[1024];
+        snprintf(msg, 1024,
+            "Unable to open file system at offset %" PRIuOFF " (%s)",
+            +a_start, tsk_error_get());
+
+        if (tsk_verbose)
+            fprintf(stderr, "%s\n", msg);
+        handleNotification(msg);
+
 
         /* We could do some carving on the volume data at this point */
 
@@ -391,8 +420,7 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype,
  *
  * @returns 1 on error and 0 on success
  */
-uint8_t
-TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
+uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
 {
     return TskAuto::findFilesInFs(a_start, TSK_FS_TYPE_DETECT, a_inum);
 }
@@ -437,7 +465,16 @@ TSK_RETVAL_ENUM
     if (tsk_fs_dir_walk(a_fs_info, a_inum,
             (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_RECURSE |
                 m_fileFilterFlags), dirWalkCb, this)) {
-        tsk_error_print(stderr);
+
+        char msg[1024];
+        snprintf(msg, 1024,
+            "Error walking directory in file system at offset %" PRIuOFF
+            " (%s)", a_fs_info->offset, tsk_error_get());
+
+        if (tsk_verbose)
+            fprintf(stderr, "%s\n", msg);
+        handleNotification(msg);
+
         return TSK_ERR;
     }
 
@@ -493,8 +530,7 @@ uint8_t
  *
  * @returns 1 if the file is an FAT System file, 0 if not.
  */
-uint8_t
-TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
+uint8_t TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
 {
     if ((a_fs_file) && (a_fs_file->fs_info)
         && (TSK_FS_TYPE_ISFAT(a_fs_file->fs_info->ftype))
@@ -514,8 +550,7 @@ TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
  *
  * @returns 1 if the file is a dot directory, 0 if not.
  */
-uint8_t
-TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
+uint8_t TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
 {
     if ((!a_fs_file) || (!a_fs_file->name)
         || ((a_fs_file->name->flags & TSK_FS_NAME_TYPE_DIR) == 0))
@@ -537,8 +572,7 @@ TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
  *
  * @returns 1 if the file is a directory, 0 if not.
  */
-uint8_t
-TskAuto::isDir(TSK_FS_FILE * a_fs_file)
+uint8_t TskAuto::isDir(TSK_FS_FILE * a_fs_file)
 {
     if ((a_fs_file) && (a_fs_file->name)
         && (a_fs_file->name->type == TSK_FS_NAME_TYPE_DIR))
@@ -552,8 +586,7 @@ TskAuto::isDir(TSK_FS_FILE * a_fs_file)
  *
  * @returns 1 if the file is a file, 0 if not.
  */
-uint8_t
-TskAuto::isFile(TSK_FS_FILE * a_fs_file)
+uint8_t TskAuto::isFile(TSK_FS_FILE * a_fs_file)
 {
     if ((a_fs_file) && (a_fs_file->name)
         && (a_fs_file->name->type == TSK_FS_NAME_TYPE_REG))
@@ -584,8 +617,7 @@ uint8_t
  *
  * @returns 1 if the attribute is non-resident, 0 if not.
  */
-uint8_t
-TskAuto::isNonResident(const TSK_FS_ATTR * a_fs_attr)
+uint8_t TskAuto::isNonResident(const TSK_FS_ATTR * a_fs_attr)
 {
     if ((a_fs_attr) && (a_fs_attr->flags & TSK_FS_ATTR_NONRES))
         return 1;

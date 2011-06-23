@@ -8,6 +8,11 @@ New Features:
 - Added C++ wrapper classes
 - Added JNI bindings / Java data model classes
 
+---------------- VERSION 3.2.3 --------------
+New Features:
+- new TskAuto method (handleNotification()) that gets verbose messages that allow for debugging when the class makes decisions.
+
+
 ---------------- VERSION 3.2.2 --------------
 Bug Fixes
 - 3213886: ISO9660 directory hole not advancing
