@@ -979,8 +979,11 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
             }
 
             if (dos_load_ext_table(vs, part_start, part_start, 1)) {
-                free(sect_buf);
-                return 1;
+                if (tsk_verbose) {
+                    fprintf(stderr, "Error loading extended table, moving on");
+                    tsk_error_print(stderr);
+                }
+                tsk_error_reset();
             }
         }
         else {

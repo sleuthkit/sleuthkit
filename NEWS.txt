@@ -11,6 +11,7 @@ New Features:
 ---------------- VERSION 3.2.3 --------------
 New Features:
 - new TskAuto method (handleNotification()) that gets verbose messages that allow for debugging when the class makes decisions.
+- DOS partitions are loaded even if an extended partition fails to load
 
 
 ---------------- VERSION 3.2.2 --------------
