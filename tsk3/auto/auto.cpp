@@ -215,7 +215,7 @@ TSK_WALK_RET_ENUM
 
 
 /**
- * Starts in a specified sector of the opened disk images and looks for a
+ * Starts in a specified byte offset of the opened disk images and looks for a
  * volume system or file system. Will call processFile() on each file
  * that is found.
  * @param a_start Byte offset to start analyzing from.
@@ -271,7 +271,7 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
 }
 
 /**
- * Starts in a specified sector of the opened disk images and looks for a
+ * Starts in a specified byte offset of the opened disk images and looks for a
  * volume system or file system. Will call processFile() on each file
  * that is found.
  * @param a_start Byte offset to start analyzing from.
@@ -284,7 +284,7 @@ uint8_t TskAuto::findFilesInVs(TSK_OFF_T a_start)
 
 
 /**
- * Starts in a specified sector of the opened disk images and looks for a
+ * Starts in a specified byte offset of the opened disk images and looks for a
  * file system. Will call processFile() on each file
  * that is found.  Same as findFilesInFs, but gives more detailed return values.
  * @param a_start Byte offset to start analyzing from. 
@@ -324,8 +324,28 @@ TSK_RETVAL_ENUM
     return retval;
 }
 
+/** 
+ * Processes the file system represented by the given TSK_FS_INFO
+ * pointer. Will Call processFile() on each file that is found.
+ *
+ * @param a_fs_info Pointer to a previously opened file system.
+ *
+ * @returns 1 on error and 0 on success
+ */
+uint8_t TskAuto::findFilesInFs(TSK_FS_INFO *a_fs_info)
+{
+    if (a_fs_info == NULL)
+        return 1;
+
+    if (findFilesInFsInt(a_fs_info, a_fs_info->root_inum) == TSK_ERR)
+        return 1;
+    else
+        return 0;
+}
+
+
 /**
- * Starts in a specified sector of the opened disk images and looks for a
+ * Starts in a specified byte offset of the opened disk images and looks for a
  * file system. Will call processFile() on each file
  * that is found.
  *
@@ -343,7 +363,7 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start)
 
 
 /**
- * Starts in a specified sector of the opened disk images and looks for a
+ * Starts in a specified byte offset of the opened disk images and looks for a
  * file system. Will call processFile() on each file
  * that is found.
  *
@@ -361,7 +381,7 @@ uint8_t TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
 }
 
 /**
- * Starts in a specified sector of the opened disk images and looks for a
+ * Starts in a specified byte offset of the opened disk images and looks for a
  * file system. Will start processing the file system at a specified
  * file system. Will call processFile() on each file
  * that is found in that directory.
@@ -410,7 +430,7 @@ uint8_t
 
 
 /**
- * Starts in a specified sector of the opened disk images and looks for a
+ * Starts in a specified byte offset of the opened disk images and looks for a
  * file system. Will start processing the file system at a specified
  * file system. Will call processFile() on each file
  * that is found in that directory.
