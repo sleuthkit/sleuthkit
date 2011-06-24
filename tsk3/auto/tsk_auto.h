@@ -72,6 +72,7 @@ class TskAuto {
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_INUM_T inum);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype, TSK_INUM_T inum);
+    uint8_t findFilesInFs(TSK_FS_INFO * a_fs_info);
     TSK_RETVAL_ENUM findFilesInFsRet(TSK_OFF_T start, TSK_FS_TYPE_ENUM a_ftype);
 
     void setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_ENUM);

@@ -6,6 +6,7 @@ Numbers refer to SourceForge.net tracker IDs:
 New Features:
 - new TskAuto method (handleNotification()) that gets verbose messages that allow for debugging when the class makes decisions.
 - DOS partitions are loaded even if an extended partition fails to load
+- new TskAuto::findFilesInFs(TSK_FS_INFO *) method
 
 
 ---------------- VERSION 3.2.2 --------------
