@@ -1332,6 +1332,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     TSK_DADDR_T sectors;
     ssize_t cnt;
     int i;
+    uint8_t used_backup_boot = 0;  // set to 1 if we used the backup boot sector
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -1406,7 +1407,10 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 return NULL;
             }
         }
+        // found the magic
         else {
+            if (sb_off)
+                used_backup_boot = 1;
             break;
         }
     }
@@ -1596,7 +1600,76 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             ("Invalid FAT image (numroot == 0, and not TSK_FS_TYPE_FAT32)");
         return NULL;
     }
-
+    
+    /* additional sanity checks if we think we are using the backup boot sector.
+     * The scenario to prevent here is if fat_open is called 6 sectors before the real start
+     * of the file system, then we want to detect that it was not a backup that we saw.  
+     */
+    if (used_backup_boot) {
+        // only FAT32 has backup boot sectors..
+        if (ftype != TSK_FS_TYPE_FAT32) {
+            fs->tag = 0;
+            free(fatsb);
+            free(fatfs);
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+            tsk_error_set_errstr(
+                     "Invalid FAT image (Used what we thought was a backup boot sector, but it is not TSK_FS_TYPE_FAT32)");
+            return NULL;
+        }
+        if (fatfs->numroot > 1) {
+            uint8_t buf1[512];
+            uint8_t buf2[512];
+            int i2;
+            int numDiffs;
+            
+            cnt = tsk_fs_read(fs, fatfs->firstfatsect * fatfs->ssize, (char *) buf1, 512);
+            if (cnt != 512) {
+                if (cnt >= 0) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_FS_READ);
+                }
+                tsk_error_set_errstr2(
+                    "%s: FAT1", myname);
+                fs->tag = 0;
+                free(fatfs->sb);
+                free(fatfs);
+                return NULL;
+            }
+            
+            cnt = tsk_fs_read(fs, (fatfs->firstfatsect + fatfs->sectperfat)*fatfs->ssize, (char *) buf2, 512);
+            if (cnt != 512) {
+                if (cnt >= 0) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_FS_READ);
+                }
+                tsk_error_set_errstr2(
+                    "%s: FAT2", myname);
+                fs->tag = 0;
+                free(fatfs->sb);
+                free(fatfs);
+                return NULL;
+            }
+            
+            numDiffs = 0;
+            for (i2 = 0; i2 < 512; i2++) {
+                if (buf1[i2] != buf2[i2]) {
+                    numDiffs++;
+                }
+            }
+            if (numDiffs > 25) {
+                fs->tag = 0;
+                free(fatsb);
+                free(fatfs);
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+                tsk_error_set_errstr(
+                         "Invalid FAT image (Too many differences between FATS from guessing (%d diffs))", numDiffs);
+                return NULL;
+            }
+        }
+    }
+    
 
     /* Set the mask to use on the cluster values */
     if (ftype == TSK_FS_TYPE_FAT12) {
