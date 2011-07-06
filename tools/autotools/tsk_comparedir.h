@@ -1,3 +1,6 @@
+#ifndef _TSK_COMPAREDIR_H
+#define _TSK_COMPAREDIR_H
+
 #include <set>
 #include <stdlib.h>
 
@@ -22,3 +25,5 @@ private:
 	virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     uint8_t processLclDir(const TSK_TCHAR *dir);
 };
+
+#endif

@@ -1,10 +1,19 @@
+/*
+ ** dataModel_SleuthkitJNI
+ ** The Sleuth Kit 
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ **
+ */
+#include "tsk3/tsk_tools_i.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
-#include "tsk3/libtsk.h"
-#include "tsk3/tsk_tools_i.h"
 #include "tskAutoDbJNI.h"
-#include "tsk3/auto/tsk_auto_i.h"
-#include "tsk3/auto/tsk_auto.h"
+#include <locale.h>
+#include <time.h>
 
 
 TskAutoDbJNI::TskAutoDbJNI(){
@@ -13,28 +22,32 @@ TskAutoDbJNI::TskAutoDbJNI(){
 }
 
 
-TSK_RETVAL_ENUM TskAutoDbJNI::processFile(TSK_FS_FILE * fs_file,
-        const char *path){
-            if(m_cancelled)
-                return TSK_STOP;
-            else
-                return TskAutoDb::processFile(fs_file, path);
-    }
+TSK_RETVAL_ENUM 
+TskAutoDbJNI::processFile(TSK_FS_FILE * fs_file,
+                                          const char *path) {
+    if(m_cancelled)
+        return TSK_STOP;
+    else
+        return TskAutoDb::processFile(fs_file, path);
+}
 void TskAutoDbJNI::cancelProcess(){
     m_cancelled = true;
+}
+
+
+static void throwTskError(JNIEnv *env, const char *msg){
+    jclass exception;
+    exception = env->FindClass("org/sleuthkit/datamodel/TskException");
+
+    env->ThrowNew(exception, msg);
 }
 
 /* Throw and exception to java
  * @param the java environment to send the exception to
  */
 static void throwTskError(JNIEnv *env){
-
-    jclass exception;
-    exception = env->FindClass("org/sleuthkit/datamodel/TskException");
-
     const char* msg = tsk_error_get();
-    env->ThrowNew(exception, msg);
-
+    throwTskError(env, msg);
 }
 
 /*
@@ -239,6 +252,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat
 (JNIEnv * env, jclass obj, jlong vs_info, jlong vol_id){
     TSK_VS_INFO * vsInfo = (TSK_VS_INFO *) vs_info;
     TSK_VS_PART_INFO * volInfo;
+
     volInfo = (TSK_VS_PART_INFO *) tsk_vs_part_get(vsInfo, (TSK_PNUM_T) vol_id);
     if(volInfo == NULL){
         throwTskError(env);
@@ -259,6 +273,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
     fsInfo = tsk_fs_open_img(img, (TSK_OFF_T) fs_offset /** img->sector_size*/, TSK_FS_TYPE_DETECT);
     if(fsInfo == NULL){
         throwTskError(env);
+        return NULL;
     }
     return (jlong)fsInfo;
 }
@@ -272,6 +287,11 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat
 (JNIEnv * env, jclass obj, jlong fs_info, jlong file_id){
     TSK_FS_INFO * fs = (TSK_FS_INFO *) fs_info;
     TSK_FS_FILE * file;
+
+    if (fs->tag != TSK_FS_INFO_TAG) {
+        throwTskError(env, "openFile: Invalid FS_INFO object"); 
+        return NULL;
+    }
 
     file = tsk_fs_file_open_meta(fs, NULL, (TSK_INUM_T) file_id);
     if(file == NULL){
@@ -400,7 +420,12 @@ JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat
         throwTskError(env);
         return NULL;
     }
+
     TSK_FS_INFO * fs = (TSK_FS_INFO *) fs_info;
+    if (fs->tag != TSK_FS_INFO_TAG) {
+        throwTskError(env, "readFsNat: Invalid TSK_FS_INFO object");
+        return NULL;
+    }
 
     ssize_t retval = tsk_fs_read(fs, (TSK_OFF_T) offset, buf, (size_t) len);
 
@@ -437,6 +462,10 @@ JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileN
         return NULL;
     }
     TSK_FS_FILE * file = (TSK_FS_FILE *) file_info;
+    if (file->tag != TSK_FS_FILE_TAG) {
+        throwTskError(env, "readFile: Invalid TSK_FS_FILE address");
+        return NULL;
+    }
 
     ssize_t retval = tsk_fs_file_read(file, (TSK_OFF_T) offset, buf, (size_t) len, TSK_FS_FILE_READ_FLAG_NONE);
 
@@ -495,8 +524,12 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeVolNat
 * Signature: ()V
 */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFsNat
-(JNIEnv * env, jclass obj, jlong fs_info){
-    tsk_fs_close((TSK_FS_INFO *) fs_info);
+(JNIEnv * env, jclass obj, jlong a_fs_info){
+    TSK_FS_INFO *fs_info = (TSK_FS_INFO *)a_fs_info;
+    if (fs_info->tag != TSK_FS_INFO_TAG) {
+        return;
+    }
+    tsk_fs_close(fs_info);
 }
 
 /*
@@ -506,7 +539,11 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFsNat
 */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat
 (JNIEnv * env, jclass obj, jlong file_info){
-    tsk_fs_file_close((TSK_FS_FILE *) file_info);
+    TSK_FS_FILE *file = (TSK_FS_FILE *)file_info;
+    if (file->tag != TSK_FS_FILE_TAG) {
+        return;
+    }
+    tsk_fs_file_close(file);
 }
 
 /*
