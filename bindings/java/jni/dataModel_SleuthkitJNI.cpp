@@ -21,7 +21,13 @@ TskAutoDbJNI::TskAutoDbJNI(){
     TskAutoDb::TskAutoDb();
 }
 
-
+/**
+ * Overriden processFile method to stop processing files if the 
+ * cancelProcess method is called
+ * @return STOP if cancelled otherwise use return value from super class
+ * @param fs_file file details
+ * @param path full path of parent directory
+ */
 TSK_RETVAL_ENUM 
 TskAutoDbJNI::processFile(TSK_FS_FILE * fs_file,
                                           const char *path) {
@@ -30,6 +36,9 @@ TskAutoDbJNI::processFile(TSK_FS_FILE * fs_file,
     else
         return TskAutoDb::processFile(fs_file, path);
 }
+/**
+ * Cancel the running process
+ */
 void TskAutoDbJNI::cancelProcess(){
     m_cancelled = true;
 }
@@ -51,9 +60,13 @@ static void throwTskError(JNIEnv *env){
 }
 
 /*
- * Class:     datamodel_SleuthkitJNI
- * Method:    loaddb
- * Signature: (Ljava/lang/String;I)J
+ * Create a database for the given image (process cannot be cancelled)
+ * @return the 0 for success 1 for failure
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param paths array of strings from java, the paths to the image parts
+ * @param num_imgs number of image parts
+ * @param outDir the output directory
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_loaddbNat
 (JNIEnv *env, jclass obj, jobjectArray paths, jint num_imgs, jstring outDir){
@@ -104,9 +117,10 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_loaddbNat
 }
 
 /*
- * Class:     datamodel_SleuthkitJNI
- * Method:    loaddb
- * Signature: (Ljava/lang/String;I)J
+ * Create a loaddb process that can later be run with specific inputs
+ * @return the pointer to the process
+ * @param env pointer to java environment this was called from
+ * @param timezone timezone for the image
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_startloaddbNat
 (JNIEnv *env, jclass obj, jstring timezone){
@@ -124,10 +138,15 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_startloaddbNat
 }
 
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    runloaddbNat
-* Signature: (J)V
-*/
+ * Create a database for the given image using a pre-created process which can be cancelled
+ * @return the 0 for success 1 for failure
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param process the loaddb proces created by startloaddbNat
+ * @param paths array of strings from java, the paths to the image parts
+ * @param num_imgs number of image parts
+ * @param outDir the output directory
+ */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runloaddbNat
 (JNIEnv * env, jclass obj, jlong process, jobjectArray paths, jint num_imgs, jstring outDir){
     jboolean isCopy;
@@ -178,10 +197,11 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runloaddbNat
 }
 
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    runloaddbNat
-* Signature: (J)V
-*/
+ * Cancel the given loaddb process
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param process the loaddb proces created by startloaddbNat
+ */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_stoploaddbNat
 (JNIEnv * env, jclass obj, jlong process){
     ((TskAutoDbJNI*)process)->cancelProcess();  
@@ -190,12 +210,14 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_stoploaddbNat
 
 
 
-
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    openImage
-* Signature: (Ljava/lang/String;I)J
-*/
+ * Open an image pointer for the given image
+ * @return the created TSK_IMG_INFO pointer
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param paths the paths to the image parts
+ * @param num_imgs number of image parts
+ */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openImageNat
 (JNIEnv *env, jclass obj, jobjectArray paths, jint num_imgs){
     TSK_IMG_INFO * img_info;
@@ -226,95 +248,108 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openImageNat
     return (jlong)img_info;
 }
 
-/* 
-* Class:     datamodel_SleuthkitJNI
-* Method:    openVol
-* Signature: (J)J
-*/
+/*
+ * Open the volume system at the given offset
+ * @return the created TSK_VS_INFO pointer
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_img_info the pointer to the parent img object
+ * @param vsOffset the offset of the volume system in bytes
+ */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVsNat
-(JNIEnv * env, jclass obj, jlong img_info, jlong vsOffset){ 
-    TSK_IMG_INFO * img = (TSK_IMG_INFO *) img_info;
-    TSK_VS_INFO * vsInfo;
+(JNIEnv * env, jclass obj, jlong a_img_info, jlong vsOffset){ 
+    TSK_IMG_INFO * img_info = (TSK_IMG_INFO *) a_img_info;
+    TSK_VS_INFO * vs_info;
 
-    vsInfo = tsk_vs_open(img, vsOffset, TSK_VS_TYPE_DETECT);
-    if(vsInfo == NULL){
+    vs_info = tsk_vs_open(img_info, vsOffset, TSK_VS_TYPE_DETECT);
+    if(vs_info == NULL){
         throwTskError(env);
     }
-    return (jlong)vsInfo;
+    return (jlong)vs_info;
 }
 
 /*
- * Class:     datamodel_SleuthkitJNI
- * Method:    openVol
- * Signature: (JJ)J
+ * Open volume with the given id from the given volume system
+ * @return the created TSK_VS_PART_INFO pointer
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_vs_info the pointer to the parent vs object
+ * @param vol_id the id of the volume to get
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat
-(JNIEnv * env, jclass obj, jlong vs_info, jlong vol_id){
-    TSK_VS_INFO * vsInfo = (TSK_VS_INFO *) vs_info;
-    TSK_VS_PART_INFO * volInfo;
-
-    volInfo = (TSK_VS_PART_INFO *) tsk_vs_part_get(vsInfo, (TSK_PNUM_T) vol_id);
-    if(volInfo == NULL){
+(JNIEnv * env, jclass obj, jlong a_vs_info, jlong vol_id){
+    TSK_VS_INFO * vs_info = (TSK_VS_INFO *) a_vs_info;
+    TSK_VS_PART_INFO * vol_info;
+    vol_info = (TSK_VS_PART_INFO *) tsk_vs_part_get(vs_info, (TSK_PNUM_T) vol_id);
+    if(vol_info == NULL){
         throwTskError(env);
     }
-    return (jlong)volInfo;
+    return (jlong)vol_info;
 }
 
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    openFs
-* Signature: (J)J
-*/
+ * Open file system with the given offset
+ * @return the created TSK_FS_INFO pointer
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_img_info the pointer to the parent img object
+ * @param fs_offset the offset in bytes to the file system 
+ */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
-(JNIEnv * env, jclass obj, jlong img_info, jlong fs_offset){
-    TSK_IMG_INFO * img = (TSK_IMG_INFO *) img_info;
-    TSK_FS_INFO * fsInfo;
+(JNIEnv * env, jclass obj, jlong a_img_info, jlong fs_offset){
+    TSK_IMG_INFO * img = (TSK_IMG_INFO *) a_img_info;
+    TSK_FS_INFO * fs_info;
 
-    fsInfo = tsk_fs_open_img(img, (TSK_OFF_T) fs_offset /** img->sector_size*/, TSK_FS_TYPE_DETECT);
-    if(fsInfo == NULL){
+    fs_info = tsk_fs_open_img(img, (TSK_OFF_T) fs_offset /** img->sector_size*/, TSK_FS_TYPE_DETECT);
+    if(fs_info == NULL){
         throwTskError(env);
         return NULL;
     }
-    return (jlong)fsInfo;
+    return (jlong)fs_info;
 }
 
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    openFile
-* Signature: (JJ)J
-*/
+ * Open the file with the given id in the given file system
+ * @return the created TSK_FS_FILE pointer
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_fs_info the pointer to the parent file system object
+ * @param file_id id of the file to open 
+ */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat
-(JNIEnv * env, jclass obj, jlong fs_info, jlong file_id){
-    TSK_FS_INFO * fs = (TSK_FS_INFO *) fs_info;
-    TSK_FS_FILE * file;
+(JNIEnv * env, jclass obj, jlong a_fs_info, jlong file_id){
+    TSK_FS_INFO * fs_info = (TSK_FS_INFO *) a_fs_info;
+    TSK_FS_FILE * file_info;
 
-    if (fs->tag != TSK_FS_INFO_TAG) {
+    if (fs_info->tag != TSK_FS_INFO_TAG) {
         throwTskError(env, "openFile: Invalid FS_INFO object"); 
         return NULL;
     }
 
-    file = tsk_fs_file_open_meta(fs, NULL, (TSK_INUM_T) file_id);
-    if(file == NULL){
-        throwTskError(env);
+    file_info = tsk_fs_file_open_meta(fs_info, NULL, (TSK_INUM_T) file_id);    if(file_info == NULL){        throwTskError(env);
     }
-    return (jlong)file;
+    return (jlong)file_info;
 }
 
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    readImgNat
-* Signature: (JJ)[B
-*/
+ * Read bytes from the given image
+ * @return array of bytes read from the image
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_img_info the pointer to the image object
+ * @param offset the offset in bytes to start at
+ * @param len number of bytes to read
+ */
 JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat
-(JNIEnv * env, jclass obj, jlong img_info, jlong offset, jlong len){
+(JNIEnv * env, jclass obj, jlong a_img_info, jlong offset, jlong len){
     char * buf = (char *) tsk_malloc((size_t)len);
     if(buf == NULL){
         throwTskError(env);
         return NULL;
     }
-    TSK_IMG_INFO * img = (TSK_IMG_INFO *) img_info;
+    TSK_IMG_INFO * img_info = (TSK_IMG_INFO *) a_img_info;
 
-    ssize_t retval = tsk_img_read(img, (TSK_OFF_T) offset, buf, (size_t) len);
+    ssize_t retval = tsk_img_read(img_info, (TSK_OFF_T) offset, buf, (size_t) len);
 
     if (retval != -1){
         jbyteArray return_array = env->NewByteArray(retval);
@@ -337,20 +372,24 @@ JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNa
 }
  
 /*
- * Class:     datamodel_SleuthkitJNI
- * Method:    readVsNat
- * Signature: (JJJ)[B
+ * Read bytes from the given volume system
+ * @return array of bytes read from the volume system
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_vs_info the pointer to the volume system object
+ * @param offset the offset in bytes to start at
+ * @param len number of bytes to read
  */
 JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat
-(JNIEnv * env, jclass obj, jlong vs_info, jlong offset, jlong len){
+(JNIEnv * env, jclass obj, jlong a_vs_info, jlong offset, jlong len){
     char * buf = (char *) tsk_malloc((size_t) len);
     if(buf == NULL){
         throwTskError(env);
         return NULL;
     }
-    TSK_VS_INFO * vs = (TSK_VS_INFO *) vs_info;
+    TSK_VS_INFO * vs_info = (TSK_VS_INFO *) a_vs_info;
 
-    ssize_t retval = tsk_vs_read_block(vs, (TSK_DADDR_T) offset, buf, (size_t) len);
+    ssize_t retval = tsk_vs_read_block(vs_info, (TSK_DADDR_T) offset, buf, (size_t) len);
 
     if (retval != -1){
         jbyteArray return_array = env->NewByteArray(retval);
@@ -372,21 +411,25 @@ JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat
     return NULL;
 }
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    readVolNat
-* Signature: (JJJ)[B
-*/
+ * Read bytes from the given volume
+ * @return array of bytes read from the volume
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_vol_info the pointer to the volume object
+ * @param offset the offset in bytes to start at
+ * @param len number of bytes to read
+ */
 
 JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat
-(JNIEnv * env, jclass obj, jlong vol_info, jlong offset, jlong len){
+(JNIEnv * env, jclass obj, jlong a_vol_info, jlong offset, jlong len){
     char * buf = (char *) tsk_malloc((size_t) len);
     if(buf == NULL){
         throwTskError(env);
         return NULL;
     }
-    TSK_VS_PART_INFO * vs = (TSK_VS_PART_INFO *) vol_info;
+    TSK_VS_PART_INFO * vol_info = (TSK_VS_PART_INFO *) a_vol_info;
 
-    ssize_t retval = tsk_vs_part_read(vs, (TSK_OFF_T) offset, buf, (size_t) len);
+    ssize_t retval = tsk_vs_part_read(vol_info, (TSK_OFF_T) offset, buf, (size_t) len);
 
     if (retval != -1){
         jbyteArray return_array = env->NewByteArray(retval);
@@ -409,25 +452,28 @@ JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNa
 }
 
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    readFsNat
-* Signature: (JJJ)[B
-*/
+ * Read bytes from the given file system
+ * @return array of bytes read from the file system
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_fs_info the pointer to the file system object
+ * @param offset the offset in bytes to start at
+ * @param len number of bytes to read
+ */
 JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat
-(JNIEnv * env, jclass obj, jlong fs_info, jlong offset, jlong len){
+(JNIEnv * env, jclass obj, jlong a_fs_info, jlong offset, jlong len){
     char * buf = (char *) tsk_malloc((size_t) len);
     if(buf == NULL){
         throwTskError(env);
         return NULL;
     }
-
-    TSK_FS_INFO * fs = (TSK_FS_INFO *) fs_info;
-    if (fs->tag != TSK_FS_INFO_TAG) {
+    TSK_FS_INFO * fs_info = (TSK_FS_INFO *) a_fs_info;
+    if (fs_info->tag != TSK_FS_INFO_TAG) {
         throwTskError(env, "readFsNat: Invalid TSK_FS_INFO object");
         return NULL;
     }
 
-    ssize_t retval = tsk_fs_read(fs, (TSK_OFF_T) offset, buf, (size_t) len);
+    ssize_t retval = tsk_fs_read(fs_info, (TSK_OFF_T) offset, buf, (size_t) len);
 
     if (retval != -1){
         jbyteArray return_array = env->NewByteArray(retval);
@@ -450,24 +496,28 @@ JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat
 }
 
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    readFileNat
-* Signature: (JJJ)[B
-*/
+ * Read bytes from the given file
+ * @return array of bytes read from the file
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_file_info the pointer to the file object
+ * @param offset the offset in bytes to start at
+ * @param len number of bytes to read
+ */
 JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat
-(JNIEnv * env, jclass obj, jlong file_info, jlong offset, jlong len){
+(JNIEnv * env, jclass obj, jlong a_file_info, jlong offset, jlong len){
     char * buf = (char *) tsk_malloc((size_t) len);
     if(buf == NULL){
         throwTskError(env);
         return NULL;
     }
-    TSK_FS_FILE * file = (TSK_FS_FILE *) file_info;
-    if (file->tag != TSK_FS_FILE_TAG) {
+    TSK_FS_FILE * file_info = (TSK_FS_FILE *) a_file_info;
+    if (file_info->tag != TSK_FS_FILE_TAG) {
         throwTskError(env, "readFile: Invalid TSK_FS_FILE address");
         return NULL;
     }
 
-    ssize_t retval = tsk_fs_file_read(file, (TSK_OFF_T) offset, buf, (size_t) len, TSK_FS_FILE_READ_FLAG_NONE);
+    ssize_t retval = tsk_fs_file_read(file_info, (TSK_OFF_T) offset, buf, (size_t) len, TSK_FS_FILE_READ_FLAG_NONE);
 
     if (retval != -1){
         jbyteArray return_array = env->NewByteArray(retval);
@@ -490,39 +540,33 @@ JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileN
 }
 
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    closeImgNat
-* Signature: ()V
-*/
+ * Close the given image
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_img_info the pointer to the image object
+ */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeImgNat
-(JNIEnv * env, jclass obj, jlong img_info){
-    tsk_img_close((TSK_IMG_INFO *) img_info);
+(JNIEnv * env, jclass obj, jlong a_img_info){
+    tsk_img_close((TSK_IMG_INFO *) a_img_info);
 }
 
 /*
- * Class:     datamodel_SleuthkitJNI
- * Method:    closeVsNat
- * Signature: (J)V
+ * Close the given volume system
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_vs_info the pointer to the volume system object
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeVsNat
-(JNIEnv *env, jclass obj, jlong vsInfo){
-    tsk_vs_close((TSK_VS_INFO *) vsInfo);
+(JNIEnv *env, jclass obj, jlong a_vs_info){
+    tsk_vs_close((TSK_VS_INFO *) a_vs_info);
 }
 
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    closeVolNat
-* Signature: (J)V
-*/
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeVolNat
-(JNIEnv * env, jclass obj, jlong vol_info){
-}
-
-/*
-* Class:     datamodel_SleuthkitJNI
-* Method:    closeFsNat
-* Signature: ()V
-*/
+ * Close the given volume system
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_fs_info the pointer to the file system object
+ */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFsNat
 (JNIEnv * env, jclass obj, jlong a_fs_info){
     TSK_FS_INFO *fs_info = (TSK_FS_INFO *)a_fs_info;
@@ -533,24 +577,26 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFsNat
 }
 
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    closeFileNat
-* Signature: (J)V
-*/
+ * Close the given file
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_file_info the pointer to the file object
+ */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat
-(JNIEnv * env, jclass obj, jlong file_info){
-    TSK_FS_FILE *file = (TSK_FS_FILE *)file_info;
-    if (file->tag != TSK_FS_FILE_TAG) {
+(JNIEnv * env, jclass obj, jlong a_file_info){
+    TSK_FS_FILE *file_info = (TSK_FS_FILE *)a_file_info;
+    if (file_info->tag != TSK_FS_FILE_TAG) {
         return;
     }
-    tsk_fs_file_close(file);
+    tsk_fs_file_close(file_info);
 }
 
 /*
-* Class:     datamodel_SleuthkitJNI
-* Method:    getVersionNat
-* Signature: ()J
-*/
+ * Get the current Sleuthkit version number
+ * @return the version string
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ */
 JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getVersionNat
 (JNIEnv * env, jclass obj){
     const char * cversion = tsk_version_get_str();

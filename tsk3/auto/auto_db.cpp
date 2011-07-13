@@ -258,7 +258,13 @@ uint8_t
 #endif
 }
 
-uint8_t TskAutoDb::initDatabase(char **img_ptrs, int a_num)
+/**
+ * Creates the basic database tables for the created database (m_db) then populates the image tables
+ * @param img_ptrs The paths to the image splits
+ * @return Resturns 1 on error
+ */
+
+uint8_t TskAutoDb::initDatabase(const char * const img_ptrs[], int a_num)
 {
     char
         foo[1024];
@@ -347,7 +353,7 @@ uint8_t TskAutoDb::initDatabase(char **img_ptrs, int a_num)
     for (int i = 0; i < a_num; i++) {
         int
             a;
-        char *
+        const char *
             img_ptr = NULL;
         img_ptr = img_ptrs[i];
         // get only the file name (ignore the directory name)

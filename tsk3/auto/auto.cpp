@@ -73,7 +73,7 @@ uint8_t
  * @returns 1 on error, 0 on success
  */
 uint8_t
-    TskAuto::openImageUtf8(int a_numImg, const char *const a_images[],
+    TskAuto::openImageUtf8(int a_numImg, const char * const a_images[],
     TSK_IMG_TYPE_ENUM a_imgType, unsigned int a_sSize)
 {
     if (m_img_info)

@@ -1,22 +1,42 @@
-To build the java bindings first download the sqlitejdbc .jar files http://www.xerial.org/maven/repository/artifact/org/xerial/sqlite-jdbc/ (newest version is at the BOTTOM)
+Sleuth Kit Java Bindings
 
-Put the .jar files in sleuthkit/bindings/java/lib
+Overview
 
-use the Ant target build.xml in sleuthkit/bindings/java/  
+The core functionality of the Sleuth Kit is in the C/C++ library.
+The functionality is made available to Java applications by using
+JNI.  The theory is that a SQLite database is created by the C++
+library and then it is queried by native Java code. JNI methods
+exist to make the database and to read file content (and other raw
+data that is too large to fit into the database).
 
-To set up Ant download it from: http://ant.apache.org/ then follow the directions in the Ant Manual (http://ant.apache.org/manual/index.html) for installation
+To use the Java bindings, you must have the Sleuth Kit datamodel
+JAR file compiled and have compiled the associated dynamic library
+from the C/C++ code.
 
-To build the .dll build the win32 visual studio project. You will need to have a version of JDK for the .dll to build. You will need to set the JDK_HOME environment variable If it is not already set. 
 
-To use these bindings you will need to move the .dll to the appropriate location to be found by your java compiler. This will be specific to your IDE or should be specified on the command line if using a command linem compiler.
-To build the java bindings first download the sqlitejdbc .jar files http://www.xerial.org/maven/repository/artifact/org/xerial/sqlite-jdbc/ (newest version is at the BOTTOM)
+Building The Jar File
 
-Put the .jar files in sleuthkit/bindings/java/lib
+You will need:
+* The sqlitejdbc Jar file:
+    http://www.xerial.org/maven/repository/artifact/org/xerial/sqlite-jdbc/ (newest version is at the BOTTOM)
+* Java JDK
+* Ant
 
-use the Ant target build.xml in sleuthkit/bindings/java/  
+Place the JAR file in the 'lib' folder.
 
-To set up Ant download it from: http://ant.apache.org/ then follow the directions in the Ant Manual (http://ant.apache.org/manual/index.html) for installation
+Build with the default ant target (by running 'ant')
 
-To build the .dll build the win32 visual studio project. You will need to have a version of JDK for the .dll to build. You will need to set the JDK_HOME environment variable If it is not already set. 
 
-To use these bindings you will need to move the .dll to the appropriate location to be found by your java compiler. This will be specific to your IDE or should be specified on the command line if using a command linem compiler.
+Building the Dynamic Library (for JNI)
+
+To build the .dll build the win32 visual studio project. You will
+need to have a version of JDK for the .dll to build. You will need
+to set the JDK_HOME environment variable If it is not already set.
+
+
+Using the Jar file and Library
+
+Make sure the Jar file is in your CLASSPATH. The dynamic library
+will also need to be available when the program is run.  Typically
+that means that it must be in the path.
+

@@ -222,7 +222,7 @@ class TskAutoDb:public TskAuto {
     bool m_vsFound;
     bool m_volFound;
 
-    uint8_t initDatabase(char **, int);
+    uint8_t initDatabase(const char * const images[], int);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
