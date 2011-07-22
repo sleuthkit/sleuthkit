@@ -372,7 +372,7 @@ public class Sleuthkit {
 		Statement statement = con.createStatement();
 		ArrayList<FsContent> children = new ArrayList<FsContent>();
 		ResultSet rs = statement.executeQuery("SELECT * FROM tsk_fs_files " +
-				"WHERE fs_id = " + fs_id + " AND par_file_id = " + dir_id);
+				"WHERE fs_id = " + fs_id + " AND par_file_id = " + dir_id + " ORDER BY name");
 		if(!rs.next()){
 			rs.close();
 			statement.close();
