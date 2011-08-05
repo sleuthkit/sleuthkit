@@ -191,5 +191,26 @@ public class TskData {
 			return imgType;
 		}
 	};
+    
+    // Enum for Volume System Type.  
+    public enum TSK_VS_TYPE_ENUM {
+        TSK_VS_TYPE_DETECT(0x0000),    ///< Use autodetection methods
+        TSK_VS_TYPE_DOS(0x0001),       ///< DOS Partition table
+        TSK_VS_TYPE_BSD(0x0002),       ///< BSD Partition table
+        TSK_VS_TYPE_SUN(0x0004),       ///< Sun VTOC
+        TSK_VS_TYPE_MAC(0x0008),       ///< Mac partition table
+        TSK_VS_TYPE_GPT(0x0010),       ///< GPT partition table
+        TSK_VS_TYPE_DBFILLER(0x00F0),  ///< fake partition table type for loaddb (for images that do not have a volume system)
+        TSK_VS_TYPE_UNSUPP(0xFFFF);    ///< Unsupported
+        
+        private long vsType;
+        private TSK_VS_TYPE_ENUM(long type){
+            this.vsType = type;
+        }
+        
+        public long getVsType() {
+            return vsType;
+        }
+    };
 
 }
