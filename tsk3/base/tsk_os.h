@@ -120,6 +120,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define TSTRLEN	wcslen
 #define TSTRCMP	wcscmp
 #define TSTRNCMP	wcsncmp
+#define TSTRICMP wcsicmp
 #define TSTRNCPY wcsncpy
 #define TSTRNCAT wcsncat
 #define TSTRCHR	wcschr
@@ -168,6 +169,7 @@ typedef char TSK_TCHAR;         ///< Character data type that is UTF-16 (wchar_t
 #define TSTRLEN	strlen
 #define TSTRCMP	strcmp
 #define TSTRNCMP strncmp
+#define TSTRICMP strcasecmp
 #define TSTRNCPY strncpy
 #define TSTRNCAT strncat
 #define TSTRCHR	strchr

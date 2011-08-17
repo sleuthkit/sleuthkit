@@ -33,4 +33,5 @@
 #endif
 extern void *tsk_img_malloc(size_t);
 extern void tsk_img_free(void *);
+extern TSK_TCHAR **tsk_img_findFiles(const TSK_TCHAR *a_startingName, int *a_numFound);
 #endif

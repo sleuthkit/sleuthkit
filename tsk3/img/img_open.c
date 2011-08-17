@@ -168,6 +168,8 @@ tsk_img_open(int num_img,
         if (img_set != NULL)
             return img_set;
 
+        // @@@ NEED to modify this so that we find addtl. split images. 
+        // REMOVE NOTION of sing / split RAW.  Just a single object. 
         /* We'll use the raw format */
         if (num_img == 1) {
             if ((img_info = raw_open(images[0], a_ssize)) != NULL) {

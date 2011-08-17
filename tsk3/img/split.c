@@ -335,14 +335,14 @@ split_close(TSK_IMG_INFO * img_info)
  * \internal
  * Open the set of disk images as a set of split raw images
  *
- * @param num_img Number of images in set
- * @param images List of disk image paths (in sorted order)
+ * @param a_num_img Number of images in set
+ * @param a_images List of disk image paths (in sorted order)
  * @param a_ssize Size of device sector in bytes (or 0 for default)
  *
  * @return NULL on error
  */
 TSK_IMG_INFO *
-split_open(int num_img, const TSK_TCHAR * const images[],
+split_open(int a_num_img, const TSK_TCHAR * const a_images[],
     unsigned int a_ssize)
 {
     IMG_SPLIT_INFO *split_info;
@@ -365,9 +365,36 @@ split_open(int num_img, const TSK_TCHAR * const images[],
     if (a_ssize)
         img_info->sector_size = a_ssize;
 
-    /* Open the files */
+    // see if there are more of them...
+    if (a_num_img == 1) {
+        if ((split_info->images = tsk_img_findFiles(a_images[0], &split_info->num_img)) == NULL) {
+            free(split_info);            
+            return NULL;            
+        }        
+    }
+    else {
+        split_info->num_img = a_num_img;
+        split_info->images = (TSK_TCHAR **) tsk_malloc(sizeof(TSK_TCHAR *) * a_num_img);
+        if (split_info->images == NULL) {
+            free(split_info);
+            return NULL;
+        }
+        
+        for (i=0; i < split_info->num_img; i++) {
+            size_t len = TSTRLEN(a_images[i]);
+            split_info->images[i] = (TSK_TCHAR *) tsk_malloc(sizeof(TSK_TCHAR) * (len+1));
+            if(split_info->images == NULL){
+                free(split_info->images);
+                free(split_info);
+                return NULL;
+            }
+            TSTRNCPY(split_info->images[i], a_images[i], len);
+        }        
+    }
+
+    /* Collect some stats on the files */
     if ((split_info->cptr =
-            (int *) tsk_malloc(num_img * sizeof(int))) == NULL) {
+            (int *) tsk_malloc(split_info->num_img * sizeof(int))) == NULL) {
         tsk_img_free(split_info);
         return NULL;
     }
@@ -377,53 +404,27 @@ split_open(int num_img, const TSK_TCHAR * const images[],
     split_info->next_slot = 0;
 
     split_info->max_off =
-        (TSK_OFF_T *) tsk_malloc(num_img * sizeof(TSK_OFF_T));
+        (TSK_OFF_T *) tsk_malloc(split_info->num_img * sizeof(TSK_OFF_T));
     if (split_info->max_off == NULL) {
         free(split_info->cptr);
         tsk_img_free(split_info);
         return NULL;
     }
     img_info->size = 0;
-    
-    split_info->num_img = num_img;
-    
-    split_info->images = (TSK_TCHAR **) tsk_malloc(sizeof(TSK_TCHAR *) * num_img);
-    if(split_info->images == NULL){
-        free(split_info->max_off);
-        free(split_info->cptr);
-        free(split_info);
-        return NULL;
-    }
-    for(i=0; i < num_img; i++){
-        size_t len = TSTRLEN(images[i]);
-        split_info->images[i] = (TSK_TCHAR *) tsk_malloc(sizeof(TSK_TCHAR) * (len+1));
-        if(split_info->images == NULL){
-            while(i > 0){
-                i--;
-                free(split_info->images[i]);
-            }
-            free(split_info->images);
-            free(split_info->max_off);
-            free(split_info->cptr);
-            free(split_info);
-            return NULL;
-        }
-        TSTRNCPY(split_info->images[i], images[i], len);
-    }
 
     /* Get size info for each file - we do not open each one because that
      * could cause us to run out of file decsriptors when we only need a few.
      * The descriptors are opened as needed
      */
-    for (i = 0; i < num_img; i++) {
+    for (i = 0; i < split_info->num_img; i++) {
         struct STAT_STR sb;
 
         split_info->cptr[i] = -1;
-        if (TSTAT(images[i], &sb) < 0) {
+        if (TSTAT(split_info->images[i], &sb) < 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_STAT);
             tsk_error_set_errstr("split_open - %" PRIttocTSK " - %s",
-                images[i], strerror(errno));
+                split_info->images[i], strerror(errno));
             free(split_info->max_off);
             free(split_info->cptr);
             tsk_img_free(split_info);
@@ -433,7 +434,7 @@ split_open(int num_img, const TSK_TCHAR * const images[],
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "split_open: image %" PRIttocTSK " is a directory\n",
-                    images[i]);
+                    split_info->images[i]);
 
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
@@ -452,7 +453,7 @@ split_open(int num_img, const TSK_TCHAR * const images[],
             tsk_fprintf(stderr,
                 "split_open: %d  size: %" PRIuOFF "  max offset: %"
                 PRIuOFF "  Name: %" PRIttocTSK "\n", i, sb.st_size,
-                split_info->max_off[i], images[i]);
+                split_info->max_off[i], split_info->images[i]);
     }
 
     return img_info;
