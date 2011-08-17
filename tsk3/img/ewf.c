@@ -71,9 +71,14 @@ ewf_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 static void
 ewf_image_close(TSK_IMG_INFO * img_info)
 {
+    int i;
     IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *) img_info;
 
     libewf_close(ewf_info->handle);
+    for (i = 0; i < ewf_info->num_imgs; i++) {
+        free(ewf_info->images[i]);
+    }
+    free(ewf_info->images);
     free(img_info);
 }
 
@@ -124,7 +129,7 @@ img_file_header_signature_ncmp(const char *filename,
 
 
 TSK_IMG_INFO *
-ewf_open(int num_img, const TSK_TCHAR * const images[],
+ewf_open(int a_num_img, const TSK_TCHAR * const a_images[],
     unsigned int a_ssize)
 {
     IMG_EWF_INFO *ewf_info;
@@ -140,13 +145,46 @@ ewf_open(int num_img, const TSK_TCHAR * const images[],
 
     img_info = (TSK_IMG_INFO *) ewf_info;
 
+
+    // See if they specified only the first of the set...
+    if (a_num_img == 1) {
+        if ((ewf_info->images =
+                tsk_img_findFiles(a_images[0],
+                    &ewf_info->num_imgs)) == NULL) {
+            free(ewf_info);
+            return NULL;
+        }
+    }
+    else {
+        int i;
+        ewf_info->num_imgs = a_num_img;
+        if ((ewf_info->images =
+                (TSK_TCHAR **) tsk_malloc(a_num_img *
+                    sizeof(TSK_TCHAR *))) == NULL) {
+            free(ewf_info);
+            return NULL;
+        }
+        for (i = 0; i < a_num_img; i++) {
+            if ((ewf_info->images[i] =
+                    (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
+                            1) * sizeof(TSK_TCHAR))) == NULL) {
+                free(ewf_info);
+                return NULL;
+            }
+            TSTRNCPY(ewf_info->images[i], a_images[i],
+                TSTRLEN(a_images[i]) + 1);
+        }
+    }
+
+
+
     /* check the magic before we call the library open */
     //if (img_file_header_signature_ncmp(images[0],
     //        "\x45\x56\x46\x09\x0d\x0a\xff\x00", 8) != 1) {
 #if defined (TSK_WIN32)
-    if (libewf_check_file_signature_wide(images[0]) == 0) {
+    if (libewf_check_file_signature_wide(ewf_info->images[0]) == 0) {
 #else
-    if (libewf_check_file_signature(images[0]) == 0) {
+    if (libewf_check_file_signature(ewf_info->images[0]) == 0) {
 #endif
         tsk_error_reset();
         tsk_errno = TSK_ERR_IMG_MAGIC;
@@ -160,16 +198,19 @@ ewf_open(int num_img, const TSK_TCHAR * const images[],
 
 #if defined (TSK_WIN32)
     ewf_info->handle =
-        libewf_open_wide((wchar_t * const *) images, num_img, LIBEWF_OPEN_READ);
+        libewf_open_wide((wchar_t * const *) ewf_info->images,
+        ewf_info->num_imgs, LIBEWF_OPEN_READ);
 #else
     ewf_info->handle =
-        libewf_open((char *const *) images, num_img, LIBEWF_OPEN_READ);
+        libewf_open((char *const *) ewf_info->images, ewf_info->num_imgs,
+        LIBEWF_OPEN_READ);
 #endif
     if (ewf_info->handle == NULL) {
         tsk_error_reset();
         tsk_errno = TSK_ERR_IMG_OPEN;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
-            "ewf_open file: %" PRIttocTSK ": Error opening", images[0]);
+            "ewf_open file: %" PRIttocTSK ": Error opening",
+            ewf_info->images[0]);
         free(ewf_info);
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening EWF file\n");
@@ -191,7 +232,7 @@ ewf_open(int num_img, const TSK_TCHAR * const images[],
         tsk_errno = TSK_ERR_IMG_OPEN;
         snprintf(tsk_errstr, TSK_ERRSTR_L,
             "ewf_open file: %" PRIttocTSK ": Error getting size of image",
-            images[0]);
+            ewf_info->images[0]);
         free(ewf_info);
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of EWF file\n");

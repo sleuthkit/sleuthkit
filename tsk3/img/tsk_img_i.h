@@ -32,4 +32,6 @@
 #define O_BINARY 0
 #endif
 
+extern TSK_TCHAR **tsk_img_findFiles(const TSK_TCHAR *a_startingName, int *a_numFound);
+
 #endif

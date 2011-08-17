@@ -37,6 +37,8 @@ extern "C" {
         LIBEWF_HANDLE *handle;
         char md5hash[33];
         int md5hash_isset;
+        TSK_TCHAR **images;
+        int num_imgs;
     } IMG_EWF_INFO;
 
 #ifdef __cplusplus
