@@ -237,6 +237,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\tsk3\img\mult_files.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\tsk3\img\split.c"
 				>
 			</File>
