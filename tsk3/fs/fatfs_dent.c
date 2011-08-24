@@ -278,6 +278,9 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     strncat(fs_name->name, volstr,
                         FATFS_MAXNAMLEN_UTF8 - a);
                 }
+
+                // make sure we only copied ASCII in
+                fatfs_cleanup_ascii(fs_name->name);
             }
 
             /* A short (8.3) entry */
@@ -367,6 +370,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     }
                 }
                 name_ptr[a] = '\0';
+                //make sure the short name has only ASCII
+                fatfs_cleanup_ascii(name_ptr);
             }
 
             /* file type: FAT only knows DIR and FILE */
