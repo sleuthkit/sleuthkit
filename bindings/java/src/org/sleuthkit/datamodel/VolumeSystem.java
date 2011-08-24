@@ -143,4 +143,9 @@ public class VolumeSystem implements Content{
 	public void finalize(){
 		SleuthkitJNI.closeVs(volumeSystemHandle);
 	}
+
+	@Override
+	public <T> T accept(ContentVisitor<T> v) {
+		return v.visit(this);
+	}
 }

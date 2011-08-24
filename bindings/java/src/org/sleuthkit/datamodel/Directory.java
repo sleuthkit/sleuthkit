@@ -106,4 +106,9 @@ public class Directory extends FsContent{
 		content = db.getChildren(file_id, fs_id, parentFileSystem);
 		return content;
 	}
+
+	@Override
+	public <T> T accept(ContentVisitor<T> v) {
+		return v.visit(this);
+	}
 }

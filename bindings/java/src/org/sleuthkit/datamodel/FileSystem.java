@@ -230,4 +230,9 @@ public class FileSystem implements Content{
 			SleuthkitJNI.closeFs(filesystemHandle);
 		}
 	}
+
+    @Override
+    public <T> T accept(ContentVisitor<T> v) {
+        return v.visit(this);
+    }
 }

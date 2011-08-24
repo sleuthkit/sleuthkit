@@ -1,0 +1,28 @@
+<ivy-module version="2.0">
+    <info organisation="org.sleuthkit" module="datamodel"/>
+    <dependencies>
+		<dependency org="junit" name="junit" rev="4.8.2"/>
+		<dependency org="com.googlecode.java-diff-utils" name="diffutils" rev="1.2.1"/>
+    </dependencies>
+</ivy-module>
+<ivy-module version="2.0">
+    <info organisation="org.sleuthkit" module="datamodel"/>
+    <dependencies>
+		<dependency org="junit" name="junit" rev="4.8.2"/>
+		<dependency org="com.googlecode.java-diff-utils" name="diffutils" rev="1.2.1"/>
+    </dependencies>
+</ivy-module>
+<ivy-module version="2.0">
+    <info organisation="org.sleuthkit" module="datamodel"/>
+    <dependencies>
+		<dependency org="junit" name="junit" rev="4.8.2"/>
+		<dependency org="com.googlecode.java-diff-utils" name="diffutils" rev="1.2.1"/>
+    </dependencies>
+</ivy-module>
+<ivy-module version="2.0">
+    <info organisation="org.sleuthkit" module="datamodel"/>
+    <dependencies>
+		<dependency org="junit" name="junit" rev="4.8.2"/>
+		<dependency org="com.googlecode.java-diff-utils" name="diffutils" rev="1.2.1"/>
+    </dependencies>
+</ivy-module>

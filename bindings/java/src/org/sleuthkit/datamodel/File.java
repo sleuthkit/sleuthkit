@@ -81,6 +81,9 @@ public class File extends FsContent{
 		return true;
 	}
 
-
+    @Override
+    public <T> T accept(ContentVisitor<T> v) {
+        return v.visit(this);
+    }
 }
 

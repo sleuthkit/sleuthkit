@@ -37,4 +37,12 @@ public interface Content {
 	 * @return size of the content
 	 */
 	public long getSize();
+
+	/**
+	 * visitor pattern support
+	 * @param <T> visitor return type
+	 * @param v visitor
+	 * @return visitor return value
+	 */
+	public <T> T accept(ContentVisitor<T> v);
 }

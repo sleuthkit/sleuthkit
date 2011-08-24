@@ -207,4 +207,9 @@ public class Volume implements Content{
 
 		return result;
 	}
+
+	@Override
+	public <T> T accept(ContentVisitor<T> v) {
+		return v.visit(this);
+	}
 }

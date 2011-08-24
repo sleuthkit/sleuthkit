@@ -22,7 +22,7 @@ package org.sleuthkit.datamodel;
  * generalized class for files and directories
  * @author alawrence
  */
-public class FsContent implements Content{
+public abstract class FsContent implements Content{
 
 	/*
 	 * database fields

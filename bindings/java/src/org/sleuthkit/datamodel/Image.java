@@ -220,4 +220,9 @@ public class Image implements Content {
 	public void closeConnection(){
 		db.closeConnection();
 	}
+
+	@Override
+	public <T> T accept(ContentVisitor<T> v) {
+		return v.visit(this);
+	}
 }
