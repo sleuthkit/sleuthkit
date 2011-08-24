@@ -72,12 +72,13 @@ extern "C" {
 #define TSK_IMG_INFO_CACHE_LEN  65536
 
     typedef struct TSK_IMG_INFO TSK_IMG_INFO;
+#define TSK_IMG_INFO_TAG 0x39204231
 
     /**
      * Created when a disk image has been opened and stores general information and handles.
      */
     struct TSK_IMG_INFO {
-
+        uint32_t tag;       ///< Set to TSK_IMG_INFO_TAG when struct is alloc
         TSK_IMG_TYPE_ENUM itype;        ///< Type of disk image format
         TSK_OFF_T size;         ///< Total size of image in bytes
         unsigned int sector_size;       ///< sector size of device in bytes (typically 512)

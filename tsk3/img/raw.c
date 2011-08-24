@@ -325,6 +325,7 @@ tsk_img_malloc(size_t a_len)
         return NULL;
     //init lock
     tsk_init_lock(&(imgInfo->cache_lock));
+    imgInfo->tag = TSK_IMG_INFO_TAG;
 
     return (void *) imgInfo;
 }
@@ -339,6 +340,7 @@ tsk_img_free(void *a_ptr)
 
     //deinit lock
     tsk_deinit_lock(&(imgInfo->cache_lock));
+    imgInfo->tag = 0;
 
     free(imgInfo);
 }
