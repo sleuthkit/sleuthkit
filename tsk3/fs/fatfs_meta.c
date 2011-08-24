@@ -253,6 +253,26 @@ attr2mode(uint16_t attr)
 }
 
 
+/** 
+ * Cleans up a char string so that it is only ASCII. We do this
+ * before we copy something into a TSK buffer that is supposed 
+ * to be UTF-8.  If it is not ASCII and it is from a single-byte
+ * data structure, then we we clean it up because we dont' know
+ * what the actual encoding is (or if it is corrupt). 
+ * @param name Name to cleanup
+ */
+void 
+fatfs_cleanup_ascii(char *name) 
+{
+    int i;
+    for (i = 0; name[i] != '\0'; i++) {
+        if ((unsigned char)(name[i]) > 0x7e) {
+            name[i] = '^';
+        }
+    }
+}
+
+
 /**
  * \internal
  * Copy the contents of a raw directry entry into a TSK_FS_INFO structure.
@@ -476,11 +496,7 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
          * copying it into a buffer that is supposed to be UTF-8 and
          * we don't know what encoding it is actually in or if it is 
          * simply junk. */
-        for (i = 0; fs_meta->name2->name[i] != '\0'; i++) {
-            if ((unsigned char)(fs_meta->name2->name[i]) > 0x7e) {
-                fs_meta->name2->name[i] = '^';
-            }
-        }
+        fatfs_cleanup_ascii(fs_meta->name2->name);
     }
     /* If the entry is a normal short entry, then copy the name
      * and add the '.' for the extension
@@ -516,11 +532,7 @@ fatfs_dinode_copy(FATFS_INFO * fatfs, TSK_FS_META * fs_meta,
          * copying it into a buffer that is supposed to be UTF-8 and
          * we don't know what encoding it is actually in or if it is 
          * simply junk. */
-        for (i = 0; fs_meta->name2->name[i] != '\0'; i++) {
-            if ((unsigned char)(fs_meta->name2->name[i]) > 0x7e) {
-                fs_meta->name2->name[i] = '^';
-            }
-        }
+        fatfs_cleanup_ascii(fs_meta->name2->name);
     }
 
     /* Clean up name to remove control characters */

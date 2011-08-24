@@ -379,6 +379,7 @@ extern "C" {
     extern int fatfs_name_cmp(TSK_FS_INFO *, const char *, const char *);
     extern uint8_t fatfs_dir_buf_add(FATFS_INFO * fatfs,
         TSK_INUM_T par_inum, TSK_INUM_T dir_inum);
+    extern void fatfs_cleanup_ascii(char *);
 
 
 #ifdef __cplusplus

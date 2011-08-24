@@ -371,6 +371,9 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     }
                 }
                 name_ptr[a] = '\0';
+
+                // make sure that only ASCII is in the short name
+                fatfs_cleanup_ascii(name_ptr);
             }
 
             /* file type: FAT only knows DIR and FILE */
