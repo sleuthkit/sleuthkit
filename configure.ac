@@ -8,6 +8,11 @@ AC_INIT(sleuthkit, 0.0.0)
 m4_include([ax_pthread.m4])
 # include the version from 1.12.1. This will work for 
 m4_include([cppunit.m4])
+m4_include([m4/ax_jni_include_dir.m4])
+m4_include([m4/ac_prog_javac_works.m4])
+m4_include([m4/ac_prog_javac.m4])
+
+
 AC_CONFIG_SRCDIR([tsk3/base/tsk_base.h])
 AM_CONFIG_HEADER([tsk3/tsk_config.h])
 AC_CONFIG_AUX_DIR(config)
@@ -141,6 +146,19 @@ AS_IF([test "x$with_libewf" != "xno"],
 # AC_SEARCH_LIBS(pthread_create, pthread)
 AC_SEARCH_LIBS(dlopen, dl)
 
+# Test for java/jni so that we can compile the java bindings
+AC_PROG_JAVAC
+if test "x$JAVAC" != x; then
+    AX_JNI_INCLUDE_DIR
+    for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
+    do
+        JNI_CPPFLAGS="$JNI_CPPFLAGS -I$JNI_INCLUDE_DIR"
+    done
+    # Export the paths so that the makefile gets them
+    AC_SUBST(JNI_CPPFLAGS, $JNI_CPPFLAGS)
+fi
+AM_CONDITIONAL([X_JNI],[test "x$JNI_CPPFLAGS" != x])
+
 AC_CONFIG_COMMANDS([tsk3/tsk_incs.h],
         [
           echo "#ifndef _TSK_INCS_H" > tsk3/tsk_incs.h
@@ -195,6 +213,7 @@ AC_CONFIG_FILES([Makefile
                  tests/Makefile
                  samples/Makefile
                  man/Makefile
+                 bindings/java/jni/Makefile
                  unit_tests/Makefile
                  unit_tests/base/Makefile])
 AC_OUTPUT

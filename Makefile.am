@@ -50,7 +50,10 @@ CLEANFILES = tsk3/tsk_incs.h
 if CPPUNIT
   UNIT_TESTS=unit_tests
 endif
-SUBDIRS = tsk3 tools tests samples man $(UNIT_TESTS)
+if X_JNI
+  JNI=bindings/java/jni
+endif
+SUBDIRS = tsk3 tools tests samples man $(UNIT_TESTS) $(JNI)
 
 nobase_include_HEADERS = tsk3/libtsk.h tsk3/tsk_incs.h \
     tsk3/base/tsk_base.h tsk3/base/tsk_os.h \
