@@ -163,9 +163,9 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_startloaddbNat
 (JNIEnv *env, jclass obj, jstring timezone){
     jboolean isCopy;
 
-    TSK_TCHAR envstr[32];
-    TSNPRINTF(envstr, 32, _TSK_T("TZ=%"PRIcTSK), (char *)env->GetStringUTFChars(timezone, &isCopy));
-    if (0 != PUTENV(envstr)) { 
+    char envstr[32];
+    snprintf(envstr, 32, "TZ=%s", env->GetStringUTFChars(timezone, &isCopy));
+    if (0 != putenv(envstr)) { 
         throwTskError(env, "Error setting timezone environment"); 
         return 1; 
     }

@@ -167,7 +167,7 @@ main(int argc, char **argv1)
             {
                 TSK_TCHAR envstr[32];
                 TSNPRINTF(envstr, 32, _TSK_T("TZ=%s"), OPTARG);
-                if (0 != PUTENV(envstr)) {
+                if (0 != TPUTENV(envstr)) {
                     tsk_fprintf(stderr, "error setting environment");
                     exit(1);
                 }

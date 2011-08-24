@@ -185,6 +185,10 @@
 				RelativePath="..\..\bindings\java\jni\dataModel_SleuthkitJNI.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\..\bindings\java\jni\tskAutoDbJNI.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

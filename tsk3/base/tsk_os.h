@@ -96,6 +96,7 @@ typedef int ssize_t;
 // remap some of the POSIX functions
 #define snprintf   _snprintf
 #define strcasecmp(string1, string2)	_stricmp(string1, string2)
+#define putenv _putenv
 
 #define roundup(x, y)	\
 	( ( ((x)+((y) - 1)) / (y)) * (y) )
@@ -120,7 +121,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define TSTRLEN	wcslen
 #define TSTRCMP	wcscmp
 #define TSTRNCMP	wcsncmp
-#define TSTRICMP wcsicmp
+#define TSTRICMP _wcsicmp
 #define TSTRNCPY wcsncpy
 #define TSTRNCAT wcsncat
 #define TSTRCHR	wcschr
@@ -129,7 +130,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define TATOI	_wtoi
 #define TFPRINTF fwprintf
 #define TSNPRINTF _snwprintf
-#define PUTENV	_wputenv
+#define TPUTENV	_wputenv
 #define TZSET	_tzset
 #define TSTAT _wstat
 
@@ -179,7 +180,7 @@ typedef char TSK_TCHAR;         ///< Character data type that is UTF-16 (wchar_t
 #define TFPRINTF fprintf
 #define TSNPRINTF snprintf
 
-#define PUTENV	putenv
+#define TPUTENV	putenv
 #define TZSET	tzset
 
 #define PRIcTSK _TSK_T("s")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer

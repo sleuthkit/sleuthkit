@@ -61,13 +61,13 @@ findFiles2(const TSK_TCHAR *a_baseName, const TSK_TCHAR *a_baseExt, TSK_TCHAR **
         
         // make the name
         if (isNumeric) {
-            TSNPRINTF(tmpName, 2048, "%s%.2d", a_baseName, i);
+            TSNPRINTF(tmpName, 2048, _TSK_T("%s%.2d"), a_baseName, i);
         }
         else {
             // The use of a_base_ext here is not entirely correct if they did not specify AA or aa... HACK
             TSK_TCHAR a = a_baseExt[0] + (i / 26);
             TSK_TCHAR b = a_baseExt[0] + (i % 26);
-            TSNPRINTF(tmpName, 2048, "%s%c%c", a_baseName, a, b);
+            TSNPRINTF(tmpName, 2048, _TSK_T("%s%c%c"), a_baseName, a, b);
         }
         
         // does the file exist?
@@ -143,13 +143,13 @@ tsk_img_findFiles(const TSK_TCHAR *a_startingName, int *a_numFound)
         
         // first lets get a count
         fileCount = 0;
-        if (findFiles2(baseName, "01", NULL, &fileCount)) {
+        if (findFiles2(baseName, _TSK_T("01"), NULL, &fileCount)) {
             free(baseName);
             return NULL;
         }
         
         if (fileCount == 99) {
-            if (findFiles2(baseName, "AA", NULL, &fileCount)) {
+            if (findFiles2(baseName, _TSK_T("AA"), NULL, &fileCount)) {
                 free(baseName);
                 return NULL;
             }
@@ -169,14 +169,14 @@ tsk_img_findFiles(const TSK_TCHAR *a_startingName, int *a_numFound)
         }
         
         *a_numFound = 0;
-        if (findFiles2(baseName, "01", retNames, a_numFound)) {
+        if (findFiles2(baseName, _TSK_T("01"), retNames, a_numFound)) {
             free(baseName);
             free(retNames);
             return NULL;
         }
         
         if (*a_numFound == 99) {
-            if (findFiles2(baseName, "AA", retNames, a_numFound)) {
+            if (findFiles2(baseName, _TSK_T("AA"), retNames, a_numFound)) {
                 free(baseName);
                 free(retNames);
                 return NULL;
