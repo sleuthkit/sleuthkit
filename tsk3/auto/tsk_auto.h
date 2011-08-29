@@ -189,8 +189,46 @@ class TskAuto {
 
 typedef struct sqlite3 sqlite3;
 
+
 /** \internal
- * C++ class that implements TskAuto to load file metadata into a SQLite database. 
+ * C++ class that wraps the specifics of interacting with a SQLite database for TskAutoDb 
+ */
+class TskImgDBSqlite {
+  public:
+    //TskImgDBSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag);
+    TskImgDBSqlite(const char * a_dbFilePathUtf8, bool a_blkMapFlag);
+    ~TskImgDBSqlite();
+    int open();
+    int close();
+    int initialize();
+    int createParentDirIndex();
+    int addImageInfo(int type, int size);
+    int addImageName(char const * imgName);
+    int addVsInfo(const TSK_VS_INFO * vs_info);
+    int addVolumeInfo(const TSK_VS_PART_INFO * vs_part);
+    int addFsInfo(int volId, int fsId, const TSK_FS_INFO * fs_info);
+    int addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
+        const char *path, int fs_id);
+    int addFsBlockInfo(int a_fsId, uint64_t a_fileId, int a_sequence,
+        uint64_t a_blk_addr, uint64_t a_len, TSK_FS_ATTR_TYPE_ENUM a_attrType,
+        uint16_t a_attrId);
+    int begin();
+    int commit();
+    bool dbExist() const;
+
+  private:
+    int attempt_exec(const char *sql, const char *errfmt);
+    sqlite3 * m_db;
+    TSK_TCHAR m_dbFilePath[1024];
+    char m_dbFilePathUtf8[1024];
+    bool m_blkMapFlag;
+    bool m_utf8;
+};
+
+
+
+/** \internal
+ * C++ class that implements TskAuto to load file metadata into a database. 
  */
 class TskAutoDb:public TskAuto {
   public:
@@ -215,7 +253,7 @@ class TskAutoDb:public TskAuto {
     virtual void createBlockMap(bool flag);
 
   private:
-     sqlite3 * m_db;
+    TskImgDBSqlite * m_db;
     int m_curFsId;
     int m_curVsId;
     bool m_blkMapFlag;
@@ -227,8 +265,12 @@ class TskAutoDb:public TskAuto {
         const TSK_FS_ATTR *, const char *path);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
         const TSK_FS_ATTR * fs_attr, const char *path);
-    uint8_t createParentDirIndex();
 };
+
+
+
+
+
 
 #endif
 

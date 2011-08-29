@@ -221,6 +221,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\tsk3\auto\db_sqlite.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\tsk3\auto\sqlite3.c"
 				>
 			</File>
