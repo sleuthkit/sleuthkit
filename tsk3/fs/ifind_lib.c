@@ -235,6 +235,19 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
             return -1;
         }
 
+        /* Verify this is indeed a directory.  We had one reported
+         * problem where a file was a disk image and opening it as
+         * a directory found the directory entries inside of the file
+         * and this caused problems... */
+        if (fs_dir->fs_file->meta->type != TSK_FS_META_TYPE_DIR) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_GENFS);
+            tsk_error_set_errstr("Address %"PRIuINUM" is not for a directory\n",
+                    next_meta);
+            free(cpath);
+            return -1;
+        }
+
         // cycle through each entry
         for (i = 0; i < tsk_fs_dir_getsize(fs_dir); i++) {
 
