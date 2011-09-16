@@ -300,7 +300,7 @@ sub read_body {
         next unless ((defined $st_ino)    && ($st_ino    =~ /[\d-]+/));
         next unless ((defined $st_uid)    && ($st_uid    =~ /\d+/));
         next unless ((defined $st_gid)    && ($st_gid    =~ /\d+/));
-        next unless ((defined $st_size)   && ($st_gid    =~ /\d+/));
+        next unless ((defined $st_size)   && ($st_size    =~ /\d+/));
         next unless ((defined $st_mtime)  && ($st_mtime  =~ /\d+/));
         next unless ((defined $st_atime)  && ($st_atime  =~ /\d+/));
         next unless ((defined $st_ctime)  && ($st_ctime  =~ /\d+/));

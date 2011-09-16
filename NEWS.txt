@@ -12,6 +12,7 @@ New Features:
 Bug Fixes:
 - Added check to fatfs_open to compare first sectors of FAT if we used backup boot sector and verify it is FAT32.
 - More checks to make sure that FAT short names are valid ASCII
+- 3406523: Mactime size sanity check
 
 
 ---------------- VERSION 3.2.2 --------------
