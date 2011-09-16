@@ -8,6 +8,7 @@ New Features:
 - DOS partitions are loaded even if an extended partition fails to load
 - new TskAuto::findFilesInFs(TSK_FS_INFO *) method
 - Need to only specify first E01 file and the rest are found
+- Changed docs license to non-commercial
 
 Bug Fixes:
 - Added check to fatfs_open to compare first sectors of FAT if we used backup boot sector and verify it is FAT32.
