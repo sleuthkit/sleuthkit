@@ -112,6 +112,7 @@ extern "C" {
         char *buf, size_t len);
 
     // type conversion functions
+    extern TSK_IMG_TYPE_ENUM tsk_img_type_toid_utf8(const char *);
     extern TSK_IMG_TYPE_ENUM tsk_img_type_toid(const TSK_TCHAR *);
     extern const char *tsk_img_type_toname(TSK_IMG_TYPE_ENUM);
     extern const char *tsk_img_type_todesc(TSK_IMG_TYPE_ENUM);

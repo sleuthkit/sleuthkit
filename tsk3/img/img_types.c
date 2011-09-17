@@ -51,6 +51,29 @@ static IMG_TYPES img_open_table[] = {
  * associated type ID.  This is used by the TSK command line tools to
  * parse the type given on the command line. 
  *
+ * @param str String of image format type, always UTF-8
+ * @return ID of image type
+ */
+TSK_IMG_TYPE_ENUM
+tsk_img_type_toid_utf8(const char * str)
+{
+    IMG_TYPES *sp;
+
+    for (sp = img_open_table; sp->name; sp++) {
+        if (strcmp(str, sp->name) == 0) {
+            return sp->code;
+        }
+    }
+    return TSK_IMG_TYPE_UNSUPP;
+}
+
+
+/**
+ * \ingroup imglib
+ * Parses a string that specifies an image format to determine the 
+ * associated type ID.  This is used by the TSK command line tools to
+ * parse the type given on the command line. 
+ *
  * @param str String of image format type
  * @return ID of image type
  */
@@ -58,20 +81,15 @@ TSK_IMG_TYPE_ENUM
 tsk_img_type_toid(const TSK_TCHAR * str)
 {
     char tmp[16];
-    IMG_TYPES *sp;
     int i;
+
     // convert to char
     for (i = 0; i < 15 && str[i] != '\0'; i++) {
         tmp[i] = (char) str[i];
     }
     tmp[i] = '\0';
 
-    for (sp = img_open_table; sp->name; sp++) {
-        if (strcmp(tmp, sp->name) == 0) {
-            return sp->code;
-        }
-    }
-    return TSK_IMG_TYPE_UNSUPP;
+    return tsk_img_type_toid(tmp);
 }
 
 

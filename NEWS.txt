@@ -7,6 +7,7 @@ New Features:
 - Added multithreaded support
 - Added C++ wrapper classes
 - Added JNI bindings / Java data model classes
+- 3314047: Added utf8-specific versions of 'toid' methods for img,vs,fs types
 
 ---------------- VERSION 3.2.3 --------------
 New Features:

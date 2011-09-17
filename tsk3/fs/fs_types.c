@@ -75,13 +75,39 @@ static FS_TYPES fs_legacy_type_table[] = {
  * \ingroup fslib
  * Parse a string with the file system type and return its internal ID.
  *
+ * @param str String to parse, always UTF-8.
+ * @returns ID of string (or unsupported if the name is unknown)
+ */
+TSK_FS_TYPE_ENUM
+tsk_fs_type_toid_utf8(const char * str)
+{
+    FS_TYPES *sp;
+
+    for (sp = fs_type_table; sp->name; sp++) {
+        if (strcmp(str, sp->name) == 0) {
+            return sp->code;
+        }
+    }
+    // look at the legacy names
+    for (sp = fs_legacy_type_table; sp->name; sp++) {
+        if (strcmp(str, sp->name) == 0) {
+            return sp->code;
+        }
+    }
+    return TSK_FS_TYPE_UNSUPP;
+}
+
+
+/**
+ * \ingroup fslib
+ * Parse a string with the file system type and return its internal ID.
+ *
  * @param str String to parse.
  * @returns ID of string (or unsupported if the name is unknown)
  */
 TSK_FS_TYPE_ENUM
 tsk_fs_type_toid(const TSK_TCHAR * str)
 {
-    FS_TYPES *sp;
     char tmp[16];
     int i;
 
@@ -91,18 +117,7 @@ tsk_fs_type_toid(const TSK_TCHAR * str)
     }
     tmp[i] = '\0';
 
-    for (sp = fs_type_table; sp->name; sp++) {
-        if (strcmp(tmp, sp->name) == 0) {
-            return sp->code;
-        }
-    }
-    // look at the legacy names
-    for (sp = fs_legacy_type_table; sp->name; sp++) {
-        if (strcmp(tmp, sp->name) == 0) {
-            return sp->code;
-        }
-    }
-    return TSK_FS_TYPE_UNSUPP;
+    return tsk_fs_type_toid_utf8(tmp);
 }
 
 

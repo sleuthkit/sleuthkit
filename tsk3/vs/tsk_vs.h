@@ -114,6 +114,7 @@ extern "C" {
 
     // to and from type ids and names
     extern TSK_VS_TYPE_ENUM tsk_vs_type_toid(const TSK_TCHAR *);
+    extern TSK_VS_TYPE_ENUM tsk_vs_type_toid_utf8(const char *);
     extern const char *tsk_vs_type_toname(TSK_VS_TYPE_ENUM);
     extern const char *tsk_vs_type_todesc(TSK_VS_TYPE_ENUM);
     extern TSK_VS_TYPE_ENUM tsk_vs_type_supported();

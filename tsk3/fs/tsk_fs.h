@@ -919,6 +919,7 @@ extern "C" {
         TSK_FS_TYPE_ENUM);
     extern void tsk_fs_close(TSK_FS_INFO *);
 
+    extern TSK_FS_TYPE_ENUM tsk_fs_type_toid_utf8(const char *);
     extern TSK_FS_TYPE_ENUM tsk_fs_type_toid(const TSK_TCHAR *);
     extern void tsk_fs_type_print(FILE *);
     extern const char *tsk_fs_type_toname(TSK_FS_TYPE_ENUM);

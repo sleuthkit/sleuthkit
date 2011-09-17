@@ -44,7 +44,6 @@ tsk_vs_type_toid(const TSK_TCHAR * str)
 {
     char tmp[16];
     int i;
-    VS_TYPES *types;
 
     // convert to char
     for (i = 0; i < 15 && str[i] != '\0'; i++) {
@@ -52,8 +51,25 @@ tsk_vs_type_toid(const TSK_TCHAR * str)
     }
     tmp[i] = '\0';
 
+    return tsk_vs_type_toid_utf8(tmp);
+}
+
+
+/**
+ * \ingroup vslib
+ * Parse a string with the volume system type and return its internal ID.
+ *
+ * @param str String to parse (always in UTF-8).
+ * @returns ID of string (or unsupported if the name is unknown)
+ */
+TSK_VS_TYPE_ENUM
+tsk_vs_type_toid_utf8(const char * str)
+{
+    int i;
+    VS_TYPES *types;
+
     for (types = vs_open_table; types->name; types++) {
-        if (strcmp(tmp, types->name) == 0) {
+        if (strcmp(str, types->name) == 0) {
             return types->code;
         }
     }
