@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2008 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
@@ -212,15 +212,9 @@ main(int argc, char ** argv1)
     else {
         char buf[100];
 
-#ifdef TSK_WIN32
-        HANDLE handle = NULL;
-#else
-        FILE *handle = NULL;
-#endif
-
-
         /* If the file was specified, use that - otherwise stdin */
 #ifdef TSK_WIN32
+        HANDLE handle = NULL;
         if (lookup_file != NULL) {
             if ((handle = CreateFile(lookup_file, GENERIC_READ,
                                      FILE_SHARE_READ, 0, OPEN_EXISTING, 0,
@@ -234,6 +228,7 @@ main(int argc, char ** argv1)
             handle = GetStdHandle(STD_INPUT_HANDLE);
         }
 #else
+        FILE *handle = NULL;
         if (lookup_file != NULL) {
             handle = fopen(lookup_file, "r");
             if (!handle) {
@@ -250,11 +245,27 @@ main(int argc, char ** argv1)
         while (1) {
             int retval;
 #ifdef TSK_WIN32
-            DWORD nread;
+            int done = 0;
+            // win32 doesn't have a fgets equivalent, so we make an equivalent one
+            for (int i = 0; i < 100; i++) {
+                DWORD nread;
 
-            if (FALSE == ReadFile(handle, buf, (DWORD) 100, &nread, NULL)) {
-                break;
+                if (FALSE == ReadFile(handle, &buf[i], (DWORD) 1, &nread, NULL)) {
+                    done = 1;
+                    break;
+                }
+                // skip the windows CR
+                else if (buf[i] == '\r') {
+                    i--;
+                    continue;
+                }
+                else if (buf[i] == '\n') {
+                    break;
+                }
             }
+            
+            if (done)
+                break;
 #else
             if (NULL == fgets(buf, 100, handle)) {
                 break;
@@ -279,6 +290,7 @@ main(int argc, char ** argv1)
                 print_notfound(buf);
             }
         }
+        
 #ifdef TSK_WIN32
         if (lookup_file != NULL)
             CloseHandle(handle);
@@ -286,6 +298,7 @@ main(int argc, char ** argv1)
         if (lookup_file != NULL)
             fclose(handle);
 #endif
+        
     }
 
     tsk_hdb_close(hdb_info);
