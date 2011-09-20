@@ -5,9 +5,9 @@
 AC_PREREQ(2.59)
 
 AC_INIT(sleuthkit, 0.0.0)
-m4_include([ax_pthread.m4])
+m4_include([m4/ax_pthread.m4])
 # include the version from 1.12.1. This will work for 
-m4_include([cppunit.m4])
+m4_include([m4/cppunit.m4])
 m4_include([m4/ax_jni_include_dir.m4])
 m4_include([m4/ac_prog_javac_works.m4])
 m4_include([m4/ac_prog_javac.m4])
