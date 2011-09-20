@@ -8,6 +8,7 @@ New Features:
 - Added C++ wrapper classes
 - Added JNI bindings / Java data model classes
 - 3314047: Added utf8-specific versions of 'toid' methods for img,vs,fs types
+- 3184429: More consistent printing of unset times (all zerso instead of 1970)
 
 ---------------- VERSION 3.2.3 --------------
 New Features:
@@ -23,6 +24,8 @@ Bug Fixes:
 - More checks to make sure that FAT short names are valid ASCII
 - 3406523: Mactime size sanity check
 - 3393960: hfind reading of Windows input file
+- 3316603: Error reading last blocks of RAW CD images
+
 
 
 ---------------- VERSION 3.2.2 --------------
