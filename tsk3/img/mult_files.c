@@ -132,7 +132,8 @@ tsk_img_findFiles(const TSK_TCHAR *a_startingName, int *a_numFound)
     }
 
     // E01 file
-    if (TSTRICMP(&a_startingName[TSTRLEN(a_startingName)-4], _TSK_T(".e01")) == 0) {
+    if ((TSTRICMP(&a_startingName[TSTRLEN(a_startingName)-4], _TSK_T(".e01")) == 0)  || 
+        (TSTRICMP(&a_startingName[TSTRLEN(a_startingName)-4], _TSK_T(".s01")) == 0)) {
         TSK_TCHAR *baseName;
         int fileCount = 0;
         
