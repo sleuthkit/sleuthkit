@@ -2457,6 +2457,7 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     hfs_plus_vh *sb = hfs->fs;
     time_t mac_time;
     TSK_INUM_T inode;
+    char timeBuf[32];
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "hfs_fstat: called\n");
@@ -2539,17 +2540,20 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     // Dates
     // (creation date is in local time zone, not UTC, according to TN 1150)
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->cr_date));
-    tsk_fprintf(hFile, "\nCreation Date: \t%s",
-        asctime(gmtime(&mac_time)));
+    tsk_fprintf(hFile, "\nCreation Date: \t%s\n",
+        tsk_fs_time_to_str(mktime(gmtime(&mac_time)), timeBuf));
 
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->m_date));
-    tsk_fprintf(hFile, "Last Written Date: \t%s", ctime(&mac_time));
+    tsk_fprintf(hFile, "Last Written Date: \t%s\n", 
+            tsk_fs_time_to_str(mac_time, timeBuf));
 
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->bkup_date));
-    tsk_fprintf(hFile, "Last Backup Date: \t%s", ctime(&mac_time));
+    tsk_fprintf(hFile, "Last Backup Date: \t%s\n", 
+            tsk_fs_time_to_str(mac_time, timeBuf));
 
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->chk_date));
-    tsk_fprintf(hFile, "Last Checked Date: \t%s", ctime(&mac_time));
+    tsk_fprintf(hFile, "Last Checked Date: \t%s\n", 
+            tsk_fs_time_to_str(mac_time, timeBuf));
 
 
     if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_VH_ATTR_SOFTWARE_LOCK)
@@ -2671,6 +2675,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     char hfs_mode[12];
     HFS_PRINT_ADDR print;
     HFS_ENTRY entry;
+    char timeBuf[32];
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
@@ -2802,14 +2807,16 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         fs_file->meta->crtime -= sec_skew;
         fs_file->meta->time2.hfs.bkup_time -= sec_skew;
 
-        tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_file->meta->crtime));
-        tsk_fprintf(hFile, "Content Modified:\t%s",
-            ctime(&fs_file->meta->mtime));
-        tsk_fprintf(hFile, "Attributes Modified:\t%s",
-            ctime(&fs_file->meta->ctime));
-        tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_file->meta->atime));
-        tsk_fprintf(hFile, "Backed Up:\t%s",
-            ctime(&fs_file->meta->time2.hfs.bkup_time));
+        tsk_fprintf(hFile, "Created:\t%s\n", 
+                tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+        tsk_fprintf(hFile, "Content Modified:\t%s\n",
+            tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
+        tsk_fprintf(hFile, "Attributes Modified:\t%s\n",
+            tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n", 
+                tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
+        tsk_fprintf(hFile, "Backed Up:\t%s\n",
+            tsk_fs_time_to_str(fs_file->meta->time2.hfs.bkup_time, timeBuf));
 
         fs_file->meta->mtime += sec_skew;
         fs_file->meta->atime += sec_skew;
@@ -2822,14 +2829,16 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "\nTimes:\n");
     }
 
-    tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_file->meta->crtime));
-    tsk_fprintf(hFile, "Content Modified:\t%s",
-        ctime(&fs_file->meta->mtime));
-    tsk_fprintf(hFile, "Attributes Modified:\t%s",
-        ctime(&fs_file->meta->ctime));
-    tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_file->meta->atime));
-    tsk_fprintf(hFile, "Backed Up:\t%s",
-        ctime(&fs_file->meta->time2.hfs.bkup_time));
+    tsk_fprintf(hFile, "Created:\t%s\n", 
+            tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+    tsk_fprintf(hFile, "Content Modified:\t%s\n",
+        tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
+    tsk_fprintf(hFile, "Attributes Modified:\t%s\n",
+        tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
+    tsk_fprintf(hFile, "Accessed:\t%s\n", 
+            tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
+    tsk_fprintf(hFile, "Backed Up:\t%s\n",
+        tsk_fs_time_to_str(fs_file->meta->time2.hfs.bkup_time, timeBuf));
 
 
     // @@@ Will need to add resource fork to here when support is added.

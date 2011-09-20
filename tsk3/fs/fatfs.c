@@ -1147,6 +1147,7 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     TSK_FS_META_NAME_LIST *fs_name_list;
     FATFS_PRINT_ADDR print;
     fatfs_dentry dep;
+    char timeBuf[32];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -1209,9 +1210,9 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         fs_meta->atime -= sec_skew;
         fs_meta->crtime -= sec_skew;
 
-        tsk_fprintf(hFile, "Written:\t%s", ctime(&fs_meta->mtime));
-        tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_meta->atime));
-        tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_meta->crtime));
+        tsk_fprintf(hFile, "Written:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n", tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+        tsk_fprintf(hFile, "Created:\t%s\n", tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
 
         fs_meta->mtime += sec_skew;
         fs_meta->atime += sec_skew;
@@ -1222,9 +1223,9 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     else
         tsk_fprintf(hFile, "\nDirectory Entry Times:\n");
 
-    tsk_fprintf(hFile, "Written:\t%s", ctime(&fs_meta->mtime));
-    tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_meta->atime));
-    tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_meta->crtime));
+    tsk_fprintf(hFile, "Written:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+    tsk_fprintf(hFile, "Accessed:\t%s\n", tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+    tsk_fprintf(hFile, "Created:\t%s\n", tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
 
     tsk_fprintf(hFile, "\nSectors:\n");
 

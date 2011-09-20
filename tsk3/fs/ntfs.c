@@ -4026,6 +4026,8 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
     const TSK_FS_ATTR *fs_attr;
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     ntfs_mft *mft;
+    char timeBuf[32];
+
     // clean up any error messages that are lying around
     tsk_error_reset();
 
@@ -4141,14 +4143,14 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
             fs_file->meta->atime -= sec_skew;
             fs_file->meta->ctime -= sec_skew;
             fs_file->meta->crtime -= sec_skew;
-            tsk_fprintf(hFile, "Created:\t%s",
-                ctime(&fs_file->meta->crtime));
-            tsk_fprintf(hFile, "File Modified:\t%s",
-                ctime(&fs_file->meta->mtime));
-            tsk_fprintf(hFile, "MFT Modified:\t%s",
-                ctime(&fs_file->meta->ctime));
-            tsk_fprintf(hFile, "Accessed:\t%s",
-                ctime(&fs_file->meta->atime));
+            tsk_fprintf(hFile, "Created:\t%s\n",
+                tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+            tsk_fprintf(hFile, "File Modified:\t%s\n",
+                tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
+            tsk_fprintf(hFile, "MFT Modified:\t%s\n",
+                tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
+            tsk_fprintf(hFile, "Accessed:\t%s\n",
+                tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
             fs_file->meta->mtime += sec_skew;
             fs_file->meta->atime += sec_skew;
             fs_file->meta->ctime += sec_skew;
@@ -4156,12 +4158,14 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
 
-        tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_file->meta->crtime));
-        tsk_fprintf(hFile, "File Modified:\t%s",
-            ctime(&fs_file->meta->mtime));
-        tsk_fprintf(hFile, "MFT Modified:\t%s",
-            ctime(&fs_file->meta->ctime));
-        tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_file->meta->atime));
+        tsk_fprintf(hFile, "Created:\t%s\n", 
+                tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+        tsk_fprintf(hFile, "File Modified:\t%s\n",
+            tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
+        tsk_fprintf(hFile, "MFT Modified:\t%s\n",
+            tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n", 
+                tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
     }
 
     /* $FILE_NAME Information */
@@ -4248,10 +4252,14 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
             m_time -= sec_skew;
             a_time -= sec_skew;
             c_time -= sec_skew;
-            tsk_fprintf(hFile, "Created:\t%s", ctime(&cr_time));
-            tsk_fprintf(hFile, "File Modified:\t%s", ctime(&m_time));
-            tsk_fprintf(hFile, "MFT Modified:\t%s", ctime(&c_time));
-            tsk_fprintf(hFile, "Accessed:\t%s", ctime(&a_time));
+            tsk_fprintf(hFile, "Created:\t%s\n", 
+                    tsk_fs_time_to_str(cr_time, timeBuf));
+            tsk_fprintf(hFile, "File Modified:\t%s\n", 
+                    tsk_fs_time_to_str(m_time, timeBuf));
+            tsk_fprintf(hFile, "MFT Modified:\t%s\n", 
+                    tsk_fs_time_to_str(c_time, timeBuf));
+            tsk_fprintf(hFile, "Accessed:\t%s\n", 
+                    tsk_fs_time_to_str(a_time, timeBuf));
             cr_time += sec_skew;
             m_time += sec_skew;
             a_time += sec_skew;
@@ -4259,10 +4267,14 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
 
-        tsk_fprintf(hFile, "Created:\t%s", ctime(&cr_time));
-        tsk_fprintf(hFile, "File Modified:\t%s", ctime(&m_time));
-        tsk_fprintf(hFile, "MFT Modified:\t%s", ctime(&c_time));
-        tsk_fprintf(hFile, "Accessed:\t%s", ctime(&a_time));
+        tsk_fprintf(hFile, "Created:\t%s\n", 
+                tsk_fs_time_to_str(cr_time, timeBuf));
+        tsk_fprintf(hFile, "File Modified:\t%s\n", 
+                tsk_fs_time_to_str(m_time, timeBuf));
+        tsk_fprintf(hFile, "MFT Modified:\t%s\n", 
+                tsk_fs_time_to_str(c_time, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n", 
+                tsk_fs_time_to_str(a_time, timeBuf));
     }
 
 

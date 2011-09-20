@@ -281,24 +281,48 @@ tsk_fs_meta_make_ls(const TSK_FS_META * a_fs_meta, char *a_buf,
 }
 
 
-static void
-tsk_fs_print_time(FILE * hFile, time_t time)
+/** \ingroup fslib
+ * Converts a time value to a string representation. Prints
+ * all zero values instead of 1970 if time is 0.
+ * @param time Time to be displayed.
+ * @param buf Buffer to print into (must b 32 byes or larger)
+ * @returns Pointer to buffer that was passed in.
+ */
+char *
+tsk_fs_time_to_str(time_t time, char *buf)
 {
+    buf[0] = '\0';
     if (time <= 0) {
-        tsk_fprintf(hFile, "0000-00-00 00:00:00 (UTC)");
+        strncpy(buf, "0000-00-00 00:00:00 (UTC)", 32);
     }
     else {
         struct tm *tmTime = localtime(&time);
 
-        tsk_fprintf(hFile, "%.4d-%.2d-%.2d %.2d:%.2d:%.2d (%s)",
+        snprintf(buf, 32, "%.4d-%.2d-%.2d %.2d:%.2d:%.2d (%s)",
             (int) tmTime->tm_year + 1900,
             (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
             tmTime->tm_hour,
             (int) tmTime->tm_min, (int) tmTime->tm_sec,
             tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
     }
+    return buf;
 }
 
+
+static void
+tsk_fs_print_time(FILE * hFile, time_t time)
+{
+    char foo[32];
+    tsk_fs_time_to_str(time, foo);
+    tsk_fprintf(hFile, "%s", foo);
+}
+
+
+// @@@ We could merge this with the tsk_fs_time_to_str in
+// the future when the feature to include time resolution
+// is added to TSK_FS_META (and then that value would be 
+// passed in and tsk_fs_time_to_str would decide what to
+// round up/down to
 
 /**
  * The only difference with this one is that the time is always

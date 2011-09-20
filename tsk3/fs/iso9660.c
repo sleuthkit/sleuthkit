@@ -1642,6 +1642,10 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         tsk_fprintf(hFile, "Sector Size: %d\n", ISO9660_SSIZE_B);
         tsk_fprintf(hFile, "Block Size: %d\n", tsk_getu16(fs->endian,
                 p->pvd.blk_sz_m));
+        if (fs->block_pre_size) {
+            tsk_fprintf(hFile, "Raw CD pre-block size: %d\n", fs->block_pre_size);
+            tsk_fprintf(hFile, "Raw CD post-block size: %d\n", fs->block_post_size);
+        }
 
         tsk_fprintf(hFile, "Total Sector Range: 0 - %d\n",
             (int) ((fs->block_size / ISO9660_SSIZE_B) *
@@ -1915,6 +1919,7 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     TSK_FS_FILE *fs_file;
     iso9660_dentry dd;
     iso9660_inode *dinode;
+    char timeBuf[32];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -2039,9 +2044,12 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         fs_file->meta->atime -= sec_skew;
         fs_file->meta->crtime -= sec_skew;
 
-        tsk_fprintf(hFile, "Written:\t%s", ctime(&fs_file->meta->mtime));
-        tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_file->meta->atime));
-        tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_file->meta->crtime));
+        tsk_fprintf(hFile, "Written:\t%s\n", 
+                tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n", 
+                tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
+        tsk_fprintf(hFile, "Created:\t%s\n", 
+                tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
 
         fs_file->meta->mtime += sec_skew;
         fs_file->meta->atime += sec_skew;
@@ -2053,10 +2061,12 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "\nFile Times:\n");
     }
 
-    tsk_fprintf(hFile, "Created:\t%s", ctime(&fs_file->meta->crtime));
-    tsk_fprintf(hFile, "File Modified:\t%s", ctime(&fs_file->meta->mtime));
-    tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_file->meta->atime));
-
+    tsk_fprintf(hFile, "Created:\t%s\n", 
+            tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+    tsk_fprintf(hFile, "File Modified:\t%s\n", 
+            tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
+    tsk_fprintf(hFile, "Accessed:\t%s\n", 
+            tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
 
     tsk_fprintf(hFile, "\nSectors:\n");
     /* since blocks are all contiguous, print them here to simplify file_walk */
@@ -2198,8 +2208,7 @@ load_vol_desc(TSK_FS_INFO * fs)
                         tsk_fprintf(stderr,
                             "Trying RAW ISO9660 with 16-byte pre-block size\n");
                     fs->block_pre_size = 16;
-                    // 304 = 2352 - 2048
-                    fs->block_post_size = 304 - fs->block_pre_size;
+                    fs->block_post_size = 288; 
                     goto ISO_RETRY_MAGIC;
                 }
                 else if (fs->block_pre_size == 16) {
@@ -2207,7 +2216,7 @@ load_vol_desc(TSK_FS_INFO * fs)
                         tsk_fprintf(stderr,
                             "Trying RAW ISO9660 with 24-byte pre-block size\n");
                     fs->block_pre_size = 24;
-                    fs->block_post_size = 304 - fs->block_pre_size;
+                    fs->block_post_size = 280;
                     goto ISO_RETRY_MAGIC;
                 }
                 else {

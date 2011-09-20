@@ -1144,6 +1144,7 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     ext2fs_sb *sb = ext2fs->fs;
     int ibpg;
     time_t tmptime;
+    char timeBuf[32];
 
 
     // clean up any error messages that are lying around
@@ -1160,15 +1161,15 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             &sb->s_uuid[0]));
 
     tmptime = tsk_getu32(fs->endian, sb->s_wtime);
-    tsk_fprintf(hFile, "\nLast Written at: %s",
-        (tmptime > 0) ? asctime(localtime(&tmptime)) : "empty");
+    tsk_fprintf(hFile, "\nLast Written at: %s\n",
+        (tmptime > 0) ? tsk_fs_time_to_str(tmptime, timeBuf) : "empty");
     tmptime = tsk_getu32(fs->endian, sb->s_lastcheck);
-    tsk_fprintf(hFile, "Last Checked at: %s",
-        (tmptime > 0) ? asctime(localtime(&tmptime)) : "empty");
+    tsk_fprintf(hFile, "Last Checked at: %s\n",
+        (tmptime > 0) ? tsk_fs_time_to_str(tmptime, timeBuf) : "empty");
 
     tmptime = tsk_getu32(fs->endian, sb->s_mtime);
-    tsk_fprintf(hFile, "\nLast Mounted at: %s",
-        (tmptime > 0) ? asctime(localtime(&tmptime)) : "empty");
+    tsk_fprintf(hFile, "\nLast Mounted at: %s\n",
+        (tmptime > 0) ? tsk_fs_time_to_str(tmptime, timeBuf) : "empty");
 
     /* State of the file system */
     if (tsk_getu16(fs->endian, sb->s_state) & EXT2FS_STATE_VALID)
@@ -1641,6 +1642,7 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     EXT2FS_PRINT_ADDR print;
     const TSK_FS_ATTR *fs_attr_indir;
     ext2fs_inode *dino_buf = NULL;
+    char timeBuf[32];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -1950,14 +1952,14 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         fs_meta->atime -= sec_skew;
         fs_meta->ctime -= sec_skew;
 
-        tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_meta->atime));
-        tsk_fprintf(hFile, "File Modified:\t%s", ctime(&fs_meta->mtime));
-        tsk_fprintf(hFile, "Inode Modified:\t%s", ctime(&fs_meta->ctime));
+        tsk_fprintf(hFile, "Accessed:\t%s\n", tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+        tsk_fprintf(hFile, "File Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+        tsk_fprintf(hFile, "Inode Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
 
         if (fs_meta->time2.ext2.dtime) {
             fs_meta->time2.ext2.dtime -= sec_skew;
             tsk_fprintf(hFile, "Deleted:\t%s",
-                ctime(&fs_meta->time2.ext2.dtime));
+                tsk_fs_time_to_str(fs_meta->time2.ext2.dtime, timeBuf));
             fs_meta->time2.ext2.dtime += sec_skew;
         }
 
@@ -1971,13 +1973,13 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "\nInode Times:\n");
     }
 
-    tsk_fprintf(hFile, "Accessed:\t%s", ctime(&fs_meta->atime));
-    tsk_fprintf(hFile, "File Modified:\t%s", ctime(&fs_meta->mtime));
-    tsk_fprintf(hFile, "Inode Modified:\t%s", ctime(&fs_meta->ctime));
+    tsk_fprintf(hFile, "Accessed:\t%s\n", tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+    tsk_fprintf(hFile, "File Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+    tsk_fprintf(hFile, "Inode Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
 
     if (fs_meta->time2.ext2.dtime)
-        tsk_fprintf(hFile, "Deleted:\t%s",
-            ctime(&fs_meta->time2.ext2.dtime));
+        tsk_fprintf(hFile, "Deleted:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->time2.ext2.dtime, timeBuf));
 
     if (numblock > 0)
         fs_meta->size = numblock * fs->block_size;
