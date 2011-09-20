@@ -311,10 +311,10 @@ TskAutoDb::addFilesInImgToDB()
     if (retval)
         return retval;
 
-    //if (m_db->createParentDirIndex()) {
-    //    tsk_error_print(stderr);
-    //    return 1;
-    //}
+    if (m_db->createParentDirIndex()) {
+        tsk_error_print(stderr);
+        return 1;
+    }
     return 0;
 }
 
