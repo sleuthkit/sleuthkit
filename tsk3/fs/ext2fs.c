@@ -2122,6 +2122,8 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("not an EXTxFS file system (magic)");
+        if (tsk_verbose)
+            fprintf(stderr, "ext2fs_open: invalid magic\n");
         return NULL;
     }
 
@@ -2168,6 +2170,8 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not an EXTxFS file system (inum count)");
+        if (tsk_verbose)
+            fprintf(stderr, "ext2fs_open: two few inodes\n");
         return NULL;
     }
 
@@ -2202,6 +2206,8 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
         tsk_error_set_errstr
             ("This file system has fragments that are a different size than blocks, which is not currently supported\nContact brian with details of the system that created this image");
+        if (tsk_verbose)
+            fprintf(stderr, "ext2fs_open: fragment size not equal to block size\n");
         return NULL;
     }
 

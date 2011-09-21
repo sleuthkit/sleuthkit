@@ -2422,6 +2422,8 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if (load_vol_desc(fs) == -1) {
         fs->tag = 0;
         iso9660_close(fs);
+        if (tsk_verbose) 
+            fprintf(stderr, "iso9660_open: Error loading volume descriptor\n");
         if (test)
             return NULL;
         else {
@@ -2467,6 +2469,8 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if ((int) fs->inum_count == -1) {
         fs->tag = 0;
         iso9660_close(fs);
+        if (tsk_verbose) 
+            fprintf(stderr, "iso9660_open: Error loading primary table\n");
         return NULL;
     }
     fs->inum_count++;           // account for the orphan directory

@@ -4634,6 +4634,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not a NTFS file system (magic)");
+        if (tsk_verbose)
+            fprintf(stderr, "ntfs_open: Incorrect NTFS magic\n");
         return NULL;
     }
 
@@ -4645,13 +4647,16 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     ntfs->ssize_b = tsk_getu16(fs->endian, ntfs->fs->ssize);
     if ((ntfs->ssize_b == 0) || (ntfs->ssize_b % 512)) {
-        fs->tag = 0;
-        free(ntfs->fs);
-        free(ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Not a NTFS file system (invalid sector size)");
+        if (tsk_verbose)
+            fprintf(stderr, "ntfs_open: invalid sector size: %d\n",
+                    ntfs->ssize_b);
+        fs->tag = 0;
+        free(ntfs->fs);
+        free(ntfs);
         return NULL;
     }
 
@@ -4662,13 +4667,16 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         (ntfs->fs->csize != 0x10) &&
         (ntfs->fs->csize != 0x20) && (ntfs->fs->csize != 0x40)
         && (ntfs->fs->csize != 0x80)) {
-        fs->tag = 0;
-        free(ntfs->fs);
-        free(ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Not a NTFS file system (invalid cluster size)");
+        if (tsk_verbose)
+            fprintf(stderr, "ntfs_open: invalid cluster size: %d\n",
+                    ntfs->fs->csize);
+        fs->tag = 0;
+        free(ntfs->fs);
+        free(ntfs);
         return NULL;
     }
 
@@ -4681,12 +4689,14 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         (TSK_DADDR_T) tsk_getu32(fs->endian,
         ntfs->fs->vol_size_s) / ntfs->fs->csize;
     if (fs->block_count == 0) {
-        fs->tag = 0;
-        free(ntfs->fs);
-        free(ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not a NTFS file system (volume size is 0)");
+        if (tsk_verbose)
+            fprintf(stderr, "ntfs_open: invalid volume size: 0\n");
+        fs->tag = 0;
+        free(ntfs->fs);
+        free(ntfs);
         return NULL;
     }
 
@@ -4714,6 +4724,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Not a NTFS file system (invalid MFT entry size)");
+        if (tsk_verbose)
+            fprintf(stderr, "ntfs_open: invalid MFT entry size\n");
         return NULL;
     }
 
@@ -4731,6 +4743,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Not a NTFS file system (invalid idx record size)");
+        if (tsk_verbose)
+            fprintf(stderr, "ntfs_open: invalid idx record size\n");
         return NULL;
     }
 
@@ -4744,6 +4758,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Not a NTFS file system (invalid starting MFT clust)");
+        if (tsk_verbose)
+            fprintf(stderr, "ntfs_open: invalid starting MFT cluster\n");
         return NULL;
     }
 
@@ -4805,6 +4821,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs->fs);
         free(ntfs);
         tsk_error_errstr2_concat(" - Data Attribute not found in $MFT");
+        if (tsk_verbose)
+            fprintf(stderr, "ntfs_open: Data attribute not found in $MFT\n");
         return NULL;
     }
 
@@ -4826,6 +4844,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_fs_file_close(ntfs->mft_file);
         free(ntfs->fs);
         free(ntfs);
+        if (tsk_verbose)
+            fprintf(stderr, "ntfs_open: Error loading file system version\n");
         return NULL;
     }
 
@@ -4835,6 +4855,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_fs_file_close(ntfs->mft_file);
         free(ntfs->fs);
         free(ntfs);
+        if (tsk_verbose)
+            fprintf(stderr, "ntfs_open: Error loading block bitmap\n");
         return NULL;
     }
 
@@ -4845,10 +4867,11 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_fs_file_close(ntfs->mft_file);
         free(ntfs->fs);
         free(ntfs);
+        if (tsk_verbose)
+            fprintf(stderr, "ntfs_open: Error loading Secure Info\n");
         return NULL;
     }
 #endif
-
 
     // initialize the caches
     ntfs->attrdef = NULL;

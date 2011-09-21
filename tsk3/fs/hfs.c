@@ -2953,6 +2953,8 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(hfs);
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("not an HFS+ file system (magic)");
+        if (tsk_verbose)
+            fprintf(stderr, "hfs_open: Invalid magic value\n");
         return NULL;
     }
 
@@ -3016,6 +3018,9 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_error_set_errno(TSK_ERR_FS_MAGIC);
             tsk_error_set_errstr
                 ("HFS file systems (other than wrappers HFS+/HFSX file systems) are not supported");
+            if (tsk_verbose)
+                fprintf(stderr, "hfs_open: Wrappers other than HFS+/HFSX are not supported (%d)\n", 
+                        tsk_getu16(fs->endian, hfs->fs->signature));
             return NULL;
         }
     }
@@ -3076,6 +3081,8 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->tag = 0;
         free(hfs->fs);
         free(hfs);
+        if (tsk_verbose)
+            fprintf(stderr, "hfs_open: Error opening catalog file\n");
         return NULL;
     }
 
@@ -3090,6 +3097,8 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(hfs);
         tsk_error_errstr2_concat
             ("- Data Attribute not found in Catalog File");
+        if (tsk_verbose)
+            fprintf(stderr, "hfs_open: Error finding data attribute in catalog file\n");
         return NULL;
     }
 
@@ -3106,27 +3115,35 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->tag = 0;
         free(hfs->fs);
         free(hfs);
+        if (tsk_verbose)
+            fprintf(stderr, "hfs_open: Error reading catalog header\n");
         return NULL;
     }
 
-    if (tsk_getu16(fs->endian, hfs->fs->version) == HFS_VH_VER_HFSPLUS)
+    // figure out case sensitivity
+    if (tsk_getu16(fs->endian, hfs->fs->version) == HFS_VH_VER_HFSPLUS) {
         hfs->is_case_sensitive = 0;
+    }
     else if (tsk_getu16(fs->endian, hfs->fs->version) == HFS_VH_VER_HFSX) {
-        if (hfs->catalog_header.compType == HFS_BT_HEAD_COMP_SENS)
+        if (hfs->catalog_header.compType == HFS_BT_HEAD_COMP_SENS) {
             hfs->is_case_sensitive = 1;
-        else if (hfs->catalog_header.compType == HFS_BT_HEAD_COMP_INSENS)
+        }
+        else if (hfs->catalog_header.compType == HFS_BT_HEAD_COMP_INSENS) {
             hfs->is_case_sensitive = 0;
+        }
         else {
-            tsk_fprintf(stderr,
-                "hfs_open: invalid value (0x%02" PRIx8
-                ") for key compare type\n", hfs->catalog_header.compType);
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "hfs_open: invalid value (0x%02" PRIx8
+                    ") for key compare type\n", hfs->catalog_header.compType);
             hfs->is_case_sensitive = 0;
         }
     }
     else {
-        tsk_fprintf(stderr,
-            "hfs_open: unknown HFS+/HFSX version (%" PRIu16 "\n",
-            tsk_getu16(fs->endian, hfs->fs->version));
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "hfs_open: unknown HFS+/HFSX version (%" PRIu16 "\n",
+                tsk_getu16(fs->endian, hfs->fs->version));
         hfs->is_case_sensitive = 0;
     }
 

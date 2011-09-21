@@ -2024,6 +2024,9 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype)
 
     /* If that didn't work, try the 256KB UFS2 location */
     if (tsk_fs_guessu32(fs, ffs->fs.sb2->magic, UFS2_FS_MAGIC)) {
+        if (tsk_verbose)
+            fprintf(stderr, "ufs_open: Trying 256KB UFS2 location\n");
+
         cnt = tsk_fs_read
             (fs, (TSK_OFF_T) UFS2_SBOFF2, (char *) ffs->fs.sb2,
             sizeof(ffs_sb2));
@@ -2042,6 +2045,9 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype)
 
         /* Try UFS1 if that did not work */
         if (tsk_fs_guessu32(fs, ffs->fs.sb2->magic, UFS2_FS_MAGIC)) {
+            if (tsk_verbose)
+                fprintf(stderr, "ufs_open: Trying UFS1 location\n");
+
             cnt = tsk_fs_read
                 (fs, (TSK_OFF_T) UFS1_SBOFF, (char *) ffs->fs.sb1, len);
             if (cnt != len) {
@@ -2057,12 +2063,14 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype)
                 return NULL;
             }
             if (tsk_fs_guessu32(fs, ffs->fs.sb1->magic, UFS1_FS_MAGIC)) {
-                fs->tag = 0;
-                free(ffs->fs.sb1);
-                free(ffs);
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_MAGIC);
                 tsk_error_set_errstr("No UFS Magic Found");
+                if (tsk_verbose)
+                    fprintf(stderr, "ufs_open: No UFS magic found\n");
+                fs->tag = 0;
+                free(ffs->fs.sb1);
+                free(ffs);
                 return NULL;
             }
             else {
@@ -2113,23 +2121,27 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype)
             (img_info->size - offset) / fs->block_size - 1;
 
     if ((fs->block_size % 512) || (ffs->ffsbsize_b % 512)) {
-        fs->tag = 0;
-        free(ffs->fs.sb1);
-        free(ffs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Not a UFS FS (invalid fragment or block size)");
+        if (tsk_verbose)
+            fprintf(stderr, "ufs_open: invalid fragment or block size\n");
+        fs->tag = 0;
+        free(ffs->fs.sb1);
+        free(ffs);
         return NULL;
     }
 
     if ((ffs->ffsbsize_b / fs->block_size) != ffs->ffsbsize_f) {
-        fs->tag = 0;
-        free(ffs->fs.sb1);
-        free(ffs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not a UFS FS (frag / block size mismatch)");
+        if (tsk_verbose)
+            fprintf(stderr, "ufs_open: fragment / block size mismatch\n");
+        fs->tag = 0;
+        free(ffs->fs.sb1);
+        free(ffs);
         return NULL;
     }
 
