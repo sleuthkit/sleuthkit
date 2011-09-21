@@ -1405,13 +1405,18 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_MAGIC);
                 tsk_error_set_errstr("Not a FATFS file system (magic)");
+                if (tsk_verbose)
+                    fprintf(stderr, "Not a FATFS file system (magic)");
                 return NULL;
             }
         }
         // found the magic
         else {
-            if (sb_off)
+            if (sb_off) {
                 used_backup_boot = 1;
+                if (tsk_verbose)
+                    fprintf(stderr, "fatfs_open: Using backup boot sector\n");
+            }
             break;
         }
     }
@@ -1439,6 +1444,9 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errstr
             ("Error: sector size (%d) is not a multiple of device size (%d)\nDo you have a disk image instead of a partition image?",
             fatfs->ssize, fs->dev_bsize);
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_open: Invalid sector size (%d)\n",
+                    fatfs->ssize);
         fs->tag = 0;
         free(fatsb);
         free(fatfs);
@@ -1454,6 +1462,9 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         (fatfs->csize != 0x10) &&
         (fatfs->csize != 0x20) &&
         (fatfs->csize != 0x40) && (fatfs->csize != 0x80)) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_open: Invalid cluster size (%d)\n",
+                    fatfs->csize);
         fs->tag = 0;
         free(fatsb);
         free(fatfs);
@@ -1466,6 +1477,9 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     // number of FAT tables
     fatfs->numfat = fatsb->numfat;
     if ((fatfs->numfat == 0) || (fatfs->numfat > 8)) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_open: Invalid number of FATS (%d)\n",
+                    fatfs->numfat);
         fs->tag = 0;
         free(fatsb);
         free(fatfs);
@@ -1491,6 +1505,9 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_getu32(fs->endian, fatsb->a.f32.sectperfat32);
 
     if (fatfs->sectperfat == 0) {
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_open: Invalid number of sectors per FAT (%d)\n",
+                    fatfs->sectperfat);
         fs->tag = 0;
         free(fatsb);
         free(fatfs);
@@ -1508,6 +1525,9 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errstr
             ("Not a FATFS file system (invalid first FAT sector %"
             PRIuDADDR ")", fatfs->firstfatsect);
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_open: Invalid first FAT (%"PRIuDADDR")\n",
+                    fatfs->firstfatsect);
 
         fs->tag = 0;
         free(fatsb);
@@ -1576,6 +1596,8 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_error_set_errno(TSK_ERR_FS_MAGIC);
             tsk_error_set_errstr
                 ("Too many sectors for TSK_FS_TYPE_FAT12: try auto-detect mode");
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_open: Too many sectors for FAT12\n");
             return NULL;
         }
     }
@@ -1588,6 +1610,8 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Invalid TSK_FS_TYPE_FAT32 image (numroot != 0)");
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_open: numroom != 0 for FAT32\n");
         return NULL;
     }
 
@@ -1599,6 +1623,8 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Invalid FAT image (numroot == 0, and not TSK_FS_TYPE_FAT32)");
+        if (tsk_verbose)
+            fprintf(stderr, "fatfs_open: numroom == 0 and not FAT32\n");
         return NULL;
     }
     
@@ -1616,6 +1642,8 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_error_set_errno(TSK_ERR_FS_MAGIC);
             tsk_error_set_errstr(
                      "Invalid FAT image (Used what we thought was a backup boot sector, but it is not TSK_FS_TYPE_FAT32)");
+            if (tsk_verbose)
+                fprintf(stderr, "fatfs_open: Had to use backup boot sector, but this isn't FAT32\n");
             return NULL;
         }
         if (fatfs->numroot > 1) {
@@ -1666,6 +1694,8 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 tsk_error_set_errno(TSK_ERR_FS_MAGIC);
                 tsk_error_set_errstr(
                          "Invalid FAT image (Too many differences between FATS from guessing (%d diffs))", numDiffs);
+                if (tsk_verbose)
+                    fprintf(stderr, "fatfs_open: Too many differences in FAT from guessing (%d diffs)\n", numDiffs);
                 return NULL;
             }
         }
