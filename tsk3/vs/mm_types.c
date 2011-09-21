@@ -63,7 +63,7 @@ tsk_vs_type_toid(const TSK_TCHAR * str)
  * @returns ID of string (or unsupported if the name is unknown)
  */
 TSK_VS_TYPE_ENUM
-tsk_vs_type_toid_utf8(const char * str)
+tsk_vs_type_toid_utf8(const char *str)
 {
     int i;
     VS_TYPES *types;

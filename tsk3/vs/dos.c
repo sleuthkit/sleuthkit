@@ -854,6 +854,10 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
         tsk_error_set_errstr
             ("File is not a DOS partition (invalid primary magic) (Sector: %"
             PRIuDADDR ")", taddr);
+        if (tsk_verbose)
+            fprintf(stderr,
+                "File is not a DOS partition (invalid primary magic) (Sector: %"
+                PRIuDADDR ")", taddr);
         free(sect_buf);
         return 1;
     }
@@ -980,7 +984,8 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
 
             if (dos_load_ext_table(vs, part_start, part_start, 1)) {
                 if (tsk_verbose) {
-                    fprintf(stderr, "Error loading extended table, moving on");
+                    fprintf(stderr,
+                        "Error loading extended table, moving on");
                     tsk_error_print(stderr);
                 }
                 tsk_error_reset();
