@@ -1228,8 +1228,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (fs_attr_run->addr != 0) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->meta->
-                        flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->
+                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                     else
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
@@ -1256,8 +1256,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (addr > fs->last_block) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->meta->
-                        flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->
+                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                     else
                         tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
@@ -1297,8 +1297,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             TSK_FS_BLOCK_FLAG_COMP;
                         retval = is_clustalloc(ntfs, comp_unit[i]);
                         if (retval == -1) {
-                            if (fs_attr->fs_file->meta->
-                                flags & TSK_FS_META_FLAG_UNALLOC)
+                            if (fs_attr->fs_file->
+                                meta->flags & TSK_FS_META_FLAG_UNALLOC)
                                 tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -3050,8 +3050,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     // versions of NTFS.
     for (i = 0; i < ntfs->sii_data.used; i++) {
         if (tsk_getu32(fs->endian,
-                ((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i].
-                key_sec_id) == secid) {
+                ((ntfs_attr_sii *) (ntfs->sii_data.
+                        buffer))[i].key_sec_id) == secid) {
             sii = &((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i];
             break;
         }
@@ -4158,14 +4158,14 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
 
-        tsk_fprintf(hFile, "Created:\t%s\n", 
-                tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+        tsk_fprintf(hFile, "Created:\t%s\n",
+            tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
         tsk_fprintf(hFile, "File Modified:\t%s\n",
             tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
         tsk_fprintf(hFile, "MFT Modified:\t%s\n",
             tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
-        tsk_fprintf(hFile, "Accessed:\t%s\n", 
-                tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n",
+            tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
     }
 
     /* $FILE_NAME Information */
@@ -4252,14 +4252,14 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
             m_time -= sec_skew;
             a_time -= sec_skew;
             c_time -= sec_skew;
-            tsk_fprintf(hFile, "Created:\t%s\n", 
-                    tsk_fs_time_to_str(cr_time, timeBuf));
-            tsk_fprintf(hFile, "File Modified:\t%s\n", 
-                    tsk_fs_time_to_str(m_time, timeBuf));
-            tsk_fprintf(hFile, "MFT Modified:\t%s\n", 
-                    tsk_fs_time_to_str(c_time, timeBuf));
-            tsk_fprintf(hFile, "Accessed:\t%s\n", 
-                    tsk_fs_time_to_str(a_time, timeBuf));
+            tsk_fprintf(hFile, "Created:\t%s\n",
+                tsk_fs_time_to_str(cr_time, timeBuf));
+            tsk_fprintf(hFile, "File Modified:\t%s\n",
+                tsk_fs_time_to_str(m_time, timeBuf));
+            tsk_fprintf(hFile, "MFT Modified:\t%s\n",
+                tsk_fs_time_to_str(c_time, timeBuf));
+            tsk_fprintf(hFile, "Accessed:\t%s\n",
+                tsk_fs_time_to_str(a_time, timeBuf));
             cr_time += sec_skew;
             m_time += sec_skew;
             a_time += sec_skew;
@@ -4267,14 +4267,14 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
 
-        tsk_fprintf(hFile, "Created:\t%s\n", 
-                tsk_fs_time_to_str(cr_time, timeBuf));
-        tsk_fprintf(hFile, "File Modified:\t%s\n", 
-                tsk_fs_time_to_str(m_time, timeBuf));
-        tsk_fprintf(hFile, "MFT Modified:\t%s\n", 
-                tsk_fs_time_to_str(c_time, timeBuf));
-        tsk_fprintf(hFile, "Accessed:\t%s\n", 
-                tsk_fs_time_to_str(a_time, timeBuf));
+        tsk_fprintf(hFile, "Created:\t%s\n",
+            tsk_fs_time_to_str(cr_time, timeBuf));
+        tsk_fprintf(hFile, "File Modified:\t%s\n",
+            tsk_fs_time_to_str(m_time, timeBuf));
+        tsk_fprintf(hFile, "MFT Modified:\t%s\n",
+            tsk_fs_time_to_str(c_time, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n",
+            tsk_fs_time_to_str(a_time, timeBuf));
     }
 
 
@@ -4653,7 +4653,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             ("Not a NTFS file system (invalid sector size)");
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid sector size: %d\n",
-                    ntfs->ssize_b);
+                ntfs->ssize_b);
         fs->tag = 0;
         free(ntfs->fs);
         free(ntfs);
@@ -4673,7 +4673,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             ("Not a NTFS file system (invalid cluster size)");
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid cluster size: %d\n",
-                    ntfs->fs->csize);
+                ntfs->fs->csize);
         fs->tag = 0;
         free(ntfs->fs);
         free(ntfs);
@@ -4822,7 +4822,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs);
         tsk_error_errstr2_concat(" - Data Attribute not found in $MFT");
         if (tsk_verbose)
-            fprintf(stderr, "ntfs_open: Data attribute not found in $MFT\n");
+            fprintf(stderr,
+                "ntfs_open: Data attribute not found in $MFT\n");
         return NULL;
     }
 
@@ -4845,7 +4846,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs->fs);
         free(ntfs);
         if (tsk_verbose)
-            fprintf(stderr, "ntfs_open: Error loading file system version\n");
+            fprintf(stderr,
+                "ntfs_open: Error loading file system version\n");
         return NULL;
     }
 

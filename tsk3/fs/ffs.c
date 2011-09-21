@@ -1318,7 +1318,8 @@ ffs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         tsk_fprintf(hFile, "File System Type: UFS 1\n");
         tmptime = tsk_getu32(fs->endian, sb1->wtime);
         tsk_fprintf(hFile, "Last Written: %s\n",
-            (tmptime > 0) ? tsk_fs_time_to_str(tmptime, timeBuf) : "empty");
+            (tmptime > 0) ? tsk_fs_time_to_str(tmptime,
+                timeBuf) : "empty");
         tsk_fprintf(hFile, "Last Mount Point: %s\n", sb1->last_mnt);
 
         flags = sb1->fs_flags;
@@ -1327,7 +1328,8 @@ ffs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         tsk_fprintf(hFile, "File System Type: UFS 2\n");
         tmptime = tsk_getu32(fs->endian, sb2->wtime);
         tsk_fprintf(hFile, "Last Written: %s\n",
-            (tmptime > 0) ? tsk_fs_time_to_str(tmptime, timeBuf) : "empty");
+            (tmptime > 0) ? tsk_fs_time_to_str(tmptime,
+                timeBuf) : "empty");
         tsk_fprintf(hFile, "Last Mount Point: %s\n", sb2->last_mnt);
         tsk_fprintf(hFile, "Volume Name: %s\n", sb2->volname);
         tsk_fprintf(hFile, "System UID: %" PRIu64 "\n",
@@ -1495,7 +1497,8 @@ ffs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
                 tmptime = (uint32_t) tsk_getu64(fs->endian, cgd2->wtime);
             }
             tsk_fprintf(hFile, "  Last Written: %s\n",
-                (tmptime > 0) ? tsk_fs_time_to_str(tmptime, timeBuf) : "empty");
+                (tmptime > 0) ? tsk_fs_time_to_str(tmptime,
+                    timeBuf) : "empty");
         }
         tsk_release_lock(&ffs->lock);
 
@@ -1723,9 +1726,12 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         fs_meta->atime -= sec_skew;
         fs_meta->ctime -= sec_skew;
 
-        tsk_fprintf(hFile, "Accessed:\t%s\n", tsk_fs_time_to_str(fs_meta->atime, timeBuf));
-        tsk_fprintf(hFile, "File Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
-        tsk_fprintf(hFile, "Inode Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+        tsk_fprintf(hFile, "File Modified:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+        tsk_fprintf(hFile, "Inode Modified:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
 
         fs_meta->mtime += sec_skew;
         fs_meta->atime += sec_skew;
@@ -1737,9 +1743,12 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "\nInode Times:\n");
     }
 
-    tsk_fprintf(hFile, "Accessed:\t%s\n", tsk_fs_time_to_str(fs_meta->atime, timeBuf));
-    tsk_fprintf(hFile, "File Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
-    tsk_fprintf(hFile, "Inode Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
+    tsk_fprintf(hFile, "Accessed:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+    tsk_fprintf(hFile, "File Modified:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+    tsk_fprintf(hFile, "Inode Modified:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
 
     if ((dino_buf = (char *) tsk_malloc(sizeof(ffs_inode2))) == NULL)
         return 1;

@@ -37,30 +37,34 @@
  * @retuns Number of bytes read or -1 on error
  */
 static ssize_t
-fs_prepost_read(TSK_FS_INFO *a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
+fs_prepost_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf,
+    size_t a_len)
 {
     TSK_OFF_T cur_off = a_off;
     TSK_OFF_T end_off = a_off + a_len;
     ssize_t cur_idx = 0;
-    
+
     // we need to read block by block so that we can skip the needed pre and post bytes
     while (cur_off < end_off) {
         TSK_OFF_T read_off;
         ssize_t retval2 = 0;
         TSK_DADDR_T blk = cur_off / a_fs->block_size;
         size_t read_len = a_fs->block_size - cur_off % a_fs->block_size;
-        
+
         if (read_len + cur_off > end_off)
             read_len = end_off - cur_off;
-        
-        read_off = a_fs->offset + cur_off + blk * (a_fs->block_pre_size + a_fs->block_post_size) + a_fs->block_pre_size;
+
+        read_off =
+            a_fs->offset + cur_off + blk * (a_fs->block_pre_size +
+            a_fs->block_post_size) + a_fs->block_pre_size;
         if (tsk_verbose)
-            fprintf(stderr, "fs_prepost_read: Mapped %"PRIuOFF" to %"PRIuOFF"\n",
-                    cur_off, read_off);
-        
+            fprintf(stderr,
+                "fs_prepost_read: Mapped %" PRIuOFF " to %" PRIuOFF "\n",
+                cur_off, read_off);
+
         retval2 =
             tsk_img_read(a_fs->img_info, read_off, &a_buf[cur_idx],
-                     read_len);
+            read_len);
         if (retval2 == -1)
             return -1;
         else if (retval2 == 0)
@@ -109,7 +113,8 @@ tsk_fs_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf, size_t a_len)
         return fs_prepost_read(a_fs, a_off, a_buf, a_len);
     }
     else {
-        return tsk_img_read(a_fs->img_info, a_off + a_fs->offset, a_buf, a_len);
+        return tsk_img_read(a_fs->img_info, a_off + a_fs->offset, a_buf,
+            a_len);
     }
 }
 
@@ -152,9 +157,10 @@ tsk_fs_read_block(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr, char *a_buf,
         return -1;
     }
 
-    
+
     if ((a_fs->block_pre_size == 0) && (a_fs->block_post_size == 0)) {
-        TSK_OFF_T off = a_fs->offset + (TSK_OFF_T) (a_addr) * a_fs->block_size;
+        TSK_OFF_T off =
+            a_fs->offset + (TSK_OFF_T) (a_addr) * a_fs->block_size;
         return tsk_img_read(a_fs->img_info, off, a_buf, a_len);
     }
     else {

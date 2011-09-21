@@ -1210,9 +1210,12 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         fs_meta->atime -= sec_skew;
         fs_meta->crtime -= sec_skew;
 
-        tsk_fprintf(hFile, "Written:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
-        tsk_fprintf(hFile, "Accessed:\t%s\n", tsk_fs_time_to_str(fs_meta->atime, timeBuf));
-        tsk_fprintf(hFile, "Created:\t%s\n", tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
+        tsk_fprintf(hFile, "Written:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+        tsk_fprintf(hFile, "Created:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
 
         fs_meta->mtime += sec_skew;
         fs_meta->atime += sec_skew;
@@ -1223,9 +1226,12 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     else
         tsk_fprintf(hFile, "\nDirectory Entry Times:\n");
 
-    tsk_fprintf(hFile, "Written:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
-    tsk_fprintf(hFile, "Accessed:\t%s\n", tsk_fs_time_to_str(fs_meta->atime, timeBuf));
-    tsk_fprintf(hFile, "Created:\t%s\n", tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
+    tsk_fprintf(hFile, "Written:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime,
+            timeBuf));
+    tsk_fprintf(hFile, "Accessed:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+    tsk_fprintf(hFile, "Created:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
 
     tsk_fprintf(hFile, "\nSectors:\n");
 
@@ -1333,7 +1339,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     TSK_DADDR_T sectors;
     ssize_t cnt;
     int i;
-    uint8_t used_backup_boot = 0;  // set to 1 if we used the backup boot sector
+    uint8_t used_backup_boot = 0;       // set to 1 if we used the backup boot sector
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -1415,7 +1421,8 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             if (sb_off) {
                 used_backup_boot = 1;
                 if (tsk_verbose)
-                    fprintf(stderr, "fatfs_open: Using backup boot sector\n");
+                    fprintf(stderr,
+                        "fatfs_open: Using backup boot sector\n");
             }
             break;
         }
@@ -1446,7 +1453,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             fatfs->ssize, fs->dev_bsize);
         if (tsk_verbose)
             fprintf(stderr, "fatfs_open: Invalid sector size (%d)\n",
-                    fatfs->ssize);
+                fatfs->ssize);
         fs->tag = 0;
         free(fatsb);
         free(fatfs);
@@ -1464,7 +1471,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         (fatfs->csize != 0x40) && (fatfs->csize != 0x80)) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_open: Invalid cluster size (%d)\n",
-                    fatfs->csize);
+                fatfs->csize);
         fs->tag = 0;
         free(fatsb);
         free(fatfs);
@@ -1479,7 +1486,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if ((fatfs->numfat == 0) || (fatfs->numfat > 8)) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_open: Invalid number of FATS (%d)\n",
-                    fatfs->numfat);
+                fatfs->numfat);
         fs->tag = 0;
         free(fatsb);
         free(fatfs);
@@ -1506,8 +1513,9 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     if (fatfs->sectperfat == 0) {
         if (tsk_verbose)
-            fprintf(stderr, "fatfs_open: Invalid number of sectors per FAT (%d)\n",
-                    fatfs->sectperfat);
+            fprintf(stderr,
+                "fatfs_open: Invalid number of sectors per FAT (%d)\n",
+                fatfs->sectperfat);
         fs->tag = 0;
         free(fatsb);
         free(fatfs);
@@ -1526,8 +1534,9 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             ("Not a FATFS file system (invalid first FAT sector %"
             PRIuDADDR ")", fatfs->firstfatsect);
         if (tsk_verbose)
-            fprintf(stderr, "fatfs_open: Invalid first FAT (%"PRIuDADDR")\n",
-                    fatfs->firstfatsect);
+            fprintf(stderr,
+                "fatfs_open: Invalid first FAT (%" PRIuDADDR ")\n",
+                fatfs->firstfatsect);
 
         fs->tag = 0;
         free(fatsb);
@@ -1597,7 +1606,8 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_error_set_errstr
                 ("Too many sectors for TSK_FS_TYPE_FAT12: try auto-detect mode");
             if (tsk_verbose)
-                fprintf(stderr, "fatfs_open: Too many sectors for FAT12\n");
+                fprintf(stderr,
+                    "fatfs_open: Too many sectors for FAT12\n");
             return NULL;
         }
     }
@@ -1627,7 +1637,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             fprintf(stderr, "fatfs_open: numroom == 0 and not FAT32\n");
         return NULL;
     }
-    
+
     /* additional sanity checks if we think we are using the backup boot sector.
      * The scenario to prevent here is if fat_open is called 6 sectors before the real start
      * of the file system, then we want to detect that it was not a backup that we saw.  
@@ -1640,10 +1650,11 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             free(fatfs);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-            tsk_error_set_errstr(
-                     "Invalid FAT image (Used what we thought was a backup boot sector, but it is not TSK_FS_TYPE_FAT32)");
+            tsk_error_set_errstr
+                ("Invalid FAT image (Used what we thought was a backup boot sector, but it is not TSK_FS_TYPE_FAT32)");
             if (tsk_verbose)
-                fprintf(stderr, "fatfs_open: Had to use backup boot sector, but this isn't FAT32\n");
+                fprintf(stderr,
+                    "fatfs_open: Had to use backup boot sector, but this isn't FAT32\n");
             return NULL;
         }
         if (fatfs->numroot > 1) {
@@ -1651,35 +1662,38 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             uint8_t buf2[512];
             int i2;
             int numDiffs;
-            
-            cnt = tsk_fs_read(fs, fatfs->firstfatsect * fatfs->ssize, (char *) buf1, 512);
+
+            cnt =
+                tsk_fs_read(fs, fatfs->firstfatsect * fatfs->ssize,
+                (char *) buf1, 512);
             if (cnt != 512) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                tsk_error_set_errstr2(
-                    "%s: FAT1", myname);
+                tsk_error_set_errstr2("%s: FAT1", myname);
                 fs->tag = 0;
                 free(fatfs->sb);
                 free(fatfs);
                 return NULL;
             }
-            
-            cnt = tsk_fs_read(fs, (fatfs->firstfatsect + fatfs->sectperfat)*fatfs->ssize, (char *) buf2, 512);
+
+            cnt =
+                tsk_fs_read(fs,
+                (fatfs->firstfatsect + fatfs->sectperfat) * fatfs->ssize,
+                (char *) buf2, 512);
             if (cnt != 512) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                tsk_error_set_errstr2(
-                    "%s: FAT2", myname);
+                tsk_error_set_errstr2("%s: FAT2", myname);
                 fs->tag = 0;
                 free(fatfs->sb);
                 free(fatfs);
                 return NULL;
             }
-            
+
             numDiffs = 0;
             for (i2 = 0; i2 < 512; i2++) {
                 if (buf1[i2] != buf2[i2]) {
@@ -1692,15 +1706,18 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 free(fatfs);
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-                tsk_error_set_errstr(
-                         "Invalid FAT image (Too many differences between FATS from guessing (%d diffs))", numDiffs);
+                tsk_error_set_errstr
+                    ("Invalid FAT image (Too many differences between FATS from guessing (%d diffs))",
+                    numDiffs);
                 if (tsk_verbose)
-                    fprintf(stderr, "fatfs_open: Too many differences in FAT from guessing (%d diffs)\n", numDiffs);
+                    fprintf(stderr,
+                        "fatfs_open: Too many differences in FAT from guessing (%d diffs)\n",
+                        numDiffs);
                 return NULL;
             }
         }
     }
-    
+
 
     /* Set the mask to use on the cluster values */
     if (ftype == TSK_FS_TYPE_FAT12) {

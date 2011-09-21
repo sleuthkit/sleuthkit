@@ -242,8 +242,8 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
         if (fs_dir->fs_file->meta->type != TSK_FS_META_TYPE_DIR) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
-            tsk_error_set_errstr("Address %"PRIuINUM" is not for a directory\n",
-                    next_meta);
+            tsk_error_set_errstr("Address %" PRIuINUM
+                " is not for a directory\n", next_meta);
             free(cpath);
             return -1;
         }

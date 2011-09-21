@@ -261,12 +261,12 @@ attr2mode(uint16_t attr)
  * what the actual encoding is (or if it is corrupt). 
  * @param name Name to cleanup
  */
-void 
-fatfs_cleanup_ascii(char *name) 
+void
+fatfs_cleanup_ascii(char *name)
 {
     int i;
     for (i = 0; name[i] != '\0'; i++) {
-        if ((unsigned char)(name[i]) > 0x7e) {
+        if ((unsigned char) (name[i]) > 0x7e) {
             name[i] = '^';
         }
     }

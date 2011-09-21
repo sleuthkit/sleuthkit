@@ -2544,16 +2544,16 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         tsk_fs_time_to_str(mktime(gmtime(&mac_time)), timeBuf));
 
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->m_date));
-    tsk_fprintf(hFile, "Last Written Date: \t%s\n", 
-            tsk_fs_time_to_str(mac_time, timeBuf));
+    tsk_fprintf(hFile, "Last Written Date: \t%s\n",
+        tsk_fs_time_to_str(mac_time, timeBuf));
 
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->bkup_date));
-    tsk_fprintf(hFile, "Last Backup Date: \t%s\n", 
-            tsk_fs_time_to_str(mac_time, timeBuf));
+    tsk_fprintf(hFile, "Last Backup Date: \t%s\n",
+        tsk_fs_time_to_str(mac_time, timeBuf));
 
     mac_time = hfs2unixtime(tsk_getu32(fs->endian, hfs->fs->chk_date));
-    tsk_fprintf(hFile, "Last Checked Date: \t%s\n", 
-            tsk_fs_time_to_str(mac_time, timeBuf));
+    tsk_fprintf(hFile, "Last Checked Date: \t%s\n",
+        tsk_fs_time_to_str(mac_time, timeBuf));
 
 
     if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_VH_ATTR_SOFTWARE_LOCK)
@@ -2807,16 +2807,17 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         fs_file->meta->crtime -= sec_skew;
         fs_file->meta->time2.hfs.bkup_time -= sec_skew;
 
-        tsk_fprintf(hFile, "Created:\t%s\n", 
-                tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+        tsk_fprintf(hFile, "Created:\t%s\n",
+            tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
         tsk_fprintf(hFile, "Content Modified:\t%s\n",
             tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
         tsk_fprintf(hFile, "Attributes Modified:\t%s\n",
             tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
-        tsk_fprintf(hFile, "Accessed:\t%s\n", 
-                tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n",
+            tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
         tsk_fprintf(hFile, "Backed Up:\t%s\n",
-            tsk_fs_time_to_str(fs_file->meta->time2.hfs.bkup_time, timeBuf));
+            tsk_fs_time_to_str(fs_file->meta->time2.hfs.bkup_time,
+                timeBuf));
 
         fs_file->meta->mtime += sec_skew;
         fs_file->meta->atime += sec_skew;
@@ -2829,14 +2830,14 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "\nTimes:\n");
     }
 
-    tsk_fprintf(hFile, "Created:\t%s\n", 
-            tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+    tsk_fprintf(hFile, "Created:\t%s\n",
+        tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
     tsk_fprintf(hFile, "Content Modified:\t%s\n",
         tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
     tsk_fprintf(hFile, "Attributes Modified:\t%s\n",
         tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
-    tsk_fprintf(hFile, "Accessed:\t%s\n", 
-            tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
+    tsk_fprintf(hFile, "Accessed:\t%s\n",
+        tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
     tsk_fprintf(hFile, "Backed Up:\t%s\n",
         tsk_fs_time_to_str(fs_file->meta->time2.hfs.bkup_time, timeBuf));
 
@@ -3019,8 +3020,9 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_error_set_errstr
                 ("HFS file systems (other than wrappers HFS+/HFSX file systems) are not supported");
             if (tsk_verbose)
-                fprintf(stderr, "hfs_open: Wrappers other than HFS+/HFSX are not supported (%d)\n", 
-                        tsk_getu16(fs->endian, hfs->fs->signature));
+                fprintf(stderr,
+                    "hfs_open: Wrappers other than HFS+/HFSX are not supported (%d)\n",
+                    tsk_getu16(fs->endian, hfs->fs->signature));
             return NULL;
         }
     }
@@ -3098,7 +3100,8 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_errstr2_concat
             ("- Data Attribute not found in Catalog File");
         if (tsk_verbose)
-            fprintf(stderr, "hfs_open: Error finding data attribute in catalog file\n");
+            fprintf(stderr,
+                "hfs_open: Error finding data attribute in catalog file\n");
         return NULL;
     }
 
@@ -3135,7 +3138,8 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "hfs_open: invalid value (0x%02" PRIx8
-                    ") for key compare type\n", hfs->catalog_header.compType);
+                    ") for key compare type\n",
+                    hfs->catalog_header.compType);
             hfs->is_case_sensitive = 0;
         }
     }

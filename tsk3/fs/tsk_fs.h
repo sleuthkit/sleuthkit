@@ -1403,7 +1403,9 @@ class TskFsAttribute {
                     return new TskFsAttrRun(run);
                 i++;
                 run = run->next;
-        }} return NULL;
+            }
+        }
+        return NULL;
     };
 
     /**
@@ -1417,7 +1419,9 @@ class TskFsAttribute {
             while (run != NULL) {
                 size++;
                 run = run->next;
-        }} return size;
+            }
+        }
+        return size;
     }
 
     /**
@@ -2086,7 +2090,8 @@ class TskFsInfo {
             return m_fsInfo->img_info;
         else
             return NULL;
-}};                             //TskFsInfo
+    }
+};                              //TskFsInfo
 
 
 
@@ -2280,7 +2285,8 @@ class TskFsMeta {
             while (nameList != NULL) {
                 nameList = nameList->next;
                 numOfList += 1;
-            } m_nameListLen = numOfList;
+            }
+            m_nameListLen = numOfList;
         }
         else {
             m_nameList = NULL;
@@ -2549,7 +2555,9 @@ class TskFsMeta {
             while (name != NULL) {
                 size++;
                 name = name->next;
-        }} return size;
+            }
+        }
+        return size;
     };
 
     /**
@@ -2566,7 +2574,9 @@ class TskFsMeta {
                     return new TskFsMetaName(name);
                 i++;
                 name = name->next;
-        }} return NULL;
+            }
+        }
+        return NULL;
     };
 
   private:

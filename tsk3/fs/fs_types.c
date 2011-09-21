@@ -79,7 +79,7 @@ static FS_TYPES fs_legacy_type_table[] = {
  * @returns ID of string (or unsupported if the name is unknown)
  */
 TSK_FS_TYPE_ENUM
-tsk_fs_type_toid_utf8(const char * str)
+tsk_fs_type_toid_utf8(const char *str)
 {
     FS_TYPES *sp;
 

@@ -1952,9 +1952,12 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         fs_meta->atime -= sec_skew;
         fs_meta->ctime -= sec_skew;
 
-        tsk_fprintf(hFile, "Accessed:\t%s\n", tsk_fs_time_to_str(fs_meta->atime, timeBuf));
-        tsk_fprintf(hFile, "File Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
-        tsk_fprintf(hFile, "Inode Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+        tsk_fprintf(hFile, "File Modified:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+        tsk_fprintf(hFile, "Inode Modified:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
 
         if (fs_meta->time2.ext2.dtime) {
             fs_meta->time2.ext2.dtime -= sec_skew;
@@ -1973,9 +1976,12 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "\nInode Times:\n");
     }
 
-    tsk_fprintf(hFile, "Accessed:\t%s\n", tsk_fs_time_to_str(fs_meta->atime, timeBuf));
-    tsk_fprintf(hFile, "File Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
-    tsk_fprintf(hFile, "Inode Modified:\t%s\n", tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
+    tsk_fprintf(hFile, "Accessed:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+    tsk_fprintf(hFile, "File Modified:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+    tsk_fprintf(hFile, "Inode Modified:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
 
     if (fs_meta->time2.ext2.dtime)
         tsk_fprintf(hFile, "Deleted:\t%s\n",
@@ -2207,7 +2213,8 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errstr
             ("This file system has fragments that are a different size than blocks, which is not currently supported\nContact brian with details of the system that created this image");
         if (tsk_verbose)
-            fprintf(stderr, "ext2fs_open: fragment size not equal to block size\n");
+            fprintf(stderr,
+                "ext2fs_open: fragment size not equal to block size\n");
         return NULL;
     }
 
