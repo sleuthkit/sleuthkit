@@ -164,22 +164,20 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
             /* If the 16 bits following the high surrogate are in the source buffer... */
             if (source < sourceEnd) {
                 UTF32 ch2 = tsk_getu16(endian, (uint8_t *) source);
+                ++source;
+
                 /* If it's a low surrogate, convert to UTF32. */
                 if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) {
                     ch = ((ch - UNI_SUR_HIGH_START) << halfShift)
                         + (ch2 - UNI_SUR_LOW_START) + halfBase;
-                    ++source;
                 }
+                else if (flags == TSKstrictConversion) { /* it's an unpaired high surrogate */
+                    result = TSKsourceIllegal;
+                    break;
+                }
+                // replace with another character
                 else {
-                    if (flags == TSKstrictConversion) { /* it's an unpaired high surrogate */
-                        --source;       /* return to the illegal value itself */
-                        result = TSKsourceIllegal;
-                        break;
-                    }
-                    // replace with another character
-                    else {
-                        ch = '^';
-                    }
+                    ch = '^';
                 }
             }
             else {              /* We don't have the 16 bits following the high surrogate. */
@@ -278,22 +276,19 @@ tsk_UTF16toUTF8_lclorder(const UTF16 ** sourceStart,
             /* If the 16 bits following the high surrogate are in the source buffer... */
             if (source < sourceEnd) {
                 UTF32 ch2 = *source;
+                source++;
                 /* If it's a low surrogate, convert to UTF32. */
                 if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) {
                     ch = ((ch - UNI_SUR_HIGH_START) << halfShift)
                         + (ch2 - UNI_SUR_LOW_START) + halfBase;
-                    ++source;
                 }
+                else if (flags == TSKstrictConversion) { /* it's an unpaired high surrogate */
+                    result = TSKsourceIllegal;
+                    break;
+                }
+                // replace with another character
                 else {
-                    if (flags == TSKstrictConversion) { /* it's an unpaired high surrogate */
-                        --source;       /* return to the illegal value itself */
-                        result = TSKsourceIllegal;
-                        break;
-                    }
-                    // replace with another character
-                    else {
-                        ch = '^';
-                    }
+                    ch = '^';
                 }
             }
             else {              /* We don't have the 16 bits following the high surrogate. */
