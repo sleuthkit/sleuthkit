@@ -244,6 +244,7 @@ main(int argc, char ** argv1)
 
         while (1) {
             int retval;
+            memset(buf, 0, 100);
 #ifdef TSK_WIN32
             int done = 0;
             // win32 doesn't have a fgets equivalent, so we make an equivalent one
@@ -256,6 +257,7 @@ main(int argc, char ** argv1)
                 }
                 // skip the windows CR
                 else if (buf[i] == '\r') {
+                    buf[i] = '\0';
                     i--;
                     continue;
                 }
