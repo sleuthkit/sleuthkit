@@ -164,16 +164,20 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
             /* If the 16 bits following the high surrogate are in the source buffer... */
             if (source < sourceEnd) {
                 UTF32 ch2 = tsk_getu16(endian, (uint8_t *) source);
+                ++source;
+
                 /* If it's a low surrogate, convert to UTF32. */
                 if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) {
                     ch = ((ch - UNI_SUR_HIGH_START) << halfShift)
                         + (ch2 - UNI_SUR_LOW_START) + halfBase;
-                    ++source;
                 }
-                else if (flags == TSKstrictConversion) {        /* it's an unpaired high surrogate */
-                    --source;   /* return to the illegal value itself */
+                else if (flags == TSKstrictConversion) { /* it's an unpaired high surrogate */
                     result = TSKsourceIllegal;
                     break;
+                }
+                // replace with another character
+                else {
+                    ch = '^';
                 }
             }
             else {              /* We don't have the 16 bits following the high surrogate. */
@@ -182,14 +186,19 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
                 break;
             }
         }
-        else if (flags == TSKstrictConversion) {
-            /* UTF-16 surrogate values are illegal in UTF-32 */
-            if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END) {
+        /* UTF-16 surrogate values are illegal in UTF-32 */
+        else if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END) {
+            if (flags == TSKstrictConversion) {
                 --source;       /* return to the illegal value itself */
                 result = TSKsourceIllegal;
                 break;
             }
+            // replace with another character
+            else {
+                ch = '^';
+            }
         }
+
         /* Figure out how many bytes the result will require */
         if (ch < (UTF32) 0x80) {
             bytesToWrite = 1;
@@ -267,16 +276,19 @@ tsk_UTF16toUTF8_lclorder(const UTF16 ** sourceStart,
             /* If the 16 bits following the high surrogate are in the source buffer... */
             if (source < sourceEnd) {
                 UTF32 ch2 = *source;
+                source++;
                 /* If it's a low surrogate, convert to UTF32. */
                 if (ch2 >= UNI_SUR_LOW_START && ch2 <= UNI_SUR_LOW_END) {
                     ch = ((ch - UNI_SUR_HIGH_START) << halfShift)
                         + (ch2 - UNI_SUR_LOW_START) + halfBase;
-                    ++source;
                 }
-                else if (flags == TSKstrictConversion) {        /* it's an unpaired high surrogate */
-                    --source;   /* return to the illegal value itself */
+                else if (flags == TSKstrictConversion) { /* it's an unpaired high surrogate */
                     result = TSKsourceIllegal;
                     break;
+                }
+                // replace with another character
+                else {
+                    ch = '^';
                 }
             }
             else {              /* We don't have the 16 bits following the high surrogate. */
@@ -285,15 +297,20 @@ tsk_UTF16toUTF8_lclorder(const UTF16 ** sourceStart,
                 break;
             }
         }
-        else if (flags == TSKstrictConversion) {
-            /* UTF-16 surrogate values are illegal in UTF-32 */
-            if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END) {
+        /* UTF-16 surrogate values are illegal in UTF-32 */
+        else if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END) {
+            if (flags == TSKstrictConversion) {
                 --source;       /* return to the illegal value itself */
                 result = TSKsourceIllegal;
                 break;
             }
+            // replace with another character
+            else {
+                ch = '^';
+            }
         }
-/* Figure out how many bytes the result will require */
+
+        /* Figure out how many bytes the result will require */
         if (ch < (UTF32) 0x80) {
             bytesToWrite = 1;
         }
