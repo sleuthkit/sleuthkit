@@ -50,6 +50,7 @@ tsk_vs_part_add(TSK_VS_INFO * a_vs, TSK_DADDR_T a_start, TSK_DADDR_T len,
     part->flags = type;
     part->vs = a_vs;
     part->addr = 0;
+    part->tag = TSK_VS_PART_INFO_TAG;
 
     /* is this the first entry in the list */
     if (a_vs->part_list == NULL) {
@@ -180,7 +181,7 @@ tsk_vs_part_free(TSK_VS_INFO * a_vs)
     while (part) {
         if (part->desc)
             free(part->desc);
-
+        part->tag = 0;
         part2 = part->next;
         free(part);
         part = part2;
@@ -203,10 +204,11 @@ tsk_vs_part_get(const TSK_VS_INFO * a_vs, TSK_PNUM_T a_idx)
 {
     TSK_VS_PART_INFO *part;
 
-    if (a_vs == NULL) {
+    if ((a_vs == NULL) || (a_vs->tag != TSK_VS_INFO_TAG)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_ARG);
-        tsk_error_set_errstr("tsk_vs_part_get: pointer is NULL");
+        tsk_error_set_errstr
+            ("tsk_vs_part_get: pointer is NULL or has unallocated structures");
         return NULL;
     }
 

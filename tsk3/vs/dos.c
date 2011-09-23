@@ -1019,6 +1019,7 @@ dos_load_prim_table(TSK_VS_INFO * vs, uint8_t test)
 static void
 dos_close(TSK_VS_INFO * vs)
 {
+    vs->tag = 0;
     tsk_vs_part_free(vs);
     free(vs);
 }
@@ -1047,6 +1048,7 @@ tsk_vs_dos_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset, uint8_t test)
         return NULL;
 
     vs->vstype = TSK_VS_TYPE_DOS;
+    vs->tag = TSK_VS_INFO_TAG;
     vs->img_info = img_info;
 
     vs->offset = offset;

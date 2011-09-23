@@ -6,7 +6,7 @@ libtsk3jni_la_SOURCES = dataModel_SleuthkitJNI.cpp dataModel_SleuthkitJNI.h \
                         tskAutoDbJNI.cpp tskAutoDbJNI.h
 
 indent:
-	indent *.c *.h
+	indent *.cpp *.h
 
 clean-local:
 	-rm -f *.c~ *.h~

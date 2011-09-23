@@ -62,6 +62,7 @@ extern "C" {
     * for open volume systems.
     */
     struct TSK_VS_INFO {
+        int tag;                ///< \internal Will be set to TSK_VS_INFO_TAG if structure is still allocated, 0 if not
         TSK_IMG_INFO *img_info; ///< Pointer to disk image that VS is in
         TSK_VS_TYPE_ENUM vstype;        ///< Type of volume system / media management
         TSK_DADDR_T offset;     ///< Byte offset where VS starts in disk image
@@ -76,7 +77,7 @@ extern "C" {
         void (*close) (TSK_VS_INFO *);  ///< \internal Progs should call tsk_vs_close().
     };
 
-
+#define TSK_VS_INFO_TAG  0x52301642
 
 
     /***************************************************************
@@ -98,6 +99,7 @@ extern "C" {
     * Linked list entry that describes a volume in a generic way. 
     */
     struct TSK_VS_PART_INFO {
+        int tag;
         TSK_VS_PART_INFO *prev; ///< Pointer to previous partition (or NULL)
         TSK_VS_PART_INFO *next; ///< Pointer to next partition (or NULL)
         TSK_VS_INFO *vs;        ///< Pointer to parent volume system handle
@@ -111,6 +113,7 @@ extern "C" {
         TSK_VS_PART_FLAG_ENUM flags;    ///< Flags for partition
     };
 
+#define TSK_VS_PART_INFO_TAG  0x90121253
 
     // to and from type ids and names
     extern TSK_VS_TYPE_ENUM tsk_vs_type_toid(const TSK_TCHAR *);

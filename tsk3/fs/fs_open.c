@@ -54,7 +54,8 @@ tsk_fs_open_vol(const TSK_VS_PART_INFO * a_part_info,
         tsk_error_set_errstr("tsk_fs_open_vol: Null vpart handle");
         return NULL;
     }
-    else if (a_part_info->vs == NULL) {
+    else if ((a_part_info->vs == NULL)
+        || (a_part_info->vs->tag != TSK_VS_INFO_TAG)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("tsk_fs_open_vol: Null vs handle");

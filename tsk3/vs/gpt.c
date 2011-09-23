@@ -267,6 +267,7 @@ gpt_load_table(TSK_VS_INFO * vs)
 static void
 gpt_close(TSK_VS_INFO * vs)
 {
+    vs->tag = 0;
     tsk_vs_part_free(vs);
     free(vs);
 }
@@ -285,6 +286,7 @@ tsk_vs_gpt_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
 
     vs->img_info = img_info;
     vs->vstype = TSK_VS_TYPE_GPT;
+    vs->tag = TSK_VS_INFO_TAG;
 
     /* If an offset was given, then use that too */
     vs->offset = offset;

@@ -200,6 +200,7 @@ bsd_load_table(TSK_VS_INFO * a_vs)
 static void
 bsd_close(TSK_VS_INFO * a_vs)
 {
+    a_vs->tag = 0;
     tsk_vs_part_free(a_vs);
     free(a_vs);
 }
@@ -224,6 +225,7 @@ tsk_vs_bsd_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
 
     vs->img_info = img_info;
     vs->vstype = TSK_VS_TYPE_BSD;
+    vs->tag = TSK_VS_INFO_TAG;
 
     /* use the offset provided */
     vs->offset = offset;
