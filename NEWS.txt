@@ -17,6 +17,7 @@ Bug Fixes:
 - 3406523: Mactime size sanity check
 - 3393960: hfind reading of Windows input file
 - 3316603: Error reading last blocks of RAW CD images
+- Fixed bugs in how directories and files were detected in TskAuto
 
 
 ---------------- VERSION 3.2.2 --------------
