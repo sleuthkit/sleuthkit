@@ -568,14 +568,14 @@ uint8_t TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
 /**
  * Utility method to help determine if a file is a . or .. directory.
  *
- * @returns 1 if the file is a dot directory, 0 if not.
+ * @returns 1 if the file is a dot directory, 0 if not. 
  */
 uint8_t TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
 {
     if ((!a_fs_file) || (!a_fs_file->name)
-        || ((a_fs_file->name->flags & TSK_FS_NAME_TYPE_DIR) == 0))
+        || (a_fs_file->name->type != TSK_FS_NAME_TYPE_DIR))
         return 0;
-
+    
     if ((a_fs_file->name->name_size >= 2)
         && (a_fs_file->name->name[0] == '.')
         && ((a_fs_file->name->name[1] == '\0')
@@ -590,29 +590,41 @@ uint8_t TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
 /**
  * Utility method to help determine if a file is a directory.
  *
- * @returns 1 if the file is a directory, 0 if not.
+ * @returns 1 if the file is a directory, 0 if not. 
  */
 uint8_t TskAuto::isDir(TSK_FS_FILE * a_fs_file)
 {
-    if ((a_fs_file) && (a_fs_file->name)
-        && (a_fs_file->name->type == TSK_FS_NAME_TYPE_DIR))
-        return 1;
-    else
-        return 0;
+    if ((a_fs_file) && (a_fs_file->name)) {
+        if (a_fs_file->name->type == TSK_FS_NAME_TYPE_DIR) {
+            return 1;
+        }
+        else if (a_fs_file->name->type == TSK_FS_NAME_TYPE_UNDEF) {
+            if ((a_fs_file->meta) && (a_fs_file->meta->type == TSK_FS_META_TYPE_DIR)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
 }
 
 /**
  * Utility method to help determine if a file is a file (and not a directory).
  *
- * @returns 1 if the file is a file, 0 if not.
+ * @returns 1 if the file is a file, 0 if not. 
  */
 uint8_t TskAuto::isFile(TSK_FS_FILE * a_fs_file)
 {
-    if ((a_fs_file) && (a_fs_file->name)
-        && (a_fs_file->name->type == TSK_FS_NAME_TYPE_REG))
-        return 1;
-    else
-        return 0;
+    if ((a_fs_file) && (a_fs_file->name)) {
+        if (a_fs_file->name->type == TSK_FS_NAME_TYPE_REG) {
+            return 1;
+        }
+        else if (a_fs_file->name->type == TSK_FS_NAME_TYPE_UNDEF) {
+            if ((a_fs_file->meta) && (a_fs_file->meta->type == TSK_FS_META_TYPE_REG)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
 }
 
 /**
