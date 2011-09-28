@@ -4789,6 +4789,13 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
 
 
+    // set up locks
+    tsk_init_lock(&ntfs->lock);
+    tsk_init_lock(&ntfs->orphan_map_lock);
+#if TSK_USE_SID
+    tsk_init_lock(&ntfs->sid_lock);
+#endif
+
     /*
      * inode
      */
@@ -4894,12 +4901,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 ntfs->fs->mft_clust), tsk_getu64(fs->endian,
                 ntfs->fs->mftm_clust));
     }
-
-    tsk_init_lock(&ntfs->lock);
-    tsk_init_lock(&ntfs->orphan_map_lock);
-#if TSK_USE_SID
-    tsk_init_lock(&ntfs->sid_lock);
-#endif
 
     return fs;
 }

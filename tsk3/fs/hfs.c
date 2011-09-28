@@ -3076,6 +3076,9 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     hfs->extents_file = NULL;
     hfs->extents_attr = NULL;
 
+    // init lock
+    tsk_init_lock(&hfs->lock);
+
     /* Load the catalog file though */
     if ((hfs->catalog_file =
             tsk_fs_file_open_meta(fs, NULL,
@@ -3166,8 +3169,6 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->jopen = hfs_jopen;
     fs->name_cmp = hfs_name_cmp;
     fs->journ_inum = 0;
-
-    tsk_init_lock(&hfs->lock);
 
     return fs;
 }
