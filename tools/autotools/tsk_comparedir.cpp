@@ -365,23 +365,15 @@ main(int argc, char **argv1)
             
 
         case _TSK_T('n'):
-            inum = (TSK_INUM_T) TSTRTOUL(OPTARG, &cp, 0);
-            if (*cp || *cp == *OPTARG || inum <= 0) {
-                TFPRINTF(stderr,
-                    _TSK_T
-                    ("invalid argument: inum must be positive: %s\n"),
-                    OPTARG);
+            if (tsk_fs_parse_inum(OPTARG, &inum, NULL, NULL, NULL, NULL)) {
+                tsk_error_print(stderr);
                 usage();
             }
             break;
         
         case _TSK_T('o'):
-            soffset = (TSK_OFF_T) TSTRTOUL(OPTARG, &cp, 0);
-            if (*cp || *cp == *OPTARG || soffset < 0) {
-                TFPRINTF(stderr,
-                     _TSK_T
-                     ("invalid argument: sector offset must be positive: %s\n"),
-                     OPTARG);
+            if ((soffset = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
                 usage();
             }
             break;

@@ -10,6 +10,7 @@ New Features:
 - Need to only specify first E01 file and the rest are found
 - Changed docs license to non-commercial
 - Unicode conversion routines fix invalid UTF-16 text during conversion
+- Added '-d' to tsk_recover to specify directory to recover
 
 Bug Fixes:
 - Added check to fatfs_open to compare first sectors of FAT if we used backup boot sector and verify it is FAT32.

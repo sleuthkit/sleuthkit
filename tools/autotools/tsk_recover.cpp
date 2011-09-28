@@ -3,7 +3,7 @@
  ** The Sleuth Kit 
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -21,7 +21,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vVae] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] image [image] output_dir\n"),
+        ("usage: %s [-vVae] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o sector_offset] [-d dir_inum] image [image] output_dir\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
@@ -36,6 +36,8 @@ usage()
         "\t-e: Recover all files (allocated and unallocated)\n");
     tsk_fprintf(stderr,
         "\t-o sector_offset: sector offset for a volume to recover (recovers only that volume)\n");
+    tsk_fprintf(stderr, 
+        "\t-d dir_inum: Directory inum to recover from (must also specify a specific partition using -o or there must not be a volume system)\n");
 
     exit(1);
 }
@@ -52,7 +54,7 @@ public:
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
-    uint8_t findFiles(TSK_OFF_T soffset, TSK_FS_TYPE_ENUM a_ftype);
+    uint8_t findFiles(TSK_OFF_T soffset, TSK_FS_TYPE_ENUM a_ftype, TSK_INUM_T a_dirInum);
     
 private:
     TSK_TCHAR * m_base_dir;
@@ -346,14 +348,22 @@ TskRecover::filterFs(TSK_FS_INFO * fs_info)
 }
 
 uint8_t
-TskRecover::findFiles(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM a_ftype)
+TskRecover::findFiles(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM a_ftype, TSK_INUM_T a_dirInum)
 {
     uint8_t retval;
 
-    if (a_soffset)
-        retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_ftype);
-    else
-        retval = findFilesInImg();
+    if (a_soffset) {
+        if (a_dirInum)
+            retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_ftype, a_dirInum);
+        else
+            retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_ftype);
+    }
+    else {
+        if (a_dirInum)
+            retval = findFilesInFs(0, a_ftype, a_dirInum);
+        else 
+            retval = findFilesInImg();
+    }
 
     printf("Files Recovered: %d\n", m_fileCount);
     return retval;
@@ -370,6 +380,7 @@ main(int argc, char **argv1)
     TSK_OFF_T soffset = 0;
     TSK_TCHAR *cp;
     TSK_FS_DIR_WALK_FLAG_ENUM walkflag = TSK_FS_DIR_WALK_FLAG_UNALLOC;
+    TSK_INUM_T dirInum = 0;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -385,7 +396,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ab:ef:i:o:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:d:ef:i:o:vV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -408,6 +419,15 @@ main(int argc, char **argv1)
             }
             break;
                 
+        case _TSK_T('d'):
+            if (tsk_fs_parse_inum(OPTARG, &dirInum, NULL, NULL, NULL, NULL)) {
+                TFPRINTF(stderr,
+                        _TSK_T("invalid argument for directory inode: %s\n"),
+                        OPTARG);
+                usage();
+            }
+            break;
+
         case _TSK_T('e'):
             walkflag =
             (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_UNALLOC |
@@ -442,12 +462,8 @@ main(int argc, char **argv1)
             break;
                 
         case _TSK_T('o'):
-            soffset = (TSK_OFF_T) TSTRTOUL(OPTARG, &cp, 0);
-            if (*cp || *cp == *OPTARG || soffset < 0) {
-                TFPRINTF(stderr,
-                         _TSK_T
-                         ("invalid argument: sector offset must be positive: %s\n"),
-                         OPTARG);
+            if ((soffset = tsk_parse_offset(OPTARG)) == -1) {
+                tsk_error_print(stderr);
                 usage();
             }
             break;
@@ -478,7 +494,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (tskRecover.findFiles(soffset, fstype)) {
+    if (tskRecover.findFiles(soffset, fstype, dirInum)) {
         tsk_error_print(stderr);
         exit(1);
     }
