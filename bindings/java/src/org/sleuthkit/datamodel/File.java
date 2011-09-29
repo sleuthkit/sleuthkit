@@ -19,6 +19,9 @@
 
 package org.sleuthkit.datamodel;
 
+import java.util.Collections;
+import java.util.List;
+
 
 /**
  *
@@ -30,12 +33,11 @@ public class File extends FsContent{
 	/**
 	 * Constructor most fields are from the database
 	 * @param db java database class
-	 * @param fs_id
-	 * @param file_id
+	 * @param obj_id
+	 * @param meta_addr 
 	 * @param attr_type
 	 * @param attr_id
 	 * @param name
-	 * @param par_file_id
 	 * @param dir_type
 	 * @param meta_type
 	 * @param dir_flags
@@ -49,16 +51,15 @@ public class File extends FsContent{
 	 * @param uid
 	 * @param gid
 	 */
-	protected File(Sleuthkit db, long fs_id, long file_id, long attr_type, long attr_id, String name, long par_file_id,
-			long dir_type, long meta_type, long dir_flags, long meta_flags, long size, 
-			long ctime, long crtime, long atime, long mtime, long mode, long uid, long gid){
-		this.db = db;
-		this.fs_id = fs_id;
-		this.file_id = file_id;
+	protected File(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr, long attr_type,
+			long attr_id, String name, long dir_type, long meta_type,
+			long dir_flags, long meta_flags, long size, long ctime, long crtime,
+			long atime, long mtime, long mode, long uid, long gid) {
+		super(db, obj_id, fs_obj_id);
+		this.meta_addr = meta_addr;
 		this.attr_type = attr_type;
 		this.attr_id = attr_id;
 		this.name = name;
-		this.par_file_id = par_file_id;
 		this.dir_type = dir_type;
 		this.meta_type = meta_type;
 		this.dir_flags = dir_flags;
@@ -77,6 +78,7 @@ public class File extends FsContent{
 	 * is this a file?
 	 * @return true, it is a file
 	 */
+	@Override
 	public boolean isFile(){
 		return true;
 	}
@@ -85,5 +87,15 @@ public class File extends FsContent{
     public <T> T accept(ContentVisitor<T> v) {
         return v.visit(this);
     }
+
+	@Override
+	public List<Content> getChildren() throws TskException {
+		return Collections.EMPTY_LIST;
+	}
+
+	@Override
+	public boolean isOnto() {
+		return false;
+	}
 }
 

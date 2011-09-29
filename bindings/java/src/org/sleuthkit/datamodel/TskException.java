@@ -27,5 +27,9 @@ public class TskException extends Exception{
 	public TskException(String msg){
 		super(msg);
 	}
+	
+	public TskException(String msg, Exception ex){
+		super(msg, ex);
+	}
 }
 

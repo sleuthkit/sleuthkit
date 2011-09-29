@@ -19,30 +19,32 @@
 package org.sleuthkit.datamodel;
 
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Image class
  * @author alawrence
  */
-public class Image implements Content {
+public class Image extends AbstractContent implements FileSystemParent {
 	//data about image
 
 	private long type, ssize;
 	private String name;
 	private String[] paths;
-	private Sleuthkit db;
 	private long imageHandle = 0;
-
+	
 	/**
 	 * constructor most inputs are from the database
 	 * @param db database object
+	 * @param obj_id 
 	 * @param type
 	 * @param ssize
 	 * @param name
-	 * @param path
-	 */
-	protected Image(Sleuthkit db, long type, long ssize, String name, String[] paths) throws TskException {
-		this.db = db;
+	 * @param paths  
+	 */		
+	
+	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths) throws TskException {
+		super(db, obj_id);
 		this.type = type;
 		this.ssize = ssize;
 		this.name = name;
@@ -59,22 +61,10 @@ public class Image implements Content {
 	}
 
 	/**
-	 * get the volume system at the given byte offset
-	 * @param offset bytes (should be 0 in most cases)
-	 * @return volume system object
-	 */
-	public VolumeSystem getVolumeSystem(long offset) throws SQLException {
-		VolumeSystem vs = db.getVolumeSystem(offset);
-		if (vs != null) {
-			vs.setParent(this);
-		}
-		return vs;
-	}
-
-	/**
 	 * get the handle to the sleuthkit image info object
 	 * @return the object pointer
 	 */
+	@Override
 	public long getImageHandle() {
 		return imageHandle;
 	}
@@ -139,7 +129,7 @@ public class Image implements Content {
 	 * get the sleuthkit database object
 	 * @return the sleuthkit object
 	 */
-	public Sleuthkit getSleuthkit(){
+	public SleuthkitCase getSleuthkit(){
 		return db;
 	}
 
@@ -224,5 +214,19 @@ public class Image implements Content {
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
+	}
+
+	@Override
+	public List<Content> getChildren() throws TskException {
+		try {
+			return db.getImageChildren(this);
+		} catch (SQLException ex) {
+			throw new TskException("Error getting Image children.", ex);
+		}
+	}
+
+	@Override
+	public boolean isOnto() {
+		return true;
 	}
 }

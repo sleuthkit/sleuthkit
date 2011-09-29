@@ -2,28 +2,27 @@
 .SH NAME
 tsk_loaddb - populate a SQLite database with metadata from a disk image
 .SH SYNOPSIS
-.B tsk_loaddb [-vVk] [-i
+.B tsk_loaddb [-avVk] [-i
 .I imgtype
 .B ] [-b
 .I dev_sector_size
 .B ] [-i
 .I imgtype
 .B ] [-d
-.I output_dir
+.I database
 .B ]
 .I image
 .SH DESCRIPTION
 .B tsk_loaddb
 loads disk information from 
 .I image
-to a sqlite database.  This database can then be used by tools in other languages for analysis. By default, the database is stored in the same directory as the image with ".db" appended to the name. 
+to a sqlite database.  This database can then be used by tools in other languages for analysis. By default, the database is stored in the same directory as the image with ".db" appended to the name or the database name can be specified with '-d'. 
 
 The arguments are as follows:
-.IP "-d output_dir"
-specify a directory to output the database file to 
-(must be an existing directory) if not specified the
-database file will be created in the same directory
-as the image file
+.IP "-a"
+Adds image to an existing database instead of creating a new one.
+.IP "-d database"
+Path for the database (default is the same directory as the image with name derived from image name
 .IP -v
 verbose output to stderr
 .IP -V

@@ -24,20 +24,18 @@ import java.util.*;
  *
  * @author alawrence
  */
-public class FileSystem implements Content{
+public class FileSystem extends AbstractContent{
 
-	long fs_id, img_offset, vol_id, fs_type, block_size, block_count, root_inum,
+	long img_offset, fs_type, block_size, block_count, root_inum,
 	first_inum, last_inum;
-	private Sleuthkit db;
-	private Volume parentVolume;
+	private FileSystemParent parent;
 	private long filesystemHandle = 0;
 
 	/**
 	 * Constructor most inputs are from the database
 	 * @param db java database class
-	 * @param fs_id
+	 * @param obj_id 
 	 * @param img_offset
-	 * @param vol_id
 	 * @param fs_type
 	 * @param block_size
 	 * @param block_count
@@ -45,13 +43,11 @@ public class FileSystem implements Content{
 	 * @param first_inum
 	 * @param last_inum
 	 */
-	protected FileSystem(Sleuthkit db, long fs_id, long img_offset, long vol_id, long fs_type,
-			long block_size, long block_count, long root_inum, long first_inum, 
-			long last_inum){
-		this.db = db;
-		this.fs_id = fs_id; 
+	protected FileSystem(SleuthkitCase db, long obj_id, long img_offset,
+			long fs_type, long block_size, long block_count, long root_inum,
+			long first_inum, long last_inum){
+		super(db, obj_id);
 		this.img_offset = img_offset; 
-		this.vol_id = vol_id; 
 		this.fs_type = fs_type;
 		this.block_size = block_size;
 		this.block_count = block_count;
@@ -59,61 +55,13 @@ public class FileSystem implements Content{
 		this.first_inum = first_inum;
 		this.last_inum = last_inum;
 	}
-
+	
 	/**
 	 * set the parent class, will be called by the parent
-	 * @param parent parent volume
+	 * @param p parent volume
 	 */
-	protected void setParent(Volume parent){
-		parentVolume = parent;
-	}
-
-
-	/**
-	 * get the root directory if one exists
-	 * @return a directory object if the root is listed in the db otherwise null
-	 */
-	public FsContent getRootDir() throws SQLException{
-		//get the root directory. good for starting a file browser 
-		FsContent dir = db.getFile(fs_id, root_inum);
-		if (dir != null){
-			dir.setParent(this);
-		}
-		return dir;
-	}
-
-	/**
-	 * gets a list of files and directories in the root of this file system
-	 * @return an arraylist of files and directories in the root directory
-	 */
-	public ArrayList<FsContent> getRootFiles() throws SQLException{
-		//getfiles in root directory
-		ArrayList<Long> childIds = db.getChildIds(root_inum, fs_id);
-		ArrayList<FsContent> content = new ArrayList<FsContent>();
-
-		for(Long id : childIds){
-			FsContent newContent = db.getFile(fs_id, id);
-			if(!newContent.getName().equals(".")&&!newContent.getName().equals("..")){
-				newContent.setParent(this);
-				content.add(newContent);
-			}
-		}
-		return content;
-	}
-
-	/**
-	 * gets a directory with the given inum
-	 * @param INUM directory's id
-	 * @return a directory or null if it doesn't exist
-	 */
-	public FsContent getDirectory(long INUM) throws SQLException{
-		//get the directory at the given inum, will need to use commandline tools
-		//if file id is the same as inum then can use database
-		FsContent dir = db.getFile(fs_id, INUM);
-		if(dir != null){
-			dir.setParent(this);
-		}
-		return dir;
+	protected void setParent(FileSystemParent p){
+		parent = p;
 	}
 
 	/**
@@ -123,26 +71,24 @@ public class FileSystem implements Content{
 	 * @return the bytes
 	 * @throws TskException
 	 */
+	@Override
 	public byte[] read(long offset, long len) throws TskException{
-		// read from the file system
-		if(filesystemHandle == 0){
-			filesystemHandle = SleuthkitJNI.openFs(this.getParent().getParent().getParent().getImageHandle(), img_offset);
-		}
-		return SleuthkitJNI.readFs(filesystemHandle, offset, len);
+		return SleuthkitJNI.readFs(getFileSystemHandle(), offset, len);
 	}
 
 	/**
 	 * get the parent volume
 	 * @return volume object
 	 */
-	public Volume getParent(){
-		return parentVolume;
+	public FileSystemParent getParent(){
+		return parent;
 	}
 
 	/**
 	 * get the size of the filesystem
 	 * @return size of the filesystem
 	 */
+	@Override
 	public long getSize() {
 		// size of the file system
 		return block_size * block_count;
@@ -151,23 +97,18 @@ public class FileSystem implements Content{
 	/**
 	 * lazily loads the filesystem pointer ie: won't be loaded until this is called
 	 * @return a filesystem pointer from the sleuthkit
+	 * @throws TskException  
 	 */
 	public long getFileSystemHandle() throws TskException{
 		if (filesystemHandle == 0){
-			filesystemHandle = SleuthkitJNI.openFs(this.getParent().getParent().getParent().getImageHandle(), img_offset);
+			filesystemHandle = SleuthkitJNI.openFs(parent.getImageHandle(), img_offset);
 		}
 		return this.filesystemHandle;
 	}
 
 	//methods get exact data from database. could be manipulated to get more
 	//meaningful data.
-	/**
-	 * get the file system id
-	 * @return fs id
-	 */
-	public long getFs_id() {
-		return fs_id;
-	}	
+
 	/**
 	 * get the byte offset of this filesystem in the image
 	 * @return offset
@@ -175,13 +116,7 @@ public class FileSystem implements Content{
 	public long getImg_offset() {
 		return img_offset;
 	}	 	
-	/**
-	 * get the volume id
-	 * @return id
-	 */
-	public long getVol_id() {
-		return vol_id;
-	}	 	
+
 	/**
 	 * get the file system type
 	 * @return enum number from sleuthkit database
@@ -225,6 +160,7 @@ public class FileSystem implements Content{
 		return last_inum;
 	}	
 
+	@Override
 	public void finalize(){
 		if(filesystemHandle != 0){
 			SleuthkitJNI.closeFs(filesystemHandle);
@@ -235,4 +171,18 @@ public class FileSystem implements Content{
     public <T> T accept(ContentVisitor<T> v) {
         return v.visit(this);
     }
+
+	@Override
+	public List<Content> getChildren() throws TskException {
+		try {
+			return db.getFileSystemChildren(this);
+		} catch (SQLException ex) {
+			throw new TskException("Error while getting FileSystem children.", ex);
+		}
+	}
+
+	@Override
+	public boolean isOnto() {
+		return true;
+	}
 }

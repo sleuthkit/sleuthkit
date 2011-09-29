@@ -25,13 +25,15 @@
 #ifdef __cplusplus
 
 // Include the other TSK header files
+
 #include "tsk3/base/tsk_base.h"
 #include "tsk3/img/tsk_img.h"
 #include "tsk3/vs/tsk_vs.h"
 #include "tsk3/fs/tsk_fs.h"
 
-#define TSK_AUTO_TAG 0x9191ABAB
 
+
+#define TSK_AUTO_TAG 0x9191ABAB
 
 typedef enum {
     TSK_FILTER_CONT = 0x00,     ///< Framework should continue to process this object
@@ -185,91 +187,6 @@ class TskAuto {
         return TSK_OK;
     };
 };
-
-
-typedef struct sqlite3 sqlite3;
-
-
-/** \internal
- * C++ class that wraps the specifics of interacting with a SQLite database for TskAutoDb 
- */
-class TskImgDBSqlite {
-  public:
-    //TskImgDBSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag);
-    TskImgDBSqlite(const char * a_dbFilePathUtf8, bool a_blkMapFlag);
-    ~TskImgDBSqlite();
-    int open();
-    int close();
-    int initialize();
-    int createParentDirIndex();
-    int addImageInfo(int type, int size);
-    int addImageName(char const * imgName);
-    int addVsInfo(const TSK_VS_INFO * vs_info);
-    int addVolumeInfo(const TSK_VS_PART_INFO * vs_part);
-    int addFsInfo(int volId, int fsId, const TSK_FS_INFO * fs_info);
-    int addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
-        const char *path, int fs_id);
-    int addFsBlockInfo(int a_fsId, uint64_t a_fileId, int a_sequence,
-        uint64_t a_blk_addr, uint64_t a_len, TSK_FS_ATTR_TYPE_ENUM a_attrType,
-        uint16_t a_attrId);
-    int begin();
-    int commit();
-    bool dbExist() const;
-
-  private:
-    int attempt_exec(const char *sql, const char *errfmt);
-    sqlite3 * m_db;
-    TSK_TCHAR m_dbFilePath[1024];
-    char m_dbFilePathUtf8[1024];
-    bool m_blkMapFlag;
-    bool m_utf8;
-};
-
-
-
-/** \internal
- * C++ class that implements TskAuto to load file metadata into a database. 
- */
-class TskAutoDb:public TskAuto {
-  public:
-    TskAutoDb();
-    virtual ~ TskAutoDb();
-    virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
-    virtual uint8_t openImageUtf8(int, const char *const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
-    uint8_t openImage(int, const TSK_TCHAR * const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, TSK_TCHAR * output_dir);
-    uint8_t openImageUtf8(int, const char *const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, char *output_dir);
-    virtual void closeImage();
-
-    uint8_t addFilesInImgToDB();
-    virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
-    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
-    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
-    virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
-        const char *path);
-    virtual void createBlockMap(bool flag);
-
-  private:
-    TskImgDBSqlite * m_db;
-    int m_curFsId;
-    int m_curVsId;
-    bool m_blkMapFlag;
-    bool m_vsFound;
-    bool m_volFound;
-
-    uint8_t initDatabase(const char * const images[], int);
-    TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
-        const TSK_FS_ATTR *, const char *path);
-    virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
-        const TSK_FS_ATTR * fs_attr, const char *path);
-};
-
-
-
-
 
 
 #endif

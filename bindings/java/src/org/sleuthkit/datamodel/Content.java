@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.List;
+
 /**
  * Interface for all content from the sleuthkit.
  * @author alawrence
@@ -29,6 +31,7 @@ public interface Content {
 	 * @param offset offset to start reading from
 	 * @param len amount of data to read (in bytes)
 	 * @return a character array of data (in bytes)
+	 * @throws TskException  
 	 */
 	public byte[] read(long offset, long len) throws TskException;
 
@@ -45,4 +48,23 @@ public interface Content {
 	 * @return visitor return value
 	 */
 	public <T> T accept(ContentVisitor<T> v);
+	
+	/**
+	 * Does this parent always have exactly one child?
+	 * @return True if the getChildren function is one-to-one
+	 */
+	public boolean isOnto();
+		
+	/**
+	 * Gets the child contents.
+	 * @return
+	 * @throws TskException
+	 */
+	public List<Content> getChildren() throws TskException;
+	
+	/**
+	 * Gets the content object id.
+	 * @return
+	 */
+	public long getId();
 }

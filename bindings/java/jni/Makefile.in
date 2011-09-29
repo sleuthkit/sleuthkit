@@ -35,8 +35,8 @@ host_triplet = @host@
 subdir = bindings/java/jni
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/ax_pthread.m4 \
-	$(top_srcdir)/cppunit.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_pthread.m4 \
+	$(top_srcdir)/m4/cppunit.m4 \
 	$(top_srcdir)/m4/ax_jni_include_dir.m4 \
 	$(top_srcdir)/m4/ac_prog_javac_works.m4 \
 	$(top_srcdir)/m4/ac_prog_javac.m4 $(top_srcdir)/configure.ac
@@ -55,7 +55,7 @@ am__installdirs = "$(DESTDIR)$(libdir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libtsk3jni_la_LIBADD =
-am_libtsk3jni_la_OBJECTS = dataModel_SleuthkitJNI.lo tskAutoDbJNI.lo
+am_libtsk3jni_la_OBJECTS = dataModel_SleuthkitJNI.lo
 libtsk3jni_la_OBJECTS = $(am_libtsk3jni_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/tsk3@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -212,9 +212,7 @@ top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I../../.. -I$(srcdir)/../../.. -Wall $(JNI_CPPFLAGS)
 EXTRA_DIST = .indent.pro 
 lib_LTLIBRARIES = libtsk3jni.la
-libtsk3jni_la_SOURCES = dataModel_SleuthkitJNI.cpp dataModel_SleuthkitJNI.h \
-                        tskAutoDbJNI.cpp tskAutoDbJNI.h
-
+libtsk3jni_la_SOURCES = dataModel_SleuthkitJNI.cpp dataModel_SleuthkitJNI.h 
 all: all-am
 
 .SUFFIXES:
@@ -285,7 +283,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dataModel_SleuthkitJNI.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tskAutoDbJNI.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -496,7 +493,7 @@ uninstall-am: uninstall-libLTLIBRARIES
 
 
 indent:
-	indent *.c *.h
+	indent *.cpp *.h
 
 clean-local:
 	-rm -f *.c~ *.h~

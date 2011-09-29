@@ -9,12 +9,11 @@
  **
  */
 #include "tsk3/tsk_tools_i.h"
+#include "tsk3/auto/tsk_case_db.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
-#include "tskAutoDbJNI.h"
 #include <locale.h>
 #include <time.h>
-
 
 /** Throw an TSK exception back up to the Java code with a specific message.
  */
@@ -96,80 +95,89 @@ castFsFileInfo(JNIEnv * env, jlong ptr)
 
 
 /*
- * Create a database for the given image (process cannot be cancelled)
- * @return the 0 for success 1 for failure
+ * Open a TskCaseDb with an associated database
+ * @return the pointer to the case
  * @param env pointer to java environment this was called from
- * @param obj the java object this was called from
- * @param paths array of strings from java, the paths to the image parts
- * @param num_imgs number of image parts
- * @param outDir the output directory
+ * @param dbPath location for the database
  */
-// @@@ We should remove this method in favor of the multi-step approach.
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_loaddbNat
-    (JNIEnv * env, jclass obj, jobjectArray paths, jint num_imgs,
-    jstring outDir) {
-    TskAutoDb tskDb;
-    //change to true when autopsy needs the block table.
-    tskDb.createBlockMap(false);
-
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbNat
+(JNIEnv *env, jclass obj, jstring dbPathJ) {
     jboolean isCopy;
 
-    // pull the strings into the C++ world.
-    char *cOutDir8 = (char *) env->GetStringUTFChars(outDir, &isCopy);
-    if (cOutDir8 == NULL) {
-        throwTskError(env);
-        return 1;
+	char * dbPath8 = (char *)env->GetStringUTFChars(dbPathJ, &isCopy);
+	
+	TSK_TCHAR dbPathT[1024];
+    TSNPRINTF(dbPathT, 1024, _TSK_T("%") PRIcTSK, dbPath8);
+	TskCaseDb * tskCase = TskCaseDb::newDb(dbPathT);
+
+    if (tskCase == NULL) {
+        throwTskError(env); 
+        return 1; //@@@ what's the right thing to return here?
     }
 
-    // get pointers to each of the file names
-    char **imagepaths8 = (char **) tsk_malloc(num_imgs * sizeof(char *));
-    if (imagepaths8 == NULL) {
-        throwTskError(env);
-        return 1;
+	return (jlong)tskCase;
+}
+
+
+/*
+ * Open a TskCaseDb with an associated database
+ * @return the pointer to the case
+ * @param env pointer to java environment this was called from
+ * @param dbPath location for the database
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbNat
+(JNIEnv *env, jclass obj, jstring dbPathJ) {
+    jboolean isCopy;
+
+	char * dbPath8 = (char *)env->GetStringUTFChars(dbPathJ, &isCopy);
+	
+	TSK_TCHAR dbPathT[1024];
+    TSNPRINTF(dbPathT, 1024, _TSK_T("%") PRIcTSK, dbPath8);
+	TskCaseDb * tskCase = TskCaseDb::openDb(dbPathT);
+
+    if (tskCase == NULL) {
+        throwTskError(env); 
+        return 1; //@@@ what's the right thing to return here?
     }
-    for (int i = 0; i < num_imgs; i++) {
-        imagepaths8[i] =
-            (char *) env->GetStringUTFChars((jstring) env->
-            GetObjectArrayElement(paths, i), &isCopy);
-        // @@@ Add error checking here
-    }
 
-
-    // open and process the image
-    if (tskDb.openImageUtf8(num_imgs, imagepaths8, TSK_IMG_TYPE_DETECT, 0,
-            cOutDir8)) {
-        throwTskError(env, tsk_error_get());
-        return 1;
-    }
-
-    if (tskDb.addFilesInImgToDB()) {
-        throwTskError(env, tsk_error_get());
-        return 1;
-    }
-
-    // cleanup
-    for (int i = 0; i < num_imgs; i++) {
-        env->ReleaseStringUTFChars((jstring) env->
-            GetObjectArrayElement(paths, i), imagepaths8[i]);
-    }
-    free(imagepaths8);
-    env->ReleaseStringUTFChars(outDir, cOutDir8);
-
-    tskDb.closeImage();
-
-    return 0;
+	return (jlong)tskCase;
 }
 
 /*
- * Create a loaddb process that can later be run with specific inputs
+ * Close (cleanup) a case
+ * @param env pointer to java environment this was called from
+ * @param case the pointer to the case
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat
+(JNIEnv *env, jclass obj, jstring caseHandle) {
+
+	TskCaseDb * tskCase = ((TskCaseDb*)caseHandle);
+    if (tskCase->m_tag != TSK_CASE_DB_TAG) {
+        throwTskError(env, "closeCaseDbNate: Invalid TskCaseDb object passed in");
+        return;
+    }
+
+	delete tskCase;
+}
+
+
+
+/*
+ * Create an add-image process that can later be run with specific inputs
  * @return the pointer to the process
  * @param env pointer to java environment this was called from
+ * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
  */
-JNIEXPORT jlong JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_startloaddbNat(JNIEnv * env,
-    jclass obj, jstring timezone) {
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
+(JNIEnv *env, jclass obj, jlong caseHandle, jstring timezone) {
     jboolean isCopy;
+
+	TskCaseDb * tskCase = ((TskCaseDb*)caseHandle);
+    if (tskCase->m_tag != TSK_CASE_DB_TAG) {
+        throwTskError(env, "initAddImgNat: Invalid TskCaseDb object passed in");
+        return 1;
+    }
 
     char envstr[32];
     snprintf(envstr, 32, "TZ=%s", env->GetStringUTFChars(timezone,
@@ -181,8 +189,8 @@ JNIEXPORT jlong JNICALL
 
     /* we should be checking this somehow */
     TZSET();
-    TskAutoDbJNI *tskDb = new TskAutoDbJNI();
-    return (jlong) tskDb;
+    TskAutoDb *tskAuto = tskCase->initAddImage();
+    return (jlong)tskAuto;
 }
 
 
@@ -192,34 +200,25 @@ JNIEXPORT jlong JNICALL
  * @return the 0 for success 1 for failure
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
- * @param process the loaddb proces created by startloaddbNat
+ * @param process the add-image process created by initAddImgNat
  * @param paths array of strings from java, the paths to the image parts
  * @param num_imgs number of image parts
  * @param outDir the output directory
  */
-JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_runloaddbNat(JNIEnv * env,
-    jclass obj, jlong process, jobjectArray paths, jint num_imgs,
-    jstring outDir) {
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat
+(JNIEnv * env, jclass obj, jlong process, jobjectArray paths, jint num_imgs){
     jboolean isCopy;
-
-    TskAutoDbJNI *tskDb = ((TskAutoDbJNI *) process);
-    if (tskDb->m_tag != TSK_AUTO_TAG) {
-        throwTskError(env,
-            "runLoadDbNat: Invalid AutoDbJNI object passed in");
+    
+    TskAutoDb * tskAuto = ((TskAutoDb*)process);
+    if (tskAuto->m_tag != TSK_AUTO_TAG) {
+        throwTskError(env, "runAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
 
     //change to true when autopsy needs the block table.
-    tskDb->createBlockMap(false);
+    tskAuto->createBlockMap(false);
 
     // move the strings into the C++ world
-
-    char *cOutDir8 = (char *) env->GetStringUTFChars(outDir, &isCopy);
-    if (cOutDir8 == NULL) {
-        throwTskError(env);
-        return;
-    }
 
     // get pointers to each of the file names
     char **imagepaths8 = (char **) tsk_malloc(num_imgs * sizeof(char *));
@@ -233,15 +232,13 @@ JNIEXPORT void JNICALL
             GetObjectArrayElement(paths, i), &isCopy);
     }
 
-    // process the images
-    if (tskDb->openImageUtf8((int) num_imgs, imagepaths8,
-            TSK_IMG_TYPE_DETECT, 0, cOutDir8)) {
-        throwTskError(env, tsk_error_get());
-    }
+    // flag to free tskAuto if the process is interuppted
+    bool deleteProcess = false;
 
-    if (tskDb->addFilesInImgToDB()) {
-        tskDb->closeImage();
+	// process the image (parts)
+    if (tskAuto->runProcess((int)num_imgs, imagepaths8, TSK_IMG_TYPE_DETECT, 0)) {
         throwTskError(env, tsk_error_get());
+        deleteProcess = true;
     }
 
     // cleanup
@@ -250,30 +247,67 @@ JNIEXPORT void JNICALL
             GetObjectArrayElement(paths, i), imagepaths8[i]);
     }
     free(imagepaths8);
+    tskAuto->closeImage();
 
-    env->ReleaseStringUTFChars(outDir, cOutDir8);
-    tskDb->closeImage();
+    if (deleteProcess) delete tskAuto;
+    // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
 
 
 
 /*
- * Cancel the given loaddb process
+ * Cancel the given add-image process
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
- * @param process the loaddb proces created by startloaddbNat
+ * @param process the add-image process created by initAddImgNat
  */
-JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_stoploaddbNat(JNIEnv * env,
-    jclass obj, jlong process) {
-    TskAutoDbJNI *tskDb = ((TskAutoDbJNI *) process);
-    if (tskDb->m_tag != TSK_AUTO_TAG) {
-        throwTskError(env,
-            "stopLoadDbNat: Invalid AutoDbJNI object passed in");
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_stopAddImgNat
+(JNIEnv * env, jclass obj, jlong process) {
+    TskAutoDb * tskAuto = ((TskAutoDb*)process);
+    if (tskAuto->m_tag != TSK_AUTO_TAG) {
+        throwTskError(env, "stopAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
-    tskDb->cancelProcess();
+    tskAuto->stopProcess();
 }
+
+
+/*
+ * Revert the given add-image process
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param process the add-image process created by initAddImgNat
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_revertAddImgNat
+(JNIEnv * env, jclass obj, jlong process) {
+    TskAutoDb * tskAuto = ((TskAutoDb*)process);
+    if (tskAuto->m_tag != TSK_AUTO_TAG) {
+        throwTskError(env, "revertAddImgNat: Invalid TskAutoDb object passed in");
+        return;
+    }
+    tskAuto->revertProcess();
+    delete tskAuto;
+}
+
+
+/*
+ * Commit the given add-image process
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param process the add-image process created by initAddImgNat
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_commitAddImgNat
+(JNIEnv * env, jclass obj, jlong process) {
+    TskAutoDb * tskAuto = ((TskAutoDb*)process);
+    if (tskAuto->m_tag != TSK_AUTO_TAG) {
+        throwTskError(env, "commitAddImgNat: Invalid TskAutoDb object passed in");
+        return -1;
+    }
+    int64_t imgId = tskAuto->commitProcess();
+    delete tskAuto;
+    return imgId;
+}
+
 
 
 /*
@@ -284,12 +318,11 @@ JNIEXPORT void JNICALL
  * @param paths the paths to the image parts
  * @param num_imgs number of image parts
  */
-JNIEXPORT jlong JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_openImageNat(JNIEnv * env,
-    jclass obj, jobjectArray paths, jint num_imgs) {
-    TSK_IMG_INFO *img_info;
-    jboolean isCopy;
-
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openImgNat
+(JNIEnv *env, jclass obj, jobjectArray paths, jint num_imgs){
+    TSK_IMG_INFO * img_info;
+        jboolean isCopy;
+    
     // get pointers to each of the file names
     char **imagepaths8 = (char **) tsk_malloc(num_imgs * sizeof(char *));
     if (imagepaths8 == NULL) {

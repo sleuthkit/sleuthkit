@@ -19,6 +19,9 @@
 
 package org.sleuthkit.datamodel;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 /**
  * The class that stores the "ENUM" for the data conversion.
  *
@@ -26,33 +29,46 @@ package org.sleuthkit.datamodel;
  */
 public class TskData {
 
-	// Enum and Arrya for Directory Type
+	// Enum for Directory Type
 	public enum TSK_FS_NAME_TYPE_ENUM {
-		TSK_FS_NAME_TYPE_UNDEF(0),     ///< Unknown type
-		TSK_FS_NAME_TYPE_FIFO(1),      ///< Named pipe
-		TSK_FS_NAME_TYPE_CHR(2),       ///< Character device
-		TSK_FS_NAME_TYPE_DIR(3),       ///< Directory
-		TSK_FS_NAME_TYPE_BLK(4),       ///< Block device
-		TSK_FS_NAME_TYPE_REG(5),       ///< Regular file
-		TSK_FS_NAME_TYPE_LNK(6),       ///< Symbolic link
-		TSK_FS_NAME_TYPE_SOCK(7),      ///< Socket
-		TSK_FS_NAME_TYPE_SHAD(8),      ///< Shadow inode (solaris)
-		TSK_FS_NAME_TYPE_WHT(9),       ///< Whiteout (openbsd)
-		TSK_FS_NAME_TYPE_VIRT(10),     ///< Special (TSK added "Virtual" files)
-		TSK_FS_NAME_TYPE_STR_MAX(11);  ///< Number of types that have a short string name
+		UNDEF(0, "-"),     ///< Unknown type
+		FIFO(1, "p"),      ///< Named pipe
+		CHR(2, "c"),       ///< Character device
+		DIR(3, "d"),       ///< Directory
+		BLK(4, "b"),       ///< Block device
+		REG(5, "r"),       ///< Regular file
+		LNK(6, "l"),       ///< Symbolic link
+		SOCK(7, "s"),      ///< Socket
+		SHAD(8, "h"),      ///< Shadow inode (solaris)
+		WHT(9, "w"),       ///< Whiteout (openbsd)
+		VIRT(10, "v");     ///< Special (TSK added "Virtual" files)
 
 		private long dir_type;
+		String label;
 
-		private TSK_FS_NAME_TYPE_ENUM(long type){
-			dir_type = type;
+		private TSK_FS_NAME_TYPE_ENUM(long type, String label){
+			this.dir_type = type;
+			this.label = label;
 		}
 
 		public long getDirType(){
 			return dir_type;
 		}
+		
+		public String getLabel() {
+			return this.label;
+		}
+		
+		static public TSK_FS_NAME_TYPE_ENUM fromType(long dir_type) {
+			for (TSK_FS_NAME_TYPE_ENUM v : TSK_FS_NAME_TYPE_ENUM.values()) {
+				if (v.dir_type == dir_type) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_FS_NAME_TYPE_ENUM matching type: " + dir_type);
+		}
 	}
 
-	public static String[] tsk_fs_name_type_str = { "-", "p", "c", "d", "b", "r", "l", "s", "h", "w", "v"};
 
 
 	// Enum and Array for Meta Type
@@ -102,21 +118,47 @@ public class TskData {
 
 	// Enum for Meta Flags
 	public enum TSK_FS_META_FLAG_ENUM {
-		TSK_FS_META_FLAG_ALLOC(1),      ///< Metadata structure is currently in an allocated state
-		TSK_FS_META_FLAG_UNALLOC(2),    ///< Metadata structure is currently in an unallocated state
-		TSK_FS_META_FLAG_USED(4),       ///< Metadata structure has been allocated at least once
-		TSK_FS_META_FLAG_UNUSED(8),     ///< Metadata structure has never been allocated.
-		TSK_FS_META_FLAG_COMP(16),      ///< The file contents are compressed.
-		TSK_FS_META_FLAG_ORPHAN(32);    ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
+		ALLOC(1, "Allocated"),      ///< Metadata structure is currently in an allocated state
+		UNALLOC(2, "Unallocated"),    ///< Metadata structure is currently in an unallocated state
+		USED(4, "Used"),       ///< Metadata structure has been allocated at least once
+		UNUSED(8, "Unused"),     ///< Metadata structure has never been allocated.
+		COMP(16, "Compressed"),      ///< The file contents are compressed.
+		ORPHAN(32, "Orphan");    ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
 
 		private long meta_flag;
+		private String label;
 
-		private TSK_FS_META_FLAG_ENUM(long flag){
-			meta_flag = flag;
+		private TSK_FS_META_FLAG_ENUM(long flag, String label){
+			this.meta_flag = flag;
+			this.label = label;
 		}
 
 		public long getMetaFlag(){
 			return meta_flag;
+		}
+		
+		public String getLabel(){
+			return label;
+		}
+		
+		
+		/**
+		 * Returns all the emum elements that match the flags in metaFlag
+		 * @param metaFlag
+		 * @return matching TSK_FS_META_FLAG_ENUM elemetns
+		 */
+		public static Set<TSK_FS_META_FLAG_ENUM> getFlags(long metaFlag) {
+			Set<TSK_FS_META_FLAG_ENUM> matchedFlags = EnumSet.noneOf(TSK_FS_META_FLAG_ENUM.class);
+			
+			for (TSK_FS_META_FLAG_ENUM v : TSK_FS_META_FLAG_ENUM.values()) {
+				long flag = v.getMetaFlag();
+
+				if((metaFlag & flag) == flag){
+					matchedFlags.add(v);
+				}
+			}
+		
+			return matchedFlags;
 		}
 	}
 
@@ -212,5 +254,35 @@ public class TskData {
             return vsType;
         }
     };
+	
+	
+	public enum ObjectType {
+		IMG(0),
+		VS(1),
+		VOL(2),
+		FS(3),
+		FILE(4);
+
+		
+		private long objectType;
+		
+		private ObjectType(long objectType) {
+			this.objectType = objectType;
+		}
+		
+		public long getObjectType(){
+			return objectType;
+		}
+		
+		public static ObjectType valueOf(long objectType) {
+			for (ObjectType v : ObjectType.values()) {
+				if (v.objectType == objectType) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException("No ObjectType of value: " + objectType);
+		}
+	}
+	
 
 }

@@ -238,7 +238,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\tsk3\base\tsk_lock.c"
+				RelativePath="$(ProjectDir)\..\..\tsk3\base\tsk_lock.c"
 				>
 			</File>
 			<File

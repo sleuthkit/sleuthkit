@@ -18,18 +18,19 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.sql.SQLException;
+
 /**
  * generalized class for files and directories
  * @author alawrence
  */
-public abstract class FsContent implements Content{
+public abstract class FsContent extends AbstractContent {
 
 	/*
 	 * database fields
 	 */
-	protected long attr_type, attr_id, par_file_id, dirtype, meta_type, dir_type, dir_flags,
-	meta_flags, size, ctime, crtime, atime, mtime, uid, gid, fs_id, mode,
-	file_id;
+	protected long fs_obj_id, meta_addr, attr_type, attr_id, dirtype, meta_type, dir_type, dir_flags,
+	meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode;
 	/**
 	 * name from the database
 	 */
@@ -42,23 +43,25 @@ public abstract class FsContent implements Content{
 	 * file Handle
 	 */
 	protected long fileHandle = 0;
-	/**
-	 * database object
-	 */
-	protected Sleuthkit db;
+
+	
+	FsContent(SleuthkitCase db, long obj_id, long fs_obj_id) {
+		super(db, obj_id);
+		this.fs_obj_id = fs_obj_id;
+	}
 
 	/**
 	 * sets the parent, called by parent on creation
 	 * @param parent parent file system object
 	 */
-	protected void setParent(FileSystem parent){
+	protected void setFileSystem(FileSystem parent){
 		parentFileSystem = parent;
 	}
 
 	@Override
 	public byte[] read(long offset, long len) throws TskException{
 		if (fileHandle == 0){
-			fileHandle = SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), file_id);
+			fileHandle = SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), meta_addr);
 		}
 		return SleuthkitJNI.readFile(fileHandle, offset, len);
 	}
@@ -79,12 +82,28 @@ public abstract class FsContent implements Content{
 	public boolean isDir(){
 		return false;
 	}
+	
+	/**
+	 * Is this the root of its parent filesystem?
+	 * @return 
+	 */
+	public boolean isRoot() {
+		return parentFileSystem.getRoot_inum() == this.getMeta_addr(); 
+	}
+	
+	public Directory getParentDirectory() throws TskException {
+		try {
+			return db.getParentDirectory(this);
+		} catch (SQLException ex) {
+			throw new TskException("Error getting parent directory.", ex);
+		}
+	}
 
 	/**
 	 * get the parent file system
 	 * @return the file system object of the parent
 	 */
-	public FileSystem getParent(){
+	public FileSystem getFileSystem(){
 		return parentFileSystem;
 	}
 
@@ -92,7 +111,7 @@ public abstract class FsContent implements Content{
 	 * get the sleuthkit database object
 	 * @return the sleuthkit object
 	 */
-	public Sleuthkit getSleuthkit(){
+	public SleuthkitCase getSleuthkit(){
 		return db;
 	}
 
@@ -118,14 +137,6 @@ public abstract class FsContent implements Content{
 	 */
 	public long getAttr_id(){
 		return attr_id;
-	}
-
-	/**
-	 * get the file id
-	 * @return file id
-	 */
-	public long getPar_file_id(){
-		return par_file_id;
 	}
 
 	/**
@@ -180,6 +191,15 @@ public abstract class FsContent implements Content{
 	public String getDirFlagsAsString(){
 		return FsContent.dirFlagToString(dir_flags);
 	}
+	
+	/**
+	 * get the file address
+	 * @return Address of the meta data structure for this file. 
+	 */
+	public long getMeta_addr() {
+		return meta_addr;
+	}
+	
 
 	/**
 	 * get the meta data flags
@@ -278,13 +298,7 @@ public abstract class FsContent implements Content{
 	public long getGid(){
 		return gid;
 	}
-	/**
-	 * get the file system id
-	 * @return file system id
-	 */
-	public long getFs_id(){
-		return fs_id;
-	}
+
 	/**
 	 * get the mode
 	 * @return mode
@@ -299,15 +313,8 @@ public abstract class FsContent implements Content{
 	public String getModeAsString(){
 		return FsContent.modeToString(mode, meta_type);
 	}
-
-	/**
-	 * get the file id
-	 * @return file id
-	 */
-	public long getFile_id(){
-		return file_id;
-	}
-
+	
+	@Override
 	public void finalize(){
 		if(fileHandle != 0){
 			SleuthkitJNI.closeFile(fileHandle);
@@ -368,7 +375,7 @@ public abstract class FsContent implements Content{
 	}
 
 	public static String dirTypeToString(long dirType){
-		return TskData.tsk_fs_name_type_str[(int)dirType];
+		return TskData.TSK_FS_NAME_TYPE_ENUM.fromType(dirType).getLabel();
 	}
 
 
@@ -472,22 +479,22 @@ public abstract class FsContent implements Content{
 
 		String result = "";
 
-		long allocFlag = TskData.TSK_FS_META_FLAG_ENUM.TSK_FS_META_FLAG_ALLOC.getMetaFlag();
-		long unallocFlag = TskData.TSK_FS_META_FLAG_ENUM.TSK_FS_META_FLAG_UNALLOC.getMetaFlag();
+		long allocFlag = TskData.TSK_FS_META_FLAG_ENUM.ALLOC.getMetaFlag();
+		long unallocFlag = TskData.TSK_FS_META_FLAG_ENUM.UNALLOC.getMetaFlag();
 
 		// some variables that might be needed in the future
-		long usedFlag = TskData.TSK_FS_META_FLAG_ENUM.TSK_FS_META_FLAG_USED.getMetaFlag();
-		long unusedFlag = TskData.TSK_FS_META_FLAG_ENUM.TSK_FS_META_FLAG_UNUSED.getMetaFlag();
-		long compFlag = TskData.TSK_FS_META_FLAG_ENUM.TSK_FS_META_FLAG_COMP.getMetaFlag();
-		long orphanFlag = TskData.TSK_FS_META_FLAG_ENUM.TSK_FS_META_FLAG_ORPHAN.getMetaFlag();
+		long usedFlag = TskData.TSK_FS_META_FLAG_ENUM.USED.getMetaFlag();
+		long unusedFlag = TskData.TSK_FS_META_FLAG_ENUM.UNUSED.getMetaFlag();
+		long compFlag = TskData.TSK_FS_META_FLAG_ENUM.COMP.getMetaFlag();
+		long orphanFlag = TskData.TSK_FS_META_FLAG_ENUM.ORPHAN.getMetaFlag();
 
 		if((metaFlag & allocFlag) == allocFlag){
-			result = "Allocated";
-		}
+			result = TskData.TSK_FS_META_FLAG_ENUM.ALLOC.getLabel();
+			}
 		if((metaFlag & unallocFlag) == unallocFlag){
-			result = "Unallocated";
+			result = TskData.TSK_FS_META_FLAG_ENUM.UNALLOC.getLabel();
 		}
-		// ... add more code here if needed
+
 
 		return result;
 	}

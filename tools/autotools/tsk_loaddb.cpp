@@ -10,6 +10,7 @@
  */
 
 #include "tsk3/tsk_tools_i.h"
+#include "tsk3/auto/tsk_case_db.h"
 #include <locale.h>
 
 static TSK_TCHAR *progname;
@@ -19,14 +20,15 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vVk] [-i imgtype] [-b dev_sector_size] [-d output_dir] image [image]\n"),
+        ("usage: %s [-avVk] [-i imgtype] [-b dev_sector_size] [-d database] image [image]\n"),
         progname);
+    tsk_fprintf(stderr, "\t-a: Add image to existing database, instead of creating a new one\n");
     tsk_fprintf(stderr, "\t-k: Don't create block data table\n");
-    tsk_fprintf(stderr, "\t-d output_dir: The directory to store the database in (default is the same directory as the image)\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
+    tsk_fprintf(stderr, "\t-d database: Path for the database (default is the same directory as the image, with name derived from image name)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     
@@ -44,9 +46,10 @@ main(int argc, char **argv1)
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
-    TSK_TCHAR *output_dir = NULL;
+    TSK_TCHAR *database = NULL;
     
     bool blkMapFlag = true;   // true if we are going to write the block map
+    bool createDbFlag = true; // true if we are going to create a new database
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -62,14 +65,18 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:d:i:vVk"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:d:i:avVk"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
             usage();
-                
+
+        case _TSK_T('a'):
+            createDbFlag = false;
+            break;
+
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
             if (*cp || *cp == *OPTARG || ssize < 1) {
@@ -99,7 +106,7 @@ main(int argc, char **argv1)
             break;
 
         case _TSK_T('d'):
-            output_dir = OPTARG;
+            database = OPTARG;
             break;
 
         case _TSK_T('v'):
@@ -117,20 +124,33 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr, "Missing image names\n");
         usage();
     }
-
-    TskAutoDb tskDb;
-    tskDb.createBlockMap(blkMapFlag);
-
+    
+    TSK_TCHAR buff[1024];
+    
+    if (database == NULL) {
+        TSNPRINTF(buff, 1024, _TSK_T("%s.db"), argv[OPTIND]);
+        database = buff;
+    }
+    
     //tskRecover.setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_UNALLOC);
-    if (tskDb.openImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize, output_dir)) {
+
+    TskCaseDb * tskCase;
+    
+    if (createDbFlag) {
+        tskCase = TskCaseDb::newDb(database);
+    } else {
+        tskCase = TskCaseDb::openDb(database);
+    }
+
+    if (tskCase == NULL) {
         tsk_error_print(stderr);
         exit(1);
     }
-
-    if (tskDb.addFilesInImgToDB()) {
+    
+    if (tskCase->addImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
         tsk_error_print(stderr);
         exit(1);
     }
-
+    
     exit(0);
 }

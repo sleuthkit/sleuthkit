@@ -225,6 +225,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\tsk3\auto\case_db.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\tsk3\auto\sqlite3.c"
 				>
 			</File>
@@ -244,6 +248,14 @@
 			</File>
 			<File
 				RelativePath="..\..\tsk3\auto\tsk_auto_i.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\tsk3\auto\tsk_case_db.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\tsk3\auto\tsk_db_sqlite.h"
 				>
 			</File>
 		</Filter>

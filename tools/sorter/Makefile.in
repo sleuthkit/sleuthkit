@@ -35,8 +35,8 @@ host_triplet = @host@
 subdir = tools/sorter
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/ax_pthread.m4 \
-	$(top_srcdir)/cppunit.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_pthread.m4 \
+	$(top_srcdir)/m4/cppunit.m4 \
 	$(top_srcdir)/m4/ax_jni_include_dir.m4 \
 	$(top_srcdir)/m4/ac_prog_javac_works.m4 \
 	$(top_srcdir)/m4/ac_prog_javac.m4 $(top_srcdir)/configure.ac

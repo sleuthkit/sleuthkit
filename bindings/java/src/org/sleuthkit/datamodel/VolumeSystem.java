@@ -18,36 +18,32 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Volume System Object
  * @author alawrence
  */
-public class VolumeSystem implements Content{
-	private Sleuthkit db;
+public class VolumeSystem extends AbstractContent {
 	private long volumeSystemHandle = 0;
 	private long type, imgOffset, blockSize;
 	private Image parent;
-	private ArrayList<Long> vol_ids;
 
 	/**
 	 * Constructor most inputs are from the database
 	 * @param db database object
+	 * @param obj_id 
 	 * @param type
 	 * @param imgOffset
 	 * @param blockSize
-	 * @param vol_ids
 	 */
-	protected VolumeSystem(Sleuthkit db, long type, long imgOffset, long blockSize, ArrayList<Long> vol_ids){
-		this.db = db;
+	protected VolumeSystem(SleuthkitCase db, long obj_id, long type, long imgOffset, long blockSize){
+		super(db, obj_id);
 		this.type = type;
 		this.imgOffset = imgOffset;
 		this.blockSize = blockSize;
-		this.vol_ids = vol_ids;
 	}
-
+	
 	/**
 	 * set the parent image called by parent on creation
 	 * @param parent parent image
@@ -57,6 +53,7 @@ public class VolumeSystem implements Content{
 	}
 	
 	//byte offset
+	@Override
 	public byte[] read(long offset, long len) throws TskException{
 		if(volumeSystemHandle == 0){
 			volumeSystemHandle = SleuthkitJNI.openVs(this.getParent().getImageHandle(), imgOffset);
@@ -68,22 +65,8 @@ public class VolumeSystem implements Content{
 	 * get the sleuthkit database object
 	 * @return the sleuthkit object
 	 */
-	public Sleuthkit getSleuthkit(){
+	public SleuthkitCase getSleuthkit(){
 		return db;
-	}
-
-	/**
-	 * get the volume in the volume system with the given id
-	 * @param id volume id
-	 * @return volume
-	 */
-	public Volume getVolume(long id) throws SQLException{
-		//get given volume.
-		Volume vol = db.getVolume(id);
-		if (vol != null){
-			vol.setParent(this);
-		}
-		return vol;
 	}
 
 	/**
@@ -97,6 +80,7 @@ public class VolumeSystem implements Content{
 	 * get the size of the volume system
 	 * @return the size of the volume system
 	 */
+	@Override
 	public long getSize() {
 		return 0;
 	}
@@ -124,6 +108,7 @@ public class VolumeSystem implements Content{
 	/**
 	 * get the volume system Handle pointer
 	 * @return volume system Handle pointer
+	 * @throws TskException  
 	 */
 	protected long getVolumeSystemHandle() throws TskException{
 		if (volumeSystemHandle == 0){
@@ -132,14 +117,8 @@ public class VolumeSystem implements Content{
 
 		return volumeSystemHandle;
 	}
-	/**
-	 * get the child volume ids
-	 * @return child volume ids
-	 */
-	public ArrayList<Long> getVolIds(){
-		return vol_ids;
-	}
 
+	@Override
 	public void finalize(){
 		SleuthkitJNI.closeVs(volumeSystemHandle);
 	}
@@ -147,5 +126,19 @@ public class VolumeSystem implements Content{
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
+	}
+
+	@Override
+	public List<Content> getChildren() throws TskException {
+		try {
+			return db.getVolumeSystemChildren(this);
+		} catch (Exception ex) {
+			throw new TskException("Error getting VolumeSystem children.", ex);
+		}
+	}
+
+	@Override
+	public boolean isOnto() {
+		return false;
 	}
 }

@@ -26,18 +26,25 @@ package org.sleuthkit.datamodel;
 public class SleuthkitJNI {
 	//Native methods
 	private static native String getVersionNat();
-	//loaddb
-	private static native long loaddbNat(String[] imgPath, int splits, String outDir) throws TskException;
-	private static native long startloaddbNat(String timezone) throws TskException;
-	private static native void runloaddbNat(long process, String[] imgPath, int splits, String outDir) throws TskException;;
-	private static native void stoploaddbNat(long process) throws TskException;;
+	
+	
+	//database
+	private static native long newCaseDbNat(String dbPath) throws TskException;
+	private static native long openCaseDbNat(String path) throws TskException;
+	private static native void closeCaseDbNat(long db) throws TskException;
+	//load image
+	private static native long initAddImgNat(long db, String timezone) throws TskException;
+	private static native void runAddImgNat(long process, String[] imgPath, int splits) throws TskException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
+	private static native void stopAddImgNat(long process) throws TskException;
+	private static native void revertAddImgNat(long process) throws TskException;
+	private static native long commitAddImgNat(long process) throws TskException;
 	//open functions
-	private static native long openImageNat(String[] imgPath, int splits) throws TskException;
+	private static native long openImgNat(String[] imgPath, int splits) throws TskException;
 	private static native long openVsNat(long imgHandle, long vsOffset) throws TskException;
 	private static native long openVolNat(long vsHandle, long volId) throws TskException;
 	private static native long openFsNat(long imgHandle, long fsId) throws TskException;
 	private static native long openFileNat(long fsHandle, long fileId) throws TskException;
-
+ 
 	//read functions
 	private static native byte[] readImgNat(long imgHandle, long offset, long len) throws TskException;
 	private static native byte[] readVsNat(long vsHandle, long offset, long len) throws TskException;
@@ -59,9 +66,95 @@ public class SleuthkitJNI {
 
 
 	public SleuthkitJNI(){}
+	
+	
+	
+	
+	public static class CaseDbHandle {
+		private long caseDbPointer;
+		
+		private CaseDbHandle(long pointer) {
+			this.caseDbPointer = pointer;
+		}
+		
+		void free() throws TskException {
+			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
+		}
+		
+		AddImageProcess initAddImageProcess(String timezone) {
+			return new AddImageProcess(timezone);
+		}
+		
+		public class AddImageProcess {
+			String timezone;
+			long autoDbPointer;
+			
+			private AddImageProcess(String timezone) {
+				this.timezone = timezone;
+				autoDbPointer = 0;
+			}
+			
+			public void run(String[] imgPath) throws TskException {
+				if (autoDbPointer != 0) {
+					throw new IllegalStateException("AddImageProcess can only be run once");
+				}
+				
+				autoDbPointer = initAddImgNat(caseDbPointer, timezone);
+				runAddImgNat(autoDbPointer, imgPath, imgPath.length);
+			}
+			
+			public void stop() throws TskException {
+				if (autoDbPointer == 0) {
+					throw new IllegalStateException("Can't stop an AddImageProcess that hasn't been run.");
+				}
+				
+				stopAddImgNat(autoDbPointer);
+			}
+			
+			public void revert() throws TskException {
+				if (autoDbPointer == 0) {
+					throw new IllegalStateException("Can't revert an AddImageProcess that hasn't been run.");
+				}
+				
+				revertAddImgNat(autoDbPointer);
+			}
+			
+			public long commit() throws TskException {
+				if (autoDbPointer == 0) {
+					throw new IllegalStateException("Can't commit an AddImageProcess that hasn't been run.");
+				}
+				
+				return commitAddImgNat(autoDbPointer);
+			}
+			
+		}
+	}
+	
+	/**
+	 * Creates a new case database. Must call .free() on CaseDbHandle instance
+	 * when done.
+	 * @param path Location to create the database at.
+	 * @return Handle for a new TskCaseDb instance.
+	 * @throws TskException 
+	 */
+	static CaseDbHandle newCaseDb(String path) throws TskException {
+		return new CaseDbHandle(newCaseDbNat(path));
+	}
+	
+	/**
+	 * Opens an existing case database. Must call .free() on CaseDbHandle 
+	 * instance when done.
+	 * @param path Location of the existing database.
+	 * @return Handle for a new TskCaseDb instance.
+	 * @throws TskException 
+	 */
+	static CaseDbHandle openCaseDb(String path) throws TskException {
+		return new CaseDbHandle(openCaseDbNat(path));
+	}
+	
 
 	/**
-	 * get the sleuthkit version string
+	 * get the Sleuth Kit version string
 	 * @return the version string
 	 */
 	public static String getVersion(){
@@ -75,48 +168,10 @@ public class SleuthkitJNI {
 	 * @throws TskException
 	 */
 	public static long openImage(String[] imageDirs) throws TskException{
-		return openImageNat(imageDirs, imageDirs.length);
+		System.out.println(imageDirs[0]);
+		return openImgNat(imageDirs, imageDirs.length);
 	}
 
-	/**
-	 * create the sqlite database for the given image
-	 * @param imgPaths paths to the image splits
-	 * @param outDir the directory to write the database to
-	 * @throws TskException
-	 */
-	public static void makeDb(String[] imgPaths, String outDir) throws TskException{
-		loaddbNat(imgPaths, imgPaths.length, outDir);
-	}
-
-	/**
-	 * create a process pointer for loaddb (this process can be started and stopped)
-	 * @param timezone timezone of the image
-	 * @return a pointer to a process
-	 * @throws TskException
-	 */
-	public static long makeLoaddbProcess(String timezone) throws TskException{
-		return startloaddbNat(timezone);
-	}
-
-	/**
-	 * start the given loaddb process
-	 * @param process pointer to an open process
-	 * @param imgPaths paths to the image to make the database from
-	 * @param outDir directory to write the database to
-	 * @throws TskException
-	 */
-	public static void runLoaddbProcess(long process, String[] imgPaths, String outDir) throws TskException{
-		runloaddbNat(process, imgPaths, imgPaths.length, outDir);
-	}
-
-	/**
-	 * cancels the given loaddb process
-	 * @param process pointer to a running process
-	 * @throws TskException
-	 */
-	public static void stopLoaddbProcess(long process) throws TskException{
-		stoploaddbNat(process);
-	}
 	/**
 	 * Get volume system Handle
 	 * @param vsOffset byte offset in the image to the volume system (usually 0)
@@ -132,6 +187,7 @@ public class SleuthkitJNI {
 	 * @param vsHandle pointer to the volume system structure in the sleuthkit
 	 * @param volId id of the volume
 	 * @return pointer to a volHandle structure in the sleuthkit
+	 * @throws TskException  
 	 */
 	public static long openVsPart(long vsHandle, long volId) throws TskException{
 		//returned long is ptr to vs Handle object in tsk
@@ -140,8 +196,10 @@ public class SleuthkitJNI {
 
 	/**
 	 * get file system Handle
+	 * @param imgHandle pointer to imgHandle in sleuthkit
 	 * @param fsOffset byte offset to the file system
 	 * @return pointer to a fsHandle structure in the sleuthkit
+	 * @throws TskException  
 	 */
 	public static long openFs(long imgHandle, long fsOffset) throws TskException{
 		return openFsNat(imgHandle, fsOffset);
@@ -152,6 +210,7 @@ public class SleuthkitJNI {
 	 * @param fsHandle fsHandle pointer in the sleuthkit
 	 * @param fileId id of the file
 	 * @return pointer to a file structure in the sleuthkit
+	 * @throws TskException  
 	 */
 	public static long openFile(long fsHandle, long fileId) throws TskException{
 		return openFileNat(fsHandle, fileId);
@@ -160,9 +219,11 @@ public class SleuthkitJNI {
 	//do reads
 	/**
 	 * reads data from an image
+	 * @param imgHandle 
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
 	 * @return an array of characters (bytes of data)
+	 * @throws TskException  
 	 */
 	public static byte[] readImg(long imgHandle, long offset, long len) throws TskException{
 		//returned byte[] is the data buffer
@@ -174,6 +235,7 @@ public class SleuthkitJNI {
 	 * @param offset sector offset in the image to start at
 	 * @param len amount of data to read
 	 * @return an array of characters (bytes of data)
+	 * @throws TskException  
 	 */
 	public static byte[] readVs(long vsHandle, long offset, long len) throws TskException{
 		return readVsNat(vsHandle, offset, len);
@@ -184,6 +246,7 @@ public class SleuthkitJNI {
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
 	 * @return an array of characters (bytes of data)
+	 * @throws TskException  
 	 */
 	public static byte[] readVsPart(long volHandle, long offset, long len) throws TskException{
 		//returned byte[] is the data buffer
@@ -195,6 +258,7 @@ public class SleuthkitJNI {
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
 	 * @return an array of characters (bytes of data)
+	 * @throws TskException  
 	 */
 	public static byte[] readFs(long fsHandle, long offset, long len) throws TskException{
 		//returned byte[] is the data buffer
@@ -206,6 +270,7 @@ public class SleuthkitJNI {
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
 	 * @return an array of characters (bytes of data)
+	 * @throws TskException  
 	 */
 	public static byte[] readFile(long fileHandle, long offset, long len) throws TskException{
 		//returned byte[] is the data buffer
@@ -215,6 +280,8 @@ public class SleuthkitJNI {
 	//free pointers
 	/**
 	 * frees the imgHandle pointer
+	 * 
+	 * @param imgHandle 
 	 */
 	public static void closeImg(long imgHandle){
 		closeImgNat(imgHandle);

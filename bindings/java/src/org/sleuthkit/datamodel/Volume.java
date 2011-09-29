@@ -19,41 +19,41 @@
 package org.sleuthkit.datamodel;
 
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Volume class
  * @author alawrence
  */
-public class Volume implements Content{
+public class Volume extends AbstractContent implements FileSystemParent {
 	// @@@ We should mark these as private and comment somewhere what the units are (bytes, sectors, etc.)
-	long vol_id, start, length, flags;
+	long addr, start, length, flags;
 	String desc;
-	private Sleuthkit db;
 	private VolumeSystem parentVs;
 	private long volumeHandle = 0;
 
 	/**
 	 * Constructor most inputs are from the database
 	 * @param db database object
-	 * @param vol_id
+	 * @param obj_id 
+	 * @param addr
 	 * @param start
 	 * @param length
 	 * @param flags
-	 * @param desc
+	 * @param desc  
 	 */
-	protected Volume(Sleuthkit db, long vol_id, long start, long length, long flags, String descr){
-		this.db = db;
-		this.vol_id = vol_id;
+	protected Volume(SleuthkitCase db, long obj_id, long addr, long start, long length, long flags, String desc){
+		super(db, obj_id);
+		this.addr = addr;
 		this.start = start;
 		this.length = length;
 		this.flags = flags;
-		if(!descr.equals("")){
-			this.desc = descr;
+		if(!desc.equals("")){
+			this.desc = desc;
 		}
 		else{
 			this.desc = "Unknown";
 		}
-
 	}
 
 	/**
@@ -64,18 +64,6 @@ public class Volume implements Content{
 		parentVs = parent;
 	}
 
-	/**
-	 * get the file system in this volume
-	 * @return file system
-	 */
-	public FileSystem getFileSystem() throws SQLException{
-		//get the file system corresponding to this volume if any
-		FileSystem fs = db.getFileSystem(vol_id);
-		if (fs != null){
-			fs.setParent(this);
-		}
-		return fs;
-	}
 
 	/**
 	 * read from this volume
@@ -88,7 +76,7 @@ public class Volume implements Content{
 	public byte[] read(long offset, long len) throws TskException {
 		// read from the volume
 		if(volumeHandle == 0){
-			volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), vol_id);
+			volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
 		}
 		return SleuthkitJNI.readVsPart(volumeHandle, offset, len);
 	}
@@ -107,22 +95,17 @@ public class Volume implements Content{
 		return parentVs;
 	}
 
-	/**
-	 * get the sleuthkit database object
-	 * @return the sleuthkit object
-	 */
-	public Sleuthkit getSleuthkit(){
-		return db;
-	}
-
 	//methods get exact data from database. could be manipulated to get more
 	//meaningful data.
+
+	
+	
 	/**
-	 * get the volume id
-	 * @return volume id
+	 * get the partition address
+	 * @return partition address in volume system
 	 */
-	public long getVol_id() {
-		return vol_id;
+	public long getAddr() {
+		return addr;
 	}
 	/**
 	 * get the starting byte offset
@@ -211,5 +194,24 @@ public class Volume implements Content{
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
+	}
+
+	@Override
+	public List<Content> getChildren() throws TskException {
+		try {
+			return db.getVolumeChildren(this);
+		} catch (SQLException ex) {
+			throw new TskException("Error while getting Volume children.", ex);
+		}
+	}
+
+	@Override
+	public long getImageHandle() {
+		return getParent().getParent().getImageHandle();
+	}
+
+	@Override
+	public boolean isOnto() {
+		return true;
 	}
 }

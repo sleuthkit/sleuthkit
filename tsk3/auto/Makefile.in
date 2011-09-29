@@ -35,8 +35,8 @@ host_triplet = @host@
 subdir = tsk3/auto
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/ax_pthread.m4 \
-	$(top_srcdir)/cppunit.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_pthread.m4 \
+	$(top_srcdir)/m4/cppunit.m4 \
 	$(top_srcdir)/m4/ax_jni_include_dir.m4 \
 	$(top_srcdir)/m4/ac_prog_javac_works.m4 \
 	$(top_srcdir)/m4/ac_prog_javac.m4 $(top_srcdir)/configure.ac
@@ -47,7 +47,8 @@ CONFIG_HEADER = $(top_builddir)/tsk3/tsk_config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libtskauto_la_LIBADD =
-am_libtskauto_la_OBJECTS = auto.lo auto_db.lo sqlite3.lo db_sqlite.lo
+am_libtskauto_la_OBJECTS = auto.lo auto_db.lo sqlite3.lo db_sqlite.lo \
+	case_db.lo
 libtskauto_la_OBJECTS = $(am_libtskauto_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/tsk3@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -205,7 +206,7 @@ AM_CPPFLAGS = -I../.. -I$(srcdir)/../.. -Wall
 EXTRA_DIST = .indent.pro
 noinst_LTLIBRARIES = libtskauto.la
 # Note that the .h files are in the top-level Makefile
-libtskauto_la_SOURCES = auto.cpp tsk_auto_i.h auto_db.cpp sqlite3.c sqlite3.h db_sqlite.cpp
+libtskauto_la_SOURCES = auto.cpp tsk_auto_i.h auto_db.cpp sqlite3.c sqlite3.h db_sqlite.cpp case_db.cpp tsk_case_db.h
 all: all-am
 
 .SUFFIXES:
@@ -259,6 +260,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/auto.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/auto_db.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/case_db.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/db_sqlite.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sqlite3.Plo@am__quote@
 
