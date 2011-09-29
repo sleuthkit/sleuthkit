@@ -17,12 +17,14 @@
 #include "tsk_case_db.h"
 #include "tsk_auto_i.h"
 
-TskCaseDb::TskCaseDb(TskDbSqlite * a_db) {
+TskCaseDb::TskCaseDb(TskDbSqlite * a_db)
+{
     m_tag = TSK_CASE_DB_TAG;
     m_db = a_db;
 }
 
-TskCaseDb::~TskCaseDb() {
+TskCaseDb::~TskCaseDb()
+{
     delete m_db;
 };
 
@@ -33,22 +35,25 @@ TskCaseDb::~TskCaseDb() {
 *
 * @param path Full path to create new database at.
 */
-TskCaseDb * TskCaseDb::newDb(const TSK_TCHAR * const path) {
+TskCaseDb *
+TskCaseDb::newDb(const TSK_TCHAR * const path)
+{
 
     // Check if the database already exsists
     struct STAT_STR stat_buf;
     if (TSTAT(path, &stat_buf) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("Database %" PRIttocTSK " already exists.  Must be deleted first.",
-            path);
+        tsk_error_set_errstr("Database %" PRIttocTSK
+            " already exists.  Must be deleted first.", path);
         return NULL;
     }
 
-    TskDbSqlite * db = new TskDbSqlite(path, true);
+    TskDbSqlite *db = new TskDbSqlite(path, true);
 
     // Open the database.
-    if (db->open()) return NULL;
+    if (db->open())
+        return NULL;
 
     if (db->initialize()) {
         delete db;
@@ -63,22 +68,25 @@ TskCaseDb * TskCaseDb::newDb(const TSK_TCHAR * const path) {
 *
 * @param path Full path to open database from.
 */
-TskCaseDb * TskCaseDb::openDb(const TSK_TCHAR * path) {
+TskCaseDb *
+TskCaseDb::openDb(const TSK_TCHAR * path)
+{
 
     // Confirm that database already exsists
     struct STAT_STR stat_buf;
     if (TSTAT(path, &stat_buf) != 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("Database %" PRIttocTSK " does not exist.  Must be created first.",
-            path);
+        tsk_error_set_errstr("Database %" PRIttocTSK
+            " does not exist.  Must be created first.", path);
         return NULL;
     }
 
-    TskDbSqlite * db = new TskDbSqlite(path, true);
+    TskDbSqlite *db = new TskDbSqlite(path, true);
 
     // Open the database.
-    if (db->open()) return NULL;
+    if (db->open())
+        return NULL;
 
     return new TskCaseDb(db);
 }
@@ -103,7 +111,9 @@ TskCaseDb * TskCaseDb::openDb(const TSK_TCHAR * path) {
  * Prepares the process to add an image to the database
  *
  */
-TskAutoDb * TskCaseDb::initAddImage() {
+TskAutoDb *
+TskCaseDb::initAddImage()
+{
     return new TskAutoDb(m_db);
 }
 
@@ -112,9 +122,11 @@ TskAutoDb * TskCaseDb::initAddImage() {
 *
 * @param images Paths to the image splits to open.
 */
-uint8_t TskCaseDb::addImage(int numImg, const TSK_TCHAR * const imagePaths[],
-                            TSK_IMG_TYPE_ENUM imgType, unsigned int sSize) {
-    
+uint8_t
+    TskCaseDb::addImage(int numImg, const TSK_TCHAR * const imagePaths[],
+    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
+{
+
     TskAutoDb autoDb(m_db);
     return autoDb.runProcess(numImg, imagePaths, imgType, sSize);
 }

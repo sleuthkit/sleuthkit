@@ -62,7 +62,7 @@ void
  * @return Resturns 1 on error
  */
 uint8_t
-TskAutoDb::openImageUtf8(int a_num, const char *const a_images[],
+    TskAutoDb::openImageUtf8(int a_num, const char *const a_images[],
     TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize)
 {
     uint8_t retval =
@@ -86,23 +86,23 @@ TskAutoDb::openImageUtf8(int a_num, const char *const a_images[],
  * @return Resturns 1 on error
  */
 uint8_t
-TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
-                     TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize)
+    TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize)
 {
 
 // make name of database
 #ifdef TSK_WIN32
 
     uint8_t retval = TskAuto::openImage(a_num, a_images, a_type, a_ssize);
-    
+
     if (retval != 0) {
         return retval;
     }
-    
-    
+
+
     // convert image paths to UTF-8
     char **img_ptrs = (char **) tsk_malloc(sizeof(char **));
- 
+
     for (int i = 0; i < a_num; i++) {
         char img2[1024];
         UTF8 *ptr8;
@@ -140,16 +140,18 @@ TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
  * @return Returns 1 on error
  */
 
-uint8_t TskAutoDb::addImageDetails(const char * const img_ptrs[], int a_num)
+uint8_t
+TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
 {
-    if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size, m_curImgId)) {
+    if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
+            m_curImgId)) {
         return 1;
     }
 
     // Add the image names
     for (int i = 0; i < a_num; i++) {
         int a;
-        const char * img_ptr = NULL;
+        const char *img_ptr = NULL;
         img_ptr = img_ptrs[i];
 
         // get only the file name (ignore the directory name)
@@ -173,8 +175,7 @@ uint8_t TskAutoDb::addImageDetails(const char * const img_ptrs[], int a_num)
  * Analyzes the open image and adds image info to a database.
  * @returns 1 on error
  */
-uint8_t
-TskAutoDb::addFilesInImgToDb()
+uint8_t TskAutoDb::addFilesInImgToDb()
 {
     if (m_db == NULL || !m_db->dbExist()) {
         tsk_error_reset();
@@ -186,24 +187,26 @@ TskAutoDb::addFilesInImgToDb()
     setVolFilterFlags((TSK_VS_PART_FLAG_ENUM) (TSK_VS_PART_FLAG_ALLOC |
             TSK_VS_PART_FLAG_UNALLOC));
 
-    uint8_t retval = findFilesInImg();
-    if (retval) return retval;
-    
+    uint8_t
+        retval = findFilesInImg();
+    if (retval)
+        return retval;
+
     return 0;
 }
 
-TSK_FILTER_ENUM
-TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
+TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
 {
     m_vsFound = true;
-    if(m_db->addVsInfo(vs_info, m_curImgId, m_curVsId)) {
+    if (m_db->addVsInfo(vs_info, m_curImgId, m_curVsId)) {
         return TSK_FILTER_STOP;
     }
 
     return TSK_FILTER_CONT;
 }
 
-TSK_FILTER_ENUM TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
+TSK_FILTER_ENUM
+TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_volFound = true;
 
@@ -215,17 +218,18 @@ TSK_FILTER_ENUM TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 }
 
 
-TSK_FILTER_ENUM TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
+TSK_FILTER_ENUM
+TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 {
-    TSK_FS_FILE *
-        file_root;
+    TSK_FS_FILE *file_root;
 
     if (m_volFound && m_vsFound) {
         // there's a volume system and volume
         if (m_db->addFsInfo(fs_info, m_curVolId, m_curFsId)) {
             return TSK_FILTER_STOP;
         }
-    } else {
+    }
+    else {
         // file system doesn't live in a volume, use image as parent
         if (m_db->addFsInfo(fs_info, m_curImgId, m_curFsId)) {
             return TSK_FILTER_STOP;
@@ -252,7 +256,7 @@ TSK_FILTER_ENUM TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 TSK_RETVAL_ENUM
     TskAutoDb::insertFileData(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path)
-{   
+{
     if (m_db->addFsFile(fs_file, fs_attr, path, m_curFsId, m_curFileId)) {
         return TSK_ERR;
     }
@@ -267,9 +271,12 @@ TSK_RETVAL_ENUM
  * returns, user must call either commitProcess() to commit the changes,
  * or revertProcess() to revert them.
  */
-uint8_t TskAutoDb::runProcess(int numImg, const TSK_TCHAR *const imagePaths[],
-                            TSK_IMG_TYPE_ENUM imgType, unsigned int sSize) {
-    if (m_db->savepoint(TSK_ADD_IMAGE_SAVEPOINT)) return 1;
+uint8_t
+TskAutoDb::runProcess(int numImg, const TSK_TCHAR * const imagePaths[],
+    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
+{
+    if (m_db->savepoint(TSK_ADD_IMAGE_SAVEPOINT))
+        return 1;
     if (openImage(numImg, imagePaths, imgType, sSize)
         || addFilesInImgToDb()) {
         m_db->rollbackSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
@@ -280,9 +287,12 @@ uint8_t TskAutoDb::runProcess(int numImg, const TSK_TCHAR *const imagePaths[],
 }
 
 #ifdef WIN32
-uint8_t TskAutoDb::runProcess(int numImg, const char *const imagePaths[],
-                            TSK_IMG_TYPE_ENUM imgType, unsigned int sSize) {
-    if (m_db->savepoint(TSK_ADD_IMAGE_SAVEPOINT)) return 1;
+uint8_t
+TskAutoDb::runProcess(int numImg, const char *const imagePaths[],
+    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
+{
+    if (m_db->savepoint(TSK_ADD_IMAGE_SAVEPOINT))
+        return 1;
     if (openImageUtf8(numImg, imagePaths, imgType, sSize)
         || addFilesInImgToDb()) {
         // rollback on stop command or error
@@ -297,7 +307,9 @@ uint8_t TskAutoDb::runProcess(int numImg, const char *const imagePaths[],
 /**
  * Cancel (and subesquently revert) the running process.
  */
-void TskAutoDb::stopProcess() {
+void
+TskAutoDb::stopProcess()
+{
     m_stopped = true;
     // flag is checked every time processFile() is called
 }
@@ -305,7 +317,9 @@ void TskAutoDb::stopProcess() {
 /**
  * Revert all changes after the process has run sucessfully.
  */
-void TskAutoDb::revertProcess() {
+void
+TskAutoDb::revertProcess()
+{
     m_db->rollbackSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
 }
 
@@ -313,7 +327,9 @@ void TskAutoDb::revertProcess() {
  * Finish the process after it has run sucessfully by committing the changes.
  * Returns the id of the image that was added.
  */
-int64_t TskAutoDb::commitProcess() {
+int64_t
+TskAutoDb::commitProcess()
+{
     m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
     return m_curImgId;
 }
@@ -325,7 +341,8 @@ TSK_RETVAL_ENUM
 {
 
     // Check if the process has been canceled
-    if (m_stopped) return TSK_STOP;
+    if (m_stopped)
+        return TSK_STOP;
 
     if (m_db->savepoint("PROCESSFILE")) {
         return TSK_ERR;
@@ -362,7 +379,6 @@ TSK_RETVAL_ENUM
     if ((m_blkMapFlag) && (isNonResident(fs_attr))
         && (isDotDir(fs_file, path) == 0)) {
         TSK_FS_ATTR_RUN *run;
-        int sequence = 0;
         for (run = fs_attr->nrd.run; run != NULL; run = run->next) {
             unsigned int block_size = fs_file->fs_info->block_size;
 
@@ -370,8 +386,8 @@ TSK_RETVAL_ENUM
             if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
                 continue;
 
-            if(m_db->addFsBlockInfo(m_curFsId, m_curFileId,
-                run->addr * block_size, run->len * block_size)) {
+            if (m_db->addFsBlockInfo(m_curFsId, m_curFileId,
+                    run->addr * block_size, run->len * block_size)) {
                 return TSK_ERR;
             }
         }

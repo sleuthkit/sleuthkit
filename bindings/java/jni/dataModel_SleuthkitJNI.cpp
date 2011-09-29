@@ -100,22 +100,23 @@ castFsFileInfo(JNIEnv * env, jlong ptr)
  * @param env pointer to java environment this was called from
  * @param dbPath location for the database
  */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbNat
-(JNIEnv *env, jclass obj, jstring dbPathJ) {
+JNIEXPORT jlong JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbNat(JNIEnv * env,
+    jclass obj, jstring dbPathJ) {
     jboolean isCopy;
 
-	char * dbPath8 = (char *)env->GetStringUTFChars(dbPathJ, &isCopy);
-	
-	TSK_TCHAR dbPathT[1024];
+    char *dbPath8 = (char *) env->GetStringUTFChars(dbPathJ, &isCopy);
+
+    TSK_TCHAR dbPathT[1024];
     TSNPRINTF(dbPathT, 1024, _TSK_T("%") PRIcTSK, dbPath8);
-	TskCaseDb * tskCase = TskCaseDb::newDb(dbPathT);
+    TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT);
 
     if (tskCase == NULL) {
-        throwTskError(env); 
-        return 1; //@@@ what's the right thing to return here?
+        throwTskError(env);
+        return 1;               //@@@ what's the right thing to return here?
     }
 
-	return (jlong)tskCase;
+    return (jlong) tskCase;
 }
 
 
@@ -125,22 +126,23 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbNat
  * @param env pointer to java environment this was called from
  * @param dbPath location for the database
  */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbNat
-(JNIEnv *env, jclass obj, jstring dbPathJ) {
+JNIEXPORT jlong JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbNat(JNIEnv * env,
+    jclass obj, jstring dbPathJ) {
     jboolean isCopy;
 
-	char * dbPath8 = (char *)env->GetStringUTFChars(dbPathJ, &isCopy);
-	
-	TSK_TCHAR dbPathT[1024];
+    char *dbPath8 = (char *) env->GetStringUTFChars(dbPathJ, &isCopy);
+
+    TSK_TCHAR dbPathT[1024];
     TSNPRINTF(dbPathT, 1024, _TSK_T("%") PRIcTSK, dbPath8);
-	TskCaseDb * tskCase = TskCaseDb::openDb(dbPathT);
+    TskCaseDb *tskCase = TskCaseDb::openDb(dbPathT);
 
     if (tskCase == NULL) {
-        throwTskError(env); 
-        return 1; //@@@ what's the right thing to return here?
+        throwTskError(env);
+        return 1;               //@@@ what's the right thing to return here?
     }
 
-	return (jlong)tskCase;
+    return (jlong) tskCase;
 }
 
 /*
@@ -148,16 +150,18 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbNat
  * @param env pointer to java environment this was called from
  * @param case the pointer to the case
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat
-(JNIEnv *env, jclass obj, jstring caseHandle) {
+JNIEXPORT void JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat(JNIEnv * env,
+    jclass obj, jstring caseHandle) {
 
-	TskCaseDb * tskCase = ((TskCaseDb*)caseHandle);
+    TskCaseDb *tskCase = ((TskCaseDb *) caseHandle);
     if (tskCase->m_tag != TSK_CASE_DB_TAG) {
-        throwTskError(env, "closeCaseDbNate: Invalid TskCaseDb object passed in");
+        throwTskError(env,
+            "closeCaseDbNate: Invalid TskCaseDb object passed in");
         return;
     }
 
-	delete tskCase;
+    delete tskCase;
 }
 
 
@@ -169,13 +173,15 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat
  * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
  */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
-(JNIEnv *env, jclass obj, jlong caseHandle, jstring timezone) {
+JNIEXPORT jlong JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
+    jclass obj, jlong caseHandle, jstring timezone) {
     jboolean isCopy;
 
-	TskCaseDb * tskCase = ((TskCaseDb*)caseHandle);
+    TskCaseDb *tskCase = ((TskCaseDb *) caseHandle);
     if (tskCase->m_tag != TSK_CASE_DB_TAG) {
-        throwTskError(env, "initAddImgNat: Invalid TskCaseDb object passed in");
+        throwTskError(env,
+            "initAddImgNat: Invalid TskCaseDb object passed in");
         return 1;
     }
 
@@ -190,7 +196,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
     /* we should be checking this somehow */
     TZSET();
     TskAutoDb *tskAuto = tskCase->initAddImage();
-    return (jlong)tskAuto;
+    return (jlong) tskAuto;
 }
 
 
@@ -205,13 +211,15 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
  * @param num_imgs number of image parts
  * @param outDir the output directory
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat
-(JNIEnv * env, jclass obj, jlong process, jobjectArray paths, jint num_imgs){
+JNIEXPORT void JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
+    jclass obj, jlong process, jobjectArray paths, jint num_imgs) {
     jboolean isCopy;
-    
-    TskAutoDb * tskAuto = ((TskAutoDb*)process);
+
+    TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (tskAuto->m_tag != TSK_AUTO_TAG) {
-        throwTskError(env, "runAddImgNat: Invalid TskAutoDb object passed in");
+        throwTskError(env,
+            "runAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
 
@@ -228,28 +236,32 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat
     }
     for (int i = 0; i < num_imgs; i++) {
         imagepaths8[i] =
-            (char *) env->GetStringUTFChars((jstring) env->
-            GetObjectArrayElement(paths, i), &isCopy);
+            (char *) env->
+            GetStringUTFChars((jstring) env->GetObjectArrayElement(paths,
+                i), &isCopy);
     }
 
     // flag to free tskAuto if the process is interuppted
     bool deleteProcess = false;
 
-	// process the image (parts)
-    if (tskAuto->runProcess((int)num_imgs, imagepaths8, TSK_IMG_TYPE_DETECT, 0)) {
+    // process the image (parts)
+    if (tskAuto->runProcess((int) num_imgs, imagepaths8,
+            TSK_IMG_TYPE_DETECT, 0)) {
         throwTskError(env, tsk_error_get());
         deleteProcess = true;
     }
 
     // cleanup
     for (int i = 0; i < num_imgs; i++) {
-        env->ReleaseStringUTFChars((jstring) env->
-            GetObjectArrayElement(paths, i), imagepaths8[i]);
+        env->
+            ReleaseStringUTFChars((jstring)
+            env->GetObjectArrayElement(paths, i), imagepaths8[i]);
     }
     free(imagepaths8);
     tskAuto->closeImage();
 
-    if (deleteProcess) delete tskAuto;
+    if (deleteProcess)
+        delete tskAuto;
     // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
 
@@ -261,11 +273,13 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat
  * @param obj the java object this was called from
  * @param process the add-image process created by initAddImgNat
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_stopAddImgNat
-(JNIEnv * env, jclass obj, jlong process) {
-    TskAutoDb * tskAuto = ((TskAutoDb*)process);
+JNIEXPORT void JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_stopAddImgNat(JNIEnv * env,
+    jclass obj, jlong process) {
+    TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (tskAuto->m_tag != TSK_AUTO_TAG) {
-        throwTskError(env, "stopAddImgNat: Invalid TskAutoDb object passed in");
+        throwTskError(env,
+            "stopAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
     tskAuto->stopProcess();
@@ -278,11 +292,13 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_stopAddImgNat
  * @param obj the java object this was called from
  * @param process the add-image process created by initAddImgNat
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_revertAddImgNat
-(JNIEnv * env, jclass obj, jlong process) {
-    TskAutoDb * tskAuto = ((TskAutoDb*)process);
+JNIEXPORT void JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_revertAddImgNat(JNIEnv * env,
+    jclass obj, jlong process) {
+    TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (tskAuto->m_tag != TSK_AUTO_TAG) {
-        throwTskError(env, "revertAddImgNat: Invalid TskAutoDb object passed in");
+        throwTskError(env,
+            "revertAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
     tskAuto->revertProcess();
@@ -296,11 +312,13 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_revertAddImgNat
  * @param obj the java object this was called from
  * @param process the add-image process created by initAddImgNat
  */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_commitAddImgNat
-(JNIEnv * env, jclass obj, jlong process) {
-    TskAutoDb * tskAuto = ((TskAutoDb*)process);
+JNIEXPORT jlong JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_commitAddImgNat(JNIEnv * env,
+    jclass obj, jlong process) {
+    TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (tskAuto->m_tag != TSK_AUTO_TAG) {
-        throwTskError(env, "commitAddImgNat: Invalid TskAutoDb object passed in");
+        throwTskError(env,
+            "commitAddImgNat: Invalid TskAutoDb object passed in");
         return -1;
     }
     int64_t imgId = tskAuto->commitProcess();
@@ -318,11 +336,12 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_commitAddImgNa
  * @param paths the paths to the image parts
  * @param num_imgs number of image parts
  */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openImgNat
-(JNIEnv *env, jclass obj, jobjectArray paths, jint num_imgs){
-    TSK_IMG_INFO * img_info;
-        jboolean isCopy;
-    
+JNIEXPORT jlong JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_openImgNat(JNIEnv * env,
+    jclass obj, jobjectArray paths, jint num_imgs) {
+    TSK_IMG_INFO *img_info;
+    jboolean isCopy;
+
     // get pointers to each of the file names
     char **imagepaths8 = (char **) tsk_malloc(num_imgs * sizeof(char *));
     if (imagepaths8 == NULL) {
@@ -331,8 +350,9 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openImgNat
     }
     for (int i = 0; i < num_imgs; i++) {
         imagepaths8[i] =
-            (char *) env->GetStringUTFChars((jstring) env->
-            GetObjectArrayElement(paths, i), &isCopy);
+            (char *) env->
+            GetStringUTFChars((jstring) env->GetObjectArrayElement(paths,
+                i), &isCopy);
         // @@@ ERror check
     }
 
@@ -346,8 +366,9 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openImgNat
 
     // cleanup
     for (int i = 0; i < num_imgs; i++) {
-        env->ReleaseStringUTFChars((jstring) env->
-            GetObjectArrayElement(paths, i), imagepaths8[i]);
+        env->
+            ReleaseStringUTFChars((jstring)
+            env->GetObjectArrayElement(paths, i), imagepaths8[i]);
     }
     free(imagepaths8);
 
@@ -386,8 +407,9 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVsNat
  * @param vol_id the id of the volume to get
  */
 JNIEXPORT jlong JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat(JNIEnv * env,
-    jclass obj, jlong a_vs_info, jlong vol_id) {
+Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat(JNIEnv * env,
+    jclass obj, jlong a_vs_info, jlong vol_id)
+{
     TSK_VS_INFO *vs_info = castVsInfo(env, a_vs_info);
     const TSK_VS_PART_INFO *vol_part_info;
 
@@ -431,8 +453,9 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
  * @param file_id id of the file to open 
  */
 JNIEXPORT jlong JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
-    jclass obj, jlong a_fs_info, jlong file_id) {
+Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
+    jclass obj, jlong a_fs_info, jlong file_id)
+{
     TSK_FS_INFO *fs_info = castFsInfo(env, a_fs_info);
     TSK_FS_FILE *file_info;
 
@@ -479,8 +502,9 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
  * @param len number of bytes to read
  */
 JNIEXPORT jbyteArray JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
-    jclass obj, jlong a_img_info, jlong offset, jlong len) {
+Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
+    jclass obj, jlong a_img_info, jlong offset, jlong len)
+{
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env, tsk_error_get());
@@ -512,8 +536,9 @@ JNIEXPORT jbyteArray JNICALL
  * @param len number of bytes to read
  */
 JNIEXPORT jbyteArray JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
-    jclass obj, jlong a_vs_info, jlong offset, jlong len) {
+Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
+    jclass obj, jlong a_vs_info, jlong offset, jlong len)
+{
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env);
@@ -521,8 +546,7 @@ JNIEXPORT jbyteArray JNICALL
     }
     TSK_VS_INFO *vs_info = castVsInfo(env, a_vs_info);
 
-    ssize_t retval =
-        tsk_vs_read_block(vs_info, (TSK_DADDR_T) offset, buf,
+    ssize_t retval = tsk_vs_read_block(vs_info, (TSK_DADDR_T) offset, buf,
         (size_t) len);
     if (retval == -1) {
         throwTskError(env, tsk_error_get());
@@ -546,8 +570,9 @@ JNIEXPORT jbyteArray JNICALL
  */
 
 JNIEXPORT jbyteArray JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
-    jclass obj, jlong a_vol_info, jlong offset, jlong len) {
+Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
+    jclass obj, jlong a_vol_info, jlong offset, jlong len)
+{
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env);
@@ -579,8 +604,9 @@ JNIEXPORT jbyteArray JNICALL
  * @param len number of bytes to read
  */
 JNIEXPORT jbyteArray JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
-    jclass obj, jlong a_fs_info, jlong offset, jlong len) {
+Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
+    jclass obj, jlong a_fs_info, jlong offset, jlong len)
+{
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env);
@@ -611,8 +637,9 @@ JNIEXPORT jbyteArray JNICALL
  * @param len number of bytes to read
  */
 JNIEXPORT jbyteArray JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
-    jclass obj, jlong a_file_info, jlong offset, jlong len) {
+Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
+    jclass obj, jlong a_file_info, jlong offset, jlong len)
+{
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env);
@@ -641,8 +668,9 @@ JNIEXPORT jbyteArray JNICALL
  * @param a_img_info the pointer to the image object
  */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_closeImgNat(JNIEnv * env,
-    jclass obj, jlong a_img_info) {
+Java_org_sleuthkit_datamodel_SleuthkitJNI_closeImgNat(JNIEnv * env,
+    jclass obj, jlong a_img_info)
+{
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     tsk_img_close(img_info);
 }
@@ -678,8 +706,9 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFsNat
  * @param a_file_info the pointer to the file object
  */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat(JNIEnv * env,
-    jclass obj, jlong a_file_info) {
+Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat(JNIEnv * env,
+    jclass obj, jlong a_file_info)
+{
     TSK_FS_FILE *file_info = castFsFileInfo(env, a_file_info);
     tsk_fs_file_close(file_info);
 }
@@ -691,8 +720,9 @@ JNIEXPORT void JNICALL
  * @param obj the java object this was called from
  */
 JNIEXPORT jstring JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_getVersionNat(JNIEnv * env,
-    jclass obj) {
+Java_org_sleuthkit_datamodel_SleuthkitJNI_getVersionNat(JNIEnv * env,
+    jclass obj)
+{
     const char *cversion = tsk_version_get_str();
     jstring jversion = (*env).NewStringUTF(cversion);
     return jversion;

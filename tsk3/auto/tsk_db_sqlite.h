@@ -7,8 +7,7 @@
 typedef struct sqlite3 sqlite3;
 
 
-typedef enum 
-{
+typedef enum {
     DB_FILES_TYPE_FS = 0,
     DB_FILES_TYPE_CARVED,
     DB_FILES_TYPE_DERIVED,
@@ -16,8 +15,7 @@ typedef enum
 } DB_FILES_TYPES;
 
 
-typedef enum 
-{
+typedef enum {
     DB_OBJECT_TYPE_IMG = 0,
     DB_OBJECT_TYPE_VS,
     DB_OBJECT_TYPE_VOL,
@@ -35,13 +33,13 @@ class TskDbSqlite {
 //@@@@
     TskDbSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag);
 #endif
-    TskDbSqlite(const char * a_dbFilePathUtf8, bool a_blkMapFlag);
+     TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag);
     ~TskDbSqlite();
     int open();
     int close();
     int initialize();
     int addImageInfo(int type, int size, int64_t & objId);
-    int addImageName(int64_t objId, char const * imgName, int sequence);
+    int addImageName(int64_t objId, char const *imgName, int sequence);
     int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
         int64_t & objId);
     int addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId,
@@ -55,25 +53,27 @@ class TskDbSqlite {
     int begin();
     int commit();
     bool dbExist() const;
-    int savepoint(const char * name);
-    int rollbackSavepoint(const char * name);
-    int releaseSavepoint(const char * name);
+    int savepoint(const char *name);
+    int rollbackSavepoint(const char *name);
+    int releaseSavepoint(const char *name);
 
 
   private:
     int createIndexes();
     int attempt(int resultCode, const char *errfmt);
-    int attempt(int resultCode, int expectedResultCode, const char *errfmt);
-    int attempt_exec(const char *sql, int (*callback)(void*,int,char**,char**),
-        void* callback_arg, const char *errfmt);
+    int attempt(int resultCode, int expectedResultCode,
+        const char *errfmt);
+    int attempt_exec(const char *sql, int (*callback) (void *, int,
+            char **, char **), void *callback_arg, const char *errfmt);
     int attempt_exec(const char *sql, const char *errfmt);
-    int prepare_stmt(const char *sql, sqlite3_stmt **ppStmt);
+    int prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt);
     int addObject(DB_OBJECT_TYPES type, int64_t parObjId, int64_t & objId);
     int addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
-        const char *path, int64_t fsObjId, int64_t parObjId, int64_t & objId);
-    int addCarvedFileInfo(int fsObjId, const char *fileName,
-        uint64_t size, int64_t & objId);
-    sqlite3 * m_db;
+        const char *path, int64_t fsObjId, int64_t parObjId,
+        int64_t & objId);
+    int addCarvedFileInfo(int fsObjId, const char *fileName, uint64_t size,
+        int64_t & objId);
+    sqlite3 *m_db;
     TSK_TCHAR m_dbFilePath[1024];
     char m_dbFilePathUtf8[1024];
     bool m_blkMapFlag;

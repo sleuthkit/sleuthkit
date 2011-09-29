@@ -77,7 +77,7 @@ class TskAuto {
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_INUM_T inum);
     uint8_t findFilesInFs(TSK_OFF_T start, TSK_FS_TYPE_ENUM ftype,
         TSK_INUM_T inum);
-    uint8_t findFilesInFs(TSK_FS_INFO *a_fs_info);
+    uint8_t findFilesInFs(TSK_FS_INFO * a_fs_info);
     TSK_RETVAL_ENUM findFilesInFsRet(TSK_OFF_T start,
         TSK_FS_TYPE_ENUM a_ftype);
 
@@ -140,7 +140,8 @@ class TskAuto {
      *
      * @param msg A text message describing the issue that was encountered.
      */
-    virtual void handleNotification(const char * msg) {};
+    virtual void handleNotification(const char *msg) {
+    };
 
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;

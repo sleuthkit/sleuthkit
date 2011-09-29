@@ -12,7 +12,7 @@
 * C++ class that implements TskAuto to load file metadata into a database. 
 */
 class TskAutoDb:public TskAuto {
-public:
+  public:
     TskAutoDb(TskDbSqlite * db);
     virtual ~ TskAutoDb();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
@@ -29,7 +29,7 @@ public:
         const char *path);
     virtual void createBlockMap(bool flag);
 
-    uint8_t runProcess(int numImg, const TSK_TCHAR *const imagePaths[],
+    uint8_t runProcess(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
 #ifdef WIN32
     uint8_t runProcess(int numImg, const char *const imagePaths[],
@@ -39,8 +39,8 @@ public:
     void revertProcess();
     int64_t commitProcess();
 
-private:
-    TskDbSqlite * m_db;
+  private:
+     TskDbSqlite * m_db;
     int64_t m_curImgId;
     int64_t m_curVsId;
     int64_t m_curVolId;
@@ -50,9 +50,9 @@ private:
     bool m_vsFound;
     bool m_volFound;
     bool m_stopped;
-    
 
-    uint8_t addImageDetails(const char * const images[], int);
+
+    uint8_t addImageDetails(const char *const images[], int);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
@@ -63,20 +63,20 @@ private:
 #define TSK_CASE_DB_TAG 0xB0551A33
 
 class TskCaseDb {
-public:
+  public:
     unsigned int m_tag;
-    
-    ~ TskCaseDb();
 
-    static TskCaseDb * newDb(const TSK_TCHAR * path);
-    static TskCaseDb * openDb(const TSK_TCHAR * path);
+    ~TskCaseDb();
+
+    static TskCaseDb *newDb(const TSK_TCHAR * path);
+    static TskCaseDb *openDb(const TSK_TCHAR * path);
     uint8_t addImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
-    TskAutoDb * initAddImage();
+    TskAutoDb *initAddImage();
 
-private:
-    TskCaseDb(TskDbSqlite * a_db);
-    TskDbSqlite * m_db;
+  private:
+     TskCaseDb(TskDbSqlite * a_db);
+    TskDbSqlite *m_db;
 };
 
 #endif
