@@ -27,6 +27,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 
 /**
  *
@@ -59,10 +60,14 @@ public class DiffUtil {
 			ReprDataModel repr = new ReprDataModel(standardWriter);
 
 			dbFile.delete();
-
-			Sleuthkit.makeDb(imagePaths.toArray(new String[imagePaths.size()]), tempDirPath);
-			Sleuthkit sk = new Sleuthkit(dbPath, imageDirPath);
-			repr.start(sk.getImage());
+			
+			SleuthkitCase sk = SleuthkitCase.newCase(dbPath, imageDirPath);
+			
+			String timezone = "";
+			AddImageProcess process = sk.makeAddImageProcess(timezone);
+			process.run(imagePaths.toArray(new String[imagePaths.size()]));
+			process.commit();
+			repr.start(sk.getRootObjects());
 			standardWriter.close();
 
 		} catch (Exception ex) {

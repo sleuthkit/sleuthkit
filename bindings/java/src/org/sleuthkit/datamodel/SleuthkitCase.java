@@ -786,22 +786,13 @@ public class SleuthkitCase {
 	}
 
 	public void finalize(){
-		try
-		{
-			if(con != null)
-				con.close();
-		}
-		catch(SQLException e)
-		{
-			// connection close failed.
-			System.err.println(e);
-		}
+		close();
 	}
 
 	/**
-	 * Closes the connection of this class.
+	 * Closes the database connection of this instance.
 	 */
-	public void closeConnection(){
+	private void closeConnection(){
 		try
 		{
 			if(con != null)

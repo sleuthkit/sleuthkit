@@ -20,8 +20,6 @@
 package org.sleuthkit.datamodel;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.CharBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -40,7 +38,6 @@ public class ReprDataModel {
 	int indentLevel = 0;
 	Appendable result;
 	ContentVisitor reprVisitor = new ReprVisitor();
-	ContentVisitor<List<? extends Content>> childrenVisitor = new ContentChildrenVisitor();
 	static final int READ_BUFFER_SIZE = 8192;
 	static final String HASH_ALGORITHM = "MD5";
 
@@ -56,8 +53,10 @@ public class ReprDataModel {
 	 * Entry point to represent a Content object and it's children
 	 * @param c the root Content object
 	 */
-	public void start(Content c) {
-		reprContent(c);
+	public void start(List<Content> lc) {
+		for(Content c : lc) {
+			reprContent(c);
+		}
 	}
 
 	private void title(String title) {
@@ -91,7 +90,11 @@ public class ReprDataModel {
 		title(c.getClass().getSimpleName());
 		c.accept(reprVisitor);
 		readContent(c);
-		reprChildren(c.accept(childrenVisitor));
+		try {
+			reprChildren(c.getChildren());
+		} catch (TskException ex) {
+			throw new RuntimeException(ex);
+		}
 		tail();
 	}
 
@@ -147,11 +150,10 @@ public class ReprDataModel {
 		repr("getDir_flags", fsc.getDir_flags());
 		repr("getDir_type", fsc.getDir_type());
 		repr("getDirtype", fsc.getDirtype());
-		repr("getFile_id", fsc.getFile_id());
-		repr("getFs_id", fsc.getFs_id());
 		repr("getGid", fsc.getGid());
 		repr("getMetaFlagsAsString", fsc.getMetaFlagsAsString());
 		repr("getMetaTypeAsString", fsc.getMetaTypeAsString());
+		repr("getMeta_addr", fsc.getMeta_addr());
 		repr("getMeta_flags", fsc.getMeta_flags());
 		repr("getMeta_type", fsc.getMeta_type());
 		repr("getMode", fsc.getMode());
@@ -159,7 +161,6 @@ public class ReprDataModel {
 		repr("getMtime", fsc.getMtime());
 		repr("getMtimeAsDate", fsc.getMtimeAsDate());
 		repr("getName", fsc.getName());
-		repr("getPar_file_id", fsc.getPar_file_id());
 		repr("getSize", fsc.getSize());
 		repr("getUid", fsc.getUid());
 	}
@@ -179,13 +180,11 @@ public class ReprDataModel {
 		 * 
 		 */
 		repr("getFirst_inum", fs.getFirst_inum());
-		repr("getFs_id", fs.getFs_id());
 		repr("getFs_type", fs.getFs_type());
 		repr("getImg_offset", fs.getImg_offset());
 		repr("getLast_inum", fs.getLast_inum());
 		repr("getRoot_inum", fs.getRoot_inum());
 		repr("getSize", fs.getSize());
-		repr("getVol_id", fs.getVol_id());
 	}
 
 	private void reprImage(Image i) {
@@ -203,13 +202,13 @@ public class ReprDataModel {
 	}
 
 	private void reprVolume(Volume v) {
+		repr("getAddr", v.getAddr());
 		repr("getDescription", v.getDescription());
 		repr("getFlags", v.getFlags());
 		repr("getFlagsAsString", v.getFlagsAsString());
 		repr("getLength", v.getLength());
 		repr("getSize", v.getSize());
 		repr("getStart", v.getStart());
-		repr("getVol_id", v.getVol_id());
 	}
 
 	private void reprVolumeSystem(VolumeSystem vs) {
@@ -260,6 +259,8 @@ public class ReprDataModel {
 
 	private void append(CharSequence s) {
 		try {
+			System.out.append(s);
+			System.out.flush();
 			result.append(s);
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);

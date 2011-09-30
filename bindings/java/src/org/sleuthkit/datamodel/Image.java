@@ -125,14 +125,6 @@ public class Image extends AbstractContent implements FileSystemParent {
 		return paths;
 	}
 
-	/**
-	 * get the sleuthkit database object
-	 * @return the sleuthkit object
-	 */
-	public SleuthkitCase getSleuthkit(){
-		return db;
-	}
-
 	// ----- Here all the methods for Image Type conversion / mapping -----
 
 	public static String imageTypeToValue(long imageType){
@@ -202,13 +194,6 @@ public class Image extends AbstractContent implements FileSystemParent {
 		}
 
 		return result;
-	}
-
-	/**
-	 * Closes the connection to the sleuthkit.
-	 */
-	public void closeConnection(){
-		db.closeConnection();
 	}
 
 	@Override
