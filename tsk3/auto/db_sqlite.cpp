@@ -30,6 +30,7 @@ TskDbSqlite::TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
     m_utf8 = true;
     m_blkMapFlag = a_blkMapFlag;
     m_db = NULL;
+    m_selectFileIdByMetaAddr = NULL;
 }
 
 #ifdef TSK_WIN32
@@ -40,6 +41,7 @@ TskDbSqlite::TskDbSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
     m_utf8 = false;
     m_blkMapFlag = a_blkMapFlag;
     m_db = NULL;
+    m_selectFileIdByMetaAddr = NULL;
 }
 #endif
 
@@ -53,24 +55,20 @@ TskDbSqlite::~TskDbSqlite()
  * Return 0 on success, 1 on failure
  */
 int
-TskDbSqlite::close()
+ TskDbSqlite::close()
 {
 
     if (m_db) {
-        sqlite3_finalize(m_selectFileIdByMetaAddr);
-        if (sqlite3_close(m_db) == SQLITE_OK) {
-            m_db = NULL;
-        }
-        else {
-            return 1;
-        }
+        sqlite3_finalize(m_selectFileIdByMetaAddr);     // calling on NULL is okay
+        sqlite3_close(m_db);
+        m_db = NULL;
     }
     return 0;
 }
 
 
 int
-TskDbSqlite::attempt(int resultCode, int expectedResultCode,
+ TskDbSqlite::attempt(int resultCode, int expectedResultCode,
     const char *errfmt)
 {
     if (resultCode != expectedResultCode) {
@@ -84,7 +82,7 @@ TskDbSqlite::attempt(int resultCode, int expectedResultCode,
 
 
 int
-TskDbSqlite::attempt(int resultCode, const char *errfmt)
+ TskDbSqlite::attempt(int resultCode, const char *errfmt)
 {
     return attempt(resultCode, SQLITE_OK, errfmt);
 }
@@ -92,10 +90,11 @@ TskDbSqlite::attempt(int resultCode, const char *errfmt)
 
 
 int
-TskDbSqlite::attempt_exec(const char *sql, int (*callback) (void *, int,
+ TskDbSqlite::attempt_exec(const char *sql, int (*callback) (void *, int,
         char **, char **), void *callback_arg, const char *errfmt)
 {
-    char *errmsg;
+    char *
+        errmsg;
 
     if (!m_db)
         return 1;
@@ -113,14 +112,14 @@ TskDbSqlite::attempt_exec(const char *sql, int (*callback) (void *, int,
 }
 
 int
-TskDbSqlite::attempt_exec(const char *sql, const char *errfmt)
+ TskDbSqlite::attempt_exec(const char *sql, const char *errfmt)
 {
     return attempt_exec(sql, NULL, NULL, errfmt);
 }
 
 
 int
-TskDbSqlite::prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt)
+ TskDbSqlite::prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt)
 {
     if (sqlite3_prepare_v2(m_db, sql, -1, ppStmt, NULL) != SQLITE_OK) {
         tsk_error_reset();
@@ -135,10 +134,11 @@ TskDbSqlite::prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt)
 
 
 int
-TskDbSqlite::addObject(DB_OBJECT_TYPES type, int64_t parObjId,
+ TskDbSqlite::addObject(DB_OBJECT_TYPES type, int64_t parObjId,
     int64_t & objId)
 {
-    char stmt[1024];
+    char
+        stmt[1024];
 
     snprintf(stmt, 1024,
         "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, %lld, %d);",
@@ -161,9 +161,10 @@ TskDbSqlite::addObject(DB_OBJECT_TYPES type, int64_t parObjId,
  * @returns 1 on error
  */
 int
-TskDbSqlite::initialize()
+ TskDbSqlite::initialize()
 {
-    char foo[1024];
+    char
+        foo[1024];
 
     // disable synchronous for loading the DB since we have no crash recovery anyway...
     if (attempt_exec("PRAGMA synchronous =  OFF;",
@@ -234,12 +235,6 @@ TskDbSqlite::initialize()
         }
     }
 
-    if (prepare_stmt
-        ("SELECT obj_id FROM tsk_files WHERE meta_addr IS ? AND fs_obj_id IS ?",
-            &m_selectFileIdByMetaAddr)) {
-        return 1;
-    }
-
     if (createIndexes())
         return 1;
 
@@ -248,7 +243,7 @@ TskDbSqlite::initialize()
 }
 
 int
-TskDbSqlite::createIndexes()
+ TskDbSqlite::createIndexes()
 {
     return
         attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
@@ -261,7 +256,7 @@ TskDbSqlite::createIndexes()
  * it will create a new database. 
  */
 int
-TskDbSqlite::open()
+ TskDbSqlite::open()
 {
 
     if (m_utf8) {
@@ -282,11 +277,40 @@ TskDbSqlite::open()
     return 0;
 }
 
+/**
+ * Must be called on an intialized database, before adding any content to it.
+ */
+int
+ TskDbSqlite::setup()
+{
+    if (prepare_stmt
+        ("SELECT obj_id FROM tsk_files WHERE meta_addr IS ? AND fs_obj_id IS ?",
+            &m_selectFileIdByMetaAddr)) {
+        return 1;
+    }
+
+    return 0;
+}
+
+
+/**
+ * Must be called after adding content to the database.
+ */
+int
+ TskDbSqlite::cleanup()
+{
+    if (m_selectFileIdByMetaAddr != NULL) {
+        sqlite3_finalize(m_selectFileIdByMetaAddr);
+        m_selectFileIdByMetaAddr = NULL;
+    }
+    return 1;
+}
 
 int
-TskDbSqlite::addImageInfo(int type, int size, int64_t & objId)
+ TskDbSqlite::addImageInfo(int type, int size, int64_t & objId)
 {
-    char stmt[1024];
+    char
+        stmt[1024];
 
     snprintf(stmt, 1024,
         "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, NULL, %d);",
@@ -304,9 +328,11 @@ TskDbSqlite::addImageInfo(int type, int size, int64_t & objId)
 }
 
 int
-TskDbSqlite::addImageName(int64_t objId, char const *imgName, int sequence)
+ TskDbSqlite::addImageName(int64_t objId, char const *imgName,
+    int sequence)
 {
-    char stmt[1024];
+    char
+        stmt[1024];
 
     snprintf(stmt, 1024,
         "INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%lld, '%s', %d)",
@@ -318,10 +344,11 @@ TskDbSqlite::addImageName(int64_t objId, char const *imgName, int sequence)
 
 
 int
-TskDbSqlite::addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
+ TskDbSqlite::addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
     int64_t & objId)
 {
-    char stmt[1024];
+    char
+        stmt[1024];
 
     if (addObject(DB_OBJECT_TYPE_VS, parObjId, objId))
         return 1;
@@ -343,10 +370,11 @@ TskDbSqlite::addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
  * Adds the sector addresses of the volumes into the db.
  */
 int
-TskDbSqlite::addVolumeInfo(const TSK_VS_PART_INFO * vs_part,
+ TskDbSqlite::addVolumeInfo(const TSK_VS_PART_INFO * vs_part,
     int64_t parObjId, int64_t & objId)
 {
-    char stmt[1024];
+    char
+        stmt[1024];
 
     if (addObject(DB_OBJECT_TYPE_VOL, parObjId, objId))
         return 1;
@@ -362,10 +390,11 @@ TskDbSqlite::addVolumeInfo(const TSK_VS_PART_INFO * vs_part,
 }
 
 int
-TskDbSqlite::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId,
+ TskDbSqlite::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId,
     int64_t & objId)
 {
-    char stmt[1024];
+    char
+        stmt[1024];
 
     if (addObject(DB_OBJECT_TYPE_FS, parObjId, objId))
         return 1;
@@ -394,11 +423,12 @@ TskDbSqlite::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId,
 
 
 int
-TskDbSqlite::addFsFile(TSK_FS_FILE * fs_file,
+ TskDbSqlite::addFsFile(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path, int64_t fsObjId,
     int64_t & objId)
 {
-    int64_t parObjId;
+    int64_t
+        parObjId;
 
     if (fs_file->name == NULL)
         return 0;
@@ -408,6 +438,7 @@ TskDbSqlite::addFsFile(TSK_FS_FILE * fs_file,
         parObjId = fsObjId;
     }
     else {
+
         // Find the parent file id in the database using the parent metadata address
         if (attempt(sqlite3_reset(m_selectFileIdByMetaAddr),
                 "Error reseting 'select file id by meta_addr' statement: %s\n")
@@ -436,7 +467,7 @@ TskDbSqlite::addFsFile(TSK_FS_FILE * fs_file,
  * Return 0 on success, 1 on error.
  */
 int
-TskDbSqlite::addFile(TSK_FS_FILE * fs_file,
+ TskDbSqlite::addFile(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path, int64_t fsObjId,
     int64_t parObjId, int64_t & objId)
 {
@@ -452,7 +483,8 @@ TskDbSqlite::addFile(TSK_FS_FILE * fs_file,
      ctime = 0;
     int
      atime = 0;
-    TSK_OFF_T size = 0;
+    TSK_OFF_T
+        size = 0;
     int
      meta_type = 0;
     int
@@ -463,8 +495,10 @@ TskDbSqlite::addFile(TSK_FS_FILE * fs_file,
      gid = 0;
     int
      uid = 0;
-    int type = 0;
-    int idx = 0;
+    int
+        type = 0;
+    int
+        idx = 0;
 
     if (fs_file->name == NULL)
         return 0;
@@ -482,7 +516,8 @@ TskDbSqlite::addFile(TSK_FS_FILE * fs_file,
         uid = fs_file->meta->uid;
     }
 
-    size_t attr_nlen = 0;
+    size_t
+        attr_nlen = 0;
     if (fs_attr) {
         type = fs_attr->type;
         idx = fs_attr->id;
@@ -495,14 +530,18 @@ TskDbSqlite::addFile(TSK_FS_FILE * fs_file,
     }
 
     // clean up special characters in name before we insert
-    size_t len = strlen(fs_file->name->name);
-    char *name;
-    size_t nlen = 2 * (len + attr_nlen);
+    size_t
+        len = strlen(fs_file->name->name);
+    char *
+        name;
+    size_t
+        nlen = 2 * (len + attr_nlen);
     if ((name = (char *) tsk_malloc(nlen + 1)) == NULL) {
         return 1;
     }
 
-    size_t j = 0;
+    size_t
+        j = 0;
     for (size_t i = 0; i < len && j < nlen; i++) {
         // ' is special in SQLite
         if (fs_file->name->name[i] == '\'') {
@@ -560,14 +599,14 @@ TskDbSqlite::addFile(TSK_FS_FILE * fs_file,
 }
 
 int
-TskDbSqlite::begin()
+ TskDbSqlite::begin()
 {
     return attempt_exec("BEGIN",
         "Error using BEGIN for insert transaction: %s\n");
 }
 
 int
-TskDbSqlite::commit()
+ TskDbSqlite::commit()
 {
     return attempt_exec("COMMIT",
         "Error using COMMIT for insert transaction: %s\n");
@@ -575,9 +614,10 @@ TskDbSqlite::commit()
 
 
 int
-TskDbSqlite::savepoint(const char *name)
+ TskDbSqlite::savepoint(const char *name)
 {
-    char buff[1024];
+    char
+        buff[1024];
 
     snprintf(buff, 1024, "SAVEPOINT %s", name);
 
@@ -585,9 +625,10 @@ TskDbSqlite::savepoint(const char *name)
 }
 
 int
-TskDbSqlite::rollbackSavepoint(const char *name)
+ TskDbSqlite::rollbackSavepoint(const char *name)
 {
-    char buff[1024];
+    char
+        buff[1024];
 
     snprintf(buff, 1024, "ROLLBACK TO SAVEPOINT %s", name);
 
@@ -595,9 +636,10 @@ TskDbSqlite::rollbackSavepoint(const char *name)
 }
 
 int
-TskDbSqlite::releaseSavepoint(const char *name)
+ TskDbSqlite::releaseSavepoint(const char *name)
 {
-    char buff[1024];
+    char
+        buff[1024];
 
     snprintf(buff, 1024, "RELEASE SAVEPOINT %s", name);
 
@@ -617,10 +659,11 @@ TskDbSqlite::releaseSavepoint(const char *name)
  * @returns 1 on error
  */
 int
-TskDbSqlite::addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
+ TskDbSqlite::addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
     uint64_t a_byteStart, uint64_t a_byteLen)
 {
-    char foo[1024];
+    char
+        foo[1024];
 
     snprintf(foo, 1024,
         "INSERT INTO tsk_file_layout (fs_id, byte_start, byte_len, obj_id) VALUES (%lld, %lld, %llu, %llu)",
@@ -641,20 +684,25 @@ TskDbSqlite::addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
  * @returns 0 on success or -1 on error.
  */
 int
-TskDbSqlite::addCarvedFileInfo(int fsObjId, const char *fileName,
+ TskDbSqlite::addCarvedFileInfo(int fsObjId, const char *fileName,
     uint64_t size, int64_t & objId)
 {
-    char foo[1024];
+    char
+        foo[1024];
 
     // clean up special characters in name before we insert
-    size_t len = strlen(fileName);
-    char *name;
-    size_t nlen = 2 * (len);
+    size_t
+        len = strlen(fileName);
+    char *
+        name;
+    size_t
+        nlen = 2 * (len);
     if ((name = (char *) tsk_malloc(nlen + 1)) == NULL) {
         return 1;
     }
 
-    size_t j = 0;
+    size_t
+        j = 0;
     for (size_t i = 0; i < len && j < nlen; i++) {
         // ' is special in SQLite
         if (fileName[i] == '\'') {
@@ -696,8 +744,7 @@ TskDbSqlite::addCarvedFileInfo(int fsObjId, const char *fileName,
 
 
 
-bool
-TskDbSqlite::dbExist() const 
+bool TskDbSqlite::dbExist() const
 {
     if (m_db)
         return true;

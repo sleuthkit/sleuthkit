@@ -48,19 +48,18 @@ public class SleuthkitCase {
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private SleuthkitCase(String dbPath, String imageDirectory, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException {
+	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.caseHandle = caseHandle;
-		this.imageDirectory = imageDirectory;
 		con = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
 		con.setReadOnly(true);
 	}
 	
-	public static SleuthkitCase openCase(String dbPath, String imageDirectory) throws TskException {
+	public static SleuthkitCase openCase(String dbPath) throws TskException {
 		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
 		try {
-			return new SleuthkitCase(dbPath, imageDirectory, caseHandle);
+			return new SleuthkitCase(dbPath, caseHandle);
 		} catch (SQLException ex) {
 			throw new TskException("Couldn't open case.", ex);
 		} catch (ClassNotFoundException ex) {
@@ -68,10 +67,10 @@ public class SleuthkitCase {
 		}
 	}
 	
-	public static SleuthkitCase newCase(String dbPath, String imageDirectory) throws TskException {
+	public static SleuthkitCase newCase(String dbPath) throws TskException {
 		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(dbPath);
 		try {
-			return new SleuthkitCase(dbPath, imageDirectory, caseHandle);
+			return new SleuthkitCase(dbPath, caseHandle);
 		} catch (SQLException ex) {
 			throw new TskException("Couldn't open case.", ex);
 		} catch (ClassNotFoundException ex) {
@@ -413,12 +412,15 @@ public class SleuthkitCase {
 			long obj_id = rs1.getLong("obj_id");
 			Statement s2 = con.createStatement();
 			ResultSet rs2 = s2.executeQuery("select * from tsk_image_names where obj_id = " + obj_id);
-			List<String> imageNames = new ArrayList<String>();
+			List<String> imagePaths = new ArrayList<String>();
 			while(rs2.next()) {
-				imageNames.add(rsHelper.imagePath(rs2));
+				imagePaths.add(rsHelper.imagePath(rs2));
 			}
 			
-			temp = rsHelper.image(rs1, imageNames.get(0), imageNames.toArray(new String[imageNames.size()]), imageDirectory);
+			String path1 = imagePaths.get(0);
+			String name = (new java.io.File(path1)).getName();
+			
+			temp = rsHelper.image(rs1, name, imagePaths.toArray(new String[imagePaths.size()]));
 		} else {
 			throw new IllegalStateException("No image found in database!");
 		}
@@ -809,9 +811,14 @@ public class SleuthkitCase {
 	 * Call to free resources when done with instance.
 	 */
 	public void close() {
+		System.err.println(this.hashCode() + " closed");
+		System.err.flush();
 		this.closeConnection();
 		try {
-			this.caseHandle.free();
+			if (this.caseHandle != null) {
+				this.caseHandle.free();
+				this.caseHandle = null;
+			}
 		} catch (TskException ex) {
 			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING,
 					"Error freeing case handle.", ex);

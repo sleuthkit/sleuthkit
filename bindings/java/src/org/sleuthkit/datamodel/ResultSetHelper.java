@@ -17,19 +17,13 @@ class ResultSetHelper {
 		this.db = db;
 	}
 
-	Image image(ResultSet rs, String name, String[] imageFiles, String imageDirectory) throws TskException, SQLException {
+	Image image(ResultSet rs, String name, String[] imagePaths) throws TskException, SQLException {
 
 		long obj_id, type, ssize;
 
 		obj_id = rs.getLong("obj_id");
 		type = rs.getLong("type");
 		ssize = rs.getLong("ssize");
-
-		String[] imagePaths = new String[imageFiles.length];
-
-		for (int i = 0; i < imageFiles.length; i++) {
-			imagePaths[i] = imageDirectory + java.io.File.separator + imageFiles[i];
-		}
 
 		Image img = new Image(db, obj_id, type, ssize, name, imagePaths);
 		return img;

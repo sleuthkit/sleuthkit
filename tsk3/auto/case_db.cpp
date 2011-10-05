@@ -25,8 +25,11 @@ TskCaseDb::TskCaseDb(TskDbSqlite * a_db)
 
 TskCaseDb::~TskCaseDb()
 {
-    delete m_db;
-};
+    if (m_db != NULL) {
+        delete m_db;
+        m_db = NULL;
+    }
+}
 
 /**
 * Creates a new case with a new database and initializes its tables.
@@ -128,5 +131,6 @@ uint8_t
 {
 
     TskAutoDb autoDb(m_db);
-    return autoDb.runProcess(numImg, imagePaths, imgType, sSize);
+    return autoDb.runProcess(numImg, imagePaths, imgType, sSize)
+        || autoDb.commitProcess();
 }

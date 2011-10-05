@@ -120,7 +120,9 @@ public class VolumeSystem extends AbstractContent {
 
 	@Override
 	public void finalize(){
-		SleuthkitJNI.closeVs(volumeSystemHandle);
+		if (volumeSystemHandle != 0) {
+			SleuthkitJNI.closeVs(volumeSystemHandle);
+		}
 	}
 
 	@Override

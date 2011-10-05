@@ -152,16 +152,17 @@ JNIEXPORT jlong JNICALL
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat(JNIEnv * env,
-    jclass obj, jstring caseHandle) {
+    jclass obj, jlong caseHandle) {
 
     TskCaseDb *tskCase = ((TskCaseDb *) caseHandle);
     if (tskCase->m_tag != TSK_CASE_DB_TAG) {
         throwTskError(env,
-            "closeCaseDbNate: Invalid TskCaseDb object passed in");
+            "closeCaseDbNat: Invalid TskCaseDb object passed in");
         return;
     }
 
     delete tskCase;
+    return;
 }
 
 
@@ -202,7 +203,8 @@ JNIEXPORT jlong JNICALL
 
 
 /*
- * Create a database for the given image using a pre-created process which can be cancelled
+ * Create a database for the given image using a pre-created process which can be cancelled.
+ * MUST call commitAddImg or revertAddImg afterwards once runAddImg returns (unless there's an error).
  * @return the 0 for success 1 for failure
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
@@ -226,6 +228,8 @@ JNIEXPORT void JNICALL
     //change to true when autopsy needs the block table.
     tskAuto->createBlockMap(false);
 
+    
+
     // move the strings into the C++ world
 
     // get pointers to each of the file names
@@ -239,6 +243,11 @@ JNIEXPORT void JNICALL
             (char *) env->
             GetStringUTFChars((jstring) env->GetObjectArrayElement(paths,
                 i), &isCopy);
+        if (imagepaths8[i] == NULL) {
+            throwTskError(env,
+                "runAddImgNat: Can't convert path strings.");
+            return;
+        }
     }
 
     // flag to free tskAuto if the process is interuppted
@@ -260,8 +269,9 @@ JNIEXPORT void JNICALL
     free(imagepaths8);
     tskAuto->closeImage();
 
-    if (deleteProcess)
+    if (deleteProcess) {
         delete tskAuto;
+    }
     // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
 
@@ -318,7 +328,7 @@ JNIEXPORT jlong JNICALL
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (tskAuto->m_tag != TSK_AUTO_TAG) {
         throwTskError(env,
-            "commitAddImgNat: Invalid TskAutoDb object passed in");
+             "commitAddImgNat: Invalid TskAutoDb object passed in");
         return -1;
     }
     int64_t imgId = tskAuto->commitProcess();
@@ -472,16 +482,22 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
  * @param env JNI env
  * @param buf Buffer to copy from
  * @param len Length of bytes in buf
- * @returns Pointer to java byte array or exception if there is an error
+ * @returns Pointer to java byte array or NULL if there is an error
  */
 static jbyteArray
 copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
 {
     jbyteArray return_array = env->NewByteArray(len);
-    // @@@ Error check
+    if (return_array == NULL) {
+        throwTskError(env, "NewByteArray returned error while getting an array to copy buffer into.");
+        return NULL;
+    }
 
-    jbyte *jBytes = env->GetByteArrayElements(return_array, 0);
-    // @@@ error check
+    jbyte * jBytes= env->GetByteArrayElements(return_array, 0);
+    if (jBytes == NULL) {
+        throwTskError(env, "GetByteArrayElements returned error while getting elements to copy buffer into.");   
+        return NULL;
+    }
 
     for (int i = 0; i < len; i++) {
         jBytes[i] = buf[i];
@@ -561,7 +577,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
 
 /*
  * Read bytes from the given volume
- * @return array of bytes read from the volume
+ * @return array of bytes read from the volume or NULL on error
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param a_vol_info the pointer to the volume object
@@ -578,6 +594,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
         throwTskError(env);
         return NULL;
     }
+
     TSK_VS_PART_INFO *vol_part_info = castVsPartInfo(env, a_vol_info);
 
     ssize_t retval =
@@ -585,10 +602,14 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
         (size_t) len);
     if (retval == -1) {
         throwTskError(env, tsk_error_get());
+        free(buf);
+        return NULL;
     }
 
     // package it up for return
     jbyteArray return_array = copyBufToByteArray(env, buf, retval);
+    // no point checking for error. copyBufToByteArray will call throwTskError and return NULL itself
+
     free(buf);
     return return_array;
 }

@@ -52,16 +52,13 @@ public class DiffUtil {
 			String dbPath = tempDir.getPath() + java.io.File.separator + firstImageFile.getName() + ".db";
 			java.io.File dbFile = new java.io.File(dbPath);
 
-			String imageDirPath = firstImageFile.getParent();
-
-
 			standardFile.createNewFile();
 			FileWriter standardWriter = new FileWriter(standardFile);
 			ReprDataModel repr = new ReprDataModel(standardWriter);
 
 			dbFile.delete();
 			
-			SleuthkitCase sk = SleuthkitCase.newCase(dbPath, imageDirPath);
+			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			
 			String timezone = "";
 			AddImageProcess process = sk.makeAddImageProcess(timezone);
@@ -85,9 +82,9 @@ public class DiffUtil {
 		List<List<String>> imagePaths = DiffTest.getImagePaths();
 		for(List<String> paths : imagePaths) {
 			String standardPath = DiffTest.standardPath(paths);
+			System.out.println("Creating standard for: " + paths.get(0));
 			createStandard(standardPath, tempDirPath, paths);
 		}
-
 	}
 
 	private static List<String> fileToLines(String filename) {

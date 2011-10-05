@@ -94,6 +94,12 @@ public class SleuthkitJNI {
 				autoDbPointer = 0;
 			}
 			
+			/**
+			 * Add an image to the case database. MUST call either commit() or
+			 * revert() after calling run().
+			 * @param imgPath Full path(s) to the image file(s).
+			 * @throws TskException
+			 */
 			public void run(String[] imgPath) throws TskException {
 				if (autoDbPointer != 0) {
 					throw new IllegalStateException("AddImageProcess can only be run once");
@@ -103,6 +109,12 @@ public class SleuthkitJNI {
 				runAddImgNat(autoDbPointer, imgPath, imgPath.length);
 			}
 			
+			/**
+			 * Call while run() is executing in another thread to prematurely
+			 * halt the process. Must call revert() in the other thread once
+			 * the stopped run() returns.
+			 * @throws TskException
+			 */
 			public void stop() throws TskException {
 				if (autoDbPointer == 0) {
 					throw new IllegalStateException("Can't stop an AddImageProcess that hasn't been run.");
@@ -111,6 +123,11 @@ public class SleuthkitJNI {
 				stopAddImgNat(autoDbPointer);
 			}
 			
+			/**
+			 * Rollback a process that has already been run(), reverting the
+			 * database.
+			 * @throws TskException
+			 */
 			public void revert() throws TskException {
 				if (autoDbPointer == 0) {
 					throw new IllegalStateException("Can't revert an AddImageProcess that hasn't been run.");
@@ -119,6 +136,12 @@ public class SleuthkitJNI {
 				revertAddImgNat(autoDbPointer);
 			}
 			
+			/**
+			 * Finish off a process that has already been run(), closing the
+			 * transaction and committing the new image data to the database.
+			 * @return The id of the image that was added.
+			 * @throws TskException 
+			 */
 			public long commit() throws TskException {
 				if (autoDbPointer == 0) {
 					throw new IllegalStateException("Can't commit an AddImageProcess that hasn't been run.");
@@ -168,7 +191,6 @@ public class SleuthkitJNI {
 	 * @throws TskException
 	 */
 	public static long openImage(String[] imageDirs) throws TskException{
-		System.out.println(imageDirs[0]);
 		return openImgNat(imageDirs, imageDirs.length);
 	}
 

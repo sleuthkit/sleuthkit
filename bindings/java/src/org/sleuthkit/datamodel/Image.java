@@ -41,7 +41,7 @@ public class Image extends AbstractContent implements FileSystemParent {
 	 * @param ssize
 	 * @param name
 	 * @param paths  
-	 */		
+	 */	
 	
 	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths) throws TskException {
 		super(db, obj_id);

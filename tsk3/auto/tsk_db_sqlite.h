@@ -38,6 +38,8 @@ class TskDbSqlite {
     int open();
     int close();
     int initialize();
+    int setup();
+    int cleanup();
     int addImageInfo(int type, int size, int64_t & objId);
     int addImageName(int64_t objId, char const *imgName, int sequence);
     int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
