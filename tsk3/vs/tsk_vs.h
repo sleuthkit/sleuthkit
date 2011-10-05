@@ -113,7 +113,7 @@ extern "C" {
         TSK_VS_PART_FLAG_ENUM flags;    ///< Flags for partition
     };
 
-#define TSK_VS_PART_INFO_TAG  0x90121253
+#define TSK_VS_PART_INFO_TAG  0x40121253
 
     // to and from type ids and names
     extern TSK_VS_TYPE_ENUM tsk_vs_type_toid(const TSK_TCHAR *);
