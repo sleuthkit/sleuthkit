@@ -24,6 +24,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db)
     m_curFsId = 0;
     m_curVsId = 0;
     m_blkMapFlag = false;
+    m_fileHashFlag = true;
     m_vsFound = false;
     m_volFound = false;
     m_stopped = false;
@@ -46,6 +47,12 @@ void
  TskAutoDb::createBlockMap(bool flag)
 {
     m_blkMapFlag = flag;
+}
+
+void
+ TskAutoDb::hashFiles(bool flag)
+{
+    m_fileHashFlag = flag;
 }
 
 /**
@@ -137,7 +144,8 @@ uint8_t
  * @return Returns 1 on error
  */
 
-uint8_t TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
+uint8_t
+TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
 {
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
             m_curImgId)) {
@@ -146,8 +154,7 @@ uint8_t TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
 
     // Add the image names
     for (int i = 0; i < a_num; i++) {
-        const char *
-            img_ptr = NULL;
+        const char *img_ptr = NULL;
         img_ptr = img_ptrs[i];
 
         //// get only the file name (ignore the directory name)
@@ -171,8 +178,7 @@ uint8_t TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
  * Analyzes the open image and adds image info to a database.
  * @returns 1 on error
  */
-uint8_t
-TskAutoDb::addFilesInImgToDb()
+uint8_t TskAutoDb::addFilesInImgToDb()
 {
     if (m_db == NULL || !m_db->dbExist()) {
         tsk_error_reset();
@@ -184,15 +190,15 @@ TskAutoDb::addFilesInImgToDb()
     setVolFilterFlags((TSK_VS_PART_FLAG_ENUM) (TSK_VS_PART_FLAG_ALLOC |
             TSK_VS_PART_FLAG_UNALLOC));
 
-    uint8_t retval = findFilesInImg();
+    uint8_t
+        retval = findFilesInImg();
     if (retval)
         return retval;
 
     return 0;
 }
 
-TSK_FILTER_ENUM
-TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
+TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
 {
     m_vsFound = true;
     if (m_db->addVsInfo(vs_info, m_curImgId, m_curVsId)) {
@@ -202,7 +208,8 @@ TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
     return TSK_FILTER_CONT;
 }
 
-TSK_FILTER_ENUM TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
+TSK_FILTER_ENUM
+TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_volFound = true;
 
@@ -214,10 +221,10 @@ TSK_FILTER_ENUM TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 }
 
 
-TSK_FILTER_ENUM TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
+TSK_FILTER_ENUM
+TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 {
-    TSK_FS_FILE *
-        file_root;
+    TSK_FS_FILE *file_root;
 
     if (m_volFound && m_vsFound) {
         // there's a volume system and volume
@@ -247,13 +254,16 @@ TSK_FILTER_ENUM TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 }
 
 /* Insert the file data into the file table.
+ * @param md5 Binary MD5 value (i.e. 16 bytes) or NULL
  * Returns 1 on error.
  */
 TSK_RETVAL_ENUM
     TskAutoDb::insertFileData(TSK_FS_FILE * fs_file,
-    const TSK_FS_ATTR * fs_attr, const char *path)
+    const TSK_FS_ATTR * fs_attr, const char *path,
+    const unsigned char *const md5)
 {
-    if (m_db->addFsFile(fs_file, fs_attr, path, m_curFsId, m_curFileId)) {
+    if (m_db->addFsFile(fs_file, fs_attr, path, md5, m_curFsId,
+            m_curFileId)) {
         return TSK_ERR;
     }
 
@@ -266,6 +276,7 @@ TSK_RETVAL_ENUM
  * all changes on error or TSK_STOP flag. When runProcess()
  * returns, user must call either commitProcess() to commit the changes,
  * or revertProcess() to revert them.
+ * @returns 1 on error and 0 on success
  */
 uint8_t
     TskAutoDb::runProcess(int numImg, const TSK_TCHAR * const imagePaths[],
@@ -356,7 +367,8 @@ void
  * Finish the process after it has run sucessfully by committing the changes.
  * Returns the id of the image that was added.
  */
-int64_t TskAutoDb::commitProcess()
+int64_t
+TskAutoDb::commitProcess()
 {
     m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
     return m_curImgId;
@@ -376,12 +388,8 @@ TSK_RETVAL_ENUM
         return TSK_ERR;
     }
 
-    TSK_RETVAL_ENUM retval;
-    // process the attributes if there are more than 1
-    if (tsk_fs_file_attr_getsize(fs_file) == 0)
-        retval = insertFileData(fs_file, NULL, path);
-    else
-        retval = processAttributes(fs_file, path);
+    // process the attributes
+    TSK_RETVAL_ENUM retval = processAttributes(fs_file, path);
 
     if (m_db->releaseSavepoint("PROCESSFILE")) {
         return TSK_ERR;
@@ -397,7 +405,20 @@ TSK_RETVAL_ENUM
 {
     // add the file metadata for the default attribute type
     if (isDefaultType(fs_file, fs_attr)) {
-        if (insertFileData(fs_attr->fs_file, fs_attr, path))
+
+        // calculate the MD5 hash if the attribute is a file
+        unsigned char hash[16];
+        unsigned char *md5 = NULL;
+        memset(hash, 0, 16);
+
+        if (m_fileHashFlag && isFile(fs_file)) {
+            if (md5HashAttr(hash, fs_attr)) {
+                return TSK_ERR;
+            }
+            md5 = hash;
+        }
+
+        if (insertFileData(fs_attr->fs_file, fs_attr, path, md5))
             return TSK_ERR;
     }
 
@@ -420,4 +441,46 @@ TSK_RETVAL_ENUM
     }
 
     return TSK_OK;
+}
+
+
+/**
+ * Helper for md5HashAttr
+ */
+TSK_WALK_RET_ENUM
+TskAutoDb::md5HashCallback(TSK_FS_FILE * file, TSK_OFF_T offset,
+    TSK_DADDR_T addr, char *buf, size_t size,
+    TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr)
+{
+    TSK_MD5_CTX *md = (TSK_MD5_CTX *) ptr;
+    if (md == NULL)
+        return TSK_WALK_CONT;
+
+    TSK_MD5_Update(md, (unsigned char *) buf, (unsigned int) size);
+
+    return TSK_WALK_CONT;
+}
+
+
+
+/**
+ * MD5 hash an attribute and put the result in the given array
+ * @param md5Hash array to write the hash to
+ * @param fs_attr attribute to hash the data of
+ * @return Returns 1 on error
+ */
+int
+TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
+{
+    TSK_MD5_CTX md;
+
+    TSK_MD5_Init(&md);
+
+    if (tsk_fs_attr_walk(fs_attr, TSK_FS_FILE_WALK_FLAG_NONE,
+            md5HashCallback, (void *) &md)) {
+        return 1;
+    }
+
+    TSK_MD5_Final(md5Hash, &md);
+    return 0;
 }

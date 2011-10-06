@@ -3392,7 +3392,7 @@ extern "C" {
 */
 #ifndef SQLITE_OMIT_DEPRECATED
     SQLITE_API SQLITE_DEPRECATED int
-        sqlite3_aggregate_count(sqlite3_context *);
+     sqlite3_aggregate_count(sqlite3_context *);
     SQLITE_API SQLITE_DEPRECATED int sqlite3_expired(sqlite3_stmt *);
     SQLITE_API SQLITE_DEPRECATED int sqlite3_transfer_bindings(sqlite3_stmt
         *, sqlite3_stmt *);

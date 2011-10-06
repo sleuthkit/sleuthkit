@@ -28,6 +28,7 @@ class TskAutoDb:public TskAuto {
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
         const char *path);
     virtual void createBlockMap(bool flag);
+    virtual void hashFiles(bool flag);
 
     uint8_t runProcess(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
@@ -47,6 +48,7 @@ class TskAutoDb:public TskAuto {
     int64_t m_curFsId;
     int64_t m_curFileId;
     bool m_blkMapFlag;
+    bool m_fileHashFlag;
     bool m_vsFound;
     bool m_volFound;
     bool m_stopped;
@@ -54,9 +56,14 @@ class TskAutoDb:public TskAuto {
 
     uint8_t addImageDetails(const char *const images[], int);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
-        const TSK_FS_ATTR *, const char *path);
+        const TSK_FS_ATTR *, const char *path,
+        const unsigned char *const md5);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
         const TSK_FS_ATTR * fs_attr, const char *path);
+    static TSK_WALK_RET_ENUM md5HashCallback(TSK_FS_FILE * file,
+        TSK_OFF_T offset, TSK_DADDR_T addr, char *buf, size_t size,
+        TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);
+    int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
 };
 
 
@@ -75,7 +82,7 @@ class TskCaseDb {
     TskAutoDb *initAddImage();
 
   private:
-     TskCaseDb(TskDbSqlite * a_db);
+    TskCaseDb(TskDbSqlite * a_db);
     TskDbSqlite *m_db;
 };
 

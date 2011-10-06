@@ -49,7 +49,8 @@ class TskDbSqlite {
     int addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId,
         int64_t & objId);
     int addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
-        const char *path, int64_t fsObjId, int64_t & objId);
+        const char *path, const unsigned char *const md5, int64_t fsObjId,
+        int64_t & objId);
     int addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
         uint64_t a_byteStart, uint64_t a_byteLen);
     int begin();
@@ -71,8 +72,8 @@ class TskDbSqlite {
     int prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt);
     int addObject(DB_OBJECT_TYPES type, int64_t parObjId, int64_t & objId);
     int addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
-        const char *path, int64_t fsObjId, int64_t parObjId,
-        int64_t & objId);
+        const char *path, const unsigned char *const md5, int64_t fsObjId,
+        int64_t parObjId, int64_t & objId);
     int addCarvedFileInfo(int fsObjId, const char *fileName, uint64_t size,
         int64_t & objId);
     sqlite3 *m_db;

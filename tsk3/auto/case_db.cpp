@@ -121,9 +121,13 @@ TskCaseDb::initAddImage()
 }
 
 /**
-* Add an image to the database.
+* Add an image to the database.  This method does not allow you
+* to customize any of the settings for ingest (such as hash calculation,
+* and block map population).  Use TskCaseDb::initAddImage() to set
+* these values.
 *
 * @param images Paths to the image splits to open.
+* @returns 1 on error and 0 on success
 */
 uint8_t
     TskCaseDb::addImage(int numImg, const TSK_TCHAR * const imagePaths[],
