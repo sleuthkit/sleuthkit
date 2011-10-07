@@ -115,7 +115,7 @@ copyInBase(const TSK_TCHAR *a_image)
 }
 
 /**
- * @param First name in the list (must be full name)
+ * @param a_startingName First name in the list (must be full name)
  * @param [out] a_numFound Number of images that are in returned list
  * @returns array of names that caller must free (NULL on error or if supplied file does not exist)
  */
