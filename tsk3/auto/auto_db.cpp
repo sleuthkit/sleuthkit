@@ -17,8 +17,12 @@
 #include <string.h>
 
 
-
-TskAutoDb::TskAutoDb(TskDbSqlite * a_db)
+/**
+ * @param a_db Database to add an image to
+ * @param a_NSRLIndex Index of "known" files (can be NULL)
+ * @param a_knownBadIndex Index of "known bad" files (can be NULL)
+ */
+TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLIndex, TSK_HDB_INFO * a_knownBadIndex)
 {
     m_db = a_db;
     m_curFsId = 0;
@@ -29,6 +33,8 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db)
     m_volFound = false;
     m_stopped = false;
     m_imgTransactionOpen = false;
+    m_NSRLIndex = a_NSRLIndex;
+    m_knownBadIndex = a_knownBadIndex;
 }
 
 TskAutoDb::~TskAutoDb()
@@ -44,6 +50,8 @@ void
  TskAutoDb::closeImage()
 {
     TskAuto::closeImage();
+    m_NSRLIndex = NULL;
+    m_knownBadIndex = NULL;
 }
 
 
@@ -266,9 +274,10 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 TSK_RETVAL_ENUM
     TskAutoDb::insertFileData(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
-    const unsigned char *const md5)
+    const unsigned char *const md5,
+    const TSK_AUTO_CASE_KNOWN_FILE_ENUM known)
 {
-    if (m_db->addFsFile(fs_file, fs_attr, path, md5, m_curFsId,
+    if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId,
             m_curFileId)) {
         return TSK_ERR;
     }
@@ -374,10 +383,8 @@ TskAutoDb::commitAddImage()
     return m_curImgId;
 }
 
-
-
 TSK_RETVAL_ENUM
-    TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
+TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
 
     // Check if the process has been canceled
@@ -400,7 +407,7 @@ TSK_RETVAL_ENUM
 
 
 TSK_RETVAL_ENUM
-    TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
+TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path)
 {
     // add the file metadata for the default attribute type
@@ -411,14 +418,36 @@ TSK_RETVAL_ENUM
         unsigned char *md5 = NULL;
         memset(hash, 0, 16);
 
+        TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
+
         if (m_fileHashFlag && isFile(fs_file)) {
             if (md5HashAttr(hash, fs_attr)) {
                 return TSK_ERR;
             }
             md5 = hash;
+
+            if (m_NSRLIndex != NULL) {
+                int8_t retval = tsk_hdb_lookup_raw(m_NSRLIndex, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
+                
+                if (retval == -1) {
+                    return TSK_ERR;
+                } else if (retval) {
+                    file_known = TSK_AUTO_CASE_FILE_KNOWN_KNOWN;
+                }
+            }
+
+            if (m_knownBadIndex != NULL) {
+                int8_t retval = tsk_hdb_lookup_raw(m_knownBadIndex, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
+                
+                if (retval == -1) {
+                    return TSK_ERR;
+                } else if (retval) {
+                    file_known = TSK_AUTO_CASE_FILE_KNOWN_BAD;
+                }
+            }
         }
 
-        if (insertFileData(fs_attr->fs_file, fs_attr, path, md5))
+        if (insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known))
             return TSK_ERR;
     }
 

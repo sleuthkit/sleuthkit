@@ -156,14 +156,14 @@ main(int argc, char **argv1)
         tsk_error_print(stderr);
         exit(1);
     }
-  
+
     TskAutoDb *autoDb = tskCase->initAddImage();
     autoDb->createBlockMap(blkMapFlag);
     autoDb->hashFiles(calcHash);
 
     if (autoDb->startAddImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
         tsk_error_print(stderr);
-        autoDb->revertAddImage();
+        // reverts automatically on error
         exit(1);
     }
 

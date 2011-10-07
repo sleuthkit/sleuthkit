@@ -24,6 +24,17 @@ typedef enum {
 } DB_OBJECT_TYPES;
 
 
+/**
+* Values for the "known" column of the files table
+*/
+typedef enum  {
+    TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN = 0,  ///< Not matched against an index
+    TSK_AUTO_CASE_FILE_KNOWN_KNOWN = 1,    ///< Match found in NSRL "known" file index
+    TSK_AUTO_CASE_FILE_KNOWN_BAD = 2,      ///< Match found in "known bad" index
+} TSK_AUTO_CASE_KNOWN_FILE_ENUM;
+
+
+
 /** \internal
  * C++ class that wraps the specifics of interacting with a SQLite database for TskAutoDb 
  */
@@ -46,7 +57,8 @@ class TskDbSqlite {
     int addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId,
         int64_t & objId);
     int addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
-        const char *path, const unsigned char *const md5, int64_t fsObjId,
+        const char *path, const unsigned char *const md5,
+        const TSK_AUTO_CASE_KNOWN_FILE_ENUM known, int64_t fsObjId,
         int64_t & objId);
     int addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
         uint64_t a_byteStart, uint64_t a_byteLen);
@@ -71,7 +83,8 @@ class TskDbSqlite {
     int prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt);
     int addObject(DB_OBJECT_TYPES type, int64_t parObjId, int64_t & objId);
     int addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
-        const char *path, const unsigned char *const md5, int64_t fsObjId,
+        const char *path, const unsigned char *const md5,
+        const TSK_AUTO_CASE_KNOWN_FILE_ENUM known, int64_t fsObjId,
         int64_t parObjId, int64_t & objId);
     int addCarvedFileInfo(int fsObjId, const char *fileName, uint64_t size,
         int64_t & objId);

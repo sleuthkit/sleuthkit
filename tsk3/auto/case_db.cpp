@@ -21,6 +21,8 @@ TskCaseDb::TskCaseDb(TskDbSqlite * a_db)
 {
     m_tag = TSK_CASE_DB_TAG;
     m_db = a_db;
+    m_NSRLIndex = NULL;
+    m_knownBadIndex = NULL;
 }
 
 TskCaseDb::~TskCaseDb()
@@ -28,6 +30,16 @@ TskCaseDb::~TskCaseDb()
     if (m_db != NULL) {
         delete m_db;
         m_db = NULL;
+    }
+
+    if (m_NSRLIndex != NULL) {
+        tsk_hdb_close(m_NSRLIndex);
+        m_NSRLIndex = NULL;
+    }
+
+    if (m_knownBadIndex != NULL) {
+        tsk_hdb_close(m_knownBadIndex);
+        m_knownBadIndex = NULL;
     }
 }
 
@@ -98,9 +110,8 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
 TskAutoDb *
 TskCaseDb::initAddImage()
 {
-    return new TskAutoDb(m_db);
+    return new TskAutoDb(m_db, m_NSRLIndex, m_knownBadIndex);
 }
-
 
 /**
 * Add an image to the database.  This method does not allow you
@@ -115,11 +126,35 @@ uint8_t
     TskCaseDb::addImage(int numImg, const TSK_TCHAR * const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
 {
-    TskAutoDb autoDb(m_db);
+    TskAutoDb autoDb(m_db, m_NSRLIndex, m_knownBadIndex);
     
     if (autoDb.startAddImage(numImg, imagePaths, imgType, sSize)) {
         autoDb.revertAddImage();
         return 1;
     }
     return autoDb.commitAddImage();
+}
+
+/*
+ * Specify the NSRL index used for determining "known" files.
+ * @param images Path to index.
+ * @returns 1 on error and 0 on success
+ */
+uint8_t
+TskCaseDb::setNSRLIndex(TSK_TCHAR * const indexFile ) {
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+    m_NSRLIndex = tsk_hdb_open(indexFile, flags);
+    return m_NSRLIndex != NULL;
+}
+
+/*
+ * Specify an index for determining "known bad" files.
+ * @param images Path to index.
+ * @returns 1 on error and 0 on success
+ */
+uint8_t
+TskCaseDb::setKnownBadIndex(TSK_TCHAR * const indexFile) {
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+    m_knownBadIndex = tsk_hdb_open(indexFile, flags);
+    return m_knownBadIndex != NULL;
 }

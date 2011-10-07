@@ -4,7 +4,7 @@
 
 #include "tsk_auto.h"
 #include "tsk_db_sqlite.h"
-
+#include "tsk3/hashdb/tsk_hashdb_i.h"
 
 #define TSK_ADD_IMAGE_SAVEPOINT "ADDIMAGE"
 
@@ -13,7 +13,7 @@
 */
 class TskAutoDb:public TskAuto {
   public:
-    TskAutoDb(TskDbSqlite * db);
+    TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLIndex, TSK_HDB_INFO * a_knownBadIndex);
     virtual ~ TskAutoDb();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
@@ -53,12 +53,15 @@ class TskAutoDb:public TskAuto {
     bool m_volFound;
     bool m_stopped;
     bool m_imgTransactionOpen;
+    TSK_HDB_INFO * m_NSRLIndex;
+    TSK_HDB_INFO * m_knownBadIndex;
 
 
     uint8_t addImageDetails(const char *const images[], int);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path,
-        const unsigned char *const md5);
+        const unsigned char *const md5,
+        const TSK_AUTO_CASE_KNOWN_FILE_ENUM known);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
         const TSK_FS_ATTR * fs_attr, const char *path);
     static TSK_WALK_RET_ENUM md5HashCallback(TSK_FS_FILE * file,
@@ -78,6 +81,8 @@ class TskCaseDb {
 
     static TskCaseDb *newDb(const TSK_TCHAR * path);
     static TskCaseDb *openDb(const TSK_TCHAR * path);
+    uint8_t setNSRLIndex(TSK_TCHAR * const indexFile);
+    uint8_t setKnownBadIndex(TSK_TCHAR * const indexFile);
     uint8_t addImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
     TskAutoDb *initAddImage();
@@ -85,6 +90,8 @@ class TskCaseDb {
   private:
     TskCaseDb(TskDbSqlite * a_db);
     TskDbSqlite *m_db;
+    TSK_HDB_INFO * m_NSRLIndex;
+    TSK_HDB_INFO * m_knownBadIndex;
 };
 
 #endif

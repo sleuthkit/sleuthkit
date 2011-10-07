@@ -223,7 +223,7 @@ int
             "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (fs_obj_id INTEGER NOT NULL, obj_id INTEGER NOT NULL UNIQUE, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT);",
+        ("CREATE TABLE tsk_files (fs_obj_id INTEGER NOT NULL, obj_id INTEGER NOT NULL UNIQUE, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER);",
             "Error creating tsk_fs_files table: %s\n")
         ||
         attempt_exec
@@ -468,7 +468,8 @@ int
 int
  TskDbSqlite::addFsFile(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
-    const unsigned char *const md5, int64_t fsObjId, int64_t & objId)
+    const unsigned char *const md5, const TSK_AUTO_CASE_KNOWN_FILE_ENUM known,
+    int64_t fsObjId, int64_t & objId)
 {
     int64_t parObjId;
 
@@ -500,7 +501,7 @@ int
     }
 
 
-    return addFile(fs_file, fs_attr, path, md5, fsObjId, parObjId, objId);
+    return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId);
 }
 
 
@@ -512,7 +513,8 @@ int
 int
  TskDbSqlite::addFile(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
-    const unsigned char *const md5, int64_t fsObjId, int64_t parObjId,
+    const unsigned char *const md5, const TSK_AUTO_CASE_KNOWN_FILE_ENUM known,
+    int64_t fsObjId, int64_t parObjId,
     int64_t & objId)
 {
 
@@ -630,7 +632,7 @@ int
         return 1;
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5) "
+        "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known) "
         "VALUES ("
         "%lld,%lld,"
         "%d,"
@@ -638,14 +640,13 @@ int
         "%" PRIuINUM ","
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "%d,%d,%d,%d,%d,%d,%d,"
-        "%s)",
+        "%d,%d,%d,%d,%d,%d,%d,%s,%d)",
         fsObjId, objId,
         DB_FILES_TYPE_FS,
         type, idx, name,
         fs_file->name->meta_addr,
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-        size, crtime, ctime, atime, mtime, meta_mode, gid, uid, md5Text);
+        size, crtime, ctime, atime, mtime, meta_mode, gid, uid, md5Text, known);
 
     if (attempt_exec(foo, "Error adding data to tsk_fs_files table: %s\n")) {
         free(name);
