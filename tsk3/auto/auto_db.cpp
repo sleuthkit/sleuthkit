@@ -28,10 +28,15 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db)
     m_vsFound = false;
     m_volFound = false;
     m_stopped = false;
+    m_imgTransactionOpen = false;
 }
 
 TskAutoDb::~TskAutoDb()
 {
+    // if they didn't commit / revert, then revert
+    if (m_imgTransactionOpen)
+        revertAddImage();
+
     closeImage();
 }
 
@@ -286,6 +291,8 @@ uint8_t
     if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT))
         return 1;
 
+    m_imgTransactionOpen = true;
+
     if (openImage(numImg, imagePaths, imgType, sSize)
         || addFilesInImgToDb()) {
         // rollback on error
@@ -293,7 +300,7 @@ uint8_t
         // rollbackSavepoint can throw errors too, need to make sure original
         // error message is preserved;
         const char *prior_msg = tsk_error_get();
-        if (m_db->revertSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
+        if (revertAddImage()) {
             if (prior_msg) {
                 tsk_error_set_errstr("%s caused: %s", prior_msg,
                     tsk_error_get());
@@ -306,13 +313,13 @@ uint8_t
 
 #ifdef WIN32
 uint8_t
-    TskAutoDb::runProcess(int numImg, const char *const imagePaths[],
+    TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
 {
     if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT))
         return 1;
-    if (m_db->setup())
-        return 1;
+
+    m_imgTransactionOpen = true;
 
     if (openImageUtf8(numImg, imagePaths, imgType, sSize)
         || addFilesInImgToDb()) {
@@ -321,7 +328,7 @@ uint8_t
         // rollbackSavepoint can throw errors too, need to make sure original
         // error message is preserved;
         const char *prior_msg = tsk_error_get();
-        if (m_db->revertSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
+        if (revertAddImage()) {
             if (prior_msg) {
                 tsk_error_set_errstr("%s caused: %s", prior_msg,
                     tsk_error_get());
@@ -329,7 +336,6 @@ uint8_t
         }
         return 1;
     }
-
     return 0;
 }
 #endif
@@ -348,10 +354,12 @@ void
 /**
  * Revert all changes after the process has run sucessfully.
  */
-void
+int
  TskAutoDb::revertAddImage()
 {
-    m_db->revertSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
+    int retval = m_db->revertSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
+    m_imgTransactionOpen = false;
+    return retval;
 }
 
 /**
@@ -362,6 +370,7 @@ int64_t
 TskAutoDb::commitAddImage()
 {
     m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
+    m_imgTransactionOpen = false;
     return m_curImgId;
 }
 

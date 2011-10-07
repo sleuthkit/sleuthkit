@@ -37,7 +37,7 @@ class TskAutoDb:public TskAuto {
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
 #endif
     void stopAddImage();
-    void revertAddImage();
+    int revertAddImage();
     int64_t commitAddImage();
 
   private:
@@ -52,6 +52,7 @@ class TskAutoDb:public TskAuto {
     bool m_vsFound;
     bool m_volFound;
     bool m_stopped;
+    bool m_imgTransactionOpen;
 
 
     uint8_t addImageDetails(const char *const images[], int);

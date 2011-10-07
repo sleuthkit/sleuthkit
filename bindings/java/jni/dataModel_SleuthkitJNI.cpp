@@ -99,6 +99,7 @@ castFsFileInfo(JNIEnv * env, jlong ptr)
  * @return the pointer to the case
  * @param env pointer to java environment this was called from
  * @param dbPath location for the database
+ * @rerurns NULL on error
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbNat(JNIEnv * env,
@@ -113,7 +114,7 @@ JNIEXPORT jlong JNICALL
 
     if (tskCase == NULL) {
         throwTskError(env);
-        return 1;               //@@@ what's the right thing to return here?
+        return NULL;               
     }
 
     return (jlong) tskCase;
@@ -125,6 +126,7 @@ JNIEXPORT jlong JNICALL
  * @return the pointer to the case
  * @param env pointer to java environment this was called from
  * @param dbPath location for the database
+ * @return Returns pointer to object or exception on error
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbNat(JNIEnv * env,
@@ -139,7 +141,7 @@ JNIEXPORT jlong JNICALL
 
     if (tskCase == NULL) {
         throwTskError(env);
-        return 1;               //@@@ what's the right thing to return here?
+        return NULL;
     }
 
     return (jlong) tskCase;
@@ -204,7 +206,8 @@ JNIEXPORT jlong JNICALL
 
 /*
  * Create a database for the given image using a pre-created process which can be cancelled.
- * MUST call commitAddImg or revertAddImg afterwards once runAddImg returns (unless there's an error).
+ * MUST call commitAddImg or revertAddImg afterwards once runAddImg returns.  If there is an 
+ * error, you do not need to call revert or commit and the 'process' handle will be deleted.
  * @return the 0 for success 1 for failure
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
@@ -256,7 +259,7 @@ JNIEXPORT void JNICALL
     bool deleteProcess = false;
 
     // process the image (parts)
-    if (tskAuto->runProcess((int) num_imgs, imagepaths8,
+    if (tskAuto->startAddImage((int) num_imgs, imagepaths8,
             TSK_IMG_TYPE_DETECT, 0)) {
         throwTskError(env, tsk_error_get());
         deleteProcess = true;
@@ -269,6 +272,7 @@ JNIEXPORT void JNICALL
             env->GetObjectArrayElement(paths, i), imagepaths8[i]);
     }
     free(imagepaths8);
+    // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
     tskAuto->closeImage();
 
     if (deleteProcess) {
@@ -280,7 +284,7 @@ JNIEXPORT void JNICALL
 
 
 /*
- * Cancel the given add-image process
+ * Cancel the given add-image process.
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param process the add-image process created by initAddImgNat
@@ -294,12 +298,12 @@ JNIEXPORT void JNICALL
             "stopAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
-    tskAuto->stopProcess();
+    tskAuto->stopAddImage();
 }
 
 
 /*
- * Revert the given add-image process
+ * Revert the given add-image process.  Deletes the 'process' handle.
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param process the add-image process created by initAddImgNat
@@ -313,13 +317,13 @@ JNIEXPORT void JNICALL
             "revertAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
-    tskAuto->revertProcess();
+    tskAuto->revertAddImage();
     delete tskAuto;
 }
 
 
 /*
- * Commit the given add-image process
+ * Commit the given add-image process. Deletes the 'process' handle.
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param process the add-image process created by initAddImgNat
@@ -333,7 +337,7 @@ JNIEXPORT jlong JNICALL
              "commitAddImgNat: Invalid TskAutoDb object passed in");
         return -1;
     }
-    int64_t imgId = tskAuto->commitProcess();
+    int64_t imgId = tskAuto->commitAddImage();
     delete tskAuto;
     return imgId;
 }
@@ -365,7 +369,7 @@ JNIEXPORT jlong JNICALL
             (char *) env->
             GetStringUTFChars((jstring) env->GetObjectArrayElement(paths,
                 i), &isCopy);
-        // @@@ ERror check
+        // @@@ Error check
     }
 
     // open the image
