@@ -35,11 +35,8 @@ class TskDbSqlite {
 #endif
      TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag);
     ~TskDbSqlite();
-    int open();
+    int open(bool);
     int close();
-    int initialize();
-    int setup();
-    int cleanup();
     int addImageInfo(int type, int size, int64_t & objId);
     int addImageName(int64_t objId, char const *imgName, int sequence);
     int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
@@ -53,15 +50,17 @@ class TskDbSqlite {
         int64_t & objId);
     int addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
         uint64_t a_byteStart, uint64_t a_byteLen);
-    int begin();
-    int commit();
+    
     bool dbExist() const;
-    int savepoint(const char *name);
-    int rollbackSavepoint(const char *name);
+    int createSavepoint(const char *name);
+    int revertSavepoint(const char *name);
     int releaseSavepoint(const char *name);
-
+    
 
   private:
+    int initialize();
+    int setupFilePreparedStmt();
+    void cleanupFilePreparedStmt();
     int createIndexes();
     int attempt(int resultCode, const char *errfmt);
     int attempt(int resultCode, int expectedResultCode,
@@ -81,7 +80,7 @@ class TskDbSqlite {
     char m_dbFilePathUtf8[1024];
     bool m_blkMapFlag;
     bool m_utf8;
-    sqlite3_stmt *m_selectFileIdByMetaAddr;
+    sqlite3_stmt *m_selectFilePreparedStmt;
 };
 
 #endif

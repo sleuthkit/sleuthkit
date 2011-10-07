@@ -10,7 +10,7 @@
 
 /**
  * \file db_sqlite.cpp
- * Contains code to perform operations against SQLite database.
+ * Contains code to perform operations against SQLite database. 
  */
 
 #include "tsk_db_sqlite.h"
@@ -22,7 +22,7 @@
 
 /**
  * Set the locations and logging object.  Must call
- * initialize() before the object can be used.
+ * open() before the object can be used.
  */
 TskDbSqlite::TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
 {
@@ -30,7 +30,7 @@ TskDbSqlite::TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
     m_utf8 = true;
     m_blkMapFlag = a_blkMapFlag;
     m_db = NULL;
-    m_selectFileIdByMetaAddr = NULL;
+    m_selectFilePreparedStmt = NULL;
 }
 
 #ifdef TSK_WIN32
@@ -41,7 +41,7 @@ TskDbSqlite::TskDbSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
     m_utf8 = false;
     m_blkMapFlag = a_blkMapFlag;
     m_db = NULL;
-    m_selectFileIdByMetaAddr = NULL;
+    m_selectFilePreparedStmt = NULL;
 }
 #endif
 
@@ -59,7 +59,7 @@ int
 {
 
     if (m_db) {
-        sqlite3_finalize(m_selectFileIdByMetaAddr);     // calling on NULL is okay
+        cleanupFilePreparedStmt();
         sqlite3_close(m_db);
         m_db = NULL;
     }
@@ -109,7 +109,6 @@ int
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr(errfmt, errmsg);
         sqlite3_free(errmsg);
-        tsk_error_print(stderr);
         return 1;
     }
     return 0;
@@ -269,12 +268,12 @@ int
 
 
 /*
- * If the database file exists this method will open it otherwise
- * it will create a new database. 
+ * Open the database (will create file if it does not exist).
+ * @param a_toInit Set to true if this is a new database that needs to have the tables created
  * @ returns 1 on error and 0 on success
  */
 int
- TskDbSqlite::open()
+ TskDbSqlite::open(bool a_toInit)
 {
 
     if (m_utf8) {
@@ -291,6 +290,16 @@ int
             return 1;
         }
     }
+    
+    // create the tables if we need to
+    if (a_toInit) {
+        if (initialize())
+            return 1;
+    }
+    
+    if (setupFilePreparedStmt()) {
+        return 1;
+    }
 
     return 0;
 }
@@ -299,11 +308,11 @@ int
  * Must be called on an intialized database, before adding any content to it.
  */
 int
- TskDbSqlite::setup()
+ TskDbSqlite::setupFilePreparedStmt()
 {
     if (prepare_stmt
         ("SELECT obj_id FROM tsk_files WHERE meta_addr IS ? AND fs_obj_id IS ?",
-            &m_selectFileIdByMetaAddr)) {
+            &m_selectFilePreparedStmt)) {
         return 1;
     }
 
@@ -314,14 +323,13 @@ int
 /**
  * Must be called after adding content to the database.
  */
-int
- TskDbSqlite::cleanup()
+void
+ TskDbSqlite::cleanupFilePreparedStmt()
 {
-    if (m_selectFileIdByMetaAddr != NULL) {
-        sqlite3_finalize(m_selectFileIdByMetaAddr);
-        m_selectFileIdByMetaAddr = NULL;
+    if (m_selectFilePreparedStmt != NULL) {
+        sqlite3_finalize(m_selectFilePreparedStmt);
+        m_selectFilePreparedStmt = NULL;
     }
-    return 1;
 }
 
 /**
@@ -474,21 +482,21 @@ int
     else {
 
         // Find the parent file id in the database using the parent metadata address
-        if (attempt(sqlite3_reset(m_selectFileIdByMetaAddr),
+        if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
                 "Error reseting 'select file id by meta_addr' statement: %s\n")
-            || attempt(sqlite3_bind_int64(m_selectFileIdByMetaAddr, 1,
+            || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1,
                     fs_file->name->par_addr),
                 "Error binding meta_addr to statment: %s (result code %d)\n")
-            || attempt(sqlite3_bind_int64(m_selectFileIdByMetaAddr, 2,
+            || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2,
                     fsObjId),
                 "Error binding fs_obj_id to statment: %s (result code %d)\n")
-            || attempt(sqlite3_step(m_selectFileIdByMetaAddr), SQLITE_ROW,
+            || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
                 "Error selecting file id by meta_addr: %s (result code %d)\n"))
         {
             return 1;
         }
 
-        parObjId = sqlite3_column_int64(m_selectFileIdByMetaAddr, 0);
+        parObjId = sqlite3_column_int64(m_selectFilePreparedStmt, 0);
     }
 
 
@@ -648,36 +656,16 @@ int
     return 0;
 }
 
-/**
- * Begin a transaction 
- * @returns 1 on error, 0 on success
- */
-int
- TskDbSqlite::begin()
-{
-    return attempt_exec("BEGIN",
-        "Error using BEGIN for insert transaction: %s\n");
-}
-
-/**
- * End a transaction 
- * @returns 1 on error, 0 on success
- */
-int
- TskDbSqlite::commit()
-{
-    return attempt_exec("COMMIT",
-        "Error using COMMIT for insert transaction: %s\n");
-}
 
 
 /**
- * Create a savepoint
+ * Create a savepoint.  Call revertSavepoint() or releaseSavepoint()
+ * to revert or commit.
  * @param name Name to call savepoint
  * @returns 1 on error, 0 on success
  */
 int
- TskDbSqlite::savepoint(const char *name)
+ TskDbSqlite::createSavepoint(const char *name)
 {
     char
      buff[1024];
@@ -688,23 +676,26 @@ int
 }
 
 /**
- * Rollback to specified savepoint
+ * Rollback to specified savepoint and release
  * @param name Name of savepoint
  * @returns 1 on error, 0 on success
  */
 int
- TskDbSqlite::rollbackSavepoint(const char *name)
+ TskDbSqlite::revertSavepoint(const char *name)
 {
     char
      buff[1024];
 
     snprintf(buff, 1024, "ROLLBACK TO SAVEPOINT %s", name);
 
-    return attempt_exec(buff, "Error rolling back savepoint: %s\n");
+    if (attempt_exec(buff, "Error rolling back savepoint: %s\n"))
+        return 1;
+
+    return releaseSavepoint(name);
 }
 
 /**
- * Release a savepoint
+ * Release a savepoint.  Commits if savepoint was not rollbacked.
  * @param name Name of savepoint
  * @returns 1 on error, 0 on success
  */
@@ -718,6 +709,7 @@ int
 
     return attempt_exec(buff, "Error releasing savepoint: %s\n");
 }
+
 
 
 

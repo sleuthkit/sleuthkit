@@ -30,18 +30,18 @@ class TskAutoDb:public TskAuto {
     virtual void createBlockMap(bool flag);
     virtual void hashFiles(bool flag);
 
-    uint8_t runProcess(int numImg, const TSK_TCHAR * const imagePaths[],
+    uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
 #ifdef WIN32
-    uint8_t runProcess(int numImg, const char *const imagePaths[],
+    uint8_t startAddImage(int numImg, const char *const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
 #endif
-    void stopProcess();
-    void revertProcess();
-    int64_t commitProcess();
+    void stopAddImage();
+    void revertAddImage();
+    int64_t commitAddImage();
 
   private:
-     TskDbSqlite * m_db;
+    TskDbSqlite * m_db;
     int64_t m_curImgId;
     int64_t m_curVsId;
     int64_t m_curVolId;

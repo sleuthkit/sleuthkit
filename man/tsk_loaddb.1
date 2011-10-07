@@ -2,7 +2,7 @@
 .SH NAME
 tsk_loaddb - populate a SQLite database with metadata from a disk image
 .SH SYNOPSIS
-.B tsk_loaddb [-avVk] [-i
+.B tsk_loaddb [-ahkvV] [-i
 .I imgtype
 .B ] [-b
 .I dev_sector_size
@@ -20,7 +20,7 @@ to a sqlite database.  This database can then be used by tools in other language
 
 The arguments are as follows:
 .IP "-a"
-Adds image to an existing database instead of creating a new one.
+Adds image to an existing database instead of creating a new one.  Requires that -d be also specified.
 .IP "-d database"
 Path for the database (default is the same directory as the image with name derived from image name
 .IP -v
@@ -30,6 +30,9 @@ Print version
 .IP -k
 Don't create block data table.  This table maps each block to the file that
 allocated it.  This option will make this program run faster.
+.IP -h
+Calculate MD5 hash value for each file and store it in table.  This option
+will make the program run slower. 
 .IP "-i imgtype"
 The format of the image file (use '-i list' for supported types)
 .IP "-b dev_sector_size"

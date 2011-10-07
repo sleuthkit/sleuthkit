@@ -55,13 +55,8 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
     TskDbSqlite *db = new TskDbSqlite(path, true);
 
     // Open the database.
-    if (db->open())
+    if (db->open(true))
         return NULL;
-
-    if (db->initialize()) {
-        delete db;
-        return NULL;
-    }
 
     return new TskCaseDb(db);
 }
@@ -88,37 +83,24 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
     TskDbSqlite *db = new TskDbSqlite(path, true);
 
     // Open the database.
-    if (db->open())
+    if (db->open(false))
         return NULL;
 
     return new TskCaseDb(db);
 }
 
-/**
-* Add an image to the database.
-*
-* @param img An already opened image.
-* @param blkMapFlag True if a block map should be created for the image.
-*/
-//uint8_t TskCaseDb::addImage(const TSK_IMG_INFO * image, bool blkMapFlag) {
-//    TskAutoDb autoDb(m_db);
-//    autoDb.createBlockMap(blkMapFlag);
-//    if (autoDb.openImage(image)) return 1;
-//    if (autoDb.addFilesInImgToDb()) return 1;
-//    
-//    return 0;
-//}
-
 
 /**
- * Prepares the process to add an image to the database
- *
+ * Prepares the process to add an image to the database. This method
+ * allows the caller to specify options to be used during the ingest.
+ * @returns TskAutDb object that can be used to add the image.
  */
 TskAutoDb *
 TskCaseDb::initAddImage()
 {
     return new TskAutoDb(m_db);
 }
+
 
 /**
 * Add an image to the database.  This method does not allow you
@@ -133,8 +115,11 @@ uint8_t
     TskCaseDb::addImage(int numImg, const TSK_TCHAR * const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
 {
-
     TskAutoDb autoDb(m_db);
-    return autoDb.runProcess(numImg, imagePaths, imgType, sSize)
-        || autoDb.commitProcess();
+    
+    if (autoDb.startAddImage(numImg, imagePaths, imgType, sSize)) {
+        autoDb.revertAddImage();
+        return 1;
+    }
+    return autoDb.commitAddImage();
 }

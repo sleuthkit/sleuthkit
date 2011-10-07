@@ -56,8 +56,8 @@ void
 }
 
 /**
- * Open the image to be analyzed.  Creates the database in the same
- * directory as the image (with .db appended to the name). Uses the
+ * Open the image to be analyzed.  Use the startAddImage() method if you want
+ * savepoints and the ability to rollback. Uses the
  * utf8 functions even in windows.
  * @param a_num Number of images
  * @param a_images Images to open
@@ -82,7 +82,8 @@ uint8_t
 }
 
 /**
- * Open the image to be analyzed.
+ * Open the image to be analyzed. Use the startAddImage() method if you want 
+ * savepoints and the ability to rollback.
  * @param a_num Number of images
  * @param a_images Images to open
  * @param a_type Image file format
@@ -274,17 +275,15 @@ TSK_RETVAL_ENUM
 /**
  * Start the process to add image/file metadata to database. Reverts
  * all changes on error or TSK_STOP flag. When runProcess()
- * returns, user must call either commitProcess() to commit the changes,
- * or revertProcess() to revert them.
+ * returns, user must call either commitAddImage() to commit the changes,
+ * or revertAddImage() to revert them.
  * @returns 1 on error and 0 on success
  */
 uint8_t
-    TskAutoDb::runProcess(int numImg, const TSK_TCHAR * const imagePaths[],
+    TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
 {
-    if (m_db->savepoint(TSK_ADD_IMAGE_SAVEPOINT))
-        return 1;
-    if (m_db->setup())
+    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT))
         return 1;
 
     if (openImage(numImg, imagePaths, imgType, sSize)
@@ -294,18 +293,14 @@ uint8_t
         // rollbackSavepoint can throw errors too, need to make sure original
         // error message is preserved;
         const char *prior_msg = tsk_error_get();
-        if (m_db->rollbackSavepoint(TSK_ADD_IMAGE_SAVEPOINT) ||
-            m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
+        if (m_db->revertSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
             if (prior_msg) {
                 tsk_error_set_errstr("%s caused: %s", prior_msg,
                     tsk_error_get());
             }
         }
-        m_db->cleanup();
         return 1;
     }
-
-    m_db->cleanup();
     return 0;
 }
 
@@ -314,7 +309,7 @@ uint8_t
     TskAutoDb::runProcess(int numImg, const char *const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
 {
-    if (m_db->savepoint(TSK_ADD_IMAGE_SAVEPOINT))
+    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT))
         return 1;
     if (m_db->setup())
         return 1;
@@ -326,18 +321,15 @@ uint8_t
         // rollbackSavepoint can throw errors too, need to make sure original
         // error message is preserved;
         const char *prior_msg = tsk_error_get();
-        if (m_db->rollbackSavepoint(TSK_ADD_IMAGE_SAVEPOINT) ||
-            m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
+        if (m_db->revertSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
             if (prior_msg) {
                 tsk_error_set_errstr("%s caused: %s", prior_msg,
                     tsk_error_get());
             }
         }
-        m_db->cleanup();
         return 1;
     }
 
-    m_db->cleanup();
     return 0;
 }
 #endif
@@ -347,7 +339,7 @@ uint8_t
  * Cancel the running process.
  */
 void
- TskAutoDb::stopProcess()
+ TskAutoDb::stopAddImage()
 {
     m_stopped = true;
     // flag is checked every time processFile() is called
@@ -357,10 +349,9 @@ void
  * Revert all changes after the process has run sucessfully.
  */
 void
- TskAutoDb::revertProcess()
+ TskAutoDb::revertAddImage()
 {
-    m_db->rollbackSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
-    m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
+    m_db->revertSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
 }
 
 /**
@@ -368,7 +359,7 @@ void
  * Returns the id of the image that was added.
  */
 int64_t
-TskAutoDb::commitProcess()
+TskAutoDb::commitAddImage()
 {
     m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
     return m_curImgId;
@@ -384,7 +375,7 @@ TSK_RETVAL_ENUM
     if (m_stopped)
         return TSK_STOP;
 
-    if (m_db->savepoint("PROCESSFILE")) {
+    if (m_db->createSavepoint("PROCESSFILE")) {
         return TSK_ERR;
     }
 

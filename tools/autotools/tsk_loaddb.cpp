@@ -20,10 +20,11 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-avVk] [-i imgtype] [-b dev_sector_size] [-d database] image [image]\n"),
+        ("usage: %s [-ahkvV] [-i imgtype] [-b dev_sector_size] [-d database] image [image]\n"),
         progname);
-    tsk_fprintf(stderr, "\t-a: Add image to existing database, instead of creating a new one\n");
+    tsk_fprintf(stderr, "\t-a: Add image to existing database, instead of creating a new one (requires -d to specify database)\n");
     tsk_fprintf(stderr, "\t-k: Don't create block data table\n");
+    tsk_fprintf(stderr, "\t-h: Calculate hash values for the files\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -50,6 +51,7 @@ main(int argc, char **argv1)
     
     bool blkMapFlag = true;   // true if we are going to write the block map
     bool createDbFlag = true; // true if we are going to create a new database
+    bool calcHash = false;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -65,7 +67,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:d:i:avVk"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:d:hi:kvV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -105,6 +107,10 @@ main(int argc, char **argv1)
             blkMapFlag = false;
             break;
 
+        case _TSK_T('h'):
+            calcHash = true;
+            break;
+
         case _TSK_T('d'):
             database = OPTARG;
             break;
@@ -128,6 +134,10 @@ main(int argc, char **argv1)
     TSK_TCHAR buff[1024];
     
     if (database == NULL) {
+        if (createDbFlag == false) {
+            fprintf(stderr, "Error: -a requires that database be specified with -d\n");
+            usage();
+        }
         TSNPRINTF(buff, 1024, _TSK_T("%s.db"), argv[OPTIND]);
         database = buff;
     }
@@ -146,8 +156,18 @@ main(int argc, char **argv1)
         tsk_error_print(stderr);
         exit(1);
     }
-    
-    if (tskCase->addImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
+  
+    TskAutoDb *autoDb = tskCase->initAddImage();
+    autoDb->createBlockMap(blkMapFlag);
+    autoDb->hashFiles(calcHash);
+
+    if (autoDb->startAddImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
+        tsk_error_print(stderr);
+        autoDb->revertAddImage();
+        exit(1);
+    }
+
+    if (autoDb->commitAddImage()) {
         tsk_error_print(stderr);
         exit(1);
     }
