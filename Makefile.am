@@ -30,9 +30,6 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     win32/callback-sample/callback-sample.vcproj \
     bindings/java/README.txt \
     bindings/java/build.xml \
-    bindings/java/jni/dataModel_SleuthkitJNI.cpp \
-    bindings/java/jni/dataModel_SleuthkitJNI.h \
-    bindings/java/jni/tskAutoDbJNI.h \
     bindings/java/src/org/sleuthkit/datamodel/Content.java \
     bindings/java/src/org/sleuthkit/datamodel/Directory.java \
     bindings/java/src/org/sleuthkit/datamodel/File.java \
