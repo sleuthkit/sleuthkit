@@ -9,17 +9,18 @@
 #
 
 use strict;
+use File::Copy;
 
 # global variables
 my $VER;
 my $TSK_RELDIR;
 my $RELDIR;
-my $SVNDIR;
+my $GITDIR;
 my $TARBALL;
 my $BRANCH;
 
-my $TESTING = 0;
-print "TESTING MODE (no commits)" if ($TESTING);
+my $TESTING = 1;
+print "TESTING MODE (no commits)\n" if ($TESTING);
 
 ######################################################
 # Utility functions
@@ -81,8 +82,11 @@ sub clean_src() {
 # Verify that all files in the current source directory
 # are checked in.  dies if any are modified.
 sub verify_precheckin {
+
+    system ("git pull");
+
     print "Verifying everything is checked in\n";
-    exec_pipe(*OUT, "svn -q status | grep \"^M\"");
+    exec_pipe(*OUT, "git status -s | grep \"^ M\"");
 
     my $foo = read_pipe_line(*OUT);
     if ($foo ne "") {
@@ -91,31 +95,33 @@ sub verify_precheckin {
             print "$foo";
             $foo = read_pipe_line(*OUT);
         }
-        die "stopping";
+# @@@die "stopping";
+    }
+    close(OUT);
+
+    print "Verifying everything is pushed\n";
+    exec_pipe(*OUT, "git status -sb | grep \"^##\" | grep \"ahead \"");
+    my $foo = read_pipe_line(*OUT);
+    if ($foo ne "") {
+        print "Files not pushed to remote\n";
+# @@@ die "stopping";
     }
     close(OUT);
 }
 
-# Create a tag and jump into that directory
+# Create a tag 
 sub tag_dir {
-
-    chdir "${SVNDIR}" or die "Error changing directories to ${SVNDIR}";
-
-    print "Tagging release\n";
-    system ("svn copy ${BRANCH} tags/${TSK_RELDIR}");
-    die "Error creating tag" unless (-d "tags/${TSK_RELDIR}");
-    system ("svn -q commit -m \"Release ${VER} from ${BRANCH}\" tags/${TSK_RELDIR}") unless ($TESTING);
-
-    chdir ("tags/${TSK_RELDIR}") or die "Error changing into tag directory tags/${TSK_RELDIR}";
-    print "Updating tag directory\n";
-    system ("svn update") unless ($TESTING);
+    system ("git tag ${TSK_RELDIR}");
+    system ("git push --tags") unless ($TESTING);
 }
 
 # Commit the updated version info in the current source directory
 sub checkin_vers {
     print "Checking in version updates\n";
-    system ("svn -q commit -m \"New version files for ${VER}\"")
-	unless ($TESTING);
+    unless ($TESTING) {
+        system ("git commit -a -m \"New version files for ${VER}\"");
+        system ("git push");
+    }
 }
 
 # update the version in configure.ac in current source directory
@@ -376,13 +382,14 @@ sub update_libver {
 
 # Update the autotools / autobuild files in current source directory
 sub update_build() {
-    print "Updating local makefiles\n";
+    print "Updating local makefiles with version info\n";
 
     unlink ("./configure");
+    unlink ("./Makefile");
+
     system ("./bootstrap");
     die ("configure missing after bootstrap") unless (-x  "./configure");
 
-    unlink ("./Makefile");
     system ("./configure > /dev/null");
     die ("makefile missing after ./configure") unless (-e "./Makefile");
 }
@@ -398,9 +405,9 @@ sub make_tar {
 # Verify that the tar ball contains all of the
 # expected files
 sub verify_tar {
-    rename ("${TARBALL}", "${RELDIR}/${TARBALL}") or die "error renaming sleuthkit tar ball";
+    copy ("${TARBALL}", "/tmp/${TARBALL}") or die "error renaming sleuthkit tar ball";
 
-    chdir ("${RELDIR}") or die "Error changing directory to ${RELDIR}";
+    chdir ("/tmp/") or die "Error changing directory to /tmp";
 
     # remove existing directory
     system ("rm -rf ${TSK_RELDIR}") if (-d "${TSK_RELDIR}");
@@ -410,7 +417,7 @@ sub verify_tar {
     die "Missing dist dir in release" unless (-d "${TSK_RELDIR}");
 
     exec_pipe(*OUT, 
-    "diff -r ${SVNDIR}/${BRANCH} ${TSK_RELDIR} | grep -v \.svn | grep -v Makefile | grep -v \.deps | grep -v gdb_history | grep -v bootstrap | grep -v libtool | grep -v DS_Store | grep -v config.h | grep -v build-html | grep -v autom4te.cache | grep -v config.log | grep -v config.status | grep -v stamp-h1 | grep -v xcode | grep -v win32\/doc | grep -v \"\\.\\#\"");
+    "diff -r ${GITDIR} ${TSK_RELDIR} | grep -v \.git | grep -v Makefile | grep -v \.deps | grep -v gdb_history | grep -v bootstrap | grep -v libtool | grep -v DS_Store | grep -v config.h | grep -v build-html | grep -v autom4te.cache | grep -v config.log | grep -v config.status | grep -v stamp-h1 | grep -v xcode | grep -v win32\/doc | grep -v \"\\.\\#\"");
 
     my $a = "y";
     my $foo = read_pipe_line(*OUT);
@@ -446,7 +453,7 @@ sub verify_tar {
 
     system ("rm -rf ${TSK_RELDIR}");
 
-    chdir "${SVNDIR}/${BRANCH}" or die "Error changing dirs back to ${SVNDIR}/${BRANCH}";
+    chdir "${GITDIR}" or die "Error changing dirs back to ${GITDIR}";
 
     # stop if asked to
     die ("Stopping") if $a eq "n";
@@ -457,39 +464,53 @@ sub verify_tar {
 # release workflow
 
 # Get the version argument
-if (scalar (@ARGV) != 2) {
-    print stderr "Missing branch and version argument (branches/sleuthkit-3.0 3.0.1)\n";
-    print stderr "\tbranch: Branch to release from\n";
+if (scalar (@ARGV) != 1) {
+    print stderr "Missing release version argument (i.e.  3.0.1)\n";
     print stderr "\tversion: Version of release\n";
+    print stderr "Makes a release of the current branch\n";
     exit;
 }
-$BRANCH = $ARGV[0];
 
-$VER = $ARGV[1];
+$VER = $ARGV[0];
 unless ($VER =~ /^\d+\.\d+\.\d+(b\d+)?$/) {
     die "Invalid version number: $VER (1.2.3 or 1.2.3b1 expected)";
 }
+
 $TSK_RELDIR = "sleuthkit-${VER}";
 $TARBALL = "${TSK_RELDIR}.tar.gz";
 
 $RELDIR = `pwd`;
 chomp ($RELDIR);
-$SVNDIR = "$RELDIR/..";
+$GITDIR = "$RELDIR/..";
 
-die "branch directory ${BRANCH} missing" 
-	unless (-d "${SVNDIR}/${BRANCH}");
 
-die "tag directory ${TSK_RELDIR} already exists" 
-	if (-e "${SVNDIR}/tags/${TSK_RELDIR}");
+# Get the current branch name
+exec_pipe(*OUT, "git branch | grep \"^\*\"");
+my $foo = read_pipe_line(*OUT);
+if ($foo =~ /^\* (.+)$/) {
+    $BRANCH = $1;
+    print "Making release from branch: ${BRANCH}\n";
+}
+else {
+    print "Error parsing current branch name: $foo";
+    die "stopping";
+}
+close(OUT);
 
-chdir "${SVNDIR}/${BRANCH}" or die "Error changing directories to ${SVNDIR}/${BRANCH}";
+# Verify the tag doesn't already exist
+exec_pipe(*OUT, "git tag | grep \"${TSK_RELDIR}\"");
+my $foo = read_pipe_line(*OUT);
+if ($foo ne "") {
+    print "Tag ${TSK_RELDIR} already exists\n";
+    die "stopping";
+}
+close(OUT);
+
+chdir ".." or die "Error changing directories to root";
 
 # All of these die of they need to abort
 clean_src();
 verify_precheckin();
-
-# Create a tag and jump into that directory
-tag_dir();
 
 # Update the version info in that tag
 update_configver();
@@ -500,6 +521,9 @@ update_pkgver();
 update_build();
 
 checkin_vers();
+
+# Create a tag 
+tag_dir();
 
 make_tar();
 verify_tar();
