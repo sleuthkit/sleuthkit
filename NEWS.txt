@@ -10,6 +10,7 @@ New Features:
 - 3314047: Added utf8-specific versions of 'toid' methods for img,vs,fs types
 - 3184429: More consistent printing of unset times (all zerso instead of 1970)
 - New database design that allows for multiple images in the same database 
+- GPT volume system tries other sector sizes if first attempt fails.
 
 Bug Fixes:
 - Relaxed checking when conflict exists between DOS and GPT partitions.

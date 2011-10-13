@@ -302,9 +302,31 @@ tsk_vs_gpt_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
 
     /* Load the partitions into the sorted list */
     if (gpt_load_table(vs)) {
-        gpt_close(vs);
-        return NULL;
+        int found = 0;
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "gpt_open: Trying other sector sizes\n");
+
+        /* Before we give up, lets try some other sector sizes */
+        vs->block_size = 512;
+        while (vs->block_size <= 8192) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "gpt_open: Trying sector size: %d\n",
+                    vs->block_size);
+
+            if (gpt_load_table(vs)) {
+                vs->block_size *= 2;
+                continue;
+            }
+            found = 1;
+            break;
+        }
+
+        if (found == 0) {
+            gpt_close(vs);
+            return NULL;
+        }
     }
+
 
     /* fill in the sorted list with the 'unknown' values */
     if (tsk_vs_part_unused(vs)) {
