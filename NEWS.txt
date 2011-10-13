@@ -11,6 +11,11 @@ New Features:
 - 3184429: More consistent printing of unset times (all zerso instead of 1970)
 - New database design that allows for multiple images in the same database 
 
+Bug Fixes:
+- Relaxed checking when conflict exists between DOS and GPT partitions.
+Had a Mac image that was failing to resolve which partition table
+to use.
+
 ---------------- VERSION 3.2.3 --------------
 New Features:
 - new TskAuto method (handleNotification()) that gets verbose messages that allow for debugging when the class makes decisions.
