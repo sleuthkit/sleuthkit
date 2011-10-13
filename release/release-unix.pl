@@ -449,9 +449,16 @@ sub verify_tar {
     system ("make > /dev/null");
     die "Error compiling tar file" unless ((-x "tools/fstools/fls") && (-x "tests/read_apis"));
 
-    chdir "..";
+    print "Building Java JAR\n";
+    chdir "bindings/java" or die "Error changing directories to java";
+    system ("ant");
+    die "Error making jar file" unless (-e "dist/Tsk_DataModel.jar");
+    chdir "../..";
 
+    # We're done.  Clean up
+    chdir "..";
     system ("rm -rf ${TSK_RELDIR}");
+    system ("rm ${TARBALL}");
 
     chdir "${GITDIR}" or die "Error changing dirs back to ${GITDIR}";
 
