@@ -1,0 +1,23 @@
+<body>
+<p>This package represents the data that can be obtained from The Sleuth Kit (TSK).</p>
+<h2><b>Object Hierarchy</b></h2>
+<p>The data found in a disk image has a hierarchy to it. There is an image. It may have a volume system with one or more volumes. Each volume may have a file system in it. Each file system has one or more files. Because of this ordering, the objects are organized in a tree with parents and children. The Case being the top of the tree, images being the next layer down, etc.</p>
+
+<p>The Content class is the interface for the Image, VolumeSystem, etc. classes. The getChildren() method of each object returns the children objects as a Content object. You can use ContentVisitor to use the visitor pattern to correctly process it.</p>
+
+<p>In general, the type of a child is known, but there are a few cases where this is not the case. One obvious example is that the child of an Image can be either a VolumeSystem or a FileSystem. The former occurs when the image has partitions and the latter occurs if the image is just of a file system.</p>
+
+<h2><b>Basic Usage</b></h2>
+
+<h3><b>Case</b></h3>
+<p>A case represents one or more hard drive images. The SleuthkitCase class is used to represent a case. It is directly tied to a Sqlite database. You can access the forensic data from those images from the SleuthkitCase class.  This is the first object you should make.</p>
+
+<p>You get access to a SleuthkitCase class using either SleuthkitCase.newCase() or SleuthkitCase.openCase(). With the case object, you can add an image, get its children, or run queries against the database.</p>
+
+<h3><b>Data Mapping</b></h3>
+<p>Use TskData to map integer and enum values back to their meaning. For example, the file system type will be returned as an integer and TskData maps it to NTFS or FAT.</p>
+
+<h3><b>JNI</b></h3>
+<p>The bulk of the analysis occurs in the C/C++ code. JNI is used to run the C/C++ code from Java. The JNI methods are all located in the SleuthkitJNI class as static methods. It returns handles that refer to data structures in the C/C++ land. You should never have to directly call these methods. This class and its methods are used by the other data model classes.</p>
+
+</body>

@@ -22,9 +22,10 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * Image class
- * @author alawrence
+ * Represents a disk image file.
+ * Populated based on data in database.
  */
+
 public class Image extends AbstractContent implements FileSystemParent {
 	//data about image
 

@@ -23,9 +23,8 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * The class that stores the "ENUM" for the data conversion.
- *
- * @author jantonius
+ * Maps data integer and binary data stored into the database
+ * into string or enum form. 
  */
 public class TskData {
 
