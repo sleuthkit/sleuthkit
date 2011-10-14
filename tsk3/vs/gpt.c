@@ -79,19 +79,6 @@ gpt_load_table(TSK_VS_INFO * vs)
         return 1;
     }
 
-    if ((safe_str = tsk_malloc(16)) == NULL) {
-        free(sect_buf);
-        return 1;
-    }
-
-    snprintf(safe_str, 16, "Safety Table");
-    if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) 0, (TSK_DADDR_T) 1,
-            TSK_VS_PART_FLAG_META, safe_str, -1, -1)) {
-        free(sect_buf);
-        return 1;
-    }
-
-
     /* Read the GPT header */
     head = (gpt_head *) sect_buf;
     cnt = tsk_vs_read_block
@@ -107,7 +94,6 @@ gpt_load_table(TSK_VS_INFO * vs)
         return 1;
     }
 
-
     if (tsk_getu64(vs->endian, &head->signature) != GPT_HEAD_SIG) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_VS_MAGIC);
@@ -116,6 +102,20 @@ gpt_load_table(TSK_VS_INFO * vs)
         free(sect_buf);
         return 1;
     }
+
+    // now that we checked the sig, lets make the meta  entries
+    if ((safe_str = tsk_malloc(16)) == NULL) {
+        free(sect_buf);
+        return 1;
+    }
+
+    snprintf(safe_str, 16, "Safety Table");
+    if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) 0, (TSK_DADDR_T) 1,
+            TSK_VS_PART_FLAG_META, safe_str, -1, -1)) {
+        free(sect_buf);
+        return 1;
+    }
+
 
     if ((head_str = tsk_malloc(16)) == NULL) {
         free(sect_buf);
