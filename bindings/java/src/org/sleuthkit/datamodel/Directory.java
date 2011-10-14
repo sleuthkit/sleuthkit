@@ -55,7 +55,7 @@ public class Directory extends FsContent{
 			long attr_type, long attr_id, String name, long dir_type,
 			long meta_type, long dir_flags, long meta_flags, long size, 
 			long ctime, long crtime, long atime, long mtime, long mode,
-			long uid, long gid) throws SQLException{
+			long uid, long gid, long known) throws SQLException{
 		super(db, obj_id, fs_obj_id);
 		this.meta_addr = meta_addr;
 		this.attr_type = attr_type;
@@ -73,6 +73,7 @@ public class Directory extends FsContent{
 		this.mode = mode;
 		this.uid = uid;
 		this.gid = gid;
+		this.known = known;
 	}
 
 

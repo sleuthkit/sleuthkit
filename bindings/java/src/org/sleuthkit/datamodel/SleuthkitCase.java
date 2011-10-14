@@ -98,6 +98,22 @@ public class SleuthkitCase {
 	public AddImageProcess makeAddImageProcess(String timezone) {
 		return this.caseHandle.initAddImageProcess(timezone);
 	}
+
+    /**
+     * Set the path to NSRL database
+     * @param path Path to database ( not index )
+     */
+	public void setNSRLDatabase(String path) throws TskException {
+		this.caseHandle.setNSRLDatabase(path);
+	}
+	
+    /**
+     * Set the path to known bad database
+     * @param path Path to database ( not index )
+     */
+	public void setKnownBadDatabase(String path) throws TskException {
+		this.caseHandle.setKnownBadDatabase(path);
+	}
 	
 //
 //	/**

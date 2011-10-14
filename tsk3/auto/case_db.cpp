@@ -21,8 +21,8 @@ TskCaseDb::TskCaseDb(TskDbSqlite * a_db)
 {
     m_tag = TSK_CASE_DB_TAG;
     m_db = a_db;
-    m_NSRLIndex = NULL;
-    m_knownBadIndex = NULL;
+    m_NSRLDb = NULL;
+    m_knownBadDb = NULL;
 }
 
 TskCaseDb::~TskCaseDb()
@@ -32,14 +32,14 @@ TskCaseDb::~TskCaseDb()
         m_db = NULL;
     }
 
-    if (m_NSRLIndex != NULL) {
-        tsk_hdb_close(m_NSRLIndex);
-        m_NSRLIndex = NULL;
+    if (m_NSRLDb != NULL) {
+        tsk_hdb_close(m_NSRLDb);
+        m_NSRLDb = NULL;
     }
 
-    if (m_knownBadIndex != NULL) {
-        tsk_hdb_close(m_knownBadIndex);
-        m_knownBadIndex = NULL;
+    if (m_knownBadDb != NULL) {
+        tsk_hdb_close(m_knownBadDb);
+        m_knownBadDb = NULL;
     }
 }
 
@@ -110,7 +110,7 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
 TskAutoDb *
 TskCaseDb::initAddImage()
 {
-    return new TskAutoDb(m_db, m_NSRLIndex, m_knownBadIndex);
+    return new TskAutoDb(m_db, m_NSRLDb, m_knownBadDb);
 }
 
 /**
@@ -126,7 +126,7 @@ uint8_t
     TskCaseDb::addImage(int numImg, const TSK_TCHAR * const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
 {
-    TskAutoDb autoDb(m_db, m_NSRLIndex, m_knownBadIndex);
+    TskAutoDb autoDb(m_db, m_NSRLDb, m_knownBadDb);
     
     if (autoDb.startAddImage(numImg, imagePaths, imgType, sSize)) {
         autoDb.revertAddImage();
@@ -141,10 +141,15 @@ uint8_t
  * @returns 1 on error and 0 on success
  */
 uint8_t
-TskCaseDb::setNSRLIndex(TSK_TCHAR * const indexFile ) {
+TskCaseDb::setNSRLHashDb(TSK_TCHAR * const indexFile ) {
+    if (m_NSRLDb != NULL) {
+        tsk_hdb_close(m_NSRLDb);
+        m_NSRLDb = NULL;
+    }
+
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-    m_NSRLIndex = tsk_hdb_open(indexFile, flags);
-    return m_NSRLIndex != NULL;
+    m_NSRLDb = tsk_hdb_open(indexFile, flags);
+    return m_NSRLDb != NULL;
 }
 
 /*
@@ -153,8 +158,13 @@ TskCaseDb::setNSRLIndex(TSK_TCHAR * const indexFile ) {
  * @returns 1 on error and 0 on success
  */
 uint8_t
-TskCaseDb::setKnownBadIndex(TSK_TCHAR * const indexFile) {
+TskCaseDb::setKnownBadHashDb(TSK_TCHAR * const indexFile) {
+    if (m_knownBadDb != NULL) {
+        tsk_hdb_close(m_knownBadDb);
+        m_knownBadDb = NULL;
+    }
+
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-    m_knownBadIndex = tsk_hdb_open(indexFile, flags);
-    return m_knownBadIndex != NULL;
+    m_knownBadDb = tsk_hdb_open(indexFile, flags);
+    return m_knownBadDb != NULL;
 }

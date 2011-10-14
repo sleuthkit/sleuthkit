@@ -84,13 +84,34 @@ castFsInfo(JNIEnv * env, jlong ptr)
 
 
 static TSK_FS_FILE *
-castFsFileInfo(JNIEnv * env, jlong ptr)
+castFsFile(JNIEnv * env, jlong ptr)
 {
     TSK_FS_FILE *lcl = (TSK_FS_FILE *) ptr;
     if (lcl->tag != TSK_FS_FILE_TAG) {
         throwTskError(env, "Invalid FS_FILE object");
     }
     return lcl;
+}
+
+static TskCaseDb * 
+castCaseDb(JNIEnv * env, jlong ptr)
+{
+    TskCaseDb *lcl = ((TskCaseDb *) ptr);
+    if (lcl->m_tag != TSK_CASE_DB_TAG) {
+        throwTskError(env,
+            "Invalid TskCaseDb object");
+    }
+
+    return lcl;
+}
+
+static int
+toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
+{
+    jboolean isCopy;
+    char *str8 = (char *) env->GetStringUTFChars(strJ, &isCopy);
+
+    return TSNPRINTF(buffer, size, _TSK_T("%") PRIcTSK, str8);
 }
 
 
@@ -104,12 +125,10 @@ castFsFileInfo(JNIEnv * env, jlong ptr)
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbNat(JNIEnv * env,
     jclass obj, jstring dbPathJ) {
-    jboolean isCopy;
-
-    char *dbPath8 = (char *) env->GetStringUTFChars(dbPathJ, &isCopy);
 
     TSK_TCHAR dbPathT[1024];
-    TSNPRINTF(dbPathT, 1024, _TSK_T("%") PRIcTSK, dbPath8);
+    toTCHAR(env, dbPathT, 1024, dbPathJ);
+
     TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT);
 
     if (tskCase == NULL) {
@@ -131,12 +150,10 @@ JNIEXPORT jlong JNICALL
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbNat(JNIEnv * env,
     jclass obj, jstring dbPathJ) {
-    jboolean isCopy;
-
-    char *dbPath8 = (char *) env->GetStringUTFChars(dbPathJ, &isCopy);
 
     TSK_TCHAR dbPathT[1024];
-    TSNPRINTF(dbPathT, 1024, _TSK_T("%") PRIcTSK, dbPath8);
+    toTCHAR(env, dbPathT, 1024, dbPathJ);
+
     TskCaseDb *tskCase = TskCaseDb::openDb(dbPathT);
 
     if (tskCase == NULL) {
@@ -150,20 +167,54 @@ JNIEXPORT jlong JNICALL
 /*
  * Close (cleanup) a case
  * @param env pointer to java environment this was called from
- * @param case the pointer to the case
+ * @param obj the java object this was called from
+ * @param caseHandle the pointer to the case
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat(JNIEnv * env,
     jclass obj, jlong caseHandle) {
 
-    TskCaseDb *tskCase = ((TskCaseDb *) caseHandle);
-    if (tskCase->m_tag != TSK_CASE_DB_TAG) {
-        throwTskError(env,
-            "closeCaseDbNat: Invalid TskCaseDb object passed in");
-        return;
-    }
+    TskCaseDb *tskCase = castCaseDb(env, caseHandle);
 
     delete tskCase;
+    return;
+}
+
+/*
+ * Set the NSRL database to use for hash lookups.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param caseHandle the pointer to the case
+ */
+JNIEXPORT void JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_setCaseDbNSRLNat(JNIEnv * env,
+    jclass obj, jlong caseHandle, jstring pathJ) {
+
+    TskCaseDb *tskCase = castCaseDb(env, caseHandle);
+
+    TSK_TCHAR pathT[1024];
+    toTCHAR(env, pathT, 1024, pathJ);
+
+    tskCase->setNSRLHashDb(pathT);
+    return;
+}
+
+/*
+ * Set the "known bad" database to use for hash lookups.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param caseHandle the pointer to the case
+ */
+JNIEXPORT void JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_setCaseDbKnownBadNat(JNIEnv * env,
+    jclass obj, jlong caseHandle, jstring pathJ) {
+
+    TskCaseDb *tskCase = castCaseDb(env, caseHandle);
+
+    TSK_TCHAR pathT[1024];
+    toTCHAR(env, pathT, 1024, pathJ);
+
+    tskCase->setKnownBadHashDb(pathT);
     return;
 }
 
@@ -181,12 +232,7 @@ JNIEXPORT jlong JNICALL
     jclass obj, jlong caseHandle, jstring timezone) {
     jboolean isCopy;
 
-    TskCaseDb *tskCase = ((TskCaseDb *) caseHandle);
-    if (tskCase->m_tag != TSK_CASE_DB_TAG) {
-        throwTskError(env,
-            "initAddImgNat: Invalid TskCaseDb object passed in");
-        return 1;
-    }
+    TskCaseDb *tskCase = castCaseDb(env, caseHandle);
 
     char envstr[32];
     snprintf(envstr, 32, "TZ=%s", env->GetStringUTFChars(timezone,
@@ -673,7 +719,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
         return NULL;
     }
 
-    TSK_FS_FILE *file_info = castFsFileInfo(env, a_file_info);
+    TSK_FS_FILE *file_info = castFsFile(env, a_file_info);
 
     ssize_t retval =
         tsk_fs_file_read(file_info, (TSK_OFF_T) offset, buf, (size_t) len,
@@ -736,7 +782,7 @@ JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat(JNIEnv * env,
     jclass obj, jlong a_file_info)
 {
-    TSK_FS_FILE *file_info = castFsFileInfo(env, a_file_info);
+    TSK_FS_FILE *file_info = castFsFile(env, a_file_info);
     tsk_fs_file_close(file_info);
 }
 
@@ -754,3 +800,64 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getVersionNat(JNIEnv * env,
     jstring jversion = (*env).NewStringUTF(cversion);
     return jversion;
 }
+
+
+/*
+ * Create an index for the given database path
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbPathJ path for the database
+ */
+JNIEXPORT void JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
+    jclass obj, jstring dbPathJ)
+{
+    jboolean isCopy;
+
+    char *dbPath8 = (char *) env->GetStringUTFChars(dbPathJ, &isCopy);
+
+    TSK_TCHAR dbPathT[1024];
+    TSNPRINTF(dbPathT, 1024, _TSK_T("%") PRIcTSK, dbPath8);
+
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
+    TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
+    if (temp == NULL) {
+        return;
+    }
+
+    TSK_TCHAR dbType[1024];
+    TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
+
+    tsk_hdb_makeindex(temp, dbType);
+
+    tsk_hdb_close(temp);
+}
+
+/*
+ * Check if an index exists for the given database path.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbPathJ path for the database
+ */
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
+  (JNIEnv * env, jclass obj, jstring dbPathJ) {
+
+    jboolean isCopy;
+
+    char *dbPath8 = (char *) env->GetStringUTFChars(dbPathJ, &isCopy);
+
+    TSK_TCHAR dbPathT[1024];
+    TSNPRINTF(dbPathT, 1024, _TSK_T("%") PRIcTSK, dbPath8);
+
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+    TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
+    if (temp == NULL) {
+        return (jboolean) false;
+    }
+    
+    bool result = tsk_hdb_hasindex(temp, TSK_HDB_DBTYPE_MD5SUM_ID) == 1;
+
+    tsk_hdb_close(temp);
+    return (jboolean) result;
+}
+    

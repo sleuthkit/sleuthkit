@@ -41,6 +41,22 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    setCaseDbNSRLNat
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_setCaseDbNSRLNat
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    setCaseDbKnownBadNat
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_setCaseDbKnownBadNat
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    initAddImgNat
  * Signature: (JLjava/lang/String;)J
  */
@@ -190,6 +206,22 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFsNat
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat
   (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    createLookupIndexNat
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat
+  (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    lookupIndexExistsNat
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
+  (JNIEnv *, jclass, jstring);
 
 #ifdef __cplusplus
 }

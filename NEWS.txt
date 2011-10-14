@@ -11,6 +11,7 @@ New Features:
 - 3184429: More consistent printing of unset times (all zerso instead of 1970)
 - New database design that allows for multiple images in the same database 
 - GPT volume system tries other sector sizes if first attempt fails.
+- Added hash calculation and lookup to AutoDB and JNI.
 
 Bug Fixes:
 - Relaxed checking when conflict exists between DOS and GPT partitions.

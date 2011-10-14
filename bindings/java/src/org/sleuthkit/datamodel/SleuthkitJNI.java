@@ -30,6 +30,9 @@ public class SleuthkitJNI {
 	private static native long newCaseDbNat(String dbPath) throws TskException;
 	private static native long openCaseDbNat(String path) throws TskException;
 	private static native void closeCaseDbNat(long db) throws TskException;
+	private static native void setCaseDbNSRLNat(long db, String hashDbPath) throws TskException;
+	private static native void setCaseDbKnownBadNat(long db, String hashDbPath) throws TskException;	
+	
 	//load image
 	private static native long initAddImgNat(long db, String timezone) throws TskException;
 	private static native void runAddImgNat(long process, String[] imgPath, int splits) throws TskException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
@@ -55,6 +58,10 @@ public class SleuthkitJNI {
 	private static native void closeVsNat(long vsHandle);
 	private static native void closeFsNat(long fsHandle);
 	private static native void closeFileNat(long fileHandle);
+	
+	//hash-lookup database functions
+	private static native void createLookupIndexNat(String dbPath) throws TskException;
+	private static native boolean lookupIndexExistsNat(String dbPath) throws TskException;
 
 	static {
 		System.loadLibrary("zlib1");
@@ -63,7 +70,7 @@ public class SleuthkitJNI {
 	}
 
 
-	public SleuthkitJNI(){}
+	public SleuthkitJNI() {}
 	
 
 	public static class CaseDbHandle {
@@ -76,6 +83,22 @@ public class SleuthkitJNI {
 		void free() throws TskException {
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 		}
+        
+        /**
+         * Set the path to an NSRL database
+         */
+        void setNSRLDatabase(String path) throws TskException {
+            setCaseDbNSRLNat(this.caseDbPointer, path);
+        }
+
+        /**
+         * Set the path to a known bad hash database
+         */
+        void setKnownBadDatabase(String path) throws TskException {
+            setCaseDbKnownBadNat(this.caseDbPointer, path);
+        }
+
+        
 	
         /**
          * Start the process of adding a disk image to the case. 
@@ -336,4 +359,24 @@ public class SleuthkitJNI {
 	public static void closeFile(long fileHandle){
 		closeFileNat(fileHandle);
 	}
+	
+	/**
+	 * Create an index for the given database path.
+	 * @param dbPath
+	 * @throws TskException 
+	 */
+	public static void createLookupIndex(String dbPath) throws TskException {
+		createLookupIndexNat(dbPath);
+	}
+	
+	/**
+	 * Check if an index exists for the given database path.
+	 * @param dbPath
+	 * @return true if index exists
+	 * @throws TskException 
+	 */
+	public static boolean lookupIndexExists(String dbPath) throws TskException {
+		return lookupIndexExistsNat(dbPath);
+	}
+	
 }
