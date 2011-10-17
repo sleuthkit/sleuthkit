@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.sql.SQLException;
+import org.sleuthkit.datamodel.TskData.FileKnown;
 
 /**
  * generalized class for files and directories
@@ -30,7 +31,7 @@ public abstract class FsContent extends AbstractContent {
 	 * database fields
 	 */
 	protected long fs_obj_id, meta_addr, attr_type, attr_id, dirtype, meta_type, dir_type, dir_flags,
-	meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode;
+	meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known;
 	/**
 	 * name from the database
 	 */
@@ -312,6 +313,10 @@ public abstract class FsContent extends AbstractContent {
 	 */
 	public String getModeAsString(){
 		return FsContent.modeToString(mode, meta_type);
+	}
+	
+	public FileKnown getKnown() {
+		return FileKnown.valueOf(this.known);
 	}
 	
 	@Override

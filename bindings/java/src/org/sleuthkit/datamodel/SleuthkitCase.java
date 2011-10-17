@@ -82,6 +82,18 @@ public class SleuthkitCase {
 		return this.caseHandle.initAddImageProcess(timezone);
 	}
 	
+	public void setNSRLDatabase(String path) throws TskException {
+		this.caseHandle.setNSRLDatabase(path);
+	}
+	
+	public void setKnownBadDatabase(String path) throws TskException {
+		this.caseHandle.setKnownBadDatabase(path);
+	}
+	
+	public void clearLookupDatabases() throws TskException {
+		this.caseHandle.clearLookupDatabases();
+	}
+	
 //
 //	/**
 //	 * fills a new file system object with data from the database

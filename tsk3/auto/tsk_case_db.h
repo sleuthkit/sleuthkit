@@ -83,6 +83,7 @@ class TskCaseDb {
     static TskCaseDb *openDb(const TSK_TCHAR * path);
     uint8_t setNSRLIndex(TSK_TCHAR * const indexFile);
     uint8_t setKnownBadIndex(TSK_TCHAR * const indexFile);
+    void clearLookupDatabases();
     uint8_t addImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
     TskAutoDb *initAddImage();

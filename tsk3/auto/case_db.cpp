@@ -142,6 +142,11 @@ uint8_t
  */
 uint8_t
 TskCaseDb::setNSRLIndex(TSK_TCHAR * const indexFile ) {
+    if (m_NSRLIndex != NULL) {
+        tsk_hdb_close(m_NSRLIndex);
+        m_NSRLIndex = NULL;
+    }
+
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
     m_NSRLIndex = tsk_hdb_open(indexFile, flags);
     return m_NSRLIndex != NULL;
@@ -154,7 +159,29 @@ TskCaseDb::setNSRLIndex(TSK_TCHAR * const indexFile ) {
  */
 uint8_t
 TskCaseDb::setKnownBadIndex(TSK_TCHAR * const indexFile) {
+    if (m_knownBadIndex != NULL) {
+        tsk_hdb_close(m_knownBadIndex);
+        m_knownBadIndex = NULL;
+    }
+
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
     m_knownBadIndex = tsk_hdb_open(indexFile, flags);
     return m_knownBadIndex != NULL;
+}
+
+/*
+ * Clear set lookup databases.
+ * @param images Path to index.
+ */
+void
+TskCaseDb::clearLookupDatabases() {
+    if (m_NSRLIndex != NULL) {
+        tsk_hdb_close(m_NSRLIndex);
+        m_NSRLIndex = NULL;
+    }
+
+    if (m_knownBadIndex != NULL) {
+        tsk_hdb_close(m_knownBadIndex);
+        m_knownBadIndex = NULL;
+    }
 }

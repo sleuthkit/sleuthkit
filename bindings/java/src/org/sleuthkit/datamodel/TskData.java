@@ -284,5 +284,36 @@ public class TskData {
 		}
 	}
 	
+	public enum FileKnown {
+		UKNOWN(0, "unknown"),
+		KNOWN(1, "known"),
+		BAD(2, "known bad");
+		
+		private long known;
+		private String name;
+		
+		private FileKnown(long known, String name) {
+			this.known = known;
+			this.name = name;
+		}
+		
+		public static FileKnown valueOf(long known) {
+			for (FileKnown v : FileKnown.values()) {
+				if (v.known == known) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException("No FileKnown of value: " + known);
+		}
+		
+		public String getName() {
+			return this.name;
+		}
+		
+		public long toLong() {
+			return this.known;
+		}
+	}
+	
 
 }
