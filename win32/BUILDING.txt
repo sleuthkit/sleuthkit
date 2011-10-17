@@ -9,15 +9,15 @@ The steps below outline the process required to compile the Debug and Release ta
 1) Download libewf-20091128 or later from:
     http://sourceforge.net/projects/libewf/
 
-2) Open archive file, rename directory from libewf-2009XXXX to libewf, and move the libewf directory to the win32 TSK subdirectory.  For example, the result should be something like: sleuthkit-3.0.0\win32\libewf.
+2) Open archive file and follow the README instructions in libewf to build libewf_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libewf_dll.
 
-3) Follow the README instructions in libewf to build libewf_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libewf_dll.
+3) Set the LIBEWF_HOME environment variable to point to the libewf folder that you created and built in step 2. 
 
-5) Open the TSK Visual Studio Solution file in the win32 directory. 
+4) Open the TSK Visual Studio Solution file in the win32 directory. 
 
-6) Compile a Debug or Release version of the libraries or executables. 
+5) Compile a Debug or Release version of the libraries or executables. 
 
-7) Note that the libraries and executables will depend on the libewf and zlib dll files (which are located in libewf/msvscpp/release  and libewf/msvscpp/zlib). 
+6) Note that the libraries and executables will depend on the libewf and zlib dll files (which are located in libewf/msvscpp/release  and libewf/msvscpp/zlib). 
 
 
 -------------------------------------------------------------------
