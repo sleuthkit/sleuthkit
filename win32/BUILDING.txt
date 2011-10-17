@@ -19,6 +19,7 @@ The steps below outline the process required to compile the Debug and Release ta
 
 6) Note that the libraries and executables will depend on the libewf and zlib dll files (which are located in libewf/msvscpp/release  and libewf/msvscpp/zlib). 
 
+Refer to the API docs at http://sleuthkit.org/sleuthkit/docs/api-docs/ for details on how to use the library in an application.
 
 -------------------------------------------------------------------
 carrier <at> sleuthkit <dot> org
