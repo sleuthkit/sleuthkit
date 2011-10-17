@@ -69,11 +69,11 @@ Note that if you built TSK with support for AFFLIB and libewf then you will also
       \subsection ov_build_win Windows
 The Windows setup is similar to the Unix setup, except that you need to include more libraries and there is no automated install or build process.  
 
-The Visual Studio solution file is located in <tt>win32/tsk-win.sln</tt>.  There are <tt>libauxtools</tt>, <tt>libimgtools</tt>, <tt>libmmtools</tt>, <tt>libfstools</tt>, and <tt>libhashdbtools</tt> projects for the five library layers (as described in \ref basic_layers).  Build all five of these. These will create the static libraries in either the <tt>Debug</tt> or <tt>Release</tt> folders (depending on which version you built). 
+The Visual Studio solution file is located in <tt>win32/tsk-win.sln</tt>.  There is a <tt>libtsk</tt> project for the five library layers (as described in \ref basic_layers).  Build this to create a static library in the <tt>Debug</tt>, <tt>Release</tt>, or <tt>Debug_NoLibs</tt> folder (depending on which version you built). The <tt>Debug_NoLibs</tt> configuration does not have any dependencies on libewf or afflib.
 
-To include the header files, configure your built environment to search in the root TSK directory (i.e. <tt>sleuthkit-3.0.0</tt>) and include the <tt>tsk3/libtsk.h</tt> file in your source code. The location of the TSK directory will depend on where you unpacked it. 
+To include the header files, configure your build environment to search in the root TSK directory (i.e. <tt>sleuthkit-3.0.0</tt>) and include the <tt>tsk3/libtsk.h</tt> file in your source code. The location of the TSK directory will depend on where you unpacked it. 
 
-To link with the libraries, you must configure your environment to include the libraries.  You can include all five of them or you can include only the ones you need. You will need to specify the directory where the libraries are located, which could be the <tt>Debug</tt> or <tt>Release</tt> subdirectories in the <tt>win32</tt> directory.  You can also move the libraries to a different location. 
+To link with the libraries, you must configure your environment to include the <tt>libtsk</tt> library.  You will need to specify the directory where the library is located, which could be the <tt>Debug</tt> or <tt>Release</tt> subdirectories in the <tt>win32</tt> directory.  You can also move the library to a different location. 
 
 Note that your Windows application must have UNICODE support enabled. 
 
