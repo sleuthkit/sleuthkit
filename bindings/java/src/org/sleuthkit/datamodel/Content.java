@@ -21,8 +21,7 @@ package org.sleuthkit.datamodel;
 import java.util.List;
 
 /**
- * Interface for all content from the sleuthkit.
- * @author alawrence
+ * Interface for all datatypes that can be found in the database.
  */
 public interface Content {
 
@@ -57,14 +56,14 @@ public interface Content {
 		
 	/**
 	 * Gets the child contents.
-	 * @return
+	 * @return List of children
 	 * @throws TskException
 	 */
 	public List<Content> getChildren() throws TskException;
 	
 	/**
 	 * Gets the content object id.
-	 * @return
+	 * @return object id
 	 */
 	public long getId();
 }

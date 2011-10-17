@@ -21,9 +21,10 @@ import java.sql.SQLException;
 import java.util.*;
 
 /**
- *
- * @author alawrence
+ * Represents a file system. 
+ * Populated based on data in database.
  */
+
 public class FileSystem extends AbstractContent{
 
 	long img_offset, fs_type, block_size, block_count, root_inum,
@@ -140,7 +141,7 @@ public class FileSystem extends AbstractContent{
 	}	 	
 	/**
 	 * get the inum of the root directory
-	 * @return
+	 * @return Root metadata address of the file system
 	 */
 	public long getRoot_inum() {
 		return root_inum;

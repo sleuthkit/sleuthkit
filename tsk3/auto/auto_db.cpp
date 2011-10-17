@@ -19,10 +19,10 @@
 
 /**
  * @param a_db Database to add an image to
- * @param a_NSRLIndex Index of "known" files (can be NULL)
- * @param a_knownBadIndex Index of "known bad" files (can be NULL)
+ * @param a_NSRLDb Database of "known" files (can be NULL)
+ * @param a_knownBadDb Database of "known bad" files (can be NULL)
  */
-TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLIndex, TSK_HDB_INFO * a_knownBadIndex)
+TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb)
 {
     m_db = a_db;
     m_curFsId = 0;
@@ -33,8 +33,8 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLIndex, TSK_HDB_INF
     m_volFound = false;
     m_stopped = false;
     m_imgTransactionOpen = false;
-    m_NSRLIndex = a_NSRLIndex;
-    m_knownBadIndex = a_knownBadIndex;
+    m_NSRLDb = a_NSRLDb;
+    m_knownBadDb = a_knownBadDb;
 }
 
 TskAutoDb::~TskAutoDb()
@@ -50,8 +50,8 @@ void
  TskAutoDb::closeImage()
 {
     TskAuto::closeImage();
-    m_NSRLIndex = NULL;
-    m_knownBadIndex = NULL;
+    m_NSRLDb = NULL;
+    m_knownBadDb = NULL;
 }
 
 
@@ -426,8 +426,8 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
             }
             md5 = hash;
 
-            if (m_NSRLIndex != NULL) {
-                int8_t retval = tsk_hdb_lookup_raw(m_NSRLIndex, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
+            if (m_NSRLDb != NULL) {
+                int8_t retval = tsk_hdb_lookup_raw(m_NSRLDb, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
                 
                 if (retval == -1) {
                     return TSK_ERR;
@@ -436,8 +436,8 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
                 }
             }
 
-            if (m_knownBadIndex != NULL) {
-                int8_t retval = tsk_hdb_lookup_raw(m_knownBadIndex, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
+            if (m_knownBadDb != NULL) {
+                int8_t retval = tsk_hdb_lookup_raw(m_knownBadDb, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
                 
                 if (retval == -1) {
                     return TSK_ERR;

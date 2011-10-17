@@ -22,8 +22,8 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * Volume class
- * @author alawrence
+ * Represents a volume in a VolumeSystem.
+ * Populated based on data in database.
  */
 public class Volume extends AbstractContent implements FileSystemParent {
 	// @@@ We should mark these as private and comment somewhere what the units are (bytes, sectors, etc.)

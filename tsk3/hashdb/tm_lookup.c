@@ -1008,7 +1008,7 @@ tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
  * \ingroup hashdblib
  * Open a hash database. 
  *
- * @param db_file Path to database.
+ * @param db_file Path to database (even if only an index exists).
  * @param flags Flags for opening the database.  
  *
  * @return Poiner to hash database state structure or NULL on error

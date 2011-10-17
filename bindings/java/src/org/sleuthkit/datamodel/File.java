@@ -24,8 +24,8 @@ import java.util.List;
 
 
 /**
- *
- * @author alawrence
+ * Represents a file in a file system. 
+ * Populated based on data in database.
  */
 public class File extends FsContent{
 

@@ -20,8 +20,7 @@
 package org.sleuthkit.datamodel;
 
 /**
- *
- * @author alawrence
+ * General exception that is thrown from Sleuthkit classes.
  */
 public class TskException extends Exception{
 	public TskException(String msg){

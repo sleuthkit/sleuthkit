@@ -22,8 +22,8 @@ import java.sql.SQLException;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 
 /**
- * generalized class for files and directories
- * @author alawrence
+ * Generalized class that stores metadata that are common to both 
+ * files and directories.
  */
 public abstract class FsContent extends AbstractContent {
 
@@ -86,7 +86,7 @@ public abstract class FsContent extends AbstractContent {
 	
 	/**
 	 * Is this the root of its parent filesystem?
-	 * @return 
+	 * @return true if this is the root inode
 	 */
 	public boolean isRoot() {
 		return parentFileSystem.getRoot_inum() == this.getMeta_addr(); 

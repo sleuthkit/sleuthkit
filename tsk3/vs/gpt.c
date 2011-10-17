@@ -125,7 +125,7 @@ gpt_load_table(TSK_VS_INFO * vs)
     snprintf(head_str, 16, "GPT Header");
     if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) 1,
             (TSK_DADDR_T) ((tsk_getu32(vs->endian,
-                        &head->head_size_b) + 511) / 512),
+                        &head->head_size_b) + (vs->block_size-1)) / vs->block_size),
             TSK_VS_PART_FLAG_META, head_str, -1, -1)) {
         free(sect_buf);
         return 1;
@@ -151,7 +151,7 @@ gpt_load_table(TSK_VS_INFO * vs)
     if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) tsk_getu64(vs->endian,
                 &head->tab_start_lba),
             (TSK_DADDR_T) ((ent_size * tsk_getu32(vs->endian,
-                        &head->tab_num_ent) + 511) / 512),
+                        &head->tab_num_ent) + (vs->block_size-1)) / vs->block_size),
             TSK_VS_PART_FLAG_META, tab_str, -1, -1)) {
         free(sect_buf);
         return 1;
@@ -302,9 +302,31 @@ tsk_vs_gpt_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
 
     /* Load the partitions into the sorted list */
     if (gpt_load_table(vs)) {
-        gpt_close(vs);
-        return NULL;
+        int found = 0;
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "gpt_open: Trying other sector sizes\n");
+
+        /* Before we give up, lets try some other sector sizes */
+        vs->block_size = 512;
+        while (vs->block_size <= 8192) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "gpt_open: Trying sector size: %d\n",
+                    vs->block_size);
+
+            if (gpt_load_table(vs)) {
+                vs->block_size *= 2;
+                continue;
+            }
+            found = 1;
+            break;
+        }
+
+        if (found == 0) {
+            gpt_close(vs);
+            return NULL;
+        }
     }
+
 
     /* fill in the sorted list with the 'unknown' values */
     if (tsk_vs_part_unused(vs)) {

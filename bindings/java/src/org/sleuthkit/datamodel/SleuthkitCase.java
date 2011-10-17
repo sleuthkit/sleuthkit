@@ -32,8 +32,8 @@ import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 
 /**
- * database connection object. makes use of the sqlite jdbc libraries
- * @author alawrence
+ * Highest level object in Sleuthkit hierarchy that represents the database.  
+ * Stores one or more Images and children data.
  */
 public class SleuthkitCase {
 	private String dbPath;
@@ -55,7 +55,12 @@ public class SleuthkitCase {
 		con = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
 		con.setReadOnly(true);
 	}
-	
+
+    /**
+     * Open an existing case.
+     * @param dbPath Path to SQLite database.
+     * @return Case object
+     */
 	public static SleuthkitCase openCase(String dbPath) throws TskException {
 		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
 		try {
@@ -66,7 +71,12 @@ public class SleuthkitCase {
 			throw new TskException("Couldn't open case.", ex);
 		}
 	}
-	
+
+    /**
+     * Create a new case
+     * @param dbPath Path to where SQlite database should be created.
+     * @return Case object
+     */
 	public static SleuthkitCase newCase(String dbPath) throws TskException {
 		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(dbPath);
 		try {
@@ -77,9 +87,32 @@ public class SleuthkitCase {
 			throw new TskException("Couldn't open case.", ex);
 		}
 	}
-	
+
+    /**
+     * Start process of adding an image to the case. 
+     * Adding an image is a multi-step process and this returns
+     * an object that allows it to happen.
+     * @param timezone TZ timezone string to use for ingest of image.
+     * @return object to start ingest
+     */
 	public AddImageProcess makeAddImageProcess(String timezone) {
 		return this.caseHandle.initAddImageProcess(timezone);
+	}
+
+    /**
+     * Set the path to NSRL database
+     * @param path Path to database ( not index )
+     */
+	public void setNSRLDatabase(String path) throws TskException {
+		this.caseHandle.setNSRLDatabase(path);
+	}
+	
+    /**
+     * Set the path to known bad database
+     * @param path Path to database ( not index )
+     */
+	public void setKnownBadDatabase(String path) throws TskException {
+		this.caseHandle.setKnownBadDatabase(path);
 	}
 	
 	public void setNSRLDatabase(String path) throws TskException {
@@ -321,7 +354,11 @@ public class SleuthkitCase {
 //		return children;
 //	}
 	
-	
+
+    /**
+     * Get the list of root objects, meaning image files or local files.
+     * @return list of content objects.
+     */
 	public List<Content> getRootObjects() throws TskException {
 		try {
 			Statement s = con.createStatement();
@@ -352,6 +389,9 @@ public class SleuthkitCase {
 		}
 	}
 	
+    /** 
+     * Stores a pair of object ID and its type 
+     */
 	private static class ObjectInfo {
 		long id;
 		TskData.ObjectType type;
@@ -362,6 +402,10 @@ public class SleuthkitCase {
 		}
 	}
 	
+    /**
+     * Get info about children of a given Content from the database.
+     * @param c Parent object to run query against
+     */
 	Collection<ObjectInfo> getChildrenInfo(Content c) throws SQLException {
 		Statement s = con.createStatement();
 		ResultSet rs = s.executeQuery("select obj_id, type from tsk_objects " +
@@ -377,6 +421,8 @@ public class SleuthkitCase {
 		return infos;
 	}
 	
+    /** 
+     
 	ObjectInfo getParentInfo(Content c) throws SQLException {
 		Statement s = con.createStatement();
 		ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
@@ -617,7 +663,9 @@ public class SleuthkitCase {
 	}
 	
 
-
+    /**
+     * Returns the list of children for a given Image
+     */
 	List<Content> getImageChildren(Image img) throws SQLException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(img);
 		
@@ -637,6 +685,9 @@ public class SleuthkitCase {
 		return children;
 	}
 	
+    /**
+     * Returns the list of children for a given VolumeSystem
+     */
 	List<Content> getVolumeSystemChildren(VolumeSystem vs) throws SQLException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(vs);
 		
@@ -654,6 +705,9 @@ public class SleuthkitCase {
 		return children;
 	}
 	
+    /**
+     * Returns a list of children for a given Volume
+     */
 	List<Content> getVolumeChildren(Volume vol) throws SQLException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(vol);
 		
@@ -670,11 +724,17 @@ public class SleuthkitCase {
 		return children;
 	}
 	
+    /**
+     * Returns a list of children for a given file system
+     */
 	List<Content> getFileSystemChildren(FileSystem fs) throws SQLException {
 		return getChildFsContents(fs.getId(), fs);
 	}
 
-
+    /**
+     * Returns a list of children for a given file system or directory
+     * @param par_obj_id Parent ID
+     */
 	List<Content> getChildFsContents(long par_obj_id, FileSystem parentFs) throws SQLException {
 		Statement s = con.createStatement();
 		ResultSet rs = s.executeQuery("select tsk_files.* from tsk_files join "
@@ -696,7 +756,9 @@ public class SleuthkitCase {
 	}
 	
 	
-	
+	/**
+     * Returns a list of children for a given directory
+     */
 	List<Content> getDirectoryChildren(Directory dir) throws SQLException {
 		return getChildFsContents(dir.getId(), dir.getFileSystem());
 	}
@@ -760,7 +822,8 @@ public class SleuthkitCase {
 
 	/**
 	 * Creates FsContents from a SQL query result set of rows from the tsk_files
-	 * table
+	 * table.  Assumes that the query was of the form
+     * "SELECT * FROM tsk_files WHERE XYZ".
 	 * @param rs ResultSet to get content from
 	 * @return A List<FsContent> containing the results
 	 * @throws SQLException  
@@ -785,10 +848,11 @@ public class SleuthkitCase {
 	
 	
 	/**
-	 * Returns the ResultSet from the given query.
-	 *
+	 * Process a query on the database to find files of a given criteria.
+	 * resultSetToFsContents will convert the results to useful objects.
+     *
 	 * @param query  the given string query to run
-	 * @return       the resultSet
+	 * @return       the resultSet from running the query.
 	 * @throws SQLException
 	 */
 	public ResultSet runQuery(String query) throws SQLException{
@@ -798,10 +862,12 @@ public class SleuthkitCase {
 		ResultSet rs = statement.executeQuery(query);
 		return rs;
 	}
+    
 
 	public void finalize(){
 		close();
 	}
+    
 
 	/**
 	 * Closes the database connection of this instance.

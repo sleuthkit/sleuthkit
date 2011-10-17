@@ -22,9 +22,10 @@ import java.sql.SQLException;
 import java.util.*;
 
 /**
- *
- * @author alawrence
+ * Represents a directory in a file system. 
+ * Populated based on data in database.
  */
+
 public class Directory extends FsContent{
 
 	/**

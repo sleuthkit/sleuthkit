@@ -21,8 +21,8 @@ package org.sleuthkit.datamodel;
 import java.util.List;
 
 /**
- * Volume System Object
- * @author alawrence
+ * Represents a volume system.
+ * Populated based on data in database.
  */
 public class VolumeSystem extends AbstractContent {
 	private long volumeSystemHandle = 0;

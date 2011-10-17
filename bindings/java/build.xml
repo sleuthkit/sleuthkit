@@ -107,4 +107,10 @@
     <delete dir="${build}"/>
     <delete dir="${dist}"/>
   </target>
+
+  <target name ="javadoc" description="Make the API docs">
+    <mkdir dir="javadoc"/>
+    <javadoc sourcepath="src" destdir="javadoc" overview="src/overview.html" />
+  </target>
+
 </project>
