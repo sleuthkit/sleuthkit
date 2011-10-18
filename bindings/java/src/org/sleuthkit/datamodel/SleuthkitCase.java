@@ -409,7 +409,6 @@ public class SleuthkitCase {
 		return infos;
 	}
 	
-    /** 
      
 	ObjectInfo getParentInfo(Content c) throws SQLException {
 		Statement s = con.createStatement();
