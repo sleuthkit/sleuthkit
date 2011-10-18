@@ -115,14 +115,6 @@ public class SleuthkitCase {
 		this.caseHandle.setKnownBadDatabase(path);
 	}
 	
-	public void setNSRLDatabase(String path) throws TskException {
-		this.caseHandle.setNSRLDatabase(path);
-	}
-	
-	public void setKnownBadDatabase(String path) throws TskException {
-		this.caseHandle.setKnownBadDatabase(path);
-	}
-	
 	public void clearLookupDatabases() throws TskException {
 		this.caseHandle.clearLookupDatabases();
 	}
@@ -384,6 +376,7 @@ public class SleuthkitCase {
 			}
 
 			return rootObjs;
+			
 		} catch (SQLException ex) {
 			throw new TskException("Error getting root objects.", ex);
 		}
@@ -421,7 +414,6 @@ public class SleuthkitCase {
 		return infos;
 	}
 	
-    /** 
      
 	ObjectInfo getParentInfo(Content c) throws SQLException {
 		Statement s = con.createStatement();
