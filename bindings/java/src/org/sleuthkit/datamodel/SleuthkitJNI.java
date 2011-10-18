@@ -20,13 +20,11 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Class links to sleuthkit c/c++ libraries to read data from image files
- * @author alawrence
+ * Interfaces with the sleuthkit c/c++ libraries to read data from image files
  */
 public class SleuthkitJNI {
 	//Native methods
 	private static native String getVersionNat();
-	
 	
 	//database
 	private static native long newCaseDbNat(String dbPath) throws TskException;
@@ -68,15 +66,20 @@ public class SleuthkitJNI {
 	private static native boolean lookupIndexExistsNat(String dbPath) throws TskException;
 
 	static {
-		System.loadLibrary("zlib1");
-		System.loadLibrary("libewf");
-		System.loadLibrary("tsk_jni");
+        try {
+            System.loadLibrary("zlib1");
+            System.loadLibrary("libewf");
+        }
+        catch (Exception ex) {
+            // @@@ LOG??
+        }
+        System.loadLibrary("libtsk_jni");
 	}
 
 
 	public SleuthkitJNI() {}
 	
-	
+
 	public static class CaseDbHandle {
 		private long caseDbPointer;
 		
@@ -87,23 +90,41 @@ public class SleuthkitJNI {
 		void free() throws TskException {
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 		}
-		
-		void setNSRLDatabase(String path) throws TskException {
-			setCaseDbNSRLNat(this.caseDbPointer, path);
-		}
-		
-		void setKnownBadDatabase(String path) throws TskException {
-			setCaseDbKnownBadNat(this.caseDbPointer, path);
-		}
-		
 		void clearLookupDatabases() throws TskException {
 			clearCaseDbLookupsNat(this.caseDbPointer);
 		}
 		
+        
+        /**
+         * Set the path to an NSRL database
+         */
+        void setNSRLDatabase(String path) throws TskException {
+            setCaseDbNSRLNat(this.caseDbPointer, path);
+        }
+
+        /**
+         * Set the path to a known bad hash database
+         */
+        void setKnownBadDatabase(String path) throws TskException {
+            setCaseDbKnownBadNat(this.caseDbPointer, path);
+        }
+
+        
+	
+        /**
+         * Start the process of adding a disk image to the case. 
+         * @param timezone Timezone that image was from
+         * @return Object that can be used to manage the process.
+         */
 		AddImageProcess initAddImageProcess(String timezone) {
 			return new AddImageProcess(timezone);
 		}
 		
+        /**
+         * Encapsulates a multi-step process to add a disk image.
+         * Adding a disk image takes a while and this object
+         * has objects to manage that process.
+         */
 		public class AddImageProcess {
 			String timezone;
 			long autoDbPointer;
@@ -114,7 +135,8 @@ public class SleuthkitJNI {
 			}
 			
 			/**
-			 * Add an image to the case database. MUST call either commit() or
+			 * Start the process of adding an image to the case database. 
+             * MUST call either commit() or
 			 * revert() after calling run().
 			 * @param imgPath Full path(s) to the image file(s).
 			 * @throws TskException
@@ -168,7 +190,6 @@ public class SleuthkitJNI {
 				
 				return commitAddImgNat(autoDbPointer);
 			}
-			
 		}
 	}
 	

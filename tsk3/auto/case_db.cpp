@@ -143,7 +143,7 @@ uint8_t
  * @returns 1 on error and 0 on success
  */
 uint8_t
-TskCaseDb::setNSRLDb(TSK_TCHAR * const indexFile ) {
+TskCaseDb::setNSRLHashDb(TSK_TCHAR * const indexFile ) {
     if (m_NSRLDb != NULL) {
         tsk_hdb_close(m_NSRLDb);
         m_NSRLDb = NULL;
@@ -160,7 +160,7 @@ TskCaseDb::setNSRLDb(TSK_TCHAR * const indexFile ) {
  * @returns 1 on error and 0 on success
  */
 uint8_t
-TskCaseDb::setKnownBadDb(TSK_TCHAR * const indexFile) {
+TskCaseDb::setKnownBadHashDb(TSK_TCHAR * const indexFile) {
     if (m_knownBadDb != NULL) {
         tsk_hdb_close(m_knownBadDb);
         m_knownBadDb = NULL;

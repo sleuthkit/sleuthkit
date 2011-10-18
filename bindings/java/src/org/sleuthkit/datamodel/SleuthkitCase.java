@@ -376,7 +376,6 @@ public class SleuthkitCase {
 			}
 
 			return rootObjs;
-			
 		} catch (SQLException ex) {
 			throw new TskException("Error getting root objects.", ex);
 		}

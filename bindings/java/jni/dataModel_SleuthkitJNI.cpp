@@ -195,7 +195,7 @@ JNIEXPORT void JNICALL
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
-    tskCase->setNSRLDb(pathT);
+    tskCase->setNSRLHashDb(pathT);
     return;
 }
 
@@ -214,7 +214,7 @@ JNIEXPORT void JNICALL
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
-    tskCase->setKnownBadDb(pathT);
+    tskCase->setKnownBadHashDb(pathT);
     return;
 }
 
