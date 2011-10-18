@@ -64,9 +64,14 @@ public class SleuthkitJNI {
 	private static native boolean lookupIndexExistsNat(String dbPath) throws TskException;
 
 	static {
-		System.loadLibrary("zlib1");
-		System.loadLibrary("libewf");
-		System.loadLibrary("tsk_jni");
+        try {
+            System.loadLibrary("zlib1");
+            System.loadLibrary("libewf");
+        }
+        catch (Exception ex) {
+            // @@@ LOG??
+        }
+        System.loadLibrary("libtsk_jni");
 	}
 
 
