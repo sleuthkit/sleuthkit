@@ -53,8 +53,8 @@ class TskAutoDb:public TskAuto {
     bool m_volFound;
     bool m_stopped;
     bool m_imgTransactionOpen;
-    TSK_HDB_INFO * m_NSRLIndex;
-    TSK_HDB_INFO * m_knownBadIndex;
+    TSK_HDB_INFO * m_NSRLDb;
+    TSK_HDB_INFO * m_knownBadDb;
 
 
     uint8_t addImageDetails(const char *const images[], int);
