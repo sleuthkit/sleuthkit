@@ -81,8 +81,8 @@ class TskCaseDb {
 
     static TskCaseDb *newDb(const TSK_TCHAR * path);
     static TskCaseDb *openDb(const TSK_TCHAR * path);
-    uint8_t setNSRLIndex(TSK_TCHAR * const indexFile);
-    uint8_t setKnownBadIndex(TSK_TCHAR * const indexFile);
+    uint8_t setNSRLDb(TSK_TCHAR * const indexFile);
+    uint8_t setKnownBadDb(TSK_TCHAR * const indexFile);
     void clearLookupDatabases();
     uint8_t addImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
@@ -91,8 +91,8 @@ class TskCaseDb {
   private:
     TskCaseDb(TskDbSqlite * a_db);
     TskDbSqlite *m_db;
-    TSK_HDB_INFO * m_NSRLIndex;
-    TSK_HDB_INFO * m_knownBadIndex;
+    TSK_HDB_INFO * m_NSRLDb;
+    TSK_HDB_INFO * m_knownBadDb;
 };
 
 #endif
