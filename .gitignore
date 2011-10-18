@@ -4,7 +4,6 @@
 # Bindings dependecies and build folders
 /bindings/java/lib/
 /bindings/java/build/
-/bindings/java/test/
 /bindings/java/dist
 
 # Windows build folders
