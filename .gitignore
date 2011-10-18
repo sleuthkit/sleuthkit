@@ -1,0 +1,9 @@
+/bindings/java/nbproject/private/
+/bindings/java/lib/
+/win32/Debug_NoLibs/
+/win32/*/Debug_NoLibs/
+/win32/Debug/
+/win32/*/Debug/
+/win32/Release/
+/win32/*/Release/
+/win32/*/*.user
