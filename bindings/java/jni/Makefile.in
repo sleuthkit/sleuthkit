@@ -54,9 +54,9 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libtsk3jni_la_LIBADD =
-am_libtsk3jni_la_OBJECTS = dataModel_SleuthkitJNI.lo
-libtsk3jni_la_OBJECTS = $(am_libtsk3jni_la_OBJECTS)
+libtsk_jni_la_LIBADD =
+am_libtsk_jni_la_OBJECTS = dataModel_SleuthkitJNI.lo
+libtsk_jni_la_OBJECTS = $(am_libtsk_jni_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/tsk3@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -78,8 +78,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libtsk3jni_la_SOURCES)
-DIST_SOURCES = $(libtsk3jni_la_SOURCES)
+SOURCES = $(libtsk_jni_la_SOURCES)
+DIST_SOURCES = $(libtsk_jni_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -211,8 +211,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I../../.. -I$(srcdir)/../../.. -Wall $(JNI_CPPFLAGS)
 EXTRA_DIST = .indent.pro 
-lib_LTLIBRARIES = libtsk3jni.la
-libtsk3jni_la_SOURCES = dataModel_SleuthkitJNI.cpp dataModel_SleuthkitJNI.h 
+lib_LTLIBRARIES = libtsk_jni.la
+libtsk_jni_la_SOURCES = dataModel_SleuthkitJNI.cpp dataModel_SleuthkitJNI.h 
 all: all-am
 
 .SUFFIXES:
@@ -273,8 +273,8 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libtsk3jni.la: $(libtsk3jni_la_OBJECTS) $(libtsk3jni_la_DEPENDENCIES) 
-	$(CXXLINK) -rpath $(libdir) $(libtsk3jni_la_OBJECTS) $(libtsk3jni_la_LIBADD) $(LIBS)
+libtsk_jni.la: $(libtsk_jni_la_OBJECTS) $(libtsk_jni_la_DEPENDENCIES) 
+	$(CXXLINK) -rpath $(libdir) $(libtsk_jni_la_OBJECTS) $(libtsk_jni_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
