@@ -1,10 +1,13 @@
 # NetBeans user-specific settings
 /bindings/java/nbproject/private/
 
-# Bindings dependecies
+# Bindings dependecies and build folders
 /bindings/java/lib/
+/bindings/java/build/
+/bindings/java/test/
+/bindings/java/dist
 
-# Build folders
+# Windows build folders
 /win32/Debug_NoLibs/
 /win32/*/Debug_NoLibs/
 /win32/Debug/
@@ -15,3 +18,6 @@
 
 # IntelliSense data
 /win32/tsk-win.ncb
+
+# Visual Studio user options
+/win32/tsk-win.suo
