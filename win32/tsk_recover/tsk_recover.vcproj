@@ -63,7 +63,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libewf.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="$(ProjectDir)\..\libewf\msvscpp\release\"
+				AdditionalLibraryDirectories="$(LIBEWF_HOME)\msvscpp\release"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -138,7 +138,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libewf.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="$(ProjectDir)\..\libewf\msvscpp\release\"
+				AdditionalLibraryDirectories="$(LIBEWF_HOME)\msvscpp\release"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -209,6 +209,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalLibraryDirectories=""
 			/>
 			<Tool
 				Name="VCALinkTool"

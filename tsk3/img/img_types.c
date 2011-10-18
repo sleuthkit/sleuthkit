@@ -89,7 +89,7 @@ tsk_img_type_toid(const TSK_TCHAR * str)
     }
     tmp[i] = '\0';
 
-    return tsk_img_type_toid(tmp);
+    return tsk_img_type_toid_utf8(tmp);
 }
 
 
