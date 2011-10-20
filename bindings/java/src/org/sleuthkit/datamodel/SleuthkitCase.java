@@ -115,6 +115,10 @@ public class SleuthkitCase {
 		this.caseHandle.setKnownBadDatabase(path);
 	}
 	
+	public void clearLookupDatabases() throws TskException {
+		this.caseHandle.clearLookupDatabases();
+	}
+	
 //
 //	/**
 //	 * fills a new file system object with data from the database

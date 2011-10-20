@@ -31,7 +31,9 @@ public class SleuthkitJNI {
 	private static native long openCaseDbNat(String path) throws TskException;
 	private static native void closeCaseDbNat(long db) throws TskException;
 	private static native void setCaseDbNSRLNat(long db, String hashDbPath) throws TskException;
-	private static native void setCaseDbKnownBadNat(long db, String hashDbPath) throws TskException;	
+	private static native void setCaseDbKnownBadNat(long db, String hashDbPath) throws TskException;
+	private static native void clearCaseDbLookupsNat(long db) throws TskException;
+
 	
 	//load image
 	private static native long initAddImgNat(long db, String timezone) throws TskException;
@@ -88,6 +90,10 @@ public class SleuthkitJNI {
 		void free() throws TskException {
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 		}
+		void clearLookupDatabases() throws TskException {
+			clearCaseDbLookupsNat(this.caseDbPointer);
+		}
+		
         
         /**
          * Set the path to an NSRL database

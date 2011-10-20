@@ -132,7 +132,9 @@ uint8_t
         autoDb.revertAddImage();
         return 1;
     }
-    return autoDb.commitAddImage();
+    autoDb.commitAddImage();
+    
+    return 0;
 }
 
 /*
@@ -167,4 +169,21 @@ TskCaseDb::setKnownBadHashDb(TSK_TCHAR * const indexFile) {
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
     m_knownBadDb = tsk_hdb_open(indexFile, flags);
     return m_knownBadDb != NULL;
+}
+
+/*
+ * Clear set lookup databases.
+ * @param images Path to index.
+ */
+void
+TskCaseDb::clearLookupDatabases() {
+    if (m_NSRLDb != NULL) {
+        tsk_hdb_close(m_NSRLDb);
+        m_NSRLDb = NULL;
+    }
+
+    if (m_knownBadDb != NULL) {
+        tsk_hdb_close(m_knownBadDb);
+        m_knownBadDb = NULL;
+    }
 }
