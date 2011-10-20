@@ -16,7 +16,7 @@ New Features:
 Bug Fixes:
 - Relaxed checking when conflict exists between DOS and GPT partitions.
 Had a Mac image that was failing to resolve which partition table
-to use.
+to use. 
 
 ---------------- VERSION 3.2.3 --------------
 New Features:
