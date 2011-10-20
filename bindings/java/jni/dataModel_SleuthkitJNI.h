@@ -57,6 +57,14 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_setCaseDbKnownB
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    clearCaseDbLookupsNat
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_clearCaseDbLookupsNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    initAddImgNat
  * Signature: (JLjava/lang/String;)J
  */

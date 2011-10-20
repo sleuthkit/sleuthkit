@@ -81,6 +81,7 @@ class TskCaseDb {
 
     static TskCaseDb *newDb(const TSK_TCHAR * path);
     static TskCaseDb *openDb(const TSK_TCHAR * path);
+    void clearLookupDatabases();
     uint8_t setNSRLHashDb(TSK_TCHAR * const indexFile);
     uint8_t setKnownBadHashDb(TSK_TCHAR * const indexFile);
     uint8_t addImage(int numImg, const TSK_TCHAR * const imagePaths[],

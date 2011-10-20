@@ -219,6 +219,13 @@ JNIEXPORT void JNICALL
 }
 
 
+JNIEXPORT void JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_clearCaseDbLookupsNat(JNIEnv * env,
+    jclass obj, jlong caseHandle) {
+
+    TskCaseDb *tskCase = castCaseDb(env, caseHandle);
+    tskCase->clearLookupDatabases();
+}
 
 /*
  * Create an add-image process that can later be run with specific inputs
@@ -812,12 +819,8 @@ JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     jclass obj, jstring dbPathJ)
 {
-    jboolean isCopy;
-
-    char *dbPath8 = (char *) env->GetStringUTFChars(dbPathJ, &isCopy);
-
     TSK_TCHAR dbPathT[1024];
-    TSNPRINTF(dbPathT, 1024, _TSK_T("%") PRIcTSK, dbPath8);
+    toTCHAR(env, dbPathT, 1024, dbPathJ);
 
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
     TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
@@ -826,9 +829,11 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     }
 
     TSK_TCHAR dbType[1024];
-    TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
+    TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_NSRL_MD5_STR);
 
-    tsk_hdb_makeindex(temp, dbType);
+    if (tsk_hdb_makeindex(temp, dbType)) {
+        throwTskError(env);
+    }
 
     tsk_hdb_close(temp);
 }
@@ -842,22 +847,18 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
   (JNIEnv * env, jclass obj, jstring dbPathJ) {
 
-    jboolean isCopy;
-
-    char *dbPath8 = (char *) env->GetStringUTFChars(dbPathJ, &isCopy);
-
     TSK_TCHAR dbPathT[1024];
-    TSNPRINTF(dbPathT, 1024, _TSK_T("%") PRIcTSK, dbPath8);
+    toTCHAR(env, dbPathT, 1024, dbPathJ);
 
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
     TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
     if (temp == NULL) {
         return (jboolean) false;
     }
-    
-    bool result = tsk_hdb_hasindex(temp, TSK_HDB_DBTYPE_MD5SUM_ID) == 1;
+
+    uint8_t retval = tsk_hdb_hasindex(temp, TSK_HDB_HTYPE_MD5_ID);
 
     tsk_hdb_close(temp);
-    return (jboolean) result;
+    return (jboolean) retval == 1;
 }
     
