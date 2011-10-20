@@ -23,6 +23,8 @@ package org.sleuthkit.datamodel;
  * General exception that is thrown from Sleuthkit classes.
  */
 public class TskException extends Exception{
+    private static final long serialVersionUID = 123049876L;
+
 	public TskException(String msg){
 		super(msg);
 	}

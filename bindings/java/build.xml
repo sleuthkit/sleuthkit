@@ -83,8 +83,8 @@
   <target name="compile" depends="init"
         description="compile the source" >
     <!-- Compile the java code from ${src} into ${build} -->
-    <javac debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" >
-    <!--<compilerarg value="-Xlint"/>-->
+    <javac debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" includeantruntime="false">
+        <compilerarg value="-Xlint"/>
     </javac>
   </target>
 
