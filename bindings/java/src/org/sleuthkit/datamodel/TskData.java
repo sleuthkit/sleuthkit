@@ -308,6 +308,10 @@ public class TskData {
 		public String getName() {
 			return this.name;
 		}
+		
+		public long toLong() {
+			return this.known;
+		}
 	}
 	
 
