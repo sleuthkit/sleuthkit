@@ -20,3 +20,10 @@
 
 # Visual Studio user options
 /win32/tsk-win.suo
+
+*.o
+*.lo
+*.la
+Makefile
+.deps
+.libs
