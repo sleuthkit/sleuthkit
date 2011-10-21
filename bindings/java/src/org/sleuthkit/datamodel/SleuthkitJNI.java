@@ -70,10 +70,11 @@ public class SleuthkitJNI {
             System.loadLibrary("zlib1");
             System.loadLibrary("libewf");
         }
-        catch (Exception ex) {
+        catch (UnsatisfiedLinkError e) {
             // @@@ LOG??
         }
         System.loadLibrary("libtsk_jni");
+        //System.load("/Users/brianc/proj/github/bindings/java/jni/.libs/libtsk_jni.0.dylib");
 	}
 
 

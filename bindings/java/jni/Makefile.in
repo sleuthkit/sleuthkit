@@ -54,7 +54,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libtsk_jni_la_LIBADD =
+libtsk_jni_la_DEPENDENCIES = ../../../tsk3/libtsk3.la
 am_libtsk_jni_la_OBJECTS = dataModel_SleuthkitJNI.lo
 libtsk_jni_la_OBJECTS = $(am_libtsk_jni_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/tsk3@am__isrc@
@@ -213,6 +213,7 @@ AM_CPPFLAGS = -I../../.. -I$(srcdir)/../../.. -Wall $(JNI_CPPFLAGS)
 EXTRA_DIST = .indent.pro 
 lib_LTLIBRARIES = libtsk_jni.la
 libtsk_jni_la_SOURCES = dataModel_SleuthkitJNI.cpp dataModel_SleuthkitJNI.h 
+libtsk_jni_la_LIBADD = ../../../tsk3/libtsk3.la
 all: all-am
 
 .SUFFIXES:
