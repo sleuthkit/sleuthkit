@@ -25,6 +25,7 @@ package org.sleuthkit.datamodel;
 public class SleuthkitJNI {
 	//Native methods
 	private static native String getVersionNat();
+	private static native void startVerboseLoggingNat(String logPath);
 	
 	//database
 	private static native long newCaseDbNat(String dbPath) throws TskException;
@@ -224,6 +225,15 @@ public class SleuthkitJNI {
 	public static String getVersion(){
 		return getVersionNat();
 	}
+	
+	/**
+	 * Enable verbose logging and redirect stderr to the given log file.
+	 * @return the version string
+	 */
+	public static void startVerboseLogging(String logPath) {
+		startVerboseLoggingNat(logPath);
+	}
+
 
 	/**
 	 * open the image and return the image info pointer

@@ -17,6 +17,14 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getVersionNa
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    startVerboseLoggingNat
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
+  (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    newCaseDbNat
  * Signature: (Ljava/lang/String;)J
  */

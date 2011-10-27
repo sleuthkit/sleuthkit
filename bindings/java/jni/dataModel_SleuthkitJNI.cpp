@@ -808,6 +808,24 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getVersionNat(JNIEnv * env,
     return jversion;
 }
 
+/*
+ * Enable verbose logging and redirect stderr to the given log file.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param logPath The log file to append to.
+ */
+JNIEXPORT void JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
+    (JNIEnv * env, jclass obj, jstring logPath)
+{
+    jboolean isCopy;
+    char *str8 = (char *) env->GetStringUTFChars(logPath, &isCopy);
+    if (freopen(str8, "a", stderr) == NULL) {
+        throwTskError(env, "Couldn't open verbose log file for appending.");
+        return;
+    }
+    tsk_verbose++;
+}
 
 /*
  * Create an index for the given database path
@@ -825,6 +843,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
     TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
     if (temp == NULL) {
+        throwTskError(env);
         return;
     }
 
