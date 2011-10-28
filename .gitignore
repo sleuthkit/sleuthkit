@@ -21,6 +21,7 @@
 # Visual Studio user options
 /win32/tsk-win.suo
 
+# Make crud
 *.o
 *.lo
 *.la
