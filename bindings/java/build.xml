@@ -2,6 +2,15 @@
     <description>
         Sleuthkit Java DataModel 
     </description>
+
+
+  <!-- some dlls come from LIBEWF_HOME -->
+  <property environment="env"/>
+  <condition property="ewfFound">
+    <isset property="env.LIBEWF_HOME"/>
+  </condition>
+  <fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
+	
   <!-- set global properties for this build -->
   <property name="src" location="src/org/sleuthkit/datamodel"/>
   <property name="build" location="build/"/>
@@ -9,7 +18,7 @@
   <property name="lib" location="lib"/>
   <property name="test" location="test"/>
   <property name="test-standards" location="teststandards"/>
-  <property name="dlls" value="../../win32/libewf/msvscpp/zlib;../../win32/libewf/msvscpp/Release;../../win32/Release"/>
+  <property name="dlls" value="${env.LIBEWF_HOME}/msvscpp/zlib;${env.LIBEWF_HOME}/msvscpp/Release;../../win32/Release"/>
   
   <path id="libraries">
     <fileset dir="${lib}">

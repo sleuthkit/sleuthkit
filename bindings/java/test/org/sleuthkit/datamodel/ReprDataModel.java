@@ -195,7 +195,12 @@ public class ReprDataModel {
 		 * 
 		 */
 		repr("getName", i.getName());
+		/**
+		 * Don't get paths, they're system specific.
+		 * 
 		repr("getPaths", i.getPaths());
+		 * 
+		 */
 		repr("getSize", i.getSize());
 		repr("getSsize", i.getSsize());
 		repr("getType", i.getType());
