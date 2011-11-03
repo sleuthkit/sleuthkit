@@ -1,6 +1,5 @@
 Image >
 	getName: fe_test_4.img
-	getPaths: [C:\Users\pmartel\Documents\NetBeansProjects\testimages\fe_test_4\fe_test_4.img]
 	getSize: 0
 	getSsize: 512
 	getType: 1

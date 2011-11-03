@@ -27,9 +27,9 @@ import java.sql.Statement;
 import java.util.*;
 import java.util.logging.Level;
 import org.sleuthkit.datamodel.TskData.ObjectType;
-import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 
 /**
  * Highest level object in Sleuthkit hierarchy that represents the database.  
@@ -537,7 +537,7 @@ public class SleuthkitCase {
 		ResultSet rs = s.executeQuery("select * from tsk_files " +
 			"where obj_id = " + id);
 
-		if (rs.next() && rs.getLong("dir_type") == TSK_FS_NAME_TYPE_ENUM.DIR.getDirType()) {
+		if (rs.next() && rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
 				temp = rsHelper.directory(rs, parentFs);
 		} else {
 			s.close();
@@ -735,7 +735,7 @@ public class SleuthkitCase {
 		List<Content> children = new ArrayList<Content>();
 		
 		while(rs.next()) {
-			if (rs.getLong("dir_type") == TSK_FS_NAME_TYPE_ENUM.DIR.getDirType()) {
+			if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
 				children.add(rsHelper.directory(rs, parentFs));
 			} else {
 				children.add(rsHelper.file(rs, parentFs));
@@ -825,7 +825,7 @@ public class SleuthkitCase {
 
 		while (rs.next()) {
 			FsContent result;
-			if (rs.getLong("dir_type") == TSK_FS_NAME_TYPE_ENUM.DIR.getDirType()) {
+			if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
 				result = rsHelper.directory(rs, null);
 			} else {
 				result = rsHelper.file(rs, null);
