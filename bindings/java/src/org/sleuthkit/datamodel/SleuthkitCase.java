@@ -27,9 +27,9 @@ import java.sql.Statement;
 import java.util.*;
 import java.util.logging.Level;
 import org.sleuthkit.datamodel.TskData.ObjectType;
-import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 
 /**
  * Highest level object in Sleuthkit hierarchy that represents the database.  
@@ -66,9 +66,9 @@ public class SleuthkitCase {
 		try {
 			return new SleuthkitCase(dbPath, caseHandle);
 		} catch (SQLException ex) {
-			throw new TskException("Couldn't open case.", ex);
+			throw new TskException("Couldn't open case at " + dbPath, ex);
 		} catch (ClassNotFoundException ex) {
-			throw new TskException("Couldn't open case.", ex);
+			throw new TskException("Couldn't open case at " + dbPath, ex);
 		}
 	}
 
@@ -82,9 +82,9 @@ public class SleuthkitCase {
 		try {
 			return new SleuthkitCase(dbPath, caseHandle);
 		} catch (SQLException ex) {
-			throw new TskException("Couldn't open case.", ex);
+			throw new TskException("Couldn't open case at " + dbPath, ex);
 		} catch (ClassNotFoundException ex) {
-			throw new TskException("Couldn't open case.", ex);
+			throw new TskException("Couldn't open case at " + dbPath, ex);
 		}
 	}
 
@@ -371,7 +371,7 @@ public class SleuthkitCase {
 				if (i.type == ObjectType.IMG) {
 					rootObjs.add(getImageById(i.id));
 				} else {
-					throw new IllegalStateException("Parentless object has wrong type to be a root: " + i.type);
+					throw new TskException("Parentless object has wrong type to be a root: " + i.type);
 				}
 			}
 
@@ -414,7 +414,7 @@ public class SleuthkitCase {
 	}
 	
      
-	ObjectInfo getParentInfo(Content c) throws SQLException {
+	ObjectInfo getParentInfo(Content c) throws SQLException, TskException {
 		Statement s = con.createStatement();
 		ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
 				+ "FROM tsk_objects AS parent JOIN tsk_objects AS child "
@@ -429,13 +429,13 @@ public class SleuthkitCase {
 			return info;
 		} else {
 			s.close();
-			throw new IllegalArgumentException("Given content has no parent.");
+			throw new TskException("Given content (id: " + c.getId() + ") has no parent.");
 		}
 	}
 	
-	Directory getParentDirectory(FsContent fsc) throws SQLException {
+	Directory getParentDirectory(FsContent fsc) throws SQLException, TskException {
 		if (fsc.isRoot()) {
-			throw new IllegalArgumentException("Given FsContent is a root object (can't have parent directory).");
+			throw new TskException("Given FsContent (id: " + fsc.getId() + ") is a root object (can't have parent directory).");
 		} else {
 			ObjectInfo parentInfo = getParentInfo(fsc);
 			
@@ -444,7 +444,7 @@ public class SleuthkitCase {
 			if (parentInfo.type == ObjectType.FILE) {
 				parent = getDirectoryById(parentInfo.id, fsc.getFileSystem());
 			} else {
-				throw new IllegalStateException("Parent has wrong type to be directory: " + parentInfo.type);
+				throw new TskException("Parent of FsContent (id: " + fsc.getId() + ") has wrong type to be directory: " + parentInfo.type);
 			}
 
 			return parent;
@@ -471,7 +471,7 @@ public class SleuthkitCase {
 			
 			temp = rsHelper.image(rs1, name, imagePaths.toArray(new String[imagePaths.size()]));
 		} else {
-			throw new IllegalStateException("No image found in database!");
+			throw new TskException("No image found for id: " + id);
 		}
 		
 		s1.close();
@@ -479,7 +479,7 @@ public class SleuthkitCase {
 	}
 	
 
-	VolumeSystem getVolumeSystemById(long id, Image parent) throws SQLException {
+	VolumeSystem getVolumeSystemById(long id, Image parent) throws SQLException, TskException {
 		Statement s = con.createStatement();
 		
 		ResultSet rs = s.executeQuery("select * from tsk_vs_info " +
@@ -489,14 +489,14 @@ public class SleuthkitCase {
 		if (rs.next()) {
 			temp = rsHelper.volumeSystem(rs, parent);
 		} else {
-			throw new IllegalStateException("No volume system found for id:" + id);
+			throw new TskException("No volume system found for id:" + id);
 		}
 		
 		s.close();
 		return temp;
 	}
 	
-	FileSystem getFileSystemById(long id, FileSystemParent parent) throws SQLException {
+	FileSystem getFileSystemById(long id, FileSystemParent parent) throws SQLException, TskException {
 		Statement s = con.createStatement();
 		FileSystem temp;
 
@@ -506,14 +506,14 @@ public class SleuthkitCase {
 		if (rs.next()) {
 			temp = rsHelper.fileSystem(rs, parent);
 		} else {
-			throw new IllegalStateException("No file system found for id:" + id);
+			throw new TskException("No file system found for id:" + id);
 		}
 		s.close();
 		
 		return temp;
 	}
 	
-	Volume getVolumeById(long id, VolumeSystem parent) throws SQLException {
+	Volume getVolumeById(long id, VolumeSystem parent) throws SQLException, TskException {
 		Statement s = con.createStatement();
 		Volume temp;
 		
@@ -523,25 +523,25 @@ public class SleuthkitCase {
 		if (rs.next()) {
 			temp = rsHelper.volume(rs, parent);
 		} else {
-			throw new IllegalStateException("No volume found for id:" + id);
+			throw new TskException("No volume found for id:" + id);
 		}
 
 		s.close();
 		return temp;
 	}
 	
-	Directory getDirectoryById(long id, FileSystem parentFs) throws SQLException {
+	Directory getDirectoryById(long id, FileSystem parentFs) throws SQLException, TskException {
 		Statement s = con.createStatement();
 		Directory temp;
 		
 		ResultSet rs = s.executeQuery("select * from tsk_files " +
 			"where obj_id = " + id);
 
-		if (rs.next() && rs.getLong("dir_type") == TSK_FS_NAME_TYPE_ENUM.DIR.getDirType()) {
+		if (rs.next() && rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
 				temp = rsHelper.directory(rs, parentFs);
 		} else {
 			s.close();
-			throw new IllegalStateException("No Directory found for id:" + id);
+			throw new TskException("No Directory found for id:" + id);
 		}
 
 		s.close();
@@ -570,6 +570,8 @@ public class SleuthkitCase {
 				}
 				fc.setFileSystem(parent);
 			} catch (SQLException ex) {
+				throw new RuntimeException(ex);
+			} catch (TskException ex) {
 				throw new RuntimeException(ex);
 			}
 		}
@@ -628,6 +630,8 @@ public class SleuthkitCase {
 				parent.accept(this);
 			} catch (SQLException ex) {
 				throw new RuntimeException(ex);
+			} catch (TskException ex) {
+				throw new RuntimeException(ex);
 			}
 			return null;
 		}
@@ -657,7 +661,7 @@ public class SleuthkitCase {
     /**
      * Returns the list of children for a given Image
      */
-	List<Content> getImageChildren(Image img) throws SQLException {
+	List<Content> getImageChildren(Image img) throws SQLException, TskException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(img);
 		
 		List<Content> children = new ArrayList<Content>(childInfos.size());
@@ -669,7 +673,7 @@ public class SleuthkitCase {
 			} else if (info.type == ObjectType.FS) {
 				children.add(getFileSystemById(info.id, img));
 			} else {
-				throw new IllegalStateException("Image has child of invalid type: " + info.type);
+				throw new TskException("Image has child of invalid type: " + info.type);
 			}
 		}
 		
@@ -679,7 +683,7 @@ public class SleuthkitCase {
     /**
      * Returns the list of children for a given VolumeSystem
      */
-	List<Content> getVolumeSystemChildren(VolumeSystem vs) throws SQLException {
+	List<Content> getVolumeSystemChildren(VolumeSystem vs) throws SQLException, TskException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(vs);
 		
 		List<Content> children = new ArrayList<Content>(childInfos.size());
@@ -689,7 +693,7 @@ public class SleuthkitCase {
 			if (info.type == ObjectType.VOL) {
 				children.add(getVolumeById(info.id, vs));
 			} else {
-				throw new IllegalStateException("VolumeSystem has child of invalid type: " + info.type);
+				throw new TskException("VolumeSystem has child of invalid type: " + info.type);
 			}
 		}
 		
@@ -699,7 +703,7 @@ public class SleuthkitCase {
     /**
      * Returns a list of children for a given Volume
      */
-	List<Content> getVolumeChildren(Volume vol) throws SQLException {
+	List<Content> getVolumeChildren(Volume vol) throws SQLException, TskException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(vol);
 		
 		List<Content> children = new ArrayList<Content>(childInfos.size());
@@ -708,7 +712,7 @@ public class SleuthkitCase {
 			if (info.type == ObjectType.FS) {
 				children.add(getFileSystemById(info.id, vol));
 			} else {
-				throw new IllegalStateException("Volume has child of invalid type: " + info.type);
+				throw new TskException("Volume has child of invalid type: " + info.type);
 			}
 		}
 		
@@ -735,7 +739,7 @@ public class SleuthkitCase {
 		List<Content> children = new ArrayList<Content>();
 		
 		while(rs.next()) {
-			if (rs.getLong("dir_type") == TSK_FS_NAME_TYPE_ENUM.DIR.getDirType()) {
+			if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
 				children.add(rsHelper.directory(rs, parentFs));
 			} else {
 				children.add(rsHelper.file(rs, parentFs));
@@ -825,7 +829,7 @@ public class SleuthkitCase {
 
 		while (rs.next()) {
 			FsContent result;
-			if (rs.getLong("dir_type") == TSK_FS_NAME_TYPE_ENUM.DIR.getDirType()) {
+			if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
 				result = rsHelper.directory(rs, null);
 			} else {
 				result = rsHelper.file(rs, null);
