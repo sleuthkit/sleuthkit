@@ -10,7 +10,7 @@
 
 /**
  * \file auto_db.cpp
- * Contains code to populate SQLite database with volume and file system information.
+ * Contains code to populate SQLite database with volume and file system information from a specific image.
  */
 
 #include "tsk_case_db.h"
@@ -297,6 +297,9 @@ uint8_t
     TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
 {
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+
     if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT))
         return 1;
 
@@ -325,6 +328,9 @@ uint8_t
     TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
 {
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+
     if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT))
         return 1;
 
@@ -351,11 +357,14 @@ uint8_t
 
 
 /**
- * Cancel the running process.
+ * Cancel the running process.  Will not be handled immediately. 
  */
 void
  TskAutoDb::stopAddImage()
 {
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "TskAutoDb::stopAddImage: Stop request received\n");
+
     m_stopped = true;
     // flag is checked every time processFile() is called
 }
@@ -367,6 +376,9 @@ void
 int
  TskAutoDb::revertAddImage()
 {
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "TskAutoDb::revertAddImage: Reverting add image process\n");
+
     if (m_imgTransactionOpen == false) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -386,6 +398,9 @@ int
 int64_t
 TskAutoDb::commitAddImage()
 {
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "TskAutoDb::commitAddImage: Commiting add image process\n");
+
     if (m_imgTransactionOpen == false) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -406,8 +421,11 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
 
     // Check if the process has been canceled
-    if (m_stopped)
+    if (m_stopped) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "TskAutoDb::processFile: Stop request detected\n");
         return TSK_STOP;
+    }
 
     if (m_db->createSavepoint("PROCESSFILE")) {
         return TSK_ERR;
