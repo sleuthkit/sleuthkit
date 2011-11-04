@@ -290,6 +290,9 @@ int
             return 1;
         }
     }
+
+    // enable finer result codes
+    sqlite3_extended_result_codes(m_db, true);
     
     // create the tables if we need to
     if (a_toInit) {
@@ -498,6 +501,11 @@ int
         }
 
         parObjId = sqlite3_column_int64(m_selectFilePreparedStmt, 0);
+
+        if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
+            "Error resetting 'select file id by meta_addr' statement: %s\n")) {
+                return 1;
+        }
     }
 
 
