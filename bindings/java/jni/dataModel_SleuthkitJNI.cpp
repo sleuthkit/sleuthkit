@@ -370,7 +370,11 @@ JNIEXPORT void JNICALL
             "revertAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
-    tskAuto->revertAddImage();
+    if (tskAuto->revertAddImage()) {
+        throwTskError(env,
+            "revertAddImgNat: Error reverting transaction");
+        return;
+    }
     delete tskAuto;
 }
 
@@ -392,6 +396,11 @@ JNIEXPORT jlong JNICALL
     }
     int64_t imgId = tskAuto->commitAddImage();
     delete tskAuto;
+    if (imgId == -1) {
+        throwTskError(env,
+            "commit addImgNat: Error commiting image");
+        return -1;
+    }
     return imgId;
 }
 

@@ -362,10 +362,18 @@ void
 
 /**
  * Revert all changes after the process has run sucessfully.
+ * @returns 1 on error, 0 on success
  */
 int
  TskAutoDb::revertAddImage()
 {
+    if (m_imgTransactionOpen == false) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("revertAddImage(): transaction is already closed");
+        return 1;
+    }
+
     int retval = m_db->revertSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
     m_imgTransactionOpen = false;
     return retval;
@@ -373,13 +381,23 @@ int
 
 /**
  * Finish the process after it has run sucessfully by committing the changes.
- * Returns the id of the image that was added.
+ * @returns Id of the image that was added or -1 on error
  */
 int64_t
 TskAutoDb::commitAddImage()
 {
-    m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
+    if (m_imgTransactionOpen == false) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("commitAddImage(): transaction is already closed");
+        return -1;
+    }
+
+    int retval = m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
     m_imgTransactionOpen = false;
+    if (retval == 1) {
+        return -1;
+    }
     return m_curImgId;
 }
 
