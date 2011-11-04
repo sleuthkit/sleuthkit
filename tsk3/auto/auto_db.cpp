@@ -300,6 +300,21 @@ uint8_t
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
 
+    if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Can't set savepoint, there's already one on the stack.");
+        return 1;
+    }
+
+    if (m_db->inTransaction()) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Can't set savepoint, already in a transaction.");
+        return 1;
+    }
+
+
     if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT))
         return 1;
 
@@ -330,6 +345,21 @@ uint8_t
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+
+    if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Can't set savepoint, there's already one on the stack.");
+        return 1;
+    }
+
+    if (m_db->inTransaction()) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Can't set savepoint, already in a transaction.");
+        return 1;
+    }
+
 
     if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT))
         return 1;
@@ -387,6 +417,14 @@ int
     }
 
     int retval = m_db->revertSavepoint(TSK_ADD_IMAGE_SAVEPOINT);
+    if (retval == 0) {
+        if (m_db->inTransaction()) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("TskAutoDb::revertAddImage(): Image reverted, but still in a transaction.");
+            retval = 1;
+        }
+    }
     m_imgTransactionOpen = false;
     return retval;
 }
@@ -412,7 +450,15 @@ TskAutoDb::commitAddImage()
     m_imgTransactionOpen = false;
     if (retval == 1) {
         return -1;
+    } else {
+        if (m_db->inTransaction()) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("TskAutoDb::revertAddImage(): Image savepoint released, but still in a transaction.");
+            return -1;
+        }
     }
+
     return m_curImgId;
 }
 

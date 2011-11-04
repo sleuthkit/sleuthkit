@@ -818,3 +818,9 @@ TskDbSqlite::dbExist() const
     else
         return false;
 }
+
+bool
+TskDbSqlite::inTransaction()
+{
+    return (sqlite3_get_autocommit(m_db) == 0);
+}

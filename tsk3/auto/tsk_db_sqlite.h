@@ -67,6 +67,7 @@ class TskDbSqlite {
     int createSavepoint(const char *name);
     int revertSavepoint(const char *name);
     int releaseSavepoint(const char *name);
+    bool inTransaction();
     
 
   private:
