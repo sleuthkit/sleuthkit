@@ -371,8 +371,7 @@ JNIEXPORT void JNICALL
         return;
     }
     if (tskAuto->revertAddImage()) {
-        throwTskError(env,
-            "revertAddImgNat: Error reverting transaction");
+        throwTskError(env);
         return;
     }
     delete tskAuto;
@@ -397,8 +396,7 @@ JNIEXPORT jlong JNICALL
     int64_t imgId = tskAuto->commitAddImage();
     delete tskAuto;
     if (imgId == -1) {
-        throwTskError(env,
-            "commit addImgNat: Error commiting image");
+        throwTskError(env);
         return -1;
     }
     return imgId;
