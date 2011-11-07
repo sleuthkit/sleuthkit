@@ -486,9 +486,7 @@ int
     else {
 
         // Find the parent file id in the database using the parent metadata address
-        if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
-                "Error reseting 'select file id by meta_addr' statement: %s\n")
-            || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1,
+        if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1,
                     fs_file->name->par_addr),
                 "Error binding meta_addr to statment: %s (result code %d)\n")
             || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2,
