@@ -290,6 +290,9 @@ int
             return 1;
         }
     }
+
+    // enable finer result codes
+    sqlite3_extended_result_codes(m_db, true);
     
     // create the tables if we need to
     if (a_toInit) {
@@ -483,9 +486,7 @@ int
     else {
 
         // Find the parent file id in the database using the parent metadata address
-        if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
-                "Error reseting 'select file id by meta_addr' statement: %s\n")
-            || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1,
+        if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1,
                     fs_file->name->par_addr),
                 "Error binding meta_addr to statment: %s (result code %d)\n")
             || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2,
@@ -498,6 +499,11 @@ int
         }
 
         parObjId = sqlite3_column_int64(m_selectFilePreparedStmt, 0);
+
+        if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
+            "Error resetting 'select file id by meta_addr' statement: %s\n")) {
+                return 1;
+        }
     }
 
 
