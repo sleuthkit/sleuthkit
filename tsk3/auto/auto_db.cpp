@@ -303,14 +303,15 @@ uint8_t
     if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Can't set savepoint, there's already one on the stack.");
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
         return 1;
     }
 
+    // @@@ This check is a bit paranoid, and may need to be removed in the future
     if (m_db->inTransaction()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Can't set savepoint, already in a transaction.");
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
         return 1;
     }
 
@@ -345,18 +346,20 @@ uint8_t
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+   
 
     if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Can't set savepoint, there's already one on the stack.");
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
         return 1;
     }
 
+    // @@@ This check is a bit paranoid, and may need to be removed in the future
     if (m_db->inTransaction()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Can't set savepoint, already in a transaction.");
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
         return 1;
     }
 
