@@ -455,7 +455,7 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
     }
 
     for (i = 0; i < fs_dir->names_used; i++) {
-        int retval;
+        TSK_WALK_RET_ENUM retval;
 
         /* Point name to the buffer of names.  We need to be
          * careful about resetting this before we free fs_file */
@@ -642,7 +642,7 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     void *a_ptr)
 {
     DENT_DINFO dinfo;
-    TSK_RETVAL_ENUM retval;
+    TSK_WALK_RET_ENUM retval;
 
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG)) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
