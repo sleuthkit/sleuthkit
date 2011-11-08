@@ -1823,7 +1823,7 @@ class TskFsInfo {
     * @param a_str String to parse.
     * @returns ID of string (or unsupported if the name is unknown)
     */
-    static const TSK_FS_TYPE_ENUM typeToId(const TSK_TCHAR * a_str) {
+    static TSK_FS_TYPE_ENUM typeToId(const TSK_TCHAR * a_str) {
         return tsk_fs_type_toid(a_str);
     };
 
