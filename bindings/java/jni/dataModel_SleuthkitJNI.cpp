@@ -314,7 +314,8 @@ JNIEXPORT void JNICALL
     // process the image (parts)
     if (tskAuto->startAddImage((int) num_imgs, imagepaths8,
             TSK_IMG_TYPE_DETECT, 0)) {
-        throwTskError(env, tsk_error_get());
+        throwTskError(env);
+        // @@@ We never get past this point now to do any cleanup
         deleteProcess = true;
     }
 

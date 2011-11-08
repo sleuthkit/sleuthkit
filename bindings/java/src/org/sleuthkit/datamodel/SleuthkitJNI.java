@@ -138,14 +138,13 @@ public class SleuthkitJNI {
 			
 			/**
 			 * Start the process of adding an image to the case database. 
-             * MUST call either commit() or
-			 * revert() after calling run().
+             * MUST call either commit() or revert() after calling run().
 			 * @param imgPath Full path(s) to the image file(s).
 			 * @throws TskException
 			 */
 			public void run(String[] imgPath) throws TskException {
 				if (autoDbPointer != 0) {
-					throw new IllegalStateException("AddImageProcess can only be run once");
+					throw new TskException("AddImgProcess:run: AutoDB pointer is already set");
 				}
 				
 				autoDbPointer = initAddImgNat(caseDbPointer, timezone);
@@ -160,7 +159,7 @@ public class SleuthkitJNI {
 			 */
 			public void stop() throws TskException {
 				if (autoDbPointer == 0) {
-					throw new IllegalStateException("Can't stop an AddImageProcess that hasn't been run.");
+					throw new TskException("AddImgProcess::stop: AutoDB pointer is NULL");
 				}
 				
 				stopAddImgNat(autoDbPointer);
@@ -168,29 +167,37 @@ public class SleuthkitJNI {
 			
 			/**
 			 * Rollback a process that has already been run(), reverting the
-			 * database.
+			 * database.  This releases the C++ object and no additional 
+			 * operations can be performed. 
+			 * 
 			 * @throws TskException
 			 */
 			public void revert() throws TskException {
 				if (autoDbPointer == 0) {
-					throw new IllegalStateException("Can't revert an AddImageProcess that hasn't been run.");
+					throw new TskException("AddImgProcess::revert: AutoDB pointer is NULL");
 				}
 				
 				revertAddImgNat(autoDbPointer);
+				// the native code deleted the object
+				autoDbPointer = 0;
 			}
 			
 			/**
 			 * Finish off a process that has already been run(), closing the
 			 * transaction and committing the new image data to the database.
-			 * @return The id of the image that was added.
+			 * @return The id of the image that was added. This releases the 
+			 * C++ object and no additional operations can be performed. 
 			 * @throws TskException 
 			 */
 			public long commit() throws TskException {
 				if (autoDbPointer == 0) {
-					throw new IllegalStateException("Can't commit an AddImageProcess that hasn't been run.");
+					throw new TskException("AddImgProcess::commit: AutoDB pointer is NULL");
 				}
-				
-				return commitAddImgNat(autoDbPointer);
+	
+				long id = commitAddImgNat(autoDbPointer);
+				// the native code deleted the object
+				autoDbPointer = 0;
+				return id;
 			}
 		}
 	}

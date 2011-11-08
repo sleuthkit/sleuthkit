@@ -269,7 +269,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 
 /* Insert the file data into the file table.
  * @param md5 Binary MD5 value (i.e. 16 bytes) or NULL
- * Returns 1 on error.
+ * Returns TSK_ERR on error.
  */
 TSK_RETVAL_ENUM
     TskAutoDb::insertFileData(TSK_FS_FILE * fs_file,
@@ -532,7 +532,8 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
             }
         }
 
-        if (insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known))
+        /// @@@ We probably want to keep on going and not stop in this case
+        if (insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known) == TSK_ERR)
             return TSK_ERR;
     }
 
@@ -547,6 +548,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
             if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
                 continue;
 
+            // @@@ We probaly want ot keep on going here
             if (m_db->addFsBlockInfo(m_curFsId, m_curFileId,
                     run->addr * block_size, run->len * block_size)) {
                 return TSK_ERR;
