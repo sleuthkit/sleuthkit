@@ -119,6 +119,57 @@ void
     m_img_info = NULL;
 }
 
+/**
+ * TskAuto calls this method before it processes the volume system that is found in an 
+ * image. You can use this to learn about the volume system before it is processed
+ * and you can force TskAuto to skip this volume system. 
+ * @param vs_info volume system details
+ * @returns Value to show if Vs should be processed, skipped, or process should stop.
+ * TSK_FILTER_CONT by default.
+ */
+TSK_FILTER_ENUM TskAuto::filterVs(const TSK_VS_INFO *) {
+    return TSK_FILTER_CONT;
+};
+
+
+/**
+ * TskAuto calls this method before it processes each volume that is found in a 
+ * volume system. You can use this to learn about each volume before it is processed
+ * and you can force TskAuto to skip this volume.  The setvolFilterFlags() method can be
+ * used to configure if TskAuto should process unallocated space. 
+ *
+ * @param vs_part Parition details
+ * @returns Value to show if volume should be processed, skipped, or process should stop.
+ * TSK_FILTER_CONT by default.
+ */
+TSK_FILTER_ENUM TskAuto::filterVol(const TSK_VS_PART_INFO *) {
+    return TSK_FILTER_CONT;
+};
+
+
+/**
+ * TskAuto calls this method before it processes each file system that is found in a 
+ * volume. You can use this to learn about each file system before it is processed
+ * and you can force TskAuto to skip this file system. 
+ * @param fs_info file system details
+ * @returns Value to show if FS should be processed, skipped, or process should stop.
+ * TSK_FILTER_CONT by default.
+ */
+TSK_FILTER_ENUM TskAuto::filterFs(TSK_FS_INFO *) {
+    return TSK_FILTER_CONT;
+};
+
+
+/**
+ * TskAuto calls this method when it encounters issues while processing an image,
+ * e.g. when opening various volume and file systems fail. This method allows users
+ * of the TskAuto class to choose an appropriate mechanism to present this information.
+ * The implementation of this method in the base class is a no-op.
+ *
+ * @param msg A text message describing the issue that was encountered.
+ */
+void TskAuto::handleNotification(const char *) {};
+
 
 /**
  * Set the attributes for the volumes that should be processed.
@@ -666,3 +717,23 @@ TskAuto::isNonResident(const TSK_FS_ATTR * a_fs_attr)
     else
         return 0;
 }
+
+
+/** 
+ * Method that is called from processAttributes() for each attribute that a file
+ * has.  processAttributes() is not called by default.  It exists so that implementations
+ * of processFile() can choose to call it if they want to look at all of the attributes. 
+ * You must implement this method to see each attribute and modify processFile() so that
+ * it calls processAttributes().
+ *
+ * @param fs_file File being analyzed.
+ * @param fs_attr Attribute of the file.
+ * @param path full path of parent directory
+ * @returns Whether to stop processing, an error occured, or if the processing should continue. 
+ * TSK_OK by default.
+ */
+TSK_RETVAL_ENUM TskAuto::processAttribute(TSK_FS_FILE *,
+    const TSK_FS_ATTR *, const char *)
+{
+    return TSK_OK;
+};
