@@ -163,11 +163,11 @@ main(int argc, char **argv1)
 
     if (autoDb->startAddImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
         tsk_error_print(stderr);
-        // reverts automatically on error
+        autoDb->revertAddImage();
         exit(1);
     }
 
-    if (autoDb->commitAddImage()) {
+    if (autoDb->commitAddImage() == -1) {
         tsk_error_print(stderr);
         exit(1);
     }

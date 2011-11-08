@@ -244,8 +244,12 @@ tsk_fs_file_attr_check(TSK_FS_FILE * a_fs_file, char *a_func)
 int
 tsk_fs_file_attr_getsize(TSK_FS_FILE * a_fs_file)
 {
-    if (tsk_fs_file_attr_check(a_fs_file, "tsk_fs_file_attr_getsize"))
+    if (tsk_fs_file_attr_check(a_fs_file, "tsk_fs_file_attr_getsize")) {
+        // @@@ Not sure if we should be ignoring this error or not...
+        // Just added the reset because we were returning 0 with error codes set
+        tsk_error_reset();
         return 0;
+    }
 
     return tsk_fs_attrlist_get_len(a_fs_file->meta->attr);
 }

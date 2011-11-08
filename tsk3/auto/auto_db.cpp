@@ -480,8 +480,14 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_ERR;
     }
 
-    // process the attributes
-    TSK_RETVAL_ENUM retval = processAttributes(fs_file, path);
+    /* process the attributes.  The case of having 0 attributes can occur
+     * with virtual / sparse files.  At some point, this can probably be cleaned
+     * up if TSK is more consistent about if there should always be an attribute or not */
+    TSK_RETVAL_ENUM retval;
+    if (tsk_fs_file_attr_getsize(fs_file) == 0)
+        retval = insertFileData(fs_file, NULL, path, NULL, TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN);
+    else
+        retval = processAttributes(fs_file, path);
 
     if (m_db->releaseSavepoint("PROCESSFILE")) {
         return TSK_ERR;
