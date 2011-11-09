@@ -495,6 +495,8 @@ int
             || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
                 "Error selecting file id by meta_addr: %s (result code %d)\n"))
         {
+            // Statement may be used again, even after error
+            sqlite3_reset(m_selectFilePreparedStmt);
             return 1;
         }
 

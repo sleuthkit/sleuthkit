@@ -288,7 +288,7 @@ TSK_RETVAL_ENUM
 
 /**
  * Start the process to add image/file metadata to database. Reverts
- * all changes on error or TSK_STOP flag. When runProcess()
+ * all changes on error. When runProcess()
  * returns, user must call either commitAddImage() to commit the changes,
  * or revertAddImage() to revert them.
  * @returns 1 on error and 0 on success
