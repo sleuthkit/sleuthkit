@@ -9,7 +9,6 @@
   <condition property="ewfFound">
     <isset property="env.LIBEWF_HOME"/>
   </condition>
-  <fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
 	
   <!-- set global properties for this build -->
   <property name="src" location="src/org/sleuthkit/datamodel"/>
@@ -74,6 +73,7 @@
   
   <target name="create-standards" depends="compile-test"
         description="create gold standards to run the datamodel tests against" >
+    <fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
     <java classname="org.sleuthkit.datamodel.DiffUtil" classpathref="libraries"	fork="true" failonerror="true">
       <sysproperty key="java.library.path" value="${dlls}"/>
     </java>
@@ -81,6 +81,7 @@
   
   <target name="test" depends="compile-test"
         description="run the tests" >
+    <fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
     <junit fork="on" haltonfailure="yes" dir=".">
 	  <sysproperty key="java.library.path" value="${dlls}"/>
       <classpath refid="libraries" />
