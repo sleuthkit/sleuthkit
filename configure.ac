@@ -181,6 +181,23 @@ AS_IF([test "x$with_libewf" != "xno"],
     )]
 )
 
+# Check if we should build fiwalk.
+AC_ARG_ENABLE(fiwalk,
+    [AS_HELP_STRING([--disable-fiwalk],[Disable fiwalk build])],
+    #if --diable-fiwalk
+#    [echo option provided:fiwalk" | "$fiwalk" | "$enable_fiwalk]
+    [],
+    #Default to fiwalk build enabled
+#    [echo "option not provided: "fiwalk" | "$fiwalk" | "$enable_fiwalk]
+    [enable_fiwalk=yes]
+#    [echo fiwalk $fiwalk $enable_fiwalk]
+    )
+
+AS_IF([test "x$enable_fiwalk" = "xyes"], [AC_DEFINE([BUILD_FIWALK],[1],[Define if fiwalk will be built])],
+    [test "x$enable_fiwalk" = "xno"], [AC_DEFINE([BUILD_FIWALK],[0],[Define if fiwalk willn not be built])],
+    [AC_MSG_FAILURE([unsupported fiwalk build option: ${enable_fiwalk}])]
+)
+
 # sqlite requires pthread libraries - this was copied from its configure.ac
 # AC_SEARCH_LIBS(pthread_create, pthread)
 AC_SEARCH_LIBS(dlopen, dl)
