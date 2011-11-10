@@ -1,0 +1,557 @@
+/**
+ * implementation for C++ XML generation class
+ *
+ * The software provided here is released by the Naval Postgraduate
+ * School, an agency of the U.S. Department of Navy.  The software
+ * bears no warranty, either expressed or implied. NPS does not assume
+ * legal liability nor responsibility for a User's use of the software
+ * or the results of such use.
+ *
+ * Please note that within the United States, copyright protection,
+ * under Section 105 of the United States Code, Title 17, is not
+ * available for any work of the United States Government and/or for
+ * any works created by United States Government employees. User
+ * acknowledges that this software contains work which was created by
+ * NPS government employees and is therefore in the public domain and
+ * not subject to copyright.
+ */
+
+#define MUTEX_LOCK(M)   pthread_mutex_lock(M)
+#define MUTEX_UNLOCK(M) pthread_mutex_unlock(M)
+
+#include "tsk3/tsk_tools_i.h"
+//#include "config.h"
+#include "xml.h"
+#include <errno.h>
+#include <regex.h>
+
+using namespace std;
+
+#include <iostream>
+#include <stdarg.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/param.h>
+#include <assert.h>
+#include <fcntl.h>
+#include <stack>
+
+
+// Implementation of mkstemp for windows found on pan-devel mailing
+// list archive
+// @http://www.mail-archive.com/pan-devel@nongnu.org/msg00294.html
+#ifndef _S_IREAD
+#define _S_IREAD 256
+#endif
+
+#ifndef _S_IWRITE
+#define _S_IWRITE 128
+#endif
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
+#ifndef _O_SHORT_LIVED
+#define _O_SHORT_LIVED 0
+#endif
+
+static const char *cstr(const string &str){
+    return str.c_str();
+}
+
+static string xml_lt("&lt;");
+static string xml_gt("&gt;");
+static string xml_am("&amp;");
+static string xml_ap("&apos;");
+static string xml_qu("&quot;");
+
+string xml::xmlescape(const string &xml)
+{
+    string ret;
+    for(string::const_iterator i = xml.begin(); i!=xml.end(); i++){
+	switch(*i){
+	case '>':  ret += xml_gt; break;
+	case '<':  ret += xml_lt; break;
+	case '&':  ret += xml_am; break;
+	case '\'': ret += xml_ap; break;
+	case '"':  ret += xml_qu; break;
+	case '\000': break;		// remove nulls
+	default:
+	    ret += *i;
+	}
+    }
+    return ret;
+}
+
+/**
+ * Strip an XML string as necessary for a tag name.
+ */
+
+string xml::xmlstrip(const string &xml)
+{
+    string ret;
+    for(string::const_iterator i = xml.begin(); i!=xml.end(); i++){
+	if(isprint(*i) && !strchr("<>\r\n&'\"",*i)){
+	    ret += isspace(*i) ? '_' : tolower(*i);
+	}
+    }
+    return ret;
+}
+
+/****************************************************************/
+/* The following code example is taken from the book
+ * "The C++ Standard Library - A Tutorial and Reference"
+ * by Nicolai M. Josuttis, Addison-Wesley, 1999
+ *
+ * (C) Copyright Nicolai M. Josuttis 1999.
+ * Permission to copy, use, modify, sell and distribute this software
+ * is granted provided this copyright notice appears in all copies.
+ * This software is provided "as is" without express or implied
+ * warranty, and with no claim as to its suitability for any purpose.
+ */
+#include <iostream>
+#include <streambuf>
+
+// for write():
+#ifdef _MSC_VER
+# include <io.h>
+#else
+# include <unistd.h>
+#endif
+
+/****************************************************************/
+
+
+xml::xml():M(),out(),tags(),tempfilename(),tag_stack(),tempfile_template("/tmp/xml_XXXXXXXX"),
+	   make_dtd(false),t0(),outfilename()
+{
+    pthread_mutex_init(&M,NULL);
+    gettimeofday(&t0,0);
+}
+
+void xml::set_tempfile_template(const std::string &temp)
+{
+    tempfile_template = temp;
+}
+
+
+void xml::set_outfilename(const string &outfilename_)
+{
+    outfilename = outfilename_;
+    tempfile_template = outfilename_ + "_tmp_XXXXXXXX"; // a better default
+}
+
+void xml::set_makeDTD(bool flag)
+{
+    make_dtd = flag;
+    if(make_dtd){			// need to write to a temp file
+	char tfilename[1024];
+	memset(tfilename,0,sizeof(tfilename));
+	strcpy(tfilename,tempfile_template.c_str());
+	int fd = mkstemp(tfilename);
+	tempfilename = tfilename;  
+	out.open(tfilename,ios_base::out);
+	if(out.is_open()){
+	    perror("fdopen");
+	    exit(1);
+	}
+	::close(fd);
+    }
+}
+
+static const char *xml_header = "<?xml version='1.0' encoding='UTF-8'?>\n";
+
+void xml::open()
+{
+    if(out.is_open()==false){
+	out.open(cstr(outfilename),ios_base::out);
+    }
+    out << xml_header;
+}
+
+/** A local class for regex matching with a single pattern */
+class Regex {
+public:
+    regex_t reg;
+    Regex(const char *pat):reg(){
+	memset(&reg,0,sizeof(reg));
+	if(regcomp(&reg,pat,REG_EXTENDED)){
+	    cerr << "xml.cpp: invalid regex pattern" << pat << "\n";
+	    exit(1);
+	}
+    }
+    ~Regex(){
+	regfree(&reg);
+    }
+    string search(const string &line){
+	regmatch_t ary[2];
+	memset(ary,0,sizeof(ary));
+	if(regexec(&reg,line.c_str(),2,ary,0)==0){
+	    return string(line.c_str()+ary[1].rm_so,ary[1].rm_eo-ary[1].rm_so);
+	}
+	else {
+	    return string();
+	}
+    }
+};
+
+/**
+ * opening an existing DFXML file...
+ * Scan through and see if we can process.
+ * We can only process XML in which tags are on lines by themselves or else both open and close are on the same line.
+ */
+void xml::open_existing(std::map<std::string,std::string> *tagmap,std::string *tagid,std::set<std::string> *tagid_set)
+{
+    out.open(cstr(outfilename),ios_base::in|ios_base::out);
+    if(!out.is_open()){
+	cerr << outfilename << strerror(errno) << ":Cannot open \n";
+	exit(1);
+    }
+    // Scan all of the lines, looking for elements in tagmap
+    Regex tag_beg("<([^/> ]+)");
+    Regex tag_end("</([^> ]+)");
+    Regex tag_val(">([^<]*)<");
+    Regex tag_id("id=((\'[^\']+\')|(\"[^\"]+\"))");
+
+    std::string line;
+    int linenumber = 0;
+    while(getline(out,line)){
+	linenumber++;
+	string begs = tag_beg.search(line);
+	string ends = tag_end.search(line);
+
+	if(ends.size()==0 && line.find("/>")!=string::npos) ends=begs; // handle <value foo='bar'/>
+
+	if(begs.size()>0 && ends.size()==0){
+	    tag_stack.push(begs);
+	}
+
+	if(begs.size()==0 && ends.size()>0){
+	    string popped = tag_stack.top();
+	    tag_stack.pop();
+	    if(ends != popped){
+		cerr << "xml is inconsistent at line " << linenumber << ".\n" 
+		     << "expected: " << popped << "\n"
+		     << "saw:      " << ends << "\n";
+		exit(1);
+	    }
+	}
+
+	if(tagmap && begs.size()>0 && begs==ends && tagmap->find(begs)!=tagmap->end()){
+	    (*tagmap)[begs] = tag_val.search(line);
+	}
+
+	string id = tag_id.search(line);
+	if(id.size()) cout << "id=" << id << "\n";
+    }
+}
+
+void xml::close()
+{
+    MUTEX_LOCK(&M);
+    if(make_dtd){
+	/* If we are making the DTD, then we have been writing to a temp file.
+	 * Open the real file, write the DTD, and copy over the tempfile.
+	 */
+	out.close();
+	std::ifstream in(cstr(tempfilename));
+	if(!in.is_open()){
+	    cerr << tempfilename << strerror(errno) << ":Cannot re-open for input\n";
+	    exit(1);
+	}
+	out.open(cstr(outfilename),ios_base::in);
+	if(!out.is_open()){
+	    cerr << outfilename << strerror(errno)
+		 << ":Cannot open for output; will not delete " << tempfilename << "\n";
+	    exit(1);
+	}
+	// copy over first line --- the XML header
+	std::string line;
+	getline(in,line);
+	out << line;
+
+	write_dtd();			// write the DTD
+	while(!in.eof()){
+	    getline(in,line);
+	    out << line;
+	}
+	in.close();
+	unlink(cstr(tempfilename));
+    }
+    out.close();
+    MUTEX_UNLOCK(&M);
+}
+
+void xml::write_dtd()
+{
+    out << "<!DOCTYPE fiwalk\n";
+    out << "[\n";
+    for(set<string>::const_iterator it = tags.begin(); it != tags.end(); it++){
+	out << "<!ELEMENT " << *it << "ANY >\n";
+    }
+    out << "<!ATTLIST volume startsector CDATA #IMPLIED>\n";
+    out << "<!ATTLIST run start CDATA #IMPLIED>\n";
+    out << "<!ATTLIST run len CDATA #IMPLIED>\n";
+    out << "]>\n";
+}
+
+/**
+ * make sure that a tag is valid and, if so, add it to the list of tags we use
+ */
+void xml::verify_tag(string tag)
+{
+    if(tag[0]=='/') tag = tag.substr(1);
+    if(tag.find(" ") != string::npos){
+	cerr << "tag '" << tag << "' contains space. Cannot continue.\n";
+	exit(1);
+    }
+    tags.insert(tag);
+}
+
+void xml::puts(const string &v)
+{
+    out << v;
+}
+
+void xml::spaces()
+{
+    for(u_int i=0;i<tag_stack.size();i++){
+	out << "  ";
+    }
+}
+
+void xml::tagout(const string &tag,const string &attribute)
+{
+    verify_tag(tag);
+    out << "<" << tag;
+    if(attribute.size()>0) out << " " << attribute;
+    out << ">";
+}
+
+#if defined(HAVE_VASPRINTF) && defined(__MINGW_H)
+///* prototype missing under mingw */
+//extern "C" {
+//    int vasprintf(char **ret,const char *fmt,va_list ap);
+//}
+#endif    
+	
+/*
+ * on mingw the have_vasprintf check succedes, but it really isn't there
+ */
+#if !defined(HAVE_VASPRINTF) || defined(_WIN32)
+extern "C" {
+    /**
+     * We do not have vasprintf.
+     * We have determined that vsnprintf() does not perform properly on windows.
+     * So we just allocate a huge buffer and then strdup() and hope!
+     */
+    int vasprintf(char **ret,const char *fmt,va_list ap) 
+    {
+	/* Figure out how long the result will be */
+	char buf[65536];
+	int size = vsnprintf(buf,sizeof(buf),fmt,ap);
+	if(size<0) return size;
+	/* Now allocate the memory */
+	*ret = (char *)strdup(buf);
+	return size;
+    }
+}
+#endif
+
+
+void xml::printf(const char *fmt,...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+
+    /** printf to stream **/
+    char *ret = 0;
+    if(vasprintf(&ret,fmt,ap) < 0){
+	out << "xml::xmlprintf: " << strerror(errno);
+	exit(EXIT_FAILURE);
+    }
+    out << ret;
+    free(ret);
+    /** end printf to stream **/
+
+    va_end(ap);
+}
+
+void xml::push(const string &tag,const string &attribute)
+{
+    spaces();
+    tag_stack.push(tag);
+    tagout(tag,attribute);
+    out << '\n';
+}
+
+void xml::pop()
+{
+    assert(tag_stack.size()>0);
+    string tag = tag_stack.top();
+    tag_stack.pop();
+    spaces();
+    tagout("/"+tag,"");
+    out << '\n';
+}
+
+
+
+
+void xml::add_DFXML_execution_environment(const std::string &command_line)
+{
+    char buf[256];
+
+    push("execution_environment");
+#ifdef HAVE_ASM_CPUID
+#ifndef __WORDSIZE
+#define __WORDSIZE 32
+#endif
+#define cpuid(id) __asm__( "cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) : "a"(id), "b"(0), "c"(0), "d"(0))
+#define b(val, base, end) ((val << (__WORDSIZE-end-1)) >> (__WORDSIZE-end+base-1))
+    unsigned long eax, ebx, ecx, edx;
+    cpuid(0);
+    
+    snprintf(buf,sizeof(buf),"%.4s%.4s%.4s", (char *)&ebx, (char *)&edx, (char *)&ecx);
+    push("cpuid");
+    xmlout("identification",buf);
+
+    cpuid(1);
+    xmlout("family", (int64_t) b(eax, 8, 11));
+    xmlout("model", (int64_t) b(eax, 4, 7));
+    xmlout("stepping", (int64_t) b(eax, 0, 3));
+    xmlout("efamily", (int64_t) b(eax, 20, 27));
+    xmlout("emodel", (int64_t) b(eax, 16, 19));
+    xmlout("brand", (int64_t) b(ebx, 0, 7));
+    xmlout("clflush_size", (int64_t) b(ebx, 8, 15) * 8);
+    xmlout("nproc", (int64_t) b(ebx, 16, 23));
+    xmlout("apicid", (int64_t) b(ebx, 24, 31));
+    
+    cpuid(0x80000006);
+    xmlout("L1_cache_size", (int64_t) b(ecx, 16, 31) * 1024);
+    pop();
+#endif
+
+
+#ifdef HAVE_SYS_UTSNAME_H
+    struct utsname name;
+    if(uname(&name)==0){
+	xmlout("os_sysname",name.sysname);
+	xmlout("os_release",name.release);
+	xmlout("os_version",name.version);
+	xmlout("host",name.nodename);
+	xmlout("arch",name.machine);
+    }
+#else
+#ifdef UNAMES
+    xmlout("os_sysname",UNAMES,"",false);
+#endif
+#endif	
+    
+    xmlout("command_line", command_line); // quote it!
+#ifdef HAVE_GETUID
+    xmlprintf("uid","","%d",getuid());
+#ifdef HAVE_GETPWUID
+    xmlout("username",getpwuid(getuid())->pw_name);
+#endif
+#endif
+    
+    time_t t = time(0);
+    strftime(buf,sizeof(buf),"%FT%TZ",gmtime(&t));
+    xmlout("start_time",buf);
+    pop();			// <execution_environment>
+}
+
+
+void xml::add_rusage()
+{
+#ifdef HAVE_GETRUSAGE
+    struct rusage ru;
+    memset(&ru,0,sizeof(ru));
+    if(getrusage(RUSAGE_SELF,&ru)==0){
+	push("rusage");
+	xmlout("utime",ru.ru_utime);
+	xmlout("stime",ru.ru_stime);
+	xmloutl("maxrss",(long)ru.ru_maxrss);
+	xmloutl("minflt",(long)ru.ru_minflt);
+	xmloutl("majflt",(long)ru.ru_majflt);
+	xmloutl("nswap",(long)ru.ru_nswap);
+	xmloutl("inblock",(long)ru.ru_inblock);
+	xmloutl("oublock",(long)ru.ru_oublock);
+
+	struct timeval t1;
+	gettimeofday(&t1,0);
+	struct timeval t;
+	
+	t.tv_sec = t1.tv_sec - t0.tv_sec;
+	if(t1.tv_usec > t0.tv_usec){
+	    t.tv_usec = t1.tv_usec - t0.tv_usec;
+	} else {
+	    t.tv_sec--;
+	    t.tv_usec = (t1.tv_usec+1000000) - t0.tv_usec;
+	}
+	xmlout("clocktime",t);
+
+	pop();
+    }
+#endif
+}
+
+
+/****************************************************************
+ *** THESE ARE THE ONLY THREADSAFE ROUTINES
+ ****************************************************************/
+void xml::xmlcomment(const string &comment_)
+{
+    MUTEX_LOCK(&M);
+    out << "<!-- " << comment_ << " -->\n";
+    out.flush();
+    MUTEX_UNLOCK(&M);
+}
+
+
+void xml::xmlprintf(const std::string &tag,const std::string &attribute, const char *fmt,...)
+{
+    MUTEX_LOCK(&M);    
+    spaces();
+    tagout(tag,attribute);
+    va_list ap;
+    va_start(ap, fmt);
+
+    /** printf to stream **/
+    char *ret = 0;
+    if(vasprintf(&ret,fmt,ap) < 0){
+	cerr << "xml::xmlprintf: " << strerror(errno) << "\n";
+	exit(EXIT_FAILURE);
+    }
+    out << ret;
+    free(ret);
+    /** end printf to stream **/
+
+    va_end(ap);
+    tagout("/"+tag,"");
+    out << '\n';
+    out.flush();
+    MUTEX_UNLOCK(&M);
+}
+
+void xml::xmlout(const string &tag,const string &value,const string &attribute,bool escape_value)
+{
+    MUTEX_LOCK(&M);
+    spaces();
+    if(value.size()==0){
+	tagout(tag,attribute+"/");
+    } else {
+	tagout(tag,attribute);
+	if(escape_value) out << xmlescape(value);
+	else out << value;
+	tagout("/"+tag,"");
+    }
+    out << "\n";
+    out.flush();
+    MUTEX_UNLOCK(&M);
+}
+
+
+

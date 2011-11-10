@@ -1,0 +1,20 @@
+Things to do:
+
+* Make the JVM interface work.
+* Quote control characters in ARFF files
+* The time of all 0s is an invalid time- "0000-00-00 00:00:00"
+* Make hashes properly calculated for NTFS files with reasonably-sized holes
+
+
+These drives are really slow:
+
+ /corp/images/nus/1028.aff
+ /corp/images/nus/1041.aff
+ /corp/images/nus/1043.aff
+
+
+These generate XML errors:
+il2-0017
+il2-0029
+il2-0030
+il2-0031

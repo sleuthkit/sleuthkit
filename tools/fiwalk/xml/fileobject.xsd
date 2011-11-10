@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2006 sp2 U (http://www.altova.com) by ITACS (Naval Postgraduate School) -->
+<xs:schema xmlns="http://afflib.org/fiwalk/fileobject/" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://afflib.org/fiwalk/fileobject/" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:element name="fileobject">
+		<xs:annotation>
+			<xs:documentation>fileobject is the key file element for the standard digital forensic XML</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="filename" type="xs:string" minOccurs="0"/>
+				<xs:element name="id" type="xs:string" minOccurs="0"/>
+				<xs:element name="filesize" type="xs:positiveInteger" minOccurs="0"/>
+				<xs:element name="partition" type="xs:nonNegativeInteger" minOccurs="0"/>
+				<xs:element name="alloc" type="xs:nonNegativeInteger" minOccurs="0"/>
+				<xs:element name="used" type="xs:nonNegativeInteger" minOccurs="0"/>
+				<xs:element name="inode" type="xs:nonNegativeInteger" minOccurs="0"/>
+				<xs:element name="type" type="xs:nonNegativeInteger" minOccurs="0"/>
+				<xs:element name="mode" type="xs:nonNegativeInteger" minOccurs="0"/>
+				<xs:element name="nlink" type="xs:nonNegativeInteger" minOccurs="0"/>
+				<xs:element name="uid" type="xs:nonNegativeInteger" minOccurs="0"/>
+				<xs:element name="gid" type="xs:nonNegativeInteger" minOccurs="0"/>
+				<xs:element name="mtime" type="xs:long" minOccurs="0"/>
+				<xs:element name="atime" type="xs:long" minOccurs="0"/>
+				<xs:element name="crtime" type="xs:long" minOccurs="0"/>
+				<xs:element name="seq" type="xs:nonNegativeInteger" minOccurs="0"/>
+				<xs:element ref="byte_runs" minOccurs="0"/>
+				<xs:element ref="hashdigest" minOccurs="0" maxOccurs="unbounded"/>
+				<xs:element name="libmagic" type="xs:string" minOccurs="0"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="byte_runs">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="run" minOccurs="0" maxOccurs="unbounded"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="run">
+		<xs:complexType>
+			<xs:attribute name="fs_offset" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="file_offset" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="img_offset" type="xs:nonNegativeInteger"/>
+			<xs:attribute name="len" type="xs:nonNegativeInteger"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="hashdigest">
+		<xs:complexType>
+			<xs:simpleContent>
+				<xs:extension base="xs:string">
+					<xs:attribute name="type" type="xs:string"/>
+				</xs:extension>
+			</xs:simpleContent>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="volume"/>
+	<xs:element name="fiwalk">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="creator">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="program" type="xs:string"/>
+							<xs:element name="version" type="xs:string"/>
+							<xs:element name="build_environment">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="compiler"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="xmloutputversion" type="xs:string" use="optional"/>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

@@ -40,6 +40,45 @@ AC_HEADER_STDC
 #AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/param.h sys/time.h unistd.h utime.h wchar.h wctype.h])
 AC_CHECK_HEADERS([inttypes.h unistd.h sys/param.h])
 
+###
+###For Fiwalk
+AC_CHECK_HEADERS([openssl/evp.h openssl/hmac.h openssl/x509.h openssl/pem.h])
+AC_CHECK_HEADERS([magic.h err.h])
+
+################################################################
+## Sleuthkit support
+## Notice that SleuthKit now requires C++ due to autotools
+## This needs to come last, because once we -ltsk3, everything needs
+## to be C++ includes
+##
+AC_LANG_PUSH([C++])
+#  AC_CHECK_LIB([tsk3],[tsk_fs_open_img],,AC_MSG_ERROR([Requires TSK 3.2.1 or above library]))
+#  AC_CHECK_HEADER([tsk3/libtsk.h],,AC_MSG_ERROR([Requires TSK 3.2.1 or above include files]))
+  AC_CHECK_MEMBER([struct TSK_IMG_INFO.sector_size],
+  AC_DEFINE([HAVE_TSK_IMG_INFO_SECTOR_SIZE], 
+  	[1 /* Released in TSK 3.0.1 */], [Description]),
+	[],
+	[[#include <tsk3/libtsk.h>]])
+  AC_CHECK_FUNCS([tsk_fs_meta_make_ls])
+AC_LANG_POP([C++])
+
+			
+
+
+#LIBS="$LIBS -lewf -lz"	# for luck
+
+############## drop optimization flags ################
+
+################################################################
+##
+## xml.cpp support
+AC_CHECK_FUNCS([vasprintf])
+
+################################################################
+
+###End For Fiwalk
+
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
 AC_C_CONST
@@ -210,6 +249,10 @@ AC_CONFIG_FILES([Makefile
                  tools/autotools/Makefile
                  tools/sorter/Makefile
                  tools/timeline/Makefile
+                 tools/fiwalk/Makefile
+		 tools/fiwalk/src/Makefile
+		 tools/fiwalk/python/Makefile
+		 tools/fiwalk/plugins/Makefile
                  tests/Makefile
                  samples/Makefile
                  man/Makefile

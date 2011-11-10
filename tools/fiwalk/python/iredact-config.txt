@@ -1,0 +1,17 @@
+IMAGEFILE /corp/images/nps/nps-2009-domexusers/nps-2009-realistic.redacted.raw
+XMLFILE /corp/images/nps/nps-2009-domexusers/nps-2009-realistic.xml
+FILEPAT *.dll FUZZ
+FILEPAT *.exe FUZZ
+FILEPAT *.com FUZZ
+COMMIT
+#KEY 100200300400
+#MD5 db06069ef1c9f40986ffa06db4fe8fd7 FILL 0x44
+#FILENAME file3.txt ENCRYPT
+#FILEPAT file*.txt ENCRYPT
+#CONTAINS This FILL 0x44
+#STRING This FILL 0x44
+#STRING is FILL 0x66
+# 
+# Uncomment this line to actually commit the redaction:
+#
+

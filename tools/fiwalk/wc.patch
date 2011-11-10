@@ -1,0 +1,1946 @@
+Index: src/plugin.cpp
+===================================================================
+--- src/plugin.cpp	(revision 7666)
++++ src/plugin.cpp	(working copy)
+@@ -18,7 +18,8 @@
+  *          
+  */
+ 
+-#include "config.h"
++#include "tsk3/tsk_tools_i.h"
++//#include "config.h"
+ 
+ #define __DARWIN_64_BIT_INO_T 1		
+ 
+Index: src/fiwalk_tsk.cpp
+===================================================================
+--- src/fiwalk_tsk.cpp	(revision 7666)
++++ src/fiwalk_tsk.cpp	(working copy)
+@@ -18,7 +18,8 @@
+  */
+ 
+ /* config.h must be first */
+-#include "config.h"
++#include "tsk3/tsk_tools_i.h"
++//#include "config.h"
+ #include "fiwalk.h"
+ #include "arff.h"
+ #include "plugin.h"
+@@ -170,7 +171,8 @@
+ 	if (tsk_fs_file_walk (fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) myflags, file_act, (void *) &ci)) {
+ 
+ 	    // ignore errors from deleted files that were being recovered
+-	    if (tsk_errno != TSK_ERR_FS_RECOVER) {
++	    //if (tsk_errno != TSK_ERR_FS_RECOVER) {
++	    if (tsk_error_get_errno() != TSK_ERR_FS_RECOVER) {
+ 		if(opt_debug){
+ 		    fprintf(stderr,"Processing: %s/%s (%" PRIuINUM ")\n", path,
+ 			   fs_file->name->name, fs_file->meta->addr);
+@@ -528,7 +530,8 @@
+ #ifdef HAVE_TSK_IMG_INFO_SECTOR_SIZE
+     img_info = tsk_img_open_utf8(argc,(const char **)argv, TSK_IMG_TYPE_DETECT,sector_size);
+ #else
+-    img_info = tsk_img_open_utf8(argc,(const char **)argv, TSK_IMG_TYPE_DETECT);
++    img_info = tsk_img_open_utf8(argc,(const char **)argv, TSK_IMG_TYPE_DETECT,sector_size);
++    //img_info = tsk_img_open_utf8(argc,(const char **)argv, TSK_IMG_TYPE_DETECT);
+ #endif
+ 
+     if (img_info==0){
+Index: src/utils.c
+===================================================================
+--- src/utils.c	(revision 7666)
++++ src/utils.c	(working copy)
+@@ -1 +1,180 @@
+-link ../../bloom/src/utils.c
+\ No newline at end of file
++/**
++ * A collection of utility functions that are useful.
++ */
++
++// Just for this module
++#define _FILE_OFFSET_BITS 64
++
++
++/* required per C++ standard */
++#ifndef __STDC_FORMAT_MACROS
++#define __STDC_FORMAT_MACROS
++#endif
++
++#include "stdio.h"
++#include "tsk3/tsk_tools_i.h"
++//#include "config.h"
++#include "utils.h"
++
++#ifdef HAVE_UNISTD_H
++#include <unistd.h>
++#endif
++
++#include <errno.h>
++#include <fcntl.h>
++#include <ctype.h>
++#include <assert.h>
++#include <string.h>
++#include <inttypes.h>
++#include <stdlib.h>
++#include <sys/stat.h>
++
++#ifndef HAVE_ERR
++#include <stdarg.h>
++void err(int eval,const char *fmt,...)
++{
++  va_list ap;
++  va_start(ap,fmt);
++  vfprintf(stderr,fmt,ap);
++  va_end(ap);
++  fprintf(stderr,": %s\n",strerror(errno));
++  exit(eval);
++}
++#endif
++
++#ifndef HAVE_ERRX
++#include <stdarg.h>
++void errx(int eval,const char *fmt,...)
++{
++  va_list ap;
++  va_start(ap,fmt);
++  vfprintf(stderr,fmt,ap);
++  fprintf(stderr,"%s\n",strerror(errno));
++  va_end(ap);
++  exit(eval);
++}
++#endif
++
++#ifndef HAVE_WARN
++#include <stdarg.h>
++void	warn(const char *fmt, ...)
++{
++    va_list args;
++    va_start(args,fmt);
++    vfprintf(stderr,fmt, args);
++    fprintf(stderr,": %s\n",strerror(errno));
++}
++#endif
++
++#ifndef HAVE_WARNX
++#include <stdarg.h>
++void warnx(const char *fmt,...)
++{
++  va_list ap;
++  va_start(ap,fmt);
++  vfprintf(stderr,fmt,ap);
++  va_end(ap);
++}
++#endif
++
++#ifndef HAVE_ISHEXNUMBER
++int ishexnumber(int c);
++inline int ishexnumber(int c)
++{
++    switch(c){
++    case '0':         case '1':         case '2':         case '3':         case '4':
++    case '5':         case '6':         case '7':         case '8':         case '9':
++    case 'A':         case 'B':         case 'C':         case 'D':         case 'E':
++    case 'F':         case 'a':         case 'b':         case 'c':         case 'd':
++    case 'e':         case 'f':
++	return 1;
++    }
++    return 0;
++}
++#endif
++
++/** Extract a buffer...
++ * @param buf - the buffer to extract;
++ * @param buflen - the size of the page to extract
++ * @param pos0 - the byte position of buf[0]
++ */
++
++int ends_with(const char *buf,const char *with)
++{
++    if(buf && with){
++	size_t buflen = strlen(buf);
++	size_t withlen = strlen(with);
++	if(buflen>withlen && strcmp(buf+buflen-withlen,with)==0) return 1;
++    }
++    return 0;
++}
++
++/**
++ * It's hard to figure out the filesize in an opearting system independent method that works with both
++ * files and devices. This seems to work. It only requires a functioning pread64 or pread.
++ */
++
++
++
++#if !defined(HAVE_PREAD64) && !defined(HAVE_PREAD) && defined(HAVE__LSEEKI64)
++static size_t pread64(int d,void *buf,size_t nbyte,int64_t offset)
++{
++    if(_lseeki64(d,offset,0)!=offset) return -1;
++    return read(d,buf,nbyte);
++}
++#endif
++
++int64_t get_filesize(int fd)
++{
++    struct stat st;
++    char buf[64];
++    int64_t raw_filesize = 0;		/* needs to be signed for lseek */
++    int bits = 0;
++    int i =0;
++
++#if defined(HAVE_PREAD64)
++    /* If we have pread64, make sure it is defined */
++    extern size_t pread64(int fd,char *buf,size_t nbyte,off_t offset);
++#endif
++
++#if !defined(HAVE_PREAD64) && defined(HAVE_PREAD)
++    /* if we are not using pread64, make sure that off_t is 8 bytes in size */
++#define pread64(d,buf,nbyte,offset) pread(d,buf,nbyte,offset)
++    if(sizeof(off_t)!=8){
++	err(1,"Compiled with off_t==%d and no pread64 support.",(int)sizeof(off_t));
++    }
++#endif
++
++
++    /* We can use fstat if sizeof(st_size)==8 and st_size>0 */
++    if(sizeof(st.st_size)==8 && fstat(fd,&st)==0){
++	if(st.st_size>0) return st.st_size;
++    }
++
++    /* Phase 1; figure out how far we can seek... */
++    for(bits=0;bits<60;bits++){
++	raw_filesize = ((int64_t)1<<bits);
++	if(pread64(fd,buf,1,raw_filesize)!=1){
++	    break;
++	}
++    }
++    if(bits==60) errx(1,"Partition detection not functional.\n");
++
++    /* Phase 2; blank bits as necessary */
++    for(i=bits;i>=0;i--){
++	int64_t test = (int64_t)1<<i;
++	int64_t test_filesize = raw_filesize | ((int64_t)1<<i);
++	if(pread64(fd,buf,1,test_filesize)==1){
++	    raw_filesize |= test;
++	} else{
++	    raw_filesize &= ~test;
++	}
++    }
++    if(raw_filesize>0) raw_filesize+=1;	/* seems to be needed */
++    return raw_filesize;
++}
++
++
++#ifdef USE_PRIVATE_REGEX
++#include <regex.c>
++#endif
+Index: src/utils.h
+===================================================================
+--- src/utils.h	(revision 7666)
++++ src/utils.h	(working copy)
+@@ -1 +1,46 @@
+-link ../../bloom/src/utils.h
+\ No newline at end of file
++/****************************************************************
++ *** utils.h
++ *** 
++ *** To use utils.c/utils.h, be sure this is in your configure.ac file:
++
++AC_CHECK_HEADERS([err.h err.h sys/mman.h sys/resource.h unistd.h])
++AC_CHECK_FUNCS([ishexnumber unistd.h err errx warn warnx pread64 pread _lseeki64 ])
++
++***
++ ****************************************************************/
++
++
++
++#ifndef UTILS_H
++#define UTILS_H
++
++#include <sys/types.h>
++#include <stdint.h>
++
++#ifndef __BEGIN_DECLS
++#if defined(__cplusplus)
++#define __BEGIN_DECLS   extern "C" {
++#define __END_DECLS     }
++#else
++#define __BEGIN_DECLS
++#define __END_DECLS
++#endif
++#endif
++
++__BEGIN_DECLS
++
++#ifdef HAVE_ERR_H
++#include <err.h>
++#else
++void err(int eval,const char *fmt,...) __attribute__((format(printf, 2, 0))) __attribute__ ((__noreturn__));
++void errx(int eval,const char *fmt,...) __attribute__((format(printf, 2, 0))) __attribute__ ((__noreturn__));
++void warn(const char *fmt, ...) __attribute__((format(printf, 1, 0)));
++void warnx(const char *fmt,...) __attribute__((format(printf, 1, 0)));
++#endif
++
++int     ends_with(const char *buf,const char *with);
++int64_t get_filesize(int fd);
++
++__END_DECLS
++
++#endif
+Index: src/xml.h
+===================================================================
+--- src/xml.h	(revision 7666)
++++ src/xml.h	(working copy)
+@@ -61,7 +61,8 @@
+ #endif
+ 
+ #ifdef HAVE_LIBTSK3
+-#include <tsk3/libtsk.h>
++//#include <tsk3/libtsk.h>
++#include "tsk3/lib_tsk.h"
+ #endif
+ 
+ #ifdef __cplusplus
+Index: src/bloom.c
+===================================================================
+--- src/bloom.c	(revision 7666)
++++ src/bloom.c	(working copy)
+@@ -1 +1,834 @@
+-link ../../bloom/src/bloom.c
+\ No newline at end of file
++/* The software provided here is released by the National
++ * Institute of Standards and Technology (NIST), an agency of
++ * the U.S. Department of Commerce, Gaithersburg MD 20899,
++ * USA.  The software bears no warranty, either expressed or
++ * implied. NIST does not assume legal liability nor
++ * responsibility for a User's use of the software or the
++ * results of such use.
++ * Please note that within the United States, copyright
++ * protection, under Section 105 of the United States Code,
++ * Title 17, is not available for any work of the United
++ * States Government and/or for any works created by United
++ * States Government employees. User acknowledges that this
++ * software contains work which was created by NIST employees
++ * and is therefore in the public domain and not subject to
++ * copyright.  The User may use, distribute, or incorporate
++ * this software provided the User acknowledges this via an
++ * explicit acknowledgment of NIST-related contributions to
++ * the User's work. User also agrees to acknowledge, via an
++ * explicit acknowledgment, that any modifications or
++ * alterations have been made to this software before
++ * redistribution.
++ * --------------------------------------------------------------------
++ *
++ * Change History:
++ * Simson L. Garfinkel - May 1, 2008
++ *   - Major rewrite using new function
++ * Simson L. Garfinkel - simsong@acm.org - August 21, 2006
++ *   - Re-implemented based on Douglas White's original Perl code.
++ *   - First 4096-bytes of file describes parameters
++ *   - Single executable for both 128-bit and 160-bit Bloom filters.
++ *   - Uses memmap() for handling 512MB bloom filters. 
++ * Douglas White - douglas.white@nist.gov - June 21, 2003
++ *   Original implementation in perl.
++ */
++
++#include "tsk3/tsk_tools_i.h"
++//#include "config.h"			/* required for OpenSSL defs */
++#include "bloom.h"
++
++#ifdef WIN32
++#include <winsock.h>
++#endif
++
++#ifdef HAVE_SYS_MMAN_H
++#include <sys/mman.h>
++#endif
++
++#ifdef HAVE_UNISTD_H
++#include <unistd.h>
++#endif
++
++#ifdef HAVE_ERR_H
++#include <err.h>
++#endif
++
++#ifdef HAVE_INTTYPES_H
++#include <inttypes.h>
++#endif
++
++#ifdef HAVE_SYS_MMAN_H
++#include <sys/mman.h>
++#endif
++
++#ifdef HAVE_SYS_RESOURCE_H
++#include <sys/resource.h>
++#endif
++
++#ifdef HAVE_OPENSSL_HMAC_H
++#include <openssl/hmac.h>
++#endif
++
++#ifdef HAVE_PTHREAD_H
++#include <pthread.h>
++#endif
++
++#include <assert.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <fcntl.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <errno.h>
++#include <ctype.h>
++#include <math.h>
++
++#ifdef _MSC_VER
++#define PRId64 "I64d"
++#define PRIi64 "I64i"
++#define PRIu64 "I64u"
++#endif
++
++
++#define BLOOM_VECTOR_OFFSET 4096	/* size of one page */
++
++#ifndef O_BINARY
++#define O_BINARY 0
++#endif
++
++
++static uint8_t *hexcharvals = 0;
++static int64_t bloom_lookups = 0;
++
++/** Initialization function is used solely for hex output
++ */
++
++static void nsrl_exit(int code) __attribute__ ((noreturn));
++static void nsrl_exit(int code)
++{
++    int i;
++    for(i=0;i<10;i++){
++	fprintf(stderr,"****************************************************\n");
++    }
++    fprintf(stderr,"bloom.c: NSRL Exit Code %d\n",code);
++    exit(code);
++}
++
++static void nsrl_bloom_init(void)
++{
++    if(hexcharvals==0){
++	/* Need to initialize this */
++	uint8_t i;
++	hexcharvals = (uint8_t *)calloc(sizeof(uint8_t),256);
++	for(i=0;i<10;i++){
++	    hexcharvals['0'+i] = i;
++	}
++	for(i=10;i<16;i++){
++	    hexcharvals['A'+i-10] = i;
++	    hexcharvals['a'+i-10] = i;
++	}
++    }
++}
++
++
++/**
++ * Convert a hex representation to binary, and return
++ * the number of bits converted.
++ * @param binbuf output buffer
++ * @param binbuf_size size of output buffer in bytes.
++ * @param hex    input buffer (in hex)
++ * @return the number of converted bits.
++ */
++int nsrl_hex2bin(unsigned char *binbuf,size_t binbuf_size,const char *hex)
++{
++    int bits = 0;
++    if(hexcharvals==0) nsrl_bloom_init();
++    while(hex[0] && hex[1] && binbuf_size>0){
++	*binbuf++ = (unsigned char)(((hexcharvals[(int)hex[0]]<<4) | hexcharvals[(int)hex[1]]));
++	hex  += 2;
++	bits += 8;
++	binbuf_size -= 1;
++    }
++    return bits;
++}
++
++/**
++ * Convert a binary blob to a hex representation
++ */
++
++const char *nsrl_hexbuf(char *dst,size_t dst_len,const unsigned char *bin,uint32_t bytes,int flag)
++{
++    int charcount = 0;
++    const char *start = dst;		// remember where the start of the string is
++    const char *fmt = (flag & NSRL_HEXBUF_UPPERCASE) ? "%02X" : "%02x";
++
++    if(hexcharvals==0) nsrl_bloom_init();
++    *dst = 0;				// begin with null termination
++    while(bytes>0 && dst_len > 3){
++	sprintf(dst,fmt,*bin); // convert the next byte to hex
++	dst += 2;
++	bin += 1;
++	dst_len -= 2;
++	bytes--;
++	charcount++;			// how many characters
++	
++	if((flag & NSRL_HEXBUF_SPACE2) ||
++	   ((flag & NSRL_HEXBUF_SPACE4) && charcount%2==0)){
++	  *dst++ = ' ';
++	  *dst   = '\000';
++	  dst_len -= 1;
++	}
++    }
++    return start;			// return the start
++}
++
++
++/**
++ * Sets a numbered bit of the bloom filter.
++ */
++#ifdef MSC
++#define inline 
++#endif
++
++static inline void set_bloom_bit(nsrl_bloom *b,uint32_t bit)
++{
++    uint8_t q = (uint8_t)(1<<(bit%8));
++    b->vector[bit/8] |= q;
++}
++
++/** Gets a numbered bit of the bloom filter.
++ * @param b The bloom filter
++ * @param bit The numbered bit to get.
++ */
++static inline int get_bloom_bit(const nsrl_bloom *b,uint32_t bit)
++{
++    int q = 1<<(bit%8);			/* bit that we need to probe */
++    return (b->vector[bit/8] & q) ? 1 : 0;
++}
++
++
++void nsrl_bloom_fprint_info(const nsrl_bloom *b,FILE *out)
++{
++    fprintf(out,"hash_bytes: %d\n",b->hash_bytes);
++    fprintf(out,"M: %d\n",b->M);
++    fprintf(out,"k: %d\n",b->k);
++    fprintf(out,"vector_bytes: %d\n",(int)b->vector_bytes);
++    fprintf(out,"vector_offset: %d\n",b->vector_offset);
++    fprintf(out,"vector: %p\n",b->vector);
++    fprintf(out,"# comment: %s\n",b->comment ? b->comment : "");
++    fprintf(out,"added_items: %"PRId64"\n",b->added_items);
++    fprintf(out,"unique_added_items: %"PRId64"\n",b->unique_added_items);
++    fprintf(out,"aliased_adds: %"PRId64"\n",b->aliased_adds);
++    fprintf(out,"Computed False Positive Rate: %6g\n",
++	    BLOOM_CALC_P((double)(1<<b->M),(double)b->added_items,(double)b->k));
++}
++
++void nsrl_bloom_print_info(const nsrl_bloom *b)
++{
++    nsrl_bloom_fprint_info(b,stdout);
++}
++
++void nsrl_bloom_fprint_usage(FILE *out)
++{
++#ifdef HAVE_GETRUSAGE
++    struct rusage ru;
++    uint32_t total_msec=0;
++    //memset(&ru,0,sizeof(ru));
++    if(getrusage(RUSAGE_SELF,&ru)!=0) return;
++    total_msec =
++	(uint32_t)ru.ru_utime.tv_sec*1000 + (uint32_t)ru.ru_utime.tv_usec/1000 + 
++	(uint32_t)ru.ru_stime.tv_sec*1000 + (uint32_t)ru.ru_stime.tv_usec/1000;
++    
++    fprintf(out,"# utime: %d.%03d  stime: %d.%03d\n",
++	    (int)ru.ru_utime.tv_sec, (int)ru.ru_utime.tv_usec/1000,
++	    (int)ru.ru_stime.tv_sec, (int)ru.ru_stime.tv_usec/1000);
++    fprintf(out,"# maxrss: %ldMB page reclaims: %ld page faults: %ld  swaps: %ld\n",
++	    ru.ru_maxrss/(1024*1024),ru.ru_minflt,ru.ru_majflt,ru.ru_nswap);
++    fprintf(out,"# inputs: %ld  outputs: %ld\n",ru.ru_inblock,ru.ru_oublock);
++    fprintf(out,"# total time: %"PRIu32" msec\n",total_msec);
++    if(bloom_lookups){
++	fprintf(out,"# average lookups per second: %.0f\n",(double)bloom_lookups * 1000.0 / (double)total_msec);
++    }
++#else
++    (void)out;
++#endif
++}
++
++void nsrl_bloom_print_usage()
++{
++    nsrl_bloom_fprint_usage(stdout);
++}
++
++
++/**
++ * Converts bloom filter parameters into ascii for storage in filter.
++ */
++void nsrl_bloom_info(char *buf,size_t buflen, const nsrl_bloom *b)
++{
++    snprintf(buf,buflen,
++	     "nsrl_bf_version:2\n"
++	     "hash_bits:%"PRId64"\n"
++	     "bloom_bits:%"PRId64"\n"
++	     "k:%"PRId64"\n"
++	     "added_items:%"PRId64"\n"
++	     "unique_added_items:%"PRId64"\n"
++	     "aliased_adds:%"PRId64"\n"
++	     "comment:%s\n",
++	     (int64_t)(b->hash_bytes*8), (int64_t)b->M,(int64_t)b->k,
++	     (int64_t)b->added_items,(int64_t)b->unique_added_items,(int64_t)b->aliased_adds,b->comment);
++}
++
++/**
++ * Histogram analysis for printing information about usage of bloom filter.
++ */
++void nsrl_calc_histogram(const nsrl_bloom *b,uint32_t counts[256])
++{
++    uint32_t i;
++    uint32_t byteswbits = 0;
++
++    memset(counts,0,sizeof(counts));
++    for(i=0;i<b->vector_bytes;i++){
++    	if(b->vector[i]) {
++	    counts[b->vector[i]]++;
++	    byteswbits++;}
++    }
++}
++
++void nsrl_print_histogram(const nsrl_bloom *b,const uint32_t counts[256])
++{
++    uint32_t totalbits = 0;
++    uint32_t bitcount = 0;
++    int i,j,mask;
++    float top, bottom, percent = 0.0;
++    for(i=1;i<256;i++){
++	if(counts[i] > 0){
++	    for(j = 0; j<8; j++){
++		mask = (1 << j);
++		if(i&mask){ bitcount += counts[i]; } 
++	    }
++	}
++    }
++    if(b->M < 32) totalbits = (uint32_t)1<<b->M;
++    else{ totalbits--;}
++    printf("%u bits total, %u bits set\n",totalbits, bitcount);
++    top = (float)bitcount;
++    bottom = (float)totalbits;
++    percent = top/bottom;
++    percent *= 100;
++    printf("%f percent full\n", percent);
++}
++
++
++static int nsrl_bloom_info_update(nsrl_bloom *b)
++{
++    char buf[BLOOM_VECTOR_OFFSET];
++    if(b->fd==0) return 0;		/* no open file to update */
++    memset(buf,0,sizeof(buf));
++    nsrl_bloom_info(buf,sizeof(buf),b);
++    if (lseek(b->fd,0,SEEK_SET)) return -1;
++    if (write(b->fd,buf,BLOOM_VECTOR_OFFSET)!=BLOOM_VECTOR_OFFSET) return -1;
++    return 0;
++}
++
++/* Return the ith bit of a blob */
++static inline uint32_t get_bit(const unsigned char *buf,uint32_t bit)
++{
++    return (buf[bit/8] & (1<<bit%8)) ? 1 : 0;
++}
++
++
++/*
++ * Encrypt with HMAC of hash; store the results in ebuf.
++ */
++static inline const unsigned char *hash_encrypt(const nsrl_bloom *b,const unsigned char *hash,unsigned char *ebuf)
++{
++#ifdef HAVE_OPENSSL_HMAC_H
++    unsigned len = b->hash_bytes;	/* make openSSL happy */
++    HMAC(b->md,b->key,(int)b->hash_bytes,hash,b->hash_bytes,ebuf,&len);
++    return ebuf;
++#else
++    fprintf(stderr,"hash_encrypt requires OpenSSL HMAC at present.\n");
++    exit(-1);
++    return 0;
++#endif
++}
++
++/**
++ * Add a hash into the bloom filter, updating the counters.
++ * @param b The bloom filter.
++ * @param hash The hash to add; needs to be b->hash_bytes long.
++ */
++void nsrl_bloom_add(nsrl_bloom *b,const unsigned char *hash)
++{
++    /* Split the hash k times according to bloom_bits(M) */
++    uint32_t i;				/* bit counter */
++    uint32_t added_bits = 0;		/* set to 0 all of the bits have already been set */
++    if (b->debug){
++	char buf[1024];
++	printf("nsrl_bloom_add(%s)\n",nsrl_hexbuf(buf,sizeof(buf),hash,b->hash_bytes,0));
++    }
++#ifdef HAVE_PTHREAD
++    if (b->multithreaded){
++	pthread_mutex_lock(&b->mutex);
++    }
++#endif
++    {
++	u_char ebuf[20];
++	if (b->key) hash = hash_encrypt(b,hash,ebuf);
++    }
++    for(i=0;i<b->k;i++){		/* repeat for each hash function */
++	uint32_t offset = i * b->M;	/* compute offset into provided hash */
++	uint32_t v = 0;
++	uint32_t j;
++	
++	for(j=0;j<b->M;j++){
++	    v = (v<<1) | get_bit(hash,offset+j);
++	}
++	if(b->debug>1) { printf(" Setting bit: %08x (was %d).\n",v,get_bloom_bit(b,v)); }
++	if(get_bloom_bit(b,v)==0){
++	    set_bloom_bit(b,v);
++	    added_bits += 1;		/* remember that we added another one */
++	} 
++    }
++    if(added_bits==b->k) b->unique_added_items++; /* all of the bits were set */
++    if(added_bits==0)    b->aliased_adds++;
++    b->added_items++;
++    if (b->added_items % 1000==0) nsrl_bloom_info_update(b);
++    if (b->debug>1) { printf("\n"); }
++#ifdef HAVE_PTHREAD
++    if (b->multithreaded){
++	pthread_mutex_unlock(&b->mutex);
++    }
++#endif
++}
++
++#ifdef WIN32
++/* This code can be called multithreaded since the hProv can be used to create multiple hashes.
++ */
++void Win32BloomHash(nsrl_bloom *b,const char *str,u_char *buf,DWORD *buflen)
++{
++    if(b->hProv==0){
++	fprintf(stderr,"Win32BloomHash: b->hProv==0???\n");
++	nsrl_exit(1);
++    }
++    if (!CryptCreateHash(b->hProv, b->digest_type, 0, 0, &b->hHash)) {
++        DWORD dwStatus = GetLastError();
++        fprintf(stderr,"CryptCreateHash(bloom.c)(%d,%d) failed: %d\n",
++		(int)b->hProv,(int)b->digest_type,(int)dwStatus); 
++        CryptReleaseContext(b->hProv, 0);
++	nsrl_exit(1);
++    }
++    if(!CryptHashData(b->hHash,(BYTE *)str,(DWORD)strlen(str),0)){
++	fprintf(stderr,"CryptHashData(bloom.c): Unable to update digest context hash");
++	nsrl_exit(1);
++    }
++    if( !CryptGetHashParam(b->hHash,HP_HASHVAL,(BYTE *)buf, buflen, 0 )) {
++	fprintf(stderr, "CryptGetHashParam(bloom.c): unable to finalize digest hash.\n");
++	nsrl_exit(1);
++    }
++    if( !CryptDestroyHash( b->hHash )){
++	fprintf(stderr," CryptDestroyHash(bloom.c): failed\n");
++	nsrl_exit(1);
++    }
++    if(b->hHash==0 || b->digest_type==0){
++	fprintf(stderr,"Things got broken\n");
++	nsrl_exit(1);
++    }
++}
++#endif
++
++int nsrl_bloom_addString(nsrl_bloom *b,const char *str)
++{
++    int previously_present = 0;
++    //char dst[64];
++#if defined(HAVE_OPENSSL_HMAC_H)
++    uint32_t buflen = EVP_MAX_MD_SIZE;
++    u_char buf[buflen];
++    EVP_Digest((const void *)str,strlen(str),buf,&buflen,b->md,0);
++#else
++#if defined(WIN32)
++    u_char buf[64];
++    DWORD buflen = sizeof(buf);
++    Win32BloomHash(b,str,buf,&buflen);
++#endif
++#endif
++    //printf("string='%s' hash=%s\n",str,nsrl_hexbuf(dst,sizeof(dst),buf,buflen,0));
++    previously_present = nsrl_bloom_query(b,buf);
++    if(!previously_present) nsrl_bloom_add(b,buf);
++    return previously_present;
++}
++
++/* nsrl_bloom_query:
++ * Check each round of nist_function128 in the vector. If any are not set,
++ * then the hash is not in the bloom filter.
++ *
++ * Returns: 1 if present, 0 if not present
++ */
++int nsrl_bloom_query( nsrl_bloom *b,const unsigned char *hash)
++{
++    uint32_t i,j;
++    int found = 1;
++#ifdef HAVE_PTHREAD
++    if (b->multithreaded){
++	pthread_mutex_lock(&b->mutex);
++    }
++#endif
++    bloom_lookups += 1;
++    if (b->debug){
++	char buf[1024];
++	printf("nsrl_bloom_query(%s) k:%d M:%d\n",
++	       nsrl_hexbuf(buf,sizeof(buf),hash,b->hash_bytes,0),b->k,b->M);
++    }
++    {
++	u_char ebuf[20];
++	if (b->key) hash = hash_encrypt(b,hash,ebuf);
++    }
++    for(i=0;i<b->k && found;i++){		/* i is which vector function to query */
++	uint32_t offset = i * b->M;
++	uint32_t v = 0;		/* v is the bit in the vector that is to be queried */
++	for(j=0;j<b->M;j++){
++	    v = (v<<1) | get_bit(hash,offset+j);
++	}
++	if(b->debug>1){ printf("  %s V(0x%08x)=%d\n", (i==0?"VECTORS":"       "), v,get_bloom_bit(b,v)); }
++	if(get_bloom_bit(b,v)==0){
++	    found = 0;
++	}
++    }
++    /* All of the bits were set; hash must be in the bloom filter */
++    if(b->debug>1) putchar('\n');
++    b->hits++;
++#ifdef HAVE_PTHREAD
++    if (b->multithreaded){
++	pthread_mutex_unlock(&b->mutex);
++    }
++#endif
++    return found;			
++}
++
++int nsrl_bloom_queryString(nsrl_bloom *b,const char *str)
++{
++#ifdef HAVE_OPENSSL_HMAC_H
++    u_char buf[EVP_MAX_MD_SIZE];
++    uint32_t buflen = EVP_MAX_MD_SIZE;
++    EVP_Digest((const void *)str,strlen(str),buf,&buflen,b->md,0);
++#else
++#ifdef WIN32
++    u_char buf[64];
++    DWORD buflen = sizeof(buf);
++    Win32BloomHash(b,str,buf,&buflen);
++#endif
++#endif
++    return nsrl_bloom_query(b,buf);
++}
++
++/*
++ * Returns the utilization from 0 to 1.0 (fraction of bits set.)
++ */
++double nsrl_bloom_utilization(const nsrl_bloom *b)
++{
++    int64_t bits_set = 0;
++    uint32_t i;
++    if(b->added_items==0) return 0.0;	/* optimization */
++    for(i=0;i<b->vector_bytes;i++){
++	/* Count the number of bits set */
++	if(b->vector[i] & 0x01) bits_set++;
++	if(b->vector[i] & 0x02) bits_set++;
++	if(b->vector[i] & 0x04) bits_set++;
++	if(b->vector[i] & 0x08) bits_set++;
++	if(b->vector[i] & 0x10) bits_set++;
++	if(b->vector[i] & 0x20) bits_set++;
++	if(b->vector[i] & 0x40) bits_set++;
++	if(b->vector[i] & 0x80) bits_set++;
++    }
++    return (double)bits_set / ((double)(b->vector_bytes) * 8.0);
++}
++
++/****************************************************************
++ *** Routines for creating and opening bloom filters.
++ ****************************************************************/
++
++nsrl_bloom *nsrl_bloom_alloc()
++{
++    nsrl_bloom *b = (nsrl_bloom *)calloc(sizeof(*b),1);
++    b->free_this = 1;
++    return b;
++}
++
++static void nsrl_bloom_set_params(nsrl_bloom *b)
++{
++#ifdef HAVE_OPENSSL_HMAC_H
++    OpenSSL_add_all_digests();
++    switch(b->hash_bytes){
++    case 16:	b->md = EVP_get_digestbyname("md5");	break;
++    case 20:	b->md = EVP_get_digestbyname("sha1");	break;
++    case 32:    b->md = EVP_get_digestbyname("sha256"); break;
++    default:
++	fprintf(stderr,"nsrl_bloom_set_params: hash_bytes=%d?\n",b->hash_bytes);
++	nsrl_exit(1);
++    }
++#else
++#ifdef WIN32
++    /* Request the AES crypt provider, fail back to the RSA crypt provider
++     */
++
++    b->hProv = 0;
++    b->hHash = 0;
++    if(CryptAcquireContext(&b->hProv,
++			   NULL,	/* pszContainer */
++			   NULL,	/* pszProvider */
++			   PROV_RSA_FULL, /* dwProvType */
++			   CRYPT_VERIFYCONTEXT)==0) /* dwFlags */ {
++	fprintf(stderr,"CryptAcquireContext(bloom.c): Cannot create RSA crypt provider");
++	nsrl_exit(1);
++    }
++    switch(b->hash_bytes){
++    case 16:	b->digest_type = CALG_MD5;break;
++    case 20:	b->digest_type = CALG_SHA1;break;
++    case 32:    fprintf(stderr,"bloom under windows can't handle 32-bits...\n");
++	nsrl_exit(1);
++    default:
++	fprintf(stderr,"nsrl_bloom_set_params: hash_bytes=%d?\n",b->hash_bytes);
++	nsrl_exit(1);
++    }
++#else
++#error Need OpenSSL or WIN32
++#endif
++#endif
++}
++
++
++
++#define xstr(s) str(s)
++#define str(s) #s
++/**
++ * Open a bloom filter, return 0 if successful.
++ * Currently this doesn't run on WIN32; it needs the WIN32 memory map file stuff.
++ */
++int nsrl_bloom_open(nsrl_bloom *b,const char *fname,int mode)
++{
++#ifdef HAVE_MMAP
++    char offset_buf[BLOOM_VECTOR_OFFSET];
++    char *line,*buf;
++    int version = 0;
++    int  prot = 0;
++
++    switch(mode & O_ACCMODE){
++    case O_RDONLY: prot = PROT_READ;if(b->debug) printf("PROT_READ\n");break;
++    case O_WRONLY: prot = PROT_WRITE;if(b->debug) printf("PROT_WRITE\n");break;
++    case O_RDWR:   prot = PROT_READ|PROT_WRITE;if(b->debug) printf("PROT_READ|PROT_WRITE\n");break;
++    }
++
++    /* Open the file and get the parameters */
++
++    b->fd = open(fname,mode|O_BINARY,0);
++    if(b->fd<0) return -1;			/* could not open */
++
++    if(read(b->fd,offset_buf,sizeof(offset_buf))!=sizeof(offset_buf)){
++	errno = EINVAL;
++	return -1;			/* not big enough for header? */
++    }
++    buf = offset_buf;
++    
++    while((line = strsep(&buf,"\n"))){
++	char *colon = index(line,':');
++	if(colon){
++	    *colon = 0;			/* terminate at the colon */
++	    const char *after_colon = colon + 1;
++	    if(strcmp(line,str(nsrl_bf_version))==0)    version = atoi(after_colon);
++	    if(strcmp(line,str(hash_bits))==0)          b->hash_bytes = (unsigned)atoi(after_colon)/8;
++	    if(strcmp(line,str(bloom_bits))==0)         b->M = (unsigned)atoi(after_colon);
++	    if(strcmp(line,str(k))==0)                  b->k = (unsigned)atoi(after_colon);
++	    if(strcmp(line,str(added_items))==0)	b->added_items = (unsigned)atoi(after_colon);
++	    if(strcmp(line,str(unique_added_items))==0) b->unique_added_items = (unsigned)atoi(after_colon);
++	    if(strcmp(line,str(aliased_adds))==0)       b->aliased_adds = (unsigned)atoi(after_colon);
++	    if(strcmp(line,str(comment))==0)            b->comment = strdup(after_colon);
++	}
++    }
++    nsrl_bloom_set_params(b);
++
++    if(version!=2){
++	fprintf(stderr,"bloom: require nsrl bf vesion 2; got version %d\n",version);
++	errno= EINVAL;
++	return -1;
++    }
++    if(b->hash_bytes==0 || b->M==0 || b->k==0){
++	close(b->fd);
++	errno= EINVAL;
++	fprintf(stderr,"bloom: invalid parameters. hash_bytes=%d bloom_bits=%d k=%d\n",
++		b->hash_bytes,b->M,b->k);
++	return -1;
++    }
++    b->vector_bytes  = (unsigned)1 << (b->M-3);
++    b->vector = (uint8_t *)mmap(0,b->vector_bytes, prot, MAP_FILE|MAP_SHARED, b->fd,BLOOM_VECTOR_OFFSET);
++    if(b->vector == MAP_FAILED){
++	return -1;			/* ugh. */
++    }
++    b->memmapped = 1;
++    return 0;
++#else
++    (void)b;
++    (void)fname;
++    (void)mode;
++    fprintf(stderr,"Currently NSRL required mmap.\n");
++    nsrl_exit(1);
++    return -1;
++#endif    
++}
++
++/** nsrl_bloom_write:
++ * @param b - bloom filter
++ * @param fname - name of file to write to
++ */
++int nsrl_bloom_write(nsrl_bloom *b,const char *fname)
++{
++    size_t written = 0;
++    /* Create the file with the paremters and empty bloom filter */
++    b->fd = open(fname,O_CREAT|O_RDWR|O_EXCL|O_BINARY,0666); 
++    if(b->fd<0){
++	return -1;		/* failed */
++    }
++
++    if(nsrl_bloom_info_update(b)){	/* try to write the parameters */
++	unlink(fname);			/* erase the file */
++	return -1;			/* some writing problem */
++    }
++    /* Tab out to where the vector starts.
++     * We pre-allocate the file (avoid making it sparse) to prevent the file being
++     * fragmented on the hard drive.
++     * We also only write a max of 1MB at a time because the 64-bit POSIX implementation
++     * doesn't like writing more than 2^31-1 bytes at a time.
++     */
++    lseek(b->fd,BLOOM_VECTOR_OFFSET,SEEK_SET); 
++    
++    while(written < b->vector_bytes){
++	size_t towrite = b->vector_bytes - written;
++	if(towrite>1024*1024) towrite = 1024*1024;
++	if(write(b->fd,b->vector+written,towrite)!=(ssize_t)towrite){ /* write failure? */
++	    unlink(fname);
++	    return -1;			/* write problem */
++	}
++	written += towrite;
++    }
++    return 0;
++}
++
++
++/** nsrl_bloom_create:
++ * @param fname - name of the filter to create; 0 if in-memory
++ * @param hash_bits  - the number of bits in values to be hashed.
++ * @param bloom_bits - log2(m)
++ * @param k = k
++ * @param comment - a comment to store in the bloom filter.
++ */
++
++int nsrl_bloom_create(nsrl_bloom *b,
++		      const char *fname,uint32_t hash_bits, uint32_t bloom_bits,uint32_t k,
++		      const char *comment)
++{
++    b->vector_bytes = ((size_t)1) << (bloom_bits-3);	/* Needed vector size */
++    b->vector = (uint8_t *)calloc(b->vector_bytes,1);
++
++    if(b->vector==0) return -1;			/* not enough memory to allocate vector buf */
++    if(hash_bits < bloom_bits * k){
++	fprintf(stderr,"bloom_bits * k > hash_bits (%d * %d > %d)",bloom_bits,k,hash_bits);
++	nsrl_exit(1);
++    }
++
++    if(hash_bits%8 != 0) {
++	fprintf(stderr,"hash_bits must be a multiple of 8 (is %d)\n",hash_bits);
++	nsrl_exit(1);
++    }
++
++    b->hash_bytes    =  hash_bits/8;
++    b->M             =  bloom_bits;
++    b->k             =  k;
++    b->comment       =  strdup(comment);
++    nsrl_bloom_set_params(b);
++
++    if(fname==0) return 0;		/* nameless bloom filter; we are done */
++
++    /**
++     * Write the bloom filter to a file
++     */
++
++    if(nsrl_bloom_write(b,fname)) return -1;   
++    free(b->vector);
++#ifdef HAVE_MMAP
++    /**
++     * Map the bloom filter into memory
++     */
++    b->vector = (uint8_t *)mmap(0,b->vector_bytes,PROT_READ|PROT_WRITE,MAP_FILE|MAP_SHARED,b->fd,
++		     BLOOM_VECTOR_OFFSET);
++    b->memmapped = 1;
++    return 0;
++#else
++    fprintf(stderr,"bloom currently requires MMAP\n");
++    nsrl_exit(1);
++    return -1;
++#endif
++}
++
++#ifdef HAVE_PTHREAD
++int nsrl_bloom_init_mutex(nsrl_bloom *b)
++{
++    if(b->multithreaded==0){
++	if(pthread_mutex_init(&b->mutex,NULL)) return -1;
++	b->multithreaded=1;
++    }
++    return 0;
++}
++#endif    
++
++
++
++/**
++ * Establish a passphrase for the specified bloom filter.
++ */
++
++void nsrl_set_passphrase(nsrl_bloom *b,const char *passphrase)
++{
++#ifdef HAVE_OPENSSL_HMAC_H
++    EVP_Digest((const void *)passphrase,strlen(passphrase),b->key,&b->hash_bytes,b->md,0);
++#endif
++}
++
++/**
++ * Clear the allocated storage.
++ */
++void nsrl_bloom_clear(nsrl_bloom *b)
++{
++#ifdef HAVE_MMAP
++    if(b->vector && (b->vector!=MAP_FAILED)){
++	if(b->memmapped) munmap(b->vector,b->vector_bytes);
++	else free(b->vector);		/* free the memory otherwise */
++    }
++#endif
++    if(b->fd)      close(b->fd);	/* close the file */
++    if(b->comment) free(b->comment);
++#ifdef HAVE_OPENSSL_HMAC_H
++    if(b->key){
++	memset(b->key,0,b->hash_bytes);
++	free(b->key);
++    }
++#else
++    if(b->hProv){
++	CryptReleaseContext( b->hProv, 0 );
++    }
++#endif
++#ifdef HAVE_PTHREAD
++    if(b->multithreaded){
++	pthread_mutex_destroy(&b->mutex);
++	b->multithreaded=0;
++    }
++#endif
++    memset(b,0,sizeof(nsrl_bloom));		/* clean object reuse */
++}
++
++void nsrl_bloom_free(nsrl_bloom *b)
++{
++    nsrl_bloom_clear(b);
++    free(b);
++}
++
++
+Index: src/content.cpp
+===================================================================
+--- src/content.cpp	(revision 7666)
++++ src/content.cpp	(working copy)
+@@ -1,4 +1,5 @@
+-#include "config.h"
++#include "tsk3/tsk_tools_i.h"
++//#include "config.h"
+ 
+ #ifndef __STDC_FORMAT_MACROS
+ #define __STDC_FORMAT_MACROS
+@@ -12,7 +13,7 @@
+ #include <sys/types.h>
+ #include <sys/time.h>
+ 
+-#include <tsk3/libtsk.h>
++//#include <tsk3/libtsk.h>
+ 
+ 
+ #include <ctype.h>
+Index: src/hash_t.h
+===================================================================
+--- src/hash_t.h	(revision 7666)
++++ src/hash_t.h	(working copy)
+@@ -1 +1,297 @@
+-link ../../bloom/src/hash_t.h
+\ No newline at end of file
++/*
++ * C++ covers for md5, sha1, and sha256 (and sha512 if present)
++ *
++ * hash representation classes: md5_t, sha1_t, sha256_t (sha512_t)
++ * has generators: md5_generator(), sha1_generator(), sha256_generator()
++ *
++ * md = sha1_t()
++ * string md.hexdigest();
++ * md.SIZE		    --- the size of the hash 
++ * uint8_t md.digest[SIZE]   --- the buffer
++ * uint8_t md.final()        --- synonym for md.digest
++ */
++
++
++#ifndef  HASH_T_H
++#define  HASH_T_H
++
++/**
++ * For reasons that defy explaination (at the moment), this is required.
++ */
++
++
++#ifdef __APPLE__
++#include <AvailabilityMacros.h>
++#undef DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER 
++#define  DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
++#endif
++
++#include <stdint.h>
++#include <assert.h>
++#include <fcntl.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <openssl/hmac.h>
++#include <openssl/evp.h>
++#include <iostream>
++
++#ifdef HAVE_SYS_MMAN_H
++#include <sys/mman.h>
++#endif
++
++#ifdef HAVE_SYS_MMAP_H
++#include <sys/mmap.h>
++#endif
++
++/* wish that the hash fields below could be const, but C++ doesn't
++ * allow initialization of a const array.
++ * See: http://stackoverflow.com/questions/161790/initialize-a-const-array-in-a-class-initializer-in-c
++ */
++class md5_ {
++public:
++    static const size_t SIZE=16;
++    uint8_t digest[SIZE];			
++};
++
++class sha1_ {
++public:
++    static const size_t SIZE=20;
++    uint8_t digest[SIZE];
++};
++
++class sha256_ {
++public:
++    static const size_t SIZE=32;
++    uint8_t digest[SIZE];
++};
++
++#ifdef HAVE_EVP_SHA512
++class sha512_ {
++public:
++    static const size_t SIZE=64;
++    uint8_t digest[SIZE];
++};
++#endif
++
++static int hexcharvals__[256];
++static int hexcharvals_init__ = 0;
++
++template<typename T> 
++class hash__:public T
++{
++public:
++    hash__(){
++    }
++    hash__(const uint8_t *provided){
++	memcpy(this->digest,provided,this->SIZE);
++    }
++    const uint8_t *final() const {
++	return this->digest;
++    }
++    /* python like interface for hexdigest */
++    const char *hexdigest(char *hexbuf,size_t bufsize) const {
++	const char *hexbuf_start = hexbuf;
++	for(unsigned int i=0;i<this->SIZE && bufsize>=3;i++){
++	    snprintf(hexbuf,bufsize,"%02x",this->digest[i]);
++	    hexbuf  += 2;
++	    bufsize -= 2;
++	}
++	return hexbuf_start;
++    }
++    std::string hexdigest() const {
++	std::string ret;
++	char buf[this->SIZE*2+1];
++	return std::string(hexdigest(buf,sizeof(buf)));
++    }
++    /**
++     * Convert a hex representation to binary, and return
++     * the number of bits converted.
++     * @param binbuf output buffer
++     * @param binbuf_size size of output buffer in bytes.
++     * @param hex    input buffer (in hex)
++     * @return the number of converted bits.
++     */
++    static int hex2bin(uint8_t *binbuf,size_t binbuf_size,const char *hex)
++    {
++	int bits = 0;
++	if(hexcharvals_init__==0){
++	    /* Need to initialize this */
++	    int i;
++	    for(i=0;i<10;i++){
++		hexcharvals__['0'+i] = i;
++	    }
++	    for(i=10;i<16;i++){
++		hexcharvals__['A'+i-10] = i;
++		hexcharvals__['a'+i-10] = i;
++	    }
++	    hexcharvals_init__ = 1;
++	}
++	while(hex[0] && hex[1] && binbuf_size>0){
++	    *binbuf++ = ((hexcharvals__[(uint8_t)hex[0]]<<4) |
++			 hexcharvals__[(uint8_t)hex[1]]);
++	    hex  += 2;
++	    bits += 8;
++	    binbuf_size -= 1;
++	}
++	return bits;
++    }
++    static const hash__ *new_from_hex(const char *hex) {
++	hash__ *val = new hash__();
++	if(hex2bin(val->digest,sizeof(val->digest),hex)!=val->SIZE*8){
++	    std::cerr << "invalid input " << hex << "(" << val->SIZE*8 << ")\n";
++	    exit(1);
++	}
++	return val;
++    }
++    bool operator<(const hash__ &s2) const {
++	/* Check the first byte manually as a performance hack */
++	if(this->digest[0] < s2.digest[0]) return true;
++	if(this->digest[0] > s2.digest[0]) return false;
++	return memcmp(this->digest,s2.digest, this->SIZE) < 0;
++    }
++    bool operator==(const hash__ &s2) const {
++	if(this->digest[0] != s2.digest[0]) return false;
++	return memcmp(this->digest,s2.digest, this->SIZE) == 0;
++    }
++};
++
++typedef hash__<md5_> md5_t;
++typedef hash__<sha1_> sha1_t;
++typedef hash__<sha256_> sha256_t;
++#ifdef HAVE_EVP_SHA512
++typedef hash__<sha512_> sha512_t;
++#endif
++
++template<typename T> 
++class hash_generator__:T { 			/* generates the hash */
++    const EVP_MD *md;
++    EVP_MD_CTX mdctx;	     /* the context for computing the value */
++    bool initialized;	       /* has the context been initialized? */
++    bool finalized;
++    /* Static function to determine if something is zero */
++    static bool iszero(const uint8_t *buf,size_t bufsize){
++	for(unsigned int i=0;i<bufsize;i++){
++	    if(buf[i]!=0) return false;
++	}
++	return true;
++    }
++public:
++    int64_t hashed_bytes;
++    hash_generator__():initialized(false),finalized(false),hashed_bytes(0){
++	switch(this->SIZE){
++	case 16: md = EVP_md5();break;
++	case 20: md = EVP_sha1();break;
++	case 32: md = EVP_sha256();break;
++#ifdef HAVE_EVP_SHA512
++	case 64: md = EVP_sha512();break;
++#endif
++	default:
++	    assert(0);
++	}
++    }
++    ~hash_generator__(){
++	release();
++    }
++    void init(){
++	if(initialized==false){
++	    EVP_MD_CTX_init(&mdctx);
++	    EVP_DigestInit_ex(&mdctx, md, NULL);
++	    initialized = true;
++	    finalized = false;
++	    hashed_bytes = 0;
++	}
++    }
++    void update(const uint8_t *buf,size_t bufsize){
++	if(!initialized) init();
++	if(finalized){
++	    std::cerr << "hashgen_t::update called after finalized\n";
++	    exit(1);
++	}
++	EVP_DigestUpdate(&mdctx,buf,bufsize);
++	hashed_bytes += bufsize;
++    }
++    void release(){			/* free allocated memory */
++	if(initialized){
++	    EVP_MD_CTX_cleanup(&mdctx);
++	    initialized = false;
++	    hashed_bytes = 0;
++	}
++    }
++    hash__<T> final() {
++	if(finalized){
++	  std::cerr << "currently friendly_geneator does not cache the final value\n";
++	  assert(0);
++	  /* code below will never be executed after assert(0) */
++	}
++	if(!initialized){
++	  init();			/* do it now! */
++	}
++	hash__<T> val;
++	unsigned int len = sizeof(val.digest);
++	EVP_DigestFinal(&mdctx,val.digest,&len);
++	finalized = true;
++	return val;
++    }
++
++    /** Compute a sha1 from a buffer and return the hash */
++    static hash__<T>  hash_buf(const uint8_t *buf,size_t bufsize){
++	/* First time through find the SHA1 of 512 NULLs */
++#if 0
++	if(sha1_ctr==0){
++	    uint8_t b2[512];
++	    EVP_MD_CTX ctx2;
++	    unsigned int len = sizeof(sha1_512nulls);
++	    memset(b2,0,sizeof(b2));
++	    EVP_MD_CTX_init(&ctx2);
++	    EVP_DigestInit_ex(&ctx2, EVP_sha1(), NULL);
++	    EVP_DigestUpdate(&ctx2,b2,sizeof(b2));
++	    EVP_DigestFinal(&ctx2,sha1_512nulls,&len);
++	    sha1_ctr++;
++	}
++
++	/* If the input is 512 bytes long and all NULLs, use our SHA1 of 512 NULLs */
++	if(bufsize==512 && iszero(buf,bufsize)){
++	    return sha1_t(sha1_512nulls);
++	}
++#endif
++	hash_generator__ g;
++	g.update(buf,bufsize);
++	return g.final();
++    }
++	
++#ifdef HAVE_MMAP
++    /** Static method allocateor */
++    static hash__<T> hash_file(const char *fname){
++	int fd = open(fname,O_RDONLY
++#ifdef O_BINARY
++		      |O_BINARY
++#endif
++		      );
++	if(fd<0) throw fname;
++	struct stat st;
++	if(fstat(fd,&st)<0){
++	    close(fd);
++	    throw fname;
++	}
++	const uint8_t *buf = (const uint8_t *)mmap(0,st.st_size,PROT_READ,MAP_FILE|MAP_SHARED,fd,0);
++	if(buf==0){
++	    close(fd);
++	    throw fname;
++	}
++	hash__<T> s = hash_buf(buf,st.st_size);
++	munmap((void *)buf,st.st_size);
++	close(fd);
++	return s;
++    }
++#endif
++};
++
++typedef hash_generator__<md5_> md5_generator;
++typedef hash_generator__<sha1_> sha1_generator;
++typedef hash_generator__<sha256_> sha256_generator;
++
++#ifdef HAVE_EVP_SHA512
++typedef hash_generator__<sha512_> sha512_generator;
++#endif
++
++#endif
+Index: src/bloom.h
+===================================================================
+--- src/bloom.h	(revision 7666)
++++ src/bloom.h	(working copy)
+@@ -1 +1,250 @@
+-link ../../bloom/src/bloom.h
+\ No newline at end of file
++/*
++ * bloom.h:
++ * 
++ * bloom filter for NIST NSRL
++ * Originally (C) August 2006, Simson L. Garfinkel
++ * Released into the public domain in September 2008.
++ * 
++ * You must run the following autoconf macros in the configure file:
++ * AC_TYPE_INT64_T
++ * AC_CHECK_HEADERS([openssl/hmac.h openssl/pem.h])
++ * AC_CHECK_FUNCS([printf getrusage err errx warn warnx mmap])
++ * AC_CHECK_HEADERS([err.h sys/mman.h sys/resource.h unistd.h])
++ */
++
++#ifndef NSRL_BLOOM_H
++#define NSRL_BLOOM_H
++
++#ifndef PACKAGE_VERSION
++#error must include autoconf config.h file
++#endif
++
++/* This must appear before inttypes.h is included */
++#ifndef __STDC_FORMAT_MACROS
++#define __STDC_FORMAT_MACROS
++#endif
++
++#include <stdio.h>
++#include <string.h>
++#include <math.h>
++#include <inttypes.h>
++#include <sys/types.h>
++
++#ifdef HAVE_PTHREAD_H
++#include <pthread.h>
++#endif
++
++#ifdef WIN32
++#include <windows.h>
++#include <windowsx.h>
++#include <wincrypt.h>
++#endif
++
++#ifdef HAVE_OPENSSL_HMAC_H
++#include <openssl/hmac.h>		// includes EVP
++#endif
++
++#ifndef __BEGIN_DECLS
++#if defined(__cplusplus)
++#define __BEGIN_DECLS   extern "C" {
++#define __END_DECLS     }
++#else
++#define __BEGIN_DECLS
++#define __END_DECLS
++#endif
++#endif
++/* End Win32 */
++
++
++__BEGIN_DECLS
++
++/* Calculate the bloom filter's false positive rate given:
++ *  m = Number of slots in the table.
++ *  n = Number of elements stored in the table.
++ *  k = Number of hash functions.
++ */
++#define BLOOM_CALC_P(m,n,k) pow(1-exp((-(double)(k)*n)/(m)),(k))
++
++typedef struct  nsrl_bloom_ {
++    uint32_t hash_bytes;		// hash_bits/8 ; performance optimization
++    uint32_t M;	                // number of bits of hash to use for each bloom function (log2(vector_bytes))
++    uint32_t k;	                // number of bloom functions to use
++    size_t   vector_bytes;		// length of the vector (vector_bytes*8 = 2^M)
++    uint32_t vector_offset;	// offset of vector in file (usually 4096)
++    uint8_t *vector;		// the bloom filter
++    char    *comment;
++    uint64_t added_items;      // How many times add() was called.
++    uint64_t unique_added_items;      // Times add() set all k bits
++    uint64_t aliased_adds;     // Times add() set 0 bits
++    int      fd;			// file descriptor for mapped or open file
++    uint32_t debug;		// debug level
++    uint32_t memmapped:1;		// true if we need to unmap; otherwise we free(vector)
++    uint32_t free_this:1;		// should we free this on clean?
++    uint32_t fileio:1;		// force file i/o
++    uint64_t hits;		// stats
++
++    /* Encryption Support; requires OpenSSL or WinCrypt */
++    uint8_t *key;			// hash of passphrase; 0 for no encryption
++#ifdef HAVE_PTHREAD
++    uint32_t multithreaded:1;	// are we multithreaded?
++    pthread_mutex_t mutex;
++#endif
++#ifdef HAVE_OPENSSL_HMAC_H
++    const EVP_MD *md;
++#endif
++#ifdef WIN32
++    DWORD digest_type;
++    HCRYPTPROV hProv;			/* handle to provider */
++    HCRYPTHASH hHash;			/* hash handle */
++#endif
++} nsrl_bloom;
++
++
++
++/* Service functions for hexdecimal conversion: */
++int nsrl_hex2bin(uint8_t *binbuf,size_t binbuf_size, const char *hex);
++const char *nsrl_hexbuf(char *dst,size_t dst_len,const uint8_t *bin,uint32_t bytes,int flag);
++
++#define NSRL_HEXBUF_UPPERCASE 0x01
++#define NSRL_HEXBUF_SPACE2    0x02
++#define NSRL_HEXBUF_SPACE4    0x04
++
++/** nsrl_bloom_alloc(): allocates the filter memory. */
++nsrl_bloom *nsrl_bloom_alloc(void);		// allocate a new bloom object
++
++/** nsrl_bloom_create:
++ * Create a nsrl bloom filter for either a 128-bit or a 160-bit hash.
++ * If fname is specified, the file is created; otherwise the bloom
++ * filter is kept in memory. M is log2(m); k is the number of functions to use.
++ * Returns 0 if successful, -1 if failure.
++ */
++
++int nsrl_bloom_create(nsrl_bloom *b,const char *fname,uint32_t hash_size, uint32_t M, uint32_t k, const char *comment);
++
++#ifdef HAVE_PTHREAD
++/** nsrl_bloom_init_mutex:
++ * Make this bloom filter multi-threaded (if mutext support is available).
++ * Returns 0 if successful, -1 if failure.
++ */
++int nsrl_bloom_init_mutex(nsrl_bloom *b);
++#endif
++
++
++/** nsrl_bloom_open: 
++ * Opens an existing bloom filter, taking the parameters from it.
++ * Returns 0 if successful, -1 if failure.
++ */
++
++int nsrl_bloom_open(nsrl_bloom *b,const char *fname,int mode);	// open an existing filter
++int nsrl_bloom_write(nsrl_bloom *b,const char *fname);	// open an existing filter
++
++/* add and query */
++
++void nsrl_bloom_fprint_info(const nsrl_bloom *b,FILE *out);
++void nsrl_bloom_print_info(const nsrl_bloom *b);
++void nsrl_bloom_fprint_usage(FILE *out);
++void nsrl_bloom_print_usage(void);
++void nsrl_bloom_add(nsrl_bloom *b,const uint8_t *hash); 
++int  nsrl_bloom_addString(nsrl_bloom *b,const char *str);  // add a string; return 0 if not presently present, 1 if already present.
++int  nsrl_bloom_query( nsrl_bloom *b,const uint8_t *hash); // 0 not present; 1 is present
++int  nsrl_bloom_queryString( nsrl_bloom *b,const char *str); // 0 not present; 1 is present
++double nsrl_bloom_utilization(const nsrl_bloom *b);			  // on scale 0..1
++
++/* Sets an encryption key */
++void nsrl_set_passphrase(nsrl_bloom *b,const char *passphrase);
++
++void  nsrl_bloom_clear(nsrl_bloom *b);	// Release resources and sanitize
++void  nsrl_bloom_free(nsrl_bloom *b);	// free *b
++
++/* debug */
++void nsrl_bloom_info(char *buf,size_t buflen,const nsrl_bloom *b);	
++void nsrl_calc_histogram(const nsrl_bloom *b,uint32_t counts[256]);
++void nsrl_print_histogram(const nsrl_bloom *b,const uint32_t counts[256]);
++
++
++__END_DECLS
++
++#ifdef __cplusplus
++#include <string>
++class NSRLBloom : public nsrl_bloom {
++public:
++    NSRLBloom(){
++	this->hash_bytes = 0;
++	this->M = 0;
++	this->k = 0;
++	this->vector_bytes = 0;
++	this->vector_offset = 0;
++	this->vector = 0;
++	this->comment = 0;
++	this->added_items = 0;
++	this->unique_added_items = 0;
++	this->aliased_adds = 0;
++	this->fd = 0;
++	this->debug = 0;
++	this->memmapped=0;
++	this->free_this=0;
++	this->hits = 0;
++	this->key = 0;
++#ifdef HAVE_PTHREAD
++	this->multithreaded=0;
++#endif
++#ifdef HAVE_OPENSSL_HMAC_H
++	this->md  = 0;
++#endif
++#ifdef WIN32
++	digest_type = 0;
++	hProv = 0;
++	hHash = 0;
++#endif	
++	nsrl_bloom_clear(this);
++    };
++    /** Open the bloom filter; return 0 if sucessful. */
++    int open(const char *fname,int mode){
++	return nsrl_bloom_open(this,fname,mode);
++    }
++    int create(const char *fname,int hash_size, int M, int k, const char *comment){
++	return nsrl_bloom_create(this,fname,hash_size,M,k,comment);
++    }
++    int create(const char *fname,int hash_size, int M, int k, const std::string &comment){
++	return nsrl_bloom_create(this,fname,hash_size,M,k,comment.c_str());
++    }
++#ifdef HAVE_PTHREAD
++    int init_mutex() {return nsrl_bloom_init_mutex(this); }
++#endif
++    void print_info() const {	nsrl_bloom_print_info(this);     }
++
++    void fprint_info(FILE *out) const { 	nsrl_bloom_fprint_info(this,out);    }
++
++    void add(const uint8_t *hash){	nsrl_bloom_add(this,hash);    }
++    int addString(const char *str){	return nsrl_bloom_addString(this,str);    }
++    void addString(const std::string &str){	nsrl_bloom_addString(this,str.c_str());    }
++    void addHex(const std::string &str){
++	uint8_t buf[256];		
++	nsrl_hex2bin(buf,sizeof(buf),str.c_str());
++	add(buf);
++    }
++    bool query(const uint8_t *hash) {	return nsrl_bloom_query(this,hash);    }
++    bool queryString(const char *str)  { return nsrl_bloom_queryString(this,str);    }
++    bool queryString(const std::string &str)  {	return nsrl_bloom_queryString(this,str.c_str());    }
++    double utilization() const{
++	return nsrl_bloom_utilization(this);
++    }
++    void set_passphrase(const char *passphrase){
++	nsrl_set_passphrase(this,passphrase);
++    }
++    uint64_t calchits(){
++	return this->hits;
++    }
++    int write(const char *fname){
++	return nsrl_bloom_write(this,fname);
++    }
++
++    static void print_usage() {nsrl_bloom_print_usage(); }
++    static void fprint_usage(FILE *out) {nsrl_bloom_fprint_usage(out); }
++
++    ~NSRLBloom(){
++	nsrl_bloom_clear(this);
++    }
++};
++#endif
++#endif
+Index: src/fiwalk.cpp
+===================================================================
+--- src/fiwalk.cpp	(revision 7666)
++++ src/fiwalk.cpp	(working copy)
+@@ -33,7 +33,8 @@
+ 
+ 
+ /* config.h must be first */
+-#include "config.h"
++#include "tsk3/tsk_tools_i.h"
++//#include "config.h"
+ #include "fiwalk.h"
+ 
+ /* Bring in our headers */
+Index: src/myglob.cpp
+===================================================================
+--- src/myglob.cpp	(revision 7666)
++++ src/myglob.cpp	(working copy)
+@@ -5,7 +5,8 @@
+  */
+ 
+ 
+-#include "config.h"
++#include "tsk3/tsk_tools_i.h"
++//#include "config.h"
+ #include <string.h>
+ #include <stdlib.h>
+ 
+Index: src/xml.cpp
+===================================================================
+--- src/xml.cpp	(revision 7666)
++++ src/xml.cpp	(working copy)
+@@ -20,7 +20,8 @@
+ #define MUTEX_LOCK(M)   pthread_mutex_lock(M)
+ #define MUTEX_UNLOCK(M) pthread_mutex_unlock(M)
+ 
+-#include "config.h"
++#include "tsk3/tsk_tools_i.h"
++//#include "config.h"
+ #include "xml.h"
+ #include <errno.h>
+ 
+Index: src/arff.cpp
+===================================================================
+--- src/arff.cpp	(revision 7666)
++++ src/arff.cpp	(working copy)
+@@ -18,7 +18,8 @@
+  */
+ #include "arff.h"
+ 
+-#include "config.h"
++#include "tsk3/tsk_tools_i.h"
++//#include "config.h"
+ 
+ #include <strings.h>
+ #include <string.h>
+Index: src/hexbuf.c
+===================================================================
+--- src/hexbuf.c	(revision 7666)
++++ src/hexbuf.c	(working copy)
+@@ -1 +1,37 @@
+-link ../../bloom/src/hexbuf.c
+\ No newline at end of file
++/**
++ * hexbuf()
++ * Turns a binary buffer into a hexdecimal string.
++ */
++
++#include "config.h"
++#include "hexbuf.h"
++#include <stdio.h>
++
++const char *hexbuf(char *dst,int dst_len,const unsigned char *bin,int bytes,int flag)
++{
++    int charcount = 0;
++    const char *start = dst;		// remember where the start of the string is
++    const char *fmt = (flag & HEXBUF_UPPERCASE) ? "%02X" : "%02x";
++
++    *dst = 0;				// begin with null termination
++    while(bytes>0 && dst_len > 3){
++	int add_spaces = 0;
++
++	sprintf(dst,fmt,*bin); // convert the next byte
++	dst += 2;
++	bin += 1;
++	dst_len -= 2;
++	bytes--;
++	charcount++;			// how many characters
++	
++	if(flag & HEXBUF_SPACE2) add_spaces = 1;
++	if((flag & HEXBUF_SPACE4) && charcount%2==0){
++	    *dst++ = ' ';
++	    *dst   = '\000';
++	    dst_len -= 1;
++	}
++    }
++    return start;			// return the start
++}
++
++
+Index: src/fiwalk.h
+===================================================================
+--- src/fiwalk.h	(revision 7666)
++++ src/fiwalk.h	(working copy)
+@@ -63,7 +63,7 @@
+ #include <vector>
+ #include <string>
+ 
+-#include <tsk3/libtsk.h>
++//#include <tsk3/libtsk.h>
+ 
+ #ifdef AFFLIB_OBSOLETE
+ #undef HAVE_LIBAFFLIB
+Index: src/hexbuf.h
+===================================================================
+--- src/hexbuf.h	(revision 7666)
++++ src/hexbuf.h	(working copy)
+@@ -1 +1,19 @@
+-link ../../bloom/src/hexbuf.h
+\ No newline at end of file
++#ifndef HEXBUF_H
++#define HEXBUF_H
++
++#define HEXBUF_UPPERCASE 0x01
++#define HEXBUF_SPACE2    0x02
++#define HEXBUF_SPACE4    0x04
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++    const char *hexbuf(char *dst,int dst_len,const unsigned char *bin,int bytes,int flag);
++
++#ifdef __cplusplus
++}
++#endif
++
++
++#endif
+Index: src/Makefile.am
+===================================================================
+--- src/Makefile.am	(revision 7666)
++++ src/Makefile.am	(working copy)
+@@ -1,7 +1,8 @@
+ bin_PROGRAMS = fiwalk test_arff 
+ 
+ AM_CFLAGS = -Wall
+-AM_CPPFLAGS = -Wall
++AM_CPPFLAGS = -I../../.. -Wall
++LDADD = ../../../tsk3/libtsk3.la
+ 
+ TESTS = test_arff test_fiwalk.sh
+ 
+Index: Makefile.am
+===================================================================
+--- Makefile.am	(revision 7666)
++++ Makefile.am	(working copy)
+@@ -16,34 +16,34 @@
+ 
+ ACLOCAL_AMFLAGS = -I m4
+ 
+-renew:
+-	aclocal
+-	autoheader -f
+-	touch NEWS README AUTHORS ChangeLog
+-	touch stamp-h
+-	aclocal
+-	automake -a -c
+-	autoconf -f
++#renew:
++#	aclocal
++#	autoheader -f
++#	touch NEWS README AUTHORS ChangeLog
++#	touch stamp-h
++#	aclocal
++#	automake -a -c
++#	autoconf -f
++#
++#release:
++#	make prerelease
++#	make distcheck
++#	make therelease
++#
++#prerelease:
++#	@echo Building and uploading the release...
++#	@echo Making release $(RELEASE)
++#	@echo
++#	echo
++#	wget http://$(RELEASE_HOST)/downloads/$(RELEASE_FN)
++#	@echo Version `cat $(RELEASE_FN)` is on the server.
++#	python checkversion.py $(RELEASE_FN) $(RELEASE)
++#	/bin/rm $(RELEASE_FN)
++#
++#therelease:
++#	gpg --detach-sign $(RELEASE).tar.gz
++#	scp $(RELEASE).tar.gz{,.sig} $(RELEASE_SSH)
++#	ssh $(RELEASE_HOST) 'echo $(RELEASE).tar.gz > $(RELEASE_PATH)'
++#	ssh $(RELEASE_HOST) 'cd $(RELEASE_LOC);/bin/rm $(PACKAGE).tar.gz;ln -s $(RELEASE).tar.gz $(PACKAGE).tar.gz'
++#	@echo Release $(RELEASE) uploaded to server
+ 
+-release:
+-	make prerelease
+-	make distcheck
+-	make therelease
+-
+-prerelease:
+-	@echo Building and uploading the release...
+-	@echo Making release $(RELEASE)
+-	@echo
+-	echo
+-	wget http://$(RELEASE_HOST)/downloads/$(RELEASE_FN)
+-	@echo Version `cat $(RELEASE_FN)` is on the server.
+-	python checkversion.py $(RELEASE_FN) $(RELEASE)
+-	/bin/rm $(RELEASE_FN)
+-
+-therelease:
+-	gpg --detach-sign $(RELEASE).tar.gz
+-	scp $(RELEASE).tar.gz{,.sig} $(RELEASE_SSH)
+-	ssh $(RELEASE_HOST) 'echo $(RELEASE).tar.gz > $(RELEASE_PATH)'
+-	ssh $(RELEASE_HOST) 'cd $(RELEASE_LOC);/bin/rm $(PACKAGE).tar.gz;ln -s $(RELEASE).tar.gz $(PACKAGE).tar.gz'
+-	@echo Release $(RELEASE) uploaded to server
+-
