@@ -547,6 +547,8 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
     if ((m_blkMapFlag) && (isNonResident(fs_attr))
         && (isDotDir(fs_file, path) == 0)) {
         TSK_FS_ATTR_RUN *run;
+        int sequence = 0;
+
         for (run = fs_attr->nrd.run; run != NULL; run = run->next) {
             unsigned int block_size = fs_file->fs_info->block_size;
 
@@ -556,7 +558,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
 
             // @@@ We probaly want ot keep on going here
             if (m_db->addFsBlockInfo(m_curFsId, m_curFileId,
-                    run->addr * block_size, run->len * block_size, 0)) {
+                    run->addr * block_size, run->len * block_size, sequence++)) {
                 return TSK_ERR;
             }
         }
