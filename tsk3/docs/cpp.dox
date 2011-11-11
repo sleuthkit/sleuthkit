@@ -1,0 +1,31 @@
+/*! \page cpppage C++ Classes
+   
+This section provides a high-level overview of the C++ classes that
+wrap around the C structs and functions.  The C++ interface can be
+used when the rest of your program is in C++ and when you want to
+ensure that the proper locks and thread-safe mechanisms are used
+in a multi-threaded environment.  TSK contains locks to make it
+thread safe, but the C interface allows a thread to modify data in
+a shared structure without obtaining the proper lock.  
+
+Note that the C++ interfaces simply create and use C structs behind
+the scenes.  Therefore, the methods are very similar to the C
+functions. References to the C++ classes were given in earlier
+sections of the User's Guide. It is assumed that the user has read 
+the preceeding sections of the User's Guide to get an understanding of
+what TSK is capable of doing. This section provides references and links 
+to the main C++ classes. 
+
+
+\section cpp_basics Basics
+The first step is to open the image with the TskImgInfo class. This class allows you to read from the disk image. See \ref imgpage for details on the C structs and functions at this layer. 
+
+After the image is open, you can determine the volume system of the image using the TskVsInfo class.  It will detect the volume system and provide access to each volume (or partition). The TskVsPartInfo class provides references to the details of each partition.  See \ref vspage for details on the C structs and functions at this layer. 
+
+Now that you know the layout of the image, you can open each volume to see what file system it has inside.  Use the TskFsInfo class for this. Once you have the file system open, there are many ways to analyze the file system contents. The TskFsBlock class provides access to each block in the file system.  The TskFsDir class provides access to each directory and the TskFsFile class provides access to each file.  From there, you can access all of the details of the file, including its name info (in TskFsFile) and metadata (in TskFsMeta). Access to all of the file's attributes are provided via the TskFsAttribute class.  See \ref fspage for details on the C structs and functions at this layer. 
+
+If you want to automate the entire process and not deal with manually detecting volumes and file systems, consider the TskAuto class.  See \ref autopage for more automation details. 
+
+Back to \ref users_guide "Table of Contents"
+
+*/
