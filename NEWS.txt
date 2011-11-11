@@ -12,6 +12,7 @@ New Features:
 - New database design that allows for multiple images in the same database 
 - GPT volume system tries other sector sizes if first attempt fails.
 - Added hash calculation and lookup to AutoDB and JNI.
+- Upgraded SQLite to 3.7.9. 
 
 Bug Fixes:
 - Relaxed checking when conflict exists between DOS and GPT partitions.
