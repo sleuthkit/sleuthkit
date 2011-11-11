@@ -13,7 +13,9 @@ my $RMAN = "/rman-3.2/rman";
 
 # rman and www are back different levels depending on 
 # which branch we are on.
-if (-d "../../../rman-3.2") {
+if (-d "../../rman-3.2") {
+    $BACK = "../../";
+} elsif (-d "../../../rman-3.2") {
     $BACK = "../../../";
 } elsif (-d "../../../../rman-3.2") {
     $BACK = "../../../../";

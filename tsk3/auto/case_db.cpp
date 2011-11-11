@@ -119,7 +119,10 @@ TskCaseDb::initAddImage()
 * and block map population).  Use TskCaseDb::initAddImage() to set
 * these values.
 *
-* @param images Paths to the image splits to open.
+* @param numImg Number of images to add
+* @param imagePaths Paths to the image splits to open.
+* @param imgType TYpe of image format
+* @param sSize Sector size of image
 * @returns 1 on error and 0 on success
 */
 uint8_t

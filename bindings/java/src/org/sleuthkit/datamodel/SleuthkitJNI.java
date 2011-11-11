@@ -235,7 +235,6 @@ public class SleuthkitJNI {
 	
 	/**
 	 * Enable verbose logging and redirect stderr to the given log file.
-	 * @return the version string
 	 */
 	public static void startVerboseLogging(String logPath) {
 		startVerboseLoggingNat(logPath);
