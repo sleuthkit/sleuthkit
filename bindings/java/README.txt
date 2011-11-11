@@ -13,30 +13,38 @@ To use the Java bindings, you must have the Sleuth Kit datamodel
 JAR file compiled and have compiled the associated dynamic library
 from the C/C++ code.
 
-
-Building The Jar File
-
-You will need:
-* The sqlitejdbc Jar file:
-    http://www.xerial.org/maven/repository/artifact/org/xerial/sqlite-jdbc/ (newest version is at the BOTTOM)
+Requirements:
 * Java JDK
 * Ant
-
-Place the JAR file in the 'lib' folder.
-
-Build with the default ant target (by running 'ant')
 
 
 Building the Dynamic Library (for JNI)
 
-To build the .dll build the win32 visual studio project. You will
-need to have a version of JDK for the .dll to build. You will need
-to set the JDK_HOME environment variable If it is not already set.
+The win32 Visual Studio solution has a tsk_jni project that will
+build the JNI dll.  To use this project, you will need to have
+JDK_HOME environment variable set to the root directory of JDK.
+
+On non-windows environments, it should just build as part of running
+./configure and make.   If the needed Java components are not found,
+it will not be built. 
+
+
+
+Building The Jar File
+
+Build with the default ant target (by running 'ant').  This will
+download the required libraries (using ivy) and place the jar file
+in the dist folder along with the needed dll and library files.
 
 
 Using the Jar file and Library
 
 Make sure the Jar file is in your CLASSPATH. The dynamic library
 will also need to be available when the program is run.  Typically
-that means that it must be in the path.
+that means that it must be in the path.  Refer to the javadocs for 
+details on using the API
+
+------------
+Brian Carrier
+Nov 11, 2011
 

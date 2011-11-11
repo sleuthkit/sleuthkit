@@ -18,6 +18,9 @@
 <p>Use TskData to map integer and enum values back to their meaning. For example, the file system type will be returned as an integer and TskData maps it to NTFS or FAT.</p>
 
 <h3><b>JNI</b></h3>
-<p>The bulk of the analysis occurs in the C/C++ code. JNI is used to run the C/C++ code from Java. The JNI methods are all located in the SleuthkitJNI class as static methods. It returns handles that refer to data structures in the C/C++ land. You should never have to directly call these methods. This class and its methods are used by the other data model classes.</p>
+<p>The bulk of the analysis occurs in the C/C++ code. JNI is used to run the C/C++ code from Java. The JNI methods are all located in the SleuthkitJNI java class as static methods. It returns handles that refer to data structures in the C/C++ land. You should never have to directly call these static Java methods. This class and its methods are used by the other Java data model classes.</p>
+
+<h3>Error Handling</h3>
+<p>The C/C++ code uses return codes and such for error handling.  The C/C++ JNI code turns any errors into a TskException that gets thrown into the Java code.  The Datamodel Java code will not catch these exceptions and instead they will be passed up to the other Java code that called the datamodel code. </p>
 
 </body>
