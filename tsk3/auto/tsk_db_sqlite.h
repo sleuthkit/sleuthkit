@@ -61,7 +61,7 @@ class TskDbSqlite {
         const TSK_AUTO_CASE_KNOWN_FILE_ENUM known, int64_t fsObjId,
         int64_t & objId);
     int addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
-        uint64_t a_byteStart, uint64_t a_byteLen);
+        uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
     
     bool dbExist() const;
     int createSavepoint(const char *name);
