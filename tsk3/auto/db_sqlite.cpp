@@ -242,7 +242,7 @@ int
 
     if (m_blkMapFlag) {
         if (attempt_exec
-            ("CREATE TABLE tsk_file_layout (fs_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, obj_id);",
+            ("CREATE TABLE tsk_file_layout (fs_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, obj_id INTEGER, sequence INTEGER);",
                 "Error creating tsk_fs_blocks table: %s\n")) {
             return 1;
         }
@@ -730,18 +730,19 @@ int
  * @param a_fileObjId ID of the file
  * @param a_byteStart Byte address relative to the start of the image file
  * @param a_byteLen Length of the run in bytes
+ * @param a_sequence Sequence of this run in the file
  * @returns 1 on error
  */
 int
  TskDbSqlite::addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
-    uint64_t a_byteStart, uint64_t a_byteLen)
+    uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence)
 {
     char
      foo[1024];
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_file_layout (fs_id, byte_start, byte_len, obj_id) VALUES (%lld, %lld, %llu, %llu)",
-        a_fsObjId, a_byteStart, a_byteLen, a_fileObjId);
+        "INSERT INTO tsk_file_layout (fs_id, byte_start, byte_len, obj_id, sequence) VALUES (%lld, %lld, %llu, %llu, %d)",
+        a_fsObjId, a_byteStart, a_byteLen, a_fileObjId, a_sequence);
 
     return attempt_exec(foo,
         "Error adding data to tsk_fs_info table: %s\n");

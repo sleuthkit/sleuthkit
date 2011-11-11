@@ -556,7 +556,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
 
             // @@@ We probaly want ot keep on going here
             if (m_db->addFsBlockInfo(m_curFsId, m_curFileId,
-                    run->addr * block_size, run->len * block_size)) {
+                    run->addr * block_size, run->len * block_size, 0)) {
                 return TSK_ERR;
             }
         }
