@@ -68,21 +68,24 @@
                 <action name="test">
                     <target>test</target>
                 </action>
+                <action name="javadoc">
+                    <target>javadoc</target>
+                </action>
             </ide-actions>
             <export>
                 <type>folder</type>
                 <location>build</location>
-                <build-target>compile</build-target>
+                <build-target>dist</build-target>
             </export>
             <export>
                 <type>folder</type>
                 <location>build</location>
-                <build-target>compile</build-target>
+                <build-target>dist</build-target>
             </export>
             <export>
                 <type>folder</type>
                 <location>test</location>
-                <build-target>compile</build-target>
+                <build-target>dist</build-target>
             </export>
             <view>
                 <items>
@@ -102,6 +105,7 @@
                     <ide-action name="build"/>
                     <ide-action name="rebuild"/>
                     <ide-action name="clean"/>
+                    <ide-action name="javadoc"/>
                     <ide-action name="test"/>
                 </context-menu>
             </view>
