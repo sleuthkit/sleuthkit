@@ -23,10 +23,17 @@ package org.sleuthkit.datamodel;
  * object. 
  */
 
-public interface FileSystemParent extends Content {
+public abstract class FileSystemParent extends AbstractContent{
+	
+	FileSystemParent(SleuthkitCase db, long obj_id) {
+		super(db, obj_id);
+	}
+	
+	
+	
 	/**
 	 * get the handle to the sleuthkit image info object
 	 * @return the object pointer
 	 */
-	public long getImageHandle();
+	abstract long getImageHandle() throws TskException;
 }
