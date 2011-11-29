@@ -25,7 +25,7 @@ import java.util.List;
  * Represents a volume in a VolumeSystem.
  * Populated based on data in database.
  */
-public class Volume extends AbstractContent implements FileSystemParent {
+public class Volume extends FileSystemParent {
 	// @@@ We should mark these as private and comment somewhere what the units are (bytes, sectors, etc.)
 	long addr, start, length, flags;
 	String desc;
@@ -206,7 +206,7 @@ public class Volume extends AbstractContent implements FileSystemParent {
 	}
 
 	@Override
-	public long getImageHandle() {
+	public long getImageHandle() throws TskException {
 		return getParent().getParent().getImageHandle();
 	}
 

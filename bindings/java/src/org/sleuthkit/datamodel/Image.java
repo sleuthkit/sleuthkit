@@ -26,7 +26,7 @@ import java.util.List;
  * Populated based on data in database.
  */
 
-public class Image extends AbstractContent implements FileSystemParent {
+public class Image extends FileSystemParent {
 	//data about image
 
 	private long type, ssize;
@@ -50,7 +50,6 @@ public class Image extends AbstractContent implements FileSystemParent {
 		this.ssize = ssize;
 		this.name = name;
 		this.paths = paths;
-		this.imageHandle = SleuthkitJNI.openImage(paths);
 	}
 
 	/**
@@ -66,8 +65,20 @@ public class Image extends AbstractContent implements FileSystemParent {
 	 * @return the object pointer
 	 */
 	@Override
-	public long getImageHandle() {
+	public long getImageHandle() throws TskException {
+		if (imageHandle == 0) {
+			imageHandle = SleuthkitJNI.openImage(paths);
+		}
+		
 		return imageHandle;
+	}
+	
+	@Override
+	public void finalize() throws Throwable {
+		super.finalize();
+		if(imageHandle != 0){
+			SleuthkitJNI.closeImg(imageHandle);
+		}
 	}
 
 	/**
@@ -80,7 +91,7 @@ public class Image extends AbstractContent implements FileSystemParent {
 	@Override
 	public byte[] read(long offset, long len) throws TskException {
 		// read from the image
-		return SleuthkitJNI.readImg(imageHandle, offset, len);
+		return SleuthkitJNI.readImg(getImageHandle(), offset, len);
 	}
 
 	/**
