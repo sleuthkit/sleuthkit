@@ -42,6 +42,12 @@ AC_CHECK_HEADERS([inttypes.h unistd.h sys/param.h])
 
 ###
 ###For Fiwalk
+
+## These will be removed after complete integration
+## Atat that point fiwalk will just be part of TSK not a separate package
+AC_DEFINE([FIWALK_VERSION], ["0.6.15"], [version of fiwalk subpackage])
+AC_DEFINE([FIWALK_PACKAGE], ["FIWALK"], [name of fiwalk subpackage])
+
 AC_CHECK_HEADERS([openssl/evp.h openssl/hmac.h openssl/x509.h openssl/pem.h])
 AC_CHECK_HEADERS([magic.h err.h])
 
@@ -185,7 +191,7 @@ AS_IF([test "x$with_libewf" != "xno"],
 AC_ARG_ENABLE(fiwalk,
     [AS_HELP_STRING([--disable-fiwalk],[Disable fiwalk build])],
     #if --diable-fiwalk
-#    [echo option provided:fiwalk" | "$fiwalk" | "$enable_fiwalk]
+#   [echo option provided:fiwalk" | "$fiwalk" | "$enable_fiwalk]
     [],
     #Default to fiwalk build enabled
 #    [echo "option not provided: "fiwalk" | "$fiwalk" | "$enable_fiwalk]

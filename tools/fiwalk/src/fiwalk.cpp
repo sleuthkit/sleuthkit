@@ -96,7 +96,7 @@ string  plugin_filename;
 
 void print_version()
 {
-    printf("FIWalk Version:    %s\n",PACKAGE_VERSION);
+    printf("FIWalk Version:    %s\n",FIWALK_VERSION);
     printf("SleuthKit Version: %s\n",tsk_version_get_str());
 #ifdef HAVE_LIBAFFLIB
     printf("AFFLIB Version:    %s\n",af_version());
@@ -542,7 +542,7 @@ int main(int argc, char * const *argv)
 	x->pop();
 	    
 	/* Output carver information per photorec standard */
-	x->add_DFXML_creator(PACKAGE,PACKAGE_VERSION,command_line);
+	x->add_DFXML_creator(FIWALK_PACKAGE,FIWALK_VERSION,command_line);
     }
 
     /* Can't use comment until after here... */
@@ -556,7 +556,7 @@ int main(int argc, char * const *argv)
     partition_info("image_filename",filename);
 
     if(!x){
-	partition_info("fiwalk_version",PACKAGE_VERSION);
+	partition_info("fiwalk_version",FIWALK_VERSION);
 	partition_info("start_time",mytime());
 	partition_info("tsk_version",tsk_version_get_str());
     }
