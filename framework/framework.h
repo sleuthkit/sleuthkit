@@ -18,7 +18,6 @@
 #include "Services/Log.h"
 #include "Services/TskImgDB.h"
 #include "Services/TskImgDBSqlite.h"
-#include "Services/TskImgDBPostgreSQL.h"
 #include "Services/Scheduler.h"
 #include "Services/TskSystemProperties.h"
 #include "Services/TskSystemPropertiesImpl.h"
