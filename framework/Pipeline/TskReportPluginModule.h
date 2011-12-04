@@ -16,8 +16,8 @@
 #include "Poco/SharedLibrary.h"
 
 /**
- * A Plugin Module supports the loading of custom libraries to perform
- * reporting.
+ * Supports the loading of custom dynamic libraries to perform
+ * reporting and post-processing in a TskReportPipeline.
  */
 class TSK_FRAMEWORK_API TskReportPluginModule: public TskPluginModule
 {

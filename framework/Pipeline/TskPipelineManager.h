@@ -20,7 +20,7 @@
 #include "TskPipeline.h"
 
 /**
- * The TskPipelineManager class is responsible for creation of Pipelines.
+ * Responsible for creation of TskPipelines and TskReportPipelines.
  */
 class TSK_FRAMEWORK_API TskPipelineManager
 {

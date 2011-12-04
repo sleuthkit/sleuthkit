@@ -20,8 +20,7 @@
 #include "TskFile.h"
 
 /**
- * TskFileManager is responsible for managing the lifetime
- * of TskFile objects in the system.
+ * Responsible for managing TskFile objects in the system.
  */
 class TSK_FRAMEWORK_API TskFileManager
 {

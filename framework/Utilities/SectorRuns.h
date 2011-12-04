@@ -13,6 +13,11 @@
 
 #include "framework_i.h"
 
+/**
+ * Stores a list of runs (which have a starting sector and length).
+ * Can be used to store information about a file, unused areas of an
+ * image, or ...
+ */
 class TSK_FRAMEWORK_API SectorRuns
 {
 public:

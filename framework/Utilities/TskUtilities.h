@@ -22,7 +22,8 @@
 #include "framework_i.h"
 
 /**
- * An interface containing common utility methods.
+ * Contains commonly needed utility methods.  Refer to the poco library
+ * for other commonly needed methods.
  */
 class TSK_FRAMEWORK_API TskUtilities
 {

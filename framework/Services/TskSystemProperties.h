@@ -24,7 +24,10 @@
 #define TSK_SYS_PROP_SET(name, value) TskServices::Instance().getSystemProperties().set((name), (value))
 
 /**
- * An interface for setting and retrieving name/value pairs.
+ * An interface for setting and retrieving system-wide name/value pairs.
+ * Typically used to store system settings so that all modules and 
+ * classes can access the settings, which can be set from a config file.  
+ * Can be registered with and retrieved from TskServices.
  */
 class TSK_FRAMEWORK_API TskSystemProperties
 {

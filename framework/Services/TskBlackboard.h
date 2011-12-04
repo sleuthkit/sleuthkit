@@ -10,7 +10,9 @@
 
 /**
  * \file TskBlackboard.h
- * Contains the interface for the TskBlackboard class.
+ * Interface for class that will implement the black board.  The black board
+ * is used to store data from analysis modules.  The data is available to
+ * later modules in the pipeline and in the final reporting phase.
  */
 
 #ifndef _TSK_BLACKBOARD_H
@@ -26,6 +28,8 @@ using namespace std;
 
 /**
  * An interface for setting and retrieving name/value pairs to the blackboard.
+ * The blackboard is used to store data for use by later modules in the pipeline.
+ * Can be registered with and retrieved from TskServices.
  */
 class TSK_FRAMEWORK_API TskBlackboard
 {

@@ -13,6 +13,11 @@
 
 #include "framework_i.h"
 
+/**
+ * Interface for class that will handle scheduling tasks in a 
+ * distributed system / cluster of nodes.
+ * Can be registered with and retrieved from TskServices.
+ */
 class TSK_FRAMEWORK_API Scheduler
 {
 public:

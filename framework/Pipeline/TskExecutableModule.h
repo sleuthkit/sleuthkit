@@ -14,8 +14,8 @@
 #include "TskModule.h"
 
 /**
- * An Executable Module supports launching a process to perform
- * some analysis on a File
+ * Supports launching a process via an executable file to perform
+ * some analysis on a TskFile object in a TskPipeline.
  */
 class TSK_FRAMEWORK_API TskExecutableModule: public TskModule
 {

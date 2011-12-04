@@ -9,7 +9,7 @@
  */
 
 /**
- * \file TskFileTskTsk.cpp
+ * \file TskFileTsk.cpp
  * Contains a Sleuthkit and Poco implementation of the TskFileTsk class.
  */
 

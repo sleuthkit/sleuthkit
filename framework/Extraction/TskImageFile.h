@@ -21,9 +21,8 @@
 #include <vector>
 #include <string>
 
-/// An interface to a disk image.
 /**
- * TskImageFile defines an interface for interacting with a disk image.
+ * An interface to a class that allows low-level access to a disk image.
  * It supports opening split image files, extracting file system 
  * information from the image and extracting data for a specific file
  * or for a range of sectors.
@@ -35,12 +34,12 @@ public:
 
     virtual ~TskImageFile();
 
-    /// Open the disk image represented by one or more actual files.
     /**
+     * Open the disk image represented by one or more actual files.
      * @param imageFiles One or more files that make up the disk image
      * @return 0 on success and -1 on error
      */
-    virtual int open(const std::vector<std::wstring> &) = 0;
+    virtual int open(const std::vector<std::wstring> &imageFiles) = 0;
 
     // open the images in the DB
     virtual int open() = 0;

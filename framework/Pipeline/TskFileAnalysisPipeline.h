@@ -23,8 +23,9 @@
 #include "TskFileAnalysisPluginModule.h"
 
 /**
- * The File Analysis Pipeline class controls the processing of a File
- * through an ordered list of dynamically configured modules.
+ * Controls the processing of a TskFile
+ * through an ordered list of dynamically configured modules. The
+ * pipeline can contain one or more instances of TskModule.
  */
 class TSK_FRAMEWORK_API TskFileAnalysisPipeline : public TskPipeline
 {

@@ -26,8 +26,9 @@
 #include "Poco/Util/AbstractConfiguration.h"
 
 /**
- * A singleton that wraps a Poco AbstractConfiguration
- * class to set and retrieve name/value pairs.
+ * An implementation of TskSystemProperties that uses Poco
+ * AbstractConfiguration class to set and retrieve name/value
+ * pairs from an XML file.
  */
 class TSK_FRAMEWORK_API TskSystemPropertiesImpl : public TskSystemProperties
 {

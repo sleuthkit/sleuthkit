@@ -19,8 +19,10 @@
 #include "File/TskFile.h"
 
 /**
- * Base class for modules that perform some operation in the
- * context of a Pipeline.
+ * Interface for classes that represent different types of modules
+ * in the pipeline. Example module types include dynamic library
+ * and executables. These modules perform some operation in the
+ * context of a TskPipeline.
  */
 class TSK_FRAMEWORK_API TskModule
 {

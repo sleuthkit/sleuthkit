@@ -11,7 +11,7 @@
 
 /**
  * \file TskImageFile.h
- * An implementation of the TskImageFile class using The Sleuth Kit.
+ * An implementation of the TskImageFile class that uses The Sleuth Kit.
  */
 #ifndef _TSK_IMAGEFILETSK_H
 #define _TSK_IMAGEFILETSK_H

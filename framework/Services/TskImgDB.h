@@ -9,10 +9,6 @@
  *  This software is distributed under the Common Public License 1.0
  */
 
-/**
- * \file TskImgDB.h
- * Interface to the framework data model.
- */
 
 #ifndef _TSK_IMGDB_H
 #define _TSK_IMGDB_H
@@ -31,7 +27,9 @@ using namespace std;
 
 typedef uint64_t artifact_t;
 
-/// TskFileRecord is a database file record
+/**
+ * Contains data from a file record in the database.
+ */
 struct TskFileRecord
 {
     uint64_t fileId;
@@ -58,6 +56,9 @@ struct TskFileRecord
     std::string fullPath;
 };
 
+/**
+ * Contains data from a volume/partition record in the database.
+ */
 struct TskVolumeInfoRecord
 {
     int vol_id;
@@ -67,6 +68,9 @@ struct TskVolumeInfoRecord
     int flags;
 };
 
+/**
+ * Contains data from a file system record in the database.
+ */
 struct TskFsInfoRecord
 {
     int fs_id;
@@ -87,6 +91,9 @@ struct TskFileTypeRecord
     uint64_t count; // count of files with this extension.
 };
 
+/**
+ * Contains data about the module return status for a given file (as recorded in the database)
+ */
 struct TskModuleStatus
 {
     uint64_t file_id;
@@ -94,6 +101,9 @@ struct TskModuleStatus
     int status;
 };
 
+/**
+ * Contains data for a blackboard entry for a given file and artifact ID
+ */
 struct TskBlackboardRecord
 {
     artifact_t artifactId;
@@ -115,12 +125,19 @@ struct TskBlackboardRecord
     TskBlackboardRecord() {}
 };
 
+/**
+ * Contains data about the current status for an unallocated chunk of data.
+ */
 struct TskUnallocImgStatusRecord
 {
     int unallocImgId;
     int status; // UNALLOC_IMG_STATUS
 };
 
+/**
+ * Contains data about the mapping of data in the unallocated chunks back
+ * to their original location in the disk image.
+ */
 struct TskAllocUnallocMapRecord
 {
     int vol_id;
@@ -130,6 +147,9 @@ struct TskAllocUnallocMapRecord
     uint64_t orig_img_sect_start;
 };
 
+/**
+ * contains data about the 'unused sectors', which did not have carvable data.
+ */
 struct TskUnusedSectorsRecord
 {
     uint64_t fileId;
@@ -137,9 +157,11 @@ struct TskUnusedSectorsRecord
     uint64_t sectLen;
 };
 
-/// TskImgDB is an interface to the framework data model.
 /**
- * 
+ * Interface for class that implments database storage for an image.
+ * The database will be used to store information about the data
+ * being analyzed. 
+ * Can be registered with and retrieved from TskServices.
  */
 class TSK_FRAMEWORK_API TskImgDB
 {

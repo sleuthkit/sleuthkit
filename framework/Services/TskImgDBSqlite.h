@@ -29,7 +29,9 @@ using namespace std;
 #include "tsk3/libtsk.h"
 #include "tsk3/auto/sqlite3.h"
 
-/// Framework data access layer the uses SQLite as the back end.
+/** 
+ * Implementation of TskImgDB that  uses SQLite to store the data.
+ */
 class TSK_FRAMEWORK_API TskImgDBSqlite : public TskImgDB
 {
 public:

@@ -1,0 +1,12 @@
+/*! \mainpage The Sleuth Kit (TSK) Framework User's Guide and API Reference
+
+  <h3>Overview</h3>
+  The framework in TSK extends TSK to allow:
+  <ul>
+    <li>Applications to more easily incorporate third-party-tools that write their programs to be incorporated as modules in the TskPipeline.</li>
+    <li>Applications to be written to take advantage of distributed computing environments.</li>
+  </ul>
+  
+  More docs will be coming.
+
+*/

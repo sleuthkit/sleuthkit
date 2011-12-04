@@ -22,8 +22,10 @@
 #include "TskReportPluginModule.h"
 
 /**
- * The Report Pipeline class controls reporting
- * through an ordered list of dynamically configured modules.
+ * Controls a series of reporting modules that are run
+ * after all of the file-specific analysis modules are run.
+ * The reporting pipeline can contain one or more TskModule
+ * modules.
  */
 class TSK_FRAMEWORK_API TskReportPipeline : public TskPipeline
 {

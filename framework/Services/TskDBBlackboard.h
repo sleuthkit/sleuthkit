@@ -23,7 +23,8 @@
 #include "Services/TskServices.h"
 
 /**
- * A class for setting and retrieving name/value pairs to the blackboard, using TskImgDB for storage.
+ * An implementation of TskBlackboard that stores the name / value pairs
+ * in the TskImgDB. 
  */
 class TSK_FRAMEWORK_API TskDBBlackboard : public TskBlackboard
 {

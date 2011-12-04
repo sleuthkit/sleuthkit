@@ -13,11 +13,21 @@
 
 #include "Services/TskImgDB.h"
 
+/**
+ * Interface for class that will carve a chunk of data. 
+ * The design assumption is that the unallocated space has
+ * already been broken up into multiple chunks and the 
+ * corresponding information for each chunk is stored in the 
+ * ImgDB. The sequence in this class corresponds to the chunk ID
+ */
 class TSK_FRAMEWORK_API CarveExtract
 {
 public:
     virtual ~CarveExtract() = 0;
-    /* @returns 1 on error */
+    /**
+     * @param sequence Id of chunk to carve
+     * @returns 1 on error 
+     */
     virtual int processFile(TskImgDB * imgDB, int sequence) = 0;
 };
 #endif

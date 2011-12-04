@@ -118,8 +118,8 @@ int SectorRuns::getVolID() const
 /**
  * Read data in the current entry into the buffer.
  *
- * @param a_offset Sector offset to start reading from (relative to start of current sector run)
- * @param a_len Number of sectors to read
+ * @param a_offsetSect Sector offset to start reading from (relative to start of current sector run)
+ * @param a_lenSect Number of sectors to read
  * @param a_buffer Buffer to read into (must be of size a_len * 512 or larger)
  * @returns -1 on error or number of sectors read
  */

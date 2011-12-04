@@ -25,7 +25,7 @@
 #include "Poco/DOM/Element.h"
 
 /**
- * The Pipeline class controls the processing of a File
+ * The Pipeline class controls the processing of a TskFile
  * through an ordered list of dynamically configured modules.
  */
 class TSK_FRAMEWORK_API TskPipeline

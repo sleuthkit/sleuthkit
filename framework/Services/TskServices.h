@@ -18,70 +18,75 @@
 #include "Services/TskBlackboard.h"
 #include "Services/TskSystemProperties.h"
 
-// TskServices class provide singleton access to framework services.
+/**
+ * Provices singleton access to many framework services.  This is used
+ * to register and access the classes that implement the services. 
+ */
 class TSK_FRAMEWORK_API TskServices
 {
 public:
-    static TskServices &Instance(); // singleton
+    /**
+     * Singleton interface to return the TskServices instance.
+     */
+    static TskServices &Instance(); 
 
-    // Return a Log instance. If there is no existing Log, it will be created in the current directory with a timestamp.
-    // Return 0 if no Log is created.
+    /** Return a Log instance. If there is no existing Log, it will be created in the current directory with a timestamp.
+    * @returns 0 if no Log is created. */
     Log& getLog();
 
-    // Register a log implementation with the framework.
+    /** Register a log implementation with the framework. */
     void setLog(Log &log);
 
-    // Register a Scheduler implementation with the framework.
+    /** Register a Scheduler implementation with the framework */
     void setScheduler(Scheduler &scheduler);
 
-    // Return the Secheduler instance.
-    // Return 0 if no Scheduler was set.
+    /** Return the Secheduler instance.
+     * @returns 0 if no Scheduler was set. */
     Scheduler& getScheduler();
 
-    /// Register a TskImgDB implementation with the framework.
-    /**
+    /** Register a TskImgDB implementation with the framework.
      * @param imgDB The TskImgDB implementation to register
      */
     void setImgDB(TskImgDB& imgDB);
 
-    /// Return the registered TskImgDB.
     /**
+     * Return the registered TskImgDB.
      * @return The registered TskImgDB implementation or NULL
      */
     TskImgDB& getImgDB();
 
-    /// Register an TskImageFile implementation with the framework.
     /**
-     * @param imageFile The TskImageFile implementation to register
+     * Register an TskImageFile implementation with the framework.
+     * @param imgFile The TskImageFile implementation to register
      */
     void setImageFile(TskImageFile& imgFile);
 
-    /// Return the registered TskImageFile.
     /**
+     * Return the registered TskImageFile.
      * @return The registered TskImageFile implementation or NULL
      */
     TskImageFile& getImageFile();
 
-    /// Register an TskBlackboard implementation with the framework.
     /**
+     * Register an TskBlackboard implementation with the framework.
      * @param blackboard The TskBlackboard implementation to register
      */
     void setBlackboard(TskBlackboard& blackboard);
 
-    /// Return the registered TskBlackboard.
     /**
+     * Return the registered TskBlackboard.
      * @return The registered TskBlackboard implementation or NULL
      */
     TskBlackboard& getBlackboard();
 
-    /// Register an TskSystemProperties implementation with the framework.
     /**
+     * Register an TskSystemProperties implementation with the framework.
      * @param systemProperties The TskSystemProperties implementation to register
      */
     void setSystemProperties(TskSystemProperties& systemProperties);
 
-    /// Return the registered TskSystemProperties.
     /**
+     * Return the registered TskSystemProperties.
      * @return The registered TskSystemProperties implementation or NULL
      */
     TskSystemProperties& getSystemProperties();

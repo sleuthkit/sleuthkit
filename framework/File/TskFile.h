@@ -23,8 +23,12 @@
 #include "Services/TskImgDB.h"
 
 /**
- * TskFile represents files that have been identified during
- * file extraction and which may be subject to analysis.
+ * An interface that is used to represent a file. This interface
+ * is used during the analysis of a file and is typically created
+ * based on data in TskImgDB, which was created by CarveExtract
+ * or TskImageFile.  Different implementations of this class 
+ * may retrieve file content and metadata in different ways.
+ * TskFile objects are obtained from TskFileManager.
  */
 class TSK_FRAMEWORK_API TskFile
 {

@@ -21,6 +21,9 @@
 
 #include "framework_i.h"
 
+/**
+ * Framework exception class
+ */
 class TSK_FRAMEWORK_API TskException : public std::exception
 {
 public:

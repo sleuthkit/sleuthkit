@@ -19,6 +19,12 @@
 #define LOGWARN(msg) TskServices::Instance().getLog().logWarn(msg)
 #define LOGINFO(msg) TskServices::Instance().getLog().logInfo(msg)
 
+/**
+ * Logging class to enable the framework, apps that use it, and modules to
+ * log error and warning messages.  The default implementation writes
+ * the log messages to a file, but it can be extended by another class.
+ * Can be registered with and retrieved from TskServices.
+ */
 class TSK_FRAMEWORK_API Log
 {
 public:

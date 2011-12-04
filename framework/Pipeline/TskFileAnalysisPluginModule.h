@@ -16,8 +16,8 @@
 #include "Poco/SharedLibrary.h"
 
 /**
- * A Plugin Module supports the loading of custom libraries to perform
- * analysis on a File
+ * Supports the loading of custom dynamic libraries to perform
+ * analysis on a single TskFile
  */
 class TSK_FRAMEWORK_API TskFileAnalysisPluginModule: public TskPluginModule
 {

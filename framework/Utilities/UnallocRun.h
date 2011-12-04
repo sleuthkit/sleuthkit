@@ -13,6 +13,11 @@
 
 #include "framework_i.h"
 
+/**
+ * Stores information that can map a region in the original disk image
+ * to a region in one of the chunks of unallocated space (as created by
+ * the CarvePrep implementation. 
+ */
 class TSK_FRAMEWORK_API UnallocRun
 {
 public:

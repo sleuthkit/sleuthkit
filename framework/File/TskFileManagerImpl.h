@@ -23,8 +23,9 @@
 #include "Poco/File.h"
 
 /**
- * The TSKFileManagerImpl provides an implementation of the TskFileManager
- * interface that stores files based on their file ids.
+ * An implementation of the TskFileManager
+ * interface that stores files in a directory named 'files' 
+ * based on their file ids.
  */
 class TSK_FRAMEWORK_API TskFileManagerImpl : public TskFileManager
 {

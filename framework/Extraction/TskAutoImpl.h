@@ -21,8 +21,9 @@
 #include <map>
 #include <string>
 
-/** \internal
- * C++ class that implements TskAuto to load file metadata into a database. 
+/** 
+ * Implements TskAuto and is used to analyze the data in a disk image
+ * and populate TskImgDB with the results.
  */
 class TSK_FRAMEWORK_API TSKAutoImpl:public TskAuto {
 public:
