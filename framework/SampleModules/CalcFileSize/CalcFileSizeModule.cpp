@@ -24,7 +24,6 @@
 
 // Framework includes
 #include "Pipeline/TskModule.h"
-#include "Services/TskSystemPropertiesImpl.h"
 #include "Services/TskBlackboard.h"
 #include "Services/TskServices.h"
 
