@@ -12,6 +12,11 @@
 #ifndef _TSK_OSSLIBTSK_H
 #define _TSK_OSSLIBTSK_H
 
+/**
+ * Include this file when incorporating the framework into an
+ * application.
+ */
+
 #include "framework_i.h"
 
 #include "Services/TskServices.h"

@@ -15,17 +15,8 @@
 #include <sstream>
 #include <math.h>
 
-#if defined(_WIN32)
-    #define FILE_SIZE_EXPORT __declspec(dllexport)
-#else
-    #define FILE_SIZE_EXPORT
-#endif
-
-
 // Framework includes
-#include "Pipeline/TskModule.h"
-#include "Services/TskBlackboard.h"
-#include "Services/TskServices.h"
+#include "TskModuleDev.h"
 
 // We process the file 8k at a time
 static const uint32_t FILE_BUFFER_SIZE = 8193;
@@ -37,18 +28,19 @@ extern "C"
      * arguments to be passed into the module.
      * @param arguments This module takes no arguments
      */
-    TskModule::Status FILE_SIZE_EXPORT initialize(std::string& arguments)
+    TskModule::Status TSK_MODULE_EXPORT initialize(std::string& arguments)
     {    
         return TskModule::OK;
     }
-        /**
+ 
+    /**
      * The run() method is where the modules work is performed.
      * The module will be passed a pointer to a file from which both
      * content and metadata can be retrieved.
      * @param pFile A pointer to a file to be processed.
      * @returns TskModule::OK on success and TskModule::FAIL on error.
      */
-    TskModule::Status FILE_SIZE_EXPORT run(TskFile * pFile)
+    TskModule::Status TSK_MODULE_EXPORT run(TskFile * pFile)
     {
         if (pFile == NULL)
         {
@@ -69,14 +61,11 @@ extern "C"
             // Open file.
             pFile->open();
 
-            unsigned __int8 byte = 0;
-            long byteCounts[256];
-            memset(byteCounts, 0, sizeof(long) * 256);
             long totalBytes = 0;
             char buffer[FILE_BUFFER_SIZE];
             int bytesRead = 0;
 
-            // Read file content into buffer and write it to the DigestOutputStream.
+            // Read file content into buffer.
             do
             {
                 memset(buffer, 0, FILE_BUFFER_SIZE);
@@ -84,7 +73,7 @@ extern "C"
                 totalBytes += bytesRead;
             } while (bytesRead > 0);
 
-            // Post the digest to the blackboard
+            // Post the file size to the blackboard
             TskBlackboard& blackboard = TskServices::Instance().getBlackboard();
             
             blackboard.set(pFile->id(), "ByteCount", totalBytes, "CalcFileSizeModule");
@@ -109,7 +98,7 @@ extern "C"
         return TskModule::OK;
     }
 
-    TskModule::Status FILE_SIZE_EXPORT finalize()
+    TskModule::Status TSK_MODULE_EXPORT finalize()
     {
         return TskModule::OK;
     }
