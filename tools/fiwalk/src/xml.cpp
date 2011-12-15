@@ -16,10 +16,6 @@
  * not subject to copyright.
  */
 
-#ifdef HAVE_PTHREAD_H
-#define MUTEX_LOCK(M)   pthread_mutex_lock(M)
-#define MUTEX_UNLOCK(M) pthread_mutex_unlock(M)
-#endif
 
 #include "tsk3/tsk_tools_i.h"
 //#include "config.h"
@@ -30,6 +26,11 @@
 #include <regex>
 #else
 #include <regex.h>
+#endif
+
+#ifdef HAVE_PTHREAD_H
+#define MUTEX_LOCK(M)   pthread_mutex_lock(M)
+#define MUTEX_UNLOCK(M) pthread_mutex_unlock(M)
 #endif
 
 using namespace std;
