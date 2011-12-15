@@ -21,7 +21,7 @@
 #include "tsk3/tsk_tools_i.h"
 //#include "config.h"
 
-#include <strings.h>
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -35,6 +35,10 @@ extern "C" {
 
 #include <ctype.h>
 #include <fcntl.h>
+
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>

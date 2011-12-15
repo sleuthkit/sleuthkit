@@ -222,10 +222,6 @@
 				RelativePath="..\..\tools\fiwalk\src\xml.cpp"
 				>
 			</File>
-			<File
-				RelativePath="..\..\tools\fiwalk\src\xml.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -286,6 +282,10 @@
 			</File>
 			<File
 				RelativePath="..\..\tools\fiwalk\src\utils.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\tools\fiwalk\src\xml.h"
 				>
 			</File>
 		</Filter>

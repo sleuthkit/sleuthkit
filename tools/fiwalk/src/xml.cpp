@@ -16,14 +16,21 @@
  * not subject to copyright.
  */
 
+#ifdef HAVE_PTHREAD_H
 #define MUTEX_LOCK(M)   pthread_mutex_lock(M)
 #define MUTEX_UNLOCK(M) pthread_mutex_unlock(M)
+#endif
 
 #include "tsk3/tsk_tools_i.h"
 //#include "config.h"
 #include "xml.h"
 #include <errno.h>
+
+#ifdef _MSC_VER
+#include <regex>
+#else
 #include <regex.h>
+#endif
 
 using namespace std;
 
@@ -31,7 +38,7 @@ using namespace std;
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/param.h>
+//#include <sys/param.h>
 #include <assert.h>
 #include <fcntl.h>
 #include <stack>
@@ -122,12 +129,18 @@ string xml::xmlstrip(const string &xml)
 
 /****************************************************************/
 
-
+#ifdef HAVE_PTHREAD_H
 xml::xml():M(),out(),tags(),tempfilename(),tag_stack(),tempfile_template("/tmp/xml_XXXXXXXX"),
 	   make_dtd(false),t0(),outfilename()
+#else
+xml::xml():out(),tags(),tempfilename(),tag_stack(),tempfile_template("/tmp/xml_XXXXXXXX"),
+	   make_dtd(false),t0(),outfilename()
+#endif
 {
+#ifdef HAVE_PTHREAD_H
     pthread_mutex_init(&M,NULL);
-    gettimeofday(&t0,0);
+#endif
+	gettimeofday(&t0,0);
 }
 
 void xml::set_tempfile_template(const std::string &temp)
@@ -249,7 +262,9 @@ void xml::open_existing(std::map<std::string,std::string> *tagmap,std::string *t
 
 void xml::close()
 {
+#ifdef HAVE_PTHREAD_H
     MUTEX_LOCK(&M);
+#endif
     if(make_dtd){
 	/* If we are making the DTD, then we have been writing to a temp file.
 	 * Open the real file, write the DTD, and copy over the tempfile.
@@ -280,7 +295,9 @@ void xml::close()
 	unlink(cstr(tempfilename));
     }
     out.close();
+#ifdef HAVE_PTHREAD_H
     MUTEX_UNLOCK(&M);
+#endif
 }
 
 void xml::write_dtd()
@@ -504,16 +521,22 @@ void xml::add_rusage()
  ****************************************************************/
 void xml::xmlcomment(const string &comment_)
 {
+#ifdef HAVE_PTHREAD_H
     MUTEX_LOCK(&M);
+#endif
     out << "<!-- " << comment_ << " -->\n";
     out.flush();
+#ifdef HAVE_PTHREAD_H
     MUTEX_UNLOCK(&M);
+#endif
 }
 
 
 void xml::xmlprintf(const std::string &tag,const std::string &attribute, const char *fmt,...)
 {
-    MUTEX_LOCK(&M);    
+#ifdef HAVE_PTHREAD_H
+    MUTEX_LOCK(&M);  
+#endif
     spaces();
     tagout(tag,attribute);
     va_list ap;
@@ -533,12 +556,16 @@ void xml::xmlprintf(const std::string &tag,const std::string &attribute, const c
     tagout("/"+tag,"");
     out << '\n';
     out.flush();
+#ifdef HAVE_PTHREAD_H
     MUTEX_UNLOCK(&M);
+#endif
 }
 
 void xml::xmlout(const string &tag,const string &value,const string &attribute,bool escape_value)
 {
+#ifdef HAVE_PTHREAD_H
     MUTEX_LOCK(&M);
+#endif
     spaces();
     if(value.size()==0){
 	tagout(tag,attribute+"/");
@@ -550,7 +577,9 @@ void xml::xmlout(const string &tag,const string &value,const string &attribute,b
     }
     out << "\n";
     out.flush();
+#ifdef HAVE_PTHREAD_H
     MUTEX_UNLOCK(&M);
+#endif
 }
 
 

@@ -10,13 +10,20 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
+#ifdef HAVE_PTHREAD_H
 #include <pthread.h>
+#endif
+
 #include <fstream>
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
+#ifdef _MSC_VER
+#include <winsock.h>
+#else
 #include <sys/time.h>
-#include <inttypes.h>
+#endif
+
 
 /* c++ */
 #include <string>
@@ -70,7 +77,9 @@
 #ifdef __cplusplus
 class xml {
 private:
+#ifdef HAVE_PTHREAD_H
     pthread_mutex_t M;			// mutext protecting out
+#endif
     std::fstream out;				// where it is being written
     std::set<std::string> tags;			// XML tags
     std::string  tempfilename;
@@ -120,7 +129,9 @@ public:
     void puts(const std::string &pdata);
 
     // writes a std::string as parsed data
+#ifdef __GNUC__
     void printf(const char *fmt,...) __attribute__((format(printf, 2, 3))); // "2" because this is "1"
+#endif
     void pop();	// close the tag
 
 /* These support Digital Forensics XML and require certain variables to be defined */
@@ -165,8 +176,14 @@ public:
      *** THESE ARE THE ONLY THREADSAFE ROUTINES ***
      **********************************************/
     void xmlcomment(const std::string &comment);
+
+#ifdef __GNUC__
     void xmlprintf(const std::string &tag,const std::string &attribute,const char *fmt,...) 
 	__attribute__((format(printf, 4, 5))); // "4" because this is "1";
+#else
+	void xmlprintf(const std::string &tag,const std::string &attribute,const char *fmt,...);
+#endif
+
     void xmlout( const std::string &tag,const std::string &value, const std::string &attribute,
 		 const bool escape_value);
 

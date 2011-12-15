@@ -20,7 +20,7 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
-#include <strings.h>
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -28,6 +28,10 @@
 #include <fcntl.h>
 #ifndef WIN32
 #include <pwd.h>
+#endif
+
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
 #endif
 
 #ifdef HAVE_INTTYPES_H

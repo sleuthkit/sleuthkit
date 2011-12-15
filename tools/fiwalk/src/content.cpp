@@ -4,8 +4,8 @@
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
-#include <inttypes.h>
-#include <strings.h>
+//#include <inttypes.h>
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -29,6 +29,10 @@
 #include "content.h"
 #include "plugin.h"
 #include "unicode_escape.h"
+
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif 
 
 #ifdef HAVE_MAGIC_H
 #include <magic.h>

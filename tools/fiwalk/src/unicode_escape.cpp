@@ -6,6 +6,7 @@
 
 
 #include "unicode_escape.h"
+#include "tsk3/tsk_tools_i.h"
 
 #include <stdio.h>
 #include <iostream>
@@ -14,7 +15,9 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
+#ifdef __HAVE_STDINT_H
 #include <stdint.h>
+#endif
 
 
 
