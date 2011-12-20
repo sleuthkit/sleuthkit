@@ -892,6 +892,7 @@ enable_largefile
 with_afflib
 with_libewf
 enable_fiwalk
+enable_opt
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1536,6 +1537,7 @@ Optional Features:
 			  (and sometimes confusing) to the casual installer
   --disable-largefile     omit support for large files
   --disable-fiwalk        Disable fiwalk build
+  --enable-opt            Drop -O C flags
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2112,6 +2114,192 @@ fi
 
 } # ac_fn_c_check_header_mongrel
 
+# ac_fn_c_check_type LINENO TYPE VAR INCLUDES
+# -------------------------------------------
+# Tests whether TYPE exists after having included INCLUDES, setting cache
+# variable VAR accordingly.
+ac_fn_c_check_type ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
+$as_echo_n "checking for $2... " >&6; }
+if { as_var=$3; eval "test \"\${$as_var+set}\" = set"; }; then :
+  $as_echo_n "(cached) " >&6
+else
+  eval "$3=no"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main ()
+{
+if (sizeof ($2))
+	 return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$4
+int
+main ()
+{
+if (sizeof (($2)))
+	    return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+else
+  eval "$3=yes"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+eval ac_res=\$$3
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+  eval $as_lineno_stack; test "x$as_lineno_stack" = x && { as_lineno=; unset as_lineno;}
+
+} # ac_fn_c_check_type
+
+# ac_fn_c_find_intX_t LINENO BITS VAR
+# -----------------------------------
+# Finds a signed integer type with width BITS, setting cache variable VAR
+# accordingly.
+ac_fn_c_find_intX_t ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for int$2_t" >&5
+$as_echo_n "checking for int$2_t... " >&6; }
+if { as_var=$3; eval "test \"\${$as_var+set}\" = set"; }; then :
+  $as_echo_n "(cached) " >&6
+else
+  eval "$3=no"
+     # Order is important - never check a type that is potentially smaller
+     # than half of the expected target width.
+     for ac_type in int$2_t 'int' 'long int' \
+	 'long long int' 'short int' 'signed char'; do
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$ac_includes_default
+	     enum { N = $2 / 2 - 1 };
+int
+main ()
+{
+static int test_array [1 - 2 * !(0 < ($ac_type) ((((($ac_type) 1 << N) << N) - 1) * 2 + 1))];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$ac_includes_default
+	        enum { N = $2 / 2 - 1 };
+int
+main ()
+{
+static int test_array [1 - 2 * !(($ac_type) ((((($ac_type) 1 << N) << N) - 1) * 2 + 1)
+		 < ($ac_type) ((((($ac_type) 1 << N) << N) - 1) * 2 + 2))];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+else
+  case $ac_type in #(
+  int$2_t) :
+    eval "$3=yes" ;; #(
+  *) :
+    eval "$3=\$ac_type" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+       eval as_val=\$$3
+   if test "x$as_val" = x""no; then :
+
+else
+  break
+fi
+     done
+fi
+eval ac_res=\$$3
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+  eval $as_lineno_stack; test "x$as_lineno_stack" = x && { as_lineno=; unset as_lineno;}
+
+} # ac_fn_c_find_intX_t
+
+# ac_fn_c_check_member LINENO AGGR MEMBER VAR INCLUDES
+# ----------------------------------------------------
+# Tries to find if the field MEMBER exists in type AGGR, after including
+# INCLUDES, setting cache variable VAR accordingly.
+ac_fn_c_check_member ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $2.$3" >&5
+$as_echo_n "checking for $2.$3... " >&6; }
+if { as_var=$4; eval "test \"\${$as_var+set}\" = set"; }; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$5
+int
+main ()
+{
+static $2 ac_aggr;
+if (ac_aggr.$3)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$4=yes"
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$5
+int
+main ()
+{
+static $2 ac_aggr;
+if (sizeof ac_aggr.$3)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$4=yes"
+else
+  eval "$4=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+eval ac_res=\$$4
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+  eval $as_lineno_stack; test "x$as_lineno_stack" = x && { as_lineno=; unset as_lineno;}
+
+} # ac_fn_c_check_member
+
 # ac_fn_cxx_check_member LINENO AGGR MEMBER VAR INCLUDES
 # ------------------------------------------------------
 # Tries to find if the field MEMBER exists in type AGGR, after including
@@ -2235,60 +2423,6 @@ $as_echo "$ac_res" >&6; }
   eval $as_lineno_stack; test "x$as_lineno_stack" = x && { as_lineno=; unset as_lineno;}
 
 } # ac_fn_cxx_check_func
-
-# ac_fn_c_check_type LINENO TYPE VAR INCLUDES
-# -------------------------------------------
-# Tests whether TYPE exists after having included INCLUDES, setting cache
-# variable VAR accordingly.
-ac_fn_c_check_type ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
-$as_echo_n "checking for $2... " >&6; }
-if { as_var=$3; eval "test \"\${$as_var+set}\" = set"; }; then :
-  $as_echo_n "(cached) " >&6
-else
-  eval "$3=no"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-$4
-int
-main ()
-{
-if (sizeof ($2))
-	 return 0;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-$4
-int
-main ()
-{
-if (sizeof (($2)))
-	    return 0;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-else
-  eval "$3=yes"
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-eval ac_res=\$$3
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-  eval $as_lineno_stack; test "x$as_lineno_stack" = x && { as_lineno=; unset as_lineno;}
-
-} # ac_fn_c_check_type
 cat >config.log <<_ACEOF
 This file contains any messages produced by compilers while
 running configure, to aid debugging if configure makes a mistake.
@@ -5095,13 +5229,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:5098: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:5232: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5101: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:5235: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5104: output\"" >&5)
+  (eval echo "\"\$as_me:5238: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -6200,7 +6334,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6203 "configure"' > conftest.$ac_ext
+  echo '#line 6337 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7730,11 +7864,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7733: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7867: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7737: \$? = $ac_status" >&5
+   echo "$as_me:7871: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8054,11 +8188,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8057: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8191: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8061: \$? = $ac_status" >&5
+   echo "$as_me:8195: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8159,11 +8293,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8162: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8296: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8166: \$? = $ac_status" >&5
+   echo "$as_me:8300: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8214,11 +8348,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8217: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8351: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8221: \$? = $ac_status" >&5
+   echo "$as_me:8355: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10573,7 +10707,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10576 "configure"
+#line 10710 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10673,7 +10807,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10676 "configure"
+#line 10810 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13537,11 +13671,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13540: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13674: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13544: \$? = $ac_status" >&5
+   echo "$as_me:13678: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13636,11 +13770,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13639: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13773: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13643: \$? = $ac_status" >&5
+   echo "$as_me:13777: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -13688,11 +13822,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13691: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13825: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13695: \$? = $ac_status" >&5
+   echo "$as_me:13829: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15622,103 +15756,6 @@ fi
 done
 
 
-###
-###For Fiwalk
-for ac_header in openssl/evp.h openssl/hmac.h openssl/x509.h openssl/pem.h
-do :
-  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
-ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
-eval as_val=\$$as_ac_Header
-   if test "x$as_val" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
-_ACEOF
-
-fi
-
-done
-
-for ac_header in magic.h err.h
-do :
-  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
-ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
-eval as_val=\$$as_ac_Header
-   if test "x$as_val" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
-_ACEOF
-
-fi
-
-done
-
-
-################################################################
-## Sleuthkit support
-## Notice that SleuthKit now requires C++ due to autotools
-## This needs to come last, because once we -ltsk3, everything needs
-## to be C++ includes
-##
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-#  AC_CHECK_LIB([tsk3],[tsk_fs_open_img],,AC_MSG_ERROR([Requires TSK 3.2.1 or above library]))
-#  AC_CHECK_HEADER([tsk3/libtsk.h],,AC_MSG_ERROR([Requires TSK 3.2.1 or above include files]))
-  ac_fn_cxx_check_member "$LINENO" "struct TSK_IMG_INFO" "sector_size" "ac_cv_member_struct_TSK_IMG_INFO_sector_size" "#include <tsk3/libtsk.h>
-"
-if test "x$ac_cv_member_struct_TSK_IMG_INFO_sector_size" = x""yes; then :
-
-$as_echo "#define HAVE_TSK_IMG_INFO_SECTOR_SIZE 1 /* Released in TSK 3.0.1 */" >>confdefs.h
-
-fi
-
-  for ac_func in tsk_fs_meta_make_ls
-do :
-  ac_fn_cxx_check_func "$LINENO" "tsk_fs_meta_make_ls" "ac_cv_func_tsk_fs_meta_make_ls"
-if test "x$ac_cv_func_tsk_fs_meta_make_ls" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_TSK_FS_META_MAKE_LS 1
-_ACEOF
-
-fi
-done
-
-ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-
-
-
-
-#LIBS="$LIBS -lewf -lz"	# for luck
-
-############## drop optimization flags ################
-
-################################################################
-##
-## xml.cpp support
-for ac_func in vasprintf
-do :
-  ac_fn_c_check_func "$LINENO" "vasprintf" "ac_cv_func_vasprintf"
-if test "x$ac_cv_func_vasprintf" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_VASPRINTF 1
-_ACEOF
-
-fi
-done
-
-
-################################################################
-
-###End For Fiwalk
-
 
 # Checks for typedefs, structures, and compiler characteristics.
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for stdbool.h that conforms to C99" >&5
@@ -17457,7 +17494,7 @@ fi
 # Check whether --enable-fiwalk was given.
 if test "${enable_fiwalk+set}" = set; then :
   enableval=$enable_fiwalk; #if --diable-fiwalk
-#    [echo option provided:fiwalk" | "$fiwalk" | "$enable_fiwalk]
+#   [echo option provided:fiwalk" | "$fiwalk" | "$enable_fiwalk]
 
 else
   #Default to fiwalk build enabled
@@ -17492,6 +17529,818 @@ else
   BUILD_FIWALK_FALSE=
 fi
 
+if test "x$enable_fiwalk" == xyes; then
+   ## These will be removed after complete integration
+   ## At that point fiwalk will just be part of TSK not a separate package
+
+$as_echo "#define FIWALK_VERSION \"0.6.15\"" >>confdefs.h
+
+
+$as_echo "#define FIWALK_PACKAGE \"FIWALK\"" >>confdefs.h
+
+
+   ################################################################
+   ##
+   ## Bloom support
+   ac_fn_c_find_intX_t "$LINENO" "64" "ac_cv_c_int64_t"
+case $ac_cv_c_int64_t in #(
+  no|yes) ;; #(
+  *)
+
+cat >>confdefs.h <<_ACEOF
+#define int64_t $ac_cv_c_int64_t
+_ACEOF
+;;
+esac
+
+   for ac_header in openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+eval as_val=\$$as_ac_Header
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+   for ac_func in printf getrusage err errx warn warnx mmap
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+eval as_val=\$$as_ac_var
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
+
+
+   ################################################################
+   ##
+   ## utils.h/utils.c support:
+   for ac_header in err.h openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+eval as_val=\$$as_ac_Header
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+   for ac_func in ishexnumber unistd.h err errx warn warnx ishexnumber pread64 pread _lseeki64
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+eval as_val=\$$as_ac_var
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
+
+
+   ################################################################
+   ##
+   ## xml.cpp support
+   for ac_func in vasprintf
+do :
+  ac_fn_c_check_func "$LINENO" "vasprintf" "ac_cv_func_vasprintf"
+if test "x$ac_cv_func_vasprintf" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_VASPRINTF 1
+_ACEOF
+
+fi
+done
+
+
+   ################################################################
+
+   ################################################################
+   ### pthread support
+   ###
+   for ac_header in pthread.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
+if test "x$ac_cv_header_pthread_h" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_PTHREAD_H 1
+_ACEOF
+
+fi
+
+done
+
+   #m4_include([ax_pthread.m4])			#Redundant
+   #AX_PTHREAD()				#Redundant
+   #LIBS="$PTHREAD_LIBS $LIBS"			#Redundant
+   #CFLAGS="$CFLAGS $PTHREAD_CFLAGS"		#Redundant
+   #CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"	#Redundant
+   #CC="$PTHREAD_CC"				#Redundant
+   ################################################################
+
+   # Specific headers that I plan to use
+   #AC_HEADER_STDC				#Redundant
+   ac_header_dirent=no
+for ac_hdr in dirent.h sys/ndir.h sys/dir.h ndir.h; do
+  as_ac_Header=`$as_echo "ac_cv_header_dirent_$ac_hdr" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_hdr that defines DIR" >&5
+$as_echo_n "checking for $ac_hdr that defines DIR... " >&6; }
+if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <sys/types.h>
+#include <$ac_hdr>
+
+int
+main ()
+{
+if ((DIR *) 0)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$as_ac_Header=yes"
+else
+  eval "$as_ac_Header=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+eval ac_res=\$$as_ac_Header
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+eval as_val=\$$as_ac_Header
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_hdr" | $as_tr_cpp` 1
+_ACEOF
+
+ac_header_dirent=$ac_hdr; break
+fi
+
+done
+# Two versions of opendir et al. are in -ldir and -lx on SCO Xenix.
+if test $ac_header_dirent = dirent.h; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing opendir" >&5
+$as_echo_n "checking for library containing opendir... " >&6; }
+if test "${ac_cv_search_opendir+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char opendir ();
+int
+main ()
+{
+return opendir ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' dir; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_opendir=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if test "${ac_cv_search_opendir+set}" = set; then :
+  break
+fi
+done
+if test "${ac_cv_search_opendir+set}" = set; then :
+
+else
+  ac_cv_search_opendir=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_opendir" >&5
+$as_echo "$ac_cv_search_opendir" >&6; }
+ac_res=$ac_cv_search_opendir
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing opendir" >&5
+$as_echo_n "checking for library containing opendir... " >&6; }
+if test "${ac_cv_search_opendir+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char opendir ();
+int
+main ()
+{
+return opendir ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' x; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_opendir=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if test "${ac_cv_search_opendir+set}" = set; then :
+  break
+fi
+done
+if test "${ac_cv_search_opendir+set}" = set; then :
+
+else
+  ac_cv_search_opendir=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_opendir" >&5
+$as_echo "$ac_cv_search_opendir" >&6; }
+ac_res=$ac_cv_search_opendir
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+fi
+
+   for ac_header in ctype.h err.h stdio.h strings.h string.h stdlib.h stdint.h sys/mman.h sys/types.h sys/time.h sys/resource.h sys/signal.h inttypes.h sys/resource.h sys/utsname.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+eval as_val=\$$as_ac_Header
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+   for ac_header in openssl/evp.h openssl/hmac.h openssl/x509.h openssl/pem.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+eval as_val=\$$as_ac_Header
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+   for ac_header in magic.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "magic.h" "ac_cv_header_magic_h" "$ac_includes_default"
+if test "x$ac_cv_header_magic_h" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_MAGIC_H 1
+_ACEOF
+
+fi
+
+done
+
+   ac_fn_c_check_member "$LINENO" "struct glob_t" "gl_matchc" "ac_cv_member_struct_glob_t_gl_matchc" "#include <glob.h>
+"
+if test "x$ac_cv_member_struct_glob_t_gl_matchc" = x""yes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_GLOB_T_GL_MATCHC 1
+_ACEOF
+
+
+fi
+
+   ac_fn_c_check_member "$LINENO" "struct dirent" "d_name" "ac_cv_member_struct_dirent_d_name" "#include <dirent.h>
+"
+if test "x$ac_cv_member_struct_dirent_d_name" = x""yes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_DIRENT_D_NAME 1
+_ACEOF
+
+
+fi
+
+   ac_fn_c_check_member "$LINENO" "struct dirent" "d_namlen" "ac_cv_member_struct_dirent_d_namlen" "#include <dirent.h>
+"
+if test "x$ac_cv_member_struct_dirent_d_namlen" = x""yes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_DIRENT_D_NAMLEN 1
+_ACEOF
+
+
+fi
+
+
+   # Specific functions that we want to know about
+   for ac_func in printf getrusage strcasestr err ishexnumber
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+eval as_val=\$$as_ac_var
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
+
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for regcomp in -lregex" >&5
+$as_echo_n "checking for regcomp in -lregex... " >&6; }
+if test "${ac_cv_lib_regex_regcomp+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lregex  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char regcomp ();
+int
+main ()
+{
+return regcomp ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_regex_regcomp=yes
+else
+  ac_cv_lib_regex_regcomp=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_regex_regcomp" >&5
+$as_echo "$ac_cv_lib_regex_regcomp" >&6; }
+if test "x$ac_cv_lib_regex_regcomp" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBREGEX 1
+_ACEOF
+
+  LIBS="-lregex $LIBS"
+
+fi
+		    # see if we need -lregex
+
+
+   # Special features that can be enabled or disabled
+   # Check whether --enable-opt was given.
+if test "${enable_opt+set}" = set; then :
+  enableval=$enable_opt;
+fi
+
+   if test "x$with_afflib" != "xno"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for uncompress in -lz" >&5
+$as_echo_n "checking for uncompress in -lz... " >&6; }
+if test "${ac_cv_lib_z_uncompress+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lz  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char uncompress ();
+int
+main ()
+{
+return uncompress ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_z_uncompress=yes
+else
+  ac_cv_lib_z_uncompress=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_uncompress" >&5
+$as_echo "$ac_cv_lib_z_uncompress" >&6; }
+if test "x$ac_cv_lib_z_uncompress" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBZ 1
+_ACEOF
+
+  LIBS="-lz $LIBS"
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: zlib not installed; required for AFFLIB and libewf" >&5
+$as_echo "$as_me: WARNING: zlib not installed; required for AFFLIB and libewf" >&2;}
+fi
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for af_open in -lafflib" >&5
+$as_echo_n "checking for af_open in -lafflib... " >&6; }
+if test "${ac_cv_lib_afflib_af_open+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lafflib  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char af_open ();
+int
+main ()
+{
+return af_open ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_afflib_af_open=yes
+else
+  ac_cv_lib_afflib_af_open=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_afflib_af_open" >&5
+$as_echo "$ac_cv_lib_afflib_af_open" >&6; }
+if test "x$ac_cv_lib_afflib_af_open" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBAFFLIB 1
+_ACEOF
+
+  LIBS="-lafflib $LIBS"
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: AFFLIB not found" >&5
+$as_echo "$as_me: WARNING: AFFLIB not found" >&2;}
+fi
+
+   fi
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ssl3_new in -lssl" >&5
+$as_echo_n "checking for ssl3_new in -lssl... " >&6; }
+if test "${ac_cv_lib_ssl_ssl3_new+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lssl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char ssl3_new ();
+int
+main ()
+{
+return ssl3_new ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ssl_ssl3_new=yes
+else
+  ac_cv_lib_ssl_ssl3_new=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_ssl3_new" >&5
+$as_echo "$ac_cv_lib_ssl_ssl3_new" >&6; }
+if test "x$ac_cv_lib_ssl_ssl3_new" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBSSL 1
+_ACEOF
+
+  LIBS="-lssl $LIBS"
+
+fi
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_md5 in -lcrypto" >&5
+$as_echo_n "checking for EVP_md5 in -lcrypto... " >&6; }
+if test "${ac_cv_lib_crypto_EVP_md5+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcrypto  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char EVP_md5 ();
+int
+main ()
+{
+return EVP_md5 ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_crypto_EVP_md5=yes
+else
+  ac_cv_lib_crypto_EVP_md5=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_EVP_md5" >&5
+$as_echo "$ac_cv_lib_crypto_EVP_md5" >&6; }
+if test "x$ac_cv_lib_crypto_EVP_md5" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBCRYPTO 1
+_ACEOF
+
+  LIBS="-lcrypto $LIBS"
+
+fi
+
+   if test "x$with_libewf" != "xno"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libewf_get_version in -lewf" >&5
+$as_echo_n "checking for libewf_get_version in -lewf... " >&6; }
+if test "${ac_cv_lib_ewf_libewf_get_version+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lewf  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char libewf_get_version ();
+int
+main ()
+{
+return libewf_get_version ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ewf_libewf_get_version=yes
+else
+  ac_cv_lib_ewf_libewf_get_version=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ewf_libewf_get_version" >&5
+$as_echo "$ac_cv_lib_ewf_libewf_get_version" >&6; }
+if test "x$ac_cv_lib_ewf_libewf_get_version" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBEWF 1
+_ACEOF
+
+  LIBS="-lewf $LIBS"
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libewf not found; no E01 support" >&5
+$as_echo "$as_me: WARNING: libewf not found; no E01 support" >&2;}
+fi
+
+   else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: libewf support disabled: no E01 support" >&5
+$as_echo "$as_me: WARNING: libewf support disabled: no E01 support" >&2;}
+   fi
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for magic_open in -lmagic" >&5
+$as_echo_n "checking for magic_open in -lmagic... " >&6; }
+if test "${ac_cv_lib_magic_magic_open+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lmagic  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char magic_open ();
+int
+main ()
+{
+return magic_open ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_magic_magic_open=yes
+else
+  ac_cv_lib_magic_magic_open=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_magic_magic_open" >&5
+$as_echo "$ac_cv_lib_magic_magic_open" >&6; }
+if test "x$ac_cv_lib_magic_magic_open" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBMAGIC 1
+_ACEOF
+
+  LIBS="-lmagic $LIBS"
+
+fi
+
+
+cat >>confdefs.h <<_ACEOF
+#define UNAMES "`(uname -s)`"
+_ACEOF
+
+
+   if test "x$with_afflib" != "xno"; then
+      # Check to see if we have the modern AFFLIB
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Checking for modern AFFLIB" >&5
+$as_echo "$as_me: Checking for modern AFFLIB" >&6;}
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+      #include <afflib/afflib.h>
+      #include <afflib/afflib_i.h>
+      int	af_get_seg(AFFILE *af,const char *name,uint32_t *arg,
+      		   unsigned char *data,size_t *datalen);
+
+int
+main ()
+{
+AFFILE *af=0;const char *segname="";uint32_t arg;u_char *data = 0;size_t datalen=0;
+      	       af_get_seg(af,segname,&arg,data,&datalen);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: AFFLIB is not obsolete" >&5
+$as_echo "$as_me: AFFLIB is not obsolete" >&6;}
+       	        afflib_obsolete=no
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: AFFLIB is obsolete; disabling AFFLIB support." >&5
+$as_echo "$as_me: AFFLIB is obsolete; disabling AFFLIB support." >&6;}
+                      afflib_obsolete=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+      if test $afflib_obsolete = yes ; then
+
+$as_echo "#define AFFLIB_OBSOLETE 1" >>confdefs.h
+
+      else
+         for ac_func in af_display_as_quad af_display_as_hex
+do :
+  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+eval as_val=\$$as_ac_var
+   if test "x$as_val" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
+
+      fi
+   fi
+
+
+   ################################################################
+   ## Sleuthkit support
+   ## Notice that SleuthKit now requires C++ due to autotools
+   ## This needs to come last, because once we -ltsk3, everything needs
+   ## to be C++ includes
+   ##
+   ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+   #  AC_CHECK_LIB([tsk3],[tsk_fs_open_img],,AC_MSG_ERROR([Requires TSK 3.2.1 or above library]))
+   #  AC_CHECK_HEADER([tsk3/libtsk.h],,AC_MSG_ERROR([Requires TSK 3.2.1 or above include files]))
+     ac_fn_cxx_check_member "$LINENO" "struct TSK_IMG_INFO" "sector_size" "ac_cv_member_struct_TSK_IMG_INFO_sector_size" "#include <tsk3/libtsk.h>
+"
+if test "x$ac_cv_member_struct_TSK_IMG_INFO_sector_size" = x""yes; then :
+
+$as_echo "#define HAVE_TSK_IMG_INFO_SECTOR_SIZE 1 /* Released in TSK 3.0.1 */" >>confdefs.h
+
+fi
+
+     for ac_func in tsk_fs_meta_make_ls
+do :
+  ac_fn_cxx_check_func "$LINENO" "tsk_fs_meta_make_ls" "ac_cv_func_tsk_fs_meta_make_ls"
+if test "x$ac_cv_func_tsk_fs_meta_make_ls" = x""yes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_TSK_FS_META_MAKE_LS 1
+_ACEOF
+
+fi
+done
+
+   ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+fi
 
 # sqlite requires pthread libraries - this was copied from its configure.ac
 # AC_SEARCH_LIBS(pthread_create, pthread)
@@ -17654,7 +18503,7 @@ else
 JAVA_TEST=Test.java
 CLASS_TEST=Test.class
 cat << \EOF > $JAVA_TEST
-/* #line 17657 "configure" */
+/* #line 18506 "configure" */
 public class Test {
 }
 EOF
