@@ -223,7 +223,7 @@ int
             "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (fs_obj_id INTEGER NOT NULL, obj_id INTEGER NOT NULL UNIQUE, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER);",
+        ("CREATE TABLE tsk_files (fs_obj_id INTEGER NOT NULL, obj_id INTEGER NOT NULL UNIQUE, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT);",
             "Error creating tsk_fs_files table: %s\n")
         ||
         attempt_exec
@@ -625,6 +625,30 @@ int
         }
     }
 
+
+    // clean up path
+    size_t path_len = strlen(path);
+    size_t epath_len = path_len*2;
+    char *
+        escaped_path;
+    if ((escaped_path = (char *) tsk_malloc(epath_len + 2)) == NULL) { // +2 = space for leading slash and terminating null
+        return 1;
+    }
+
+    size_t k = 0;
+    escaped_path[k++] = '/'; // add a leading slash
+    for (size_t i = 0; i < path_len && k < epath_len; i++) {
+        // ' is special in SQLite
+        if (path[i] == '\'') {
+            escaped_path[k++] = '\'';
+            escaped_path[k++] = '\'';
+        }
+        else {
+            escaped_path[k++] = path[i];
+        }
+    }
+
+
     char
      md5Text[1024] = "NULL";
 
@@ -647,7 +671,7 @@ int
         return 1;
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known) "
+        "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
         "%lld,%lld,"
         "%d,"
@@ -655,13 +679,15 @@ int
         "%" PRIuINUM ","
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "%d,%d,%d,%d,%d,%d,%d,%s,%d)",
+        "%d,%d,%d,%d,%d,%d,%d,%s,%d,"
+        "'%s')",
         fsObjId, objId,
         DB_FILES_TYPE_FS,
         type, idx, name,
         fs_file->name->meta_addr,
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-        size, crtime, ctime, atime, mtime, meta_mode, gid, uid, md5Text, known);
+        size, crtime, ctime, atime, mtime, meta_mode, gid, uid, md5Text, known,
+        escaped_path);
 
     if (attempt_exec(foo, "Error adding data to tsk_fs_files table: %s\n")) {
         free(name);

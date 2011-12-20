@@ -161,6 +161,7 @@ public class ReprDataModel {
 		repr("getMtime", fsc.getMtime());
 		repr("getMtimeAsDate", fsc.getMtimeAsDate());
 		repr("getName", fsc.getName());
+		repr("getParentPath", fsc.getParentPath());
 		repr("getSize", fsc.getSize());
 		repr("getUid", fsc.getUid());
 	}
