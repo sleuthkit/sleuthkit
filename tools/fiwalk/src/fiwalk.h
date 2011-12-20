@@ -47,7 +47,14 @@
 
 
 #include <sys/types.h>
+
+#ifdef _MSC_VER
+#include <winsock.h>
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
+
 #include <sys/stat.h>
 
 #ifdef HAVE_SIGNAL_H

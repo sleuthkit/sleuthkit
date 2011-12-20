@@ -1,19 +1,22 @@
 #include "tsk3/tsk_tools_i.h"
-//#include "config.h"
+
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
-//#include <inttypes.h>
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
 #include <sys/types.h>
-#include <sys/time.h>
 
-//#include <tsk3/libtsk.h>
+#ifdef _MSC_VER
+#include <winsock.h>
+#include <time.h>
+#else
+#include <sys/time.h>
+#endif
 
 
 #include <ctype.h>

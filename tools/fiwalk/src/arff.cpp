@@ -19,7 +19,6 @@
 #include "arff.h"
 
 #include "tsk3/tsk_tools_i.h"
-//#include "config.h"
 
 
 #include <string.h>
@@ -27,11 +26,24 @@
 #include <stdarg.h>
 
 #include <sys/types.h>
-#include <sys/time.h>
 
-extern "C" {
-#include <regex.h>
-}
+#ifdef _MSC_VER
+#include <winsock.h>
+#include <time.h>
+#else
+#include <sys/time.h>
+#endif
+
+
+#ifdef _MSC_VER
+//	extern "C"{
+	#include <regex>
+//	}
+#else
+	extern "C" {
+	#include <regex.h>
+	}
+#endif
 
 #include <ctype.h>
 #include <fcntl.h>

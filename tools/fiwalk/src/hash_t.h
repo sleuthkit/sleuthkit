@@ -19,6 +19,7 @@
  * For reasons that defy explaination (at the moment), this is required.
  */
 
+#include "tsk3/tsk_tools_i.h"
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
@@ -26,7 +27,10 @@
 #define  DEPRECATED_IN_MAC_OS_X_VERSION_10_7_AND_LATER
 #endif
 
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#endif
+
 #include <assert.h>
 #include <fcntl.h>
 #include <sys/types.h>

@@ -18,7 +18,7 @@
 
 
 #include "tsk3/tsk_tools_i.h"
-//#include "config.h"
+
 #include "xml.h"
 #include <errno.h>
 

@@ -16,10 +16,12 @@
 
 #include <fstream>
 #include <string.h>
-#include <time.h>
 #include <sys/types.h>
+
 #ifdef _MSC_VER
 #include <winsock.h>
+#include <time.h>
+#include <windows.h>
 #else
 #include <sys/time.h>
 #endif

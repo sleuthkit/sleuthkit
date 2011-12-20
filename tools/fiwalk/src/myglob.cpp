@@ -6,7 +6,7 @@
 
 
 #include "tsk3/tsk_tools_i.h"
-//#include "config.h"
+
 #include <string.h>
 #include <stdlib.h>
 
