@@ -54,7 +54,8 @@ public class File extends FsContent{
 	protected File(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr, long attr_type,
 			long attr_id, String name, long dir_type, long meta_type,
 			long dir_flags, long meta_flags, long size, long ctime, long crtime,
-			long atime, long mtime, long mode, long uid, long gid, long known) {
+			long atime, long mtime, long mode, long uid, long gid, long known,
+			String parent_path) {
 		super(db, obj_id, fs_obj_id);
 		this.meta_addr = meta_addr;
 		this.attr_type = attr_type;
@@ -73,6 +74,7 @@ public class File extends FsContent{
 		this.uid = uid;
 		this.gid = gid;
 		this.known = known;
+		this.parent_path = parent_path;
 	}
 
 	/**

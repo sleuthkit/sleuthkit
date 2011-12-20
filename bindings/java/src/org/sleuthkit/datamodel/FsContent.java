@@ -32,6 +32,10 @@ public abstract class FsContent extends AbstractContent {
 	 */
 	protected long fs_obj_id, meta_addr, attr_type, attr_id, dirtype, meta_type, dir_type, dir_flags,
 	meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known;
+	/*
+	 * path of parent directory
+	 */
+	protected String parent_path;
 	/**
 	 * name from the database
 	 */
@@ -44,7 +48,6 @@ public abstract class FsContent extends AbstractContent {
 	 * file Handle
 	 */
 	protected long fileHandle = 0;
-
 	
 	FsContent(SleuthkitCase db, long obj_id, long fs_obj_id) {
 		super(db, obj_id);
@@ -317,6 +320,10 @@ public abstract class FsContent extends AbstractContent {
 	
 	public FileKnown getKnown() {
 		return FileKnown.valueOf(this.known);
+	}
+	
+	public String getParentPath() {
+		return this.parent_path;
 	}
 	
 	@Override
