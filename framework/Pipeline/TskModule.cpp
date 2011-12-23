@@ -46,8 +46,7 @@ const std::wstring TskModule::SEQUENCE_MACRO = L"@SEQUENCE";    ///< The job seq
 const std::wstring TskModule::PID_MACRO = L"@PID";  ///< The process id of the program that is using the pipeline.
 const std::wstring TskModule::STARTTIME_MACRO = L"@STARTTIME";  ///< The time at which the program that is using the pipeline started.
 const std::wstring TskModule::CURTIME_MACRO = L"@CURTIME";  ///< The current time.
-const std::wstring TskModule::UNIQUE_ID_MACRO = L"@UNIQUE_ID";  ///< A combination of task name, node name, process id and start time separated by underscores. This is useful if you want to redirect output to a shared location. A unique file name will eliminate potential file sharing confli
-cts.
+const std::wstring TskModule::UNIQUE_ID_MACRO = L"@UNIQUE_ID";  ///< A combination of task name, node name, process id and start time separated by underscores. This is useful if you want to redirect output to a shared location. A unique file name will eliminate potential file sharing conflicts.
 
 TskModule::TskModule() : m_modulePath(""), m_arguments(""), m_name(""), m_moduleId(0)
 {
