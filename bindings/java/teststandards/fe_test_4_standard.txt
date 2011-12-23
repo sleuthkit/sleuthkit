@@ -68,6 +68,7 @@ Image >
 					getMtime: 0
 					getMtimeAsDate: 0000-00-00 00:00:00
 					getName: 
+					getParentPath: /
 					getSize: 16384
 					getUid: 0
 					read: md5=81c08f35401c144854c40fe5b9383b38
@@ -97,6 +98,7 @@ Image >
 						getMtime: 0
 						getMtimeAsDate: 0000-00-00 00:00:00
 						getName: $FAT1
+						getParentPath: /
 						getSize: 6144
 						getUid: 0
 						read: md5=ac5750e6eb5ab94ea394023d43ab4b50
@@ -126,6 +128,7 @@ Image >
 						getMtime: 0
 						getMtimeAsDate: 0000-00-00 00:00:00
 						getName: $FAT2
+						getParentPath: /
 						getSize: 6144
 						getUid: 0
 						read: md5=ac5750e6eb5ab94ea394023d43ab4b50
@@ -155,6 +158,7 @@ Image >
 						getMtime: 0
 						getMtimeAsDate: 0000-00-00 00:00:00
 						getName: $MBR
+						getParentPath: /
 						getSize: 512
 						getUid: 0
 						read: md5=f87a92f7f10eb15763230c71c3f84629
@@ -184,6 +188,7 @@ Image >
 						getMtime: 0
 						getMtimeAsDate: 0000-00-00 00:00:00
 						getName: $OrphanFiles
+						getParentPath: /
 						getSize: 0
 						getUid: 0
 						read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -213,6 +218,7 @@ Image >
 						getMtime: 1286915024
 						getMtimeAsDate: 2010-10-12 16:23:44
 						getName: dir 1
+						getParentPath: /
 						getSize: 4096
 						getUid: 0
 						read: md5=84f0eae9b626031286d45c1909ec0083
@@ -242,6 +248,7 @@ Image >
 							getMtime: 1286915024
 							getMtimeAsDate: 2010-10-12 16:23:44
 							getName: .
+							getParentPath: /dir 1/
 							getSize: 4096
 							getUid: 0
 							read: md5=84f0eae9b626031286d45c1909ec0083
@@ -271,6 +278,7 @@ Image >
 							getMtime: 1286915016
 							getMtimeAsDate: 2010-10-12 16:23:36
 							getName: filler1
+							getParentPath: /dir 1/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -300,6 +308,7 @@ Image >
 							getMtime: 1286915016
 							getMtimeAsDate: 2010-10-12 16:23:36
 							getName: filler2
+							getParentPath: /dir 1/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -329,6 +338,7 @@ Image >
 							getMtime: 1286915016
 							getMtimeAsDate: 2010-10-12 16:23:36
 							getName: filler3
+							getParentPath: /dir 1/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -358,6 +368,7 @@ Image >
 							getMtime: 1286915018
 							getMtimeAsDate: 2010-10-12 16:23:38
 							getName: filler4
+							getParentPath: /dir 1/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -387,6 +398,7 @@ Image >
 							getMtime: 1286915018
 							getMtimeAsDate: 2010-10-12 16:23:38
 							getName: filler5
+							getParentPath: /dir 1/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -416,6 +428,7 @@ Image >
 							getMtime: 1286915018
 							getMtimeAsDate: 2010-10-12 16:23:38
 							getName: filler6
+							getParentPath: /dir 1/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -445,6 +458,7 @@ Image >
 							getMtime: 1286915020
 							getMtimeAsDate: 2010-10-12 16:23:40
 							getName: filler7
+							getParentPath: /dir 1/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -474,6 +488,7 @@ Image >
 							getMtime: 1286915024
 							getMtimeAsDate: 2010-10-12 16:23:44
 							getName: filler8
+							getParentPath: /dir 1/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -503,6 +518,7 @@ Image >
 							getMtime: 1286895424
 							getMtimeAsDate: 2010-10-12 10:57:04
 							getName: maytag0.jpg
+							getParentPath: /dir 1/
 							getSize: 9023
 							getUid: 0
 							read: md5=048857eca91ffed071cb8b8a1b3e3235
@@ -532,6 +548,7 @@ Image >
 					getMtime: 0
 					getMtimeAsDate: 0000-00-00 00:00:00
 					getName: ..
+					getParentPath: /dir 1/
 					getSize: 16384
 					getUid: 0
 					read: md5=81c08f35401c144854c40fe5b9383b38
@@ -592,6 +609,7 @@ Image >
 					getMtime: 0
 					getMtimeAsDate: 0000-00-00 00:00:00
 					getName: 
+					getParentPath: /
 					getSize: 16384
 					getUid: 0
 					read: md5=75835fc58e872c3b0fc80ac516265912
@@ -621,6 +639,7 @@ Image >
 						getMtime: 0
 						getMtimeAsDate: 0000-00-00 00:00:00
 						getName: $FAT1
+						getParentPath: /
 						getSize: 6144
 						getUid: 0
 						read: md5=0dc62184de6df1c53c549c2408663654
@@ -650,6 +669,7 @@ Image >
 						getMtime: 0
 						getMtimeAsDate: 0000-00-00 00:00:00
 						getName: $FAT2
+						getParentPath: /
 						getSize: 6144
 						getUid: 0
 						read: md5=0dc62184de6df1c53c549c2408663654
@@ -679,6 +699,7 @@ Image >
 						getMtime: 0
 						getMtimeAsDate: 0000-00-00 00:00:00
 						getName: $MBR
+						getParentPath: /
 						getSize: 512
 						getUid: 0
 						read: md5=ae9b1438441ee0c1ef68fdcc85fd620a
@@ -708,6 +729,7 @@ Image >
 						getMtime: 0
 						getMtimeAsDate: 0000-00-00 00:00:00
 						getName: $OrphanFiles
+						getParentPath: /
 						getSize: 0
 						getUid: 0
 						read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -737,6 +759,7 @@ Image >
 						getMtime: 1286914978
 						getMtimeAsDate: 2010-10-12 16:22:58
 						getName: dir 2
+						getParentPath: /
 						getSize: 2048
 						getUid: 0
 						read: md5=1dfbdb6600e081008cb448d0e69f7ac9
@@ -766,6 +789,7 @@ Image >
 							getMtime: 1286914978
 							getMtimeAsDate: 2010-10-12 16:22:58
 							getName: .
+							getParentPath: /dir 2/
 							getSize: 2048
 							getUid: 0
 							read: md5=1dfbdb6600e081008cb448d0e69f7ac9
@@ -795,6 +819,7 @@ Image >
 							getMtime: 1286914242
 							getMtimeAsDate: 2010-10-12 16:10:42
 							getName: about_maytag.txt
+							getParentPath: /dir 2/
 							getSize: 5158
 							getUid: 0
 							read: md5=940fafae14bfc68df90ad2e62696392e
@@ -824,6 +849,7 @@ Image >
 							getMtime: 1286914956
 							getMtimeAsDate: 2010-10-12 16:22:36
 							getName: filler1
+							getParentPath: /dir 2/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -853,6 +879,7 @@ Image >
 							getMtime: 1286914958
 							getMtimeAsDate: 2010-10-12 16:22:38
 							getName: filler2
+							getParentPath: /dir 2/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -882,6 +909,7 @@ Image >
 							getMtime: 1286914958
 							getMtimeAsDate: 2010-10-12 16:22:38
 							getName: filler3
+							getParentPath: /dir 2/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -911,6 +939,7 @@ Image >
 							getMtime: 1286914960
 							getMtimeAsDate: 2010-10-12 16:22:40
 							getName: filler4
+							getParentPath: /dir 2/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -940,6 +969,7 @@ Image >
 							getMtime: 1286914960
 							getMtimeAsDate: 2010-10-12 16:22:40
 							getName: filler5
+							getParentPath: /dir 2/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -969,6 +999,7 @@ Image >
 							getMtime: 1286914960
 							getMtimeAsDate: 2010-10-12 16:22:40
 							getName: filler6
+							getParentPath: /dir 2/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -998,6 +1029,7 @@ Image >
 							getMtime: 1286914962
 							getMtimeAsDate: 2010-10-12 16:22:42
 							getName: filler7
+							getParentPath: /dir 2/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -1027,6 +1059,7 @@ Image >
 							getMtime: 1286914962
 							getMtimeAsDate: 2010-10-12 16:22:42
 							getName: filler8
+							getParentPath: /dir 2/
 							getSize: 0
 							getUid: 0
 							read: md5=d41d8cd98f00b204e9800998ecf8427e
@@ -1056,6 +1089,7 @@ Image >
 					getMtime: 0
 					getMtimeAsDate: 0000-00-00 00:00:00
 					getName: ..
+					getParentPath: /dir 2/
 					getSize: 16384
 					getUid: 0
 					read: md5=75835fc58e872c3b0fc80ac516265912

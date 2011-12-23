@@ -1,128 +1,129 @@
+
 <project xmlns:ivy="antlib:org.apache.ivy.ant" name="DataModel" default="dist" basedir=".">
-    <description>
+	<description>
         Sleuthkit Java DataModel 
-    </description>
+	</description>
 
 
   <!-- some dlls come from LIBEWF_HOME -->
-  <property environment="env"/>
-  <condition property="ewfFound">
-    <isset property="env.LIBEWF_HOME"/>
-  </condition>
+	<property environment="env"/>
+	<condition property="ewfFound">
+		<isset property="env.LIBEWF_HOME"/>
+	</condition>
 	
   <!-- set global properties for this build -->
-  <property name="src" location="src/org/sleuthkit/datamodel"/>
-  <property name="build" location="build/"/>
-  <property name="dist"  location="dist"/>
-  <property name="lib" location="lib"/>
-  <property name="test" location="test"/>
-  <property name="test-standards" location="teststandards"/>
-  <property name="dlls" value="${env.LIBEWF_HOME}/msvscpp/zlib;${env.LIBEWF_HOME}/msvscpp/Release;../../win32/Release"/>
+	<property name="src" location="src/org/sleuthkit/datamodel"/>
+	<property name="build" location="build/"/>
+	<property name="dist"  location="dist"/>
+	<property name="lib" location="lib"/>
+	<property name="test" location="test"/>
+	<property name="test-standards" location="teststandards"/>
+	<property name="dlls" value="${env.LIBEWF_HOME}/msvscpp/zlib;${env.LIBEWF_HOME}/msvscpp/Release;../../win32/Release"/>
   
-  <path id="libraries">
-    <fileset dir="${lib}">
-      <include name="*.jar"/>
-    </fileset>
-	<pathelement path="${build}"/>
-  </path>
+	<path id="libraries">
+		<fileset dir="${lib}">
+			<include name="*.jar"/>
+		</fileset>
+		<pathelement path="${build}"/>
+	</path>
 
 
-  <target name="init">
-    <mkdir dir="${build}"/>
-	<mkdir dir="${dist}"/>
-	<mkdir dir="${lib}"/>
-	<mkdir dir="${test-standards}"/>
-  </target>
+	<target name="init">
+		<mkdir dir="${build}"/>
+		<mkdir dir="${dist}"/>
+		<mkdir dir="${lib}"/>
+		<mkdir dir="${test-standards}"/>
+	</target>
   
   
-   <property name="ivy.install.version" value="2.1.0-rc2" />
-    <condition property="ivy.home" value="${env.IVY_HOME}">
-      <isset property="env.IVY_HOME" />
-    </condition>
-    <property name="ivy.home" value="${user.home}/.ant" />
-    <property name="ivy.jar.dir" value="${ivy.home}/lib" />
-    <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
+	<property name="ivy.install.version" value="2.1.0-rc2" />
+	<condition property="ivy.home" value="${env.IVY_HOME}">
+		<isset property="env.IVY_HOME" />
+	</condition>
+	<property name="ivy.home" value="${user.home}/.ant" />
+	<property name="ivy.jar.dir" value="${ivy.home}/lib" />
+	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
 
-    <target name="download-ivy" unless="offline">
-      <mkdir dir="${ivy.jar.dir}"/>
+	<target name="download-ivy" unless="offline">
+		<mkdir dir="${ivy.jar.dir}"/>
       <!-- download Ivy from web site so that it can be used even without any special installation -->
-      <get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" 
+		<get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" 
              dest="${ivy.jar.file}" usetimestamp="true"/>
-    </target>
+	</target>
 
-    <target name="init-ivy" depends="download-ivy">
+	<target name="init-ivy" depends="download-ivy">
       <!-- try to load ivy here from ivy home, in case the user has not already dropped
               it into ant's lib dir (note that the latter copy will always take precedence).
               We will not fail as long as local lib dir exists (it may be empty) and
               ivy is in at least one of ant's lib dir or the local lib dir. -->
-      <path id="ivy.lib.path">
-        <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
-      </path>
-      <taskdef resource="org/apache/ivy/ant/antlib.xml"
+		<path id="ivy.lib.path">
+			<fileset dir="${ivy.jar.dir}" includes="*.jar"/>
+		</path>
+		<taskdef resource="org/apache/ivy/ant/antlib.xml"
                  uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
-    </target>
+	</target>
   
   
-  <target name="compile-test" depends="compile,init-ivy"
+	<target name="compile-test" depends="compile,init-ivy"
         description="compile the tests" >
-	<ivy:retrieve />
-    <javac debug="on" srcdir="${test}" destdir="${build}">
-      <classpath refid="libraries"/>
-    </javac>
-  </target>
+		<ivy:retrieve />
+		<javac debug="on" srcdir="${test}" destdir="${build}">
+			<classpath refid="libraries"/>
+		</javac>
+	</target>
   
-  <target name="create-standards" depends="compile-test"
+	<target name="create-standards" depends="compile-test"
         description="create gold standards to run the datamodel tests against" >
-    <fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
-    <java classname="org.sleuthkit.datamodel.DiffUtil" classpathref="libraries"	fork="true" failonerror="true">
-      <sysproperty key="java.library.path" value="${dlls}"/>
-    </java>
-  </target>
+		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
+		<java classname="org.sleuthkit.datamodel.DiffUtil" classpathref="libraries"	fork="true" failonerror="true">
+			<sysproperty key="java.library.path" value="${dlls}"/>
+		</java>
+	</target>
   
-  <target name="test" depends="compile-test"
+	<target name="test" depends="compile-test"
         description="run the tests" >
-    <fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
-    <junit fork="on" haltonfailure="yes" dir=".">
-	  <sysproperty key="java.library.path" value="${dlls}"/>
-      <classpath refid="libraries" />
-      <formatter type="plain" usefile="false" />
-      <test name="org.sleuthkit.datamodel.DiffTest" />
-    </junit>
-  </target>
+		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
+		<junit fork="on" haltonfailure="yes" dir=".">
+			<sysproperty key="java.library.path" value="${dlls}"/>
+			<classpath refid="libraries" />
+			<formatter type="plain" usefile="false" />
+			<test name="org.sleuthkit.datamodel.DiffTest" />
+		</junit>
+	</target>
  
-  <target name="compile" depends="init"
+	<target name="compile" depends="init"
         description="compile the source" >
     <!-- Compile the java code from ${src} into ${build} -->
-    <javac debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" includeantruntime="false">
-        <compilerarg value="-Xlint"/>
-    </javac>
-  </target>
+		<javac debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" includeantruntime="false">
+			<compilerarg value="-Xlint"/>
+		</javac>
+	</target>
 
-  <target name="dist" depends="jni,init-ivy"
+	<target name="dist" depends="jni,init-ivy"
         description="generate the distribution" >
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-    <jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
+		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
 	<!-- Fetch dependencies too -->
-	<ivy:retrieve />
-  </target>
+		<ivy:retrieve />
+	</target>
   
-  <target name="jni" depends="compile" description="make the jni.h file">
-    <javah classpath = "${build}" outputFile="jni/dataModel_SleuthkitJNI.h" force="yes">
-	  <class name="org.sleuthkit.datamodel.SleuthkitJNI"/>
-	</javah>
-  </target>
+	<target name="jni" depends="compile" description="make the jni.h file">
+		<javah classpath = "${build}" outputFile="jni/dataModel_SleuthkitJNI.h" force="yes">
+			<class name="org.sleuthkit.datamodel.SleuthkitJNI"/>
+		</javah>
+	</target>
   
 
-  <target name="clean"
+	<target name="clean"
         description="clean up" >
     <!-- Delete the ${build} and ${dist} directory trees -->
-    <delete dir="${build}"/>
-    <delete dir="${dist}"/>
-  </target>
+		<delete dir="${build}"/>
+		<delete dir="${dist}"/>
+	</target>
 
-  <target name ="javadoc" description="Make the API docs">
-    <mkdir dir="javadoc"/>
-    <javadoc sourcepath="src" destdir="javadoc" overview="src/overview.html" />
-  </target>
+	<target name ="javadoc" description="Make the API docs">
+		<mkdir dir="javadoc"/>
+		<javadoc sourcepath="src" destdir="javadoc" overview="src/overview.html" />
+	</target>
 
 </project>

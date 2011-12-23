@@ -76,6 +76,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="copy &quot;$(LIBEWF_HOME)msvscpp\release\libewf.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;copy &quot;$(LIBEWF_HOME)msvscpp\zlib\zlib1.dll&quot; &quot;$(OutDir)&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -139,6 +140,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="copy &quot;$(LIBEWF_HOME)msvscpp\release\libewf.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;copy &quot;$(LIBEWF_HOME)msvscpp\zlib\zlib1.dll&quot; &quot;$(OutDir)&quot;"
 			/>
 		</Configuration>
 		<Configuration
