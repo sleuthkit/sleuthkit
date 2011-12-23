@@ -34,30 +34,30 @@ public:
     static const int FILE_BUFFER_SIZE;
     static const std::string FILES_DIRECTORY;
 
-    /// The TskFileManagerImpl is implemented as a singleton
+    // The TskFileManagerImpl is implemented as a singleton
     static TskFileManagerImpl& instance();
 
-    /// Return a File object for the given file id.
+    // Return a File object for the given file id.
     virtual TskFile* getFile(const uint64_t fileId);
 
-    /// Return a TskFile object for the given file id and path
+    // Return a TskFile object for the given file id and path
     virtual TskFile* getFile(const uint64_t fileId, const std::wstring& path);
 
-    /// Return the path including the file name for the given file id.
+    // Return the path including the file name for the given file id.
     virtual std::wstring getPath(const uint64_t fileId);
 
-    //// Save the given file to disk.
+    // Save the given file to disk.
     virtual void saveFile(TskFile* fileToSave);
     virtual void saveFile(const uint64_t fileId);
 
-    /// Save the given file to the specified fully qualified file name
+    // Save the given file to the specified fully qualified file name
     virtual void saveFile(TskFile* fileToSave, const std::wstring& filePath);
     virtual void saveFile(const uint64_t fileId, const std::wstring& filePath);
 
-    /// Save the contents of the input stream to a file with the given fileId
+    // Save the contents of the input stream to a file with the given fileId
     virtual void saveFile(const uint64_t fileId, std::istream& istr);
 
-    /// Delete the file from disk.
+    // Delete the file from disk.
     virtual void deleteFile(TskFile* fileToDelete);
     virtual void deleteFile(const uint64_t fileId);
 
@@ -72,10 +72,10 @@ private:
     // Our one and only instance
     static TskFileManagerImpl * m_pInstance;
 
-    /// Our storage location
+    // Our storage location
     Poco::File * m_storageDir;
 
-    /// Ensure that the storage location is set up
+    // Ensure that the storage location is set up
     void initialize();
 };
 #endif

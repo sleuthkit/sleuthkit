@@ -34,17 +34,20 @@
 #include "Poco/DateTimeFormatter.h"
 #include "Poco/DateTimeFormat.h"
 
-const std::wstring TskModule::FILE_MACRO = L"@FILE";
-const std::wstring TskModule::OUT_MACRO = L"@OUT";
-const std::wstring TskModule::SESSION_MACRO = L"@SESSION";
-const std::wstring TskModule::PROGDIR_MACRO = L"@PROGDIR";
-const std::wstring TskModule::TASK_MACRO = L"@TASK";
-const std::wstring TskModule::NODE_MACRO = L"@NODE";
-const std::wstring TskModule::SEQUENCE_MACRO = L"@SEQUENCE";
-const std::wstring TskModule::PID_MACRO = L"@PID";
-const std::wstring TskModule::STARTTIME_MACRO = L"@STARTTIME";
-const std::wstring TskModule::CURTIME_MACRO = L"@CURTIME";
-const std::wstring TskModule::UNIQUE_ID_MACRO = L"@UNIQUE_ID";
+
+/* Note that the comment next to the macro name serves as the primary documenattion for the supported macros */
+const std::wstring TskModule::FILE_MACRO = L"@FILE";    ///< The file id currently being processed by the pipeline
+const std::wstring TskModule::OUT_MACRO = L"@OUT";  ///< The path to the preferred output folder (as supplied by the program that configured the pipeline).
+const std::wstring TskModule::SESSION_MACRO = L"@SESSION";  ///< The session id assigned by to this job (as assigned by the program that configured the pipeline).
+const std::wstring TskModule::PROGDIR_MACRO = L"@PROGDIR";  ///< The path to the directory where the program that is using the pipeline is installed.
+const std::wstring TskModule::TASK_MACRO = L"@TASK";    ///< The name of the currently executing task (e.g. FileAnalysis, Carving etc.)
+const std::wstring TskModule::NODE_MACRO = L"@NODE";    ///< The name of the computer on which the task is running.
+const std::wstring TskModule::SEQUENCE_MACRO = L"@SEQUENCE";    ///< The job sequence number
+const std::wstring TskModule::PID_MACRO = L"@PID";  ///< The process id of the program that is using the pipeline.
+const std::wstring TskModule::STARTTIME_MACRO = L"@STARTTIME";  ///< The time at which the program that is using the pipeline started.
+const std::wstring TskModule::CURTIME_MACRO = L"@CURTIME";  ///< The current time.
+const std::wstring TskModule::UNIQUE_ID_MACRO = L"@UNIQUE_ID";  ///< A combination of task name, node name, process id and start time separated by underscores. This is useful if you want to redirect output to a shared location. A unique file name will eliminate potential file sharing confli
+cts.
 
 TskModule::TskModule() : m_modulePath(""), m_arguments(""), m_name(""), m_moduleId(0)
 {

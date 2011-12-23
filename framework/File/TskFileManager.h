@@ -25,10 +25,19 @@
 class TSK_FRAMEWORK_API TskFileManager
 {
 public:
-    /// Return a TskFile object for the given file id.
+    /**
+     * Return a TskFile object for a given file ID.
+     * @param fileId ID of file to return object of.
+     * @returns Pointer to file object. Caller must free it.
+     */
     virtual TskFile * getFile(const uint64_t fileId) = 0;
 
-    /// Return a TskFile object for the given file id and path
+    /**
+     * Return a TskFile object for a file stored locally at a given path.
+     * @param fileId ID of file to assign to file at the path
+     * @param path Location to find the file at. 
+     * @returns Pointer to file object. Caller must free it.
+     */
     virtual TskFile * getFile(const uint64_t fileId, const std::wstring& path) = 0;
 
     /// Return the path including the file name for the given file id.

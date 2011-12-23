@@ -32,7 +32,11 @@
 class TSK_FRAMEWORK_API TskSystemProperties
 {
 public:
-    /// Retrieve the string value associated with the given name.
+    /** 
+     * Retrieve the string value associated with the given name.
+     * @param name Name of value to retrieve
+     * @returns String value or empty string if name was not found.
+     */
     virtual std::wstring get(std::wstring name) const = 0;
 
     /// Associate a string value with a name.

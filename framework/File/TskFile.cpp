@@ -34,6 +34,7 @@ void TskFile::initialize()
 {
     TskImgDB * imgDB = &TskServices::Instance().getImgDB();
 
+    // XXX We never check the return value...
     if (imgDB != NULL)
         imgDB->getFileRecord(m_id, m_fileRecord);
 }

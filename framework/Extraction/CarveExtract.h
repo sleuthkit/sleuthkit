@@ -25,6 +25,7 @@ class TSK_FRAMEWORK_API CarveExtract
 public:
     virtual ~CarveExtract() = 0;
     /**
+     * @param imgDB DB for the image being analyzed
      * @param sequence Id of chunk to carve
      * @returns 1 on error 
      */

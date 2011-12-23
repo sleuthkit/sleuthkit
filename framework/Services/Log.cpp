@@ -23,7 +23,12 @@ Log::Log()
 {
 }
 
-// return 1 on error, 0 on success
+/**
+ * Open the singlel og file at the path specified. All messages
+ * will be printed to the log.
+ * @param a_logFileFullPath Path to logfile to open.
+ * @returns 1 on error and 0 on success.
+ */
 int Log::open(const wchar_t * a_logFileFullPath)
 {
     close(); // if needed
@@ -39,6 +44,10 @@ int Log::open(const wchar_t * a_logFileFullPath)
     return 0;
 }
 
+/**
+ * Close the opened log file.
+ * @returns 0 on success
+ */
 int Log::close()
 {
     errno_t err = 0;
@@ -58,6 +67,11 @@ Log::~Log()
     close();
 }
 
+/**
+ * Generate a log message with a given level.
+ * @param a_channel Level of log to make
+ * @param a_msg Message to record.
+ */
 void Log::log(Channel a_channel, const std::wstring &a_msg)
 {
     wchar_t level[10];
@@ -96,6 +110,10 @@ void Log::log(Channel a_channel, const std::wstring &a_msg)
     }
 }
 
+/**
+ * Return the path to the log file.
+ * @returns path to log
+ */
 const wchar_t * Log::getLogPath()
 {
     return (const wchar_t * )&m_filePath;

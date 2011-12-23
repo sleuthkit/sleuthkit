@@ -42,24 +42,19 @@ public:
     static const std::wstring DB_PORT;
     static const std::wstring SESSION_ID;
 
-    /// Constructor
     TskSystemPropertiesImpl() { m_abstractConfig = (Poco::Util::AbstractConfiguration *)NULL; };
     TskSystemPropertiesImpl(Poco::Util::AbstractConfiguration & abstractConfig) { m_abstractConfig = &abstractConfig; };
 
-    /// Destructor
     virtual ~TskSystemPropertiesImpl() {};
 
-    /// Retrieve the string value associated with the given name.
     std::wstring get(std::wstring name) const;
 
-    /// Associate a string value with a name.
     void set(std::wstring name, std::wstring value);
 
     /// Initialize with POCO AbstractConfiguration
     void initialize(Poco::Util::AbstractConfiguration & abstractConfig);
 
 private:
-    /// Copy Constructor
     TskSystemPropertiesImpl(TskSystemPropertiesImpl const&) {};
 
     Poco::Util::AbstractConfiguration * m_abstractConfig;

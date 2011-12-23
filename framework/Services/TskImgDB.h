@@ -183,29 +183,35 @@ public:
         IMGDB_FILES_STATUS_ANALYSIS_FAILED,
         IMGDB_FILES_STATUS_ANALYSIS_SKIPPED
     };
+
+    /**
+     * Files have a 'known' status that is updated
+     * with the use of hash databases. */
     static enum KNOWN_STATUS
     {
-        IMGDB_FILES_KNOWN = 0,
-        IMGDB_FILES_KNOWN_GOOD,
-        IMGDB_FILES_KNOWN_BAD,
-        IMGDB_FILES_UNKNOWN
+        IMGDB_FILES_KNOWN = 0,  ///< 'Known', but cannot differentiate between good or bad.  NSRL, for example, identifies known, but does not assign a good or bad status. 
+        IMGDB_FILES_KNOWN_GOOD,  ///< Known to be good / safely ignorable.
+        IMGDB_FILES_KNOWN_BAD,  ///< Known to be bad or notable
+        IMGDB_FILES_UNKNOWN     ///< Unknown files.  Perhaps because they haven't been analyzed yet or perhaps because they are user files that are not in a database.  All files start off in this state. 
     };
 
+    /// Hash types supported by framework
     static enum HASH_TYPE 
     {
-        MD5 = 0,
-        SHA1,
-        SHA2_256,
-        SHA2_512
+        MD5 = 0,    ///< 128-bit MD5
+        SHA1,       ///< 160-bit SHA1
+        SHA2_256,   ///< 256-bit SHA2
+        SHA2_512    ///< 512-bit SHA2
     };
 
+    /// Data types that can be stored in blackboard
     static enum VALUE_TYPE
     {
-        BB_VALUE_TYPE_BYTE = 0,
-        BB_VALUE_TYPE_STRING,
-        BB_VALUE_TYPE_INT32,
-        BB_VALUE_TYPE_INT64,
-        BB_VALUE_TYPE_DOUBLE
+        BB_VALUE_TYPE_BYTE = 0, ///< Single byte
+        BB_VALUE_TYPE_STRING,   ///< String 
+        BB_VALUE_TYPE_INT32,    ///< 32-bit integer
+        BB_VALUE_TYPE_INT64,    ///< 64-bit integer
+        BB_VALUE_TYPE_DOUBLE    ///< double floating point
     };
 
     static enum UNALLOC_IMG_STATUS
@@ -221,9 +227,23 @@ public:
     TskImgDB();
     virtual ~ TskImgDB();
 
+    /**
+     * Opens the database and creates the needed tables.
+     * @returns 1 on error and 0 on success.
+     */
     virtual int initialize() = 0;
+
+    /**
+     * Opens an existing database. Use initialize() to create
+     * a new one.
+     * @returns 1 on error and 0 on success.
+     */
     virtual int open() = 0;
 
+    /**
+     * Close the database.
+     * @returns 0 on success and 1 on failure.
+     */
     virtual int close() = 0;
 
     virtual int begin() = 0;
@@ -274,12 +294,12 @@ public:
     virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<int64_t> & values) const = 0;
     virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<double> & values) const = 0;
 
-    /// Create a new artifact with the given record.
+    // Create a new artifact with the given record.
     virtual artifact_t addBlackboardInfo(const TskBlackboardRecord& blackboardRecord) const = 0;
 
     virtual void getAllBlackboardRows(const uint64_t fileId, vector<TskBlackboardRecord> & bbRecords ) const = 0;
 
-    //// Convenience functions
+    // Convenience functions
 
     // return the valueString field, if valueType is BB_VALUE_TYPE_STRING, otherwise raise exception
     virtual string toString(const TskBlackboardRecord & rec) const;
@@ -293,13 +313,13 @@ public:
     // return the valueDouble field, if valueType is BB_VALUE_TYPE_DOUBLE, otherwise raise exception
     virtual double toDouble(const TskBlackboardRecord & rec) const;
 
-    ////// --------------------
+    // --------------------
 
 
-    /// Get set of file ids that match the given condition (i.e. SQL where clause)
+    // Get set of file ids that match the given condition (i.e. SQL where clause)
     virtual std::vector<uint64_t> getFileIds(std::string& condition) const = 0;
 
-    /// Get the number of files that match the given condition
+    // Get the number of files that match the given condition
     virtual int getFileCount(std::string& condition) const = 0;
 
     virtual std::vector<uint64_t> getUniqueCarvedFileIds(HASH_TYPE hashType) const = 0;

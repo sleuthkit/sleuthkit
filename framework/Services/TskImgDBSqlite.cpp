@@ -51,10 +51,6 @@ TskImgDBSqlite::~TskImgDBSqlite()
     (void) close();
 }
 
-/*
- * Close the Sqlite database.
- * Return 0 on success, 1 on failure
-*/
 int TskImgDBSqlite::close()
 {
     if (m_db) {
@@ -95,10 +91,6 @@ int TskImgDBSqlite::dropTables()
     return 0;
 }
 
-/** 
-* Open the DB and create the tables.
-* @returns 1 on error
-*/
 int TskImgDBSqlite::initialize()
 {
     wchar_t infoMessage[MAX_BUFF_LENGTH];
@@ -448,7 +440,7 @@ int TskImgDBSqlite::addImageName(char const * imgName)
     return 0;
 }
 
-/**
+/*
  * Adds the sector addresses of the volumes into the db.
  */
 int TskImgDBSqlite::addVolumeInfo(const TSK_VS_PART_INFO * vs_part)
@@ -762,8 +754,8 @@ int TskImgDBSqlite::addFsBlockInfo(int a_fsId, uint64_t a_fileId, int a_sequence
 /**
  * Add information about how the unallocated images were created so that we can later
  * map where data was recovered from.  
- * @param a_volId Volume ID that the data was extracted from.
- * @param unallocImgId ID of the unallocated image that was created.
+ * @param a_volID Volume ID that the data was extracted from.
+ * @param unallocImgID ID of the unallocated image that was created.
  * @param unallocImgStart Sector offset of where in the unallocated image that the run starts.
  * @param length Number of sectors that are in the run.
  * @param origImgStart Sector offset in the original image (relative to start of image) where the run starts 
@@ -1267,6 +1259,8 @@ UnallocRun * TskImgDBSqlite::getUnallocRun(int a_unalloc_img_id, int a_file_offs
  * Adds information about a carved file into the database.  This includes the sector layout
  * information. 
  * 
+ * @param vol_id Volume in which the carved file was found in
+ * @param name Name of the file 
  * @param size Number of bytes in file
  * @param runStarts Array with starting sector (relative to start of image) for each run in file.
  * @param runLengths Array with number of sectors in each run 
@@ -1342,6 +1336,7 @@ int TskImgDBSqlite::addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t size,
  * 
  * @param name The name of the file.
  * @param parentId The id of the file from which this file is derived.
+ * @param isDirectory True if entry is for a directory verus a file
  * @param size The size of the file.
  * @param details This is a string that may contain extra details related
  * to the particular type of mechanism that was used to derive this file, 
@@ -1351,7 +1346,8 @@ int TskImgDBSqlite::addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t size,
  * @param crtime Time the file was created.
  * @param atime Last access time.
  * @param mtime Last modified time.
- * @param fileId Return the file_id value.
+ * @param fileId Reference to location where file_id for file can be assigned
+ * @param path Path of file
  *
  * @returns 0 on success or -1 on error.
  */

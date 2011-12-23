@@ -29,7 +29,7 @@
 class TSK_FRAMEWORK_API TskDBBlackboard : public TskBlackboard
 {
 public:
-    /// Singleton access
+    // Singleton access
     static TskDBBlackboard& instance();
 
     // TEXT
@@ -59,19 +59,19 @@ public:
 	virtual void getBlackboardRows(uint64_t fileId, vector<TskBlackboardRecord> & bbRecords) const;
 
 protected:
-    /// Default Constructor
+    // Default Constructor
     TskDBBlackboard() { m_pImgDB = &(TskServices::Instance().getImgDB()); };
 
-    /// Copy Constructor
+    // Copy Constructor
     TskDBBlackboard(TskDBBlackboard const&) {};
 
-    /// Assignment operator
+    // Assignment operator
     TskDBBlackboard& operator=(TskDBBlackboard const&) { return *m_pInstance; };
 
-    /// Destructor
+    // Destructor
     virtual ~TskDBBlackboard() {};
 
-    /// Our one and only instance
+    // Our one and only instance
     static TskDBBlackboard * m_pInstance;
 
     TskImgDB * m_pImgDB;

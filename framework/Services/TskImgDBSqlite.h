@@ -82,7 +82,7 @@ public:
     virtual int updateKnownStatus(uint64_t a_file_id, int a_status);
 	virtual bool dbExist() const;
 
-    /// Blackboard access methods.
+    // Blackboard access methods.
     virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<vector<unsigned char>> & values) const;
     virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<string> & values) const;
     virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<int32_t> & values) const;
@@ -91,13 +91,13 @@ public:
 
     virtual void getAllBlackboardRows(const uint64_t fileId, vector<TskBlackboardRecord> & bbRecords) const;
 
-    /// Create a new artifact with the given record.
+    // Create a new artifact with the given record.
     virtual artifact_t addBlackboardInfo(const TskBlackboardRecord& blackboardRecord) const;
 
-    /// Get set of file ids that match the given condition (i.e. SQL where clause)
+    // Get set of file ids that match the given condition (i.e. SQL where clause)
     virtual std::vector<uint64_t> getFileIds(std::string& condition) const;
 
-    /// Get the number of files that match the given condition
+    // Get the number of files that match the given condition
     virtual int getFileCount(std::string& condition) const;
 
     virtual std::vector<uint64_t> getUniqueCarvedFileIds(HASH_TYPE hashType) const;

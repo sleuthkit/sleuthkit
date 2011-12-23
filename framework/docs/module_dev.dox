@@ -1,0 +1,129 @@
+/*! \page mod_devpage Developing Dynamic Library Modules
+
+
+\section mod_overview Overview
+A module in the TSK framework should perform a single type of analysis.  A module is executed within the scope of a pipeline.  Refer to \ref pipe_types for details on the different types of pipelines and how to configure them. 
+
+Modules should have a focused task so that they are usable in many scenarios. As an example, if you want to perform hash lookup then it would be best to have a module that calculates the hash value and another module to lookup the hash in a database.  This separation allows the hash value to be used by other modules later in the pipeline and allows you to support different hash databases in the future. 
+
+Note that pipelines can also refer to executable programs.  This section covers only how to develop a dynamic link library module.  Details on using executable modules are provided in the \ref pipe_modtypes section. 
+
+
+\section mod_setup Setup
+It is assumed that you have compiled the framework or at least have access to the header files and library files from a compiled version.  If not, refer to the <tt>BUILDING.txt</tt> file that comes with the source code. 
+
+\section mod_samples Sample Modules
+The framework source code has some sample modules that you should refer to for examples.  There are also official modules that perform common tasks (such as hash calculation) that you can refer to. 
+
+
+\section mod_build Building the Module
+The module will be written as a dynamic library.  This document assumes that you know how to configure your compiler and development environment to make a dynamic link library. 
+
+You will need to include the framework header file to get access to the framework classes. 
+
+<pre>#include "TskModuleDev.h" </pre>
+
+Next, you need to define several function that the framework will call when it uses the module.   Those are described in the following sections. 
+
+\subsection mod_setup_init Module InitializationThe <tt>initialize</tt> function is where you perform one time module configuration tasks such as validating input or output folders or establishing a connection to an external system such as a database server.
+The module initialization function must be implemented and it must have the following signature:
+
+<pre>TskModule::Status initialize(std::string& args) (VERIFY)</pre>
+
+The function takes a string argument, which  you supplied in the pipeline configuration file. It returns a status which should be TskModule::OK or TskModule::FAIL.  Returning TskModule::FAIL will indicate a fatal problem and will cause the pipeline to terminate. 
+\subsection mod_setup_run File Analysis Execution
+If your module will be running in a file analysis pipeline, then it must implement the <tt>run</tt> function. This function will be called for each file that is run through the file analysis pipeline.   It should have the following signature:
+<pre>TskModule::Status run(TskFile* pFile)</pre>
+The function is passed a pointer to a file and it must return either TskModule::OK, TskModule::FAIL, or TskModule::STOP.
+
+The file pointer is supplied by the framework and can be used to access both the metadata and the content associated with the file. The file object is managed by the framework and a module must therefore not delete it.  
+A file analysis module has the ability to terminate the processing of a file in the pipeline by  returning the TskModule::STOP status. This is useful if a module determines that a particular file is not relevant (e.g. by identifying it as a known good file).
+
+\subsection mod_setup_report Report Execution
+If your module will be running in a reporting pipeline, then it must implement the <tt>report</tt> function.   It is similar to a file analysis function, except it is not passed in a reference to a specific file. The signature for a reporting module is:
+<pre>TskModule::Status report()</pre>
+The report module does not have access to an individual file pointer but a module writer may choose to get access to a set of files as described in the Accessing Specific Files section below.  As with the file analysis module, the report() function can choose to stop subsequent modules in the reporting pipeline by returning a TskModule::STOP status.
+
+
+\subsection mod_setup_cleanup Module Cleanup
+When the pipeline is being destroyed, the <tt>finalize</tt> function on each module will be called. This is where you should free any resources that you allocated during initialization or execution. The module termination function must have the following signature:
+<pre>TskModule::Status finalize()</pre>
+
+\section mod_stuff Doing Stuff in a Module
+Now that we know where to put code in the module, we'll examine what we can do in those places. 
+
+\subsection mod_stuff_services Services
+
+The framework provides a set of services to each module.  These services allow the module to access common resources and information. These services can be accessed through the TskServices class, which is a singleton and the following code snippet demonstrates how to get access to the Log service:
+
+<pre>Log& tskLog = TskServices::Instance().getLog()</pre>
+Other services can be accessed in a similar manner.  Below is a list of services and a brief description.  Refer to the specific classes for more details.  Many of these services return an interface and the implementation details are left up to the programs that integrate the framework.  Not all services may be available.
+
+<ul>
+  <li>TskSystemProperties provides an interface to system-wide configuration data (such as data that could be stored in a configuration file). Data are stored as name / value pairs. </li>
+
+  <li>TskImgDB  provides an interface to the underlying framework database. The class can be used to run adhoc queries against the database to identify a subset of files.  </li>
+  <li>TskFileManager is a singleton that allows module writers to save, copy, or delete file content.</li>
+
+  <li>Log allows modules to write log messages to the logging mechanism that the application using the pipeline has configured. The framework comes with a default log infrastructure that logs messages to a single file.  In addition to directly getting the Log singleton from TskServices, you can also use the LOGERROR(), LOGWARN(), and LOGINFO() macros that get the class and log the message in a single statement.</li>
+
+  <li>TskBlackboard provides a mechanism for intermodule communication. Modules may post and retrieve data to the blackboard using name / value pairs. Typically, the blackboard stores its data in the TskImgDB database. </li>
+
+  <li>Scheduler provides a mechanism to schedule other types of analysis (if you are running this as a distributed application).  For example, if the module opens up a ZIP file, then it could schedule each of the individual files for analysis. </li>
+
+  <li>ImageFile provides access to the disk image being analyzed.  This allows you to access a specific file or raw data.</li>
+</ul>
+
+Although not a service, you might also want to check out TskUtilities, which has some common utilities that may be useful.  For example, there are utilities for Unicode conversion in there. Poco also provides some platform-independent utilities. 
+
+
+\subsection mod_stuff_file Accessing File Content and Metadata
+
+A file analysis module will be passed a TskFile object for the file to analyze.  TskFile objects can represent all types of files, including allocated and deleted files, carved files, and derived files (i.e. a file stored inside of a ZIP file). From this object, you can read content using the TskFile.read() method.  You can also access specific types of file metadata using specific methods, such as TskFile.size(), TskFile.crtime(), and TskFile.gePath(). Refer to the TskFile documentation for a list of all methods. 
+
+
+\subsection mod_stuff_files Accessing Other Files
+
+Reporting modules may want to access specific files. To gain access to a file, you must first identify its unique Id that was assigned to it in the database.  The framework supports adhoc querying of the underlying database through the TskImgDB class. In particular, the TskImgDB::getFileIds() and TskImgDB::getFileCount() methods allow you to define a condition and to receive either the identifiers that match the condition or the number of files that match the condition.  Refer to the schema described at http://wiki.sleuthkit.org/index.php?title=SQLite_Database_v2_Schema for details on the tables and columns that can be queried. 
+The following code snippet demonstrates the use of the TskImgDB::getFileIds() method to retrieve identifiers for Windows "NTUSER.DAT" registry files:
+
+<pre>     std::string condition("WHERE files.dir_type = TSK_FS_NAME_TYPE_REG AND UPPER(files.name) = 'NTUSER.DAT");    // Get the file ids matching our condition    TskImgDB& imgDB = TskServices::Instance().getImgDB();    std::vector<uint64_t> fileIds = imgDB.getFileIds(condition);
+</pre>
+Notice that the condition is simply a SQL "WHERE" clause. The "dir_type = TSK_FS_NAME_TYPE_REG" condition limits our query to files rather than directories.
+
+Once you have a file ID, you can get the corresponding TskFile object with the TskFileManager, specifically the TskFileManager.getFile() method. 
+
+
+\section mod_blackboard The Blackboard
+The blackboard plays a critical role in allowing modules to communicate and pass data. The blackboard is simply a table that contains name and value pairs. A module can post data to the blackboard so that later modules can see the results and it can query the blackboard to see what previous modules have posted.
+
+You can get access to TskBlackboard from TskServices. 
+
+\subsection mod_bb_typesStandard Types
+There are types of data that are always important in digital forensics and the framework defines how those should be stored in the blackboard.  Using these techniques will ensure that you can find the correct data from previous modules and that later modules can find your results. 
+
+Example types that are defined include:
+<ul>
+  <li>TskBlackboard.TSK_URL</li>
+  <li>TskBlackboard.TSK_PROGRAM_NAME</li>
+  <li>TskBlackboard.TSK_HASH_MD5</li>
+  <li>TskBlackboard.TSK_GEO</li>
+  <li>TskBlackboard.TSK_DATETIME</li>
+</ul>
+
+To store an MD5 hash of a given file, you would post to the file's blackboard a name value pair where the name is TskBlackboard.TSK_HASH_MD5 and the value is the MD5 hash value. 
+
+<!-- TODO: ADD MORE OF THE INTENDED SETS -->
+
+\subsection mod_bb_artifacts Artifact Groupings
+In many cases, something that is found during analysis will have many of the standard types described in the previous section.  In these cases, they are grouped together into an artifact.  For example, if you analyze a GPS track log, then you want to record the time and place of each track point on the blackboard.  To do this, you would add a GEO and DATE entry to the blackboard for every track point and you would group a GEO and DATE pair into the same artifact.  
+
+To create a multiple attribute artifact, use the standard TskBlackboard.set() method that only takes in the name and value pairs. That will return the artifact ID.  Next, call the TskBlackboard.set() method that also takes in the artifact ID and pass in the ID that you got from the first call. 
+
+
+\subsection mod_bb_query Blackboard Querying
+There are a variety of get methods in TskBlackboard that allow you to get files and blackboard values. 
+
+<!-- TODO: Expand on querying the blackboard.  -->
+
+*/

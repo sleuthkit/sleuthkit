@@ -36,29 +36,29 @@ class TSK_FRAMEWORK_API TskBlackboard
 public:
 
     // BLACKBOARD ATTRIBUTE
-    static const string TSK_DATETIME; // INT32: GMT based Unix time, defines number of secords elapsed since UTC Jan 1, 1970.
-    static const string TSK_GEO;      // STRING: TBD
-    static const string TSK_USERNAME; // STRING: TBD
-    static const string TSK_PASSWORD; // STRING: TBD
-    static const string TSK_NAME;     // STRING: TBD
-    static const string TSK_DEVICE_MODEL; // STRING: TBD
-    static const string TSK_DEVICE_MAKE;  // STRING: TBD
-    static const string TSK_DEVICE_ID;// STRING: TBD
-    static const string TSK_RECENTLYUSED; // STRING: TBD
-    static const string TSK_KEYWORD;  // STRING: One keyword per artifact
-    static const string TSK_EMAIL;    // STRING: One email per artifact
-    static const string TSK_URL;      // STRING: URL, should starts with http:// or ftp:// etc.
-    static const string TSK_URL_HISTORY; // STRING: One URL per artifact
-    static const string TSK_DOMAIN;   // STRING: DNS Domain name, e.g. basis.com
-    static const string TSK_HASH_MD5; // STRING: MD5 hash
-    static const string TSK_HASH_SHA1;     // STRING: SHA1 hash
-    static const string TSK_HASH_SHA2_256; // STRING: SHA2 256 bit hash
-    static const string TSK_HASH_SHA2_512; // STRING: SHA2 512 bit hash
-    static const string TSK_TEXT;      // STRING: TEXT
-    static const string TSK_TEXT_LANGUGE;  // STRING: Language of Text, should use ISO 639-3 langage code
-    static const string TSK_ENTROPY;   // DOUBLE: Entropy value of file
-    static const string TSK_PROGRAM_NAME;   // STRING: name of a program
-    static const string TSK_HASHSET_NAME; //STRING: name of a hashset
+    static const string TSK_DATETIME; 
+    static const string TSK_GEO;      
+    static const string TSK_USERNAME; 
+    static const string TSK_PASSWORD; 
+    static const string TSK_NAME;
+    static const string TSK_DEVICE_MODEL; 
+    static const string TSK_DEVICE_MAKE;
+    static const string TSK_DEVICE_ID;
+    static const string TSK_RECENTLYUSED; 
+    static const string TSK_KEYWORD;
+    static const string TSK_EMAIL;
+    static const string TSK_URL;
+    static const string TSK_URL_HISTORY; 
+    static const string TSK_DOMAIN;
+    static const string TSK_HASH_MD5;
+    static const string TSK_HASH_SHA1;
+    static const string TSK_HASH_SHA2_256;
+    static const string TSK_HASH_SHA2_512;
+    static const string TSK_TEXT;
+    static const string TSK_TEXT_LANGUGE;
+    static const string TSK_ENTROPY;
+    static const string TSK_PROGRAM_NAME;
+    static const string TSK_HASHSET_NAME;
 
     // TEXT
     virtual artifact_t set(const uint64_t fileId, const string & attribute, const string & value, const string & source = "", const string & context = "") = 0;
