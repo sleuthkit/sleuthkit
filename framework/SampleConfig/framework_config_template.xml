@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TSK_FRAMEWORK_CONFIG>
+  <!--
+  <DB_HOST>X</DB_HOST>
+  <DB_PORT>X</DB_PORT>
+  <PIPELINE_CONFIG_FILE>pipeline_config.xml</PIPELINE_CONFIG_FILE>
+  <MODULE_DIR>X</MODULE_DIR>
+  <PROG_DIR>X</PROG_DIR>
+  -->
+</TSK_FRAMEWORK_CONFIG>
