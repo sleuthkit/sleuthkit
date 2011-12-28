@@ -24,7 +24,7 @@ Log::Log()
 }
 
 /**
- * Open the singlel og file at the path specified. All messages
+ * Open the single log file at the path specified. All messages
  * will be printed to the log.
  * @param a_logFileFullPath Path to logfile to open.
  * @returns 1 on error and 0 on success.
@@ -98,15 +98,12 @@ void Log::log(Channel a_channel, const std::wstring &a_msg)
         newtime.tm_mon+1,newtime.tm_mday,newtime.tm_year % 100, 
         newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
 
-    /* BC: For some unknown reason, when we had this enabled, the carver
-     * would miss files that it would otherwise find. Not sure why. It may have
-     * to do with the carver producing so much data to stderr that this got in
-     * its way...  Disabling since the log should be the primary source of debug
-     * data anyway. */
-    //fwprintf(stderr, L"%S %s %s\n", timeStr, level, a_msg);
     if (m_logFile) {
         fwprintf(m_logFile, L"%S %s %s\n", timeStr, level, a_msg.data());
         fflush(m_logFile);
+    }
+    else {
+        fwprintf(stderr, L"%S %s %s\n", timeStr, level, a_msg.data());
     }
 }
 

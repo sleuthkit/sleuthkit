@@ -37,6 +37,7 @@ public:
     virtual ~TskImageFileTsk();
 
     virtual int open(const std::vector<std::wstring> &images);
+    virtual int open(const TSK_TCHAR *imageFile);
     virtual int open();
     virtual void close();
 

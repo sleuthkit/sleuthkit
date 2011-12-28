@@ -40,8 +40,17 @@ public:
      * @return 0 on success and -1 on error
      */
     virtual int open(const std::vector<std::wstring> &imageFiles) = 0;
+    /**
+     * Open the disk image at the following path using TSK_TCHAR type. 
+     * @param imageFile Path to image (or first in a set of images).
+     * @return 0 on success and -1 on error
+     */
+    virtual int open(const TSK_TCHAR *imageFile) = 0;
 
-    // open the images in the DB
+    /**
+     * open the images at the paths saved in ImgDB
+     * @returns 0 on success and -1 on error
+     */
     virtual int open() = 0;
 
     /// Close the disk image.

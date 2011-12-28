@@ -17,8 +17,8 @@
 
 /**
  * \file Log.h
- * Interface for logging infrastructure that enables applications and framework
- * to log to a single place.
+ * Interface and default logging infrastructure that enables applications and framework
+ * to log to a single place.  
  */
 
 /**
@@ -50,7 +50,9 @@
 /**
  * Logging class to enable the framework, apps that use it, and modules to
  * log error and warning messages.  The default implementation writes
- * the log messages to a file, but it can be extended by another class.
+ * the log messages to a file if open() was called and prints the messages to
+ * stderr if a log file was not specified. The class can be extended 
+ * if you want logs to be saved in another way.
  * Can be registered with and retrieved from TskServices.
  *
  * Developers can either directly call the log() method with the logging

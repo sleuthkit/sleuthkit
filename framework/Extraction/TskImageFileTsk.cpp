@@ -44,11 +44,15 @@ TskImageFileTsk::~TskImageFileTsk()
     close();
 }
 
-/**
- * Open an image file for later analysis and extraction. 
- * @param images List of images to open.
- * @returns -1 on error and 0 on success
- */
+int TskImageFileTsk::open(const TSK_TCHAR *imageFile)
+{
+    if (!m_images.empty()) {
+        close();        
+    }
+    m_images.push_back(imageFile);
+    return openImages();
+}
+
 int TskImageFileTsk::open(const std::vector<std::wstring> &images)
 {
     if (!m_images.empty()) {

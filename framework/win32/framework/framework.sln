@@ -3,7 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual C++ Express 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "framework", "framework.vcproj", "{F791B16A-1489-4526-9FFF-CB481CEC5414}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CalcFileSize", "..\CalcFileSize\CalcFileSize.vcproj", "{FA3FF845-E341-4BE3-A17F-8042C99A374F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CalcFileSizeModule", "..\CalcFileSize\CalcFileSize.vcproj", "{FA3FF845-E341-4BE3-A17F-8042C99A374F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ValidatePipeline", "..\ValidatePipeline\ValidatePipeline.vcproj", "{352C3C04-1F31-4138-97A6-1DC6EC5FD379}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_analyzeimg", "..\tsk_analyzeimg\tsk_analyzeimg.vcproj", "{13BD0806-028E-42F1-A91D-5128565A9717}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
 	EndProjectSection
@@ -22,6 +32,14 @@ Global
 		{FA3FF845-E341-4BE3-A17F-8042C99A374F}.Debug|Win32.Build.0 = Debug|Win32
 		{FA3FF845-E341-4BE3-A17F-8042C99A374F}.Release|Win32.ActiveCfg = Release|Win32
 		{FA3FF845-E341-4BE3-A17F-8042C99A374F}.Release|Win32.Build.0 = Release|Win32
+		{352C3C04-1F31-4138-97A6-1DC6EC5FD379}.Debug|Win32.ActiveCfg = Debug|Win32
+		{352C3C04-1F31-4138-97A6-1DC6EC5FD379}.Debug|Win32.Build.0 = Debug|Win32
+		{352C3C04-1F31-4138-97A6-1DC6EC5FD379}.Release|Win32.ActiveCfg = Release|Win32
+		{352C3C04-1F31-4138-97A6-1DC6EC5FD379}.Release|Win32.Build.0 = Release|Win32
+		{13BD0806-028E-42F1-A91D-5128565A9717}.Debug|Win32.ActiveCfg = Debug|Win32
+		{13BD0806-028E-42F1-A91D-5128565A9717}.Debug|Win32.Build.0 = Debug|Win32
+		{13BD0806-028E-42F1-A91D-5128565A9717}.Release|Win32.ActiveCfg = Release|Win32
+		{13BD0806-028E-42F1-A91D-5128565A9717}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -32,6 +32,7 @@
 /**
  * Set the locations and logging object.  Must call
  * initialize() before the object can be used.
+ * @param a_outpath FOLDER to store the database in
 */
 TskImgDBSqlite::TskImgDBSqlite(const wchar_t * a_outpath)
 {
@@ -44,6 +45,7 @@ TskImgDBSqlite::TskImgDBSqlite(const wchar_t * a_outpath)
     }
     wcsncpy_s(m_dbFilePath, m_outPath, 256);
     wcsncat_s(m_dbFilePath, L"image.db", 256);
+    m_db = NULL;
 }
 
 TskImgDBSqlite::~TskImgDBSqlite()
