@@ -40,7 +40,7 @@ public:
     static const string TSK_GEO;      
     static const string TSK_USERNAME; 
     static const string TSK_PASSWORD; 
-    static const string TSK_NAME;
+    static const string TSK_NAME_PERSON;
     static const string TSK_DEVICE_MODEL; 
     static const string TSK_DEVICE_MAKE;
     static const string TSK_DEVICE_ID;

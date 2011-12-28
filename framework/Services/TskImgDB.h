@@ -107,11 +107,11 @@ struct TskModuleStatus
 struct TskBlackboardRecord
 {
     artifact_t artifactId;
-    uint64_t fileId;
-    string attribute;
-    string source;
-    string context;
-    int valueType; // determines which value below contains actual data
+    uint64_t fileId;    ///< File that this information pertains to.
+    string attribute; ///< Name / type of the data being stored. Standard attribute names are defined in TskBlackboard
+    string source;  ///< Name of the module that added this data
+    string context; ///< Optional string that provides more context about the data.  For example, it may have "Last Printed" if the entry is a DATETIME entry about when a document was last printed.
+    int valueType; ///< Type of data being stored
     int32_t valueInt32;
     int64_t valueInt64;
     string valueString;
