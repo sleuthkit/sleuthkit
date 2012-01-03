@@ -103,8 +103,9 @@ static int64_t bloom_lookups = 0;
 
 /** Initialization function is used solely for hex output
  */
-
-static void nsrl_exit(int code) __attribute__ ((noreturn));
+#ifdef __GNUC__
+	static void nsrl_exit(int code) __attribute__ ((noreturn));
+#endif
 static void nsrl_exit(int code)
 {
     int i;
