@@ -1,20 +1,36 @@
 /*! \page mod_bbpage Communicating with the Blackboard
 
 \section bb_overview Overview
-The blackboard plays a critical role in allowing modules to communicate and pass data. The blackboard is simply a table that contains name and value pairs. A module can post data to the blackboard so that later modules can see the results and it can query the blackboard to see what previous modules have posted.
+The blackboard plays a critical role in allowing modules to communicate and pass data. In its most simple form, the blackboard is a table that contains name and value pairs. A module can post data to the blackboard so that later modules can see the results and it can query the blackboard to see what previous modules have posted.  It gets a little more complex because you can group together related name and value pairs into artifacts.  This section describes how to post and get results from the blackboard. 
 
 You can get access to TskBlackboard from TskServices. 
 
 \section bb_artifacts Attributes and Artifacts
 
-A basic concept behind storing things on the blackboard is that a single piece of data is called an <em>attribute</em>.  Example attributes include a date, geo coordinate, URL, or name.  
+A basic concept behind storing things on the blackboard is that a single piece of data is called an <em>attribute</em>.  Example attributes include a date, geo coordinate, URL, or name.  Attributes are a name and value pair. The name part defines the type of the attribute. 
 
-Attributes are grouped together into <em>artifacts</em>. For example, if you have a track log from a GPS, then you could organize each track point as an artifact.  Each track point has a geo coordinate and date attribute. 
+All attributes are part of an <em>artifacts</em>.  Artifacts group together related attributes and have an associated type.  A file may have multiple artifacts on the blackboard and a later section will outline when you should create a new artifact to store new attributes and when attributes should be included in an existing artifact. 
 
-The blackboard in the framework has many rows.  Each row is an attribute that stores a specific type of data.  Rows are grouped together into artifacts. 
+As a basic example, consider if you have a module that analyzes GPS track logs. It would create an artifact of type TSK_TRACK_POINT for each track point in the GPS log.  Each artifact would have a geo coordinate and date attribute.
 
 
-\section bb_types Standard Attribute Types
+\section bb_art_types Standard Artifact Types
+
+Several types of artifacts have been identified as common in digital forensics and their use in the blackboard has been officially defined.  As more modules are written, more artifact types will also be defined. 
+
+All attributes must be part of an artifact.  Each file can have a TskBlackboard.TSK_ART_GEN_INFO artifact that contains general information about the file. The attributes in this artifact all pertain to the same file, but they are not necessarily related to each other.  All attributes should be added to this artifact unless it needs its own artifact.  
+
+Refer to the TskBlackboard code for a full list of defined types and refer to its documentation and the wiki page (http://wiki.sleuthkit.org/index.php?title=Artifact_Examples) for full details on their use.  A short list of example artifacts include:
+
+Example artifact types include:
+ - TskBlackboard.TSK_ART_WEB_BOOKMARK
+ - TskBlackboard.TSK_ART_WEB_COOKIE
+ - TskBlackboard.TSK_ART_WEB_HISTORY
+ - TskBlackboard.TSK_ART_GEN_INFO
+
+
+\section bb_attr_types Standard Attribute Types
+
 There are types of attributes that are always important in digital forensics and the framework defines how those should be stored in the blackboard.  Using these techniques will ensure that you can find the correct data from previous modules and that later modules can find your results. 
 
 Example attributes that are defined include:
@@ -35,8 +51,11 @@ See the TskBlackbord class for the full list of standard attributes and what the
 
 Each attribute also has a context field that can optionally be set. It provides context the name and value pair.  Each standard type provides suggestions about what the context should store, but it is not designed to be automatically interpreted by a program. 
 
-As an example, if you have a module that analyzes a Microsoft Word file, then it may pull out dates about when the document was last saved and printed. Both of these dates should be added to the blackboard so that they can be used by a later module that makes timelines of all activity.  Since they are not attributes of the same artifact, they will be added as different artifacts.  To differentiate between these two artifacts, the context for each TskBloackboard.TSK_DATETIME should be different.  One should be "Last Printed" and the other "Last Saved". 
+As an example, if you have a module that analyzes a Microsoft Word file, then it may pull out dates about when the document was last saved and printed. Both of these dates should be added to the blackboard so that they can be used by a later module that makes timelines of all activity.  Both of these would be added to the TskBlackboard.TSK_ART_GEN_INFO artifact.  To differentiate between them, the context for each TskBloackboard.TSK_DATETIME should be different.  One should be "Last Printed" and the other "Last Saved". 
 
+
+<!-- 
+  MAKE SURE THIS MOVES TO THE CODE WHERE THE ARTIFACT EXAMPLES ARE DEFINED
 
 \section bb_ex Artifact Examples
 
@@ -48,15 +67,18 @@ If you have a module that examines web history or other files and can find user 
 
 If you have a module that analyzes certain document types (such as PDF or Word), then the module should post the text to TskBlackboard.TSK_TEXT.  It should also post any other metadata that was recovered, such as dates and user names. 
 
+-->
 
 \section bb_artifact2 Multiple Artifacts Versus Multiple Attributes
-In some cases, it may not be clear if you should add multiple single-attribute artifacts for a file or add a single multiple-attribute artifact.  This section addresses that topic.
+
+While the framework defines some common artifacts, you are free to make your own. This section outlines if you really should be making your own artifact though  and how many. 
+In some cases, it may not be clear if you should add multiple single-attribute artifacts to a file or add a single multiple-attribute artifact.  
 
 The general motivation for grouping attributes is that if someone queries the blackboard and finds a given attribute, then they can use the artifact grouping to find the other related attributes.  With that in mind, here are some guidelines:
 
- - Create as few artifacts as possible for a given file. 
- - If a single file contains multiple instances of the same data type (i.e. log entries in a log file, bookmarks in a bookmark file, cookies in a cookie database), then each instance should be its own artifact so that you can differentiate them.  
- - Attributes in the same artifact should be related to each other.  Adding an attribute to an artifact should provide more context. 
+ - Create as few artifacts as possible for a given file.  Add as many attributes as possible to TskBlackboard.TSK_ART_GEN_INFO. 
+ - If a single file contains multiple instances of the same data type (i.e. log entries in a log file, bookmarks in a bookmark file, cookies in a cookie database), then each instance should be its own artifact so that you can differentiate them and all related attributes are clearly grouped (i.e. it is clear which date goes with which log entry).  
+ - Within non-TSK_ART_GEN_INFO artifacts, attributes should be related to each other.  Adding an attribute to an artifact should provide more context to the existing attributes. 
 
 
 \section bb_set Setting Attributes and Artifacts
