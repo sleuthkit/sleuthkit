@@ -35,6 +35,13 @@
 /* config.h must be first */
 #include "tsk3/tsk_tools_i.h"
 //#include "config.h"
+
+#ifdef _MSC_VER
+  #ifndef _CRT_SECURE_NO_WARNINGS
+  #define _CRT_SECURE_NO_WARNINGS
+  #endif
+#endif
+
 #include "fiwalk.h"
 
 /* Bring in our headers */
@@ -93,6 +100,10 @@ int64_t  current_partition_start=0;	// in bytes
 
 /* Individual 'state' variables */
 string  plugin_filename;
+
+#ifndef FIWALK_VERSION
+#define FIWALK_VERSION "ERROR GETTING VERSION"
+#endif
 
 void print_version()
 {
@@ -179,7 +190,7 @@ static const char *cstr(const string &str){
     return str.c_str();
 }
 
-static string empty("");
+static string fw_empty("");
 
 
 /****************************************************************
@@ -226,14 +237,14 @@ void partition_info(const string &name,const string &value,const string &attribu
 
 void partition_info(const string &name,const string &value)
 {
-    partition_info(name,value,empty);
+    partition_info(name,value,fw_empty);
 }
 
 void partition_info(const string &name,long i)
 {
     char buf[1024];
     sprintf(buf,"%ld",i);
-    partition_info(name,buf,empty);
+    partition_info(name,buf,fw_empty);
 }
 
 
@@ -367,7 +378,7 @@ int af_display_as_hex(const char *segname)
 #endif
 
 
-int main(int argc, char * const *argv)
+int main(int argc, char * const *argv1)
 {
     int ch;
     extern int optind;
@@ -376,56 +387,68 @@ int main(int argc, char * const *argv)
     string *xml_fn = 0;
     const char *audit_file = 0;
     bool opt_x = false;
-    string command_line = xml::make_command_line(argc,argv);
+    string command_line = xml::make_command_line(argc,argv1);
     bool opt_zap = false;
     u_int sector_size=512;			// defaults to 512; may be changed by AFF
 
     int t0 = time(0);
+	TSK_TCHAR **argv;
 
-    while ((ch = getopt(argc, argv, "A:a:B:C:dEfG:gmv1IMX:S:T:VZn:c:b:xOzh")) > 0) { // s: removed
+#ifdef TSK_WIN32
+	argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+	if (argv == NULL) {
+		fprintf(stderr,"Error getting wide arguments\n");
+		exit(1);
+	}
+#else
+	argv = (TSK_TCHAR **) argv1;
+#endif
+	
+
+    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:B:C:dEfG:gmv1IMX:S:T:VZn:c:b:xOzh"))) > 0) { // s: removed
 	switch (ch) {
-	case '1': opt_sha1++;break;
-	case 'm':
+	case _TSK_T('1'): opt_sha1++;break;
+	case _TSK_T('m'):
 	    opt_body_file = 1;
 	    opt_sha1 = 0;
 	    opt_md5  = 1;
 	    t = stdout;
 	    break;
-	case 'A': arff_fn = optarg;break;
-	case 'B': 
+	case _TSK_T('A'): arff_fn = OPTARG;break;
+	case _TSK_T('B'): 
 	    opt_compute_sector_hashes=true;
 	    sector_bloom = new NSRLBloom();
-	    if(sector_bloom->create(optarg,160,30,4,"Sector hash")){
+	    if(sector_bloom->create(OPTARG,160,30,4,"Sector hash")){
 		err(1,"%s",optarg);
 	    }
 	    break;
-	case 'C': file_count_max = atoi(optarg);break;
-	case 'd': opt_debug++; break;
-	case 'E':
+	case _TSK_T('C'): file_count_max = atoi(OPTARG);break;
+	case _TSK_T('d'): opt_debug++; break;
+	case _TSK_T('E'):
 	    opt_print_sector_hashes = true;
 	    opt_compute_sector_hashes=true;
 	    break;
-	case 'f': opt_magic = true;break;
-	case 'g': opt_no_data++; break;
-	case 'G': opt_maxgig = atoi(optarg);break;
-	case 'I': opt_ignore_ntfs_system_files=true;break;
-	case 'M': opt_md5++; break;
-	case 'O': opt_allocated_only=true; break;
-	case 'S': sectorhash_size = atoi(optarg); break;
-	case 'T': text_fn = optarg;break;
-	case 'V': print_version();exit(0);
-	case 'X': xml_fn = new string(optarg);break;
+	case _TSK_T('f'): opt_magic = true;break;
+	case _TSK_T('g'): opt_no_data++; break;
+	case _TSK_T('G'): opt_maxgig = atoi(OPTARG);break;
+	case _TSK_T('I'): opt_ignore_ntfs_system_files=true;break;
+	case _TSK_T('M'): opt_md5++; break;
+	case _TSK_T('O'): opt_allocated_only=true; break;
+	case _TSK_T('S'): sectorhash_size = atoi(OPTARG); break;
+	case _TSK_T('T'): text_fn = OPTARG;break;
+	case _TSK_T('V'): print_version();exit(0);
+	case _TSK_T('X'): xml_fn = new string(OPTARG);break;
 
-	case 'x': opt_x = true;break;
-	case 'Z': opt_zap = true;break;
-	case 'a': audit_file = optarg;break;
-	case 'c': config_file = optarg; break;
-	case 'n': namelist.push_back(optarg);break;
+	case _TSK_T('x'): opt_x = true;break;
+	case _TSK_T('Z'): opt_zap = true;break;
+	case _TSK_T('a'): audit_file = OPTARG;break;
+	case _TSK_T('c'): config_file = OPTARG; break;
+	case _TSK_T('n'): namelist.push_back(OPTARG);break;
 	    //case 's': save_outdir = optarg; opt_save = true; break;
-	case 'v': tsk_verbose++; break; 			// sleuthkit option
-	case 'z': opt_sha1=false;opt_md5=false;break;
-	case 'h':
-	case '?':
+	case _TSK_T('v'): tsk_verbose++; break; 			// sleuthkit option
+	case _TSK_T('z'): opt_sha1=false;opt_md5=false;break;
+	case _TSK_T('h'):
+	case _TSK_T('?'):
 	default:
 	    fprintf(stderr, "Invalid argument: %s\n", argv[optind]);
 	    usage();
@@ -538,7 +561,7 @@ int main(int argc, char * const *argv)
 		"\n  xmlns='http://www.forensicswiki.org/wiki/Category:Digital_Forensics_XML'"
 		"\n  xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
 		"\n  xmlns:dc='http://purl.org/dc/elements/1.1/'" );
-	x->xmlout("dc:type","Disk Image",empty,false);
+	x->xmlout("dc:type","Disk Image",fw_empty,false);
 	x->pop();
 	    
 	/* Output carver information per photorec standard */

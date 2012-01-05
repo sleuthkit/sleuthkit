@@ -23,7 +23,7 @@
 #include <errno.h>
 
 #ifdef _MSC_VER
-#include <regex>
+#include "regex-0.12/regex.h"  //use regex in src tree
 #else
 #include <regex.h>
 #endif
@@ -39,7 +39,9 @@ using namespace std;
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
-//#include <sys/param.h>
+#ifndef _MSC_VER
+#include <sys/param.h>
+#endif
 #include <assert.h>
 #include <fcntl.h>
 #include <stack>

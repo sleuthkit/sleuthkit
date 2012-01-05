@@ -36,9 +36,7 @@
 
 
 #ifdef _MSC_VER
-//	extern "C"{
-	#include <regex>
-//	}
+	#include "regex-0.12/regex.h"  //use regex in src tree
 #else
 	extern "C" {
 	#include <regex.h>

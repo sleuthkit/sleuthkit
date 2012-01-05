@@ -28,7 +28,11 @@
  * NPS government employees and is therefore in the public domain and
  * not subject to copyright.
  */
-
+#ifdef _MSC_VER
+  #ifndef _CRT_SECURE_NO_WARNINGS
+  #define _CRT_SECURE_NO_WARNINGS
+  #endif
+#endif
 
 #include "outfile.h"
 

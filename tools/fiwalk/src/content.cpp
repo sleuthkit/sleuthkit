@@ -12,6 +12,14 @@
 #include <sys/types.h>
 
 #ifdef _MSC_VER
+  #ifndef _CRT_SECURE_NO_WARNINGS
+  #define _CRT_SECURE_NO_WARNINGS
+  #endif
+
+  #ifndef _CRT_NONSTDC_NO_WARNINGS
+  #define _CRT_NONSTDC_NO_WARNINGS
+  #endif
+
 #include <winsock.h>
 #include <time.h>
 #else
@@ -101,6 +109,10 @@ bool content::name_filtered()
 /** given a filename, open the file and return the file descriptor.
  * If the file already exists, change the file name until it doesn't exist and open.
  */
+
+#if _MSC_VER
+#define MAXPATHLEN _MAX_PATH //found in stdlib.h of VC++
+#endif 
 static int open_filename_with_suffix(string &filename)
 {
     for(int i=0;i<10000;i++){
@@ -194,6 +206,17 @@ string content::filemagic()
     }
     const char *ret_ = magic_file(mt,tempfile_path.c_str());
     string ret(ret_ ? ret_ : "");
+#elif _MSC_VER
+	char cmd[1024];
+    char buf[1024];
+    string ret;
+    snprintf(cmd,sizeof(cmd),"file -b -z '%s'",tempfile_path.c_str());
+    FILE *f = _popen(cmd,"r");
+    while(!feof(f)){
+	if(fgets(buf,sizeof(buf),f)) ret += buf;
+    }
+    _pclose(f);
+    /* Remove the newlines */
 #else
     char cmd[1024];
     char buf[1024];

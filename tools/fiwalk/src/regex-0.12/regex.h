@@ -404,7 +404,7 @@ typedef struct
    unfortunately clutters up the declarations a bit, but I think it's
    worth it.  */
 
-#if __STDC__
+#if __STDC__ || _MSC_VER
 
 #define _RE_ARGS(args) args
 
