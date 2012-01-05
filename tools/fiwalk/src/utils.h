@@ -15,7 +15,10 @@ AC_CHECK_FUNCS([ishexnumber unistd.h err errx warn warnx pread64 pread _lseeki64
 #define UTILS_H
 
 #include <sys/types.h>
+
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#endif
 
 #ifndef __BEGIN_DECLS
 #if defined(__cplusplus)
@@ -32,10 +35,17 @@ __BEGIN_DECLS
 #ifdef HAVE_ERR_H
 #include <err.h>
 #else
-void err(int eval,const char *fmt,...) __attribute__((format(printf, 2, 0))) __attribute__ ((__noreturn__));
-void errx(int eval,const char *fmt,...) __attribute__((format(printf, 2, 0))) __attribute__ ((__noreturn__));
-void warn(const char *fmt, ...) __attribute__((format(printf, 1, 0)));
-void warnx(const char *fmt,...) __attribute__((format(printf, 1, 0)));
+    #ifdef __GNUC__
+    void err(int eval,const char *fmt,...) __attribute__((format(printf, 2, 0))) __attribute__ ((__noreturn__));
+    void errx(int eval,const char *fmt,...) __attribute__((format(printf, 2, 0))) __attribute__ ((__noreturn__));
+    void warn(const char *fmt, ...) __attribute__((format(printf, 1, 0)));
+    void warnx(const char *fmt,...) __attribute__((format(printf, 1, 0)));
+    #else
+    void err(int eval,const char *fmt,...);
+    void errx(int eval,const char *fmt,...);
+    void warn(const char *fmt, ...);
+    void warnx(const char *fmt,...);
+    #endif
 #endif
 
 int     ends_with(const char *buf,const char *with);

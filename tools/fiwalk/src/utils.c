@@ -24,7 +24,11 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <assert.h>
+
+#ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
+#endif
+
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <string.h>
@@ -75,6 +79,10 @@ void warnx(const char *fmt,...)
   vfprintf(stderr,fmt,ap);
   va_end(ap);
 }
+#endif
+
+#ifdef _MSC_VER
+#define inline
 #endif
 
 #ifndef HAVE_ISHEXNUMBER

@@ -34,7 +34,6 @@
  */
 
 #include "tsk3/tsk_tools_i.h"
-//#include "config.h"			/* required for OpenSSL defs */
 #include "bloom.h"
 
 #ifdef WIN32
@@ -188,7 +187,7 @@ const char *nsrl_hexbuf(char *dst,size_t dst_len,const unsigned char *bin,uint32
 /**
  * Sets a numbered bit of the bloom filter.
  */
-#ifdef MSC
+#ifdef _MSC_VER
 #define inline 
 #endif
 

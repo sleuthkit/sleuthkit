@@ -20,6 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* AIX requires this to be the first thing in the file. */
+
 #if defined (_AIX) && !defined (REGEX_MALLOC)
   #pragma alloca
 #endif
@@ -48,7 +49,7 @@
 
 /* We used to test for `BSTRING' here, but only GCC and Emacs define
    `BSTRING', as far as I know, and neither of them use this code.  */
-#if HAVE_STRING_H || STDC_HEADERS
+#if HAVE_STRING_H || STDC_HEADERS || _MSC_VER
 #include <string.h>
 #ifndef bcmp
 #define bcmp(s1, s2, n)	memcmp ((s1), (s2), (n))
@@ -63,13 +64,17 @@
 #include <strings.h>
 #endif
 
+#if _MSC_VER
+#include <stdlib.h>
+#include <malloc.h>
+#else
 #ifdef STDC_HEADERS
 #include <stdlib.h>
 #else
 char *malloc ();
 char *realloc ();
 #endif
-
+#endif
 
 /* Define the syntax stuff for \<, \>, etc.  */
 
@@ -236,7 +241,7 @@ char *alloca ();
 typedef char boolean;
 #define false 0
 #define true 1
-
+
 /* These are the command codes that appear in compiled regular
    expressions.  Some opcodes are followed by argument bytes.  A
    command code can specify any interpretation whatsoever for its
@@ -4871,13 +4876,16 @@ regexec (preg, string, nmatch, pmatch, eflags)
 
 /* Returns a message corresponding to an error code, ERRCODE, returned
    from either regcomp or regexec.   We don't use PREG here.  */
-
+#if __GNUC__
 size_t
 regerror (errcode, preg, errbuf, errbuf_size)
     int errcode;
     const regex_t *preg;
     char *errbuf;
     size_t errbuf_size;
+#else
+size_t regerror(int errcode,const regex_t *preg, char *errbuf, size_t errbuf_size)
+#endif
 {
   const char *msg;
   size_t msg_size;

@@ -3,7 +3,7 @@
  * Turns a binary buffer into a hexdecimal string.
  */
 
-#include "config.h"
+//#include "config.h"
 #include "hexbuf.h"
 #include <stdio.h>
 

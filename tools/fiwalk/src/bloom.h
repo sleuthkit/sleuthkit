@@ -15,8 +15,12 @@
 #ifndef NSRL_BLOOM_H
 #define NSRL_BLOOM_H
 
-#ifndef PACKAGE_VERSION
-#error must include autoconf config.h file
+#include "tsk3/tsk_tools_i.h"
+
+#if __GNUC__
+    #ifndef PACKAGE_VERSION
+    #error must include autoconf config.h file
+    #endif
 #endif
 
 /* This must appear before inttypes.h is included */
@@ -27,8 +31,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <inttypes.h>
 #include <sys/types.h>
+
+#ifdef  __GNUC__
+#include <inttypes.h>
+#endif
 
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>

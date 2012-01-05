@@ -191,10 +191,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\tools\fiwalk\src\lua_utf8.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\tools\fiwalk\src\myglob.cpp"
 				>
 			</File>
