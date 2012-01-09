@@ -16,6 +16,10 @@
  * not subject to copyright.
  */
 
+#ifdef _MSC_VER
+#define FIWALK_PACKAGE "FIWALK"
+#endif
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -158,3 +162,8 @@ void partition_info(const string &name,long i);
 /* fiwalk_tsk.cpp */
 int process_image_file(int argc,char *const *argv,const char *audit_file,u_int sector_size);
 
+#ifdef TSK_WIN32
+#define F_OK 00
+#define W_OK 02
+#define R_OK 04
+#endif

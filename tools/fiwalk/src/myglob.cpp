@@ -16,8 +16,11 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef TSK_WIN32
+#include <direct.h>
+#else
 #include <dirent.h>
-
+#endif
 #include "myglob.h"
 
 #include <iostream>

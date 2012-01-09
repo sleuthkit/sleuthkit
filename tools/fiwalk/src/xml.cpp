@@ -24,6 +24,7 @@
 
 #ifdef _MSC_VER
 #include "regex-0.12/regex.h"  //use regex in src tree
+#include <mmsystem.h> //Provides timeGetTime
 #else
 #include <regex.h>
 #endif
@@ -58,6 +59,21 @@ using namespace std;
 #define _S_IWRITE 128
 #endif
 
+#ifdef _MSC_VER
+#include <fcntl.h>
+int mkstemp(char *tmpl)
+{
+   int ret=-1;
+
+mktemp(tmpl); ret=open(tmpl,O_RDWR|O_BINARY|O_CREAT|O_EXCL|_O_SHORT_LIVED, _S_IREAD|_S_IWRITE);
+
+   return ret;
+}
+
+#endif
+
+
+
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
@@ -75,6 +91,17 @@ static string xml_gt("&gt;");
 static string xml_am("&amp;");
 static string xml_ap("&apos;");
 static string xml_qu("&quot;");
+
+#if _MSC_VER
+//Internal gettimeofday for windows builds
+static int gettimeofday(struct timeval *tp, void* tzp){
+	DWORD t;
+	t=timeGetTime();
+	tp->tv_sec = t/1000;
+	tp->tv_usec = t%1000;
+	return 0;
+}
+#endif
 
 string xml::xmlescape(const string &xml)
 {

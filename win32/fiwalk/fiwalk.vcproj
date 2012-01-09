@@ -43,7 +43,7 @@
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="2"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -58,6 +58,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="libeay32MD.lib ssleay32MD.lib msvcrt.lib winmm.lib"
+				IgnoreAllDefaultLibraries="false"
+				IgnoreDefaultLibraryNames="msvcrtd.lib"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -200,10 +203,6 @@
 			</File>
 			<File
 				RelativePath="..\..\tools\fiwalk\src\plugin.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tools\fiwalk\src\test_arff.cpp"
 				>
 			</File>
 			<File

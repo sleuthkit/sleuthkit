@@ -7,9 +7,13 @@
 #ifndef MYGLOB_H
 #define MYGLOB_H
 
+#ifdef _MSC_VER
+#include "regex-0.12/regex.h"  //use regex in src tree
+#else
 extern "C" {
 #include <regex.h>
 }
+#endif
 
 #include <string>
 

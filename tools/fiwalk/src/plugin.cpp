@@ -31,7 +31,13 @@
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef TSK_WIN32
+#include <direct.h>
+#define popen	_popen
+#define pclose	_pclose
+#else
 #include <dirent.h>
+#endif
 
 #include <algorithm>
 #include <string>

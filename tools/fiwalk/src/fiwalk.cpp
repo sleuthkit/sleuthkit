@@ -34,13 +34,6 @@
 
 /* config.h must be first */
 #include "tsk3/tsk_tools_i.h"
-//#include "config.h"
-
-#ifdef _MSC_VER
-  #ifndef _CRT_SECURE_NO_WARNINGS
-  #define _CRT_SECURE_NO_WARNINGS
-  #endif
-#endif
 
 #include "fiwalk.h"
 
@@ -49,6 +42,15 @@
 #include "plugin.h"
 
 #include "utils.h"
+
+#ifdef _MSC_VER
+#include <direct.h>
+#include <crtdefs.h>
+  #ifndef _CRT_SECURE_NO_WARNINGS
+  #define _CRT_SECURE_NO_WARNINGS 1
+  #endif
+//#define mkdir _mkdir
+#endif
 
 /* Output Devices */
 class arff *a = 0;			// ARFF generator
@@ -102,7 +104,7 @@ int64_t  current_partition_start=0;	// in bytes
 string  plugin_filename;
 
 #ifndef FIWALK_VERSION
-#define FIWALK_VERSION "ERROR GETTING VERSION"
+#define FIWALK_VERSION "0.6.15"
 #endif
 
 void print_version()
@@ -377,11 +379,26 @@ int af_display_as_hex(const char *segname)
 }
 #endif
 
+int wchar_to_char(TSK_TCHAR *src, char *dest)
+{
+	int size;
+	int i = 0;
 
-int main(int argc, char * const *argv1)
+	size = wcslen(src) +1;
+	
+	for(i=0; i<size && src[i] != '\0'; i++)
+	{
+		dest[i]=(char)src[i];
+	}
+	dest[i]='\0';
+	return 0;
+}
+
+
+int main(int argc, char **argv1)
 {
     int ch;
-    extern int optind;
+//    extern int optind;
     const char *arff_fn = 0;
     const char *text_fn = 0;
     string *xml_fn = 0;
@@ -395,6 +412,8 @@ int main(int argc, char * const *argv1)
 	TSK_TCHAR **argv;
 
 #ifdef TSK_WIN32
+	char *opt_arg = NULL;
+	char *argv_0 = NULL;
 	argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 	if (argv == NULL) {
 		fprintf(stderr,"Error getting wide arguments\n");
@@ -405,7 +424,7 @@ int main(int argc, char * const *argv1)
 #endif
 	
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:B:C:dEfG:gmv1IMX:S:T:VZn:c:b:xOzh"))) > 0) { // s: removed
+    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:B:C:dEfG:gmv1IMX:S:T:VZn:c:b:xOzh"))) != EOF ) { // s: removed
 	switch (ch) {
 	case _TSK_T('1'): opt_sha1++;break;
 	case _TSK_T('m'):
@@ -414,15 +433,31 @@ int main(int argc, char * const *argv1)
 	    opt_md5  = 1;
 	    t = stdout;
 	    break;
-	case _TSK_T('A'): arff_fn = OPTARG;break;
+	case _TSK_T('A'):
+#ifdef TSK_WIN32
+		opt_arg=(char *)malloc(wcslen(OPTARG));
+		wchar_to_char(OPTARG,opt_arg);
+		arff_fn = opt_arg;
+#else
+		arff_fn = new string(OPTARG);
+#endif
+		break;
 	case _TSK_T('B'): 
 	    opt_compute_sector_hashes=true;
 	    sector_bloom = new NSRLBloom();
-	    if(sector_bloom->create(OPTARG,160,30,4,"Sector hash")){
-		err(1,"%s",optarg);
+#ifdef TSK_WIN32
+		opt_arg=(char *)malloc(wcslen(OPTARG));
+		wchar_to_char(OPTARG,opt_arg);
+		if(sector_bloom->create(opt_arg,160,30,4,"Sector hash")){
+		err(1,"%s",opt_arg);
 	    }
+#else
+	    if(sector_bloom->create(OPTARG,160,30,4,"Sector hash")){
+		err(1,"%s",OPTARG);
+	    }
+#endif
 	    break;
-	case _TSK_T('C'): file_count_max = atoi(OPTARG);break;
+	case _TSK_T('C'): file_count_max = TATOI(OPTARG);break;
 	case _TSK_T('d'): opt_debug++; break;
 	case _TSK_T('E'):
 	    opt_print_sector_hashes = true;
@@ -430,36 +465,80 @@ int main(int argc, char * const *argv1)
 	    break;
 	case _TSK_T('f'): opt_magic = true;break;
 	case _TSK_T('g'): opt_no_data++; break;
-	case _TSK_T('G'): opt_maxgig = atoi(OPTARG);break;
+	case _TSK_T('G'): opt_maxgig = TATOI(OPTARG);break;
 	case _TSK_T('I'): opt_ignore_ntfs_system_files=true;break;
 	case _TSK_T('M'): opt_md5++; break;
 	case _TSK_T('O'): opt_allocated_only=true; break;
-	case _TSK_T('S'): sectorhash_size = atoi(OPTARG); break;
-	case _TSK_T('T'): text_fn = OPTARG;break;
+	case _TSK_T('S'): sectorhash_size = TATOI(OPTARG); break;
+	case _TSK_T('T'):
+#ifdef TSK_WIN32
+		opt_arg=(char *)malloc(wcslen(OPTARG));
+		wchar_to_char(OPTARG,opt_arg);
+		text_fn = opt_arg;
+#else
+		text_fn = new string(OPTARG);
+#endif
+		break;
 	case _TSK_T('V'): print_version();exit(0);
-	case _TSK_T('X'): xml_fn = new string(OPTARG);break;
-
+	case _TSK_T('X'): 
+#ifdef TSK_WIN32
+		opt_arg=(char *)malloc(wcslen(OPTARG));
+		wchar_to_char(OPTARG,opt_arg);
+		xml_fn = new string(opt_arg);
+#else
+		xml_fn = new string(OPTARG);
+#endif
+		break;
 	case _TSK_T('x'): opt_x = true;break;
 	case _TSK_T('Z'): opt_zap = true;break;
-	case _TSK_T('a'): audit_file = OPTARG;break;
-	case _TSK_T('c'): config_file = OPTARG; break;
-	case _TSK_T('n'): namelist.push_back(OPTARG);break;
+	case _TSK_T('a'): 
+#ifdef TSK_WIN32
+		opt_arg=(char *)malloc(wcslen(OPTARG));
+		wchar_to_char(OPTARG,opt_arg);
+		audit_file = opt_arg;
+#else
+		audit_file = OPTARG;
+#endif
+		break;
+	case _TSK_T('c'): 
+#ifdef TSK_WIN32
+		opt_arg=(char *)malloc(wcslen(OPTARG));
+		wchar_to_char(OPTARG,opt_arg);
+		config_file = opt_arg;
+#else
+		config_file = OPTARG;
+#endif		
+		break;
+	case _TSK_T('n'):
+		
+#ifdef TSK_WIN32
+#else
+		namelist.push_back(OPTARG);
+#endif
+		break;
 	    //case 's': save_outdir = optarg; opt_save = true; break;
 	case _TSK_T('v'): tsk_verbose++; break; 			// sleuthkit option
 	case _TSK_T('z'): opt_sha1=false;opt_md5=false;break;
 	case _TSK_T('h'):
 	case _TSK_T('?'):
 	default:
-	    fprintf(stderr, "Invalid argument: %s\n", argv[optind]);
+	    fprintf(stderr, "Invalid argument: %s\n", argv[OPTIND]);
 	    usage();
 	}
     }
 
-    if (optind >= argc) usage();
-    argc -= optind;
-    argv += optind;
+    if (OPTIND >= argc) usage();
+    argc -= OPTIND;
+    argv += OPTIND;
 
-    const char *filename = argv[0];
+#ifdef TSK_WIN32
+		argv_0=(char *)malloc(wcslen(argv[0]));
+		wchar_to_char(argv[0],argv_0);
+		const char *filename = argv_0;
+#else
+	const char *filename = argv[0];
+#endif
+
     if(!filename){
 	errx(1,"must provide filename");
     }
@@ -660,10 +739,10 @@ int main(int argc, char * const *argv1)
 #ifdef SIGINFO
     signal(SIGINFO,sig_info);
 #endif
-    int count = process_image_file(argc,argv,audit_file,sector_size);
+    int count = process_image_file(argc,argv1,audit_file,sector_size);
     if(count<=0 || sector_size!=512){
 	comment("Retrying with 512 byte sector size.");
-	count = process_image_file(argc,argv,audit_file,512);
+	count = process_image_file(argc,argv1,audit_file,512);
     }
 
     int t1 = time(0);

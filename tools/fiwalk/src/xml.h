@@ -133,7 +133,10 @@ public:
     // writes a std::string as parsed data
 #ifdef __GNUC__
     void printf(const char *fmt,...) __attribute__((format(printf, 2, 3))); // "2" because this is "1"
+#else
+	void printf(const char *fmt,...);
 #endif
+
     void pop();	// close the tag
 
 /* These support Digital Forensics XML and require certain variables to be defined */

@@ -83,6 +83,17 @@ void warnx(const char *fmt,...)
 
 #ifdef _MSC_VER
 #define inline
+#include <io.h>
+#include <stdio.h>
+//pread implementation from https://gist.github.com/1258986
+int pread(unsigned int fd, char *buf, size_t count, int offset)
+{
+if (_lseek(fd, offset, SEEK_SET) != offset) {
+return -1;
+}
+return read(fd, buf, count);
+}
+
 #endif
 
 #ifndef HAVE_ISHEXNUMBER
@@ -145,7 +156,7 @@ int64_t get_filesize(int fd)
     extern size_t pread64(int fd,char *buf,size_t nbyte,off_t offset);
 #endif
 
-#if !defined(HAVE_PREAD64) && defined(HAVE_PREAD)
+#if !defined(HAVE_PREAD64) && (defined(HAVE_PREAD) || defined(_MSC_VER))
     /* if we are not using pread64, make sure that off_t is 8 bytes in size */
 #define pread64(d,buf,nbyte,offset) pread(d,buf,nbyte,offset)
     if(sizeof(off_t)!=8){
