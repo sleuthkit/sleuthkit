@@ -379,6 +379,7 @@ int af_display_as_hex(const char *segname)
 }
 #endif
 
+#if _MSC_VER
 int wchar_to_char(TSK_TCHAR *src, char *dest)
 {
 	int size;
@@ -393,7 +394,7 @@ int wchar_to_char(TSK_TCHAR *src, char *dest)
 	dest[i]='\0';
 	return 0;
 }
-
+#endif
 
 int main(int argc, char **argv1)
 {
@@ -434,18 +435,18 @@ int main(int argc, char **argv1)
 	    t = stdout;
 	    break;
 	case _TSK_T('A'):
-#ifdef TSK_WIN32
+#ifdef _MSC_VER
 		opt_arg=(char *)malloc(wcslen(OPTARG));
 		wchar_to_char(OPTARG,opt_arg);
 		arff_fn = opt_arg;
 #else
-		arff_fn = new string(OPTARG);
+		arff_fn = OPTARG;
 #endif
 		break;
 	case _TSK_T('B'): 
 	    opt_compute_sector_hashes=true;
 	    sector_bloom = new NSRLBloom();
-#ifdef TSK_WIN32
+#ifdef _MSC_VER
 		opt_arg=(char *)malloc(wcslen(OPTARG));
 		wchar_to_char(OPTARG,opt_arg);
 		if(sector_bloom->create(opt_arg,160,30,4,"Sector hash")){
@@ -471,17 +472,17 @@ int main(int argc, char **argv1)
 	case _TSK_T('O'): opt_allocated_only=true; break;
 	case _TSK_T('S'): sectorhash_size = TATOI(OPTARG); break;
 	case _TSK_T('T'):
-#ifdef TSK_WIN32
+#ifdef _MSC_VER
 		opt_arg=(char *)malloc(wcslen(OPTARG));
 		wchar_to_char(OPTARG,opt_arg);
 		text_fn = opt_arg;
 #else
-		text_fn = new string(OPTARG);
+		text_fn = OPTARG;
 #endif
 		break;
 	case _TSK_T('V'): print_version();exit(0);
 	case _TSK_T('X'): 
-#ifdef TSK_WIN32
+#ifdef _MSC_VER
 		opt_arg=(char *)malloc(wcslen(OPTARG));
 		wchar_to_char(OPTARG,opt_arg);
 		xml_fn = new string(opt_arg);
@@ -492,7 +493,7 @@ int main(int argc, char **argv1)
 	case _TSK_T('x'): opt_x = true;break;
 	case _TSK_T('Z'): opt_zap = true;break;
 	case _TSK_T('a'): 
-#ifdef TSK_WIN32
+#ifdef _MSC_VER
 		opt_arg=(char *)malloc(wcslen(OPTARG));
 		wchar_to_char(OPTARG,opt_arg);
 		audit_file = opt_arg;
@@ -501,7 +502,7 @@ int main(int argc, char **argv1)
 #endif
 		break;
 	case _TSK_T('c'): 
-#ifdef TSK_WIN32
+#ifdef _MSC_VER
 		opt_arg=(char *)malloc(wcslen(OPTARG));
 		wchar_to_char(OPTARG,opt_arg);
 		config_file = opt_arg;
@@ -531,7 +532,7 @@ int main(int argc, char **argv1)
     argc -= OPTIND;
     argv += OPTIND;
 
-#ifdef TSK_WIN32
+#ifdef _MSC_VER
 		argv_0=(char *)malloc(wcslen(argv[0]));
 		wchar_to_char(argv[0],argv_0);
 		const char *filename = argv_0;
