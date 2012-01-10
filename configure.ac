@@ -270,7 +270,7 @@ if test "x$enable_fiwalk" == xyes; then
      AC_DEFINE([HAVE_TSK_IMG_INFO_SECTOR_SIZE], 
      	[1 /* Released in TSK 3.0.1 */], [Description]),
    	[],
-   	[[#include <tsk3/libtsk.h>]])
+   	[[#include "tsk3/libtsk.h"]])
      AC_CHECK_FUNCS([tsk_fs_meta_make_ls])
    AC_LANG_POP([C++])
 fi

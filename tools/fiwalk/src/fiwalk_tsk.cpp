@@ -345,11 +345,7 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
 int proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
 {
     TSK_FS_INFO *fs_info;
-#ifdef HAVE_TSK_IMG_INFO_SECTOR_SIZE
     u_int sector_size = img_info->sector_size;
-#else
-    u_int sector_size = 512;
-#endif
 
     /* Try it as a file system */
     fs_info = tsk_fs_open_img(img_info, start, TSK_FS_TYPE_DETECT);
@@ -527,12 +523,15 @@ int process_image_file(int argc,char * const *argv,const char *audit_file,u_int 
     TSK_IMG_INFO *img_info;
     int count = 0;
 
-#ifdef HAVE_TSK_IMG_INFO_SECTOR_SIZE
+    while (count <= argc)
+    {
+        printf("argv_%d: %s\n", count, argv[count]);
+	count++;
+    }
+    printf("sector_size: %d\n", sector_size);
+
+    count = 0;
     img_info = tsk_img_open_utf8(argc,(const char **)argv, TSK_IMG_TYPE_DETECT,sector_size);
-#else
-    img_info = tsk_img_open_utf8(argc,(const char **)argv, TSK_IMG_TYPE_DETECT,sector_size);
-    //img_info = tsk_img_open_utf8(argc,(const char **)argv, TSK_IMG_TYPE_DETECT);
-#endif
 
     if (img_info==0){
 	comment("TSK Error (img_open) %s sector_size=%u",tsk_error_get(),sector_size);

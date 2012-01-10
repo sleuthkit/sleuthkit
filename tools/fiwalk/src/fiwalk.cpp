@@ -396,7 +396,7 @@ int wchar_to_char(TSK_TCHAR *src, char *dest)
 }
 #endif
 
-int main(int argc, char **argv1)
+int main(int argc, char * const *argv1)
 {
     int ch;
 //    extern int optind;
@@ -410,7 +410,7 @@ int main(int argc, char **argv1)
     u_int sector_size=512;			// defaults to 512; may be changed by AFF
 
     int t0 = time(0);
-	TSK_TCHAR **argv;
+    TSK_TCHAR * const *argv;
 
 #ifdef TSK_WIN32
 	char *opt_arg = NULL;
@@ -421,7 +421,7 @@ int main(int argc, char **argv1)
 		exit(1);
 	}
 #else
-	argv = (TSK_TCHAR **) argv1;
+	argv = (TSK_TCHAR * const*) argv1;
 #endif
 	
 
@@ -530,7 +530,9 @@ int main(int argc, char **argv1)
 
     if (OPTIND >= argc) usage();
     argc -= OPTIND;
+    printf("argv: %s\n", *argv);
     argv += OPTIND;
+    printf("argv: %s\n", *argv);
 
 #ifdef _MSC_VER
 		argv_0=(char *)malloc(wcslen(argv[0]));
@@ -740,10 +742,10 @@ int main(int argc, char **argv1)
 #ifdef SIGINFO
     signal(SIGINFO,sig_info);
 #endif
-    int count = process_image_file(argc,argv1,audit_file,sector_size);
+    int count = process_image_file(argc,argv,audit_file,sector_size);
     if(count<=0 || sector_size!=512){
 	comment("Retrying with 512 byte sector size.");
-	count = process_image_file(argc,argv1,audit_file,512);
+	count = process_image_file(argc,argv,audit_file,512);
     }
 
     int t1 = time(0);

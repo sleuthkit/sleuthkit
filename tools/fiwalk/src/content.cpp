@@ -287,7 +287,6 @@ void content::write_record()
     }
 
     /* This stuff is only if we are creating ARFF output */
-#ifdef HAVE_TSK_IMG_INFO_SECTOR_SIZE
     if(a){
 	file_info("fragments",this->segs.size());
 	if(img_info->sector_size>0){
@@ -301,7 +300,6 @@ void content::write_record()
 	    }
 	}
     }
-#endif
 }
 
 /* Do we need full content? */

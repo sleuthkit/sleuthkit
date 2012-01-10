@@ -18315,7 +18315,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
    #  AC_CHECK_LIB([tsk3],[tsk_fs_open_img],,AC_MSG_ERROR([Requires TSK 3.2.1 or above library]))
    #  AC_CHECK_HEADER([tsk3/libtsk.h],,AC_MSG_ERROR([Requires TSK 3.2.1 or above include files]))
-     ac_fn_cxx_check_member "$LINENO" "struct TSK_IMG_INFO" "sector_size" "ac_cv_member_struct_TSK_IMG_INFO_sector_size" "#include <tsk3/libtsk.h>
+     ac_fn_cxx_check_member "$LINENO" "struct TSK_IMG_INFO" "sector_size" "ac_cv_member_struct_TSK_IMG_INFO_sector_size" "#include \"tsk3/libtsk.h\"
 "
 if test "x$ac_cv_member_struct_TSK_IMG_INFO_sector_size" = x""yes; then :
 
