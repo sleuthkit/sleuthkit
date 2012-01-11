@@ -308,16 +308,23 @@ void file_info(const string name, int64_t value)
 /* Process a temporal value */
 void file_infot(const string name,time_t t0)
 {
+#ifdef _MSC_VER
+#define TM_FORMAT "%Y-%m-%dT%H:%M:%SZ"
+#else
+#define TM_FORMAT "%FT%TZ"
+#endif
+
     if(a) a->add_valuet(name,t0); 
-    if(x){
+	struct tm *temp_time = gmtime(&t0);
+	if(x){
 	char buf[32];
-	strftime(buf,sizeof(buf),"%FT%TZ",gmtime(&t0));
+	strftime(buf,sizeof(buf),TM_FORMAT,gmtime(&t0));
 	x->xmlout(name,buf);
     }
     if(t) {
 	char buf[64];
 	fprintf(t,"%s: %ld\n",name.c_str(),(long)t0);
-	strftime(buf,sizeof(buf),"%FT%TZ",gmtime(&t0));
+	strftime(buf,sizeof(buf),TM_FORMAT,gmtime(&t0));
 	fprintf(t,"%s_txt: %s\n",name.c_str(),buf);
     }
 }
@@ -530,9 +537,8 @@ int main(int argc, char * const *argv1)
 
     if (OPTIND >= argc) usage();
     argc -= OPTIND;
-    printf("argv: %s\n", *argv);
-    argv += OPTIND;
-    printf("argv: %s\n", *argv);
+	argv += OPTIND;
+	argv1 += OPTIND;
 
 #ifdef _MSC_VER
 		argv_0=(char *)malloc(wcslen(argv[0]));
@@ -742,11 +748,20 @@ int main(int argc, char * const *argv1)
 #ifdef SIGINFO
     signal(SIGINFO,sig_info);
 #endif
+
+#if _MSC_VER
+    int count = process_image_file(argc,argv1,audit_file,sector_size);
+    if(count<=0 || sector_size!=512){
+	comment("Retrying with 512 byte sector size.");
+	count = process_image_file(argc,argv1,audit_file,512);
+    }
+#else
     int count = process_image_file(argc,argv,audit_file,sector_size);
     if(count<=0 || sector_size!=512){
 	comment("Retrying with 512 byte sector size.");
 	count = process_image_file(argc,argv,audit_file,512);
     }
+#endif
 
     int t1 = time(0);
     comment("clock: %d",t1-t0);
