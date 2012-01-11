@@ -432,7 +432,7 @@ int main(int argc, char * const *argv1)
 #endif
 	
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:B:C:dEfG:gmv1IMX:S:T:VZn:c:b:xOzh"))) != EOF ) { // s: removed
+    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:B:C:dEfG:gmv1IMX:S:T:VZn:c:b:xOzh"))) > 0 ) { // s: removed
 	switch (ch) {
 	case _TSK_T('1'): opt_sha1++;break;
 	case _TSK_T('m'):
@@ -520,6 +520,9 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('n'):
 		
 #ifdef TSK_WIN32
+		opt_arg=(char *)malloc(wcslen(OPTARG));
+		wchar_to_char(OPTARG,opt_arg);
+		namelist.push_back(opt_arg);
 #else
 		namelist.push_back(OPTARG);
 #endif

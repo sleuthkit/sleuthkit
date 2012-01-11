@@ -523,14 +523,6 @@ int process_image_file(int argc,char * const *argv,const char *audit_file,u_int 
     TSK_IMG_INFO *img_info;
     int count = 0;
 
-    while (count <= argc)
-    {
-        printf("argv_%d: %s\n", count, argv[count]);
-	count++;
-    }
-    printf("sector_size: %d\n", sector_size);
-
-    count = 0;
     img_info = tsk_img_open_utf8(argc,(const char **)argv, TSK_IMG_TYPE_DETECT,sector_size);
 
     if (img_info==0){
