@@ -116,7 +116,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -134,6 +134,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="libeay32MD.lib ssleay32MD.lib msvcrt.lib winmm.lib libewf.lib"
+				AdditionalLibraryDirectories="$(LIBEWF_HOME)\msvscpp\release"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
