@@ -50,6 +50,10 @@
 #endif
 
 #ifdef HAVE_LIBEWF
+#if defined(_MSC_VER)
+#include <config_msc.h>
+#endif
+
 #include <libewf.h>
 #endif
 

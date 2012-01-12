@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;WIN32"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -59,9 +59,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32MD.lib ssleay32MD.lib msvcrt.lib winmm.lib"
+				AdditionalDependencies="libeay32MD.lib ssleay32MD.lib msvcrt.lib winmm.lib libewf.lib"
+				AdditionalLibraryDirectories="$(LIBEWF_HOME)\msvscpp\release"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="msvcrtd.lib"
+				DelayLoadDLLs=""
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -114,7 +116,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
