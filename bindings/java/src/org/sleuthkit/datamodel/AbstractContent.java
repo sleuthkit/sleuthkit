@@ -35,5 +35,27 @@ public abstract class AbstractContent implements Content {
 	public long getId() {
 		return this.obj_id;
 	}
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final AbstractContent other = (AbstractContent) obj;
+        if (this.obj_id != other.obj_id) {
+            return false;
+        }
+        return true;
+    }
+    
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 41 * hash + (int) (this.obj_id ^ (this.obj_id >>> 32));
+        return hash;
+    }
 	
 }
