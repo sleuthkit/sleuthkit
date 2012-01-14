@@ -12,6 +12,7 @@
 
 #include "TskServices.h"
 #include "Utilities/TskException.h"
+#include "Services/TskSystemPropertiesImpl.h"
 
 TskServices *TskServices::m_pInstance = NULL;
 
@@ -164,8 +165,12 @@ TskSystemProperties& TskServices::getSystemProperties()
 {
     if (m_systemProperties == NULL)
     {
-        LOGERROR(L"TskServices::getSystemProperties - SystemProperties has not been initialized.");
-        throw TskException("SystemProperties not initialized.");
+        TskSystemPropertiesImpl *prop = new TskSystemPropertiesImpl();
+        prop->initialize();
+        setSystemProperties(*prop);
+
+        LOGINFO(L"TskServices::getSystemProperties - SystemProperties has not been set, using default implementation.");
+        //throw TskException("SystemProperties not initialized.");
     }
     return *m_systemProperties;
 }

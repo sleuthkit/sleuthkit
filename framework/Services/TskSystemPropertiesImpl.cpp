@@ -18,6 +18,7 @@
 #include "TskSystemPropertiesImpl.h"
 #include "Services/TskServices.h"
 #include "Poco/UnicodeConverter.h"
+#include "Poco/Util/MapConfiguration.h"
 #include "Utilities/TskException.h"
 #include <sstream>
 
@@ -105,3 +106,12 @@ void TskSystemPropertiesImpl::initialize(Poco::Util::AbstractConfiguration & abs
 {
     m_abstractConfig = &abstractConfig;
 }
+
+void TskSystemPropertiesImpl::initialize()
+{
+    // @@@ Need to make sure someone frees this....
+    Poco::Util::MapConfiguration *pMapConfig =
+        new Poco::Util::MapConfiguration();
+    initialize(*pMapConfig);
+}
+

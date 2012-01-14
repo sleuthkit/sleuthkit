@@ -1,13 +1,13 @@
 /*
- *
- *  The Sleuth Kit
- *
- *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- *  Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
- *  reserved.
- *
- *  This software is distributed under the Common Public License 1.0
- */
+*
+*  The Sleuth Kit
+*
+*  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
+*  Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+*  reserved.
+*
+*  This software is distributed under the Common Public License 1.0
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
@@ -62,9 +62,9 @@ ValidatePipeline::~ValidatePipeline()
 }
 
 /* Validate all of the pipelines in the given config file. 
- * This method does some basic parsing of the config file to learn
- * about the various pipelines that exist in the file.
- */
+* This method does some basic parsing of the config file to learn
+* about the various pipelines that exist in the file.
+*/
 bool ValidatePipeline::isValid(const char *a_configPath) const
 {
     bool result = false;
@@ -96,11 +96,11 @@ bool ValidatePipeline::isValid(const char *a_configPath) const
                     writer.writeNode(pipelineXml, pNode);
 
                     std::string pipelineType = pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE);
-                    
+
                     TskPipeline * pipeline;
-					if (pipelineType == TskPipelineManager::FILE_ANALYSIS_PIPELINE)
+                    if (pipelineType == TskPipelineManager::FILE_ANALYSIS_PIPELINE)
                         pipeline = new TskFileAnalysisPipeline();
-					else if (pipelineType == TskPipelineManager::REPORTING_PIPELINE)
+                    else if (pipelineType == TskPipelineManager::REPORTING_PIPELINE)
                         pipeline = new TskReportPipeline();
                     else
                         fprintf(stdout, "Unsupported pipeline type: %s\n", pipelineType.c_str());

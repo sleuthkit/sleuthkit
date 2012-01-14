@@ -61,7 +61,9 @@ TskPipelineManager::~TskPipelineManager()
 }
 
 /**
- *
+ * Looks for pipeline config file in either the system properties or with the
+ * name TskPipelineManager::DEFAULT_PIPELINE_CONFIG in the CONFIG_DIR (as set
+ * in the sytem properties). 
  */
 TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType)
 {

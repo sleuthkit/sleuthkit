@@ -54,6 +54,8 @@ public:
     /// Initialize with POCO AbstractConfiguration
     void initialize(Poco::Util::AbstractConfiguration & abstractConfig);
 
+    /// initialize with a memory-based mapping only (no local file)
+    void initialize();
 private:
     TskSystemPropertiesImpl(TskSystemPropertiesImpl const&) {};
 
