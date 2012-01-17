@@ -35,6 +35,7 @@
 /* config.h must be first */
 #include "tsk3/tsk_tools_i.h"
 
+#include <stdio.h>
 #include "fiwalk.h"
 
 /* Bring in our headers */
@@ -315,8 +316,8 @@ void file_infot(const string name,time_t t0)
 #endif
 
     if(a) a->add_valuet(name,t0); 
-	struct tm *temp_time = gmtime(&t0);
-	if(x){
+//	struct tm *temp_time = gmtime(&t0);
+    if(x){
 	char buf[32];
 	strftime(buf,sizeof(buf),TM_FORMAT,gmtime(&t0));
 	x->xmlout(name,buf);
@@ -585,7 +586,7 @@ int main(int argc, char * const *argv1)
     /* XML initialization */
 
     if(opt_x){
-	x = new xml();		// default to stdout
+	x = new xml();			// default to stdout
     }
     if(xml_fn){
 	if(*xml_fn == "0"){
@@ -595,9 +596,9 @@ int main(int argc, char * const *argv1)
 	if(x) errx(1,"Cannot write XML to stdout and file at same time\n");
 	if(access(xml_fn->c_str(),F_OK)==0){
 	    if(opt_zap){
-			if(unlink(xml_fn->c_str())){ 
-				err(1,"%s: file exists and cannot unlink",xml_fn->c_str());
-			}
+		if(unlink(xml_fn->c_str())){
+		    err(1,"%s: file exists and cannot unlink",xml_fn->c_str());
+		}
 	    }
 	    else{
 		errx(1,"%s: file exists",xml_fn->c_str());
