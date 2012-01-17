@@ -59,7 +59,8 @@ TskModule::~TskModule()
 /**
  * Determines the fully qualified path to a module given either an
  * absolute or relative location string. For relative paths we look for the
- * module first in our program directory, then the "Modules" folder and 
+ * module first in PROG_DIR, then MODULE_DIR, then the
+ * current directory, and 
  * finally the system path. Will throw an exception if the module cannot 
  * be found.
  * @param location Absolute or relative path string.
@@ -68,35 +69,36 @@ void TskModule::setPath(const std::string& location)
 {
     if (location.empty()) 
     {
-        throw TskException("location is empty or missing.");
+        throw TskException("TskModule::setPath: location is empty or missing.");
     }
 
     Poco::Path tempPath = location;
 
     if (!tempPath.isAbsolute())
     {
-        // If this is not an absolute path see if we can find the
-        // executable either relative to our program directory, in
-        // our "Modules" folder or on our system path.
-
-        std::string progDir = TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemPropertiesImpl::PROG_DIR));
+        // If this is a relative path, then see if we can find the
+        // executable either in PROG_DIR, in MODULE_DIR, in the current directory,
+        // or on the system path.
         
-        std::string moduleDir = TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemPropertiesImpl::MODULE_DIR));
-
-        std::string pathsToSearch = progDir + Poco::Path::pathSeparator() + moduleDir;
+        std::string pathsToSearch = TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemPropertiesImpl::PROG_DIR));
+        if (!pathsToSearch.empty())
+            pathsToSearch += Poco::Path::pathSeparator();
+        pathsToSearch += TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemPropertiesImpl::MODULE_DIR));
+        if (!pathsToSearch.empty())
+            pathsToSearch += Poco::Path::pathSeparator();
+        pathsToSearch += ".";
 
         if (!Poco::Path::find(pathsToSearch, location, tempPath))
         {
-            std::string systemPath;
-
+            // if we didn't find them in the above paths, check on the path. 
             if (Poco::Environment::has("Path"))
             {
-                systemPath = Poco::Environment::get("Path");
-            }
-
-            if (!systemPath.empty())
-            {
-                Poco::Path::find(systemPath, location, tempPath);
+                std::string systemPath = Poco::Environment::get("Path");
+            
+                if (!systemPath.empty())
+                {
+                    Poco::Path::find(systemPath, location, tempPath);
+                }
             }
         }
     }
@@ -107,10 +109,16 @@ void TskModule::setPath(const std::string& location)
     if (!moduleFile.exists())
     {
         std::wstringstream msg;
-        msg << L"TskModule::setPath - File does not exist: "
-            << tempPath.toString().c_str() << std::endl;
+        msg << L"TskModule::setPath - Module not found: "
+            << tempPath.toString().c_str();
         LOGERROR(msg.str());
         throw TskException("Module not found.");
+    }
+    else {
+        std::wstringstream msg;
+        msg << L"TskModule::setPath - Module found at: "
+            << tempPath.toString().c_str();
+        LOGINFO(msg.str());
     }
 
     m_modulePath = tempPath.toString();
@@ -133,7 +141,7 @@ std::string TskModule::parameterSubstitution(const std::string& paramString, con
     // Replace all occurences of OUT_MACRO with the output directory.
     Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::OUT_MACRO), 
-                         TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemPropertiesImpl::OUTDIR)));
+                         TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemPropertiesImpl::OUT_DIR)));
 
     // Replace all occurences of PROGDIR_MACRO with the program directory.
     Poco::replaceInPlace(resultString, 

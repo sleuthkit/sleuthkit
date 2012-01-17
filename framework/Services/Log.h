@@ -50,8 +50,8 @@
 /**
  * Logging class to enable the framework, apps that use it, and modules to
  * log error and warning messages.  The default implementation writes
- * the log messages to a file if open() was called and prints the messages to
- * stderr if a log file was not specified. The class can be extended 
+ * the log messages to a file if open() was called or prints the messages to
+ * stderr if open() was never called. The class can be extended 
  * if you want logs to be saved in another way.
  * Can be registered with and retrieved from TskServices.
  *
@@ -94,6 +94,7 @@ public:
     void logInfo(const std::wstring &msg)  { log(Log::Info,  msg); };
 
     int open(const wchar_t * a_outDir);
+    int open();
     int close();
     const wchar_t * getLogPath();
 

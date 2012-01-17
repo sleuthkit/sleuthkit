@@ -28,9 +28,9 @@
 
 /** Root output directory that all modules can write to. Should be a
  * shared location if framework is being used in a distributed environment. */
-const std::wstring TskSystemPropertiesImpl::OUTDIR = L"OUTDIR";
+const std::wstring TskSystemPropertiesImpl::OUT_DIR = L"OUT_DIR";
 
-/// Directory where program using the framework is installed. 
+/// Directory where program using the framework is installed.  Used during search for modules. 
 const std::wstring TskSystemPropertiesImpl::PROG_DIR = L"PROG_DIR";
 
 /// Directory where configuration files and data can be found. 
@@ -73,7 +73,7 @@ std::wstring TskSystemPropertiesImpl::get(std::wstring name) const
         {
             // Log a message
             std::wstringstream msg;
-            msg << L"TskSystemPropertiesImpl::get - No value found for: " << name << std::endl;
+            msg << L"TskSystemPropertiesImpl::get - No value found for: " << name;
             LOGWARN(msg.str());
         }
     } else 

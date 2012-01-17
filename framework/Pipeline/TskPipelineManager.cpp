@@ -62,8 +62,10 @@ TskPipelineManager::~TskPipelineManager()
 
 /**
  * Looks for pipeline config file in either the system properties or with the
- * name TskPipelineManager::DEFAULT_PIPELINE_CONFIG in the CONFIG_DIR (as set
- * in the sytem properties). 
+ * name TskPipelineManager::DEFAULT_PIPELINE_CONFIG in the CONFIG_DIR (as defined
+ * in the sytem properties).  
+ * @returns Pointer to TskPipeline.  Do not free this. It will be freed by the
+ * TskPipelineManager deconstructor. 
  */
 TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType)
 {
@@ -117,7 +119,7 @@ TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType
 
         if (pipelines->length() == 0)
         {
-            LOGERROR(L"TskPipelineManager::createPipeline - No pipelines found in config file.\n");
+            LOGERROR(L"TskPipelineManager::createPipeline - No pipelines found in config file.");
 
             throw TskException("No pipelines found in config file.");
         }
@@ -152,14 +154,14 @@ TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType
     }
     catch (Poco::XML::SAXParseException& )
     {
-        LOGERROR(L"TskPipelineManager::createPipeline - Error parsing pipeline config file.\n");
+        LOGERROR(L"TskPipelineManager::createPipeline - Error parsing pipeline config file.");
         throw TskException("Error parsing pipeline config file.");
     }
     catch (TskException& ex)
     {
         std::wstringstream errorMsg;
         errorMsg << L"TskPipelineManager::createPipeline - Error creating pipeline: "
-            << ex.message().c_str() << std::endl;
+            << ex.message().c_str() ;
         LOGERROR(errorMsg.str());
 
         throw TskException("Error creating pipeline.");
@@ -167,7 +169,7 @@ TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType
 
     std::wstringstream errorMsg;
     errorMsg << L"TskPipelineManager::createPipeline - Failed to find pipeline for "
-        << pipelineType.c_str() << std::endl;
+        << pipelineType.c_str() ;
     LOGERROR(errorMsg.str());
 
     throw TskException("Failed to find pipeline for " + pipelineType);

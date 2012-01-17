@@ -575,7 +575,7 @@ int TskImgDBSqlite::getFileRecord(const uint64_t fileId, TskFileRecord& fileReco
         else 
         {
             std::wstringstream msg;
-            msg << L"TskImgDBSqlite::getFileRecord - Error querying files table for file id: " << fileId << std::endl;
+            msg << L"TskImgDBSqlite::getFileRecord - Error querying files table for file id: " << fileId ;
             LOGERROR(msg.str());
 
             ret = -1;
@@ -585,7 +585,7 @@ int TskImgDBSqlite::getFileRecord(const uint64_t fileId, TskFileRecord& fileReco
     else 
     {
         std::wstringstream msg;
-        msg << L"TskImgDBSqlite::getFileRecord - Error querying files table for file id: " << fileId << std::endl;
+        msg << L"TskImgDBSqlite::getFileRecord - Error querying files table for file id: " << fileId ;
         LOGERROR(msg.str());
 
         ret = -1;
@@ -1994,7 +1994,7 @@ std::vector<uint64_t> TskImgDBSqlite::getUniqueCarvedFileIds(HASH_TYPE hashType)
         break;
     default:
         std::wstringstream errorMsg;
-        errorMsg << L"TskImgDBSqlite::getUniqueCarvedFileIds - Unsupported hashType : " << hashType << std::endl;
+        errorMsg << L"TskImgDBSqlite::getUniqueCarvedFileIds - Unsupported hashType : " << hashType ;
         LOGERROR(errorMsg.str());
         return results;
     }
@@ -2093,7 +2093,7 @@ std::vector<uint64_t> TskImgDBSqlite::getUniqueFileIds(HASH_TYPE hashType) const
         break;
     default:
         std::wstringstream errorMsg;
-        errorMsg << L"TskImgDBSqlite::getUniqueFileIds - Unsupported hashType : " << hashType << std::endl;
+        errorMsg << L"TskImgDBSqlite::getUniqueFileIds - Unsupported hashType : " << hashType ;
         LOGERROR(errorMsg.str());
         return results;
     }
@@ -2270,7 +2270,7 @@ int TskImgDBSqlite::setHash(uint64_t a_file_id, TskImgDB::HASH_TYPE hashType, co
         break;
     default:
         std::wstringstream errorMsg;
-        errorMsg << L"TskImgDBSqlite::setHash - Unsupported hashType : " << hashType << std::endl;
+        errorMsg << L"TskImgDBSqlite::setHash - Unsupported hashType : " << hashType ;
         LOGERROR(errorMsg.str());
         return 1;
     }
@@ -3017,7 +3017,7 @@ int TskImgDBSqlite::addUnusedSectors(int unallocImgId, std::vector<TskUnusedSect
                         // Log error
                         std::wstringstream msg;
                         msg << L"TskImgDBSqlite::addUnusedSectors - Error adding sector: sectorStart="
-                            << unusedSectStart << " sectorEnd=" << cfileSectStart << std::endl;
+                            << unusedSectStart << " sectorEnd=" << cfileSectStart ;
                         LOGERROR(msg.str());
                         return rc;
                     }
@@ -3032,7 +3032,7 @@ int TskImgDBSqlite::addUnusedSectors(int unallocImgId, std::vector<TskUnusedSect
                     // Log error
                     std::wstringstream msg;
                     msg << L"TskImgDBSqlite::addUnusedSectors - Error adding sector: sectorStart="
-                        << cfileSectStart + cfileSectLen << " sectorEnd=" << totalSectEnd << std::endl;
+                        << cfileSectStart + cfileSectLen << " sectorEnd=" << totalSectEnd ;
                     LOGERROR(msg.str());
                     return rc;
                }
@@ -3168,13 +3168,13 @@ int TskImgDBSqlite::getUnusedSector(uint64_t fileId, TskUnusedSectorsRecord & un
         } else {
             std::wstringstream msg;
             msg << L"TskDBSqlite::getUnusedSector - Error querying unused_sectors table for file_id "
-                << fileId << std::endl;
+                << fileId ;
             LOGERROR(msg.str());
         }
     } else {
         std::wstringstream msg;
         msg << L"TskDBSqlite::getUnusedSector - Error querying unused_sectors table: "
-            << sqlite3_errmsg(m_db) << std::endl;
+            << sqlite3_errmsg(m_db) ;
         LOGERROR(msg.str());
     }
     return rc;
