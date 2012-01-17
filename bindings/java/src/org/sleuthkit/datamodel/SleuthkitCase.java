@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -28,6 +29,8 @@ import java.util.*;
 import java.util.logging.Level;
 import org.sleuthkit.datamodel.TskData.ObjectType;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 
@@ -48,12 +51,12 @@ public class SleuthkitCase {
 	 * @throws SQLException
 	 * @throws ClassNotFoundException
 	 */
-	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException {
+	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException, TskException {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.caseHandle = caseHandle;
 		con = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
-		con.setReadOnly(true);
+		initBlackboardTypes();
 	}
 
     /**
@@ -88,6 +91,25 @@ public class SleuthkitCase {
 		}
 	}
 
+	private void initBlackboardTypes() throws SQLException, TskException{
+		Statement s = con.createStatement();
+		
+		for(TSK_BLACKBOARD_ARTIFACT_TYPE type : TSK_BLACKBOARD_ARTIFACT_TYPE.values()){
+			ResultSet rs = s.executeQuery("SELECT artifact_type_id from blackboard_artifact_types WHERE type_name = '" + type.getLabel() + "'");
+			if(rs.next()){
+				type.setTypeID(rs.getInt(1));
+			}
+			else{
+				type.setTypeID(this.addArtifactType(type.getLabel()));
+			}
+		}
+		for(TSK_BLACKBOARD_ATTRIBUTE_TYPE type : TSK_BLACKBOARD_ATTRIBUTE_TYPE.values()){	
+			type.setTypeID(this.getAttrTypeID(type.getLabel()));
+			
+		}
+		s.close();
+	}
+	
     /**
      * Start process of adding an image to the case. 
      * Adding an image is a multi-step process and this returns
@@ -378,6 +400,439 @@ public class SleuthkitCase {
 			return rootObjs;
 		} catch (SQLException ex) {
 			throw new TskException("Error getting root objects.", ex);
+		}
+	}
+	
+		/**
+     * Get all blackboard artifacts of a given type for the given object id
+	 * @param artifactTypeName artifact type name
+	 * @param obj_id object id
+     * @return list of blackboard artifacts
+     */
+	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName, long obj_id) throws TskException {
+		try {
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("select artifact_type_id from blackboard_artifact_types where type_name = '" + artifactTypeName + "'");
+			int artifactTypeID;
+			
+			if(rs.next()){
+				artifactTypeID = rs.getInt("artifact_type_id");
+			}
+			else{
+				artifactTypeID = this.addArtifactType(artifactTypeName);
+			}
+			
+			rs = s.executeQuery("SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = " + obj_id + " AND artifact_type_id = " + artifactTypeID);
+			
+			while(rs.next()){
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName));
+			}
+			s.close();
+			return artifacts;
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
+		}
+	}
+
+	/**
+     * Get all blackboard artifacts of a given type for the given object id
+	 * @param artifactTypeID artifact type id (must exist in database)
+	 * @param obj_id object id
+     * @return list of blackboard artifacts
+     */
+	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, long obj_id) throws TskException {
+		try {
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("select type_name from blackboard_artifact_types where artifact_type_id = " + artifactTypeID);
+			String artifactTypeName;
+			
+			if(rs.next()){
+				artifactTypeName = rs.getString("type_name");
+			}
+			else{
+				throw new TskException("Error getting artifact with non-existant type id");
+			}
+			
+			rs = s.executeQuery("SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = " + obj_id + " AND artifact_type_id = " + artifactTypeID);
+			
+			while(rs.next()){
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName));
+			}
+			s.close();
+			return artifacts;
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
+		}
+	}
+
+	/**
+     * Get all blackboard artifacts of a given type for the given object id
+	 * @param artifactType artifact type enum
+	 * @param obj_id object id
+     * @return list of blackboard artifacts
+     */
+	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(TSK_BLACKBOARD_ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
+		try {
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			Statement s = con.createStatement();
+			ResultSet rs;
+			int type = artifactType.getTypeID();
+			rs = s.executeQuery("SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = " + obj_id + " AND artifact_type_id = " + type);
+			
+			while(rs.next()){
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), obj_id, type, artifactType.getLabel()));
+			}
+			s.close();
+			return artifacts;
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
+		}
+	}
+	
+	/**
+     * Get the blackboard artifact with the given artifact id
+	 * @param artifactType artifact type enum
+	 * @param obj_id object id
+     * @return blackboard artifact
+     */
+	public BlackboardArtifact getBlackboardArtifact(long artifactID) throws TskException {
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs;
+			
+			rs = s.executeQuery("SELECT obj_id, artifact_type_id FROM blackboard_artifacts WHERE artifact_id = " + artifactID);
+			long obj_id = rs.getLong(1);
+			int artifact_type_id = rs.getInt(2);
+			
+			s.close();
+			return new BlackboardArtifact(this, artifactID, obj_id, artifact_type_id, this.getArtifactTypeString(artifact_type_id));
+			
+		} catch (SQLException ex) {
+			throw new TskException("Error getting a blackboard artifact. " + ex.getMessage(), ex);
+		}
+	}
+
+	/**
+     * Add a blackboard attribute. All information for the attribute should be in the given attribute
+	 * @param attr a blackboard attribute. All necessary information should be filled in.
+     */
+	public void addBlackboardAttribute(BlackboardAttribute attr) throws TskException {
+		try {
+			Statement s = con.createStatement();
+			switch(attr.getValueType()){
+				case STRING:
+					s.executeUpdate("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_text) VALUES (" 
+							+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", '" + attr.getValueString() + "')");
+					break;
+				case BYTE:
+					PreparedStatement ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_byte) VALUES (" 
+							+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", ?)");
+					ps.setBytes(1, attr.getValueBytes());
+					ps.executeUpdate();
+					ps.close();
+					break;
+				case INTEGER:
+					s.executeUpdate("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int32) VALUES (" 
+							+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueInt() + ")");
+					break;
+				case LONG:
+					s.executeUpdate("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int64) VALUES (" 
+							+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueLong() + ")");
+					break;
+				case DOUBLE:
+					s.executeUpdate("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) VALUES (" 
+							+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueDouble() + ")");
+					break;
+			}
+			s.close();
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a blackboard artifact.", ex);
+		}
+	}
+
+	/**
+     * Get the attribute id that corresponds to the given string. If that string does not exist
+	 * it will be added to the table.
+	 * @param attrTypeString attribute type string
+     * @return attribute id
+     */
+	public int getAttrTypeID(String attrTypeString) throws TskException {
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs;
+			
+			rs = s.executeQuery("SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'"); 
+			if(rs.next()){
+				int type = rs.getInt(1);
+				s.close();
+				return type;
+			}
+			else{
+				s.executeUpdate("INSERT INTO blackboard_attribute_types (attribute_type_id, type_name) VALUES (NULL, '" + attrTypeString + "')");
+				rs = s.executeQuery("SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'"); 
+				rs.next();
+				int type = rs.getInt(1);
+				s.close();
+				return type;
+			}
+			
+		} catch (SQLException ex) {
+			throw new TskException("Error getting attribute type id.", ex);
+		}
+	}
+
+	/**
+     * Get the string associated with the given id. Will throw an error if that id does not exist
+	 * @param attrTypeID attribute id
+     * @return string associated with the given id
+     */
+	public String getAttrTypeString(int attrTypeID) throws TskException {
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs;
+			
+			rs = s.executeQuery("SELECT type_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); 
+			if(rs.next()){
+				String type = rs.getString(1);
+				s.close();
+				return type;
+			}
+			else{
+				s.close();
+				throw new TskException("Error getting attribute type name.");
+			}
+			
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a attribute type name.", ex);
+		}
+	}
+	
+	/**
+     * Get artifact type id for the given string. Will throw an error if that artifact doesn't
+	 * exist. Use addArtifactType(...) to create a new one.
+	 * @param artifactTypeString name for an artifact type
+     * @return artifact type
+     */
+	int getArtifactTypeID(String artifactTypeString) throws TskException {
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs;
+			
+			rs = s.executeQuery("SELECT attribute_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeString + "'"); 
+			if(rs.next()){
+				int type = rs.getInt(1);
+				s.close();
+				return type;
+			}
+			else{
+				s.close();
+				throw new TskException("Error: no artifact with that name in database");
+			}
+			
+		} catch (SQLException ex) {
+			throw new TskException("Error getting artifact type id.", ex);
+		}
+	}
+
+	/**
+     * Get artifact type name for the given string. Will throw an error if that artifact doesn't
+	 * exist. Use addArtifactType(...) to create a new one.
+	 * @param artifactTypeID id for an artifact type
+     * @return name of that artifact type
+     */
+	String getArtifactTypeString(int artifactTypeID) throws TskException {
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs;
+			
+			rs = s.executeQuery("SELECT type_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID); 
+			if(rs.next()){
+				String type = rs.getString(1);
+				s.close();
+				return type;
+			}
+			else{
+				s.close();
+				throw new TskException("Error: no artifact with that name in database");
+			}
+			
+		} catch (SQLException ex) {
+			throw new TskException("Error getting artifact type id.", ex);
+		}
+	}
+
+	/**
+     * Add an artifact type with the given name. Will return an id that can be used
+	 * to look that artifact type up.
+	 * @param artifactTypeID id for an artifact type
+     * @return name of that artifact type
+     */
+	private int addArtifactType(String artifactTypeName) throws TskException {
+		try{
+		Statement s = con.createStatement();
+		s.executeUpdate("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name) VALUES (NULL , '" + artifactTypeName + "')");
+		ResultSet rs = s.executeQuery("SELECT artifact_type_id from blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
+		if(rs.next()){
+			int type = rs.getInt(1);
+			s.close();
+			return type;
+		}
+		s.close();
+		return -1;
+		}catch (SQLException ex) {
+			throw new TskException("Error adding artifact type.", ex);
+		}
+	}
+	
+	/**
+     * Get all attributes that match a where clause. The clause should begin with
+	 * "WHERE" or "JOIN". To use this method you must know the database tables
+	 * @param whereClause a sqlite where clause
+     * @return a list of matching attributes
+     */
+	public ArrayList<BlackboardAttribute> getMatchingAttributes(String whereClause) throws TskException{
+		ArrayList<BlackboardAttribute> matches = new ArrayList<BlackboardAttribute>();
+		try{
+		Statement s;
+		s = con.createStatement();
+			
+		ResultSet rs = s.executeQuery("Select artifact_id, source, context, attribute_type_id, value_type, "
+        + "value_byte, value_text, value_int32, value_int64, value_double FROM blackboard_attributes " + whereClause);
+		
+		while(rs.next()){
+			BlackboardAttribute attr = new BlackboardAttribute(rs.getLong("artifact_id"), this.getAttrTypeString(rs.getInt("attribute_type_id")), rs.getInt("attribute_type_id"), rs.getString("source"), rs.getString("context"),
+				BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")), rs.getInt("value_int32"), rs.getLong("value_int64"), rs.getDouble("value_double"), 
+				rs.getString("value_text"),rs.getBytes("value_byte"), this); 
+			matches.add(attr);
+		}
+		s.close();
+		return matches;
+		}catch (SQLException ex) {
+			throw new TskException("Error getting attributes. using this where clause: " + whereClause, ex);
+		}
+	}
+	
+	/**
+     * Get all artifacts that match a where clause. The clause should begin with
+	 * "WHERE" or "JOIN". To use this method you must know the database tables
+	 * @param whereClause a sqlite where clause
+     * @return a list of matching artifacts
+     */
+	public ArrayList<BlackboardArtifact> getMatchingArtifacts(String whereClause) throws TskException{
+		ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
+		try{
+		Statement s;
+		s = con.createStatement();
+			
+		ResultSet rs = s.executeQuery("Select artifact_id, obj_id, artifact_type_id FROM blackboard_artifacts " + whereClause);
+		
+		while(rs.next()){
+			BlackboardArtifact attr = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), this.getArtifactTypeString(rs.getInt(3))); 
+			matches.add(attr);
+		}
+		s.close();
+		return matches;
+		}catch (SQLException ex) {
+			throw new TskException("Error getting attributes. using this where clause: " + whereClause, ex);
+		}
+	}
+
+	/**
+     * Add a new blackboard artifact with the given type. If that artifact type does not
+	 * exist it will be added. The artifact type id can be looked up in the returned
+	 * blackboard artifact
+	 * @param artifactTypeName the name the given artifact should have
+     * @return a new blackboard artifact
+     */
+	BlackboardArtifact addBlackboardArtifact(String artifactTypeName, long obj_id) throws TskException {
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("select artifact_type_id from blackboard_artifact_types where type_name = '" + artifactTypeName + "'");
+			int artifactTypeID;
+			
+			if(rs.next()){
+				artifactTypeID = rs.getInt("artifact_type_id");
+			}
+			else{
+				artifactTypeID = this.addArtifactType(artifactTypeName);
+			}
+			
+			long artifactID = -1;
+			s.executeUpdate("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) VALUES (NULL, " + obj_id + ", " + artifactTypeID + ")");
+			rs = s.executeQuery("SELECT artifact_id from blackboard_artifacts WHERE obj_id = " + obj_id + " AND + artifact_type_id = " + artifactTypeID);
+			while(rs.next()){
+				if(rs.getLong(1) > artifactID)
+					artifactID = rs.getLong(1);
+			}
+			s.close();
+			return new BlackboardArtifact(this, artifactID, obj_id, artifactTypeID, artifactTypeName);
+			
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
+		}
+	}
+
+	/**
+     * Add a new blackboard artifact with the given type. If that artifact type does not
+	 * exist an error will be thrown. The artifact typename can be looked up in the 
+	 * returned blackboard artifact
+	 * @param artifactTypeID the type the given artifact should have
+     * @return a new blackboard artifact
+     */
+	BlackboardArtifact addBlackboardArtifact(int artifactTypeID, long obj_id) throws TskException {
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("select type_name from blackboard_artifact_types where artifact_type_id = " + artifactTypeID);
+			String artifactTypeName;
+			
+			if(rs.next()){
+				artifactTypeName = rs.getString("type_name");
+			}
+			else{
+				s.close();
+				throw new TskException("Error getting artifact with non-existant type id");
+			}
+			
+			long artifactID = -1;
+			s.executeUpdate("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) VALUES (NULL, " + obj_id + ", " + artifactTypeID + ")");
+			rs = s.executeQuery("SELECT artifact_id from blackboard_artifacts WHERE obj_id = " + obj_id + " AND + artifact_type_id = " + artifactTypeID);
+			while(rs.next()){
+				if(rs.getLong(1) > artifactID)
+					artifactID = rs.getLong(1);
+			}
+			s.close();
+			return new BlackboardArtifact(this, artifactID, obj_id, artifactTypeID, artifactTypeName);
+		
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
+		}
+	}
+
+	/**
+     * Add a new blackboard artifact with the given type. 
+	 * @param artifactType the type the given artifact should have
+     * @return a new blackboard artifact
+     */
+	BlackboardArtifact addBlackboardArtifact(TSK_BLACKBOARD_ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs;
+			int type = artifactType.getTypeID();
+			
+			long artifactID = -1;
+			s.executeUpdate("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) VALUES (NULL, " + obj_id + ", " + type + ")");
+			rs = s.executeQuery("SELECT artifact_id from blackboard_artifacts WHERE obj_id = " + obj_id + " AND + artifact_type_id = " + type);
+			while(rs.next()){
+				if(rs.getLong(1) > artifactID)
+					artifactID = rs.getLong(1);
+			}
+			s.close();
+			return new BlackboardArtifact(this, artifactID, obj_id, type, artifactType.getLabel());
+			
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
 		}
 	}
 	
