@@ -585,8 +585,7 @@ int main(int argc, char * const *argv1)
     /* XML initialization */
 
     if(opt_x){
-	x = new xml();
-	x->set_outfilename("stdout");
+	x = new xml();		// default to stdout
     }
     if(xml_fn){
 	if(*xml_fn == "0"){
@@ -596,15 +595,15 @@ int main(int argc, char * const *argv1)
 	if(x) errx(1,"Cannot write XML to stdout and file at same time\n");
 	if(access(xml_fn->c_str(),F_OK)==0){
 	    if(opt_zap){
-		if(unlink(xml_fn->c_str())) err(1,"%s: file exists and cannot unlink",xml_fn->c_str());
+			if(unlink(xml_fn->c_str())){ 
+				err(1,"%s: file exists and cannot unlink",xml_fn->c_str());
+			}
 	    }
 	    else{
 		errx(1,"%s: file exists",xml_fn->c_str());
 	    }
 	}
-	x = new xml();
-	x->set_outfilename(*xml_fn);
-	x->set_makeDTD(true);
+	x = new xml(*xml_fn,true);	// we will make DTD going to a file
     }
 	
     /* If no output file has been specified, output text to stdout */
@@ -646,7 +645,6 @@ int main(int argc, char * const *argv1)
     /* output per-run metadata for XML output */
     if(x){
 	/* Output Dublin Core information */
-	x->open();
 	x->push("dfxml","version='1.0'");
 	x->push("metadata",
 		"\n  xmlns='http://www.forensicswiki.org/wiki/Category:Digital_Forensics_XML'"
