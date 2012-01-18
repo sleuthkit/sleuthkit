@@ -55,6 +55,7 @@ public:
     static const string TSK_HASH_SHA2_256;
     static const string TSK_HASH_SHA2_512;
     static const string TSK_TEXT;
+    static const string TSK_TEXT_FILE;
     static const string TSK_TEXT_LANGUAGE;
     static const string TSK_ENTROPY;
     static const string TSK_PROGRAM_NAME;

@@ -2762,7 +2762,8 @@ std::string TskImgDBSqlite::getFileName(uint64_t file_id) const
  * @param fileId id of the file to get the status of
  * @returns KNOWN_STATUS
  */
-int TskImgDBSqlite::getKnownStatus(const uint64_t fileId){
+int TskImgDBSqlite::getKnownStatus(const uint64_t fileId) const
+{
     int retval = -1;
 
     if (!m_db)
@@ -2784,6 +2785,65 @@ int TskImgDBSqlite::getKnownStatus(const uint64_t fileId){
     }
 
     return retval;
+}
+
+void TskImgDBSqlite::getAllBlackboardRows(std::string& condition, vector<TskBlackboardRecord> & bbRecords)const{
+    if (!m_db)
+        throw TskException("No database.");
+    
+    int result = 0;
+    std::string stmt("SELECT artifact_id, blackboard.file_id, source, context, attribute, value_type, value_byte, value_text, value_int32, value_int64, value_double FROM blackboard");
+
+    constructStmt(stmt, condition);
+
+    sqlite3_stmt * statement;
+    if (sqlite3_prepare_v2(m_db, stmt.c_str(), -1, &statement, 0) == SQLITE_OK) 
+    {
+        while (sqlite3_step(statement) == SQLITE_ROW) 
+        {
+            TskBlackboardRecord record;
+
+            record.artifactId = (artifact_t)sqlite3_column_int64(statement, 0);
+            record.fileId = (uint64_t)sqlite3_column_int64(statement, 1);
+            record.source = (char *)sqlite3_column_text(statement, 2);
+            record.context = (char *)sqlite3_column_text(statement, 3);
+            record.attribute = (char *)sqlite3_column_text(statement, 4);
+            record.valueType = (int)sqlite3_column_int(statement, 5);
+            switch (record.valueType) {
+                case TskImgDB::BB_VALUE_TYPE_BYTE:
+                    {
+                        // return the blob
+                        int blobSize = sqlite3_column_bytes(statement, 6);
+                        const unsigned char *pBlob = (const unsigned char *)sqlite3_column_blob(statement, 6);
+                        record.valueByte.reserve(blobSize);
+                        for (int i = 0; i < blobSize; i++) {
+                            record.valueByte.push_back((unsigned char)pBlob[i]);
+                        }
+                    }
+                    break;
+                case TskImgDB::BB_VALUE_TYPE_STRING:
+                    record.valueString = (char *)sqlite3_column_text(statement, 7);
+                    break;
+                case TskImgDB::BB_VALUE_TYPE_INT32:
+                    record.valueInt32 = (int32_t)sqlite3_column_int(statement, 8);
+                    break;
+                case TskImgDB::BB_VALUE_TYPE_INT64:
+                    record.valueInt64 = (int64_t)sqlite3_column_int64(statement, 9);
+                    break;
+                case TskImgDB::BB_VALUE_TYPE_DOUBLE:
+                    record.valueDouble = (double)sqlite3_column_double(statement, 10);
+                    break;
+            };
+            bbRecords.push_back(record);
+        }
+        sqlite3_finalize(statement);
+    } else 
+    {
+        std::wstringstream msg;
+        msg << L"TskImgDBSqlite::getAllBlackboardRows - Error getting records: " << sqlite3_errmsg(m_db);
+        LOGERROR(msg.str());
+    }
+
 }
 
 void TskImgDBSqlite::getAllBlackboardRows(uint64_t fileId, vector<TskBlackboardRecord> & bbRecords) const
