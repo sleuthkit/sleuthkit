@@ -15,6 +15,9 @@
 #include <locale.h>
 #include <time.h>
 
+TSK_HDB_INFO * m_NSRLDb;
+TSK_HDB_INFO * m_knownBadDb;
+
 /** Throw an TSK exception back up to the Java code with a specific message.
  */
 static void
@@ -188,14 +191,18 @@ JNIEXPORT void JNICALL
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_setCaseDbNSRLNat(JNIEnv * env,
-    jclass obj, jlong caseHandle, jstring pathJ) {
+    jclass obj, jstring pathJ) {
 
-    TskCaseDb *tskCase = castCaseDb(env, caseHandle);
-
+    if (m_NSRLDb != NULL) {
+        tsk_hdb_close(m_NSRLDb);
+        m_NSRLDb = NULL;
+    }
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
-    tskCase->setNSRLHashDb(pathT);
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+    m_NSRLDb = tsk_hdb_open(pathT, flags);
+    
     return;
 }
 
@@ -207,24 +214,71 @@ JNIEXPORT void JNICALL
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_setCaseDbKnownBadNat(JNIEnv * env,
-    jclass obj, jlong caseHandle, jstring pathJ) {
+    jclass obj, jstring pathJ) {
 
-    TskCaseDb *tskCase = castCaseDb(env, caseHandle);
+    if (m_knownBadDb != NULL) {
+        tsk_hdb_close(m_knownBadDb);
+        m_knownBadDb = NULL;
+    }
 
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
-    tskCase->setKnownBadHashDb(pathT);
-    return;
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+    m_knownBadDb = tsk_hdb_open(pathT, flags);
 }
 
 
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_clearCaseDbLookupsNat(JNIEnv * env,
-    jclass obj, jlong caseHandle) {
+    jclass obj) {
 
-    TskCaseDb *tskCase = castCaseDb(env, caseHandle);
-    tskCase->clearLookupDatabases();
+    if (m_NSRLDb != NULL) {
+        tsk_hdb_close(m_NSRLDb);
+        m_NSRLDb = NULL;
+    }
+
+    if (m_knownBadDb != NULL) {
+        tsk_hdb_close(m_knownBadDb);
+        m_knownBadDb = NULL;
+    }
+}
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    hashDBLookup
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
+(JNIEnv * env, jclass obj, jstring hash){
+    
+    jboolean isCopy;
+    
+    unsigned char *md5 = (unsigned char *) env->GetStringUTFChars(hash, &isCopy);
+
+    TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
+
+    if (m_NSRLDb != NULL) {
+        int8_t retval = tsk_hdb_lookup_raw(m_NSRLDb, md5, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
+                
+        if (retval == -1) {
+        throwTskError(env, "error matching nsrl hashset");
+        } else if (retval) {
+            file_known = TSK_AUTO_CASE_FILE_KNOWN_KNOWN;
+        }
+    }
+
+    if (m_knownBadDb != NULL) {
+        int8_t retval = tsk_hdb_lookup_raw(m_knownBadDb, md5, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
+                
+        if (retval == -1) {
+            throwTskError(env, "error matching known bad hashset");
+        } else if (retval) {
+            file_known = TSK_AUTO_CASE_FILE_KNOWN_BAD;
+        }
+    }
+
+    return (int) file_known;
 }
 
 /*
