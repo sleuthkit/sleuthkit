@@ -205,6 +205,75 @@ public class ReprDataModel {
 		repr("getSize", i.getSize());
 		repr("getSsize", i.getSsize());
 		repr("getType", i.getType());
+		try {
+			BlackboardArtifact art1;
+			BlackboardArtifact art2;
+			BlackboardArtifact art3;
+			art1 = i.newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE.DEFAULT);
+			art2 = i.newArtifact("Test_Attribute");
+			art3 = i.newArtifact(1);
+			byte[] bytearray1 = new byte[2];
+			bytearray1[0] = 1;
+			bytearray1[1] = 2;
+			byte[] bytearray2 = new byte[2];
+			bytearray2[0] = 3;
+			bytearray2[1] = 4;
+			byte[] bytearray3 = new byte[2];
+			bytearray3[0] = 5;
+			bytearray3[1] = 6;
+			
+			art1.addAttribute("testattr", (int) 23, "regressionTest", "first_call");
+			art1.addAttribute("testattr", (long) 5, "regressionTest", "second_call");
+			art1.addAttribute("testattr", (double) 7.412, "regressionTest", "third_call");
+			art1.addAttribute("testattr", "test", "regressionTest", "fourth_call");
+			art1.addAttribute("testattr", bytearray1, "regressionTest", "fifth_call");
+			art2.addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE.TSK_DATETIME, (int) 23, "regressionTest", "sixth_call");
+			art2.addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE.TSK_FLAG, (long) 5, "regressionTest", "seventh_call");
+			art2.addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE.TSK_GEO, (double) 7.412, "regressionTest", "eighth_call");
+			art2.addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE.TSK_KEYWORD, "test", "regressionTest", "nineth_call");
+			art2.addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE.TSK_KEYWORD_SET, bytearray2, "regressionTest", "tenth_call");
+			art3.addAttribute(1, (int) 29, "regressionTest", "eleventh_call");
+			art3.addAttribute(1, (long) 565413, "regressionTest", "twelfth_call");
+			art3.addAttribute(1, (double) 1.987, "regressionTest", "thirteenth_call");
+			art3.addAttribute(2, "test2", "regressionTest", "fourteenth_call");
+			art3.addAttribute(2, bytearray3, "regressionTest", "fifteenth_call");
+			
+			for(BlackboardArtifact art : i.getAllArtifacts()){
+				repr("ArtifactGetArtifactID", art.getArtifactID());
+				repr("ArtifactGetArtifactTypeID", new Integer(art.getArtifactTypeID()).toString());
+				repr("ArtifactGetArtifactTypeName", art.getArtifactTypeName());
+				repr("ArtifactGetObjectID", art.getObjectID());
+				for(BlackboardAttribute attr : art.getAttributes()){
+					repr("AttributeGetArtifactID", attr.getArtifactID());
+					repr("AttributeGetAttributeTypeName", attr.getAttributeTypeName());
+					repr("AttributeGetContext", attr.getContext());
+					repr("AttributeGetSource", attr.getModuleName());
+					repr("AttributeGetAttributeTypeID", new Integer(attr.getAttributeTypeID()).toString());
+					BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE val_type = attr.getValueType();
+					repr("AttributeGetValueType", val_type.getLabel());
+					switch(val_type){
+						case STRING:
+							repr("AttributeGetValue" + val_type.getLabel(), attr.getValueString());
+							break;
+						case BYTE:
+							repr("AttributeGetValue" + val_type.getLabel(), Arrays.toString(attr.getValueBytes()));
+							break;
+						case INTEGER:
+							repr("AttributeGetValue" + val_type.getLabel(), new Integer(attr.getValueInt()).toString());
+							break;
+						case LONG:
+							repr("AttributeGetValue" + val_type.getLabel(), attr.getValueLong());
+							break;
+						case DOUBLE:
+							repr("AttributeGetValue" + val_type.getLabel(), new Double(attr.getValueDouble()).toString());
+							break;
+					}
+				}
+			}
+			
+		} catch (TskException ex) {
+			throw new RuntimeException(ex);
+		}
 	}
 
 	private void reprVolume(Volume v) {

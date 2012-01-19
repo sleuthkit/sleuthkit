@@ -31,9 +31,10 @@ public class SleuthkitJNI {
 	private static native long newCaseDbNat(String dbPath) throws TskException;
 	private static native long openCaseDbNat(String path) throws TskException;
 	private static native void closeCaseDbNat(long db) throws TskException;
-	private static native void setCaseDbNSRLNat(long db, String hashDbPath) throws TskException;
-	private static native void setCaseDbKnownBadNat(long db, String hashDbPath) throws TskException;
-	private static native void clearCaseDbLookupsNat(long db) throws TskException;
+	private static native void setCaseDbNSRLNat(String hashDbPath) throws TskException;
+	private static native void setCaseDbKnownBadNat(String hashDbPath) throws TskException;
+	private static native void clearCaseDbLookupsNat() throws TskException;
+	private static native int hashDBLookup(String hash) throws TskException;
 
 	
 	//load image
@@ -93,7 +94,7 @@ public class SleuthkitJNI {
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 		}
 		void clearLookupDatabases() throws TskException {
-			clearCaseDbLookupsNat(this.caseDbPointer);
+			clearCaseDbLookupsNat();
 		}
 		
         
@@ -101,14 +102,14 @@ public class SleuthkitJNI {
          * Set the path to an NSRL database
          */
         void setNSRLDatabase(String path) throws TskException {
-            setCaseDbNSRLNat(this.caseDbPointer, path);
+            setCaseDbNSRLNat(path);
         }
 
         /**
          * Set the path to a known bad hash database
          */
         void setKnownBadDatabase(String path) throws TskException {
-            setCaseDbKnownBadNat(this.caseDbPointer, path);
+            setCaseDbKnownBadNat(path);
         }
 
         
@@ -405,6 +406,24 @@ public class SleuthkitJNI {
 	 */
 	public static boolean lookupIndexExists(String dbPath) throws TskException {
 		return lookupIndexExistsNat(dbPath);
+	}
+	
+	/**
+     * Set the path to an NSRL database
+     */
+    public static void setNSRLDatabase(String path) throws TskException {
+        setCaseDbNSRLNat(path);
+    }
+
+    /**
+     * Set the path to a known bad hash database
+     */
+    public static void setKnownBadDatabase(String path) throws TskException {
+        setCaseDbKnownBadNat(path);
+    }
+	
+	public static TskData.FileKnown lookupHash(String hash) throws TskException{
+		return TskData.FileKnown.valueOf(hashDBLookup(hash));
 	}
 	
 }

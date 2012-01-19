@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -66,4 +67,60 @@ public interface Content {
 	 * @return object id
 	 */
 	public long getId();
+	/**
+	 * Add an artifact associated with this content to the blackboard
+	 * @param artifactTypeName name of the artifact type (if the name doesn't already exist
+	 * it will be created)
+	 * @return the blackboard artifact (the artifact type id can be looked up from this)
+	 * @throws TskException
+	 */
+	public BlackboardArtifact newArtifact(String artifactTypeName) throws TskException;
+	
+	/**
+	 * Add an artifact associated with this content to the blackboard
+	 * @param artifactTypeID id of the artifact type (if the id doesn't already exist
+	 * an error will be thrown)
+	 * @return the blackboard artifact (the artifact type id can be looked up from this)
+	 * @throws TskException
+	 */
+	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskException;
+	
+	/**
+	 * Add an artifact associated with this content to the blackboard
+	 * @param type artifact type enum 
+	 * @return the blackboard artifact 
+	 * @throws TskException
+	 */
+	public BlackboardArtifact newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException;
+	
+	/**
+	 * Get all artifacts associated with this content that have the given type name
+	 * @param artifactTypeName name of the type to look up
+	 * @return a list of blackboard artifacts
+	 * @throws TskException
+	 */
+	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskException;
+	
+	/**
+	 * Get all artifacts associated with this content that have the given type id
+	 * @param artifactTypeID type id to look up
+	 * @return a list of blackboard artifacts
+	 * @throws TskException
+	 */
+	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskException;
+	
+	/**
+	 * Get all artifacts associated with this content that have the given type
+	 * @param type type to look up
+	 * @return a list of blackboard artifacts
+	 * @throws TskException
+	 */
+	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException;
+	
+	/**
+	 * Get all artifacts associated with this content
+	 * @return a list of blackboard artifacts
+	 * @throws TskException
+	 */
+	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskException;
 }
