@@ -241,6 +241,12 @@ void arff::add_value(string name,const string &value)
  */
 void arff::add_valuet(string name,time_t t)
 {
+#ifdef _MSC_VER
+#define TM_FORMAT "%Y-%m-%d %H:%M:%S"
+#else
+#define TM_FORMAT "%F %T "
+#endif
+
     if(t==0) return;			// ignore invalid dates
 
     // If type doesn't exist, create it and make it a STRING
@@ -249,7 +255,7 @@ void arff::add_valuet(string name,time_t t)
     }
     int code = attributeCodes[name];
     char buf[64];
-    strftime(buf,sizeof(buf),"%F %T",gmtime(&t));
+    strftime(buf,sizeof(buf),TM_FORMAT,gmtime(&t));
     (*values.back())[code] = buf;
 }
 
@@ -270,7 +276,7 @@ void arff::add_value(string name,int64_t value)
     char buf[64];
     switch(type){
     case DATE:
-	strftime(buf,sizeof(buf),"%F %T",gmtime((time_t *)&valuet));
+	strftime(buf,sizeof(buf),TM_FORMAT,gmtime((time_t *)&valuet));
 	break;
     default:
 	sprintf(buf,"%"PRIu64,value);

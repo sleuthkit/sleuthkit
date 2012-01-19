@@ -187,8 +187,8 @@ string xml::xmlstrip(const string &xml)
 xml::xml():M(),outf(),out(&cout),tags(),tag_stack(),tempfilename(),tempfile_template("/tmp/xml_XXXXXXXX"),
 	   t0(),make_dtd(false),outfilename()
 #else
-xml::xml():outf(),tags(),tempfilename(),tag_stack(),tempfile_template("/tmp/xml_XXXXXXXX"),
-	   make_dtd(false),t0(),outfilename()
+xml::xml():outf(),out(&cout),tags(),tag_stack(),tempfilename(),tempfile_template("/tmp/xml_XXXXXXXX"),
+	   t0(),make_dtd(false),outfilename()
 #endif
 {
 #ifdef HAVE_PTHREAD
@@ -535,7 +535,13 @@ void xml::add_DFXML_execution_environment(const std::string &command_line)
     }
 #endif
 #endif	
-    
+
+#ifdef _MSC_VER
+#define TM_FORMAT "%Y-%m-%dT%H:%M:%SZ"
+#else
+#define TM_FORMAT "%FT%TZ"
+#endif
+
     xmlout("command_line", command_line); // quote it!
 #ifdef HAVE_GETUID
     xmlprintf("uid","","%d",getuid());
@@ -545,7 +551,7 @@ void xml::add_DFXML_execution_environment(const std::string &command_line)
 #endif
     
     time_t t = time(0);
-    strftime(buf,sizeof(buf),"%FT%TZ",gmtime(&t));
+    strftime(buf,sizeof(buf),"TM_FORMAT",gmtime(&t));
     xmlout("start_time",buf);
     pop();			// <execution_environment>
 }
