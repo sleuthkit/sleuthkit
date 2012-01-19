@@ -74,7 +74,7 @@ public interface Content {
 	 * @return the blackboard artifact (the artifact type id can be looked up from this)
 	 * @throws TskException
 	 */
-	public BlackboardArtifact addArtifact(String artifactTypeName) throws TskException;
+	public BlackboardArtifact newArtifact(String artifactTypeName) throws TskException;
 	
 	/**
 	 * Add an artifact associated with this content to the blackboard
@@ -83,7 +83,7 @@ public interface Content {
 	 * @return the blackboard artifact (the artifact type id can be looked up from this)
 	 * @throws TskException
 	 */
-	public BlackboardArtifact addArtifact(int artifactTypeID) throws TskException;
+	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskException;
 	
 	/**
 	 * Add an artifact associated with this content to the blackboard
@@ -91,7 +91,7 @@ public interface Content {
 	 * @return the blackboard artifact 
 	 * @throws TskException
 	 */
-	public BlackboardArtifact addArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException;
+	public BlackboardArtifact newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException;
 	
 	/**
 	 * Get all artifacts associated with this content that have the given type name

@@ -61,16 +61,16 @@ public abstract class AbstractContent implements Content {
     }
 	
 	@Override
-	public BlackboardArtifact addArtifact(String artifactTypeName) throws TskException{
-		return db.addBlackboardArtifact(artifactTypeName, obj_id);
+	public BlackboardArtifact newArtifact(String artifactTypeName) throws TskException{
+		return db.newBlackboardArtifact(artifactTypeName, obj_id);
 	}
 	@Override
-	public BlackboardArtifact addArtifact(int artifactTypeID) throws TskException{
-		return db.addBlackboardArtifact(artifactTypeID, obj_id);
+	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskException{
+		return db.newBlackboardArtifact(artifactTypeID, obj_id);
 	}
 	@Override
-	public BlackboardArtifact addArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException{
-		return db.addBlackboardArtifact(type, obj_id);
+	public BlackboardArtifact newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException{
+		return db.newBlackboardArtifact(type, obj_id);
 	}
 	
 	@Override

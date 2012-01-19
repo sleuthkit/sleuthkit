@@ -209,9 +209,9 @@ public class ReprDataModel {
 			BlackboardArtifact art1;
 			BlackboardArtifact art2;
 			BlackboardArtifact art3;
-			art1 = i.addArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE.DEFAULT);
-			art2 = i.addArtifact("Test_Attribute");
-			art3 = i.addArtifact(1);
+			art1 = i.newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE.DEFAULT);
+			art2 = i.newArtifact("Test_Attribute");
+			art3 = i.newArtifact(1);
 			byte[] bytearray1 = new byte[2];
 			bytearray1[0] = 1;
 			bytearray1[1] = 2;
