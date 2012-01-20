@@ -25,14 +25,15 @@
 #include "Poco/UnicodeConverter.h"
 #include "Utilities/TskException.h"
 
-#define IMGDB_CHUNK_SIZE 1024*1024*10 // what size chunks should the database use when growing and shrinking
+#define IMGDB_CHUNK_SIZE 1024*1024*1 // what size chunks should the database use when growing and shrinking
 #define IMGDB_MAX_RETRY_COUNT 50    // how many times will we retry a SQL statement
 #define IMGDB_RETRY_WAIT 100   // how long (in milliseconds) are we willing to wait between retries
 
 /**
- * Set the locations and logging object.  Must call
+ * Set the database location.  Must call
  * initialize() before the object can be used.
- * @param a_outpath FOLDER to store the database in
+ * @param a_outpath Directory to store the database in. This 
+ * directory must already exist.
 */
 TskImgDBSqlite::TskImgDBSqlite(const wchar_t * a_outpath)
 {

@@ -30,7 +30,9 @@ using namespace std;
 #include "tsk3/auto/sqlite3.h"
 
 /** 
- * Implementation of TskImgDB that  uses SQLite to store the data.
+ * Implementation of TskImgDB that uses SQLite to store the data.
+ * Do not use this in a distributed environment if multiple processes
+ * will be accessing the database at the same time. 
  */
 class TSK_FRAMEWORK_API TskImgDBSqlite : public TskImgDB
 {

@@ -15,17 +15,15 @@
 
 #include "TskImgDB.h"
 
-/// Default constructor
 TskImgDB::TskImgDB()
 {
 }
 
-/// Destructor
 TskImgDB::~TskImgDB()
 {
 }
 
-//// Convenience functions
+// Convenience functions
 
 // return the valueString field, if valueType is BB_VALUE_TYPE_STRING, otherwise raise exception
 string TskImgDB::toString(const TskBlackboardRecord & rec) const
