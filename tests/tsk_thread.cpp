@@ -1,5 +1,8 @@
 #include "tsk_thread.h"
 
+// mingw's pthread.h will try to read a config.h if HAVE_CONFIG_H
+#undef HAVE_CONFIG_H
+
 #include <pthread.h>
 #include <assert.h>
 
