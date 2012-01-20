@@ -368,9 +368,20 @@ split_open(int a_num_img, const TSK_TCHAR * const a_images[],
     // see if there are more of them...
     if (a_num_img == 1) {
         if ((split_info->images = tsk_img_findFiles(a_images[0], &split_info->num_img)) == NULL) {
-            free(split_info);            
-            return NULL;            
-        }        
+            // special case to handle windows objects: not an error, just return NULL
+#if defined(TSK_WIN32) || defined(__CYGWIN__)
+            if (TSTRNCMP(_TSK_T("\\\\.\\"), a_images[0], 4) == 0) {
+                free(split_info);
+                return NULL;
+            }
+#endif
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_IMG_STAT);
+            tsk_error_set_errstr("split_open - could not find segment files starting at %" PRIttocTSK "",
+                                 a_images[0]);
+            free(split_info);
+            return NULL;
+        }
     }
     else {
         split_info->num_img = a_num_img;
