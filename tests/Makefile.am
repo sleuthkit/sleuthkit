@@ -1,6 +1,6 @@
-AM_CPPFLAGS = -I.. -I$(srcdir)/.. -Wall 
+AM_CPPFLAGS = -I.. -I$(srcdir)/.. -Wall $(PTHREAD_CFLAGS)
 LDADD = ../tsk3/libtsk3.la
-LDFLAGS = -static
+LDFLAGS += -static $(PTHREAD_LIBS)
 EXTRA_DIST = .indent.pro 
 
 noinst_PROGRAMS = read_apis fs_fname_apis fs_attrlist_apis fs_thread_test
