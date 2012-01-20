@@ -75,7 +75,7 @@ public:
     virtual int getVolumeInfo(std::list<TskVolumeInfoRecord> & volumeInfoList) const;
     virtual int getFsInfo(std::list<TskFsInfoRecord> & fsInfoList) const;
     virtual int getFileInfoSummary(FILE_TYPES fileType, std::list<TskFileTypeRecord> & fileTypeInfoList) const;
-    virtual int getKnownStatus(const uint64_t fileId);
+    virtual int getKnownStatus(const uint64_t fileId) const;
 
     virtual UnallocRun * getUnallocRun(int file_id, int file_offset) const; 
     virtual SectorRuns * getFreeSectors() const;
@@ -92,6 +92,7 @@ public:
     virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<double> & values) const;
 
     virtual void getAllBlackboardRows(const uint64_t fileId, vector<TskBlackboardRecord> & bbRecords) const;
+    virtual void getAllBlackboardRows(std::string& condition, vector<TskBlackboardRecord> & bbRecords) const;
 
     // Create a new artifact with the given record.
     virtual artifact_t addBlackboardInfo(const TskBlackboardRecord& blackboardRecord) const;

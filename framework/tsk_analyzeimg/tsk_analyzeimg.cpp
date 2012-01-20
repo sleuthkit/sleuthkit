@@ -8,8 +8,9 @@
 *
 *  This software is distributed under the Common Public License 1.0
 */
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
+#include <cstdio>
+#include <cstdlib>
 
 #include "tsk3/tsk_tools_i.h"
 #include "framework.h"
@@ -160,7 +161,7 @@ int main(int argc, char **argv1)
     }
     catch (TskException &e ) {
         fprintf(stderr, "Error creating file analysis pipeline\n");
-        cerr << e.message() << endl;
+        std::cerr << e.message() << endl;
         filePipeline = NULL;
     }
 
@@ -170,7 +171,7 @@ int main(int argc, char **argv1)
     }
     catch (TskException &e ) {
         fprintf(stderr, "Error creating reporting pipeline\n");
-        cerr << e.message() << endl;
+        std::cerr << e.message() << endl;
         reportPipeline = NULL;
     }
 

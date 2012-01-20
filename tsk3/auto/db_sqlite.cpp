@@ -236,7 +236,24 @@ int
         ||
         attempt_exec
         ("CREATE TABLE tsk_files_derived_method (derived_id INTEGER PRIMARY KEY, tool_name TEXT, tool_version TEXT, other TEXT)",
-            "Error creating tsk_files_derived_method table: %s\n")) {
+            "Error creating tsk_files_derived_method table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, artifact_type_id INTEGER)",
+            "Error creating blackboard_artifact table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE blackboard_attributes (artifact_id INTEGER NOT NULL, source TEXT, context TEXT, attribute_type_id INTEGER NOT NULL, value_type INTEGER NOT NULL, "
+        "value_byte BLOB, value_text TEXT, value_int32 INTEGER, value_int64 INTEGER, value_double NUMERIC(20, 10))",
+            "Error creating blackboard_attribute table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE blackboard_artifact_types (artifact_type_id INTEGER PRIMARY KEY, type_name TEXT)",
+            "Error creating blackboard_artifact_types table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT)",
+            "Error creating blackboard_attribute_types table: %s\n")) {
         return 1;
     }
 
@@ -263,6 +280,10 @@ int
 {
     return
         attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
+        "Error creating tsk_objects index on par_obj_id: %s\n")||
+        attempt_exec("CREATE INDEX objID ON blackboard_artifacts(obj_id);",
+        "Error creating objID index on blackboard_artifacts: %s\n")||
+        attempt_exec("CREATE INDEX artifactID ON blackboard_artifacts(artifact_id);",
         "Error creating tsk_objects index on par_obj_id: %s\n");
 }
 
