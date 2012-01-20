@@ -15,6 +15,7 @@
 const string TskBlackboard::TSK_DATETIME = "DATETIME"; ///< INT32: GMT based Unix time, defines number of secords elapsed since UTC Jan 1, 1970.
 const string TskBlackboard::TSK_GEO = "GEO";      ///< STRING: TBD
 const string TskBlackboard::TSK_USERNAME = "USERNAME"; ///< String of a user name.  Use TskBlackboard::TSK_DOMAIN to store the domain that the username is from (if it is known). 
+const string TskBlackboard::TSK_DOMAIN = "DOMAIN";   ///< String of a DNS Domain name, e.g. sleuthkit.org  use TskBlackboad::TSK_URL for a full URL.
 const string TskBlackboard::TSK_PASSWORD = "PASSWORD"; ///< String of a password that was found.  Use TskBlackboard::TSK_USERNAME and TskBlackboard::TSK_DOMAIN to link the password to a given user and site. 
 const string TskBlackboard::TSK_NAME_PERSON = "NAME_PERSON";     ///< String of a person name 
 const string TskBlackboard::TSK_DEVICE_MODEL = "MODEL"; ///< String of manufactorer name of device that was connected (or somehow related to) the data being analyzed
@@ -25,7 +26,7 @@ const string TskBlackboard::TSK_KEYWORD = "KEYWORD";  ///< STRING: Keyword that 
 const string TskBlackboard::TSK_EMAIL = "EMAIL";    ///< String of e-mail address in the form of user@host.com
 const string TskBlackboard::TSK_URL = "URL";      ///< String of a URL, should start with http:// or ftp:// etc.  You should also make a TskBlackoard::TSK_DOMAIN entry for the base domain name. 
 const string TskBlackboard::TSK_URL_HISTORY = "HISTORY"; ///< STRING: 
-const string TskBlackboard::TSK_DOMAIN = "DOMAIN";   ///< String of a DNS Domain name, e.g. sleuthkit.org  use TskBlackboad::TSK_URL for a full URL.
+
 const string TskBlackboard::TSK_HASH_MD5 = "HASH_MD5"; ///< STRING: MD5 hash
 const string TskBlackboard::TSK_HASH_SHA1 = "HASH_SHA1";     ///< STRING: SHA1 hash
 const string TskBlackboard::TSK_HASH_SHA2_256 = "HASH_SHA2_256"; ///< STRING: SHA2 256 bit hash
