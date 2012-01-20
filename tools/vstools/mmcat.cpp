@@ -181,17 +181,12 @@ main(int argc, char **argv1)
     }
 
 #ifdef TSK_WIN32
-    char strerror_buffer[1024];
     if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_WRITE);
-        tsk_error_set_errstr(
-            "mmcat: error setting stdout to binary: %s",
-            strerror_s(strerror_buffer, 1024, errno));
-        return 1;
+        fprintf(stderr,
+                "error setting stdout to binary: %s", strerror(errno));
+        exit(1);
     }
 #endif
-
 
     for (addr = 0; addr < vs_part->len; addr++) {
         ssize_t retval;

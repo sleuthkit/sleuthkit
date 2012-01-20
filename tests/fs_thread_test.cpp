@@ -23,6 +23,9 @@
 
 #include "tsk_thread.h"
 
+// for tsk_getopt() and friends
+#include "tsk3/base/tsk_base_i.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -146,39 +149,56 @@ private:
     MyThread& operator=(const MyThread&);
 };
 
-static const char* progname;
+static const TSK_TCHAR *progname;
 
 static void
 usage()
 {
-    fprintf(stderr, "Usage: %s [-f fstype ] [-o imgoffset ] [-v] image nthreads niters\n", progname);
+    TFPRINTF(stderr, _TSK_T("Usage: %s [-f fstype ] [-o imgoffset ] [-v] image nthreads niters\n"), progname);
+
     exit(1);
 }
 
 int
-main(int argc, char* argv[])
+main(int argc, char** argv1)
 {
+    
+    TSK_TCHAR **argv;
+    TSK_TCHAR *cp;
+
+#ifdef TSK_WIN32
+    // On Windows, get the wide arguments (mingw doesn't support wmain)
+    argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+    if (argv == NULL) {
+        fprintf(stderr, "Error getting wide arguments\n");
+        exit(1);
+    }
+#else
+    argv = (TSK_TCHAR **) argv1;
+#endif
+
     progname = argv[0];
 
     TSK_FS_TYPE_ENUM fstype = TSK_FS_TYPE_DETECT;
     TSK_OFF_T imgaddr = 0;
     int ch;
-    while ((ch = GETOPT(argc, argv, "f:o:v")) != -1) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("f:o:v"))) != -1) {
         switch (ch) {
-        case 'f':
+        case _TSK_T('f'):
             fstype = tsk_fs_type_toid(OPTARG);
             if (fstype == TSK_FS_TYPE_UNSUPP) {
-                fprintf(stderr, "Unsupported file system type: %s\n", OPTARG);
+                TFPRINTF(stderr,
+                         _TSK_T("Unsupported file system type: %s\n"), OPTARG);
                 usage();
             }
             break;
-        case 'o':
+        case _TSK_T('o'):
             if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {
                 tsk_error_print(stderr);
                 exit(1);
             }
             break;
-        case 'v':
+        case _TSK_T('v'):
             tsk_verbose = 1;
             break;
         default:
@@ -190,13 +210,13 @@ main(int argc, char* argv[])
         usage();
     }
 
-    const char* image = argv[OPTIND];
-    size_t nthreads = atoi(argv[OPTIND + 1]);
+    const TSK_TCHAR* image = argv[OPTIND];
+    size_t nthreads = (size_t) TSTRTOUL(argv[OPTIND + 1], &cp, 0);
     if (nthreads == 0) {
         fprintf(stderr, "invalid nthreads\n");
         exit(1);
     }
-    size_t niters = atoi(argv[OPTIND + 2]);
+    size_t niters = (size_t) TSTRTOUL(argv[OPTIND + 2], &cp, 0);
     if (niters == 0) {
         fprintf(stderr, "invalid nthreads\n");
         exit(1);
@@ -209,7 +229,7 @@ main(int argc, char* argv[])
     }
 
     if ((imgaddr * img->sector_size) >= img->size) {
-        fprintf(stderr, "Sector offset supplied is larger than disk image (maximum: %"
+        tsk_fprintf(stderr, "Sector offset supplied is larger than disk image (maximum: %"
                 PRIu64 ")\n", img->size / img->sector_size);
         exit(1);
     }
@@ -233,4 +253,5 @@ main(int argc, char* argv[])
     
     tsk_fs_close(fs);
     tsk_img_close(img);
+    exit(0);
 }
