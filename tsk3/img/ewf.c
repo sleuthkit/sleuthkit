@@ -145,12 +145,17 @@ ewf_open(int a_num_img, const TSK_TCHAR * const a_images[],
 
     // See if they specified only the first of the set...
     if (a_num_img == 1) {
-        if ((ewf_info->images =
-                tsk_img_findFiles(a_images[0],
-                    &ewf_info->num_imgs)) == NULL) {
+#ifdef TSK_WIN32
+        ewf_info->num_imgs = libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]), LIBEWF_FORMAT_UNKNOWN, &ewf_info->images);
+#else
+        ewf_info->num_imgs = libewf_glob(a_images[0], TSTRLEN(a_images[0]), LIBEWF_FORMAT_UNKNOWN, &ewf_info->images);
+#endif
+        if (ewf_info->num_imgs <= 0) {
             free(ewf_info);
             return NULL;
         }
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "ewf_open: found %d segment files via libewf_glob\n", ewf_info->num_imgs);
     }
     else {
         int i;
