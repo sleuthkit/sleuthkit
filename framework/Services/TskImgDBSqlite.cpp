@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include <cassert>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -545,12 +546,15 @@ int TskImgDBSqlite::getFileRecord(const uint64_t fileId, TskFileRecord& fileReco
     sqlite3_stmt * statement;
     std::stringstream stmt;
 
-    stmt << "SELECT file_id, type_id, name, par_file_id, dir_type, meta_type, dir_flags, "
-        << "meta_flags, size, ctime, crtime, atime, mtime, mode, uid, gid, status, full_path FROM files WHERE file_id=" << fileId;
+    stmt << "SELECT f.file_id, f.type_id, f.name, f.par_file_id, f.dir_type, f.meta_type, f.dir_flags, "
+        << "f.meta_flags, f.size, f.ctime, f.crtime, f.atime, f.mtime, f.mode, f.uid, f.gid, f.status, f.full_path, "
+        << "fh.md5, fh.sha1, fh.sha2_256, fh.sha2_512 "
+        << "FROM files f LEFT OUTER JOIN file_hashes fh ON f.file_id = fh.file_id WHERE f.file_id=" << fileId;
 
     if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) 
     {
         int result = sqlite3_step(statement);
+
         if (result == SQLITE_ROW) 
         {
             fileRecord.fileId       = sqlite3_column_int64(statement, 0);
@@ -571,11 +575,20 @@ int TskImgDBSqlite::getFileRecord(const uint64_t fileId, TskFileRecord& fileReco
             fileRecord.gid          = sqlite3_column_int(statement, 15);
             fileRecord.status       = sqlite3_column_int(statement, 16);
             fileRecord.fullPath     = (char *)sqlite3_column_text(statement, 17);
+
+            if (sqlite3_column_type(statement, 18) == SQLITE_TEXT)
+                fileRecord.md5      = (char *)sqlite3_column_text(statement, 18);
+            if (sqlite3_column_type(statement, 19) == SQLITE_TEXT)
+                fileRecord.sha1     = (char *)sqlite3_column_text(statement, 19);
+            if (sqlite3_column_type(statement, 20) == SQLITE_TEXT)
+                fileRecord.sha2_256 = (char *)sqlite3_column_text(statement, 20);
+            if (sqlite3_column_type(statement, 21) == SQLITE_TEXT)
+                fileRecord.sha2_512 = (char *)sqlite3_column_text(statement, 21);
         }
         else 
         {
             std::wstringstream msg;
-            msg << L"TskImgDBSqlite::getFileRecord - Error querying files table for file id: " << fileId << std::endl;
+            msg << L"TskImgDBSqlite::getFileRecord - Error querying files table for file id: " << fileId;
             LOGERROR(msg.str());
 
             ret = -1;
@@ -585,7 +598,7 @@ int TskImgDBSqlite::getFileRecord(const uint64_t fileId, TskFileRecord& fileReco
     else 
     {
         std::wstringstream msg;
-        msg << L"TskImgDBSqlite::getFileRecord - Error querying files table for file id: " << fileId << std::endl;
+        msg << L"TskImgDBSqlite::getFileRecord - Error querying files table for file id: " << fileId;
         LOGERROR(msg.str());
 
         ret = -1;
@@ -1994,7 +2007,7 @@ std::vector<uint64_t> TskImgDBSqlite::getUniqueCarvedFileIds(HASH_TYPE hashType)
         break;
     default:
         std::wstringstream errorMsg;
-        errorMsg << L"TskImgDBSqlite::getUniqueCarvedFileIds - Unsupported hashType : " << hashType << std::endl;
+        errorMsg << L"TskImgDBSqlite::getUniqueCarvedFileIds - Unsupported hashType : " << hashType ;
         LOGERROR(errorMsg.str());
         return results;
     }
@@ -2093,7 +2106,7 @@ std::vector<uint64_t> TskImgDBSqlite::getUniqueFileIds(HASH_TYPE hashType) const
         break;
     default:
         std::wstringstream errorMsg;
-        errorMsg << L"TskImgDBSqlite::getUniqueFileIds - Unsupported hashType : " << hashType << std::endl;
+        errorMsg << L"TskImgDBSqlite::getUniqueFileIds - Unsupported hashType : " << hashType ;
         LOGERROR(errorMsg.str());
         return results;
     }
@@ -2231,12 +2244,14 @@ void TskImgDBSqlite::constructStmt(std::string& stmt, std::string& condition) co
         condition.erase(0, condition.find_first_not_of(' '));
 
         std::string whereClause("WHERE");
+        std::string joinClause("JOIN");
 
         // If the condition doesn't start with a WHERE clause and it doesn't
         // start with a comma it is presumably extending the FROM clause with
         // one or more table names. In this case we need to add the comma to
         // the statement.
         if (strnicmp(condition.c_str(), whereClause.c_str(), whereClause.length()) != 0 &&
+            strnicmp(condition.c_str(), joinClause.c_str(), joinClause.length()) != 0 &&
             condition[0] != ',')
         {
             stmt.append(",");
@@ -2270,7 +2285,7 @@ int TskImgDBSqlite::setHash(uint64_t a_file_id, TskImgDB::HASH_TYPE hashType, co
         break;
     default:
         std::wstringstream errorMsg;
-        errorMsg << L"TskImgDBSqlite::setHash - Unsupported hashType : " << hashType << std::endl;
+        errorMsg << L"TskImgDBSqlite::setHash - Unsupported hashType : " << hashType ;
         LOGERROR(errorMsg.str());
         return 1;
     }
@@ -2762,7 +2777,8 @@ std::string TskImgDBSqlite::getFileName(uint64_t file_id) const
  * @param fileId id of the file to get the status of
  * @returns KNOWN_STATUS
  */
-int TskImgDBSqlite::getKnownStatus(const uint64_t fileId){
+int TskImgDBSqlite::getKnownStatus(const uint64_t fileId) const
+{
     int retval = -1;
 
     if (!m_db)
@@ -2784,6 +2800,65 @@ int TskImgDBSqlite::getKnownStatus(const uint64_t fileId){
     }
 
     return retval;
+}
+
+void TskImgDBSqlite::getAllBlackboardRows(std::string& condition, vector<TskBlackboardRecord> & bbRecords)const{
+    if (!m_db)
+        throw TskException("No database.");
+    
+    int result = 0;
+    std::string stmt("SELECT artifact_id, blackboard.file_id, source, context, attribute, value_type, value_byte, value_text, value_int32, value_int64, value_double FROM blackboard");
+
+    constructStmt(stmt, condition);
+
+    sqlite3_stmt * statement;
+    if (sqlite3_prepare_v2(m_db, stmt.c_str(), -1, &statement, 0) == SQLITE_OK) 
+    {
+        while (sqlite3_step(statement) == SQLITE_ROW) 
+        {
+            TskBlackboardRecord record;
+
+            record.artifactId = (artifact_t)sqlite3_column_int64(statement, 0);
+            record.fileId = (uint64_t)sqlite3_column_int64(statement, 1);
+            record.source = (char *)sqlite3_column_text(statement, 2);
+            record.context = (char *)sqlite3_column_text(statement, 3);
+            record.attribute = (char *)sqlite3_column_text(statement, 4);
+            record.valueType = (int)sqlite3_column_int(statement, 5);
+            switch (record.valueType) {
+                case TskImgDB::BB_VALUE_TYPE_BYTE:
+                    {
+                        // return the blob
+                        int blobSize = sqlite3_column_bytes(statement, 6);
+                        const unsigned char *pBlob = (const unsigned char *)sqlite3_column_blob(statement, 6);
+                        record.valueByte.reserve(blobSize);
+                        for (int i = 0; i < blobSize; i++) {
+                            record.valueByte.push_back((unsigned char)pBlob[i]);
+                        }
+                    }
+                    break;
+                case TskImgDB::BB_VALUE_TYPE_STRING:
+                    record.valueString = (char *)sqlite3_column_text(statement, 7);
+                    break;
+                case TskImgDB::BB_VALUE_TYPE_INT32:
+                    record.valueInt32 = (int32_t)sqlite3_column_int(statement, 8);
+                    break;
+                case TskImgDB::BB_VALUE_TYPE_INT64:
+                    record.valueInt64 = (int64_t)sqlite3_column_int64(statement, 9);
+                    break;
+                case TskImgDB::BB_VALUE_TYPE_DOUBLE:
+                    record.valueDouble = (double)sqlite3_column_double(statement, 10);
+                    break;
+            };
+            bbRecords.push_back(record);
+        }
+        sqlite3_finalize(statement);
+    } else 
+    {
+        std::wstringstream msg;
+        msg << L"TskImgDBSqlite::getAllBlackboardRows - Error getting records: " << sqlite3_errmsg(m_db);
+        LOGERROR(msg.str());
+    }
+
 }
 
 void TskImgDBSqlite::getAllBlackboardRows(uint64_t fileId, vector<TskBlackboardRecord> & bbRecords) const
@@ -3017,7 +3092,7 @@ int TskImgDBSqlite::addUnusedSectors(int unallocImgId, std::vector<TskUnusedSect
                         // Log error
                         std::wstringstream msg;
                         msg << L"TskImgDBSqlite::addUnusedSectors - Error adding sector: sectorStart="
-                            << unusedSectStart << " sectorEnd=" << cfileSectStart << std::endl;
+                            << unusedSectStart << " sectorEnd=" << cfileSectStart ;
                         LOGERROR(msg.str());
                         return rc;
                     }
@@ -3032,7 +3107,7 @@ int TskImgDBSqlite::addUnusedSectors(int unallocImgId, std::vector<TskUnusedSect
                     // Log error
                     std::wstringstream msg;
                     msg << L"TskImgDBSqlite::addUnusedSectors - Error adding sector: sectorStart="
-                        << cfileSectStart + cfileSectLen << " sectorEnd=" << totalSectEnd << std::endl;
+                        << cfileSectStart + cfileSectLen << " sectorEnd=" << totalSectEnd ;
                     LOGERROR(msg.str());
                     return rc;
                }
@@ -3168,13 +3243,13 @@ int TskImgDBSqlite::getUnusedSector(uint64_t fileId, TskUnusedSectorsRecord & un
         } else {
             std::wstringstream msg;
             msg << L"TskDBSqlite::getUnusedSector - Error querying unused_sectors table for file_id "
-                << fileId << std::endl;
+                << fileId ;
             LOGERROR(msg.str());
         }
     } else {
         std::wstringstream msg;
         msg << L"TskDBSqlite::getUnusedSector - Error querying unused_sectors table: "
-            << sqlite3_errmsg(m_db) << std::endl;
+            << sqlite3_errmsg(m_db) ;
         LOGERROR(msg.str());
     }
     return rc;

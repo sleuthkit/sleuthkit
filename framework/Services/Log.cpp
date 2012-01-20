@@ -21,8 +21,29 @@
 Log::Log()
 : m_logFile(NULL)
 {
+    m_filePath[0] = '\0';
 }
 
+
+/**
+ * Opens a single log file with a default name, based on the time
+ * that the log was opened.
+ * @returns 1 on error and 0 on success.
+ */
+int Log::open()
+{
+    struct tm newtime;
+    time_t aclock;
+
+    time(&aclock);   // Get time in seconds
+    localtime_s(&newtime, &aclock);   // Convert time to struct tm form 
+    wchar_t filename[MAX_BUFF_LENGTH];
+    _snwprintf_s(filename, MAX_BUFF_LENGTH, MAX_BUFF_LENGTH, L"log_%.4d-%.2d-%.2d-%.2d-%.2d-%.2d.txt",
+        newtime.tm_year + 1900, newtime.tm_mon+1, newtime.tm_mday,  
+        newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
+
+    return open(filename);
+}
 /**
  * Open the single log file at the path specified. All messages
  * will be printed to the log.
@@ -109,10 +130,13 @@ void Log::log(Channel a_channel, const std::wstring &a_msg)
 
 /**
  * Return the path to the log file.
- * @returns path to log
+ * @returns path to log or NULL if log is going to STDERR
  */
 const wchar_t * Log::getLogPath()
 {
-    return (const wchar_t * )&m_filePath;
+    if (m_logFile)
+        return (const wchar_t * )&m_filePath;
+    else
+        return NULL;
 }
 

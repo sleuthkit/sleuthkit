@@ -33,7 +33,7 @@
 class TSK_FRAMEWORK_API TskSystemPropertiesImpl : public TskSystemProperties
 {
 public:
-    static const std::wstring OUTDIR;
+    static const std::wstring OUT_DIR;
     static const std::wstring PROG_DIR;
     static const std::wstring CONFIG_DIR;
     static const std::wstring MODULE_DIR;
@@ -54,6 +54,8 @@ public:
     /// Initialize with POCO AbstractConfiguration
     void initialize(Poco::Util::AbstractConfiguration & abstractConfig);
 
+    /// initialize with a memory-based mapping only (no local file)
+    void initialize();
 private:
     TskSystemPropertiesImpl(TskSystemPropertiesImpl const&) {};
 

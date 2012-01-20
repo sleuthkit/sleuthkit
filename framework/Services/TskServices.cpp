@@ -12,6 +12,7 @@
 
 #include "TskServices.h"
 #include "Utilities/TskException.h"
+#include "Services/TskSystemPropertiesImpl.h"
 
 TskServices *TskServices::m_pInstance = NULL;
 
@@ -31,28 +32,10 @@ TskServices &TskServices::Instance()
 
 Log& TskServices::getLog()
 {
+    // create a default one if it has not been set yet
     if (!m_log) {
         m_log = new Log;
-
-        struct tm newtime;
-        time_t aclock;
-
-        time(&aclock);   // Get time in seconds
-        localtime_s(&newtime, &aclock);   // Convert time to struct tm form 
-        wchar_t timeStr[64];
-        _snwprintf_s(timeStr, 64, 64, L"%.4d-%.2d-%.2d-%.2d-%.2d-%.2d",
-            newtime.tm_year + 1900, newtime.tm_mon+1, newtime.tm_mday,  
-            newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
-
-        wchar_t filename[MAX_BUFF_LENGTH];
-
-        wcscpy_s(filename, MAX_BUFF_LENGTH, L"log_");
-        wcscat_s(filename, MAX_BUFF_LENGTH, timeStr);
-        wcscat_s(filename, MAX_BUFF_LENGTH, L".txt");
-        if (m_log->open(filename)) {
-            delete m_log;
-            m_log = NULL;
-        }
+        m_log->logInfo(L"TskServices::getLog - Log has not been set, using default implementation.");
     }
     return *m_log;
 }
@@ -164,8 +147,12 @@ TskSystemProperties& TskServices::getSystemProperties()
 {
     if (m_systemProperties == NULL)
     {
-        LOGERROR(L"TskServices::getSystemProperties - SystemProperties has not been initialized.");
-        throw TskException("SystemProperties not initialized.");
+        TskSystemPropertiesImpl *prop = new TskSystemPropertiesImpl();
+        prop->initialize();
+        setSystemProperties(*prop);
+
+        LOGINFO(L"TskServices::getSystemProperties - SystemProperties has not been set, using default implementation.");
+        //throw TskException("SystemProperties not initialized.");
     }
     return *m_systemProperties;
 }

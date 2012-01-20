@@ -67,7 +67,7 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
 {
     if (pipelineConfig.empty())
     {
-        LOGERROR(L"TskPipeline::initialize - Pipeline configuration string is empty.\n");
+        LOGERROR(L"TskPipeline::initialize - Pipeline configuration string is empty.");
         throw TskException("Pipeline configuration string is empty.");
     }
 
@@ -82,7 +82,7 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
 
         if (modules->length() == 0)
         {
-            LOGWARN(L"TskPipeline::initialize - No modules found in config file.\n");
+            LOGWARN(L"TskPipeline::initialize - No modules found in config file.");
             return;
         }
 
@@ -147,7 +147,7 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
             {
                 std::wstringstream errorMsg;
                 errorMsg << L"TskPipeline::initialize - Module order (" << order
-                    << L") is greater than the number of modules (" << m_modules.max_size() << ")" << std::endl;
+                    << L") is greater than the number of modules (" << m_modules.max_size() << ")" ;
                 LOGERROR(errorMsg.str());
 
                 throw TskException("Module order greater than number of modules.");
@@ -157,7 +157,7 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
             {
                 std::wstringstream errorMsg;
                 errorMsg << L"TskPipeline::initialize - Position (" << order 
-                    << L") is already occupied by a module." << std::endl;
+                    << L") is already occupied by a module." ;
                 LOGERROR(errorMsg.str());
 
                 throw TskException("Multiple modules with same order.");
@@ -173,7 +173,7 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
                 if (imgDB.addModule(m_modules[order]->getName(), "", moduleId)) {
                     std::wstringstream errorMsg;
                     errorMsg << L"TskPipeline::initialize - Failed to insert into Modules table. Module order=" << order 
-                             << L" module name=" << TskUtilities::toUTF16(m_modules[order]->getName()) << std::endl;
+                             << L" module name=" << TskUtilities::toUTF16(m_modules[order]->getName()) ;
                     LOGERROR(errorMsg.str());
 
                     throw TskException("Multiple modules with same order.");
@@ -186,7 +186,7 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
     catch (std::exception& ex)
     {
         std::wstringstream errorMsg;
-        errorMsg << L"TskPipeline::initialize - Pipeline initialization failed: " <<ex.what() << std::endl;
+        errorMsg << L"TskPipeline::initialize - Pipeline initialization failed: " <<ex.what() ;
         LOGERROR(errorMsg.str());
 
         throw TskException("Pipeline initialization failed.");
@@ -291,7 +291,7 @@ TskModule * TskPipeline::createModule(Poco::XML::Element *pElem)
 {
     if (!pElem)
     {
-        LOGERROR(L"TskPipeline::createModule - Passed NULL Element.\n");
+        LOGERROR(L"TskPipeline::createModule - Passed NULL Element.");
         return NULL;
     }
 
@@ -331,7 +331,7 @@ TskModule * TskPipeline::createModule(Poco::XML::Element *pElem)
         {
             std::wstringstream errorMsg;
             errorMsg << "TskPipeline::createModule - Unrecognized module type : "
-                << pElem->getAttribute(TskPipeline::MODULE_TYPE_ATTR).c_str() << std::endl;
+                << pElem->getAttribute(TskPipeline::MODULE_TYPE_ATTR).c_str();
             LOGERROR(errorMsg.str());
 
             return NULL;
@@ -340,14 +340,14 @@ TskModule * TskPipeline::createModule(Poco::XML::Element *pElem)
     catch (TskException& ex)
     {
         std::wstringstream errorMsg;
-        errorMsg << L"TskPipeline::createModule - Module creation failed: " << ex.message().c_str() << std::endl;
+        errorMsg << L"TskPipeline::createModule - Module creation failed: " << ex.message().c_str();
 
         LOGERROR(errorMsg.str());
         return NULL;
     }
     catch (...)
     {
-        LOGERROR(L"TskPipeline::createModule - Caught unknown exception.\n");
+        LOGERROR(L"TskPipeline::createModule - Caught unknown exception.");
         return NULL;
     }
 

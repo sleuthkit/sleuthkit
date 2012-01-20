@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(POCO_HOME)/XML/include/&quot;;&quot;$(POCO_HOME)/Foundation/include/&quot;;&quot;$(ProjectDir)../../..&quot;;&quot;$(ProjectDir)../..&quot;;&quot;$(POCO_HOME)/Util/include/&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
