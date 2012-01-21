@@ -444,7 +444,7 @@ int main(int argc, char * const *argv1)
 	    break;
 	case _TSK_T('A'):
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG));
+		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
 		wchar_to_char(OPTARG,opt_arg);
 		arff_fn = opt_arg;
 #else
@@ -455,7 +455,7 @@ int main(int argc, char * const *argv1)
 	    opt_compute_sector_hashes=true;
 	    sector_bloom = new NSRLBloom();
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG));
+		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
 		wchar_to_char(OPTARG,opt_arg);
 		if(sector_bloom->create(opt_arg,160,30,4,"Sector hash")){
 		err(1,"%s",opt_arg);
@@ -481,7 +481,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('S'): sectorhash_size = TATOI(OPTARG); break;
 	case _TSK_T('T'):
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG));
+		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
 		wchar_to_char(OPTARG,opt_arg);
 		text_fn = opt_arg;
 #else
@@ -491,7 +491,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('V'): print_version();exit(0);
 	case _TSK_T('X'): 
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG));
+		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
 		wchar_to_char(OPTARG,opt_arg);
 		xml_fn = new string(opt_arg);
 #else
@@ -502,7 +502,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('Z'): opt_zap = true;break;
 	case _TSK_T('a'): 
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG));
+		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
 		wchar_to_char(OPTARG,opt_arg);
 		audit_file = opt_arg;
 #else
@@ -511,7 +511,7 @@ int main(int argc, char * const *argv1)
 		break;
 	case _TSK_T('c'): 
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG));
+		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
 		wchar_to_char(OPTARG,opt_arg);
 		config_file = opt_arg;
 #else
@@ -521,7 +521,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('n'):
 		
 #ifdef TSK_WIN32
-		opt_arg=(char *)malloc(wcslen(OPTARG));
+		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
 		wchar_to_char(OPTARG,opt_arg);
 		namelist.push_back(opt_arg);
 #else
@@ -545,7 +545,7 @@ int main(int argc, char * const *argv1)
 	argv1 += OPTIND;
 
 #ifdef _MSC_VER
-		argv_0=(char *)malloc(wcslen(argv[0]));
+		argv_0=(char *)malloc(wcslen(argv[0])+2);
 		wchar_to_char(argv[0],argv_0);
 		const char *filename = argv_0;
 #else
