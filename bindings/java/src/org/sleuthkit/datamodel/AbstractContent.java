@@ -69,7 +69,7 @@ public abstract class AbstractContent implements Content {
 		return db.newBlackboardArtifact(artifactTypeID, obj_id);
 	}
 	@Override
-	public BlackboardArtifact newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException{
+	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskException{
 		return db.newBlackboardArtifact(type, obj_id);
 	}
 	
@@ -82,7 +82,7 @@ public abstract class AbstractContent implements Content {
 		return db.getBlackboardArtifacts(artifactTypeID, obj_id);
 	}
 	@Override
-	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException{
+	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskException{
 		return db.getBlackboardArtifacts(type, obj_id);
 	}
 	@Override

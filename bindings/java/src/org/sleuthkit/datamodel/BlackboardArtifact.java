@@ -28,24 +28,27 @@ import java.util.ArrayList;
 public class BlackboardArtifact {
 	
 	/**
-	 * Enum for artifact types. The enum typeIDs will be populated at database creation
+	 * Enum for artifact types. 
+     * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
+     * for details on which attributes should be used for each artifact.
+     * The enum typeIDs will be populated at database creation
 	 * time, so they will always match the ids stored in the database.
 	 */
-	public enum TSK_BLACKBOARD_ARTIFACT_TYPE {
-		DEFAULT("default_artifact_type"),     ///< Default type
-		TSK_WEB_BOOKMARK ("tsk_web_bookmark"),
-		TSK_WEB_COOKIE ("tsk_web_cookie"),
-		TSK_WEB_HISTORY ("tsk_web_history"),
-		TSK_WEB_DOWNLOAD ("tsk_web_download"),
-		TSK_RECENT_OBJECT ("tsk_recent_object"),
-		TSK_TRACKPOINT ("tsk_trackpoint"),
-		TSK_INSTALLED_PROG ("tsk_installed_prog"),
-		TSK_KEYWORD_HIT ("tsk_keyword_hit");
+	public enum ARTIFACT_TYPE {
+		TSK_GEN_INFO("TSK_GEN_INFO"),     ///< Default type
+		TSK_WEB_BOOKMARK ("TSK_WEB_BOOKMARK"),
+		TSK_WEB_COOKIE ("TSK_WEB_COOKIE"),
+		TSK_WEB_HISTORY ("TSK_WEB_HISTORY"),
+		TSK_WEB_DOWNLOAD ("TSK_WEB_DOWNLOAD"),
+		TSK_RECENT_OBJ ("TSK_RECENT_OBJ"),
+		TSK_TRACKPOINT ("TSK_TRACKPOINT"),
+		TSK_INSTALLED_PROG ("TSK_INSTALLED_PROG"),
+		TSK_KEYWORD_HIT ("TSK_KEYWORD_HIT");
 		
 		private String label;
 		private int typeID;
 
-		private TSK_BLACKBOARD_ARTIFACT_TYPE(String label){
+		private ARTIFACT_TYPE(String label){
 			this.label = label;
 		}
 		
@@ -78,26 +81,26 @@ public class BlackboardArtifact {
 		 * @param label label string
 		 * @return the corresponding enum
 		 */
-		static public TSK_BLACKBOARD_ARTIFACT_TYPE fromLabel(String label) {
-			for (TSK_BLACKBOARD_ARTIFACT_TYPE v : TSK_BLACKBOARD_ARTIFACT_TYPE.values()) {
+		static public ARTIFACT_TYPE fromLabel(String label) {
+			for (ARTIFACT_TYPE v : ARTIFACT_TYPE.values()) {
 				if (v.label.equals(label)) {
 					return v;
 				}
 			}
-			throw new IllegalArgumentException("No TSK_BLACKBOARD_ARTIFACT_TYPE matching type: " + label);
+			throw new IllegalArgumentException("No ARTIFACT_TYPE matching type: " + label);
 		}
 		/**
 		 * get the enum value that corresponds to the given id
 		 * @param ID the id
 		 * @return the corresponding enum
 		 */
-		static public TSK_BLACKBOARD_ARTIFACT_TYPE fromID(int ID) {
-			for (TSK_BLACKBOARD_ARTIFACT_TYPE v : TSK_BLACKBOARD_ARTIFACT_TYPE.values()) {
+		static public ARTIFACT_TYPE fromID(int ID) {
+			for (ARTIFACT_TYPE v : ARTIFACT_TYPE.values()) {
 				if (v.typeID == ID) {
 					return v;
 				}
 			}
-			throw new IllegalArgumentException("No TSK_BLACKBOARD_ARTIFACT_TYPE matching type: " + ID);
+			throw new IllegalArgumentException("No ARTIFACT_TYPE matching type: " + ID);
 		}
 	}
 	
@@ -164,7 +167,7 @@ public class BlackboardArtifact {
 	 * @param context addition information about the attribute
 	 * @throws TskException
 	 */
-	public void addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE attrType, int value, String moduleName, String context) throws TskException{
+	public void addAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType, int value, String moduleName, String context) throws TskException{
 		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrType.getLabel(), attrType.getTypeID(), moduleName, context,
 			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER, value, 0, 0, 
 			"", new byte[0], Case);
@@ -209,7 +212,7 @@ public class BlackboardArtifact {
 	 * @param context addition information about the attribute
 	 * @throws TskException
 	 */
-	public void addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE attrType, long value, String moduleName, String context) throws TskException{
+	public void addAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType, long value, String moduleName, String context) throws TskException{
 		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrType.getLabel(), attrType.getTypeID(), moduleName, context,
 			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG, 0, value, 0, 
 			"", new byte[0], Case);
@@ -254,7 +257,7 @@ public class BlackboardArtifact {
 	 * @param context addition information about the attribute
 	 * @throws TskException
 	 */
-	public void addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE attrType, double value, String moduleName, String context) throws TskException{
+	public void addAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType, double value, String moduleName, String context) throws TskException{
 		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrType.getLabel(), attrType.getTypeID(), moduleName, context,
 			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE, 0, 0, value, 
 			"", new byte[0], Case);
@@ -298,7 +301,7 @@ public class BlackboardArtifact {
 	 * @param context addition information about the attribute
 	 * @throws TskException
 	 */
-	public void addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE attrType, String value, String moduleName, String context) throws TskException{
+	public void addAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value, String moduleName, String context) throws TskException{
 		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrType.getLabel(), attrType.getTypeID(), moduleName, context,
 			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING, 0, 0, 0, 
 			value, new byte[0], Case);
@@ -343,7 +346,7 @@ public class BlackboardArtifact {
 	 * @param context addition information about the attribute
 	 * @throws TskException
 	 */
-	public void addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE attrType, byte[] value, String moduleName, String context) throws TskException{
+	public void addAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType, byte[] value, String moduleName, String context) throws TskException{
 		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrType.getLabel(), attrType.getTypeID(), moduleName, context,
 			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE, 0, 0, 0, 
 			"", value, Case);
