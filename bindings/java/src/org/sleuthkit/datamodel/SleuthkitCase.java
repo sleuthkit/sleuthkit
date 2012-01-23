@@ -453,8 +453,7 @@ public class SleuthkitCase {
 	
 	/**
      * Get the blackboard artifact with the given artifact id
-	 * @param artifactType artifact type enum
-	 * @param obj_id object id
+	 * @param artifactID artifact ID
      * @return blackboard artifact
      */
 	public BlackboardArtifact getBlackboardArtifact(long artifactID) throws TskException {

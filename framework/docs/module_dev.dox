@@ -21,7 +21,7 @@ The module will be written as a dynamic library.  This document assumes that you
 
 You will need to include the framework header file to get access to the framework classes. 
 
-<pre>#include "TskModuleDev.h" </pre>
+<pre>\#include "TskModuleDev.h" </pre>
 
 Next, you need to define several function that the framework will call when it uses the module.   Those are described in the following sections. 
 

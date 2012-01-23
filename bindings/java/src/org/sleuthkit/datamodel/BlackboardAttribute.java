@@ -56,7 +56,6 @@ public class BlackboardAttribute {
 
 		/**
 		 * get the type id for this enum
-		 * @return
 		 */
 		public long getType(){
 			return type;
@@ -64,14 +63,13 @@ public class BlackboardAttribute {
 		
 		/**
 		 * get the label string for this enum
-		 * @return
 		 */
 		public String getLabel() {
 			return this.label;
 		}
 		
 		/**
-		 * get the enum for the given type string
+		 * get the enum for the given type id
 		 * @param type type id
 		 * @return enum
 		 */
