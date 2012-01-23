@@ -3,30 +3,32 @@
 \section bb_overview Overview
 The blackboard plays a critical role in allowing modules to communicate and pass data. In its most simple form, the blackboard is a table that contains name and value pairs. A module can post data to the blackboard so that later modules can see the results and it can query the blackboard to see what previous modules have posted.  It gets a little more complex because you can group together related name and value pairs into artifacts.  This section describes how to post and get results from the blackboard. 
 
-You can get access to TskBlackboard from TskServices. 
+The blackboard exists in both the C++ framework and the Java bindings.  This page is the overview for both languages. The C++ code will be linked to, but Java references will also be given. 
+
+In the C++ framework, you can get access to TskBlackboard from TskServices.  The the Java bindings, you can accesss the blackboard from SleuthkitCase or the Content object. 
 
 \section bb_artifacts Attributes and Artifacts
 
 A basic concept behind storing things on the blackboard is that a single piece of data is called an <em>attribute</em>.  Example attributes include a date, geo coordinate, URL, or name.  Attributes are a name and value pair. The name part defines the type of the attribute. 
 
-All attributes are part of an <em>artifacts</em>.  Artifacts group together related attributes and have an associated type.  A file may have multiple artifacts on the blackboard and a later section will outline when you should create a new artifact to store new attributes and when attributes should be included in an existing artifact. 
+All attributes are part of an <em>artifact</em>.  Artifacts group together related attributes and have an associated type.  A file may have multiple artifacts on the blackboard and a later section will outline when you should create a new artifact to store new attributes and when attributes should be included in an existing artifact. 
 
-As a basic example, consider if you have a module that analyzes GPS track logs. It would create an artifact of type TSK_TRACK_POINT for each track point in the GPS log.  Each artifact would have a geo coordinate and date attribute.
+Some examples of artifacts include web browser bookmarks (with URL and DATE attributes) and GPS track points (with GEO and DATE attributes).
 
 
 \section bb_art_types Standard Artifact Types
 
 Several types of artifacts have been identified as common in digital forensics and their use in the blackboard has been officially defined.  As more modules are written, more artifact types will also be defined. 
 
-All attributes must be part of an artifact.  Each file can have a TskBlackboard.TSK_ART_GEN_INFO artifact that contains general information about the file. The attributes in this artifact all pertain to the same file, but they are not necessarily related to each other.  All attributes should be added to this artifact unless it needs its own artifact.  
+Each file will typically have a TskBlackboard.TSK_GEN_INFO artifact that contains general information about the file. The attributes in this artifact all pertain to the same file, but they are not necessarily related to each other.  All attributes should be added to this artifact unless it needs its own artifact.  
 
 Refer to the TskBlackboard code for a full list of defined types and refer to its documentation and the wiki page (http://wiki.sleuthkit.org/index.php?title=Artifact_Examples) for full details on their use.  A short list of example artifacts include:
 
 Example artifact types include:
- - TskBlackboard.TSK_ART_WEB_BOOKMARK
- - TskBlackboard.TSK_ART_WEB_COOKIE
- - TskBlackboard.TSK_ART_WEB_HISTORY
- - TskBlackboard.TSK_ART_GEN_INFO
+ - TskBlackboard.TSK_WEB_BOOKMARK
+ - TskBlackboard.TSK_WEB_COOKIE
+ - TskBlackboard.TSK_WEB_HISTORY
+ - TskBlackboard.TSK_GEN_INFO
 
 
 \section bb_attr_types Standard Attribute Types

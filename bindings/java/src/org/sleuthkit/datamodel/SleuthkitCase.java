@@ -29,8 +29,8 @@ import java.util.*;
 import java.util.logging.Level;
 import org.sleuthkit.datamodel.TskData.ObjectType;
 import java.util.logging.Logger;
-import org.sleuthkit.datamodel.BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE;
-import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 
@@ -94,7 +94,7 @@ public class SleuthkitCase {
 	private void initBlackboardTypes() throws SQLException, TskException{
 		Statement s = con.createStatement();
 		
-		for(TSK_BLACKBOARD_ARTIFACT_TYPE type : TSK_BLACKBOARD_ARTIFACT_TYPE.values()){
+		for(ARTIFACT_TYPE type : ARTIFACT_TYPE.values()){
 			ResultSet rs = s.executeQuery("SELECT artifact_type_id from blackboard_artifact_types WHERE type_name = '" + type.getLabel() + "'");
 			if(rs.next()){
 				type.setTypeID(rs.getInt(1));
@@ -103,7 +103,7 @@ public class SleuthkitCase {
 				type.setTypeID(this.addArtifactType(type.getLabel()));
 			}
 		}
-		for(TSK_BLACKBOARD_ATTRIBUTE_TYPE type : TSK_BLACKBOARD_ATTRIBUTE_TYPE.values()){	
+		for(ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()){	
 			type.setTypeID(this.getAttrTypeID(type.getLabel()));
 			
 		}
@@ -447,7 +447,7 @@ public class SleuthkitCase {
 	 * @param obj_id object id
      * @return list of blackboard artifacts
      */
-	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(TSK_BLACKBOARD_ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
+	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
 			return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel(), obj_id);
 	}
 	
@@ -763,7 +763,7 @@ public class SleuthkitCase {
 	 * @param artifactType the type the given artifact should have
      * @return a new blackboard artifact
      */
-	BlackboardArtifact newBlackboardArtifact(TSK_BLACKBOARD_ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
+	BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
 		try {
 			Statement s = con.createStatement();
 			ResultSet rs;
