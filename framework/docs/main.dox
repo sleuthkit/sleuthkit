@@ -32,6 +32,7 @@ To compile the framework, refer to the <tt>BUILDING.TXT</tt> file that comes wit
   - \subpage mod_example_page
 
 <h3>Developers Guide to Using the Framework</h3>
+  - \subpage fw_setup 
   - Extraction Phase and Populating the Database
   - Running File Anaysis and Reporting Pipelines
   - \subpage fw_example_page
