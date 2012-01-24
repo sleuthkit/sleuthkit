@@ -47,6 +47,7 @@
 #ifdef _MSC_VER
 #include <direct.h>
 #include <crtdefs.h>
+#include <windows.h>
   #ifndef _CRT_SECURE_NO_WARNINGS
   #define _CRT_SECURE_NO_WARNINGS 1
   #endif
@@ -388,6 +389,10 @@ int af_display_as_hex(const char *segname)
 #endif
 
 #if _MSC_VER
+typedef struct {
+    SLIST_ENTRY SingleListEntry;
+	void * MallocItem;
+} MallocEntry;
 int wchar_to_char(TSK_TCHAR *src, char *dest)
 {
 	int size;
@@ -423,6 +428,12 @@ int main(int argc, char * const *argv1)
 #ifdef TSK_WIN32
 	char *opt_arg = NULL;
 	char *argv_0 = NULL;
+	SLIST_HEADER MallocListHead;
+	SLIST_ENTRY *pLastEntry;
+	MallocEntry *pMallocListEntry;
+
+	InitializeSListHead(&MallocListHead);
+
 	argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 	if (argv == NULL) {
 		fprintf(stderr,"Error getting wide arguments\n");
@@ -444,7 +455,10 @@ int main(int argc, char * const *argv1)
 	    break;
 	case _TSK_T('A'):
 #ifdef _MSC_VER
+		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
 		opt_arg=(char *)malloc(wcslen(OPTARG));
+		pMallocListEntry->MallocItem=(void *)opt_arg;
+		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
 		wchar_to_char(OPTARG,opt_arg);
 		arff_fn = opt_arg;
 #else
@@ -455,7 +469,10 @@ int main(int argc, char * const *argv1)
 	    opt_compute_sector_hashes=true;
 	    sector_bloom = new NSRLBloom();
 #ifdef _MSC_VER
+		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
 		opt_arg=(char *)malloc(wcslen(OPTARG));
+		pMallocListEntry->MallocItem=(void *)opt_arg;
+		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
 		wchar_to_char(OPTARG,opt_arg);
 		if(sector_bloom->create(opt_arg,160,30,4,"Sector hash")){
 		err(1,"%s",opt_arg);
@@ -482,6 +499,9 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('T'):
 #ifdef _MSC_VER
 		opt_arg=(char *)malloc(wcslen(OPTARG));
+		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
+		pMallocListEntry->MallocItem=(void *)opt_arg;
+		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
 		wchar_to_char(OPTARG,opt_arg);
 		text_fn = opt_arg;
 #else
@@ -492,6 +512,9 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('X'): 
 #ifdef _MSC_VER
 		opt_arg=(char *)malloc(wcslen(OPTARG));
+		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
+		pMallocListEntry->MallocItem=(void *)opt_arg;
+		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
 		wchar_to_char(OPTARG,opt_arg);
 		xml_fn = new string(opt_arg);
 #else
@@ -503,6 +526,9 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('a'): 
 #ifdef _MSC_VER
 		opt_arg=(char *)malloc(wcslen(OPTARG));
+		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
+		pMallocListEntry->MallocItem=(void *)opt_arg;
+		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
 		wchar_to_char(OPTARG,opt_arg);
 		audit_file = opt_arg;
 #else
@@ -512,6 +538,9 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('c'): 
 #ifdef _MSC_VER
 		opt_arg=(char *)malloc(wcslen(OPTARG));
+		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
+		pMallocListEntry->MallocItem=(void *)opt_arg;
+		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
 		wchar_to_char(OPTARG,opt_arg);
 		config_file = opt_arg;
 #else
@@ -522,6 +551,9 @@ int main(int argc, char * const *argv1)
 		
 #ifdef TSK_WIN32
 		opt_arg=(char *)malloc(wcslen(OPTARG));
+		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
+		pMallocListEntry->MallocItem=(void *)opt_arg;
+		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
 		wchar_to_char(OPTARG,opt_arg);
 		namelist.push_back(opt_arg);
 #else
@@ -546,6 +578,9 @@ int main(int argc, char * const *argv1)
 
 #ifdef _MSC_VER
 		argv_0=(char *)malloc(wcslen(argv[0]));
+		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
+		pMallocListEntry->MallocItem=(void *)argv_0;
+		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
 		wchar_to_char(argv[0],argv_0);
 		const char *filename = argv_0;
 #else
@@ -792,11 +827,27 @@ int main(int argc, char * const *argv1)
 	a->write();
 	delete a;
     }
+
     if(t) comment("=EOF=");
     if(x) {
+	if (opt_debug) printf("Getting Ready to Delete X, size %d\n", sizeof(*x));
 	x->pop();			// <dfxml>
+	if (opt_debug) printf("Getting Ready to Delete X, size %d\n", sizeof(*x));
 	x->close();
-	delete x;
+	if (opt_debug) printf("Getting Ready to Delete X, size %d\n", sizeof(*x));
+#if _MSC_VER
+	while(1)
+	{
+		pMallocListEntry=(MallocEntry *)InterlockedPopEntrySList(&MallocListHead);
+		if(pMallocListEntry == NULL)
+			break;
+		free((pMallocListEntry->MallocItem));
+		_aligned_free(pMallocListEntry);
+	}
+	if (opt_debug) printf("All Mallocs have been freed\n");
+#endif
+	delete(x);
     }
+	if (opt_debug) printf("Getting Ready to Exit with 0\n");
     exit(0);
 }
