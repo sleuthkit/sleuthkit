@@ -24,19 +24,19 @@ import java.util.ArrayList;
  * Implements some general methods from the Content interface. 
  */
 public abstract class AbstractContent implements Content {
-	
-	final protected SleuthkitCase db;
-	final private long obj_id;
+    
+    final protected SleuthkitCase db;
+    final private long obj_id;
 
-	AbstractContent(SleuthkitCase db, long obj_id) {
-		this.db = db;
-		this.obj_id = obj_id;
-	}
-	
-	@Override
-	public long getId() {
-		return this.obj_id;
-	}
+    AbstractContent(SleuthkitCase db, long obj_id) {
+        this.db = db;
+        this.obj_id = obj_id;
+    }
+    
+    @Override
+    public long getId() {
+        return this.obj_id;
+    }
     
     @Override
     public boolean equals(Object obj) {
@@ -59,34 +59,30 @@ public abstract class AbstractContent implements Content {
         hash = 41 * hash + (int) (this.obj_id ^ (this.obj_id >>> 32));
         return hash;
     }
-	
-	@Override
-	public BlackboardArtifact newArtifact(String artifactTypeName) throws TskException{
-		return db.newBlackboardArtifact(artifactTypeName, obj_id);
-	}
-	@Override
-	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskException{
-		return db.newBlackboardArtifact(artifactTypeID, obj_id);
-	}
-	@Override
-	public BlackboardArtifact newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException{
-		return db.newBlackboardArtifact(type, obj_id);
-	}
-	
-	@Override
-	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskException{
-		return db.getBlackboardArtifacts(artifactTypeName, obj_id);
-	}
-	@Override
-	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskException{
-		return db.getBlackboardArtifacts(artifactTypeID, obj_id);
-	}
-	@Override
-	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException{
-		return db.getBlackboardArtifacts(type, obj_id);
-	}
-	@Override
-	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskException{
-		return db.getMatchingArtifacts("WHERE obj_id = " + obj_id);
-	}
+    
+    @Override
+    public BlackboardArtifact newArtifact(int artifactTypeID) throws TskException{
+        return db.newBlackboardArtifact(artifactTypeID, obj_id);
+    }
+    @Override
+    public BlackboardArtifact newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException{
+        return db.newBlackboardArtifact(type, obj_id);
+    }
+    
+    @Override
+    public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskException{
+        return db.getBlackboardArtifacts(artifactTypeName, obj_id);
+    }
+    @Override
+    public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskException{
+        return db.getBlackboardArtifacts(artifactTypeID, obj_id);
+    }
+    @Override
+    public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException{
+        return db.getBlackboardArtifacts(type, obj_id);
+    }
+    @Override
+    public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskException{
+        return db.getMatchingArtifacts("WHERE obj_id = " + obj_id);
+    }
 }

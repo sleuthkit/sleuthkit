@@ -26,101 +26,93 @@ import java.util.List;
  */
 public interface Content {
 
-	/**
-	 * read data from the content in the sleuthkit
-	 * @param offset offset to start reading from
-	 * @param len amount of data to read (in bytes)
-	 * @return a character array of data (in bytes)
-	 * @throws TskException  
-	 */
-	public byte[] read(long offset, long len) throws TskException;
+    /**
+     * read data from the content in the sleuthkit
+     * @param offset offset to start reading from
+     * @param len amount of data to read (in bytes)
+     * @return a character array of data (in bytes)
+     * @throws TskException  
+     */
+    public byte[] read(long offset, long len) throws TskException;
 
-	/**
-	 * get the size of the content
-	 * @return size of the content
-	 */
-	public long getSize();
+    /**
+     * get the size of the content
+     * @return size of the content
+     */
+    public long getSize();
 
-	/**
-	 * visitor pattern support
-	 * @param <T> visitor return type
-	 * @param v visitor
-	 * @return visitor return value
-	 */
-	public <T> T accept(ContentVisitor<T> v);
-	
-	/**
-	 * Does this parent always have exactly one child?
-	 * @return True if the getChildren function is one-to-one
-	 */
-	public boolean isOnto();
-		
-	/**
-	 * Gets the child contents.
-	 * @return List of children
-	 * @throws TskException
-	 */
-	public List<Content> getChildren() throws TskException;
-	
-	/**
-	 * Gets the content object id.
-	 * @return object id
-	 */
-	public long getId();
-	/**
-	 * Add an artifact associated with this content to the blackboard
-	 * @param artifactTypeName name of the artifact type (if the name doesn't already exist
-	 * it will be created)
-	 * @return the blackboard artifact (the artifact type id can be looked up from this)
-	 * @throws TskException
-	 */
-	public BlackboardArtifact newArtifact(String artifactTypeName) throws TskException;
-	
-	/**
-	 * Add an artifact associated with this content to the blackboard
-	 * @param artifactTypeID id of the artifact type (if the id doesn't already exist
-	 * an error will be thrown)
-	 * @return the blackboard artifact (the artifact type id can be looked up from this)
-	 * @throws TskException
-	 */
-	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskException;
-	
-	/**
-	 * Add an artifact associated with this content to the blackboard
-	 * @param type artifact type enum 
-	 * @return the blackboard artifact 
-	 * @throws TskException
-	 */
-	public BlackboardArtifact newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException;
-	
-	/**
-	 * Get all artifacts associated with this content that have the given type name
-	 * @param artifactTypeName name of the type to look up
-	 * @return a list of blackboard artifacts
-	 * @throws TskException
-	 */
-	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskException;
-	
-	/**
-	 * Get all artifacts associated with this content that have the given type id
-	 * @param artifactTypeID type id to look up
-	 * @return a list of blackboard artifacts
-	 * @throws TskException
-	 */
-	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskException;
-	
-	/**
-	 * Get all artifacts associated with this content that have the given type
-	 * @param type type to look up
-	 * @return a list of blackboard artifacts
-	 * @throws TskException
-	 */
-	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException;
-	
-	/**
-	 * Get all artifacts associated with this content
-	 * @return a list of blackboard artifacts
-	 * @throws TskException
-	 */
-	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskException;
+    /**
+     * visitor pattern support
+     * @param <T> visitor return type
+     * @param v visitor
+     * @return visitor return value
+     */
+    public <T> T accept(ContentVisitor<T> v);
+    
+    /**
+     * Does this parent always have exactly one child?
+     * @return True if the getChildren function is one-to-one
+     */
+    public boolean isOnto();
+        
+    /**
+     * Gets the child contents.
+     * @return List of children
+     * @throws TskException
+     */
+    public List<Content> getChildren() throws TskException;
+    
+    /**
+     * Gets the content object id.
+     * @return object id
+     */
+    public long getId();
+    
+    /**
+     * Add an artifact associated with this content to the blackboard
+     * @param artifactTypeID id of the artifact type (if the id doesn't already exist
+     * an error will be thrown)
+     * @return the blackboard artifact (the artifact type id can be looked up from this)
+     * @throws TskException
+     */
+    public BlackboardArtifact newArtifact(int artifactTypeID) throws TskException;
+    
+    /**
+     * Add an artifact associated with this content to the blackboard
+     * @param type artifact type enum 
+     * @return the blackboard artifact 
+     * @throws TskException
+     */
+    public BlackboardArtifact newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException;
+    
+    /**
+     * Get all artifacts associated with this content that have the given type name
+     * @param artifactTypeName name of the type to look up
+     * @return a list of blackboard artifacts
+     * @throws TskException
+     */
+    public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskException;
+    
+    /**
+     * Get all artifacts associated with this content that have the given type id
+     * @param artifactTypeID type id to look up
+     * @return a list of blackboard artifacts
+     * @throws TskException
+     */
+    public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskException;
+    
+    /**
+     * Get all artifacts associated with this content that have the given type
+     * @param type type to look up
+     * @return a list of blackboard artifacts
+     * @throws TskException
+     */
+    public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException;
+    
+    /**
+     * Get all artifacts associated with this content
+     * @return a list of blackboard artifacts
+     * @throws TskException
+     */
+    public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskException;
 }
