@@ -551,7 +551,7 @@ void xml::add_DFXML_execution_environment(const std::string &command_line)
 #endif
     
     time_t t = time(0);
-    strftime(buf,sizeof(buf),"TM_FORMAT",gmtime(&t));
+    strftime(buf,sizeof(buf),TM_FORMAT,gmtime(&t));
     xmlout("start_time",buf);
     pop();			// <execution_environment>
 }
