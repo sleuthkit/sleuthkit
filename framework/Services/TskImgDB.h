@@ -275,6 +275,7 @@ public:
     virtual int getImageInfo(int & type, int & sectorSize) const = 0;
     virtual int getVolumeInfo(std::list<TskVolumeInfoRecord> & volumeInfoList) const = 0;
     virtual int getFsInfo(std::list<TskFsInfoRecord> & fsInfoList) const = 0;
+    virtual int getFileInfoSummary(std::list<TskFileTypeRecord>& fileTypeInfoList) const = 0;
     virtual int getFileInfoSummary(FILE_TYPES fileType, std::list<TskFileTypeRecord> & fileTypeInfoList) const = 0;
     virtual int getKnownStatus(const uint64_t fileId) const = 0;
     

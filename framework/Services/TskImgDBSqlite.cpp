@@ -2542,6 +2542,19 @@ static std::string getFileType(const char *name)
 }
 
 /**
+ * Return a list of TskFileTypeRecord for all files.
+ * @param fileTypeInfoList A list of TskFileTypeRecord (output)
+ * @returns 0 on success or -1 on error.
+ */
+int TskImgDBSqlite::getFileInfoSummary(std::list<TskFileTypeRecord> &fileTypeInfoList) const
+{
+    std::stringstream stmt;
+    stmt << "SELECT name FROM files WHERE dir_type = " << TSK_FS_NAME_TYPE_REG;
+
+    return getFileTypeRecords(stmt.str(), fileTypeInfoList);
+}
+
+/**
  * Return a list of TskFileTypeRecord for fileType
  * @param fileType FILE_TYPE to report
  * @param fileTypeInfoList A list of TskFileTypeRecord (output)
@@ -2549,16 +2562,27 @@ static std::string getFileType(const char *name)
  */
 int TskImgDBSqlite::getFileInfoSummary(FILE_TYPES fileType, std::list<TskFileTypeRecord> & fileTypeInfoList) const
 {
-    std::list<TskFileTypeRecord> list;
-
-    if (!m_db)
-        return -1;
-
     stringstream stmt;
     stmt << "SELECT name FROM files WHERE type_id = " << fileType << " AND dir_type = " << TSK_FS_NAME_TYPE_REG;
 
+    return getFileTypeRecords(stmt.str(), fileTypeInfoList);
+}
+
+/**
+ * Return a list of TskFileTypeRecords matching the given SQL statement.
+ * @param stmt The SQL statement used to match file records.
+ * @param fileTypeInfoList A list of TskFileTypeRecord (output)
+ * @returns 0 on success of -1 on error.
+ */
+int TskImgDBSqlite::getFileTypeRecords(std::string& stmt, std::list<TskFileTypeRecord>& fileTypeInfoList) const
+{
+    if (!m_db)
+        return -1;
+
+    std::list<TskFileTypeRecord> list;
+
     sqlite3_stmt * statement;
-    if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) {
+    if (sqlite3_prepare_v2(m_db, stmt.c_str(), -1, &statement, 0) == SQLITE_OK) {
         FileTypeMap_t fileTypeMap;
         while (sqlite3_step(statement) == SQLITE_ROW) {
             char *name = (char *)sqlite3_column_text(statement, 0);
@@ -2583,7 +2607,7 @@ int TskImgDBSqlite::getFileInfoSummary(FILE_TYPES fileType, std::list<TskFileTyp
         sqlite3_finalize(statement);
     } else {
         wchar_t infoMessage[MAX_BUFF_LENGTH];
-        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::getFsInfo - Error getting from fs_info table: %S", sqlite3_errmsg(m_db));
+        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::getFileTypeRecords - Error querying files table: %S", sqlite3_errmsg(m_db));
         LOGERROR(infoMessage);
         return -1;
     }

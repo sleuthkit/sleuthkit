@@ -72,6 +72,7 @@ public:
     virtual int getImageInfo(int & type, int & sectorSize) const;
     virtual int getVolumeInfo(std::list<TskVolumeInfoRecord> & volumeInfoList) const;
     virtual int getFsInfo(std::list<TskFsInfoRecord> & fsInfoList) const;
+    virtual int getFileInfoSummary(std::list<TskFileTypeRecord>& fileTypeInfoList) const;
     virtual int getFileInfoSummary(FILE_TYPES fileType, std::list<TskFileTypeRecord> & fileTypeInfoList) const;
     virtual int getKnownStatus(const uint64_t fileId) const;
 
@@ -136,6 +137,7 @@ private:
     int getModuleId(const std::string name, int & moduleId) const;
     void constructStmt(std::string& stmt, std::string& condition) const;
     int addUnusedSector(uint64_t sectStart, uint64_t sectEnd, int volId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList);
+    int getFileTypeRecords(std::string& stmt, std::list<TskFileTypeRecord>& fileTypeInfoList) const;
 };
 
 #endif
