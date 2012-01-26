@@ -389,23 +389,28 @@ int af_display_as_hex(const char *segname)
 #endif
 
 #if _MSC_VER
-typedef struct {
-    SLIST_ENTRY SingleListEntry;
-	void * MallocItem;
-} MallocEntry;
-int wchar_to_char(TSK_TCHAR *src, char *dest)
-{
-	int size;
-	int i = 0;
 
-	size = wcslen(src) +1;
-	
-	for(i=0; i<size && src[i] != '\0'; i++)
-	{
-		dest[i]=(char)src[i];
-	}
-	dest[i]='\0';
-	return 0;
+static int convert(TSK_TCHAR *OPTARG, char **_opt_arg)
+{
+		char *opt_arg=*_opt_arg;
+		char *temp = NULL;
+		int arg_len = TSTRLEN(OPTARG);
+		int ret_val = 0;
+
+		opt_arg=(char *)tsk_malloc(TSTRLEN(OPTARG)+2);
+		temp=opt_arg;
+		ret_val = 
+			tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
+			(const UTF16 **) &OPTARG, (UTF16 *)(OPTARG+arg_len+1),
+			(UTF8 **)&temp, (UTF8 *)(temp+arg_len+2), TSKlenientConversion);
+		if (ret_val)
+		{
+			printf("Conversion Error ret_val: %d\n", ret_val);
+			return ret_val;
+		}
+		*_opt_arg=opt_arg;
+		printf("opt_arg: %s\n",opt_arg);
+		return 0;
 }
 #endif
 
@@ -428,11 +433,7 @@ int main(int argc, char * const *argv1)
 #ifdef TSK_WIN32
 	char *opt_arg = NULL;
 	char *argv_0 = NULL;
-	SLIST_HEADER MallocListHead;
-	SLIST_ENTRY *pLastEntry;
-	MallocEntry *pMallocListEntry;
 
-	InitializeSListHead(&MallocListHead);
 
 	argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 	if (argv == NULL) {
@@ -455,11 +456,7 @@ int main(int argc, char * const *argv1)
 	    break;
 	case _TSK_T('A'):
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
-		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
-		pMallocListEntry->MallocItem=(void *)opt_arg;
-		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
-		wchar_to_char(OPTARG,opt_arg);
+		convert(OPTARG, &opt_arg);
 		arff_fn = opt_arg;
 #else
 		arff_fn = OPTARG;
@@ -469,11 +466,7 @@ int main(int argc, char * const *argv1)
 	    opt_compute_sector_hashes=true;
 	    sector_bloom = new NSRLBloom();
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
-		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
-		pMallocListEntry->MallocItem=(void *)opt_arg;
-		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
-		wchar_to_char(OPTARG,opt_arg);
+		convert(OPTARG, &opt_arg);
 		if(sector_bloom->create(opt_arg,160,30,4,"Sector hash")){
 		err(1,"%s",opt_arg);
 	    }
@@ -498,11 +491,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('S'): sectorhash_size = TATOI(OPTARG); break;
 	case _TSK_T('T'):
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
-		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
-		pMallocListEntry->MallocItem=(void *)opt_arg;
-		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
-		wchar_to_char(OPTARG,opt_arg);
+		convert(OPTARG, &opt_arg);
 		text_fn = opt_arg;
 #else
 		text_fn = OPTARG;
@@ -511,11 +500,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('V'): print_version();exit(0);
 	case _TSK_T('X'): 
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
-		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
-		pMallocListEntry->MallocItem=(void *)opt_arg;
-		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
-		wchar_to_char(OPTARG,opt_arg);
+		convert(OPTARG, &opt_arg);
 		xml_fn = new string(opt_arg);
 #else
 		xml_fn = new string(OPTARG);
@@ -525,11 +510,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('Z'): opt_zap = true;break;
 	case _TSK_T('a'): 
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
-		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
-		pMallocListEntry->MallocItem=(void *)opt_arg;
-		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
-		wchar_to_char(OPTARG,opt_arg);
+		convert(OPTARG, &opt_arg);
 		audit_file = opt_arg;
 #else
 		audit_file = OPTARG;
@@ -537,11 +518,7 @@ int main(int argc, char * const *argv1)
 		break;
 	case _TSK_T('c'): 
 #ifdef _MSC_VER
-		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
-		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
-		pMallocListEntry->MallocItem=(void *)opt_arg;
-		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
-		wchar_to_char(OPTARG,opt_arg);
+		convert(OPTARG, &opt_arg);
 		config_file = opt_arg;
 #else
 		config_file = OPTARG;
@@ -550,11 +527,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('n'):
 		
 #ifdef TSK_WIN32
-		opt_arg=(char *)malloc(wcslen(OPTARG)+2);
-		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
-		pMallocListEntry->MallocItem=(void *)opt_arg;
-		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
-		wchar_to_char(OPTARG,opt_arg);
+		convert(OPTARG, &opt_arg);
 		namelist.push_back(opt_arg);
 #else
 		namelist.push_back(OPTARG);
@@ -577,11 +550,7 @@ int main(int argc, char * const *argv1)
 	argv1 += OPTIND;
 
 #ifdef _MSC_VER
-		argv_0=(char *)malloc(wcslen(argv[0])+2);
-		pMallocListEntry=(MallocEntry *)_aligned_malloc(sizeof(MallocEntry), MEMORY_ALLOCATION_ALIGNMENT);
-		pMallocListEntry->MallocItem=(void *)argv_0;
-		pLastEntry = InterlockedPushEntrySList(&MallocListHead, &(pMallocListEntry->SingleListEntry));
-		wchar_to_char(argv[0],argv_0);
+		convert(argv[0],&argv_0);
 		const char *filename = argv_0;
 #else
 	const char *filename = argv[0];
@@ -830,24 +799,9 @@ int main(int argc, char * const *argv1)
 
     if(t) comment("=EOF=");
     if(x) {
-	if (opt_debug) printf("Getting Ready to Delete X, size %d\n", sizeof(*x));
 	x->pop();			// <dfxml>
-	if (opt_debug) printf("Getting Ready to Delete X, size %d\n", sizeof(*x));
 	x->close();
-	if (opt_debug) printf("Getting Ready to Delete X, size %d\n", sizeof(*x));
-#if _MSC_VER
-	while(1)
-	{
-		pMallocListEntry=(MallocEntry *)InterlockedPopEntrySList(&MallocListHead);
-		if(pMallocListEntry == NULL)
-			break;
-		free((pMallocListEntry->MallocItem));
-		_aligned_free(pMallocListEntry);
-	}
-	if (opt_debug) printf("All Mallocs have been freed\n");
-#endif
 	delete(x);
     }
-	if (opt_debug) printf("Getting Ready to Exit with 0\n");
     exit(0);
 }
