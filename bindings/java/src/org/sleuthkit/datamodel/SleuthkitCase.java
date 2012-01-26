@@ -32,6 +32,7 @@ import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
+import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 
 /**
@@ -1300,5 +1301,91 @@ public class SleuthkitCase {
 			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING,
 					"Error freeing case handle.", ex);
 		}
+	}
+	
+	/** update the given hash and known status to the object in the DB denoted by id */
+	private void updateHashAndKnown(long id, String md5Hash, long known) throws SQLException{
+		Statement s = con.createStatement();
+		s.executeUpdate("UPDATE tsk_files " +
+						"SET known='" + known + "', md5='" + md5Hash + "' " +
+						"WHERE obj_id=" + id);
+		s.close();
+	}
+	
+	/** update the hashes and known statuses of multiple objects in the db */
+	private void updateHashesAndKnowns(List<Long> ids, List<String> md5Hashes, List<Long> knowns) throws SQLException{
+		int idsSize = ids.size();
+		int md5sSize = md5Hashes.size();
+		int knownsSize = knowns.size();
+		if(idsSize == md5sSize && md5sSize == knownsSize && knownsSize == idsSize){
+			StringBuilder query = new StringBuilder("UPDATE tsk_files SET known = CASE obj_id");
+			for(int i = 0; i<idsSize; i++){
+				// " WHEN id THEN known"
+				query.append(" WHEN ").append(ids.get(i))
+					 .append(" THEN ").append(knowns.get(i));
+			}
+			query.append(" END, md5 = CASE obj_id");
+			for(int i = 0; i<idsSize; i++){
+				// " WHEN id THEN hash"
+				query.append(" WHEN ").append(ids.get(i))
+				     .append(" THEN '").append(md5Hashes.get(i)).append("'");
+			}
+			query.append(" END WHERE id in (");
+			for(int i = 0; i<idsSize; i++){
+				// "1,2,3,4,"
+				query.append(ids.get(i)).append(",");
+			}
+			// remove the last unnecessary comma
+			query.deleteCharAt(query.length()-1);
+			query.append(")");
+			Statement s = con.createStatement();
+			s.executeUpdate(query.toString());
+			s.close();
+		}else{
+			throw new IllegalArgumentException("Lists must be of equal length!");
+		}
+	}
+	
+	/** Perform actions relating to the given object's md5 */
+	public String analyzeFileMd5(Content cont) throws TskException{
+		Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
+		try{
+			long contId = cont.getId();
+			String md5Hash = Hash.calculateHash(cont);
+			FileKnown fk = SleuthkitJNI.lookupHash(md5Hash);
+			String known = fk.getName();
+			updateHashAndKnown(contId, md5Hash, fk.toLong());
+			return known;
+		} catch (TskException ex) {
+			logger.log(Level.SEVERE, "Error looking up known status", ex);
+		} catch(SQLException ex) {
+			logger.log(Level.SEVERE, "Error updating SQL database", ex);
+		}
+		throw new TskException("Error analyzing file");
+	}
+	
+	/** Perform actions relating to the given objects' md5s */
+	public List<Long> analyzeFilesMd5(List<? extends Content> cont) throws TskException{
+		List<Long> ids = new ArrayList<Long>();
+		List<String> md5Hashes = new ArrayList<String>();
+		List<Long> knowns = new ArrayList<Long>();
+		
+		try{
+			for(Content c : cont){
+				ids.add(c.getId());
+				String md5Hash = Hash.calculateHash(c);
+				md5Hashes.add(md5Hash);
+				knowns.add(SleuthkitJNI.lookupHash(md5Hash).toLong());
+			}
+			updateHashesAndKnowns(ids, md5Hashes, knowns);
+			return knowns;
+		} catch (TskException ex) {
+			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE,
+					"Error looking up known status", ex);
+		} catch(SQLException ex) {
+			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE,
+				"Error updating SQL database", ex);
+		}
+		throw new TskException("Error analyzing files");
 	}
 } 
