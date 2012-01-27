@@ -28,7 +28,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_curFsId = 0;
     m_curVsId = 0;
     m_blkMapFlag = false;
-    m_fileHashFlag = true;
+    m_fileHashFlag = false;
     m_vsFound = false;
     m_volFound = false;
     m_stopped = false;
@@ -511,7 +511,32 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
 
         TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
 
-        
+		if (m_fileHashFlag && isFile(fs_file)) {
+            if (md5HashAttr(hash, fs_attr)) {
+                return TSK_ERR;
+            }
+            md5 = hash;
+
+            if (m_NSRLDb != NULL) {
+                int8_t retval = tsk_hdb_lookup_raw(m_NSRLDb, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
+                
+                if (retval == -1) {
+                    return TSK_ERR;
+                } else if (retval) {
+                    file_known = TSK_AUTO_CASE_FILE_KNOWN_KNOWN;
+                }
+            }
+
+            if (m_knownBadDb != NULL) {
+                int8_t retval = tsk_hdb_lookup_raw(m_knownBadDb, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
+                
+                if (retval == -1) {
+                    return TSK_ERR;
+                } else if (retval) {
+                    file_known = TSK_AUTO_CASE_FILE_KNOWN_BAD;
+                }
+            }
+        }
 
         /// @@@ We probably want to keep on going and not stop in this case
         if (insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known) == TSK_ERR)

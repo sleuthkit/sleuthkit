@@ -340,7 +340,7 @@ JNIEXPORT void JNICALL
     //change to true when autopsy needs the block table.
     tskAuto->createBlockMap(false);
     //change to false if hashes aren't needed
-    tskAuto->hashFiles(true);
+    tskAuto->hashFiles(false);
 
     
 
