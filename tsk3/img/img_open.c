@@ -168,24 +168,15 @@ tsk_img_open(int num_img,
         if (img_set != NULL)
             return img_set;
 
-        // @@@ NEED to modify this so that we find addtl. split images. 
-        // REMOVE NOTION of sing / split RAW.  Just a single object. 
-        /* We'll use the raw format */
-        if (num_img == 1) {
-            if ((img_info = raw_open(images[0], a_ssize)) != NULL) {
-                return img_info;
-            }
-            else if (tsk_error_get_errno() != 0) {
-                return NULL;
-            }
+        /* We'll use the (possibly split) raw format.  If the user
+         * specifies only one file and does not want subsequent
+         * segments automatically detected, they'll need to specify
+         * TSK_IMG_TYPE_RAW_SING. */
+        if ((img_info = split_open(num_img, images, a_ssize)) != NULL) {
+            return img_info;
         }
-        else {
-            if ((img_info = split_open(num_img, images, a_ssize)) != NULL) {
-                return img_info;
-            }
-            else if (tsk_error_get_errno() != 0) {
-                return NULL;
-            }
+        else if (tsk_error_get_errno() != 0) {
+            return NULL;
         }
 
         /* To improve the error message, verify the file can be read. */
@@ -217,7 +208,6 @@ tsk_img_open(int num_img,
 
     /*
      * Type values
-     * Make a local copy that we can modify the string as we parse it
      */
 
     switch (type) {
@@ -233,12 +223,9 @@ tsk_img_open(int num_img,
 
     case TSK_IMG_TYPE_RAW_SPLIT:
 
-        /* If only one image file is given, and only one type was
-         * given then use raw */
-        if (num_img == 1)
-            img_info = raw_open(images[0], a_ssize);
-        else
-            img_info = split_open(num_img, images, a_ssize);
+        /* Even if only one image file is given, assume we should
+         * look for more segments */
+        img_info = split_open(num_img, images, a_ssize);
         break;
 
 #if HAVE_LIBAFFLIB

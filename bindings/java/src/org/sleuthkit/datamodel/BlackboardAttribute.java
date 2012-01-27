@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,7 +24,6 @@ package org.sleuthkit.datamodel;
  */
 public class BlackboardAttribute {
 	private long artifactID;
-	private String attributeTypeName;
 	private int attributeTypeID;
 	private String moduleName;
 	private String context;
@@ -42,9 +41,9 @@ public class BlackboardAttribute {
 	public enum TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE {
 		STRING(0, "String"),	   ///< string
 		INTEGER(1, "Integer"),   ///< int
-		LONG(2, "Long"),            ///< long
-		DOUBLE(3, "Double"),      ///< double
-		BYTE(4, "Byte");      ///< byte
+		LONG(2, "Long"),			///< long
+		DOUBLE(3, "Double"),	  ///< double
+		BYTE(4, "Byte");	  ///< byte
 
 		private long type;
 		private String label;
@@ -56,7 +55,6 @@ public class BlackboardAttribute {
 
 		/**
 		 * get the type id for this enum
-		 * @return
 		 */
 		public long getType(){
 			return type;
@@ -64,14 +62,13 @@ public class BlackboardAttribute {
 		
 		/**
 		 * get the label string for this enum
-		 * @return
 		 */
 		public String getLabel() {
 			return this.label;
 		}
 		
 		/**
-		 * get the enum for the given type string
+		 * get the enum for the given type id
 		 * @param type type id
 		 * @return enum
 		 */
@@ -88,25 +85,44 @@ public class BlackboardAttribute {
 	/**
 	 * Built in attribute types
 	 */
-	public enum TSK_BLACKBOARD_ATTRIBUTE_TYPE {
-		TSK_URL ("tsk_url"),
-		TSK_DATETIME ("tsk_datetime"),
-		TSK_NAME ("tsk_name"),
-		TSK_PROG_NAME ("tsk_prog_name"),
-		TSK_WEB_BOOKMARK ("tsk_web_bookmark"),
-		TSK_VALUE ("tsk_value"),
-		TSK_FLAG ("tsk_flag"),
-		TSK_PATH ("tsk_path"),
-		TSK_GEO ("tsk_geo"),
-		TSK_KEYWORD ("tsk_keyword"),
-		TSK_REGEXP ("tsk_regexp"),
-		TSK_PREVIEW  ("tsk_preview"),
-		TSK_KEYWORD_SET  ("tsk_set");
+
+	public enum ATTRIBUTE_TYPE {
+		TSK_URL (1, "TSK_URL"),
+		TSK_DATETIME (2, "TSK_DATETIME"),
+		TSK_NAME (3, "TSK_NAME"),
+		TSK_PROG_NAME (4, "TSK_PROG_NAME"),
+		TSK_WEB_BOOKMARK (5, "TSK_WEB_BOOKMARK"),
+		TSK_VALUE (6, "TSK_VALUE"),
+		TSK_FLAG (7, "TSK_FLAG"),
+		TSK_PATH (8, "TSK_PATH"),
+		TSK_GEO (9, "TSK_GEO"),
+		TSK_KEYWORD (10, "TSK_KEYWORD"),
+		TSK_KEYWORD_REGEXP (11, "TSK_KEYWORD_REGEXP"),
+		TSK_KEYWORD_PREVIEW  (12, "TSK_KEYWORD_PREVIEW"),
+		TSK_KEYWORD_SET  (13, "TSK_KEYWORD_SET"),
+		TSK_USERNAME  (14, "TSK_USERNAME"),
+        TSK_DOMAIN (15, "TSK_DOMAIN"),
+        TSK_PASSWORD (16, "TSK_PASSWORD"),
+        TSK_NAME_PERSON (17, "TSK_NAME_PERSON"),
+        TSK_DEVICE_MODEL (18, "TSK_DEVICE_MODEL"),
+        TSK_DEVICE_MAKE (19, "TSK_DEVICE_MAKE"),
+        TSK_DEVICE_ID (20, "TSK_DEVICE_ID"),
+        TSK_EMAIL (21, "TSK_EMAIL"),
+        TSK_HASH_HD5 (22, "TSK_HASH_MD5"),
+        TSK_HASH_SHA1 (23, "TSK_HASH_SHA1"),
+        TSK_HASH_SHA2_256 (24, "TSK_HASH_SHA2_256"),
+        TSK_HASH_SHA2_512 (25, "TSK_HASH_SHA2_512"),
+        TSK_TEXT (26, "TSK_TEXT"),
+        TSK_TEXT_FILE (27, "TSK_TEXT_FILE"),
+        TSK_TEXT_LANGUAGE (28, "TSK_TEXT_LANGUAGE"),
+        TSK_ENTROPY (29, "TSK_ENTROPY"),
+        TSK_HASHSET_NAME (30, "TSK_HASHSET_NAME");
 
 		private String label;
 		private int typeID;
 
-		private TSK_BLACKBOARD_ATTRIBUTE_TYPE(String label){
+		private ATTRIBUTE_TYPE(int typeID, String label){
+			this.typeID = typeID;
 			this.label = label;
 		}
 		
@@ -127,25 +143,17 @@ public class BlackboardAttribute {
 		}
 		
 		/**
-		 * set the type id (this should only be used by sleuthkitCase)
-		 * @param typeID type id
-		 */
-		protected void setTypeID(int typeID){
-			this.typeID = typeID;
-		}
-		
-		/**
 		 * get the attribute enum for the given label
 		 * @param label label string
 		 * @return the enum value
 		 */
-		static public TSK_BLACKBOARD_ATTRIBUTE_TYPE fromLabel(String label) {
-			for (TSK_BLACKBOARD_ATTRIBUTE_TYPE v : TSK_BLACKBOARD_ATTRIBUTE_TYPE.values()) {
+		static public ATTRIBUTE_TYPE fromLabel(String label) {
+			for (ATTRIBUTE_TYPE v : ATTRIBUTE_TYPE.values()) {
 				if (v.label.equals(label)) {
 					return v;
 				}
 			}
-			throw new IllegalArgumentException("No TSK_BLACKBOARD_ATTRIBUTE_TYPE matching type: " + label);
+			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching type: " + label);
 		}
 	}
 	
@@ -164,12 +172,11 @@ public class BlackboardAttribute {
 	 * @param valueBytes value if it is a byte array
 	 * @param Case the case that can be used to make calls into the blackboard db
 	 */
-	protected BlackboardAttribute(long artifactID, String attributeTypeName, int attributeTypeID, String moduleName, String context,
+	protected BlackboardAttribute(long artifactID, int attributeTypeID, String moduleName, String context,
 		TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, long valueLong, double valueDouble, 
 		String valueString, byte[] valueBytes, SleuthkitCase Case){
 		
 		this.artifactID = artifactID;
-		this.attributeTypeName = attributeTypeName;
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = moduleName;
 		this.context = context;
@@ -183,19 +190,127 @@ public class BlackboardAttribute {
 	}
 	
 	/**
+	 * create a blackboard attribute that stores an int (creates an attribute that can be
+	 * added to an artifact)
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param context extra information about the attribute
+	 * @param valueInt the value
+	 */
+	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
+		int valueInt){
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = moduleName;
+		this.context = context;
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
+		this.valueInt = valueInt;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+	}
+	
+	/**
+	 * create a blackboard attribute that stores a long (creates an attribute that can be
+	 * added to an artifact)
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param context extra information about the attribute
+	 * @param valueLong the value
+	 */
+	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
+		long valueLong){
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = moduleName;
+		this.context = context;
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG;
+		this.valueInt = 0;
+		this.valueLong = valueLong;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		
+	}
+	
+	/**
+	 * create a blackboard attribute that stores a double (creates an attribute that can be
+	 * added to an artifact)
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param context extra information about the attribute
+	 * @param valueDouble the value
+	 */
+	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
+		double valueDouble){
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = moduleName;
+		this.context = context;
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = valueDouble;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		
+	}
+	
+	/**
+	 * create a blackboard attribute that stores a string (creates an attribute that can be
+	 * added to an artifact)
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param context extra information about the attribute
+	 * @param valueString the value
+	 */
+	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
+		String valueString){
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = moduleName;
+		this.context = context;
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = valueString;
+		this.valueBytes = new byte[0];
+		
+	}
+	
+	/**
+	 * create a blackboard attribute that stores a byte array (creates an attribute that can be
+	 * added to an artifact)
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param context extra information about the attribute
+	 * @param valueBytes the value
+	 */
+	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
+		byte[] valueBytes){
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = moduleName;
+		this.context = context;
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = valueBytes;
+		
+	}
+	
+	/**
 	 * get the artifact id 
 	 * @return artifact id
 	 */
 	public long getArtifactID(){
 		return artifactID;
 	}
-	/**
-	 * get the type name string
-	 * @return type name string
-	 */
-	public String getAttributeTypeName(){
-		return attributeTypeName;
-	}
+	
 	/**
 	 * get the attribute type id
 	 * @return type id
@@ -206,7 +321,7 @@ public class BlackboardAttribute {
 	/**
 	 * get the value type (this should be used to identify the type of value and call
 	 * the right value get method)
-	 * @return calue type
+	 * @return value type
 	 */
 	public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType(){
 		return valueType;
@@ -268,5 +383,22 @@ public class BlackboardAttribute {
 	 */
 	public BlackboardArtifact getParentArtifact() throws TskException{
 		return Case.getBlackboardArtifact(artifactID);
+	}
+	
+	/**
+	 * set the artifactID, this should only be used by sleuthkitCase
+	 * @param artifactID artifactID
+	 */
+	protected void setArtifactID(long artifactID){
+		this.artifactID = artifactID;
+	}
+	
+	/**
+	 * set the sleuthkitCase, this should only be used by sleuthkitCase
+	 * @param Case case
+	 */
+	
+	protected void setCase(SleuthkitCase Case){
+		this.Case = Case;
 	}
 }

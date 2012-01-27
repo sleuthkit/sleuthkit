@@ -8,6 +8,11 @@
  */
 
 
+#include "tsk_base_i.h"
+
+#ifdef TSK_WIN32
+
+
 #include <windows.h>
 
 static DWORD tlsIndex;
@@ -55,3 +60,6 @@ void tsk_error_win32_thread_cleanup() {
 		TlsSetValue(tlsIndex, 0);
 	}
 }
+
+
+#endif /*TSK_WIN32*/

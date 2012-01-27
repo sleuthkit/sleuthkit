@@ -99,7 +99,19 @@ static const char *tsk_err_auto_str[TSK_ERR_AUTO_MAX] = {
     "Image not opened yet"
 };
 
+
+#ifdef TSK_WIN32
+
+TSK_ERROR_INFO *
+tsk_error_get_info()
+{
+    return (TSK_ERROR_INFO *)
+    tsk_error_win32_get_per_thread_(sizeof(TSK_ERROR_INFO));
+}
+
+#else
 #ifdef HAVE_PTHREAD
+
 static pthread_key_t pt_tls_key;
 static pthread_once_t pt_tls_key_once = PTHREAD_ONCE_INIT;
 
@@ -131,16 +143,6 @@ tsk_error_get_info()
         (void) pthread_setspecific(pt_tls_key, ptr);
     }
     return ptr;
-}
-
-#else
-#ifdef TSK_WIN32
-
-TSK_ERROR_INFO *
-tsk_error_get_info()
-{
-    return (TSK_ERROR_INFO *)
-        tsk_error_win32_get_per_thread_(sizeof(TSK_ERROR_INFO));
 }
 
 #else
