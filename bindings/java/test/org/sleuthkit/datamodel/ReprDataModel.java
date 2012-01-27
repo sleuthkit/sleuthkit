@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -206,11 +206,12 @@ public class ReprDataModel {
 		repr("getSsize", i.getSsize());
 		repr("getType", i.getType());
 		try {
+			int typeID = i.db.addArtifactType("Test_Attribute");
 			BlackboardArtifact art1;
 			BlackboardArtifact art2;
 			BlackboardArtifact art3;
-			art1 = i.newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE.DEFAULT);
-			art2 = i.newArtifact("Test_Attribute");
+			art1 = i.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+			art2 = i.newArtifact(typeID);
 			art3 = i.newArtifact(1);
 			byte[] bytearray1 = new byte[2];
 			bytearray1[0] = 1;
@@ -222,21 +223,23 @@ public class ReprDataModel {
 			bytearray3[0] = 5;
 			bytearray3[1] = 6;
 			
-			art1.addAttribute("testattr", (int) 23, "regressionTest", "first_call");
-			art1.addAttribute("testattr", (long) 5, "regressionTest", "second_call");
-			art1.addAttribute("testattr", (double) 7.412, "regressionTest", "third_call");
-			art1.addAttribute("testattr", "test", "regressionTest", "fourth_call");
-			art1.addAttribute("testattr", bytearray1, "regressionTest", "fifth_call");
-			art2.addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE.TSK_DATETIME, (int) 23, "regressionTest", "sixth_call");
-			art2.addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE.TSK_FLAG, (long) 5, "regressionTest", "seventh_call");
-			art2.addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE.TSK_GEO, (double) 7.412, "regressionTest", "eighth_call");
-			art2.addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE.TSK_KEYWORD, "test", "regressionTest", "nineth_call");
-			art2.addAttribute(BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE.TSK_KEYWORD_SET, bytearray2, "regressionTest", "tenth_call");
-			art3.addAttribute(1, (int) 29, "regressionTest", "eleventh_call");
-			art3.addAttribute(1, (long) 565413, "regressionTest", "twelfth_call");
-			art3.addAttribute(1, (double) 1.987, "regressionTest", "thirteenth_call");
-			art3.addAttribute(2, "test2", "regressionTest", "fourteenth_call");
-			art3.addAttribute(2, bytearray3, "regressionTest", "fifteenth_call");
+			int attrTypeID = i.db.addAttrType("testattr");
+			
+			art1.addAttribute(new BlackboardAttribute(attrTypeID, "regressionTest", "first_call", (int) 23));
+			art1.addAttribute(new BlackboardAttribute(attrTypeID, "regressionTest", "second_call", (long) 5));
+			art1.addAttribute(new BlackboardAttribute(attrTypeID, "regressionTest", "third_call", (double) 7.412));
+			art1.addAttribute(new BlackboardAttribute(attrTypeID, "regressionTest", "fourth_call", "test"));
+			art1.addAttribute(new BlackboardAttribute(attrTypeID, "regressionTest", "fifth_call", bytearray1));
+			art2.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME.getTypeID(), "regressionTest", "sixth_call", (int) 23));
+			art2.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_FLAG.getTypeID(), "regressionTest", "seventh_call", (long) 5));
+			art2.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO.getTypeID(), "regressionTest", "eighth_call", (double) 7.412));
+			art2.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD.getTypeID(), "regressionTest", "nineth_call", "test"));
+			art2.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_SET.getTypeID(), "regressionTest", "tenth_call", bytearray2));
+			art3.addAttribute(new BlackboardAttribute(1, "regressionTest", "eleventh_call", (int) 29));
+			art3.addAttribute(new BlackboardAttribute(1, "regressionTest", "twelfth_call", (long) 565413));
+			art3.addAttribute(new BlackboardAttribute(1, "regressionTest", "thirteenth_call", (double) 1.987));
+			art3.addAttribute(new BlackboardAttribute(2, "regressionTest", "fourteenth_call", "test2"));
+			art3.addAttribute(new BlackboardAttribute(2, "regressionTest", "fifteenth_call", bytearray3));
 			
 			for(BlackboardArtifact art : i.getAllArtifacts()){
 				repr("ArtifactGetArtifactID", art.getArtifactID());
@@ -245,10 +248,10 @@ public class ReprDataModel {
 				repr("ArtifactGetObjectID", art.getObjectID());
 				for(BlackboardAttribute attr : art.getAttributes()){
 					repr("AttributeGetArtifactID", attr.getArtifactID());
-					repr("AttributeGetAttributeTypeName", attr.getAttributeTypeName());
+					repr("AttributeGetAttributeTypeID", new Integer(attr.getAttributeTypeID()).toString());
+					repr("AttributeGetAttributeTypeName", i.db.getAttrTypeString(attr.getAttributeTypeID()));
 					repr("AttributeGetContext", attr.getContext());
 					repr("AttributeGetSource", attr.getModuleName());
-					repr("AttributeGetAttributeTypeID", new Integer(attr.getAttributeTypeID()).toString());
 					BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE val_type = attr.getValueType();
 					repr("AttributeGetValueType", val_type.getLabel());
 					switch(val_type){
