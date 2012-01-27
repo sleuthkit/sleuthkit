@@ -18,22 +18,33 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.io.InputStream;
 
 class Hash {
+	
+	private final static int BUFFER_SIZE = 8192;
     /**
      * generate the md5 hash for the given content
     */
     static String calculateHash(Content content){
         String hashText = "";
+		InputStream in = new ReadContentInputStream(content);
+		Logger logger = Logger.getLogger(Hash.class.getName());
         try {
             MessageDigest md = MessageDigest.getInstance("md5");
-            byte[] contentBytes = content.read(0, content.getSize());
-            byte[] hash = md.digest(contentBytes);
+			byte[] buffer = new byte[BUFFER_SIZE];
+            int len = in.read(buffer);
+            while (len != -1) {
+				md.update(buffer, 0, len);
+                len = in.read(buffer);
+            }
+            byte[] hash = md.digest();
             BigInteger bigInt = new BigInteger(1,hash);
             hashText = bigInt.toString(16);
             // zero padding
@@ -41,10 +52,10 @@ class Hash {
                 hashText = "0"+hashText;
             }
         } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(Hash.class.getName()).log(Level.SEVERE, "No algorithm known as 'md5'", ex);
-        } catch (TskException ex) {
-           Logger.getLogger(Hash.class.getName()).log(Level.SEVERE, "Error reading content", ex);
-        }
+            logger.log(Level.SEVERE, "No algorithm known as 'md5'", ex);
+        } catch (IOException ex) {
+			logger.log(Level.SEVERE, "Error reading content", ex);
+		}
         return hashText;
     }
 }
