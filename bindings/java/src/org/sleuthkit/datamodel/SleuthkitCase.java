@@ -28,8 +28,8 @@ import java.util.*;
 import java.util.logging.Level;
 import org.sleuthkit.datamodel.TskData.ObjectType;
 import java.util.logging.Logger;
-import org.sleuthkit.datamodel.BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE;
-import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_TYPE;
+import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 
@@ -95,18 +95,18 @@ public class SleuthkitCase {
 
 	private void initBlackboardTypes() throws SQLException, TskException {
 		Statement s = con.createStatement();
-
-		for (TSK_BLACKBOARD_ARTIFACT_TYPE type : TSK_BLACKBOARD_ARTIFACT_TYPE.values()) {
+		for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
 			ResultSet rs = s.executeQuery("SELECT * from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'");
 			if (!rs.next()) {
 				this.addBuiltInArtifactType(type);
 			}
 		}
-		for (TSK_BLACKBOARD_ATTRIBUTE_TYPE type : TSK_BLACKBOARD_ATTRIBUTE_TYPE.values()) {
+		for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
 			ResultSet rs = s.executeQuery("SELECT * from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'");
 			if (!rs.next()) {
 				this.addBuiltInAttrType(type);
 			}
+
 		}
 		s.close();
 	}
@@ -453,18 +453,17 @@ public class SleuthkitCase {
 	 * Get all blackboard artifacts of a given type for the given object id
 	 * @param artifactType artifact type enum
 	 * @param obj_id object id
-	 * @return list of blackboard artifacts
-	 */
-	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(TSK_BLACKBOARD_ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
-		return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel(), obj_id);
+     * @return list of blackboard artifacts
+     */
+	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
+			return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel(), obj_id);
 	}
 
 	/**
-	 * Get the blackboard artifact with the given artifact id
-	 * @param artifactType artifact type enum
-	 * @param obj_id object id
-	 * @return blackboard artifact
-	 */
+     * Get the blackboard artifact with the given artifact id
+	 * @param artifactID artifact ID
+     * @return blackboard artifact
+     */
 	public BlackboardArtifact getBlackboardArtifact(long artifactID) throws TskException {
 		try {
 			Statement s = con.createStatement();
@@ -777,9 +776,9 @@ public class SleuthkitCase {
 	/**
 	 * Add a new blackboard artifact with the given type. 
 	 * @param artifactType the type the given artifact should have
-	 * @return a new blackboard artifact
-	 */
-	BlackboardArtifact newBlackboardArtifact(TSK_BLACKBOARD_ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
+     * @return a new blackboard artifact
+     */
+	BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
 		try {
 			Statement s = con.createStatement();
 			ResultSet rs;
@@ -806,7 +805,7 @@ public class SleuthkitCase {
 	 * @param type type enum
 	 * @throws TskException 
 	 */
-	private void addBuiltInArtifactType(TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException {
+	private void addBuiltInArtifactType(ARTIFACT_TYPE type) throws TskException {
 		addArtifactType(type.getLabel(), type.getTypeID());
 	}
 
@@ -815,7 +814,7 @@ public class SleuthkitCase {
 	 * @param type type enum
 	 * @throws TskException 
 	 */
-	private void addBuiltInAttrType(TSK_BLACKBOARD_ATTRIBUTE_TYPE type) throws TskException {
+	private void addBuiltInAttrType(ATTRIBUTE_TYPE type) throws TskException {
 		addAttrType(type.getLabel(), type.getTypeID());
 	}
 

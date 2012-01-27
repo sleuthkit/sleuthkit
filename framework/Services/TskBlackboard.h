@@ -44,21 +44,50 @@ public:
     static const string TSK_DEVICE_MODEL; 
     static const string TSK_DEVICE_MAKE;
     static const string TSK_DEVICE_ID;
-    static const string TSK_RECENTLYUSED; 
     static const string TSK_KEYWORD;
     static const string TSK_EMAIL;
     static const string TSK_URL;
-    static const string TSK_URL_HISTORY; 
     static const string TSK_DOMAIN;
     static const string TSK_HASH_MD5;
     static const string TSK_HASH_SHA1;
     static const string TSK_HASH_SHA2_256;
     static const string TSK_HASH_SHA2_512;
     static const string TSK_TEXT;
+    static const string TSK_TEXT_FILE;
     static const string TSK_TEXT_LANGUAGE;
     static const string TSK_ENTROPY;
     static const string TSK_PROGRAM_NAME;
     static const string TSK_HASHSET_NAME;
+    static const string TSK_NAME;
+    static const string TSK_VALUE;
+    static const string TSK_FLAG;
+    static const string TSK_PATH;
+    static const string TSK_KEYWORD_REGEXP;
+    static const string TSK_KEYWORD_PREVIEW;
+    static const string TSK_KEYWORD_SET;
+
+#if 0
+    /**
+     * Standard artifact types.
+     * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
+     * for the attributes that should be used with each artifact.
+     */
+    enum ARTIFACT_TYPE {
+        /**
+         * General artifact that most attributes should be stored in,
+         * unless there is a better fit. */
+        TSK_GEN_INFO = "TSK_GEN_INFO",
+        TSK_WEB_BOOKMARK = "TSK_WEB_BOOKMARK", ///< Web browser bookmark
+        TSK_WEB_COOKIE = "TSK_WEB_COOKIE", ///< web browser cookie
+        TSK_WEB_HISTORY = "TSK_WEB_HISTORY", ///< web browser history
+        TSK_WEB_DOWNLOAD = "TSK_WEB_DOWNLOAD", ///< web browser download
+        TSK_RECENT_OBJ = "TSK_RECENT_OBJ", ///< Recently accessed object (recent doc, MRU, etc.)
+        TSK_TRACKPOINT = "TSK_TRACKPOINT", ///< GPS Trackpoint from log
+        TSK_INSTALLED_PROG = "TSK_INSTALLED_PROG", ///< Installed program
+        TSK_KEYWORD_HIT = "TSK_KEYWORD_HIT" ///< Keyword hit
+    };
+#endif
+
 
     // TEXT
     virtual artifact_t set(const uint64_t fileId, const string & attribute, const string & value, const string & source = "", const string & context = "") = 0;
@@ -97,5 +126,7 @@ protected:
     /// Destructor
     virtual ~TskBlackboard() {};
 };
+
+
 
 #endif

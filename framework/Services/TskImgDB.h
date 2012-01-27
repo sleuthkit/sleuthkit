@@ -276,7 +276,7 @@ public:
     virtual int getVolumeInfo(std::list<TskVolumeInfoRecord> & volumeInfoList) const = 0;
     virtual int getFsInfo(std::list<TskFsInfoRecord> & fsInfoList) const = 0;
     virtual int getFileInfoSummary(FILE_TYPES fileType, std::list<TskFileTypeRecord> & fileTypeInfoList) const = 0;
-    virtual int getKnownStatus(const uint64_t fileId) = 0;
+    virtual int getKnownStatus(const uint64_t fileId) const = 0;
     
 
     virtual UnallocRun * getUnallocRun(int file_id, int file_offset) const = 0; 
@@ -298,6 +298,7 @@ public:
     virtual artifact_t addBlackboardInfo(const TskBlackboardRecord& blackboardRecord) const = 0;
 
     virtual void getAllBlackboardRows(const uint64_t fileId, vector<TskBlackboardRecord> & bbRecords ) const = 0;
+    virtual void getAllBlackboardRows(std::string& condition, vector<TskBlackboardRecord> & bbRecords) const = 0;
 
     // Convenience functions
 

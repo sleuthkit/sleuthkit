@@ -28,24 +28,27 @@ import java.util.ArrayList;
 public class BlackboardArtifact {
 	
 	/**
-	 * Enum for artifact types. The enum typeIDs will be populated at database creation
+	 * Enum for artifact types. 
+     * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
+     * for details on which attributes should be used for each artifact.
+     * The enum typeIDs will be populated at database creation
 	 * time, so they will always match the ids stored in the database.
 	 */
-	public enum TSK_BLACKBOARD_ARTIFACT_TYPE {
-		DEFAULT(1, "default_artifact_type"),	 ///< Default type
-		TSK_WEB_BOOKMARK (2, "tsk_web_bookmark"),
-		TSK_WEB_COOKIE (3, "tsk_web_cookie"),
-		TSK_WEB_HISTORY (4, "tsk_web_history"),
-		TSK_WEB_DOWNLOAD (5, "tsk_web_download"),
-		TSK_RECENT_OBJECT (6, "tsk_recent_object"),
-		TSK_TRACKPOINT (7, "tsk_trackpoint"),
-		TSK_INSTALLED_PROG (8, "tsk_installed_prog"),
-		TSK_KEYWORD_HIT (9, "tsk_keyword_hit");
+	public enum ARTIFACT_TYPE {
+		TSK_GEN_INFO(1, "TSK_GEN_INFO"),	 ///< Default type
+		TSK_WEB_BOOKMARK (2, "TSK_WEB_BOOKMARK"),
+		TSK_WEB_COOKIE (3, "TSK_WEB_COOKIE"),
+		TSK_WEB_HISTORY (4, "TSK_WEB_HISTORY"),
+		TSK_WEB_DOWNLOAD (5, "TSK_WEB_DOWNLOAD"),
+		TSK_RECENT_OBJECT (6, "TSK_RECENT_OBJ"),
+		TSK_TRACKPOINT (7, "TSK_TRACKPOINT"),
+		TSK_INSTALLED_PROG (8, "TSK_INSTALLED_PROG"),
+		TSK_KEYWORD_HIT (9, "TSK_KEYWORD_HIT");
 		
 		private String label;
 		private int typeID;
 
-		private TSK_BLACKBOARD_ARTIFACT_TYPE(int typeID, String label){
+		private ARTIFACT_TYPE(int typeID, String label){
 			this.typeID = typeID;
 			this.label = label;
 		}
@@ -71,26 +74,26 @@ public class BlackboardArtifact {
 		 * @param label label string
 		 * @return the corresponding enum
 		 */
-		static public TSK_BLACKBOARD_ARTIFACT_TYPE fromLabel(String label) {
-			for (TSK_BLACKBOARD_ARTIFACT_TYPE v : TSK_BLACKBOARD_ARTIFACT_TYPE.values()) {
+		static public ARTIFACT_TYPE fromLabel(String label) {
+			for (ARTIFACT_TYPE v : ARTIFACT_TYPE.values()) {
 				if (v.label.equals(label)) {
 					return v;
 				}
 			}
-			throw new IllegalArgumentException("No TSK_BLACKBOARD_ARTIFACT_TYPE matching type: " + label);
+			throw new IllegalArgumentException("No ARTIFACT_TYPE matching type: " + label);
 		}
 		/**
 		 * get the enum value that corresponds to the given id
 		 * @param ID the id
 		 * @return the corresponding enum
 		 */
-		static public TSK_BLACKBOARD_ARTIFACT_TYPE fromID(int ID) {
-			for (TSK_BLACKBOARD_ARTIFACT_TYPE v : TSK_BLACKBOARD_ARTIFACT_TYPE.values()) {
+		static public ARTIFACT_TYPE fromID(int ID) {
+			for (ARTIFACT_TYPE v : ARTIFACT_TYPE.values()) {
 				if (v.typeID == ID) {
 					return v;
 				}
 			}
-			throw new IllegalArgumentException("No TSK_BLACKBOARD_ARTIFACT_TYPE matching type: " + ID);
+			throw new IllegalArgumentException("No ARTIFACT_TYPE matching type: " + ID);
 		}
 	}
 	
@@ -162,7 +165,7 @@ public class BlackboardArtifact {
 		attr.setCase(Case);
 		Case.addBlackboardAttribute(attr);
 	}
-	
+
 	/**
 	 * get all attributes associated with this artifact
 	 * @return a list of attributes

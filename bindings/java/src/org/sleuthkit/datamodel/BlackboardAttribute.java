@@ -55,7 +55,6 @@ public class BlackboardAttribute {
 
 		/**
 		 * get the type id for this enum
-		 * @return
 		 */
 		public long getType(){
 			return type;
@@ -63,14 +62,13 @@ public class BlackboardAttribute {
 		
 		/**
 		 * get the label string for this enum
-		 * @return
 		 */
 		public String getLabel() {
 			return this.label;
 		}
 		
 		/**
-		 * get the enum for the given type string
+		 * get the enum for the given type id
 		 * @param type type id
 		 * @return enum
 		 */
@@ -87,25 +85,43 @@ public class BlackboardAttribute {
 	/**
 	 * Built in attribute types
 	 */
-	public enum TSK_BLACKBOARD_ATTRIBUTE_TYPE {
-		TSK_URL (1,"tsk_url"),
-		TSK_DATETIME (2, "tsk_datetime"),
-		TSK_NAME (3, "tsk_name"),
-		TSK_PROG_NAME (4, "tsk_prog_name"),
-		TSK_WEB_BOOKMARK (5, "tsk_web_bookmark"),
-		TSK_VALUE (6, "tsk_value"),
-		TSK_FLAG (7, "tsk_flag"),
-		TSK_PATH (8, "tsk_path"),
-		TSK_GEO (9, "tsk_geo"),
-		TSK_KEYWORD (10, "tsk_keyword"),
-		TSK_REGEXP (11, "tsk_regexp"),
-		TSK_PREVIEW  (12, "tsk_preview"),
-		TSK_KEYWORD_SET  (13, "tsk_set");
+
+	public enum ATTRIBUTE_TYPE {
+		TSK_URL (1, "TSK_URL"),
+		TSK_DATETIME (2, "TSK_DATETIME"),
+		TSK_NAME (3, "TSK_NAME"),
+		TSK_PROG_NAME (4, "TSK_PROG_NAME"),
+		TSK_WEB_BOOKMARK (5, "TSK_WEB_BOOKMARK"),
+		TSK_VALUE (6, "TSK_VALUE"),
+		TSK_FLAG (7, "TSK_FLAG"),
+		TSK_PATH (8, "TSK_PATH"),
+		TSK_GEO (9, "TSK_GEO"),
+		TSK_KEYWORD (10, "TSK_KEYWORD"),
+		TSK_KEYWORD_REGEXP (11, "TSK_KEYWORD_REGEXP"),
+		TSK_KEYWORD_PREVIEW  (12, "TSK_KEYWORD_PREVIEW"),
+		TSK_KEYWORD_SET  (13, "TSK_KEYWORD_SET"),
+		TSK_USERNAME  (14, "TSK_USERNAME"),
+        TSK_DOMAIN (15, "TSK_DOMAIN"),
+        TSK_PASSWORD (16, "TSK_PASSWORD"),
+        TSK_NAME_PERSON (17, "TSK_NAME_PERSON"),
+        TSK_DEVICE_MODEL (18, "TSK_DEVICE_MODEL"),
+        TSK_DEVICE_MAKE (19, "TSK_DEVICE_MAKE"),
+        TSK_DEVICE_ID (20, "TSK_DEVICE_ID"),
+        TSK_EMAIL (21, "TSK_EMAIL"),
+        TSK_HASH_HD5 (22, "TSK_HASH_MD5"),
+        TSK_HASH_SHA1 (23, "TSK_HASH_SHA1"),
+        TSK_HASH_SHA2_256 (24, "TSK_HASH_SHA2_256"),
+        TSK_HASH_SHA2_512 (25, "TSK_HASH_SHA2_512"),
+        TSK_TEXT (26, "TSK_TEXT"),
+        TSK_TEXT_FILE (27, "TSK_TEXT_FILE"),
+        TSK_TEXT_LANGUAGE (28, "TSK_TEXT_LANGUAGE"),
+        TSK_ENTROPY (29, "TSK_ENTROPY"),
+        TSK_HASHSET_NAME (30, "TSK_HASHSET_NAME");
 
 		private String label;
 		private int typeID;
 
-		private TSK_BLACKBOARD_ATTRIBUTE_TYPE(int typeID, String label){
+		private ATTRIBUTE_TYPE(int typeID, String label){
 			this.typeID = typeID;
 			this.label = label;
 		}
@@ -131,13 +147,13 @@ public class BlackboardAttribute {
 		 * @param label label string
 		 * @return the enum value
 		 */
-		static public TSK_BLACKBOARD_ATTRIBUTE_TYPE fromLabel(String label) {
-			for (TSK_BLACKBOARD_ATTRIBUTE_TYPE v : TSK_BLACKBOARD_ATTRIBUTE_TYPE.values()) {
+		static public ATTRIBUTE_TYPE fromLabel(String label) {
+			for (ATTRIBUTE_TYPE v : ATTRIBUTE_TYPE.values()) {
 				if (v.label.equals(label)) {
 					return v;
 				}
 			}
-			throw new IllegalArgumentException("No TSK_BLACKBOARD_ATTRIBUTE_TYPE matching type: " + label);
+			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching type: " + label);
 		}
 	}
 	

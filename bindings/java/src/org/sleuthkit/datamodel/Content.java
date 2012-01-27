@@ -83,7 +83,7 @@ public interface Content {
 	 * @return the blackboard artifact 
 	 * @throws TskException
 	 */
-	public BlackboardArtifact newArtifact(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException;
+	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskException;
 	
 	/**
 	 * Get all artifacts associated with this content that have the given type name
@@ -107,7 +107,7 @@ public interface Content {
 	 * @return a list of blackboard artifacts
 	 * @throws TskException
 	 */
-	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.TSK_BLACKBOARD_ARTIFACT_TYPE type) throws TskException;
+	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskException;
 	
 	/**
 	 * Get all artifacts associated with this content
