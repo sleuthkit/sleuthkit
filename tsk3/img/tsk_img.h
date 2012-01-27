@@ -68,7 +68,7 @@ extern "C" {
         TSK_IMG_TYPE_UNSUPP = 0xffff,   ///< Unsupported disk image type
     } TSK_IMG_TYPE_ENUM;
 
-#define TSK_IMG_INFO_CACHE_NUM  4
+#define TSK_IMG_INFO_CACHE_NUM  128
 #define TSK_IMG_INFO_CACHE_LEN  65536
 
     typedef struct TSK_IMG_INFO TSK_IMG_INFO;
