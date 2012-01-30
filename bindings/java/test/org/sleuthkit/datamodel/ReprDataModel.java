@@ -206,7 +206,7 @@ public class ReprDataModel {
 		repr("getSsize", i.getSsize());
 		repr("getType", i.getType());
 		try {
-			int typeID = i.db.addArtifactType("Test_Attribute");
+			int typeID = i.db.addArtifactType("Test_Artifact", "Test Artifact");
 			BlackboardArtifact art1;
 			BlackboardArtifact art2;
 			BlackboardArtifact art3;
@@ -223,7 +223,7 @@ public class ReprDataModel {
 			bytearray3[0] = 5;
 			bytearray3[1] = 6;
 			
-			int attrTypeID = i.db.addAttrType("testattr");
+			int attrTypeID = i.db.addAttrType("testattr", "Test Attribute");
 			
 			art1.addAttribute(new BlackboardAttribute(attrTypeID, "regressionTest", "first_call", (int) 23));
 			art1.addAttribute(new BlackboardAttribute(attrTypeID, "regressionTest", "second_call", (long) 5));
@@ -245,11 +245,13 @@ public class ReprDataModel {
 				repr("ArtifactGetArtifactID", art.getArtifactID());
 				repr("ArtifactGetArtifactTypeID", new Integer(art.getArtifactTypeID()).toString());
 				repr("ArtifactGetArtifactTypeName", art.getArtifactTypeName());
+				repr("ArtifactGetDisplayName", art.getDisplayName());
 				repr("ArtifactGetObjectID", art.getObjectID());
 				for(BlackboardAttribute attr : art.getAttributes()){
 					repr("AttributeGetArtifactID", attr.getArtifactID());
 					repr("AttributeGetAttributeTypeID", new Integer(attr.getAttributeTypeID()).toString());
 					repr("AttributeGetAttributeTypeName", i.db.getAttrTypeString(attr.getAttributeTypeID()));
+					repr("AttributeGetDisplayName", i.db.getAttrTypeDisplayName(attr.getAttributeTypeID()));
 					repr("AttributeGetContext", attr.getContext());
 					repr("AttributeGetSource", attr.getModuleName());
 					BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE val_type = attr.getValueType();

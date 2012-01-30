@@ -87,43 +87,45 @@ public class BlackboardAttribute {
 	 */
 
 	public enum ATTRIBUTE_TYPE {
-		TSK_URL (1, "TSK_URL"),
-		TSK_DATETIME (2, "TSK_DATETIME"),
-		TSK_NAME (3, "TSK_NAME"),
-		TSK_PROG_NAME (4, "TSK_PROG_NAME"),
-		TSK_WEB_BOOKMARK (5, "TSK_WEB_BOOKMARK"),
-		TSK_VALUE (6, "TSK_VALUE"),
-		TSK_FLAG (7, "TSK_FLAG"),
-		TSK_PATH (8, "TSK_PATH"),
-		TSK_GEO (9, "TSK_GEO"),
-		TSK_KEYWORD (10, "TSK_KEYWORD"),
-		TSK_KEYWORD_REGEXP (11, "TSK_KEYWORD_REGEXP"),
-		TSK_KEYWORD_PREVIEW  (12, "TSK_KEYWORD_PREVIEW"),
-		TSK_KEYWORD_SET  (13, "TSK_KEYWORD_SET"),
-		TSK_USERNAME  (14, "TSK_USERNAME"),
-        TSK_DOMAIN (15, "TSK_DOMAIN"),
-        TSK_PASSWORD (16, "TSK_PASSWORD"),
-        TSK_NAME_PERSON (17, "TSK_NAME_PERSON"),
-        TSK_DEVICE_MODEL (18, "TSK_DEVICE_MODEL"),
-        TSK_DEVICE_MAKE (19, "TSK_DEVICE_MAKE"),
-        TSK_DEVICE_ID (20, "TSK_DEVICE_ID"),
-        TSK_EMAIL (21, "TSK_EMAIL"),
-        TSK_HASH_HD5 (22, "TSK_HASH_MD5"),
-        TSK_HASH_SHA1 (23, "TSK_HASH_SHA1"),
-        TSK_HASH_SHA2_256 (24, "TSK_HASH_SHA2_256"),
-        TSK_HASH_SHA2_512 (25, "TSK_HASH_SHA2_512"),
-        TSK_TEXT (26, "TSK_TEXT"),
-        TSK_TEXT_FILE (27, "TSK_TEXT_FILE"),
-        TSK_TEXT_LANGUAGE (28, "TSK_TEXT_LANGUAGE"),
-        TSK_ENTROPY (29, "TSK_ENTROPY"),
-        TSK_HASHSET_NAME (30, "TSK_HASHSET_NAME");
+		TSK_URL (1, "TSK_URL", "URL"),
+		TSK_DATETIME (2, "TSK_DATETIME", "Date Time"),
+		TSK_NAME (3, "TSK_NAME", "Name"),
+		TSK_PROG_NAME (4, "TSK_PROG_NAME", "Program Name"),
+		TSK_WEB_BOOKMARK (5, "TSK_WEB_BOOKMARK", "Bookmark"),
+		TSK_VALUE (6, "TSK_VALUE", "Value"),
+		TSK_FLAG (7, "TSK_FLAG", "Flag"),
+		TSK_PATH (8, "TSK_PATH", "Path"),
+		TSK_GEO (9, "TSK_GEO", "Geo"),
+		TSK_KEYWORD (10, "TSK_KEYWORD", "Keyword"),
+		TSK_KEYWORD_REGEXP (11, "TSK_KEYWORD_REGEXP", "Keyword Regular Expression"),
+		TSK_KEYWORD_PREVIEW  (12, "TSK_KEYWORD_PREVIEW", "Keyword Preview"),
+		TSK_KEYWORD_SET  (13, "TSK_KEYWORD_SET", "Keyword Set"),
+		TSK_USERNAME  (14, "TSK_USERNAME", "Username"),
+        TSK_DOMAIN (15, "TSK_DOMAIN", "Domain"),
+        TSK_PASSWORD (16, "TSK_PASSWORD", "Password"),
+        TSK_NAME_PERSON (17, "TSK_NAME_PERSON", "Person Name"),
+        TSK_DEVICE_MODEL (18, "TSK_DEVICE_MODEL", "Device Model"),
+        TSK_DEVICE_MAKE (19, "TSK_DEVICE_MAKE", "Device Make"),
+        TSK_DEVICE_ID (20, "TSK_DEVICE_ID", "Device ID"),
+        TSK_EMAIL (21, "TSK_EMAIL", "Email"),
+        TSK_HASH_HD5 (22, "TSK_HASH_MD5", "MD5 Hash"),
+        TSK_HASH_SHA1 (23, "TSK_HASH_SHA1", "SHA1 Hash"),
+        TSK_HASH_SHA2_256 (24, "TSK_HASH_SHA2_256", "SHA2-256 Hash"),
+        TSK_HASH_SHA2_512 (25, "TSK_HASH_SHA2_512", "SHA2-512 Hash"),
+        TSK_TEXT (26, "TSK_TEXT", "Text"),
+        TSK_TEXT_FILE (27, "TSK_TEXT_FILE", "Text File"),
+        TSK_TEXT_LANGUAGE (28, "TSK_TEXT_LANGUAGE", "Text Language"),
+        TSK_ENTROPY (29, "TSK_ENTROPY", "Entropy"),
+        TSK_HASHSET_NAME (30, "TSK_HASHSET_NAME", "Hashset Name");
 
 		private String label;
 		private int typeID;
+		private String displayName;
 
-		private ATTRIBUTE_TYPE(int typeID, String label){
+		private ATTRIBUTE_TYPE(int typeID, String label, String displayName){
 			this.typeID = typeID;
 			this.label = label;
+			this.displayName = displayName;
 		}
 		
 		/**
@@ -154,6 +156,10 @@ public class BlackboardAttribute {
 				}
 			}
 			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching type: " + label);
+		}
+
+		String getDisplayName() {
+			return this.displayName;
 		}
 	}
 	

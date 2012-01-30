@@ -35,22 +35,24 @@ public class BlackboardArtifact {
 	 * time, so they will always match the ids stored in the database.
 	 */
 	public enum ARTIFACT_TYPE {
-		TSK_GEN_INFO(1, "TSK_GEN_INFO"),	 ///< Default type
-		TSK_WEB_BOOKMARK (2, "TSK_WEB_BOOKMARK"),
-		TSK_WEB_COOKIE (3, "TSK_WEB_COOKIE"),
-		TSK_WEB_HISTORY (4, "TSK_WEB_HISTORY"),
-		TSK_WEB_DOWNLOAD (5, "TSK_WEB_DOWNLOAD"),
-		TSK_RECENT_OBJECT (6, "TSK_RECENT_OBJ"),
-		TSK_TRACKPOINT (7, "TSK_TRACKPOINT"),
-		TSK_INSTALLED_PROG (8, "TSK_INSTALLED_PROG"),
-		TSK_KEYWORD_HIT (9, "TSK_KEYWORD_HIT");
+		TSK_GEN_INFO(1, "TSK_GEN_INFO", "General Info"),	 ///< Default type
+		TSK_WEB_BOOKMARK (2, "TSK_WEB_BOOKMARK", "Bookmark"),
+		TSK_WEB_COOKIE (3, "TSK_WEB_COOKIE", "Cookie"),
+		TSK_WEB_HISTORY (4, "TSK_WEB_HISTORY", "History"),
+		TSK_WEB_DOWNLOAD (5, "TSK_WEB_DOWNLOAD", "Download"),
+		TSK_RECENT_OBJECT (6, "TSK_RECENT_OBJ", "Recent Object"),
+		TSK_TRACKPOINT (7, "TSK_TRACKPOINT", "Trackpoint"),
+		TSK_INSTALLED_PROG (8, "TSK_INSTALLED_PROG", "Installed Program"),
+		TSK_KEYWORD_HIT (9, "TSK_KEYWORD_HIT", "Keyword Hit");
 		
 		private String label;
 		private int typeID;
+		private String displayName;
 
-		private ARTIFACT_TYPE(int typeID, String label){
+		private ARTIFACT_TYPE(int typeID, String label, String displayName){
 			this.typeID = typeID;
 			this.label = label;
+			this.displayName = displayName;
 		}
 		
 		/**
@@ -95,6 +97,10 @@ public class BlackboardArtifact {
 			}
 			throw new IllegalArgumentException("No ARTIFACT_TYPE matching type: " + ID);
 		}
+
+		String getDisplayName() {
+			return this.displayName;
+		}
 	}
 	
 	
@@ -103,6 +109,7 @@ public class BlackboardArtifact {
 	private long objID;
 	private int artifactTypeID;
 	private String artifactTypeName;
+	private String displayName;
 	private SleuthkitCase Case;
 	
 	/**
@@ -113,12 +120,13 @@ public class BlackboardArtifact {
 	 * @param artifactTypeID the type id of this artifact
 	 * @param artifactTypeName the type name of this artifact
 	 */
-	protected BlackboardArtifact(SleuthkitCase Case, long artifactID, long objID, int artifactTypeID, String artifactTypeName){
+	protected BlackboardArtifact(SleuthkitCase Case, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName){
 		this.Case = Case;
 		this.artifactID = artifactID;
 		this.objID = objID;
 		this.artifactTypeID = artifactTypeID;
 		this.artifactTypeName = artifactTypeName;
+		this.displayName = displayName;
 	}
 	
 	/**
@@ -149,6 +157,13 @@ public class BlackboardArtifact {
 	 */
 	public String getArtifactTypeName(){
 		return this.artifactTypeName;
+	}
+	/**
+	 * get the artifact display name for this artifact
+	 * @return artifact display name
+	 */
+	public String getDisplayName(){
+		return this.displayName;
 	}
 	
 	//add int
