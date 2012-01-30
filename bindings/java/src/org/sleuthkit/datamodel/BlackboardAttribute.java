@@ -254,7 +254,7 @@ public class BlackboardAttribute {
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = moduleName;
 		this.context = context;
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE;
 		this.valueInt = 0;
 		this.valueLong = 0;
 		this.valueDouble = valueDouble;
@@ -277,7 +277,7 @@ public class BlackboardAttribute {
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = moduleName;
 		this.context = context;
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING;
 		this.valueInt = 0;
 		this.valueLong = 0;
 		this.valueDouble = 0;
@@ -300,7 +300,7 @@ public class BlackboardAttribute {
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = moduleName;
 		this.context = context;
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE;
 		this.valueInt = 0;
 		this.valueLong = 0;
 		this.valueDouble = 0;
