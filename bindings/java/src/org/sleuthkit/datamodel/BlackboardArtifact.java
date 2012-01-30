@@ -166,7 +166,6 @@ public class BlackboardArtifact {
 		return this.displayName;
 	}
 	
-	//add int
 	/**
 	 * add an attribute to this artifact
 	 * @param attrType the attribute type enum

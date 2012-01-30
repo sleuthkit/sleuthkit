@@ -30,24 +30,24 @@ Image >
 	AttributeGetDisplayName: Test Attribute
 	AttributeGetContext: third_call
 	AttributeGetSource: regressionTest
-	AttributeGetValueType: Integer
-	AttributeGetValueInteger: 0
+	AttributeGetValueType: Double
+	AttributeGetValueDouble: 7.412
 	AttributeGetArtifactID: 1
 	AttributeGetAttributeTypeID: 1001
 	AttributeGetAttributeTypeName: testattr
 	AttributeGetDisplayName: Test Attribute
 	AttributeGetContext: fourth_call
 	AttributeGetSource: regressionTest
-	AttributeGetValueType: Integer
-	AttributeGetValueInteger: 0
+	AttributeGetValueType: String
+	AttributeGetValueString: test
 	AttributeGetArtifactID: 1
 	AttributeGetAttributeTypeID: 1001
 	AttributeGetAttributeTypeName: testattr
 	AttributeGetDisplayName: Test Attribute
 	AttributeGetContext: fifth_call
 	AttributeGetSource: regressionTest
-	AttributeGetValueType: Integer
-	AttributeGetValueInteger: 0
+	AttributeGetValueType: Byte
+	AttributeGetValueByte: [1, 2]
 	ArtifactGetArtifactID: 2
 	ArtifactGetArtifactTypeID: 1001
 	ArtifactGetArtifactTypeName: Test_Artifact
@@ -75,24 +75,24 @@ Image >
 	AttributeGetDisplayName: Geo
 	AttributeGetContext: eighth_call
 	AttributeGetSource: regressionTest
-	AttributeGetValueType: Integer
-	AttributeGetValueInteger: 0
+	AttributeGetValueType: Double
+	AttributeGetValueDouble: 7.412
 	AttributeGetArtifactID: 2
 	AttributeGetAttributeTypeID: 10
 	AttributeGetAttributeTypeName: TSK_KEYWORD
 	AttributeGetDisplayName: Keyword
 	AttributeGetContext: nineth_call
 	AttributeGetSource: regressionTest
-	AttributeGetValueType: Integer
-	AttributeGetValueInteger: 0
+	AttributeGetValueType: String
+	AttributeGetValueString: test
 	AttributeGetArtifactID: 2
 	AttributeGetAttributeTypeID: 13
 	AttributeGetAttributeTypeName: TSK_KEYWORD_SET
 	AttributeGetDisplayName: Keyword Set
 	AttributeGetContext: tenth_call
 	AttributeGetSource: regressionTest
-	AttributeGetValueType: Integer
-	AttributeGetValueInteger: 0
+	AttributeGetValueType: Byte
+	AttributeGetValueByte: [3, 4]
 	ArtifactGetArtifactID: 3
 	ArtifactGetArtifactTypeID: 1
 	ArtifactGetArtifactTypeName: TSK_GEN_INFO
@@ -120,24 +120,24 @@ Image >
 	AttributeGetDisplayName: URL
 	AttributeGetContext: thirteenth_call
 	AttributeGetSource: regressionTest
-	AttributeGetValueType: Integer
-	AttributeGetValueInteger: 0
+	AttributeGetValueType: Double
+	AttributeGetValueDouble: 1.987
 	AttributeGetArtifactID: 3
 	AttributeGetAttributeTypeID: 2
 	AttributeGetAttributeTypeName: TSK_DATETIME
 	AttributeGetDisplayName: Date Time
 	AttributeGetContext: fourteenth_call
 	AttributeGetSource: regressionTest
-	AttributeGetValueType: Integer
-	AttributeGetValueInteger: 0
+	AttributeGetValueType: String
+	AttributeGetValueString: test2
 	AttributeGetArtifactID: 3
 	AttributeGetAttributeTypeID: 2
 	AttributeGetAttributeTypeName: TSK_DATETIME
 	AttributeGetDisplayName: Date Time
 	AttributeGetContext: fifteenth_call
 	AttributeGetSource: regressionTest
-	AttributeGetValueType: Integer
-	AttributeGetValueInteger: 0
+	AttributeGetValueType: Byte
+	AttributeGetValueByte: [5, 6]
 	read: md5=d41d8cd98f00b204e9800998ecf8427e
 
 	VolumeSystem >
