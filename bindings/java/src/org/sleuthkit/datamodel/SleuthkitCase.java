@@ -417,7 +417,7 @@ public class SleuthkitCase {
 			ResultSet rs = s.executeQuery("SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = " + obj_id + " AND artifact_type_id = " + artifactTypeID);
 
 			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName));
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName, this.getArtifactTypeDisplayName(artifactTypeID)));
 			}
 			s.close();
 			return artifacts;
@@ -474,7 +474,7 @@ public class SleuthkitCase {
 			int artifact_type_id = rs.getInt(2);
 
 			s.close();
-			return new BlackboardArtifact(this, artifactID, obj_id, artifact_type_id, this.getArtifactTypeString(artifact_type_id));
+			return new BlackboardArtifact(this, artifactID, obj_id, artifact_type_id, this.getArtifactTypeString(artifact_type_id), this.getArtifactTypeDisplayName(artifact_type_id));
 
 		} catch (SQLException ex) {
 			throw new TskException("Error getting a blackboard artifact. " + ex.getMessage(), ex);
@@ -525,8 +525,8 @@ public class SleuthkitCase {
 	 * @return the id of the new attribute
 	 * @throws TskException 
 	 */
-	public int addAttrType(String attrTypeString) throws TskException {
-		addAttrType(attrTypeString, attributeIDcounter);
+	public int addAttrType(String attrTypeString, String displayName) throws TskException {
+		addAttrType(attrTypeString, displayName, attributeIDcounter);
 		int retval = attributeIDcounter;
 		attributeIDcounter++;
 		return retval;
@@ -539,12 +539,12 @@ public class SleuthkitCase {
 	 * @param typeID type id
 	 * @throws TskException 
 	 */
-	private void addAttrType(String attrTypeString, int typeID) throws TskException {
+	private void addAttrType(String attrTypeString, String displayName, int typeID) throws TskException {
 		try {
 			Statement s = con.createStatement();
 			ResultSet rs = s.executeQuery("SELECT * from blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'");
 			if(!rs.next())
-				s.executeUpdate("INSERT INTO blackboard_attribute_types (attribute_type_id, type_name) VALUES (" + typeID + ", '" + attrTypeString + "')");
+				s.executeUpdate("INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name) VALUES (" + typeID + ", '" + attrTypeString + "', '" + displayName + "')");
 			else
 				throw new TskException("Attribute with that name already exists");
 		} catch (SQLException ex) {
@@ -602,9 +602,34 @@ public class SleuthkitCase {
 			throw new TskException("Error getting or creating a attribute type name.", ex);
 		}
 	}
+	
+	/**
+	 * Get the display name for the attribute with the given id. Will throw an error if that id does not exist
+	 * @param attrTypeID attribute id
+	 * @return string associated with the given id
+	 */
+	public String getAttrTypeDisplayName(int attrTypeID) throws TskException {
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs;
+
+			rs = s.executeQuery("SELECT display_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID);
+			if (rs.next()) {
+				String type = rs.getString(1);
+				s.close();
+				return type;
+			} else {
+				s.close();
+				throw new TskException("No type with that id.");
+			}
+
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a attribute type name.", ex);
+		}
+	}
 
 	/**
-	 * Get artifact type id for the given string. Will create a new one if one with that
+	 * Get artifact type id for the given string. Will throw an error if one with that
 	 * name does not exist.
 	 * @param artifactTypeString name for an artifact type
 	 * @return artifact type
@@ -620,12 +645,7 @@ public class SleuthkitCase {
 				s.close();
 				return type;
 			} else {
-				this.addArtifactType(artifactTypeString);
-				rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeString + "'");
-				rs.next();
-				int type = rs.getInt(1);
-				s.close();
-				return type;
+				throw new TskException("No artifact with that name exists");
 			}
 
 		} catch (SQLException ex) {
@@ -658,6 +678,32 @@ public class SleuthkitCase {
 			throw new TskException("Error getting artifact type id.", ex);
 		}
 	}
+	
+	/**
+	 * Get artifact type display name for the given string. Will throw an error if that artifact doesn't
+	 * exist. Use addArtifactType(...) to create a new one.
+	 * @param artifactTypeID id for an artifact type
+	 * @return display name of that artifact type
+	 */
+	String getArtifactTypeDisplayName(int artifactTypeID) throws TskException {
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs;
+
+			rs = s.executeQuery("SELECT display_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID);
+			if (rs.next()) {
+				String type = rs.getString(1);
+				s.close();
+				return type;
+			} else {
+				s.close();
+				throw new TskException("Error: no artifact with that name in database");
+			}
+
+		} catch (SQLException ex) {
+			throw new TskException("Error getting artifact type id.", ex);
+		}
+	}
 
 	/**
 	 * Add an artifact type with the given name. Will return an id that can be used
@@ -665,8 +711,8 @@ public class SleuthkitCase {
 	 * @param artifactTypeID id for an artifact type
 	 * @return name of that artifact type
 	 */
-	public int addArtifactType(String artifactTypeName) throws TskException {
-		addArtifactType(artifactTypeName, artifactIDcounter);
+	public int addArtifactType(String artifactTypeName, String displayName) throws TskException {
+		addArtifactType(artifactTypeName, displayName, artifactIDcounter);
 		int retval = artifactIDcounter;
 		artifactIDcounter++;
 		return retval;
@@ -678,12 +724,12 @@ public class SleuthkitCase {
 	 * @param typeID type id
 	 * @throws TskException 
 	 */
-	private void addArtifactType(String artifactTypeName, int typeID) throws TskException {
+	private void addArtifactType(String artifactTypeName, String displayName, int typeID) throws TskException {
 		try {
 			Statement s = con.createStatement();
 			ResultSet rs = s.executeQuery("SELECT * FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
 			if(!rs.next())
-				s.executeUpdate("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name) VALUES (" + typeID + " , '" + artifactTypeName + "')");
+				s.executeUpdate("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + typeID + " , '" + artifactTypeName + "', '" + displayName + "')");
 			else
 				throw new TskException("Artifact with that name already exists");
 		} catch (SQLException ex) {
@@ -734,8 +780,8 @@ public class SleuthkitCase {
 			ResultSet rs = s.executeQuery("Select artifact_id, obj_id, artifact_type_id FROM blackboard_artifacts " + whereClause);
 
 			while (rs.next()) {
-				BlackboardArtifact attr = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), this.getArtifactTypeString(rs.getInt(3)));
-				matches.add(attr);
+				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), this.getArtifactTypeString(rs.getInt(3)), this.getArtifactTypeDisplayName(rs.getInt(3)));
+				matches.add(artifact);
 			}
 			s.close();
 			return matches;
@@ -756,6 +802,7 @@ public class SleuthkitCase {
 			Statement s = con.createStatement();
 
 			String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
+			String artifactDisplayName = this.getArtifactTypeDisplayName(artifactTypeID);
 
 			long artifactID = -1;
 			s.executeUpdate("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) VALUES (NULL, " + obj_id + ", " + artifactTypeID + ")");
@@ -766,7 +813,7 @@ public class SleuthkitCase {
 				}
 			}
 			s.close();
-			return new BlackboardArtifact(this, artifactID, obj_id, artifactTypeID, artifactTypeName);
+			return new BlackboardArtifact(this, artifactID, obj_id, artifactTypeID, artifactTypeName, artifactDisplayName);
 
 		} catch (SQLException ex) {
 			throw new TskException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
@@ -793,7 +840,7 @@ public class SleuthkitCase {
 				}
 			}
 			s.close();
-			return new BlackboardArtifact(this, artifactID, obj_id, type, artifactType.getLabel());
+			return new BlackboardArtifact(this, artifactID, obj_id, type, artifactType.getLabel(), artifactType.getDisplayName());
 
 		} catch (SQLException ex) {
 			throw new TskException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
@@ -806,7 +853,7 @@ public class SleuthkitCase {
 	 * @throws TskException 
 	 */
 	private void addBuiltInArtifactType(ARTIFACT_TYPE type) throws TskException {
-		addArtifactType(type.getLabel(), type.getTypeID());
+		addArtifactType(type.getLabel(), type.getDisplayName(), type.getTypeID());
 	}
 
 	/**
@@ -815,7 +862,7 @@ public class SleuthkitCase {
 	 * @throws TskException 
 	 */
 	private void addBuiltInAttrType(ATTRIBUTE_TYPE type) throws TskException {
-		addAttrType(type.getLabel(), type.getTypeID());
+		addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
 	}
 
 	/** 
