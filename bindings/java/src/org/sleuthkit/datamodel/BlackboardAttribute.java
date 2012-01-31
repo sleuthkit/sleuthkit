@@ -158,7 +158,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching type: " + label);
 		}
 
-		String getDisplayName() {
+		public String getDisplayName() {
 			return this.displayName;
 		}
 	}
