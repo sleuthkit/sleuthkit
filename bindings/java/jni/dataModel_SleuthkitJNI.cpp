@@ -254,12 +254,12 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
     
     jboolean isCopy;
     
-    unsigned char *md5 = (unsigned char *) env->GetStringUTFChars(hash, &isCopy);
+    const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
     TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
 
     if (m_NSRLDb != NULL) {
-        int8_t retval = tsk_hdb_lookup_raw(m_NSRLDb, md5, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
+        int8_t retval = tsk_hdb_lookup_str(m_NSRLDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
                 
         if (retval == -1) {
         throwTskError(env, "error matching nsrl hashset");
@@ -269,7 +269,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
     }
 
     if (m_knownBadDb != NULL) {
-        int8_t retval = tsk_hdb_lookup_raw(m_knownBadDb, md5, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
+        int8_t retval = tsk_hdb_lookup_str(m_knownBadDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
                 
         if (retval == -1) {
             throwTskError(env, "error matching known bad hashset");
