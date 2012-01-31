@@ -1415,7 +1415,14 @@ public class SleuthkitCase {
 		}
 	}
 	
-	/** update the given hash and known status to the object in the DB denoted by id */
+	/**
+	 * Update the given hash and known status of the object in the DB denoted by id
+	 * 
+	 * @param id		The object's unique ID in the database
+	 * @param md5Hash	The object's calculated md5 hash
+	 * @param known		The object's known status
+	 * @throws SQLException
+	 */
 	private void updateHashAndKnown(long id, String md5Hash, long known) throws SQLException{
 		Statement s = con.createStatement();
 		s.executeUpdate("UPDATE tsk_files " +
@@ -1424,46 +1431,62 @@ public class SleuthkitCase {
 		s.close();
 	}
 	
-	/** update the hashes and known statuses of multiple objects in the db */
-	private void updateHashesAndKnowns(List<Long> ids, List<String> md5Hashes, List<Long> knowns) throws SQLException{
-		int idsSize = ids.size();
-		int md5sSize = md5Hashes.size();
-		int knownsSize = knowns.size();
-		if(idsSize == md5sSize && md5sSize == knownsSize && knownsSize == idsSize){
-			StringBuilder query = new StringBuilder("UPDATE tsk_files SET known = CASE obj_id");
-			for(int i = 0; i<idsSize; i++){
-				// " WHEN id THEN known"
-				query.append(" WHEN ").append(ids.get(i))
-					 .append(" THEN ").append(knowns.get(i));
-			}
-			query.append(" END, md5 = CASE obj_id");
-			for(int i = 0; i<idsSize; i++){
-				// " WHEN id THEN hash"
-				query.append(" WHEN ").append(ids.get(i))
-				     .append(" THEN '").append(md5Hashes.get(i)).append("'");
-			}
-			query.append(" END WHERE id in (");
-			for(int i = 0; i<idsSize; i++){
-				// "1,2,3,4,"
-				query.append(ids.get(i)).append(",");
-			}
-			// remove the last unnecessary comma
-			query.deleteCharAt(query.length()-1);
-			query.append(")");
-			Statement s = con.createStatement();
-			s.executeUpdate(query.toString());
-			s.close();
-		}else{
-			throw new IllegalArgumentException("Lists must be of equal length!");
-		}
-	}
+//	Useful if we want to queue sql updates for performance reasons
+//	/**
+//	 * Update the given hash and known status of the objects in the DB denoted by id
+//	 * 
+//	 * @param ids		The objects' unique IDs in the database
+//	 * @param md5Hashes	The objects' calculated md5 hashes
+//	 * @param knowns	The objects' known statuses
+//	 * @throws SQLException
+//	 */
+//	private void updateHashesAndKnowns(List<Long> ids, List<String> md5Hashes, List<Long> knowns) throws SQLException{
+//		int idsSize = ids.size();
+//		int md5sSize = md5Hashes.size();
+//		int knownsSize = knowns.size();
+//		if(idsSize == md5sSize && md5sSize == knownsSize && knownsSize == idsSize){
+//			StringBuilder query = new StringBuilder("UPDATE tsk_files SET known = CASE obj_id");
+//			for(int i = 0; i<idsSize; i++){
+//				// " WHEN id THEN known"
+//				query.append(" WHEN ").append(ids.get(i))
+//					 .append(" THEN ").append(knowns.get(i));
+//			}
+//			query.append(" END, md5 = CASE obj_id");
+//			for(int i = 0; i<idsSize; i++){
+//				// " WHEN id THEN hash"
+//				query.append(" WHEN ").append(ids.get(i))
+//				     .append(" THEN '").append(md5Hashes.get(i)).append("'");
+//			}
+//			query.append(" END WHERE id in (");
+//			for(int i = 0; i<idsSize; i++){
+//				// "1,2,3,4,"
+//				query.append(ids.get(i)).append(",");
+//			}
+//			// remove the last unnecessary comma
+//			query.deleteCharAt(query.length()-1);
+//			query.append(")");
+//			Statement s = con.createStatement();
+//			s.executeUpdate(query.toString());
+//			s.close();
+//		}else{
+//			throw new IllegalArgumentException("Lists must be of equal length!");
+//		}
+//	}
 	
-	/** Perform actions relating to the given object's md5 */
-	public String analyzeFileMd5(Content cont) throws TskException{
+	/**
+	 * Calculate the given Content object's md5 hash, look it up in the
+	 * known databases, and then update the case database with both hash and
+	 * known status
+	 *
+	 * @param cont The content whose md5 you want to look up
+	 * @return	   The content's known status from the databases
+	 * @throws TskException
+	 */
+	public String lookupFileMd5(Content cont) throws TskException{
 		Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 		try{
 			long contId = cont.getId();
-			String md5Hash = Hash.calculateHash(cont);
+			String md5Hash = Hash.calculateMd5(cont);
 			FileKnown fk = SleuthkitJNI.lookupHash(md5Hash);
 			String known = fk.getName();
 			updateHashAndKnown(contId, md5Hash, fk.toLong());
@@ -1476,28 +1499,37 @@ public class SleuthkitCase {
 		throw new TskException("Error analyzing file");
 	}
 	
-	/** Perform actions relating to the given objects' md5s */
-	public List<Long> analyzeFilesMd5(List<? extends Content> cont) throws TskException{
-		List<Long> ids = new ArrayList<Long>();
-		List<String> md5Hashes = new ArrayList<String>();
-		List<Long> knowns = new ArrayList<Long>();
-		
-		try{
-			for(Content c : cont){
-				ids.add(c.getId());
-				String md5Hash = Hash.calculateHash(c);
-				md5Hashes.add(md5Hash);
-				knowns.add(SleuthkitJNI.lookupHash(md5Hash).toLong());
-			}
-			updateHashesAndKnowns(ids, md5Hashes, knowns);
-			return knowns;
-		} catch (TskException ex) {
-			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE,
-					"Error looking up known status", ex);
-		} catch(SQLException ex) {
-			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE,
-				"Error updating SQL database", ex);
-		}
-		throw new TskException("Error analyzing files");
-	}
+//	Useful if we want to queue sql updates for performance reasons
+//	/**
+//	 * Calculate the given Content objects' md5 hashes, look them up in the
+//	 * known databases, and then update the case database with both hash and
+//	 * known status
+//	 *
+//	 * @param cont The list of contents whose md5s you want to look up
+//	 * @return	   The contents' known statuses from the databases
+//	 * @throws TskException
+//	 */
+//	public List<Long> lookupFilesMd5(List<? extends Content> cont) throws TskException{
+//		List<Long> ids = new ArrayList<Long>();
+//		List<String> md5Hashes = new ArrayList<String>();
+//		List<Long> knowns = new ArrayList<Long>();
+//		
+//		try{
+//			for(Content c : cont){
+//				ids.add(c.getId());
+//				String md5Hash = Hash.calculateMd5(c);
+//				md5Hashes.add(md5Hash);
+//				knowns.add(SleuthkitJNI.lookupHash(md5Hash).toLong());
+//			}
+//			updateHashesAndKnowns(ids, md5Hashes, knowns);
+//			return knowns;
+//		} catch (TskException ex) {
+//			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE,
+//					"Error looking up known status", ex);
+//		} catch(SQLException ex) {
+//			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE,
+//				"Error updating SQL database", ex);
+//		}
+//		throw new TskException("Error analyzing files");
+//	}
 } 

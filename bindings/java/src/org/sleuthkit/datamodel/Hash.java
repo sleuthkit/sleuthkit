@@ -32,7 +32,7 @@ class Hash {
     /**
      * generate the md5 hash for the given content
     */
-    static String calculateHash(Content content){
+    static String calculateMd5(Content content){
         String hashText = "";
 		InputStream in = new ReadContentInputStream(content);
 		Logger logger = Logger.getLogger(Hash.class.getName());
