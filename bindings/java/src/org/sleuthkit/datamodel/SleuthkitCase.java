@@ -404,6 +404,48 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Get all blackboard artifacts of a given type
+	 * @param artifactTypeID artifact type id (must exist in database)
+	 * @return list of blackboard artifacts
+	 */
+	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID) throws TskException {
+		String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
+		try {
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("SELECT artifact_id, obj_id FROM blackboard_artifacts WHERE artifact_type_id = " + artifactTypeID);
+
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), artifactTypeID, artifactTypeName));
+			}
+			s.close();
+			return artifacts;
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
+		}
+	}
+
+	/**
+	 * Get all blackboard artifact types
+	 * @return list of blackboard artifact types
+	 */
+	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypes() throws TskException {
+		try {
+			ArrayList<BlackboardArtifact.ARTIFACT_TYPE> artifact_types = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types");
+
+			while (rs.next()) {
+				artifact_types.add(BlackboardArtifact.ARTIFACT_TYPE.fromID(rs.getInt(1)));
+			}
+			s.close();
+			return artifact_types;
+		} catch (SQLException ex) {
+			throw new TskException("Error getting artifact types. " + ex.getMessage(), ex);
+		}
+	}
+
+	/**
 	 * helper method to get all artifacts matching the type id name and object id
 	 * @param artifactTypeID artifact type id
 	 * @param artifactTypeName artifact type name
@@ -459,7 +501,7 @@ public class SleuthkitCase {
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
 			return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel(), obj_id);
 	}
-
+	
 	/**
      * Get the blackboard artifact with the given artifact id
 	 * @param artifactID artifact ID
