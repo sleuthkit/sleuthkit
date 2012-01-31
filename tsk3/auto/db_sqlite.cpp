@@ -248,11 +248,11 @@ int
             "Error creating blackboard_attribute table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifact_types (artifact_type_id INTEGER PRIMARY KEY, type_name TEXT)",
+        ("CREATE TABLE blackboard_artifact_types (artifact_type_id INTEGER PRIMARY KEY, type_name TEXT, display_name TEXT)",
             "Error creating blackboard_artifact_types table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT)",
+        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT, display_name TEXT)",
             "Error creating blackboard_attribute_types table: %s\n")) {
         return 1;
     }
