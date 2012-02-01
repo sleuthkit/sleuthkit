@@ -116,7 +116,9 @@ public class BlackboardAttribute {
         TSK_TEXT_FILE (27, "TSK_TEXT_FILE", "Text File"),
         TSK_TEXT_LANGUAGE (28, "TSK_TEXT_LANGUAGE", "Text Language"),
         TSK_ENTROPY (29, "TSK_ENTROPY", "Entropy"),
-        TSK_HASHSET_NAME (30, "TSK_HASHSET_NAME", "Hashset Name");
+        TSK_HASHSET_NAME (30, "TSK_HASHSET_NAME", "Hashset Name"),
+		TSK_REFERRER(31, "TSK_REFERRER", "Referring Address"),
+		TSK_LAST_ACCESSED(32, "TSK_LAST_ACCESSED", "Last Time Accessed");
 
 		private String label;
 		private int typeID;
