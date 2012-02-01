@@ -1420,13 +1420,13 @@ public class SleuthkitCase {
 	 * 
 	 * @param id		The object's unique ID in the database
 	 * @param md5Hash	The object's calculated md5 hash
-	 * @param known		The object's known status
+	 * @param fileKnown	The object's known status
 	 * @throws SQLException
 	 */
-	private void updateHashAndKnown(long id, String md5Hash, long known) throws SQLException{
+	private void updateHashAndKnown(long id, String md5Hash, FileKnown fileKnown) throws SQLException{
 		Statement s = con.createStatement();
 		s.executeUpdate("UPDATE tsk_files " +
-						"SET known='" + known + "', md5='" + md5Hash + "' " +
+						"SET known='" + fileKnown.toLong() + "', md5='" + md5Hash + "' " +
 						"WHERE obj_id=" + id);
 		s.close();
 	}
@@ -1487,10 +1487,9 @@ public class SleuthkitCase {
 		try{
 			long contId = cont.getId();
 			String md5Hash = Hash.calculateMd5(cont);
-			FileKnown fk = SleuthkitJNI.lookupHash(md5Hash);
-			String known = fk.getName();
-			updateHashAndKnown(contId, md5Hash, fk.toLong());
-			return known;
+			FileKnown fileKnown = SleuthkitJNI.lookupHash(md5Hash);
+			updateHashAndKnown(contId, md5Hash, fileKnown);
+			return fileKnown.getName();
 		} catch (TskException ex) {
 			logger.log(Level.SEVERE, "Error looking up known status", ex);
 		} catch(SQLException ex) {
