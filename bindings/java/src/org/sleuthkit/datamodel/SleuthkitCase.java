@@ -31,6 +31,7 @@ import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
+import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 
 /**
@@ -403,6 +404,49 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Get all blackboard artifacts of a given type
+	 * @param artifactTypeID artifact type id (must exist in database)
+	 * @return list of blackboard artifacts
+	 */
+	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID) throws TskException {
+		String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
+		try {
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("SELECT artifact_id, obj_id FROM blackboard_artifacts WHERE artifact_type_id = " + artifactTypeID);
+
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), 
+								artifactTypeID, artifactTypeName, ARTIFACT_TYPE.fromID(artifactTypeID).getDisplayName()));
+			}
+			s.close();
+			return artifacts;
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
+		}
+	}
+
+	/**
+	 * Get all blackboard artifact types
+	 * @return list of blackboard artifact types
+	 */
+	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypes() throws TskException {
+		try {
+			ArrayList<BlackboardArtifact.ARTIFACT_TYPE> artifact_types = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types");
+
+			while (rs.next()) {
+				artifact_types.add(BlackboardArtifact.ARTIFACT_TYPE.fromID(rs.getInt(1)));
+			}
+			s.close();
+			return artifact_types;
+		} catch (SQLException ex) {
+			throw new TskException("Error getting artifact types. " + ex.getMessage(), ex);
+		}
+	}
+
+	/**
 	 * helper method to get all artifacts matching the type id name and object id
 	 * @param artifactTypeID artifact type id
 	 * @param artifactTypeName artifact type name
@@ -458,7 +502,7 @@ public class SleuthkitCase {
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
 			return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel(), obj_id);
 	}
-
+	
 	/**
      * Get the blackboard artifact with the given artifact id
 	 * @param artifactID artifact ID
@@ -1370,4 +1414,121 @@ public class SleuthkitCase {
 					"Error freeing case handle.", ex);
 		}
 	}
-}
+	
+	/**
+	 * Update the given hash and known status of the object in the DB denoted by id
+	 * 
+	 * @param id		The object's unique ID in the database
+	 * @param md5Hash	The object's calculated md5 hash
+	 * @param fileKnown	The object's known status
+	 * @throws SQLException
+	 */
+	private void updateHashAndKnown(long id, String md5Hash, FileKnown fileKnown) throws SQLException{
+		Statement s = con.createStatement();
+		s.executeUpdate("UPDATE tsk_files " +
+						"SET known='" + fileKnown.toLong() + "', md5='" + md5Hash + "' " +
+						"WHERE obj_id=" + id);
+		s.close();
+	}
+	
+//	Useful if we want to queue sql updates for performance reasons
+//	/**
+//	 * Update the given hash and known status of the objects in the DB denoted by id
+//	 * 
+//	 * @param ids		The objects' unique IDs in the database
+//	 * @param md5Hashes	The objects' calculated md5 hashes
+//	 * @param knowns	The objects' known statuses
+//	 * @throws SQLException
+//	 */
+//	private void updateHashesAndKnowns(List<Long> ids, List<String> md5Hashes, List<Long> knowns) throws SQLException{
+//		int idsSize = ids.size();
+//		int md5sSize = md5Hashes.size();
+//		int knownsSize = knowns.size();
+//		if(idsSize == md5sSize && md5sSize == knownsSize && knownsSize == idsSize){
+//			StringBuilder query = new StringBuilder("UPDATE tsk_files SET known = CASE obj_id");
+//			for(int i = 0; i<idsSize; i++){
+//				// " WHEN id THEN known"
+//				query.append(" WHEN ").append(ids.get(i))
+//					 .append(" THEN ").append(knowns.get(i));
+//			}
+//			query.append(" END, md5 = CASE obj_id");
+//			for(int i = 0; i<idsSize; i++){
+//				// " WHEN id THEN hash"
+//				query.append(" WHEN ").append(ids.get(i))
+//				     .append(" THEN '").append(md5Hashes.get(i)).append("'");
+//			}
+//			query.append(" END WHERE id in (");
+//			for(int i = 0; i<idsSize; i++){
+//				// "1,2,3,4,"
+//				query.append(ids.get(i)).append(",");
+//			}
+//			// remove the last unnecessary comma
+//			query.deleteCharAt(query.length()-1);
+//			query.append(")");
+//			Statement s = con.createStatement();
+//			s.executeUpdate(query.toString());
+//			s.close();
+//		}else{
+//			throw new IllegalArgumentException("Lists must be of equal length!");
+//		}
+//	}
+	
+	/**
+	 * Calculate the given Content object's md5 hash, look it up in the
+	 * known databases, and then update the case database with both hash and
+	 * known status
+	 *
+	 * @param cont The content whose md5 you want to look up
+	 * @return	   The content's known status from the databases
+	 * @throws TskException
+	 */
+	public String lookupFileMd5(Content cont) throws TskException{
+		Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
+		try{
+			long contId = cont.getId();
+			String md5Hash = Hash.calculateMd5(cont);
+			FileKnown fileKnown = SleuthkitJNI.lookupHash(md5Hash);
+			updateHashAndKnown(contId, md5Hash, fileKnown);
+			return fileKnown.getName();
+		} catch (TskException ex) {
+			logger.log(Level.SEVERE, "Error looking up known status", ex);
+		} catch(SQLException ex) {
+			logger.log(Level.SEVERE, "Error updating SQL database", ex);
+		}
+		throw new TskException("Error analyzing file");
+	}
+	
+//	Useful if we want to queue sql updates for performance reasons
+//	/**
+//	 * Calculate the given Content objects' md5 hashes, look them up in the
+//	 * known databases, and then update the case database with both hash and
+//	 * known status
+//	 *
+//	 * @param cont The list of contents whose md5s you want to look up
+//	 * @return	   The contents' known statuses from the databases
+//	 * @throws TskException
+//	 */
+//	public List<Long> lookupFilesMd5(List<? extends Content> cont) throws TskException{
+//		List<Long> ids = new ArrayList<Long>();
+//		List<String> md5Hashes = new ArrayList<String>();
+//		List<Long> knowns = new ArrayList<Long>();
+//		
+//		try{
+//			for(Content c : cont){
+//				ids.add(c.getId());
+//				String md5Hash = Hash.calculateMd5(c);
+//				md5Hashes.add(md5Hash);
+//				knowns.add(SleuthkitJNI.lookupHash(md5Hash).toLong());
+//			}
+//			updateHashesAndKnowns(ids, md5Hashes, knowns);
+//			return knowns;
+//		} catch (TskException ex) {
+//			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE,
+//					"Error looking up known status", ex);
+//		} catch(SQLException ex) {
+//			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE,
+//				"Error updating SQL database", ex);
+//		}
+//		throw new TskException("Error analyzing files");
+//	}
+} 

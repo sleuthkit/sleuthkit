@@ -28,7 +28,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_curFsId = 0;
     m_curVsId = 0;
     m_blkMapFlag = false;
-    m_fileHashFlag = true;
+    m_fileHashFlag = false;
     m_vsFound = false;
     m_volFound = false;
     m_stopped = false;
@@ -511,7 +511,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
 
         TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
 
-        if (m_fileHashFlag && isFile(fs_file)) {
+		if (m_fileHashFlag && isFile(fs_file)) {
             if (md5HashAttr(hash, fs_attr)) {
                 return TSK_ERR;
             }
