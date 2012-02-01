@@ -690,7 +690,7 @@ public class SleuthkitCase {
 			Statement s = con.createStatement();
 			ResultSet rs;
 
-			rs = s.executeQuery("SELECT display_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID);
+			rs = s.executeQuery("SELECT type_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID);
 			if (rs.next()) {
 				String type = rs.getString(1);
 				s.close();
