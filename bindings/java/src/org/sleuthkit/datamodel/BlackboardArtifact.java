@@ -98,7 +98,7 @@ public class BlackboardArtifact {
 			throw new IllegalArgumentException("No ARTIFACT_TYPE matching type: " + ID);
 		}
 
-		String getDisplayName() {
+		public String getDisplayName() {
 			return this.displayName;
 		}
 	}
