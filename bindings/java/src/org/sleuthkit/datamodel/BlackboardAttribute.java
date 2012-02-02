@@ -326,6 +326,22 @@ public class BlackboardAttribute {
 	public int getAttributeTypeID() {
 		return attributeTypeID;
 	}
+	
+	/**
+	 * get the attribute type id
+	 * @return type id
+	 */
+	public String getAttributeTypeName() throws TskException {
+		return Case.getAttrTypeString(attributeTypeID);
+	}
+	
+	/**
+	 * get the attribute type id
+	 * @return type id
+	 */
+	public String getAttributeTypeDisplayName() throws TskException {
+		return Case.getAttrTypeDisplayName(attributeTypeID);
+	}
 
 	/**
 	 * get the value type (this should be used to identify the type of value and call
