@@ -1491,9 +1491,9 @@ public class SleuthkitCase {
 			updateHashAndKnown(contId, md5Hash, fileKnown);
 			return fileKnown.getName();
 		} catch (TskException ex) {
-			logger.log(Level.WARNING, "Error looking up known status", ex);
+			logger.log(Level.INFO, "Error looking up known status", ex);
 		} catch(SQLException ex) {
-			logger.log(Level.WARNING, "Error updating SQL database", ex);
+			logger.log(Level.INFO, "Error updating SQL database", ex);
 		}
 		throw new TskException("Error analyzing file");
 	}
