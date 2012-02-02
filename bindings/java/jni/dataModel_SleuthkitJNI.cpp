@@ -190,7 +190,7 @@ JNIEXPORT void JNICALL
  * @param caseHandle the pointer to the case
  */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_setCaseDbNSRLNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_setDbNSRLNat(JNIEnv * env,
     jclass obj, jstring pathJ) {
 
     if (m_NSRLDb != NULL) {
@@ -213,7 +213,7 @@ JNIEXPORT void JNICALL
  * @param caseHandle the pointer to the case
  */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_setCaseDbKnownBadNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_setDbKnownBadNat(JNIEnv * env,
     jclass obj, jstring pathJ) {
 
     if (m_knownBadDb != NULL) {
@@ -230,7 +230,7 @@ JNIEXPORT void JNICALL
 
 
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_clearCaseDbLookupsNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupsNat(JNIEnv * env,
     jclass obj) {
 
     if (m_NSRLDb != NULL) {

@@ -31,9 +31,9 @@ public class SleuthkitJNI {
 	private static native long newCaseDbNat(String dbPath) throws TskException;
 	private static native long openCaseDbNat(String path) throws TskException;
 	private static native void closeCaseDbNat(long db) throws TskException;
-	private static native void setCaseDbNSRLNat(String hashDbPath) throws TskException;
-	private static native void setCaseDbKnownBadNat(String hashDbPath) throws TskException;
-	private static native void clearCaseDbLookupsNat() throws TskException;
+	private static native void setDbNSRLNat(String hashDbPath) throws TskException;
+	private static native void setDbKnownBadNat(String hashDbPath) throws TskException;
+	private static native void closeDbLookupsNat() throws TskException;
 	private static native int hashDBLookup(String hash) throws TskException;
 
 	
@@ -94,7 +94,7 @@ public class SleuthkitJNI {
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 		}
 		void clearLookupDatabases() throws TskException {
-			clearCaseDbLookupsNat();
+			closeDbLookupsNat();
 		}
 		
 		
@@ -102,14 +102,14 @@ public class SleuthkitJNI {
 		 * Set the path to an NSRL database
 		 */
 		void setNSRLDatabase(String path) throws TskException {
-			setCaseDbNSRLNat(path);
+			setDbNSRLNat(path);
 		}
 
 		/**
 		 * Set the path to a known bad hash database
 		 */
 		void setKnownBadDatabase(String path) throws TskException {
-			setCaseDbKnownBadNat(path);
+			setDbKnownBadNat(path);
 		}
 
 		
@@ -412,14 +412,14 @@ public class SleuthkitJNI {
 	 * Set the path to an NSRL database
 	 */
 	public static void setNSRLDatabase(String path) throws TskException {
-		setCaseDbNSRLNat(path);
+		setDbNSRLNat(path);
 	}
 
 	/**
 	 * Set the path to a known bad hash database
 	 */
 	public static void setKnownBadDatabase(String path) throws TskException {
-		setCaseDbKnownBadNat(path);
+		setDbKnownBadNat(path);
 	}
 	
 	public static TskData.FileKnown lookupHash(String hash) throws TskException{
