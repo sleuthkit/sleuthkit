@@ -43,7 +43,8 @@ public class BlackboardArtifact {
 		TSK_RECENT_OBJECT (6, "TSK_RECENT_OBJ", "Recent Documents"),
 		TSK_TRACKPOINT (7, "TSK_TRACKPOINT", "Trackpoints"),
 		TSK_INSTALLED_PROG (8, "TSK_INSTALLED_PROG", "Installed Programs"),
-		TSK_KEYWORD_HIT (9, "TSK_KEYWORD_HIT", "Keyword Hits");
+		TSK_KEYWORD_HIT (9, "TSK_KEYWORD_HIT", "Keyword Hits"),
+		TSK_HASHSET_HIT (10, "TSK_HASHSET_HIT", "Hashset Hits");
 		
 		private String label;
 		private int typeID;
