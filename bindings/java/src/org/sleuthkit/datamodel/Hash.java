@@ -56,9 +56,9 @@ class Hash {
                 hashText = "0" + hashText;
             }
         } catch (NoSuchAlgorithmException ex) {
-            logger.log(Level.SEVERE, "No algorithm known as 'md5'", ex);
+            logger.log(Level.WARNING, "No algorithm known as 'md5'", ex);
         } catch (IOException ex) {
-            logger.log(Level.SEVERE, "Error reading content", ex);
+            logger.log(Level.WARNING, "Error reading content", ex);
         }
         return hashText;
     }
