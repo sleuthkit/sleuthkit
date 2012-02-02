@@ -32,9 +32,9 @@ class Hash {
 
     /**
      * generate the md5 hash for the given content
-	 * 
-	 * @param content	Content object whose md5 hash we want to calculate
-	 * @return			md5 of the given Content object
+     * 
+     * @param content    Content object whose md5 hash we want to calculate
+     * @return            md5 of the given Content object
      */
     static String calculateMd5(Content content) {
         String hashText = "";
@@ -56,9 +56,11 @@ class Hash {
                 hashText = "0" + hashText;
             }
         } catch (NoSuchAlgorithmException ex) {
-            logger.log(Level.SEVERE, "No algorithm known as 'md5'", ex);
+            // TODO This should be higher than INFO, but we want to avoid pop-ups during ingest.  Find better fix in future.
+            logger.log(Level.INFO, "No algorithm known as 'md5'", ex);
         } catch (IOException ex) {
-            logger.log(Level.SEVERE, "Error reading content", ex);
+            // TODO This should be higher than INFO, but we want to avoid pop-ups during ingest.  Find better fix in future.
+            logger.log(Level.INFO, "Error reading content", ex);
         }
         return hashText;
     }

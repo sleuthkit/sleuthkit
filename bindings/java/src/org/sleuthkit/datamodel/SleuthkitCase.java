@@ -1491,9 +1491,11 @@ public class SleuthkitCase {
 			updateHashAndKnown(contId, md5Hash, fileKnown);
 			return fileKnown.getName();
 		} catch (TskException ex) {
-			logger.log(Level.SEVERE, "Error looking up known status", ex);
+			// TODO This should be higher than INFO, but we want to avoid pop-ups during ingest.  Find better fix in future.
+			logger.log(Level.INFO, "Error looking up known status", ex);
 		} catch(SQLException ex) {
-			logger.log(Level.SEVERE, "Error updating SQL database", ex);
+			// TODO This should be higher than INFO, but we want to avoid pop-ups during ingest.  Find better fix in future.
+			logger.log(Level.INFO, "Error updating SQL database", ex);
 		}
 		throw new TskException("Error analyzing file");
 	}

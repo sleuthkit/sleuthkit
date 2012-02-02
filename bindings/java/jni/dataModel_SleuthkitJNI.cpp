@@ -15,8 +15,8 @@
 #include <locale.h>
 #include <time.h>
 
-TSK_HDB_INFO * m_NSRLDb;
-TSK_HDB_INFO * m_knownBadDb;
+static TSK_HDB_INFO * m_NSRLDb = NULL;
+static TSK_HDB_INFO * m_knownBadDb = NULL;
 
 /** Throw an TSK exception back up to the Java code with a specific message.
  */
@@ -251,18 +251,18 @@ JNIEXPORT void JNICALL
  */
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
 (JNIEnv * env, jclass obj, jstring hash){
-    
+
     jboolean isCopy;
-    
+
     const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
     TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
 
     if (m_NSRLDb != NULL) {
         int8_t retval = tsk_hdb_lookup_str(m_NSRLDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
-                
+
         if (retval == -1) {
-        throwTskError(env, "error matching nsrl hashset");
+            throwTskError(env);
         } else if (retval) {
             file_known = TSK_AUTO_CASE_FILE_KNOWN_KNOWN;
         }
@@ -270,15 +270,15 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
 
     if (m_knownBadDb != NULL) {
         int8_t retval = tsk_hdb_lookup_str(m_knownBadDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
-                
+
         if (retval == -1) {
-            throwTskError(env, "error matching known bad hashset");
+            throwTskError(env);
         } else if (retval) {
             file_known = TSK_AUTO_CASE_FILE_KNOWN_BAD;
         }
     }
 
-	env->ReleaseStringUTFChars(hash, (const char *) md5);
+    env->ReleaseStringUTFChars(hash, (const char *) md5);
 
     return (int) file_known;
 }
