@@ -3,7 +3,7 @@ LDADD = ../../tsk3/libtsk3.la $(CPPUNIT_LIBS)
 LDFLAGS = -static 
 
 noinst_PROGRAMS = test_base
-test_base_SOURCES= test_base.cpp errors_test.cpp
+test_base_SOURCES= test_base.cpp errors_test.cpp errors_test.h
 
 indent:
 	indent *.cpp *.h

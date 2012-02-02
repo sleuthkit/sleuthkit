@@ -476,9 +476,9 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_STOP;
     }
 
-    if (m_db->createSavepoint("PROCESSFILE")) {
-        return TSK_ERR;
-    }
+    //if (m_db->createSavepoint("PROCESSFILE")) {
+    //    return TSK_ERR;
+    //}
 
     /* process the attributes.  The case of having 0 attributes can occur
      * with virtual / sparse files.  At some point, this can probably be cleaned
@@ -489,9 +489,9 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     else
         retval = processAttributes(fs_file, path);
 
-    if (m_db->releaseSavepoint("PROCESSFILE")) {
-        return TSK_ERR;
-    }
+    //if (m_db->releaseSavepoint("PROCESSFILE")) {
+    //    return TSK_ERR;
+    //}
 
     return retval;
 }
