@@ -88,7 +88,7 @@ public class BlackboardAttribute {
 
 	public enum ATTRIBUTE_TYPE {
 		TSK_URL (1, "TSK_URL", "URL"),
-		TSK_DATETIME (2, "TSK_DATETIME", "Date Time"),
+		TSK_DATETIME (2, "TSK_DATETIME", "Date/Time"),
 		TSK_NAME (3, "TSK_NAME", "Name"),
 		TSK_PROG_NAME (4, "TSK_PROG_NAME", "Program Name"),
 		TSK_WEB_BOOKMARK (5, "TSK_WEB_BOOKMARK", "Bookmark"),
