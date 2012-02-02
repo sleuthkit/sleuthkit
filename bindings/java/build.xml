@@ -99,7 +99,7 @@
 		</javac>
 	</target>
 
-	<target name="dist" depends="jni,init-ivy"
+	<target name="dist" depends="init-ivy"
         description="generate the distribution" >
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
