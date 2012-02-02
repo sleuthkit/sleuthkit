@@ -26,7 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.InputStream;
 
-class Hash {
+public class Hash {
 
     private final static int BUFFER_SIZE = 8192;
 
@@ -36,7 +36,7 @@ class Hash {
      * @param content    Content object whose md5 hash we want to calculate
      * @return            md5 of the given Content object
      */
-    static String calculateMd5(Content content) {
+    public static String calculateMd5(Content content) {
         String hashText = "";
         InputStream in = new ReadContentInputStream(content);
         Logger logger = Logger.getLogger(Hash.class.getName());
