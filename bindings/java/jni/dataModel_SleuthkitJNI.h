@@ -251,3 +251,25 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndex
 }
 #endif
 #endif
+/* Header for class org_sleuthkit_datamodel_SleuthkitJNI_CaseDbHandle */
+
+#ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseDbHandle
+#define _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseDbHandle
+#ifdef __cplusplus
+extern "C" {
+#endif
+#ifdef __cplusplus
+}
+#endif
+#endif
+/* Header for class org_sleuthkit_datamodel_SleuthkitJNI_CaseDbHandle_AddImageProcess */
+
+#ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseDbHandle_AddImageProcess
+#define _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseDbHandle_AddImageProcess
+#ifdef __cplusplus
+extern "C" {
+#endif
+#ifdef __cplusplus
+}
+#endif
+#endif
