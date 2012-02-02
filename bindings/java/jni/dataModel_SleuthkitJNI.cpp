@@ -278,6 +278,8 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
         }
     }
 
+	env->ReleaseStringUTFChars(hash, (const char *) md5);
+
     return (int) file_known;
 }
 
@@ -338,7 +340,7 @@ JNIEXPORT void JNICALL
     //change to true when autopsy needs the block table.
     tskAuto->createBlockMap(false);
     //change to false if hashes aren't needed
-    tskAuto->hashFiles(true);
+    tskAuto->hashFiles(false);
 
     
 
