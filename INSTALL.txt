@@ -72,6 +72,18 @@ need to be in your PATH if you want to run the TSK commands without
 specifying '/usr/local/bin' everytime.
 
 
+If you get an error like:
+
+  libtool: Version mismatch error.  This is libtool 2.2.10, but the
+  libtool: definition of this LT_INIT comes from libtool 2.2.4.
+  libtool: You should recreate aclocal.m4 with macros from libtool 2.2.10
+  libtool: and run autoconf again.
+
+Run:
+    ./bootstrap 
+and then go back to running configure and make.
+
+
 CONFIGURE OPTIONS
 -----------------------------------------------------------------------------
 There are some arguments to 'configure' that you can supply to
@@ -91,6 +103,10 @@ if it is installed.
 --with-libewf=dir: Supply this if you want TSK to look in 'dir' for
 the libewf installation (the directory should have 'lib' and 'include'
 directories in it).
+
+-----------------------------------------------------------------------------
+
+If you are compiling 
 
 -----------------------------------------------------------------------------
 Brian Carrier

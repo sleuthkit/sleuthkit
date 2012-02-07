@@ -36,14 +36,15 @@ public class BlackboardArtifact {
 	 */
 	public enum ARTIFACT_TYPE {
 		TSK_GEN_INFO(1, "TSK_GEN_INFO", "General Info"),	 ///< Default type
-		TSK_WEB_BOOKMARK (2, "TSK_WEB_BOOKMARK", "Bookmark"),
-		TSK_WEB_COOKIE (3, "TSK_WEB_COOKIE", "Cookie"),
-		TSK_WEB_HISTORY (4, "TSK_WEB_HISTORY", "History"),
-		TSK_WEB_DOWNLOAD (5, "TSK_WEB_DOWNLOAD", "Download"),
-		TSK_RECENT_OBJECT (6, "TSK_RECENT_OBJ", "Recent Object"),
-		TSK_TRACKPOINT (7, "TSK_TRACKPOINT", "Trackpoint"),
-		TSK_INSTALLED_PROG (8, "TSK_INSTALLED_PROG", "Installed Program"),
-		TSK_KEYWORD_HIT (9, "TSK_KEYWORD_HIT", "Keyword Hit");
+		TSK_WEB_BOOKMARK (2, "TSK_WEB_BOOKMARK", "Bookmarks"),
+		TSK_WEB_COOKIE (3, "TSK_WEB_COOKIE", "Cookies"),
+		TSK_WEB_HISTORY (4, "TSK_WEB_HISTORY", "Web History"),
+		TSK_WEB_DOWNLOAD (5, "TSK_WEB_DOWNLOAD", "Downloads"),
+		TSK_RECENT_OBJECT (6, "TSK_RECENT_OBJ", "Recent Documents"),
+		TSK_TRACKPOINT (7, "TSK_TRACKPOINT", "Trackpoints"),
+		TSK_INSTALLED_PROG (8, "TSK_INSTALLED_PROG", "Installed Programs"),
+		TSK_KEYWORD_HIT (9, "TSK_KEYWORD_HIT", "Keyword Hits"),
+		TSK_HASHSET_HIT (10, "TSK_HASHSET_HIT", "Hashset Hits");
 		
 		private String label;
 		private int typeID;
@@ -98,7 +99,7 @@ public class BlackboardArtifact {
 			throw new IllegalArgumentException("No ARTIFACT_TYPE matching type: " + ID);
 		}
 
-		String getDisplayName() {
+		public String getDisplayName() {
 			return this.displayName;
 		}
 	}
