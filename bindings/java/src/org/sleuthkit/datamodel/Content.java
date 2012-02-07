@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Interface for all datatypes that can be found in the database.
  */
-public interface Content {
+public interface Content extends DisplayableItem{
 
 	/**
 	 * read data from the content in the sleuthkit
@@ -50,24 +50,17 @@ public interface Content {
 	public <T> T accept(ContentVisitor<T> v);
 	
 	/**
-	 * Does this parent always have exactly one child?
-	 * @return True if the getChildren function is one-to-one
+	 * Gets the content object id.
+	 * @return object id
 	 */
-	public boolean isOnto();
-		
+	public long getId();
+	
 	/**
 	 * Gets the child contents.
 	 * @return List of children
 	 * @throws TskException
 	 */
 	public List<Content> getChildren() throws TskException;
-	
-	/**
-	 * Gets the content object id.
-	 * @return object id
-	 */
-	public long getId();
-	
 	/**
 	 * Add an artifact associated with this content to the blackboard
 	 * @param artifactTypeID id of the artifact type (if the id doesn't already exist

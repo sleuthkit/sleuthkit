@@ -209,6 +209,11 @@ public class Image extends FileSystemParent {
 	}
 
 	@Override
+	public <T> T accept(DisplayableItemVisitor<T> v) {
+		return v.visit(this);
+	}
+
+	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
