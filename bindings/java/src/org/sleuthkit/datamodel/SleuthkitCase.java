@@ -1475,9 +1475,11 @@ public class SleuthkitCase {
 	/**
 	 * Process a query on the database to find files of a given criteria.
 	 * resultSetToFsContents will convert the results to useful objects.
+	 * Requires subsequent call to closeRunQuery()
 	 *
 	 * @param query  the given string query to run
-	 * @return	   the resultSet from running the query. Caller should call close() when done on result set and its statement (rs.getStatement().close()).
+	 * @return	   the resultSet from running the query. 
+	 * Caller should call closeRunQuery(resultSet) as soon as possible, when done with retrieving data from the resultSet
 	 * @throws SQLException
 	 */
 	public ResultSet runQuery(String query) throws SQLException {
@@ -1486,6 +1488,21 @@ public class SleuthkitCase {
 			statement = con.createStatement();
 			ResultSet rs = statement.executeQuery(query);
 			return rs;
+		}
+	}
+	
+	/**
+	 * Closes ResultSet and its Statement previously retrieved from runQuery()
+	 * 
+	 * @param resultSet with its Statement to close
+	 * @throws SQLException 
+	 */
+	public void closeRunQuery(ResultSet resultSet) throws SQLException {	
+		synchronized (caseLock) {
+			final Statement statement = resultSet.getStatement();
+			resultSet.close();
+			if (statement != null)
+				statement.close();
 		}
 	}
 
