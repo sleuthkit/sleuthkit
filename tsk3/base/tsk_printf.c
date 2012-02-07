@@ -17,6 +17,10 @@
 
 #include "tsk_base_i.h"
 #include <stdarg.h>
+#ifdef WIN32
+#include <io.h>
+#include <fcntl.h>
+#endif
 
 
 /** \internal
@@ -89,11 +93,8 @@ tsk_fprintf(FILE * fd, const char *msg, ...)
     va_start(args, msg);
 
 #ifdef TSK_WIN32
-    {
-        WCHAR wbuf[2048];
-        tsk_printf_conv(wbuf, 2048, msg, &args);
-        fwprintf(fd, _TSK_T("%s"), wbuf);
-    }
+    _setmode( _fileno(fd), _O_BINARY );
+    vfprintf(fd, msg, args);
 #else
     vfprintf(fd, msg, args);
 #endif
@@ -116,11 +117,8 @@ tsk_printf(const char *msg, ...)
     va_start(args, msg);
 
 #ifdef TSK_WIN32
-    {
-        WCHAR wbuf[2048];
-        tsk_printf_conv(wbuf, 2048, msg, &args);
-        wprintf(_TSK_T("%s"), wbuf);
-    }
+    _setmode( _fileno(stdout), _O_BINARY );
+    vprintf(msg, args);
 #else
     vprintf(msg, args);
 #endif

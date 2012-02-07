@@ -1068,7 +1068,7 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
  * @returns 1 on error or not found, 0 on success. Check tsk_errno
  * to differentiate between error and not found.
  */
-static uint8_t
+uint8_t
 hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
@@ -2360,6 +2360,30 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     return 0;
 }
 
+/* return the name of a file at a given inode
+ * in a newly-allocated string, or NULL on error
+ */
+char *hfs_get_inode_name(TSK_FS_INFO * fs, TSK_INUM_T inum) {
+    HFS_INFO *hfs = (HFS_INFO *) fs;
+    HFS_ENTRY entry;
+	
+    if (hfs_cat_file_lookup(hfs, inum, &entry))
+        return NULL;
+
+	char *fn = malloc( HFS_MAXNAMLEN + 1 );
+	if ( fn == NULL )
+		return NULL;
+	
+    if (hfs_uni2ascii(fs, entry.thread.name.unicode,
+					  tsk_getu16(fs->endian, entry.thread.name.length), fn,
+					  HFS_MAXNAMLEN + 1)) {
+		free(fn);
+        return NULL;
+	}
+	
+	return fn;
+}
+
 /* print the name of a file at a given inode
  * returns 0 on success, 1 on error */
 static uint8_t
@@ -2698,6 +2722,13 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "Folder\n");
     else
         tsk_fprintf(hFile, "\n");
+
+    tsk_fprintf(hFile, "Path:\t");
+    if ( inum == HFS_ROOT_INUM )
+        tsk_fprintf(hFile, "/");
+    else
+        print_parent_path(hFile, fs, inum);
+    tsk_fprintf(hFile, "\n");
 
     tsk_fs_meta_make_ls(fs_file->meta, hfs_mode, sizeof(hfs_mode));
     tsk_fprintf(hFile, "Mode:\t%s\n", hfs_mode);
