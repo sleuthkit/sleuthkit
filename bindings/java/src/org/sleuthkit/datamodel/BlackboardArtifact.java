@@ -204,5 +204,35 @@ public class BlackboardArtifact implements DisplayableItem{
         return Case;
     }
 
+    /**
+     * A wrapper class for all ARTIFACT_TYPEs, pre-existing or otherwise
+     */
+    public static class TypeWrapper implements DisplayableItem{
+        private int typeId;
+        private String displayName;
+
+        public TypeWrapper(int typeId, String displayName){
+            this.typeId = typeId;
+            this.displayName = displayName;
+        }
+
+        public int getTypeId(){
+            return typeId;
+        }
+
+        public String getDisplayName(){
+            return displayName;
+        }
+
+        @Override
+        public <T> T accept(DisplayableItemVisitor<T> v) {
+            return v.visit(this);
+        }
+
+        @Override
+        public boolean isOnto() {
+            return false;
+        }
+    }
 }
 

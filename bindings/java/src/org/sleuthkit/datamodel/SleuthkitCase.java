@@ -430,17 +430,17 @@ public class SleuthkitCase {
 	 * Get all blackboard artifact types
 	 * @return list of blackboard artifact types
 	 */
-	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypes() throws TskException {
+	public List<BlackboardArtifact.TypeWrapper> getBlackboardArtifactTypes() throws TskException {
 		try {
-			ArrayList<BlackboardArtifact.ARTIFACT_TYPE> artifact_types = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
+			List<BlackboardArtifact.TypeWrapper> artifactTypes = new ArrayList<BlackboardArtifact.TypeWrapper>();
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types");
+			ResultSet rs = s.executeQuery("SELECT artifact_type_id,display_name FROM blackboard_artifact_types");
 
 			while (rs.next()) {
-				artifact_types.add(BlackboardArtifact.ARTIFACT_TYPE.fromID(rs.getInt(1)));
+				artifactTypes.add(new BlackboardArtifact.TypeWrapper((int)rs.getLong("artifact_type_id"), rs.getString("display_name")));
 			}
 			s.close();
-			return artifact_types;
+			return artifactTypes;
 		} catch (SQLException ex) {
 			throw new TskException("Error getting artifact types. " + ex.getMessage(), ex);
 		}
