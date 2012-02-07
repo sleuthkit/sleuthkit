@@ -3,7 +3,7 @@
 
                     Installation Instructions
 
-                     Last Modified: March 2010
+                     Last Modified: Feb 2012
 
 
 REQUIREMENTS
@@ -16,8 +16,9 @@ Tested Platform:
 - SunOS 4-5.*
 - Windows
 
-System:
-- C compiler
+Build System:
+- C/C++ compiler
+- Java compiler / JDK
 - GNU Make
 
 Optional Programs:
