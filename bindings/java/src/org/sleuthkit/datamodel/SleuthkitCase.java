@@ -979,6 +979,24 @@ public class SleuthkitCase {
 		}
 	}
 
+	public File getFileById(long id) throws SQLException, TskException {
+		Statement s = con.createStatement();
+
+		ResultSet rs = s.executeQuery("select * from tsk_files where obj_id = " + id);
+		FsContent temp = null;
+		List<FsContent> results;
+		if((results = resultSetToFsContents(rs)).size() > 0){
+			s.close();
+			if((temp = results.get(0)).isFile())
+				return (File) temp;
+			else
+				throw new TskException("Query returned non-file FsContent");
+		}
+		else
+			s.close();
+			throw new TskException("No file found for id " + id);
+	}
+
 	public Image getImageById(long id) throws SQLException, TskException {
 		Statement s1 = con.createStatement();
 
