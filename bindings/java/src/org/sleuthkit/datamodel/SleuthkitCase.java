@@ -1183,6 +1183,70 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Helper to return FileSystems in an Image
+	 * @param image Image to lookup FileSystem for
+	 * @return Collection of FileSystems in the image
+	 */
+	public Collection<FileSystem> getFileSystems(Image image)  {
+		return new GetFileSystemsVisitor().visit(image);
+	}
+
+	/**
+	 * top-down FileSystem visitor to be be visited on parent of FileSystem
+	 * and return a Collection<FileSystem> for that parent
+	 * visiting children of FileSystem is not supported
+	 */
+	private static class GetFileSystemsVisitor implements ContentVisitor<Collection<FileSystem>> {
+
+		@Override
+		public Collection<FileSystem> visit(Directory directory) {
+			//should never get here
+			return null;
+		}
+
+		@Override
+		public Collection<FileSystem> visit(File file) {
+			//should never get here
+			return null;
+		}
+
+		@Override
+		public Collection<FileSystem> visit(FileSystem fs) {
+			Collection<FileSystem> col = new ArrayList<FileSystem>();
+			col.add(fs);
+			return col;
+		}
+
+		@Override
+		public Collection<FileSystem> visit(Image image) {
+			return getAllFromChildren(image);
+		}
+
+		@Override
+		public Collection<FileSystem> visit(Volume volume) {
+			return getAllFromChildren(volume);
+		}
+
+		@Override
+		public Collection<FileSystem> visit(VolumeSystem vs) {
+			return getAllFromChildren(vs);
+		}
+
+		private Collection<FileSystem> getAllFromChildren(Content parent) {
+			Collection<FileSystem> all = new ArrayList<FileSystem>();
+
+			try {
+				for (Content child : parent.getChildren()) {
+					all.addAll(child.accept(this));
+				}
+			} catch (TskException ex) {
+			}
+
+			return all;
+		}
+	}
+
+	/**
 	 * Initializes the entire heritage of the visited Content.
 	 */
 	private class SetParentVisitor implements ContentVisitor<Void> {
@@ -1456,20 +1520,20 @@ public class SleuthkitCase {
 	 */
 	public List<FsContent> resultSetToFsContents(ResultSet rs) throws SQLException {
 		SetParentVisitor setParent = new SetParentVisitor();
-			ArrayList<FsContent> results = new ArrayList<FsContent>();
+		ArrayList<FsContent> results = new ArrayList<FsContent>();
 
-			while (rs.next()) {
-				FsContent result;
-				if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
-					result = rsHelper.directory(rs, null);
-				} else {
-					result = rsHelper.file(rs, null);
-				}
-				result.accept(setParent);
-				results.add(result);
+		while (rs.next()) {
+			FsContent result;
+			if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+				result = rsHelper.directory(rs, null);
+			} else {
+				result = rsHelper.file(rs, null);
 			}
+			result.accept(setParent);
+			results.add(result);
+		}
 
-			return results;
+		return results;
 	}
 
 	/**
@@ -1490,19 +1554,20 @@ public class SleuthkitCase {
 			return rs;
 		}
 	}
-	
+
 	/**
 	 * Closes ResultSet and its Statement previously retrieved from runQuery()
 	 * 
 	 * @param resultSet with its Statement to close
 	 * @throws SQLException 
 	 */
-	public void closeRunQuery(ResultSet resultSet) throws SQLException {	
+	public void closeRunQuery(ResultSet resultSet) throws SQLException {
 		synchronized (caseLock) {
 			final Statement statement = resultSet.getStatement();
 			resultSet.close();
-			if (statement != null)
+			if (statement != null) {
 				statement.close();
+			}
 		}
 	}
 
