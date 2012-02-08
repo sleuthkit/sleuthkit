@@ -18,16 +18,31 @@
 extern "C" {
 #endif
 
-    extern TSK_IMG_INFO *raw_open(const TSK_TCHAR *, unsigned int a_ssize);
-
+    extern TSK_IMG_INFO *raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
+                                  unsigned int a_ssize);
+    
+#define SPLIT_CACHE	15
+    
     typedef struct {
-        TSK_IMG_INFO img_info;
 #ifdef TSK_WIN32
         HANDLE fd;
 #else
         int fd;
 #endif
-        TSK_OFF_T seek_pos;     // shared and protected by cache_lock in IMG_INFO
+        int image;
+        TSK_OFF_T seek_pos;
+    } IMG_SPLIT_CACHE;
+    
+    typedef struct {
+        TSK_IMG_INFO img_info;
+        int num_img;
+        
+        // the following are protected by cache_lock in IMG_INFO
+        TSK_TCHAR **images;
+        TSK_OFF_T *max_off;
+        int *cptr;              /* exists for each image - points to entry in cache */
+        IMG_SPLIT_CACHE cache[SPLIT_CACHE];     /* small number of fds for open images */
+        int next_slot;
     } IMG_RAW_INFO;
 
 #ifdef __cplusplus
