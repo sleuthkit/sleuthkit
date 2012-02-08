@@ -19,7 +19,7 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Interface for all displayable datatypes that can be found in the database
+ * Interface for all visitable datatypes that can be found in the database
  */
 public interface SleuthkitVisitableItem {
 

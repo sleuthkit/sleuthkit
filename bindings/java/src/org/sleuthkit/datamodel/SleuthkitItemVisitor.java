@@ -19,8 +19,8 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Interface for implementing a visitor pattern on all DisplayableItem 
- * implementations.  Allows for processing a DisplayableItem object 
+ * Interface for implementing a visitor pattern on all SleuthkitVisitableItem 
+ * implementations.  Allows for processing a SleuthkitVisitableItem object 
  * without having to use lots of instanceof statements.
  *
  * @param <T> return type of visit methods
