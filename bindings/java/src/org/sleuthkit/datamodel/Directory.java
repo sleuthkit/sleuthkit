@@ -88,7 +88,7 @@ public class Directory extends FsContent{
 	}
 
 	@Override
-	public <T> T accept(DisplayableItemVisitor<T> v) {
+	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 

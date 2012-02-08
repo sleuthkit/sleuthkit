@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Interface for all datatypes that can be found in the database.
  */
-public interface Content extends DisplayableItem{
+public interface Content extends SleuthkitVisitableItem{
 
 	/**
 	 * read data from the content in the sleuthkit
@@ -48,6 +48,12 @@ public interface Content extends DisplayableItem{
 	 * @return visitor return value
 	 */
 	public <T> T accept(ContentVisitor<T> v);
+	
+    /**
+     * Does this parent always have exactly one child?
+     * @return True if the getChildren function is one-to-one
+     */
+    public boolean isOnto();
 	
 	/**
 	 * Gets the content object id.

@@ -19,27 +19,16 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Parent of all Blackboard Artifacts to be displayed
+ * Interface for all displayable datatypes that can be found in the database
  */
-public class ExtractedContent implements DisplayableItem{
+public interface SleuthkitVisitableItem {
 
-    SleuthkitCase skCase;
+    /**
+     * visitor pattern support
+     * @param <T> visitor return type
+     * @param v visitor
+     * @return visitor return value
+     */
+    public <T> T accept(SleuthkitItemVisitor<T> v);
 
-    public ExtractedContent(SleuthkitCase skCase){
-        this.skCase = skCase;
-    }
-
-    @Override
-    public <T> T accept(DisplayableItemVisitor<T> v) {
-        return v.visit(this);
-    }
-
-    @Override
-    public boolean isOnto() {
-        return false;
-    }
-
-    public SleuthkitCase getSleuthkitCase(){
-        return skCase;
-    }
 }

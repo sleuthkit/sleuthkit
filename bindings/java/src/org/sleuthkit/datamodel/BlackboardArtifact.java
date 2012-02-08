@@ -25,7 +25,7 @@ import java.util.ArrayList;
  * Blackboard Artifact class used to store a set of name-value pairs
  * @author alawrence
  */
-public class BlackboardArtifact implements DisplayableItem{
+public class BlackboardArtifact implements SleuthkitVisitableItem{
 
 	/**
 	 * Enum for artifact types. 
@@ -191,13 +191,8 @@ public class BlackboardArtifact implements DisplayableItem{
 	}
 
     @Override
-    public <T> T accept(DisplayableItemVisitor<T> v) {
+    public <T> T accept(SleuthkitItemVisitor<T> v) {
         return v.visit(this);
-    }
-
-    @Override
-    public boolean isOnto() {
-        return false;
     }
 
     public SleuthkitCase getSleuthkitCase(){
@@ -207,7 +202,7 @@ public class BlackboardArtifact implements DisplayableItem{
     /**
      * A wrapper class for all ARTIFACT_TYPEs, pre-existing or otherwise
      */
-    public static class TypeWrapper implements DisplayableItem{
+    public static class TypeWrapper implements SleuthkitVisitableItem{
         private int typeId;
         private String displayName;
 
@@ -225,13 +220,8 @@ public class BlackboardArtifact implements DisplayableItem{
         }
 
         @Override
-        public <T> T accept(DisplayableItemVisitor<T> v) {
+        public <T> T accept(SleuthkitItemVisitor<T> v) {
             return v.visit(this);
-        }
-
-        @Override
-        public boolean isOnto() {
-            return false;
         }
     }
 }

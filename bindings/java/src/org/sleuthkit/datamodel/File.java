@@ -85,9 +85,9 @@ public class File extends FsContent{
 	public boolean isFile(){
 		return true;
 	}
-	
+
 	@Override
-	public <T> T accept(DisplayableItemVisitor<T> v) {
+	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 

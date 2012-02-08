@@ -192,7 +192,7 @@ public class Volume extends FileSystemParent {
 	}
 
 	@Override
-	public <T> T accept(DisplayableItemVisitor<T> v) {
+	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 

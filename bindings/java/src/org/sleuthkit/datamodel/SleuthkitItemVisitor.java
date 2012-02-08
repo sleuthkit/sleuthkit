@@ -25,7 +25,7 @@ package org.sleuthkit.datamodel;
  *
  * @param <T> return type of visit methods
  */
-public interface DisplayableItemVisitor<T> {
+public interface SleuthkitItemVisitor<T> {
 
     T visit(Directory d);
     T visit(File f);
@@ -35,13 +35,10 @@ public interface DisplayableItemVisitor<T> {
     T visit(VolumeSystem vs);
     T visit(BlackboardArtifact ba);
     T visit(BlackboardArtifact.TypeWrapper tw);
-    T visit(ExtractedContent ec);
-    T visit(SearchFilters.FileSearchFilter fsf);
-    T visit(SearchFilters sf);
 
-    static abstract public class Default<T> implements DisplayableItemVisitor<T> {
+    static abstract public class Default<T> implements SleuthkitItemVisitor<T> {
 
-        protected abstract T defaultVisit(DisplayableItem c);
+        protected abstract T defaultVisit(SleuthkitVisitableItem s);
         @Override
         public T visit(Directory d) {
             return defaultVisit(d);
@@ -80,21 +77,6 @@ public interface DisplayableItemVisitor<T> {
         @Override
         public T visit(BlackboardArtifact.TypeWrapper tw) {
             return defaultVisit(tw);
-        }
-
-        @Override
-        public T visit(ExtractedContent ec) {
-            return defaultVisit(ec);
-        }
-
-        @Override
-        public T visit(SearchFilters.FileSearchFilter fsf) {
-            return defaultVisit(fsf);
-        }
-
-        @Override
-        public T visit(SearchFilters sf) {
-            return defaultVisit(sf);
         }
     }
 }
