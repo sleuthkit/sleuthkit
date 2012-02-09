@@ -122,7 +122,7 @@ int main(int argc, char **argv1)
     }
 
     // @@@ Not UNIX-friendly
-    TSK_SYS_PROP_SET(TskSystemPropertiesImpl::OUT_DIR, outDirPath);
+    TSK_SYS_PROP_SET(TskSystemProperties::OUT_DIR, outDirPath);
 
     // Create and register our SQLite ImgDB class   
     std::auto_ptr<TskImgDB> pImgDB(NULL);
@@ -142,7 +142,7 @@ int main(int argc, char **argv1)
 
     // @@@ Not UNIX-friendly
     if (pipeline_config != NULL) 
-        TSK_SYS_PROP_SET(TskSystemPropertiesImpl::PIPELINE_CONFIG, pipeline_config);
+        TSK_SYS_PROP_SET(TskSystemProperties::PIPELINE_CONFIG, pipeline_config);
 
     // Create an ImageFile and register it with the framework.
     TskImageFileTsk imageFileTsk;

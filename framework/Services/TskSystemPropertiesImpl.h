@@ -33,15 +33,6 @@
 class TSK_FRAMEWORK_API TskSystemPropertiesImpl : public TskSystemProperties
 {
 public:
-    static const std::wstring OUT_DIR;
-    static const std::wstring PROG_DIR;
-    static const std::wstring CONFIG_DIR;
-    static const std::wstring MODULE_DIR;
-    static const std::wstring PIPELINE_CONFIG;
-    static const std::wstring DB_HOST;
-    static const std::wstring DB_PORT;
-    static const std::wstring SESSION_ID;
-
     TskSystemPropertiesImpl() { m_abstractConfig = (Poco::Util::AbstractConfiguration *)NULL; };
     TskSystemPropertiesImpl(Poco::Util::AbstractConfiguration & abstractConfig) { m_abstractConfig = &abstractConfig; };
 
@@ -59,7 +50,7 @@ public:
 private:
     TskSystemPropertiesImpl(TskSystemPropertiesImpl const&) {};
 
-    Poco::Util::AbstractConfiguration * m_abstractConfig;
+    Poco::AutoPtr<Poco::Util::AbstractConfiguration> m_abstractConfig;
 };
 
 #endif

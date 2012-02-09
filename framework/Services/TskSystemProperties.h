@@ -32,6 +32,15 @@
 class TSK_FRAMEWORK_API TskSystemProperties
 {
 public:
+    static const std::wstring OUT_DIR;
+    static const std::wstring PROG_DIR;
+    static const std::wstring CONFIG_DIR;
+    static const std::wstring MODULE_DIR;
+    static const std::wstring PIPELINE_CONFIG;
+    static const std::wstring DB_HOST;
+    static const std::wstring DB_PORT;
+    static const std::wstring SESSION_ID;
+
     /** 
      * Retrieve the string value associated with the given name.
      * @param name Name of value to retrieve

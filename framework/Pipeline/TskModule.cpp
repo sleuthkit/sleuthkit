@@ -20,7 +20,7 @@
 #include "Services/TskServices.h"
 #include "Utilities/TskException.h"
 #include "Utilities/TskUtilities.h"
-#include "Services/TskSystemPropertiesImpl.h"
+#include "Services/TskSystemProperties.h"
 
 #include "Poco/String.h"
 #include "Poco/StringTokenizer.h"
@@ -80,10 +80,10 @@ void TskModule::setPath(const std::string& location)
         // executable either in PROG_DIR, in MODULE_DIR, in the current directory,
         // or on the system path.
         
-        std::string pathsToSearch = TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemPropertiesImpl::PROG_DIR));
+        std::string pathsToSearch = TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemProperties::PROG_DIR));
         if (!pathsToSearch.empty())
             pathsToSearch += Poco::Path::pathSeparator();
-        pathsToSearch += TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemPropertiesImpl::MODULE_DIR));
+        pathsToSearch += TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemProperties::MODULE_DIR));
         if (!pathsToSearch.empty())
             pathsToSearch += Poco::Path::pathSeparator();
         pathsToSearch += ".";
@@ -141,17 +141,17 @@ std::string TskModule::parameterSubstitution(const std::string& paramString, con
     // Replace all occurences of OUT_MACRO with the output directory.
     Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::OUT_MACRO), 
-                         TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemPropertiesImpl::OUT_DIR)));
+                         TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemProperties::OUT_DIR)));
 
     // Replace all occurences of PROGDIR_MACRO with the program directory.
     Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::PROGDIR_MACRO), 
-                         TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemPropertiesImpl::PROG_DIR)));
+                         TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemProperties::PROG_DIR)));
 
     // Replace all occurences of SESSION_MACRO with the session id.
     Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::SESSION_MACRO), 
-                         TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemPropertiesImpl::SESSION_ID)));
+                         TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemProperties::SESSION_ID)));
 
     // Replace all occurences of TASK_MACRO with the task name.
     Poco::replaceInPlace(resultString, 

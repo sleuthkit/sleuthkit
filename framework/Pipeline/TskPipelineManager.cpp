@@ -19,7 +19,7 @@
 
 // Framework includes
 #include "TskPipelineManager.h"
-#include "Services/TskSystemPropertiesImpl.h"
+#include "Services/TskSystemProperties.h"
 #include "Utilities/TskException.h"
 #include "Services/TskServices.h"
 #include "TskFileAnalysisPipeline.h"
@@ -70,7 +70,7 @@ TskPipelineManager::~TskPipelineManager()
 TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType)
 {
     // Get location of Pipeline configuration file.
-    std::wstring pipelineConfig = TSK_SYS_PROP_GET(TskSystemPropertiesImpl::PIPELINE_CONFIG);
+    std::wstring pipelineConfig = TSK_SYS_PROP_GET(TskSystemProperties::PIPELINE_CONFIG);
     std::string utf8PipelineConfig;
 
     Poco::UnicodeConverter::toUTF8(pipelineConfig, utf8PipelineConfig);
@@ -85,7 +85,7 @@ TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType
     // config file in the "config" folder.
     if (!configFile.isAbsolute())
     {
-        std::wstring configDir = TSK_SYS_PROP_GET(TskSystemPropertiesImpl::CONFIG_DIR);
+        std::wstring configDir = TSK_SYS_PROP_GET(TskSystemProperties::CONFIG_DIR);
         std::string utf8ConfigDir;
         Poco::UnicodeConverter::toUTF8(configDir, utf8ConfigDir);
 

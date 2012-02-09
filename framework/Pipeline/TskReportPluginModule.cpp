@@ -20,7 +20,6 @@
 #include "TskReportPluginModule.h"
 #include "Services/TskServices.h"
 #include "Utilities/TskException.h"
-#include "Services/TskSystemPropertiesImpl.h"
 #include "File/TskFileManagerImpl.h"
 
 // Poco includes
