@@ -1183,6 +1183,71 @@ public class SleuthkitCase {
 			return null;
 		}
 	}
+	
+	/**
+	 * Helper to return FileSystems in an Image
+	 * @param image Image to lookup FileSystem for
+	 * @return Collection of FileSystems in the image
+	 */
+	public Collection<FileSystem> getFileSystems(Image image) {
+		return new GetFileSystemsVisitor().visit(image);
+	}
+
+	/**
+	 * top-down FileSystem visitor to be be visited on parent of FileSystem
+	 * and return a Collection<FileSystem> for that parent
+	 * visiting children of FileSystem is not supported
+	 */
+	private static class GetFileSystemsVisitor implements
+			ContentVisitor<Collection<FileSystem>> {
+
+		@Override
+		public Collection<FileSystem> visit(Directory directory) {
+			//should never get here
+			return null;
+		}
+
+		@Override
+		public Collection<FileSystem> visit(File file) {
+			//should never get here
+			return null;
+		}
+
+		@Override
+		public Collection<FileSystem> visit(FileSystem fs) {
+			Collection<FileSystem> col = new ArrayList<FileSystem>();
+			col.add(fs);
+			return col;
+		}
+
+		@Override
+		public Collection<FileSystem> visit(Image image) {
+			return getAllFromChildren(image);
+		}
+
+		@Override
+		public Collection<FileSystem> visit(Volume volume) {
+			return getAllFromChildren(volume);
+		}
+
+		@Override
+		public Collection<FileSystem> visit(VolumeSystem vs) {
+			return getAllFromChildren(vs);
+		}
+
+		private Collection<FileSystem> getAllFromChildren(Content parent) {
+			Collection<FileSystem> all = new ArrayList<FileSystem>();
+
+			try {
+				for (Content child : parent.getChildren()) {
+					all.addAll(child.accept(this));
+				}
+			} catch (TskException ex) {
+			}
+
+			return all;
+		}
+	}
 
 	/**
 	 * Returns the list of children for a given Image
