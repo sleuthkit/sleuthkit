@@ -34,7 +34,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem{
      * The enum typeIDs will be populated at database creation
 	 * time, so they will always match the ids stored in the database.
 	 */
-	public enum ARTIFACT_TYPE {
+	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem{
 		TSK_GEN_INFO(1, "TSK_GEN_INFO", "General Info"),	 ///< Default type
 		TSK_WEB_BOOKMARK (2, "TSK_WEB_BOOKMARK", "Bookmarks"),
 		TSK_WEB_COOKIE (3, "TSK_WEB_COOKIE", "Cookies"),
@@ -101,6 +101,11 @@ public class BlackboardArtifact implements SleuthkitVisitableItem{
 
 		public String getDisplayName() {
 			return this.displayName;
+		}
+
+		@Override
+		public <T> T accept(SleuthkitItemVisitor<T> v) {
+			return v.visit(this);
 		}
 	}
 	
@@ -197,32 +202,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem{
 
     public SleuthkitCase getSleuthkitCase(){
         return Case;
-    }
-
-    /**
-     * A wrapper class for all ARTIFACT_TYPEs, pre-existing or otherwise
-     */
-    public static class TypeWrapper implements SleuthkitVisitableItem{
-        private int typeId;
-        private String displayName;
-
-        public TypeWrapper(int typeId, String displayName){
-            this.typeId = typeId;
-            this.displayName = displayName;
-        }
-
-        public int getTypeId(){
-            return typeId;
-        }
-
-        public String getDisplayName(){
-            return displayName;
-        }
-
-        @Override
-        public <T> T accept(SleuthkitItemVisitor<T> v) {
-            return v.visit(this);
-        }
     }
 }
 

@@ -34,7 +34,7 @@ public interface SleuthkitItemVisitor<T> {
     T visit(Volume v);
     T visit(VolumeSystem vs);
     T visit(BlackboardArtifact ba);
-    T visit(BlackboardArtifact.TypeWrapper tw);
+    T visit(BlackboardArtifact.ARTIFACT_TYPE tw);
 
     static abstract public class Default<T> implements SleuthkitItemVisitor<T> {
 
@@ -75,7 +75,7 @@ public interface SleuthkitItemVisitor<T> {
         }
 
         @Override
-        public T visit(BlackboardArtifact.TypeWrapper tw) {
+        public T visit(BlackboardArtifact.ARTIFACT_TYPE tw) {
             return defaultVisit(tw);
         }
     }
