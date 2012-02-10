@@ -136,9 +136,7 @@ public class SleuthkitCase {
 	 * @param path Path to database ( not index )
 	 */
 	public void setNSRLDatabase(String path) throws TskException {
-		synchronized (caseLock) {
-			this.caseHandle.setNSRLDatabase(path);
-		}
+		this.caseHandle.setNSRLDatabase(path);
 	}
 
 	/**
@@ -146,15 +144,11 @@ public class SleuthkitCase {
 	 * @param path Path to database ( not index )
 	 */
 	public void setKnownBadDatabase(String path) throws TskException {
-		synchronized (caseLock) {
-			this.caseHandle.setKnownBadDatabase(path);
-		}
+		this.caseHandle.setKnownBadDatabase(path);
 	}
 
 	public void clearLookupDatabases() throws TskException {
-		synchronized (caseLock) {
-			this.caseHandle.clearLookupDatabases();
-		}
+		this.caseHandle.clearLookupDatabases();
 	}
 
 //
@@ -388,18 +382,19 @@ public class SleuthkitCase {
 	 * @return list of content objects.
 	 */
 	public List<Content> getRootObjects() throws TskException {
+		Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("select obj_id, type from tsk_objects "
-					+ "where par_obj_id is NULL");
+			synchronized (caseLock) {
+				Statement s = con.createStatement();
+				ResultSet rs = s.executeQuery("select obj_id, type from tsk_objects "
+						+ "where par_obj_id is NULL");
 
-			Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
-
-			while (rs.next()) {
-				infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getLong("type"))));
+				while (rs.next()) {
+					infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getLong("type"))));
+				}
+				rs.close();
+				s.close();
 			}
-			rs.close();
-			s.close();
 
 			List<Content> rootObjs = new ArrayList<Content>();
 
@@ -635,7 +630,7 @@ public class SleuthkitCase {
 				}
 
 			}
-			
+
 			//commit transaction
 			try {
 				con.commit();
@@ -1047,10 +1042,6 @@ public class SleuthkitCase {
 	 */
 	private void addBuiltInAttrType(ATTRIBUTE_TYPE type) throws TskException {
 		addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
-
-
-
-
 	}
 
 	/** 
@@ -1127,6 +1118,27 @@ public class SleuthkitCase {
 
 			return parent;
 		}
+	}
+
+	public File getFileById(long id) throws SQLException, TskException {
+		synchronized (caseLock) {
+			Statement s = con.createStatement();
+
+			ResultSet rs = s.executeQuery("select * from tsk_files where obj_id = " + id);
+			FsContent temp = null;
+			List<FsContent> results;
+			if ((results = resultSetToFsContents(rs)).size() > 0) {
+				s.close();
+				if ((temp = results.get(0)).isFile()) {
+					return (File) temp;
+				} else {
+					throw new TskException("Query returned non-file FsContent");
+				}
+			} else {
+				s.close();
+			}
+		}
+		throw new TskException("No file found for id " + id);
 	}
 
 	public Image getImageById(long id) throws SQLException, TskException {
@@ -1248,74 +1260,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Helper to return FileSystems in an Image
-	 * @param image Image to lookup FileSystem for
-	 * @return Collection of FileSystems in the image
-	 */
-	public Collection<FileSystem> getFileSystems(Image image) {
-		return new GetFileSystemsVisitor().visit(image);
-
-
-
-
-	}
-
-	/**
-	 * top-down FileSystem visitor to be be visited on parent of FileSystem
-	 * and return a Collection<FileSystem> for that parent
-	 * visiting children of FileSystem is not supported
-	 */
-	private static class GetFileSystemsVisitor implements ContentVisitor<Collection<FileSystem>> {
-
-		@Override
-		public Collection<FileSystem> visit(Directory directory) {
-			//should never get here
-			return null;
-		}
-
-		@Override
-		public Collection<FileSystem> visit(File file) {
-			//should never get here
-			return null;
-		}
-
-		@Override
-		public Collection<FileSystem> visit(FileSystem fs) {
-			Collection<FileSystem> col = new ArrayList<FileSystem>();
-			col.add(fs);
-			return col;
-		}
-
-		@Override
-		public Collection<FileSystem> visit(Image image) {
-			return getAllFromChildren(image);
-		}
-
-		@Override
-		public Collection<FileSystem> visit(Volume volume) {
-			return getAllFromChildren(volume);
-		}
-
-		@Override
-		public Collection<FileSystem> visit(VolumeSystem vs) {
-			return getAllFromChildren(vs);
-		}
-
-		private Collection<FileSystem> getAllFromChildren(Content parent) {
-			Collection<FileSystem> all = new ArrayList<FileSystem>();
-
-			try {
-				for (Content child : parent.getChildren()) {
-					all.addAll(child.accept(this));
-				}
-			} catch (TskException ex) {
-			}
-
-			return all;
-		}
-	}
-
-	/**
 	 * Initializes the entire heritage of the visited Content.
 	 */
 	private class SetParentVisitor implements ContentVisitor<Void> {
@@ -1421,6 +1365,71 @@ public class SleuthkitCase {
 				throw new RuntimeException(ex);
 			}
 			return null;
+		}
+	}
+
+	/**
+	 * Helper to return FileSystems in an Image
+	 * @param image Image to lookup FileSystem for
+	 * @return Collection of FileSystems in the image
+	 */
+	public Collection<FileSystem> getFileSystems(Image image) {
+		return new GetFileSystemsVisitor().visit(image);
+	}
+
+	/**
+	 * top-down FileSystem visitor to be be visited on parent of FileSystem
+	 * and return a Collection<FileSystem> for that parent
+	 * visiting children of FileSystem is not supported
+	 */
+	private static class GetFileSystemsVisitor implements
+			ContentVisitor<Collection<FileSystem>> {
+
+		@Override
+		public Collection<FileSystem> visit(Directory directory) {
+			//should never get here
+			return null;
+		}
+
+		@Override
+		public Collection<FileSystem> visit(File file) {
+			//should never get here
+			return null;
+		}
+
+		@Override
+		public Collection<FileSystem> visit(FileSystem fs) {
+			Collection<FileSystem> col = new ArrayList<FileSystem>();
+			col.add(fs);
+			return col;
+		}
+
+		@Override
+		public Collection<FileSystem> visit(Image image) {
+			return getAllFromChildren(image);
+		}
+
+		@Override
+		public Collection<FileSystem> visit(Volume volume) {
+			return getAllFromChildren(volume);
+		}
+
+		@Override
+		public Collection<FileSystem> visit(VolumeSystem vs) {
+			return getAllFromChildren(vs);
+		}
+
+		private Collection<FileSystem> getAllFromChildren(Content parent) {
+			Collection<FileSystem> all = new ArrayList<FileSystem>();
+
+			try {
+				for (Content child : parent.getChildren()) {
+					all.addAll(child.accept(this));
+				}
+			} catch (TskException ex) {
+			}
+
+			return all;
 		}
 	}
 
@@ -1591,15 +1600,17 @@ public class SleuthkitCase {
 		SetParentVisitor setParent = new SetParentVisitor();
 		ArrayList<FsContent> results = new ArrayList<FsContent>();
 
-		while (rs.next()) {
-			FsContent result;
-			if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
-				result = rsHelper.directory(rs, null);
-			} else {
-				result = rsHelper.file(rs, null);
+		synchronized (caseLock) {
+			while (rs.next()) {
+				FsContent result;
+				if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+					result = rsHelper.directory(rs, null);
+				} else {
+					result = rsHelper.file(rs, null);
+				}
+				result.accept(setParent);
+				results.add(result);
 			}
-			result.accept(setParent);
-			results.add(result);
 		}
 
 		return results;
@@ -1674,10 +1685,6 @@ public class SleuthkitCase {
 				if (this.caseHandle != null) {
 					this.caseHandle.free();
 					this.caseHandle = null;
-
-
-
-
 				}
 			} catch (TskException ex) {
 				Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING,
@@ -1756,12 +1763,6 @@ public class SleuthkitCase {
 	 */
 	public String lookupFileMd5(Content cont) throws TskException {
 		Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
-
-
-
-
-
-
 		try {
 			long contId = cont.getId();
 			String md5Hash = Hash.calculateMd5(cont);
