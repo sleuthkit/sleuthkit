@@ -427,26 +427,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get all blackboard artifact types
-	 * @return list of blackboard artifact types
-	 */
-	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypes() throws TskException {
-		try {
-			ArrayList<BlackboardArtifact.ARTIFACT_TYPE> artifact_types = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types");
-
-			while (rs.next()) {
-				artifact_types.add(BlackboardArtifact.ARTIFACT_TYPE.fromID(rs.getInt(1)));
-			}
-			s.close();
-			return artifact_types;
-		} catch (SQLException ex) {
-			throw new TskException("Error getting artifact types. " + ex.getMessage(), ex);
-		}
-	}
-
-	/**
 	 * helper method to get all artifacts matching the type id name and object id
 	 * @param artifactTypeID artifact type id
 	 * @param artifactTypeName artifact type name
@@ -977,6 +957,24 @@ public class SleuthkitCase {
 
 			return parent;
 		}
+	}
+
+	public File getFileById(long id) throws SQLException, TskException {
+		Statement s = con.createStatement();
+
+		ResultSet rs = s.executeQuery("select * from tsk_files where obj_id = " + id);
+		FsContent temp = null;
+		List<FsContent> results;
+		if((results = resultSetToFsContents(rs)).size() > 0){
+			s.close();
+			if((temp = results.get(0)).isFile())
+				return (File) temp;
+			else
+				throw new TskException("Query returned non-file FsContent");
+		}
+		else
+			s.close();
+			throw new TskException("No file found for id " + id);
 	}
 
 	public Image getImageById(long id) throws SQLException, TskException {

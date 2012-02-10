@@ -25,8 +25,8 @@ import java.util.ArrayList;
  * Blackboard Artifact class used to store a set of name-value pairs
  * @author alawrence
  */
-public class BlackboardArtifact {
-	
+public class BlackboardArtifact implements SleuthkitVisitableItem{
+
 	/**
 	 * Enum for artifact types. 
      * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
@@ -34,7 +34,7 @@ public class BlackboardArtifact {
      * The enum typeIDs will be populated at database creation
 	 * time, so they will always match the ids stored in the database.
 	 */
-	public enum ARTIFACT_TYPE {
+	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem{
 		TSK_GEN_INFO(1, "TSK_GEN_INFO", "General Info"),	 ///< Default type
 		TSK_WEB_BOOKMARK (2, "TSK_WEB_BOOKMARK", "Bookmarks"),
 		TSK_WEB_COOKIE (3, "TSK_WEB_COOKIE", "Cookies"),
@@ -101,6 +101,11 @@ public class BlackboardArtifact {
 
 		public String getDisplayName() {
 			return this.displayName;
+		}
+
+		@Override
+		public <T> T accept(SleuthkitItemVisitor<T> v) {
+			return v.visit(this);
 		}
 	}
 	
@@ -189,5 +194,14 @@ public class BlackboardArtifact {
 	public ArrayList<BlackboardAttribute> getAttributes() throws TskException{
 		return Case.getMatchingAttributes("WHERE artifact_id = " + artifactID);
 	}
+
+    @Override
+    public <T> T accept(SleuthkitItemVisitor<T> v) {
+        return v.visit(this);
+    }
+
+    public SleuthkitCase getSleuthkitCase(){
+        return Case;
+    }
 }
 
