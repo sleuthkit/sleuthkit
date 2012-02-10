@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,9 +31,9 @@ public class SleuthkitJNI {
 	private static native long newCaseDbNat(String dbPath) throws TskException;
 	private static native long openCaseDbNat(String path) throws TskException;
 	private static native void closeCaseDbNat(long db) throws TskException;
-	private static native void setCaseDbNSRLNat(String hashDbPath) throws TskException;
-	private static native void setCaseDbKnownBadNat(String hashDbPath) throws TskException;
-	private static native void clearCaseDbLookupsNat() throws TskException;
+	private static native void setDbNSRLNat(String hashDbPath) throws TskException;
+	private static native void setDbKnownBadNat(String hashDbPath) throws TskException;
+	private static native void closeDbLookupsNat() throws TskException;
 	private static native int hashDBLookup(String hash) throws TskException;
 
 	
@@ -68,15 +68,15 @@ public class SleuthkitJNI {
 	private static native boolean lookupIndexExistsNat(String dbPath) throws TskException;
 
 	static {
-        try {
-            System.loadLibrary("zlib1");
-            System.loadLibrary("libewf");
-        }
-        catch (UnsatisfiedLinkError e) {
-            // @@@ LOG??
-        }
-        System.loadLibrary("libtsk_jni");
-        //System.load("/Users/brianc/proj/github/bindings/java/jni/.libs/libtsk_jni.0.dylib");
+		try {
+			System.loadLibrary("zlib1");
+			System.loadLibrary("libewf");
+		}
+		catch (UnsatisfiedLinkError e) {
+			// @@@ LOG??
+		}
+		System.loadLibrary("libtsk_jni");
+		//System.load("/Users/brianc/proj/github/bindings/java/jni/.libs/libtsk_jni.0.dylib");
 	}
 
 
@@ -94,40 +94,40 @@ public class SleuthkitJNI {
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 		}
 		void clearLookupDatabases() throws TskException {
-			clearCaseDbLookupsNat();
+			closeDbLookupsNat();
 		}
 		
-        
-        /**
-         * Set the path to an NSRL database
-         */
-        void setNSRLDatabase(String path) throws TskException {
-            setCaseDbNSRLNat(path);
-        }
+		
+		/**
+		 * Set the path to an NSRL database
+		 */
+		void setNSRLDatabase(String path) throws TskException {
+			setDbNSRLNat(path);
+		}
 
-        /**
-         * Set the path to a known bad hash database
-         */
-        void setKnownBadDatabase(String path) throws TskException {
-            setCaseDbKnownBadNat(path);
-        }
+		/**
+		 * Set the path to a known bad hash database
+		 */
+		void setKnownBadDatabase(String path) throws TskException {
+			setDbKnownBadNat(path);
+		}
 
-        
+		
 	
-        /**
-         * Start the process of adding a disk image to the case. 
-         * @param timezone Timezone that image was from
-         * @return Object that can be used to manage the process.
-         */
+		/**
+		 * Start the process of adding a disk image to the case. 
+		 * @param timezone Timezone that image was from
+		 * @return Object that can be used to manage the process.
+		 */
 		AddImageProcess initAddImageProcess(String timezone) {
 			return new AddImageProcess(timezone);
 		}
 		
-        /**
-         * Encapsulates a multi-step process to add a disk image.
-         * Adding a disk image takes a while and this object
-         * has objects to manage that process.
-         */
+		/**
+		 * Encapsulates a multi-step process to add a disk image.
+		 * Adding a disk image takes a while and this object
+		 * has objects to manage that process.
+		 */
 		public class AddImageProcess {
 			String timezone;
 			long autoDbPointer;
@@ -139,7 +139,7 @@ public class SleuthkitJNI {
 			
 			/**
 			 * Start the process of adding an image to the case database. 
-             * MUST call either commit() or revert() after calling run().
+			 * MUST call either commit() or revert() after calling run().
 			 * @param imgPath Full path(s) to the image file(s).
 			 * @throws TskException
 			 */
@@ -409,18 +409,18 @@ public class SleuthkitJNI {
 	}
 	
 	/**
-     * Set the path to an NSRL database
-     */
-    public static void setNSRLDatabase(String path) throws TskException {
-        setCaseDbNSRLNat(path);
-    }
+	 * Set the path to an NSRL database
+	 */
+	public static void setNSRLDatabase(String path) throws TskException {
+		setDbNSRLNat(path);
+	}
 
-    /**
-     * Set the path to a known bad hash database
-     */
-    public static void setKnownBadDatabase(String path) throws TskException {
-        setCaseDbKnownBadNat(path);
-    }
+	/**
+	 * Set the path to a known bad hash database
+	 */
+	public static void setKnownBadDatabase(String path) throws TskException {
+		setDbKnownBadNat(path);
+	}
 	
 	public static TskData.FileKnown lookupHash(String hash) throws TskException{
 		return TskData.FileKnown.valueOf(hashDBLookup(hash));

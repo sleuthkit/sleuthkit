@@ -28,7 +28,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_curFsId = 0;
     m_curVsId = 0;
     m_blkMapFlag = false;
-    m_fileHashFlag = true;
+    m_fileHashFlag = false;
     m_vsFound = false;
     m_volFound = false;
     m_stopped = false;
@@ -476,9 +476,9 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_STOP;
     }
 
-    if (m_db->createSavepoint("PROCESSFILE")) {
-        return TSK_ERR;
-    }
+    //if (m_db->createSavepoint("PROCESSFILE")) {
+    //    return TSK_ERR;
+    //}
 
     /* process the attributes.  The case of having 0 attributes can occur
      * with virtual / sparse files.  At some point, this can probably be cleaned
@@ -489,9 +489,9 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     else
         retval = processAttributes(fs_file, path);
 
-    if (m_db->releaseSavepoint("PROCESSFILE")) {
-        return TSK_ERR;
-    }
+    //if (m_db->releaseSavepoint("PROCESSFILE")) {
+    //    return TSK_ERR;
+    //}
 
     return retval;
 }
@@ -511,7 +511,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
 
         TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
 
-        if (m_fileHashFlag && isFile(fs_file)) {
+		if (m_fileHashFlag && isFile(fs_file)) {
             if (md5HashAttr(hash, fs_attr)) {
                 return TSK_ERR;
             }

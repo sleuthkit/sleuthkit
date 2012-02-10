@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,21 +35,25 @@ public class BlackboardArtifact {
 	 * time, so they will always match the ids stored in the database.
 	 */
 	public enum ARTIFACT_TYPE {
-		TSK_GEN_INFO("TSK_GEN_INFO"),     ///< Default type
-		TSK_WEB_BOOKMARK ("TSK_WEB_BOOKMARK"),
-		TSK_WEB_COOKIE ("TSK_WEB_COOKIE"),
-		TSK_WEB_HISTORY ("TSK_WEB_HISTORY"),
-		TSK_WEB_DOWNLOAD ("TSK_WEB_DOWNLOAD"),
-		TSK_RECENT_OBJ ("TSK_RECENT_OBJ"),
-		TSK_TRACKPOINT ("TSK_TRACKPOINT"),
-		TSK_INSTALLED_PROG ("TSK_INSTALLED_PROG"),
-		TSK_KEYWORD_HIT ("TSK_KEYWORD_HIT");
+		TSK_GEN_INFO(1, "TSK_GEN_INFO", "General Info"),	 ///< Default type
+		TSK_WEB_BOOKMARK (2, "TSK_WEB_BOOKMARK", "Bookmarks"),
+		TSK_WEB_COOKIE (3, "TSK_WEB_COOKIE", "Cookies"),
+		TSK_WEB_HISTORY (4, "TSK_WEB_HISTORY", "Web History"),
+		TSK_WEB_DOWNLOAD (5, "TSK_WEB_DOWNLOAD", "Downloads"),
+		TSK_RECENT_OBJECT (6, "TSK_RECENT_OBJ", "Recent Documents"),
+		TSK_TRACKPOINT (7, "TSK_TRACKPOINT", "Trackpoints"),
+		TSK_INSTALLED_PROG (8, "TSK_INSTALLED_PROG", "Installed Programs"),
+		TSK_KEYWORD_HIT (9, "TSK_KEYWORD_HIT", "Keyword Hits"),
+		TSK_HASHSET_HIT (10, "TSK_HASHSET_HIT", "Hashset Hits");
 		
 		private String label;
 		private int typeID;
+		private String displayName;
 
-		private ARTIFACT_TYPE(String label){
+		private ARTIFACT_TYPE(int typeID, String label, String displayName){
+			this.typeID = typeID;
 			this.label = label;
+			this.displayName = displayName;
 		}
 		
 		/**
@@ -66,14 +70,6 @@ public class BlackboardArtifact {
 		 */
 		public int getTypeID(){
 			return this.typeID;
-		}
-		
-		/**
-		 * set the type id of this enum, this should only be called by the case
-		 * @param typeID the id to set for this enum
-		 */
-		protected void setTypeID(int typeID){
-			this.typeID = typeID;
 		}
 		
 		/**
@@ -102,6 +98,10 @@ public class BlackboardArtifact {
 			}
 			throw new IllegalArgumentException("No ARTIFACT_TYPE matching type: " + ID);
 		}
+
+		public String getDisplayName() {
+			return this.displayName;
+		}
 	}
 	
 	
@@ -110,6 +110,7 @@ public class BlackboardArtifact {
 	private long objID;
 	private int artifactTypeID;
 	private String artifactTypeName;
+	private String displayName;
 	private SleuthkitCase Case;
 	
 	/**
@@ -120,12 +121,13 @@ public class BlackboardArtifact {
 	 * @param artifactTypeID the type id of this artifact
 	 * @param artifactTypeName the type name of this artifact
 	 */
-	protected BlackboardArtifact(SleuthkitCase Case, long artifactID, long objID, int artifactTypeID, String artifactTypeName){
+	protected BlackboardArtifact(SleuthkitCase Case, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName){
 		this.Case = Case;
 		this.artifactID = artifactID;
 		this.objID = objID;
 		this.artifactTypeID = artifactTypeID;
 		this.artifactTypeName = artifactTypeName;
+		this.displayName = displayName;
 	}
 	
 	/**
@@ -157,8 +159,14 @@ public class BlackboardArtifact {
 	public String getArtifactTypeName(){
 		return this.artifactTypeName;
 	}
+	/**
+	 * get the artifact display name for this artifact
+	 * @return artifact display name
+	 */
+	public String getDisplayName(){
+		return this.displayName;
+	}
 	
-	//add int
 	/**
 	 * add an attribute to this artifact
 	 * @param attrType the attribute type enum
@@ -167,220 +175,12 @@ public class BlackboardArtifact {
 	 * @param context addition information about the attribute
 	 * @throws TskException
 	 */
-	public void addAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType, int value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrType.getLabel(), attrType.getTypeID(), moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER, value, 0, 0, 
-			"", new byte[0], Case);
+	public void addAttribute(BlackboardAttribute attr) throws TskException{
+		attr.setArtifactID(artifactID);
+		attr.setCase(Case);
 		Case.addBlackboardAttribute(attr);
 	}
-	/**
-	 * add an attribute to this artifact
-	 * @param attrTypeString the attribute type string (if the attribute type does not exist, it 
-	 * will be created)
-	 * @param value the value int
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(String attrTypeString, int value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrTypeString, Case.getAttrTypeID(attrTypeString), moduleName, context,
-		BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER, value, 0, 0, 
-			"", new byte[0], Case);
-		Case.addBlackboardAttribute(attr);
-	}
-	/**
-	 * add an attribute to this artifact
-	 * @param attrTypeID the attribute type id
-	 * @param value the value int
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(int attrTypeID, int value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, Case.getAttrTypeString(attrTypeID), attrTypeID, moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER, value, 0, 0, 
-			"", new byte[0], Case);
-		Case.addBlackboardAttribute(attr);
-	}
-	
-	//add long
-	/**
-	 * add an attribute to this artifact
-	 * @param attrType the attribute type enum
-	 * @param value the value long
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType, long value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrType.getLabel(), attrType.getTypeID(), moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG, 0, value, 0, 
-			"", new byte[0], Case);
-		Case.addBlackboardAttribute(attr);
-	}
-	/**
-	 * add an attribute to this artifact
-	 * @param attrTypeString the attribute type string (if the attribute type does not exist, it 
-	 * will be created)
-	 * @param value the value long
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(String attrTypeString, long value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrTypeString, Case.getAttrTypeID(attrTypeString), moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG, 0, value, 0, 
-			"", new byte[0], Case);
-		Case.addBlackboardAttribute(attr);
-	}
-	/**
-	 * add an attribute to this artifact
-	 * @param attrTypeID the attribute type id
-	 * @param value the value long
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(int attrTypeID, long value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, Case.getAttrTypeString(attrTypeID), attrTypeID, moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG, 0, value, 0, 
-			"", new byte[0], Case);
-		Case.addBlackboardAttribute(attr);
-	}
-	
-	//add double
-	/**
-	 * add an attribute to this artifact
-	 * @param attrType the attribute type enum
-	 * @param value the value double
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType, double value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrType.getLabel(), attrType.getTypeID(), moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE, 0, 0, value, 
-			"", new byte[0], Case);
-		Case.addBlackboardAttribute(attr);
-	}
-	/**
-	 * add an attribute to this artifact
-	 * @param attrTypeString the attribute type string (if the attribute type does not exist, it 
-	 * will be created)
-	 * @param value the value double
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(String attrTypeString, double value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrTypeString, Case.getAttrTypeID(attrTypeString), moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE, 0, 0, value, 
-			"", new byte[0], Case);
-		Case.addBlackboardAttribute(attr);		
-	}
-	/**
-	 * add an attribute to this artifact
-	 * @param attrTypeID the attribute type id
-	 * @param value the value double
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(int attrTypeID, double value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, Case.getAttrTypeString(attrTypeID), attrTypeID, moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE, 0, 0, value, 
-			"", new byte[0], Case);
-		Case.addBlackboardAttribute(attr);	
-	}
-	//add String
-	/**
-	 * add an attribute to this artifact
-	 * @param attrType the attribute type enum
-	 * @param value the value string
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrType.getLabel(), attrType.getTypeID(), moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING, 0, 0, 0, 
-			value, new byte[0], Case);
-		Case.addBlackboardAttribute(attr);
-	}
-	/**
-	 * add an attribute to this artifact
-	 * @param attrTypeString the attribute type string (if the attribute type does not exist, it 
-	 * will be created)
-	 * @param value the value string
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(String attrTypeString, String value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrTypeString, Case.getAttrTypeID(attrTypeString), moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING, 0, 0, 0, 
-			value, new byte[0], Case);
-		Case.addBlackboardAttribute(attr);
-	}
-	/**
-	 * add an attribute to this artifact
-	 * @param attrTypeID the attribute type id
-	 * @param value the value string
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(int attrTypeID, String value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, Case.getAttrTypeString(attrTypeID), attrTypeID, moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING, 0, 0, 0, 
-			value, new byte[0], Case);
-		Case.addBlackboardAttribute(attr);
-	}
-	
-	//add bytes
-	/**
-	 * add an attribute to this artifact
-	 * @param attrType the attribute type enum
-	 * @param value the value byte array
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType, byte[] value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrType.getLabel(), attrType.getTypeID(), moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE, 0, 0, 0, 
-			"", value, Case);
-		Case.addBlackboardAttribute(attr);
-	}
-	/**
-	 * add an attribute to this artifact
-	 * @param attrTypeString the attribute type string (if the attribute type does not exist, it 
-	 * will be created)
-	 * @param value the value byte array
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(String attrTypeString, byte[] value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, attrTypeString, Case.getAttrTypeID(attrTypeString), moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE, 0, 0, 0, 
-			"", value, Case);
-		Case.addBlackboardAttribute(attr);
-	}
-	/**
-	 * add an attribute to this artifact
-	 * @param attrTypeID the attribute type id
-	 * @param value the value byte array
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
-	 * @throws TskException
-	 */
-	public void addAttribute(int attrTypeID, byte[] value, String moduleName, String context) throws TskException{
-		BlackboardAttribute attr = new BlackboardAttribute(this.artifactID, Case.getAttrTypeString(attrTypeID), attrTypeID, moduleName, context,
-			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE, 0, 0, 0, 
-			"", value, Case);
-		Case.addBlackboardAttribute(attr);
-	}
+
 	/**
 	 * get all attributes associated with this artifact
 	 * @return a list of attributes
