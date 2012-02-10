@@ -592,6 +592,67 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Add a blackboard attributes in bulk. All information for the attribute should be in the given attribute
+	 * @param attributes collection of blackboard attributes. All necessary information should be filled in.
+	 */
+	public void addBlackboardAttributes(Collection<BlackboardAttribute> attributes) throws TskException {
+		synchronized (caseLock) {
+			try {
+				con.setAutoCommit(false);
+			} catch (SQLException ex) {
+				throw new TskException("Error creating transaction, no attributes created.", ex);
+			}
+			for (BlackboardAttribute attr : attributes) {
+				PreparedStatement ps = null;
+				try {
+					switch (attr.getValueType()) {
+						case STRING:
+							ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_text) VALUES ("
+									+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", '" + attr.getValueString() + "')");
+							break;
+						case BYTE:
+							ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_byte) VALUES ("
+									+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", ?)");
+							ps.setBytes(1, attr.getValueBytes());
+							break;
+						case INTEGER:
+							ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int32) VALUES ("
+									+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueInt() + ")");
+							break;
+						case LONG:
+							ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int64) VALUES ("
+									+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueLong() + ")");
+							break;
+						case DOUBLE:
+							ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) VALUES ("
+									+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueDouble() + ")");
+							break;
+					}
+					ps.executeUpdate();
+					ps.close();
+				} catch (SQLException ex) {
+					throw new TskException("Error creating a blackboard artifact.", ex);
+				}
+
+			}
+			
+			//commit transaction
+			try {
+				con.commit();
+			} catch (SQLException ex) {
+				throw new TskException("Error committing transaction, no attributes created.", ex);
+			} finally {
+				try {
+					con.setAutoCommit(true);
+				} catch (SQLException ex) {
+					throw new TskException("Error setting autocommit and closing the transaction!", ex);
+				}
+			}
+
+		}
+	}
+
+	/**
 	 * add an attribute type with the given name
 	 * @param attrTypeString name of the new attribute
 	 * @return the id of the new attribute
@@ -986,6 +1047,10 @@ public class SleuthkitCase {
 	 */
 	private void addBuiltInAttrType(ATTRIBUTE_TYPE type) throws TskException {
 		addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
+
+
+
+
 	}
 
 	/** 
@@ -1187,8 +1252,12 @@ public class SleuthkitCase {
 	 * @param image Image to lookup FileSystem for
 	 * @return Collection of FileSystems in the image
 	 */
-	public Collection<FileSystem> getFileSystems(Image image)  {
+	public Collection<FileSystem> getFileSystems(Image image) {
 		return new GetFileSystemsVisitor().visit(image);
+
+
+
+
 	}
 
 	/**
@@ -1605,6 +1674,10 @@ public class SleuthkitCase {
 				if (this.caseHandle != null) {
 					this.caseHandle.free();
 					this.caseHandle = null;
+
+
+
+
 				}
 			} catch (TskException ex) {
 				Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING,
@@ -1683,6 +1756,12 @@ public class SleuthkitCase {
 	 */
 	public String lookupFileMd5(Content cont) throws TskException {
 		Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
+
+
+
+
+
+
 		try {
 			long contId = cont.getId();
 			String md5Hash = Hash.calculateMd5(cont);
@@ -1696,7 +1775,10 @@ public class SleuthkitCase {
 			// TODO This should be higher than INFO, but we want to avoid pop-ups during ingest.  Find better fix in future.
 			logger.log(Level.INFO, "Error updating SQL database", ex);
 		}
-		throw new TskException("Error analyzing file");
+
+
+		throw new TskException(
+				"Error analyzing file");
 	}
 //	Useful if we want to queue sql updates for performance reasons
 //	/**
