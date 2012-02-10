@@ -1299,7 +1299,7 @@ int TskImgDBSqlite::addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t size,
     sqlite3_snprintf(1024, stmt,
         "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type,"
         "dir_flags, meta_flags, size, ctime, crtime, atime, mtime, mode, uid, gid, status, full_path) "
-        "VALUES (NULL, %d, '%q', NULL, %d, %d, %d, %d, %llu, NULL, NULL, NULL, NULL, NULL, NULL, NULL, %d, '%q')",
+        "VALUES (NULL, %d, '%q', NULL, %d, %d, %d, %d, %llu, 0, 0, 0, 0, NULL, NULL, NULL, %d, '%q')",
         IMGDB_FILES_TYPE_CARVED, utf8Name.c_str(), (int)TSK_FS_NAME_TYPE_REG, (int)TSK_FS_META_TYPE_REG,
         (int)TSK_FS_NAME_FLAG_UNALLOC, (int)TSK_FS_META_FLAG_UNALLOC, size, IMGDB_FILES_STATUS_CREATED, utf8Name.c_str());
     // MAY-118 NOTE: addCarvedFileInfo insert entry into files table, but actual file on disk has not been created yet.

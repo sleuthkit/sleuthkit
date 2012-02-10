@@ -65,6 +65,7 @@ public:
     static const string TSK_KEYWORD_REGEXP;
     static const string TSK_KEYWORD_PREVIEW;
     static const string TSK_KEYWORD_SET;
+    static const string TSK_INTERESTING_FILE;
 
 #if 0
     /**

@@ -43,4 +43,5 @@ const string TskBlackboard::TSK_PATH = "TSK_PATH";
 const string TskBlackboard::TSK_KEYWORD_REGEXP = "TSK_KEYWORD_REGEXP";
 const string TskBlackboard::TSK_KEYWORD_PREVIEW = "TSK_KEYWORD_PREVIEW";
 const string TskBlackboard::TSK_KEYWORD_SET = "TSK_KEYWORD_SET";
+const string TskBlackboard::TSK_INTERESTING_FILE = "TSK_INTERESTING_FILE";
 
