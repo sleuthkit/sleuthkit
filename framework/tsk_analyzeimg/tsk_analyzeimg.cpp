@@ -14,6 +14,7 @@
 
 #include "tsk3/tsk_tools_i.h"
 #include "framework.h"
+#include "Services/TskSchedulerQueue.h"
 
 // @@@ Remove once Poco stuff is hidden in systemPropertiesImpl
 #include "Poco/Util/XMLConfiguration.h"
@@ -144,6 +145,11 @@ int main(int argc, char **argv1)
     if (pipeline_config != NULL) 
         TSK_SYS_PROP_SET(TskSystemProperties::PIPELINE_CONFIG, pipeline_config);
 
+    // Create a Scheduler and register it
+    // @@@ Should make this be default
+    TskSchedulerQueue scheduler;
+    TskServices::Instance().setScheduler(scheduler);
+
     // Create an ImageFile and register it with the framework.
     TskImageFileTsk imageFileTsk;
     if (imageFileTsk.open(imagePath) != 0) {
@@ -183,12 +189,20 @@ int main(int argc, char **argv1)
         return 1;
     }
 
+    // @@@ go through the scheduler queue....
+
     //Run pipeline on all files
     // @@@ this needs to cycle over the files to analyze, 10 is just here for testing 
     if (filePipeline) {
-        for (int i = 0; i < 10; i++) {
+        TskSchedulerQueue::task_struct *task;
+        while ((task = scheduler.next()) != NULL) {
+            if (task->task != Scheduler::FileAnalysis)  {
+                fprintf(stderr, "WARNING: Skipping task %d\n", task->task);
+                continue;
+            }
+            printf("processing file: %d\n", (int)task->id);
             try {
-                filePipeline->run(i);
+                filePipeline->run(task->id);
             }
             catch (...) {
                 // error message has been logged already.

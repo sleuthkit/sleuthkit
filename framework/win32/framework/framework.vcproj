@@ -276,6 +276,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Services\TskSchedulerQueue.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Services\TskServices.cpp"
 				>
 			</File>
@@ -415,6 +419,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Pipeline\TskReportPluginModule.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Services\TskSchedulerQueue.h"
 				>
 			</File>
 			<File

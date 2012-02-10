@@ -277,6 +277,15 @@ int TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
 
     int result = m_db.addFsFileInfo(m_curFsId, a_fsFile, name, type, idx, fileId, a_path);
     free(name);
+
+    // Message was already logged
+    if (result) {
+        return -1;
+    }
+    
+    if (TskServices::Instance().getScheduler().schedule(Scheduler::FileAnalysis, fileId, fileId)) {
+        LOGERROR(L"Error adding file for scheduling");
+    }
     return 0;
 }
 
