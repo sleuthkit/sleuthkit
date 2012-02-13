@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.lang.String;
 import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Blackboard Artifact class used to store a set of name-value pairs
@@ -184,6 +185,22 @@ public class BlackboardArtifact implements SleuthkitVisitableItem{
 		attr.setArtifactID(artifactID);
 		attr.setCase(Case);
 		Case.addBlackboardAttribute(attr);
+	}
+	
+	/**
+	 * add a collection of attributes to this artifact in a single transaction
+	 * @param a
+	 * @throws TskException
+	 */
+	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskException{
+		if (attributes.isEmpty())
+			return;
+		
+		for (BlackboardAttribute attr : attributes) {
+			attr.setArtifactID(artifactID);
+			attr.setCase(Case);
+		}
+		Case.addBlackboardAttributes(attributes);
 	}
 
 	/**
