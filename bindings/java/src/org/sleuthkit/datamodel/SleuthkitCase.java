@@ -60,7 +60,20 @@ public class SleuthkitCase {
 		this.dbPath = dbPath;
 		this.caseHandle = caseHandle;
 		con = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+		configureDB();
 		initBlackboardTypes();
+	}
+
+	private void configureDB() throws TskException {
+		try {
+			//this should match SleuthkitJNI db setup
+			final Statement statement = con.createStatement();
+			//reduce i/o operations, we have no OS crash recovery anyway
+			statement.execute("PRAGMA synchronous = OFF;");
+			statement.close();
+		} catch (SQLException e) {
+			throw new TskException("Couldn't configure the database connection", e);
+		}
 	}
 
 	/**
