@@ -25,6 +25,8 @@ using namespace std;
 #include "TskImgDB.h"
 #include "Utilities/SectorRuns.h"
 #include "Utilities/UnallocRun.h"
+#include "TskBlackboardArtifact.h"
+#include "TskBlackboardAttribute.h"
 
 #include "tsk3/libtsk.h"
 #include "tsk3/auto/sqlite3.h"
@@ -85,19 +87,24 @@ public:
     virtual int updateKnownStatus(uint64_t a_file_id, int a_status);
 	virtual bool dbExist() const;
 
-    // Blackboard access methods.
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<vector<unsigned char>> & values) const;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<string> & values) const;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<int32_t> & values) const;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<int64_t> & values) const;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<double> & values) const;
-
-    virtual void getAllBlackboardRows(const uint64_t fileId, vector<TskBlackboardRecord> & bbRecords) const;
-    virtual void getAllBlackboardRows(std::string& condition, vector<TskBlackboardRecord> & bbRecords) const;
-
-    // Create a new artifact with the given record.
-    virtual artifact_t addBlackboardInfo(const TskBlackboardRecord& blackboardRecord) const;
-
+    // Blackboard methods.
+    virtual void addBlackboardAttribute(TskBlackboardAttribute attr);
+    virtual string getArtifactTypeDisplayName(int artifactTypeID);
+    virtual int getArtifactTypeID(string artifactTypeString);
+    virtual string getArtifactTypeName(int artifactTypeID);
+    virtual string getAttributeTypeDisplayName(int attributeTypeID);
+    virtual int getAttributeTypeID(string attributeTypeString);
+    virtual string getAttributeTypeName(int attributeTypeID);
+    virtual TskBlackboardArtifact getBlackboardArtifact(long artifactID);
+    virtual vector<TskBlackboardArtifact> getMatchingArtifacts(string whereClause);
+    virtual vector<TskBlackboardAttribute> getMatchingAttributes(string whereClause);
+    virtual TskBlackboardArtifact newBlackboardArtifact(int artifactTypeID, uint64_t file_id);
+    virtual TskBlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, uint64_t file_id);
+    virtual void addArtifactType(string artifactTypeName, string displayName);
+    virtual void addAttributeType(string attributeTypeName, string displayName);
+    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(string artifactTypeName, uint64_t file_id);
+    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, uint64_t file_id);
+    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, uint64_t file_id);
     // Get set of file ids that match the given condition (i.e. SQL where clause)
     virtual std::vector<uint64_t> getFileIds(std::string& condition) const;
 
@@ -131,6 +138,8 @@ private:
     wchar_t m_progPath[256];
     wchar_t m_dbFilePath[256];
     sqlite3 * m_db;
+    int m_artifactIDcounter;
+    int m_attributeIDcounter;
 
     int dropTables();
 
@@ -140,6 +149,11 @@ private:
     void constructStmt(std::string& stmt, std::string& condition) const;
     int addUnusedSector(uint64_t sectStart, uint64_t sectEnd, int volId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList);
     int getFileTypeRecords(std::string& stmt, std::list<TskFileTypeRecord>& fileTypeInfoList) const;
+    virtual void addArtifactType(string artifactTypeName, string displayName, int typeID);
+    virtual void addAttributeType(string attributeTypeName, string displayName, int typeID);
+    virtual void addBuiltInArtifactType(ARTIFACT_TYPE type);
+    virtual void addBuiltInAttributeType(ATTRIBUTE_TYPE type);
+    virtual vector<TskBlackboardArtifact> getArtifactsHelper(int artifactTypeID, string artifactTypeName, uint64_t file_id);
 };
 
 #endif

@@ -22,6 +22,9 @@
 #include "framework_i.h"
 #include "Utilities/SectorRuns.h"
 #include "Utilities/UnallocRun.h"
+#include "TskBlackboardAttribute.h"
+#include "TskBlackboard.h"
+#include "TskBlackboardArtifact.h"
 
 using namespace std;
 
@@ -287,36 +290,25 @@ public:
     virtual int updateKnownStatus(uint64_t a_file_id, int a_status) = 0;
 	virtual bool dbExist() const = 0;
 
-    // Blackboard read/write methods.
-
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<vector<unsigned char>> & values) const = 0;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<string> & values) const = 0;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<int32_t> & values) const = 0;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<int64_t> & values) const = 0;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<double> & values) const = 0;
-
-    // Create a new artifact with the given record.
-    virtual artifact_t addBlackboardInfo(const TskBlackboardRecord& blackboardRecord) const = 0;
-
-    virtual void getAllBlackboardRows(const uint64_t fileId, vector<TskBlackboardRecord> & bbRecords ) const = 0;
-    virtual void getAllBlackboardRows(std::string& condition, vector<TskBlackboardRecord> & bbRecords) const = 0;
-
-    // Convenience functions
-
-    // return the valueString field, if valueType is BB_VALUE_TYPE_STRING, otherwise raise exception
-    virtual string toString(const TskBlackboardRecord & rec) const;
-
-    // return the valueInt32 field, if valueType is BB_VALUE_TYPE_INT32, otherwise raise exception
-    virtual int32_t toInt32(const TskBlackboardRecord & rec) const;
-
-    // return the valueInt64 field, if valueType is BB_VALUE_TYPE_INT64, otherwise raise exception
-    virtual int64_t toInt64(const TskBlackboardRecord & rec) const;
-
-    // return the valueDouble field, if valueType is BB_VALUE_TYPE_DOUBLE, otherwise raise exception
-    virtual double toDouble(const TskBlackboardRecord & rec) const;
-
-    // --------------------
-
+    // Blackboard methods.
+    virtual void addBlackboardAttribute(TskBlackboardAttribute attr) = 0;
+    virtual string getArtifactTypeDisplayName(int artifactTypeID) = 0;
+    virtual int getArtifactTypeID(string artifactTypeString) = 0;
+    virtual string getArtifactTypeName(int artifactTypeID) = 0;
+    virtual string getAttributeTypeDisplayName(int attributeTypeID) = 0;
+    virtual int getAttributeTypeID(string attributeTypeString) = 0;
+    virtual string getAttributeTypeName(int attributeTypeID) = 0;
+    virtual TskBlackboardArtifact getBlackboardArtifact(long artifactID) = 0;
+    virtual vector<TskBlackboardArtifact> getMatchingArtifacts(string whereClause) = 0;
+    virtual vector<TskBlackboardAttribute> getMatchingAttributes(string whereClause) = 0;
+    virtual TskBlackboardArtifact newBlackboardArtifact(int artifactTypeID, uint64_t file_id) = 0;
+    virtual TskBlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, uint64_t file_id) = 0;
+    virtual void addArtifactType(string artifactTypeName, string displayName) = 0;
+    virtual void addAttributeType(string attributeTypeName, string displayName) = 0;
+    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(string artifactTypeName, uint64_t file_id) = 0;
+    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, uint64_t file_id) = 0;
+    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, uint64_t file_id) = 0;
+    
 
     // Get set of file ids that match the given condition (i.e. SQL where clause)
     virtual std::vector<uint64_t> getFileIds(std::string& condition) const = 0;
@@ -346,7 +338,8 @@ public:
     virtual int addUnusedSectors(int unallocImgId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList) = 0;
     virtual int getUnusedSector(uint64_t fileId, TskUnusedSectorsRecord & unusedSectorsRecord) const = 0;
 
-private:
+protected:
+
 };
 
 #endif

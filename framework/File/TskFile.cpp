@@ -239,8 +239,45 @@ void TskFile::setStatus(TskImgDB::FILE_STATUS status)
     TskServices::Instance().getImgDB().updateFileStatus(id(), status);
 }
 
-std::vector<TskBlackboardRecord> TskFile::getBlackboardRecords(){
-    std::vector<TskBlackboardRecord> records;
-    TskServices::Instance().getBlackboard().getBlackboardRows(m_id, records);
-    return records;
+///COMMENT ME!
+TskBlackboardArtifact TskFile::newArtifact(int artifactTypeID){
+    return TskServices::Instance().getBlackboard().newBlackboardArtifact(artifactTypeID, m_id);
+}
+
+TskBlackboardArtifact TskFile::newArtifact(ARTIFACT_TYPE type){
+    return TskServices::Instance().getBlackboard().newBlackboardArtifact(type, m_id);
+}
+
+vector<TskBlackboardArtifact> TskFile::getArtifacts(string artifactTypeName){
+    return TskServices::Instance().getBlackboard().getBlackboardArtifacts(artifactTypeName, m_id);
+}
+
+vector<TskBlackboardArtifact> TskFile::getArtifacts(int artifactTypeID){
+    return TskServices::Instance().getBlackboard().getBlackboardArtifacts(artifactTypeID, m_id);
+}
+
+vector<TskBlackboardArtifact> TskFile::getArtifacts(ARTIFACT_TYPE type){
+    return TskServices::Instance().getBlackboard().getBlackboardArtifacts(type, m_id);
+}
+
+vector<TskBlackboardArtifact> TskFile::getAllArtifacts(){
+    stringstream str;
+    str << "WHERE artifact_id = " << m_id;
+    return TskServices::Instance().getBlackboard().getMatchingArtifacts(str.str());
+}
+
+
+TskBlackboardArtifact TskFile::getGenInfo(){
+    TskBlackboard& blackboard = TskServices::Instance().getBlackboard();
+
+    vector<TskBlackboardArtifact> artifacts;
+    TskBlackboardArtifact genInfo;
+    artifacts = getArtifacts(TSK_ART_GEN_INFO);
+
+    if(artifacts.size() == 0)
+        genInfo = newArtifact(TSK_ART_GEN_INFO);
+    else
+        genInfo = artifacts[0];
+
+    return genInfo;
 }
