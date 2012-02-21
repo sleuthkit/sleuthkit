@@ -433,4 +433,32 @@ public class BlackboardAttribute {
 	protected void setCase(SleuthkitCase Case) {
 		this.Case = Case;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final BlackboardAttribute other = (BlackboardAttribute) obj;
+		if (this.artifactID != other.artifactID) {
+			return false;
+		}
+		if (this.attributeTypeID != other.attributeTypeID) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 97 * hash + (int) (this.artifactID ^ (this.artifactID >>> 32));
+		hash = 97 * hash + this.attributeTypeID;
+		return hash;
+	}
+	
+	
 }
