@@ -220,5 +220,37 @@ public class BlackboardArtifact implements SleuthkitVisitableItem{
     public SleuthkitCase getSleuthkitCase(){
         return Case;
     }
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final BlackboardArtifact other = (BlackboardArtifact) obj;
+		if (this.artifactID != other.artifactID) {
+			return false;
+		}
+		if (this.objID != other.objID) {
+			return false;
+		}
+		if (this.artifactTypeID != other.artifactTypeID) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 29 * hash + (int) (this.artifactID ^ (this.artifactID >>> 32));
+		hash = 29 * hash + (int) (this.objID ^ (this.objID >>> 32));
+		hash = 29 * hash + this.artifactTypeID;
+		return hash;
+	}
+	
+	
 }
 
