@@ -54,6 +54,7 @@ public:
     virtual vector<TskBlackboardAttribute> getMatchingAttributes(string whereClause) = 0;
     virtual TskBlackboardArtifact newBlackboardArtifact(int artifactTypeID, uint64_t file_id) = 0;
     virtual TskBlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, uint64_t file_id) = 0;
+    virtual vector<TskBlackboardArtifact> getArtifacts(ARTIFACT_TYPE artifactType) = 0;
 
 protected:
     /// Default Constructor

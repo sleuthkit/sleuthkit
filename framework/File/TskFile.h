@@ -146,6 +146,7 @@ public:
     virtual vector<TskBlackboardArtifact> getArtifacts(ARTIFACT_TYPE type);
     virtual vector<TskBlackboardArtifact> getAllArtifacts();
     virtual TskBlackboardArtifact getGenInfo();
+    virtual void addGenInfoAttribute(TskBlackboardAttribute attr);
 
 
     std::string fullPath() const;

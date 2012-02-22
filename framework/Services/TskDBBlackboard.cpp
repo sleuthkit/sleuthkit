@@ -95,3 +95,9 @@ TskBlackboardArtifact TskDBBlackboard::newBlackboardArtifact(int artifactTypeID,
 TskBlackboardArtifact TskDBBlackboard::newBlackboardArtifact(ARTIFACT_TYPE artifactType, uint64_t file_id){
     return IMGDB().newBlackboardArtifact(artifactType, file_id);
 }
+
+vector<TskBlackboardArtifact> TskDBBlackboard::getArtifacts(ARTIFACT_TYPE artifactType){
+    stringstream condition;
+    condition << "WHERE artifact_type_id = " << artifactType;
+    return IMGDB().getMatchingArtifacts(condition.str());
+}

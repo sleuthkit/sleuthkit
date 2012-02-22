@@ -53,6 +53,7 @@ public:
     virtual vector<TskBlackboardAttribute> getMatchingAttributes(string whereClause);
     virtual TskBlackboardArtifact newBlackboardArtifact(int artifactTypeID, uint64_t file_id);
     virtual TskBlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, uint64_t file_id);
+    virtual vector<TskBlackboardArtifact> getArtifacts(ARTIFACT_TYPE artifactType);
 protected:
     // Default Constructor
     TskDBBlackboard() { m_pImgDB = &(TskServices::Instance().getImgDB()); };
