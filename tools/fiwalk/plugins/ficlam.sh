@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #       ficlam.sh : a simple plug-in that runs on top of fiwalk framework.
 #     description : fiwalk's plug-in system will instantiate clamav's daemon for a scan on each file.
 #    requirements : clamconfig.txt which is in $domex/src/fiwalk/plugins

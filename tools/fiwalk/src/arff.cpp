@@ -244,7 +244,7 @@ void arff::add_valuet(string name,time_t t)
 #ifdef _MSC_VER
 #define TM_FORMAT "%Y-%m-%d %H:%M:%S"
 #else
-#define TM_FORMAT "%F %T "
+#define TM_FORMAT "%F %T"
 #endif
 
     if(t==0) return;			// ignore invalid dates
