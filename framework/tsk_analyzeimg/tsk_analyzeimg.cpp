@@ -146,7 +146,6 @@ int main(int argc, char **argv1)
         TSK_SYS_PROP_SET(TskSystemProperties::PIPELINE_CONFIG, pipeline_config);
 
     // Create a Scheduler and register it
-    // @@@ Should make this be default
     TskSchedulerQueue scheduler;
     TskServices::Instance().setScheduler(scheduler);
 

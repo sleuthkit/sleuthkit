@@ -206,17 +206,20 @@ TSK_FILTER_ENUM TSKAutoImpl::filterFs(TSK_FS_INFO * a_fsInfo)
 }
 
 /* Insert the file data into the file table.
- * Returns 0 on success or -1 on error.
+ * @Returns OK on success, COR on error because of the data (and we should keep on processing more files), 
+ * and ERR because of system error (and we shoudl proabably stop processing)
  */
-int TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
+TSK_RETVAL_ENUM TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
     const TSK_FS_ATTR * a_fsAttr, const char * a_path, uint64_t & fileId)
 {
     int type = 0;
     int idx = 0;
     fileId = 0;
 
-    if (a_fsFile->name == NULL)
-        return -1;
+    if (a_fsFile->name == NULL) {
+        LOGERROR(L"TSKAutoImpl::insertFileData name value is NULL");
+        return TSK_COR;
+    }
 
     size_t attr_len = 0;
     if (a_fsAttr) {
@@ -238,7 +241,8 @@ int TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
     size_t nlen = 2 * (len + attr_len);
     if ((name = (char *) malloc(nlen + 1)) == NULL)
     {
-        return -1;
+        LOGERROR(L"Error allocating memory");
+        return TSK_ERR;
     }
     memset(name, 0, nlen+1);
 
@@ -280,13 +284,14 @@ int TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
 
     // Message was already logged
     if (result) {
-        return -1;
+        return TSK_COR;
     }
     
     if (TskServices::Instance().getScheduler().schedule(Scheduler::FileAnalysis, fileId, fileId)) {
         LOGERROR(L"Error adding file for scheduling");
+        return TSK_COR;
     }
-    return 0;
+    return TSK_OK;
 }
 
 
@@ -305,7 +310,8 @@ TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_
     {
         retval = TSK_OK;
         uint64_t fileId;
-        if (insertFileData(a_fsFile, NULL, a_path, fileId) == -1)
+        // If COR is returned, then keep on going. 
+        if (insertFileData(a_fsFile, NULL, a_path, fileId) == TSK_ERR)
             retval = TSK_ERR;
         else
             m_numFilesSeen++;
@@ -346,7 +352,8 @@ TSK_RETVAL_ENUM TSKAutoImpl::processAttribute(TSK_FS_FILE * a_fsFile,
     // add the file metadata for the default attribute type
     if (isDefaultType(a_fsFile, a_fsAttr))
     {
-        if (insertFileData(a_fsAttr->fs_file, a_fsAttr, a_path, mFileId) == -1)
+        // if COR is returned, then keep on going.
+        if (insertFileData(a_fsAttr->fs_file, a_fsAttr, a_path, mFileId) == TSK_ERR)
             return TSK_ERR;
     }
 
@@ -363,7 +370,8 @@ TSK_RETVAL_ENUM TSKAutoImpl::processAttribute(TSK_FS_FILE * a_fsFile,
             
             if (m_db.addFsBlockInfo(m_curFsId, mFileId, count++, run->addr, run->len))
             {
-                return TSK_ERR;
+                // this error should have been logged.
+                // we'll continue to try processing the file
             }
         }
     }

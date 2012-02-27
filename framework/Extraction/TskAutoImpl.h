@@ -48,7 +48,7 @@ private:
     uint64_t m_numFilesSeen;
     time_t m_startTime;
 
-    int insertFileData(TSK_FS_FILE * fs_file,
+    TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path, uint64_t & fileId);
     TSK_RETVAL_ENUM insertBlockData(const TSK_FS_ATTR * fs_attr);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
