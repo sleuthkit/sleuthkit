@@ -21,6 +21,7 @@
 
 // Framework includes
 #include "Services/TskImgDB.h"
+#include "Services/TskBlackboardArtifact.h"
 
 /**
  * An interface that is used to represent a file. This interface
@@ -137,7 +138,16 @@ public:
     /// Set the file status, also update the ImgDB file status
     virtual void setStatus(TskImgDB::FILE_STATUS status);
 
-    virtual std::vector<TskBlackboardRecord> TskFile::getBlackboardRecords();
+    //Blackboard methods
+    virtual TskBlackboardArtifact newArtifact(int artifactTypeID);
+    virtual TskBlackboardArtifact newArtifact(ARTIFACT_TYPE type);
+    virtual vector<TskBlackboardArtifact> getArtifacts(string artifactTypeName);
+    virtual vector<TskBlackboardArtifact> getArtifacts(int artifactTypeID);
+    virtual vector<TskBlackboardArtifact> getArtifacts(ARTIFACT_TYPE type);
+    virtual vector<TskBlackboardArtifact> getAllArtifacts();
+    virtual TskBlackboardArtifact getGenInfo();
+    virtual void addGenInfoAttribute(TskBlackboardAttribute attr);
+
 
     std::string fullPath() const;
 protected:

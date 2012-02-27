@@ -74,9 +74,10 @@ extern "C"
             } while (bytesRead > 0);
 
             // Post the file size to the blackboard
-            TskBlackboard& blackboard = TskServices::Instance().getBlackboard();
-            
-            blackboard.set(pFile->id(), "ByteCount", totalBytes, "CalcFileSizeModule");
+            TskBlackboardArtifact genInfo = pFile->getGenInfo();
+
+            TskBlackboardAttribute attr((int) TSK_VALUE, "CalcFileSizeModule", "ByteCount", totalBytes);
+            genInfo.addAttribute(attr);
 
             // Close file.
             pFile->close();

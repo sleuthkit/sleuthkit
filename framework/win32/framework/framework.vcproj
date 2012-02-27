@@ -204,6 +204,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Services\TskBlackboardArtifact.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Services\TskBlackboardAttribute.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Services\TskDBBlackboard.cpp"
 				>
 			</File>
@@ -343,6 +351,14 @@
 			</File>
 			<File
 				RelativePath="..\..\Services\TskBlackboard.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Services\TskBlackboardArtifact.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Services\TskBlackBoardAttribute.h"
 				>
 			</File>
 			<File

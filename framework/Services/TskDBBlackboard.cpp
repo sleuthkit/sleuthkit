@@ -28,147 +28,76 @@ TskDBBlackboard& TskDBBlackboard::instance()
     return *m_pInstance;
 }
 
-// TEXT
-artifact_t TskDBBlackboard::set(const uint64_t fileId, const string & attribute, const string & value, const string & source, const string & context)
-{
-    TskBlackboardRecord blackboardRecord(0, fileId, attribute, source, context);
-    
-    blackboardRecord.valueType = TskImgDB::BB_VALUE_TYPE_STRING;
-    blackboardRecord.valueString = value;
-
-    return IMGDB().addBlackboardInfo(blackboardRecord);
+void TskDBBlackboard::addArtifactType(string artifactTypeName, string displayName){
+    IMGDB().addArtifactType(artifactTypeName, displayName);
 }
 
-void TskDBBlackboard::set(const artifact_t artifactId, uint64_t fileId, const string & attribute, const string & value, const string & source, const string & context)
-{
-    TskBlackboardRecord blackboardRecord(artifactId, fileId, attribute, source, context);
-    
-    blackboardRecord.valueType = TskImgDB::BB_VALUE_TYPE_STRING;
-    blackboardRecord.valueString = value;
-
-    IMGDB().addBlackboardInfo(blackboardRecord);
+void TskDBBlackboard::addAttributeType(string attributeTypeName, string displayName){
+    IMGDB().addAttributeType(attributeTypeName, displayName);
 }
 
-vector<string> TskDBBlackboard::getString(const uint64_t fileId, const string & attribute) const
-{
-    vector<string> strings;
-    IMGDB().getBlackboard(fileId, attribute.c_str(), strings);
-    return strings;
+void TskDBBlackboard::addBlackboardAttribute(TskBlackboardAttribute attr){
+    IMGDB().addBlackboardAttribute(attr);
 }
 
-// int32
-artifact_t TskDBBlackboard::set(const uint64_t fileId, const string & attribute, int32_t value, const string & source, const string & context)
-{
-    TskBlackboardRecord blackboardRecord(0, fileId, attribute, source, context);
-    
-    blackboardRecord.valueType = TskImgDB::BB_VALUE_TYPE_INT32;
-    blackboardRecord.valueInt32 = value;
-
-    return IMGDB().addBlackboardInfo(blackboardRecord);
+string TskDBBlackboard::getArtifactTypeDisplayName(int artifactTypeID){
+    return IMGDB().getArtifactTypeDisplayName(artifactTypeID);
 }
 
-void TskDBBlackboard::set(const artifact_t artifactId, const uint64_t fileId, const string & attribute, int32_t value, const string & source, const string & context)
-{
-    TskBlackboardRecord blackboardRecord(artifactId, fileId, attribute, source, context);
-    
-    blackboardRecord.valueType = TskImgDB::BB_VALUE_TYPE_INT32;
-    blackboardRecord.valueInt32 = value;
-
-    IMGDB().addBlackboardInfo(blackboardRecord);
+int TskDBBlackboard::getArtifactTypeID(string artifactTypeString){
+    return IMGDB().getArtifactTypeID(artifactTypeString);
 }
 
-vector<int32_t> TskDBBlackboard::getInt32(const uint64_t fileId, const string & attribute) const
-{
-    vector<int32_t> results;
-    IMGDB().getBlackboard(fileId, attribute.c_str(), results);
-    return results;
+string TskDBBlackboard::getArtifactTypeName(int artifactTypeID){
+    return IMGDB().getArtifactTypeName(artifactTypeID);
 }
 
-// int64
-artifact_t TskDBBlackboard::set(const uint64_t fileId, const string & attribute, int64_t value, const string & source, const string & context)
-{
-    TskBlackboardRecord blackboardRecord(0, fileId, attribute, source, context);
-    
-    blackboardRecord.valueType = TskImgDB::BB_VALUE_TYPE_INT64;
-    blackboardRecord.valueInt64 = value;
-
-    return IMGDB().addBlackboardInfo(blackboardRecord);
+string TskDBBlackboard::getAttributeTypeDisplayName(int attributeTypeID){
+    return IMGDB().getAttributeTypeDisplayName(attributeTypeID);
 }
 
-void TskDBBlackboard::set(const artifact_t artifactId, const uint64_t fileId, const string & attribute, int64_t value, const string & source, const string & context)
-{
-    TskBlackboardRecord blackboardRecord(artifactId, fileId, attribute, source, context);
-    
-    blackboardRecord.valueType = TskImgDB::BB_VALUE_TYPE_INT64;
-    blackboardRecord.valueInt64 = value;
-
-    IMGDB().addBlackboardInfo(blackboardRecord);
+int TskDBBlackboard::getAttributeTypeID(string attributeTypeString){
+    return IMGDB().getArtifactTypeID(attributeTypeString);
+}
+string TskDBBlackboard::getAttributeTypeName(int attributeTypeID){
+    return IMGDB().getAttributeTypeName(attributeTypeID);
 }
 
-vector<int64_t> TskDBBlackboard::getInt64(const uint64_t fileId, const string & attribute) const
-{
-    vector<int64_t> results;
-    IMGDB().getBlackboard(fileId, attribute.c_str(), results);
-    return results;
+TskBlackboardArtifact TskDBBlackboard::getBlackboardArtifact(long artifactID){
+    return IMGDB().getBlackboardArtifact(artifactID);
 }
 
-// double
-artifact_t TskDBBlackboard::set(const uint64_t fileId, const string & attribute, double value, const string & source, const string & context)
-{
-    TskBlackboardRecord blackboardRecord(0, fileId, attribute, source, context);
-    
-    blackboardRecord.valueType = TskImgDB::BB_VALUE_TYPE_DOUBLE;
-    blackboardRecord.valueDouble = value;
-
-    return IMGDB().addBlackboardInfo(blackboardRecord);
+vector<TskBlackboardArtifact> TskDBBlackboard::getBlackboardArtifacts(string artifactTypeName, uint64_t file_id){
+    return IMGDB().getBlackboardArtifacts(artifactTypeName, file_id);
 }
 
-void TskDBBlackboard::set(const artifact_t artifactId, const uint64_t fileId, const string & attribute, double value, const string & source, const string & context)
-{
-    TskBlackboardRecord blackboardRecord(artifactId, fileId, attribute, source, context);
-    
-    blackboardRecord.valueType = TskImgDB::BB_VALUE_TYPE_DOUBLE;
-    blackboardRecord.valueDouble = value;
-
-    IMGDB().addBlackboardInfo(blackboardRecord);
+vector<TskBlackboardArtifact> TskDBBlackboard::getBlackboardArtifacts(int artifactTypeID, uint64_t file_id){
+    return IMGDB().getBlackboardArtifacts(artifactTypeID, file_id);
 }
 
-vector<double> TskDBBlackboard::getDouble(const uint64_t fileId, const string & attribute) const
-{
-    vector<double> results;
-    IMGDB().getBlackboard(fileId, attribute.c_str(), results);
-    return results;
+vector<TskBlackboardArtifact> TskDBBlackboard::getBlackboardArtifacts(ARTIFACT_TYPE artifactType, uint64_t file_id){
+    return IMGDB().getBlackboardArtifacts(artifactType, file_id);
 }
 
-// byte
-artifact_t TskDBBlackboard::set(uint64_t fileId, const string & attribute, const vector<unsigned char> & value, const string & source, const string & context)
-{
-    TskBlackboardRecord blackboardRecord(0, fileId, attribute, source, context);
-    
-    blackboardRecord.valueType = TskImgDB::BB_VALUE_TYPE_BYTE;
-    blackboardRecord.valueByte = value;
-
-    return IMGDB().addBlackboardInfo(blackboardRecord);
+vector<TskBlackboardArtifact> TskDBBlackboard::getMatchingArtifacts(string whereClause){
+    return IMGDB().getMatchingArtifacts(whereClause);
 }
 
-void TskDBBlackboard::set(artifact_t artifactId, uint64_t fileId, const string & attribute, const vector<unsigned char> & value, const string & source, const string & context)
-{
-    TskBlackboardRecord blackboardRecord(artifactId, fileId, attribute, source, context);
-    
-    blackboardRecord.valueType = TskImgDB::BB_VALUE_TYPE_BYTE;
-    blackboardRecord.valueByte = value;
+vector<TskBlackboardAttribute> TskDBBlackboard::getMatchingAttributes(string whereClause){
+    return IMGDB().getMatchingAttributes(whereClause);
 
-    IMGDB().addBlackboardInfo(blackboardRecord);
 }
 
-vector<vector<unsigned char>> TskDBBlackboard::getByte(uint64_t fileId, const string & attribute) const
-{
-    vector<vector<unsigned char>> results;
-    IMGDB().getBlackboard(fileId, attribute.c_str(), results);
-    return results;
+TskBlackboardArtifact TskDBBlackboard::newBlackboardArtifact(int artifactTypeID, uint64_t file_id){
+    return IMGDB().newBlackboardArtifact(artifactTypeID, file_id);
 }
 
-void TskDBBlackboard::getBlackboardRows(uint64_t fileId, vector<TskBlackboardRecord> & bbRecords) const
-{
-    IMGDB().getAllBlackboardRows(fileId, bbRecords);
+TskBlackboardArtifact TskDBBlackboard::newBlackboardArtifact(ARTIFACT_TYPE artifactType, uint64_t file_id){
+    return IMGDB().newBlackboardArtifact(artifactType, file_id);
+}
+
+vector<TskBlackboardArtifact> TskDBBlackboard::getArtifacts(ARTIFACT_TYPE artifactType){
+    stringstream condition;
+    condition << "WHERE artifact_type_id = " << artifactType;
+    return IMGDB().getMatchingArtifacts(condition.str());
 }

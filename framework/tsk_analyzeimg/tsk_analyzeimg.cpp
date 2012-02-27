@@ -139,7 +139,7 @@ int main(int argc, char **argv1)
     TskServices::Instance().setImgDB(*pImgDB);
 
     // Create a Blackboard and register it with the framework.
-    TskServices::Instance().setBlackboard(TskDBBlackboard::instance());
+    TskServices::Instance().setBlackboard((TskBlackboard &) TskDBBlackboard::instance());
 
     // @@@ Not UNIX-friendly
     if (pipeline_config != NULL) 

@@ -11,7 +11,7 @@
 #include "TskBlackboard.h"
 
 /* Note that the below comments are the only documentation for the standard types.
- * Please ensure that all types are documented. */
+ * Please ensure that all types are documented. 
 const string TskBlackboard::TSK_DATETIME = "TSK_DATETIME"; ///< INT32: GMT based Unix time, defines number of secords elapsed since UTC Jan 1, 1970.
 const string TskBlackboard::TSK_GEO = "TSK_GEO";      ///< STRING: TBD
 const string TskBlackboard::TSK_USERNAME = "TSK_USERNAME"; ///< String of a user name.  Use TskBlackboard::TSK_DOMAIN to store the domain that the username is from (if it is known). 
@@ -43,4 +43,5 @@ const string TskBlackboard::TSK_PATH = "TSK_PATH";
 const string TskBlackboard::TSK_KEYWORD_REGEXP = "TSK_KEYWORD_REGEXP";
 const string TskBlackboard::TSK_KEYWORD_PREVIEW = "TSK_KEYWORD_PREVIEW";
 const string TskBlackboard::TSK_KEYWORD_SET = "TSK_KEYWORD_SET";
-
+const string TskBlackboard::TSK_INTERESTING_FILE = "TSK_INTERESTING_FILE";
+*/
