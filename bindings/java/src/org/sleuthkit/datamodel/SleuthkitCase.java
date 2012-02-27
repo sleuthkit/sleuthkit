@@ -1133,20 +1133,72 @@ public class SleuthkitCase {
 		}
 	}
 
-	public File getFileById(long id) throws SQLException, TskException {
+	public Content getContentById(long id) throws SQLException, TskException {
+		synchronized (caseLock) {
+			Statement s = con.createStatement();
+			ResultSet contentRs = s.executeQuery("select * from tsk_objects where obj_id = " + id);
+			ResultSet volumeSystemRs;
+			ResultSet volumeRs;
+			ResultSet imageRs;
+			Image img;
+			VolumeSystem vs;
+			Volume v;
+			Content ret;
+			int type = contentRs.getInt("type");
+			switch (type) {
+				case 0:
+					ret = getImageById(id);
+					break;
+				case 1:
+					img = getImageById(contentRs.getInt("par_obj_id"));
+					ret = getVolumeSystemById(id, img);
+					break;
+				case 2:
+					volumeSystemRs = s.executeQuery("select * from tsk_objects where obj_id = " + contentRs.getInt("par_obj_id"));
+					img = getImageById(volumeSystemRs.getInt("par_obj_id"));
+					vs = getVolumeSystemById(contentRs.getInt("par_obj_id"), img);
+					volumeSystemRs.close();
+					ret = getVolumeById(id, vs);
+					break;
+				case 3:
+					if (contentRs.getInt("par_obj_id") == 0) {
+						img = getImageById(contentRs.getInt("par_obj_id"));
+						ret = getFileSystemById(id, img);
+					} else {
+						volumeRs = s.executeQuery("select * from tsk_objects where obj_id = " + contentRs.getInt("par_obj_id"));
+						volumeSystemRs = s.executeQuery(("select * from tsk_objects where obj_id = " + volumeRs.getInt("par_obj_id")));
+						imageRs = s.executeQuery(("select * from tsk_objects where obj_id = " + volumeSystemRs.getInt("par_obj_id")));
+						img = getImageById(imageRs.getInt("obj_id"));
+						vs = getVolumeSystemById(volumeSystemRs.getInt("obj_id"), img);
+						v = getVolumeById(volumeRs.getInt("obj_id"), vs);
+						volumeRs.close();
+						volumeSystemRs.close();
+						imageRs.close();
+						ret = getFileSystemById(id, v);
+					}
+					break;
+				case 4:
+					ret = getFsContentById(id);
+					break;
+				default:
+					ret = null;
+					break;
+			}
+			contentRs.close();
+			s.close();
+			return ret;
+		}
+	}
+
+	public FsContent getFsContentById(long id) throws SQLException, TskException {
 		synchronized (caseLock) {
 			Statement s = con.createStatement();
 
 			ResultSet rs = s.executeQuery("select * from tsk_files where obj_id = " + id);
-			FsContent temp = null;
 			List<FsContent> results;
 			if ((results = resultSetToFsContents(rs)).size() > 0) {
 				s.close();
-				if ((temp = results.get(0)).isFile()) {
-					return (File) temp;
-				} else {
-					throw new TskException("Query returned non-file FsContent");
-				}
+				return results.get(0);
 			} else {
 				s.close();
 			}
