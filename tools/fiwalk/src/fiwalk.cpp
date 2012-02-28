@@ -84,11 +84,9 @@ int  opt_M = 30;
 int  opt_k = 4;
 
 
-/* Sector hash bloom calculations */
 u_int	sectorhash_size=512;
-bool	opt_compute_sector_hashes = false;
-bool	opt_print_sector_hashes = false;
-NSRLBloom *sector_bloom = 0;
+//bool	opt_compute_sector_hashes = false;
+//bool	opt_print_sector_hashes = false;
 
 namelist_t namelist;		// names of files that we want to find
 
@@ -133,7 +131,6 @@ void usage()
     printf("options:\n");
     printf("    -c config.txt   read config.txt for metadata extraction tools\n");
     printf("    -C nn           only process nn files, then do a clean exit\n"); 
-    printf("    -u              Guess at usernames based on filenames, mode, or UIDs\n");
     
     printf("\n");
     printf("include/exclude parameters; may be repeated. \n");
@@ -174,11 +171,11 @@ void usage()
     printf("    -T<file> = Walkfile output to <file>\n");
     printf("    -a <audit.txt> = Read the scalpel audit.txt file\n");
     printf("\n");
-    printf("Sector hash:\n");
-    printf("    -E             = Print sector hashes\n");
-    printf("    -Snnn          = Specify sector hash size; default is %d\n",sectorhash_size);
-    printf("    -B<file>       = output sector hash bloom filter to <file>; M=%d k=%d\n",opt_M,opt_k);
-    
+//Bringing this back with dfxml later
+//    printf("Sector hash:\n");
+//    printf("    -E             = Print sector hashes\n");
+//    printf("    -Snnn          = Specify sector hash size; default is %d\n",sectorhash_size);
+
     printf("Misc:\n");
     printf("    -d = debug this program\n");
     printf("    -v = Enable SleuthKit verbose flag\n");
@@ -445,7 +442,8 @@ int main(int argc, char * const *argv1)
 #endif
 	
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:B:C:dEfG:gmv1IMX:S:T:VZn:c:b:xOzh"))) > 0 ) { // s: removed
+ //   while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dEfG:gmv1IMX:S:T:VZn:c:b:xOzh?"))) > 0 ) { // s: removed
+    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gmv1IMX:T:VZn:c:b:xOzh?"))) > 0 ) { // s: removed
 	switch (ch) {
 	case _TSK_T('1'): opt_sha1++;break;
 	case _TSK_T('m'):
@@ -462,33 +460,20 @@ int main(int argc, char * const *argv1)
 		arff_fn = OPTARG;
 #endif
 		break;
-	case _TSK_T('B'): 
-	    opt_compute_sector_hashes=true;
-	    sector_bloom = new NSRLBloom();
-#ifdef _MSC_VER
-		convert(OPTARG, &opt_arg);
-		if(sector_bloom->create(opt_arg,160,30,4,"Sector hash")){
-		err(1,"%s",opt_arg);
-	    }
-#else
-	    if(sector_bloom->create(OPTARG,160,30,4,"Sector hash")){
-		err(1,"%s",OPTARG);
-	    }
-#endif
-	    break;
 	case _TSK_T('C'): file_count_max = TATOI(OPTARG);break;
 	case _TSK_T('d'): opt_debug++; break;
-	case _TSK_T('E'):
-	    opt_print_sector_hashes = true;
-	    opt_compute_sector_hashes=true;
-	    break;
+//	case _TSK_T('E'):
+//	    opt_print_sector_hashes = true;
+//	    opt_compute_sector_hashes=true;
+//	    break;
 	case _TSK_T('f'): opt_magic = true;break;
 	case _TSK_T('g'): opt_no_data++; break;
 	case _TSK_T('G'): opt_maxgig = TATOI(OPTARG);break;
+	case _TSK_T('h'): usage(); break;
 	case _TSK_T('I'): opt_ignore_ntfs_system_files=true;break;
 	case _TSK_T('M'): opt_md5++; break;
 	case _TSK_T('O'): opt_allocated_only=true; break;
-	case _TSK_T('S'): sectorhash_size = TATOI(OPTARG); break;
+//	case _TSK_T('S'): sectorhash_size = TATOI(OPTARG); break;
 	case _TSK_T('T'):
 #ifdef _MSC_VER
 		convert(OPTARG, &opt_arg);
@@ -536,8 +521,7 @@ int main(int argc, char * const *argv1)
 	    //case 's': save_outdir = optarg; opt_save = true; break;
 	case _TSK_T('v'): tsk_verbose++; break; 			// sleuthkit option
 	case _TSK_T('z'): opt_sha1=false;opt_md5=false;break;
-	case _TSK_T('h'):
-	case _TSK_T('?'):
+	case _TSK_T('?'): usage();break;
 	default:
 	    fprintf(stderr, "Invalid argument: %s\n", argv[OPTIND]);
 	    usage();

@@ -13,7 +13,6 @@ fiwalk_SOURCES = fiwalk.cpp  fiwalk_tsk.cpp fiwalk.h \
 	arff.cpp arff.h \
 	plugin.cpp plugin.h \
 	myglob.cpp myglob.h\
-	bloom.c bloom.h \
 	utils.c utils.h \
 	bloomset.h \
 	xml.cpp xml.h \

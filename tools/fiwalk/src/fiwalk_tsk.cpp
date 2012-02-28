@@ -288,21 +288,17 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
 	if(ci.do_plugin && ci.total_bytes>0) plugin_process(ci.tempfile_path);
 
 	/* Output the sector hashes to text or XML file if requested */
-	if(opt_compute_sector_hashes){
-	    int count = 1;
-	    for(vector<string>::const_iterator it = ci.sectorhashes.begin();
-		it!=ci.sectorhashes.end(); it++){
-		if(sector_bloom){
-		    sector_bloom->addHex(*it);
-		    printf("adding %s\n",(*it).c_str());
-		}
-		if(opt_print_sector_hashes){
-		    if(t) fprintf(t,"sectorhash: %s %d\n",(*it).c_str(),count);
-		    if(x) x->xmlout("sectorhash",*it,"",false);
-		}
-		count++;
-	    }
-	}
+//	if(opt_compute_sector_hashes){
+//	    int count = 1;
+//	    for(vector<string>::const_iterator it = ci.sectorhashes.begin();
+//		it!=ci.sectorhashes.end(); it++){
+//		if(opt_print_sector_hashes){
+//		    if(t) fprintf(t,"sectorhash: %s %d\n",(*it).c_str(),count);
+//		    if(x) x->xmlout("sectorhash",*it,"",false);
+//		}
+//		count++;
+//	    }
+//	}
     }
 
     /* END of file processing */

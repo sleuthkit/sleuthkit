@@ -104,8 +104,6 @@
 #include "utils.h"
 #include "xml.h"
 #include "base64.h"
-#include "bloom.h"
-#include "bloomset.h"
 #include "content.h"
 
 using namespace std;
@@ -120,7 +118,7 @@ extern bool	opt_md5;			// do we need md5s?
 extern bool	opt_sha1;			// do we need sha1s?
 extern string	save_outdir;
 extern bool	opt_get_fragments;
-extern bool	opt_compute_sector_hashes;
+//extern bool	opt_compute_sector_hashes;
 extern int	opt_debug;
 extern bool	opt_no_data;
 extern bool	opt_allocated_only;
@@ -146,9 +144,8 @@ void file_info(const string name, int64_t value);
 void file_infot(const string name,time_t t0);
 
 extern u_int sectorhash_size;		// for the computation of sector hashes
-extern bool  opt_compute_sector_hashes;
-extern bool  opt_print_sector_hashes;
-extern NSRLBloom *sector_bloom;
+//extern bool  opt_compute_sector_hashes;
+//extern bool  opt_print_sector_hashes;
 extern namelist_t namelist;		// names of files that we want to find
 
 
