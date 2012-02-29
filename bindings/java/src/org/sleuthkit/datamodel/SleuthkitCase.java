@@ -1138,46 +1138,43 @@ public class SleuthkitCase {
 			Statement s = con.createStatement();
 			ResultSet contentRs = s.executeQuery("select * from tsk_objects where obj_id = " + id);
 			ResultSet volumeSystemRs;
-			ResultSet volumeRs;
-			ResultSet imageRs;
-			Image img;
 			VolumeSystem vs;
-			Volume v;
+			Image img;
 			Content ret;
-			int type = contentRs.getInt("type");
+			TskData.ObjectType type = TskData.ObjectType.valueOf(contentRs.getLong("type"));
 			switch (type) {
-				case 0:
+				case IMG:
 					ret = getImageById(id);
 					break;
-				case 1:
+				case VS:
 					img = getImageById(contentRs.getInt("par_obj_id"));
 					ret = getVolumeSystemById(id, img);
 					break;
-				case 2:
+				case VOL:
 					volumeSystemRs = s.executeQuery("select * from tsk_objects where obj_id = " + contentRs.getInt("par_obj_id"));
 					img = getImageById(volumeSystemRs.getInt("par_obj_id"));
 					vs = getVolumeSystemById(contentRs.getInt("par_obj_id"), img);
 					volumeSystemRs.close();
 					ret = getVolumeById(id, vs);
 					break;
-				case 3:
+				case FS:
 					if (contentRs.getInt("par_obj_id") == 0) {
 						img = getImageById(contentRs.getInt("par_obj_id"));
 						ret = getFileSystemById(id, img);
 					} else {
-						volumeRs = s.executeQuery("select * from tsk_objects where obj_id = " + contentRs.getInt("par_obj_id"));
+						ResultSet volumeRs = s.executeQuery("select * from tsk_objects where obj_id = " + contentRs.getInt("par_obj_id"));
 						volumeSystemRs = s.executeQuery(("select * from tsk_objects where obj_id = " + volumeRs.getInt("par_obj_id")));
-						imageRs = s.executeQuery(("select * from tsk_objects where obj_id = " + volumeSystemRs.getInt("par_obj_id")));
+						ResultSet imageRs = s.executeQuery(("select * from tsk_objects where obj_id = " + volumeSystemRs.getInt("par_obj_id")));
 						img = getImageById(imageRs.getInt("obj_id"));
 						vs = getVolumeSystemById(volumeSystemRs.getInt("obj_id"), img);
-						v = getVolumeById(volumeRs.getInt("obj_id"), vs);
+						Volume v = getVolumeById(volumeRs.getInt("obj_id"), vs);
 						volumeRs.close();
 						volumeSystemRs.close();
 						imageRs.close();
 						ret = getFileSystemById(id, v);
 					}
 					break;
-				case 4:
+				case FILE:
 					ret = getFsContentById(id);
 					break;
 				default:
