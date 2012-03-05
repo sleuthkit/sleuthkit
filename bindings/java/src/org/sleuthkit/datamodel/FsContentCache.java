@@ -30,8 +30,8 @@ import java.util.Map;
  */
  class FsContentCache {
 
-	static final long MAX_ENTRY_SIZE = 51200; //max size of file to cache
-	static final int MAX_NUM_ENTRIES = 1000;  //most recent files cached
+	static final long MAX_ENTRY_SIZE = 10 * 1024 * 1024; //max size of file to cache
+	static final int MAX_NUM_ENTRIES = 5;  //most recent files cached
 	
 	private Map<Long, CacheEntry> cache = null;
 	private List<Long> queue = null; 
