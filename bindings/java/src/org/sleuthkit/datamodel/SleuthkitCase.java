@@ -62,6 +62,7 @@ public class SleuthkitCase {
 		con = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
 		configureDB();
 		initBlackboardTypes();
+		FsContentCache.getInstance().clear();
 	}
 
 	private void configureDB() throws TskException {

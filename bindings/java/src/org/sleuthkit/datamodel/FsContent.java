@@ -67,7 +67,7 @@ public abstract class FsContent extends AbstractContent {
 		if (fileHandle == 0){
 			fileHandle = SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), meta_addr);
 		}
-		return SleuthkitJNI.readFile(fileHandle, offset, len);
+		return FsContentCache.getInstance().read(this, fileHandle, offset, len);
 	}
 
 	//methods get exact data from database. could be manipulated to get more
