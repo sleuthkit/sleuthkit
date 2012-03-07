@@ -25,3 +25,21 @@ TskImgDB::~TskImgDB()
 {
 }
 
+TskBlackboardAttribute TskImgDB::createAttribute(uint64_t artifactID, int attributeTypeID, uint64_t objectID, string moduleName, string context,
+		TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, uint64_t valueLong, double valueDouble, 
+        string valueString, vector<unsigned char> valueBytes){
+
+    return TskBlackboardAttribute(artifactID, attributeTypeID, objectID, moduleName, context,
+		valueType, valueInt, valueLong, valueDouble, valueString, valueBytes);
+}
+TskBlackboardArtifact TskImgDB::createArtifact(uint64_t artifactID, uint64_t objID, int artifactTypeID){
+    return TskBlackboardArtifact(artifactID, objID, artifactTypeID);
+}
+
+map<int, TskArtifactNames> TskImgDB::getAllArtifactTypes(){
+    return TskBlackboard::getAllArtifactTypes();
+}
+
+map<int, TskAttributeNames> TskImgDB::getAllAttributeTypes(){
+    return TskBlackboard::getAllAttributeTypes();
+}

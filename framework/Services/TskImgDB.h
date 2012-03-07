@@ -28,6 +28,9 @@
 
 using namespace std;
 
+class TskArtifactNames;
+class TskAttributeNames;
+
 typedef uint64_t artifact_t;
 
 /**
@@ -290,26 +293,6 @@ public:
     virtual int updateKnownStatus(uint64_t a_file_id, int a_status) = 0;
 	virtual bool dbExist() const = 0;
 
-    // Blackboard methods.
-    virtual void addBlackboardAttribute(TskBlackboardAttribute attr) = 0;
-    virtual string getArtifactTypeDisplayName(int artifactTypeID) = 0;
-    virtual int getArtifactTypeID(string artifactTypeString) = 0;
-    virtual string getArtifactTypeName(int artifactTypeID) = 0;
-    virtual string getAttributeTypeDisplayName(int attributeTypeID) = 0;
-    virtual int getAttributeTypeID(string attributeTypeString) = 0;
-    virtual string getAttributeTypeName(int attributeTypeID) = 0;
-    virtual TskBlackboardArtifact getBlackboardArtifact(long artifactID) = 0;
-    virtual vector<TskBlackboardArtifact> getMatchingArtifacts(string whereClause) = 0;
-    virtual vector<TskBlackboardAttribute> getMatchingAttributes(string whereClause) = 0;
-    virtual TskBlackboardArtifact newBlackboardArtifact(int artifactTypeID, uint64_t file_id) = 0;
-    virtual TskBlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, uint64_t file_id) = 0;
-    virtual void addArtifactType(string artifactTypeName, string displayName) = 0;
-    virtual void addAttributeType(string attributeTypeName, string displayName) = 0;
-    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(string artifactTypeName, uint64_t file_id) = 0;
-    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, uint64_t file_id) = 0;
-    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, uint64_t file_id) = 0;
-    
-
     // Get set of file ids that match the given condition (i.e. SQL where clause)
     virtual std::vector<uint64_t> getFileIds(std::string& condition) const = 0;
 
@@ -338,8 +321,35 @@ public:
     virtual int addUnusedSectors(int unallocImgId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList) = 0;
     virtual int getUnusedSector(uint64_t fileId, TskUnusedSectorsRecord & unusedSectorsRecord) const = 0;
 
-protected:
+    friend class TskDBBlackboard;
 
+protected:
+    // Blackboard methods.
+    virtual TskBlackboardArtifact createBlackboardArtifact(uint64_t file_id, int artifactTypeID) = 0;
+    virtual void addBlackboardAttribute(TskBlackboardAttribute attr) = 0;
+    
+    virtual string getArtifactTypeDisplayName(int artifactTypeID) = 0;
+    virtual int getArtifactTypeID(string artifactTypeString) = 0;
+    virtual string getArtifactTypeName(int artifactTypeID) = 0;
+    virtual vector<TskBlackboardArtifact> getMatchingArtifacts(string whereClause) = 0;
+
+    virtual void addArtifactType(int typeID, string artifactTypeName, string displayName) = 0;
+    virtual void addAttributeType(int typeID, string attributeTypeName, string displayName)= 0;
+
+    virtual string getAttributeTypeDisplayName(int attributeTypeID) = 0;
+    virtual int getAttributeTypeID(string attributeTypeString) = 0;
+    virtual string getAttributeTypeName(int attributeTypeID) = 0;
+    virtual vector<TskBlackboardAttribute> getMatchingAttributes(string whereClause) = 0;
+    TskBlackboardAttribute createAttribute(uint64_t artifactID, int attributeTypeID, uint64_t objectID, string moduleName, string context,
+		TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, uint64_t valueLong, double valueDouble, 
+		string valueString, vector<unsigned char> valueBytes);
+    TskBlackboardArtifact createArtifact(uint64_t artifactID, uint64_t objID, int artifactTypeID);
+    virtual map<int, TskArtifactNames> getAllArtifactTypes();
+    virtual map<int, TskAttributeNames> getAllAttributeTypes();
+    virtual vector<int> findAttributeTypes(int artifactTypeId) = 0;
+
+private:
+    
 };
 
 #endif

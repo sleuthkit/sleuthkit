@@ -29,34 +29,55 @@
  * An implementation of TskBlackboard that stores the name / value pairs
  * in the TskImgDB. 
  */
-class TSK_FRAMEWORK_API TskDBBlackboard
+class TSK_FRAMEWORK_API TskDBBlackboard : public TskBlackboard
 {
 public:
     // Singleton access
     static TskDBBlackboard& instance();
 
-    virtual void addArtifactType(string artifactTypeName, string displayName);
-    virtual void addAttributeType(string attributeTypeName, string displayName);
-    virtual void addBlackboardAttribute(TskBlackboardAttribute attr);
-    virtual string getArtifactTypeDisplayName(int artifactTypeID);
-    virtual int getArtifactTypeID(string artifactTypeString);
-    virtual string getArtifactTypeName(int artifactTypeID);
-    virtual string getAttributeTypeDisplayName(int attributeTypeID);
-    virtual int getAttributeTypeID(string attributeTypeString);
-    virtual string getAttributeTypeName(int attributeTypeID);
-    virtual TskBlackboardArtifact getBlackboardArtifact(long artifactID);
-    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(string artifactTypeName, uint64_t file_id);
-    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, uint64_t file_id);
-    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, uint64_t file_id);
-    //this might be better put in the TskDBBlackboard class
-    virtual vector<TskBlackboardArtifact> getMatchingArtifacts(string whereClause);
-    virtual vector<TskBlackboardAttribute> getMatchingAttributes(string whereClause);
-    virtual TskBlackboardArtifact newBlackboardArtifact(int artifactTypeID, uint64_t file_id);
-    virtual TskBlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, uint64_t file_id);
-    virtual vector<TskBlackboardArtifact> getArtifacts(ARTIFACT_TYPE artifactType);
+    virtual TskBlackboardArtifact getBlackboardArtifact(const long artifactID);
+
+    virtual vector<TskBlackboardArtifact> getMatchingArtifacts(const string& condition)const;
+    virtual vector<TskBlackboardArtifact> getArtifacts(const uint64_t file_id, const string& artifactTypeName)const;
+    virtual vector<TskBlackboardArtifact> getArtifacts(const uint64_t file_id, int artifactTypeID)const;
+    virtual vector<TskBlackboardArtifact> getArtifacts(const uint64_t file_id, TSK_ARTIFACT_TYPE artifactType)const;
+    virtual vector<TskBlackboardArtifact> getArtifacts(const TSK_ARTIFACT_TYPE artifactType)const;
+    
+    virtual vector<TskBlackboardAttribute> getMatchingAttributes(const string& condition)const;   
+    virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, const string& attributeTypeName)const;
+    virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, int attributeTypeID)const;
+    virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, TSK_ATTRIBUTE_TYPE attributeType)const;
+    virtual vector<TskBlackboardAttribute> getAttributes(const TSK_ATTRIBUTE_TYPE attributeType)const;
+    
+
+    virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const int artifactTypeID);
+    virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const TSK_ARTIFACT_TYPE artifactType);
+    virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const string& artifactTypeName);
+
+    virtual void createGenInfoAttribute(const uint64_t file_id, TskBlackboardAttribute& attr);
+
+
+    static string attrTypeIDToTypeDisplayName(const int attributeTypeID);
+    static int attrTypeNameToTypeID(const string& attributeTypeString);
+    static string attrTypeIDToTypeName(const int attributeTypeID);
+
+    static int addAttributeType(const string& attributeTypeName, const string& displayName);
+
+    static string artTypeIDToDisplayName(const int artifactTypeID);
+    static int artTypeNameToTypeID(const string& artifactTypeString);
+    static string artTypeIDToTypeName(const int artifactTypeID);
+
+    static int addArtifactType(const string& artifactTypeName, const string& displayName);
+
+    virtual vector<int> findAttributeTypes(int artifactTypeId);
+
+    friend class TskBlackboardArtifact;
+
 protected:
+    virtual void addBlackboardAttribute(TskBlackboardAttribute& attr);
     // Default Constructor
-    TskDBBlackboard() { m_pImgDB = &(TskServices::Instance().getImgDB()); };
+    TskDBBlackboard() { 
+        m_pImgDB = &(TskServices::Instance().getImgDB()); };
 
     // Copy Constructor
     TskDBBlackboard(TskDBBlackboard const&) {};
@@ -71,6 +92,7 @@ protected:
     static TskDBBlackboard * m_pInstance;
 
     TskImgDB * m_pImgDB;
+
 
 private: 
 

@@ -21,21 +21,6 @@
 
 using namespace std;
 
-/**
- * Built in artifact types 
- */
-typedef enum ARTIFACT_TYPE {
-		TSK_ART_GEN_INFO = 1,
-		TSK_ART_WEB_BOOKMARK,
-		TSK_ART_WEB_COOKIE,
-		TSK_ART_WEB_HISTORY,
-		TSK_ART_WEB_DOWNLOAD,
-		TSK_ART_RECENT_OBJECT,
-		TSK_ART_TRACKPOINT,
-		TSK_ART_INSTALLED_PROG,
-		TSK_ART_KEYWORD_HIT
-    };
-
 class TskBlackboardAttribute;
 class TskBlackboard;
 
@@ -45,30 +30,57 @@ class TskBlackboard;
 class TSK_FRAMEWORK_API TskBlackboardArtifact
 {
 public:
-	static string getTypeName(ARTIFACT_TYPE type);
-	static string getDisplayName(ARTIFACT_TYPE type);
-	
-	virtual uint64_t getArtifactID();
-	virtual uint64_t getObjectID();
-    virtual int getArtifactTypeID();
-    virtual string getArtifactTypeName();
-    virtual string getDisplayName();
-    virtual void addAttribute(TskBlackboardAttribute attr);
-	virtual vector<TskBlackboardAttribute> getAttributes();	
+    /**
+     * Get the artifact type id for this artifact
+     * @returns artifact type id
+     */
+    uint64_t getArtifactID() const;
+    /**
+     * Get the object id for this artifact
+     * @returns object id
+     */
+    uint64_t getObjectID() const;
+    /**
+     * Get the artifact type id for this artifact
+     * @returns artifact type id
+     */
+    int getArtifactTypeID() const;
+    /**
+     * Get the artifact type name for this artifact
+     * @returns artifact type name
+     */
+    string getArtifactTypeName() const;
+    /**
+     * Get the display name for this artifact
+     * @returns display name
+     */
+    string getDisplayName() const;
+    /**
+     * Add an attribute to this artifact
+     * @param attr attribute to be added
+     */
+    void addAttribute(TskBlackboardAttribute& attr);
+    /**
+     * Get all attributes associated with this artifact
+     * @returns a vector of attributes
+     */
+	vector<TskBlackboardAttribute> getAttributes() const;	
+    /*
+     * destructor
+     */
 	~TskBlackboardArtifact();
-    TskBlackboardArtifact(TskBlackboard * blackboard, uint64_t artifactID, uint64_t objID, int artifactTypeID, string artifactTypeName, string displayName);
-    TskBlackboardArtifact();
+
+    friend class TskBlackboard;
+    friend class TskFile;
+    friend class TskImgDB;
 
 protected:
-    virtual void setBlackboard(TskBlackboard * blackboard);
+    TskBlackboardArtifact(const uint64_t artifactID, const uint64_t objID, const int artifactTypeID);
 
 private:
 	uint64_t m_artifactID;
 	uint64_t m_objID;
 	int m_artifactTypeID;
-	string m_artifactTypeName;
-	string m_displayName;	
-    TskBlackboard * m_blackboard;
 };
 	
 #endif
