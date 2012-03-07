@@ -1825,9 +1825,6 @@ public class SleuthkitCase {
 	 * @throws TskException
 	 */
 	public TskData.FileKnown lookupFileMd5(FsContent cont, String md5Hash) throws TskException {
-		TskData.FileKnown current = cont.getKnown();
-		if(!current.equals(TskData.FileKnown.UKNOWN))
-			return current;
 		Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 		try {
 			long contId = cont.getId();
