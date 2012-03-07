@@ -1820,17 +1820,20 @@ public class SleuthkitCase {
 	 * known status
 	 *
 	 * @param cont The content whose md5 you want to look up
+	 * @param md5Hash The hash of that content
 	 * @return	   The content's known status from the databases
 	 * @throws TskException
 	 */
-	public String lookupFileMd5(Content cont) throws TskException {
+	public TskData.FileKnown lookupFileMd5(FsContent cont, String md5Hash) throws TskException {
+		TskData.FileKnown current = cont.getKnown();
+		if(!current.equals(TskData.FileKnown.UKNOWN))
+			return current;
 		Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 		try {
 			long contId = cont.getId();
-			String md5Hash = Hash.calculateMd5(cont);
 			FileKnown fileKnown = SleuthkitJNI.lookupHash(md5Hash);
 			updateHashAndKnown(contId, md5Hash, fileKnown);
-			return fileKnown.getName();
+			return fileKnown;
 		} catch (TskException ex) {
 			// TODO This should be higher than INFO, but we want to avoid pop-ups during ingest.  Find better fix in future.
 			logger.log(Level.INFO, "Error looking up known status", ex);
