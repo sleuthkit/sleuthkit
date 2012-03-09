@@ -33,10 +33,10 @@ public class Hash {
 
     /**
      * Generate the md5 hash for the given FsContent
-	 * and store it in the database
+     * and store it in the database
      * 
-     * @param fsContent		FsContent object whose md5 hash we want to calculate
-     * @return				md5 of the given FsContent object
+     * @param fsContent     FsContent object whose md5 hash we want to calculate
+     * @return              md5 of the given FsContent object
      */
     public static String calculateMd5(FsContent fsContent) throws IOException{
         String hashText = "";
@@ -57,12 +57,12 @@ public class Hash {
             while (hashText.length() < 32) {
                 hashText = "0" + hashText;
             }
-			fsContent.getSleuthkit().setMd5Hash(fsContent, hashText);
+            fsContent.getSleuthkit().setMd5Hash(fsContent, hashText);
         } catch (NoSuchAlgorithmException ex) {
             logger.log(Level.WARNING, "No algorithm known as 'md5'", ex);
         } catch (SQLException ex) {
-			logger.log(Level.WARNING, "Error updating content's md5 in database", ex);
-		}
+            logger.log(Level.WARNING, "Error updating content's md5 in database", ex);
+        }
         return hashText;
     }
 }
