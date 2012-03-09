@@ -152,17 +152,17 @@ vector<TskBlackboardArtifact> TskDBBlackboard::getMatchingArtifacts(const string
 
 vector<TskBlackboardAttribute> TskDBBlackboard::getAttributes(const uint64_t file_id, const string& attributeTypeName)const{
     stringstream condition;
-    condition << " WHERE obj_id = " << file_id << "AND attribute_type_id = " << attrTypeNameToTypeID(attributeTypeName);
+    condition << " WHERE obj_id = " << file_id << " AND attribute_type_id = " << attrTypeNameToTypeID(attributeTypeName);
     return IMGDB().getMatchingAttributes(condition.str());
 }
 vector<TskBlackboardAttribute> TskDBBlackboard::getAttributes(const uint64_t file_id, int attributeTypeID)const{
     stringstream condition;
-    condition << " WHERE obj_id = " << file_id << "AND attribute_type_id = " << attributeTypeID;
+    condition << " WHERE obj_id = " << file_id << " AND attribute_type_id = " << attributeTypeID;
     return IMGDB().getMatchingAttributes(condition.str());
 }
 vector<TskBlackboardAttribute> TskDBBlackboard::getAttributes(const uint64_t file_id, TSK_ATTRIBUTE_TYPE attributeType)const{
     stringstream condition;
-    condition << " WHERE obj_id = " << file_id << "AND attribute_type_id = " << attributeType;
+    condition << " WHERE obj_id = " << file_id << " AND attribute_type_id = " << attributeType;
     return IMGDB().getMatchingAttributes(condition.str());
 }
 vector<TskBlackboardAttribute> TskDBBlackboard::getAttributes(const TSK_ATTRIBUTE_TYPE attributeType)const{

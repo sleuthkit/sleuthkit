@@ -310,7 +310,7 @@ vector<TskBlackboardArtifact> TskFile::getAllArtifacts(){
  */
 vector<TskBlackboardAttribute> TskFile::getAttributes(string attributeTypeName){
     stringstream str;
-    str << "WHERE obj_id = " << m_id << "AND attribute_type_id = " << TskServices::Instance().getBlackboard().attrTypeNameToTypeID(attributeTypeName);
+    str << "WHERE obj_id = " << m_id << " AND attribute_type_id = " << TskServices::Instance().getBlackboard().attrTypeNameToTypeID(attributeTypeName);
     return TskServices::Instance().getBlackboard().getMatchingAttributes(str.str());
 }
 
@@ -321,7 +321,7 @@ vector<TskBlackboardAttribute> TskFile::getAttributes(string attributeTypeName){
  */
 vector<TskBlackboardAttribute> TskFile::getAttributes(int attributeTypeID){
     stringstream str;
-    str << "WHERE obj_id = " << m_id << "AND attribute_type_id = " << attributeTypeID;
+    str << "WHERE obj_id = " << m_id << " AND attribute_type_id = " << attributeTypeID;
     return TskServices::Instance().getBlackboard().getMatchingAttributes(str.str());
 }
 
@@ -332,7 +332,7 @@ vector<TskBlackboardAttribute> TskFile::getAttributes(int attributeTypeID){
  */
 vector<TskBlackboardAttribute> TskFile::getAttributes(TSK_ATTRIBUTE_TYPE type){
     stringstream str;
-    str << "WHERE obj_id = " << m_id << "AND attribute_type_id = " << type;
+    str << "WHERE obj_id = " << m_id << " AND attribute_type_id = " << type;
     return TskServices::Instance().getBlackboard().getMatchingAttributes(str.str());
 }
 
