@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include "framework_i.h"
 
 using namespace std;
@@ -34,42 +35,6 @@ typedef enum TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE {
     TSK_BYTE,
 };	  ///< byte
 
-/**
- * Built in attribute types 
- */
-typedef enum ATTRIBUTE_TYPE {
-    TSK_URL = 1,
-    TSK_DATETIME,
-    TSK_NAME,
-    TSK_PROG_NAME,
-    TSK_WEB_BOOKMARK,
-    TSK_VALUE,
-    TSK_FLAG,
-    TSK_PATH,
-    TSK_GEO,
-    TSK_KEYWORD,
-    TSK_KEYWORD_REGEXP,
-    TSK_KEYWORD_PREVIEW,
-    TSK_KEYWORD_SET,
-    TSK_USERNAME,
-    TSK_DOMAIN,
-    TSK_PASSWORD,
-    TSK_NAME_PERSON,
-    TSK_DEVICE_MODEL,
-    TSK_DEVICE_MAKE,
-    TSK_DEVICE_ID,
-    TSK_EMAIL,
-    TSK_HASH_HD5,
-    TSK_HASH_SHA1,
-    TSK_HASH_SHA2_256,
-    TSK_HASH_SHA2_512,
-    TSK_TEXT,
-    TSK_TEXT_FILE,
-    TSK_TEXT_LANGUAGE ,
-    TSK_ENTROPY,
-    TSK_HASHSET_NAME,
-    TSK_INTERESTING_FILE,
-};
 
 class TskBlackboardArtifact;
 class TskBlackboard;
@@ -80,34 +45,141 @@ class TskBlackboard;
 class TSK_FRAMEWORK_API TskBlackboardAttribute 
 {
 public:
-	static string getTypeName(ATTRIBUTE_TYPE type);
-	static string getDisplayName(ATTRIBUTE_TYPE type);
-	TskBlackboardAttribute(int attributeTypeID, string moduleName, string context, int valueInt);
-	TskBlackboardAttribute(int attributeTypeID, string moduleName, string context, uint64_t valueLong);
-	TskBlackboardAttribute(int attributeTypeID, string moduleName, string context, double valueDouble);
-	TskBlackboardAttribute(int attributeTypeID, string moduleName, string context, string valueString);
-	TskBlackboardAttribute(int attributeTypeID, string moduleName, string context, vector<unsigned char> valueBytes);
-    TskBlackboardAttribute(TskBlackboard * blackboard, uint64_t artifactID, int attributeTypeID, string moduleName, string context,
-		TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, uint64_t valueLong, double valueDouble, 
-		string valueString, vector<unsigned char> valueBytes);
-    ~TskBlackboardAttribute();
-    virtual uint64_t getArtifactID();
-	virtual int getAttributeTypeID();
-	virtual TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType();
-	virtual int getValueInt();
-	virtual uint64_t getValueLong();
-    virtual double getValueDouble();
-    virtual string getValueString();
-    virtual vector<unsigned char> getValueBytes();
-    virtual string getModuleName();
-    virtual string getContext();
-    virtual TskBlackboardArtifact getParentArtifact();
-    virtual void setArtifactID(uint64_t artifactID);
-    virtual void setBlackboard(TskBlackboard * blackboard);
-protected:
+    
 
+    /**
+     * Constructor for an attribute storing an int 
+     * @param attributeTypeID attribute type id 
+     * @param moduleName module that created this attribute 
+     * @param context additional context 
+     * @param valueInt integer value
+     */	
+	TskBlackboardAttribute(const int attributeTypeID, const string& moduleName, const string& context, const int valueInt);
+	/**
+     * Constructor for an attribute storing a 64 bit integer 
+     * @param attributeTypeID attribute type id 
+     * @param moduleName module that created this attribute 
+     * @param context additional context 
+     * @param valueLong 64 bit integer value
+     */	
+    TskBlackboardAttribute(const int attributeTypeID, const string& moduleName, const string& context, const uint64_t valueLong);
+	/**
+     * Constructor for an attribute storing a double 
+     * @param attributeTypeID attribute type id 
+     * @param moduleName module that created this attribute 
+     * @param context additional context 
+     * @param valueDouble double value
+     */	
+    TskBlackboardAttribute(const int attributeTypeID, const string& moduleName, const string& context, const double valueDouble);
+	/**
+     * Constructor for an attribute storing a string
+     * @param attributeTypeID attribute type id 
+     * @param moduleName module that created this attribute 
+     * @param context additional context 
+     * @param valueString string value
+     */	
+    TskBlackboardAttribute(const int attributeTypeID, const string& moduleName, const string& context, const string& valueString);
+    /**
+     * Constructor for an attribute storing a byte array
+     * @param attributeTypeID attribute type id 
+     * @param moduleName module that created this attribute 
+     * @param context additional context 
+     * @param valueBytes byte array value
+     */
+    TskBlackboardAttribute(const int attributeTypeID, const string& moduleName, const string& context, const vector<unsigned char> valueBytes);
+    /*
+     * detructor
+     */
+    ~TskBlackboardAttribute();
+    
+    /**
+     * Get artifact id for the parent of this attribute
+     * @returns artifact id
+     */	
+    uint64_t getArtifactID() const;
+    /**
+     * Get attribute type id for this attribute
+     * @returns attribute type id
+     */	
+	int getAttributeTypeID() const;
+    /**
+     * Get typeof value this attribute stores
+     * @returns value type
+     */	
+	TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() const;
+    /**
+     * Get value int (if the attribute stores an int)
+     * @returns value int
+     */	
+	int getValueInt() const;
+    /**
+     * Get value long (if the attribute stores a long0
+     * @returns value long
+     */	
+	uint64_t getValueLong() const;
+    /**
+     * Get value double (if the attribute stores a double)
+     * @returns value double
+     */	
+    double getValueDouble() const;
+    /**
+     * Get value string (if this attribute stores a string)
+     * @returns value string
+     */	
+    string getValueString() const;
+    /**
+     * Get value bytes (if this attribute stores bytes)
+     * @returns value bytes
+     */	
+    vector<unsigned char> getValueBytes() const;
+    /**
+     * Get nameof the module that created this attribute
+     * @returns module name
+     */
+    string getModuleName() const;
+    /**
+     * Get context for this attribute
+     * @returns context
+     */
+    string getContext() const;
+    /**
+     * Get object id this attribute is associated with
+     * @returns object id
+     */
+    uint64_t getObjectID() const;
+
+    /**
+     * Get parent artifact for this attribute
+     * @returns parent artifact
+     */	
+    TskBlackboardArtifact getParentArtifact() const; 
+
+    friend class TskImgDB;
+    friend class TskDBBlackboard;
+    friend class TskBlackboardArtifact;
+    friend class TskFile;
+
+protected:
+    void setArtifactID(uint64_t artifactID);
+    void setObjectID(uint64_t objectID);
+    /**
+     * Constructor should only be used by blackboard
+     * @param blackboard the blackboard storing this
+     * @param artifactID if of the artifact this is associated with
+     * @param attributeTypeID attribute type id 
+     * @param moduleName module that created this attribute 
+     * @param context additional context 
+     * @param valueInt integer value
+     * @param valueLong 64 bit integer value
+     * @param valueDouble double value
+     * @param valueString string value
+     * @param valueBytes byte array value
+     * @param objectID object the attribute is associated with
+     */	
+    TskBlackboardAttribute(uint64_t artifactID, const int attributeTypeID, uint64_t objectID, const string moduleName, const string context,
+		const TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, const int valueInt, const uint64_t valueLong, const double valueDouble, 
+		const string& valueString, const vector<unsigned char> valueBytes);
 private:
-    TskBlackboardAttribute();
     uint64_t m_artifactID;
 	int m_attributeTypeID;
 	string m_moduleName;
@@ -118,7 +190,7 @@ private:
 	double m_valueDouble;
 	string m_valueString;
 	vector<unsigned char> m_valueBytes;
-    TskBlackboard * m_blackboard;
+    uint64_t m_objectID;
 };
 
 #endif

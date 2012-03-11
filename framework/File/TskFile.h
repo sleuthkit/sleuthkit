@@ -139,12 +139,17 @@ public:
     virtual void setStatus(TskImgDB::FILE_STATUS status);
 
     //Blackboard methods
-    virtual TskBlackboardArtifact newArtifact(int artifactTypeID);
-    virtual TskBlackboardArtifact newArtifact(ARTIFACT_TYPE type);
+    virtual TskBlackboardArtifact createArtifact(int artifactTypeID);
+    virtual TskBlackboardArtifact createArtifact(TSK_ARTIFACT_TYPE type);
+    virtual TskBlackboardArtifact createArtifact(string artifactTypeName);
     virtual vector<TskBlackboardArtifact> getArtifacts(string artifactTypeName);
     virtual vector<TskBlackboardArtifact> getArtifacts(int artifactTypeID);
-    virtual vector<TskBlackboardArtifact> getArtifacts(ARTIFACT_TYPE type);
+    virtual vector<TskBlackboardArtifact> getArtifacts(TSK_ARTIFACT_TYPE type);
     virtual vector<TskBlackboardArtifact> getAllArtifacts();
+    virtual vector<TskBlackboardAttribute> getAttributes(string attributeTypeName);
+    virtual vector<TskBlackboardAttribute> getAttributes(int attributeTypeID);
+    virtual vector<TskBlackboardAttribute> getAttributes(TSK_ATTRIBUTE_TYPE type);
+    virtual vector<TskBlackboardAttribute> getAllAttributes();
     virtual TskBlackboardArtifact getGenInfo();
     virtual void addGenInfoAttribute(TskBlackboardAttribute attr);
 

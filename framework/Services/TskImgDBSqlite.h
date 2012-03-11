@@ -87,24 +87,6 @@ public:
     virtual int updateKnownStatus(uint64_t a_file_id, int a_status);
 	virtual bool dbExist() const;
 
-    // Blackboard methods.
-    virtual void addBlackboardAttribute(TskBlackboardAttribute attr);
-    virtual string getArtifactTypeDisplayName(int artifactTypeID);
-    virtual int getArtifactTypeID(string artifactTypeString);
-    virtual string getArtifactTypeName(int artifactTypeID);
-    virtual string getAttributeTypeDisplayName(int attributeTypeID);
-    virtual int getAttributeTypeID(string attributeTypeString);
-    virtual string getAttributeTypeName(int attributeTypeID);
-    virtual TskBlackboardArtifact getBlackboardArtifact(long artifactID);
-    virtual vector<TskBlackboardArtifact> getMatchingArtifacts(string whereClause);
-    virtual vector<TskBlackboardAttribute> getMatchingAttributes(string whereClause);
-    virtual TskBlackboardArtifact newBlackboardArtifact(int artifactTypeID, uint64_t file_id);
-    virtual TskBlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, uint64_t file_id);
-    virtual void addArtifactType(string artifactTypeName, string displayName);
-    virtual void addAttributeType(string attributeTypeName, string displayName);
-    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(string artifactTypeName, uint64_t file_id);
-    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, uint64_t file_id);
-    virtual vector<TskBlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, uint64_t file_id);
     // Get set of file ids that match the given condition (i.e. SQL where clause)
     virtual std::vector<uint64_t> getFileIds(std::string& condition) const;
 
@@ -132,14 +114,31 @@ public:
 
     virtual int addUnusedSectors(int unallocImgId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList);
     virtual int getUnusedSector(uint64_t fileId, TskUnusedSectorsRecord & unusedSectorsRecord) const;
+    friend class TskDBBlackboard;
 
+protected:
+    // Blackboard methods.
+    virtual TskBlackboardArtifact createBlackboardArtifact(uint64_t file_id, int artifactTypeID);
+    virtual void addBlackboardAttribute(TskBlackboardAttribute attr);
+    
+    virtual void addArtifactType(int typeID, string artifactTypeName, string displayName);
+    virtual void addAttributeType(int typeID, string attributeTypeName, string displayName);
+
+    virtual string getArtifactTypeDisplayName(int artifactTypeID);
+    virtual int getArtifactTypeID(string artifactTypeString);
+    virtual string getArtifactTypeName(int artifactTypeID);
+    virtual vector<TskBlackboardArtifact> getMatchingArtifacts(string condition);
+
+    virtual string getAttributeTypeDisplayName(int attributeTypeID);
+    virtual int getAttributeTypeID(string attributeTypeString);
+    virtual string getAttributeTypeName(int attributeTypeID);
+    virtual vector<TskBlackboardAttribute> getMatchingAttributes(string condition);
+    virtual vector<int> findAttributeTypes(int artifactTypeId);
 private:
     wchar_t m_outPath[256];
     wchar_t m_progPath[256];
     wchar_t m_dbFilePath[256];
     sqlite3 * m_db;
-    int m_artifactIDcounter;
-    int m_attributeIDcounter;
 
     int dropTables();
 
@@ -149,11 +148,7 @@ private:
     void constructStmt(std::string& stmt, std::string& condition) const;
     int addUnusedSector(uint64_t sectStart, uint64_t sectEnd, int volId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList);
     int getFileTypeRecords(std::string& stmt, std::list<TskFileTypeRecord>& fileTypeInfoList) const;
-    virtual void addArtifactType(string artifactTypeName, string displayName, int typeID);
-    virtual void addAttributeType(string attributeTypeName, string displayName, int typeID);
-    virtual void addBuiltInArtifactType(ARTIFACT_TYPE type);
-    virtual void addBuiltInAttributeType(ATTRIBUTE_TYPE type);
-    virtual vector<TskBlackboardArtifact> getArtifactsHelper(int artifactTypeID, string artifactTypeName, uint64_t file_id);
+    virtual vector<TskBlackboardArtifact> getArtifactsHelper(uint64_t file_id, int artifactTypeID, string artifactTypeName);
 };
 
 #endif
