@@ -355,11 +355,7 @@ split_open(int a_num_img, const TSK_TCHAR * const a_images[],
         return NULL;
 
     img_info = (TSK_IMG_INFO *) split_info;
-
-    if (a_num_img == 1)
-        img_info->itype = TSK_IMG_TYPE_RAW_SING;
-    else
-        img_info->itype = TSK_IMG_TYPE_RAW_SPLIT;
+    img_info->itype = TSK_IMG_TYPE_RAW_SPLIT;
 
     img_info->read = split_read;
     img_info->close = split_close;
