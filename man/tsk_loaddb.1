@@ -2,21 +2,21 @@
 .SH NAME
 tsk_loaddb - populate a SQLite database with metadata from a disk image
 .SH SYNOPSIS
-.B tsk_loaddb [-ahkvV] [-i
+.B tsk_loaddb [-ahkvV] [ -i
 .I imgtype
-.B ] [-b
+.B ] [ -b
 .I dev_sector_size
-.B ] [-i
+.B ] [ -i
 .I imgtype
-.B ] [-d
+.B ] [ -d
 .I database
 .B ]
-.I image
+.I image [images]
 .SH DESCRIPTION
 .B tsk_loaddb
 loads disk information from 
 .I image
-to a sqlite database.  This database can then be used by tools in other languages for analysis. By default, the database is stored in the same directory as the image with ".db" appended to the name or the database name can be specified with '-d'. 
+to a SQLite database.  This database can then be used by tools in other languages for analysis. By default, the database is stored in the same directory as the image with ".db" appended to the name or the database name can be specified with '-d'. 
 
 The arguments are as follows:
 .IP "-a"
@@ -34,10 +34,16 @@ allocated it.  This option will make this program run faster.
 Calculate MD5 hash value for each file and store it in table.  This option
 will make the program run slower. 
 .IP "-i imgtype"
-The format of the image file (use '-i list' for supported types)
+The format of the image file, such as raw.
+Use '\-i list' to list the supported types.
+If not given, autodetection methods are used.
 .IP "-b dev_sector_size"
-The size (in bytes) of the device sectors
-If -i or -b are not given, autodetection methods are used.
+The size (in bytes) of the device sectors.
+If not given, autodetection methods are used.
+.IP "image [images]"
+The disk or partition image to read, whose format is given with '\-i'.
+Multiple image file names can be given if the image is split into multiple segments.
+If only one image file is given, and its name is the first in a sequence (e.g., as indicated by ending in '.001'), subsequent image segments will be included automatically.
 
 .SH EXAMPLES
 To load image data from image.dd to image.dd.db:

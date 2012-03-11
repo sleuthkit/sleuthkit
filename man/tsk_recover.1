@@ -2,19 +2,21 @@
 .SH NAME
 tsk_recover - Export files from an image into a local directory
 .SH SYNOPSIS
-.B tsk_recover [-vVae] [-i
+.B tsk_recover [-vVae] [ -f
+.I fstype
+.B ] [ -i
 .I imgtype
-.B ] [-b
+.B ] [ -b
 .I dev_sector_size
-.B ] [-o
+.B ] [ -o
 .I sector_offset
-.B ] [-d  
+.B ] [ -d  
 .I dir_inum
 .B ]
-.I  image output_dir 
+.I  image [images] output_dir 
 .SH DESCRIPTION
 .B tsk_recover
-recover files to the
+recovers files to the
 .I output_dir
 from the 
 .I image.
@@ -29,11 +31,16 @@ Print version
 Recover allocated files only
 .IP -e
 Recover all files (allocated and unallocated)
+.IP "-f fstype"
+Specify the file system type.
+Use '\-f list' to list the supported file system types.
+If not given, autodetection methods are used.
 .IP "-i imgtype"
-The format of the image file (use '-i list' for supported types)
+The format of the image file, such as raw.
+Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-b dev_sector_size"
-The size (in bytes) of the device sectors
+The size (in bytes) of the device sectors.
 If not given, autodetection methods are used.  
 .IP "-o sector_offset"
 Sector offset for a volume to recover (recovers only that volume)
@@ -41,11 +48,17 @@ If not given, will attempt to recover all volumes in image and save them
 to different folders. 
 .IP "-d dir_inum"
 Directory inum to recover from (must also specify a specific partition using -o or there must not be a volume system)
+.IP "image [images]"
+The disk or partition image to read, whose format is given with '\-i'.
+Multiple image file names can be given if the image is split into multiple segments.
+If only one image file is given, and its name is the first in a sequence (e.g., as indicated by ending in '.001'), subsequent image segments will be included automatically.
+.IP output_dir
+The directory in which to save recovered files.
 
 .SH EXAMPLES
 To recover only unallocated files from image.dd to the recovered directory:
 
-	# tsk_recover ./recovered ./image.dd
+	# tsk_recover ./image.dd ./recovered
 
 .SH AUTHOR
 Brian Carrier <carrier at sleuthkit dot org>

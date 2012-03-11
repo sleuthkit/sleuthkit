@@ -17,7 +17,6 @@
 #include "tsk_img_i.h"
 
 #include "raw.h"
-#include "split.h"
 
 #if HAVE_LIBAFFLIB
 typedef int bool;
@@ -118,7 +117,6 @@ tsk_img_open(int num_img,
 #if HAVE_LIBAFFLIB || HAVE_LIBEWF
         char *set = NULL;
 #endif
-        struct STAT_STR stat_buf;
 
         // we rely on tsk_errno, so make sure it is 0
         tsk_error_reset();
@@ -164,94 +162,32 @@ tsk_img_open(int num_img,
             tsk_error_reset();
         }
 #endif
+        
         // if any of the non-raw formats were detected, then use it.
         if (img_set != NULL)
             return img_set;
 
-        // @@@ NEED to modify this so that we find addtl. split images. 
-        // REMOVE NOTION of sing / split RAW.  Just a single object. 
-        /* We'll use the raw format */
-        if (num_img == 1) {
-            if ((img_info = raw_open(images[0], a_ssize)) != NULL) {
-                return img_info;
-            }
-            else if (tsk_error_get_errno() != 0) {
-                return NULL;
-            }
+        // otherwise, try raw
+        if ((img_info = raw_open(num_img, images, a_ssize)) != NULL) {
+            return img_info;
         }
-        else {
-            if ((img_info =
-                    split_open(num_img, images, a_ssize)) != NULL) {
-                return img_info;
-            }
-            else if (tsk_error_get_errno() != 0) {
-                return NULL;
-
-            }
-        }
-#if 0
-            // Commented out until split_open has all of the 
-            // platform-specific file size and opening routines
-
-            /* We'll use the (possibly split) raw format.  If the user
-             * specifies only one file and does not want subsequent
-             * segments automatically detected, they'll need to specify
-             * TSK_IMG_TYPE_RAW_SING. */
-            if ((img_info = split_open(num_img, images, a_ssize)) != NULL) {
-                return img_info;
-            }
-            else if (tsk_error_get_errno() != 0) {
-                return NULL;
-            }
-#endif
-
-            /* To improve the error message, verify the file can be read. */
-            if (TSTAT(images[0], &stat_buf) < 0) {
-                // special case to handle windows objects
-#if defined(TSK_WIN32) || defined(__CYGWIN__)
-                if (TSTRNCMP(_TSK_T("\\\\.\\"), images[0], 4) == 0) {
-                    if (tsk_verbose)
-                        TFPRINTF(stderr,
-                            _TSK_T
-                            ("tsk_img_open: Ignoring stat error because of windows object: %s\n"),
-                            images[0]);
-                }
-                else {
-#endif
-                    tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_IMG_STAT);
-                    tsk_error_set_errstr("%" PRIttocTSK " : %s",
-                        images[0], strerror(errno));
-                    return NULL;
-#if defined(TSK_WIN32) || defined(__CYGWIN__)
-                }
-#endif
-            }
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+        else if (tsk_error_get_errno() != 0) {
             return NULL;
-        }
+        }        
+        
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+        return NULL;
+    }
 
-        /*
-         * Type values
-         */
+    /*
+     * Type values
+     */
 
-        switch (type) {
-        case TSK_IMG_TYPE_RAW_SING:
+    switch (type) {
+    case TSK_IMG_TYPE_RAW:
 
-            /* If we have more than one image name, and raw was the only
-             * type given, then use split */
-            if (num_img > 1)
-                img_info = split_open(num_img, images, a_ssize);
-            else
-                img_info = raw_open(images[0], a_ssize);
-            break;
-
-        case TSK_IMG_TYPE_RAW_SPLIT:
-
-            /* Even if only one image file is given, assume we should
-             * look for more segments */
-            img_info = split_open(num_img, images, a_ssize);
+            img_info = raw_open(num_img, images, a_ssize);
             break;
 
 #if HAVE_LIBAFFLIB

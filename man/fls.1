@@ -63,7 +63,8 @@ The time skew of the original system in seconds.  For example, if the
 original system was 100 seconds slow, this value would be \-100.  This
 is only used if \-l or \-m are given.
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types.
+Identify the type of image file, such as raw.
+Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
@@ -78,9 +79,11 @@ Display version.
 .IP "-z zone"
 The ASCII string of the time zone of the original system.  For
 example, EST or GMT.  These strings must be defined by your operating
-system and may vary.  
+system and may vary.
 .IP "image [images]"
-One (or more if split) disk or partition images whose format is given with '\-i'.
+The disk or partition image to read, whose format is given with '\-i'.
+Multiple image file names can be given if the image is split into multiple segments.
+If only one image file is given, and its name is the first in a sequence (e.g., as indicated by ending in '.001'), subsequent image segments will be included automatically.
 
 .PP
 Once the inode has been determined, the file can be recovered using
