@@ -16,6 +16,9 @@
 
 TskServices *TskServices::m_pInstance = NULL;
 
+/**
+ * Singleton interface to return the TskServices instance.
+ */
 TskServices &TskServices::Instance()
 {
     if (!m_pInstance) {
@@ -30,6 +33,11 @@ TskServices &TskServices::Instance()
     return *m_pInstance;
 }
 
+/** 
+ * Return the system log service.  If no log was setup, a service will be
+ * created that sends messages to stderr.
+ * @returns log reference. 
+ */
 Log& TskServices::getLog()
 {
     // create a default one if it has not been set yet
@@ -40,6 +48,10 @@ Log& TskServices::getLog()
     return *m_log;
 }
 
+/**
+ * Set the log service. 
+ * Throws an exception if one has already been set. 
+ */
 void TskServices::setLog(Log &log)
 {
     if (m_log) {
@@ -50,6 +62,11 @@ void TskServices::setLog(Log &log)
     }
 }
 
+/** 
+ * Return the system scheduler service.  If no service was setup, an exception
+ * is thrown.
+ * @returns scheduler reference. 
+ */
 Scheduler& TskServices::getScheduler()
 {
     if (m_scheduler == NULL)
@@ -61,6 +78,10 @@ Scheduler& TskServices::getScheduler()
     return *m_scheduler;
 }
 
+/**
+ * Set the scheduler service. 
+ * Throws an exception if one has already been set. 
+ */
 void TskServices::setScheduler(Scheduler &scheduler)
 {
     if (m_scheduler) {
@@ -71,16 +92,12 @@ void TskServices::setScheduler(Scheduler &scheduler)
     }
 }
 
-void TskServices::setImgDB(TskImgDB& imgDB)
-{
-    if (m_imgDB) {
-        LOGERROR(L"TskServices::setImgDB - ImgDB has already been initialized.");
-        throw TskException("ImgDB already initialized.");
-    } else {
-        m_imgDB = &imgDB;
-    }
-}
 
+/** 
+ * Return the database service.  If no service was setup, an exception
+ * is thrown.
+ * @returns database reference. 
+ */
 TskImgDB& TskServices::getImgDB()
 {
     if (m_imgDB == NULL)
@@ -92,6 +109,26 @@ TskImgDB& TskServices::getImgDB()
     return *m_imgDB;
 }
 
+/**
+ * Set the database service. 
+ * Throws an exception if one has already been set. 
+ */
+void TskServices::setImgDB(TskImgDB& imgDB)
+{
+    if (m_imgDB) {
+        LOGERROR(L"TskServices::setImgDB - ImgDB has already been initialized.");
+        throw TskException("ImgDB already initialized.");
+    } else {
+        m_imgDB = &imgDB;
+    }
+}
+
+
+
+/**
+ * Set the image file service. 
+ * Throws an exception if one has already been set. 
+ */
 void TskServices::setImageFile(TskImageFile& imageFile)
 {
     if (m_imageFile) {
@@ -102,6 +139,11 @@ void TskServices::setImageFile(TskImageFile& imageFile)
     }
 }
 
+/** 
+ * Return the image file service.  If no service was setup, an exception
+ * is thrown.
+ * @returns image file reference. 
+ */
 TskImageFile& TskServices::getImageFile()
 {
     if (m_imageFile == NULL)
@@ -113,6 +155,10 @@ TskImageFile& TskServices::getImageFile()
     return *m_imageFile;
 }
 
+/**
+ * Set the blackboard service. 
+ * Throws an exception if one has already been set. 
+ */
 void TskServices::setBlackboard(TskBlackboard& blackboard)
 {
     if (m_blackboard) {
@@ -123,6 +169,11 @@ void TskServices::setBlackboard(TskBlackboard& blackboard)
     }
 }
 
+/** 
+ * Return the blackboard service.  If no service was setup, an exception
+ * is thrown.
+ * @returns blackboard file reference. 
+ */
 TskBlackboard& TskServices::getBlackboard()
 {
     if (m_blackboard == NULL)
@@ -133,6 +184,10 @@ TskBlackboard& TskServices::getBlackboard()
     return *m_blackboard;
 }
 
+/**
+ * Set the system properties service. 
+ * Throws an exception if one has already been set. 
+ */
 void TskServices::setSystemProperties(TskSystemProperties& systemProperties)
 {
     if (m_systemProperties) {
@@ -143,6 +198,11 @@ void TskServices::setSystemProperties(TskSystemProperties& systemProperties)
     }
 }
 
+/** 
+ * Return the system properties service.  If no service was setup, a
+ * default memory-based version is created.
+ * @returns system properties reference. 
+ */
 TskSystemProperties& TskServices::getSystemProperties()
 {
     if (m_systemProperties == NULL)
@@ -152,7 +212,6 @@ TskSystemProperties& TskServices::getSystemProperties()
         setSystemProperties(*prop);
 
         LOGINFO(L"TskServices::getSystemProperties - SystemProperties has not been set, using default implementation.");
-        //throw TskException("SystemProperties not initialized.");
     }
     return *m_systemProperties;
 }
