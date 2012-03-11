@@ -1133,20 +1133,69 @@ public class SleuthkitCase {
 		}
 	}
 
-	public File getFileById(long id) throws SQLException, TskException {
+	public Content getContentById(long id) throws SQLException, TskException {
+		synchronized (caseLock) {
+			Statement s = con.createStatement();
+			ResultSet contentRs = s.executeQuery("select * from tsk_objects where obj_id = " + id);
+			ResultSet volumeSystemRs;
+			VolumeSystem vs;
+			Image img;
+			Content ret;
+			TskData.ObjectType type = TskData.ObjectType.valueOf(contentRs.getLong("type"));
+			switch (type) {
+				case IMG:
+					ret = getImageById(id);
+					break;
+				case VS:
+					img = getImageById(contentRs.getInt("par_obj_id"));
+					ret = getVolumeSystemById(id, img);
+					break;
+				case VOL:
+					volumeSystemRs = s.executeQuery("select * from tsk_objects where obj_id = " + contentRs.getInt("par_obj_id"));
+					img = getImageById(volumeSystemRs.getInt("par_obj_id"));
+					vs = getVolumeSystemById(contentRs.getInt("par_obj_id"), img);
+					volumeSystemRs.close();
+					ret = getVolumeById(id, vs);
+					break;
+				case FS:
+					if (contentRs.getInt("par_obj_id") == 0) {
+						img = getImageById(contentRs.getInt("par_obj_id"));
+						ret = getFileSystemById(id, img);
+					} else {
+						ResultSet volumeRs = s.executeQuery("select * from tsk_objects where obj_id = " + contentRs.getInt("par_obj_id"));
+						volumeSystemRs = s.executeQuery(("select * from tsk_objects where obj_id = " + volumeRs.getInt("par_obj_id")));
+						ResultSet imageRs = s.executeQuery(("select * from tsk_objects where obj_id = " + volumeSystemRs.getInt("par_obj_id")));
+						img = getImageById(imageRs.getInt("obj_id"));
+						vs = getVolumeSystemById(volumeSystemRs.getInt("obj_id"), img);
+						Volume v = getVolumeById(volumeRs.getInt("obj_id"), vs);
+						volumeRs.close();
+						volumeSystemRs.close();
+						imageRs.close();
+						ret = getFileSystemById(id, v);
+					}
+					break;
+				case FILE:
+					ret = getFsContentById(id);
+					break;
+				default:
+					ret = null;
+					break;
+			}
+			contentRs.close();
+			s.close();
+			return ret;
+		}
+	}
+
+	public FsContent getFsContentById(long id) throws SQLException, TskException {
 		synchronized (caseLock) {
 			Statement s = con.createStatement();
 
 			ResultSet rs = s.executeQuery("select * from tsk_files where obj_id = " + id);
-			FsContent temp = null;
 			List<FsContent> results;
 			if ((results = resultSetToFsContents(rs)).size() > 0) {
 				s.close();
-				if ((temp = results.get(0)).isFile()) {
-					return (File) temp;
-				} else {
-					throw new TskException("Query returned non-file FsContent");
-				}
+				return results.get(0);
 			} else {
 				s.close();
 			}
@@ -1705,25 +1754,68 @@ public class SleuthkitCase {
 			}
 		}
 	}
-
+	
 	/**
-	 * Update the given hash and known status of the object in the DB denoted by id
+	 * Store the known status for the FsContent in the database
+	 * Note: will not update status if content is already 'Known Bad'
 	 * 
-	 * @param id		The object's unique ID in the database
-	 * @param md5Hash	The object's calculated md5 hash
-	 * @param fileKnown	The object's known status
-	 * @throws SQLException
+	 * @param	fsContent	The FsContent object
+	 * @param	fileKnown	The object's known status
+	 * @return				true if the known status was updated, false otherwise
+	 * @throws				SQLException
 	 */
-	private void updateHashAndKnown(long id, String md5Hash, FileKnown fileKnown) throws SQLException {
+	public boolean setKnown(FsContent fsContent, FileKnown fileKnown) throws SQLException {
+		long id = fsContent.getId();
+		FileKnown currentKnown = fsContent.getKnown();
+		if(currentKnown.compareTo(fileKnown) > 0) {
+			return false;
+		}
 		synchronized (caseLock) {
 			Statement s = con.createStatement();
 			s.executeUpdate("UPDATE tsk_files "
-					+ "SET known='" + fileKnown.toLong() + "', md5='" + md5Hash + "' "
+					+ "SET known='" + fileKnown.toLong() + "' "
+					+ "WHERE obj_id=" + id);
+			s.close();
+		}
+		return true;
+	}
+	
+	/**
+	 * Store the md5Hash for the FsContent in the database
+	 * 
+	 * @param	fsContent	The FsContent object
+	 * @param	md5Hash		The object's md5Hash
+	 * @throws				SQLException
+	 */
+	void setMd5Hash(FsContent fsContent, String md5Hash) throws SQLException{
+		long id = fsContent.getId();
+		synchronized (caseLock) {
+			Statement s = con.createStatement();
+			s.executeUpdate("UPDATE tsk_files "
+					+ "SET md5='" + md5Hash + "' "
 					+ "WHERE obj_id=" + id);
 			s.close();
 		}
 	}
 
+//	/**
+//	 * Update the given hash and known status of the object in the DB denoted by id
+//	 * 
+//	 * @param id		The object's unique ID in the database
+//	 * @param md5Hash	The object's calculated md5 hash
+//	 * @param fileKnown	The object's known status
+//	 * @throws SQLException
+//	 */
+//	private void updateHashAndKnown(long id, String md5Hash, FileKnown fileKnown) throws SQLException {
+//		synchronized (caseLock) {
+//			Statement s = con.createStatement();
+//			s.executeUpdate("UPDATE tsk_files "
+//					+ "SET known='" + fileKnown.toLong() + "', md5='" + md5Hash + "' "
+//					+ "WHERE obj_id=" + id);
+//			s.close();
+//		}
+//	}
+//
 //	Useful if we want to queue sql updates for performance reasons
 //	/**
 //	 * Update the given hash and known status of the objects in the DB denoted by id
@@ -1766,33 +1858,14 @@ public class SleuthkitCase {
 //		}
 //	}
 	/**
-	 * Calculate the given Content object's md5 hash, look it up in the
-	 * known databases, and then update the case database with both hash and
-	 * known status
+	 * Look up the given hash in the known databases
 	 *
-	 * @param cont The content whose md5 you want to look up
-	 * @return	   The content's known status from the databases
-	 * @throws TskException
+	 * @param md5Hash	The hash of that content
+	 * @return			Known status from the databases
+	 * @throws			TskException
 	 */
-	public String lookupFileMd5(Content cont) throws TskException {
-		Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
-		try {
-			long contId = cont.getId();
-			String md5Hash = Hash.calculateMd5(cont);
-			FileKnown fileKnown = SleuthkitJNI.lookupHash(md5Hash);
-			updateHashAndKnown(contId, md5Hash, fileKnown);
-			return fileKnown.getName();
-		} catch (TskException ex) {
-			// TODO This should be higher than INFO, but we want to avoid pop-ups during ingest.  Find better fix in future.
-			logger.log(Level.INFO, "Error looking up known status", ex);
-		} catch (SQLException ex) {
-			// TODO This should be higher than INFO, but we want to avoid pop-ups during ingest.  Find better fix in future.
-			logger.log(Level.INFO, "Error updating SQL database", ex);
-		}
-
-
-		throw new TskException(
-				"Error analyzing file");
+	public TskData.FileKnown lookupMd5(String md5Hash) throws TskException {
+		return SleuthkitJNI.lookupHash(md5Hash);
 	}
 //	Useful if we want to queue sql updates for performance reasons
 //	/**
