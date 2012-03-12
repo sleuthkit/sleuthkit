@@ -35,7 +35,11 @@ public class BlackboardArtifact implements SleuthkitVisitableItem{
      * The enum typeIDs will be populated at database creation
 	 * time, so they will always match the ids stored in the database.
 	 */
-	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem{
+    /* It is very important that this list be kept up to
+     * date and in sync with the C++ code.  Do not add
+     * anything here unless you also add it there.
+     * See framework/Services/TskBlackboard.* */
+	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 		TSK_GEN_INFO(1, "TSK_GEN_INFO", "General Info"),	 ///< Default type
 		TSK_WEB_BOOKMARK (2, "TSK_WEB_BOOKMARK", "Bookmarks"),
 		TSK_WEB_COOKIE (3, "TSK_WEB_COOKIE", "Cookies"),
@@ -46,6 +50,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem{
 		TSK_INSTALLED_PROG (8, "TSK_INSTALLED_PROG", "Installed Programs"),
 		TSK_KEYWORD_HIT (9, "TSK_KEYWORD_HIT", "Keyword Hits"),
 		TSK_HASHSET_HIT (10, "TSK_HASHSET_HIT", "Hashset Hits");
+        /* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		
 		private String label;
 		private int typeID;
