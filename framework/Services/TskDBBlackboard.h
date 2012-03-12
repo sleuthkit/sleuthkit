@@ -1,17 +1,17 @@
 /*
- * The Sleuth Kit
- *
- * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
- * reserved.
- *
- * This software is distributed under the Common Public License 1.0
- */
+* The Sleuth Kit
+*
+* Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
+* Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+* reserved.
+*
+* This software is distributed under the Common Public License 1.0
+*/
 
 /**
- * \file TskDBBlackboard.h
- * Contains the definition for the TskDBBlackboard class.
- */
+* \file TskDBBlackboard.h
+* Contains the definition for the TskDBBlackboard class.
+*/
 
 #ifndef _TSK_DB_BLACKBOARD_H
 #define _TSK_DB_BLACKBOARD_H
@@ -26,9 +26,9 @@
 
 
 /**
- * An implementation of TskBlackboard that stores the name / value pairs
- * in the TskImgDB. 
- */
+* An implementation of TskBlackboard that stores the name / value pairs
+* in the TskImgDB. 
+*/
 class TSK_FRAMEWORK_API TskDBBlackboard : public TskBlackboard
 {
 public:
@@ -42,13 +42,13 @@ public:
     virtual vector<TskBlackboardArtifact> getArtifacts(const uint64_t file_id, int artifactTypeID)const;
     virtual vector<TskBlackboardArtifact> getArtifacts(const uint64_t file_id, TSK_ARTIFACT_TYPE artifactType)const;
     virtual vector<TskBlackboardArtifact> getArtifacts(const TSK_ARTIFACT_TYPE artifactType)const;
-    
+
     virtual vector<TskBlackboardAttribute> getMatchingAttributes(const string& condition)const;   
     virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, const string& attributeTypeName)const;
     virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, int attributeTypeID)const;
     virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, TSK_ATTRIBUTE_TYPE attributeType)const;
     virtual vector<TskBlackboardAttribute> getAttributes(const TSK_ATTRIBUTE_TYPE attributeType)const;
-    
+
 
     virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const int artifactTypeID);
     virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const TSK_ARTIFACT_TYPE artifactType);
@@ -77,7 +77,8 @@ protected:
     virtual void addBlackboardAttribute(TskBlackboardAttribute& attr);
     // Default Constructor
     TskDBBlackboard() { 
-        m_pImgDB = &(TskServices::Instance().getImgDB()); };
+        m_pImgDB = &(TskServices::Instance().getImgDB()); 
+    };
 
     // Copy Constructor
     TskDBBlackboard(TskDBBlackboard const&) {};
@@ -97,8 +98,4 @@ protected:
 private: 
 
 };
-
 #endif
-
-
-    

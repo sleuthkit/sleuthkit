@@ -35,7 +35,7 @@ import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 
 /**
- * Highest level object in Sleuthkit hierarchy that represents the database.  
+ * Highest level object in Sleuthkit hierarchy that represents the database.
  * Stores one or more Images and children data.
  */
 public class SleuthkitCase {
@@ -132,7 +132,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Start process of adding an image to the case. 
+	 * Start process of adding an image to the case.
 	 * Adding an image is a multi-step process and this returns
 	 * an object that allows it to happen.
 	 * @param timezone TZ timezone string to use for ingest of image.
@@ -480,7 +480,7 @@ public class SleuthkitCase {
 	 * @param artifactTypeName artifact type name
 	 * @param obj_id associated object id
 	 * @return list of blackboard artifacts
-	 * @throws TskException 
+	 * @throws TskException
 	 */
 	private ArrayList<BlackboardArtifact> getArtifactsHelper(int artifactTypeID, String artifactTypeName, long obj_id) throws TskException {
 		synchronized (caseLock) {
@@ -664,7 +664,7 @@ public class SleuthkitCase {
 	 * add an attribute type with the given name
 	 * @param attrTypeString name of the new attribute
 	 * @return the id of the new attribute
-	 * @throws TskException 
+	 * @throws TskException
 	 */
 	public int addAttrType(String attrTypeString, String displayName) throws TskException {
 		addAttrType(attrTypeString, displayName, attributeIDcounter);
@@ -678,7 +678,7 @@ public class SleuthkitCase {
 	 * helper method. add an attribute type with the given name and id
 	 * @param attrTypeString type name
 	 * @param typeID type id
-	 * @throws TskException 
+	 * @throws TskException
 	 */
 	private void addAttrType(String attrTypeString, String displayName, int typeID) throws TskException {
 		synchronized (caseLock) {
@@ -895,7 +895,7 @@ public class SleuthkitCase {
 	 * helper method. add an artifact with the given type and id
 	 * @param artifactTypeName type name
 	 * @param typeID type id
-	 * @throws TskException 
+	 * @throws TskException
 	 */
 	private void addArtifactType(String artifactTypeName, String displayName, int typeID) throws TskException {
 		synchronized (caseLock) {
@@ -978,7 +978,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Add a new blackboard artifact with the given type. If that artifact type does not
-	 * exist an error will be thrown. The artifact typename can be looked up in the 
+	 * exist an error will be thrown. The artifact typename can be looked up in the
 	 * returned blackboard artifact
 	 * @param artifactTypeID the type the given artifact should have
 	 * @return a new blackboard artifact
@@ -1010,7 +1010,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add a new blackboard artifact with the given type. 
+	 * Add a new blackboard artifact with the given type.
 	 * @param artifactType the type the given artifact should have
 	 * @return a new blackboard artifact
 	 */
@@ -1042,7 +1042,7 @@ public class SleuthkitCase {
 	/**
 	 * add one of the built in artifact types
 	 * @param type type enum
-	 * @throws TskException 
+	 * @throws TskException
 	 */
 	private void addBuiltInArtifactType(ARTIFACT_TYPE type) throws TskException {
 		addArtifactType(type.getLabel(), type.getDisplayName(), type.getTypeID());
@@ -1051,14 +1051,14 @@ public class SleuthkitCase {
 	/**
 	 * add one of the built in attribute types
 	 * @param type type enum
-	 * @throws TskException 
+	 * @throws TskException
 	 */
 	private void addBuiltInAttrType(ATTRIBUTE_TYPE type) throws TskException {
 		addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
 	}
 
-	/** 
-	 * Stores a pair of object ID and its type 
+	/**
+	 * Stores a pair of object ID and its type
 	 */
 	private static class ObjectInfo {
 
@@ -1364,7 +1364,7 @@ public class SleuthkitCase {
 
 		SetParentVisitor() {
 		}
-		// make File/Directory visits (majority of cases) faster by caching 
+		// make File/Directory visits (majority of cases) faster by caching
 		// fully initialized parent FileSystems
 		Map<Long, FileSystem> fileSystemCache = new HashMap<Long, FileSystem>();
 
@@ -1417,7 +1417,7 @@ public class SleuthkitCase {
 
 		@Override
 		public Void visit(Image i) {
-			// images are currently parentless 
+			// images are currently parentless
 			return null;
 		}
 
@@ -1628,7 +1628,7 @@ public class SleuthkitCase {
 		return getChildFsContents(dir.getId(), dir.getFileSystem());
 	}
 
-//	
+//
 //	/**
 //	 * searches the database for files whose parent is the given file
 //	 * @param dir_id directory id
@@ -1688,7 +1688,7 @@ public class SleuthkitCase {
 	 * "SELECT * FROM tsk_files WHERE XYZ".
 	 * @param rs ResultSet to get content from. Caller is responsible for closing it.
 	 * @return A List<FsContent> containing the results
-	 * @throws SQLException  
+	 * @throws SQLException
 	 */
 	public List<FsContent> resultSetToFsContents(ResultSet rs) throws SQLException {
 		SetParentVisitor setParent = new SetParentVisitor();
@@ -1716,7 +1716,7 @@ public class SleuthkitCase {
 	 * Requires subsequent call to closeRunQuery()
 	 *
 	 * @param query  the given string query to run
-	 * @return	   the resultSet from running the query. 
+	 * @return	   the resultSet from running the query.
 	 * Caller should call closeRunQuery(resultSet) as soon as possible, when done with retrieving data from the resultSet
 	 * @throws SQLException
 	 */
@@ -1731,9 +1731,9 @@ public class SleuthkitCase {
 
 	/**
 	 * Closes ResultSet and its Statement previously retrieved from runQuery()
-	 * 
+	 *
 	 * @param resultSet with its Statement to close
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
 		synchronized (caseLock) {
@@ -1786,11 +1786,11 @@ public class SleuthkitCase {
 			}
 		}
 	}
-	
+
 	/**
 	 * Store the known status for the FsContent in the database
 	 * Note: will not update status if content is already 'Known Bad'
-	 * 
+	 *
 	 * @param	fsContent	The FsContent object
 	 * @param	fileKnown	The object's known status
 	 * @return				true if the known status was updated, false otherwise
@@ -1799,7 +1799,7 @@ public class SleuthkitCase {
 	public boolean setKnown(FsContent fsContent, FileKnown fileKnown) throws TskException {
 		long id = fsContent.getId();
 		FileKnown currentKnown = fsContent.getKnown();
-		if(currentKnown.compareTo(fileKnown) > 0) {
+		if (currentKnown.compareTo(fileKnown) > 0) {
 			return false;
 		}
 		synchronized (caseLock) {
@@ -1815,10 +1815,10 @@ public class SleuthkitCase {
 		}
 		return true;
 	}
-	
+
 	/**
 	 * Store the md5Hash for the FsContent in the database
-	 * 
+	 *
 	 * @param	fsContent	The FsContent object
 	 * @param	md5Hash		The object's md5Hash
 	 * @throws				TskException
@@ -1840,7 +1840,7 @@ public class SleuthkitCase {
 
 //	/**
 //	 * Update the given hash and known status of the object in the DB denoted by id
-//	 * 
+//	 *
 //	 * @param id		The object's unique ID in the database
 //	 * @param md5Hash	The object's calculated md5 hash
 //	 * @param fileKnown	The object's known status
@@ -1859,7 +1859,7 @@ public class SleuthkitCase {
 //	Useful if we want to queue sql updates for performance reasons
 //	/**
 //	 * Update the given hash and known status of the objects in the DB denoted by id
-//	 * 
+//	 *
 //	 * @param ids		The objects' unique IDs in the database
 //	 * @param md5Hashes	The objects' calculated md5 hashes
 //	 * @param knowns	The objects' known statuses
@@ -1921,7 +1921,7 @@ public class SleuthkitCase {
 //		List<Long> ids = new ArrayList<Long>();
 //		List<String> md5Hashes = new ArrayList<String>();
 //		List<Long> knowns = new ArrayList<Long>();
-//		
+//
 //		try{
 //			for(Content c : cont){
 //				ids.add(c.getId());

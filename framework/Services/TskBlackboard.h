@@ -28,60 +28,85 @@
 
 using namespace std;
 
-/* Note that the below comments are the only documentation for the standard types.
- * Please ensure that all types are documented. 
+/**
+ * Built in artifact types.
+ * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
+ * for details on which attributes should be used for each artifact.
  */
 
-/**
- * Built in artifact types 
- */
+/* Note that the below comments are the only documentation 
+ * for the standard types.  Please ensure that all types are
+ * documented. 
+ * 
+ * The numbers are explicitly added to make it easier to verify
+ * that the Java and C++ code is in sync.
+ *
+ * It is very important that this list be kept up to date and 
+ * in sync with the Java code.  Do not add anything here unless
+ * you also add it there.  
+ * See bindings/java/src/org/sleuthkit/datamodel/BlackboardArtifact.java */
 typedef enum TSK_ARTIFACT_TYPE {
 		TSK_ART_GEN_INFO = 1,///< The general info artifact, if information doesn't need its own artifact it should go here
-		TSK_ART_WEB_BOOKMARK,///< A web bookmark. Each bookmark should have its own artifact and should expand its information using attributes
-		TSK_ART_WEB_COOKIE,///< A web cookie. Each cookie should have its own artifact and should expand its information using attributes
-		TSK_ART_WEB_HISTORY,///< A web history enrty. Each history enrty should have its own artifact and should expand its information using attributes
-		TSK_ART_WEB_DOWNLOAD,///< A web download. Each download enrty should have its own artifact and should expand its information using attributes
-		TSK_ART_RECENT_OBJECT,///< A recently used object record. Each record should have its own artifact and should expand its information using attributes
-		TSK_ART_TRACKPOINT,///< A trackpoint. Each trackpoint should have its own artifact and should expand its information using attributes
-		TSK_ART_INSTALLED_PROG,///< An installed program. Each program should have its own artifact and should expand its information using attributes
-		TSK_ART_KEYWORD_HIT///< A keyword hit. Each hit should have its own artifact and should expand its information using attributes
-    };
+		TSK_ART_WEB_BOOKMARK = 2,///< A web bookmark. 
+		TSK_ART_WEB_COOKIE = 3,///< A web cookie. 
+		TSK_ART_WEB_HISTORY = 4,///< A web history enrty. 
+		TSK_ART_WEB_DOWNLOAD = 5,///< A web download. 
+		TSK_ART_RECENT_OBJECT = 6,///< A recently used object (MRU, recent document, etc.).
+		TSK_ART_TRACKPOINT = 7,///< A trackpoint from a GPS log.
+		TSK_ART_INSTALLED_PROG = 8,///< An installed program. 
+		TSK_ART_KEYWORD_HIT = 9,///< A keyword hit. 
+        TSK_ART_HASHSET_HIT = 10 ///< A hit with a hashset / hash database. 
+    /* SEE ABOVE -- KEEP JAVA CODE IN SYNC */
+};
 
 /**
  * Built in attribute types 
  */
+/* The numbers are explicitly added to make it easier to verify
+ * that the Java and C++ code is in sync.
+ *
+ * It is very important that this list be kept up to date and 
+ * in sync with the Java code.  Do not add anything here unless
+ * you also add it there.  
+ * See bindings/java/src/org/sleuthkit/datamodel/BlackboardAttribute.java 
+ */
 typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_URL = 1,///< String of a URL, should start with http:// or ftp:// etc.  You should also make a TskBlackoard::TSK_DOMAIN entry for the base domain name. 
-    TSK_DATETIME,///< INT32: GMT based Unix time, defines number of secords elapsed since UTC Jan 1, 1970.
-    TSK_NAME,///< STRING: The name associated with an artifact
-    TSK_PROG_NAME,///< String of name of a program that was installed on the system
-    TSK_WEB_BOOKMARK,///< STRING: Browser bookmark information
-    TSK_VALUE,///< Some value associated with an artifact
-    TSK_FLAG,///< Some flag associated with an artifact
-    TSK_PATH,///< A filesystem path. There is no required formatting style
-    TSK_GEO,///< STRING: TBD
-    TSK_KEYWORD,///< STRING: Keyword that was found in this file. 
-    TSK_KEYWORD_REGEXP,///< STRING: A regular expression string
-    TSK_KEYWORD_PREVIEW,///< STRING: A text preview
-    TSK_KEYWORD_SET,///< STRING: A keyword set 
-    TSK_USERNAME,///< String of a user name.  Use TskBlackboard::TSK_DOMAIN to store the domain that the username is from (if it is known). 
-    TSK_DOMAIN,///< String of a DNS Domain name, e.g. sleuthkit.org  use TskBlackboad::TSK_URL for a full URL.
-    TSK_PASSWORD,///< String of a password that was found.  Use TskBlackboard::TSK_USERNAME and TskBlackboard::TSK_DOMAIN to link the password to a given user and site. 
-    TSK_NAME_PERSON,///< String of a person name
-    TSK_DEVICE_MODEL,///< String of manufacturer name of device that was connected (or somehow related to) the data being analyzed
-    TSK_DEVICE_MAKE,///< String of make of a device that was connected (or somehow related to) the data being analyzed
-    TSK_DEVICE_ID,///< String of ID of a device that was connected (or somehow related to) the data being analyzed
-    TSK_EMAIL,///< String of e-mail address in the form of user@host.com
-    TSK_HASH_HD5,///< STRING: MD5 hash
-    TSK_HASH_SHA1,///< STRING: SHA1 hash
-    TSK_HASH_SHA2_256,///< STRING: SHA2 256 bit hash
-    TSK_HASH_SHA2_512,///< STRING: SHA2 512 bit hash
-    TSK_TEXT,///< String of text extracted from a file.
-    TSK_TEXT_FILE,///< String of path to file containing text. May be absolute or relative. If relative, will be evaluated relative to OUT_DIR setting.
-    TSK_TEXT_LANGUAGE ,///< String of the detected language in ISO 639-3 language code of TskBlackboard::TSK_TEXT data.
-    TSK_ENTROPY,///< DOUBLE: Entropy value of file
-    TSK_HASHSET_NAME,///< String of name of the hashset if a file was found in it
-    TSK_INTERESTING_FILE,///< An interesting file hit, potentially file id, name, or path
+    TSK_DATETIME = 2,///< INT32: GMT based Unix time, defines number of secords elapsed since UTC Jan 1, 1970.
+    TSK_NAME = 3,///< STRING: The name associated with an artifact
+    TSK_PROG_NAME = 4,///< String of name of a program that was installed on the system
+    TSK_WEB_BOOKMARK = 5,///< STRING: Browser bookmark information -- DO NOT USED -- WILL BE REMOVED
+    TSK_VALUE = 6,///< Some value associated with an artifact
+    TSK_FLAG = 7,///< Some flag associated with an artifact
+    TSK_PATH = 8,///< A filesystem path. There is no required formatting style
+    TSK_GEO = 9,///< STRING: TBD
+    TSK_KEYWORD = 10,///< STRING: Keyword that was found in this file. 
+    TSK_KEYWORD_REGEXP = 11,///< STRING: A regular expression string
+    TSK_KEYWORD_PREVIEW = 12,///< STRING: A text preview
+    TSK_KEYWORD_SET = 13,///< STRING: A keyword set 
+    TSK_USERNAME = 14,///< String of a user name.  Use TskBlackboard::TSK_DOMAIN to store the domain that the username is from (if it is known). 
+    TSK_DOMAIN = 15,///< String of a DNS Domain name, e.g. sleuthkit.org  use TskBlackboad::TSK_URL for a full URL.
+    TSK_PASSWORD = 16,///< String of a password that was found.  Use TskBlackboard::TSK_USERNAME and TskBlackboard::TSK_DOMAIN to link the password to a given user and site. 
+    TSK_NAME_PERSON = 17,///< String of a person name
+    TSK_DEVICE_MODEL = 18,///< String of manufacturer name of device that was connected (or somehow related to) the data being analyzed
+    TSK_DEVICE_MAKE = 19,///< String of make of a device that was connected (or somehow related to) the data being analyzed
+    TSK_DEVICE_ID = 20,///< String of ID of a device that was connected (or somehow related to) the data being analyzed
+    TSK_EMAIL = 21,///< String of e-mail address in the form of user@host.com
+    TSK_HASH_HD5 = 22,///< STRING: MD5 hash
+    TSK_HASH_SHA1 = 23,///< STRING: SHA1 hash
+    TSK_HASH_SHA2_256 = 24,///< STRING: SHA2 256 bit hash
+    TSK_HASH_SHA2_512 = 25,///< STRING: SHA2 512 bit hash
+    TSK_TEXT = 26,///< String of text extracted from a file.
+    TSK_TEXT_FILE = 27,///< String of path to file containing text. May be absolute or relative. If relative, will be evaluated relative to OUT_DIR setting.
+    TSK_TEXT_LANGUAGE = 28,///< String of the detected language in ISO 639-3 language code of TskBlackboard::TSK_TEXT data.
+    TSK_ENTROPY = 29,///< DOUBLE: Entropy value of file
+    TSK_HASHSET_NAME = 30,///< String of name of the hashset if a file was found in it
+    TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path
+    TSK_REFERRER = 32,///<String Referrer URL
+    TSK_LAST_ACCESSED = 33,///<last time access, review this instead of DATETIME
+    TSK_IP_ADDRESS = 34,///<String IP Address
+    TSK_PHONE_NUMBER = 35,///<String phone number
+    /* SEE ABOVE -- KEEP JAVA CODE IN SYNC */
 };
 
 /*
