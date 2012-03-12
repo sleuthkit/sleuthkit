@@ -82,6 +82,10 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_ENTROPY,///< DOUBLE: Entropy value of file
     TSK_HASHSET_NAME,///< String of name of the hashset if a file was found in it
     TSK_INTERESTING_FILE,///< An interesting file hit, potentially file id, name, or path
+    TSK_REFERRER,///<String Referrer URL
+    TSK_LAST_ACCESSED,///<last time access, review this instead of DATETIME
+    TSK_IP_ADDRESS,///<String IP Address
+    TSK_PHONE_NUMBER,///<String phone number
 };
 
 /*
