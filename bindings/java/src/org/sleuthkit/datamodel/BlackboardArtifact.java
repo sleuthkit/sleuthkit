@@ -220,5 +220,37 @@ public class BlackboardArtifact implements SleuthkitVisitableItem{
     public SleuthkitCase getSleuthkitCase(){
         return Case;
     }
+
+    /**
+     * Compare the two objects' fields, skipping SleuthkitCase
+     * @param obj
+     * @return Whether this object is equal to the given one
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final BlackboardArtifact other = (BlackboardArtifact) obj;
+        if (this.artifactID != other.artifactID) {
+            return false;
+        }
+        if (this.objID != other.objID) {
+            return false;
+        }
+        if (this.artifactTypeID != other.artifactTypeID) {
+            return false;
+        }
+        if ((this.artifactTypeName == null) ? (other.artifactTypeName != null) : !this.artifactTypeName.equals(other.artifactTypeName)) {
+            return false;
+        }
+        if ((this.displayName == null) ? (other.displayName != null) : !this.displayName.equals(other.displayName)) {
+            return false;
+        }
+        return true;
+    }
 }
 

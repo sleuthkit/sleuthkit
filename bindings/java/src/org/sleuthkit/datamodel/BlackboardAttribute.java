@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Arrays;
+
 /**
  *
  * @author alawrence
@@ -433,4 +435,51 @@ public class BlackboardAttribute {
 	protected void setCase(SleuthkitCase Case) {
 		this.Case = Case;
 	}
+
+    /**
+     * Compare the two objects' fields, skipping SleuthkitCase
+     * @param obj
+     * @return Whether this object is equal to the given one
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final BlackboardAttribute other = (BlackboardAttribute) obj;
+        if (this.artifactID != other.artifactID) {
+            return false;
+        }
+        if (this.attributeTypeID != other.attributeTypeID) {
+            return false;
+        }
+        if ((this.moduleName == null) ? (other.moduleName != null) : !this.moduleName.equals(other.moduleName)) {
+            return false;
+        }
+        if ((this.context == null) ? (other.context != null) : !this.context.equals(other.context)) {
+            return false;
+        }
+        if (this.valueType != other.valueType) {
+            return false;
+        }
+        if (this.valueInt != other.valueInt) {
+            return false;
+        }
+        if (this.valueLong != other.valueLong) {
+            return false;
+        }
+        if (Double.doubleToLongBits(this.valueDouble) != Double.doubleToLongBits(other.valueDouble)) {
+            return false;
+        }
+        if ((this.valueString == null) ? (other.valueString != null) : !this.valueString.equals(other.valueString)) {
+            return false;
+        }
+        if (!Arrays.equals(this.valueBytes, other.valueBytes)) {
+            return false;
+        }
+        return true;
+    }
 }
