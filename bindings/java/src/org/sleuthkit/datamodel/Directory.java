@@ -99,11 +99,7 @@ public class Directory extends FsContent{
 
 	@Override
 	public List<Content> getChildren() throws TskException {
-		try {
-			return db.getDirectoryChildren(this);
-		} catch (SQLException ex) {
-			throw new TskException("Error while getting Directory children.", ex);
-		}
+		return db.getDirectoryChildren(this);
 	}
 
 	@Override
