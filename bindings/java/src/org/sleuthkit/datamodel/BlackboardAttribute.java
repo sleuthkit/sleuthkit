@@ -87,15 +87,16 @@ public class BlackboardAttribute {
 	 * Built in attribute types
 	 */
 	public enum ATTRIBUTE_TYPE {
-        /* It is very important that this list be kept up to
-         * date and in sync with the C++ code.  Do not add
-         * anything here unless you also add it there.
-         * See framework/Services/TskBlackboard.* */
+		/* It is very important that this list be kept up to
+		 * date and in sync with the C++ code.  Do not add
+		 * anything here unless you also add it there.
+		 * See framework/Services/TskBlackboard.* */
+
 		TSK_URL(1, "TSK_URL", "URL"),
 		TSK_DATETIME(2, "TSK_DATETIME", "Date/Time"),
 		TSK_NAME(3, "TSK_NAME", "Name"),
 		TSK_PROG_NAME(4, "TSK_PROG_NAME", "Program Name"),
-        TSK_WEB_BOOKMARK(5, "TSK_WEB_BOOKMARK", "Bookmark"),
+		TSK_WEB_BOOKMARK(5, "TSK_WEB_BOOKMARK", "Bookmark"),
 		TSK_VALUE(6, "TSK_VALUE", "Value"),
 		TSK_FLAG(7, "TSK_FLAG", "Flag"),
 		TSK_PATH(8, "TSK_PATH", "Path"),
@@ -123,11 +124,10 @@ public class BlackboardAttribute {
 		TSK_HASHSET_NAME(30, "TSK_HASHSET_NAME", "Hashset Name"),
 		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", "Interesting File"),
 		TSK_REFERRER(32, "TSK_REFERRER", "Referrer URL"),
-		TSK_LAST_ACCESSED(33, "TSK_LAST_ACCESSED", "Last Time Accessed"),	// @@@ Review this instead of using DATETIME
+		TSK_LAST_ACCESSED(33, "TSK_LAST_ACCESSED", "Last Time Accessed"), // @@@ Review this instead of using DATETIME
 		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", "IP Address"),
 		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", "Phone Number");
-        /* SEE ABOVE -- ALSO ADD TO C++ CODE */
-		
+		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		private String label;
 		private int typeID;
 		private String displayName;
@@ -334,7 +334,7 @@ public class BlackboardAttribute {
 	public int getAttributeTypeID() {
 		return attributeTypeID;
 	}
-	
+
 	/**
 	 * get the attribute type id
 	 * @return type id
@@ -342,7 +342,7 @@ public class BlackboardAttribute {
 	public String getAttributeTypeName() throws TskException {
 		return Case.getAttrTypeString(attributeTypeID);
 	}
-	
+
 	/**
 	 * get the attribute type id
 	 * @return type id

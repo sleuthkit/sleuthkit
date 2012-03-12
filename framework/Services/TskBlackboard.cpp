@@ -1,12 +1,12 @@
 /*
- * The Sleuth Kit
- *
- * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
- * reserved.
- *
- * This software is distributed under the Common Public License 1.0
- */
+* The Sleuth Kit
+*
+* Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
+* Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+* reserved.
+*
+* This software is distributed under the Common Public License 1.0
+*/
 
 #include "TskBlackboard.h"
 
@@ -65,8 +65,8 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
 }
 
 /** \internal
- * The table used to store names and display names for built in artifacts
- */
+* The table used to store names and display names for built in artifacts
+*/
 
 map<int, TskArtifactNames> artifact_type_table= initializeArtifactTypeMap();
 map<int, TskAttributeNames> attribute_type_table= initializeAttributeTypeMap();
