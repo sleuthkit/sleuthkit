@@ -57,6 +57,10 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_ENTROPY, TskAttributeNames("TSK_ENTROPY", "Entropy")));
     retval.insert(pair<int, TskAttributeNames>(TSK_HASHSET_NAME, TskAttributeNames("TSK_HASHSET_NAME", "Hashset Name")));
     retval.insert(pair<int, TskAttributeNames>(TSK_INTERESTING_FILE, TskAttributeNames("TSK_INTERESTING_FILE", "Interesting File")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_REFERRER, TskAttributeNames("TSK_REFERRER", "Referrer URL")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_LAST_ACCESSED, TskAttributeNames("TSK_LAST_ACCESSED", "Last Time Accessed")));  // @@@ Review this instead of using DATETIME
+    retval.insert(pair<int, TskAttributeNames>(TSK_IP_ADDRESS, TskAttributeNames("TSK_IP_ADDRESS", "IP Address")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER, TskAttributeNames("TSK_PHONE_NUMBER", "Phone Number")));
     return retval;
 }
 

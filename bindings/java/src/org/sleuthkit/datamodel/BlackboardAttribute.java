@@ -118,8 +118,12 @@ public class BlackboardAttribute {
 		TSK_TEXT_LANGUAGE(28, "TSK_TEXT_LANGUAGE", "Text Language"),
 		TSK_ENTROPY(29, "TSK_ENTROPY", "Entropy"),
 		TSK_HASHSET_NAME(30, "TSK_HASHSET_NAME", "Hashset Name"),
-		TSK_REFERRER(31, "TSK_REFERRER", "Referrer URL"),
-		TSK_LAST_ACCESSED(32, "TSK_LAST_ACCESSED", "Last Time Accessed");	// @@@ Review this instead of using DATETIME
+		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", "Interesting File"),
+		TSK_REFERRER(32, "TSK_REFERRER", "Referrer URL"),
+		TSK_LAST_ACCESSED(33, "TSK_LAST_ACCESSED", "Last Time Accessed"),	// @@@ Review this instead of using DATETIME
+		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", "IP Address"),
+		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", "Phone Number");
+		
 		private String label;
 		private int typeID;
 		private String displayName;
