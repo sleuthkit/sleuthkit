@@ -229,7 +229,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
     /**
-     * Compare the two objects' fields, skipping SleuthkitCase
+     * Compare this artifact with the given object
+	 * Ensure that the artifacts have the same ID
      * @param obj
      * @return Whether this object is equal to the given one
      */
@@ -243,18 +244,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
         }
         final BlackboardArtifact other = (BlackboardArtifact) obj;
         if (this.artifactID != other.artifactID) {
-            return false;
-        }
-        if (this.objID != other.objID) {
-            return false;
-        }
-        if (this.artifactTypeID != other.artifactTypeID) {
-            return false;
-        }
-        if ((this.artifactTypeName == null) ? (other.artifactTypeName != null) : !this.artifactTypeName.equals(other.artifactTypeName)) {
-            return false;
-        }
-        if ((this.displayName == null) ? (other.displayName != null) : !this.displayName.equals(other.displayName)) {
             return false;
         }
         return true;
