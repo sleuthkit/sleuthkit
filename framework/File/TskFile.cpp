@@ -277,7 +277,7 @@ vector<TskBlackboardArtifact> TskFile::getArtifacts(string artifactTypeName){
 
 /**
  * Get all artifacts associated with this file with the given type id
- * @param artifactTypeid type id
+ * @param artifactTypeID type id
  * @returns all matching artifacts
  */
 vector<TskBlackboardArtifact> TskFile::getArtifacts(int artifactTypeID){
@@ -305,7 +305,7 @@ vector<TskBlackboardArtifact> TskFile::getAllArtifacts(){
 
 /**
  * Get all artifacts associated with this file with the given type name
- * @param artifactTypeName type name
+ * @param attributeTypeName type name
  * @returns all matching artifacts
  */
 vector<TskBlackboardAttribute> TskFile::getAttributes(string attributeTypeName){
@@ -316,7 +316,7 @@ vector<TskBlackboardAttribute> TskFile::getAttributes(string attributeTypeName){
 
 /**
  * Get all artifacts associated with this file with the given type id
- * @param artifactTypeid type id
+ * @param attributeTypeID type id
  * @returns all matching artifacts
  */
 vector<TskBlackboardAttribute> TskFile::getAttributes(int attributeTypeID){
@@ -348,7 +348,6 @@ vector<TskBlackboardAttribute> TskFile::getAllAttributes(){
 
 /**
  * Get the general info artifact for this file
- * @param type artifact type
  * @returns all matching artifacts
  */
 TskBlackboardArtifact TskFile::getGenInfo(){
@@ -365,7 +364,7 @@ TskBlackboardArtifact TskFile::getGenInfo(){
 
 /**
  * Add an attribute to the general info artifact for this file
- * @param attribute attribute to be added
+ * @param attr attribute to be added
  */
 void TskFile::addGenInfoAttribute(TskBlackboardAttribute attr){
     getGenInfo().addAttribute(attr);

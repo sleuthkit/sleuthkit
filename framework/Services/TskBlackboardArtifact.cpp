@@ -90,12 +90,9 @@ vector<TskBlackboardAttribute> TskBlackboardArtifact::getAttributes()const{
 
 /**
 * Constructor
-* @param blackboard blackboard used to create this 
 * @param artifactID artifact id 
 * @param objID object id 
 * @param artifactTypeID arifact type id 
-* @param artifactTypeName artifact type name
-* @param displayName display name
 */	
 TskBlackboardArtifact::TskBlackboardArtifact(uint64_t artifactID, uint64_t objID, int artifactTypeID)
 : m_artifactID(artifactID), m_objID(objID), m_artifactTypeID(artifactTypeID) {}

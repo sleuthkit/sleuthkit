@@ -115,11 +115,11 @@ m_valueString(){}
 
 /**
 * Constructor 
-* @param blackboard the blackboard storing this
 * @param artifactID if of the artifact this is associated with
 * @param attributeTypeID attribute type id 
 * @param moduleName module that created this attribute 
 * @param context additional context 
+* @param valueType Type of value being set (only the corresponding value from the next parameters will be used)
 * @param valueInt integer value
 * @param valueLong 64 bit integer value
 * @param valueDouble double value

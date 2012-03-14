@@ -1,6 +1,33 @@
-/*! \page fw_setup Setting up the Services
+/*! \page fw_setup Setting up the Infrastructure
 
-\section fw_setup_sysprop System Properties
+The developer's guide to using the framework is self contained, but you can also refer to the source code for tsk_analyzeimg, which is included in the framework.  It is a basic program that uses the framework to analyze a disk image and use the pipeline infrastructure. 
+
+This part of the document outlines how to get the infrastructure in place for any type of run. The other sections focus on specific types of analysis.  If you are running end-to-end analysis in the same process / session, then you'll do all of these at once.  If you are doing a distributed system, then you will need to start with this section and continue on the relevant analysis section. 
+
+\section fw_setup_minimal Minimal Setup
+
+One of the design goals of the framework is to minimize the setup that you need to do.  This section outlines the minimal set of setup steps to take.  If the default settings do not meet your needs, you'll need to jump to the \ref fw_setup_adv section.
+
+
+Database - reqs location
+
+
+Scheduler - reqs system-dependent way of getting jobs out or make generic method that can get tasks out if they were not already handled. 
+
+
+Blackboard - no good reason... DB could be made default, but check with Anthony's new code first.
+
+ImageFile - reqs image file -- req'd if disk images are used. 
+
+
+SETTINGS:
+- OutDirPath
+
+
+\section fw_setup_adv Advanced Setup
+
+SystemPropertiesImpl....
+Log
 
 \section fw_setup_imgdb Image Database
 

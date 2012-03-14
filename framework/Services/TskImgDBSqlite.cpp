@@ -3189,8 +3189,8 @@ string TskImgDBSqlite::getAttributeTypeName(int attributeTypeID){
 }
 
 /**
- * Get all artifacts with that match the given where clause 
- * @param whereClause where clause to use for matching
+ * Get all artifacts by performing a SQL Select statement with the given where clause.
+ * @param condition The SQL select where clause that should be used in the query.
  * @returns vector of matching artifacts
  */
 vector<TskBlackboardArtifact> TskImgDBSqlite::getMatchingArtifacts(string condition){
