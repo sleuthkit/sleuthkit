@@ -189,6 +189,7 @@ public:
      * @returns vector of matching attributes
      */
     virtual vector<TskBlackboardAttribute> getMatchingAttributes(const string& condition)const = 0;   
+
     /**
      * Get all attributes with the given type name and file id
      * @param file_id associated file id
@@ -196,13 +197,15 @@ public:
      * @returns vector of matching attributes
      */
     virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, const string& attributeTypeName)const = 0;
+
     /**
      * Get all attributes with the given type and file id
      * @param file_id associated file id
-     * @param attributeType name
+     * @param attributeTypeID Type of attribute to return
      * @returns vector of matching attributes
      */
     virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, int attributeTypeID)const = 0;
+
     /** Get all attributes with the given type and file id
      * @param file_id associated file id
      * @param attributeType name
@@ -224,17 +227,19 @@ public:
      * @returns the new artifact
      */
     virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const int artifactTypeID) = 0;
+
     /**
      * Create a new blackboard artifact with the given type and file id
-     * @param artifactType artifact type
      * @param file_id associated file id
+     * @param artifactType artifact type
      * @returns the new artifact
      */
     virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const TSK_ARTIFACT_TYPE artifactType) = 0;
+
     /**
-     * Add a new artifact type with the given name and display name
-     * @param artifactTypeName type name (should already exist)
-     * @param displayName display name
+     * Add a new artifact type with the given name and file id
+     * @param file_id associated file id
+     * @param artifactTypeName System name of artifact type
      */
     virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const string& artifactTypeName) = 0;
 
@@ -243,7 +248,6 @@ public:
      * @param file_id file id for the file to add the attribute to
      * @param attr and attribute populated with values. this attribute will have
      * its artifact_id and obj_id set by this method.
-     * @param displayName display name
      */
     virtual void createGenInfoAttribute(const uint64_t file_id, TskBlackboardAttribute& attr) = 0;
 

@@ -162,20 +162,7 @@ public:
 protected:
     void setArtifactID(uint64_t artifactID);
     void setObjectID(uint64_t objectID);
-    /**
-    * Constructor should only be used by blackboard
-    * @param blackboard the blackboard storing this
-    * @param artifactID if of the artifact this is associated with
-    * @param attributeTypeID attribute type id 
-    * @param moduleName module that created this attribute 
-    * @param context additional context 
-    * @param valueInt integer value
-    * @param valueLong 64 bit integer value
-    * @param valueDouble double value
-    * @param valueString string value
-    * @param valueBytes byte array value
-    * @param objectID object the attribute is associated with
-    */	
+
     TskBlackboardAttribute(uint64_t artifactID, const int attributeTypeID, uint64_t objectID, const string moduleName, const string context,
         const TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, const int valueInt, const uint64_t valueLong, const double valueDouble, 
         const string& valueString, const vector<unsigned char> valueBytes);
