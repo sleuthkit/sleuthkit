@@ -220,11 +220,7 @@ public class Image extends FileSystemParent {
 
 	@Override
 	public List<Content> getChildren() throws TskException {
-		try {
-			return db.getImageChildren(this);
-		} catch (SQLException ex) {
-			throw new TskException("Error getting Image children.", ex);
-		}
+		return db.getImageChildren(this);
 	}
 
 	@Override

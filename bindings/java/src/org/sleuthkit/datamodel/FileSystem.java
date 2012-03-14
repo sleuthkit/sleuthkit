@@ -180,11 +180,7 @@ public class FileSystem extends AbstractContent{
 
 	@Override
 	public List<Content> getChildren() throws TskException {
-		try {
-			return db.getFileSystemChildren(this);
-		} catch (SQLException ex) {
-			throw new TskException("Error while getting FileSystem children.", ex);
-		}
+		return db.getFileSystemChildren(this);
 	}
 
 	@Override

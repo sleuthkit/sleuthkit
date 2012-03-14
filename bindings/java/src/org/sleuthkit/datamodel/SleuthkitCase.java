@@ -1075,249 +1075,285 @@ public class SleuthkitCase {
 	 * Get info about children of a given Content from the database.
 	 * @param c Parent object to run query against
 	 */
-	Collection<ObjectInfo> getChildrenInfo(Content c) throws SQLException {
+	Collection<ObjectInfo> getChildrenInfo(Content c) throws TskException {
 		synchronized (caseLock) {
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("select obj_id, type from tsk_objects "
-					+ "where par_obj_id = " + c.getId());
+			try {
+				Statement s = con.createStatement();
+				ResultSet rs = s.executeQuery("select obj_id, type from tsk_objects "
+						+ "where par_obj_id = " + c.getId());
 
-			Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
+				Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
 
-			while (rs.next()) {
-				infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getLong("type"))));
-			}
-			rs.close();
-			s.close();
-			return infos;
-		}
-	}
-
-	ObjectInfo getParentInfo(Content c) throws SQLException, TskException {
-		synchronized (caseLock) {
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
-					+ "FROM tsk_objects AS parent JOIN tsk_objects AS child "
-					+ "ON child.par_obj_id = parent.obj_id "
-					+ "WHERE child.obj_id = " + c.getId());
-
-			ObjectInfo info;
-
-			if (rs.next()) {
-				info = new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getLong("type")));
+				while (rs.next()) {
+					infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getLong("type"))));
+				}
 				rs.close();
 				s.close();
-				return info;
-			} else {
-				rs.close();
-				s.close();
-				throw new TskException("Given content (id: " + c.getId() + ") has no parent.");
+				return infos;
+			} catch (SQLException ex) {
+				throw new TskException("Error getting Children Info for Content.", ex);
 			}
 		}
 	}
 
-	Directory getParentDirectory(FsContent fsc) throws SQLException, TskException {
-		if (fsc.isRoot()) {
-			throw new TskException("Given FsContent (id: " + fsc.getId() + ") is a root object (can't have parent directory).");
-		} else {
-			ObjectInfo parentInfo = getParentInfo(fsc);
-
-			Directory parent;
-
-			if (parentInfo.type == ObjectType.FILE) {
-				parent = getDirectoryById(parentInfo.id, fsc.getFileSystem());
-			} else {
-				throw new TskException("Parent of FsContent (id: " + fsc.getId() + ") has wrong type to be directory: " + parentInfo.type);
-			}
-
-			return parent;
-		}
-	}
-
-	public Content getContentById(long id) throws SQLException, TskException {
+	ObjectInfo getParentInfo(Content c) throws TskException {
 		synchronized (caseLock) {
-			Statement s = con.createStatement();
-			ResultSet contentRs = s.executeQuery("select * from tsk_objects where obj_id = " + id);
-			ResultSet volumeSystemRs;
-			VolumeSystem vs;
-			Image img;
-			Content ret;
-			TskData.ObjectType type = TskData.ObjectType.valueOf(contentRs.getLong("type"));
-			switch (type) {
-				case IMG:
-					ret = getImageById(id);
-					break;
-				case VS:
-					img = getImageById(contentRs.getInt("par_obj_id"));
-					ret = getVolumeSystemById(id, img);
-					break;
-				case VOL:
-					volumeSystemRs = s.executeQuery("select * from tsk_objects where obj_id = " + contentRs.getInt("par_obj_id"));
-					img = getImageById(volumeSystemRs.getInt("par_obj_id"));
-					vs = getVolumeSystemById(contentRs.getInt("par_obj_id"), img);
-					volumeSystemRs.close();
-					ret = getVolumeById(id, vs);
-					break;
-				case FS:
-					if (contentRs.getInt("par_obj_id") == 0) {
+			try {
+				Statement s = con.createStatement();
+				ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
+						+ "FROM tsk_objects AS parent JOIN tsk_objects AS child "
+						+ "ON child.par_obj_id = parent.obj_id "
+						+ "WHERE child.obj_id = " + c.getId());
+
+				ObjectInfo info;
+
+				if (rs.next()) {
+					info = new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getLong("type")));
+					rs.close();
+					s.close();
+					return info;
+				} else {
+					rs.close();
+					s.close();
+					throw new TskException("Given content (id: " + c.getId() + ") has no parent.");
+				}
+			} catch (SQLException ex) {
+				throw new TskException("Error getting Parent Info for Content.", ex);
+			}
+		}
+	}
+
+	Directory getParentDirectory(FsContent fsc) throws TskException {
+			if (fsc.isRoot()) {
+				throw new TskException("Given FsContent (id: " + fsc.getId() + ") is a root object (can't have parent directory).");
+			} else {
+				ObjectInfo parentInfo = getParentInfo(fsc);
+
+				Directory parent;
+
+				if (parentInfo.type == ObjectType.FILE) {
+					parent = getDirectoryById(parentInfo.id, fsc.getFileSystem());
+				} else {
+					throw new TskException("Parent of FsContent (id: " + fsc.getId() + ") has wrong type to be directory: " + parentInfo.type);
+				}
+
+				return parent;
+			}
+		}
+
+	public Content getContentById(long id) throws TskException {
+		synchronized (caseLock) {
+			try {
+				Statement s = con.createStatement();
+				ResultSet contentRs = s.executeQuery("select * from tsk_objects where obj_id = " + id);
+				ResultSet volumeSystemRs;
+				VolumeSystem vs;
+				Image img;
+				Content ret;
+				TskData.ObjectType type = TskData.ObjectType.valueOf(contentRs.getLong("type"));
+				switch (type) {
+					case IMG:
+						ret = getImageById(id);
+						break;
+					case VS:
 						img = getImageById(contentRs.getInt("par_obj_id"));
-						ret = getFileSystemById(id, img);
-					} else {
-						ResultSet volumeRs = s.executeQuery("select * from tsk_objects where obj_id = " + contentRs.getInt("par_obj_id"));
-						volumeSystemRs = s.executeQuery(("select * from tsk_objects where obj_id = " + volumeRs.getInt("par_obj_id")));
-						ResultSet imageRs = s.executeQuery(("select * from tsk_objects where obj_id = " + volumeSystemRs.getInt("par_obj_id")));
-						img = getImageById(imageRs.getInt("obj_id"));
-						vs = getVolumeSystemById(volumeSystemRs.getInt("obj_id"), img);
-						Volume v = getVolumeById(volumeRs.getInt("obj_id"), vs);
-						volumeRs.close();
+						ret = getVolumeSystemById(id, img);
+						break;
+					case VOL:
+						volumeSystemRs = s.executeQuery("select * from tsk_objects where obj_id = " + contentRs.getInt("par_obj_id"));
+						img = getImageById(volumeSystemRs.getInt("par_obj_id"));
+						vs = getVolumeSystemById(contentRs.getInt("par_obj_id"), img);
 						volumeSystemRs.close();
-						imageRs.close();
-						ret = getFileSystemById(id, v);
-					}
-					break;
-				case FILE:
-					ret = getFsContentById(id);
-					break;
-				default:
-					ret = null;
-					break;
+						ret = getVolumeById(id, vs);
+						break;
+					case FS:
+						if (contentRs.getInt("par_obj_id") == 0) {
+							img = getImageById(contentRs.getInt("par_obj_id"));
+							ret = getFileSystemById(id, img);
+						} else {
+							ResultSet volumeRs = s.executeQuery("select * from tsk_objects where obj_id = " + contentRs.getInt("par_obj_id"));
+							volumeSystemRs = s.executeQuery(("select * from tsk_objects where obj_id = " + volumeRs.getInt("par_obj_id")));
+							ResultSet imageRs = s.executeQuery(("select * from tsk_objects where obj_id = " + volumeSystemRs.getInt("par_obj_id")));
+							img = getImageById(imageRs.getInt("obj_id"));
+							vs = getVolumeSystemById(volumeSystemRs.getInt("obj_id"), img);
+							Volume v = getVolumeById(volumeRs.getInt("obj_id"), vs);
+							volumeRs.close();
+							volumeSystemRs.close();
+							imageRs.close();
+							ret = getFileSystemById(id, v);
+						}
+						break;
+					case FILE:
+						ret = getFsContentById(id);
+						break;
+					default:
+						ret = null;
+						break;
+				}
+				contentRs.close();
+				s.close();
+				return ret;
+			} catch (SQLException ex) {
+				throw new TskException("Error getting Content by ID.", ex);
 			}
-			contentRs.close();
-			s.close();
-			return ret;
 		}
 	}
 
-	public FsContent getFsContentById(long id) throws SQLException, TskException {
+	public FsContent getFsContentById(long id) throws TskException {
 		synchronized (caseLock) {
-			Statement s = con.createStatement();
+			try {
+				Statement s = con.createStatement();
 
-			ResultSet rs = s.executeQuery("select * from tsk_files where obj_id = " + id);
-			List<FsContent> results;
-			if ((results = resultSetToFsContents(rs)).size() > 0) {
-				s.close();
-				return results.get(0);
-			} else {
-				s.close();
+				ResultSet rs = s.executeQuery("select * from tsk_files where obj_id = " + id);
+				List<FsContent> results;
+				if ((results = resultSetToFsContents(rs)).size() > 0) {
+					s.close();
+					return results.get(0);
+				} else {
+					s.close();
+				}
+			} catch (SQLException ex) {
+				throw new TskException("Error getting FsContent by ID.", ex);
 			}
 		}
 		throw new TskException("No file found for id " + id);
 	}
 
-	public Image getImageById(long id) throws SQLException, TskException {
+	public Image getImageById(long id) throws TskException {
 		synchronized (caseLock) {
-			Statement s1 = con.createStatement();
+			try {
+				Statement s1 = con.createStatement();
 
-			ResultSet rs1 = s1.executeQuery("select * from tsk_image_info where obj_id = " + id);
+				ResultSet rs1 = s1.executeQuery("select * from tsk_image_info where obj_id = " + id);
 
-			Image temp;
-			if (rs1.next()) {
-				long obj_id = rs1.getLong("obj_id");
-				Statement s2 = con.createStatement();
-				ResultSet rs2 = s2.executeQuery("select * from tsk_image_names where obj_id = " + obj_id);
-				List<String> imagePaths = new ArrayList<String>();
-				while (rs2.next()) {
-					imagePaths.add(rsHelper.imagePath(rs2));
+				Image temp;
+				if (rs1.next()) {
+					long obj_id = rs1.getLong("obj_id");
+					Statement s2 = con.createStatement();
+					ResultSet rs2 = s2.executeQuery("select * from tsk_image_names where obj_id = " + obj_id);
+					List<String> imagePaths = new ArrayList<String>();
+					while (rs2.next()) {
+						imagePaths.add(rsHelper.imagePath(rs2));
+					}
+
+					String path1 = imagePaths.get(0);
+					String name = (new java.io.File(path1)).getName();
+
+					temp = rsHelper.image(rs1, name, imagePaths.toArray(new String[imagePaths.size()]));
+					rs2.close();
+					s2.close();
+				} else {
+					rs1.close();
+					s1.close();
+					throw new TskException("No image found for id: " + id);
 				}
-
-				String path1 = imagePaths.get(0);
-				String name = (new java.io.File(path1)).getName();
-
-				temp = rsHelper.image(rs1, name, imagePaths.toArray(new String[imagePaths.size()]));
-				rs2.close();
-				s2.close();
-			} else {
 				rs1.close();
 				s1.close();
-				throw new TskException("No image found for id: " + id);
+				return temp;
+			} catch (SQLException ex) {
+				throw new TskException("Error getting Image by ID.", ex);
 			}
-			rs1.close();
-			s1.close();
-			return temp;
 		}
 	}
 
-	VolumeSystem getVolumeSystemById(long id, Image parent) throws SQLException, TskException {
+	VolumeSystem getVolumeSystemById(long id, Image parent) throws TskException {
 		synchronized (caseLock) {
-			Statement s = con.createStatement();
+			try {
+				Statement s = con.createStatement();
 
-			ResultSet rs = s.executeQuery("select * from tsk_vs_info "
-					+ "where obj_id = " + id);
-			VolumeSystem temp;
+				ResultSet rs = s.executeQuery("select * from tsk_vs_info "
+						+ "where obj_id = " + id);
+				VolumeSystem temp;
 
-			if (rs.next()) {
-				temp = rsHelper.volumeSystem(rs, parent);
-			} else {
+				if (rs.next()) {
+					temp = rsHelper.volumeSystem(rs, parent);
+				} else {
+					rs.close();
+					s.close();
+					throw new TskException("No volume system found for id:" + id);
+				}
 				rs.close();
 				s.close();
-				throw new TskException("No volume system found for id:" + id);
+				return temp;
+			} catch (SQLException ex) {
+				throw new TskException("Error getting Volume System by ID.", ex);
 			}
-			rs.close();
-			s.close();
-			return temp;
 		}
 	}
 
-	FileSystem getFileSystemById(long id, FileSystemParent parent) throws SQLException, TskException {
+	FileSystem getFileSystemById(long id, FileSystemParent parent) throws TskException {
 		synchronized (caseLock) {
-			Statement s = con.createStatement();
-			FileSystem temp;
+			try {
+				Statement s = con.createStatement();
+				FileSystem temp;
 
-			ResultSet rs = s.executeQuery("select * from tsk_fs_info "
-					+ "where obj_id = " + id);
+				ResultSet rs = s.executeQuery("select * from tsk_fs_info "
+						+ "where obj_id = " + id);
 
-			if (rs.next()) {
-				temp = rsHelper.fileSystem(rs, parent);
-			} else {
+				if (rs.next()) {
+					temp = rsHelper.fileSystem(rs, parent);
+				} else {
+					rs.close();
+					s.close();
+					throw new TskException("No file system found for id:" + id);
+				}
 				rs.close();
 				s.close();
-				throw new TskException("No file system found for id:" + id);
-			}
-			rs.close();
-			s.close();
 
-			return temp;
+				return temp;
+			} catch (SQLException ex) {
+				throw new TskException("Error getting File System by ID.", ex);
+			}
 		}
 	}
 
-	Volume getVolumeById(long id, VolumeSystem parent) throws SQLException, TskException {
+	Volume getVolumeById(long id, VolumeSystem parent) throws TskException {
 		synchronized (caseLock) {
-			Statement s = con.createStatement();
-			Volume temp;
+			try {
+				Statement s = con.createStatement();
+				Volume temp;
 
-			ResultSet rs = s.executeQuery("select * from tsk_vs_parts "
-					+ "where obj_id = " + id);
+				ResultSet rs = s.executeQuery("select * from tsk_vs_parts "
+						+ "where obj_id = " + id);
 
-			if (rs.next()) {
-				temp = rsHelper.volume(rs, parent);
-			} else {
+				if (rs.next()) {
+					temp = rsHelper.volume(rs, parent);
+				} else {
+					rs.close();
+					s.close();
+					throw new TskException("No volume found for id:" + id);
+				}
 				rs.close();
 				s.close();
-				throw new TskException("No volume found for id:" + id);
+				return temp;
+			} catch (SQLException ex) {
+				throw new TskException("Error getting Volume by ID.", ex);
 			}
-			rs.close();
-			s.close();
-			return temp;
 		}
 	}
 
-	Directory getDirectoryById(long id, FileSystem parentFs) throws SQLException, TskException {
+	Directory getDirectoryById(long id, FileSystem parentFs) throws TskException {
 		synchronized (caseLock) {
-			Statement s = con.createStatement();
-			Directory temp;
+			try {
+				Statement s = con.createStatement();
+				Directory temp;
 
-			ResultSet rs = s.executeQuery("select * from tsk_files "
-					+ "where obj_id = " + id);
+				ResultSet rs = s.executeQuery("select * from tsk_files "
+						+ "where obj_id = " + id);
 
-			if (rs.next() && rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
-				temp = rsHelper.directory(rs, parentFs);
-			} else {
+				if (rs.next() && rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+					temp = rsHelper.directory(rs, parentFs);
+				} else {
+					rs.close();
+					s.close();
+					throw new TskException("No Directory found for id:" + id);
+				}
 				rs.close();
 				s.close();
-				throw new TskException("No Directory found for id:" + id);
+				return temp;
+			} catch (SQLException ex) {
+				throw new TskException("Error getting Directory by ID.", ex);
 			}
-			rs.close();
-			s.close();
-			return temp;
 		}
 	}
 
@@ -1342,8 +1378,6 @@ public class SleuthkitCase {
 					fileSystemCache.put(fileSystemId, parent);
 				}
 				fc.setFileSystem(parent);
-			} catch (SQLException ex) {
-				throw new RuntimeException(ex);
 			} catch (TskException ex) {
 				throw new RuntimeException(ex);
 			}
@@ -1375,8 +1409,6 @@ public class SleuthkitCase {
 				}
 				fs.setParent(parent);
 				parent.accept(this);
-			} catch (SQLException ex) {
-				throw new RuntimeException(ex);
 			} catch (TskException ex) {
 				throw new RuntimeException(ex);
 			}
@@ -1401,8 +1433,6 @@ public class SleuthkitCase {
 				}
 				v.setParent(parent);
 				parent.accept(this);
-			} catch (SQLException ex) {
-				throw new RuntimeException(ex);
 			} catch (TskException ex) {
 				throw new RuntimeException(ex);
 			}
@@ -1421,8 +1451,6 @@ public class SleuthkitCase {
 				}
 				vs.setParent(parent);
 				parent.accept(this);
-			} catch (SQLException ex) {
-				throw new RuntimeException(ex);
 			} catch (TskException ex) {
 				throw new RuntimeException(ex);
 			}
@@ -1498,7 +1526,7 @@ public class SleuthkitCase {
 	/**
 	 * Returns the list of children for a given Image
 	 */
-	List<Content> getImageChildren(Image img) throws SQLException, TskException {
+	List<Content> getImageChildren(Image img) throws TskException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(img);
 
 		List<Content> children = new ArrayList<Content>(childInfos.size());
@@ -1520,7 +1548,7 @@ public class SleuthkitCase {
 	/**
 	 * Returns the list of children for a given VolumeSystem
 	 */
-	List<Content> getVolumeSystemChildren(VolumeSystem vs) throws SQLException, TskException {
+	List<Content> getVolumeSystemChildren(VolumeSystem vs) throws TskException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(vs);
 
 		List<Content> children = new ArrayList<Content>(childInfos.size());
@@ -1540,7 +1568,7 @@ public class SleuthkitCase {
 	/**
 	 * Returns a list of children for a given Volume
 	 */
-	List<Content> getVolumeChildren(Volume vol) throws SQLException, TskException {
+	List<Content> getVolumeChildren(Volume vol) throws TskException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(vol);
 
 		List<Content> children = new ArrayList<Content>(childInfos.size());
@@ -1559,7 +1587,7 @@ public class SleuthkitCase {
 	/**
 	 * Returns a list of children for a given file system
 	 */
-	List<Content> getFileSystemChildren(FileSystem fs) throws SQLException {
+	List<Content> getFileSystemChildren(FileSystem fs) throws TskException{
 		return getChildFsContents(fs.getId(), fs);
 	}
 
@@ -1567,24 +1595,28 @@ public class SleuthkitCase {
 	 * Returns a list of children for a given file system or directory
 	 * @param par_obj_id Parent ID
 	 */
-	List<Content> getChildFsContents(long par_obj_id, FileSystem parentFs) throws SQLException {
+	List<Content> getChildFsContents(long par_obj_id, FileSystem parentFs) throws TskException{
 		List<Content> children = new ArrayList<Content>();
 		synchronized (caseLock) {
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("select tsk_files.* from tsk_files join "
-					+ "tsk_objects on tsk_files.obj_id = tsk_objects.obj_id "
-					+ "where par_obj_id = " + par_obj_id + " order by name asc");
+			try {
+				Statement s = con.createStatement();
+				ResultSet rs = s.executeQuery("select tsk_files.* from tsk_files join "
+						+ "tsk_objects on tsk_files.obj_id = tsk_objects.obj_id "
+						+ "where par_obj_id = " + par_obj_id + " order by name asc");
 
 
-			while (rs.next()) {
-				if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
-					children.add(rsHelper.directory(rs, parentFs));
-				} else {
-					children.add(rsHelper.file(rs, parentFs));
+				while (rs.next()) {
+					if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+						children.add(rsHelper.directory(rs, parentFs));
+					} else {
+						children.add(rsHelper.file(rs, parentFs));
+					}
 				}
+				rs.close();
+				s.close();
+			} catch (SQLException ex) {
+				throw new TskException("Error getting Child FsContents.", ex);
 			}
-			rs.close();
-			s.close();
 		}
 		return children;
 	}
@@ -1592,7 +1624,7 @@ public class SleuthkitCase {
 	/**
 	 * Returns a list of children for a given directory
 	 */
-	List<Content> getDirectoryChildren(Directory dir) throws SQLException {
+	List<Content> getDirectoryChildren(Directory dir) throws TskException {
 		return getChildFsContents(dir.getId(), dir.getFileSystem());
 	}
 
@@ -1663,17 +1695,17 @@ public class SleuthkitCase {
 		ArrayList<FsContent> results = new ArrayList<FsContent>();
 
 		synchronized (caseLock) {
-			while (rs.next()) {
-				FsContent result;
-				if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
-					result = rsHelper.directory(rs, null);
-				} else {
-					result = rsHelper.file(rs, null);
+				while (rs.next()) {
+					FsContent result;
+					if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+						result = rsHelper.directory(rs, null);
+					} else {
+						result = rsHelper.file(rs, null);
+					}
+					result.accept(setParent);
+					results.add(result);
 				}
-				result.accept(setParent);
-				results.add(result);
 			}
-		}
 
 		return results;
 	}
@@ -1762,20 +1794,24 @@ public class SleuthkitCase {
 	 * @param	fsContent	The FsContent object
 	 * @param	fileKnown	The object's known status
 	 * @return				true if the known status was updated, false otherwise
-	 * @throws				SQLException
+	 * @throws				TskException
 	 */
-	public boolean setKnown(FsContent fsContent, FileKnown fileKnown) throws SQLException {
+	public boolean setKnown(FsContent fsContent, FileKnown fileKnown) throws TskException {
 		long id = fsContent.getId();
 		FileKnown currentKnown = fsContent.getKnown();
 		if (currentKnown.compareTo(fileKnown) > 0) {
 			return false;
 		}
 		synchronized (caseLock) {
-			Statement s = con.createStatement();
-			s.executeUpdate("UPDATE tsk_files "
-					+ "SET known='" + fileKnown.toLong() + "' "
-					+ "WHERE obj_id=" + id);
-			s.close();
+			try {
+				Statement s = con.createStatement();
+				s.executeUpdate("UPDATE tsk_files "
+						+ "SET known='" + fileKnown.toLong() + "' "
+						+ "WHERE obj_id=" + id);
+				s.close();
+			} catch (SQLException ex) {
+				throw new TskException("Error setting Known status.", ex);
+			}
 		}
 		return true;
 	}
@@ -1785,16 +1821,20 @@ public class SleuthkitCase {
 	 *
 	 * @param	fsContent	The FsContent object
 	 * @param	md5Hash		The object's md5Hash
-	 * @throws				SQLException
+	 * @throws				TskException
 	 */
-	void setMd5Hash(FsContent fsContent, String md5Hash) throws SQLException {
+	void setMd5Hash(FsContent fsContent, String md5Hash) throws TskException{
 		long id = fsContent.getId();
 		synchronized (caseLock) {
-			Statement s = con.createStatement();
-			s.executeUpdate("UPDATE tsk_files "
-					+ "SET md5='" + md5Hash + "' "
-					+ "WHERE obj_id=" + id);
-			s.close();
+			try {
+				Statement s = con.createStatement();
+				s.executeUpdate("UPDATE tsk_files "
+						+ "SET md5='" + md5Hash + "' "
+						+ "WHERE obj_id=" + id);
+				s.close();
+			} catch (SQLException ex) {
+				throw new TskException("Error setting MD5 hash.", ex);
+			}
 		}
 	}
 

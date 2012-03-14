@@ -203,11 +203,7 @@ public class Volume extends FileSystemParent {
 
 	@Override
 	public List<Content> getChildren() throws TskException {
-		try {
-			return db.getVolumeChildren(this);
-		} catch (SQLException ex) {
-			throw new TskException("Error while getting Volume children.", ex);
-		}
+		return db.getVolumeChildren(this);
 	}
 
 	@Override

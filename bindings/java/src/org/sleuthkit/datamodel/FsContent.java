@@ -96,11 +96,7 @@ public abstract class FsContent extends AbstractContent {
 	}
 	
 	public Directory getParentDirectory() throws TskException {
-		try {
-			return db.getParentDirectory(this);
-		} catch (SQLException ex) {
-			throw new TskException("Error getting parent directory.", ex);
-		}
+		return db.getParentDirectory(this);
 	}
 
 	/**
