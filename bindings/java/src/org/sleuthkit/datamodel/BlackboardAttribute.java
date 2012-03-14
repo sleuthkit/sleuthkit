@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.Arrays;
 
 /**
  *
