@@ -204,6 +204,7 @@ if test "x$enable_fiwalk" == xyes; then
    AC_HEADER_DIRENT
    AC_CHECK_HEADERS([ctype.h err.h stdio.h strings.h string.h stdlib.h stdint.h sys/mman.h sys/types.h sys/time.h sys/resource.h sys/signal.h inttypes.h sys/resource.h sys/utsname.h])
    AC_CHECK_HEADERS([openssl/evp.h openssl/hmac.h openssl/x509.h openssl/pem.h])
+   AC_CHECK_HEADERS([CommonCrypto/CommonDigest.h])
    AC_CHECK_HEADERS([magic.h])
    AC_CHECK_MEMBERS([struct glob_t.gl_matchc],,,[[#include <glob.h>]])
    AC_CHECK_MEMBERS([struct dirent.d_name],,,[[#include <dirent.h>]])
@@ -224,6 +225,7 @@ if test "x$enable_fiwalk" == xyes; then
       AC_CHECK_LIB([afflib],[af_open],,AC_MSG_WARN([AFFLIB not found]))
    fi
    AC_CHECK_LIB([ssl],[ssl3_new])
+   AC_CHECK_LIB([system],[CC_MD2_Init])
    AC_CHECK_LIB([crypto],[EVP_md5])
    if test "x$with_libewf" != "xno"; then
       AC_CHECK_LIB([ewf],[libewf_get_version],,AC_MSG_WARN([libewf not found; no E01 support]))
