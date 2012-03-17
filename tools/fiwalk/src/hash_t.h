@@ -260,11 +260,7 @@ public:
     void init(){
 	if(initialized==false){
 #ifdef COMMON_DIGEST_FOR_OPENSSL
-//		printf("Initalizing MD\n");				//debug
-//		int temp;								//debug
-//		temp = md_init(md);
 		md_init(md);
-//		printf("Initalizing MD %d\n", temp);	//debug
 #else
 	    EVP_MD_CTX_init(&mdctx);
 	    EVP_DigestInit_ex(&mdctx, md, NULL);
@@ -275,9 +271,7 @@ public:
 	}
     }
     void update(const uint8_t *buf,size_t bufsize){
-//	printf("In Update\n");						//debug
 	if(!initialized) init();
-//	printf("Update finished initializing\n");	//debug
 	if(finalized){
 	    std::cerr << "hashgen_t::update called after finalized\n";
 	    exit(1);
@@ -286,22 +280,9 @@ public:
 	EVP_DigestUpdate(&mdctx,buf,bufsize);
 #else;
 	MD5_CTX * temp = (MD5_CTX *)mdctx;
-//	printf("Size:\t%d\n", this->SIZE);
-//	printf("bufsize:\t%d\n", bufsize);		//debug
-//	printf("buf:\t%d\n", buf);				//debug
-//	printf("mdctx:\t%p\n", mdctx);			//debug
-//	printf("mdctx_A:\t%p\n", &temp->A);			//debug
-//	printf("mdctx_Nl Nh:\t%p,%p\n", &temp->Nl, &temp->Nh);			//debug
-//	printf("mdctx_data:\t%p\n",&temp->data);			//debug
-//	printf("mdctx_num:\t%p\n", &temp->num);			//debug
-//	printf("Doing 1st md %s\n", md);
-	md = CC_MD5(buf, bufsize, md);
-//	printf("Did 1st md %s\n", md);
-//	printf("Did 1st md \n");
-//	printf("Going to md_update\n");			//debug
-	md_update((MD5_CTX *)mdctx, buf, bufsize);
+//	md = CC_MD5(buf, bufsize, md);
+//	md_update((MD5_CTX *)mdctx, buf, bufsize);
 	md_update(mdctx, buf, bufsize);
-//	printf("Finished md_update\n");			//debug
 
 #endif
 	hashed_bytes += bufsize;
@@ -328,10 +309,10 @@ public:
 	  init();			/* do it now! */
 	}
 	hash__<T> val;
-	unsigned int len = sizeof(val.digest);
 #ifdef COMMON_DIGEST_FOR_OPENSSL
 	md_final(val.digest, mdctx);
 #else
+	unsigned int len = sizeof(val.digest);
 	EVP_DigestFinal(&mdctx,val.digest,&len);
 #endif
 	finalized = true;
