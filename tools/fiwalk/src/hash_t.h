@@ -35,8 +35,16 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <openssl/hmac.h>
-#include <openssl/evp.h>
+
+#ifdef __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1070
+ #define COMMON_DIGEST_FOR_OPENSSL
+ #include <CommonCrypto/CommonDigest.h>
+ #include <CommonCrypto/CommonHMAC.h>
+#else
+ #include <openssl/hmac.h>
+ #include <openssl/evp.h>
+#endif
+
 #include <iostream>
 
 #ifdef HAVE_SYS_MMAN_H
@@ -162,14 +170,27 @@ public:
 typedef hash__<md5_> md5_t;
 typedef hash__<sha1_> sha1_t;
 typedef hash__<sha256_> sha256_t;
-#ifdef HAVE_EVP_SHA512
+#ifdef HAVE_EVP_SHA512 || COMMON_DIGEST_FOR_OPENSSL
 typedef hash__<sha512_> sha512_t;
 #endif
 
 template<typename T> 
 class hash_generator__:T { 			/* generates the hash */
-    const EVP_MD *md;
+    unsigned int ret;
+#ifndef COMMON_DIGEST_FOR_OPENSSL
+	const EVP_MD *md;
     EVP_MD_CTX mdctx;	     /* the context for computing the value */
+#else
+	void *mdctx;
+	unsigned char *md;
+//	int (*md_update) ();
+//	md_update = MD5_Update;
+//	md_update = &SHA_Update;
+	int (*md_init)(void *);
+	int (*md_update)(void *, const void *, CC_LONG);
+	int (*md_final)(unsigned char *, void *);
+//	 int (*md_final)();
+#endif
     bool initialized;	       /* has the context been initialized? */
     bool finalized;
     /* Static function to determine if something is zero */
@@ -183,14 +204,54 @@ public:
     int64_t hashed_bytes;
     hash_generator__():initialized(false),finalized(false),hashed_bytes(0){
 	switch(this->SIZE){
+#ifdef COMMON_DIGEST_FOR_OPENSSL
+	case 16:
+		mdctx = malloc(sizeof(MD5_CTX));
+		memset(mdctx,0,sizeof(MD5_CTX));
+		md=(unsigned char *)malloc(MD5_DIGEST_LENGTH);
+		memset(md,0,MD5_DIGEST_LENGTH);
+//		int (*md_init)(MD5_CTX*) = &MD5_Init;
+//		(int (*)(MD5_CTX*))md_init  = MD5_Init;
+		md_init	 	= (int(*)(void *))&MD5_Init;
+		md_update	= (int (*)(void *, const void *, CC_LONG))&MD5_Update;
+		md_final	= (int (*)(unsigned char*, void *))&MD5_Final;
+		break;
+	case 20: 
+		mdctx = malloc(sizeof(SHA_CTX));
+		memset(mdctx,0,sizeof(SHA_CTX));
+		md=(unsigned char *)malloc(SHA_DIGEST_LENGTH);
+		memset(md,0,SHA_DIGEST_LENGTH);
+		md_init		= (int(*)(void *))&SHA1_Init;
+		md_update	= (int (*)(void *, const void *, CC_LONG))(void (*)())&SHA1_Update;
+		md_final	= (int (*)(unsigned char*, void*))&SHA1_Final;
+		break;
+	case 32: 
+		mdctx = malloc(sizeof(SHA256_CTX));
+		md=(unsigned char *)malloc(SHA256_DIGEST_LENGTH);
+		md_init		= (int(*)(void *))&SHA256_Init;
+		md_update	= (int (*)(void *, const void *, CC_LONG))(void (*)())&SHA256_Update;
+		md_final	= (int (*)(unsigned char*, void*))&SHA256_Final;
+		break;
+	case 64:
+		mdctx = malloc(sizeof(SHA512_CTX));
+		md=(unsigned char *)malloc(SHA512_DIGEST_LENGTH);
+		md_init		= (int(*)(void *))&SHA512_Init;
+		md_update	= (int (*)(void *, const void *, CC_LONG))(void (*)())&SHA512_Update;
+		md_final	= (int (*)(unsigned char*, void*))&SHA512_Final;
+		break;
+#else
 	case 16: md = EVP_md5();break;
 	case 20: md = EVP_sha1();break;
 	case 32: md = EVP_sha256();break;
 #ifdef HAVE_EVP_SHA512
 	case 64: md = EVP_sha512();break;
 #endif
+#endif
 	default:
 	    assert(0);
+#ifdef __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__
+	fprintf(stderr,"MacOSX version %d\n. Openssl evp fuctions are deprecated.\n Using CommonCrypto.",__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__);
+#endif
 	}
     }
     ~hash_generator__(){
@@ -198,25 +259,61 @@ public:
     }
     void init(){
 	if(initialized==false){
+#ifdef COMMON_DIGEST_FOR_OPENSSL
+//		printf("Initalizing MD\n");				//debug
+//		int temp;								//debug
+//		temp = md_init(md);
+		md_init(md);
+//		printf("Initalizing MD %d\n", temp);	//debug
+#else
 	    EVP_MD_CTX_init(&mdctx);
 	    EVP_DigestInit_ex(&mdctx, md, NULL);
+#endif
 	    initialized = true;
 	    finalized = false;
 	    hashed_bytes = 0;
 	}
     }
     void update(const uint8_t *buf,size_t bufsize){
+//	printf("In Update\n");						//debug
 	if(!initialized) init();
+//	printf("Update finished initializing\n");	//debug
 	if(finalized){
 	    std::cerr << "hashgen_t::update called after finalized\n";
 	    exit(1);
 	}
+#ifndef COMMON_DIGEST_FOR_OPENSSL
 	EVP_DigestUpdate(&mdctx,buf,bufsize);
+#else;
+	MD5_CTX * temp = (MD5_CTX *)mdctx;
+//	printf("Size:\t%d\n", this->SIZE);
+//	printf("bufsize:\t%d\n", bufsize);		//debug
+//	printf("buf:\t%d\n", buf);				//debug
+//	printf("mdctx:\t%p\n", mdctx);			//debug
+//	printf("mdctx_A:\t%p\n", &temp->A);			//debug
+//	printf("mdctx_Nl Nh:\t%p,%p\n", &temp->Nl, &temp->Nh);			//debug
+//	printf("mdctx_data:\t%p\n",&temp->data);			//debug
+//	printf("mdctx_num:\t%p\n", &temp->num);			//debug
+//	printf("Doing 1st md %s\n", md);
+	md = CC_MD5(buf, bufsize, md);
+//	printf("Did 1st md %s\n", md);
+//	printf("Did 1st md \n");
+//	printf("Going to md_update\n");			//debug
+	md_update((MD5_CTX *)mdctx, buf, bufsize);
+	md_update(mdctx, buf, bufsize);
+//	printf("Finished md_update\n");			//debug
+
+#endif
 	hashed_bytes += bufsize;
     }
     void release(){			/* free allocated memory */
 	if(initialized){
+#ifdef COMMON_DIGEST_FOR_OPENSSL
+		free(md);
+		free(mdctx);
+#else
 	    EVP_MD_CTX_cleanup(&mdctx);
+#endif
 	    initialized = false;
 	    hashed_bytes = 0;
 	}
@@ -232,7 +329,11 @@ public:
 	}
 	hash__<T> val;
 	unsigned int len = sizeof(val.digest);
+#ifdef COMMON_DIGEST_FOR_OPENSSL
+	md_final(val.digest, mdctx);
+#else
 	EVP_DigestFinal(&mdctx,val.digest,&len);
+#endif
 	finalized = true;
 	return val;
     }
