@@ -77,7 +77,7 @@ public:
     uint8_t digest[SIZE];
 };
 
-#ifdef HAVE_EVP_SHA512
+#ifdef HAVE_EVP_SHA512 || COMMON_DIGEST_FOR_OPENSSL
 class sha512_ {
 public:
     static const size_t SIZE=64;
@@ -260,7 +260,7 @@ public:
     void init(){
 	if(initialized==false){
 #ifdef COMMON_DIGEST_FOR_OPENSSL
-		md_init(md);
+		md_init(mdctx);
 #else
 	    EVP_MD_CTX_init(&mdctx);
 	    EVP_DigestInit_ex(&mdctx, md, NULL);
