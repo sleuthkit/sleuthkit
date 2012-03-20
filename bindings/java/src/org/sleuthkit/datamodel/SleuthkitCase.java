@@ -1900,4 +1900,19 @@ public class SleuthkitCase {
 //		}
 //		throw new TskException("Error analyzing files");
 //	}
+	
+public int countFsContentType(TskData.TSK_FS_META_TYPE_ENUM contentType)throws SQLException {
+	    int count = 0;
+		Long contentLong = contentType.getMetaType();
+	    synchronized (caseLock) {
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("select count(*) from tsk_files where meta_type = '"+ contentLong.toString() +"'");
+			while (rs.next()) {
+				count = rs.getInt("count(*)");
+			}
+			rs.close();
+			s.close();
+		}
+		return count;
+	}
 }
