@@ -1940,18 +1940,29 @@ public class SleuthkitCase {
 //		}
 //		throw new TskException("Error analyzing files");
 //	}
-	
-public int countFsContentType(TskData.TSK_FS_META_TYPE_ENUM contentType)throws SQLException {
+
+/**
+ * Return the number of objects in the database of a given file type.
+ *
+ * @param contentType Type of file to count
+ * @return Number of objects with that type.
+ * @throw  TSKException
+ */
+public int countFsContentType(TskData.TSK_FS_META_TYPE_ENUM contentType)throws TskException {
 	    int count = 0;
 		Long contentLong = contentType.getMetaType();
 	    synchronized (caseLock) {
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("select count(*) from tsk_files where meta_type = '"+ contentLong.toString() +"'");
-			while (rs.next()) {
-				count = rs.getInt("count(*)");
-			}
-			rs.close();
-			s.close();
+            try {
+			    Statement s = con.createStatement();
+			    ResultSet rs = s.executeQuery("select count(*) from tsk_files where meta_type = '"+ contentLong.toString() +"'");
+			    while (rs.next()) {
+				    count = rs.getInt("count(*)");
+			    }
+			    rs.close();
+			    s.close();
+            } catch (SQLException ex) {
+                throw new TskException("Error getting number of objects.", ex);
+            }
 		}
 		return count;
 	}
