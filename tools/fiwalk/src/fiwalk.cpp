@@ -305,6 +305,52 @@ void file_info(const string name, int64_t value)
 }
 
 /* Process a temporal value */
+void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
+{
+	char *tm_format = NULL;
+	
+	if(TSK_FS_TYPE_ISFAT(ftype))
+	{
+#ifdef _MSC_VER
+	    tm_format="%Y-%m-%dT%H:%M:%S";
+#else
+		tm_format="%FT%T";	
+#endif
+	}
+	else
+	{
+#ifdef _MSC_VER
+	    tm_format="%Y-%m-%dT%H:%M:%SZ";
+#else
+		tm_format="%FT%TZ";
+#endif
+	}
+
+    if(a) a->add_valuet(name,t0); 
+//	struct tm *temp_time = gmtime(&t0);
+    if(x){
+	char buf[32];
+	strftime(buf,sizeof(buf),tm_format,gmtime(&t0));
+	if(TSK_FS_TYPE_ISFAT(ftype))
+	{
+		if (!name.compare("atime"))
+			x->xmlout(name,buf,"prec=\"86400\"", false);
+		if (!name.compare("mtime"))
+			x->xmlout(name,buf,"prec=\"2\"", false);
+		if (!name.compare("crtime"))
+			x->xmlout(name,buf,"prec=\"0.001\"", false);
+	}
+	else
+		x->xmlout(name,buf);
+    }
+    if(t) {
+	char buf[64];
+	fprintf(t,"%s: %ld\n",name.c_str(),(long)t0);
+	strftime(buf,sizeof(buf),tm_format,gmtime(&t0));
+	fprintf(t,"%s_txt: %s\n",name.c_str(),buf);
+    }
+}
+
 void file_infot(const string name,time_t t0)
 {
 #ifdef _MSC_VER
