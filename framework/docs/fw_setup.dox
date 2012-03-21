@@ -8,29 +8,36 @@ This part of the document outlines how to get the infrastructure in place for an
 
 One of the design goals of the framework is to minimize the setup that you need to do.  This section outlines the minimal set of setup steps to take.  If the default settings do not meet your needs, you'll need to jump to the \ref fw_setup_adv section.
 
+\subsection fw_setup_min_serv Services
 
-Database - reqs location
+The framework depends on a set of services to be setup.  Some of
+the services will default to a basic implementation if one has not
+been configured, but others require that a service be setup and
+registered.  Review the \ref mod_stuff_services section to get the
+basic idea of services.
+
+The following services must be setup before the library can analyze data:
+- Database: An instance of TskImgDB must be created and registered with TskServices.  The framework comes with a basic SQLite implementation, but you must first create it and specify where you want to store the database.
+- Scheduler: An instance of TskScheduler must be created.  Methods for getting tasks out of the scheduler will depend on the implementation and design of the scheduler, so it is up to the user of the library to create the instance and make sure that the tasks are retrieved from it.  The framework comes with a basic queue implementation. 
+
+/* @@@ Review this in future because it could default to ImgDB */
+- Blackboard: An instance of the TskBlackBoard must be created.  Currently, the only implementation is TskDBBlackBoard that writes the blackboard contents to TskImgDB. 
+
+- Image File: An instance of TskImageFile must be created if the analysis will deal with disk image files.  TskImageFileTsk is the Sleuth Kit-based implementation of TskImageFile. 
 
 
-Scheduler - reqs system-dependent way of getting jobs out or make generic method that can get tasks out if they were not already handled. 
+\subsection fw_setup_min_prop System Properties
+There are some settings in TskSystemProperties that must be set.  Note that TskSystemProperties is one of the advanced services that will have a default implementation that is created if one has not be explicitly created and registered.  Ensure that before any settings are set, that you register an instance of TskSystemProperties if you do not want the default. 
 
-
-Blackboard - no good reason... DB could be made default, but check with Anthony's new code first.
-
-ImageFile - reqs image file -- req'd if disk images are used. 
-
-
-SETTINGS:
-- OutDirPath
+- Output Directory: TskSystemProperties.OUT_DIR must be set with the location of a shared output folder. 
 
 
 \section fw_setup_adv Advanced Setup
 
-SystemPropertiesImpl....
-Log
+Some of the services have default configurations that will be created as needed if a specific instance is not created and registered.   Those are described in this section. 
 
-\section fw_setup_imgdb Image Database
-
+- System Properties: The TskSystemProperties interface can serve two purposes.  One is a run-time service that provides name and value pairs for system settings.  The other purpose is to store those settings in a local file that can be read and loaded each time.  The values returned by TskSystemProperties can seamlessly come from either a local file or be memory-based and set by another object.  The default instance created is a memory-based one.  But, there is also a TskSystemPropertiesImpl class that can load an XML file.
+- Log: The Log interface allows messages from the framework and modules to go to a single location.  If a specific instance is not set, messages will be sent to STDERR.  Otherwise, Log can be explicitly created with a path to where a log file should be created. 
 
 
 */
