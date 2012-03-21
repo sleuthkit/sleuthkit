@@ -114,7 +114,10 @@ public:
 
     virtual int addUnusedSectors(int unallocImgId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList);
     virtual int getUnusedSector(uint64_t fileId, TskUnusedSectorsRecord & unusedSectorsRecord) const;
-    friend class TskDBBlackboard;
+
+	virtual std::string quote(const std::string str) const;
+
+	friend class TskDBBlackboard;
 
 protected:
     // Blackboard methods.

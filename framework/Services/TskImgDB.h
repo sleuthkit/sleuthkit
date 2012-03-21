@@ -321,6 +321,9 @@ public:
     virtual int addUnusedSectors(int unallocImgId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList) = 0;
     virtual int getUnusedSector(uint64_t fileId, TskUnusedSectorsRecord & unusedSectorsRecord) const = 0;
 
+	// Quote and escape a string, the returned quoted string can be used as string literal in SQL statement.
+	virtual std::string quote(const std::string str) const = 0;
+
     friend class TskDBBlackboard;
 
 protected:

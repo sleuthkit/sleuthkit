@@ -3462,3 +3462,11 @@ vector<int> TskImgDBSqlite::findAttributeTypes(int artifactTypeId){
     }
     return attrTypes;
 }
+
+std::string TskImgDBSqlite::quote(const std::string str) const
+{
+    char *item = sqlite3_mprintf("%Q", str.c_str());
+	std::string returnStr(item);
+    sqlite3_free(item);
+	return returnStr;
+}
