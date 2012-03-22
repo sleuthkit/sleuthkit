@@ -338,7 +338,7 @@ void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
 		if (!name.compare("mtime"))
 			x->xmlout(name,buf,"prec=\"2\"", false);
 		if (!name.compare("crtime"))
-			x->xmlout(name,buf,"prec=\"0.001\"", false);
+			x->xmlout(name,buf,"prec=\"2\"", false);
 	}
 	else
 		x->xmlout(name,buf);
