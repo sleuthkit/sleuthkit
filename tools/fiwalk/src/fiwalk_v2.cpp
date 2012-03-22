@@ -1,0 +1,677 @@
+/**
+ * fiwalk.cpp:
+ * File and Inode Walk.
+ *
+ * This application uses SleuthKit to generate a report of all of the files
+ * and orphaned inodes found in a disk image. It can optionally compute the
+ * MD5 of any objects, save those objects into a directory, or both.
+ *
+ * Algorithm:
+ * 1 - Find all of the partitions on the disk. 
+ * 2 - For each partition, walk the files.
+ * 3 - For each file, print the requested information.
+ * 4 - For each partition, walk the indoes
+ * 5 - For each inode, print the requested information.
+ *
+ * @author Simson Garfinkel
+ *
+ *
+ * The software provided here is released by the Naval Postgraduate
+ * School, an agency of the U.S. Department of Navy.  The software
+ * bears no warranty, either expressed or implied. NPS does not assume
+ * legal liability nor responsibility for a User's use of the software
+ * or the results of such use.
+ *
+ * Please note that within the United States, copyright protection,
+ * under Section 105 of the United States Code, Title 17, is not
+ * available for any work of the United States Government and/or for
+ * any works created by United States Government employees. User
+ * acknowledges that this software contains work which was created by
+ * NPS government employees and is therefore in the public domain and
+ * not subject to copyright.
+ */
+
+
+/* config.h must be first */
+#include "config.h"
+#include "fiwalk.h"
+
+/* Bring in our headers */
+#include "arff.h"
+#include "plugin.h"
+
+#include "utils.h"
+
+/* Output Devices */
+class arff *a = 0;			// ARFF generator
+class xml  *x = 0;
+FILE  *t = 0;				// text output or body file enabled
+
+/* Configurable options */
+
+/* Runtime options */
+string save_outdir = ".";
+int  opt_debug    = 0;
+int  opt_maxgig   = 2;
+bool opt_mactime  = false;
+bool opt_md5      = true;		// calculate the MD5 for every file?
+bool opt_sha1     = true;		// calculate the SHA1 for every file?
+bool opt_save     = false;
+bool opt_get_fragments = false;
+bool opt_no_data  = false;		// don't get the data
+bool opt_allocated_only = false;
+bool opt_body_file = false;
+bool opt_ignore_ntfs_system_files = false;
+
+const char *config_file = 0;
+int  file_count_max = 0;
+int  file_count = 0;
+int  next_id = 1;
+
+int  opt_M = 30;
+int  opt_k = 4;
+
+
+/* Sector hash bloom calculations */
+u_int	sectorhash_size=512;
+bool	opt_compute_sector_hashes = false;
+bool	opt_print_sector_hashes = false;
+NSRLBloom *sector_bloom = 0;
+
+namelist_t namelist;		// names of files that we want to find
+
+bool opt_magic = false;		// don't get the output of the file command
+
+
+
+/****************************************************************
+ ** Current information.
+ ****************************************************************/
+int      current_partition_num=0;
+int64_t  current_partition_start=0;	// in bytes
+
+/* Individual 'state' variables */
+string  plugin_filename;
+
+void print_version()
+{
+    printf("FIWalk Version:    %s\n",PACKAGE_VERSION);
+    printf("SleuthKit Version: %s\n",tsk_version_get_str());
+#ifdef HAVE_LIBAFFLIB
+    printf("AFFLIB Version:    %s\n",af_version());
+#else
+    printf("*** NO AFFLIB SUPPORT ***\n");
+#endif    
+#ifdef HAVE_LIBEWF
+    printf("LIBEWF Version:    %s\n",libewf_get_version());
+#else
+    printf("*** NO LIBEWF SUPPORT ***\n");
+#endif
+    
+}
+
+void usage()
+{
+    printf("usage: fiwalk [options] iso-name\n");
+    printf("Default behavior: Just print the file system statistics and exit.\n");
+    printf("options:\n");
+    printf("    -c config.txt   read config.txt for metadata extraction tools\n");
+    printf("    -C nn           only process nn files, then do a clean exit\n"); 
+    printf("    -u              Guess at usernames based on filenames, mode, or UIDs\n");
+    
+    printf("\n");
+    printf("include/exclude parameters; may be repeated. \n");
+    printf("    -n pattern  = only match files for which the filename matches\n");
+    printf("                  the pattern.\n");
+    printf("              example: -n .jpeg -n .jpg will find all JPEG files\n");
+    printf("              Case is ignored. Will not match orphan files.\n");
+    printf("    ");
+    printf("\n");
+    printf("Ways to make this program run faster:\n");
+    printf("    -I ignore NTFS system files\n");
+    printf("    -g just report the file fragments - don't get the data\n");
+    printf("    -O only walk allocated files\n");
+    printf("    -z do not calculate MD5 or SHA1 values\n");
+    printf("    -Gnn - Only process the contents of files smaller than nn gigabytes (default %d)\n",
+	   opt_maxgig);
+    printf("           (Specify -G0 to remove space restrictions)\n");
+
+    printf("\n");
+    printf("Ways to make this program run slower:\n");
+    printf("    -M = Report MD5 for each file (default on)\n");
+    printf("    -1 = Report SHA1 for each file (default on)\n");
+#ifdef HAVE_LIBMAGIC
+    printf("    -f = Enable LIBMAGIC (disabled by default)");
+#else
+    printf("    -f = Report the output of the 'file' command for each\n");
+#endif
+    //printf("Full content options:\n");
+    //printf("    -s <dir> = Save all recovered files to <dir>\n");
+    printf("\n");
+    printf("Output options:\n");
+    printf("    -m = Output in SleuthKit 'Body file' format\n");
+    printf("    -A<file> = ARFF output to <file>\n");
+    printf("    -X<file> = XML output to a <file> (full DTD)\n");
+    printf("         -X0 = Write output to filename.xml\n");
+    printf("    -Z       = zap (erase) the output file\n");
+    printf("    -x       = XML output to stdout (no DTD)\n");
+    printf("    -T<file> = Walkfile output to <file>\n");
+    printf("    -a <audit.txt> = Read the scalpel audit.txt file\n");
+    printf("\n");
+    printf("Sector hash:\n");
+    printf("    -E             = Print sector hashes\n");
+    printf("    -Snnn          = Specify sector hash size; default is %d\n",sectorhash_size);
+    printf("    -B<file>       = output sector hash bloom filter to <file>; M=%d k=%d\n",opt_M,opt_k);
+    
+    printf("Misc:\n");
+    printf("    -d = debug this program\n");
+    printf("    -v = Enable SleuthKit verbose flag\n");
+    printf("\n");
+    print_version();
+    exit(1);
+}
+
+/****************************************************************
+ ** Support routines 
+ ****************************************************************/
+static const char *cstr(const string &str){
+    return str.c_str();
+}
+
+static string empty("");
+
+
+/****************************************************************
+ ** XML output
+ ****************************************************************/
+
+/****************************************************************
+ ** Metadata Output
+ ****************************************************************/
+
+/**
+ * output a comment in the current file format
+ */
+void comment(const char *format,...)
+{
+    char buf[1024];
+    va_list ap;
+    va_start(ap, format);
+    vsnprintf(buf,sizeof(buf),format,ap);
+    va_end(ap);
+
+    if(t) fprintf(t,"# %s\n",buf);
+    if(x) x->xmlcomment(buf);
+    if(a) a->add_comment(buf);
+}
+
+/**
+ * output a name/format/value for the current partition.
+ * This information is simply printed as comments for ARFF files.
+ *
+ * @param name - the name of the thing being output
+ * @param format - the format for the thing
+ * @param ... - the value
+ * This will output as a comment in the ARFF file
+ */
+void partition_info(const string &name,const string &value,const string &attribute)
+{
+
+    if(name.find(" ")<0) err(1,"partition_info(%s) has a space in it",cstr(name));
+    if(a) a->add_comment(name + ": " + value);
+    if(t && !opt_body_file) fputs(cstr(name + ": " + value + "\n"),t);
+    if(x) x->xmlout(name,value,attribute,true);
+}
+
+void partition_info(const string &name,const string &value)
+{
+    partition_info(name,value,empty);
+}
+
+void partition_info(const string &name,long i)
+{
+    char buf[1024];
+    sprintf(buf,"%ld",i);
+    partition_info(name,buf,empty);
+}
+
+
+/****************************************************************
+ * These file_info(name,value) are called for each extracted attribute
+ * for each file.  Some of the class are made by metadata extraction
+ * in this module; others are called from the plugin system.
+ */
+void file_info_xml(const string &name,const string &value)
+{
+    if(x){
+	x->push(name);
+	x->puts(value);
+	x->pop();
+    }
+}
+
+/* Process a string value */
+void file_info(const string &name,const string &value)
+{
+    if(a) a->add_value(name,value); 
+    if(t && !opt_body_file) fputs(cstr(name + ": " + value + "\n"),t); 
+    if(x) x->xmlout(name,value); 
+}
+
+/* this file_info is for sending through a hash. */
+void file_info(const md5_t &h)
+{
+    if(a) a->add_value("md5",h.hexdigest());
+    if(t && !opt_body_file) fputs(cstr("md5: " + h.hexdigest() + "\n"),t);
+    if(x) x->xmlout("hashdigest",h.hexdigest(),"type='md5'",false);
+}
+
+void file_info(const sha1_t &h)
+{
+    if(a) a->add_value("sha1",h.hexdigest());
+    if(t && !opt_body_file) fputs(cstr("sha1: " + h.hexdigest() + "\n"),t);
+    if(x) x->xmlout("hashdigest",h.hexdigest(),"type='sha1'",false);
+}
+
+void file_info(const sha256_t &h)
+{
+    if(a) a->add_value("sha256",h.hexdigest());
+    if(t && !opt_body_file) fputs(cstr("sha256: " + h.hexdigest() + "\n"),t);
+    if(x) x->xmlout("hashdigest",h.hexdigest(),"type='sha256'",false);
+}
+
+
+/* Process a numeric value */
+void file_info(const string name, int64_t value)
+{
+    if(a) a->add_value(name,value); 
+    if(t || x){
+	if(t) fprintf(t,"%s: %"PRId64"\n",cstr(name),value);
+	if(x) x->xmlprintf(name,"","%"PRId64,value);
+    }
+}
+
+/* Process a temporal value */
+void file_infot(const string name,time_t t0)
+{
+    if(a) a->add_valuet(name,t0); 
+    if(x){
+	char buf[32];
+	strftime(buf,sizeof(buf),"%FT%TZ",gmtime(&t0));
+	x->xmlout(name,buf);
+    }
+    if(t) {
+	char buf[64];
+	fprintf(t,"%s: %ld\n",name.c_str(),(long)t0);
+	strftime(buf,sizeof(buf),"%FT%TZ",gmtime(&t0));
+	fprintf(t,"%s_txt: %s\n",name.c_str(),buf);
+    }
+}
+
+/****************************************************************/
+string mytime()
+{
+    time_t t = time(0);
+    char *buf = ctime(&t);
+    buf[24] = 0;
+    return string(buf);
+}
+
+bool has_unprintable(const u_char *buf,int buflen)
+{
+    while(buflen>0){
+	if(!isprint(*buf)) return true;
+	buf++;
+	buflen--;
+    }
+    return false;
+}
+
+void sig_info(int arg)
+{
+    if(a){
+	printf("a=%p\n",a);
+	printf("\n");
+    }
+}
+
+
+#if defined(HAVE_LIBAFFLIB) && defined(HAVE_AF_DISPLAY_AS_QUAD)
+static const char *quads[] = {
+    AF_IMAGESIZE,
+    AF_BADSECTORS,
+    AF_BLANKSECTORS,
+    AF_DEVICE_SECTORS,
+    0
+};
+
+
+int af_display_as_quad(const char *segname)
+{
+    for(int i=0;quads[i];i++){
+	if(strcmp(segname,quads[i])==0) return true;
+    }
+    return false;
+}
+
+
+int af_display_as_hex(const char *segname)
+{
+    if(strcmp(segname,AF_MD5)==0) return 1;
+    if(strcmp(segname,AF_SHA1)==0) return 1;
+    if(strcmp(segname,AF_SHA256)==0) return 1;
+    if(strcmp(segname,AF_IMAGE_GID)==0) return 1;
+    return 0;
+}
+#endif
+
+
+int main(int argc, char * const *argv)
+{
+    int ch;
+    extern int optind;
+    const char *arff_fn = 0;
+    const char *text_fn = 0;
+    string *xml_fn = 0;
+    const char *audit_file = 0;
+    bool opt_x = false;
+    string command_line = xml::make_command_line(argc,argv);
+    bool opt_zap = false;
+    u_int sector_size=512;			// defaults to 512; may be changed by AFF
+
+    int t0 = time(0);
+
+    while ((ch = getopt(argc, argv, "A:a:B:C:dEfG:gmv1IMX:S:T:VZn:c:b:xOzh")) > 0) { // s: removed
+	switch (ch) {
+	case '1': opt_sha1++;break;
+	case 'm':
+	    opt_body_file = 1;
+	    opt_sha1 = 0;
+	    opt_md5  = 1;
+	    t = stdout;
+	    break;
+	case 'A': arff_fn = optarg;break;
+	case 'B': 
+	    opt_compute_sector_hashes=true;
+	    sector_bloom = new NSRLBloom();
+	    if(sector_bloom->create(optarg,160,30,4,"Sector hash")){
+		err(1,"%s",optarg);
+	    }
+	    break;
+	case 'C': file_count_max = atoi(optarg);break;
+	case 'd': opt_debug++; break;
+	case 'E':
+	    opt_print_sector_hashes = true;
+	    opt_compute_sector_hashes=true;
+	    break;
+	case 'f': opt_magic = true;break;
+	case 'g': opt_no_data++; break;
+	case 'G': opt_maxgig = atoi(optarg);break;
+	case 'I': opt_ignore_ntfs_system_files=true;break;
+	case 'M': opt_md5++; break;
+	case 'O': opt_allocated_only=true; break;
+	case 'S': sectorhash_size = atoi(optarg); break;
+	case 'T': text_fn = optarg;break;
+	case 'V': print_version();exit(0);
+	case 'X': xml_fn = new string(optarg);break;
+
+	case 'x': opt_x = true;break;
+	case 'Z': opt_zap = true;break;
+	case 'a': audit_file = optarg;break;
+	case 'c': config_file = optarg; break;
+	case 'n': namelist.push_back(optarg);break;
+	    //case 's': save_outdir = optarg; opt_save = true; break;
+	case 'v': tsk_verbose++; break; 			// sleuthkit option
+	case 'z': opt_sha1=false;opt_md5=false;break;
+	case 'h':
+	case '?':
+	default:
+	    fprintf(stderr, "Invalid argument: %s\n", argv[optind]);
+	    usage();
+	}
+    }
+
+    if (optind >= argc) usage();
+    argc -= optind;
+    argv += optind;
+
+    const char *filename = argv[0];
+    if(!filename){
+	errx(1,"must provide filename");
+    }
+
+    if(opt_save){
+	if(access(save_outdir.c_str(),F_OK)){
+	    #ifdef WIN32
+	    if(mkdir(save_outdir.c_str())) {
+	    #else
+	    if(mkdir(save_outdir.c_str(),0777)){
+	    #endif
+		err(1,"Cannot make directory: %s",save_outdir.c_str());
+	    }
+	}
+	if(access(save_outdir.c_str(),R_OK)){
+	    err(1,"Cannot access directory: %s",save_outdir.c_str());
+	}
+    }
+
+    if(text_fn){
+	if(access(text_fn,F_OK)==0) errx(1,"%s: file exists",text_fn);
+	t = fopen(text_fn,"w");
+	if(!t) err(1,"%s",text_fn);
+    }
+
+    if(arff_fn){
+	if(access(arff_fn,F_OK)==0) errx(1,"%s: file exists",arff_fn);
+	a = new arff("fiwalk");		// the ARFF output object
+	a->set_outfile(arff_fn);
+    }
+
+    /* XML initialization */
+
+    if(opt_x){
+	x = new xml();			// default to stdout
+    }
+    if(xml_fn){
+	if(*xml_fn == "0"){
+	    string newfn = filename;
+	    *xml_fn = newfn.substr(0,newfn.rfind(".")) + ".xml";
+	}
+	if(x) errx(1,"Cannot write XML to stdout and file at same time\n");
+	if(access(xml_fn->c_str(),F_OK)==0){
+	    if(opt_zap){
+		if(unlink(xml_fn->c_str())){
+		    err(1,"%s: file exists and cannot unlink",xml_fn->c_str());
+		}
+	    }
+	    else{
+		errx(1,"%s: file exists",xml_fn->c_str());
+	    }
+	}
+	x = new xml(*xml_fn,true);	// we will make DTD going to a file
+    }
+	
+    /* If no output file has been specified, output text to stdout */
+    if(a==0 && x==0 && t==0){
+	t = stdout;
+    }
+
+    if(strstr(filename,".aff") || strstr(filename,".afd") || strstr(filename,".afm")){
+#ifndef HAVE_LIBAFFLIB
+	fprintf(stderr,"ERROR: fiwalk was compiled without AFF support.\n");
+	exit(0);
+#else
+#if 0
+	if((tsk_img_type_supported() & TSK_IMG_TYPE_AFF_AFF)==0){
+	    fprintf(stderr,"ERROR: fiwalk was compiled with AFF support but the TSK library is not.\n");
+	    fprintf(stderr,"tsk_img_type_supported=0x%x\n",tsk_img_type_supported());
+	    exit(0);
+	}
+#endif
+#endif
+    }
+
+    /* If we are outputing ARFF, create the ARFF object and set the file types for the file system metadata */
+    if(a){
+	a->add_attribute("id",arff::NUMERIC);
+	a->add_attribute("partition",arff::NUMERIC);
+	a->add_attribute("filesize",arff::NUMERIC);
+	a->add_attribute("mtime",arff::DATE);
+	a->add_attribute("ctime",arff::DATE);
+	a->add_attribute("atime",arff::DATE);
+	a->add_attribute("fragments",arff::NUMERIC);
+	a->add_attribute("frag1startsector",arff::NUMERIC);
+	a->add_attribute("frag2startsector",arff::NUMERIC);
+	a->add_attribute("filename",arff::STRING);
+	if(opt_md5) a->add_attribute("md5",arff::STRING);
+	if(opt_sha1) a->add_attribute("sha1",arff::STRING);
+    }
+
+    /* output per-run metadata for XML output */
+    if(x){
+	/* Output Dublin Core information */
+	x->push("dfxml","version='1.0'");
+	x->push("metadata",
+		"\n  xmlns='http://www.forensicswiki.org/wiki/Category:Digital_Forensics_XML'"
+		"\n  xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
+		"\n  xmlns:dc='http://purl.org/dc/elements/1.1/'" );
+	x->xmlout("dc:type","Disk Image",empty,false);
+	x->pop();
+	    
+	/* Output carver information per photorec standard */
+	x->add_DFXML_creator(PACKAGE,PACKAGE_VERSION,command_line);
+    }
+
+    /* Can't use comment until after here... */
+    if(config_file){
+	comment("Reading configuration file %s",config_file);
+	config_read(config_file);    /* Read the configuration file */
+    }
+
+    /* Check that we have a valid file format */
+    if(x) x->push("source");
+    partition_info("image_filename",filename);
+
+    if(!x){
+	partition_info("fiwalk_version",PACKAGE_VERSION);
+	partition_info("start_time",mytime());
+	partition_info("tsk_version",tsk_version_get_str());
+    }
+    if(x) x->pop();
+
+    if (opt_debug) printf("calling tsk_img_open(%s)\n",filename);
+
+#if defined(HAVE_LIBAFFLIB)
+    /* Get all of the AFF metadata and put into the XML file... */
+    if(af_identify_file_type(filename,1)==AF_IDENTIFY_AFF ||
+       af_identify_file_type(filename,1)==AF_IDENTIFY_AFD ||
+       af_identify_file_type(filename,1)==AF_IDENTIFY_AFM){
+	AFFILE *af = af_open(filename,0,O_RDONLY);
+	if(!af) af_err(1,"af_open(%s)",filename);
+    
+	if(!x) partition_info("aff_version",af_version());
+
+	aff::seglist sl(af);
+
+	for(aff::seglist::const_iterator seg = sl.begin();seg != sl.end(); seg++){
+	    uint32_t arg;
+	    size_t datalen = 0;
+	    char hashname[256];			// 
+	
+	    char *segname = strdup(seg->name.c_str());
+
+	    if(segname[0]==0) continue;	// skip this segment
+	    if(af_segname_page_number(segname)!=-1) continue; // don't get the data pages
+	    if(af_segname_hash_page_number(segname,hashname,sizeof(hashname))!=-1) continue; // don't do hash pages
+	    if(af_is_signature_segment(segname)) continue; // don't do signature segments
+	    if(datalen>65536) continue;	// don't include segments larger than this
+	    /* Now get the data */
+	    u_char *data = (u_char *)malloc(datalen+1);
+	    if(af_get_seg(af,segname,&arg,data,&datalen)){
+		free(data);
+		continue;			// shouldn't have had an error getting it...?
+	    }
+	    data[datalen] = 0;
+
+	    /* Clean the segment name for XML conformance */
+	    for(char *cc=segname;*cc;cc++){
+		if(!isalnum(*cc)) *cc='_';
+	    }
+
+	    /* Now figure out how to code the XML */
+	    if(datalen==0){
+		partition_info(segname,arg);
+	    } else if(af_display_as_quad(segname)){
+		char display[20];
+		int64_t quad;
+		af_get_segq(af,segname,&quad);
+		snprintf(display,sizeof(display),"%"PRId64,quad);
+		partition_info(segname,quad);
+	    } else if(af_display_as_hex(segname)){
+		int bhexsize = datalen*2+2;
+		char *bhexbuf = (char *)calloc(bhexsize,1);
+		partition_info(segname,af_hexbuf(bhexbuf,bhexsize,data,datalen,AF_HEXBUF_NO_SPACES),"coding='base16'");
+		free(bhexbuf);
+	    } else if(has_unprintable(data,datalen)){
+		int  b64size = datalen*2+2;
+		char *b64buf = (char *)calloc(b64size,1);
+		b64_ntop(data,datalen,b64buf,b64size);
+		partition_info(segname,b64buf,"coding='base64'");
+		free(b64buf);
+	    } else{
+		partition_info(string(segname),string((const char *)data));
+	    }
+	    free(data);
+	    free(segname);
+	}
+	if(af_get_sectorsize(af)>0){
+	    sector_size = af_get_sectorsize(af);
+	}
+	af_close(af);
+    }
+#endif    
+
+#ifdef SIGINFO
+    signal(SIGINFO,sig_info);
+#endif
+    int count = process_image_file(argc,argv,audit_file,sector_size);
+    if(count<=0 || sector_size!=512){
+	comment("Retrying with 512 byte sector size.");
+	count = process_image_file(argc,argv,audit_file,512);
+    }
+
+    int t1 = time(0);
+    comment("clock: %d",t1-t0);
+#ifdef HAVE_GETRUSAGE
+    /* Print usage information */
+    struct rusage ru;
+    memset(&ru,0,sizeof(ru));
+    if(getrusage(RUSAGE_SELF,&ru)==0){
+	if(x) x->push("runstats");
+	partition_info("user_seconds",ru.ru_utime.tv_sec);
+	partition_info("system_seconds",ru.ru_stime.tv_sec);
+	partition_info("maxrss",ru.ru_maxrss);
+	partition_info("reclaims",ru.ru_minflt);
+	partition_info("faults",ru.ru_majflt);
+	partition_info("swaps",ru.ru_nswap);
+	partition_info("inputs",ru.ru_inblock);
+	partition_info("outputs",ru.ru_oublock);
+	partition_info("stop_time",cstr(mytime()));
+	if(x) x->pop();
+    }
+#endif
+
+    // *** Added <finished time="(time_t)" duration="<seconds>" />
+
+    if(a){
+	a->write();
+	delete a;
+    }
+    if(t) comment("=EOF=");
+    if(x) {
+	x->pop();			// <dfxml>
+	x->close();
+	delete x;
+    }
+    exit(0);
+}

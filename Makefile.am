@@ -28,6 +28,12 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     win32/libautotools/libautotools.vcproj  \
     win32/posix-sample/posix-sample.vcproj \
     win32/callback-sample/callback-sample.vcproj \
+    win32/callback-cpp-sample/callback-cpp-sample.vcproj \
+    win32/regex-0_12/regex-0_12.vcproj \
+    win32/fiwalk/fiwalk.vcproj \
+    win32/posix-cpp-sample/posix-cpp-sample.vcproj \
+    win32/libtsk/libtsk.vcproj \
+    win32/tsk_jni/tsk_jni.vcproj \
     bindings/java/README.txt \
     bindings/java/build.xml \
     bindings/java/src/org/sleuthkit/datamodel/AbstractContent.java \

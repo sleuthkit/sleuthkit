@@ -1,5 +1,11 @@
 /* tsk3/tsk_config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* AFFLIB rejects uint32_t */
+#undef AFFLIB_OBSOLETE
+
+/* Define if fiwalk will not be built */
+#undef BUILD_FIWALK
+
 /* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
    systems. This function is required for `alloca.c' support on those systems.
    */
@@ -8,8 +14,20 @@
 /* Define to 1 if using `alloca.c'. */
 #undef C_ALLOCA
 
+/* name of fiwalk subpackage */
+#undef FIWALK_PACKAGE
+
+/* version of fiwalk subpackage */
+#undef FIWALK_VERSION
+
 /* Define to 1 if you have the <afflib/afflib.h> header file. */
 #undef HAVE_AFFLIB_AFFLIB_H
+
+/* Define to 1 if you have the `af_display_as_hex' function. */
+#undef HAVE_AF_DISPLAY_AS_HEX
+
+/* Define to 1 if you have the `af_display_as_quad' function. */
+#undef HAVE_AF_DISPLAY_AS_QUAD
 
 /* Define to 1 if you have `alloca', as a function or macro. */
 #undef HAVE_ALLOCA
@@ -18,20 +36,48 @@
    */
 #undef HAVE_ALLOCA_H
 
+/* Define to 1 if you have the <ctype.h> header file. */
+#undef HAVE_CTYPE_H
+
+/* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
+   */
+#undef HAVE_DIRENT_H
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
 /* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
 #undef HAVE_DOPRNT
 
+/* Define to 1 if you have the `err' function. */
+#undef HAVE_ERR
+
+/* Define to 1 if you have the `errx' function. */
+#undef HAVE_ERRX
+
+/* Define to 1 if you have the <err.h> header file. */
+#undef HAVE_ERR_H
+
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
+
+/* Define to 1 if you have the `getrusage' function. */
+#undef HAVE_GETRUSAGE
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the `ishexnumber' function. */
+#undef HAVE_ISHEXNUMBER
+
 /* Define to 1 if you have the `afflib' library (-lafflib). */
 #undef HAVE_LIBAFFLIB
+
+/* Define to 1 if you have the `crypto' library (-lcrypto). */
+#undef HAVE_LIBCRYPTO
+
+/* Define to 1 if you have the `dl' library (-ldl). */
+#undef HAVE_LIBDL
 
 /* Define to 1 if you have the `ewf' library (-lewf). */
 #undef HAVE_LIBEWF
@@ -39,19 +85,60 @@
 /* Define to 1 if you have the <libewf.h> header file. */
 #undef HAVE_LIBEWF_H
 
+/* Define to 1 if you have the `magic' library (-lmagic). */
+#undef HAVE_LIBMAGIC
+
+/* Define to 1 if you have the `regex' library (-lregex). */
+#undef HAVE_LIBREGEX
+
+/* Define to 1 if you have the `ssl' library (-lssl). */
+#undef HAVE_LIBSSL
+
+/* Define to 1 if you have the `z' library (-lz). */
+#undef HAVE_LIBZ
+
 /* Define to 1 if `lstat' has the bug that it succeeds when given the
    zero-length file name argument. */
 #undef HAVE_LSTAT_EMPTY_STRING_BUG
 
+/* Define to 1 if you have the <magic.h> header file. */
+#undef HAVE_MAGIC_H
+
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the `mmap' function. */
+#undef HAVE_MMAP
+
+/* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
+#undef HAVE_NDIR_H
+
+/* Define to 1 if you have the <openssl/evp.h> header file. */
+#undef HAVE_OPENSSL_EVP_H
+
+/* Define to 1 if you have the <openssl/hmac.h> header file. */
+#undef HAVE_OPENSSL_HMAC_H
+
+/* Define to 1 if you have the <openssl/pem.h> header file. */
+#undef HAVE_OPENSSL_PEM_H
+
+/* Define to 1 if you have the <openssl/x509.h> header file. */
+#undef HAVE_OPENSSL_X509_H
+
+/* Define to 1 if you have the `pread' function. */
+#undef HAVE_PREAD
+
+/* Define to 1 if you have the `pread64' function. */
+#undef HAVE_PREAD64
+
+/* Define to 1 if you have the `printf' function. */
+#undef HAVE_PRINTF
 
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
 
-/* Define to 1 if your system has a GNU libc compatible `realloc' function,
-   and to 0 otherwise. */
-#undef HAVE_REALLOC
+/* Define to 1 if you have the <pthread.h> header file. */
+#undef HAVE_PTHREAD_H
 
 /* Define to 1 if stdbool.h conforms to C99. */
 #undef HAVE_STDBOOL_H
@@ -59,8 +146,14 @@
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
 
+/* Define to 1 if you have the <stdio.h> header file. */
+#undef HAVE_STDIO_H
+
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the `strcasestr' function. */
+#undef HAVE_STRCASESTR
 
 /* Define to 1 if you have the <strings.h> header file. */
 #undef HAVE_STRINGS_H
@@ -68,11 +161,37 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define to 1 if `d_name' is a member of `struct dirent'. */
+#undef HAVE_STRUCT_DIRENT_D_NAME
+
+/* Define to 1 if `d_namlen' is a member of `struct dirent'. */
+#undef HAVE_STRUCT_DIRENT_D_NAMLEN
+
+/* Define to 1 if `gl_matchc' is a member of `struct glob_t'. */
+#undef HAVE_STRUCT_GLOB_T_GL_MATCHC
+
+/* Define to 1 if you have the <sys/dir.h> header file, and it defines `DIR'.
+   */
+#undef HAVE_SYS_DIR_H
+
+/* Define to 1 if you have the <sys/mman.h> header file. */
+#undef HAVE_SYS_MMAN_H
+
+/* Define to 1 if you have the <sys/ndir.h> header file, and it defines `DIR'.
+   */
+#undef HAVE_SYS_NDIR_H
+
 /* Define to 1 if you have the <sys/param.h> header file. */
 #undef HAVE_SYS_PARAM_H
 
+/* Define to 1 if you have the <sys/resource.h> header file. */
+#undef HAVE_SYS_RESOURCE_H
+
 /* Define to 1 if you have the <sys/select.h> header file. */
 #undef HAVE_SYS_SELECT_H
+
+/* Define to 1 if you have the <sys/signal.h> header file. */
+#undef HAVE_SYS_SIGNAL_H
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
 #undef HAVE_SYS_SOCKET_H
@@ -80,10 +199,22 @@
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
 
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
-/* Define to 1 if you have the <unistd.h> header file. */
+/* Define to 1 if you have the <sys/utsname.h> header file. */
+#undef HAVE_SYS_UTSNAME_H
+
+/* Define to 1 if you have the `tsk_fs_meta_make_ls' function. */
+#undef HAVE_TSK_FS_META_MAKE_LS
+
+/* Description */
+#undef HAVE_TSK_IMG_INFO_SECTOR_SIZE
+
+/* Define to 1 if you have the `unistd.h' function. */
 #undef HAVE_UNISTD_H
 
 /* Define to 1 if you have the <utime.h> header file. */
@@ -92,11 +223,23 @@
 /* Define to 1 if `utime(file, NULL)' sets file's timestamp to the present. */
 #undef HAVE_UTIME_NULL
 
+/* Define to 1 if you have the `vasprintf' function. */
+#undef HAVE_VASPRINTF
+
 /* Define to 1 if you have the `vprintf' function. */
 #undef HAVE_VPRINTF
 
+/* Define to 1 if you have the `warn' function. */
+#undef HAVE_WARN
+
+/* Define to 1 if you have the `warnx' function. */
+#undef HAVE_WARNX
+
 /* Define to 1 if the system has the type `_Bool'. */
 #undef HAVE__BOOL
+
+/* Define to 1 if you have the `_lseeki64' function. */
+#undef HAVE__LSEEKI64
 
 /* Define to 1 if `lstat' dereferences a symlink specified with a trailing
    slash. */
@@ -120,6 +263,9 @@
 
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
@@ -148,6 +294,9 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* Host operating system */
+#undef UNAMES
+
 /* Version number of package */
 #undef VERSION
 
@@ -166,14 +315,15 @@
 /* Define to `int' if <sys/types.h> doesn't define. */
 #undef gid_t
 
+/* Define to the type of a signed integer type of width exactly 64 bits if
+   such a type exists and the standard includes do not define it. */
+#undef int64_t
+
 /* Define to `int' if <sys/types.h> does not define. */
 #undef mode_t
 
 /* Define to `long int' if <sys/types.h> does not define. */
 #undef off_t
-
-/* Define to rpl_realloc if the replacement function should be used. */
-#undef realloc
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 #undef size_t
