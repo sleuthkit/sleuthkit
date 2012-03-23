@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -570,7 +572,7 @@ public class SleuthkitCase {
 				switch (attr.getValueType()) {
 					case STRING:
 						s.executeUpdate("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_text) VALUES ("
-								+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", '" + attr.getValueString() + "')");
+								+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", '" + escapeForBlackboard(attr.getValueString()) + "')");
 						break;
 					case BYTE:
 						PreparedStatement ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_byte) VALUES ("
@@ -616,7 +618,7 @@ public class SleuthkitCase {
 					switch (attr.getValueType()) {
 						case STRING:
 							ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_text) VALUES ("
-									+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", '" + attr.getValueString() + "')");
+									+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", '" + escapeForBlackboard(attr.getValueString()) + "')");
 							break;
 						case BYTE:
 							ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_byte) VALUES ("
@@ -1941,29 +1943,45 @@ public class SleuthkitCase {
 //		throw new TskException("Error analyzing files");
 //	}
 
-/**
- * Return the number of objects in the database of a given file type.
- *
- * @param contentType Type of file to count
- * @return Number of objects with that type.
- * @throw  TSKException
- */
-public int countFsContentType(TskData.TSK_FS_META_TYPE_ENUM contentType)throws TskException {
-	    int count = 0;
+	/**
+	 * Return the number of objects in the database of a given file type.
+	 *
+	 * @param contentType Type of file to count
+	 * @return Number of objects with that type.
+	 * @throw  TSKException
+	 */
+	public int countFsContentType(TskData.TSK_FS_META_TYPE_ENUM contentType) throws TskException {
+		int count = 0;
 		Long contentLong = contentType.getMetaType();
-	    synchronized (caseLock) {
-            try {
-			    Statement s = con.createStatement();
-			    ResultSet rs = s.executeQuery("select count(*) from tsk_files where meta_type = '"+ contentLong.toString() +"'");
-			    while (rs.next()) {
-				    count = rs.getInt("count(*)");
-			    }
-			    rs.close();
-			    s.close();
-            } catch (SQLException ex) {
-                throw new TskException("Error getting number of objects.", ex);
-            }
+		synchronized (caseLock) {
+			try {
+				Statement s = con.createStatement();
+				ResultSet rs = s.executeQuery("select count(*) from tsk_files where meta_type = '" + contentLong.toString() + "'");
+				while (rs.next()) {
+					count = rs.getInt("count(*)");
+				}
+				rs.close();
+				s.close();
+			} catch (SQLException ex) {
+				throw new TskException("Error getting number of objects.", ex);
+			}
 		}
 		return count;
+	}
+
+	/**
+	 * Escape the single quotes in the given string so they can be added to the SQL db
+	 * @param text
+	 * @return text the escaped version
+	 */
+	private static String escapeForBlackboard(String text) {
+		try {
+			//text = text.replaceAll("\\\\'", URLEncoder.encode("\\'", "UTF-8"));
+			text = text.replaceAll("'", URLEncoder.encode("'", "UTF-8"));
+			//text = text.replaceAll("\"", URLEncoder.encode("\"", "UTF-8"));
+			//text = text.replaceAll("\\\\", URLEncoder.encode("\\", "UTF-8"));
+		} catch (UnsupportedEncodingException ex) {
+		}
+		return text;
 	}
 }
