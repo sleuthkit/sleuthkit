@@ -278,12 +278,8 @@ public:
 	}
 #ifndef COMMON_DIGEST_FOR_OPENSSL
 	EVP_DigestUpdate(&mdctx,buf,bufsize);
-#else;
-	MD5_CTX * temp = (MD5_CTX *)mdctx;
-//	md = CC_MD5(buf, bufsize, md);
-//	md_update((MD5_CTX *)mdctx, buf, bufsize);
+#else
 	md_update(mdctx, buf, bufsize);
-
 #endif
 	hashed_bytes += bufsize;
     }

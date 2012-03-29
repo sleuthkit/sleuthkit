@@ -307,14 +307,14 @@ void file_info(const string name, int64_t value)
 /* Process a temporal value */
 void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
 {
-	char *tm_format = NULL;
+	const char * tm_format = NULL;
 	
 	if(TSK_FS_TYPE_ISFAT(ftype))
 	{
 #ifdef _MSC_VER
 	    tm_format="%Y-%m-%dT%H:%M:%S";
 #else
-		tm_format="%FT%T";	
+	    tm_format="%FT%T";	
 #endif
 	}
 	else
@@ -322,7 +322,7 @@ void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype)
 #ifdef _MSC_VER
 	    tm_format="%Y-%m-%dT%H:%M:%SZ";
 #else
-		tm_format="%FT%TZ";
+	    tm_format="%FT%TZ";
 #endif
 	}
 
