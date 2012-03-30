@@ -266,7 +266,23 @@ public:
                                         const bool isDirectory, const uint64_t size, const std::string& details,
                                         const int ctime, const int crtime, const int atime, const int mtime, uint64_t & fileId, std::string path) = 0;
     virtual int addFsBlockInfo(int fsID, uint64_t a_mFileId, int count, uint64_t blk_addr, uint64_t len) = 0;
-    virtual int addAllocUnallocMapInfo(int unallocVolID, int unallocImgID, uint64_t unallocImgStart, uint64_t length, uint64_t origImgStart) = 0;
+
+    /**
+     * Add information about how the unallocated images were created so that we can 
+     later 
+     * map where data was recovered from. This is typically used by CarvePrep and the results are 
+     * used by CarveExtract via getUnallocRun(). 
+     * @param a_volID Volume ID that the data was extracted from.
+     * @param unallocImgID ID of the unallocated image that the sectors were copied into. 
+     * @param unallocImgStart Sector offset of where in the unallocated image that t
+     he run starts.
+     * @param length Number of sectors that are in the run.
+     * @param origImgStart Sector offset in the original image (relative to start of
+        image) where the run starts  
+     * @returns 1 on errror
+     */
+    virtual int addAllocUnallocMapInfo(int a_volID, int unallocImgID, uint64_t unallocImgStart, uint64_t length, uint64_t origImgStart) = 0;
+
     virtual int getSessionID() const = 0;
     virtual int getFileIds(char *a_fileName, uint64_t *a_outBuffer, int a_buffSize) const = 0;
     virtual int getNumFiles() const = 0;
@@ -286,7 +302,21 @@ public:
     virtual int getKnownStatus(const uint64_t fileId) const = 0;
     
 
-    virtual UnallocRun * getUnallocRun(int file_id, int file_offset) const = 0; 
+    /**
+     * Given an offset in an unallocated image that was created for carving, 
+     * return information about where that data came from in the original image.
+     * This is used to map where a carved file is located in the original image.
+     * 
+     * @param a_unalloc_img_id ID of the unallocated image that you want data about
+     * @param a_file_offset Sector offset where file was found in the unallocated image
+     * @return NULL on error or a run descriptor.  
+     */
+    virtual UnallocRun * getUnallocRun(int a_unalloc_img_id, int a_file_offset) const = 0; 
+
+    /**
+     * Returns a list of the sectors that are not used by files and that
+     * are in unpartitioned space.  Typically this is used by CarvePrep.
+     */
     virtual SectorRuns * getFreeSectors() const = 0;
 
     virtual int updateFileStatus(uint64_t a_file_id, int a_status) = 0;
@@ -313,7 +343,13 @@ public:
     virtual int getModuleErrors(std::vector<TskModuleStatus> & moduleStatusList) const = 0;
     virtual std::string getFileName(uint64_t file_id) const = 0;
 
+    /**
+     * Used when a new unallocated image file is created for carving. 
+     * @param unallocImgId [out] Stores the unique ID assigned to the image.
+     * @returns -1 on error, 0 on success.
+     */
     virtual int addUnallocImg(int & unallocImgId) = 0;
+
     virtual int setUnallocImgStatus(int unallocImgId, TskImgDB::UNALLOC_IMG_STATUS status) = 0;
     virtual TskImgDB::UNALLOC_IMG_STATUS getUnallocImgStatus(int unallocImgId) const = 0;
     virtual int getAllUnallocImgStatus(std::vector<TskUnallocImgStatusRecord> & unallocImgStatusList) const = 0;

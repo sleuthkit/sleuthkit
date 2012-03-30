@@ -570,6 +570,8 @@ INPUT                  = framework/docs/main.dox \
                          framework/docs/pipeline.dox \
                          framework/docs/module_examples.dox \
                          framework/docs/fw_setup.dox \
+                         framework/docs/fw_extract.dox \
+                         framework/docs/fw_pipelines.dox \
                          framework/docs/fw_examples.dox \
                          framework/Extraction \
                          framework/File \
