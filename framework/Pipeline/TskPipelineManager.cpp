@@ -43,16 +43,11 @@ const std::string TskPipelineManager::PIPELINE_ELEMENT = "PIPELINE";
 const std::string TskPipelineManager::PIPELINE_TYPE = "type";
 const std::string TskPipelineManager::DEFAULT_PIPELINE_CONFIG = "pipeline_config.xml";
 
-/**
- *
- */
+
 TskPipelineManager::TskPipelineManager()
 {
 }
 
-/**
- *
- */
 TskPipelineManager::~TskPipelineManager()
 {
     // Delete our pipelines
