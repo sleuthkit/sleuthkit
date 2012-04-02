@@ -883,8 +883,9 @@ public class SleuthkitCase {
 	/**
 	 * Add an artifact type with the given name. Will return an id that can be used
 	 * to look that artifact type up.
-	 * @param artifactTypeID id for an artifact type
-	 * @return name of that artifact type
+	 * @param artifactTypeName System (unique) name of artifact
+     * @param displayName Display (non-unique) name of artifact
+	 * @return ID of artifact added
 	 */
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskException {
 		addArtifactType(artifactTypeName, displayName, artifactIDcounter);
@@ -1948,7 +1949,7 @@ public class SleuthkitCase {
 	 *
 	 * @param contentType Type of file to count
 	 * @return Number of objects with that type.
-	 * @throw  TSKException
+	 * @throws  TSKException
 	 */
 	public int countFsContentType(TskData.TSK_FS_META_TYPE_ENUM contentType) throws TskException {
 		int count = 0;
