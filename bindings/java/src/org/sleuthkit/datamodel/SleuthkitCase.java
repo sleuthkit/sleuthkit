@@ -996,12 +996,8 @@ public class SleuthkitCase {
 
 				long artifactID = -1;
 				s.executeUpdate("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) VALUES (NULL, " + obj_id + ", " + artifactTypeID + ")");
-				ResultSet rs = s.executeQuery("SELECT artifact_id from blackboard_artifacts WHERE obj_id = " + obj_id + " AND + artifact_type_id = " + artifactTypeID);
-				while (rs.next()) {
-					if (rs.getLong(1) > artifactID) {
-						artifactID = rs.getLong(1);
-					}
-				}
+				ResultSet rs = s.executeQuery("SELECT max(artifact_id) from blackboard_artifacts WHERE obj_id = " + obj_id + " AND + artifact_type_id = " + artifactTypeID);
+				artifactID = rs.getLong(1);
 				rs.close();
 				s.close();
 				return new BlackboardArtifact(this, artifactID, obj_id, artifactTypeID, artifactTypeName, artifactDisplayName);
@@ -1766,7 +1762,8 @@ public class SleuthkitCase {
 			}
 		} catch (SQLException e) {
 			// connection close failed.
-			System.err.println(e);
+			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING,
+						"Error closing connection.", e);
 		}
 	}
 
