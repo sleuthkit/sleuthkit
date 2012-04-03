@@ -101,7 +101,7 @@ class TskDbSqlite {
     bool m_blkMapFlag;
     bool m_utf8;
     sqlite3_stmt *m_selectFilePreparedStmt;
-    map<int64_t, map<TSK_INUM_T,int64_t> > m_parentIds;
+    map<int64_t, map<TSK_INUM_T,int64_t> > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to its object ID in the database
 };
 
 #endif

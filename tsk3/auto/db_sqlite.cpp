@@ -529,10 +529,10 @@ int
  * @param objId object id of this directory from the objects table
  */
 void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId) {
-    map<TSK_INUM_T,int64_t>::iterator it = m_parentIds[fsObjId].find(meta_addr);
-    if (it == m_parentIds[fsObjId].end() )
+    map<TSK_INUM_T,int64_t>::iterator it = m_parentDirIdCache[fsObjId].find(meta_addr);
+    if (it == m_parentDirIdCache[fsObjId].end() )
         //store only if does not exist
-        m_parentIds[fsObjId][meta_addr] = objId;
+        m_parentDirIdCache[fsObjId][meta_addr] = objId;
 }
 
 /**
@@ -545,8 +545,8 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & f
     int64_t parObjId = -1;
 
     //get from cache by parent meta addr, if available
-    map<TSK_INUM_T,int64_t>::iterator it = m_parentIds[fsObjId].find(fs_file->name->par_addr);
-    if (it != m_parentIds[fsObjId].end() ) {
+    map<TSK_INUM_T,int64_t>::iterator it = m_parentDirIdCache[fsObjId].find(fs_file->name->par_addr);
+    if (it != m_parentDirIdCache[fsObjId].end() ) {
         parObjId = it->second;
     }
     
