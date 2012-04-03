@@ -57,7 +57,7 @@
  *
  * So, the way this is solved is that generic mft_lookup is used to get
  * any MFT entry, even $MFT.  If $MFT is not cached then we calculate
- * the address of where to read based on mutliplication and guessing.
+ * the address of where to read based on multiplication and guessing.
  * When we are loading the $MFT, we set 'loading_the_MFT' to 1 so
  * that we can update things as we go along.  When we read $MFT we
  * read all the attributes and save info about the $Data one.  If
