@@ -51,11 +51,11 @@ public class SleuthkitJNI {
 	private static native long openFileNat(long fsHandle, long fileId) throws TskException;
  
 	//read functions
-	private static native byte[] readImgNat(long imgHandle, long offset, long len) throws TskException;
-	private static native byte[] readVsNat(long vsHandle, long offset, long len) throws TskException;
-	private static native byte[] readVolNat(long volHandle, long offset, long len) throws TskException;
-	private static native byte[] readFsNat(long fsHandle, long offset, long len) throws TskException;
-	private static native byte[] readFileNat(long fileHandle, long offset, long len) throws TskException;
+	private static native int readImgNat(long imgHandle, byte[] readBuffer, long offset, long len) throws TskException;
+	private static native int readVsNat(long vsHandle, byte[] readBuffer, long offset, long len) throws TskException;
+	private static native int readVolNat(long volHandle, byte[] readBuffer, long offset, long len) throws TskException;
+	private static native int readFsNat(long fsHandle, byte[] readBuffer, long offset, long len) throws TskException;
+	private static native int readFileNat(long fileHandle, byte[] readBuffer, long offset, long len) throws TskException;
 
 	//close functions
 	private static native void closeImgNat(long imgHandle);
@@ -300,61 +300,67 @@ public class SleuthkitJNI {
 	/**
 	 * reads data from an image
 	 * @param imgHandle 
+	 * @param readBuffer buffer to read to
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
-	 * @return an array of characters (bytes of data)
+	 * @return the number of characters read, or -1 if the end of the stream has been reached 
 	 * @throws TskException  
 	 */
-	public static byte[] readImg(long imgHandle, long offset, long len) throws TskException{
+	public static int readImg(long imgHandle, byte[] readBuffer, long offset, long len) throws TskException{
 		//returned byte[] is the data buffer
-		return readImgNat(imgHandle, offset, len);
+		return readImgNat(imgHandle, readBuffer, offset, len);
 	}
 	/**
 	 * reads data from an volume system
 	 * @param vsHandle pointer to a volume system structure in the sleuthkit
+	 * @param readBuffer buffer to read to
 	 * @param offset sector offset in the image to start at
 	 * @param len amount of data to read
-	 * @return an array of characters (bytes of data)
+	 * @return the number of characters read, or -1 if the end of the stream has been reached 
 	 * @throws TskException  
 	 */
-	public static byte[] readVs(long vsHandle, long offset, long len) throws TskException{
-		return readVsNat(vsHandle, offset, len);
+	public static int readVs(long vsHandle, byte[] readBuffer, long offset, long len) throws TskException{
+		return readVsNat(vsHandle, readBuffer, offset, len);
 	}
 	/**
 	 * reads data from an volume
 	 * @param volHandle pointer to a volume structure in the sleuthkit
+	 * @param readBuffer buffer to read to
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
-	 * @return an array of characters (bytes of data)
+	 * @return the number of characters read, or -1 if the end of the stream has been reached 
 	 * @throws TskException  
 	 */
-	public static byte[] readVsPart(long volHandle, long offset, long len) throws TskException{
+	public static int readVsPart(long volHandle, byte[] readBuffer, long offset, long len) throws TskException{
 		//returned byte[] is the data buffer
-		return readVolNat(volHandle, offset, len);
+		return readVolNat(volHandle, readBuffer, offset, len);
 	}
 	/**
 	 * reads data from an file system
 	 * @param fsHandle pointer to a file system structure in the sleuthkit
+	 * @param readBuffer buffer to read to
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
-	 * @return an array of characters (bytes of data)
+	 * @return the number of characters read, or -1 if the end of the stream has been reached 
 	 * @throws TskException  
 	 */
-	public static byte[] readFs(long fsHandle, long offset, long len) throws TskException{
+	public static int readFs(long fsHandle, byte[] readBuffer, long offset, long len) throws TskException{
 		//returned byte[] is the data buffer
-		return readFsNat(fsHandle, offset, len);
+		return readFsNat(fsHandle, readBuffer, offset, len);
 	}
+	
+	
 	/**
 	 * reads data from an file
 	 * @param fileHandle pointer to a file structure in the sleuthkit
+	 * @param readBuffer pre-allocated buffer to read to
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
-	 * @return an array of characters (bytes of data)
+	 * @return the number of characters read, or -1 if the end of the stream has been reached 
 	 * @throws TskException  
 	 */
-	public static byte[] readFile(long fileHandle, long offset, long len) throws TskException{
-		//returned byte[] is the data buffer
-		return readFileNat(fileHandle, offset, len);
+	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskException {
+		return readFileNat(fileHandle, readBuffer, offset, len);
 	}
 
 	//free pointers
