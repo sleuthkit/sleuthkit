@@ -181,10 +181,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * add an attribute to this artifact
-	 * @param attrType the attribute type enum
-	 * @param value the value int
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
+	 * @param attr the attribute to add
 	 * @throws TskException
 	 */
 	public void addAttribute(BlackboardAttribute attr) throws TskException {
@@ -195,7 +192,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * add a collection of attributes to this artifact in a single transaction
-	 * @param a
+	 * @param attributes List of attributes to add
 	 * @throws TskException
 	 */
 	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskException {

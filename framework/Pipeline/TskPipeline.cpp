@@ -57,12 +57,22 @@ TskPipeline::~TskPipeline()
         delete *it;
 }
 
+/**
+ * Validate a Pipeline based on the given XML configuration string. 
+ * @param pipelineConfig String of config file for the specific type of pipeline. 
+ * @throws TskException in case of error.
+ */
 void TskPipeline::validate(const std::string & pipelineConfig)
 {
     m_loadDll = false;
     initialize(pipelineConfig);
 }
 
+/**
+ * Parses the XML config file.  Modules are loaded if m_loadDll is set to true. 
+ * @param pipelineConfig String of a config file for the specific type of pipeline.
+ * @throws TskException in case of error.
+ */
 void TskPipeline::initialize(const std::string & pipelineConfig)
 {
     if (pipelineConfig.empty())
@@ -193,6 +203,7 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
     }
 }
 
+
 void TskPipeline::run(const uint64_t fileId)
 {
     if (m_modules.size() == 0)
@@ -287,6 +298,11 @@ void TskPipeline::run()
     }
 }
 
+/**
+ * Creates a module of the type specified in the XML element.
+ * @param pElem element type from XML file. 
+ * @returns NULL on error 
+ */
 TskModule * TskPipeline::createModule(Poco::XML::Element *pElem)
 {
     if (!pElem)

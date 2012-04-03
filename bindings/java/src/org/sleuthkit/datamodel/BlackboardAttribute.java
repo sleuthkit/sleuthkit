@@ -177,7 +177,6 @@ public class BlackboardAttribute {
 	/**
 	 * constructor for a blackboard attribute. should only be used by sleuthkitCase
 	 * @param artifactID artifact id for this attribute
-	 * @param attributeTypeName type name
 	 * @param attributeTypeID type id
 	 * @param moduleName module that created this attribute
 	 * @param context extra information about this name value pair

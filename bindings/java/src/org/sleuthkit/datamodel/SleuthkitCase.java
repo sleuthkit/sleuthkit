@@ -883,8 +883,9 @@ public class SleuthkitCase {
 	/**
 	 * Add an artifact type with the given name. Will return an id that can be used
 	 * to look that artifact type up.
-	 * @param artifactTypeID id for an artifact type
-	 * @return name of that artifact type
+	 * @param artifactTypeName System (unique) name of artifact
+     * @param displayName Display (non-unique) name of artifact
+	 * @return ID of artifact added
 	 */
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskException {
 		addArtifactType(artifactTypeName, displayName, artifactIDcounter);
@@ -995,12 +996,8 @@ public class SleuthkitCase {
 
 				long artifactID = -1;
 				s.executeUpdate("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) VALUES (NULL, " + obj_id + ", " + artifactTypeID + ")");
-				ResultSet rs = s.executeQuery("SELECT artifact_id from blackboard_artifacts WHERE obj_id = " + obj_id + " AND + artifact_type_id = " + artifactTypeID);
-				while (rs.next()) {
-					if (rs.getLong(1) > artifactID) {
-						artifactID = rs.getLong(1);
-					}
-				}
+				ResultSet rs = s.executeQuery("SELECT max(artifact_id) from blackboard_artifacts WHERE obj_id = " + obj_id + " AND + artifact_type_id = " + artifactTypeID);
+				artifactID = rs.getLong(1);
 				rs.close();
 				s.close();
 				return new BlackboardArtifact(this, artifactID, obj_id, artifactTypeID, artifactTypeName, artifactDisplayName);
@@ -1765,7 +1762,8 @@ public class SleuthkitCase {
 			}
 		} catch (SQLException e) {
 			// connection close failed.
-			System.err.println(e);
+			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING,
+						"Error closing connection.", e);
 		}
 	}
 
@@ -1948,7 +1946,7 @@ public class SleuthkitCase {
 	 *
 	 * @param contentType Type of file to count
 	 * @return Number of objects with that type.
-	 * @throw  TSKException
+	 * @throws  TSKException
 	 */
 	public int countFsContentType(TskData.TSK_FS_META_TYPE_ENUM contentType) throws TskException {
 		int count = 0;

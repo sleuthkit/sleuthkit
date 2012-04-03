@@ -1,8 +1,12 @@
-/*! \page fw_setup Setting up the Infrastructure
+/*! \page fw_setup_page Setting up the Infrastructure
 
 The developer's guide to using the framework is self contained, but you can also refer to the source code for tsk_analyzeimg, which is included in the framework.  It is a basic program that uses the framework to analyze a disk image and use the pipeline infrastructure. 
 
 This part of the document outlines how to get the infrastructure in place for any type of run. The other sections focus on specific types of analysis.  If you are running end-to-end analysis in the same process / session, then you'll do all of these at once.  If you are doing a distributed system, then you will need to start with this section and continue on the relevant analysis section. 
+
+\section fw_setup_env Development Environment
+
+LIBRARIES AND HEADER FILES @@@@
 
 \section fw_setup_minimal Minimal Setup
 
@@ -20,7 +24,8 @@ The following services must be setup before the library can analyze data:
 - Database: An instance of TskImgDB must be created and registered with TskServices.  The framework comes with a basic SQLite implementation, but you must first create it and specify where you want to store the database.
 - Scheduler: An instance of TskScheduler must be created.  Methods for getting tasks out of the scheduler will depend on the implementation and design of the scheduler, so it is up to the user of the library to create the instance and make sure that the tasks are retrieved from it.  The framework comes with a basic queue implementation. 
 
-/* @@@ Review this in future because it could default to ImgDB */
+// @@@ Review this in future because it could default to ImgDB 
+
 - Blackboard: An instance of the TskBlackBoard must be created.  Currently, the only implementation is TskDBBlackBoard that writes the blackboard contents to TskImgDB. 
 
 - Image File: An instance of TskImageFile must be created if the analysis will deal with disk image files.  TskImageFileTsk is the Sleuth Kit-based implementation of TskImageFile. 

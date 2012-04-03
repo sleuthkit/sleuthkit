@@ -10,7 +10,8 @@
 
 /**
  * \file TskPipeline.h
- * Contains the interface for the TskPipeline class.
+ * Contains the declarations for the TskPipeline class and the interface for methods
+ * that are defined in the various implementations.
  */
 
 #ifndef _TSK_PIPELINE_H
@@ -25,20 +26,22 @@
 #include "Poco/DOM/Element.h"
 
 /**
- * The Pipeline class controls the processing of a TskFile
- * through an ordered list of dynamically configured modules.
+ * The Pipeline class controls the processing of a data
+ * through an ordered list of dynamic library or executable modules.
+ * Different types of pipeline implementations exist for the different types of data. 
+ * Pipelines are created by the TskPipelineManager class. 
  */
 class TSK_FRAMEWORK_API TskPipeline
 {
 public:
-    static const std::string MODULE_ELEMENT;
-    static const std::string MODULE_TYPE_ATTR;
-    static const std::string MODULE_ORDER_ATTR;
-    static const std::string MODULE_LOCATION_ATTR;
-    static const std::string MODULE_ARGS_ATTR;
-    static const std::string MODULE_OUTPUT_ATTR;
-    static const std::string MODULE_EXECUTABLE_TYPE;
-    static const std::string MODULE_PLUGIN_TYPE;
+    static const std::string MODULE_ELEMENT; ///< module element in XML config file
+    static const std::string MODULE_TYPE_ATTR;  ///< attribute for module type in XML config file
+    static const std::string MODULE_ORDER_ATTR; ///< attribute for module order in XML config file
+    static const std::string MODULE_LOCATION_ATTR; ///< attribute for module location in XML config file
+    static const std::string MODULE_ARGS_ATTR; ///< attribute for module arguments in XML config file
+    static const std::string MODULE_OUTPUT_ATTR; ///< attribute for module output in XML config file
+    static const std::string MODULE_EXECUTABLE_TYPE; ///< value of MODULE_TYPE_ATTR for executable modules
+    static const std::string MODULE_PLUGIN_TYPE; ///< value of MODULE_TYPE_ATTR for library modules
 
     // Default constructor
     TskPipeline();
@@ -49,25 +52,36 @@ public:
     // Destructor
     ~TskPipeline();
 
-    // Validate a Pipeline based on the given XML configuration string.
     void validate(const std::string& pipelineConfig);
-
-    // Initialize a Pipeline based on the given XML configuration string.
     void initialize(const std::string& pipelineConfig);
+    bool isEmpty() const { 
+        return m_modules.size() == 0; 
+    }
 
-    // Does the Pipeline have any modules?
-    bool isEmpty() const { return m_modules.size() == 0; }
-
-    // Run through all the modules in the Pipeline for the given file id.
+    /**
+     * Run a file analysis pipeline on a file with the given ID.
+     * @param fileId Id of file to run pipeilne on.
+     * @throws exceptions on errors 
+     */
     virtual void run(const uint64_t fileId) = 0;
 
-    // Run through all the modules in the Pipeline for the given File object
+    /**
+     * Run a file analysis pipeline on the given file object.
+     * @param file TskFile object to run pipeilne on.
+     * @throws exceptions on errors 
+     */    
     virtual void run(TskFile* file) = 0;
 
-    // Run through all the modules in the Pipeline, useful for processing entire ImgDB
+    /**
+     * Run a reporting / post-analysis pipeline.
+     * @throws exceptions on errors     
+     */    
     virtual void run() = 0;
 
-    // Create a module for the pipeline
+    /**
+     * Create a module for the given pipeline type.
+     * @returns Plug-in module
+     */
     virtual TskPluginModule * createPluginModule() = 0;
 
 protected:
@@ -76,8 +90,8 @@ protected:
     bool excludeFile(const TskFile*);
 
 private:
-    bool m_hasExeModule;
-    bool m_loadDll;
+    bool m_hasExeModule;    ///< True if any module is an executable module
+    bool m_loadDll;     ///< True if dlls should be loaded during initialize
 
     TskModule * createModule(Poco::XML::Element * pElem);
 };

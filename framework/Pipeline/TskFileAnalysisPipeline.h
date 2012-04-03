@@ -23,34 +23,26 @@
 #include "TskFileAnalysisPluginModule.h"
 
 /**
- * Controls the processing of a TskFile
- * through an ordered list of dynamically configured modules. The
- * pipeline can contain one or more instances of TskModule.
+ * Controls the processing of a file analysis pipeline.  
  */
 class TSK_FRAMEWORK_API TskFileAnalysisPipeline : public TskPipeline
 {
 public:
-    // Default constructor
     TskFileAnalysisPipeline();
 
-    // Destructor
     ~TskFileAnalysisPipeline();
 
-    // Initialize a Pipeline based on the given XML configuration string.
     void initialize(const std::string& pipelineConfig);
-
-    // Run through all the modules in the Pipeline for the given file id.
     virtual void run(const uint64_t fileId);
-
-    // Run through all the modules in the Pipeline for the given File object
     virtual void run(TskFile* file);
 
     // Run through all the modules in the Pipeline for Reporting.
     virtual void run() {}; // NOP
 
     // Create a module for the pipeline
-    TskPluginModule * createPluginModule() { return (new TskFileAnalysisPluginModule()); };
-
+    TskPluginModule * createPluginModule() { 
+        return (new TskFileAnalysisPluginModule()); 
+    };
 };
 
 #endif

@@ -1,0 +1,12 @@
+/*! \page fw_pipeline_page Running File Analysis and Reporting Pipelines
+
+\section fw_pipeline_overview Overview
+This page outlines how to setup up file analysis and reporting pipelines so that data from a disk image can be analyzed. It requires that you have already populated the database as outlined in \ref fw_extract_page.  This page also assumes that you have read \ref pipeline_config_page in the Module Developer's Section so that you are familiar with the basics of a pipeline. 
+
+\section fw_pipeline_create Creating a Pipeline
+Before the first pipeline can be created, an instance of TskPipelineManager must be created.  To create a pipeline, TskPipelineManager.createPipeline() is used to get a file analysis or reporting TskPipeline object based on the arguments given to createPipelne. 
+
+\section fw_pipeline_run Running a Pipeline
+Once you have a TskPipeline object, then you can run the appropriate run method for the given file type.  
+
+*/

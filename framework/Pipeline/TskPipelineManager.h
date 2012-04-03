@@ -10,7 +10,7 @@
 
 /**
  * \file TskPipelineManager.h
- * Contains the interface for the TskPipelineManager class.
+ * Contains the declarations for the TskPipelineManager class.
  */
 
 #ifndef _TSK_PIPELINEMANAGER_H
@@ -20,28 +20,23 @@
 #include "TskPipeline.h"
 
 /**
- * Responsible for creation of TskPipelines and TskReportPipelines.
+ * Responsible for creation and destruction of of TskPipeline objects.
  */
 class TSK_FRAMEWORK_API TskPipelineManager
 {
 public:
-    static const std::string FILE_ANALYSIS_PIPELINE;
-    static const std::string REPORTING_PIPELINE;
-    static const std::string PIPELINE_ELEMENT;
-    static const std::string PIPELINE_TYPE;
-    static const std::string DEFAULT_PIPELINE_CONFIG;
+    static const std::string FILE_ANALYSIS_PIPELINE;  ///< String to use when creating a file analysis pipeline type
+    static const std::string REPORTING_PIPELINE;  ///< String to use when creating a reporting pipeline type
+    static const std::string PIPELINE_ELEMENT; ///< Element in pipeline config XML file.
+    static const std::string PIPELINE_TYPE; ///< Attribute in PIPELINE_ELEMENT for pipeline type in config XML file
+    static const std::string DEFAULT_PIPELINE_CONFIG; ///< Name of default pipeline config file
 
-    // Default Constructor
     TskPipelineManager();
-
-    // Destructor
     ~TskPipelineManager();
-
-    // Create a new Pipeline of the given type
     TskPipeline * createPipeline(const std::string& pipelineType);
 
 private:
-    std::vector<TskPipeline *> m_pipelines;
+    std::vector<TskPipeline *> m_pipelines;  ///< List of allocated pipelines
 };
 
 #endif 
