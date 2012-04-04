@@ -39,6 +39,7 @@ extern "C" {
         int md5hash_isset;
         TSK_TCHAR **images;
         int num_imgs;
+        uint8_t used_ewf_glob;  // 1 if libewf_glob was used during open
     } IMG_EWF_INFO;
 
 #ifdef __cplusplus

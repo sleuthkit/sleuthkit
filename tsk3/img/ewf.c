@@ -73,10 +73,15 @@ ewf_image_close(TSK_IMG_INFO * img_info)
     IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *) img_info;
 
     libewf_close(ewf_info->handle);
-    for (i = 0; i < ewf_info->num_imgs; i++) {
-        free(ewf_info->images[i]);
+    // this stuff crashes if we used glob. v2 of the API has a free method.
+    // not clear from the docs what we should do in v1...
+    // @@@ Probably a memory leak in v1 unless libewf_close deals with it
+    if (ewf_info->used_ewf_glob == 0) {
+        for (i = 0; i < ewf_info->num_imgs; i++) {
+            free(ewf_info->images[i]);
+        }
+        free(ewf_info->images);
     }
-    free(ewf_info->images);
     free(img_info);
 }
 
@@ -144,6 +149,7 @@ ewf_open(int a_num_img, const TSK_TCHAR * const a_images[],
 
 
     // See if they specified only the first of the set...
+    ewf_info->used_ewf_glob = 0;
     if (a_num_img == 1) {
 #ifdef TSK_WIN32
         ewf_info->num_imgs = libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]), LIBEWF_FORMAT_UNKNOWN, &ewf_info->images);
@@ -154,6 +160,7 @@ ewf_open(int a_num_img, const TSK_TCHAR * const a_images[],
             free(ewf_info);
             return NULL;
         }
+        ewf_info->used_ewf_glob = 1;
         if (tsk_verbose)
             tsk_fprintf(stderr, "ewf_open: found %d segment files via libewf_glob\n", ewf_info->num_imgs);
     }
