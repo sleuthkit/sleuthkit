@@ -81,7 +81,7 @@ int main(int argc, char **argv1)
             tsk_verbose++;
             break;
         case _TSK_T('V'):
-            fprintf(stdout, "Version 20120404\n");
+            tsk_version_print(stdout);
             exit(0);
             }
     }
