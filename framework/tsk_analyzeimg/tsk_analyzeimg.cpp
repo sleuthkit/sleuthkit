@@ -35,9 +35,9 @@ makeDir(const TSK_TCHAR *dir)
 }
 
 void 
-usage() 
+usage(const char *program) 
 {
-    fprintf(stderr, "tsk_analyzeimg [-c framework_config_file] [-p pipeline_config_file] image_name\n");
+    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] image_name\n", program);
     fprintf(stderr, "\t-c framework_config_file: Path to XML framework config file\n");
     fprintf(stderr, "\t-p pipeline_config_file: Path to XML pipeline config file (overrides pipeline config specified with -c)\n");
     exit(1);
@@ -70,7 +70,7 @@ int main(int argc, char **argv1)
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
-            usage();
+            usage(argv1[0]);
         case _TSK_T('c'):
             framework_config = OPTARG;
             break;
@@ -81,7 +81,7 @@ int main(int argc, char **argv1)
             tsk_verbose++;
             break;
         case _TSK_T('V'):
-            tsk_version_print(stdout);
+            fprintf(stdout, "Version 20120404\n");
             exit(0);
             }
     }
@@ -89,7 +89,7 @@ int main(int argc, char **argv1)
     /* We need at least one more argument */
     if (OPTIND == argc) {
         tsk_fprintf(stderr, "Missing image name\n");
-        usage();
+        usage(argv1[0]);
     }
     TSK_TCHAR *imagePath = argv[OPTIND];
 
@@ -192,14 +192,14 @@ int main(int argc, char **argv1)
 
     //Run pipeline on all files
     // @@@ this needs to cycle over the files to analyze, 10 is just here for testing 
-    if (filePipeline) {
+    if (filePipeline && !filePipeline->isEmpty()) {
         TskSchedulerQueue::task_struct *task;
         while ((task = scheduler.next()) != NULL) {
             if (task->task != Scheduler::FileAnalysis)  {
                 fprintf(stderr, "WARNING: Skipping task %d\n", task->task);
                 continue;
             }
-            printf("processing file: %d\n", (int)task->id);
+            //printf("processing file: %d\n", (int)task->id);
             try {
                 filePipeline->run(task->id);
             }
