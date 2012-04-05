@@ -615,19 +615,7 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
         throwTskError(env, "NewByteArray returned error while getting an array to copy buffer into.");
         return NULL;
     }
-
-    //TODO there may be a more efficient way to copy entire block
-    jbyte * jBytes= env->GetByteArrayElements(return_array, 0);
-    if (jBytes == NULL) {
-        throwTskError(env, "GetByteArrayElements returned error while getting elements to copy buffer into.");   
-        return NULL;
-    }
-
-    for (int i = 0; i < len; i++) {
-        jBytes[i] = buf[i];
-    }
-
-    env->ReleaseByteArrayElements(return_array, jBytes, 0);
+    env->SetByteArrayRegion(return_array, 0, len, (jbyte*)buf);
 
     return return_array;
 }
@@ -637,24 +625,12 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
  * @param jbuf Buffer to copy to
  * @param buf Buffer to copy from
  * @param len Length of bytes in buf
- * @returns number of bytes copies or -1 on error
+ * @returns number of bytes copied or -1 on error
  */
 static ssize_t
 copyBufToByteArray(JNIEnv * env, jbyteArray jbuf, const char *buf, ssize_t len)
 {
-    jbyte * jBytes= env->GetByteArrayElements(jbuf, 0);
-    if (jBytes == NULL) {
-        throwTskError(env, "GetByteArrayElements returned error while getting elements to copy buffer into.");   
-        return -1;
-    }
-
-    //TODO there may be a more efficient way to copy entire block
-    for (int i = 0; i < len; i++) {
-        jBytes[i] = buf[i];
-    }
-
-    env->ReleaseByteArrayElements(jbuf, jBytes, 0);
-
+    env->SetByteArrayRegion(jbuf, 0, len, (jbyte*)buf);
     return len;
 }
 
@@ -674,7 +650,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env, tsk_error_get());
-        return NULL;
+        return -1;
     }
 
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
@@ -719,7 +695,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env);
-        return NULL;
+        return -1;
     }
     TSK_VS_INFO *vs_info = castVsInfo(env, a_vs_info);
 
@@ -762,7 +738,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env);
-        return NULL;
+        return -1;
     }
 
     TSK_VS_PART_INFO *vol_part_info = castVsPartInfo(env, a_vol_info);
@@ -808,7 +784,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env);
-        return NULL;
+        return -1;
     }
     TSK_FS_INFO *fs_info = castFsInfo(env, a_fs_info);
 
