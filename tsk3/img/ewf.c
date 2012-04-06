@@ -35,7 +35,9 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
         return -1;
     }
 
+    tsk_take_lock(&(ewf_info->read_lock));
     cnt = libewf_read_random(ewf_info->handle, buf, len, offset);
+    tsk_release_lock(&(ewf_info->read_lock));
     if (cnt < 0) {
         tsk_error_reset();
         // @@@ Add more specific error message
@@ -82,6 +84,7 @@ ewf_image_close(TSK_IMG_INFO * img_info)
         }
         free(ewf_info->images);
     }
+    tsk_deinit_lock(&(ewf_info->read_lock));
     free(img_info);
 }
 
@@ -281,6 +284,9 @@ ewf_open(int a_num_img, const TSK_TCHAR * const a_images[],
     img_info->read = ewf_image_read;
     img_info->close = ewf_image_close;
     img_info->imgstat = ewf_image_imgstat;
+
+    // initialize the read lock
+    tsk_init_lock(&(ewf_info->read_lock));
 
     return img_info;
 }

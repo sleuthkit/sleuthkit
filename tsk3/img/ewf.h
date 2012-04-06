@@ -40,6 +40,7 @@ extern "C" {
         TSK_TCHAR **images;
         int num_imgs;
         uint8_t used_ewf_glob;  // 1 if libewf_glob was used during open
+        tsk_lock_t read_lock;  ///< Lock for reads since libewf is not thread safe -- only works if you have a single instance of EWF_INFO for all threads.
     } IMG_EWF_INFO;
 
 #ifdef __cplusplus

@@ -233,10 +233,10 @@ tsk_hdb_idxinitialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 }
 
 /**
- * Add an entry to the intermediate index file.
+ * Add a string entry to the intermediate index file.
  *
  * @param hdb_info Hash database state info
- * @param hvalue Hash value to add
+ * @param hvalue String of hash value to add
  * @param offset Byte offset of hash entry in original database.
  * @return 1 on error and 0 on success
  */
@@ -251,6 +251,30 @@ tsk_hdb_idxaddentry(TSK_HDB_INFO * hdb_info, char *hvalue,
             fprintf(hdb_info->hIdxTmp, "%c", toupper((int) hvalue[i]));
         else
             fprintf(hdb_info->hIdxTmp, "%c", hvalue[i]);
+    }
+
+    /* Print the entry to the unsorted index file */
+    fprintf(hdb_info->hIdxTmp, "|%.16llu\n", (unsigned long long) offset);
+
+    return 0;
+}
+
+/**
+ * Add a binary entry to the intermediate index file.
+ *
+ * @param hdb_info Hash database state info
+ * @param hvalue Array of integers of hash value to add
+ * @param hlen Number of bytes in hvalue
+ * @param offset Byte offset of hash entry in original database.
+ * @return 1 on error and 0 on success
+ */
+uint8_t
+tsk_hdb_idxaddentry_bin(TSK_HDB_INFO * hdb_info, char *hvalue, int hlen,
+                    TSK_OFF_T offset)
+{
+    int i;
+    for (i = 0; i < hlen; i++) {
+        fprintf(hdb_info->hIdxTmp, "%02X", hvalue[i]);
     }
 
     /* Print the entry to the unsorted index file */
@@ -1071,6 +1095,16 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
             }
             dbtype = TSK_HDB_DBTYPE_MD5SUM_ID;
         }
+        if (encase_test(hDb)) {
+            if (dbtype != 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
+                tsk_error_set_errstr(
+                         "hdb_open: Error determining DB type (EnCase)");
+                return NULL;
+            }
+            dbtype = TSK_HDB_DBTYPE_ENCASE_ID;
+        }
         if (hk_test(hDb)) {
             if (dbtype != 0) {
                 tsk_error_reset();
@@ -1112,6 +1146,11 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
     case TSK_HDB_DBTYPE_MD5SUM_ID:
         hdb_info->getentry = md5sum_getentry;
         hdb_info->makeindex = md5sum_makeindex;
+        break;
+
+    case TSK_HDB_DBTYPE_ENCASE_ID:
+        hdb_info->getentry = encase_getentry;
+        hdb_info->makeindex = encase_makeindex;
         break;
 
     case TSK_HDB_DBTYPE_HK_ID:

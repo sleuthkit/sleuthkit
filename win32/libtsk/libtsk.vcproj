@@ -613,6 +613,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\tsk3\hashdb\encase_index.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\tsk3\hashdb\nsrl_index.c"
 				>
 			</File>
