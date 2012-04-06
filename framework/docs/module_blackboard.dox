@@ -6,7 +6,7 @@ The blackboard plays a critical role in allowing modules to communicate and pass
 
 The blackboard exists in both the C++ framework and the Java bindings.  This page is the overview for both languages. The C++ code will be linked to, but Java references will also be given. 
 
-In the C++ framework, you can get access to TskBlackboard from TskServices.  The the Java bindings, you can accesss the blackboard from SleuthkitCase or the Content object. 
+In the C++ framework, you can get access to TskBlackboard from TskServices.  The the Java bindings, you can access the blackboard from SleuthkitCase or the Content object. 
 
 \section bb_artifacts Attributes and Artifacts
 
@@ -17,9 +17,14 @@ All attributes are part of an <em>artifact</em>.  Artifacts group together relat
 Some examples of artifacts include web browser bookmarks (with URL and DATE attributes) and GPS track points (with GEO and DATE attributes).
 
 
-\section bb_art_types Standard Artifact Types
+\section bb_art_types Artifact Types
 
-Several types of artifacts have been identified as common in digital forensics and their use in the blackboard has been officially defined.  As more modules are written, more artifact types will also be defined. 
+All artifacts have a type.  The type defines the type of data being stored.  The framework defines several standard types of artifacts.  Each artifact type has a unique ID associated with it.  Each type also have a unique system name ("TSK_WEB_BOOKMARK" for example) and a display name that does not need to be unique ("Web Bookmark" for example).  If you create a new artifact, then you must supply the two names and the framework will return a unique ID. 
+
+
+\subsection bb_art_types_std Standard Artifact Types
+This section describes the standard artifact types. 
+As more modules are written, more artifact type will also be defined. 
 
 Each file will typically have a TSK_GEN_INFO artifact that contains general information about the file. The attributes in this artifact all pertain to the same file, but they are not necessarily related to each other.  All attributes should be added to this artifact unless it needs its own artifact.  
 
@@ -31,7 +36,16 @@ Example artifact types include:
  - TSK_ARTIFACT_TYPE.TSK_WEB_HISTORY
 
 
-\section bb_attr_types Standard Attribute Types
+\subsection bb_art_types_add Creating Artifact Types
+
+If you need an artifact that does not exist in the framework, you can make one.  Simply call the TskBlackboard.addArtifactType() method.  It will return the artifact ID that you can then use to create an artifact.  To test if a type already exists, use XXX.
+
+
+\section bb_attr_types Attribute Types
+
+All attributes have a type.  The type defines the type of data being stored.  The framework defines several standard types of attributes.  Each attribute type has a unique ID associated with it.  Each type also have a unique system name ("TSK_URL" for example) and a display name that does not need to be unique ("URL" for example).  
+
+\subsection bb_attr_types_std Standard Attribute Types
 
 There are types of attributes that are always important in digital forensics and the framework defines how those should be stored in the blackboard.  Refer to the #TSK_ATTRIBUTE_TYPE enum for the full list of defined types. Using these techniques will ensure that you can find the correct data from previous modules and that later modules can find your results. 
 
@@ -44,17 +58,16 @@ Example attributes that are defined include:
 
 The framework defines what value should be stored for each of these attribute types.  To store an MD5 hash of a given file, you would post to the file's blackboard a name value pair where the name is TSK_HASH_MD5 and the value is the MD5 hash value. 
 
-\section bb_custom_types Custom Artifact and Attribute Types
 
-You can make your own artifact and attribute types if the standard ones do not meet your requirements.  To make a new artifact, use the TskBlackboard.addArtifactType() method.  It will return the artifact type ID.  This ID will unique inside of the database, but will be different accross databases.  To test if a type already exists, use XXXXX.
+\subsection bb_attr_context Attribute Context
 
-
-\section bb_context Attribute Context
-
-Each attribute also has a context field that can optionally be set. It provides context the name and value pair.  Each standard type provides suggestions about what the context should store, but it is not designed to be automatically interpreted by a program. Most attributes will not have this value set. 
+Each attribute has a context field that can optionally be set. It provides context the name and value pair.  Each standard type provides suggestions about what the context should store, but it is not designed to be automatically interpreted by a program. Most attributes will not have this value set. 
 
 As an example, if you have a module that analyzes a Microsoft Word file, then it may pull out dates about when the document was last saved and printed. Both of these dates should be added to the blackboard so that they can be used by a later module that makes timelines of all activity.  Both of these would be added to the TSK_ART_GEN_INFO artifact.  To differentiate between them, the context for each TskBloackboard.TSK_DATETIME should be different.  One should be "Last Printed" and the other "Last Saved". 
 
+\subsection bb_attr_types_add Creating Attribute Types
+
+If you need an attribute that does not exist in the framework, you can make one.  Simply call the TskBlackboard.addAttributeType() method.  It will return the attribute ID that you can then use to create an attribute.  To test if a type already exists, use XXX.
 
 <!-- 
   MAKE SURE THIS MOVES TO THE CODE WHERE THE ARTIFACT EXAMPLES ARE DEFINED
@@ -83,7 +96,7 @@ The general motivation for grouping attributes is that if someone queries the bl
  - Within non-TSK_ART_GEN_INFO artifacts, attributes should be related to each other.  Adding an attribute to an artifact should provide more context to the existing attributes. 
 
 
-\section bb_set Setting Standard Attributes and Artifacts
+\section bb_set Adding Standard Attributes and Artifacts
 
 Both the C++ and Java code have objects for both attributes and artifacts.  The TskBlackboardAttribute class has a variety of constructors to set the corresponding value type.  
 
@@ -95,7 +108,7 @@ The artifacts are added to the underlying database as soon as it is created and 
 
 
 \section bb_query  Querying the Blackboard
-There are a variety of get methods in TskFile that allow you to get artifacts and attributes for a given file (TskFile.getArtifacts() for example).  There are also methods in TskBlackboard that allow you to get artifacts and attributes accross all files (TskBlackboard.getArtifacts for example).
+There are a variety of get methods in TskFile that allow you to get artifacts and attributes for a given file (TskFile.getArtifacts() for example).  There are also methods in TskBlackboard that allow you to get artifacts and attributes across all files (TskBlackboard.getArtifacts for example).
 
 TODO: ADD MORE HERE.
 

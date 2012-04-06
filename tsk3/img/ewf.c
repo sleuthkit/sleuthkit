@@ -139,6 +139,9 @@ ewf_open(int a_num_img, const TSK_TCHAR * const a_images[],
 #if !defined( LIBEWF_STRING_DIGEST_HASH_LENGTH_MD5 )
     uint8_t md5_hash[16];
 #endif
+    if (tsk_verbose)
+        libewf_set_notify_values(stderr, 1);
+
     if ((ewf_info =
             (IMG_EWF_INFO *) tsk_img_malloc(sizeof(IMG_EWF_INFO))) ==
         NULL) {

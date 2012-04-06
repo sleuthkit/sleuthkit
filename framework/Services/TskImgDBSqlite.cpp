@@ -810,16 +810,6 @@ int TskImgDBSqlite::addFsBlockInfo(int a_fsId, uint64_t a_fileId, int a_sequence
     return 0;
 }
 
-/**
- * Add information about how the unallocated images were created so that we can later
- * map where data was recovered from.  
- * @param a_volID Volume ID that the data was extracted from.
- * @param unallocImgID ID of the unallocated image that was created.
- * @param unallocImgStart Sector offset of where in the unallocated image that the run starts.
- * @param length Number of sectors that are in the run.
- * @param origImgStart Sector offset in the original image (relative to start of image) where the run starts 
- * @returns 1 on errror
- */
 int TskImgDBSqlite::addAllocUnallocMapInfo(int a_volID, int unallocImgID, 
                                            uint64_t unallocImgStart, uint64_t length, uint64_t origImgStart)
 {
@@ -1265,15 +1255,6 @@ int TskImgDBSqlite::commit()
     return 0;
 }
 
-/**
- * Given an offset in an unallocated image that was created for carving, 
- * return information about where that data came from in the original image. 
- * This is used to map where a carved file is located in the original image. 
- *
- * @param a_unalloc_img_id ID of the unallocated image that you want data about
- * @param a_file_offset Sector offset where file was found in the unallocated image
- * @return NULL on error or a run descriptor. 
- */
 UnallocRun * TskImgDBSqlite::getUnallocRun(int a_unalloc_img_id, int a_file_offset) const
 {
     char stmt[1024];

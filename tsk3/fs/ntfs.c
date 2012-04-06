@@ -2372,7 +2372,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
              * unallocated.  If so, then the list entry could
              * have been reallocated, so we will just ignore it
              */
-            if ((tsk_getu16(fs->endian, mft->flags) & NTFS_MFT_INUSE) == 0) {
+            if (((tsk_getu16(fs->endian, mft->flags) & NTFS_MFT_INUSE) == 0) ||
+                (fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)) {
                 continue;
             }
             else {

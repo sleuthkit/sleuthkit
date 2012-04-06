@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.sql.SQLException;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 
 /**
@@ -62,13 +61,15 @@ public abstract class FsContent extends AbstractContent {
 		parentFileSystem = parent;
 	}
 
+
 	@Override
-	public byte[] read(long offset, long len) throws TskException{
+	public int read(byte[] buf, long offset, long len) throws TskException{
 		if (fileHandle == 0){
 			fileHandle = SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), meta_addr);
 		}
-		return SleuthkitJNI.readFile(fileHandle, offset, len);
+		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 	}
+	
 
 	//methods get exact data from database. could be manipulated to get more
 	//meaningful data.
@@ -96,11 +97,7 @@ public abstract class FsContent extends AbstractContent {
 	}
 	
 	public Directory getParentDirectory() throws TskException {
-		try {
-			return db.getParentDirectory(this);
-		} catch (SQLException ex) {
-			throw new TskException("Error getting parent directory.", ex);
-		}
+		return db.getParentDirectory(this);
 	}
 
 	/**

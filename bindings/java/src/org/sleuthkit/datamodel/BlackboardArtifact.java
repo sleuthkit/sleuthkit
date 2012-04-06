@@ -50,7 +50,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_TRACKPOINT(7, "TSK_TRACKPOINT", "Trackpoints"),
 		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG", "Installed Programs"),
 		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT", "Keyword Hits"),
-		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", "Hashset Hits");
+		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", "Hashset Hits"),
+		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Device Attached");
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
 		private int typeID;
@@ -181,10 +182,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * add an attribute to this artifact
-	 * @param attrType the attribute type enum
-	 * @param value the value int
-	 * @param moduleName the module that created this attribute
-	 * @param context addition information about the attribute
+	 * @param attr the attribute to add
 	 * @throws TskException
 	 */
 	public void addAttribute(BlackboardAttribute attr) throws TskException {
@@ -195,7 +193,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * add a collection of attributes to this artifact in a single transaction
-	 * @param a
+	 * @param attributes List of attributes to add
 	 * @throws TskException
 	 */
 	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskException {
@@ -227,4 +225,25 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	public SleuthkitCase getSleuthkitCase() {
 		return Case;
 	}
+
+    /**
+     * Compare this artifact with the given object
+	 * Ensure that the artifacts have the same ID
+     * @param obj
+     * @return Whether this object is equal to the given one
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final BlackboardArtifact other = (BlackboardArtifact) obj;
+        if (this.artifactID != other.artifactID) {
+            return false;
+        }
+        return true;
+    }
 }

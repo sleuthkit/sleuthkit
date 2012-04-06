@@ -25,11 +25,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.InputStream;
-import java.sql.SQLException;
 
 public class Hash {
 
     private final static int BUFFER_SIZE = 8192;
+	private final static byte[] buffer = new byte[BUFFER_SIZE];
 
     /**
      * Generate the md5 hash for the given FsContent
@@ -44,7 +44,6 @@ public class Hash {
         Logger logger = Logger.getLogger(Hash.class.getName());
         try {
             MessageDigest md = MessageDigest.getInstance("md5");
-            byte[] buffer = new byte[BUFFER_SIZE];
             int len = in.read(buffer);
             while (len != -1) {
                 md.update(buffer, 0, len);
@@ -60,7 +59,7 @@ public class Hash {
             fsContent.getSleuthkit().setMd5Hash(fsContent, hashText);
         } catch (NoSuchAlgorithmException ex) {
             logger.log(Level.WARNING, "No algorithm known as 'md5'", ex);
-        } catch (SQLException ex) {
+        } catch (TskException ex) {
             logger.log(Level.WARNING, "Error updating content's md5 in database", ex);
         }
         return hashText;

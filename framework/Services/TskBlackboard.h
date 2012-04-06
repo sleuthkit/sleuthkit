@@ -55,8 +55,13 @@ typedef enum TSK_ARTIFACT_TYPE {
 		TSK_ART_TRACKPOINT = 7,///< A trackpoint from a GPS log.
 		TSK_ART_INSTALLED_PROG = 8,///< An installed program. 
 		TSK_ART_KEYWORD_HIT = 9,///< A keyword hit. 
-        TSK_ART_HASHSET_HIT = 10 ///< A hit with a hashset / hash database. 
-    /* SEE ABOVE -- KEEP JAVA CODE IN SYNC */
+        TSK_ART_HASHSET_HIT = 10, ///< A hit within a known bad / notable hashset / hash database. 
+        TSK_ART_DEVICE_ATTACHED = 11, ///< An event for a device being attached to the host computer
+    /* SEE ABOVE:
+     * - KEEP JAVA CODE IN SYNC 
+     * - UPDATE map in TskBlackboard.cpp
+     * - Update Wiki to reflect the attributes that should be part of the artifact. 
+     */
 };
 
 /**
@@ -90,7 +95,7 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_NAME_PERSON = 17,///< String of a person name
     TSK_DEVICE_MODEL = 18,///< String of manufacturer name of device that was connected (or somehow related to) the data being analyzed
     TSK_DEVICE_MAKE = 19,///< String of make of a device that was connected (or somehow related to) the data being analyzed
-    TSK_DEVICE_ID = 20,///< String of ID of a device that was connected (or somehow related to) the data being analyzed
+    TSK_DEVICE_ID = 20,///< String of ID/serial number of a device that was connected (or somehow related to) the data being analyzed
     TSK_EMAIL = 21,///< String of e-mail address in the form of user@host.com
     TSK_HASH_HD5 = 22,///< STRING: MD5 hash
     TSK_HASH_SHA1 = 23,///< STRING: SHA1 hash
@@ -100,13 +105,16 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_TEXT_FILE = 27,///< String of path to file containing text. May be absolute or relative. If relative, will be evaluated relative to OUT_DIR setting.
     TSK_TEXT_LANGUAGE = 28,///< String of the detected language in ISO 639-3 language code of TskBlackboard::TSK_TEXT data.
     TSK_ENTROPY = 29,///< DOUBLE: Entropy value of file
-    TSK_HASHSET_NAME = 30,///< String of name of the hashset if a file was found in it
+    TSK_HASHSET_NAME = 30,///< String of the name or file name of the hashset 
     TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path
-    TSK_REFERRER = 32,///<String Referrer URL
+    TSK_REFERRER = 32,///< String of referrer URL
     TSK_LAST_ACCESSED = 33,///<last time access, review this instead of DATETIME
-    TSK_IP_ADDRESS = 34,///<String IP Address
-    TSK_PHONE_NUMBER = 35,///<String phone number
-    /* SEE ABOVE -- KEEP JAVA CODE IN SYNC */
+    TSK_IP_ADDRESS = 34,///<String of IP Address
+    TSK_PHONE_NUMBER = 35,///<String of phone number
+    TSK_PATH_ID = 36,///< Object ID from database that a TSK_PATH attribute corresponds to
+    /* SEE ABOVE: 
+     * - KEEP JAVA CODE IN SYNC 
+     * - UPDATE map in TskBlackBoard.cpp too */
 };
 
 /*

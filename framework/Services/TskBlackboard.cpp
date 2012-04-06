@@ -21,6 +21,7 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_ART_TRACKPOINT, TskArtifactNames("TSK_ART_TRACKPOINT", "Trackpoint")));
     retval.insert(pair<int, TskArtifactNames>(TSK_ART_INSTALLED_PROG, TskArtifactNames("TSK_ART_INSTALLED_PROG", "Installed Program")));
     retval.insert(pair<int, TskArtifactNames>(TSK_ART_KEYWORD_HIT, TskArtifactNames("TSK_ART_KEYWORD_HIT", "Keyword Hit")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_ART_DEVICE_ATTACHED, TskArtifactNames("TSK_ART_DEVICE_ATTACHED", "Device Attached")));
     return retval;
 }
 
@@ -61,6 +62,8 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_LAST_ACCESSED, TskAttributeNames("TSK_LAST_ACCESSED", "Last Time Accessed")));  // @@@ Review this instead of using DATETIME
     retval.insert(pair<int, TskAttributeNames>(TSK_IP_ADDRESS, TskAttributeNames("TSK_IP_ADDRESS", "IP Address")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER, TskAttributeNames("TSK_PHONE_NUMBER", "Phone Number")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_PATH_ID, TskAttributeNames("TSK_PATH_ID", "Id of Path")));
+
     return retval;
 }
 

@@ -67,19 +67,21 @@ public class Volume extends FileSystemParent {
 
 	/**
 	 * read from this volume
+	 * @param buf buffer to read to
 	 * @param offset in bytes
 	 * @param len in bytes
-	 * @return the byte data
+	 * @return number bytes read, or -1 if error
 	 * @throws TskException
 	 */
 	@Override
-	public byte[] read(long offset, long len) throws TskException {
+	public int read(byte[] buf, long offset, long len) throws TskException {
 		// read from the volume
 		if(volumeHandle == 0){
 			volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
 		}
-		return SleuthkitJNI.readVsPart(volumeHandle, offset, len);
+		return SleuthkitJNI.readVsPart(volumeHandle, buf, offset, len);
 	}
+	
 
 	@Override
 	public long getSize() {
@@ -203,11 +205,7 @@ public class Volume extends FileSystemParent {
 
 	@Override
 	public List<Content> getChildren() throws TskException {
-		try {
-			return db.getVolumeChildren(this);
-		} catch (SQLException ex) {
-			throw new TskException("Error while getting Volume children.", ex);
-		}
+		return db.getVolumeChildren(this);
 	}
 
 	@Override
