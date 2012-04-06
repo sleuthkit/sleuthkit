@@ -974,6 +974,9 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     else if(temp->db_type == TSK_HDB_DBTYPE_HK_ID) {
         TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_HK_STR);
     }
+    else if(temp->db_type == TSK_HDB_DBTYPE_ENCASE_ID) {
+        TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_ENCASE_STR);
+    }
     else {
         TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_NSRL_MD5_STR);
     }

@@ -142,6 +142,17 @@ tsk_hdb_idxinitialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
         }
         hdb_setuphash(hdb_info, TSK_HDB_HTYPE_MD5_ID);
     }
+    else if (strcmp(dbtmp, TSK_HDB_DBTYPE_ENCASE_STR) == 0) {
+        if (hdb_info->db_type != TSK_HDB_DBTYPE_ENCASE_ID) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_ARG);
+            tsk_error_set_errstr(
+                     "hdb_idxinitialize: database detected as: %d index creation as: %d",
+                     hdb_info->db_type, TSK_HDB_DBTYPE_ENCASE_ID);
+            return 1;
+        }
+        hdb_setuphash(hdb_info, TSK_HDB_HTYPE_MD5_ID);
+    }
     else {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
@@ -220,6 +231,10 @@ tsk_hdb_idxinitialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
         fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_STR,
                 TSK_HDB_DBTYPE_HK_STR);
         break;
+    case TSK_HDB_DBTYPE_ENCASE_ID:
+        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_STR,
+                TSK_HDB_DBTYPE_ENCASE_STR);
+        break;
         /* Used to stop warning messages about missing enum value */
     case TSK_HDB_DBTYPE_IDXONLY_ID:
     default:
@@ -269,7 +284,7 @@ tsk_hdb_idxaddentry(TSK_HDB_INFO * hdb_info, char *hvalue,
  * @return 1 on error and 0 on success
  */
 uint8_t
-tsk_hdb_idxaddentry_bin(TSK_HDB_INFO * hdb_info, char *hvalue, int hlen,
+tsk_hdb_idxaddentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,
                     TSK_OFF_T offset)
 {
     int i;

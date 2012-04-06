@@ -83,7 +83,7 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
         
         /* Add the entry to the index */
-        if (tsk_hdb_idxaddentry_bin(hdb_info, buf, 18, offset)) {
+        if (tsk_hdb_idxaddentry_bin(hdb_info, buf, 16, offset)) {
             tsk_error_set_errstr2( "encase_makeindex");
             return 1;
         }
