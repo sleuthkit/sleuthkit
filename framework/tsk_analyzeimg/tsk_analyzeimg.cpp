@@ -222,3 +222,4 @@ int main(int argc, char **argv1)
     fprintf(stderr, "image analysis complete\n");
     return 0;
 }
+
