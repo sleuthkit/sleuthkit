@@ -19,6 +19,9 @@
 
 package org.sleuthkit.datamodel;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Interfaces with the sleuthkit c/c++ libraries to read data from image files
  */
@@ -85,6 +88,9 @@ public class SleuthkitJNI {
 
 	public static class CaseDbHandle {
 		private long caseDbPointer;
+		
+		//map concat. image paths to image handle
+		private static final Map<String,Long> imageHandleCache = new HashMap<String,Long>(); 
 		
 		private CaseDbHandle(long pointer) {
 			this.caseDbPointer = pointer;
@@ -248,8 +254,25 @@ public class SleuthkitJNI {
 	 * @return the image info pointer
 	 * @throws TskException
 	 */
-	public static long openImage(String[] imageDirs) throws TskException{
-		return openImgNat(imageDirs, imageDirs.length);
+	public static long openImage(String[] imageFiles) throws TskException{
+		long imageHandle = 0;
+		
+		StringBuilder keyBuilder = new StringBuilder();
+		for (int i=0; i<imageFiles.length; ++i)
+			keyBuilder.append(imageFiles[i]);
+		final String imageKey = keyBuilder.toString();
+		
+		if (CaseDbHandle.imageHandleCache.containsKey(imageKey) )
+			//get from cache
+			imageHandle = CaseDbHandle.imageHandleCache.get(imageKey);
+		else {
+			//open new handle and cache it
+			imageHandle = openImgNat(imageFiles, imageFiles.length);
+			CaseDbHandle.imageHandleCache.put(imageKey, imageHandle);
+		}
+
+		return imageHandle;
+		
 	}
 
 	/**
@@ -370,7 +393,8 @@ public class SleuthkitJNI {
 	 * @param imgHandle 
 	 */
 	public static void closeImg(long imgHandle){
-		closeImgNat(imgHandle);
+		//close when case is closed instead
+		//closeImgNat(imgHandle); 
 	}
 	/**
 	 * frees the vsHandle pointer
