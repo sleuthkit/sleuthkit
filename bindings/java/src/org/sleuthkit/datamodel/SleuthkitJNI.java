@@ -254,7 +254,7 @@ public class SleuthkitJNI {
 	 * @return the image info pointer
 	 * @throws TskException
 	 */
-	public static long openImage(String[] imageFiles) throws TskException{
+	public synchronized static long openImage(String[] imageFiles) throws TskException{
 		long imageHandle = 0;
 		
 		StringBuilder keyBuilder = new StringBuilder();
