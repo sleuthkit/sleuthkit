@@ -72,7 +72,7 @@ public class SleuthkitJNI {
 
 	static {
 		try {
-			System.loadLibrary("zlib1");
+			System.loadLibrary("zlib");
 			System.loadLibrary("libewf");
 		}
 		catch (UnsatisfiedLinkError e) {
