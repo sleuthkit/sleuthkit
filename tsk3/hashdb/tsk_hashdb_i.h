@@ -61,6 +61,9 @@ extern "C" {
                                          TSK_TCHAR * dbname);
     extern uint8_t tsk_hdb_idxaddentry(TSK_HDB_INFO *, char *hvalue,
                                        TSK_OFF_T offset);
+    extern uint8_t tsk_hdb_idxaddentry_bin(TSK_HDB_INFO * hdb_info, 
+                                           unsigned char *hvalue, int hlen,
+                                           TSK_OFF_T offset);
     extern uint8_t tsk_hdb_idxfinalize(TSK_HDB_INFO *);
 
 /* Functions */
@@ -74,6 +77,12 @@ extern "C" {
     extern uint8_t md5sum_test(FILE *);
     extern uint8_t md5sum_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t md5sum_getentry(TSK_HDB_INFO *, const char *, TSK_OFF_T,
+                                   TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
+                                   void *);
+
+    extern uint8_t encase_test(FILE *);
+    extern uint8_t encase_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
+    extern uint8_t encase_getentry(TSK_HDB_INFO *, const char *, TSK_OFF_T,
                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                    void *);
 
