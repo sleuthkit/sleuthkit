@@ -62,7 +62,7 @@ extern "C" {
     extern uint8_t tsk_hdb_idxaddentry(TSK_HDB_INFO *, char *hvalue,
                                        TSK_OFF_T offset);
     extern uint8_t tsk_hdb_idxaddentry_bin(TSK_HDB_INFO * hdb_info, 
-                                           char *hvalue, int hlen,
+                                           unsigned char *hvalue, int hlen,
                                            TSK_OFF_T offset);
     extern uint8_t tsk_hdb_idxfinalize(TSK_HDB_INFO *);
 
