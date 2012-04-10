@@ -1,13 +1,13 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
-** 
-** This software is distributed under the Common Public License 1.0 
+**
+** This software is distributed under the Common Public License 1.0
 */
 
 /*
@@ -98,7 +98,7 @@ extern "C" {
         uint8_t s_free_blocks_count_hi[4]; /* u32 */
         uint8_t s_min_extra_isize[2];   /* u16 */
         uint8_t s_want_extra_isize[2];  /* u16 */
-        uint8_t s_flags[4];             /* u32 */    
+        uint8_t s_flags[4];             /* u32 */
         uint8_t s_raid_stride[2];       /* u16 */
         uint8_t s_mmp_interval[2];      /* u16 */
         uint8_t s_mmp_block[8];         /* u64 */
@@ -123,7 +123,7 @@ extern "C" {
         uint8_t s_last_error_block[8];  /* u64 */
         uint8_t s_last_error_func[32];  /* u8[32] */
         uint8_t s_mount_opts[64];       /* u8[64] */
-        uint8_t s_padding[112 * 4];      
+        uint8_t s_padding[112 * 4];
     } ext2fs_sb;
 
 /* File system State Values */
@@ -154,12 +154,12 @@ extern "C" {
 #define EXT2FS_FEATURE_INCOMPAT_RECOVER		0x0004
 #define EXT2FS_FEATURE_INCOMPAT_JOURNAL_DEV	0x0008
 #define EXT2FS_FEATURE_INCOMPAT_META_BG         0x0010
-#define EXT2FS_FEATURE_INCOMPAT_EXTENTS         0x0040 
+#define EXT2FS_FEATURE_INCOMPAT_EXTENTS         0x0040
 #define EXT2FS_FEATURE_INCOMPAT_64BIT           0x0080
 #define EXT2FS_FEATURE_INCOMPAT_MMP             0x0100
 #define EXT2FS_FEATURE_INCOMPAT_FLEX_BG         0x0200
-#define EXT2FS_FEATURE_INCOMPAT_EA_INODE        0x0400 
-#define EXT2FS_FEATURE_INCOMPAT_DIRDATA         0x1000 
+#define EXT2FS_FEATURE_INCOMPAT_EA_INODE        0x0400
+#define EXT2FS_FEATURE_INCOMPAT_DIRDATA         0x1000
 
 #define EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER	0x0001
 #define EXT2FS_FEATURE_RO_COMPAT_LARGE_FILE	0x0002
@@ -182,6 +182,27 @@ extern "C" {
         uint8_t bg_used_dirs_count[2];  /* u16: num of use directories  */
         uint8_t f1[14];
     } ext2fs_gd;
+
+    typedef struct{
+        uint8_t bg_block_bitmap_lo[4];      /* u32 */
+        uint8_t bg_inode_bitmap_lo[4];      /* u32 */
+        uint8_t bg_inode_table_lo[4];       /* u32 */
+        uint8_t bg_free_blocks_count_lo[2]; /* u16 */
+        uint8_t bg_free_inodes_count_lo[2]; /* u16 */
+        uint8_t bg_used_dirs_count_lo[2];   /* u16 */
+        uint8_t bg_flags[2];                /* u16 */
+        uint8_t bg_reserved[4*2];           /* u32 */
+        uint8_t bg_itable_unused_lo[2];     /* u16 */
+        uint8_t bg_checksum[2];             /* u16 */
+        uint8_t bg_block_bitmap_hi[4];      /* u32 */
+        uint8_t bg_inode_bitmap_hi[4];      /* u32 */
+        uint8_t bg_inode_table_hi[4];       /* u32 */
+        uint8_t bg_free_blocks_count_hi[2]; /* u16 */
+        uint8_t bg_free_inodes_count_hi[2]; /* u16 */
+        uint8_t bg_used_dirs_count_hi[2];   /* u16 */
+        uint8_t bg_itable_unused_hi[2];     /* u16 */
+        uint8_t bg_reserved2[4*3];          /* u32 */
+    }ext4fs_gd;
 
 
 /* data address to group number */
@@ -228,21 +249,21 @@ extern "C" {
         uint8_t i_ctime_extra[4];  /* u32 */
         uint8_t i_mtime_extra[4];  /* u32 */
         uint8_t i_atime_extra[4];  /* u32 */
-        uint8_t i_crtime[4];       /* u32 */ 
+        uint8_t i_crtime[4];       /* u32 */
         uint8_t i_crtime_extra[4]; /* u32 */
-        uint8_t i_version_hi[4];   /* u32 */       
+        uint8_t i_version_hi[4];   /* u32 */
     } ext2fs_inode;
-    
+
     typedef struct ext2fs_extent {
-        uint8_t  ee_block[4];       /* u32 */ 
+        uint8_t  ee_block[4];       /* u32 */
         uint8_t  ee_len[2];         /* u16 */
         uint8_t  ee_start_hi[2];    /* u16 */
-        uint8_t  ee_start_lo[4];    /* u32 */ 
+        uint8_t  ee_start_lo[4];    /* u32 */
     } ext2fs_extent;
 
     typedef struct ext2fs_extent_idx {
-        uint8_t  ei_block[4];       /* u32 */ 
-        uint8_t  ei_leaf_lo[4];     /* u32 */ 
+        uint8_t  ei_block[4];       /* u32 */
+        uint8_t  ei_leaf_lo[4];     /* u32 */
         uint8_t  ei_leaf_hi[2];     /* u16 */
         uint8_t  ei_unused[2];      /* u16 */
     } ext2fs_extent_idx;
@@ -252,7 +273,7 @@ extern "C" {
         uint8_t  eh_entries[2];     /* u16 */
         uint8_t  eh_max[2];         /* u16 */
         uint8_t  eh_depth[2];       /* u16 */
-        uint8_t  eh_generation[4];  /* u32 */ 
+        uint8_t  eh_generation[4];  /* u32 */
     } ext2fs_extent_header;
 
 /* MODE */
@@ -369,8 +390,8 @@ extern "C" {
 #define EXT2_EA_IDX_LUSTRE                 5
 #define EXT2_EA_IDX_SECURITY               6
 
-/* Entries follow the header and are aligned to 4-byte boundaries 
- * the value of the attribute is stored at the bottom of the block 
+/* Entries follow the header and are aligned to 4-byte boundaries
+ * the value of the attribute is stored at the bottom of the block
  */
     typedef struct {
         uint8_t nlen;
@@ -506,7 +527,10 @@ extern "C" {
         /* lock protects grp_buf, grp_num, bmap_buf, bmap_grp_num, imap_buf, imap_grp_num */
         tsk_lock_t lock;
 
+        void *v_grp_buf;
+        ext4fs_gd *ext4_grp_buf;
         ext2fs_gd *grp_buf;     /* cached group descriptor r/w shared - lock */
+
         EXT2_GRPNUM_T grp_num;  /* cached group number r/w shared - lock */
 
         uint8_t *bmap_buf;      /* cached block allocation bitmap r/w shared - lock */
