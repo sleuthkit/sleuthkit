@@ -68,7 +68,11 @@ std::string TskFile::name() const
  */
 std::string TskFile::extension() const
 {
-    return m_fileRecord.name.substr(m_fileRecord.name.find_last_of(".") + 1);
+    size_t pos = m_fileRecord.name.find_last_of(".");
+    if (pos == std::string.npos)
+        return std::string("");
+    else
+        return m_fileRecord.name.substr(pos + 1);
 }
 
 /**
