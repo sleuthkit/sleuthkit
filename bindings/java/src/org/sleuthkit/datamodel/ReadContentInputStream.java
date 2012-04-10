@@ -51,7 +51,7 @@ public class ReadContentInputStream extends InputStream {
     public int read(byte[] b, int off, int len) throws IOException {
         
         // must return 0 for zero-length arrays
-        if (b.length == 0) {
+        if (b.length == 0 || len == 0) {
             return 0;
         }
         
@@ -68,8 +68,8 @@ public class ReadContentInputStream extends InputStream {
             try {
 				final int lenRead = content.read(b, position, lenToRead);
 
-                if (lenRead == -1) {
-                    // error
+                if (lenRead == 0 || lenRead == -1) {
+                    //error or no more bytes to read, report EOF
                     return -1;
                 } else {
                     position += lenRead;
