@@ -162,7 +162,15 @@ void TskFileManagerImpl::saveFile(TskFile* fileToSave, const std::wstring& fileP
 
         // Create directories that may be missing along the path.
         Poco::File destDir(destPath.parent());
-        destDir.createDirectories();
+
+        try
+        {
+            destDir.createDirectories();
+        }
+        catch (Poco::FileExistsException& )
+        {
+            // It's ok if the directory already exists.
+        }
 
         Poco::File destFile(destPath);
 
