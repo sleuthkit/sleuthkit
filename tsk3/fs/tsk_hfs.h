@@ -8,6 +8,11 @@
 ** 14900 Conference Center Drive
 ** Chantilly, VA 20151
 **
+** Matt Stillerman [matt@atc-nycorp.com]
+** Copyright (c) 2012 ATC-NY.  All rights reserved.
+** This file contains data developed with support from the National
+** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
+**
 ** Copyright (c) 2009-2011 Brian Carrier.  All rights reserved.
 ** 
 ** Judson Powers [jpowers@atc-nycorp.com]
@@ -96,7 +101,13 @@
  */
 #define NSEC_BTWN_1904_1970	(uint32_t) 2082844800U
 
+/**
+ * These two constants are the "ID" of the data fork and resource fork as TSK attributes.  By the way,
+ * those attributes both have type TSK_FS_ATTR_TYPE_NTFS_DATA, which is a bit counter-intuitive.
+ */
 
+#define HFS_FS_ATTR_ID_DATA 0
+#define HFS_FS_ATTR_ID_RSRC 1
 
 /* predefined files */
 #define HFS_ROOT_PARENT_ID         1
@@ -129,6 +140,15 @@
 #define HFS_ALLOCATIONNAME "$BitMapFile"
 #define HFS_STARTUPNAME "$BootFile"
 #define HFS_ATTRIBUTESNAME "$AttributesFile"
+
+/**
+ * B-Tree Node Types
+ */
+
+#define HFS_ATTR_NODE_LEAF     -1
+#define HFS_ATTR_NODE_HEADER   1
+#define HFS_ATTR_NODE_INDEX     0
+#define HFS_ATTR_NODE_MAP      2
 
 /*
  * HFS structures
@@ -262,6 +282,15 @@ typedef struct {
 #define HFS_VH_FI_ID2   7       /* OS X Volume ID part 2 */
 
 
+/**
+ *   Flags to control hfs_UTF16toUTF8() 
+ */
+
+// If this flag is set, the function will replace fwd slash with colon, as
+// required in HFS+ filenames.
+#define HFS_U16U8_FLAG_REPLACE_SLASH 0x00000001
+
+
 /*
 ** HFS+/HFSX Super Block
 */
@@ -393,7 +422,7 @@ typedef struct {
     uint8_t res2[64];           /* reserved */
 } hfs_btree_header_record;
 
-/* key for category records */
+/* key for catalog records */
 typedef struct {
     uint8_t key_len[2];         // length of key minus 2
     uint8_t parent_cnid[4];
@@ -418,6 +447,36 @@ typedef struct {
     uint8_t childNode[4];
 } hfs_btree_index_record;
 
+/***************** ATTRIBUTES FILE ******************************/
+
+typedef struct {
+	uint8_t key_len[2];
+	uint8_t pad[2];
+	uint8_t file_id[4];
+	uint8_t start_block[4];
+	uint8_t attr_name_len[2];
+	uint8_t attr_name[254];
+} hfs_btree_key_attr;
+
+
+
+typedef struct {
+	uint8_t record_type[4];  // HFS_ATTRIBUTE_RECORD_INLINE_DATA
+	uint8_t reserved[8];
+	uint8_t attr_size[4];
+	uint8_t attr_data[2];  /* variable length data */
+} hfs_attr_data;
+
+
+
+/* the following values are still TBD, and are just place-holders */
+#define HFS_ATTR_RECORD_INLINE_DATA 0x10
+#define HFS_ATTR_RECORD_FORK_DATA 0x20
+#define HFS_ATTR_RECORD_EXTENTS 0x30
+
+
+
+#define COMPRESSION_UNIT_SIZE 65536
 
 
 /********* CATALOG Record structures *********/
@@ -543,6 +602,49 @@ typedef struct {
     hfs_thread thread;          /* thread record */
 } HFS_ENTRY;
 
+
+/******************  Resource File Structures *****************/
+
+typedef struct {
+	uint8_t dataOffset[4];
+	uint8_t mapOffset[4];
+	uint8_t dataLength[4];
+	uint8_t mapLength[4];
+} hfs_resource_fork_header;
+
+typedef struct {
+	uint8_t length[4];
+	uint8_t data[2]; // Variable length
+} hfs_resource;
+
+typedef struct {
+	uint8_t reserved1[16];  // copy of resource fork header
+	uint8_t reserved2[4];  //handle to next resource map
+	uint8_t reserved3[2];  // file reference number
+	uint8_t fork_attributes[2];  //??
+	uint8_t typeListOffset[2];   // Actually, points to a 2-byte count of types (minus 1)
+	uint8_t nameListOffset[2];   // could be the end of the fork or zero, if there is no name list.
+} hfs_resource_fork_map_header;
+
+typedef struct {
+	unsigned char type[4];
+	uint8_t count[2];  // number of resources of this type, minus 1
+	uint8_t offset[2]; // offset from beginning of type list to reference list for this type.
+} hfs_resource_type_list_item;
+
+typedef struct {
+	uint8_t typeCount[2];  // number of types minus one
+	hfs_resource_type_list_item type[];  // Variable length
+} hfs_resource_type_list;
+
+typedef struct {
+	uint8_t resID[2];
+	uint8_t resNameOffset[2];  //SIGNED offset from beginning of name list, or -1
+	uint8_t resAttributes[1];  // ??
+	uint8_t resDataOffset[3];  // from beginning of resource data to data for this resource
+	uint8_t reserved[4];     // handle to resource
+}  hfs_resource_refListItem;
+
 /************** JOURNAL ******************/
 
 /* HFS Journal Info Block */
@@ -554,12 +656,19 @@ typedef struct {
     uint8_t res[128];
 } hfs_journ_sb;
 
+
+
+
 /*
  * Prototypes
  */
 extern uint8_t hfs_checked_read_random(TSK_FS_INFO *, char *, size_t,
     TSK_OFF_T);
-extern uint8_t hfs_uni2ascii(TSK_FS_INFO *, uint8_t *, int, char *, int);
+
+//extern uint8_t hfs_uni2ascii(TSK_FS_INFO *, uint8_t *, int, char *, int);
+//   replaced by:
+extern uint8_t hfs_UTF16toUTF8(TSK_FS_INFO *, uint8_t *, int, char *, int, uint32_t);
+
 extern int hfs_unicode_compare(HFS_INFO *, const hfs_uni_str *,
     const hfs_uni_str *);
 extern uint16_t hfs_get_idxkeylen(HFS_INFO * hfs, uint16_t keylen,

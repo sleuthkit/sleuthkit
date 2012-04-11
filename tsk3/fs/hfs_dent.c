@@ -76,6 +76,7 @@
 #define UTF16_NULL_REPLACE 0x005e
 #define UTF16_SLASH 0x002f
 #define UTF16_COLON 0x003a
+#define UTF16_LEAST_PRINTABLE 0x0020
 
 /* convert HFS+'s UTF16 to UTF8
  * replaces null characters with another character (0xfffd)
@@ -84,10 +85,33 @@
  * note that at least one directory on HFS+ volumes begins with
  *   four nulls, so we do need to handle nulls; also, Apple chooses
  *   to encode nulls as UTF8 \xC0\x80, which is not a valid UTF8 sequence
- * returns 0 on success, 1 on failure; sets up to error string 1 */
+ *
+ *   @param fs  the file system
+ *   @param uni  the UTF16 string as a sequence of bytes
+ *   @param ulen  then length of the UTF16 string in characters
+ *   @param asc   a buffer to hold the UTF8 result
+ *   @param alen  the length of that buffer
+ *   @param flags  control some aspects of the conversion
+ *   @return 0 on success, 1 on failure; sets up to error string 1
+ *
+ *   HFS_U16U8_FLAG_REPLACE_SLASH  if this flag is set, then slashes will be replaced
+ *   by colons.  Otherwise, they will not be replaced.
+ *
+ *   NOTE:  If file names or directory names contain control characters (less than decimal 32)
+ *   other than NULL, these will be preserved.  Such characters typically have meaning
+ *   for the terminal such as "carriage return" or "clear screen".  As a result, programs
+ *   such fls and istat which try to print out the path will behave strangely.  In particular,
+ *   HFS+ file systems contain a special directory named ".HFS+ Private Directory Data^M"
+ *   which is terminated by a control-M.  Most terminals will perform a "carriage return"
+ *   for this character, and thus, when printing the path of any file in this directory,
+ *   the end of the path will overwrite the beginning.
+ *
+ *   Code in this function (that is commented out) will replace any such characters by a
+ *   valid printing character.
+ */
 uint8_t
-hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
-    int alen)
+hfs_UTF16toUTF8(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
+    int alen, uint32_t flags)
 {
     UTF8 *ptr8;
     uint8_t *uniclean;
@@ -109,10 +133,16 @@ hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
             uc = UTF16_NULL_REPLACE;
             changed = 1;
         }
-        else if (uc == UTF16_SLASH) {
+        else if ((flags & HFS_U16U8_FLAG_REPLACE_SLASH) && uc == UTF16_SLASH) {
             uc = UTF16_COLON;
             changed = 1;
         }
+
+        //else if (uc < UTF16_LEAST_PRINTABLE) {
+        //	uc = (uint16_t) UTF16_NULL_REPLACE;
+        //	changed = 1;
+        //}
+
         if (changed)
             *((uint16_t *) (uniclean + i * 2)) =
                 tsk_getu16(fs->endian, (uint8_t *) & uc);
@@ -130,7 +160,7 @@ hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
     if (r != TSKconversionOK) {
         tsk_error_set_errno(TSK_ERR_FS_UNICODE);
         tsk_error_set_errstr
-            ("hfs_uni2ascii: unicode conversion failed (%d)", (int) r);
+            ("hfs_UTF16toUTF8: unicode conversion failed (%d)", (int) r);
         return 1;
     }
 
@@ -250,9 +280,10 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 
 
-            if (hfs_uni2ascii(fs, (uint8_t *) cur_key->name.unicode,
+            if (hfs_UTF16toUTF8(fs, (uint8_t *) cur_key->name.unicode,
                     tsk_getu16(hfs->fs_info.endian, cur_key->name.length),
-                    info->fs_name->name, HFS_MAXNAMLEN + 1)) {
+                    info->fs_name->name, HFS_MAXNAMLEN + 1,
+                    HFS_U16U8_FLAG_REPLACE_SLASH)) {
                 return HFS_BTREE_CB_ERR;
             }
         }
@@ -266,9 +297,10 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
                 hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
                     file->std.perm.mode));
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-            if (hfs_uni2ascii(fs, (uint8_t *) cur_key->name.unicode,
+            if (hfs_UTF16toUTF8(fs, (uint8_t *) cur_key->name.unicode,
                     tsk_getu16(hfs->fs_info.endian, cur_key->name.length),
-                    info->fs_name->name, HFS_MAXNAMLEN + 1)) {
+                    info->fs_name->name, HFS_MAXNAMLEN + 1,
+                    HFS_U16U8_FLAG_REPLACE_SLASH)) {
                 return HFS_BTREE_CB_ERR;
             }
         }

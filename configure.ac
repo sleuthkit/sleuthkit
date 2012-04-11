@@ -112,8 +112,44 @@ AS_IF([test "x$with_afflib" != "xno"],
       [AC_CHECK_LIB([afflib], [af_open])]
     )]
 )
+
+
+#AC_CHECK_LIB([zlib], [inflate])
+
+# Check if we should link zlib
+AC_ARG_WITH([zlib],
+    [AS_HELP_STRING([--without-zlib],[Do not use ZLIB even if it is installed])]
+    [AS_HELP_STRING([--with-zlib=dir],[Specify that ZLIB is installed in directory 'dir'])],
+    # If --with-afflib or --without-afflib is given
+    [],
+    # if nothing was specified, default to a test
+    [with_zlib=yes])
+
+# check for the lib if they did not specify no
+AS_IF([test "x$with_zlib" != "xno"],
+    # Test the dir if they specified something beyond yes/no
+    [AS_IF([test "x$with_zlib" != "xyes"],
+        [AS_IF([test -d ${with_zlib}],
+            [CFLAGS="$CFLAGS -I${with_zlib}"
+                LDFLAGS="$LDFLAGS -L${with_zlib}"],
+            # Dir given was not correct
+            [AC_MSG_FAILURE([ZLIB directory not found at ${with_afflib}])])
+        ]
+    )]
+    # Check for the header file first to make sure they have the dev install
+    [AC_CHECK_HEADERS([zlib.h],
+      [AC_CHECK_LIB([z], [inflate])]
+    )]
+)
+
+
+
+
 #needed for sqllite
 AC_CHECK_LIB(dl, dlopen) 
+
+#for compressed files in HFS+ we need zlib
+#AC_CHECK_LIBS(zlib, zlib)
 
 
 # Check if we should link libewf.

@@ -204,6 +204,7 @@ extern "C" {
 
     /**
     * These are based on the NTFS type values. 
+     * Added types for HFS+.
     */
     typedef enum {
         TSK_FS_ATTR_TYPE_DEFAULT = 0x01,        // 1
@@ -225,7 +226,14 @@ extern "C" {
         TSK_FS_ATTR_TYPE_NTFS_EA = 0xE0,        // 224
         TSK_FS_ATTR_TYPE_NTFS_PROP = 0xF0,      //  (NT)
         TSK_FS_ATTR_TYPE_NTFS_LOG = 0x100,      //  (2K)
-        TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001    //  Indirect blocks for UFS and ExtX file systems
+        TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001,   //  Indirect blocks for UFS and ExtX file systems
+
+        // Types for HFS+ File Attributes
+        TSK_FS_ATTR_TYPE_HFS_DEFAULT = 0x01,    // 1    Data fork of fs special files and misc
+        TSK_FS_ATTR_TYPE_HFS_DATA = 0x80,       // 128  Data and RSRC forks of regular files
+        TSK_FS_ATTR_TYPE_HFS_EXT_ATTR = 0xE0,   // 224  Extended Attributes, exc. compression records
+        TSK_FS_ATTR_TYPE_HFS_COMP_REC = 0x110,  // 272  Compression records
+        TSK_FS_ATTR_TYPE_HFS_RSRC = 0x120       // 288  Individual resources in the RSRC fork
     } TSK_FS_ATTR_TYPE_ENUM;
 
 #define TSK_FS_ATTR_ID_DEFAULT  0       ///< Default Data ID used if file system does not assign one.
