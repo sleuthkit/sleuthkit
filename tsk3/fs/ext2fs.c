@@ -29,9 +29,9 @@
 
 #include "tsk_fs_i.h"
 #include "tsk_ext2fs.h"
+//#define Ext4_DBG
 
-
-
+#ifdef Ext4_DBG
 static uint8_t debug_print_buf(unsigned char *buf, int len)
 {
     int i = 0;
@@ -46,6 +46,7 @@ static uint8_t debug_print_buf(unsigned char *buf, int len)
     printf("\n");
     return 0;
 }
+#endif
 
 
 /* ext2fs_group_load - load block group descriptor into cache
@@ -1859,11 +1860,22 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
                 "    Group Descriptor Table: %" PRIuDADDR " - ",
                 (cg_base + (boff + fs->block_size - 1) / fs->block_size));
 
+
             boff += (ext2fs->groups_count * gd_size);
             tsk_fprintf(hFile, "%" PRIuDADDR "\n",
                 ((cg_base +
                         (boff + fs->block_size - 1) / fs->block_size) -
                     1));
+            if(fs->ftype == TSK_FS_TYPE_EXT4)
+            {
+                tsk_fprintf(hFile,
+                    "    Group Descriptor Growth Blocks: %" PRIuDADDR " - ", cg_base + (boff + fs->block_size -1)/fs->block_size);
+                boff += tsk_getu16(fs->endian, ext2fs->fs->pad_or_gdt.s_reserved_gdt_blocks) * fs->block_size;
+                tsk_fprintf(hFile, "%" PRIuDADDR "\n",
+                    ((cg_base +
+                            (boff + fs->block_size - 1) / fs->block_size) -
+                        1));
+            }
         }
 
 

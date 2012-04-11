@@ -107,7 +107,7 @@ extern "C" {
         uint8_t s_algorithm_usage_bitmap[4]; /* u32 */
         uint8_t s_prealloc_blocks;      /* u8 */
         uint8_t s_prealloc_dir_blocks;  /* u8 */
-        union{
+        union pad_or_gdt{
             uint8_t s_padding1[2];          /* u16 */
             uint8_t s_reserved_gdt_blocks[2]; /*u16*/
         }pad_or_gdt;
