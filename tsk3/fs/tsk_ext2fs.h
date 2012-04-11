@@ -107,7 +107,10 @@ extern "C" {
         uint8_t s_algorithm_usage_bitmap[4]; /* u32 */
         uint8_t s_prealloc_blocks;      /* u8 */
         uint8_t s_prealloc_dir_blocks;  /* u8 */
-        uint8_t s_padding1[2];          /* u16 */
+        union{
+            uint8_t s_padding1[2];          /* u16 */
+            uint8_t s_reserved_gdt_blocks[2]; /*u16*/
+        }pad_or_gdt;
         uint8_t s_journal_uuid[16];     /* u8[16] */
         uint8_t s_journal_inum[4];      /* u32 */
         uint8_t s_journal_dev[4];       /* u32 */
@@ -169,12 +172,18 @@ extern "C" {
 #define EXT2FS_REV_DYN		1
 
 /* feature flags */
+#define EXT2FS_HAS_COMPAT_FEATURE(fs,sb,mask)\
+    ((tsk_getu32(fs->endian,sb->s_feature_compat) & mask) != 0)
+
 #define EXT2FS_FEATURE_COMPAT_DIR_PREALLOC	0x0001
 #define EXT2FS_FEATURE_COMPAT_IMAGIC_INODES	0x0002
 #define EXT2FS_FEATURE_COMPAT_HAS_JOURNAL	0x0004
 #define EXT2FS_FEATURE_COMPAT_EXT_ATTR		0x0008
 #define EXT2FS_FEATURE_COMPAT_RESIZE_INO	0x0010
 #define EXT2FS_FEATURE_COMPAT_DIR_INDEX		0x0020
+
+#define EXT2FS_HAS_INCOMPAT_FEATURE(fs,sb,mask)\
+    ((tsk_getu32(fs->endian,sb->s_feature_incompat) & mask) != 0)
 
 #define EXT2FS_FEATURE_INCOMPAT_COMPRESSION	0x0001
 #define EXT2FS_FEATURE_INCOMPAT_FILETYPE	0x0002
@@ -187,6 +196,11 @@ extern "C" {
 #define EXT2FS_FEATURE_INCOMPAT_FLEX_BG         0x0200
 #define EXT2FS_FEATURE_INCOMPAT_EA_INODE        0x0400
 #define EXT2FS_FEATURE_INCOMPAT_DIRDATA         0x1000
+#define EXT4FS_FEATURE_INCOMPAT_INLINEDATA      0x2000 /* data in inode */
+#define EXT4FS_FEATURE_INCOMPAT_LARGEDIR        0x4000 /* >2GB or 3-lvl htree */
+
+#define EXT2FS_HAS_RO_COMPAT_FEATURE(fs,sb,mask)\
+    ((tsk_getu32(fs->endian,sb->s_feature_ro_compat) & mask) != 0)
 
 #define EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER	0x0001
 #define EXT2FS_FEATURE_RO_COMPAT_LARGE_FILE	0x0002

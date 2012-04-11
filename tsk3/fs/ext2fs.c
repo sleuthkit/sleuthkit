@@ -30,6 +30,24 @@
 #include "tsk_fs_i.h"
 #include "tsk_ext2fs.h"
 
+
+
+static uint8_t debug_print_buf(unsigned char *buf, int len)
+{
+    int i = 0;
+    for(i=0; i<len; i++)
+    {
+        if(i%8 == 0)
+            printf("%08X:\t", i);
+        printf("0x%02X ", buf[i]);
+        if((i+1)%8 == 0)
+            printf("\n");
+    }
+    printf("\n");
+    return 0;
+}
+
+
 /* ext2fs_group_load - load block group descriptor into cache
  *
  * Note: This routine assumes &ext2fs->lock is locked by the caller.
@@ -46,8 +64,10 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     TSK_FS_INFO *fs = (TSK_FS_INFO *) ext2fs;
     int gd_size;
 
-    printf("DEBUG: Got Here 1\n");
-    if(fs->ftype == TSK_FS_TYPE_EXT4){
+    if(fs->ftype == TSK_FS_TYPE_EXT4 &&
+       EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_64BIT)
+       )
+    {
         gd_size=sizeof(ext4fs_gd);
     }else{
         gd_size=sizeof(ext2fs_gd);
@@ -56,7 +76,6 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     /*
      * Sanity check
      */
-    printf("DEBUG: Got Here 2\n");
     if (grp_num < 0 || grp_num >= ext2fs->groups_count) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -66,7 +85,6 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
         return 1;
     }
 
-    printf("DEBUG: Got Here 3\n");
     if (ext2fs->grp_buf == NULL) {
         if(fs->ftype == TSK_FS_TYPE_EXT4){
             ext2fs->ext4_grp_buf = (ext4fs_gd *)tsk_malloc(gd_size);
@@ -82,7 +100,6 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
         return 0;
     }
     gd = ext2fs->grp_buf;
-    printf("DEBUG: Got Here 4\n");
 
     /*
      * We're not reading group descriptors often, so it is OK to do small
@@ -92,7 +109,10 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     if (fs->ftype == TSK_FS_TYPE_EXT4)
         gd = ext2fs->ext4_grp_buf;
     cnt = tsk_fs_read(&ext2fs->fs_info, offs, (char *) gd, gd_size);
-    printf("DEBUG: Got Here 5: cnt=%d\n", cnt);
+    /*DEBUG*/
+#ifdef Ext4_DBG
+    debug_print_buf((char *)ext2fs->ext4_grp_buf, gd_size);
+#endif
     if (cnt != gd_size) {
         if (cnt >= 0) {
             tsk_error_reset();
@@ -102,18 +122,26 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
             PRI_EXT2GRP " at %" PRIuOFF, grp_num, offs);
         return 1;
     }
-    printf("DEBUG: Entering sanity check!\n");
     /* Perform a sanity check on the data to make sure offsets are in range */
     if (fs->ftype == TSK_FS_TYPE_EXT4){
-        tsk_printf("DEBUG: Doing some Ext4 processing\n");
+        ext2fs->grp_buf = ext2fs->ext4_grp_buf;
         gd = ext2fs->ext4_grp_buf;
         ext4fs_gd *ext4_gd = ext2fs->ext4_grp_buf;
-        printf("DEBUG hi: %04X\n",*ext4_gd->bg_block_bitmap_hi);
-        printf("DEBUG lo: %08X\n",*ext4_gd->bg_block_bitmap_lo);
-        printf("block_bitmap :%012lX\n",
-               ext4_getu48(fs->endian,
-                        ext4_gd->bg_block_bitmap_hi,
-                        ext4_gd->bg_block_bitmap_lo));
+        if(EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_64BIT)){
+#ifdef Ext4_DBG
+            printf("DEBUG hi: %04X\n",*ext4_gd->bg_block_bitmap_hi);
+            printf("DEBUG lo: %08X\n",*ext4_gd->bg_block_bitmap_lo);
+#endif
+            printf("block_bitmap :%06lX\n",
+                   ext4_getu48(fs->endian,
+                   ext4_gd->bg_block_bitmap_hi,
+                   ext4_gd->bg_block_bitmap_lo));
+        }else{
+#ifdef Ext4_DBG
+            printf("block_bitmap:%04lX\n",tsk_getu32(fs->endian,ext4_gd->bg_block_bitmap_lo));
+            printf("stored checksum: %X\n",tsk_getu16(fs->endian,ext4_gd->bg_checksum));
+#endif
+        }
     }else{
         ext2fs_gd *ext2_gd = (ext2fs_gd *)gd;
         if ((tsk_getu32(fs->endian,
@@ -1506,7 +1534,10 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         break;
       case TSK_FS_TYPE_EXT4:
         tmptypename = "Ext4";
-        gd_size=sizeof(ext4fs_gd);
+        if (EXT2FS_HAS_INCOMPAT_FEATURE(fs,sb,EXT2FS_FEATURE_INCOMPAT_64BIT))
+            gd_size=sizeof(ext4fs_gd);
+        else
+            gd_size=sizeof(ext2fs_gd);
         break;
       default:
         tmptypename = "Ext2";
@@ -1755,7 +1786,13 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             sb->s_inodes_per_group) * ext2fs->inode_size + fs->block_size -
         1) / fs->block_size;
 
-    tsk_fprintf(hFile, "\n\tDEBUG: Group Descritpor Size: %d\n", gd_size); //DEBUG
+#ifdef Ext4_DBG
+    tsk_fprintf(hFile, "\n\tDEBUG: Group Descriptor Size: %d\n", gd_size); //DEBUG
+    tsk_fprintf(hFile, "\n\tDEBUG: Group Descriptor Size: %d\n", *sb->s_desc_size); //DEBUG
+    debug_print_buf((unsigned char *)&sb->pad_or_gdt, 16);
+    printf("\n\tDEBUG: gdt_growth: %d\n", tsk_getu16(fs->endian,sb->pad_or_gdt.s_reserved_gdt_blocks));
+#endif
+
     for (i = 0; i < ext2fs->groups_count; i++) {
         TSK_DADDR_T cg_base;
         TSK_INUM_T inum;
@@ -1931,6 +1968,10 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
         tsk_fprintf(hFile, "  Total Directories: %" PRIu16 "\n",
             tsk_getu16(fs->endian, ext2fs->grp_buf->bg_used_dirs_count));
+
+        if(fs->ftype == TSK_FS_TYPE_EXT4){
+            tsk_fprintf(hFile, "  Checksum: 0x%" PRIX16 "\n", tsk_getu16(fs->endian,ext2fs->ext4_grp_buf->bg_checksum));
+        }
 
         tsk_release_lock(&ext2fs->lock);
     }
