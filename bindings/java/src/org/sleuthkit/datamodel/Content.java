@@ -25,15 +25,16 @@ import java.util.List;
  * Interface for all datatypes that can be found in the database.
  */
 public interface Content extends SleuthkitVisitableItem{
-
+	
 	/**
 	 * read data from the content in the sleuthkit
+	 * @param buf a character array of data (in bytes)
 	 * @param offset offset to start reading from
 	 * @param len amount of data to read (in bytes)
-	 * @return a character array of data (in bytes)
+	 * @return num of bytes read, or -1 on error
 	 * @throws TskException  
 	 */
-	public byte[] read(long offset, long len) throws TskException;
+	public int read(byte[] buf, long offset, long len) throws TskException;
 
 	/**
 	 * get the size of the content

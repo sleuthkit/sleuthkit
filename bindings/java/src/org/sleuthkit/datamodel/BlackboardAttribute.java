@@ -127,7 +127,9 @@ public class BlackboardAttribute {
 		TSK_REFERRER(32, "TSK_REFERRER", "Referrer URL"),
 		TSK_LAST_ACCESSED(33, "TSK_LAST_ACCESSED", "Last Time Accessed"), // @@@ Review this instead of using DATETIME
 		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", "IP Address"),
-		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", "Phone Number");
+		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", "Phone Number"),
+		TSK_PATH_ID(36, "TSK_PATH_ID", "Path ID");
+		
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		private String label;
 		private int typeID;

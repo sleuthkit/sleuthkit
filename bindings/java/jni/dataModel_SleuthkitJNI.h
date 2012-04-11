@@ -162,42 +162,42 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    readImgNat
- * Signature: (JJJ)[B
+ * Signature: (J[BJJ)I
  */
-JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat
-  (JNIEnv *, jclass, jlong, jlong, jlong);
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat
+  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    readVsNat
- * Signature: (JJJ)[B
+ * Signature: (J[BJJ)I
  */
-JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat
-  (JNIEnv *, jclass, jlong, jlong, jlong);
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat
+  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    readVolNat
- * Signature: (JJJ)[B
+ * Signature: (J[BJJ)I
  */
-JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat
-  (JNIEnv *, jclass, jlong, jlong, jlong);
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat
+  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    readFsNat
- * Signature: (JJJ)[B
+ * Signature: (J[BJJ)I
  */
-JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat
-  (JNIEnv *, jclass, jlong, jlong, jlong);
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat
+  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    readFileNat
- * Signature: (JJJ)[B
+ * Signature: (J[BJJ)I
  */
-JNIEXPORT jbyteArray JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat
-  (JNIEnv *, jclass, jlong, jlong, jlong);
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat
+  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI

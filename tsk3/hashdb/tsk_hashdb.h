@@ -76,7 +76,8 @@ extern "C" {
         TSK_HDB_DBTYPE_NSRL_ID = 1,     ///< NIST NSRL format
         TSK_HDB_DBTYPE_MD5SUM_ID = 2,   ///< md5sum format
         TSK_HDB_DBTYPE_HK_ID = 3,       ///< hashkeeper format
-        TSK_HDB_DBTYPE_IDXONLY_ID = 4   ///< Only the database index was opened -- original dbtype is unknown
+        TSK_HDB_DBTYPE_IDXONLY_ID = 4,   ///< Only the database index was opened -- original dbtype is unknown
+        TSK_HDB_DBTYPE_ENCASE_ID = 5    ///< EnCase format
     };
     typedef enum TSK_HDB_DBTYPE_ENUM TSK_HDB_DBTYPE_ENUM;
 
@@ -87,8 +88,9 @@ extern "C" {
 #define TSK_HDB_DBTYPE_NSRL_SHA1_STR		"nsrl-sha1"     ///< NSRL SHA1 string name
 #define TSK_HDB_DBTYPE_MD5SUM_STR		"md5sum"        ///< md5sum db string n ame
 #define TSK_HDB_DBTYPE_HK_STR			"hk"    ///< hash keeper string name
+#define TSK_HDB_DBTYPE_ENCASE_STR			"encase"    ///< encase string name
     /// List of supported data base types
-#define TSK_HDB_DBTYPE_SUPPORT_STR		"nsrl-md5, nsrl-sha1, md5sum, hk"
+#define TSK_HDB_DBTYPE_SUPPORT_STR		"nsrl-md5, nsrl-sha1, md5sum, encase, hk"
 
 
     typedef struct TSK_HDB_INFO TSK_HDB_INFO;

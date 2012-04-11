@@ -321,9 +321,11 @@ TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_
         retval = processAttributes(a_fsFile, a_path);
     }
 
+    static time_t lastCheck = m_startTime;
     time_t timeNow = time(NULL);
-    if (timeNow - m_startTime > 3600)
+    if ((timeNow - lastCheck) > 3600)
     {
+        lastCheck = timeNow;
         std::wstringstream msg;
         msg << L"TSKAutoImpl::processFile : Processed " << m_numFilesSeen << " files.";
         LOGINFO(msg.str());
