@@ -24,6 +24,33 @@ extern "C" {
     typedef uint32_t EXT2_GRPNUM_T;
 #define PRI_EXT2GRP	PRIu32
 
+
+/** \internal
+* Read a 48-bit unsigned value.
+* @param endian Flag that identifies local ordering.
+* @param x 16-bit MSB byte array to read from
+* @param y 32-bit byte array to read from
+* @returns 48-bit unsigned value
+*/
+#define ext4_getu48(endian, x, y)   \
+(uint64_t)( ((endian) == TSK_LIT_ENDIAN)  ?	\
+            ((uint64_t) \
+             ((uint64_t)((uint8_t *)(y))[0] <<  0)+ \
+             ((uint64_t)((uint8_t *)(y))[1] <<  8) + \
+             ((uint64_t)((uint8_t *)(y))[2] << 16) + \
+             ((uint64_t)((uint8_t *)(y))[3] << 24) + \
+             ((uint64_t)((uint8_t *)(x))[0] << 32) + \
+             ((uint64_t)((uint8_t *)(x))[1] << 40)) \
+                                          : \
+            ((uint64_t) \
+             ((uint64_t)((uint8_t *)(y))[5] <<  0)+ \
+             ((uint64_t)((uint8_t *)(y))[4] <<  8) + \
+             ((uint64_t)((uint8_t *)(y))[3] << 16) + \
+             ((uint64_t)((uint8_t *)(y))[2] << 24) + \
+             ((uint64_t)((uint8_t *)(x))[1] << 32) + \
+             ((uint64_t)((uint8_t *)(x))[0] << 40)) )\
+
+
 /*
 ** Constants
 */
@@ -173,7 +200,7 @@ extern "C" {
 /*
  * Group Descriptor
  */
-    typedef struct {
+    typedef struct ext2fs_gd{
         uint8_t bg_block_bitmap[4];     /* u32: block of blocks bitmap */
         uint8_t bg_inode_bitmap[4];     /* u32: block of inodes bitmap */
         uint8_t bg_inode_table[4];      /* u32: block of inodes table */
@@ -183,7 +210,7 @@ extern "C" {
         uint8_t f1[14];
     } ext2fs_gd;
 
-    typedef struct{
+    typedef struct ext4fs_gd{
         uint8_t bg_block_bitmap_lo[4];      /* u32 */
         uint8_t bg_inode_bitmap_lo[4];      /* u32 */
         uint8_t bg_inode_table_lo[4];       /* u32 */

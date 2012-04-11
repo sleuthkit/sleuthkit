@@ -46,10 +46,9 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     TSK_FS_INFO *fs = (TSK_FS_INFO *) ext2fs;
     int gd_size;
 
-
+    printf("DEBUG: Got Here 1\n");
     if(fs->ftype == TSK_FS_TYPE_EXT4){
         gd_size=sizeof(ext4fs_gd);
-
     }else{
         gd_size=sizeof(ext2fs_gd);
     }
@@ -57,6 +56,7 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     /*
      * Sanity check
      */
+    printf("DEBUG: Got Here 2\n");
     if (grp_num < 0 || grp_num >= ext2fs->groups_count) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -66,13 +66,14 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
         return 1;
     }
 
+    printf("DEBUG: Got Here 3\n");
     if (ext2fs->grp_buf == NULL) {
         if(fs->ftype == TSK_FS_TYPE_EXT4){
             ext2fs->ext4_grp_buf = (ext4fs_gd *)tsk_malloc(gd_size);
         }else{
             ext2fs->grp_buf = (ext2fs_gd *)tsk_malloc(gd_size);
         }
-        if(ext2fs->grp_buf == NULL){
+        if(ext2fs->grp_buf == NULL && ext2fs->ext4_grp_buf == NULL){
             return 1;
         }
 
@@ -80,16 +81,18 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     else if (ext2fs->grp_num == grp_num) {
         return 0;
     }
-
     gd = ext2fs->grp_buf;
+    printf("DEBUG: Got Here 4\n");
 
     /*
      * We're not reading group descriptors often, so it is OK to do small
      * reads instead of cacheing group descriptors in a large buffer.
      */
     offs = ext2fs->groups_offset + grp_num * gd_size;
+    if (fs->ftype == TSK_FS_TYPE_EXT4)
+        gd = ext2fs->ext4_grp_buf;
     cnt = tsk_fs_read(&ext2fs->fs_info, offs, (char *) gd, gd_size);
-
+    printf("DEBUG: Got Here 5: cnt=%d\n", cnt);
     if (cnt != gd_size) {
         if (cnt >= 0) {
             tsk_error_reset();
@@ -99,10 +102,18 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
             PRI_EXT2GRP " at %" PRIuOFF, grp_num, offs);
         return 1;
     }
-
+    printf("DEBUG: Entering sanity check!\n");
     /* Perform a sanity check on the data to make sure offsets are in range */
     if (fs->ftype == TSK_FS_TYPE_EXT4){
-
+        tsk_printf("DEBUG: Doing some Ext4 processing\n");
+        gd = ext2fs->ext4_grp_buf;
+        ext4fs_gd *ext4_gd = ext2fs->ext4_grp_buf;
+        printf("DEBUG hi: %04X\n",*ext4_gd->bg_block_bitmap_hi);
+        printf("DEBUG lo: %08X\n",*ext4_gd->bg_block_bitmap_lo);
+        printf("block_bitmap :%012lX\n",
+               ext4_getu48(fs->endian,
+                        ext4_gd->bg_block_bitmap_hi,
+                        ext4_gd->bg_block_bitmap_lo));
     }else{
         ext2fs_gd *ext2_gd = (ext2fs_gd *)gd;
         if ((tsk_getu32(fs->endian,
