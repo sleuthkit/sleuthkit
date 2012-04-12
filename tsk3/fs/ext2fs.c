@@ -49,6 +49,50 @@ static uint8_t debug_print_buf(unsigned char *buf, int len)
 #endif
 
 
+/** \internal
+    test_root - tests to see if a is power of b
+    Adapted from E2fsprogs sparse.c
+    Super blocks are only in block groups that are powers of 3,5, and 7
+    @param a the number being investigated
+    @param b the root
+    @return 1 if a is a power of b, otherwise 0
+*/
+static uint8_t test_root(uint32_t a, uint32_t b)
+{
+        if (a == 0)
+                  return 1;
+          while (1) {
+                  if (a == 1)
+                          return 1;
+                  if (a % b)
+                          return 0;
+                  a = a / b;
+          }
+}
+
+/** ext2fs_bg_has_super - wrapper around test_root
+    Adapted from E2fsprogs sparse.c
+    @param  flags     pointer to s_feature_ro_compat flags for superblock
+    @param  group_num the block group number
+    @return 1 if block group has superblock, otherwise 0
+*/
+uint32_t ext2fs_bg_has_super(uint32_t feature_ro_compat, uint32_t group_block)
+{
+        if (!(feature_ro_compat &
+                EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER))
+                  return 1;
+
+          if (test_root(group_block, 3) || (test_root(group_block, 5)) ||
+              test_root(group_block, 7))
+                  return 1;
+
+          return 0;
+}
+
+
+
+
+
 /* ext2fs_group_load - load block group descriptor into cache
  *
  * Note: This routine assumes &ext2fs->lock is locked by the caller.
@@ -1844,14 +1888,18 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* only print the super block data if we are not in a sparse
          * group
          */
-        if (((tsk_getu32(fs->endian, ext2fs->fs->s_feature_ro_compat) &
+#ifdef Ext4_DBG
+        printf("DEBUG: ext2fs_super: %d\n", ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i));
+#endif
+/*        if (((tsk_getu32(fs->endian, ext2fs->fs->s_feature_ro_compat) &
                     EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER) &&
                 (cg_base != tsk_getu32(fs->endian,
                         ext2fs->grp_buf->bg_block_bitmap)))
             || ((tsk_getu32(fs->endian,
                         ext2fs->fs->s_feature_ro_compat) &
                     EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER) == 0)) {
-
+*/
+        if(ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i)) {
             TSK_OFF_T boff;
 
             /* the super block is the first 1024 bytes */
