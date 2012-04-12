@@ -1557,6 +1557,8 @@ static uint8_t
 ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 {
     unsigned int i;
+    unsigned int gpfbg;
+    unsigned int gd_blocks;
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
     ext2fs_sb *sb = ext2fs->fs;
     int ibpg;
@@ -1793,6 +1795,7 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     if(fs->ftype == TSK_FS_TYPE_EXT4)
     {
         tsk_fprintf(hFile,"Block Groups Per Flex Group: %" PRIu32 "\n", (1 << sb->s_log_groups_per_flex));
+        gpfbg = (1 << sb->s_log_groups_per_flex);
     }
 
     tsk_fprintf(hFile, "Block Range: %" PRIuDADDR " - %" PRIuDADDR "\n",
@@ -1830,6 +1833,8 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         (tsk_getu32(fs->endian,
             sb->s_inodes_per_group) * ext2fs->inode_size + fs->block_size -
         1) / fs->block_size;
+    /* number of blocks group descriptors consume */
+    gd_blocks = (gd_size * ext2fs->groups_count + fs->block_size-1)/ fs->block_size;
 
 #ifdef Ext4_DBG
     tsk_fprintf(hFile, "\n\tDEBUG: Group Descriptor Size: %d\n", gd_size); //DEBUG
@@ -1968,20 +1973,42 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
              *
              * This hard coded aspect does not scale ...
              */
-            tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 ", ",
-                tsk_getu32(fs->endian,
-                    ext2fs->grp_buf->bg_inode_bitmap) + 1,
-                tsk_getu32(fs->endian,
-                    ext2fs->grp_buf->bg_inode_table) - 1);
+            if(fs->ftype == TSK_FS_TYPE_EXT4 && EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_FLEX_BG)){
+                printf("\nDEBUG: Flex BG PROCESSING\n");
+                /*If this is the 1st bg in a flex bg then it contains the bitmaps and inode tables */
+                if(i%gpfbg == 0){
+                    tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 ",",
+                    cg_base
+                    + (gpfbg * 2)  //To account for the bitmaps
+                    + (ibpg*gpfbg) //Combined inode tables
+                    + tsk_getu16(fs->endian, ext2fs->fs->pad_or_gdt.s_reserved_gdt_blocks) + gd_blocks //group descriptors
+                    +1, //superblock
+                    cg_base + tsk_getu32(fs->endian,sb->s_blocks_per_group) - 1);
+                }else{
+                    tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 ",",
+                        cg_base + gd_blocks + tsk_getu16(fs->endian, ext2fs->fs->pad_or_gdt.s_reserved_gdt_blocks) + 1 //+1 for backup super block
+                        , cg_base + tsk_getu32(fs->endian,sb->s_blocks_per_group) - 1 );
+                }
+            }
+            else{
+                tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 ", ",
+                    tsk_getu32(fs->endian,
+                        ext2fs->grp_buf->bg_inode_bitmap) + 1,
+                    tsk_getu32(fs->endian,
+                        ext2fs->grp_buf->bg_inode_table) - 1);
+            }
         }
-
-        tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
-            (uint64_t) tsk_getu32(fs->endian,
-                ext2fs->grp_buf->bg_inode_table) + ibpg,
-            ((ext2_cgbase_lcl(fs, sb, i + 1) - 1) <
-                fs->last_block) ? (ext2_cgbase_lcl(fs, sb,
-                    i + 1) - 1) : fs->last_block);
-
+        if(fs->ftype == TSK_FS_TYPE_EXT4 && EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_FLEX_BG)){
+            printf("\nDEBUG: Flex BG PROCESSING\n");
+        }
+        else{
+            tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+                (uint64_t) tsk_getu32(fs->endian,
+                    ext2fs->grp_buf->bg_inode_table) + ibpg,
+                ((ext2_cgbase_lcl(fs, sb, i + 1) - 1) <
+                    fs->last_block) ? (ext2_cgbase_lcl(fs, sb,
+                        i + 1) - 1) : fs->last_block);
+        }
 
         /* Print the free info */
 
@@ -2040,7 +2067,7 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             tsk_getu16(fs->endian, ext2fs->grp_buf->bg_used_dirs_count));
 
         if(fs->ftype == TSK_FS_TYPE_EXT4){
-            tsk_fprintf(hFile, "  Checksum: 0x%" PRIX16 "\n", tsk_getu16(fs->endian,ext2fs->ext4_grp_buf->bg_checksum));
+            tsk_fprintf(hFile, "  Checksum: 0x%04" PRIX16 "\n", tsk_getu16(fs->endian,ext2fs->ext4_grp_buf->bg_checksum));
         }
 
         tsk_release_lock(&ext2fs->lock);
