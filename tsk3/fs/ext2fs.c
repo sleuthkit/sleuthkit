@@ -1806,7 +1806,16 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             return 1;
         }
         tsk_fprintf(hFile, "\nGroup: %d:\n", i);
-
+        if(fs->ftype == TSK_FS_TYPE_EXT4){
+            tsk_fprintf(hFile,"  Block Group Flags: [");
+            if(EXT4BG_HAS_FLAG(fs, ext2fs->ext4_grp_buf, EXT4_BG_INODE_UNINIT))
+                tsk_fprintf(hFile,"INODE_UNINIT, ");
+            if(EXT4BG_HAS_FLAG(fs, ext2fs->ext4_grp_buf, EXT4_BG_BLOCK_UNINIT))
+                tsk_fprintf(hFile,"BLOCK_UNINIT, ");
+            if(EXT4BG_HAS_FLAG(fs, ext2fs->ext4_grp_buf, EXT4_BG_INODE_ZEROED))
+                tsk_fprintf(hFile,"INODE_ZEROED, ");
+            tsk_fprintf(hFile,"\b\b]\n");
+        }
         inum =
             fs->first_inum + tsk_gets32(fs->endian,
             sb->s_inodes_per_group) * i;

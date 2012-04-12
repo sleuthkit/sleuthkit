@@ -224,6 +224,13 @@ extern "C" {
         uint8_t f1[14];
     } ext2fs_gd;
 
+#define EXT4_BG_INODE_UNINIT    0x0001 /* Inode table/bitmap not in use */
+#define EXT4_BG_BLOCK_UNINIT    0x0002 /* Block bitmap not in use */
+#define EXT4_BG_INODE_ZEROED    0x0004 /* On-disk itable initialized to zero */
+
+#define EXT4BG_HAS_FLAG(fs,gd,flag)\
+    ((tsk_getu16(fs->endian,gd->bg_flags) & flag) != 0)
+
     typedef struct ext4fs_gd{
         uint8_t bg_block_bitmap_lo[4];      /* u32 */
         uint8_t bg_inode_bitmap_lo[4];      /* u32 */
