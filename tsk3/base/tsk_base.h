@@ -39,11 +39,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x00000000
+#define TSK_VERSION_NUM 0x030203ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "0.0.0"
+#define TSK_VERSION_STR "3.2.3"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -289,7 +289,15 @@ extern "C" {
     /** \name Error Handling */
 //@{
 
+    //  I think I don't want this in the multi-threaded version!
+    //  @@@@@
+    //extern uint32_t tsk_errno;
+    extern const char *tsk_error_get();
+    extern void tsk_error_print(FILE *);
+    extern void tsk_error_reset();
 
+    extern void errorReturned(char *errstr, ...);
+    extern void errorDetected(uint32_t errnum, char *errstr, ...);
 
 #define TSK_ERR_AUX	0x01000000
 #define TSK_ERR_IMG	0x02000000
@@ -300,7 +308,9 @@ extern "C" {
 #define TSK_ERR_MASK	0x00ffffff
 
 #define TSK_ERR_AUX_MALLOC	(TSK_ERR_AUX | 0)
-#define TSK_ERR_AUX_MAX		2
+#define TSK_ERR_AUX_BLANK   (TSK_ERR_AUX | 1)
+#define TSK_ERR_AUX_GENERIC (TSK_ERR_AUX | 2)
+#define TSK_ERR_AUX_MAX		3
 
 #define TSK_ERR_IMG_NOFILE	(TSK_ERR_IMG | 0)
 #define TSK_ERR_IMG_OFFSET	(TSK_ERR_IMG | 1)
