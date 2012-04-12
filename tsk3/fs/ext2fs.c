@@ -1802,7 +1802,7 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
 
             /* Is the value location and size valid? */
-            if ((tsk_getu32(fs->endian,
+            if ((tsk_getu16(fs->endian,
                         ea_entry->val_off) > fs->block_size)
                 || ((tsk_getu16(fs->endian,
                             ea_entry->val_off) + tsk_getu32(fs->endian,
