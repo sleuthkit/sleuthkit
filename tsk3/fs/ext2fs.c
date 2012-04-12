@@ -1957,11 +1957,12 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         tsk_fprintf(hFile, "    Data Blocks: ");
 
         /* If we are in a sparse group, display the other addresses */
-        if ((tsk_getu32(fs->endian, ext2fs->fs->s_feature_ro_compat) &
+        if(ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i)) {
+/*        if ((tsk_getu32(fs->endian, ext2fs->fs->s_feature_ro_compat) &
                 EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER) &&
             (cg_base == tsk_getu32(fs->endian,
                     ext2fs->grp_buf->bg_block_bitmap))) {
-
+*/
             /* it goes from the end of the inode bitmap to before the
              * table
              *
