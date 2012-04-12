@@ -83,7 +83,7 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_WEB_BOOKMARK = 5,///< STRING: Browser bookmark information -- DO NOT USED -- WILL BE REMOVED
     TSK_VALUE = 6,///< Some value associated with an artifact
     TSK_FLAG = 7,///< Some flag associated with an artifact
-    TSK_PATH = 8,///< A filesystem path. There is no required formatting style
+    TSK_PATH = 8,///< A filesystem path.  Should be fully qualified. Should set TSK_PATH_ID as well when this is set. TODO: Need to define this value more for cases with multiple images and multiple file systems per image. 
     TSK_GEO = 9,///< STRING: TBD
     TSK_KEYWORD = 10,///< STRING: Keyword that was found in this file. 
     TSK_KEYWORD_REGEXP = 11,///< STRING: A regular expression string
@@ -111,7 +111,7 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_LAST_ACCESSED = 33,///<last time access, review this instead of DATETIME
     TSK_IP_ADDRESS = 34,///<String of IP Address
     TSK_PHONE_NUMBER = 35,///<String of phone number
-    TSK_PATH_ID = 36,///< Object ID from database that a TSK_PATH attribute corresponds to
+    TSK_PATH_ID = 36,///< Object ID from database that a TSK_PATH attribute corresponds to.  Set to -1 if path is for a file that is not in database (i.e. deleted). 
     /* SEE ABOVE: 
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackBoard.cpp too */
