@@ -1958,10 +1958,8 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             tsk_getu32(fs->endian,
                 ext2fs->grp_buf->bg_inode_table) + ibpg - 1);
 
-
-        tsk_fprintf(hFile, "    Data Blocks: ");
-
         /* If we are in a sparse group, display the other addresses */
+
         if(ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i)) {
 /*        if ((tsk_getu32(fs->endian, ext2fs->fs->s_feature_ro_compat) &
                 EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER) &&
@@ -1974,10 +1972,25 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
              * This hard coded aspect does not scale ...
              */
             if(fs->ftype == TSK_FS_TYPE_EXT4 && EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_FLEX_BG)){
-                printf("\nDEBUG: Flex BG PROCESSING\n");
+#ifdef Ext4_DBG
+                printf("\nDEBUG: Flex BG PROCESSING cg_base: %d, gpfbg: %d, ibpg: %d \n", cg_base, gpfbg, ibpg);
+#endif
                 /*If this is the 1st bg in a flex bg then it contains the bitmaps and inode tables */
                 if(i%gpfbg == 0){
-                    tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 ",",
+                    tsk_fprintf(hFile, "    Uninit Data Bitmaps: ");
+                    tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_block_bitmap_lo)+ext2fs->groups_count,
+                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_block_bitmap_lo)+gpfbg-1);
+                    tsk_fprintf(hFile, "    Uninit Inode Bitmaps: ");
+                    tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_bitmap_lo)+ext2fs->groups_count,
+                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_bitmap_lo)+gpfbg-1);
+                    tsk_fprintf(hFile, "    Uninit Inode Table: ");
+                    tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_lo)+(ext2fs->groups_count*ibpg),
+                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_lo)+(gpfbg*ibpg)-1);
+                    tsk_fprintf(hFile, "    Data Blocks: ");
+                    tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 "\n",
                     cg_base
                     + (gpfbg * 2)  //To account for the bitmaps
                     + (ibpg*gpfbg) //Combined inode tables
@@ -1985,12 +1998,14 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
                     +1, //superblock
                     cg_base + tsk_getu32(fs->endian,sb->s_blocks_per_group) - 1);
                 }else{
-                    tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 ",",
+                    tsk_fprintf(hFile, "    Data Blocks: ");
+                    tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 "\n",
                         cg_base + gd_blocks + tsk_getu16(fs->endian, ext2fs->fs->pad_or_gdt.s_reserved_gdt_blocks) + 1 //+1 for backup super block
                         , cg_base + tsk_getu32(fs->endian,sb->s_blocks_per_group) - 1 );
                 }
             }
             else{
+                tsk_fprintf(hFile, "    Data Blocks: ");
                 tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 ", ",
                     tsk_getu32(fs->endian,
                         ext2fs->grp_buf->bg_inode_bitmap) + 1,
@@ -1998,10 +2013,20 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
                         ext2fs->grp_buf->bg_inode_table) - 1);
             }
         }
-        if(fs->ftype == TSK_FS_TYPE_EXT4 && EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_FLEX_BG)){
+        if(fs->ftype == TSK_FS_TYPE_EXT4 && EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_FLEX_BG))
+        {
+#ifdef Ext4_DBG
             printf("\nDEBUG: Flex BG PROCESSING\n");
+#endif
+            if(!ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i))
+            {
+                tsk_fprintf(hFile, "    Data Blocks: ");
+                tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+                        cg_base, cg_base + tsk_getu32(fs->endian,sb->s_blocks_per_group) - 1 );
+            }
         }
         else{
+            tsk_fprintf(hFile, "    Data Blocks: ");
             tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
                 (uint64_t) tsk_getu32(fs->endian,
                     ext2fs->grp_buf->bg_inode_table) + ibpg,
