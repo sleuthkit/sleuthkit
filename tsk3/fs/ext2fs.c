@@ -1545,6 +1545,129 @@ ext2fs_load_attrs(TSK_FS_FILE * fs_file)
 }
 
 
+static uint8_t
+ext4_fsstat_datablock_helper(TSK_FS_INFO *fs, FILE *hFile, unsigned int i, TSK_DADDR_T cg_base, int gd_size)
+{
+    EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
+    ext2fs_sb *sb = ext2fs->fs;
+    unsigned int gpfbg = (1 << sb->s_log_groups_per_flex);
+    unsigned int ibpg, gd_blocks;
+    unsigned int num_flex_bg, curr_flex_bg;
+    uint64_t last_block;
+
+    /* number of blocks the inodes consume */
+    ibpg =
+        (tsk_getu32(fs->endian,
+            sb->s_inodes_per_group) * ext2fs->inode_size + fs->block_size -
+        1) / fs->block_size;
+    /* number of blocks group descriptors consume */
+    gd_blocks = (gd_size * ext2fs->groups_count + fs->block_size-1)/ fs->block_size;
+    num_flex_bg = (ext2fs->groups_count/gpfbg);
+    if(ext2fs->groups_count % gpfbg)
+        num_flex_bg ++;
+    curr_flex_bg = i/gpfbg;
+
+    last_block = cg_base + tsk_getu32(fs->endian,sb->s_blocks_per_group) - 1;
+    if (last_block > fs->last_block)
+    {
+        last_block = fs->last_block;
+    }
+
+    //printf("ibpg %d  cur_flex: %d, flex_bgs: %d : %d, %d",ibpg, i/gpfbg, num_flex_bg, ext2fs->groups_count/gpfbg, ext2fs->groups_count%gpfbg);
+
+#ifdef Ext4_DBG
+    printf("\nDEBUG: Flex BG PROCESSING cg_base: %d, gpfbg: %d, ibpg: %d \n", cg_base, gpfbg, ibpg);
+#endif
+    /*If this is the 1st bg in a flex bg then it contains the bitmaps and inode tables */
+    //if(ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i))
+    //{
+    if(i%gpfbg == 0)
+    {
+        if(curr_flex_bg == (num_flex_bg-1))
+        {
+        int left_over = num_flex_bg % gpfbg;
+        tsk_fprintf(hFile, "    Uninit Data Bitmaps: ");
+        tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+                    tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_block_bitmap_lo)+ (left_over - 1),
+                    tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_block_bitmap_lo)+ gpfbg -1 );
+        tsk_fprintf(hFile, "    Uninit Inode Bitmaps: ");
+        tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+                    tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_bitmap_lo)+ (left_over - 1),
+                    tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_bitmap_lo)+ gpfbg - 1 );
+        tsk_fprintf(hFile, "    Uninit Inode Table: ");
+        tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+                    tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_lo)+((left_over -1) * ibpg),
+                    tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_lo)+(gpfbg * ibpg) - 1);
+        }
+        tsk_fprintf(hFile, "    Data Blocks1: ");
+        uint16_t db_offset = 0;
+        if(ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i))
+        {
+            db_offset = cg_base
+            + (gpfbg * 2)  //To account for the bitmaps
+            + (ibpg*gpfbg) //Combined inode tables
+            + tsk_getu16(fs->endian, ext2fs->fs->pad_or_gdt.s_reserved_gdt_blocks) + gd_blocks //group descriptors
+            +1; //superblock
+        }
+        else
+        {
+            db_offset = cg_base
+            + (gpfbg * 2)  //To account for the bitmaps
+            + (ibpg*gpfbg); //Combined inode tables
+        }
+        tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 "\n",
+            db_offset, last_block);
+    }
+    else
+    {
+        tsk_fprintf(hFile, "    Data Blocks2: ");
+        uint64_t db_offset = 0 ;
+        if(ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i))
+        {
+            db_offset = cg_base
+            + tsk_getu16(fs->endian, ext2fs->fs->pad_or_gdt.s_reserved_gdt_blocks) + gd_blocks //group descriptors
+            +1; //superblock
+        }
+        else
+        {
+            db_offset = cg_base;
+        }
+        tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 "\n",
+            db_offset, last_block);
+    }
+//    }else if(!ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i))
+//    {
+//        if(i%gpfbg == 0){
+//            tsk_fprintf(hFile, "    Uninit Data Bitmaps: ");
+//            tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+//                        //tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_block_bitmap_lo)+(1 << sb->s_log_groups_per_flex),
+//                        tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_block_bitmap_lo),
+//                        tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_block_bitmap_lo)+gpfbg-1);
+//            tsk_fprintf(hFile, "    Uninit Inode Bitmaps: ");
+//            tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+//                        tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_bitmap_lo)+ext2fs->groups_count,
+//                        tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_bitmap_lo)+gpfbg-1);
+//            tsk_fprintf(hFile, "    Uninit Inode Table: ");
+//            tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+//                        tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_lo)+(ext2fs->groups_count*ibpg),
+//                        tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_lo)+(gpfbg*ibpg)-1);
+//            tsk_fprintf(hFile, "    Data Blocks: ");
+//            tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 "\n",
+//            cg_base
+//            + (gpfbg * 2)  //To account for the bitmaps
+//            + (ibpg*gpfbg) //Combined inode tables
+//            + tsk_getu16(fs->endian, ext2fs->fs->pad_or_gdt.s_reserved_gdt_blocks) + gd_blocks //group descriptors
+//            +1, //superblock
+//            cg_base + tsk_getu32(fs->endian,sb->s_blocks_per_group) - 1);
+//        }
+//        else{
+//        tsk_fprintf(hFile, "    Data Blocks: ");
+//        tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+//                cg_base, cg_base + tsk_getu32(fs->endian,sb->s_blocks_per_group) - 1 );
+//        }
+   //}
+}
+
 /**
  * Print details about the file system to a file handle.
  *
@@ -1959,7 +2082,12 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
                 ext2fs->grp_buf->bg_inode_table) + ibpg - 1);
 
         /* If we are in a sparse group, display the other addresses */
-
+        if(fs->ftype == TSK_FS_TYPE_EXT4)
+        {
+            ext4_fsstat_datablock_helper(fs, hFile, i, cg_base, gd_size);
+        }
+        else
+        {
         if(ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i)) {
 /*        if ((tsk_getu32(fs->endian, ext2fs->fs->s_feature_ro_compat) &
                 EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER) &&
@@ -1971,70 +2099,21 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
              *
              * This hard coded aspect does not scale ...
              */
-            if(fs->ftype == TSK_FS_TYPE_EXT4 && EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_FLEX_BG)){
-#ifdef Ext4_DBG
-                printf("\nDEBUG: Flex BG PROCESSING cg_base: %d, gpfbg: %d, ibpg: %d \n", cg_base, gpfbg, ibpg);
-#endif
-                /*If this is the 1st bg in a flex bg then it contains the bitmaps and inode tables */
-                if(i%gpfbg == 0){
-                    tsk_fprintf(hFile, "    Uninit Data Bitmaps: ");
-                    tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
-                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_block_bitmap_lo)+ext2fs->groups_count,
-                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_block_bitmap_lo)+gpfbg-1);
-                    tsk_fprintf(hFile, "    Uninit Inode Bitmaps: ");
-                    tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
-                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_bitmap_lo)+ext2fs->groups_count,
-                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_bitmap_lo)+gpfbg-1);
-                    tsk_fprintf(hFile, "    Uninit Inode Table: ");
-                    tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
-                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_lo)+(ext2fs->groups_count*ibpg),
-                                tsk_getu32(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_lo)+(gpfbg*ibpg)-1);
-                    tsk_fprintf(hFile, "    Data Blocks: ");
-                    tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 "\n",
-                    cg_base
-                    + (gpfbg * 2)  //To account for the bitmaps
-                    + (ibpg*gpfbg) //Combined inode tables
-                    + tsk_getu16(fs->endian, ext2fs->fs->pad_or_gdt.s_reserved_gdt_blocks) + gd_blocks //group descriptors
-                    +1, //superblock
-                    cg_base + tsk_getu32(fs->endian,sb->s_blocks_per_group) - 1);
-                }else{
-                    tsk_fprintf(hFile, "    Data Blocks: ");
-                    tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 "\n",
-                        cg_base + gd_blocks + tsk_getu16(fs->endian, ext2fs->fs->pad_or_gdt.s_reserved_gdt_blocks) + 1 //+1 for backup super block
-                        , cg_base + tsk_getu32(fs->endian,sb->s_blocks_per_group) - 1 );
-                }
-            }
-            else{
-                tsk_fprintf(hFile, "    Data Blocks: ");
-                tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 ", ",
-                    tsk_getu32(fs->endian,
-                        ext2fs->grp_buf->bg_inode_bitmap) + 1,
-                    tsk_getu32(fs->endian,
-                        ext2fs->grp_buf->bg_inode_table) - 1);
-            }
-        }
-        if(fs->ftype == TSK_FS_TYPE_EXT4 && EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_FLEX_BG))
-        {
-#ifdef Ext4_DBG
-            printf("\nDEBUG: Flex BG PROCESSING\n");
-#endif
-            if(!ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i))
-            {
-                tsk_fprintf(hFile, "    Data Blocks: ");
-                tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
-                        cg_base, cg_base + tsk_getu32(fs->endian,sb->s_blocks_per_group) - 1 );
-            }
-        }
-        else{
             tsk_fprintf(hFile, "    Data Blocks: ");
-            tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
-                (uint64_t) tsk_getu32(fs->endian,
-                    ext2fs->grp_buf->bg_inode_table) + ibpg,
-                ((ext2_cgbase_lcl(fs, sb, i + 1) - 1) <
-                    fs->last_block) ? (ext2_cgbase_lcl(fs, sb,
-                        i + 1) - 1) : fs->last_block);
+            tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 ", ",
+                tsk_getu32(fs->endian,
+                    ext2fs->grp_buf->bg_inode_bitmap) + 1,
+                tsk_getu32(fs->endian,
+                    ext2fs->grp_buf->bg_inode_table) - 1);
         }
-
+        tsk_fprintf(hFile, "    Data Blocks: ");
+        tsk_fprintf(hFile, "%" PRIuDADDR " - %" PRIuDADDR "\n",
+            (uint64_t) tsk_getu32(fs->endian,
+                ext2fs->grp_buf->bg_inode_table) + ibpg,
+            ((ext2_cgbase_lcl(fs, sb, i + 1) - 1) <
+                fs->last_block) ? (ext2_cgbase_lcl(fs, sb,
+                    i + 1) - 1) : fs->last_block);
+        }
         /* Print the free info */
 
 
