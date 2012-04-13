@@ -28,3 +28,5 @@
 Makefile
 .deps
 .libs
+Makefile.in
+*.swp
