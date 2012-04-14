@@ -289,7 +289,7 @@ typedef struct {
 // If this flag is set, the function will replace fwd slash with colon, as
 // required in HFS+ filenames.
 #define HFS_U16U8_FLAG_REPLACE_SLASH 0x00000001
-
+#define HFS_U16U8_FLAG_REPLACE_CONTROL  0x00000002
 
 /*
 ** HFS+/HFSX Super Block

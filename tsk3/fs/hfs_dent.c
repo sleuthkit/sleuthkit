@@ -97,17 +97,9 @@
  *   HFS_U16U8_FLAG_REPLACE_SLASH  if this flag is set, then slashes will be replaced
  *   by colons.  Otherwise, they will not be replaced.
  *
- *   NOTE:  If file names or directory names contain control characters (less than decimal 32)
- *   other than NULL, these will be preserved.  Such characters typically have meaning
- *   for the terminal such as "carriage return" or "clear screen".  As a result, programs
- *   such fls and istat which try to print out the path will behave strangely.  In particular,
- *   HFS+ file systems contain a special directory named ".HFS+ Private Directory Data^M"
- *   which is terminated by a control-M.  Most terminals will perform a "carriage return"
- *   for this character, and thus, when printing the path of any file in this directory,
- *   the end of the path will overwrite the beginning.
- *
- *   Code in this function (that is commented out) will replace any such characters by a
- *   valid printing character.
+ *   HFS_U16U8_FLAG_REPLACE_CONTROL if this flag is set, then all control characters
+ *   will be replaced by the UTF16_NULL_REPLACE character. N.B., always replaces
+ *   null characters regardless of this flag.
  */
 uint8_t
 hfs_UTF16toUTF8(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
@@ -126,8 +118,11 @@ hfs_UTF16toUTF8(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
         return 1;
 
     memcpy(uniclean, uni, ulen * 2);
+
     for (i = 0; i < ulen; ++i) {
         uint16_t uc = tsk_getu16(fs->endian, uniclean + i * 2);
+
+
         int changed = 0;
         if (uc == UTF16_NULL) {
             uc = UTF16_NULL_REPLACE;
@@ -138,10 +133,10 @@ hfs_UTF16toUTF8(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
             changed = 1;
         }
 
-        //else if (uc < UTF16_LEAST_PRINTABLE) {
-        //	uc = (uint16_t) UTF16_NULL_REPLACE;
-        //	changed = 1;
-        //}
+        else if ((flags & HFS_U16U8_FLAG_REPLACE_CONTROL) && uc < UTF16_LEAST_PRINTABLE) {
+        	uc = (uint16_t) UTF16_NULL_REPLACE;
+        	changed = 1;
+        }
 
         if (changed)
             *((uint16_t *) (uniclean + i * 2)) =
@@ -150,6 +145,7 @@ hfs_UTF16toUTF8(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
 
     // convert to UTF-8
     memset(asc, 0, alen);
+
     ptr8 = (UTF8 *) asc;
     ptr16 = (UTF16 *) uniclean;
     r = tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &ptr16,

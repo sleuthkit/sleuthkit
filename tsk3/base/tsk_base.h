@@ -296,8 +296,6 @@ extern "C" {
     extern void tsk_error_print(FILE *);
     extern void tsk_error_reset();
 
-    extern void errorReturned(char *errstr, ...);
-    extern void errorDetected(uint32_t errnum, char *errstr, ...);
 
 #define TSK_ERR_AUX	0x01000000
 #define TSK_ERR_IMG	0x02000000

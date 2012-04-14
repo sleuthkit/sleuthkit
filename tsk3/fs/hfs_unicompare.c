@@ -111,46 +111,6 @@
 static int hfs_unicode_compare_int(uint16_t endian,
     const hfs_uni_str * uni1, const hfs_uni_str * uni2);
 
-/**
- * This function compares two unicode strings (hfs_uni_str) as case sensitive, regardless
- * of the "case sensitivity" of the file system. We need this because extended attribute names
- * are always case sensitive.
- *
- * The function makes use of the FS endian-ness to interpret the string length, but treats the
- * encoded bytes as always big-endian (which I think is correct).  The FS endian-ness must be
- * passed in as a parameter.
-*/
-int
-hfs_unicode_compare_cs(TSK_ENDIAN_ENUM endian, const hfs_uni_str * uni1,
-		const hfs_uni_str * uni2) {
-	uint16_t l1, l2;
-	const uint8_t *s1, *s2;
-	uint16_t c1, c2;
-
-	l1 = tsk_getu16(endian, uni1->length);
-	l2 = tsk_getu16(endian, uni2->length);
-	s1 = uni1->unicode;
-	s2 = uni2->unicode;
-
-	while (1) {
-		if ((l1 == 0) && (l2 == 0))
-			return 0;
-		if (l1 == 0)
-			return -1;
-		if (l2 == 0)
-			return 1;
-		c1 = tsk_getu16(TSK_BIG_ENDIAN, s1);
-		c2 = tsk_getu16(TSK_BIG_ENDIAN, s2);
-		if (c1 < c2)
-			return -1;
-		if (c1 > c2)
-			return 1;
-		s1 += 2;
-		s2 += 2;
-		--l1;
-		--l2;
-	}
-}
 
 /**
  * This function compares two unicode strings (as hfs_uni_str) as either case-sensitive
@@ -194,6 +154,7 @@ hfs_unicode_compare(HFS_INFO * hfs, const hfs_uni_str * uni1,
             --l1;
             --l2;
         }
+        return 0;
     }
     else
         return hfs_unicode_compare_int(hfs->fs_info.endian, uni1, uni2);
