@@ -97,15 +97,6 @@ static void error_returned(char *errstr, ...);
 
 
 
-// Put this here, temporarily
-
-typedef struct {
-    /* this structure represents the xattr on disk; the fields below are little-endian */
-    uint8_t compression_magic[4];
-    uint8_t compression_type[4];     /* see the enum below */
-    uint8_t uncompressed_size[8];
-    unsigned char attr_bytes[0];   /* the bytes of the attribute after the header */
-} DECMPFS_DISK_HEADER;
 
 /***************** ZLIB stuff *******************************/
 
@@ -114,8 +105,24 @@ typedef struct {
 // Adapted from zpipe.c (part of zlib) at http://zlib.net/zpipe.c
 #define CHUNK 16384
 
-
-int inf(uint8_t *source,
+/*
+ * Invokes the zlib library to inflate (uncompress) data.
+ *
+ * Returns and error code.  Places the uncompressed data in a buffer supplied by the caller.  Also
+ * returns the uncompressed length, and the number of compressed bytes consumed.
+ *
+ * Will stop short of the end of compressed data, if a natural end of a compression unit is reached.  Using
+ * bytesConsumed, the caller can then advance the source pointer, and re-invoke the function.  This will then
+ * inflate the next following compression unit in the data stream.
+ *
+ * @param source - buffer of compressed data
+ * @param sourceLen  - length of the compressed data.
+ * @param dest  -- buffer to  hold the uncompressed results
+ * @param destLen -- length of the dest buffer
+ * @param uncompressedLength  -- return of the length of the uncompressed data found.
+ * @param bytesConsumed  -- return of the number of input bytes of compressed data used.
+ */
+static int zlib_inflate(uint8_t *source,
         uint64_t sourceLen,
         uint8_t *dest,
         uint64_t destLen,
@@ -2343,7 +2350,7 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
             tsk_fprintf(stderr, "hfs_attr_walk_special: Inflating the compression unit\n");
         uint64_t uncLen;
         unsigned int bytesConsumed;
-        int infResult = inf(rawBuf, (uint64_t) len,
+        int infResult = zlib_inflate(rawBuf, (uint64_t) len,
                 uncBuf, (uint64_t) COMPRESSION_UNIT_SIZE,
                 &uncLen, &bytesConsumed);
         if(infResult != 0) {
@@ -2617,7 +2624,7 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         unsigned int bytesConsumed;
         uint8_t * uncBufPtr = uncBuf;
 
-        int infResult = inf(rawBuf, (uint64_t) len,
+        int infResult = zlib_inflate(rawBuf, (uint64_t) len,
                 uncBufPtr, (uint64_t) COMPRESSION_UNIT_SIZE,
                 &uncLen, &bytesConsumed);
         if(infResult != 0) {
@@ -3192,7 +3199,7 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
                             }
                             uint64_t uLen;
                             int bytesConsumed;
-                            int infResult = inf(buffer+16, (uint64_t) (attributeLength - 16), // source, srcLen
+                            int infResult = zlib_inflate(buffer+16, (uint64_t) (attributeLength - 16), // source, srcLen
                                     uncBuf, (uint64_t) (uncSize + 100),       // dest, destLen
                                     &uLen, &bytesConsumed);  // returned by the function
                             if(infResult != 0) {
@@ -3428,7 +3435,6 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
     }
 
     // OK, resource size must be > 0
-//    void * result;
     uint64_t logSize;
     uint64_t bytesRead;
 
@@ -3453,7 +3459,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
     hfs_resource_fork_map_header mapHdrStruct;
 
     // Read in the WHOLE map
-    char * map = tsk_malloc(mapLength + 10);  // ???
+    char * map = tsk_malloc(mapLength);
     if(map == NULL) {
         error_returned("- hfs_parse_resource_fork: could not allocate space for the resource fork map");
         return NULL;
@@ -3587,16 +3593,16 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
  * if it exists, has ID=1.  Thus, this counter is used for other
  * attributes and starts at 2.
  */
-static uint16_t attributeCounter = 2;
+static uint16_t attribute_counter = 2;
 
 static uint16_t next_attribute_id() {
-    uint16_t result = attributeCounter;
-    attributeCounter++;
+    uint16_t result = attribute_counter;
+    attribute_counter++;
     return result;
 }
 
 static void reset_attribute_counter() {
-    attributeCounter = 2;
+    attribute_counter = 2;
 }
 
 
