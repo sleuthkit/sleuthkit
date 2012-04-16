@@ -459,6 +459,7 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
     tsk_release_lock(&ext2fs->lock);
 
     cnt = tsk_fs_read(fs, addr, (char *) dino_buf, ext2fs->inode_size);
+
     if (cnt != ext2fs->inode_size) {
         if (cnt >= 0) {
             tsk_error_reset();
@@ -468,6 +469,8 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
             " from %" PRIuOFF, dino_inum, addr);
         return 1;
     }
+//DEBUG    printf("Inode Size: %d, %d, %d, %d\n", sizeof(ext2fs_inode), *ext2fs->fs->s_inode_size, ext2fs->inode_size, *ext2fs->fs->s_want_extra_isize);
+//DEBUG    debug_print_buf((char *)dino_buf, ext2fs->inode_size);
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,
@@ -613,7 +616,7 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
         fs_meta->mtime_nano = tsk_getu32(fs->endian, dino_buf->i_mtime_extra) >> 2;
         fs_meta->atime_nano = tsk_getu32(fs->endian, dino_buf->i_atime_extra) >> 2;
         fs_meta->ctime_nano = tsk_getu32(fs->endian, dino_buf->i_ctime_extra) >> 2;
-	fs_meta->crtime=tsk_getu32(fs->endian,dino_buf->i_crtime);
+        fs_meta->crtime=tsk_getu32(fs->endian,dino_buf->i_crtime);
         fs_meta->crtime_nano = tsk_getu32(fs->endian, dino_buf->i_crtime_extra) >> 2;
     }else
     {
@@ -1815,7 +1818,10 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             tsk_fprintf(hFile, "Has Large Files, ");
         if (tsk_getu32(fs->endian, sb->s_feature_ro_compat) &
             EXT2FS_FEATURE_RO_COMPAT_BTREE_DIR)
-            tsk_fprintf(hFile, "Btree Dir");
+            tsk_fprintf(hFile, "Btree Dir, ");
+        if (tsk_getu32(fs->endian, sb->s_feature_ro_compat) &
+            EXT2FS_FEATURE_RO_COMPAT_EXTRA_ISIZE)
+            tsk_fprintf(hFile, "Extra Inode Size");
 
         tsk_fprintf(hFile, "\n");
     }
@@ -2239,11 +2245,25 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     EXT2FS_PRINT_ADDR print;
     const TSK_FS_ATTR *fs_attr_indir;
     ext2fs_inode *dino_buf = NULL;
-    char timeBuf[32];
+    char * timeBuf = NULL;
     unsigned int size;
+    unsigned int large_inodes;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
+    if (ext2fs->inode_size > 128)
+    {
+        large_inodes = 1;
+        timeBuf = (char *)tsk_malloc(sizeof(char) * 64);
+    }
+    else
+    {
+        large_inodes = 0;
+        timeBuf = (char *)tsk_malloc(sizeof(char) * 32);
+    }
+    if(timeBuf == NULL)
+        return 1;
+
     size = ext2fs->inode_size > sizeof(ext2fs_inode) ? ext2fs->inode_size : sizeof(ext2fs_inode);
     if ((dino_buf =
             (ext2fs_inode *) tsk_malloc(size)) == NULL) {
@@ -2608,18 +2628,32 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         fs_meta->atime -= sec_skew;
         fs_meta->ctime -= sec_skew;
 
-        tsk_fprintf(hFile, "Accessed:\t%s\n",
-            tsk_fs_time_to_str(fs_meta->atime, timeBuf));
-        tsk_fprintf(hFile, "File Modified:\t%s\n",
-            tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
-        tsk_fprintf(hFile, "Inode Modified:\t%s\n",
-            tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
 
-        if (fs->ftype == TSK_FS_TYPE_EXT4) {
+        if(fs->ftype == TSK_FS_TYPE_EXT4 && large_inodes)
+        {
+            tsk_fprintf(hFile, "Accessed:\t%s\n",
+                tsk_fs_time_to_str_subsecs(fs_meta->atime, fs_meta->atime_nano, timeBuf));
+            tsk_fprintf(hFile, "File Modified:\t%s\n",
+                tsk_fs_time_to_str_subsecs(fs_meta->mtime, fs_meta->mtime_nano, timeBuf));
+            tsk_fprintf(hFile, "Inode Modified:\t%s\n",
+                tsk_fs_time_to_str_subsecs(fs_meta->ctime, fs_meta->ctime_nano, timeBuf));
+        }
+        else
+        {
+            tsk_fprintf(hFile, "Accessed:\t%s\n",
+                tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+            tsk_fprintf(hFile, "File Modified:\t%s\n",
+                tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+            tsk_fprintf(hFile, "Inode Modified:\t%s\n",
+                tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
+        }
+
+        if(fs->ftype == TSK_FS_TYPE_EXT4 && large_inodes) {
             fs_meta->crtime -= sec_skew;
             tsk_fprintf(hFile, "File Created:\t%s\n",
-	        tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
+                tsk_fs_time_to_str_subsecs(fs_meta->crtime, fs_meta->crtime_nano, timeBuf));
             fs_meta->crtime += sec_skew;
+
         }
 
         if (fs_meta->time2.ext2.dtime) {
@@ -2639,15 +2673,30 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "\nInode Times:\n");
     }
 
-    tsk_fprintf(hFile, "Accessed:\t%s\n",
-        tsk_fs_time_to_str(fs_meta->atime, timeBuf));
-    tsk_fprintf(hFile, "File Modified:\t%s\n",
-        tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
-    tsk_fprintf(hFile, "Inode Modified:\t%s\n",
-        tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
-    if(fs->ftype == TSK_FS_TYPE_EXT4) {
+    if(fs->ftype == TSK_FS_TYPE_EXT4 && large_inodes)
+    {
+        tsk_fprintf(hFile, "Accessed:\t%s\n",
+            tsk_fs_time_to_str_subsecs(fs_meta->atime, fs_meta->atime_nano, timeBuf));
+        tsk_fprintf(hFile, "File Modified:\t%s\n",
+            tsk_fs_time_to_str_subsecs(fs_meta->mtime, fs_meta->mtime_nano, timeBuf));
+        tsk_fprintf(hFile, "Inode Modified:\t%s\n",
+            tsk_fs_time_to_str_subsecs(fs_meta->ctime, fs_meta->ctime_nano, timeBuf));
+    }
+    else
+    {
+        tsk_fprintf(hFile, "Accessed:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+        tsk_fprintf(hFile, "File Modified:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+        tsk_fprintf(hFile, "Inode Modified:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
+    }
+
+
+
+    if(fs->ftype == TSK_FS_TYPE_EXT4 && large_inodes) {
         tsk_fprintf(hFile, "File Created:\t%s\n",
-            tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
+            tsk_fs_time_to_str_subsecs(fs_meta->crtime, fs_meta->crtime_nano, timeBuf));
     }
     if (fs_meta->time2.ext2.dtime)
         tsk_fprintf(hFile, "Deleted:\t%s\n",
@@ -2712,6 +2761,8 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fs_file_close(fs_file);
     if (dino_buf != NULL)
         free((char *) dino_buf);
+    if(timeBuf != NULL)
+        free(timeBuf);
 
     return 0;
 }

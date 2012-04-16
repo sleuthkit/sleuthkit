@@ -1,14 +1,14 @@
 /*
 ** fs_name
-** The Sleuth Kit 
+** The Sleuth Kit
 **
-** Display and manipulate directory entries 
+** Display and manipulate directory entries
 ** This file contains generic functions that call the appropriate function
 ** depending on the file system type.
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -138,7 +138,7 @@ tsk_fs_name_free(TSK_FS_NAME * fs_name)
 
 /** \internal
  * Copy the contents of a TSK_FS_NAME structure to another
- * structure. 
+ * structure.
  * @param a_fs_name_to Destination structure to copy to
  * @param a_fs_name_from Source structure to copy from
  * @returns 1 on error
@@ -212,7 +212,7 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
 
 /**
  * \ingroup fslib
- * Makes the "ls -l" permissions string for a file. 
+ * Makes the "ls -l" permissions string for a file.
  *
  * @param a_fs_meta File to be processed
  * @param a_buf [out] Buffer to write results to (must be 12 bytes or longer)
@@ -285,7 +285,7 @@ tsk_fs_meta_make_ls(const TSK_FS_META * a_fs_meta, char *a_buf,
  * Converts a time value to a string representation. Prints
  * all zero values instead of 1970 if time is 0.
  * @param time Time to be displayed.
- * @param buf Buffer to print into (must b 32 byes or larger)
+ * @param buf Buffer to print into (must b 32 bytes or larger)
  * @returns Pointer to buffer that was passed in.
  */
 char *
@@ -308,7 +308,34 @@ tsk_fs_time_to_str(time_t time, char *buf)
     return buf;
 }
 
+/** \ingroup fslib
+ * Converts a time value to a string representation. Prints
+ * all zero values instead of 1970 if time is 0.
+ * @param time Time to be displayed.
+ * @param buf Buffer to print into (must b 64 bytes or larger)
+ * @param subsecs Subseconds to be printed
+ * @returns Pointer to buffer that was passed in.
+ */
+char *
+tsk_fs_time_to_str_subsecs(time_t time, unsigned int subsecs, char *buf)
+{
+    buf[0] = '\0';
+    if (time <= 0) {
+        strncpy(buf, "0000-00-00 00:00:00 (UTC)", 32);
+    }
+    else {
+        struct tm *tmTime = localtime(&time);
 
+        snprintf(buf, 64, "%.4d-%.2d-%.2d %.2d:%.2d:%.2d.%.9d (%s)",
+            (int) tmTime->tm_year + 1900,
+            (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
+            tmTime->tm_hour,
+            (int) tmTime->tm_min, (int) tmTime->tm_sec,
+            subsecs,
+            tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
+    }
+    return buf;
+}
 static void
 tsk_fs_print_time(FILE * hFile, time_t time)
 {
@@ -320,7 +347,7 @@ tsk_fs_print_time(FILE * hFile, time_t time)
 
 // @@@ We could merge this with the tsk_fs_time_to_str in
 // the future when the feature to include time resolution
-// is added to TSK_FS_META (and then that value would be 
+// is added to TSK_FS_META (and then that value would be
 // passed in and tsk_fs_time_to_str would decide what to
 // round up/down to
 
@@ -377,7 +404,7 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
     /* type of file - based on inode type: we want letters though for
      * regular files so we use the dent_str though */
     if (fs_file->meta) {
-        /* 
+        /*
          * An NTFS directory can have a Data stream, in which
          * case it would be printed with modes of a
          * directory, although it is really a file
@@ -462,7 +489,7 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
  * \internal
  * Print contents of  fs_name entry format like ls -l
 **
-** All elements are tab delimited 
+** All elements are tab delimited
 **
 ** If path is NULL, then skip else use. it has the full directory name
 **  It needs to end with "/"
@@ -616,7 +643,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
 
     tsk_fprintf(hFile, "|");
 
-    /* TYPE as specified in the directory entry 
+    /* TYPE as specified in the directory entry
      */
     if (fs_file->name->type < TSK_FS_NAME_TYPE_STR_MAX)
         tsk_fprintf(hFile, "%s/",

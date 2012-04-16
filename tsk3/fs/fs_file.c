@@ -20,7 +20,7 @@
 /**
  * \internal
  * Allocate a new FS_FILE structure
- * @param a_fs File system fiel will be in.
+ * @param a_fs File system file will be in.
  * @returns NULL on error
  */
 TSK_FS_FILE *
