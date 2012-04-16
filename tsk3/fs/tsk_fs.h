@@ -841,6 +841,7 @@ extern "C" {
         TSK_DADDR_T last_block_act;     ///< Address of last block -- adjusted so that it is equal to the last block in the image or volume (if image is not complete)
         unsigned int block_size;        ///< Size of each block (in bytes)
         unsigned int dev_bsize; ///< Size of device block (typically always 512)
+		unsigned int inode_size;		///< Size of each inode (in bytes)
 
         /* The following are used for really RAW images that contain data
            before and after the actual user sector. For example, a raw cd

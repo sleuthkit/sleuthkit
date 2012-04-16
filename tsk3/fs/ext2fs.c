@@ -2924,7 +2924,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /* Set the size of the inode, but default to our data structure
      * size if it is larger */
-    ext2fs->inode_size = tsk_getu16(fs->endian, ext2fs->fs->s_inode_size);
+    fs->inode_size = ext2fs->inode_size = tsk_getu16(fs->endian, ext2fs->fs->s_inode_size);
     if (ext2fs->inode_size < sizeof(ext2fs_inode)) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
