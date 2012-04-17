@@ -1745,10 +1745,8 @@ public class SleuthkitCase {
 	 * @return A List<FsContent> containing the results
 	 * @throws SQLException
 	 */
-	private SetParentVisitor setParent;
 	public List<FsContent> resultSetToFsContents(ResultSet rs) throws SQLException {
-		if(setParent == null)
-			setParent = new SetParentVisitor();
+		SetParentVisitor setParent = new SetParentVisitor();
 		ArrayList<FsContent> results = new ArrayList<FsContent>();
 
 		synchronized (caseLock) {
