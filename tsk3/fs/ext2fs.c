@@ -173,17 +173,17 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
         gd = ext2fs->ext4_grp_buf;
         ext4fs_gd *ext4_gd = ext2fs->ext4_grp_buf;
         if(EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_64BIT)){
-#ifdef Ext4_DBG
-            printf("DEBUG hi: %04X\n",*ext4_gd->bg_block_bitmap_hi);
+#ifdef Ext4_DBG           
+	    printf("DEBUG hi: %04X\n",*ext4_gd->bg_block_bitmap_hi);
             printf("DEBUG lo: %08X\n",*ext4_gd->bg_block_bitmap_lo);
-#endif
-            printf("block_bitmap :%06lX\n",
+            printf("block_bitmap :%012lX\n",
                    ext4_getu48(fs->endian,
                    ext4_gd->bg_block_bitmap_hi,
                    ext4_gd->bg_block_bitmap_lo));
+#endif
         }else{
 #ifdef Ext4_DBG
-            printf("block_bitmap:%04lX\n",tsk_getu32(fs->endian,ext4_gd->bg_block_bitmap_lo));
+            printf("block_bitmap:%08lX\n",tsk_getu32(fs->endian,ext4_gd->bg_block_bitmap_lo));
             printf("stored checksum: %X\n",tsk_getu16(fs->endian,ext4_gd->bg_checksum));
 #endif
         }
@@ -1790,7 +1790,7 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             tsk_fprintf(hFile, "Extents, ");
         if (tsk_getu32(fs->endian, sb->s_feature_incompat) &
             EXT2FS_FEATURE_INCOMPAT_64BIT)
-            tsk_fprintf(hFile, "64 bit FS, ");
+            tsk_fprintf(hFile, "64bit, ");
         if (tsk_getu32(fs->endian, sb->s_feature_incompat) &
             EXT2FS_FEATURE_INCOMPAT_MMP)
             tsk_fprintf(hFile, "Multiple Mount Protection, ");

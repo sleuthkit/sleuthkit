@@ -111,6 +111,7 @@ extern "C" {
             uint8_t s_padding1[2];          /* u16 */
             uint8_t s_reserved_gdt_blocks[2]; /*u16*/
         }pad_or_gdt;
+/* Valid if EXT2_FEATURE_COMPAT_HAS_JOURNAL */
         uint8_t s_journal_uuid[16];     /* u8[16] */
         uint8_t s_journal_inum[4];      /* u32 */
         uint8_t s_journal_dev[4];       /* u32 */
@@ -123,6 +124,7 @@ extern "C" {
         uint8_t s_first_meta_bg[4];     /* u32 */
         uint8_t s_mkfs_time[4];         /* u32 */
         uint8_t s_jnl_blocks[17 * 4];   /* u32[17] */
+/* Valid if EXT4_FEATURE_COMPAT_64BIT*/
         uint8_t s_blocks_count_hi[4];   /* u32 */
         uint8_t s_r_blocks_count_hi[4]; /* u32 */
         uint8_t s_free_blocks_count_hi[4]; /* u32 */
@@ -153,6 +155,9 @@ extern "C" {
         uint8_t s_last_error_block[8];  /* u64 */
         uint8_t s_last_error_func[32];  /* u8[32] */
         uint8_t s_mount_opts[64];       /* u8[64] */
+	uint8_t	s_usr_quota_inum[4];	/* u32 */
+	uint8_t s_grp_quota_inum[4];	/* u32 */
+	uint8_t s_overhead_clusters[4];	/* u32 */
         uint8_t s_padding[112 * 4];
     } ext2fs_sb;
 
@@ -209,6 +214,9 @@ extern "C" {
 #define EXT2FS_FEATURE_RO_COMPAT_GDT_CSUM       0x0010
 #define EXT2FS_FEATURE_RO_COMPAT_DIR_NLINK      0x0020
 #define EXT2FS_FEATURE_RO_COMPAT_EXTRA_ISIZE    0x0040
+#define EXT4FS_FEATURE_RO_COMPAT_QUOTA          0x0100
+#define EXT4FS_FEATURE_RO_COMPAT_BIGALLOC       0x0200
+#define EXT4FS_FEATURE_RO_COMPAT_METADATA_CSUM  0x0400
 
 
 /*
