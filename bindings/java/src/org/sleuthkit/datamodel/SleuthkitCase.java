@@ -1628,7 +1628,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Returns a map of image object IDs to a list of file paths for that image
+	 * Returns a map of image object IDs to a list of fully qualified file paths for that image
 	 */
 	public Map<Long, List<String>> getImagePaths() throws TskException {
 		Map<Long, List<String>> imgPaths = new LinkedHashMap<Long, List<String>>();
@@ -1663,7 +1663,7 @@ public class SleuthkitCase {
 	/**
 	 * Set the file paths for the image given by obj_id
 	 * @param obj_id the ID of the image to update
-	 * @param paths the path to the files that make up the image
+	 * @param paths the fully qualified path to the files that make up the image
 	 * @throws TskException if sql update fails
 	 */
 	public void setImagePaths(long obj_id, List<String> paths) throws TskException {
