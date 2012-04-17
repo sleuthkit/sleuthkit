@@ -4,6 +4,11 @@
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
+** Matt Stillerman [matt@atc-nycorp.com]
+** Copyright (c) 2012 ATC-NY.  All rights reserved.
+** This file contains data developed with support from the National
+** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
+**
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
 ** 

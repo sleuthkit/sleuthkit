@@ -8,15 +8,12 @@
 ** 14900 Conference Center Drive
 ** Chantilly, VA 20151
 **
-** Matt Stillerman [matt@atc-nycorp.com]
-** Copyright (c) 2012 ATC-NY.  All rights reserved.
-** This file contains data developed with support from the National
-** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
-**
+
 ** Copyright (c) 2009 Brian Carrier.  All rights reserved.
 **
 ** Judson Powers [jpowers@atc-nycorp.com]
-** Copyright (c) 2008 ATC-NY.  All rights reserved.
+** Matt Stillerman [matt@atc-nycorp.com]
+** Copyright (c) 2008, 2012 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
 ** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
 ** 
@@ -79,9 +76,11 @@
 
 // Compression Stuff
 
+#ifdef HAVE_LIBZ
+
 #include <zlib.h>
 
-
+#endif
 
 #define XSWAP(a,b) { a ^= b; b ^= a; a ^= b; }
 
@@ -94,13 +93,9 @@ static uint8_t hfs_load_extended_attrs(TSK_FS_FILE * file,
 static void error_detected(uint32_t errnum, char *errstr, ...);
 static void error_returned(char *errstr, ...);
 
-
-
-
+#ifdef HAVE_LIBZ
 
 /***************** ZLIB stuff *******************************/
-
-
 
 // Adapted from zpipe.c (part of zlib) at http://zlib.net/zpipe.c
 #define CHUNK 16384
@@ -220,7 +215,7 @@ static int zlib_inflate(uint8_t *source,
     return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 }
 
-
+#endif
 
 /* may set error up to string 1
  * returns 0 on success, 1 on failure */
@@ -1974,6 +1969,7 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file_folder * a_entry,
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & a_hfs->fs_info;
     uint16_t hfsmode;
 
+
     if (a_fs_meta == NULL) {
         tsk_error_set_errno( TSK_ERR_FS_ARG);
         tsk_error_set_errstr(
@@ -2079,6 +2075,9 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file_folder * a_entry,
     // All entries here are used.  
     a_fs_meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
 
+    if(std->perm.o_flags &  HFS_PERM_OFLAG_COMPRESSED)
+    	a_fs_meta->flags |= TSK_FS_META_FLAG_COMP;
+
     /* TODO @@@ could fill in name2 with this entry's name and parent inode
        from Catalog entry */
 
@@ -2113,6 +2112,7 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;
     HFS_ENTRY entry;
+
 
     if (a_fs_file == NULL) {
         tsk_error_set_errno( TSK_ERR_FS_ARG);
@@ -2187,6 +2187,8 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 
     return 0;
 }
+
+#ifdef HAVE_LIBZ
 
 typedef struct {
     uint32_t offset;
@@ -2679,6 +2681,8 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 
 }
 
+#endif
+
 
 typedef struct {
     TSK_FS_INFO *fs;                      // the HFS file system
@@ -3159,7 +3163,7 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
                     if(cmpType == 3) {
                         // Data is inline.  We will load the uncompressed data as a resident attribute.
                         if(tsk_verbose)
-                            tsk_fprintf(stderr, "hfs_load_extended_attrs: Compressed data is inline in the attribute, will load this as the DATA attribute.\n");
+                            tsk_fprintf(stderr, "hfs_load_extended_attrs: Compressed data is inline in the attribute, will load this as the default DATA attribute.\n");
                         // Need an FS_ATTR:
                         TSK_FS_ATTR * fs_attr_unc;
 
@@ -3173,6 +3177,9 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
                         }
 
                         if(cmph->attr_bytes[0] & 0xF == 0xF) {
+                        	if(tsk_verbose)
+                        		tsk_fprintf(stderr, "hfs_load_extended_attrs: Leading byte, 0xF, indicates that the data is not really compressed.\n"
+                        				"hfs_load_extended_attrs:  Loading the default DATA attribute.");
                             reallyCompressed = FALSE;
                             cmpSize = attributeLength - 17;  // subtr. size of header + 1 indicator byte
                             // Load the remainder of the attribute as 128-0
@@ -3188,8 +3195,11 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
 
                         } else {
                             reallyCompressed = TRUE;
+#ifdef HAVE_LIBZ
+                            if(tsk_verbose)
+                            	tsk_fprintf(stderr, "hfs_load_extended_attrs: Uncompressing (inflating) data.");
                             cmpSize = attributeLength - 16;  // subt size of header
-                            // TODO: Uncompress the remainder of the attribute, and load as 128-0
+                            // Uncompress the remainder of the attribute, and load as 128-0
                             uint8_t * uncBuf = (uint8_t *) tsk_malloc(uncSize + 100);  // add some extra space
                             if(uncBuf == NULL) {
                                 error_returned(" - hfs_load_extended_attrs, space for the uncompressed attr");
@@ -3220,6 +3230,8 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
                                 close_attr_file(&attrFile);
                                 return 1;
                             }
+                            if(tsk_verbose)
+                            	tsk_fprintf(stderr, "hfs_load_extended_attrs: Loading inflated data as default DATA attribute.");
                             // set the details in the fs_attr structure.  Note, we are loading this
                             // as a RESIDENT attribute.
                             if (tsk_fs_attr_set_str(fs_file, fs_attr_unc, "DATA", TSK_FS_ATTR_TYPE_HFS_DATA,
@@ -3229,6 +3241,24 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
                                 close_attr_file(&attrFile);
                                 return 1;
                             }
+#else
+                            // ZLIB compression library is not available, so we will load a zero-length
+                            // default DATA attribute.  Without this, icat may misbehave.
+
+                            if(tsk_verbose)
+                            	tsk_fprintf(stderr, "hfs_load_extended_attrs: ZLIB not available, so loading an empty default DATA attribute.\n");
+
+                            // This is one byte long, so the ptr is not null, but only loading zero bytes.
+                            uint8_t uncBuf[1];
+                            if (tsk_fs_attr_set_str(fs_file, fs_attr_unc, "DATA", TSK_FS_ATTR_TYPE_HFS_DATA,
+                            		HFS_FS_ATTR_ID_DATA, uncBuf, (size_t) 0)) {
+                            	error_returned(" - hfs_load_extended_attrs");
+                            	free(nodeData);
+                            	close_attr_file(&attrFile);
+                            	return 1;
+                            }
+
+#endif
 
                         }
                     } else if (cmpType == 4) {
@@ -3375,7 +3405,7 @@ void free_res_descriptor(RES_DESCRIPTOR * rd) {
  * resource.  If the resource fork is empty, or if there is not a resource fork at all,
  * or an error occurs, this function returns NULL.
  *
- * A non-NULL answer should be freed by the caller.
+ * A non-NULL answer should be freed by the caller, using free_res_descriptor.
  *
  */
 
@@ -3771,8 +3801,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                         "hfs_load_attrs: loading the data fork attribute\n");
 
                 // get an attribute structure to store the data in
-                if ((fs_attr =
-                                tsk_fs_attrlist_getnew(fs_file->meta->attr,
+                if ((fs_attr = tsk_fs_attrlist_getnew(fs_file->meta->attr,
                                         TSK_FS_ATTR_NONRES)) == NULL) {
                     error_returned(" - hfs_load_attrs");
                     return 1;
@@ -3888,14 +3917,16 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                 return 1;
             }
 
+
             if(isCompressed && compDataInRSRCFork) {
+
                 // OK, we are going to load those same resource fork blocks as the "DATA"
                 // attribute, but will mark it as compressed.
                 // get an attribute structure to store the resource fork data in.  We will
                 // reuse the fs_attr variable, since we are done with the data fork.
                 if(tsk_verbose)
-                    tsk_fprintf(stderr, "File is compressed with data in the resource fork, "
-                            "so, loading the resource fork runs also as data fork runs.\n");
+                    tsk_fprintf(stderr, "File is compressed with data in the resource fork. "
+                            "Loading the default DATA attribute.\n");
                 if ((fs_attr =
                         tsk_fs_attrlist_getnew(fs_file->meta->attr,
                                 TSK_FS_ATTR_NONRES)) == NULL) {
@@ -3906,6 +3937,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                  * that means that we do not need to free it if we abort in the
                  * following code (and doing so will cause double free errors). */
 
+#ifdef HAVE_LIBZ
 
                 // convert the resource fork to the TSK format
                 if (((attr_run = hfs_extents_to_attr(fs, forkx->extents, 0)) == NULL)
@@ -3913,6 +3945,9 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                     error_returned(" - hfs_load_attrs, RSRC fork as DATA fork");
                     return 1;
                 }
+
+                if(tsk_verbose)
+                	tsk_fprintf(stderr, "hfs_load_attrs:  Loading RSRC fork block runs as the default DATA attribute.\n");
 
                 // add the runs to the attribute and the attribute to the file.
                 if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run, "DATA",
@@ -3935,10 +3970,28 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                     return 1;
                 }
 
+                if(tsk_verbose)
+                	tsk_fprintf(stderr, "hfs_load_attrs: setting the \"special\" function pointers to inflate compressed data.\n");
+
                 fs_attr->w = hfs_attr_walk_special;
                 fs_attr->r = hfs_file_read_special;
-                //fs_attr->nrd->skiplen = resource fork header size ??
+
+#else
+                // We don't have zlib, so the uncompressed data is not available to us,
+                // however, we must have a default DATA attribute, or icat will misbehave.
+                if(tsk_verbose)
+                	tsk_fprintf(stderr, "hfs_load_attrs: No zlib compression library, so setting a zero-length default DATA attribute.\n");
+
+                if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, "DATA",
+                		TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA, 0, 0, 0,
+                		0, 0)) {
+                	error_returned(" - hfs_load_attrs (non-file)");
+                	return 1;
+                }
+
+#endif
             }
+
         }  // END resource fork size > 0
 
     } // END the fork data structures are non-NULL

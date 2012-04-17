@@ -8,15 +8,12 @@
 ** 14900 Conference Center Drive
 ** Chantilly, VA 20151
 **
-** Matt Stillerman [matt@atc-nycorp.com]
-** Copyright (c) 2012 ATC-NY.  All rights reserved.
-** This file contains data developed with support from the National
-** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
 **
 ** Copyright (c) 2009-2011 Brian Carrier.  All rights reserved.
 ** 
 ** Judson Powers [jpowers@atc-nycorp.com]
-** Copyright (c) 2008 ATC-NY.  All rights reserved.
+** Matt Stillerman [matt@atc-nycorp.com]
+** Copyright (c) 2008, 2012 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
 ** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
 ** 
