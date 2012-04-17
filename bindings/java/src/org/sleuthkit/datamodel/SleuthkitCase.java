@@ -1627,6 +1627,62 @@ public class SleuthkitCase {
 		return getChildFsContents(dir.getId(), dir.getFileSystem());
 	}
 
+	/**
+	 * Returns a map of image object IDs to a list of file paths for that image
+	 */
+	public Map<Long, List<String>> getImagePaths() throws TskException {
+		Map<Long, List<String>> imgPaths = new LinkedHashMap<Long, List<String>>();
+		synchronized (caseLock) {
+			try {
+				Statement s1 = con.createStatement();
+
+				ResultSet rs1 = s1.executeQuery("select * from tsk_image_info");
+
+				while (rs1.next()) {
+					long obj_id = rs1.getLong("obj_id");
+					Statement s2 = con.createStatement();
+					ResultSet rs2 = s2.executeQuery("select * from tsk_image_names where obj_id = " + obj_id);
+					List<String> paths = new ArrayList<String>();
+					while (rs2.next()) {
+						paths.add(rsHelper.imagePath(rs2));
+					}
+					rs2.close();
+					s2.close();
+					imgPaths.put(obj_id, paths);
+				}
+
+				rs1.close();
+				s1.close();
+			} catch (SQLException ex) {
+				throw new TskException("Error getting image paths.", ex);
+			}
+		}
+		return imgPaths;
+	}
+
+	/**
+	 * Set the file paths for the image given by obj_id
+	 * @param obj_id the ID of the image to update
+	 * @param paths the path to the files that make up the image
+	 * @throws TskException if sql update fails
+	 */
+	public void setImagePaths(long obj_id, List<String> paths) throws TskException {
+		synchronized (caseLock) {
+			try {
+				Statement s1 = con.createStatement();
+
+				s1.executeUpdate("delete from tsk_image_names where obj_id = " + obj_id);
+				for(int i = 0; i < paths.size(); i++) {
+					s1.executeUpdate("insert into tsk_image_names values (" + obj_id + ", \"" + paths.get(i) + "\", " + i + ")");
+				}
+
+				s1.close();
+			} catch (SQLException ex) {
+				throw new TskException("Error updating image paths.", ex);
+			}
+		}
+	}
+
 //
 //	/**
 //	 * searches the database for files whose parent is the given file
@@ -1689,8 +1745,10 @@ public class SleuthkitCase {
 	 * @return A List<FsContent> containing the results
 	 * @throws SQLException
 	 */
+	private SetParentVisitor setParent;
 	public List<FsContent> resultSetToFsContents(ResultSet rs) throws SQLException {
-		SetParentVisitor setParent = new SetParentVisitor();
+		if(setParent == null)
+			setParent = new SetParentVisitor();
 		ArrayList<FsContent> results = new ArrayList<FsContent>();
 
 		synchronized (caseLock) {
