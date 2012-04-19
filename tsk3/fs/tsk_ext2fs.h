@@ -158,7 +158,7 @@ extern "C" {
 	uint8_t	s_usr_quota_inum[4];	/* u32 */
 	uint8_t s_grp_quota_inum[4];	/* u32 */
 	uint8_t s_overhead_clusters[4];	/* u32 */
-        uint8_t s_padding[112 * 4];
+        uint8_t s_padding[ 109 * 4];
     } ext2fs_sb;
 
 /* File system State Values */
