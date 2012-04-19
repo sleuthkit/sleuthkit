@@ -2882,8 +2882,10 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     /* If autodetect was given, look for the journal */
     if (ftype == TSK_FS_TYPE_EXT_DETECT) {
         if (tsk_getu32(fs->endian, ext2fs->fs->s_feature_incompat) &
-            EXT2FS_FEATURE_INCOMPAT_EXTENTS)
+            EXT2FS_FEATURE_INCOMPAT_EXTENTS){
             fs->ftype = TSK_FS_TYPE_EXT4;
+            fs->flags |= TSK_FS_INFO_FLAG_HAVE_SUBSEC;
+        }
         else if (tsk_getu32(fs->endian, ext2fs->fs->s_feature_compat) &
             EXT2FS_FEATURE_COMPAT_HAS_JOURNAL)
             fs->ftype = TSK_FS_TYPE_EXT3;

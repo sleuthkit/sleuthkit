@@ -336,11 +336,20 @@ tsk_fs_time_to_str_subsecs(time_t time, unsigned int subsecs, char *buf)
     }
     return buf;
 }
+
 static void
 tsk_fs_print_time(FILE * hFile, time_t time)
 {
     char foo[32];
     tsk_fs_time_to_str(time, foo);
+    tsk_fprintf(hFile, "%s", foo);
+}
+
+static void
+tsk_fs_print_time_subsec(FILE *hFile, time_t time, unsigned subsec)
+{
+    char foo[64];
+    tsk_fs_time_to_str_subsecs(time, subsec, foo);
     tsk_fprintf(hFile, "%s", foo);
 }
 
@@ -518,39 +527,67 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
     else {
 
         /* MAC times */
-        tsk_fprintf(hFile, "\t");
-        if (fs_file->meta->mtime)
-            tsk_fs_print_time(hFile, fs_file->meta->mtime - sec_skew);
-        else
-            tsk_fs_print_time(hFile, fs_file->meta->mtime);
+	
+        if (fs_file->fs_info->flags | TSK_FS_INFO_FLAG_HAVE_SUBSEC)
+        {
+            tsk_fprintf(hFile, "\t");
+            if (fs_file->meta->mtime)
+               tsk_fs_print_time_subsec(hFile, fs_file->meta->mtime - sec_skew, fs_file->meta->mtime_nano);
+            else
+               tsk_fs_print_time_subsec(hFile, fs_file->meta->mtime, fs_file->meta->mtime_nano);
+            
+            tsk_fprintf(hFile, "\t");
+            if (fs_file->meta->atime)
+               tsk_fs_print_time_subsec(hFile, fs_file->meta->atime - sec_skew, fs_file->meta->atime_nano);
+            else
+               tsk_fs_print_time_subsec(hFile, fs_file->meta->atime, fs_file->meta->atime_nano);
+            
+            tsk_fprintf(hFile, "\t");
+            if (fs_file->meta->ctime)
+               tsk_fs_print_time_subsec(hFile, fs_file->meta->ctime - sec_skew, fs_file->meta->ctime_nano);
+            else
+               tsk_fs_print_time_subsec(hFile, fs_file->meta->ctime, fs_file->meta->ctime_nano);
+            
+            tsk_fprintf(hFile, "\t");
+            if (fs_file->meta->crtime)
+               tsk_fs_print_time_subsec(hFile, fs_file->meta->crtime - sec_skew, fs_file->meta->crtime_nano);
+            else
+               tsk_fs_print_time_subsec(hFile, fs_file->meta->crtime, fs_file->meta->crtime_nano);
+        }
+        else{
+            tsk_fprintf(hFile, "\t");
+            if (fs_file->meta->mtime)
+                tsk_fs_print_time(hFile, fs_file->meta->mtime - sec_skew);
+            else
+                tsk_fs_print_time(hFile, fs_file->meta->mtime);
 
-        tsk_fprintf(hFile, "\t");
-        /* FAT only gives the day of last access */
-        if ((TSK_FS_TYPE_ISFAT(fs->ftype)) || (fs_file->meta->atime == 0))
-            tsk_fs_print_day(hFile, fs_file->meta->atime);
-        else
-            tsk_fs_print_time(hFile, fs_file->meta->atime - sec_skew);
+            tsk_fprintf(hFile, "\t");
+            /* FAT only gives the day of last access */
+            if ((TSK_FS_TYPE_ISFAT(fs->ftype)) || (fs_file->meta->atime == 0))
+                tsk_fs_print_day(hFile, fs_file->meta->atime);
+            else
+                tsk_fs_print_time(hFile, fs_file->meta->atime - sec_skew);
 
-        tsk_fprintf(hFile, "\t");
-        if (fs_file->meta->ctime)
-            tsk_fs_print_time(hFile, fs_file->meta->ctime - sec_skew);
-        else
-            tsk_fs_print_time(hFile, fs_file->meta->ctime);
+            tsk_fprintf(hFile, "\t");
+            if (fs_file->meta->ctime)
+                tsk_fs_print_time(hFile, fs_file->meta->ctime - sec_skew);
+            else
+                tsk_fs_print_time(hFile, fs_file->meta->ctime);
 
-        tsk_fprintf(hFile, "\t");
-        if (fs_file->meta->crtime)
-            tsk_fs_print_time(hFile, fs_file->meta->crtime - sec_skew);
-        else
-            tsk_fs_print_time(hFile, fs_file->meta->crtime);
+            tsk_fprintf(hFile, "\t");
+            if (fs_file->meta->crtime)
+                tsk_fs_print_time(hFile, fs_file->meta->crtime - sec_skew);
+            else
+                tsk_fs_print_time(hFile, fs_file->meta->crtime);
+         }
+         /* use the stream size if one was given */
+         if (fs_attr)
+             tsk_fprintf(hFile, "\t%" PRIuOFF, fs_attr->size);
+         else
+             tsk_fprintf(hFile, "\t%" PRIuOFF, fs_file->meta->size);
 
-        /* use the stream size if one was given */
-        if (fs_attr)
-            tsk_fprintf(hFile, "\t%" PRIuOFF, fs_attr->size);
-        else
-            tsk_fprintf(hFile, "\t%" PRIuOFF, fs_file->meta->size);
-
-        tsk_fprintf(hFile, "\t%" PRIuGID "\t%" PRIuUID "\n",
-            fs_file->meta->gid, fs_file->meta->uid);
+         tsk_fprintf(hFile, "\t%" PRIuGID "\t%" PRIuUID "\n",
+             fs_file->meta->gid, fs_file->meta->uid);
     }
 
     return;
@@ -581,6 +618,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
 {
     char ls[12];
     size_t i;
+    
 
     if ((!hFile) || (!fs_file))
         return;
@@ -669,30 +707,53 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
             tsk_fprintf(hFile, "%" PRIuOFF "|", fs_attr->size);
         else
             tsk_fprintf(hFile, "%" PRIuOFF "|", fs_file->meta->size);
-
+	
         /* atime, mtime, ctime, crtime */
-        if (fs_file->meta->atime)
-            tsk_fprintf(hFile, "%" PRIu32 "|",
-                fs_file->meta->atime - time_skew);
+        if (fs_file->fs_info->flags | TSK_FS_INFO_FLAG_HAVE_SUBSEC)
+        {
+            if (fs_file->meta->atime)
+                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->atime - time_skew, fs_file->meta->atime_nano);
+            else
+                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->atime, fs_file->meta->atime_nano);
+            if (fs_file->meta->mtime)
+                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32, fs_file->meta->mtime - time_skew, fs_file->meta->mtime_nano);
+            else
+                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32, fs_file->meta->mtime, fs_file->meta->mtime_nano);
+            if (fs_file->meta->ctime)
+                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->ctime - time_skew, fs_file->meta->ctime_nano);
+            else
+                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->ctime , fs_file->meta->ctime_nano);
+            if (fs_file->meta->crtime)
+                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->crtime - time_skew, fs_file->meta->crtime_nano);
+            else
+                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->crtime, fs_file->meta->crtime_nano);
+            tsk_fprintf(hFile, "\n");
+        }
         else
-            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->atime);
-
-        if (fs_file->meta->mtime)
-            tsk_fprintf(hFile, "%" PRIu32 "|",
-                fs_file->meta->mtime - time_skew);
-        else
-            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->mtime);
-
-        if (fs_file->meta->ctime)
-            tsk_fprintf(hFile, "%" PRIu32 "|",
-                fs_file->meta->ctime - time_skew);
-        else
-            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->ctime);
-
-        if (fs_file->meta->crtime)
-            tsk_fprintf(hFile, "%" PRIu32 "\n",
-                fs_file->meta->crtime - time_skew);
-        else
-            tsk_fprintf(hFile, "%" PRIu32 "\n", fs_file->meta->crtime);
+        {
+            if (fs_file->meta->atime)
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->atime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->atime);
+    
+            if (fs_file->meta->mtime)
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->mtime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->mtime);
+    
+            if (fs_file->meta->ctime)
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->ctime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->ctime);
+    
+            if (fs_file->meta->crtime)
+                tsk_fprintf(hFile, "%" PRIu32 "\n",
+                    fs_file->meta->crtime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "\n", fs_file->meta->crtime);
+        }
     }
 }
