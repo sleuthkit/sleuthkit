@@ -1,4 +1,4 @@
-/*! \page pipeline_config_page Pipeline Configuration
+/*! \page pipeline_config_page Pipeline and Module Basics
 
 \section pipe_overview Overview
 A pipeline in the TSK framework is simply a set of modules that are run in a specific order.  Modules will be covered in more detail in the next major section, but for now all we need to know is that a module does a specific type of analysis.  An example module could calculate the MD5 hash of a file and another module could lookup the hash value in a database to see if it is known.  Modules can communicate between each other and the MD5 hash would be passed from the first to the second. 

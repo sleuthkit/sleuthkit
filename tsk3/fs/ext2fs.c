@@ -1567,18 +1567,18 @@ ext2fs_make_acl_str(char *str, int len, uint16_t perm)
     }
     if (perm & EXT2_PACL_PERM_WRITE) {
         if (i) {
-            snprintf(&str[i], len - 1, ", ");
+            snprintf(&str[i], len-i-1, ", ");
             i += 2;
         }
-        snprintf(&str[i], len - 1, "Write");
+        snprintf(&str[i], len-i-1, "Write");
         i += 5;
     }
     if (perm & EXT2_PACL_PERM_EXEC) {
         if (i) {
-            snprintf(&str[i], len - 1, ", ");
+            snprintf(&str[i], len-i-1, ", ");
             i += 2;
         }
-        snprintf(&str[i], len - 1, "Execute");
+        snprintf(&str[i], len-i-1, "Execute");
         i += 7;
     }
 }
@@ -1802,7 +1802,7 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
 
             /* Is the value location and size valid? */
-            if ((tsk_getu32(fs->endian,
+            if ((tsk_getu16(fs->endian,
                         ea_entry->val_off) > fs->block_size)
                 || ((tsk_getu16(fs->endian,
                             ea_entry->val_off) + tsk_getu32(fs->endian,
