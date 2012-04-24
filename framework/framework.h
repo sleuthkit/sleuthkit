@@ -37,7 +37,6 @@
 #include "File/TskFileManager.h"
 #include "File/TskFileManagerImpl.h"
 #include "File/TskFile.h"
-#include "Reporting/Report.h"
 #include "Pipeline/TskPipelineManager.h"
 #include "Pipeline/TskPipeline.h"
 #include "Pipeline/TskFileAnalysisPipeline.h"
