@@ -78,13 +78,13 @@ public:
     virtual int getFsInfo(std::list<TskFsInfoRecord> & fsInfoList) const;
     virtual int getFileInfoSummary(std::list<TskFileTypeRecord>& fileTypeInfoList) const;
     virtual int getFileInfoSummary(FILE_TYPES fileType, std::list<TskFileTypeRecord> & fileTypeInfoList) const;
-    virtual int getKnownStatus(const uint64_t fileId) const;
+    virtual TskImgDB::KNOWN_STATUS getKnownStatus(const uint64_t fileId) const;
 
     virtual UnallocRun * getUnallocRun(int file_id, int file_offset) const; 
     virtual SectorRuns * getFreeSectors() const;
 
-    virtual int updateFileStatus(uint64_t a_file_id, int a_status);
-    virtual int updateKnownStatus(uint64_t a_file_id, int a_status);
+    virtual int updateFileStatus(uint64_t a_file_id, FILE_STATUS a_status);
+    virtual int updateKnownStatus(uint64_t a_file_id, KNOWN_STATUS a_status);
 	virtual bool dbExist() const;
 
     // Get set of file ids that match the given condition (i.e. SQL where clause)
