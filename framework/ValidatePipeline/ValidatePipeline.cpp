@@ -117,7 +117,7 @@ bool ValidatePipeline::isValid(const char *a_configPath) const
                     result = true;
             }
         } catch (Poco::XML::SAXParseException& ex) {
-            fprintf(stdout, "Error parsing pipeline config file: %s\n", a_configPath);
+            fprintf(stderr, "Error parsing pipeline config file: %s (%s)\n", a_configPath, ex.what());
         }
 
     }
