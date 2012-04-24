@@ -184,10 +184,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\Reporting\Report.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Services\Scheduler.cpp"
 				>
 			</File>
@@ -331,10 +327,6 @@
 			</File>
 			<File
 				RelativePath="..\..\Services\Log.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Reporting\Report.h"
 				>
 			</File>
 			<File
