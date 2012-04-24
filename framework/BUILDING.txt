@@ -17,7 +17,7 @@ with the code.
 
 Development environment setup consists of the following steps:
 1) Download and build the POCO library
-3) Build the Sleuth Kit framework library
+2) Build the Sleuth Kit framework library
 
 
 POCO
