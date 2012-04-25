@@ -947,7 +947,11 @@ public class SleuthkitCase {
 	 * Add an artifact type with the given name. Will return an id that can be used
 	 * to look that artifact type up.
 	 * @param artifactTypeName System (unique) name of artifact
+	<<<<<<< HEAD
 	 * @param displayName Display (non-unique) name of artifact
+	=======
+	 * @param displayName Display (non-unique) name of artifact
+	>>>>>>> 465632190bbe84e4e5dfd1c2bf66a3fe950d70b3
 	 * @return ID of artifact added
 	 */
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskException {
@@ -1131,6 +1135,7 @@ public class SleuthkitCase {
 	 * Stores a pair of object ID and its type
 	 */
 	private static class ObjectInfo {
+
 		long id;
 		TskData.ObjectType type;
 
@@ -1712,6 +1717,7 @@ public class SleuthkitCase {
 	 */
 	public Map<Long, List<String>> getImagePaths() throws TskException {
 		Map<Long, List<String>> imgPaths = new LinkedHashMap<Long, List<String>>();
+
 		dbReadLock();
 		try {
 			Statement s1 = con.createStatement();
@@ -1738,6 +1744,8 @@ public class SleuthkitCase {
 		} finally {
 			dbReadUnlock();
 		}
+
+
 		return imgPaths;
 	}
 
@@ -1748,6 +1756,7 @@ public class SleuthkitCase {
 	 * @throws TskException if sql update fails
 	 */
 	public void setImagePaths(long obj_id, List<String> paths) throws TskException {
+
 		dbWriteLock();
 		try {
 			Statement s1 = con.createStatement();
@@ -1763,6 +1772,7 @@ public class SleuthkitCase {
 		} finally {
 			dbWriteUnlock();
 		}
+
 	}
 
 //

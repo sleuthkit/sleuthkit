@@ -22,14 +22,19 @@
 #include <string>
 
 /**
- * An interface to a class that allows low-level access to a disk image.
+ * An interface to a class that allows file system and low-level 
+ * access to a disk image.
  * It supports opening split image files, extracting file system 
  * information from the image and extracting data for a specific file
- * or for a range of sectors.
+ * or for a range of sectors.  You must call one of the open() methods
+ * before using any of the other methods in the interface. 
  */
 class TSK_FRAMEWORK_API TskImageFile
 {
 public:
+    /**
+     * You must call one of the open() methods after creating the object.
+     */
     TskImageFile();
 
     virtual ~TskImageFile();
@@ -40,6 +45,7 @@ public:
      * @return 0 on success and -1 on error
      */
     virtual int open(const std::vector<std::wstring> &imageFiles) = 0;
+
     /**
      * Open the disk image at the following path using TSK_TCHAR type. 
      * @param imageFile Path to image (or first in a set of images).
@@ -61,7 +67,8 @@ public:
 
     /**
      * Analyze the volume and file systems in the opened images and add
-     * the data to the Image database.
+     * populate the TskImgDB instance registered with TskServices.  This
+     * will not perform file carving.
      * @returns 1 on error and 0 on success
      */
     virtual int extractFiles() = 0;

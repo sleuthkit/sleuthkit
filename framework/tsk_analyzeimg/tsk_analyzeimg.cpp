@@ -3,7 +3,7 @@
 *  The Sleuth Kit
 *
 *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
-*  Copyright (c) 2011 Basis Technology Corporation. All Rights
+*  Copyright (c) 2011-2012 Basis Technology Corporation. All Rights
 *  reserved.
 *
 *  This software is distributed under the Common Public License 1.0
@@ -11,13 +11,13 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk3/tsk_tools_i.h" // Needed for tsk_getopt
 #include "framework.h"
 #include "Services/TskSchedulerQueue.h"
-
-// @@@ Remove once Poco stuff is hidden in systemPropertiesImpl
-#include "Poco/Util/XMLConfiguration.h"
+#include "Services/TskSystemPropertiesImpl.h"
+#include "Services/TskImgDBSqlite.h"
 
 
 static uint8_t 
@@ -35,11 +35,12 @@ makeDir(const TSK_TCHAR *dir)
 }
 
 void 
-usage() 
+usage(const char *program) 
 {
-    fprintf(stderr, "tsk_analyzeimg [-c framework_config_file] [-p pipeline_config_file] image_name\n");
+    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] [-d outdir] image_name\n", program);
     fprintf(stderr, "\t-c framework_config_file: Path to XML framework config file\n");
     fprintf(stderr, "\t-p pipeline_config_file: Path to XML pipeline config file (overrides pipeline config specified with -c)\n");
+    fprintf(stderr, "\t-d outdir: Path to output directory\n");
     exit(1);
 }
 
@@ -51,6 +52,7 @@ int main(int argc, char **argv1)
     struct STAT_STR stat_buf;
     TSK_TCHAR *pipeline_config = NULL;
     TSK_TCHAR *framework_config = NULL;
+    std::wstring outDirPath;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -64,13 +66,13 @@ int main(int argc, char **argv1)
 #endif
 
     while ((ch =
-        GETOPT(argc, argv, _TSK_T("c:p:vV"))) > 0) {
-            switch (ch) {
+        GETOPT(argc, argv, _TSK_T("d:c:p:vV"))) > 0) {
+        switch (ch) {
         case _TSK_T('?'):
         default:
             TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
                 argv[OPTIND]);
-            usage();
+            usage(argv1[0]);
         case _TSK_T('c'):
             framework_config = OPTARG;
             break;
@@ -83,42 +85,39 @@ int main(int argc, char **argv1)
         case _TSK_T('V'):
             tsk_version_print(stdout);
             exit(0);
-            }
+            break;
+        case _TSK_T('d'):
+            outDirPath.assign(OPTARG);
+            break;
+        }
     }
 
     /* We need at least one more argument */
     if (OPTIND == argc) {
         tsk_fprintf(stderr, "Missing image name\n");
-        usage();
+        usage(argv1[0]);
     }
+
     TSK_TCHAR *imagePath = argv[OPTIND];
 
     // Load the framework config if they specified it
-    Poco::AutoPtr<Poco::Util::XMLConfiguration> pXMLConfig;
     if (framework_config) {
-        // @@@ Not Unix-friendly
-        try {
-            pXMLConfig = new Poco::Util::XMLConfiguration(TskUtilities::toUTF8(framework_config));
-        }
-        catch (std::exception& e) {
-            fprintf(stderr, "Error opening framework config file (%s)\n", e.what());
-            return 1;
-        }
         // Initialize properties based on the config file.
         TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();    
-        systemProperties->initialize(*pXMLConfig);
+        systemProperties->initialize(framework_config);
         TskServices::Instance().setSystemProperties(*systemProperties);
     }
 
-    // make up an output folder to store the database and such in
-    TSK_TCHAR outDirPath[1024];
-    TSNPRINTF(outDirPath, 1024, _TSK_T("%s_tsk_out"), imagePath);
-    if (TSTAT(outDirPath, &stat_buf) == 0) {
-        fprintf(stderr, "Output directory already exists (%"PRIttocTSK")\n", outDirPath);
+    if (outDirPath == _TSK_T("")) {
+        outDirPath.assign(imagePath);
+        outDirPath.append(_TSK_T("_tsk_out"));
+    }
+    if (TSTAT(outDirPath.c_str(), &stat_buf) == 0) {
+        fprintf(stderr, "Output directory already exists (%"PRIttocTSK")\n", outDirPath.c_str());
         return 1;
     }
 
-    if (makeDir(outDirPath)) {
+    if (makeDir(outDirPath.c_str())) {
         return 1;
     }
 
@@ -127,7 +126,7 @@ int main(int argc, char **argv1)
 
     // Create and register our SQLite ImgDB class   
     std::auto_ptr<TskImgDB> pImgDB(NULL);
-    pImgDB = std::auto_ptr<TskImgDB>(new TskImgDBSqlite(outDirPath));
+    pImgDB = std::auto_ptr<TskImgDB>(new TskImgDBSqlite(outDirPath.c_str()));
     if (pImgDB->initialize() != 0) {
         fprintf(stderr, "Error initializing SQLite database\n");
         tsk_error_print(stderr);
@@ -192,14 +191,14 @@ int main(int argc, char **argv1)
 
     //Run pipeline on all files
     // @@@ this needs to cycle over the files to analyze, 10 is just here for testing 
-    if (filePipeline) {
+    if (filePipeline && !filePipeline->isEmpty()) {
         TskSchedulerQueue::task_struct *task;
         while ((task = scheduler.next()) != NULL) {
             if (task->task != Scheduler::FileAnalysis)  {
                 fprintf(stderr, "WARNING: Skipping task %d\n", task->task);
                 continue;
             }
-            printf("processing file: %d\n", (int)task->id);
+            //printf("processing file: %d\n", (int)task->id);
             try {
                 filePipeline->run(task->id);
             }
@@ -222,3 +221,4 @@ int main(int argc, char **argv1)
     fprintf(stderr, "image analysis complete\n");
     return 0;
 }
+

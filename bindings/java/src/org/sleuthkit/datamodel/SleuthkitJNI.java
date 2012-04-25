@@ -72,7 +72,7 @@ public class SleuthkitJNI {
 
 	static {
 		try {
-			System.loadLibrary("zlib1");
+			System.loadLibrary("zlib");
 			System.loadLibrary("libewf");
 		}
 		catch (UnsatisfiedLinkError e) {
@@ -252,7 +252,7 @@ public class SleuthkitJNI {
 
 	/**
 	 * open the image and return the image info pointer
-	 * @param imageDirs the paths to the images
+	 * @param imageFiles the paths to the images
 	 * @return the image info pointer
 	 * @throws TskException
 	 */

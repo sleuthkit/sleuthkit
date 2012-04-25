@@ -82,7 +82,7 @@ public class Image extends FileSystemParent {
 
 	/**
 	 * read from the image
-	 * @param the byte buffer to read to
+	 * @param buf the buffer to read to
 	 * @param offset in bytes
 	 * @param len in bytes
 	 * @return number of bytes read, -1 if error

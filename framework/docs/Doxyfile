@@ -31,7 +31,7 @@ PROJECT_NAME           = "The Sleuth Kit Framework"
 # This could be handy for archiving the generated documentation or 
 # if some version control system is used.
 
-PROJECT_NUMBER         = ?
+PROJECT_NUMBER         = 4.0
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) 
 # base path where the generated documentation will be put. 
@@ -570,11 +570,12 @@ INPUT                  = framework/docs/main.dox \
                          framework/docs/pipeline.dox \
                          framework/docs/module_examples.dox \
                          framework/docs/fw_setup.dox \
+                         framework/docs/fw_extract.dox \
+                         framework/docs/fw_pipelines.dox \
                          framework/docs/fw_examples.dox \
                          framework/Extraction \
                          framework/File \
                          framework/Pipeline \
-                         framework/Reporting \
                          framework/Services \
                          framework/Utilities
 

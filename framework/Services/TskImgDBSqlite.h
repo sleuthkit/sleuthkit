@@ -61,7 +61,7 @@ public:
                                         const bool isDirectory, const uint64_t size, const std::string& details,
                                         const int ctime, const int crtime, const int atime, const int mtime, uint64_t & fileId, std::string path);
     virtual int addFsBlockInfo(int fsID, uint64_t a_mFileId, int count, uint64_t blk_addr, uint64_t len);
-    virtual int addAllocUnallocMapInfo(int unallocVolID, int unallocImgID, uint64_t unallocImgStart, uint64_t length, uint64_t origImgStart);
+    virtual int addAllocUnallocMapInfo(int a_volID, int unallocImgID, uint64_t unallocImgStart, uint64_t length, uint64_t origImgStart);
     virtual int getSessionID() const;
     virtual int getFileIds(char *a_fileName, uint64_t *a_outBuffer, int a_buffSize) const;
     virtual int getMaxFileIdReadyForAnalysis(uint64_t a_lastFileId, uint64_t & maxFileId) const;
@@ -78,13 +78,13 @@ public:
     virtual int getFsInfo(std::list<TskFsInfoRecord> & fsInfoList) const;
     virtual int getFileInfoSummary(std::list<TskFileTypeRecord>& fileTypeInfoList) const;
     virtual int getFileInfoSummary(FILE_TYPES fileType, std::list<TskFileTypeRecord> & fileTypeInfoList) const;
-    virtual int getKnownStatus(const uint64_t fileId) const;
+    virtual TskImgDB::KNOWN_STATUS getKnownStatus(const uint64_t fileId) const;
 
     virtual UnallocRun * getUnallocRun(int file_id, int file_offset) const; 
     virtual SectorRuns * getFreeSectors() const;
 
-    virtual int updateFileStatus(uint64_t a_file_id, int a_status);
-    virtual int updateKnownStatus(uint64_t a_file_id, int a_status);
+    virtual int updateFileStatus(uint64_t a_file_id, FILE_STATUS a_status);
+    virtual int updateKnownStatus(uint64_t a_file_id, KNOWN_STATUS a_status);
 	virtual bool dbExist() const;
 
     // Get set of file ids that match the given condition (i.e. SQL where clause)
@@ -114,7 +114,10 @@ public:
 
     virtual int addUnusedSectors(int unallocImgId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList);
     virtual int getUnusedSector(uint64_t fileId, TskUnusedSectorsRecord & unusedSectorsRecord) const;
-    friend class TskDBBlackboard;
+
+	virtual std::string quote(const std::string str) const;
+
+	friend class TskDBBlackboard;
 
 protected:
     // Blackboard methods.

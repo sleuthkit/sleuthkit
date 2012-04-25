@@ -68,7 +68,11 @@ std::string TskFile::name() const
  */
 std::string TskFile::extension() const
 {
-    return m_fileRecord.name.substr(m_fileRecord.name.find_last_of(".") + 1);
+    size_t pos = m_fileRecord.name.find_last_of(".");
+    if (pos == std::string.npos)
+        return std::string("");
+    else
+        return m_fileRecord.name.substr(pos + 1);
 }
 
 /**
@@ -82,14 +86,14 @@ uint64_t TskFile::parentFileId() const
 /**
  * What is this files directory type?
  */
-int TskFile::dirType() const
+TSK_FS_NAME_TYPE_ENUM TskFile::dirType() const
 {
     return m_fileRecord.dirType;
 }
 /**
  * What is this files metadata type?
  */
-int TskFile::metaType() const
+TSK_FS_META_TYPE_ENUM TskFile::metaType() const
 {
     return m_fileRecord.metaType;
 }
@@ -97,7 +101,7 @@ int TskFile::metaType() const
 /**
  * What are this files directory flags?
  */
-int TskFile::dirFlags() const
+TSK_FS_NAME_FLAG_ENUM TskFile::dirFlags() const
 {
     return m_fileRecord.dirFlags;
 }
@@ -105,7 +109,7 @@ int TskFile::dirFlags() const
 /**
  * What are this files metadata flags?
  */
-int TskFile::metaFlags() const
+TSK_FS_META_FLAG_ENUM TskFile::metaFlags() const
 {
     return m_fileRecord.metaFlags;
 }
@@ -113,7 +117,7 @@ int TskFile::metaFlags() const
 /**
  * What is this files size?
  */
-uint64_t TskFile::size() const
+TSK_OFF_T TskFile::size() const
 {
     return m_fileRecord.size;
 }
@@ -121,7 +125,7 @@ uint64_t TskFile::size() const
 /**
  * What is this files change time?
  */
-int TskFile::ctime() const
+time_t TskFile::ctime() const
 {
     return m_fileRecord.ctime;
 }
@@ -129,7 +133,7 @@ int TskFile::ctime() const
 /**
  * What is this files creation time?
  */
-int TskFile::crtime() const
+time_t TskFile::crtime() const
 {
     return m_fileRecord.crtime;
 }
@@ -137,7 +141,7 @@ int TskFile::crtime() const
 /**
  * What is this files access time?
  */
-int TskFile::atime() const
+time_t TskFile::atime() const
 {
     return m_fileRecord.atime;
 }
@@ -145,7 +149,7 @@ int TskFile::atime() const
 /**
  * What is this files modify time?
  */
-int TskFile::mtime() const
+time_t TskFile::mtime() const
 {
     return m_fileRecord.mtime;
 }
@@ -153,7 +157,7 @@ int TskFile::mtime() const
 /**
  * What is this files mode?
  */
-int TskFile::mode() const
+TSK_FS_META_MODE_ENUM TskFile::mode() const
 {
     return m_fileRecord.mode;
 }
@@ -161,7 +165,7 @@ int TskFile::mode() const
 /**
  * What is this files user id?
  */
-int TskFile::uid() const
+TSK_UID_T TskFile::uid() const
 {
     return m_fileRecord.uid;
 }
@@ -169,7 +173,7 @@ int TskFile::uid() const
 /**
  * What is this files group id?
  */
-int TskFile::gid() const
+TSK_GID_T TskFile::gid() const
 {
     return m_fileRecord.gid;
 }

@@ -14,10 +14,21 @@
  * Contains common utility methods.
  */
 
+#include <sstream>
+
 #include "TskUtilities.h"
+#include "Services/TskServices.h"
 
 #include "Poco/UnicodeConverter.h"
+#include "Poco/Net/DNS.h"
+#include "Poco/Net/HostEntry.h"
+#include "Poco/Net/NetException.h"
 
+/**
+ * Convert a given UTF16 string to UTF8
+ * @param utf16Str The UTF16 encoded string.
+ * @returns A UTF8 encoded version of the input string.
+ */
 std::string TskUtilities::toUTF8(const std::wstring &utf16Str)
 {
     std::string utf8Str;
@@ -25,9 +36,46 @@ std::string TskUtilities::toUTF8(const std::wstring &utf16Str)
     return utf8Str;
 }
 
+/**
+ * Convert a given UTF8 string to UTF16
+ * @param utf8Str The UTF8 encoded string.
+ * @returns A UTF16 encoded version of the input string.
+ */
 std::wstring TskUtilities::toUTF16(const std::string &utf8Str)
 {
     std::wstring utf16Str;
     Poco::UnicodeConverter::toUTF16(utf8Str, utf16Str);
     return utf16Str;
+}
+
+/**
+ * Get the IP address for the given host name.
+ * @param host The name of the host who's IP address you want.
+ * @param host_ip This string will be filled in with the IP address.
+ * @returns true on success, false otherwise.
+ */
+bool TskUtilities::getHostIP(const std::string& host, std::string & host_ip)
+{
+    try
+    {
+        Poco::Net::HostEntry hostEntry = Poco::Net::DNS::hostByName(host);
+
+        if (hostEntry.addresses().empty())
+        {
+            LOGERROR(L"TskUtilities::getHostIP - No addresses found for host.\n");
+            return false;
+        }
+
+        // Take the first address.
+        host_ip = hostEntry.addresses()[0].toString();
+        return true;
+    }
+    catch (Poco::Net::NetException& netEx)
+    {
+        std::wstringstream msg;
+        msg << L"TskUtilities::getHostIP - Error resolving host name: " << host.c_str() 
+            << L" : " << netEx.what() << std::endl;
+        LOGERROR(msg.str());
+        return false;
+    }
 }
