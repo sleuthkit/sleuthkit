@@ -401,6 +401,7 @@ get_size(const TSK_TCHAR * a_file, uint8_t is_winobj)
     }
 
 #ifdef TSK_WIN32
+    {
     HANDLE fd;
     DWORD dwHi, dwLo;
 
@@ -480,7 +481,7 @@ get_size(const TSK_TCHAR * a_file, uint8_t is_winobj)
     }
 
     CloseHandle(fd);
-
+    }
 #else
 
     int fd;
@@ -541,6 +542,7 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     TSK_IMG_INFO *img_info;
     int i;
     int is_winobj = 0;
+    TSK_OFF_T first_seg_size;
 
     if ((raw_info =
             (IMG_RAW_INFO *) tsk_img_malloc(sizeof(IMG_RAW_INFO))) == NULL)
@@ -568,7 +570,7 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
 #endif
 
     /* Check that the first image file exists and is not a directory */
-    TSK_OFF_T first_seg_size = get_size(a_images[0], is_winobj);
+    first_seg_size = get_size(a_images[0], is_winobj);
     if (first_seg_size < -1) {
         tsk_img_free(raw_info);
         return NULL;
@@ -671,9 +673,9 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
      * could cause us to run out of file decsriptors when we only need a few.
      * The descriptors are opened as needed */
     for (i = 1; i < raw_info->num_img; i++) {
-
+        TSK_OFF_T size; 
         raw_info->cptr[i] = -1;
-        TSK_OFF_T size = get_size(raw_info->images[i], is_winobj);
+        size = get_size(raw_info->images[i], is_winobj);
         if (size < 0) {
             if (size == -1) {
                 if (tsk_verbose) {
