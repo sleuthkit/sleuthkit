@@ -5,12 +5,10 @@
  * Version 2. See the file COPYING for more details.
  */
 
-#include <linux/types.h>
-#include <linux/module.h>
-#include <linux/crc16.h>
+#include "tsk_base_i.h"
 
 /** CRC table for the CRC-16. The poly is 0x8005 (x^16 + x^15 + x^2 + 1) */
-u16 const crc16_table[256] = {
+uint16_t const crc16_table[256] = {
 	0x0000, 0xC0C1, 0xC181, 0x0140, 0xC301, 0x03C0, 0x0280, 0xC241,
 	0xC601, 0x06C0, 0x0780, 0xC741, 0x0500, 0xC5C1, 0xC481, 0x0440,
 	0xCC01, 0x0CC0, 0x0D80, 0xCD41, 0x0F00, 0xCFC1, 0xCE81, 0x0E40,
@@ -44,7 +42,6 @@ u16 const crc16_table[256] = {
 	0x4400, 0x84C1, 0x8581, 0x4540, 0x8701, 0x47C0, 0x4680, 0x8641,
 	0x8201, 0x42C0, 0x4380, 0x8341, 0x4100, 0x81C1, 0x8081, 0x4040
 };
-EXPORT_SYMBOL(crc16_table);
 
 /**
  * crc16 - compute the CRC-16 for the data buffer
@@ -54,14 +51,10 @@ EXPORT_SYMBOL(crc16_table);
  *
  * Returns the updated CRC value.
  */
-u16 crc16(u16 crc, u8 const *buffer, size_t len)
+uint16_t crc16(uint16_t crc, uint8_t const *buffer, size_t len)
 {
 	while (len--)
 		crc = crc16_byte(crc, *buffer++);
 	return crc;
 }
-EXPORT_SYMBOL(crc16);
-
-MODULE_DESCRIPTION("CRC16 calculations");
-MODULE_LICENSE("GPL");
 

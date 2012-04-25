@@ -29,6 +29,7 @@
 
 #include "tsk_fs_i.h"
 #include "tsk_ext2fs.h"
+#include <stddef.h>
 //#define Ext4_DBG
 
 #ifdef Ext4_DBG
@@ -173,7 +174,7 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
         gd = ext2fs->ext4_grp_buf;
         ext4fs_gd *ext4_gd = ext2fs->ext4_grp_buf;
         if(EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_64BIT)){
-#ifdef Ext4_DBG           
+#ifdef Ext4_DBG
 	    printf("DEBUG hi: %04X\n",*ext4_gd->bg_block_bitmap_hi);
             printf("DEBUG lo: %08X\n",*ext4_gd->bg_block_bitmap_lo);
             printf("block_bitmap :%012lX\n",
@@ -220,6 +221,41 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     }
 
     return 0;
+}
+
+/**
+ * ext4_group_desc_csum - Calculates the checksum of a group descriptor
+ * Ported from linux/fs/ext4/super.c
+ * @ext4_sb:       pointer to ext2 super block structure
+ * @block_group:   group descriptor number
+ * @gdp:           pointer to group descriptor to calculate checksum for
+ * returns the checksum value
+ */
+
+static uint16_t
+ext4_group_desc_csum(ext2fs_sb *ext4_sb, uint32_t block_group,
+			    struct ext4fs_gd *gdp)
+{
+	uint16_t crc = 0;
+
+	if (*ext4_sb->s_feature_ro_compat & EXT2FS_FEATURE_RO_COMPAT_GDT_CSUM)
+	{
+		int offset = offsetof(struct ext4fs_gd, bg_checksum);
+		uint32_t le_group = tsk_getu32(TSK_LIT_ENDIAN, &block_group);
+		crc = crc16(~0, ext4_sb->s_uuid, sizeof(ext4_sb->s_uuid));
+		crc = crc16(crc, (uint8_t *)&le_group, sizeof(le_group));
+		crc = crc16(crc, (uint8_t *)gdp, offset);
+		offset += sizeof(gdp->bg_checksum); /* skip checksum */
+		/* for checksum of struct ext4_group_desc do the rest...*/
+		if ((*ext4_sb->s_feature_incompat &
+		     EXT2FS_FEATURE_INCOMPAT_64BIT) &&
+		    offset < *ext4_sb->s_desc_size)
+        {
+			crc = crc16(crc, (uint8_t *)gdp + offset, *ext4_sb->s_desc_size - offset);
+        }
+	}
+
+	return crc;
 }
 
 /* ext2fs_print_map - print a bitmap */
@@ -2147,7 +2183,8 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             tsk_getu16(fs->endian, ext2fs->grp_buf->bg_used_dirs_count));
 
         if(fs->ftype == TSK_FS_TYPE_EXT4){
-            tsk_fprintf(hFile, "  Checksum: 0x%04" PRIX16 "\n", tsk_getu16(fs->endian,ext2fs->ext4_grp_buf->bg_checksum));
+            tsk_fprintf(hFile, "  Stored Checksum: 0x%04" PRIX16 "\n", tsk_getu16(fs->endian,ext2fs->ext4_grp_buf->bg_checksum));
+            tsk_fprintf(hFile, "  Calculated Checksum: 0x%04" PRIX16 "\n",ext4_group_desc_csum(ext2fs->fs, i, ext2fs->ext4_grp_buf));
         }
 
         tsk_release_lock(&ext2fs->lock);

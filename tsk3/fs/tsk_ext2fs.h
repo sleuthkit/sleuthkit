@@ -155,9 +155,9 @@ extern "C" {
         uint8_t s_last_error_block[8];  /* u64 */
         uint8_t s_last_error_func[32];  /* u8[32] */
         uint8_t s_mount_opts[64];       /* u8[64] */
-	uint8_t	s_usr_quota_inum[4];	/* u32 */
-	uint8_t s_grp_quota_inum[4];	/* u32 */
-	uint8_t s_overhead_clusters[4];	/* u32 */
+        uint8_t s_usr_quota_inum[4];    /* u32 */
+        uint8_t s_grp_quota_inum[4];    /* u32 */
+        uint8_t s_overhead_clusters[4]; /* u32 */
         uint8_t s_padding[ 109 * 4];
     } ext2fs_sb;
 
