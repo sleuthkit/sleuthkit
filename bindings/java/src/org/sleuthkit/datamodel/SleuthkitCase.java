@@ -947,11 +947,7 @@ public class SleuthkitCase {
 	 * Add an artifact type with the given name. Will return an id that can be used
 	 * to look that artifact type up.
 	 * @param artifactTypeName System (unique) name of artifact
-	<<<<<<< HEAD
 	 * @param displayName Display (non-unique) name of artifact
-	=======
-	 * @param displayName Display (non-unique) name of artifact
-	>>>>>>> 465632190bbe84e4e5dfd1c2bf66a3fe950d70b3
 	 * @return ID of artifact added
 	 */
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskException {
