@@ -2,7 +2,8 @@
 .SH NAME
 blkcat \- Display the contents of file system data unit in a disk image.
 .SH SYNOPSIS
-.B blkcat [-ahswvV] [-f fstype] [-u unit_size] [-i imgtype] [-o imgoffset] [-b dev_sector_size] image [images] unit_addr [num]
+.B blkcat [-ahswvV] [-f fstype] [-u unit_size] [-i imgtype] [-o imgoffset] [-b dev_sector_size] 
+.I image [images] unit_addr [num]
 
 .SH DESCRIPTION
 .B blkcat
@@ -37,7 +38,8 @@ and number of fragments).
 Specify the size of the default data unit for raw, blkls, and swap 
 images.
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types.
+Identify the type of image file, such as raw.
+Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
@@ -50,7 +52,9 @@ Display version.
 .IP -w  
 Display the contents in an HTML table format.  
 .IP "image [images]"
-One (or more if split) disk or partition images whose format is given with '\-i'.
+The disk or partition image to read, whose format is given with '\-i'.
+Multiple image file names can be given if the image is split into multiple segments.
+If only one image file is given, and its name is the first in a sequence (e.g., as indicated by ending in '.001'), subsequent image segments will be included automatically.
 .IP unit_addr
 Address of the disk unit to display.  The size of a unit on this 
 file system can be determined using the \-s option.

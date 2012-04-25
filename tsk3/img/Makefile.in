@@ -47,8 +47,8 @@ CONFIG_HEADER = $(top_builddir)/tsk3/tsk_config.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libtskimg_la_LIBADD =
-am_libtskimg_la_OBJECTS = img_open.lo img_types.lo raw.lo split.lo \
-	aff.lo ewf.lo img_io.lo mult_files.lo
+am_libtskimg_la_OBJECTS = img_open.lo img_types.lo raw.lo aff.lo \
+	ewf.lo img_io.lo mult_files.lo
 libtskimg_la_OBJECTS = $(am_libtskimg_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/tsk3@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -197,7 +197,7 @@ AM_CFLAGS = -I../.. -I$(srcdir)/../.. -Wall
 EXTRA_DIST = .indent.pro 
 noinst_LTLIBRARIES = libtskimg.la
 libtskimg_la_SOURCES = img_open.c img_types.c raw.c raw.h \
-    split.c split.h aff.c aff.h ewf.c ewf.h tsk_img_i.h img_io.c mult_files.c
+    aff.c aff.h ewf.c ewf.h tsk_img_i.h img_io.c mult_files.c
 
 all: all-am
 
@@ -257,7 +257,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/img_types.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mult_files.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/raw.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/split.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
