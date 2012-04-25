@@ -19,7 +19,9 @@
 #include "Services/TskServices.h"
 #include "Poco/UnicodeConverter.h"
 #include "Poco/Util/MapConfiguration.h"
+#include "Poco/Util/XMLConfiguration.h"
 #include "Utilities/TskException.h"
+#include "Utilities/TskUtilities.h"
 #include <sstream>
 
 std::wstring TskSystemPropertiesImpl::get(std::wstring name) const
@@ -74,6 +76,24 @@ void TskSystemPropertiesImpl::set(std::wstring name, std::wstring value)
 void TskSystemPropertiesImpl::initialize(Poco::Util::AbstractConfiguration & abstractConfig)
 {
     m_abstractConfig = &abstractConfig;
+}
+
+void TskSystemPropertiesImpl::initialize(const std::wstring configfile) 
+{
+    // This gets wrapped in an AutoPtr and will be automatically
+    // freed during destruction.
+    Poco::Util::XMLConfiguration * pXMLConfig = 
+        new Poco::Util::XMLConfiguration(TskUtilities::toUTF8(configfile));
+    initialize(*pXMLConfig);
+}
+
+void TskSystemPropertiesImpl::initialize(const char *configfile) 
+{
+    // This gets wrapped in an AutoPtr and will be automatically
+    // freed during destruction.
+    Poco::Util::XMLConfiguration * pXMLConfig = 
+        new Poco::Util::XMLConfiguration(configfile);
+    initialize(*pXMLConfig);
 }
 
 void TskSystemPropertiesImpl::initialize()

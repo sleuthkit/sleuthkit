@@ -168,11 +168,10 @@ int main(int argc, char **argv)
     TskServices::Instance().setLog(log);
 
     std::wstring progDirPath = getProgDir();
-    Poco::AutoPtr<Poco::Util::XMLConfiguration> pXMLConfig = new Poco::Util::XMLConfiguration(frameworkConfigPath);
 
     // Initialize properties based on the config file. Do this to shutdown noise in validation.
     TskSystemPropertiesImpl systemProperties;
-    systemProperties.initialize(*pXMLConfig);
+    systemProperties.initialize(frameworkConfigPath);
     TskServices::Instance().setSystemProperties(systemProperties);
 
     TSK_SYS_PROP_SET(TskSystemProperties::PROG_DIR, progDirPath); 
