@@ -16,6 +16,8 @@
 #include "tsk3/tsk_tools_i.h" // Needed for tsk_getopt
 #include "framework.h"
 #include "Services/TskSchedulerQueue.h"
+#include "Services/TskSystemPropertiesImpl.h"
+#include "Services/TskImgDBSqlite.h"
 
 
 static uint8_t 

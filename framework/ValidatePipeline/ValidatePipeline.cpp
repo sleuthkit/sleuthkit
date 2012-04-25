@@ -15,6 +15,7 @@
 #include <Windows.h>
 
 #include "framework.h"
+#include "Services/TskSystemPropertiesImpl.h"
 
 #include "Poco/AutoPtr.h"
 #include "Poco/Path.h"
