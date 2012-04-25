@@ -554,6 +554,33 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 	}
+	
+	/**
+	 * helper method to get all artifacts matching the type id name
+	 * @param artifactTypeID artifact type id
+	 * @param artifactTypeName artifact type name
+	 * @return list of blackboard artifacts
+	 * @throws TskException
+	 */
+	private ArrayList<BlackboardArtifact> getArtifactsHelper(int artifactTypeID, String artifactTypeName) throws TskException {
+		dbReadLock();
+		try {
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("SELECT artifact_id, obj_id FROM blackboard_artifacts WHERE artifact_type_id = " + artifactTypeID);
+
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), artifactTypeID, artifactTypeName, this.getArtifactTypeDisplayName(artifactTypeID)));
+			}
+			rs.close();
+			s.close();
+			return artifacts;
+		} catch (SQLException ex) {
+			throw new TskException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
+		} finally {
+			dbReadUnlock();
+		}
+	}
 
 	/**
 	 * Get all blackboard artifacts of a given type for the given object id
@@ -586,6 +613,28 @@ public class SleuthkitCase {
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
 		return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel(), obj_id);
+	}
+	
+	
+	
+	/**
+	 * Get all blackboard artifacts of a given type
+	 * @param artifactTypeName artifact type name
+	 * @return list of blackboard artifacts
+	 */
+	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName) throws TskException {
+		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
+		return getArtifactsHelper(artifactTypeID, artifactTypeName);
+	}
+
+	
+	/**
+	 * Get all blackboard artifacts of a given type 
+	 * @param artifactType artifact type enum
+	 * @return list of blackboard artifacts
+	 */
+	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType) throws TskException {
+		return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel());
 	}
 
 	/**
