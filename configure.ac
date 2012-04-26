@@ -164,7 +164,7 @@ AM_CONDITIONAL([BUILD_FIWALK], [test x$enable_fiwalk = xyes])
 if test "x$enable_fiwalk" == xyes; then
    ## These will be removed after complete integration
    ## At that point fiwalk will just be part of TSK not a separate package
-   AC_DEFINE([FIWALK_VERSION], ["0.6.15"], [version of fiwalk subpackage])
+   AC_DEFINE([FIWALK_VERSION], ["0.6.17"], [version of fiwalk subpackage])
    AC_DEFINE([FIWALK_PACKAGE], ["FIWALK"], [name of fiwalk subpackage])
 
    ################################################################

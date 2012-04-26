@@ -36,7 +36,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1070
+#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1070
  #define COMMON_DIGEST_FOR_OPENSSL
  #include <CommonCrypto/CommonDigest.h>
  #include <CommonCrypto/CommonHMAC.h>
@@ -77,7 +77,7 @@ public:
     uint8_t digest[SIZE];
 };
 
-#ifdef HAVE_EVP_SHA512 || COMMON_DIGEST_FOR_OPENSSL
+#if HAVE_EVP_SHA512 || COMMON_DIGEST_FOR_OPENSSL
 class sha512_ {
 public:
     static const size_t SIZE=64;
@@ -170,7 +170,7 @@ public:
 typedef hash__<md5_> md5_t;
 typedef hash__<sha1_> sha1_t;
 typedef hash__<sha256_> sha256_t;
-#ifdef HAVE_EVP_SHA512 || COMMON_DIGEST_FOR_OPENSSL
+#if HAVE_EVP_SHA512 || COMMON_DIGEST_FOR_OPENSSL
 typedef hash__<sha512_> sha512_t;
 #endif
 

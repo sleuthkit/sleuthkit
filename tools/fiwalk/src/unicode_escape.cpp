@@ -3,7 +3,7 @@
  * http://www.ietf.org/rfc/rfc3987.txt
  */
 
-
+#include "tsk3/tsk_tools_i.h"
 #include "unicode_escape.h"
 
 #include <stdio.h>
@@ -13,7 +13,9 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#endif
 
 #define IS_IN_RANGE(c, f, l)    (((c) >= (f)) && ((c) <= (l)))
 
