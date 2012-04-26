@@ -104,13 +104,16 @@ void TskFileTsk::setPath(const std::string& path)
     m_file = Poco::File(path);
 }
 
-/**
+/*
  * Either initialize an input stream for files that exist on disk
  * or open a handle through the Sleuthkit for file system files that
  * have not been written to disk.
  */
 void TskFileTsk::open()
 {
+    if (m_isOpen)
+        return;
+
     // If the file exists on disk we initialize the input stream.
     if (exists())
     {
@@ -206,7 +209,6 @@ ssize_t TskFileTsk::read(char *buf, const size_t count)
         if (m_fileInStream != NULL)
         {
             m_fileInStream->read(buf, count);
-
             return m_fileInStream->gcount();
         }
         else if (typeId() == TskImgDB::IMGDB_FILES_TYPE_FS)

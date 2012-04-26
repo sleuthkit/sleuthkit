@@ -194,7 +194,6 @@ std::string TskFile::fullPath() const
     return m_fileRecord.fullPath;
 }
 
-// Get the file hash
 std::string TskFile::getHash(TskImgDB::HASH_TYPE hashType) const
 {
     switch (hashType) {

@@ -85,6 +85,10 @@ void TskFileAnalysisPipeline::run(TskFile* file)
 
         for (int i = 0; i < m_modules.size(); i++)
         {
+            // we have no way of knowing if the file was closed by a module,
+            // so always make sure it is open
+            file->open();
+
             TskModule::Status status = m_modules[i]->run(file);
 
             imgDB.setModuleStatus(file->id(), m_modules[i]->getModuleId(), (int)status);

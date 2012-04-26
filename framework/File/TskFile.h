@@ -111,14 +111,24 @@ public:
     virtual std::string getPath() const = 0;
     virtual void setPath(const std::string& path) = 0;
 
-    // Get the file hash
+    /** 
+     * Get the pre-calculated hash value of the specified type.
+     * @param hashType Type of hash to lookup
+     * @returns String of hash value or empty string if the value
+     * has not been calculated. 
+     */
     std::string getHash(TskImgDB::HASH_TYPE hashType) const;
 
-    // Set the file hash
+    /**
+     * Sets the file's hash value in the database.  note that hash values
+     * are not stored in the blackboard. 
+     * @param hashType Type of hash value
+     * @param hash String value of hash.
+     */
     void setHash(TskImgDB::HASH_TYPE hashType, const std::string hash);
     
-    /// Does a file exist on disk for this TskFile object.
     /**
+     * Tests if a local copy of the file exists somewhere. 
      * @return True if a file exists, false otherwise
      */ 
     virtual bool exists() const = 0;
@@ -135,10 +145,15 @@ public:
      */ 
     virtual bool isVirtual() const = 0;
 
-    /// Open the file. Must be called before reading.
+    /** 
+     * Open the file. Must be called before reading.
+     * @throws TskFileException on error
+     */
     virtual void open() = 0;
 
-    /// Close the file.
+    /**
+     * Closes the open file.
+     */
     virtual void close() = 0;
 
     /**
