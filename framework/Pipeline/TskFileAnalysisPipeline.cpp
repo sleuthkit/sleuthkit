@@ -83,11 +83,18 @@ void TskFileAnalysisPipeline::run(TskFile* file)
             bCreated = true;
         }
 
+        bool bModuleFailed = false;
+
         for (int i = 0; i < m_modules.size(); i++)
         {
             TskModule::Status status = m_modules[i]->run(file);
 
             imgDB.setModuleStatus(file->id(), m_modules[i]->getModuleId(), (int)status);
+
+            // If any module encounters a failure while processing a file
+            // we will set the file status to failed once the pipeline is complete.
+            if (status == TskModule::FAIL)
+                bModuleFailed = true;
 
             // Stop processing the file when a module tells us to.
             if (status == TskModule::STOP)
@@ -99,9 +106,12 @@ void TskFileAnalysisPipeline::run(TskFile* file)
             TskFileManagerImpl::instance().deleteFile(file);
 
         // We allow modules to set status on the file so we only update it
-        // if the modules haven't
+        // if the modules haven't.
         if (file->status() == TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_IN_PROGRESS)
-            file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_COMPLETE);
+            if (bModuleFailed)
+                file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_FAILED);
+            else
+                file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_COMPLETE);
     }
     catch (std::exception& ex)
     {
