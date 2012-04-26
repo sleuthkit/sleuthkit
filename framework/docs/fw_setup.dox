@@ -6,7 +6,10 @@ This part of the document outlines how to get the infrastructure in place for an
 
 \section fw_setup_env Development Environment
 
-LIBRARIES AND HEADER FILES @@@@
+You will need to build the framework library using the instructions that come with the source code.  You will also need to configure your build environment to depend on the framework.dll file (or other dynamic library if on a non-Windows platform). 
+
+At a minimum, you will need to include the <tt>framework.h</tt> file. This includes the basics of the framework.  You may need to include additional .h files depending on what objects you need to use. 
+
 
 \section fw_setup_minimal Minimal Setup
 

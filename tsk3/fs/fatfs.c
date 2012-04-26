@@ -916,8 +916,8 @@ fatfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         tsk_fprintf(hFile, "** FS Info Sector: %" PRIu16 "\n",
             tsk_getu16(fs->endian, sb->a.f32.fsinfo));
 
-        tsk_fprintf(hFile, "** Backup Boot Sector: %" PRIu32 "\n",
-            tsk_getu32(fs->endian, sb->a.f32.bs_backup));
+        tsk_fprintf(hFile, "** Backup Boot Sector: %" PRIu16 "\n",
+            tsk_getu16(fs->endian, sb->a.f32.bs_backup));
     }
 
     for (i = 0; i < fatfs->numfat; i++) {

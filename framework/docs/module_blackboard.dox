@@ -1,4 +1,4 @@
-/*! \page mod_bbpage Communicating with the Blackboard
+/*! \page mod_bbpage The Blackboard
 
 \section bb_overview Overview
 
@@ -61,7 +61,9 @@ The framework defines what value should be stored for each of these attribute ty
 
 \subsection bb_attr_context Attribute Context
 
-Each attribute has a context field that can optionally be set. It provides context the name and value pair.  Each standard type provides suggestions about what the context should store, but it is not designed to be automatically interpreted by a program. Most attributes will not have this value set. 
+Each attribute has a context field that can optionally be set. It provides context the name and value pair.  Each standard type provides suggestions about what the context should store, but it is not designed to be automatically interpreted by a program. 
+
+NOTE: Most attributes will not have this value set. 
 
 As an example, if you have a module that analyzes a Microsoft Word file, then it may pull out dates about when the document was last saved and printed. Both of these dates should be added to the blackboard so that they can be used by a later module that makes timelines of all activity.  Both of these would be added to the TSK_ART_GEN_INFO artifact.  To differentiate between them, the context for each TskBloackboard.TSK_DATETIME should be different.  One should be "Last Printed" and the other "Last Saved". 
 

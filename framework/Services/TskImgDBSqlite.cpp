@@ -602,22 +602,22 @@ int TskImgDBSqlite::getFileRecord(const uint64_t fileId, TskFileRecord& fileReco
         if (result == SQLITE_ROW) 
         {
             fileRecord.fileId       = sqlite3_column_int64(statement, 0);
-            fileRecord.typeId       = sqlite3_column_int(statement, 1);
+            fileRecord.typeId = (TskImgDB::FILE_TYPES)sqlite3_column_int(statement, 1);
             fileRecord.name         = (char *)sqlite3_column_text(statement, 2);
             fileRecord.parentFileId = sqlite3_column_int64(statement, 3);
-            fileRecord.dirType      = sqlite3_column_int(statement, 4);
-            fileRecord.metaType     = sqlite3_column_int(statement, 5);
-            fileRecord.dirFlags     = sqlite3_column_int(statement, 6);
-            fileRecord.metaFlags    = sqlite3_column_int(statement, 7);
+            fileRecord.dirType = (TSK_FS_NAME_TYPE_ENUM) sqlite3_column_int(statement, 4);
+            fileRecord.metaType = (TSK_FS_META_TYPE_ENUM) sqlite3_column_int(statement, 5);
+            fileRecord.dirFlags = (TSK_FS_NAME_FLAG_ENUM) sqlite3_column_int(statement, 6);
+            fileRecord.metaFlags = (TSK_FS_META_FLAG_ENUM) sqlite3_column_int(statement, 7);
             fileRecord.size         = sqlite3_column_int64(statement, 8);
             fileRecord.ctime        = sqlite3_column_int(statement, 9);
             fileRecord.crtime       = sqlite3_column_int(statement, 10);
             fileRecord.atime        = sqlite3_column_int(statement, 11);
             fileRecord.mtime        = sqlite3_column_int(statement, 12);
-            fileRecord.mode         = sqlite3_column_int(statement, 13);
+            fileRecord.mode = (TSK_FS_META_MODE_ENUM)sqlite3_column_int(statement, 13);
             fileRecord.uid          = sqlite3_column_int(statement, 14);
             fileRecord.gid          = sqlite3_column_int(statement, 15);
-            fileRecord.status       = sqlite3_column_int(statement, 16);
+            fileRecord.status = (TskImgDB::FILE_STATUS) sqlite3_column_int(statement, 16);
             fileRecord.fullPath     = (char *)sqlite3_column_text(statement, 17);
 
             if (sqlite3_column_type(statement, 18) == SQLITE_TEXT)
@@ -1621,13 +1621,8 @@ int TskImgDBSqlite::busyHandler(void * pDB, int count)
 }
 
 
-/**
- * update the status field in the database for a given file.
- * @param a_file_id File to update.
- * @param a_status Status flag to update to.
- * @returns 1 on error.
- */
-int TskImgDBSqlite::updateFileStatus(uint64_t a_file_id, int a_status)
+
+int TskImgDBSqlite::updateFileStatus(uint64_t a_file_id, FILE_STATUS a_status)
 {
     if (!m_db)
         return 1;
@@ -1648,13 +1643,8 @@ int TskImgDBSqlite::updateFileStatus(uint64_t a_file_id, int a_status)
     return 0;
 }
 
-/**
- * update the known status field in the database for a given file.
- * @param a_file_id File to update.
- * @param a_status Status flag to update to.
- * @returns 1 on error.
- */
-int TskImgDBSqlite::updateKnownStatus(uint64_t a_file_id, int a_status)
+
+int TskImgDBSqlite::updateKnownStatus(uint64_t a_file_id, KNOWN_STATUS a_status)
 {
     if (!m_db)
         return 1;
@@ -2171,7 +2161,7 @@ int TskImgDBSqlite::getVolumeInfo(std::list<TskVolumeInfoRecord> & volumeInfoLis
             vol_info.sect_start = sqlite3_column_int64(statement,1);
             vol_info.sect_len = sqlite3_column_int64(statement,2);
             vol_info.description.assign((char *)sqlite3_column_text(statement, 3));
-            vol_info.flags = sqlite3_column_int(statement, 4);
+            vol_info.flags = (TSK_VS_PART_FLAG_ENUM)sqlite3_column_int(statement, 4);
             volumeInfoList.push_back(vol_info);
         }
         sqlite3_finalize(statement);
@@ -2206,7 +2196,7 @@ int TskImgDBSqlite::getFsInfo(std::list<TskFsInfoRecord> & fsInfoList) const
             fs_info.fs_id = sqlite3_column_int(statement,0);
             fs_info.img_byte_offset = sqlite3_column_int64(statement,1);
             fs_info.vol_id = sqlite3_column_int(statement,2);
-            fs_info.fs_type = sqlite3_column_int(statement,3);
+            fs_info.fs_type = (TSK_FS_TYPE_ENUM)sqlite3_column_int(statement,3);
             fs_info.block_size = sqlite3_column_int(statement,4);
             fs_info.block_count = sqlite3_column_int64(statement,5);
             fs_info.root_inum = sqlite3_column_int64(statement,6);
@@ -2497,17 +2487,13 @@ std::string TskImgDBSqlite::getFileName(uint64_t file_id) const
     return name;
 }
 
-/**
- * Return the known status of the file with the given id
- * @param fileId id of the file to get the status of
- * @returns KNOWN_STATUS
- */
-int TskImgDBSqlite::getKnownStatus(const uint64_t fileId) const
+
+TskImgDB::KNOWN_STATUS TskImgDBSqlite::getKnownStatus(const uint64_t fileId) const
 {
     int retval = -1;
 
     if (!m_db)
-        return retval;
+        return (KNOWN_STATUS)retval;
     
     stringstream stmt;
     stmt << "SELECT known FROM file_hashes WHERE file_id = " << fileId;
@@ -2524,7 +2510,7 @@ int TskImgDBSqlite::getKnownStatus(const uint64_t fileId) const
         LOGERROR(infoMessage);
     }
 
-    return retval;
+    return (KNOWN_STATUS)retval;
 }
 
 
@@ -2632,7 +2618,7 @@ int TskImgDBSqlite::getAllUnallocImgStatus(std::vector<TskUnallocImgStatusRecord
         while (sqlite3_step(statement) == SQLITE_ROW) {
             TskUnallocImgStatusRecord record;
             record.unallocImgId = (int)sqlite3_column_int(statement, 0);
-            record.status = (int)sqlite3_column_int(statement, 1);
+            record.status = (TskImgDB::UNALLOC_IMG_STATUS)sqlite3_column_int(statement, 1);
             unallocImgStatusList.push_back(record);
         }
         rc = 0;
