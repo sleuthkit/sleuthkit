@@ -1673,12 +1673,47 @@ bool TskImgDBSqlite::dbExist() const
         return false;
 }
 
-std::vector<uint64_t> TskImgDBSqlite::getUniqueCarvedFileIds(HASH_TYPE hashType) const
+void TskImgDBSqlite::getCarvedFileInfo(const std::string& stmt, std::map<uint64_t, std::string>& results) const
+{
+    sqlite3_stmt * statement;
+    if (sqlite3_prepare_v2(m_db, stmt.c_str(), -1, &statement, 0) == SQLITE_OK) 
+    {
+        while (sqlite3_step(statement) == SQLITE_ROW) 
+        {
+            uint64_t fileId = (uint64_t)sqlite3_column_int64(statement, 0);
+            std::string fileName = (char*)sqlite3_column_text(statement, 1);
+            std::string cfileName = (char*)sqlite3_column_text(statement, 2);
+
+            // Grab the extension and append it to the cfile name
+            std::string::size_type pos = fileName.rfind('.');
+            if (pos != std::string::npos)
+                cfileName.append(fileName.substr(pos));
+
+            results[fileId] = cfileName;
+        }
+        sqlite3_finalize(statement);
+    } else 
+    {
+        std::wstringstream msg;
+        msg << L"TskImgDBSqlite::getCarvedFileInfo - Error retrieving carved file details: "
+            << sqlite3_errmsg(m_db);
+        LOGERROR(msg.str());
+    }
+}
+
+/**
+ * Returns the file id and carved file name for a unique set of carved files.
+ * Uniqueness is based on the value of a particular hash type. Where duplicate
+ * hash values exist, the lowest file_id is chosen.
+ * @param hashType The type of hash value to use when determining uniqueness
+ * @return A map of file ids and the corresponding carved file name.
+ */
+std::map<uint64_t, std::string> TskImgDBSqlite::getUniqueCarvedFiles(HASH_TYPE hashType) const
 {
     if (!m_db)
         throw TskException("No database.");
 
-    std::vector<uint64_t> results;
+    std::map<uint64_t, std::string> results;
 
     string hash;
     switch (hashType) {
@@ -1695,75 +1730,62 @@ std::vector<uint64_t> TskImgDBSqlite::getUniqueCarvedFileIds(HASH_TYPE hashType)
         hash = "sha2_512";
         break;
     default:
-        std::wstringstream errorMsg;
-        errorMsg << L"TskImgDBSqlite::getUniqueCarvedFileIds - Unsupported hashType : " << hashType ;
-        LOGERROR(errorMsg.str());
+        std::wstringstream msg;
+        msg << L"TskImgDBSqlite::getUniqueCarvedFiles - Unsupported hashType : " << hashType << std::endl;
+        LOGERROR(msg.str());
         return results;
     }
 
     stringstream stmt;
-
-    // If the file_hashes table is empty, just return all of carve_files
+    
+    // If hashes have not been calculated return all carved files
     stmt << "SELECT count(*) FROM file_hashes;";
 
     sqlite3_stmt * statement;
-    if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) {
-        if (sqlite3_step(statement) == SQLITE_ROW) {
+    if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) 
+    {
+        if (sqlite3_step(statement) == SQLITE_ROW) 
+        {
             uint64_t counter = (uint64_t)sqlite3_column_int64(statement, 0);
-            if (counter == 0) {
+            if (counter == 0) 
+            {
                 sqlite3_finalize(statement);
-                return getCarvedFileIds();
+                stmt.str("");
+                stmt << "select c.file_id, f.name, 'cfile_' || c.vol_id || '_' || cs.sect_start || '_' "
+                    << "|| c.file_id from files f, carved_files c, carved_sectors cs "
+                    << "where c.file_id = cs.file_id and cs.seq = 0 and f.file_id = c.file_id";
+                getCarvedFileInfo(stmt.str(), results);
+                return results;
             }
         }
         sqlite3_finalize(statement);
-    } else {
+    } else 
+    {
         wchar_t infoMessage[MAX_BUFF_LENGTH];
-        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::getUniqueCarvedFileIds - Error getting file_hashes count: %S", sqlite3_errmsg(m_db));
+        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::getUniqueCarvedFiles - Error getting file_hashes count: %S", sqlite3_errmsg(m_db));
         LOGERROR(infoMessage);
     }
 
     stmt.str("");
-    stmt << "SELECT h." 
-        << hash 
-        << ", min(h.file_id) FROM file_hashes h, carved_files f WHERE h.file_id = f.file_id AND h." 
-        << hash 
-        << " != '' group by h." << hash;
 
-    if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) {
-        while (sqlite3_step(statement) == SQLITE_ROW) {
-            uint64_t fileId = (uint64_t)sqlite3_column_int64(statement, 1);
-            results.push_back(fileId);
-        }
-        sqlite3_finalize(statement);
-    } else {
-        wchar_t infoMessage[MAX_BUFF_LENGTH];
-        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::getUniqueCarvedFileIds - Error querying file_hashes table: %S", sqlite3_errmsg(m_db));
-        LOGERROR(infoMessage);
-    }
+    // Get the set of files for which the hash has been calculated.
+    stmt << "select c.file_id, f.name, 'cfile_' || c.vol_id || '_' || cs.sect_start || '_' "
+        << "|| c.file_id from files f, carved_files c, carved_sectors cs "
+        << "where c.file_id = cs.file_id and cs.seq = 0 and f.file_id = c.file_id and c.file_id in "
+        << "(select min(file_id) from file_hashes where " << hash << " != '' group by " << hash << ")";
 
-    // Get all carved_files with empty hash, if hash was not generated.
+    getCarvedFileInfo(stmt.str(), results);
+
+    // Next get the set of files for which the hash has *not* been calculated.
     stmt.str("");
-    stmt << "SELECT f.file_id FROM carved_files f WHERE " 
-        << "f.file_id NOT IN (SELECT f.file_id FROM file_hashes h, carved_files f WHERE h.file_id = f.file_id AND h." << hash << " != '') ";
-    if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) {
-        uint64_t counter = 0;
-        while (sqlite3_step(statement) == SQLITE_ROW) {
-            uint64_t fileId = (uint64_t)sqlite3_column_int64(statement, 0);
-            results.push_back(fileId);
-            counter++;
-        }
-        sqlite3_finalize(statement);
-        if (counter) {
-            // There are some files without hash, generate a warning.
-            std::wstringstream errorMsg;
-            errorMsg << L"TskImgDBSqlite::getUniqueCarvedFileIds - Including " << counter << L" files with no hash value.";
-            LOGWARN(errorMsg.str());
-        }
-    } else {
-        wchar_t infoMessage[MAX_BUFF_LENGTH];
-        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::getUniqueCarvedFileIds - Error querying file_hashes table: %S", sqlite3_errmsg(m_db));
-        LOGERROR(infoMessage);
-    }
+
+    stmt << "select c.file_id, f.name, 'cfile_' || c.vol_id || '_' || cs.sect_start || '_' "
+        << "|| c.file_id from files f, carved_files c, carved_sectors cs "
+        << "where c.file_id = cs.file_id and cs.seq = 0 and f.file_id = c.file_id and c.file_id in "
+        << "(select file_id from file_hashes where " << hash << " = '')";
+
+    getCarvedFileInfo(stmt.str(), results);
+
     return results;
 }
 
