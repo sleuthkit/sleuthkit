@@ -146,7 +146,9 @@ public:
     virtual bool isVirtual() const = 0;
 
     /** 
-     * Open the file. Must be called before reading.
+     * Open the file. Must be called before reading. Implementations must
+     * support concept of open() being called multiple times even if file 
+     * is already open. 
      * @throws TskFileException on error
      */
     virtual void open() = 0;
