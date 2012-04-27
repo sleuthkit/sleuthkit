@@ -82,10 +82,10 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    initAddImgNat
- * Signature: (JLjava/lang/String;)J
+ * Signature: (JLjava/lang/String;Z)J
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
-  (JNIEnv *, jclass, jlong, jstring);
+  (JNIEnv *, jclass, jlong, jstring, jboolean);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI

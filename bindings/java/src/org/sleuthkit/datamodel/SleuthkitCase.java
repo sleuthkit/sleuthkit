@@ -184,10 +184,11 @@ public class SleuthkitCase {
 	 * Adding an image is a multi-step process and this returns
 	 * an object that allows it to happen.
 	 * @param timezone TZ timezone string to use for ingest of image.
+	 * @param noFatFsOrphans true if to skip processing orphans on FAT filesystems
 	 * @return object to start ingest
 	 */
-	public AddImageProcess makeAddImageProcess(String timezone) {
-		return this.caseHandle.initAddImageProcess(timezone);
+	public AddImageProcess makeAddImageProcess(String timezone, boolean noFatFsOrphans) {
+		return this.caseHandle.initAddImageProcess(timezone, noFatFsOrphans);
 	}
 
 	/**

@@ -29,6 +29,7 @@ class TskAutoDb:public TskAuto {
         const char *path);
     virtual void createBlockMap(bool flag);
     virtual void hashFiles(bool flag);
+    virtual void setNoFatFsOrphans(bool noFatFsOrphans);
 
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
@@ -55,6 +56,7 @@ class TskAutoDb:public TskAuto {
     bool m_imgTransactionOpen;
     TSK_HDB_INFO * m_NSRLDb;
     TSK_HDB_INFO * m_knownBadDb;
+    bool m_noFatFsOrphans;
 
 
     uint8_t addImageDetails(const char *const images[], int);

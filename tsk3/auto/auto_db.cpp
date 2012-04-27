@@ -35,6 +35,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_imgTransactionOpen = false;
     m_NSRLDb = a_NSRLDb;
     m_knownBadDb = a_knownBadDb;
+    m_noFatFsOrphans = false;
 }
 
 TskAutoDb::~TskAutoDb()
@@ -66,6 +67,16 @@ void
  TskAutoDb::hashFiles(bool flag)
 {
     m_fileHashFlag = flag;
+}
+
+/**
+* Skip processing of orphans on FAT filesystems
+* Has no affect for other filesystems
+* @param noFatFsOrphans flag set to true if to skip processing orphans on FAT fs
+*/
+void TskAutoDb::setNoFatFsOrphans(bool noFatFsOrphans)
+{
+    m_noFatFsOrphans = noFatFsOrphans;
 }
 
 /**
@@ -261,8 +272,17 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 
     // make sure that flags are set to get all files -- we need this to
     // find parent directory
-    setFileFilterFlags((TSK_FS_DIR_WALK_FLAG_ENUM)
-        (TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC));
+     
+    TSK_FS_DIR_WALK_FLAG_ENUM filterFlags = (TSK_FS_DIR_WALK_FLAG_ENUM)
+        (TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC);
+
+    //check if to skip processing of FAT orphans
+    if (m_noFatFsOrphans 
+        && fs_info->ftype & (TSK_FS_TYPE_FAT12 | TSK_FS_TYPE_FAT16 | TSK_FS_TYPE_FAT32) ) {
+            filterFlags = (TSK_FS_DIR_WALK_FLAG_ENUM) (filterFlags | TSK_FS_DIR_WALK_FLAG_NOORPHAN);
+    }
+
+    setFileFilterFlags(filterFlags);
 
     return TSK_FILTER_CONT;
 }
