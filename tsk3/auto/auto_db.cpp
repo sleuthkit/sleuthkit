@@ -70,8 +70,9 @@ void
 }
 
 /**
-* Skip processing of orphans on FAT filesystems
-* Has no affect for other filesystems
+* Skip processing of orphans on FAT filesystems.  
+* This will make the loading of the database much faster
+* but you will not have all deleted files.
 * @param noFatFsOrphans flag set to true if to skip processing orphans on FAT fs
 */
 void TskAutoDb::setNoFatFsOrphans(bool noFatFsOrphans)
@@ -278,7 +279,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 
     //check if to skip processing of FAT orphans
     if (m_noFatFsOrphans 
-        && fs_info->ftype & (TSK_FS_TYPE_FAT12 | TSK_FS_TYPE_FAT16 | TSK_FS_TYPE_FAT32) ) {
+        && TSK_FS_TYPE_ISFAT(fs_info->ftype) ) {
             filterFlags = (TSK_FS_DIR_WALK_FLAG_ENUM) (filterFlags | TSK_FS_DIR_WALK_FLAG_NOORPHAN);
     }
 
