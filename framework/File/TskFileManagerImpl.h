@@ -40,9 +40,6 @@ public:
     // Return a File object for the given file id.
     virtual TskFile* getFile(const uint64_t fileId);
 
-    // Return a TskFile object for the given file id and path
-    virtual TskFile* getFile(const uint64_t fileId, const std::wstring& path);
-
     // Return the path including the file name for the given file id.
     virtual std::wstring getPath(const uint64_t fileId);
 

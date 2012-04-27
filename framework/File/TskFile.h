@@ -104,9 +104,6 @@ public:
     */
     TSK_GID_T gid() const;
 
-    // Get the status
-    int status() const;
-
     /// Fully qualified path to on-disk representation of file.
     virtual std::string getPath() const = 0;
     virtual void setPath(const std::string& path) = 0;
@@ -169,8 +166,14 @@ public:
     // Read "count" bytes into "buf" starting at "offset".
     virtual ssize_t read(const int64_t offset, char * buf, const size_t count) = 0;
 
-    /// Set the file status, also update the ImgDB file status
-    virtual void setStatus(TskImgDB::FILE_STATUS status);
+    /**
+     * Set the file status (where it is in its analysis life cycle)
+     */
+    void setStatus(TskImgDB::FILE_STATUS status);
+
+    /** Get the analysis status of the file (where it is in the analysis life cycle)
+     */
+    TskImgDB::FILE_STATUS status() const;
 
     //Blackboard methods
     virtual TskBlackboardArtifact createArtifact(int artifactTypeID);
@@ -205,7 +208,10 @@ protected:
     // The database file record.
     TskFileRecord m_fileRecord;
 
-    // Initialize the file from a database record
+    /**
+     * Loads the raw file data from the database.
+     * @throws TskException on error
+     */
     void initialize();
 };
 

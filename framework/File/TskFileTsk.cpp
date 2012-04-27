@@ -153,6 +153,7 @@ void TskFileTsk::open()
         throw TskFileException("Error opening file");
     }
 
+    m_offset = 0;
     m_isOpen = true;
 }
 
@@ -174,14 +175,13 @@ void TskFileTsk::close()
     {
         TskServices::Instance().getImageFile().closeFile(m_handle);
         m_handle = -1;
-        m_offset = 0;
     }
 
     if (typeId() == TskImgDB::IMGDB_FILES_TYPE_UNUSED) {
         m_handle = -1;
-        m_offset = 0;
     }
 
+    m_offset = 0;
     m_isOpen = false;
 }
 

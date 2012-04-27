@@ -27,16 +27,17 @@ TskFile::~TskFile(void)
 {
 }
 
-/**
- * 
- */
+
 void TskFile::initialize()
 {
     TskImgDB * imgDB = &TskServices::Instance().getImgDB();
+    // getDB will throw exception if ImgDB has not been setup
 
-    // XXX We never check the return value...
-    if (imgDB != NULL)
-        imgDB->getFileRecord(m_id, m_fileRecord);
+    if (imgDB != NULL) {
+        if (imgDB->getFileRecord(m_id, m_fileRecord)) {
+            throw TskException("TskFile::initialize: Error looking up file: " + m_id);
+        }
+    }
 }
 
 /**
@@ -181,7 +182,7 @@ TSK_GID_T TskFile::gid() const
 /**
  * What is this files status?
  */
-int TskFile::status() const
+TskImgDB::FILE_STATUS TskFile::status() const
 {
     return m_fileRecord.status;
 }
@@ -235,7 +236,6 @@ void TskFile::setHash(TskImgDB::HASH_TYPE hashType, const std::string hash)
     }
 }
 
-/// Set the file status
 void TskFile::setStatus(TskImgDB::FILE_STATUS status)
 {
     m_fileRecord.status = status;
