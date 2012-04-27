@@ -40,9 +40,10 @@ public:
      */
     uint64_t id() const;
 
-    /** Get the type id
+    /**
+     * Get the high-level type (file system, local, carved, etc.)
      */
-    int typeId() const;
+    TskImgDB::FILE_TYPES typeId() const;
 
     /** Get the name
      */
@@ -104,9 +105,12 @@ public:
     */
     TSK_GID_T gid() const;
 
-    /// Fully qualified path to on-disk representation of file.
+    /**
+     * Get the fully qualified path of there this file should
+     * be locally stored.  It does not check if the file is 
+     * locally stored.   Use exists() for that.
+     */
     virtual std::string getPath() const = 0;
-    virtual void setPath(const std::string& path) = 0;
 
     /** 
      * Get the pre-calculated hash value of the specified type.
@@ -125,18 +129,16 @@ public:
     void setHash(TskImgDB::HASH_TYPE hashType, const std::string hash);
     
     /**
-     * Tests if a local copy of the file exists somewhere. 
+     * Tests if a local copy of the file exists at the default location. 
      * @return True if a file exists, false otherwise
      */ 
     virtual bool exists() const = 0;
 
-    /// Does this file represent a directory.
     /**
      * @return True if this is a directory, false otherwise
      */ 
     virtual bool isDirectory() const = 0;
 
-    /// Is this a "virtual" file 
     /**
      * @return True if this is a "virtual" file, false otherwise
      */ 
@@ -156,6 +158,7 @@ public:
     virtual void close() = 0;
 
     /**
+     * Read file content into a buffer.  Reads from end of last read.
      * @param buf Buffer into which file content will be placed.
      * Must be at least "count" bytes in size.
      * @param count The number of bytes to read from the file.
@@ -195,9 +198,6 @@ public:
 protected:
     // File id.
     uint64_t m_id;
-
-    // Where the file is stored on disk
-    std::string m_filePath;
 
     // Our current offset into the file
     uint64_t m_offset;

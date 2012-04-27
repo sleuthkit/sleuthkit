@@ -48,10 +48,7 @@ uint64_t TskFile::id() const
     return m_id;
 }
 
-/**
- * What is this files type id?
- */
-int TskFile::typeId() const
+TskImgDB::FILE_TYPES TskFile::typeId() const
 {
     return m_fileRecord.typeId;
 }

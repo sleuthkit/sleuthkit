@@ -35,19 +35,12 @@
 class TSK_FRAMEWORK_API TskFileTsk : public TskFile
 {
 public:
-    // Construct a file for the given id.
-	TskFileTsk(const uint64_t id);
-
-    // Construct a file for the given id and path.
-    // The path is must be the fully qualified path to a
-    // file on disk and the file must exist and be readable.
-    TskFileTsk(const uint64_t id, const std::string& path);
+    
 
 	virtual ~TskFileTsk();
 
     /// Fully qualified path to on-disk representation of file.
     virtual std::string getPath() const;
-    virtual void setPath(const std::string& path);
 
     /// Does a file exist on disk for this TskFile object.
     /**
@@ -86,6 +79,13 @@ public:
     virtual ssize_t read(const int64_t offset, char * buf, const size_t count);
 
 protected:
+    friend class TskFileManagerImpl;
+
+    // Construct a file for the given id.
+	TskFileTsk(const uint64_t id);
+
+    TskFileTsk() {};
+
     // A handle to the file on disk
     Poco::File m_file;
 

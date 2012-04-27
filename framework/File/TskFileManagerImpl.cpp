@@ -81,16 +81,11 @@ void TskFileManagerImpl::initialize()
 
 TskFile * TskFileManagerImpl::getFile(const uint64_t fileId)
 {
-    // Check to see if a local version of the file exists
-    std::string filePath = TskUtilities::toUTF8(getPath(fileId));
-
-    Poco::File pocoFile(filePath);
-
-    // call the relevant File constructor.
-    if (pocoFile.exists())
-        return new TskFileTsk(fileId, filePath);
-    else
-        return new TskFileTsk(fileId);
+    /* If we were to ever have different subclasses of TskFile
+     * that differentiate file types, this is where the logic
+     * should go to create the correct version. 
+     */
+    return new TskFileTsk(fileId);
 }
 
 
@@ -183,9 +178,6 @@ void TskFileManagerImpl::saveFile(TskFile* fileToSave, const std::wstring& fileP
             // Flush and close the output stream.
             fos.flush();
             fos.close();
-
-            // Set the path for the newly saved file
-            fileToSave->setPath(destFile.path());
 
             // Close the file
             fileToSave->close();
@@ -286,7 +278,6 @@ void TskFileManagerImpl::deleteFile(TskFile* fileToDelete)
         {
             Poco::File targetFile(fileToDelete->getPath());
             targetFile.remove();
-            fileToDelete->setPath("");
         }
     }
     catch (Poco::Exception& ex)
