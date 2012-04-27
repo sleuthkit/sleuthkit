@@ -289,7 +289,7 @@ public:
     // Get the number of files that match the given condition
     virtual int getFileCount(std::string& condition) const = 0;
 
-    virtual std::vector<uint64_t> getUniqueCarvedFileIds(HASH_TYPE hashType) const = 0;
+    virtual std::map<uint64_t, std::string> getUniqueCarvedFiles(HASH_TYPE hashType) const = 0;
     virtual std::vector<uint64_t> getCarvedFileIds() const = 0;
 
     virtual std::vector<uint64_t> getUniqueFileIds(HASH_TYPE hashType) const = 0;

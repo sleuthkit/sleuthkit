@@ -93,7 +93,7 @@ public:
     // Get the number of files that match the given condition
     virtual int getFileCount(std::string& condition) const;
 
-    virtual std::vector<uint64_t> getUniqueCarvedFileIds(HASH_TYPE hashType) const;
+    virtual std::map<uint64_t, std::string> getUniqueCarvedFiles(HASH_TYPE hashType) const;
     virtual std::vector<uint64_t> getCarvedFileIds() const;
 
     virtual std::vector<uint64_t> getUniqueFileIds(HASH_TYPE hashType) const;
@@ -152,6 +152,7 @@ private:
     int addUnusedSector(uint64_t sectStart, uint64_t sectEnd, int volId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList);
     int getFileTypeRecords(std::string& stmt, std::list<TskFileTypeRecord>& fileTypeInfoList) const;
     virtual vector<TskBlackboardArtifact> getArtifactsHelper(uint64_t file_id, int artifactTypeID, string artifactTypeName);
+    void getCarvedFileInfo(const std::string& stmt, std::map<uint64_t, std::string>& results) const;
 };
 
 #endif
