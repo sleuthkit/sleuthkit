@@ -99,6 +99,11 @@ TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType
         LOGERROR(errorMsg.str());
         throw TskException("Error opening pipeline config file.");
     }
+    else {
+        std::wstringstream msg;
+        msg << L"TskPipelineManager::createPipeline -- using config file: " << configFile.toString().c_str();
+        LOGINFO(msg.str());
+    }
 
     try
     {
@@ -136,6 +141,16 @@ TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType
 
             if (pElem && pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE) == pipelineType)
             {
+                // quick sanity check to verify that there is only one pipeline in the config file for this type
+                for (unsigned long i2 = i+1; i2 < pipelines->length(); i2++) {
+                    Poco::XML::Node * pNode2 = pipelines->item(i2);
+                    Poco::XML::Element* pElem2 = dynamic_cast<Poco::XML::Element*>(pNode2);
+
+                    if (pElem2 && pElem2->getAttribute(TskPipelineManager::PIPELINE_TYPE) == pipelineType) {
+                        LOGERROR(L"TskPipelineManager::createPipeline: Multiple pipelines of the same type exist");
+                        throw TskException ("Error creating pipeline");
+                    }
+                }
                 // We found the right pipeline so initialize it.
                 Poco::XML::DOMWriter writer;
                 std::ostringstream pipelineXml;

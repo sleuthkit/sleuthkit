@@ -224,6 +224,13 @@ public:
     virtual int getMaxFileIdReadyForAnalysis(uint64_t a_lastFileId, uint64_t & maxFileId) const = 0;
     virtual int getMinFileIdReadyForAnalysis(uint64_t & minFileId) const = 0;
     virtual uint64_t getFileId(int fsId, uint64_t fs_file_id) const = 0;
+
+    /**
+     * Queries the blackboard for raw information about a specific file. 
+     * @param fileId ID of file to lookup
+     * @param fileRecord Location where data should be stored
+     * @returns -1 on error and 0 on success.
+     */
     virtual int getFileRecord(const uint64_t fileId, TskFileRecord& fileRecord) const = 0;
     virtual SectorRuns * getFileSectors(uint64_t fileId) const = 0;
     virtual std::vector<std::wstring> getImageNames() const = 0;

@@ -29,41 +29,79 @@ public:
      * Return a TskFile object for a given file ID.
      * @param fileId ID of file to return object of.
      * @returns Pointer to file object. Caller must free it.
+     * @throws TskException in case of error.
      */
     virtual TskFile * getFile(const uint64_t fileId) = 0;
 
-    /**
-     * Return a TskFile object for a file stored locally at a given path.
-     * @param fileId ID of file to assign to file at the path
-     * @param path Location to find the file at. 
-     * @returns Pointer to file object. Caller must free it.
+    /** 
+     * Return the fully qualified path to where the local instance of the file with the given ID
+     * should exist.  This does not validate that the ID is for a file and does
+     * not validate that the file actually exists. 
+     * @param fileId Id of the file.
+     * @returns Path to where local file should exist. 
      */
-    virtual TskFile * getFile(const uint64_t fileId, const std::wstring& path) = 0;
-
-    /// Return the path including the file name for the given file id.
     virtual std::wstring getPath(const uint64_t fileId) = 0;
 
-    //// Save the given file to disk.
+    /**
+     * Save the file to the default location. 
+     * @param fileToSave File object of the file to save.
+     * @throws various exceptions on errors
+     */
     virtual void saveFile(TskFile* fileToSave) = 0;
 
+    /**
+     * Save the file to the default location. 
+     * @param fileId ID of the file to save.
+     * @throws various exceptions on errors
+     */
     virtual void saveFile(const uint64_t fileId)
     {
         saveFile(getFile(fileId));
     }
 
-    /// Save the given file to the specified path
+    /**
+     * Save the file to the given fully qualifed file path. 
+     * Directories along the path will be created if they do not exist.
+     * If the destination file exists it will be replaced.
+     * @param fileToSave The file to save.
+     * @param filePath The path to save to, including the file name. 
+     * @throws various exceptions on errors
+     */
     virtual void saveFile(TskFile* fileToSave, const std::wstring& filePath) = 0;
 
+    /**
+     * Save the file to the given fully qualifed file path. 
+     * Directories along the path will be created if they do not exist.
+     * If the destination file exists it will be replaced.
+     * @param fileId ID of the file to save.
+     * @param filePath The path to save to, including the file name. 
+     * @throws various exceptions on errors
+     */
     virtual void saveFile(const uint64_t fileId, const std::wstring& filePath)
     {
         saveFile(getFile(fileId), filePath);
     }
 
-    /// Save the content represented by the input stream using the given file id
+    /**
+     * Write the file contents to an input stream.
+     * @param fileId ID of the file to save.
+     * @param istr Input stream to write to
+     * @throws various exceptions on errors
+     */
     virtual void saveFile(const uint64_t fileId, std::istream& istr) = 0;
 
-    /// Delete the file from disk.
+    /**
+     * Delete the local copy of a file.
+     * @param fileToDelete Object of file to delete local copy of
+     * @throws various exceptions on errors
+     */
     virtual void deleteFile(TskFile* fileToDelete) = 0;
+
+    /**
+     * Delete the local copy of a file.
+     * @param fileId ID of file to delete local copy of
+     * @throws various exceptions on errors
+     */
     virtual void deleteFile(const uint64_t fileId)
     {
         deleteFile(getFile(fileId));

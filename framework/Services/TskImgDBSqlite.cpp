@@ -577,9 +577,7 @@ uint64_t TskImgDBSqlite::getFileId(int a_fsId, uint64_t a_fsFileId) const
     return fileId;
 }
 
-/**
- * @returns the file record or -1 on error.
- */
+
 int TskImgDBSqlite::getFileRecord(const uint64_t fileId, TskFileRecord& fileRecord) const
 {
     if (!m_db)
