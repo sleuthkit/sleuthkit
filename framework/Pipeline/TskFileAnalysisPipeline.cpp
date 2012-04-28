@@ -75,12 +75,9 @@ void TskFileAnalysisPipeline::run(TskFile* file)
 
         // If there is an Executable module in the pipeline we must
         // ensure that the file exists on disk.
-        bool bCreated = false;
-
-        if (!file->exists())
+        if (m_hasExeModule && !file->exists())
         {
             TskFileManagerImpl::instance().saveFile(file);
-            bCreated = true;
         }
 
         bool bModuleFailed = false;
@@ -101,9 +98,16 @@ void TskFileAnalysisPipeline::run(TskFile* file)
                 break;
         }
 
-        // Delete the file if we created it above.
-        if (bCreated)
+        // Delete the file if it exists. The file may have been created by us
+        // above or by a module that required it to exist on disk.
+        // Carved and derived files should not be deleted since the content is
+        // typically created by external tools.
+        if (file->typeId() != TskImgDB::IMGDB_FILES_TYPE_CARVED &&
+            file->typeId() != TskImgDB::IMGDB_FILES_TYPE_DERIVED &&
+            file->exists())
+        {
             TskFileManagerImpl::instance().deleteFile(file);
+        }
 
         // We allow modules to set status on the file so we only update it
         // if the modules haven't.

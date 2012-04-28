@@ -86,11 +86,11 @@ public:
 
 protected:
     std::vector<TskModule*> m_modules;
+    bool m_hasExeModule;    ///< True if any module is an executable module
 
     bool excludeFile(const TskFile*);
 
 private:
-    bool m_hasExeModule;    ///< True if any module is an executable module
     bool m_loadDll;     ///< True if dlls should be loaded during initialize
 
     TskModule * createModule(Poco::XML::Element * pElem);
