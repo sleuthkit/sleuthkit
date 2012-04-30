@@ -67,9 +67,6 @@ extern "C"
 
             TskBlackboardAttribute attr((int) TSK_VALUE, "CalcFileSizeModule", "ByteCount", totalBytes);
             genInfo.addAttribute(attr);
-
-            // Close file.
-            pFile->close();
         }
         catch (TskException& tskEx)
         {
