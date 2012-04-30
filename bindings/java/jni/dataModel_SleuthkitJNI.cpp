@@ -289,10 +289,11 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
  * @param env pointer to java environment this was called from
  * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
+ * @param noFatFsOrphans whether to skip processing orphans on FAT filesystems
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
-    jclass obj, jlong caseHandle, jstring timezone) {
+    jclass obj, jlong caseHandle, jstring timezone, jboolean noFatFsOrphans) {
     jboolean isCopy;
 
     TskCaseDb *tskCase = castCaseDb(env, caseHandle);
@@ -308,6 +309,10 @@ JNIEXPORT jlong JNICALL
     /* we should be checking this somehow */
     TZSET();
     TskAutoDb *tskAuto = tskCase->initAddImage();
+
+    const bool noFatFsOrhpansBool = noFatFsOrphans?true:false;
+    tskAuto->setNoFatFsOrphans(noFatFsOrhpansBool);
+
     return (jlong) tskAuto;
 }
 
@@ -323,7 +328,6 @@ JNIEXPORT jlong JNICALL
  * @param process the add-image process created by initAddImgNat
  * @param paths array of strings from java, the paths to the image parts
  * @param num_imgs number of image parts
- * @param outDir the output directory
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
