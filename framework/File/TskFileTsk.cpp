@@ -220,7 +220,76 @@ ssize_t TskFileTsk::read(char *buf, const size_t count)
     return 0;
 }
 
-ssize_t TskFileTsk::read(const int64_t offset, char *buf, const size_t count)
+TSK_OFF_T TskFileTsk::tell() const
 {
-    return 0;
+    if (!m_isOpen)
+    {
+        LOGERROR(L"TskFileTsk::tell : File not open.");
+        throw TskFileException("File not open.");
+    }
+
+    if (m_fileInStream != NULL)
+        return m_fileInStream->tellg();
+    else
+        return m_offset;
+}
+
+TSK_OFF_T TskFileTsk::seek(const TSK_OFF_T off, std::ios::seekdir origin)
+{
+    if (!m_isOpen)
+    {
+        LOGERROR(L"TskFileTsk::tell : File not open.");
+        throw TskFileException("File not open.");
+    }
+
+    if (m_fileInStream != NULL)
+    {
+        // Clear all error flags before seeking since an earlier
+        // read may have set the eof flag.
+        m_fileInStream->clear();
+        m_fileInStream->seekg(off, origin);
+        return m_fileInStream->tellg();
+    }
+    else
+    {
+        if (origin == std::ios::beg)
+        {
+            if (off > size())
+            {
+                LOGERROR(L"TskFileTsk::seek - Attempt to seek beyond end of file.");
+                throw TskFileException("Attempt to seek beyond end of file.");
+            }
+
+            m_offset = off;
+        }
+        else if (origin == std::ios::end)
+        {
+            if (off > 0)
+            {
+                LOGERROR(L"TskFileTsk::seek - Offset must be a negative number when seeking from end of file.");
+                throw TskFileException("Seek from end requires negative offset.");
+            }
+            if (size() + off < 0)
+            {
+                LOGERROR(L"TskFileTsk::seek - Attempt to seek prior to start of file.");
+                throw TskFileException("Attempt to seek prior to start of file");
+            }
+            m_offset = size() + off;
+        }
+        else
+        {
+            if (m_offset + off > size())
+            {
+                LOGERROR(L"TskFileTsk::seek - Attempt to seek beyond end of file.");
+                throw TskFileException("Attempt to seek beyond end of file.");
+            }
+            if (m_offset + off < 0)
+            {
+                LOGERROR(L"TskFileTsk::seek - Attempt to seek prior to start of file.");
+                throw TskFileException("Attempt to seek prior to start of file.");
+            }
+            m_offset += off;
+        }
+        return m_offset;
+    }
 }

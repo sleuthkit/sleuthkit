@@ -92,12 +92,8 @@ void TskFileAnalysisPipeline::run(TskFile* file)
 
             imgDB.setModuleStatus(file->id(), m_modules[i]->getModuleId(), (int)status);
 
-
-            // @@@ This is here to ensure that we close the file and re-open it
-            // again for the next module so that the offset resets.  If we remove
-            // the notion of internal state in TskFile for the offset, then this
-            // can go away. Or we can replace it with a seek call. 
-            file->close();
+            // Reset the file offset to the beginning of the file for the next module.
+            file->seek(0);
 
             // If any module encounters a failure while processing a file
             // we will set the file status to failed once the pipeline is complete.

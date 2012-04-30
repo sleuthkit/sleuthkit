@@ -67,6 +67,10 @@ public:
     /// Close the file.
     virtual void close();
 
+    virtual TSK_OFF_T tell() const;
+
+    virtual TSK_OFF_T seek(const TSK_OFF_T off, std::ios::seekdir origin = std::ios::beg);
+
     /**
      * @param buf Buffer into which file content will be placed.
      * Must be at least "count" bytes in size.
@@ -74,9 +78,6 @@ public:
      * @return The number of bytes read or 0 for end of file.
      */
     virtual ssize_t read(char * buf, const size_t count);
-
-    // Read "count" bytes into "buf" starting at "offset".
-    virtual ssize_t read(const int64_t offset, char * buf, const size_t count);
 
 protected:
     friend class TskFileManagerImpl;

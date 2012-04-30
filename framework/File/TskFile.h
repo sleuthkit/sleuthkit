@@ -166,6 +166,26 @@ public:
     virtual void save();
 
     /**
+     * Get the current byte offset within the file.
+     * @returns Current byte offset.
+     * @throws TskFileException if file is not open.
+     */
+    virtual TSK_OFF_T tell() const = 0;
+
+    /**
+     * Set the byte offset within the file. If the second parameter is not
+     * supplied the offset will be set relative to the beginning of the file.
+     * @param off Number off bytes to offset from origin.
+     * @param dir The point from which the given offset is relative to. Defaults
+     * to beginning of file. If origin is std::ios::end the offset must be a 
+     * negative number.
+     * @returns The absolute file offset resulting from the repositioning.
+     * @throws TskFileException if file is not open or if you attempt to seek
+     * to an invalid offset.
+     */
+    virtual TSK_OFF_T seek(const TSK_OFF_T off, std::ios::seekdir origin = std::ios::beg) = 0;
+
+    /**
      * Read file content into a buffer.  Reads from end of last read.
      * @param buf Buffer into which file content will be placed.
      * Must be at least "count" bytes in size.
@@ -173,9 +193,6 @@ public:
      * @return The number of bytes read or 0 for end of file.
      */
     virtual ssize_t read(char * buf, const size_t count) = 0;
-
-    // Read "count" bytes into "buf" starting at "offset".
-    virtual ssize_t read(const int64_t offset, char * buf, const size_t count) = 0;
 
     /**
      * Set the file status (where it is in its analysis life cycle)
@@ -208,7 +225,7 @@ protected:
     uint64_t m_id;
 
     // Our current offset into the file
-    uint64_t m_offset;
+    TSK_OFF_T m_offset;
 
     // Is the file open (used for both on disk and image files)
     bool m_isOpen;

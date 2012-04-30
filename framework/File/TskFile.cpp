@@ -48,10 +48,14 @@ void TskFile::save()
         throw TskException("Attempt to save file with file id 0.");
     }
 
+    // If the file already exists we have nothing to do.
+    if (exists())
+        return;
+
     // Make sure the file is open before saving.
     open();
 
-    TskServices::Instance().getFileManager().saveFile(m_id);
+    TskServices::Instance().getFileManager().saveFile(this);
 }
 
 /**
