@@ -158,6 +158,14 @@ public:
     virtual void close() = 0;
 
     /**
+     * Save the file to the default location. This is a simple wrapper
+     * around TskFileManager::saveFile.
+     * @throws TskException if file id is zero along with exceptions 
+     * thrown by TskFileManager::saveFile.
+     */
+    virtual void save();
+
+    /**
      * Read file content into a buffer.  Reads from end of last read.
      * @param buf Buffer into which file content will be placed.
      * Must be at least "count" bytes in size.

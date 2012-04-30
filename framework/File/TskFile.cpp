@@ -40,6 +40,20 @@ void TskFile::initialize()
     }
 }
 
+void TskFile::save()
+{
+    if (m_id == 0)
+    {
+        LOGERROR(L"TskFile::save - Attempt to save file with file id 0.");
+        throw TskException("Attempt to save file with file id 0.");
+    }
+
+    // Make sure the file is open before saving.
+    open();
+
+    TskServices::Instance().getFileManager().saveFile(m_id);
+}
+
 /**
  * What is this files id?
  */
