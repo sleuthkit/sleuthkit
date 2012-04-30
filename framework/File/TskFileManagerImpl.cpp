@@ -268,8 +268,8 @@ void TskFileManagerImpl::addFile(const uint64_t fileId, std::wstring& filePath)
 {
     try
     {
-        Poco::FileInputStream fis(TskUtilities::toUTF8(filePath));
-        addFile(fileId, fis);
+        Poco::File sourceFile(TskUtilities::toUTF8(filePath));
+        sourceFile.copyTo(TskUtilities::toUTF8(getPath(fileId)));
     }
     catch (Poco::Exception& ex)
     {
