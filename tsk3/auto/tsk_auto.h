@@ -90,10 +90,9 @@ class TskAuto {
      * and you can force TskAuto to skip this volume system. 
      * @param vs_info volume system details
      * @returns Value to show if Vs should be processed, skipped, or process should stop.
+     * TSK_FILTER_CONT by default.
      */
-    virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info) {
-        return TSK_FILTER_CONT;
-    };
+    virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
 
     /**
      * TskAuto calls this method before it processes each volume that is found in a 
@@ -103,10 +102,9 @@ class TskAuto {
      *
      * @param vs_part Parition details
      * @returns Value to show if volume should be processed, skipped, or process should stop.
+     * TSK_FILTER_CONT by default.
      */
-    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part) {
-        return TSK_FILTER_CONT;
-    };
+    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
 
     /**
      * TskAuto calls this method before it processes each file system that is found in a 
@@ -114,10 +112,9 @@ class TskAuto {
      * and you can force TskAuto to skip this file system. 
      * @param fs_info file system details
      * @returns Value to show if FS should be processed, skipped, or process should stop.
+     * TSK_FILTER_CONT by default.
      */
-    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info) {
-        return TSK_FILTER_CONT;
-    };
+    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
 
     /**
      * TskAuto calls this method for each file and directory that it finds in an image. 
@@ -140,8 +137,7 @@ class TskAuto {
      *
      * @param msg A text message describing the issue that was encountered.
      */
-    virtual void handleNotification(const char *msg) {
-    };
+    virtual void handleNotification(const char *msg);
 
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
@@ -182,11 +178,10 @@ class TskAuto {
      * @param fs_attr Attribute of the file.
      * @param path full path of parent directory
      * @returns Whether to stop processing, an error occured, or if the processing should continue. 
+     * TSK_OK by default.
      */
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE * fs_file,
-        const TSK_FS_ATTR * fs_attr, const char *path) {
-        return TSK_OK;
-    };
+        const TSK_FS_ATTR * fs_attr, const char *path);
 };
 
 
