@@ -74,6 +74,18 @@
 #ifndef _TSK_HFS_H
 #define _TSK_HFS_H
 
+/*
+ * Some compilers do not have the boolean type.
+ */
+
+#ifndef TRUE
+#define TRUE ((unsigned char)1)
+#endif
+
+#ifndef FALSE
+#define FALSE ((unsigned char)0)
+#endif
+
 
 /*
  * All structures created using technote 1150 from Apple.com

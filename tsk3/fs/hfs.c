@@ -88,7 +88,7 @@
 static uint16_t next_attribute_id();
 static void reset_attribute_counter();
 static uint8_t hfs_load_extended_attrs(TSK_FS_FILE * file,
-        boolean *isCompressed, boolean *compDataInRSRC,
+        unsigned char *isCompressed, unsigned char *compDataInRSRC,
         uint64_t * uncSize);
 static void error_detected(uint32_t errnum, char *errstr, ...);
 static void error_returned(char *errstr, ...);
@@ -423,7 +423,7 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
  */
 static uint8_t
 hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
-    TSK_FS_ATTR * a_attr, boolean dataForkQ)
+    TSK_FS_ATTR * a_attr, unsigned char dataForkQ)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
     uint16_t nodesize;          /* size of nodes (all, regardless of the name) */
@@ -1578,7 +1578,7 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         return 1;
     }
 
-    boolean dummy1, dummy2;
+    unsigned char dummy1, dummy2;
     uint64_t dummy3;
 
     hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
@@ -1723,7 +1723,7 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         return 1;
     }
 
-    boolean dummy1, dummy2;
+    unsigned char dummy1, dummy2;
     uint64_t dummy3;
 
     hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
@@ -1798,7 +1798,7 @@ hfs_make_startfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         return 1;
     }
 
-    boolean dummy1, dummy2;
+    unsigned char dummy1, dummy2;
     uint64_t dummy3;
 
     hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
@@ -1945,7 +1945,7 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     fs_attr->size = fs_file->meta->size;
     fs_attr->nrd.allocsize = fs_file->meta->size;
 
-    boolean dummy1, dummy2;
+    unsigned char dummy1, dummy2;
     uint64_t dummy3;
     hfs_load_extended_attrs(fs_file, &dummy1,&dummy2, &dummy3);
 
@@ -2828,7 +2828,7 @@ static const char * hfs_attrTypeName(uint32_t typeNum) {
 
 static uint8_t
 hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
-        boolean *isCompressed, boolean *compDataInRSRC,
+        unsigned char *isCompressed, unsigned char *compDataInRSRC,
         uint64_t * uncompressedSize)
 {
     tsk_error_reset();
@@ -3036,7 +3036,7 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
     // and nodeDescriptor points to the descriptor of that node.
 
     // Loop over successive LEAF nodes, starting with this one
-    boolean done = FALSE;
+    unsigned char done = FALSE;
     while( ! done) {
 
         if(tsk_verbose)
@@ -3158,7 +3158,7 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
                     uint32_t cmpType = tsk_getu32(TSK_LIT_ENDIAN, cmph->compression_type);
                     uint64_t uncSize = tsk_getu64(TSK_LIT_ENDIAN, cmph->uncompressed_size);
                     *uncompressedSize = uncSize;
-                    boolean reallyCompressed;
+                    unsigned char reallyCompressed;
                     uint64_t cmpSize = 0;
                     if(cmpType == 3) {
                     	// Data is inline.  We will load the uncompressed data as a resident attribute.
@@ -3515,7 +3515,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
     uint16_t typeListOffset = tsk_getu16(fs_info->endian, mapHdr->typeListOffset);
 
     uint16_t nameListOffset = tsk_getu16(fs_info->endian, mapHdr->nameListOffset);
-    boolean hasNameList;
+    unsigned char hasNameList;
     uint8_t * nameListBegin;
     char * nameBuffer;
 
@@ -3539,7 +3539,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
         uint16_t numRes = tsk_getu16(fs_info->endian, tlItem->count) + 1;
         uint16_t refOff = tsk_getu16(fs_info->endian, tlItem->offset);
 
-        boolean isCompression = memcmp(tlItem->type, "cmpf", 4) == 0;
+        unsigned char isCompression = memcmp(tlItem->type, "cmpf", 4) == 0;
 
         int pindx;
         for( pindx = 0; pindx<numRes; pindx++) {
@@ -3651,8 +3651,8 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
     TSK_FS_ATTR *fs_attr;
     TSK_FS_ATTR_RUN *attr_run;
     hfs_fork *forkx;
-    boolean resource_fork_has_contents = FALSE;
-    boolean compression_flag;
+    unsigned char resource_fork_has_contents = FALSE;
+    unsigned char compression_flag;
 
 
     // clean up any error messages that are lying around
@@ -3755,7 +3755,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
     // We do these first, so that we can detect the mode of compression, if
     // any.  We need to know that mode in order to handle the forks.
 
-    boolean isCompressed, compDataInRSRCFork;
+    unsigned char isCompressed, compDataInRSRCFork;
     uint64_t uncompressedSize;
 
 
@@ -3773,13 +3773,10 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
 
     if(isCompressed) {
         fs_file->meta->size = uncompressedSize;
-        printf("THERE IS A COMP REC\n");
     }
 
     // This is the flag indicating compression, from the Catalog File record.
     compression_flag = (fs_file->meta->flags & TSK_FS_META_FLAG_COMP) != 0;
-
-    printf("THE FLAGS ARE %x\n", fs_file->meta->flags);
 
     if(compression_flag && ! isCompressed)
     	tsk_fprintf(stderr, "hfs_load_attrs: WARNING, HFS marks this as a"
@@ -4680,7 +4677,7 @@ typedef struct {
     int idx;
     TSK_DADDR_T startBlock;
     uint32_t  blockCount;
-    boolean accumulating;
+    unsigned char accumulating;
 } HFS_PRINT_ADDR;
 
 static void
@@ -5161,7 +5158,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         DECMPFS_DISK_HEADER *cmph = (DECMPFS_DISK_HEADER *) aBuf;
         uint32_t cmpType = tsk_getu32(TSK_LIT_ENDIAN, cmph->compression_type);
         uint64_t uncSize = tsk_getu64(TSK_LIT_ENDIAN, cmph->uncompressed_size);
-        boolean reallyCompressed;
+        unsigned char reallyCompressed;
         uint64_t cmpSize = 0;
         if(cmpType == 3) {
             // Data is inline
