@@ -10,7 +10,7 @@
 
 /**
  * \file TskFileManagerImpl.cpp
- * Default implementation of the TskFileManagerImpl class.
+ * Default implementation of the TskFileManager class.
  */
 
 #include <sstream>
@@ -114,7 +114,7 @@ std::wstring TskFileManagerImpl::getPath(const uint64_t fileId)
 }
 
 
-void TskFileManagerImpl::saveFile(TskFile* fileToSave, const std::wstring& filePath)
+void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& filePath)
 {
     try 
     {
@@ -216,7 +216,7 @@ void TskFileManagerImpl::saveFile(TskFile* fileToSave)
 {
     // Determine what the path should be based on TskFile.id()
     // and call saveFile(fileToSave, path)
-    saveFile(fileToSave, getPath(fileToSave->id()));
+    copyFile(fileToSave, getPath(fileToSave->id()));
 }
 
 void TskFileManagerImpl::saveFile(const uint64_t fileId)
@@ -225,13 +225,13 @@ void TskFileManagerImpl::saveFile(const uint64_t fileId)
     TskFileManager::saveFile(fileId);
 }
 
-void TskFileManagerImpl::saveFile(const uint64_t fileId, const std::wstring& filePath)
+void TskFileManagerImpl::copyFile(const uint64_t fileId, const std::wstring& filePath)
 {
     // Use the default implementation in our parent class
-    TskFileManager::saveFile(fileId, filePath);
+    TskFileManager::copyFile(fileId, filePath);
 }
 
-void TskFileManagerImpl::saveFile(const uint64_t fileId, std::istream& istr)
+void TskFileManagerImpl::addFile(const uint64_t fileId, std::istream& istr)
 {
     // If a file with this id already exists we raise an error
     TskFile * pFile = getFile(fileId);
@@ -258,9 +258,26 @@ void TskFileManagerImpl::saveFile(const uint64_t fileId, std::istream& istr)
     catch (Poco::Exception& ex)
     {
         std::wstringstream msg;
-        msg << L"TskFileManagerImpl::saveFile - Error saving file from stream : " << ex.displayText().c_str();
+        msg << L"TskFileManagerImpl::addFile - Error saving file from stream : " << ex.displayText().c_str();
         LOGERROR(msg.str());
         throw TskFileException("Error saving file from stream.");
+    }
+}
+
+void TskFileManagerImpl::addFile(const uint64_t fileId, std::wstring& filePath)
+{
+    try
+    {
+        Poco::FileInputStream fis(TskUtilities::toUTF8(filePath));
+        addFile(fileId, fis);
+    }
+    catch (Poco::Exception& ex)
+    {
+        std::wstringstream msg;
+        msg << L"TskFileManagerImpl::addFile - Error opening file " << TskUtilities::toUTF8(filePath).c_str()  
+            << L" : " << ex.displayText().c_str();
+        LOGERROR(msg.str());
+        throw TskFileException("Error opening input file.");
     }
 }
 

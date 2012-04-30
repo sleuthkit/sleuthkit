@@ -60,35 +60,48 @@ public:
     }
 
     /**
-     * Save the file to the given fully qualifed file path. 
+     * Copy the file to the given fully qualifed file path. 
      * Directories along the path will be created if they do not exist.
      * If the destination file exists it will be replaced.
      * @param fileToSave The file to save.
      * @param filePath The path to save to, including the file name. 
      * @throws various exceptions on errors
      */
-    virtual void saveFile(TskFile* fileToSave, const std::wstring& filePath) = 0;
+    virtual void copyFile(TskFile* fileToSave, const std::wstring& filePath) = 0;
 
     /**
-     * Save the file to the given fully qualifed file path. 
+     * Copy the file to the given fully qualifed file path. 
      * Directories along the path will be created if they do not exist.
      * If the destination file exists it will be replaced.
      * @param fileId ID of the file to save.
      * @param filePath The path to save to, including the file name. 
      * @throws various exceptions on errors
      */
-    virtual void saveFile(const uint64_t fileId, const std::wstring& filePath)
+    virtual void copyFile(const uint64_t fileId, const std::wstring& filePath)
     {
-        saveFile(getFile(fileId), filePath);
+        copyFile(getFile(fileId), filePath);
     }
 
     /**
-     * Write the file contents to an input stream.
-     * @param fileId ID of the file to save.
-     * @param istr Input stream to write to
-     * @throws various exceptions on errors
+     * Add a file to the system using the given file id and input stream.
+     * This method saves a local copy of the content contained in the input stream.
+     * @param fileId ID of the new file.
+     * @param istr Input stream containing the file content to save.
+     * @throws TskFileException if a file with the given fileId already exists or
+     * if an error is encountered while saving the input stream.
      */
-    virtual void saveFile(const uint64_t fileId, std::istream& istr) = 0;
+    virtual void addFile(const uint64_t fileId, std::istream& istr) = 0;
+
+    /**
+     * Add a file to the system using the given file id and path.
+     * This method saves a local copy of the file given in the path.
+     * @param fileId ID of the new file.
+     * @param istr The path of the file to save.
+     * @throws TskFileException if a file with the given fileId already exists,
+     * the file specified in filePath does not exist or an error is encountered 
+     * while saving the file.
+     */
+    virtual void addFile(const uint64_t fileId, std::wstring& filePath) = 0;
 
     /**
      * Delete the local copy of a file.

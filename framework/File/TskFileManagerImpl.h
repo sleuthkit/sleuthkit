@@ -47,12 +47,14 @@ public:
     virtual void saveFile(TskFile* fileToSave);
     virtual void saveFile(const uint64_t fileId);
 
-    // Save the given file to the specified fully qualified file name
-    virtual void saveFile(TskFile* fileToSave, const std::wstring& filePath);
-    virtual void saveFile(const uint64_t fileId, const std::wstring& filePath);
+    // Copy the given file to the specified fully qualified file name
+    virtual void copyFile(TskFile* fileToSave, const std::wstring& filePath);
+    virtual void copyFile(const uint64_t fileId, const std::wstring& filePath);
 
     // Save the contents of the input stream to a file with the given fileId
-    virtual void saveFile(const uint64_t fileId, std::istream& istr);
+    virtual void addFile(const uint64_t fileId, std::istream& istr);
+
+    virtual void addFile(const uint64_t fileId, std::wstring& filePath);
 
     // Delete the file from disk.
     virtual void deleteFile(TskFile* fileToDelete);
