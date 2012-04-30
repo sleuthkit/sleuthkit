@@ -106,7 +106,7 @@ public:
     TSK_GID_T gid() const;
 
     /**
-     * Get the fully qualified path of there this file should
+     * Get the fully qualified path of where this file should
      * be locally stored.  It does not check if the file is 
      * locally stored.   Use exists() for that.
      */
