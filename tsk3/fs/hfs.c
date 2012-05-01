@@ -705,12 +705,13 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 }
 
 
-                if(key->fork_type != desiredType)
+                if(key->fork_type != desiredType) {
                     if(dataForkQ) {
                         is_done = 1;
                         break;
                     } else
                         continue;
+                }
 
                 // OK, this is one of the extents records that we are seeking, so save it.
                 keylen = 2 + tsk_getu16(fs->endian, key->key_len);
@@ -1997,14 +1998,6 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file_folder * a_entry,
         tsk_fs_attrlist_markunused(a_fs_meta->attr);
     }
 
-    // @@@    Do we want this?  I copied it from ntfs.c  - Matt
-//    else {
-//        a_fs_meta->attr = tsk_fs_attrlist_alloc();
-//        if (a_fs_meta->attr == NULL)
-//            return TSK_ERR;
-//    }
-
-
 
     /* 
      * Copy the file type specific stuff first 
@@ -2090,8 +2083,6 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const hfs_file_folder * a_entry,
        Probably need to make a dummy TSK_FS_FILE. 
        }
      */
-
-    TSK_FS_ATTR * fs_attr;
 
 
     return 0;
@@ -2948,8 +2939,7 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
             // Offset of the record
             uint8_t * recOffsetData = &nodeData[attrFile.nodeSize - 2* (recIndx+1)];// data describing where this record is
             uint16_t recOffset = tsk_getu16(endian, recOffsetData);
-            uint8_t * nextRecOffsetData = &nodeData[attrFile.nodeSize - 2* (recIndx+2)];
-            uint16_t nextRecOffset = tsk_getu16(endian, nextRecOffsetData);
+            //uint8_t * nextRecOffsetData = &nodeData[attrFile.nodeSize - 2* (recIndx+2)];
 
             // Pointer to first byte of record
             uint8_t * record = &nodeData[recOffset];
@@ -3050,8 +3040,8 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
             // Offset of the record
             uint8_t * recOffsetData = &nodeData[attrFile.nodeSize - 2* (recIndx+1)];// data describing where this record is
             uint16_t recOffset = tsk_getu16(endian, recOffsetData);
-            uint8_t * nextRecOffsetData = &nodeData[attrFile.nodeSize - 2* (recIndx+2)];
-            uint16_t nextRecOffset = tsk_getu16(endian, nextRecOffsetData);
+            //uint8_t * nextRecOffsetData = &nodeData[attrFile.nodeSize - 2* (recIndx+2)];
+            //uint16_t nextRecOffset = tsk_getu16(endian, nextRecOffsetData);
 
 
             // Pointer to first byte of record
@@ -3181,9 +3171,9 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
                     			return 1;
                     		}
 
-                    		if(cmph->attr_bytes[0] & 0xF == 0xF) {
+                    		if((cmph->attr_bytes[0] & 0x0F) == 0x0F) {
                     			if(tsk_verbose)
-                    				tsk_fprintf(stderr, "hfs_load_extended_attrs: Leading byte, 0xF, indicates that the data is not really compressed.\n"
+                    				tsk_fprintf(stderr, "hfs_load_extended_attrs: Leading byte, 0x0F, indicates that the data is not really compressed.\n"
                     						"hfs_load_extended_attrs:  Loading the default DATA attribute.");
                     			reallyCompressed = FALSE;
                     			cmpSize = attributeLength - 17;  // subtr. size of header + 1 indicator byte
@@ -3446,7 +3436,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
     }
 
     // find the attribute for the resource fork
-    TSK_FS_ATTR * rAttr = tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_DATA,
+    const TSK_FS_ATTR * rAttr = tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_DATA,
             HFS_FS_ATTR_ID_RSRC, TRUE);
 
 
@@ -3463,8 +3453,8 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
     // The resource fork is the second one.
     hfs_fork * resForkInfo = &fork_info[1];
     uint64_t resSize = tsk_getu64(fs_info->endian, resForkInfo->logic_sz);
-    uint32_t numBlocks = tsk_getu32(fs_info->endian, resForkInfo->total_blk);
-    uint32_t clmpSize = tsk_getu32(fs_info->endian, resForkInfo->clmp_sz);
+    //uint32_t numBlocks = tsk_getu32(fs_info->endian, resForkInfo->total_blk);
+    //uint32_t clmpSize = tsk_getu32(fs_info->endian, resForkInfo->clmp_sz);
 
     // Hmm, certainly no resources here!
     if( resSize == 0) {
@@ -3472,8 +3462,6 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
     }
 
     // OK, resource size must be > 0
-    uint64_t logSize;
-    uint64_t bytesRead;
 
     // JUST read the resource fork header
     hfs_resource_fork_header rfHeader;
@@ -3489,11 +3477,8 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
     hfs_resource_fork_header * resHead = &rfHeader;
     uint32_t dataOffset = tsk_getu32(fs_info->endian, resHead->dataOffset);
     uint32_t mapOffset = tsk_getu32(fs_info->endian, resHead->mapOffset);
-    uint32_t dataLength = tsk_getu32(fs_info->endian, resHead->dataLength);
+    //uint32_t dataLength = tsk_getu32(fs_info->endian, resHead->dataLength);
     uint32_t mapLength = tsk_getu32(fs_info->endian, resHead->mapLength);
-
-
-    hfs_resource_fork_map_header mapHdrStruct;
 
     // Read in the WHOLE map
     char * map = tsk_malloc(mapLength);
@@ -3516,7 +3501,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
 
     uint16_t nameListOffset = tsk_getu16(fs_info->endian, mapHdr->nameListOffset);
     unsigned char hasNameList;
-    uint8_t * nameListBegin;
+    char * nameListBegin;
     char * nameBuffer;
 
 
@@ -3539,16 +3524,14 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
         uint16_t numRes = tsk_getu16(fs_info->endian, tlItem->count) + 1;
         uint16_t refOff = tsk_getu16(fs_info->endian, tlItem->offset);
 
-        unsigned char isCompression = memcmp(tlItem->type, "cmpf", 4) == 0;
-
         int pindx;
         for( pindx = 0; pindx<numRes; pindx++) {
             hfs_resource_refListItem * item = ((hfs_resource_refListItem*)(((uint8_t *)typeList) + refOff)) + pindx;
             int16_t nameOffset = tsk_gets16(fs_info->endian, item->resNameOffset);
 
             if(hasNameList && nameOffset != -1) {
-                uint8_t * name = nameListBegin + nameOffset;
-                uint8_t nameLen = name[0];
+                char * name = nameListBegin + nameOffset;
+                uint8_t nameLen = (uint8_t) name[0];
                 nameBuffer = tsk_malloc(nameLen + 1);
                 if(nameBuffer == NULL) {
                     error_returned("hfs_parse_resource_fork: allocating space for the name of a resource");
@@ -3590,7 +3573,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
             // Just read the first four bytes of the resource to get its length.  It MUST
             // be at least 4 bytes long
 
-            uint8_t lenBuff[4];
+            char lenBuff[4];
 
             int result3 = tsk_fs_attr_read(rAttr, (uint64_t)  rOffset,
                     lenBuff, (size_t) 4, TSK_FS_FILE_READ_FLAG_NONE);
@@ -3600,7 +3583,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
                 free_res_descriptor(result);
                 return NULL;
             }
-            uint32_t rLen = tsk_getu32(fs_info->endian, lenBuff);  // should this be LIT ENDIAN?
+            uint32_t rLen = tsk_getu32(TSK_BIG_ENDIAN, lenBuff);  //TODO
 
             rsrc->id = rID;
             rsrc->offset = rOffset + 4;
@@ -4699,24 +4682,10 @@ output_print_addr(HFS_PRINT_ADDR * print) {
                 }
 }
 
-//static TSK_WALK_RET_ENUM
-//print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-//    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
-//{
-//    HFS_PRINT_ADDR *print = (HFS_PRINT_ADDR *) ptr;
-//    tsk_fprintf(print->hFile, "%" PRIuDADDR " ", addr);
-//
-//    if (++(print->idx) == HFS_PRINT_WIDTH) {
-//        tsk_fprintf(print->hFile, "\n");
-//        print->idx = 0;
-//    }
-//
-//    return TSK_WALK_CONT;
-//}
 
 
 static TSK_WALK_RET_ENUM
-print_addr_act2(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
+print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
 {
     HFS_PRINT_ADDR *print = (HFS_PRINT_ADDR *) ptr;
@@ -4742,11 +4711,7 @@ print_addr_act2(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 
 
 
-#define NTFS_PRINT_WIDTH   8
-typedef struct {
-    FILE *hFile;
-    int idx;
-} NTFS_PRINT_ADDR;
+
 
 /**
  * Print details on a specific file to a file handle. 
@@ -4831,7 +4796,6 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "\n");
 
         hfs_uni_str * nm = & entry.thread.name;
-        int kndx;
         char name_buf[HFS_MAXNAMLEN + 1];
         hfs_UTF16toUTF8(fs, nm->unicode, (int) tsk_getu16(fs->endian, nm->length),
         		&name_buf[0], HFS_MAXNAMLEN+1,
@@ -5012,7 +4976,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             if (tsk_fs_file_walk_type(fs_file,
                             TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA,
                             (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK),
-                            print_addr_act2, (void *) &print)) {
+                            print_addr_act, (void *) &print)) {
                 tsk_fprintf(hFile, "\nError reading file data fork\n");
                 tsk_error_print(hFile);
                 tsk_error_reset();
@@ -5037,7 +5001,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             if (tsk_fs_file_walk_type(fs_file,
                             TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_RSRC,
                             (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK),
-                            print_addr_act2, (void *) &print)) {
+                            print_addr_act, (void *) &print)) {
                 tsk_fprintf(hFile, "\nError reading file resource fork\n");
                 tsk_error_print(hFile);
                 tsk_error_reset();
@@ -5055,7 +5019,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     (void) tsk_fs_file_attr_get(fs_file);
 
     // Compression ATTR, if there is one:
-    TSK_FS_ATTR * compressionAttr = NULL;
+    const TSK_FS_ATTR * compressionAttr = NULL;
 
     /* Print all of the attributes */
     tsk_fprintf(hFile, "\nAttributes: \n");
@@ -5071,7 +5035,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             if (!fs_attr)
                 continue;
 
-            char * type = hfs_attrTypeName((uint32_t)fs_attr->type);
+            const char * type = hfs_attrTypeName((uint32_t)fs_attr->type);
 
 
             // We will need to do something better than this, in the end.
@@ -5079,7 +5043,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
             /* print the layout if it is non-resident and not "special" */
             if (fs_attr->flags & TSK_FS_ATTR_NONRES) {
-                NTFS_PRINT_ADDR print_addr;
+                //NTFS_PRINT_ADDR print_addr;
 
                 tsk_fprintf(hFile,
                         "Type: %s (%" PRIu32 "-%" PRIu16
@@ -5093,12 +5057,6 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
                                                 "",
                                                 (fs_attr->flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" :
                                                         "", fs_attr->size, fs_attr->nrd.initsize);
-
-                print_addr.idx = 0;
-                print_addr.hFile = hFile;
-
-                if (print_addr.idx != 0)
-                    tsk_fprintf(hFile, "\n");
             }  // END:  non-resident attribute case
             else {
                 tsk_fprintf(hFile,
@@ -5162,7 +5120,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         uint64_t cmpSize = 0;
         if(cmpType == 3) {
             // Data is inline
-            if(cmph->attr_bytes[0] & 0xF == 0xF) {
+            if((cmph->attr_bytes[0] & 0x0F) == 0x0F) {
                 reallyCompressed = FALSE;
                 cmpSize = fs_attr->size - 17;  // subtr. size of header + 1 indicator byte
             } else {
