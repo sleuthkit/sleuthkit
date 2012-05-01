@@ -1582,7 +1582,11 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     unsigned char dummy1, dummy2;
     uint64_t dummy3;
 
-    hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
+    uint8_t result = hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
+    if(result != 0) {
+    	tsk_fprintf(stderr, "WARNING: Extended attributes failed to load for the Catalog file.\n");
+    	tsk_error_reset();
+    }
 
     fs_file->meta->attr_state = TSK_FS_META_ATTR_STUDIED;
     return 0;
@@ -1727,7 +1731,11 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     unsigned char dummy1, dummy2;
     uint64_t dummy3;
 
-    hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
+    uint8_t result = hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
+    if(result != 0) {
+    	tsk_fprintf(stderr, "WARNING: Extended attributes failed to load for the Allocation file.\n");
+    	tsk_error_reset();
+    }
 
     fs_file->meta->attr_state = TSK_FS_META_ATTR_STUDIED;
     return 0;
@@ -1802,7 +1810,11 @@ hfs_make_startfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     unsigned char dummy1, dummy2;
     uint64_t dummy3;
 
-    hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
+    uint8_t result = hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
+    if(result != 0) {
+    	tsk_fprintf(stderr, "WARNING: Extended attributes failed to load for the Start file.\n");
+    	tsk_error_reset();
+    }
 
     fs_file->meta->attr_state = TSK_FS_META_ATTR_STUDIED;
     return 0;
@@ -1949,6 +1961,12 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     unsigned char dummy1, dummy2;
     uint64_t dummy3;
     hfs_load_extended_attrs(fs_file, &dummy1,&dummy2, &dummy3);
+
+    uint8_t result = hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
+    if(result != 0) {
+    	tsk_fprintf(stderr, "WARNING: Extended attributes failed to load for the BadBlocks file.\n");
+    	tsk_error_reset();
+    }
 
     fs_file->meta->attr_state = TSK_FS_META_ATTR_STUDIED;
     return 0;
@@ -2923,11 +2941,11 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
 
         uint16_t numRec = tsk_getu16(endian, nodeDescriptor->num_rec);
 
-        if(numRec < 2) {
-            // This is wrong, there must always be at least 2 records in an INDEX node.
+        if(numRec == 0) {
+            // This is wrong, there must always be at least 1 record in an INDEX node.
             free(nodeData);
             error_detected(TSK_ERR_FS_READ,
-                    "hfs_load_extended_attrs:Attributes File index node %" PRIu64 " has less than two records",
+                    "hfs_load_extended_attrs:Attributes File index node %" PRIu32 " has zero records",
                     nodeID);
             close_attr_file(&attrFile);
             return 1;
@@ -3424,7 +3442,8 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
     }
 
     if(fs_file->meta->content_ptr == NULL) {
-        error_detected(TSK_ERR_FS_ARG, "hfs_parse_resource_fork: fs_file has null fork data structures");
+    	if(tsk_verbose)
+    		fprintf(stderr, "hfs_parse_resource_fork: fs_file has null fork data structures, so no resources.\n");
         return NULL;
     }
 
@@ -3432,16 +3451,6 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
     TSK_FS_INFO * fs_info = fs_file->fs_info;
     if(fs_info == NULL) {
         error_detected(TSK_ERR_FS_ARG, "hfs_parse_resource_fork: null fs within fs_info");
-        return NULL;
-    }
-
-    // find the attribute for the resource fork
-    const TSK_FS_ATTR * rAttr = tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_DATA,
-            HFS_FS_ATTR_ID_RSRC, TRUE);
-
-
-    if(rAttr == NULL) {
-        error_returned("hfs_parse_resource_fork: could not get the resource fork attribute");
         return NULL;
     }
 
@@ -3462,6 +3471,17 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file) {
     }
 
     // OK, resource size must be > 0
+
+    // find the attribute for the resource fork
+    const TSK_FS_ATTR * rAttr = tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_DATA,
+            HFS_FS_ATTR_ID_RSRC, TRUE);
+
+
+    if(rAttr == NULL) {
+        error_returned("hfs_parse_resource_fork: could not get the resource fork attribute");
+        return NULL;
+    }
+
 
     // JUST read the resource fork header
     hfs_resource_fork_header rfHeader;
@@ -3749,7 +3769,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
 
     if( hfs_load_extended_attrs(fs_file, &isCompressed, &compDataInRSRCFork,
             &uncompressedSize)) {
-        error_returned(" - hfs_load_attrs");
+        error_returned(" - hfs_load_attrs A");
         fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
         return 1;
     }
@@ -3836,7 +3856,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                     // see if extents file has additional runs
                     if (hfs_ext_find_extent_record_attr(hfs,
                                     (uint32_t) fs_file->meta->addr, fs_attr, TRUE)) {
-                        error_returned(" - hfs_load_attrs");
+                        error_returned(" - hfs_load_attrs B");
                         fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
                         return 1;
                     }
@@ -3912,7 +3932,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
             // see if extents file has additional runs for the resource fork.
             if (hfs_ext_find_extent_record_attr(hfs,
                     (uint32_t) fs_file->meta->addr, fs_attr, FALSE)) {
-                error_returned(" - hfs_load_attrs");
+                error_returned(" - hfs_load_attrs C");
                 fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
                 return 1;
             }
@@ -5514,6 +5534,7 @@ error_detected(uint32_t errnum, char *errstr, ...) {
     }
 
     va_end(args);
+
 }
 
 
