@@ -294,7 +294,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- UNUSED_SECTORS
-    stmt = "CREATE TABLE unused_sectors (file_id INTEGER, sect_start INTEGER, sect_len INTEGER, vol_id INTEGER)";
+    stmt = "CREATE TABLE unused_sectors (file_id INTEGER PRIMARY KEY, sect_start INTEGER, sect_len INTEGER, vol_id INTEGER)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) {
         _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating unused_sectors table: %S", errmsg);
         LOGERROR(infoMessage);
