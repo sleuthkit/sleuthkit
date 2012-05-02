@@ -36,5 +36,50 @@ Example channels;
 	jvm  - Java.  A Java VM is strated up. Data is passed using jni/shared memory/tcp
 
    *.jpeg     dgi	/path/to/dgi/exec	#	Domex Gateway Interface
+
+/***Dependencies***/
+
+-openssl (Linux, Windows) or CommonCrypto (on more recent OSX)
    
 
+/***LICENCES****/
+
+***Fiwalk***
+
+Public Domain Software 
+Simson L. Garfinkel
+Naval Postgraduate School
+
+The software provided here is released by the Naval Postgraduate
+School, an agency of the U.S. Department of Navy.  The software bears
+no warranty, either expressed or implied. NPS does not assume legal
+liability nor responsibility for a User's use of the software or the
+results of such use.
+
+Please note that within the United States, copyright protection, under
+Section 105 of the United States Code, Title 17, is not available for
+any work of the United States Government and/or for any works created
+by United States Government employees. 
+
+***REGEX***
+
+Extended regular expression matching and search library,
+version 0.12.
+(Implements POSIX draft P10003.2/D11.2, except for
+internationalization features.)
+
+Copyright (C) 1993 Free Software Foundation, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. 
