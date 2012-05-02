@@ -223,10 +223,17 @@ ssize_t TskFileTsk::read(char *buf, const size_t count)
         else if (typeId() == TskImgDB::IMGDB_FILES_TYPE_UNUSED)
         {
             int bytesRead = 0;
-            if (m_offset + count >= m_unusedSectorsRecord.sectLen * 512) {
-                return bytesRead;
+            uint64_t bytesToRead = 0;
+            uint64_t fileSize = m_unusedSectorsRecord.sectLen * 512;
+            if (m_offset + count > fileSize) {
+                if (fileSize - m_offset > 0)
+                    bytesToRead = fileSize - m_offset;
+                else
+                    return bytesRead;
+            } else {
+                bytesToRead = count;
             }
-            bytesRead = TskServices::Instance().getImageFile().getByteData(m_unusedSectorsRecord.sectStart * 512 + m_offset, count, buf);
+            bytesRead = TskServices::Instance().getImageFile().getByteData(m_unusedSectorsRecord.sectStart * 512 + m_offset, bytesToRead, buf);
             if (bytesRead > 0)
                 m_offset += bytesRead;
             return bytesRead;

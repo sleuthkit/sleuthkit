@@ -253,10 +253,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\tools\fiwalk\src\bloom.c"
-				>
-			</File>
-			<File
 				RelativePath="..\..\tools\fiwalk\src\content.cpp"
 				>
 			</File>
@@ -312,14 +308,6 @@
 			</File>
 			<File
 				RelativePath="..\..\tools\fiwalk\src\base64.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tools\fiwalk\src\bloom.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tools\fiwalk\src\bloomset.h"
 				>
 			</File>
 			<File

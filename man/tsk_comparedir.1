@@ -4,14 +4,16 @@ tsk_comparedir - compare the contents of a directory with the contents of an ima
 .SH SYNOPSIS
 .B tsk_comparedir [-vV] [-n
 .I start_inum
-.B ][ -i
+.B ] [ -f
+.I fstype
+.B ] [ -i
 .I imgtype
-.B ][ -b
+.B ] [ -b
 .I dev_sector_size
-.B ][-o
+.B ] [ -o
 .I sector_offset
 .B ]
-.I image comparison_directory
+.I image [images] comparison_directory
 .SH DESCRIPTION
 .B tsk_comparedir 
 compares the contents of
@@ -29,12 +31,21 @@ Starting inum for a directory in the image to start the comparison at.
 verbose output to stderr
 .IP -V
 Print version
+.IP "-f fstype"
+Specify the file system type.
+Use '\-f list' to list the supported file system types.
+If not given, autodetection methods are used.
 .IP "-i imgtype"
-The format of the image file (use '-i list' for supported types)
+The format of the image file, such as raw.
+Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-b dev_sector_size"
-The size (in bytes) of the device sectors
+The size (in bytes) of the device sectors.
 If not given, autodetection methods are used.
+.IP "image [images]"
+The disk or partition image to read, whose format is given with '\-i'.
+Multiple image file names can be given if the image is split into multiple segments.
+If only one image file is given, and its name is the first in a sequence (e.g., as indicated by ending in '.001'), subsequent image segments will be included automatically.
 
 .SH EXAMPLES
 To compare the directories in image.dd to those in directory:

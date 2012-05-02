@@ -3,7 +3,7 @@
 *  The Sleuth Kit
 *
 *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
-*  Copyright (c) 2011 Basis Technology Corporation. All Rights
+*  Copyright (c) 2011-2012 Basis Technology Corporation. All Rights
 *  reserved.
 *
 *  This software is distributed under the Common Public License 1.0
@@ -13,12 +13,11 @@
 #include <cstdlib>
 #include <string>
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk3/tsk_tools_i.h" // Needed for tsk_getopt
 #include "framework.h"
 #include "Services/TskSchedulerQueue.h"
-
-// @@@ Remove once Poco stuff is hidden in systemPropertiesImpl
-#include "Poco/Util/XMLConfiguration.h"
+#include "Services/TskSystemPropertiesImpl.h"
+#include "Services/TskImgDBSqlite.h"
 
 
 static uint8_t 
@@ -102,19 +101,10 @@ int main(int argc, char **argv1)
     TSK_TCHAR *imagePath = argv[OPTIND];
 
     // Load the framework config if they specified it
-    Poco::AutoPtr<Poco::Util::XMLConfiguration> pXMLConfig;
     if (framework_config) {
-        // @@@ Not Unix-friendly
-        try {
-            pXMLConfig = new Poco::Util::XMLConfiguration(TskUtilities::toUTF8(framework_config));
-        }
-        catch (std::exception& e) {
-            fprintf(stderr, "Error opening framework config file (%s)\n", e.what());
-            return 1;
-        }
         // Initialize properties based on the config file.
         TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();    
-        systemProperties->initialize(*pXMLConfig);
+        systemProperties->initialize(framework_config);
         TskServices::Instance().setSystemProperties(*systemProperties);
     }
 

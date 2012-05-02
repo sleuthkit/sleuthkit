@@ -26,10 +26,9 @@ public:
     virtual ~CarveExtract() = 0;
     /**
      * Carve a specified unallocated image. 
-     * @param imgDB DB for the image being analyzed
      * @param unallocImgId Id of the unallocated image to carve
      * @returns 1 on error 
      */
-    virtual int processFile(TskImgDB * imgDB, int unallocImgId) = 0;
+    virtual int processFile(int unallocImgId) = 0;
 };
 #endif

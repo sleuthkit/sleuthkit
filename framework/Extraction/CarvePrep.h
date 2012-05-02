@@ -28,12 +28,12 @@ class TSK_FRAMEWORK_API CarvePrep
 public:
     virtual ~CarvePrep(void) = 0;
     /**
-     * a_img
-     * a_toSchedule True if the scheduler should be called to queue
+     * Make one or more files to carve. 
+     * @param a_toSchedule True if the scheduler should be called to queue
      * up the data or false if it shoudl be processed now.
      * @returns 1 on error 
      */
-    virtual int processSectors(TskImgDB * a_img,  bool a_toSchedule) = 0;
+    virtual int processSectors(bool a_toSchedule) = 0;
 };
 
 #endif
