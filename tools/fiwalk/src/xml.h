@@ -72,9 +72,9 @@
 #endif
 #endif
 
-#ifdef HAVE_LIBTSK3
-#include "tsk3/lib_tsk.h"
-#endif
+//#ifdef HAVE_LIBTSK3
+#include "tsk3/libtsk.h"
+//#endif
 
 #ifdef __cplusplus
 class xml {
@@ -108,11 +108,15 @@ private:
     struct timeval t0;
     bool  make_dtd;
     std::string outfilename;
+ //   std::stack<TSK_INUM_T> parent_stack;
     void  write_doctype(std::fstream &out);
     void  write_dtd();
     void  verify_tag(std::string tag);
     void  spaces();			// print spaces corresponding to tag stack
 public:
+    std::stack<TSK_INUM_T> parent_stack;
+
+
     static std::string make_command_line(int argc,char * const *argv){
 	std::string command_line;
 	for(int i=0;i<argc;i++){
@@ -138,7 +142,7 @@ public:
 
     static std::string xmlescape(const std::string &xml);
     static std::string xmlstrip(const std::string &xml);
-    
+
 
     /**
      * opens an existing XML file and jumps to the end.
@@ -184,7 +188,7 @@ public:
     void xmlcomment(const std::string &comment);
 
 #ifdef __GNUC__
-    void xmlprintf(const std::string &tag,const std::string &attribute,const char *fmt,...) 
+    void xmlprintf(const std::string &tag,const std::string &attribute,const char *fmt,...)
 	__attribute__((format(printf, 4, 5))); // "4" because this is "1";
 #else
 	void xmlprintf(const std::string &tag,const std::string &attribute,const char *fmt,...);
