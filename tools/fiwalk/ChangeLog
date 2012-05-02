@@ -1,3 +1,7 @@
+2012-05-02  Simson Garfinkel  <simsong@ncr.nps.edu>
+
+	* src/unicode_escape.cpp (validateOrEscapeUTF8): corrected escaping for 4-byte unicodes
+
 2012-04-12  Simson Garfinkel  <simsong@ncr.nps.edu>
 
 	* src/unicode_escape.cpp (validateOrEscapeUTF8): UTF-8 isn't valid if it begins 0xc0; who knew?

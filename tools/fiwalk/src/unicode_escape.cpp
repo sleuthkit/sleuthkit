@@ -23,7 +23,10 @@
  * not subject to copyright.
  */
 
+#ifndef STANDALONE
 #include "tsk3/tsk_tools_i.h"
+#endif
+
 #include "unicode_escape.h"
 
 #include <stdio.h>
@@ -39,7 +42,7 @@
 
 #define IS_IN_RANGE(c, f, l)    (((c) >= (f)) && ((c) <= (l)))
 
-inline std::string esc(unsigned char ch)
+std::string esc(unsigned char ch)
 {
     char buf[10];
     snprintf(buf,sizeof(buf),"\\x%02X",ch);
@@ -47,7 +50,7 @@ inline std::string esc(unsigned char ch)
 }
 
 /** returns true if this is a UTF8 continuation character */
-inline bool utf8cont(unsigned char ch)
+bool utf8cont(unsigned char ch)
 {
     return ((ch&0x80)==0x80) &&  ((ch & 0x40)==0);
 }
@@ -95,8 +98,8 @@ std::string validateOrEscapeUTF8(std::string input)
     std::string::size_type i = 0;
     while( i < input.length() ) {
 	uint8_t ch = (uint8_t)input.at(i);
-	// utf8 1 byte
-	if((ch & 0x80)==0){
+	// utf8 1 byte prefix (0xxx xxxx)
+	if((ch & 0x80)==0x00){			// 00 .. 0x7f
 	    if(ch=='\\'){			// escape the escape character
 		output += "\\\\";
 		i++;
@@ -114,9 +117,8 @@ std::string validateOrEscapeUTF8(std::string input)
 	    continue;
 	}
 
-
-	// utf8 2 bytes
-	if((((ch & 0xc0) == 0xc0) && ((ch & 0x20)==0)) // 2-byte prefix
+	// utf8 2 bytes  (110x xxxx) prefix
+	if(((ch & 0xe0)==0xc0)  // 2-byte prefix
 	   && (i+1 < input.length())
 	   && utf8cont((uint8_t)input.at(i+1))){
 	    wchar_t unichar = (((uint8_t)input.at(i) & 0x1f) << 6) | (((uint8_t)input.at(i+1) & 0x3f));
@@ -131,8 +133,8 @@ std::string validateOrEscapeUTF8(std::string input)
 	    continue;
 	}
 		
-	// utf8 3 bytes
-	if((((ch & 0xe0) == 0xe0) && ((ch & 0x10)==0))
+	// utf8 3 bytes (1110 xxxx prefix)
+	if(((ch & 0xf0) == 0xe0)
 	   && (i+2 < input.length())
 	   && utf8cont((uint8_t)input.at(i+1))
 	   && utf8cont((uint8_t)input.at(i+2))){
@@ -150,13 +152,16 @@ std::string validateOrEscapeUTF8(std::string input)
 	    continue;
 	}
 	    
-	// utf8 4 bytes
-	if((((ch & 0xf0) == 0xf0) && ((ch & 0x08)==0))
+	// utf8 4 bytes (1111 0xxx prefix)
+	if((( ch & 0xf8) == 0xf0)
 	   && (i+2 < input.length())
 	   && utf8cont((uint8_t)input.at(i+1))
 	   && utf8cont((uint8_t)input.at(i+2))
 	   && utf8cont((uint8_t)input.at(i+3))){
-	    uint32_t unichar = (((uint8_t)input.at(i) & 0x0f) << 12) | (((uint8_t)input.at(i+1) & 0x3f) << 6) | (((uint8_t)input.at(i+2) & 0x3f));
+	    uint32_t unichar =( (((uint8_t)input.at(i) & 0x07) << 18)
+				|(((uint8_t)input.at(i+1) & 0x3f) << 12)
+				|(((uint8_t)input.at(i+2) & 0x3f) <<  6)
+				|(((uint8_t)input.at(i+3) & 0x3f)));
 
 	    if(invalid_unichar(unichar)){
 		output += esc((uint8_t)input.at(i++)); // byte 1
@@ -171,8 +176,21 @@ std::string validateOrEscapeUTF8(std::string input)
 	    output += (uint8_t)input.at(i++);	// byte4
 	    continue;
 	}
+
 	// Just escape it
 	output += esc((uint8_t)input.at(i++));
     }
     return output;
 }
+
+#ifdef STANDALONE
+
+int main(int argc,char **argv)
+{
+    std::string line;
+    while(getline(std::cin,line)){
+	std::cout << validateOrEscapeUTF8(line) << "\n";
+    }
+	
+}
+#endif
