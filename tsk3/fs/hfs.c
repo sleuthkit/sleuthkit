@@ -117,9 +117,9 @@ static void error_returned(char *errstr, ...);
  * @param uncompressedLength  -- return of the length of the uncompressed data found.
  * @param bytesConsumed  -- return of the number of input bytes of compressed data used.
  */
-static int zlib_inflate(uint8_t *source,
+static int zlib_inflate(char *source,
         uint64_t sourceLen,
-        uint8_t *dest,
+        char *dest,
         uint64_t destLen,
         uint64_t *uncompressedLength,
         unsigned long * bytesConsumed)    // this is unsigned long because that's what zlib uses.
@@ -141,8 +141,8 @@ static int zlib_inflate(uint8_t *source,
         return ret;
 
     // Some vars to help with copying bytes into "in"
-    uint8_t * srcPtr = source;
-    uint8_t * destPtr = dest;
+    char * srcPtr = source;
+    char * destPtr = dest;
     uint64_t srcAvail = sourceLen;   //uint64_t
     uint64_t amtToCopy;
     uint64_t copiedSoFar = 0;
@@ -2204,7 +2204,7 @@ typedef struct {
     uint32_t length;
 } CMP_OFFSET_ENTRY;
 
-hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
+uint8_t hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
 {
     TSK_FS_INFO *fs;
@@ -2249,7 +2249,7 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     TSK_FS_FILE * fs_file = fs_attr->fs_file;
 
     // find the attribute for the resource fork
-    TSK_FS_ATTR * rAttr = tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_DATA,
+    const TSK_FS_ATTR * rAttr = tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_DATA,
             HFS_FS_ATTR_ID_RSRC, TRUE);
     if(rAttr == NULL) {
         error_returned(" hfs_attr_walk_special: could not get the attribute for the resource fork of the file");
@@ -2257,8 +2257,8 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     }
 
     // Allocate two buffers of the compression unit size.
-    uint8_t * rawBuf = tsk_malloc(COMPRESSION_UNIT_SIZE);
-    uint8_t * uncBuf = tsk_malloc(COMPRESSION_UNIT_SIZE);
+    char * rawBuf = tsk_malloc(COMPRESSION_UNIT_SIZE);
+    char * uncBuf = tsk_malloc(COMPRESSION_UNIT_SIZE);
     if(rawBuf == NULL || uncBuf == NULL) {
         error_returned(" hfs_attr_walk_special: buffers for reading and uncompressing");
         return 1;
@@ -2281,9 +2281,9 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     // parse the Resource Fork map, and find the appropriate entry, then jump to THAT data offset.
     hfs_resource_fork_header * resHead = &rfHeader;
     uint32_t dataOffset = tsk_getu32(endian, resHead->dataOffset);
-    uint32_t mapOffset = tsk_getu32(endian, resHead->mapOffset);
-    uint32_t dataLength = tsk_getu32(endian, resHead->dataLength);
-    uint32_t mapLength = tsk_getu32(endian, resHead->mapLength);
+    //uint32_t mapOffset = tsk_getu32(endian, resHead->mapOffset);
+    //uint32_t dataLength = tsk_getu32(endian, resHead->dataLength);
+    //uint32_t mapLength = tsk_getu32(endian, resHead->mapLength);
 
 
     // Read in the offset table
@@ -2360,7 +2360,7 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
         if(tsk_verbose)
             tsk_fprintf(stderr, "hfs_attr_walk_special: Inflating the compression unit\n");
         uint64_t uncLen;
-        unsigned int bytesConsumed;
+        unsigned long bytesConsumed;
         int infResult = zlib_inflate(rawBuf, (uint64_t) len,
                 uncBuf, (uint64_t) COMPRESSION_UNIT_SIZE,
                 &uncLen, &bytesConsumed);
@@ -2377,7 +2377,7 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
         unsigned int blockSize = fs->block_size;
         uint64_t lumpSize;
         uint64_t remaining = uncLen;
-        uint8_t * lumpStart = uncBuf;
+        char * lumpStart = uncBuf;
 
         while(remaining > 0 ) {
 
@@ -2394,7 +2394,7 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                         " offset %" PRIu64 " in the compression unit\n",
                         lumpSize, uncLen - remaining);
             int retval =
-                    a_action(fs_attr->fs_file, off, NULL,
+                    a_action(fs_attr->fs_file, off, 0,
                             lumpStart, lumpSize,
                             TSK_FS_BLOCK_FLAG_COMP, ptr);
             //fprintf(stdout, "Returned from the callback function, ret = %d\n", retval);
@@ -2472,7 +2472,7 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     TSK_FS_FILE * fs_file = a_fs_attr->fs_file;
 
     // find the attribute for the resource fork
-    TSK_FS_ATTR * rAttr = tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_DATA,
+    const TSK_FS_ATTR * rAttr = tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_DATA,
             HFS_FS_ATTR_ID_RSRC, TRUE);
     if(rAttr == NULL) {
         error_returned(" hfs_file_read_special: could not get the attribute for the resource fork of the file");
@@ -2480,12 +2480,12 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     }
 
     // Allocate two buffers of the compression unit size.
-    uint8_t * rawBuf = tsk_malloc(COMPRESSION_UNIT_SIZE);
+    char * rawBuf = tsk_malloc(COMPRESSION_UNIT_SIZE);
     if(rawBuf == NULL ) {
         error_returned(" hfs_file_read_special: buffers for reading and uncompressing");
         return -1;
     }
-    uint8_t * uncBuf = tsk_malloc(COMPRESSION_UNIT_SIZE);
+    char * uncBuf = tsk_malloc(COMPRESSION_UNIT_SIZE);
     if(uncBuf == NULL) {
         error_returned(" hfs_file_read_special: buffers for reading and uncompressing");
         free(rawBuf);
@@ -2508,9 +2508,9 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     // eventually we'll want the other quantities as well.
     hfs_resource_fork_header * resHead = &rfHeader;
     uint32_t dataOffset = tsk_getu32(endian, resHead->dataOffset);
-    uint32_t mapOffset = tsk_getu32(endian, resHead->mapOffset);
-    uint32_t dataLength = tsk_getu32(endian, resHead->dataLength);
-    uint32_t mapLength = tsk_getu32(endian, resHead->mapLength);
+    //uint32_t mapOffset = tsk_getu32(endian, resHead->mapOffset);
+    //uint32_t dataLength = tsk_getu32(endian, resHead->dataLength);
+    //uint32_t mapLength = tsk_getu32(endian, resHead->mapLength);
 
 
     // Read in the offset table
@@ -2632,8 +2632,8 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         if(tsk_verbose)
             tsk_fprintf(stderr, "hfs_file_read_special: Inflating the compression unit\n");
         uint64_t uncLen;
-        unsigned int bytesConsumed;
-        uint8_t * uncBufPtr = uncBuf;
+        unsigned long bytesConsumed;
+        char * uncBufPtr = uncBuf;
 
         int infResult = zlib_inflate(rawBuf, (uint64_t) len,
                 uncBufPtr, (uint64_t) COMPRESSION_UNIT_SIZE,
@@ -3222,7 +3222,7 @@ hfs_load_extended_attrs(TSK_FS_FILE *fs_file,
                     				return 1;
                     			}
                     			uint64_t uLen;
-                    			int bytesConsumed;
+                    			unsigned long bytesConsumed;
                     			int infResult = zlib_inflate(buffer+16, (uint64_t) (attributeLength - 16), // source, srcLen
                     					uncBuf, (uint64_t) (uncSize + 100),       // dest, destLen
                     					&uLen, &bytesConsumed);  // returned by the function
@@ -4310,6 +4310,7 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     tsk_fs_file_close(fs_file);
     return 0;
 }
+
 
 /* print the name of a file at a given inode
  * returns 0 on success, 1 on error */
