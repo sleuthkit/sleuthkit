@@ -18445,7 +18445,7 @@ if test "x$enable_fiwalk" == xyes; then
    ## These will be removed after complete integration
    ## At that point fiwalk will just be part of TSK not a separate package
 
-$as_echo "#define FIWALK_VERSION \"0.6.15\"" >>confdefs.h
+$as_echo "#define FIWALK_VERSION \"0.6.17\"" >>confdefs.h
 
 
 $as_echo "#define FIWALK_PACKAGE \"FIWALK\"" >>confdefs.h

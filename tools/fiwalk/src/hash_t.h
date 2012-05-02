@@ -77,7 +77,7 @@ public:
     uint8_t digest[SIZE];
 };
 
-#if HAVE_EVP_SHA512 || COMMON_DIGEST_FOR_OPENSSL
+#if defined(HAVE_EVP_SHA512) || defined(COMMON_DIGEST_FOR_OPENSSL)
 class sha512_ {
 public:
     static const size_t SIZE=64;
@@ -170,7 +170,7 @@ public:
 typedef hash__<md5_> md5_t;
 typedef hash__<sha1_> sha1_t;
 typedef hash__<sha256_> sha256_t;
-#if HAVE_EVP_SHA512 || COMMON_DIGEST_FOR_OPENSSL
+#if defined(HAVE_EVP_SHA512) || defined(COMMON_DIGEST_FOR_OPENSSL)
 typedef hash__<sha512_> sha512_t;
 #endif
 

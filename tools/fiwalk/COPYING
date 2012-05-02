@@ -1,3 +1,23 @@
+Except as noted below, fiwalk source code is public domain.
+
+1. On computers that do not have a functioning regex library, fiwalk is
+linked with regex.c version 0.12 from the Free Software
+Foundation. That version of regex is covered under the GPL. So if you
+compile fiwalk on a machine that does not have regex, the fiwalk
+executable is GPLed.
+
+src/regex-0.12/regex.c - Copyright (C) 1993 Free Software Foundation, Inc., GPL
+src/regex-0.12/regex.h - Copyright (C) 1993 Free Software Foundation, Inc., GPL
+
+2. The base64.cpp and base64.h implementation is Copyright by the
+Internet Software Consortium, with portions Copyright 1995 by
+IBM. Both are licensed under a liberal copyright that allows inclusion
+in any program so long as the copyright notice is not removed.
+
+src/base64.h - Copyright (C) 1996-1999 by Internet Software Consortium
+src/base64.cpp - Copyright (C) 1996-1999 by Internet Software Consortium
+
+================================================================
 Public Domain Software 
 Simson L. Garfinkel
 Naval Postgraduate School
@@ -12,3 +32,7 @@ Please note that within the United States, copyright protection, under
 Section 105 of the United States Code, Title 17, is not available for
 any work of the United States Government and/or for any works created
 by United States Government employees. 
+
+================================================================
+The exceptions are as noted below:
+
