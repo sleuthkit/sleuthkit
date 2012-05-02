@@ -59,6 +59,9 @@ class arff *a = 0;			// ARFF generator
 class xml  *x = 0;
 FILE  *t = 0;				// text output or body file enabled
 
+/* Ouput Helper */
+class parent_tracker *pt = 0;
+
 /* Configurable options */
 
 /* Runtime options */
@@ -585,6 +588,7 @@ int main(int argc, char * const *argv1)
 #else
 	const char *filename = argv[0];
 #endif
+    pt = new parent_tracker();
 
     if(!filename){
 	errx(1,"must provide filename");

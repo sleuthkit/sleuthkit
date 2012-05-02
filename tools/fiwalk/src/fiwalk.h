@@ -1,4 +1,4 @@
-/** 
+/**
  * fiwalk.h
  *
  * The software provided here is released by the Naval Postgraduate
@@ -105,6 +105,7 @@
 #include "xml.h"
 #include "base64.h"
 #include "content.h"
+#include "parent_tracker.h"
 
 using namespace std;
 
@@ -155,6 +156,7 @@ extern namelist_t namelist;		// names of files that we want to find
 extern class arff *a;
 extern class xml *x;
 extern FILE  *t;				// text output or body file enabled
+extern class parent_tracker *pt;
 
 void partition_info(const string &name,const string &value,const string &attribute);
 void partition_info(const string &name,const string &value);
