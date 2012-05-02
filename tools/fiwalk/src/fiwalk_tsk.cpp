@@ -346,6 +346,8 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
 static TSK_WALK_RET_ENUM
 dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
 {
+    TSK_FS_DIR *dir = NULL;
+
     /* Ignore NTFS System files */
     if (opt_ignore_ntfs_system_files
 	&& (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))
@@ -355,23 +357,32 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
     /* If the name has corresponding metadata, then walk it */
     if (fs_file->meta) {
 
-       if(x){
-            if(x->parent_stack.empty())
+       if(pt){
+
+            dir = tsk_fs_dir_open_meta(fs_file->fs_info,fs_file->meta->addr);
+            if (dir == NULL)
+                printf("Cannot get dir entry\n");
+            else
             {
-                x->parent_stack.push(fs_file->fs_info->root_inum);
+                pt->process_dentry(dir, fs_file);
+            }
+/*            if(pt->parent_stack.empty())
+            {
+                pt->parent_stack.push(fs_file->fs_info->root_inum);
             }
 
-            if(!x->parent_stack.empty())
+            if(!pt->parent_stack.empty())
             {
-                printf("Current Parent %u, %u, %u\n", x->parent_stack.top(), x->parent_stack.size(), fs_file->meta->addr);
+                printf("Current Parent %u, %u, %u\n", pt->parent_stack.top(), pt->parent_stack.size(), fs_file->meta->addr);
                 printf("Dir_name: %s\n", fs_file->name->name);
                 printf("Is Dot: %d Is DoubleDot: %d\n", strcmp(fs_file->name->name,"."), strcmp(fs_file->name->name,".."));
             }
-            if(x->parent_stack.top() != fs_file->meta->addr && !(strcmp(fs_file->name->name,".") == 0)  && !(strcmp(fs_file->name->name,"..") == 0))
+            if(pt->parent_stack.top() != fs_file->meta->addr && !(strcmp(fs_file->name->name,".") == 0)  && !(strcmp(fs_file->name->name,"..") == 0))
             {
-                x->parent_stack.push(fs_file->meta->addr);
-                printf("Current Parent %u, %u\n", x->parent_stack.top(), x->parent_stack.size());
+                pt->parent_stack.push(fs_file->meta->addr);
+                printf("Current Parent %u, %u\n", pt->parent_stack.top(), pt->parent_stack.size());
             }
+*/
         }
 
 	process_tsk_file(fs_file, path);
