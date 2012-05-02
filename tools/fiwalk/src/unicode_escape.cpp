@@ -64,9 +64,16 @@ std::string validateOrEscapeUTF8(std::string input)
 
 
 	// utf8 2 bytes
-	if((((ch & 0xc0) == 0xc0) && ((ch & 0x20)==0))
+	if((((ch & 0xc0) == 0xc0) && ((ch & 0x20)==0)) // 2-byte prefix
 	   && (i+1 < input.length())
 	   && utf8cont(input.at(i+1))){
+	    wchar_t unichar = ((input.at(i) & 0x1f) << 6) | ((input.at(i+1) & 0x3f));
+	    if((input.at(i)==0xc0) || (unichar < 0x7f)){		// invalid code point for this encoding
+		output += esc(input.at(i++));
+		output += esc(input.at(i++));
+		continue;
+	    }
+			      
 	    output += input.at(i++);	// byte1
 	    output += input.at(i++);	// byte2
 	    continue;
@@ -77,9 +84,9 @@ std::string validateOrEscapeUTF8(std::string input)
 	   && (i+2 < input.length())
 	   && utf8cont(input.at(i+1))
 	   && utf8cont(input.at(i+2))){
-	    wchar_t unichar = ((input.at(i) & 0x1f) << 12) | ((input.at(i+1) & 0x3f) << 6) | ((input.at(i+2) & 0x3f));
+	    wchar_t unichar = ((input.at(i) & 0x0f) << 12) | ((input.at(i+1) & 0x3f) << 6) | ((input.at(i+2) & 0x3f));
 	    
-	    if(unichar==0xfffe || unichar==0xffff){ // invalid code points
+	    if(unichar==0xfffe || unichar==0xffff || unichar<0x7ff){ // invalid code points
 		output += esc(input.at(i++));
 		output += esc(input.at(i++));
 		continue;

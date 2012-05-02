@@ -14,7 +14,6 @@ fiwalk_SOURCES = fiwalk.cpp  fiwalk_tsk.cpp fiwalk.h \
 	plugin.cpp plugin.h \
 	myglob.cpp myglob.h\
 	utils.c utils.h \
-	bloomset.h \
 	xml.cpp xml.h \
 	hash_t.h \
 	unicode_escape.cpp unicode_escape.h \
