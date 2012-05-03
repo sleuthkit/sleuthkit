@@ -166,7 +166,9 @@ int TskImageFileTsk::getByteData(const uint64_t byte_start,
     int retval = tsk_img_read(m_img_info, byte_start, buffer, (size_t)(byte_len));
     if (retval == -1) {
         std::wstringstream message;
-        message << L"TskImageFileTsk::getByteData - tsk_img_read: " << tsk_error_get() << std::endl;
+        message << L"TskImageFileTsk::getByteData - tsk_img_read -- start: " 
+            << byte_start << " -- len: " << byte_len
+            << "(" << tsk_error_get() << ")" << std::endl;
         LOGERROR(message.str());
         return -1;
     }

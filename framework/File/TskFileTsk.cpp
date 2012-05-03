@@ -176,14 +176,23 @@ ssize_t TskFileTsk::read(char *buf, const size_t count)
         if (m_fileInStream != NULL)
         {
             m_fileInStream->read(buf, count);
+            /* @@@ BC: I am not entirely sure that POCO will
+             * not be throwing this as an exception -- the C++ streams can be 
+             * configured either way.  If it is, we'll catch that below */
+            // check for errors -- fail is set if EOF is reached
+            if ((m_fileInStream->fail()) && (m_fileInStream->eof() == false)) {
+                std::wstringstream message;
+                message << L"TskFileTsk::read - error reading stream -  offset: " 
+                    << m_fileInStream->tellg() << " -- len: " << count << std::endl;
+                LOGERROR(message.str());
+                return -1;
+            }
             return m_fileInStream->gcount();
         }
         else if (typeId() == TskImgDB::IMGDB_FILES_TYPE_FS)
         {
-            // The file doesn't exist on disk so we need to read the content
-            // from the ImageFile.
+            // readFile will log any errors
             int bytesRead = TskServices::Instance().getImageFile().readFile(m_handle, m_offset, count, buf);
-
             if (bytesRead > 0)
                 m_offset += bytesRead;
 
@@ -202,22 +211,26 @@ ssize_t TskFileTsk::read(char *buf, const size_t count)
             } else {
                 bytesToRead = count;
             }
+            // getByteData will log any errors
             bytesRead = TskServices::Instance().getImageFile().getByteData(m_unusedSectorsRecord.sectStart * 512 + m_offset, bytesToRead, buf);
             if (bytesRead > 0)
                 m_offset += bytesRead;
             return bytesRead;
         }
+        else {
+            std::wstringstream errorMsg;
+            errorMsg << "TskFileTsk::read ID: " << m_id << " -- unknown type" << std::endl;
+            LOGERROR(errorMsg.str());
+            return -1;
+        }
     }
     catch (std::exception& ex)
     {
-        // Log a message and throw a framework exception.
         std::wstringstream errorMsg;
-        errorMsg << "TskFileTsk::read : " << ex.what() << std::endl;
+        errorMsg << "TskFileTsk::read ID: " << m_id << " -- " << ex.what() << std::endl;
         LOGERROR(errorMsg.str());
-
-        throw TskFileException("Failed to read from file: " + m_id);
+        return -1;
     }
-    return 0;
 }
 
 TSK_OFF_T TskFileTsk::tell() const
