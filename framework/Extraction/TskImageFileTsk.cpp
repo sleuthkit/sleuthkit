@@ -335,8 +335,12 @@ int TskImageFileTsk::readFile(const int handle,
     if (bytesRead == -1)
     {
         std::wstringstream errorMsg;
-        errorMsg << L"TskImageFileTsk::readFile - Error reading file: "
-            << tsk_error_get() << std::endl;
+        errorMsg << L"TskImageFileTsk::readFile - Error reading file (FS_OFFSET: " 
+            << openFile->fsFile->fs_info->offset << " - ID: "
+            << openFile->fsFile->meta->addr << " - " 
+            << ((openFile->fsFile->meta->flags & TSK_FS_META_FLAG_ALLOC) ? "Allocated" : "Deleted")
+            << ") (" 
+            << tsk_error_get() << ")" << std::endl;
         LOGERROR(errorMsg.str());
     }
 
