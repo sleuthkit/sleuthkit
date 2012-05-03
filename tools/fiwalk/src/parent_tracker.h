@@ -10,12 +10,14 @@
 #include <list>
 #include <stack>
 
-typedef struct PT_DENTRY_INFO{
+class PT_DENTRY_INFO{
+    public:
+
     int addr;               //inode_num
     int num_entries;
     int num_used_entries;
     int curr_entry;
-} PT_DENTRY_INFO;
+};
 
 class parent_tracker{
     private:
@@ -24,10 +26,16 @@ class parent_tracker{
     int is_dot_or_double_dot(const TSK_FS_FILE *);
     int inc_dentry_counter(PT_DENTRY_INFO *);
     int dec_dentry_counter(PT_DENTRY_INFO *);
+    uint64_t last_parent_inum;
+    uint8_t flags; //1=just_popped
+    void set_just_popped();
+    void clear_just_popped();
+    int check_just_popped();
 
     public:
 
     parent_tracker();
+    int print_parent(const TSK_FS_FILE *);
     int add_pt_dentry_info(const TSK_FS_DIR *);
     int rm_pt_dentry_info();
     int stat_dentry_stack();

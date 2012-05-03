@@ -163,6 +163,12 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     /* Looks like we are processing */
     if(a) a->new_row();			// tell ARFF we are starting a new row
     if(x) x->push("fileobject"); 	// tell XML we are starting a new XML object
+    if(pt && x)
+    {
+        x->push("parent_object");
+        pt->print_parent(fs_file);
+        x->pop();
+    }
 
     /* Get the content if needed */
     if(ci.need_file_walk() && (opt_maxgig==0 || fs_file->meta->size/1000000000 < opt_maxgig)){
@@ -361,7 +367,7 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
 
             dir = tsk_fs_dir_open_meta(fs_file->fs_info,fs_file->meta->addr);
             if (dir == NULL)
-                printf("Cannot get dir entry\n");
+                printf("Cannot get dir entry, fs_root is %d\n", fs_file->fs_info->root_inum);
             else
             {
                 pt->process_dentry(dir, fs_file);
@@ -386,7 +392,6 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
         }
 
 	process_tsk_file(fs_file, path);
-	printf("Done Processing: %s\n",fs_file->name->name);
     }
 
     return TSK_WALK_CONT;
