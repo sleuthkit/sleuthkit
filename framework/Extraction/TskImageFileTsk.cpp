@@ -166,7 +166,9 @@ int TskImageFileTsk::getByteData(const uint64_t byte_start,
     int retval = tsk_img_read(m_img_info, byte_start, buffer, (size_t)(byte_len));
     if (retval == -1) {
         std::wstringstream message;
-        message << L"TskImageFileTsk::getByteData - tsk_img_read: " << tsk_error_get() << std::endl;
+        message << L"TskImageFileTsk::getByteData - tsk_img_read -- start: " 
+            << byte_start << " -- len: " << byte_len
+            << "(" << tsk_error_get() << ")" << std::endl;
         LOGERROR(message.str());
         return -1;
     }
@@ -335,8 +337,12 @@ int TskImageFileTsk::readFile(const int handle,
     if (bytesRead == -1)
     {
         std::wstringstream errorMsg;
-        errorMsg << L"TskImageFileTsk::readFile - Error reading file: "
-            << tsk_error_get() << std::endl;
+        errorMsg << L"TskImageFileTsk::readFile - Error reading file (FS_OFFSET: " 
+            << openFile->fsFile->fs_info->offset << " - ID: "
+            << openFile->fsFile->meta->addr << " - " 
+            << ((openFile->fsFile->meta->flags & TSK_FS_META_FLAG_ALLOC) ? "Allocated" : "Deleted")
+            << ") (" 
+            << tsk_error_get() << ")" << std::endl;
         LOGERROR(errorMsg.str());
     }
 
