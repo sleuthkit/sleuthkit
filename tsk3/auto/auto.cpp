@@ -17,6 +17,7 @@
 #include "tsk3/fs/tsk_fatfs.h"
 
 
+// @@@ Follow through some error paths for sanity check and update docs somewhere to relfect the new scheme
 
 TskAuto::TskAuto()
 {
@@ -24,6 +25,8 @@ TskAuto::TskAuto()
     m_tag = TSK_AUTO_TAG;
     m_volFilterFlags = TSK_VS_PART_FLAG_ALLOC;
     m_fileFilterFlags = TSK_FS_DIR_WALK_FLAG_RECURSE;
+    m_stopAllProcessing = false;
+    m_internalOpen = false;
 }
 
 
@@ -43,7 +46,7 @@ TskAuto::~TskAuto()
  * be equal to num_img and they must be in a sorted order)
  * @param a_imgType The disk image type (can be autodetection)
  * @param a_sSize Size of device sector in bytes (or 0 for default)
- * @returns 1 on error, 0 on success
+ * @returns 1 on error (messages were NOT registered), 0 on success
  */
 uint8_t
     TskAuto::openImage(int a_numImg, const TSK_TCHAR * const a_images[],
@@ -70,7 +73,7 @@ uint8_t
  * be equal to num_img and they must be in a sorted order)
  * @param a_imgType The disk image type (can be autodetection)
  * @param a_sSize Size of device sector in bytes (or 0 for default)
- * @returns 1 on error, 0 on success
+ * @returns 1 on error (messages were NOT registered), 0 on success
  */
 uint8_t
     TskAuto::openImageUtf8(int a_numImg, const char *const a_images[],
@@ -92,7 +95,7 @@ uint8_t
  * of the findFilesInXXX() methods. Note that the TSK_IMG_INFO will not
  * be freed when the TskAuto class is closed.
  * @param a_img_info Handle to an already opened disk image.
- * @returns 1 on error and 0 on success
+ * @returns 1 on error (messages were NOT registered) and 0 on success
  */
 uint8_t TskAuto::openImage(TSK_IMG_INFO * a_img_info)
 {
@@ -162,15 +165,18 @@ TSK_OFF_T TskAuto::getImageSize() const
  * Starts in sector 0 of the opened disk images and looks for a
  * volume or file system. Will call processFile() on each file
  * that is found.
- * @return 1 on error, 0 on success
+ * @return 1 if an error occured (message will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInImg()
 {
+    resetErrorList();
+    
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
-        tsk_error_set_errstr("findFilesInImg\n");
+        tsk_error_set_errstr("findFilesInImg -- img_info");
+        registerError();
         return 1;
     }
 
@@ -181,32 +187,36 @@ TskAuto::findFilesInImg()
 /** \internal
  * Volume system walk callback function that will analyze
  * each volume to find a file system.
+ * Does not return ERROR because all errors have been registered 
+ * and returning an error would indicate to TSK that errno and such are set. 
  */
 TSK_WALK_RET_ENUM
     TskAuto::vsWalkCb(TSK_VS_INFO * a_vs_info,
     const TSK_VS_PART_INFO * a_vs_part, void *a_ptr)
 {
     TskAuto *tsk = (TskAuto *) a_ptr;
-    if (tsk->m_tag != TSK_AUTO_TAG)
+    if (tsk->m_tag != TSK_AUTO_TAG) {
+        // we have no way to register an error...
         return TSK_WALK_STOP;
+    }
 
+    // see if the super class wants to continue with this.
     TSK_FILTER_ENUM retval1 = tsk->filterVol(a_vs_part);
     if (retval1 == TSK_FILTER_SKIP)
         return TSK_WALK_CONT;
-    else if (retval1 == TSK_FILTER_STOP)
-        return TSK_WALK_STOP;
+    else if ((retval1 == TSK_FILTER_STOP) || (tsk->getStopProcessing()))
+        return TSK_WALK_STOP;    
 
+    // process it
     TSK_RETVAL_ENUM retval2 =
         tsk->findFilesInFsRet(a_vs_part->start *
         a_vs_part->vs->block_size, TSK_FS_TYPE_DETECT);
-    if (retval2 == TSK_STOP) {
+    if ((retval2 == TSK_STOP) || (tsk->getStopProcessing())) {
         return TSK_WALK_STOP;
     }
     else if (retval2 != TSK_OK) {
-        // if we return ERROR here, then the walk will stop.  But, the
-        // error could just be because we looked into an unallocated volume.
-        // do any special error handling / reporting here.
-        tsk_error_reset();
+        if (tsk->registerError())
+            return TSK_WALK_STOP;
     }
 
     return TSK_WALK_CONT;
@@ -219,53 +229,50 @@ TSK_WALK_RET_ENUM
  * that is found.
  * @param a_start Byte offset to start analyzing from.
  * @param a_vtype Volume system type to analyze
- * @return 1 on error, 0 on success
+ * @return 1 if an error occured (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
 {
+    resetErrorList();
+    
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
-        tsk_error_set_errstr("findFilesInVs\n");
+        tsk_error_set_errstr("findFilesInVs -- img_info");
+        registerError();
         return 1;
     }
 
     TSK_VS_INFO *vs_info;
     // USE mm_walk to get the volumes
     if ((vs_info = tsk_vs_open(m_img_info, a_start, a_vtype)) == NULL) {
-        char
-         msg[1024];
-        snprintf(msg, 1024,
-            "Unable to open volume system at offset %" PRIuOFF " (%s)",
-            a_start, tsk_error_get());
-
-        if (tsk_verbose)
-            fprintf(stderr, "%s\n", msg);
-        handleNotification(msg);
+        tsk_error_set_errstr2("Unable to open volume system at offset %" PRIuOFF,
+                           a_start);
+        if (registerError())
+            return 1;
 
         /* There was no volume system, but there could be a file system */
-        tsk_error_reset();
         if (findFilesInFs(a_start)) {
             return 1;
         }
     }
+    // process the volume system
     else {
         TSK_FILTER_ENUM retval = filterVs(vs_info);
-        if (retval == TSK_FILTER_STOP)
-            return TSK_STOP;
-        else if (retval == TSK_FILTER_SKIP)
-            return TSK_OK;
+        if ((retval == TSK_FILTER_STOP) || (retval == TSK_FILTER_SKIP)|| (m_stopAllProcessing))
+            return m_errors.empty() ? 0 : 1;
 
         /* Walk the allocated volumes (skip metadata and unallocated volumes) */
         if (tsk_vs_part_walk(vs_info, 0, vs_info->part_count - 1,
                 m_volFilterFlags, vsWalkCb, this)) {
+            registerError();
             tsk_vs_close(vs_info);
             return 1;
         }
         tsk_vs_close(vs_info);
     }
-    return 0;
+    return m_errors.empty() ? 0 : 1;
 }
 
 /**
@@ -273,7 +280,7 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
  * volume system or file system. Will call processFile() on each file
  * that is found.
  * @param a_start Byte offset to start analyzing from.
- * @return 1 on error, 0 on success
+ * @return 1 if an error occured (message will have been registered), 0 on success
  */
 uint8_t
 TskAuto::findFilesInVs(TSK_OFF_T a_start)
@@ -288,30 +295,28 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start)
  * that is found.  Same as findFilesInFs, but gives more detailed return values.
  * @param a_start Byte offset to start analyzing from. 
  * @param a_ftype File system type.
- * @returns values that allow the caller to differentiate stop from ok.  
+ * @returns Error (messages will have been registered), OK, or STOP.
  */
 TSK_RETVAL_ENUM
     TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
 {
+    resetErrorList();
+    
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
-        tsk_error_set_errstr("findFilesInFsRet\n");
+        tsk_error_set_errstr("findFilesInFsRet -- img_info");
+        registerError();
         return TSK_ERR;
     }
 
     TSK_FS_INFO *fs_info;
     /* Try it as a file system */
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        char msg[1024];
-        snprintf(msg, 1024,
-            "Unable to open file system at offset %" PRIuOFF " (%s)",
-            a_start, tsk_error_get());
-
-        if (tsk_verbose)
-            fprintf(stderr, "%s\n", msg);
-        handleNotification(msg);
-
+        
+        tsk_error_set_errstr2("unable to open file system at offset %" PRIuOFF,
+            a_start);
+        registerError();
 
         /* We could do some carving on the volume data at this point */
 
@@ -320,27 +325,10 @@ TSK_RETVAL_ENUM
 
     TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
     tsk_fs_close(fs_info);
-    return retval;
-}
-
-/** 
- * Processes the file system represented by the given TSK_FS_INFO
- * pointer. Will Call processFile() on each file that is found.
- *
- * @param a_fs_info Pointer to a previously opened file system.
- *
- * @returns 1 on error and 0 on success
- */
-uint8_t
-TskAuto::findFilesInFs(TSK_FS_INFO * a_fs_info)
-{
-    if (a_fs_info == NULL)
-        return 1;
-
-    if (findFilesInFsInt(a_fs_info, a_fs_info->root_inum) == TSK_ERR)
-        return 1;
-    else
-        return 0;
+    if (m_errors.empty() == false)
+        return TSK_ERR;
+    else 
+        return retval;
 }
 
 
@@ -351,15 +339,12 @@ TskAuto::findFilesInFs(TSK_FS_INFO * a_fs_info)
  *
  * @param a_start Byte offset of file system starting location.
  *
- * @returns 1 on error and 0 on success
+ * @returns 1 if an error occured (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInFs(TSK_OFF_T a_start)
 {
-    if (findFilesInFsRet(a_start, TSK_FS_TYPE_DETECT) == TSK_ERR)
-        return 1;
-    else
-        return 0;
+    return findFilesInFs(a_start, TSK_FS_TYPE_DETECT);
 }
 
 
@@ -371,15 +356,13 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start)
  * @param a_start Byte offset of file system starting location.
  * @param a_ftype Type of file system that is located at the offset.
  *
- * @returns 1 on error and 0 on success
+ * @returns 1 if an error occured (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
 {
-    if (findFilesInFsRet(a_start, a_ftype) == TSK_ERR)
-        return 1;
-    else
-        return 0;
+    findFilesInFsRet(a_start, a_ftype);
+    return m_errors.empty() ? 0 : 1;
 }
 
 /**
@@ -392,42 +375,38 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
  * @param a_ftype Type of file system that will be analyzed.
  * @param a_inum inum to start walking files system at.
  *
- * @returns 1 on error and 0 on success
+ * @returns 1 if an error occured (messages will have been registered) and 0 on success
  */
 uint8_t
     TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype,
     TSK_INUM_T a_inum)
 {
+    resetErrorList();
+    
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
-        tsk_error_set_errstr("findFilesInFs\n");
+        tsk_error_set_errstr("findFilesInFs -- img_info ");
+        registerError();
         return 1;
     }
 
     TSK_FS_INFO *fs_info;
     /* Try it as a file system */
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        char msg[1024];
-        snprintf(msg, 1024,
-            "Unable to open file system at offset %" PRIuOFF " (%s)",
-            +a_start, tsk_error_get());
-
-        if (tsk_verbose)
-            fprintf(stderr, "%s\n", msg);
-        handleNotification(msg);
+        tsk_error_set_errstr2(
+            "Unable to open file system at offset %" PRIuOFF,
+            a_start);
+        registerError();
 
 
         /* We could do some carving on the volume data at this point */
 
         return 1;
     }
-    TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, a_inum);
+    findFilesInFsInt(fs_info, a_inum);
     tsk_fs_close(fs_info);
-    if (retval == TSK_ERR)
-        return 1;
-    else
-        return 0;
+    return m_errors.empty() ? 0 : 1;
 }
 
 
@@ -440,7 +419,7 @@ uint8_t
  * @param a_start Byte offset of file system starting location.
  * @param a_inum inum to start walking files system at.
  *
- * @returns 1 on error and 0 on success
+ * @returns 1 if an error occured (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
@@ -448,38 +427,66 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
     return TskAuto::findFilesInFs(a_start, TSK_FS_TYPE_DETECT, a_inum);
 }
 
+/** 
+ * Processes the file system represented by the given TSK_FS_INFO
+ * pointer. Will Call processFile() on each file that is found.
+ *
+ * @param a_fs_info Pointer to a previously opened file system.
+ *
+ * @returns 1 if an error occured (messages will have been registered) and 0 on success
+ */
+uint8_t
+TskAuto::findFilesInFs(TSK_FS_INFO * a_fs_info)
+{
+    resetErrorList();
+    if (a_fs_info == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
+        tsk_error_set_errstr("findFilesInFs - fs_info");
+        registerError();
+        return 1;
+    }
+    
+    findFilesInFsInt(a_fs_info, a_fs_info->root_inum);
+    return m_errors.empty() ? 0 : 1;
+}
 
 /** \internal
  * file name walk callback.  Walk the contents of each file
  * that is found.
+ *
+ * Does not return ERROR because all errors have been registered 
+ * and returning an error would indicate to TSK that errno and such are set. 
  */
 TSK_WALK_RET_ENUM
     TskAuto::dirWalkCb(TSK_FS_FILE * a_fs_file, const char *a_path,
     void *a_ptr)
 {
     TskAuto *tsk = (TskAuto *) a_ptr;
-    if (tsk->m_tag != TSK_AUTO_TAG)
+    if (tsk->m_tag != TSK_AUTO_TAG) {
+        // we have no way to register an error...
         return TSK_WALK_STOP;
-    TSK_RETVAL_ENUM retval = tsk->processFile(a_fs_file, a_path);
-    if (retval != TSK_OK) {
-        if (retval == TSK_STOP)
-            return TSK_WALK_STOP;
-        else
-            return TSK_WALK_ERROR;
     }
-    else
+    
+    TSK_RETVAL_ENUM retval = tsk->processFile(a_fs_file, a_path);
+    if ((retval == TSK_STOP) || (tsk->getStopProcessing()))
+        return TSK_WALK_STOP;
+    else 
         return TSK_WALK_CONT;
 }
 
 
-/* Internal method that the other findFilesInFs can call after they
+/** \internal
+ * Internal method that the other findFilesInFs can call after they
  * have opened FS_INFO.
+ * @returns OK, STOP, or ERR (error message will already have been registered)
  */
 TSK_RETVAL_ENUM
     TskAuto::findFilesInFsInt(TSK_FS_INFO * a_fs_info, TSK_INUM_T a_inum)
 {
+    // see if the super class wants us to proceed
     TSK_FILTER_ENUM retval = filterFs(a_fs_info);
-    if (retval == TSK_FILTER_STOP)
+    if ((retval == TSK_FILTER_STOP) || (m_stopAllProcessing))
         return TSK_STOP;
     else if (retval == TSK_FILTER_SKIP)
         return TSK_OK;
@@ -489,17 +496,14 @@ TSK_RETVAL_ENUM
             (TSK_FS_DIR_WALK_FLAG_ENUM) (TSK_FS_DIR_WALK_FLAG_RECURSE |
                 m_fileFilterFlags), dirWalkCb, this)) {
 
-        char msg[1024];
-        snprintf(msg, 1024,
-            "Error walking directory in file system at offset %" PRIuOFF
-            " (%s)", a_fs_info->offset, tsk_error_get());
-
-        if (tsk_verbose)
-            fprintf(stderr, "%s\n", msg);
-        handleNotification(msg);
-
+        tsk_error_set_errstr2(
+            "Error walking directory in file system at offset %" PRIuOFF, a_fs_info->offset);
+        registerError();
         return TSK_ERR;
     }
+    
+    if (m_stopAllProcessing)
+        return TSK_STOP;
 
     /* We could do some analysis of unallocated blocks at this point...  */
 
@@ -513,7 +517,7 @@ TSK_RETVAL_ENUM
  * method (which you must implement) on each of the attributes in the file.
  * @param fs_file file  details
  * @param path full path of parent directory
- * @returns 1 if the file system processing should stop and not process more files.
+ * @returns STOP if the file system processing should stop and not process more files or OK.
  */
 TSK_RETVAL_ENUM
     TskAuto::processAttributes(TSK_FS_FILE * fs_file, const char *path)
@@ -524,11 +528,55 @@ TSK_RETVAL_ENUM
         TSK_RETVAL_ENUM retval =
             processAttribute(fs_file, tsk_fs_file_attr_get_idx(fs_file, i),
             path);
-        if (retval != TSK_OK)
-            return retval;
+        if ((retval == TSK_STOP) || (m_stopAllProcessing))
+            return TSK_STOP;
     }
     return TSK_OK;
 }
+
+
+void TskAuto::setStopProcessing() {
+    m_stopAllProcessing = true;
+}
+
+bool TskAuto::getStopProcessing() const {
+    return m_stopAllProcessing;
+}
+
+uint8_t TskAuto::registerError() {
+    // add to our list of errors
+    error_record er;
+    er.code = tsk_error_get_errno();
+    er.msg1 = tsk_error_get_errstr();
+    er.msg2 = tsk_error_get_errstr2();
+    m_errors.push_back(er);
+    
+    // call super class implementation
+    uint8_t retval = handleError();
+    
+    tsk_error_reset();
+    return retval;
+}
+
+ 
+const std::vector<TskAuto::error_record> TskAuto::getErrorList() {
+    return m_errors;
+}
+
+void TskAuto::resetErrorList() {
+    m_errors.clear();
+}
+
+std::string TskAuto::errorRecordToString(error_record &rec) {
+    tsk_error_reset();
+    tsk_error_set_errno(rec.code);
+    tsk_error_set_errstr("%s", rec.msg1.c_str());
+    tsk_error_set_errstr2("%s", rec.msg2.c_str());
+    const char *msg = tsk_error_get();
+    tsk_error_reset();
+    return msg;
+}
+
 
 
 /**

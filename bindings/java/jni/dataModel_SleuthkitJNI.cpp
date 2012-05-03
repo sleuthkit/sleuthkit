@@ -14,6 +14,7 @@
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
 #include <time.h>
+#include <string>
 
 static TSK_HDB_INFO * m_NSRLDb = NULL;
 static TSK_HDB_INFO * m_knownBadDb = NULL;
@@ -374,6 +375,13 @@ JNIEXPORT void JNICALL
     // process the image (parts)
     if (tskAuto->startAddImage((int) num_imgs, imagepaths8,
             TSK_IMG_TYPE_DETECT, 0)) {
+        std::string msg = "Errors occured while ingesting image\n";
+        std::vector<TskAuto::error_record> errors = tskAuto->getErrorList();
+        for (size_t i = 0; i < errors.size(); i++) {
+            msg.append(TskAuto::errorRecordToString(errors[i]));
+            msg.append("\n");
+        }
+
         throwTskError(env);
         // @@@ We never get past this point now to do any cleanup
         deleteProcess = true;
