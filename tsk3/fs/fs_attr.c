@@ -798,8 +798,8 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
 
             /* If the address is too large then give an error */
             if (addr + len_idx > fs->last_block) {
-                if (fs_attr->fs_file->meta->
-                    flags & TSK_FS_META_FLAG_UNALLOC)
+                if (fs_attr->fs_file->
+                    meta->flags & TSK_FS_META_FLAG_UNALLOC)
                     tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                 else
                     tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
@@ -1134,8 +1134,8 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                     fprintf(stderr,
                         "tsk_fs_attr_read_type: File %" PRIuINUM
                         " has FILLER entry, using 0s\n",
-                        (a_fs_attr->fs_file->meta) ? a_fs_attr->fs_file->
-                        meta->addr : 0);
+                        (a_fs_attr->fs_file->meta) ? a_fs_attr->
+                        fs_file->meta->addr : 0);
             }
             // we return 0s for reads past the initsize (unless they want slack space)
             else if (((TSK_OFF_T) ((data_run_cur->offset +
@@ -1147,8 +1147,9 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                     fprintf(stderr,
                         "tsk_fs_attr_read: Returning 0s for read past end of initsize (%"
                         PRIuINUM ")\n", ((a_fs_attr->fs_file)
-                            && (a_fs_attr->fs_file->meta)) ? a_fs_attr->
-                        fs_file->meta->addr : 0);
+                            && (a_fs_attr->fs_file->
+                                meta)) ? a_fs_attr->fs_file->meta->
+                        addr : 0);
             }
             else {
                 TSK_OFF_T fs_offset_b;

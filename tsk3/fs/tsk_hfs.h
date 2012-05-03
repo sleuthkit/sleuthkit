@@ -459,21 +459,21 @@ typedef struct {
 /***************** ATTRIBUTES FILE ******************************/
 
 typedef struct {
-	uint8_t key_len[2];
-	uint8_t pad[2];
-	uint8_t file_id[4];
-	uint8_t start_block[4];
-	uint8_t attr_name_len[2];
-	uint8_t attr_name[254];
+    uint8_t key_len[2];
+    uint8_t pad[2];
+    uint8_t file_id[4];
+    uint8_t start_block[4];
+    uint8_t attr_name_len[2];
+    uint8_t attr_name[254];
 } hfs_btree_key_attr;
 
 
 
 typedef struct {
-	uint8_t record_type[4];  // HFS_ATTRIBUTE_RECORD_INLINE_DATA
-	uint8_t reserved[8];
-	uint8_t attr_size[4];
-	uint8_t attr_data[2];  /* variable length data */
+    uint8_t record_type[4];     // HFS_ATTRIBUTE_RECORD_INLINE_DATA
+    uint8_t reserved[8];
+    uint8_t attr_size[4];
+    uint8_t attr_data[2];       /* variable length data */
 } hfs_attr_data;
 
 
@@ -508,7 +508,7 @@ typedef struct {
     uint8_t compression_magic[4];
     uint8_t compression_type[4];
     uint8_t uncompressed_size[8];
-    unsigned char attr_bytes[0];   /* the bytes of the attribute after the header, if any. */
+    unsigned char attr_bytes[0];        /* the bytes of the attribute after the header, if any. */
 } DECMPFS_DISK_HEADER;
 
 
@@ -642,44 +642,44 @@ typedef struct {
 /******************  Resource File Structures *****************/
 
 typedef struct {
-	uint8_t dataOffset[4];
-	uint8_t mapOffset[4];
-	uint8_t dataLength[4];
-	uint8_t mapLength[4];
+    uint8_t dataOffset[4];
+    uint8_t mapOffset[4];
+    uint8_t dataLength[4];
+    uint8_t mapLength[4];
 } hfs_resource_fork_header;
 
 typedef struct {
-	uint8_t length[4];
-	uint8_t data[2]; // Variable length
+    uint8_t length[4];
+    uint8_t data[2];            // Variable length
 } hfs_resource;
 
 typedef struct {
-	uint8_t reserved1[16];  // copy of resource fork header
-	uint8_t reserved2[4];  //handle to next resource map
-	uint8_t reserved3[2];  // file reference number
-	uint8_t fork_attributes[2];  //??
-	uint8_t typeListOffset[2];   // Actually, points to a 2-byte count of types (minus 1)
-	uint8_t nameListOffset[2];   // could be the end of the fork or zero, if there is no name list.
+    uint8_t reserved1[16];      // copy of resource fork header
+    uint8_t reserved2[4];       //handle to next resource map
+    uint8_t reserved3[2];       // file reference number
+    uint8_t fork_attributes[2]; //??
+    uint8_t typeListOffset[2];  // Actually, points to a 2-byte count of types (minus 1)
+    uint8_t nameListOffset[2];  // could be the end of the fork or zero, if there is no name list.
 } hfs_resource_fork_map_header;
 
 typedef struct {
-	unsigned char type[4];
-	uint8_t count[2];  // number of resources of this type, minus 1
-	uint8_t offset[2]; // offset from beginning of type list to reference list for this type.
+    unsigned char type[4];
+    uint8_t count[2];           // number of resources of this type, minus 1
+    uint8_t offset[2];          // offset from beginning of type list to reference list for this type.
 } hfs_resource_type_list_item;
 
 typedef struct {
-	uint8_t typeCount[2];  // number of types minus one
-	hfs_resource_type_list_item type[];  // Variable length
+    uint8_t typeCount[2];       // number of types minus one
+    hfs_resource_type_list_item type[]; // Variable length
 } hfs_resource_type_list;
 
 typedef struct {
-	uint8_t resID[2];
-	uint8_t resNameOffset[2];  //SIGNED offset from beginning of name list, or -1
-	uint8_t resAttributes[1];  // ??
-	uint8_t resDataOffset[3];  // from beginning of resource data to data for this resource
-	uint8_t reserved[4];     // handle to resource
-}  hfs_resource_refListItem;
+    uint8_t resID[2];
+    uint8_t resNameOffset[2];   //SIGNED offset from beginning of name list, or -1
+    uint8_t resAttributes[1];   // ??
+    uint8_t resDataOffset[3];   // from beginning of resource data to data for this resource
+    uint8_t reserved[4];        // handle to resource
+} hfs_resource_refListItem;
 
 /************** JOURNAL ******************/
 
@@ -703,7 +703,8 @@ extern uint8_t hfs_checked_read_random(TSK_FS_INFO *, char *, size_t,
 
 //extern uint8_t hfs_uni2ascii(TSK_FS_INFO *, uint8_t *, int, char *, int);
 //   replaced by:
-extern uint8_t hfs_UTF16toUTF8(TSK_FS_INFO *, uint8_t *, int, char *, int, uint32_t);
+extern uint8_t hfs_UTF16toUTF8(TSK_FS_INFO *, uint8_t *, int, char *, int,
+    uint32_t);
 
 extern int hfs_unicode_compare(HFS_INFO *, const hfs_uni_str *,
     const hfs_uni_str *);

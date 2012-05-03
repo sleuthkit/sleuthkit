@@ -153,8 +153,6 @@ AS_IF(
 )
 
 
-
-
 #needed for sqllite
 AC_CHECK_LIB(dl, dlopen) 
 

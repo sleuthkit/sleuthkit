@@ -129,14 +129,16 @@ hfs_UTF16toUTF8(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
             uc = UTF16_NULL_REPLACE;
             changed = 1;
         }
-        else if ((flags & HFS_U16U8_FLAG_REPLACE_SLASH) && uc == UTF16_SLASH) {
+        else if ((flags & HFS_U16U8_FLAG_REPLACE_SLASH)
+            && uc == UTF16_SLASH) {
             uc = UTF16_COLON;
             changed = 1;
         }
 
-        else if ((flags & HFS_U16U8_FLAG_REPLACE_CONTROL) && uc < UTF16_LEAST_PRINTABLE) {
-        	uc = (uint16_t) UTF16_NULL_REPLACE;
-        	changed = 1;
+        else if ((flags & HFS_U16U8_FLAG_REPLACE_CONTROL)
+            && uc < UTF16_LEAST_PRINTABLE) {
+            uc = (uint16_t) UTF16_NULL_REPLACE;
+            changed = 1;
         }
 
         if (changed)
