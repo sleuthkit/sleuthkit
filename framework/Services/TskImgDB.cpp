@@ -15,49 +15,31 @@
 
 #include "TskImgDB.h"
 
+/// Default constructor
 TskImgDB::TskImgDB()
 {
 }
 
+/// Destructor
 TskImgDB::~TskImgDB()
 {
 }
 
-// Convenience functions
+TskBlackboardAttribute TskImgDB::createAttribute(uint64_t artifactID, int attributeTypeID, uint64_t objectID, string moduleName, string context,
+		TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, uint64_t valueLong, double valueDouble, 
+        string valueString, vector<unsigned char> valueBytes){
 
-// return the valueString field, if valueType is BB_VALUE_TYPE_STRING, otherwise raise exception
-string TskImgDB::toString(const TskBlackboardRecord & rec) const
-{
-    if (rec.valueType == BB_VALUE_TYPE_STRING)
-        return rec.valueString;
-    else
-        throw("Invalid Blackboard record: valueType not STRING");
-    return "";
+    return TskBlackboardAttribute(artifactID, attributeTypeID, objectID, moduleName, context,
+		valueType, valueInt, valueLong, valueDouble, valueString, valueBytes);
+}
+TskBlackboardArtifact TskImgDB::createArtifact(uint64_t artifactID, uint64_t objID, int artifactTypeID){
+    return TskBlackboardArtifact(artifactID, objID, artifactTypeID);
 }
 
-// return the valueInt32 field, if valueType is BB_VALUE_TYPE_INT32, otherwise raise exception
-int32_t TskImgDB::toInt32(const TskBlackboardRecord & rec) const
-{
-    if (rec.valueType == BB_VALUE_TYPE_INT32)
-        return rec.valueInt32;
-    else
-        throw("Invalid Blackboard record: valueType not INT32");
+map<int, TskArtifactNames> TskImgDB::getAllArtifactTypes(){
+    return TskBlackboard::getAllArtifactTypes();
 }
 
-// return the valueInt64 field, if valueType is BB_VALUE_TYPE_INT64, otherwise raise exception
-int64_t TskImgDB::toInt64(const TskBlackboardRecord & rec) const
-{
-    if (rec.valueType == BB_VALUE_TYPE_INT64)
-        return rec.valueInt64;
-    else
-        throw("Invalid Blackboard record: valueType not INT64");
-}
-
-// return the valueDouble field, if valueType is BB_VALUE_TYPE_DOUBLE, otherwise raise exception
-double TskImgDB::toDouble(const TskBlackboardRecord & rec) const
-{
-    if (rec.valueType == BB_VALUE_TYPE_DOUBLE)
-        return rec.valueDouble;
-    else
-        throw("Invalid Blackboard record: valueType not Double");
+map<int, TskAttributeNames> TskImgDB::getAllAttributeTypes(){
+    return TskBlackboard::getAllAttributeTypes();
 }

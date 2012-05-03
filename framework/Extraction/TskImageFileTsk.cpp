@@ -62,7 +62,7 @@ int TskImageFileTsk::open(const std::vector<std::wstring> &images)
     return openImages();
 }
 
-/**
+/*
  * Opens the image files listed in ImgDB for later analysis and extraction.  
  * @returns -1 on error and 0 on success
  */
@@ -174,11 +174,6 @@ int TskImageFileTsk::getByteData(const uint64_t byte_start,
     return retval;
 }
 
-/**
- * PRocesses the file system and extracts files to the DB.  Uses the images
- * that were already opened with an open() method. 
- * @returns 1 on error
- */
 int TskImageFileTsk::extractFiles()
 {
     // @@@ Add Sanity check that DB is empty 
@@ -228,8 +223,7 @@ int TskImageFileTsk::extractFiles()
         return 1;
     }
 
-    // Notification messages produced by findFilesInImg() will be handled
-    // by TskAutoImpl.
+    // TskAutoImpl will log errors as they occur
     tskAutoImpl.findFilesInImg();
 
     // It's possible that this is an image with no volumes or file systems.

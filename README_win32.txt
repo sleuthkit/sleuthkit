@@ -21,12 +21,14 @@ argument when running the './configure' script and use 'make' to
 compile.  If you're using mingw32 on Windows, './configure' and
 'make' will work directly.
 
-Note that compilation requires a JDK be installed, and by default
-the Oracle JDK on Windows is installed in a path such as
-C:\Program Files\Java\jdk1.6.0_16\.  GNU autotools do not handle
-paths containing spaces, so you will need to copy the JDK to a
-directory without spaces in the name, such as C:\jdk1.6.0_16\, then
-add C:\jdk1.6.0_16\bin to $PATH before running './configure'
+Note that to compile the Java bindings  you will need to have a JDK
+to be installed, and by default the Oracle JDK on Windows is installed
+in a path such as C:\Program Files\Java\jdk1.6.0_16\.  GNU autotools
+(which is used if you do a mingw32 compile, but not a Visual Studio
+compile) do not handle paths containing spaces, so you will need
+to copy the JDK to a directory without spaces in the name, such as
+C:\jdk1.6.0_16\, then add C:\jdk1.6.0_16\bin to $PATH before running
+'./configure'
 
 Note also that libtool may fail on mingw32 on Windows if
 C:\Windows\system32 is on $PATH before /usr/bin.  The fix is to have

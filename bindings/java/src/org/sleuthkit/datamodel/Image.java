@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -83,16 +82,19 @@ public class Image extends FileSystemParent {
 
 	/**
 	 * read from the image
+	 * @param buf the buffer to read to
 	 * @param offset in bytes
 	 * @param len in bytes
-	 * @return the byte data
+	 * @return number of bytes read, -1 if error
 	 * @throws TskException
 	 */
 	@Override
-	public byte[] read(long offset, long len) throws TskException {
+	public int read(byte[] buf, long offset, long len) throws TskException {
 		// read from the image
-		return SleuthkitJNI.readImg(getImageHandle(), offset, len);
+		return SleuthkitJNI.readImg(getImageHandle(), buf, offset, len);
 	}
+	
+	
 
 	/**
 	 * get the image size
@@ -220,11 +222,7 @@ public class Image extends FileSystemParent {
 
 	@Override
 	public List<Content> getChildren() throws TskException {
-		try {
-			return db.getImageChildren(this);
-		} catch (SQLException ex) {
-			throw new TskException("Error getting Image children.", ex);
-		}
+		return db.getImageChildren(this);
 	}
 
 	@Override

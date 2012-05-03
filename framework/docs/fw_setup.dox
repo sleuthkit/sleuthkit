@@ -1,9 +1,51 @@
-/*! \page fw_setup Setting up the Services
+/*! \page fw_setup_page Setting up the Infrastructure
 
-\section fw_setup_sysprop System Properties
+The developer's guide to using the framework is self contained, but you can also refer to the source code for tsk_analyzeimg, which is included in the framework.  It is a basic program that uses the framework to analyze a disk image and use the pipeline infrastructure. 
 
-\section fw_setup_imgdb Image Database
+This part of the document outlines how to get the infrastructure in place for any type of run. The other sections focus on specific types of analysis.  If you are running end-to-end analysis in the same process / session, then you'll do all of these at once.  If you are doing a distributed system, then you will need to start with this section and continue on the relevant analysis section. 
 
+\section fw_setup_env Development Environment
+
+You will need to build the framework library using the instructions that come with the source code.  You will also need to configure your build environment to depend on the framework.dll file (or other dynamic library if on a non-Windows platform). 
+
+At a minimum, you will need to include the <tt>framework.h</tt> file. This includes the basics of the framework.  You may need to include additional .h files depending on what objects you need to use. 
+
+
+\section fw_setup_minimal Minimal Setup
+
+One of the design goals of the framework is to minimize the setup that you need to do.  This section outlines the minimal set of setup steps to take.  If the default settings do not meet your needs, you'll need to jump to the \ref fw_setup_adv section.
+
+\subsection fw_setup_min_serv Services
+
+The framework depends on a set of services to be setup.  Some of
+the services will default to a basic implementation if one has not
+been configured, but others require that a service be setup and
+registered.  Review the \ref mod_stuff_services section to get the
+basic idea of services.
+
+The following services must be setup before the library can analyze data:
+- Database: An instance of TskImgDB must be created and registered with TskServices.  The framework comes with a basic SQLite implementation, but you must first create it and specify where you want to store the database.
+- Scheduler: An instance of TskScheduler must be created.  Methods for getting tasks out of the scheduler will depend on the implementation and design of the scheduler, so it is up to the user of the library to create the instance and make sure that the tasks are retrieved from it.  The framework comes with a basic queue implementation. 
+
+// @@@ Review this in future because it could default to ImgDB 
+
+- Blackboard: An instance of the TskBlackBoard must be created.  Currently, the only implementation is TskDBBlackBoard that writes the blackboard contents to TskImgDB. 
+
+- Image File: An instance of TskImageFile must be created if the analysis will deal with disk image files.  TskImageFileTsk is the Sleuth Kit-based implementation of TskImageFile. 
+
+
+\subsection fw_setup_min_prop System Properties
+There are some settings in TskSystemProperties that must be set.  Note that TskSystemProperties is one of the advanced services that will have a default implementation that is created if one has not be explicitly created and registered.  Ensure that before any settings are set, that you register an instance of TskSystemProperties if you do not want the default. 
+
+- Output Directory: TskSystemProperties.OUT_DIR must be set with the location of a shared output folder. 
+
+
+\section fw_setup_adv Advanced Setup
+
+Some of the services have default configurations that will be created as needed if a specific instance is not created and registered.   Those are described in this section. 
+
+- System Properties: The TskSystemProperties interface can serve two purposes.  One is a run-time service that provides name and value pairs for system settings.  The other purpose is to store those settings in a local file that can be read and loaded each time.  The values returned by TskSystemProperties can seamlessly come from either a local file or be memory-based and set by another object.  The default instance created is a memory-based one.  But, there is also a TskSystemPropertiesImpl class that can load an XML file.
+- Log: The Log interface allows messages from the framework and modules to go to a single location.  If a specific instance is not set, messages will be sent to STDERR.  Otherwise, Log can be explicitly created with a path to where a log file should be created. 
 
 
 */

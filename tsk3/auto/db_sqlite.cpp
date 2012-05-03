@@ -90,7 +90,7 @@ int
 
 
 /**
- * Execute a statement.  
+ * Execute a statement and sets TSK error values on error 
  * @returns 1 on error, 0 on success
  */
 int
@@ -284,7 +284,11 @@ int
         attempt_exec("CREATE INDEX objID ON blackboard_artifacts(obj_id);",
         "Error creating objID index on blackboard_artifacts: %s\n")||
         attempt_exec("CREATE INDEX artifactID ON blackboard_artifacts(artifact_id);",
-        "Error creating tsk_objects index on par_obj_id: %s\n");
+        "Error creating artifact_id index on blackboard_artifacts: %s\n")||
+        attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
+        "Error creating artifact_id index on blackboard_attributes: %s\n");
+
+    
 }
 
 
@@ -502,7 +506,7 @@ int
     const unsigned char *const md5, const TSK_AUTO_CASE_KNOWN_FILE_ENUM known,
     int64_t fsObjId, int64_t & objId)
 {
-    int64_t parObjId;
+    int64_t parObjId = 0;
 
     if (fs_file->name == NULL)
         return 0;
@@ -512,34 +516,70 @@ int
         parObjId = fsObjId;
     }
     else {
-
-        // Find the parent file id in the database using the parent metadata address
-        if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1,
-                    fs_file->name->par_addr),
-                "Error binding meta_addr to statment: %s (result code %d)\n")
-            || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2,
-                    fsObjId),
-                "Error binding fs_obj_id to statment: %s (result code %d)\n")
-            || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
-                "Error selecting file id by meta_addr: %s (result code %d)\n"))
-        {
-            // Statement may be used again, even after error
-            sqlite3_reset(m_selectFilePreparedStmt);
+        parObjId = findParObjId(fs_file, fsObjId);
+        if (parObjId == -1) {
+            //error
             return 1;
-        }
-
-        parObjId = sqlite3_column_int64(m_selectFilePreparedStmt, 0);
-
-        if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
-            "Error resetting 'select file id by meta_addr' statement: %s\n")) {
-                return 1;
-        }
+        }    
     }
-
 
     return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId);
 }
 
+/**
+ * Store meta_addr to object id mapping of the directory in a local cache map
+ * @param fsObjId fs id of this directory
+ * @param meta_addr meta_addr of this directory
+ * @param objId object id of this directory from the objects table
+ */
+void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId) {
+    map<TSK_INUM_T,int64_t>::iterator it = m_parentDirIdCache[fsObjId].find(meta_addr);
+    if (it == m_parentDirIdCache[fsObjId].end() )
+        //store only if does not exist
+        m_parentDirIdCache[fsObjId][meta_addr] = objId;
+}
+
+/**
+ * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
+ * @param fs_file file to find parent obj id for
+ * @param fsObjId fs id of this file
+ * @returns parent obj id ( > 0), -1 on error
+ */
+int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & fsObjId) {
+    int64_t parObjId = -1;
+
+    //get from cache by parent meta addr, if available
+    map<TSK_INUM_T,int64_t>::iterator it = m_parentDirIdCache[fsObjId].find(fs_file->name->par_addr);
+    if (it != m_parentDirIdCache[fsObjId].end() ) {
+        parObjId = it->second;
+    }
+    
+    if (parObjId > 0)
+        //return cached
+        return parObjId;
+
+    // Find the parent file id in the database using the parent metadata address
+    if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1, fs_file->name->par_addr),
+                "Error binding meta_addr to statment: %s (result code %d)\n")
+        || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
+            "Error binding fs_obj_id to statment: %s (result code %d)\n")
+        || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
+            "Error selecting file id by meta_addr: %s (result code %d)\n"))
+    {
+        // Statement may be used again, even after error
+        sqlite3_reset(m_selectFilePreparedStmt);
+        return -1;
+    }
+
+    parObjId = sqlite3_column_int64(m_selectFilePreparedStmt, 0);
+
+    if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
+        "Error resetting 'select file id by meta_addr' statement: %s\n")) {
+            return -1;
+    }
+
+    return parObjId;
+}
 
 /**
  * Add file data to the file table
@@ -713,6 +753,11 @@ int
     if (attempt_exec(foo, "Error adding data to tsk_fs_files table: %s\n")) {
         free(name);
         return 1;
+    }
+
+    //if dir, update parent id cache
+    if (meta_type == TSK_FS_META_TYPE_DIR) {
+        storeObjId(fsObjId, fs_file->name->meta_addr, objId);
     }
 
     free(name);

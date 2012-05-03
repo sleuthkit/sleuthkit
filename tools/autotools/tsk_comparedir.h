@@ -15,6 +15,7 @@ struct ltstr
 class TskCompareDir : public TskAuto {
 public:
     uint8_t compareDirs(TSK_OFF_T soffset, TSK_INUM_T inum, TSK_FS_TYPE_ENUM a_fstype, const TSK_TCHAR * lcl_dir);
+    virtual uint8_t handleError();
 
 private:
     std::set<char*, ltstr> m_filesInImg; 

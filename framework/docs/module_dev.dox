@@ -23,6 +23,8 @@ You will need to include the framework header file to get access to the framewor
 
 <pre>\#include "TskModuleDev.h" </pre>
 
+You should be able to find this header file by ensuring that the TSK_HOME environment variable is set to the root of TSK (in a Windows environment) and that $(TSK_HOME) and $TSK_HOME/framework are in the include search path. 
+
 Next, you need to define several function that the framework will call when it uses the module.   Those are described in the following sections. 
 
 \subsection mod_setup_init Module InitializationThe <tt>initialize</tt> function is where you perform one time module configuration tasks such as validating input or output folders or establishing a connection to an external system such as a database server.

@@ -14,6 +14,7 @@
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
 #include <time.h>
+#include <string>
 
 static TSK_HDB_INFO * m_NSRLDb = NULL;
 static TSK_HDB_INFO * m_knownBadDb = NULL;
@@ -289,10 +290,11 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
  * @param env pointer to java environment this was called from
  * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
+ * @param noFatFsOrphans whether to skip processing orphans on FAT filesystems
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
-    jclass obj, jlong caseHandle, jstring timezone) {
+    jclass obj, jlong caseHandle, jstring timezone, jboolean noFatFsOrphans) {
     jboolean isCopy;
 
     TskCaseDb *tskCase = castCaseDb(env, caseHandle);
@@ -308,6 +310,10 @@ JNIEXPORT jlong JNICALL
     /* we should be checking this somehow */
     TZSET();
     TskAutoDb *tskAuto = tskCase->initAddImage();
+
+    const bool noFatFsOrhpansBool = noFatFsOrphans?true:false;
+    tskAuto->setNoFatFsOrphans(noFatFsOrhpansBool);
+
     return (jlong) tskAuto;
 }
 
@@ -323,7 +329,6 @@ JNIEXPORT jlong JNICALL
  * @param process the add-image process created by initAddImgNat
  * @param paths array of strings from java, the paths to the image parts
  * @param num_imgs number of image parts
- * @param outDir the output directory
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
@@ -370,6 +375,13 @@ JNIEXPORT void JNICALL
     // process the image (parts)
     if (tskAuto->startAddImage((int) num_imgs, imagepaths8,
             TSK_IMG_TYPE_DETECT, 0)) {
+        std::string msg = "Errors occured while ingesting image\n";
+        std::vector<TskAuto::error_record> errors = tskAuto->getErrorList();
+        for (size_t i = 0; i < errors.size(); i++) {
+            msg.append(TskAuto::errorRecordToString(errors[i]));
+            msg.append("\n");
+        }
+
         throwTskError(env);
         // @@@ We never get past this point now to do any cleanup
         deleteProcess = true;
@@ -601,11 +613,11 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
 }
 
 
-/** move a local buffer into a Java array.
+/** move a local buffer into a new Java array.
  * @param env JNI env
  * @param buf Buffer to copy from
  * @param len Length of bytes in buf
- * @returns Pointer to java byte array or NULL if there is an error
+ * @returns Pointer to newly created java byte array or NULL if there is an error
  */
 static jbyteArray
 copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
@@ -615,92 +627,115 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
         throwTskError(env, "NewByteArray returned error while getting an array to copy buffer into.");
         return NULL;
     }
-
-    jbyte * jBytes= env->GetByteArrayElements(return_array, 0);
-    if (jBytes == NULL) {
-        throwTskError(env, "GetByteArrayElements returned error while getting elements to copy buffer into.");   
-        return NULL;
-    }
-
-    for (int i = 0; i < len; i++) {
-        jBytes[i] = buf[i];
-    }
-
-    env->ReleaseByteArrayElements(return_array, jBytes, 0);
+    env->SetByteArrayRegion(return_array, 0, len, (jbyte*)buf);
 
     return return_array;
 }
 
+/** move a local buffer into an existing Java array.
+ * @param env JNI env
+ * @param jbuf Buffer to copy to
+ * @param buf Buffer to copy from
+ * @param len Length of bytes in buf
+ * @returns number of bytes copied or -1 on error
+ */
+static ssize_t
+copyBufToByteArray(JNIEnv * env, jbyteArray jbuf, const char *buf, ssize_t len)
+{
+    env->SetByteArrayRegion(jbuf, 0, len, (jbyte*)buf);
+    return len;
+}
+
 /*
  * Read bytes from the given image
- * @return array of bytes read from the image
+ * @return number of bytes read from the image, -1 on error
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param a_img_info the pointer to the image object
  * @param offset the offset in bytes to start at
  * @param len number of bytes to read
  */
-JNIEXPORT jbyteArray JNICALL
+JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
-    jclass obj, jlong a_img_info, jlong offset, jlong len)
+    jclass obj, jlong a_img_info, jbyteArray jbuf, jlong offset, jlong len)
 {
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env, tsk_error_get());
-        return NULL;
+        return -1;
     }
 
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
 
-    ssize_t retval =
+    ssize_t bytesread =
         tsk_img_read(img_info, (TSK_OFF_T) offset, buf, (size_t) len);
-    if (retval == -1) {
+    if (bytesread == -1) {
+        free(buf);
         throwTskError(env, tsk_error_get());
+        return -1;
     }
 
     // package it up for return
-    jbyteArray return_array = copyBufToByteArray(env, buf, retval);
+    // adjust number bytes to copy
+    ssize_t copybytes = bytesread;
+    jsize jbuflen = env->GetArrayLength(jbuf);
+    if (jbuflen < copybytes)
+        copybytes = jbuflen;
+
+    ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
     free(buf);
-    return return_array;
+	if (copiedbytes == -1) {
+        throwTskError(env, tsk_error_get());
+    }
+    return copiedbytes;
 }
 
 
 /*
  * Read bytes from the given volume system
- * @return array of bytes read from the volume system
+ * @return number of bytes read from the volume system, -1 on error
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param a_vs_info the pointer to the volume system object
  * @param offset the offset in bytes to start at
  * @param len number of bytes to read
  */
-JNIEXPORT jbyteArray JNICALL
+JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
-    jclass obj, jlong a_vs_info, jlong offset, jlong len)
+    jclass obj, jlong a_vs_info, jbyteArray jbuf, jlong offset, jlong len)
 {
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env);
-        return NULL;
+        return -1;
     }
     TSK_VS_INFO *vs_info = castVsInfo(env, a_vs_info);
 
-    ssize_t retval = tsk_vs_read_block(vs_info, (TSK_DADDR_T) offset, buf,
+    ssize_t bytesread = tsk_vs_read_block(vs_info, (TSK_DADDR_T) offset, buf,
         (size_t) len);
-    if (retval == -1) {
+    if (bytesread == -1) {
         throwTskError(env, tsk_error_get());
     }
 
     // package it up for return
-    jbyteArray return_array = copyBufToByteArray(env, buf, retval);
+	// adjust number bytes to copy
+    ssize_t copybytes = bytesread;
+    jsize jbuflen = env->GetArrayLength(jbuf);
+    if (jbuflen < copybytes)
+        copybytes = jbuflen;
+
+    ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
     free(buf);
-    return return_array;
+    if (copiedbytes == -1) {
+        throwTskError(env, tsk_error_get());
+    }
+    return copiedbytes;
 }
 
 
 /*
  * Read bytes from the given volume
- * @return array of bytes read from the volume or NULL on error
+ * @return number of bytes read from the volume or -1 on error
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param a_vol_info the pointer to the volume object
@@ -708,102 +743,134 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
  * @param len number of bytes to read
  */
 
-JNIEXPORT jbyteArray JNICALL
+JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
-    jclass obj, jlong a_vol_info, jlong offset, jlong len)
+    jclass obj, jlong a_vol_info, jbyteArray jbuf, jlong offset, jlong len)
 {
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env);
-        return NULL;
+        return -1;
     }
 
     TSK_VS_PART_INFO *vol_part_info = castVsPartInfo(env, a_vol_info);
 
-    ssize_t retval =
+    ssize_t bytesread =
         tsk_vs_part_read(vol_part_info, (TSK_OFF_T) offset, buf,
         (size_t) len);
-    if (retval == -1) {
+    if (bytesread == -1) {
         throwTskError(env, tsk_error_get());
         free(buf);
-        return NULL;
+        return -1;
     }
 
     // package it up for return
-    jbyteArray return_array = copyBufToByteArray(env, buf, retval);
-    // no point checking for error. copyBufToByteArray will call throwTskError and return NULL itself
+    // adjust number bytes to copy
+    ssize_t copybytes = bytesread;
+    jsize jbuflen = env->GetArrayLength(jbuf);
+    if (jbuflen < copybytes)
+        copybytes = jbuflen;
 
+    ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
     free(buf);
-    return return_array;
+    if (copiedbytes == -1) {
+        throwTskError(env, tsk_error_get());
+    }
+    return copiedbytes;
 }
 
 
 /*
  * Read bytes from the given file system
- * @return array of bytes read from the file system
+ * @return number of bytes read from the file system, -1 on error
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param a_fs_info the pointer to the file system object
  * @param offset the offset in bytes to start at
  * @param len number of bytes to read
  */
-JNIEXPORT jbyteArray JNICALL
+JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
-    jclass obj, jlong a_fs_info, jlong offset, jlong len)
+    jclass obj, jlong a_fs_info, jbyteArray jbuf, jlong offset, jlong len)
 {
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env);
-        return NULL;
+        return -1;
     }
     TSK_FS_INFO *fs_info = castFsInfo(env, a_fs_info);
 
-    ssize_t retval =
+    ssize_t bytesread =
         tsk_fs_read(fs_info, (TSK_OFF_T) offset, buf, (size_t) len);
-    if (retval == -1) {
+    if (bytesread == -1) {
+        free(buf);
         throwTskError(env, tsk_error_get());
+        return -1;
     }
 
     // package it up for return
-    jbyteArray return_array = copyBufToByteArray(env, buf, retval);
+    // adjust number bytes to copy
+    ssize_t copybytes = bytesread;
+    jsize jbuflen = env->GetArrayLength(jbuf);
+    if (jbuflen < copybytes)
+        copybytes = jbuflen;
+
+    ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
     free(buf);
-    return return_array;
+    if (copiedbytes == -1) {
+        throwTskError(env, tsk_error_get());
+    }
+    return copiedbytes;
 }
+
 
 
 /*
  * Read bytes from the given file
- * @return array of bytes read from the file
+ * @return number of bytes read, or -1 on error
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param a_file_info the pointer to the file object
+ * @param jbuf jvm allocated buffer to read to
  * @param offset the offset in bytes to start at
  * @param len number of bytes to read
  */
-JNIEXPORT jbyteArray JNICALL
+JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
-    jclass obj, jlong a_file_info, jlong offset, jlong len)
+    jclass obj, jlong a_file_info, jbyteArray jbuf, jlong offset, jlong len)
 {
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
         throwTskError(env);
-        return NULL;
+        return -1;
     }
 
     TSK_FS_FILE *file_info = castFsFile(env, a_file_info);
 
-    ssize_t retval =
+    ssize_t bytesread =
         tsk_fs_file_read(file_info, (TSK_OFF_T) offset, buf, (size_t) len,
         TSK_FS_FILE_READ_FLAG_NONE);
-    if (retval == -1) {
+    if (bytesread == -1) {
+		free(buf);
         throwTskError(env, tsk_error_get());
+		return -1;
     }
 
     // package it up for return
-    jbyteArray return_array = copyBufToByteArray(env, buf, retval);
+	// adjust number bytes to copy
+	ssize_t copybytes = bytesread;
+	jsize jbuflen = env->GetArrayLength(jbuf);
+	if (jbuflen < copybytes)
+		copybytes = jbuflen;
+
+    ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
     free(buf);
-    return return_array;
+    if (copiedbytes == -1) {
+        throwTskError(env, tsk_error_get());
+    }
+    return copiedbytes;
 }
+
 
 /*
  * Close the given image
@@ -918,6 +985,9 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     }
     else if(temp->db_type == TSK_HDB_DBTYPE_HK_ID) {
         TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_HK_STR);
+    }
+    else if(temp->db_type == TSK_HDB_DBTYPE_ENCASE_ID) {
+        TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_ENCASE_STR);
     }
     else {
         TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_NSRL_MD5_STR);

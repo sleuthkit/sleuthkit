@@ -35,6 +35,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_imgTransactionOpen = false;
     m_NSRLDb = a_NSRLDb;
     m_knownBadDb = a_knownBadDb;
+    m_noFatFsOrphans = false;
 }
 
 TskAutoDb::~TskAutoDb()
@@ -66,6 +67,17 @@ void
  TskAutoDb::hashFiles(bool flag)
 {
     m_fileHashFlag = flag;
+}
+
+/**
+* Skip processing of orphans on FAT filesystems.  
+* This will make the loading of the database much faster
+* but you will not have all deleted files.
+* @param noFatFsOrphans flag set to true if to skip processing orphans on FAT fs
+*/
+void TskAutoDb::setNoFatFsOrphans(bool noFatFsOrphans)
+{
+    m_noFatFsOrphans = noFatFsOrphans;
 }
 
 /**
@@ -190,14 +202,15 @@ TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
 
 /**
  * Analyzes the open image and adds image info to a database.
- * @returns 1 on error
+ * @returns 1 if an error occured (error will have been registered)
  */
 uint8_t TskAutoDb::addFilesInImgToDb()
 {
     if (m_db == NULL || !m_db->dbExist()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("addFilesInImgToDb: m_db not open\n");
+        tsk_error_set_errstr("addFilesInImgToDb: m_db not open");
+        registerError();
         return 1;
     }
 
@@ -261,8 +274,17 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 
     // make sure that flags are set to get all files -- we need this to
     // find parent directory
-    setFileFilterFlags((TSK_FS_DIR_WALK_FLAG_ENUM)
-        (TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC));
+     
+    TSK_FS_DIR_WALK_FLAG_ENUM filterFlags = (TSK_FS_DIR_WALK_FLAG_ENUM)
+        (TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC);
+
+    //check if to skip processing of FAT orphans
+    if (m_noFatFsOrphans 
+        && TSK_FS_TYPE_ISFAT(fs_info->ftype) ) {
+            filterFlags = (TSK_FS_DIR_WALK_FLAG_ENUM) (filterFlags | TSK_FS_DIR_WALK_FLAG_NOORPHAN);
+    }
+
+    setFileFilterFlags(filterFlags);
 
     return TSK_FILTER_CONT;
 }
@@ -291,7 +313,7 @@ TSK_RETVAL_ENUM
  * all changes on error. When runProcess()
  * returns, user must call either commitAddImage() to commit the changes,
  * or revertAddImage() to revert them.
- * @returns 1 on error and 0 on success
+ * @returns 1 if any error occured (messages will be registered in list) and 0 on success
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
@@ -304,6 +326,7 @@ uint8_t
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
+        registerError();
         return 1;
     }
 
@@ -312,28 +335,28 @@ uint8_t
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
+        registerError();
         return 1;
     }
 
-
-    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT))
+    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
+        registerError();
         return 1;
+    }
 
     m_imgTransactionOpen = true;
 
-    if (openImage(numImg, imagePaths, imgType, sSize)
-        || addFilesInImgToDb()) {
-        // rollback on error
-
-        // rollbackSavepoint can throw errors too, need to make sure original
-        // error message is preserved;
-        const char *prior_msg = tsk_error_get();
-        if (revertAddImage()) {
-            if (prior_msg) {
-                tsk_error_set_errstr("%s caused: %s", prior_msg,
-                    tsk_error_get());
-            }
-        }
+    if (openImage(numImg, imagePaths, imgType, sSize)) {
+        tsk_error_set_errstr2("TskAutoDb::startAddImage");
+        registerError();
+        if (revertAddImage())
+            registerError();
+        return 1;
+    }
+    
+    if (addFilesInImgToDb()) {
+        if (revertAddImage())
+            registerError();
         return 1;
     }
     return 0;
@@ -399,12 +422,13 @@ void
         tsk_fprintf(stderr, "TskAutoDb::stopAddImage: Stop request received\n");
 
     m_stopped = true;
+    setStopProcessing();
     // flag is checked every time processFile() is called
 }
 
 /**
  * Revert all changes after the process has run sucessfully.
- * @returns 1 on error, 0 on success
+ * @returns 1 on error (error was NOT registered in list), 0 on success
  */
 int
  TskAutoDb::revertAddImage()
@@ -434,7 +458,7 @@ int
 
 /**
  * Finish the process after it has run sucessfully by committing the changes.
- * @returns Id of the image that was added or -1 on error
+ * @returns Id of the image that was added or -1 on error (error was NOT registered in list)
  */
 int64_t
 TskAutoDb::commitAddImage()
@@ -476,10 +500,6 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_STOP;
     }
 
-    //if (m_db->createSavepoint("PROCESSFILE")) {
-    //    return TSK_ERR;
-    //}
-
     /* process the attributes.  The case of having 0 attributes can occur
      * with virtual / sparse files.  At some point, this can probably be cleaned
      * up if TSK is more consistent about if there should always be an attribute or not */
@@ -489,14 +509,14 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     else
         retval = processAttributes(fs_file, path);
 
-    //if (m_db->releaseSavepoint("PROCESSFILE")) {
-    //    return TSK_ERR;
-    //}
-
-    return retval;
+    if (retval == TSK_STOP)
+        return TSK_STOP;
+    else 
+        return TSK_OK;
 }
 
 
+// we return only OK or STOP -- errors are registered only and OK is returned. 
 TSK_RETVAL_ENUM
 TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path)
@@ -513,15 +533,16 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
 
 		if (m_fileHashFlag && isFile(fs_file)) {
             if (md5HashAttr(hash, fs_attr)) {
-                return TSK_ERR;
+                // error was registered
+                return TSK_OK;
             }
             md5 = hash;
 
             if (m_NSRLDb != NULL) {
                 int8_t retval = tsk_hdb_lookup_raw(m_NSRLDb, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
-                
                 if (retval == -1) {
-                    return TSK_ERR;
+                    registerError();
+                    return TSK_OK;
                 } else if (retval) {
                     file_known = TSK_AUTO_CASE_FILE_KNOWN_KNOWN;
                 }
@@ -529,18 +550,19 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
 
             if (m_knownBadDb != NULL) {
                 int8_t retval = tsk_hdb_lookup_raw(m_knownBadDb, hash, 16, TSK_HDB_FLAG_QUICK, NULL, NULL);
-                
                 if (retval == -1) {
-                    return TSK_ERR;
+                    registerError();
+                    return TSK_OK;
                 } else if (retval) {
                     file_known = TSK_AUTO_CASE_FILE_KNOWN_BAD;
                 }
             }
         }
 
-        /// @@@ We probably want to keep on going and not stop in this case
-        if (insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known) == TSK_ERR)
-            return TSK_ERR;
+        if (insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known) == TSK_ERR) {
+            registerError();
+            return TSK_OK;
+        }
     }
 
     // add the block map, if requested and the file is non-resident
@@ -559,7 +581,8 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
             // @@@ We probaly want ot keep on going here
             if (m_db->addFsBlockInfo(m_curFsId, m_curFileId,
                     run->addr * block_size, run->len * block_size, sequence++)) {
-                return TSK_ERR;
+                registerError();
+                return TSK_OK;
             }
         }
     }
@@ -591,7 +614,7 @@ TskAutoDb::md5HashCallback(TSK_FS_FILE * file, TSK_OFF_T offset,
  * MD5 hash an attribute and put the result in the given array
  * @param md5Hash array to write the hash to
  * @param fs_attr attribute to hash the data of
- * @return Returns 1 on error
+ * @return Returns 1 on error (message has been registered)
  */
 int
 TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
@@ -602,6 +625,7 @@ TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
 
     if (tsk_fs_attr_walk(fs_attr, TSK_FS_FILE_WALK_FLAG_NONE,
             md5HashCallback, (void *) &md)) {
+        registerError();
         return 1;
     }
 

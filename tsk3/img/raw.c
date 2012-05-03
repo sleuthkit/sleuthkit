@@ -41,28 +41,28 @@
  */
 static ssize_t
 raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
-                   size_t len, TSK_OFF_T rel_offset)
+    size_t len, TSK_OFF_T rel_offset)
 {
     IMG_SPLIT_CACHE *cimg;
     ssize_t cnt;
-    
+
     /* Is the image already open? */
     if (raw_info->cptr[idx] == -1) {
         if (tsk_verbose) {
             tsk_fprintf(stderr,
-                        "raw_read_segment: opening file into slot %d: %" PRIttocTSK
-                        "\n", raw_info->next_slot, raw_info->images[idx]);
+                "raw_read_segment: opening file into slot %d: %" PRIttocTSK
+                "\n", raw_info->next_slot, raw_info->images[idx]);
         }
-        
+
         /* Grab the next cache slot */
         cimg = &raw_info->cache[raw_info->next_slot];
-        
+
         /* Free it if being used */
         if (cimg->fd != 0) {
             if (tsk_verbose) {
                 tsk_fprintf(stderr,
-                            "raw_read_segment: closing file %" PRIttocTSK "\n",
-                            raw_info->images[cimg->image]);
+                    "raw_read_segment: closing file %" PRIttocTSK "\n",
+                    raw_info->images[cimg->image]);
             }
 #ifdef TSK_WIN32
             CloseHandle(cimg->fd);
@@ -71,24 +71,24 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
 #endif
             raw_info->cptr[cimg->image] = -1;
         }
-        
+
 #ifdef TSK_WIN32
         if ((cimg->fd = CreateFile(raw_info->images[idx], FILE_READ_DATA,
-                                   FILE_SHARE_READ, NULL, OPEN_EXISTING, 0,
-                                   NULL)) == INVALID_HANDLE_VALUE) {
+                    FILE_SHARE_READ, NULL, OPEN_EXISTING, 0,
+                    NULL)) == INVALID_HANDLE_VALUE) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                                 "\" - %d", raw_info->images[idx], (int) GetLastError());
+                "\" - %d", raw_info->images[idx], (int) GetLastError());
             return -1;
         }
 #else
         if ((cimg->fd =
-             open(raw_info->images[idx], O_RDONLY | O_BINARY)) < 0) {
+                open(raw_info->images[idx], O_RDONLY | O_BINARY)) < 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                                 "\" - %s", raw_info->images[idx], strerror(errno));
+                "\" - %s", raw_info->images[idx], strerror(errno));
             return -1;
         }
 #endif
@@ -102,36 +102,37 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
     else {
         cimg = &raw_info->cache[raw_info->cptr[idx]];
     }
-    
+
 #ifdef TSK_WIN32
     {
         DWORD nread;
         if (cimg->seek_pos != rel_offset) {
             LARGE_INTEGER li;
             li.QuadPart = rel_offset;
-            
+
             li.LowPart = SetFilePointer(cimg->fd, li.LowPart,
-                                        &li.HighPart, FILE_BEGIN);
-            
+                &li.HighPart, FILE_BEGIN);
+
             if ((li.LowPart == INVALID_SET_FILE_POINTER) &&
                 (GetLastError() != NO_ERROR)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-                tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK "\" offset %" PRIuOFF
-                                     " seek - %d", raw_info->images[idx], rel_offset,
-                                     (int) GetLastError());
+                tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
+                    "\" offset %" PRIuOFF " seek - %d",
+                    raw_info->images[idx], rel_offset,
+                    (int) GetLastError());
                 return -1;
             }
             cimg->seek_pos = rel_offset;
         }
-        
+
         if (FALSE == ReadFile(cimg->fd, buf, (DWORD) len, &nread, NULL)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_READ);
-            tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK "\" offset: %" PRIuOFF
-                                 " read len: %" PRIuSIZE " - %d",
-                                 raw_info->images[idx], rel_offset, len,
-                                 (int) GetLastError());
+            tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
+                "\" offset: %" PRIuOFF " read len: %" PRIuSIZE " - %d",
+                raw_info->images[idx], rel_offset, len,
+                (int) GetLastError());
             return -1;
         }
         cnt = (ssize_t) nread;
@@ -141,27 +142,26 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         if (lseek(cimg->fd, rel_offset, SEEK_SET) != rel_offset) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-            tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK "\" offset %" PRIuOFF
-                                 " seek - %s", raw_info->images[idx], rel_offset,
-                                 strerror(errno));
+            tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
+                "\" offset %" PRIuOFF " seek - %s", raw_info->images[idx],
+                rel_offset, strerror(errno));
             return -1;
         }
         cimg->seek_pos = rel_offset;
     }
-    
+
     cnt = read(cimg->fd, buf, len);
     if (cnt < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
-        tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK "\" offset: %" PRIuOFF
-                             " read len: %" PRIuSIZE " - %s",
-                             raw_info->images[idx], rel_offset, len,
-                             strerror(errno));
+        tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK "\" offset: %"
+            PRIuOFF " read len: %" PRIuSIZE " - %s", raw_info->images[idx],
+            rel_offset, len, strerror(errno));
         return -1;
     }
 #endif
     cimg->seek_pos += cnt;
-    
+
     return cnt;
 }
 
@@ -185,29 +185,30 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 {
     IMG_RAW_INFO *raw_info = (IMG_RAW_INFO *) img_info;
     int i;
-    
+
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-                    "raw_read: byte offset: %" PRIuOFF " len: %" PRIuSIZE "\n",
-                    offset, len);
+            "raw_read: byte offset: %" PRIuOFF " len: %" PRIuSIZE "\n",
+            offset, len);
     }
-    
+
     if (offset > img_info->size) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-        tsk_error_set_errstr("raw_read: offset %" PRIuOFF " too large", offset);
+        tsk_error_set_errstr("raw_read: offset %" PRIuOFF " too large",
+            offset);
         return -1;
     }
-    
+
     // Find the location of the offset
     for (i = 0; i < raw_info->num_img; i++) {
-        
+
         /* Does the data start in this image? */
         if (offset < raw_info->max_off[i]) {
             TSK_OFF_T rel_offset;
             size_t read_len;
             ssize_t cnt;
-            
+
             /* Get the offset relative to this image segment */
             if (i > 0) {
                 rel_offset = offset - raw_info->max_off[i - 1];
@@ -215,76 +216,75 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
             else {
                 rel_offset = offset;
             }
-            
+
             /* Get the length to read */
             if ((raw_info->max_off[i] - offset) >= len)
                 read_len = len;
             else
                 read_len = (size_t) (raw_info->max_off[i] - offset);
-            
-            
+
+
             if (tsk_verbose) {
                 tsk_fprintf(stderr,
-                            "raw_read: found in image %d relative offset: %"
-                            PRIuOFF " len: %" PRIuOFF "\n", i, rel_offset,
-                            read_len);
+                    "raw_read: found in image %d relative offset: %"
+                    PRIuOFF " len: %" PRIuOFF "\n", i, rel_offset,
+                    read_len);
             }
-            
-            cnt = raw_read_segment(raw_info, i, buf, read_len,
-                                   rel_offset);
+
+            cnt = raw_read_segment(raw_info, i, buf, read_len, rel_offset);
             if (cnt < 0) {
                 return -1;
             }
             if ((TSK_OFF_T) cnt != read_len) {
                 return cnt;
             }
-            
+
             /* read from the next image segment(s) if needed */
             if (((TSK_OFF_T) cnt == read_len) && (read_len != len)) {
                 ssize_t cnt2;
-                
+
                 len -= read_len;
-                
+
                 while (len > 0) {
                     /* go to the next image segment */
                     i++;
-                    
+
                     if (raw_info->max_off[i] -
                         raw_info->max_off[i - 1] >= len)
                         read_len = len;
                     else
                         read_len = (size_t)
-                        (raw_info->max_off[i] -
-                         raw_info->max_off[i - 1]);
-                    
+                            (raw_info->max_off[i] -
+                            raw_info->max_off[i - 1]);
+
                     if (tsk_verbose) {
                         tsk_fprintf(stderr,
-                                    "raw_read: additional image reads: image %d len: %"
-                                    PRIuOFF "\n", i, read_len);
+                            "raw_read: additional image reads: image %d len: %"
+                            PRIuOFF "\n", i, read_len);
                     }
-                    
+
                     cnt2 = raw_read_segment(raw_info, i, &buf[cnt],
-                                            read_len, 0);
+                        read_len, 0);
                     if (cnt2 < 0) {
                         return -1;
                     }
                     cnt += cnt2;
-                    
+
                     if ((TSK_OFF_T) cnt2 != read_len) {
                         return cnt;
                     }
-                    
+
                     len -= cnt2;
                 }
             }
             return cnt;
         }
     }
-    
+
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-    tsk_error_set_errstr("raw_read: offset %" PRIuOFF " not found in any segments",
-                         offset);
+    tsk_error_set_errstr("raw_read: offset %" PRIuOFF
+        " not found in any segments", offset);
 
     return -1;
 }
@@ -302,24 +302,26 @@ raw_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 {
     IMG_RAW_INFO *raw_info = (IMG_RAW_INFO *) img_info;
     int i;
-    
+
     tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
     tsk_fprintf(hFile, "Image Type: raw\n");
     tsk_fprintf(hFile, "\nSize in bytes: %" PRIuOFF "\n", img_info->size);
-    
-    if ( raw_info->num_img > 1 ) {
-        tsk_fprintf(hFile, "\n--------------------------------------------\n");
+
+    if (raw_info->num_img > 1) {
+        tsk_fprintf(hFile,
+            "\n--------------------------------------------\n");
         tsk_fprintf(hFile, "Split Information:\n");
-        
+
         for (i = 0; i < raw_info->num_img; i++) {
-            tsk_fprintf(hFile, "%" PRIttocTSK "  (%" PRIuOFF " to %" PRIuOFF ")\n",
-                        raw_info->images[i],
-                        (TSK_OFF_T) (i == 0) ? 0 : raw_info->max_off[i - 1],
-                        (TSK_OFF_T) (raw_info->max_off[i] - 1));
+            tsk_fprintf(hFile,
+                "%" PRIttocTSK "  (%" PRIuOFF " to %" PRIuOFF ")\n",
+                raw_info->images[i],
+                (TSK_OFF_T) (i == 0) ? 0 : raw_info->max_off[i - 1],
+                (TSK_OFF_T) (raw_info->max_off[i] - 1));
         }
     }
-    
+
     return;
 }
 
@@ -343,7 +345,7 @@ raw_close(TSK_IMG_INFO * img_info)
             close(raw_info->cache[i].fd);
 #endif
     }
-    for(i = 0; i < raw_info->num_img; i++){
+    for (i = 0; i < raw_info->num_img; i++) {
         if (raw_info->images[i])
             free(raw_info->images[i]);
     }
@@ -353,7 +355,7 @@ raw_close(TSK_IMG_INFO * img_info)
         free(raw_info->images);
     if (raw_info->cptr)
         free(raw_info->cptr);
-    
+
     tsk_img_free(raw_info);
 }
 
@@ -362,94 +364,87 @@ raw_close(TSK_IMG_INFO * img_info)
  * Get the size in bytes of the given file.
  *
  * @param a_file The file to test
+ * @param is_winobj 1 if the file is a windows object and not a real file
  *
  * @return the size in bytes, or -1 on error/unknown,
  *         -2 if unreadable, -3 if it's a directory.
  */
 static TSK_OFF_T
-get_size(const TSK_TCHAR *a_file)
+get_size(const TSK_TCHAR * a_file, uint8_t is_winobj)
 {
     TSK_OFF_T size = -1;
     struct STAT_STR sb;
-    int is_winobj = 0;
-    
-#if defined(TSK_WIN32) || defined(__CYGWIN__)
-    if ((a_file[0] == _TSK_T('\\'))
-        && (a_file[1] == _TSK_T('\\'))
-        && (a_file[2] == _TSK_T('.'))
-        && (a_file[3] == _TSK_T('\\'))) {
-        is_winobj = 1;
-    }
-#endif
 
     if (TSTAT(a_file, &sb) < 0) {
         if (is_winobj) {
             /* stat can fail for Windows objects; ignore that */
             if (tsk_verbose) {
                 tsk_fprintf(stderr,
-                            "raw_open: ignoring stat result on Windows device %" PRIttocTSK "\n",
-                            a_file);
+                    "raw_open: ignoring stat result on Windows device %"
+                    PRIttocTSK "\n", a_file);
             }
-        } else {
+        }
+        else {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_STAT);
-            tsk_error_set_errstr("raw_open: image \"%" PRIttocTSK "\" - %s",
-                                 a_file, strerror(errno));
+            tsk_error_set_errstr("raw_open: image \"%" PRIttocTSK
+                "\" - %s", a_file, strerror(errno));
             return -2;
         }
     }
     else if ((sb.st_mode & S_IFMT) == S_IFDIR) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
-        tsk_error_set_errstr("raw_open: image \"%" PRIttocTSK "\" - is a directory",
-                             a_file);
+        tsk_error_set_errstr("raw_open: image \"%" PRIttocTSK
+            "\" - is a directory", a_file);
         return -3;
     }
 
 #ifdef TSK_WIN32
+    {
     HANDLE fd;
     DWORD dwHi, dwLo;
-    
+
     if ((fd = CreateFile(a_file, FILE_READ_DATA,
-                         FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) ==
+                FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) ==
         INVALID_HANDLE_VALUE) {
-        
+
         // if it is a device, try with SHARE_WRITE
         if (is_winobj) {
             if (tsk_verbose) {
                 tsk_fprintf(stderr,
-                            "raw_open: trying Windows device with share_write mode\n");
+                    "raw_open: trying Windows device with share_write mode\n");
             }
-            
+
             fd = CreateFile(a_file, FILE_READ_DATA,
-                            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                            OPEN_EXISTING, 0, NULL);
+                FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                OPEN_EXISTING, 0, NULL);
         }
-        
+
         if (fd == INVALID_HANDLE_VALUE) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
             // print string of commonly found errors
             if (GetLastError() == ERROR_ACCESS_DENIED) {
                 tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                                     "\" - access denied", a_file);
+                    "\" - access denied", a_file);
             }
             else if (GetLastError() == ERROR_SHARING_VIOLATION) {
                 tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                                     "\" - sharing violation", a_file);
+                    "\" - sharing violation", a_file);
             }
             else if (GetLastError() == ERROR_FILE_NOT_FOUND) {
                 tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                                     "\" - file not found", a_file);
+                    "\" - file not found", a_file);
             }
             else {
                 tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                                     "\" - (error %d)", a_file, (int) GetLastError());
+                    "\" - (error %d)", a_file, (int) GetLastError());
             }
             return -2;
         }
     }
-    
+
     /* We need different techniques to determine the size of Windows physical
      * devices versus normal files */
     if (is_winobj == 0) {
@@ -458,56 +453,57 @@ get_size(const TSK_TCHAR *a_file)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
             tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                                 "\" - GetFileSize: %d", a_file, (int) GetLastError());
+                "\" - GetFileSize: %d", a_file, (int) GetLastError());
             size = -1;
-        } else {
+        }
+        else {
             size = dwLo | ((TSK_OFF_T) dwHi << 32);
         }
     }
     else {
         DISK_GEOMETRY pdg;
         DWORD junk;
-        
+
         if (FALSE == DeviceIoControl(fd, IOCTL_DISK_GET_DRIVE_GEOMETRY,
-                                     NULL, 0, &pdg, sizeof(pdg), &junk,
-                                     (LPOVERLAPPED) NULL)) {
+                NULL, 0, &pdg, sizeof(pdg), &junk, (LPOVERLAPPED) NULL)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
             tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                                 "\" - DeviceIoControl: %d", a_file, (int) GetLastError());
+                "\" - DeviceIoControl: %d", a_file, (int) GetLastError());
             size = -1;
-        } else {
+        }
+        else {
             size = pdg.Cylinders.QuadPart *
-            (TSK_OFF_T) pdg.TracksPerCylinder *
-            (TSK_OFF_T) pdg.SectorsPerTrack *
-            (TSK_OFF_T) pdg.BytesPerSector;
+                (TSK_OFF_T) pdg.TracksPerCylinder *
+                (TSK_OFF_T) pdg.SectorsPerTrack *
+                (TSK_OFF_T) pdg.BytesPerSector;
         }
     }
-    
+
     CloseHandle(fd);
-    
+    }
 #else
-    
+
     int fd;
-    
+
     if ((fd = open(a_file, O_RDONLY | O_BINARY)) < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK "\" - %s",
-                             a_file, strerror(errno));
+            a_file, strerror(errno));
         return -2;
     }
-    
+
 #ifdef __APPLE__
     /* OS X doesn't support SEEK_END on char devices */
     if ((sb.st_mode & S_IFMT) != S_IFCHR) {
         size = lseek(fd, 0, SEEK_END);
     }
-    
+
     if (size <= 0) {
         int blkSize;
         long long blkCnt;
-        
+
         if (ioctl(fd, DKIOCGETBLOCKSIZE, &blkSize) >= 0) {
             if (ioctl(fd, DKIOCGETBLOCKCOUNT, &blkCnt) >= 0) {
                 size = blkCnt * (long long) blkSize;
@@ -519,11 +515,11 @@ get_size(const TSK_TCHAR *a_file)
      * devices and such */
     size = lseek(fd, 0, SEEK_END);
 #endif
-    
+
     close(fd);
-    
+
 #endif
-    
+
     return size;
 }
 
@@ -540,28 +536,29 @@ get_size(const TSK_TCHAR *a_file)
  */
 TSK_IMG_INFO *
 raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
-         unsigned int a_ssize)
+    unsigned int a_ssize)
 {
     IMG_RAW_INFO *raw_info;
     TSK_IMG_INFO *img_info;
     int i;
     int is_winobj = 0;
-    
+    TSK_OFF_T first_seg_size;
+
     if ((raw_info =
-         (IMG_RAW_INFO *) tsk_img_malloc(sizeof(IMG_RAW_INFO))) == NULL)
+            (IMG_RAW_INFO *) tsk_img_malloc(sizeof(IMG_RAW_INFO))) == NULL)
         return NULL;
-    
+
     img_info = (TSK_IMG_INFO *) raw_info;
-    
+
     img_info->itype = TSK_IMG_TYPE_RAW;
     img_info->read = raw_read;
     img_info->close = raw_close;
     img_info->imgstat = raw_imgstat;
-    
+
     img_info->sector_size = 512;
     if (a_ssize)
         img_info->sector_size = a_ssize;
-    
+
 #if defined(TSK_WIN32) || defined(__CYGWIN__)
     /* determine if this is the path to a Windows device object */
     if ((a_images[0][0] == _TSK_T('\\'))
@@ -571,58 +568,63 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
         is_winobj = 1;
     }
 #endif
-    
+
     /* Check that the first image file exists and is not a directory */
-    TSK_OFF_T first_seg_size = get_size(a_images[0]);
-    if ( first_seg_size < -1 ) {
+    first_seg_size = get_size(a_images[0], is_winobj);
+    if (first_seg_size < -1) {
         tsk_img_free(raw_info);
         return NULL;
     }
-    
+
     /* see if there are more of them... */
     if ((a_num_img == 1) && !is_winobj) {
-        if ((raw_info->images = tsk_img_findFiles(a_images[0], &raw_info->num_img)) == NULL) {
+        if ((raw_info->images =
+                tsk_img_findFiles(a_images[0],
+                    &raw_info->num_img)) == NULL) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_STAT);
-            tsk_error_set_errstr("raw_open: could not find segment files starting at \"%" PRIttocTSK "\"",
-                                 a_images[0]);
+            tsk_error_set_errstr
+                ("raw_open: could not find segment files starting at \"%"
+                PRIttocTSK "\"", a_images[0]);
             tsk_img_free(raw_info);
             return NULL;
         }
     }
     else {
         raw_info->num_img = a_num_img;
-        raw_info->images = (TSK_TCHAR **) tsk_malloc(sizeof(TSK_TCHAR *) * a_num_img);
+        raw_info->images =
+            (TSK_TCHAR **) tsk_malloc(sizeof(TSK_TCHAR *) * a_num_img);
         if (raw_info->images == NULL) {
             tsk_img_free(raw_info);
             return NULL;
         }
-        
-        for (i=0; i < raw_info->num_img; i++) {
+
+        for (i = 0; i < raw_info->num_img; i++) {
             size_t len = TSTRLEN(a_images[i]);
-            raw_info->images[i] = (TSK_TCHAR *) tsk_malloc(sizeof(TSK_TCHAR) * (len+1));
+            raw_info->images[i] =
+                (TSK_TCHAR *) tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
             if (raw_info->images[i] == NULL) {
                 int j;
-                for (j=0; j<i; j++) {
+                for (j = 0; j < i; j++) {
                     free(raw_info->images[j]);
                 }
                 free(raw_info->images);
                 tsk_img_free(raw_info);
                 return NULL;
             }
-            TSTRNCPY(raw_info->images[i], a_images[i], len+1);
+            TSTRNCPY(raw_info->images[i], a_images[i], len + 1);
         }
     }
-    
+
     /* sanity check: when we have multiple segments, the size of
      * each must be known */
-    if ( (raw_info->num_img > 1) && (first_seg_size < 0) ) {
+    if ((raw_info->num_img > 1) && (first_seg_size < 0)) {
         if (tsk_verbose) {
             tsk_fprintf(stderr,
-                        "raw_open: file size is unknown in a segmented raw image\n");
+                "raw_open: file size is unknown in a segmented raw image\n");
         }
-        
-        for (i=0; i < raw_info->num_img; i++) {
+
+        for (i = 0; i < raw_info->num_img; i++) {
             free(raw_info->images[i]);
         }
         free(raw_info->images);
@@ -633,7 +635,7 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     /* initialize the split cache */
     raw_info->cptr = (int *) tsk_malloc(raw_info->num_img * sizeof(int));
     if (raw_info->cptr == NULL) {
-        for (i=0; i < raw_info->num_img; i++) {
+        for (i = 0; i < raw_info->num_img; i++) {
             free(raw_info->images[i]);
         }
         free(raw_info->images);
@@ -641,16 +643,16 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
         return NULL;
     }
     memset((void *) &raw_info->cache, 0,
-           SPLIT_CACHE * sizeof(IMG_SPLIT_CACHE));
+        SPLIT_CACHE * sizeof(IMG_SPLIT_CACHE));
     raw_info->next_slot = 0;
-    
+
     /* initialize the offset table and re-use the first segment
      * size gathered above */
     raw_info->max_off =
-    (TSK_OFF_T *) tsk_malloc(raw_info->num_img * sizeof(TSK_OFF_T));
+        (TSK_OFF_T *) tsk_malloc(raw_info->num_img * sizeof(TSK_OFF_T));
     if (raw_info->max_off == NULL) {
         free(raw_info->cptr);
-        for (i=0; i < raw_info->num_img; i++) {
+        for (i = 0; i < raw_info->num_img; i++) {
             free(raw_info->images[i]);
         }
         free(raw_info->images);
@@ -662,46 +664,46 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     raw_info->cptr[0] = -1;
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-                    "raw_open: segment: 0  size: %" PRIuOFF "  max offset: %"
-                    PRIuOFF "  path: %" PRIttocTSK "\n", first_seg_size,
-                    raw_info->max_off[0], raw_info->images[0]);
+            "raw_open: segment: 0  size: %" PRIuOFF "  max offset: %"
+            PRIuOFF "  path: %" PRIttocTSK "\n", first_seg_size,
+            raw_info->max_off[0], raw_info->images[0]);
     }
-    
+
     /* get size info for each file - we do not open each one because that
      * could cause us to run out of file decsriptors when we only need a few.
      * The descriptors are opened as needed */
     for (i = 1; i < raw_info->num_img; i++) {
-
+        TSK_OFF_T size; 
         raw_info->cptr[i] = -1;
-        TSK_OFF_T size = get_size(raw_info->images[i]);
-        if ( size < 0 ) {
-            if ( size == -1 ) {
+        size = get_size(raw_info->images[i], is_winobj);
+        if (size < 0) {
+            if (size == -1) {
                 if (tsk_verbose) {
                     tsk_fprintf(stderr,
-                                "raw_open: file size is unknown in a segmented raw image\n");
+                        "raw_open: file size is unknown in a segmented raw image\n");
                 }
             }
             free(raw_info->cptr);
-            for (i=0; i < raw_info->num_img; i++) {
+            for (i = 0; i < raw_info->num_img; i++) {
                 free(raw_info->images[i]);
             }
             free(raw_info->images);
             tsk_img_free(raw_info);
             return NULL;
         }
-        
+
         /* add the size of this image to the total and save the current max */
         img_info->size += size;
         raw_info->max_off[i] = img_info->size;
-        
+
         if (tsk_verbose) {
             tsk_fprintf(stderr,
-                        "raw_open: segment: %d  size: %" PRIuOFF "  max offset: %"
-                        PRIuOFF "  path: %" PRIttocTSK "\n", i, size,
-                        raw_info->max_off[i], raw_info->images[i]);
+                "raw_open: segment: %d  size: %" PRIuOFF "  max offset: %"
+                PRIuOFF "  path: %" PRIttocTSK "\n", i, size,
+                raw_info->max_off[i], raw_info->images[i]);
         }
     }
-    
+
     return img_info;
 }
 
@@ -718,7 +720,7 @@ tsk_img_malloc(size_t a_len)
     //init lock
     tsk_init_lock(&(imgInfo->cache_lock));
     imgInfo->tag = TSK_IMG_INFO_TAG;
-    
+
     return (void *) imgInfo;
 }
 
@@ -730,10 +732,10 @@ void
 tsk_img_free(void *a_ptr)
 {
     TSK_IMG_INFO *imgInfo = (TSK_IMG_INFO *) a_ptr;
-    
+
     //deinit lock
     tsk_deinit_lock(&(imgInfo->cache_lock));
     imgInfo->tag = 0;
-    
+
     free(imgInfo);
 }

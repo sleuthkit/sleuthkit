@@ -67,15 +67,17 @@ public class FileSystem extends AbstractContent{
 
 	/**
 	 * read data from the filesystem
+	 * @param buf buffer to read to
 	 * @param offset offset in bytes from the start of the filesystem
 	 * @param len how many bytes to read
-	 * @return the bytes
+	 * @return number bytes read, or -1 if error
 	 * @throws TskException
 	 */
 	@Override
-	public byte[] read(long offset, long len) throws TskException{
-		return SleuthkitJNI.readFs(getFileSystemHandle(), offset, len);
+	public int read(byte[] buf, long offset, long len) throws TskException{
+		return SleuthkitJNI.readFs(getFileSystemHandle(), buf, offset, len);
 	}
+	
 
 	/**
 	 * get the parent volume
@@ -180,11 +182,7 @@ public class FileSystem extends AbstractContent{
 
 	@Override
 	public List<Content> getChildren() throws TskException {
-		try {
-			return db.getFileSystemChildren(this);
-		} catch (SQLException ex) {
-			throw new TskException("Error while getting FileSystem children.", ex);
-		}
+		return db.getFileSystemChildren(this);
 	}
 
 	@Override

@@ -21,6 +21,7 @@
 
 // Framework includes
 #include "Services/TskImgDB.h"
+#include "Services/TskBlackboardArtifact.h"
 
 /**
  * An interface that is used to represent a file. This interface
@@ -35,56 +36,73 @@ class TSK_FRAMEWORK_API TskFile
 public:
 	virtual ~TskFile();
 
-    // Returns the file id.
+    /** Returns the file id.
+     */
     uint64_t id() const;
 
-    // Get the type id
+    /** Get the type id
+     */
     int typeId() const;
 
-    // Get the name
+    /** Get the name
+     */
     std::string name() const;
 
-    // Get the extension
+    /** Get the extension
+    */
     std::string extension() const;
 
-    // Get the parent file id
+    /** Get the parent file id
+    */
     uint64_t parentFileId() const;
 
-    // Get the directory type
-    int dirType() const;
+    /** Get the directory type
+    */
+    TSK_FS_NAME_TYPE_ENUM dirType() const;
 
-    // Get the metadata flags
-    int metaType() const;
+    /** Get the metadata flags
+    */
+    TSK_FS_META_TYPE_ENUM metaType() const;
 
-    // Get the directory flags
-    int dirFlags() const;
+    /** Get the directory flags
+    */
+    TSK_FS_NAME_FLAG_ENUM dirFlags() const;
 
-    // Get the metadata flags
-    int metaFlags() const;
+    /** Get the metadata flags
+    */
+    TSK_FS_META_FLAG_ENUM metaFlags() const;
 
-    // Get the file size
-    uint64_t size() const;
+    /** Get the file size
+    */
+    TSK_OFF_T size() const;
 
-    // Get the change time
-    int ctime() const;
+    /** Get the change time
+     */
+    time_t ctime() const;
 
-    // Get the creation time
-    int crtime() const;
+    /** Get the creation time
+    */
+    time_t crtime() const;
 
-    // Get the access time
-    int atime() const;
+    /** Get the last access time
+    */
+    time_t atime() const;
 
-    // Get the modify time
-    int mtime() const;
+    /** Get the modify time
+    */
+    time_t mtime() const;
 
-    // Get the mode
-    int mode() const;
+    /** Get the mode
+    */
+    TSK_FS_META_MODE_ENUM  mode() const;
 
-    // Get the user id
-    int uid() const;
+    /** Get the user id
+    */
+    TSK_UID_T uid() const;
 
-    // Get the group id
-    int gid() const;
+    /** Get the group id
+    */
+    TSK_GID_T gid() const;
 
     // Get the status
     int status() const;
@@ -137,7 +155,21 @@ public:
     /// Set the file status, also update the ImgDB file status
     virtual void setStatus(TskImgDB::FILE_STATUS status);
 
-    virtual std::vector<TskBlackboardRecord> TskFile::getBlackboardRecords();
+    //Blackboard methods
+    virtual TskBlackboardArtifact createArtifact(int artifactTypeID);
+    virtual TskBlackboardArtifact createArtifact(TSK_ARTIFACT_TYPE type);
+    virtual TskBlackboardArtifact createArtifact(string artifactTypeName);
+    virtual vector<TskBlackboardArtifact> getArtifacts(string artifactTypeName);
+    virtual vector<TskBlackboardArtifact> getArtifacts(int artifactTypeID);
+    virtual vector<TskBlackboardArtifact> getArtifacts(TSK_ARTIFACT_TYPE type);
+    virtual vector<TskBlackboardArtifact> getAllArtifacts();
+    virtual vector<TskBlackboardAttribute> getAttributes(string attributeTypeName);
+    virtual vector<TskBlackboardAttribute> getAttributes(int attributeTypeID);
+    virtual vector<TskBlackboardAttribute> getAttributes(TSK_ATTRIBUTE_TYPE type);
+    virtual vector<TskBlackboardAttribute> getAllAttributes();
+    virtual TskBlackboardArtifact getGenInfo();
+    virtual void addGenInfoAttribute(TskBlackboardAttribute attr);
+
 
     std::string fullPath() const;
 protected:

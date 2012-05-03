@@ -51,7 +51,7 @@ public class ReadContentInputStream extends InputStream {
     public int read(byte[] b, int off, int len) throws IOException {
         
         // must return 0 for zero-length arrays
-        if (b.length == 0) {
+        if (b.length == 0 || len == 0) {
             return 0;
         }
         
@@ -63,17 +63,15 @@ public class ReadContentInputStream extends InputStream {
         if (position < length) {
             // data remains to be read
             
-            int lenToRead = (int) Math.min(len, length - position);
+            final int lenToRead = (int) Math.min(len, length - position);
         
             try {
-                byte[] buff = content.read(position, lenToRead);
-                int lenRead = buff.length;
+				final int lenRead = content.read(b, position, lenToRead);
 
-                if (lenRead == 0) {
-                    // TSK could not read the whole file, ending partway
+                if (lenRead == 0 || lenRead == -1) {
+                    //error or no more bytes to read, report EOF
                     return -1;
                 } else {
-                    System.arraycopy(buff, 0, b, off, lenRead);
                     position += lenRead;
                     return lenRead;
                 }

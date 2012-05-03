@@ -186,7 +186,6 @@ tsk_img_open(int num_img,
 
     switch (type) {
     case TSK_IMG_TYPE_RAW:
-
             img_info = raw_open(num_img, images, a_ssize);
             break;
 

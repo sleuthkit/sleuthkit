@@ -109,16 +109,11 @@ uint8_t TSKAutoImpl::scanImgForFs(const uint64_t sect_start, const uint64_t sect
                                   TSK_VS_PART_FLAG_UNALLOC);
             }
 
-            // The call to findFilesInFs will take care of creating a
-            // dummy volume for the file system.
-            if (findFilesInFs(fs_info) == TSK_ERR)
-            {
-                std::wstringstream msg;
-                msg << L"TSKAutoImpl::scanImgForFs - Error finding files: "
-                    << tsk_error_get();
-                tsk_error_reset();
-                LOGERROR(msg.str());
-            }
+            /* The call to findFilesInFs will take care of creating a
+             * dummy volume for the file system.*/
+            /* errors encountered during this phase will have been
+             * logged. */
+            findFilesInFs(fs_info);
 
             // Move the current offset past the file system we just found.
             current_offset += ((fs_info->block_count + 1) * fs_info->block_size);
@@ -206,17 +201,20 @@ TSK_FILTER_ENUM TSKAutoImpl::filterFs(TSK_FS_INFO * a_fsInfo)
 }
 
 /* Insert the file data into the file table.
- * Returns 0 on success or -1 on error.
+ * @returns OK on success, COR on error because of the data (and we should keep on processing more files), 
+ * and ERR because of system error (and we shoudl proabably stop processing)
  */
-int TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
+TSK_RETVAL_ENUM TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
     const TSK_FS_ATTR * a_fsAttr, const char * a_path, uint64_t & fileId)
 {
     int type = 0;
     int idx = 0;
     fileId = 0;
 
-    if (a_fsFile->name == NULL)
-        return -1;
+    if (a_fsFile->name == NULL) {
+        LOGERROR(L"TSKAutoImpl::insertFileData name value is NULL");
+        return TSK_COR;
+    }
 
     size_t attr_len = 0;
     if (a_fsAttr) {
@@ -238,7 +236,8 @@ int TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
     size_t nlen = 2 * (len + attr_len);
     if ((name = (char *) malloc(nlen + 1)) == NULL)
     {
-        return -1;
+        LOGERROR(L"Error allocating memory");
+        return TSK_ERR;
     }
     memset(name, 0, nlen+1);
 
@@ -277,10 +276,22 @@ int TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
 
     int result = m_db.addFsFileInfo(m_curFsId, a_fsFile, name, type, idx, fileId, a_path);
     free(name);
-    return 0;
+
+    // Message was already logged
+    if (result) {
+        return TSK_COR;
+    }
+    
+    if (TskServices::Instance().getScheduler().schedule(Scheduler::FileAnalysis, fileId, fileId)) {
+        LOGERROR(L"Error adding file for scheduling");
+        return TSK_COR;
+    }
+    return TSK_OK;
 }
 
 
+/* Based on the error handling design, we only return OK or STOP.  All
+ * other errors have been handled, so we don't return ERROR to TSK. */
 TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_path)
 {
     // skip the . and .. dirs
@@ -294,21 +305,27 @@ TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_
     // process the attributes if there are more than 1
     if (tsk_fs_file_attr_getsize(a_fsFile) == 0)
     {
-        retval = TSK_OK;
         uint64_t fileId;
-        if (insertFileData(a_fsFile, NULL, a_path, fileId) == -1)
-            retval = TSK_ERR;
-        else
+        // If COR is returned, then keep on going. 
+        if (insertFileData(a_fsFile, NULL, a_path, fileId) == TSK_ERR) {
+            retval = TSK_STOP;
+        }
+        else {
             m_numFilesSeen++;
+            retval = TSK_OK;
+        }
     }
     else
     {
         retval = processAttributes(a_fsFile, a_path);
     }
 
+    // @@@ This seems like a bug...
+    static time_t lastCheck = m_startTime;
     time_t timeNow = time(NULL);
-    if (timeNow - m_startTime > 3600)
+    if ((timeNow - lastCheck) > 3600)
     {
+        lastCheck = timeNow;
         std::wstringstream msg;
         msg << L"TSKAutoImpl::processFile : Processed " << m_numFilesSeen << " files.";
         LOGINFO(msg.str());
@@ -318,17 +335,20 @@ TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_
     return retval;
 }
 
-void TSKAutoImpl::handleNotification(const char * a_msg)
+uint8_t TSKAutoImpl::handleError()
 {
     // @@@ Possibly test tsk_errno to determine how the message should be logged.
     std::wstringstream msg;
-    msg << L"TskAutoImpl::handleNotification " << a_msg;
+    msg << L"TskAutoImpl::handleError " << tsk_errror_get();
 
     LOGWARN(msg.str());
+    return 0;
 }
 
 
 
+/* Based on the error handling design, we only return OK or STOP.  All
+ * other errors have been handled, so we don't return ERROR to TSK. */
 TSK_RETVAL_ENUM TSKAutoImpl::processAttribute(TSK_FS_FILE * a_fsFile,
     const TSK_FS_ATTR * a_fsAttr, const char * a_path)
 {
@@ -337,8 +357,9 @@ TSK_RETVAL_ENUM TSKAutoImpl::processAttribute(TSK_FS_FILE * a_fsFile,
     // add the file metadata for the default attribute type
     if (isDefaultType(a_fsFile, a_fsAttr))
     {
-        if (insertFileData(a_fsAttr->fs_file, a_fsAttr, a_path, mFileId) == -1)
-            return TSK_ERR;
+        // if COR is returned, then keep on going.
+        if (insertFileData(a_fsAttr->fs_file, a_fsAttr, a_path, mFileId) == TSK_ERR)
+            return TSK_STOP;
     }
 
     // add the block map, if the file is non-resident
@@ -354,7 +375,8 @@ TSK_RETVAL_ENUM TSKAutoImpl::processAttribute(TSK_FS_FILE * a_fsFile,
             
             if (m_db.addFsBlockInfo(m_curFsId, mFileId, count++, run->addr, run->len))
             {
-                return TSK_ERR;
+                // this error should have been logged.
+                // we'll continue to try processing the file
             }
         }
     }

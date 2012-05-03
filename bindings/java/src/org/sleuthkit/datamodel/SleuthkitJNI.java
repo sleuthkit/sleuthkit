@@ -19,6 +19,9 @@
 
 package org.sleuthkit.datamodel;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Interfaces with the sleuthkit c/c++ libraries to read data from image files
  */
@@ -38,7 +41,7 @@ public class SleuthkitJNI {
 
 	
 	//load image
-	private static native long initAddImgNat(long db, String timezone) throws TskException;
+	private static native long initAddImgNat(long db, String timezone, boolean noFatFsOrphans) throws TskException;
 	private static native void runAddImgNat(long process, String[] imgPath, int splits) throws TskException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
 	private static native void stopAddImgNat(long process) throws TskException;
 	private static native void revertAddImgNat(long process) throws TskException;
@@ -51,11 +54,11 @@ public class SleuthkitJNI {
 	private static native long openFileNat(long fsHandle, long fileId) throws TskException;
  
 	//read functions
-	private static native byte[] readImgNat(long imgHandle, long offset, long len) throws TskException;
-	private static native byte[] readVsNat(long vsHandle, long offset, long len) throws TskException;
-	private static native byte[] readVolNat(long volHandle, long offset, long len) throws TskException;
-	private static native byte[] readFsNat(long fsHandle, long offset, long len) throws TskException;
-	private static native byte[] readFileNat(long fileHandle, long offset, long len) throws TskException;
+	private static native int readImgNat(long imgHandle, byte[] readBuffer, long offset, long len) throws TskException;
+	private static native int readVsNat(long vsHandle, byte[] readBuffer, long offset, long len) throws TskException;
+	private static native int readVolNat(long volHandle, byte[] readBuffer, long offset, long len) throws TskException;
+	private static native int readFsNat(long fsHandle, byte[] readBuffer, long offset, long len) throws TskException;
+	private static native int readFileNat(long fileHandle, byte[] readBuffer, long offset, long len) throws TskException;
 
 	//close functions
 	private static native void closeImgNat(long imgHandle);
@@ -69,7 +72,7 @@ public class SleuthkitJNI {
 
 	static {
 		try {
-			System.loadLibrary("zlib1");
+			System.loadLibrary("zlib");
 			System.loadLibrary("libewf");
 		}
 		catch (UnsatisfiedLinkError e) {
@@ -85,6 +88,11 @@ public class SleuthkitJNI {
 
 	public static class CaseDbHandle {
 		private long caseDbPointer;
+		
+		//map concat. image paths to cached image handle
+		private static final Map<String,Long> imageHandleCache = new HashMap<String,Long>(); 
+		//map image and offsets to cached fs handle
+		private static final Map<Long,Map<Long,Long>> fsHandleCache = new HashMap<Long,Map<Long,Long>>();
 		
 		private CaseDbHandle(long pointer) {
 			this.caseDbPointer = pointer;
@@ -117,10 +125,12 @@ public class SleuthkitJNI {
 		/**
 		 * Start the process of adding a disk image to the case. 
 		 * @param timezone Timezone that image was from
+		 * @param noFatFsOrphans true if to skip processing of orphans on FAT filesystems 
+		 * 
 		 * @return Object that can be used to manage the process.
 		 */
-		AddImageProcess initAddImageProcess(String timezone) {
-			return new AddImageProcess(timezone);
+		AddImageProcess initAddImageProcess(String timezone, boolean noFatFsOrhpans) {
+			return new AddImageProcess(timezone, noFatFsOrhpans);
 		}
 		
 		/**
@@ -130,10 +140,12 @@ public class SleuthkitJNI {
 		 */
 		public class AddImageProcess {
 			String timezone;
+			boolean noFatFsOrphans;
 			long autoDbPointer;
 			
-			private AddImageProcess(String timezone) {
+			private AddImageProcess(String timezone, boolean noFatFsOrphans) {
 				this.timezone = timezone;
+				this.noFatFsOrphans = noFatFsOrphans;
 				autoDbPointer = 0;
 			}
 			
@@ -148,7 +160,7 @@ public class SleuthkitJNI {
 					throw new TskException("AddImgProcess:run: AutoDB pointer is already set");
 				}
 				
-				autoDbPointer = initAddImgNat(caseDbPointer, timezone);
+				autoDbPointer = initAddImgNat(caseDbPointer, timezone, noFatFsOrphans);
 				runAddImgNat(autoDbPointer, imgPath, imgPath.length);
 			}
 			
@@ -244,12 +256,30 @@ public class SleuthkitJNI {
 
 	/**
 	 * open the image and return the image info pointer
-	 * @param imageDirs the paths to the images
+	 * @param imageFiles the paths to the images
 	 * @return the image info pointer
 	 * @throws TskException
 	 */
-	public static long openImage(String[] imageDirs) throws TskException{
-		return openImgNat(imageDirs, imageDirs.length);
+	public synchronized static long openImage(String[] imageFiles) throws TskException{
+		long imageHandle = 0;
+		
+		StringBuilder keyBuilder = new StringBuilder();
+		for (int i=0; i<imageFiles.length; ++i)
+			keyBuilder.append(imageFiles[i]);
+		final String imageKey = keyBuilder.toString();
+		
+		if (CaseDbHandle.imageHandleCache.containsKey(imageKey) )
+			//get from cache
+			imageHandle = CaseDbHandle.imageHandleCache.get(imageKey);
+		else {
+			//open new handle and cache it
+			imageHandle = openImgNat(imageFiles, imageFiles.length);
+			CaseDbHandle.fsHandleCache.put(imageHandle, new HashMap<Long,Long>());
+			CaseDbHandle.imageHandleCache.put(imageKey, imageHandle);
+		}
+
+		return imageHandle;
+		
 	}
 
 	/**
@@ -281,8 +311,19 @@ public class SleuthkitJNI {
 	 * @return pointer to a fsHandle structure in the sleuthkit
 	 * @throws TskException  
 	 */
-	public static long openFs(long imgHandle, long fsOffset) throws TskException{
-		return openFsNat(imgHandle, fsOffset);
+	public synchronized static long openFs(long imgHandle, long fsOffset) throws TskException{
+		long fsHandle = 0;
+		final Map<Long,Long> imgOffSetToFsHandle = CaseDbHandle.fsHandleCache.get(imgHandle);
+		if (imgOffSetToFsHandle.containsKey(fsOffset)) {
+			//return cached
+			fsHandle = imgOffSetToFsHandle.get(fsOffset);
+		}
+		else {
+			fsHandle = openFsNat(imgHandle, fsOffset);
+			//cache it
+			imgOffSetToFsHandle.put(fsOffset, fsHandle);
+		}
+		return fsHandle;
 	}
 
 	/**
@@ -300,61 +341,67 @@ public class SleuthkitJNI {
 	/**
 	 * reads data from an image
 	 * @param imgHandle 
+	 * @param readBuffer buffer to read to
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
-	 * @return an array of characters (bytes of data)
+	 * @return the number of characters read, or -1 if the end of the stream has been reached 
 	 * @throws TskException  
 	 */
-	public static byte[] readImg(long imgHandle, long offset, long len) throws TskException{
+	public static int readImg(long imgHandle, byte[] readBuffer, long offset, long len) throws TskException{
 		//returned byte[] is the data buffer
-		return readImgNat(imgHandle, offset, len);
+		return readImgNat(imgHandle, readBuffer, offset, len);
 	}
 	/**
 	 * reads data from an volume system
 	 * @param vsHandle pointer to a volume system structure in the sleuthkit
+	 * @param readBuffer buffer to read to
 	 * @param offset sector offset in the image to start at
 	 * @param len amount of data to read
-	 * @return an array of characters (bytes of data)
+	 * @return the number of characters read, or -1 if the end of the stream has been reached 
 	 * @throws TskException  
 	 */
-	public static byte[] readVs(long vsHandle, long offset, long len) throws TskException{
-		return readVsNat(vsHandle, offset, len);
+	public static int readVs(long vsHandle, byte[] readBuffer, long offset, long len) throws TskException{
+		return readVsNat(vsHandle, readBuffer, offset, len);
 	}
 	/**
 	 * reads data from an volume
 	 * @param volHandle pointer to a volume structure in the sleuthkit
+	 * @param readBuffer buffer to read to
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
-	 * @return an array of characters (bytes of data)
+	 * @return the number of characters read, or -1 if the end of the stream has been reached 
 	 * @throws TskException  
 	 */
-	public static byte[] readVsPart(long volHandle, long offset, long len) throws TskException{
+	public static int readVsPart(long volHandle, byte[] readBuffer, long offset, long len) throws TskException{
 		//returned byte[] is the data buffer
-		return readVolNat(volHandle, offset, len);
+		return readVolNat(volHandle, readBuffer, offset, len);
 	}
 	/**
 	 * reads data from an file system
 	 * @param fsHandle pointer to a file system structure in the sleuthkit
+	 * @param readBuffer buffer to read to
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
-	 * @return an array of characters (bytes of data)
+	 * @return the number of characters read, or -1 if the end of the stream has been reached 
 	 * @throws TskException  
 	 */
-	public static byte[] readFs(long fsHandle, long offset, long len) throws TskException{
+	public static int readFs(long fsHandle, byte[] readBuffer, long offset, long len) throws TskException{
 		//returned byte[] is the data buffer
-		return readFsNat(fsHandle, offset, len);
+		return readFsNat(fsHandle, readBuffer, offset, len);
 	}
+	
+	
 	/**
 	 * reads data from an file
 	 * @param fileHandle pointer to a file structure in the sleuthkit
+	 * @param readBuffer pre-allocated buffer to read to
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
-	 * @return an array of characters (bytes of data)
+	 * @return the number of characters read, or -1 if the end of the stream has been reached 
 	 * @throws TskException  
 	 */
-	public static byte[] readFile(long fileHandle, long offset, long len) throws TskException{
-		//returned byte[] is the data buffer
-		return readFileNat(fileHandle, offset, len);
+	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskException {
+		return readFileNat(fileHandle, readBuffer, offset, len);
 	}
 
 	//free pointers
@@ -364,7 +411,9 @@ public class SleuthkitJNI {
 	 * @param imgHandle 
 	 */
 	public static void closeImg(long imgHandle){
-		closeImgNat(imgHandle);
+		//@@@ TODO close the image handle when Case is closed instead
+		//currently the image handle is not being freed, it's cached for duration of the application
+		//closeImgNat(imgHandle); 
 	}
 	/**
 	 * frees the vsHandle pointer
@@ -379,7 +428,9 @@ public class SleuthkitJNI {
 	 * @param fsHandle pointer to file system structure in sleuthkit
 	 */
 	public static void closeFs(long fsHandle){
-		closeFsNat(fsHandle);
+		//@@@ TODO close the fs handle when Case is closed instead
+		//currently the fs handle is not being freed, it's cached for duration of the application
+		//closeFsNat(fsHandle);
 	}
 	/**
 	 * frees the fileHandle pointer

@@ -14,6 +14,10 @@ New Features:
 - Added hash calculation and lookup to AutoDB and JNI.
 - Upgraded SQLite to 3.7.9. 
 - Added Framework in (windows-only)
+- EnCase hash support
+- Libewf v2 support (it is now non-beta)
+- First file in a raw split or E01 can be specified and the rest of the files
+  are found. 
 
 Bug Fixes:
 - Relaxed checking when conflict exists between DOS and GPT partitions.
@@ -1780,3 +1784,4 @@ integer value.
 - removed file system types of linux1 and linux2 and linux
 - added file system type of linux-ext2 (as ext3 is becoming more popular)
 - bug in file command that reported seek error for object files and STDIN
+

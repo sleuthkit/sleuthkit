@@ -162,7 +162,10 @@ main(int argc, char **argv1)
     autoDb->hashFiles(calcHash);
 
     if (autoDb->startAddImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
-        tsk_error_print(stderr);
+        std::vector<TskAuto::error_record> errors = autoDb->getErrorList();
+        for (size_t i = 0; i < errors.size(); i++) {
+            fprintf(stderr, "Error: %s\n", TskAuto::errorRecordToString(errors[i]).c_str());
+        } 
         exit(1);
     }
 

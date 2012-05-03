@@ -19,39 +19,10 @@
 #include "Services/TskServices.h"
 #include "Poco/UnicodeConverter.h"
 #include "Poco/Util/MapConfiguration.h"
+#include "Poco/Util/XMLConfiguration.h"
 #include "Utilities/TskException.h"
+#include "Utilities/TskUtilities.h"
 #include <sstream>
-
-/* NOTE that the below comments are the only documentation about
- * the official properties.  Anything added to this list must be
- * documented. */
-
-/** Root output directory that all modules can write to. Should be a
- * shared location if framework is being used in a distributed environment. */
-const std::wstring TskSystemPropertiesImpl::OUT_DIR = L"OUT_DIR";
-
-/// Directory where program using the framework is installed.  Used during search for modules. 
-const std::wstring TskSystemPropertiesImpl::PROG_DIR = L"PROG_DIR";
-
-/// Directory where configuration files and data can be found. 
-const std::wstring TskSystemPropertiesImpl::CONFIG_DIR = L"CONFIG_DIR";
-
-/// Directory where plug-in and executable modules can be found.
-const std::wstring TskSystemPropertiesImpl::MODULE_DIR = L"MODULE_DIR";
-
-/// Path to the pipeline config file being used. 
-const std::wstring TskSystemPropertiesImpl::PIPELINE_CONFIG = L"PIPELINE_CONFIG_FILE";
-
-/// Hostname of central database (if one is being used)
-const std::wstring TskSystemPropertiesImpl::DB_HOST = L"DB_HOST";
-
-/// port of central database (if one is being used)
-const std::wstring TskSystemPropertiesImpl::DB_PORT = L"DB_PORT";
-
-/** ID of this session.  The intended use of this is in a distributed
- * environment that is processing multiple images at the same time.  Each
- * image would have a unique session ID. */
-const std::wstring TskSystemPropertiesImpl::SESSION_ID = L"SESSION_ID";
 
 std::wstring TskSystemPropertiesImpl::get(std::wstring name) const
 {
@@ -107,9 +78,28 @@ void TskSystemPropertiesImpl::initialize(Poco::Util::AbstractConfiguration & abs
     m_abstractConfig = &abstractConfig;
 }
 
+void TskSystemPropertiesImpl::initialize(const std::wstring configfile) 
+{
+    // This gets wrapped in an AutoPtr and will be automatically
+    // freed during destruction.
+    Poco::Util::XMLConfiguration * pXMLConfig = 
+        new Poco::Util::XMLConfiguration(TskUtilities::toUTF8(configfile));
+    initialize(*pXMLConfig);
+}
+
+void TskSystemPropertiesImpl::initialize(const char *configfile) 
+{
+    // This gets wrapped in an AutoPtr and will be automatically
+    // freed during destruction.
+    Poco::Util::XMLConfiguration * pXMLConfig = 
+        new Poco::Util::XMLConfiguration(configfile);
+    initialize(*pXMLConfig);
+}
+
 void TskSystemPropertiesImpl::initialize()
 {
-    // @@@ Need to make sure someone frees this....
+    // This gets wrapped in an AutoPtr and will be automatically
+    // freed during destruction.
     Poco::Util::MapConfiguration *pMapConfig =
         new Poco::Util::MapConfiguration();
     initialize(*pMapConfig);

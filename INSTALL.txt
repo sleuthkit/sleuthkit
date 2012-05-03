@@ -18,8 +18,8 @@ Tested Platform:
 
 Build System:
 - C/C++ compiler
-- Java compiler / JDK
 - GNU Make
+- Java compiler / JDK (if you want the java bindings)
 
 Optional Programs:
 - Autopsy: Provides a graphical HTML-based interface to The

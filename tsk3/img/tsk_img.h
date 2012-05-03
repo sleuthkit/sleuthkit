@@ -56,13 +56,15 @@ extern "C" {
         TSK_IMG_TYPE_DETECT = 0x0000,   ///< Use autodetection methods
 
         TSK_IMG_TYPE_RAW = 0x0001,      ///< Raw disk image (single or split)
+        TSK_IMG_TYPE_RAW_SING = TSK_IMG_TYPE_RAW, ///< Raw single (backward compatibility) depreciated
+        TSK_IMG_TYPE_RAW_SPLIT = TSK_IMG_TYPE_RAW, ///< Raw single (backward compatibility) depreciated
 
-        TSK_IMG_TYPE_AFF_AFF = 0x0002,  ///< AFF AFF Format
-        TSK_IMG_TYPE_AFF_AFD = 0x0004,  ///< AFD AFF Format
-        TSK_IMG_TYPE_AFF_AFM = 0x0008,  ///< AFM AFF Format
-        TSK_IMG_TYPE_AFF_ANY = 0x0010,  ///< Any format supported by AFFLIB (including beta ones)
+        TSK_IMG_TYPE_AFF_AFF = 0x0004,  ///< AFF AFF Format
+        TSK_IMG_TYPE_AFF_AFD = 0x0008,  ///< AFD AFF Format
+        TSK_IMG_TYPE_AFF_AFM = 0x0010,  ///< AFM AFF Format
+        TSK_IMG_TYPE_AFF_ANY = 0x0020,  ///< Any format supported by AFFLIB (including beta ones)
 
-        TSK_IMG_TYPE_EWF_EWF = 0x0020,  ///< EWF version
+        TSK_IMG_TYPE_EWF_EWF = 0x0040,  ///< EWF version
 
         TSK_IMG_TYPE_UNSUPP = 0xffff,   ///< Unsupported disk image type
     } TSK_IMG_TYPE_ENUM;

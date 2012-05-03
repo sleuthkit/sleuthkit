@@ -34,6 +34,9 @@ TskFileAnalysisPipeline::~TskFileAnalysisPipeline()
 
 void TskFileAnalysisPipeline::run(const uint64_t fileId)
 {
+    if (m_modules.size() == 0)
+        return;
+
     // Get a file object for the given fileId
     std::auto_ptr<TskFile> file(TskFileManagerImpl::instance().getFile(fileId));
 
@@ -43,6 +46,9 @@ void TskFileAnalysisPipeline::run(const uint64_t fileId)
 
 void TskFileAnalysisPipeline::run(TskFile* file)
 {
+    if (m_modules.size() == 0)
+        return;
+
     if (file == NULL)
     {
         LOGERROR(L"TskFileAnalysisPipeline::run - Passed NULL file pointer.");

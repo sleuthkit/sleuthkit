@@ -31,6 +31,8 @@
 #include "tsk3/vs/tsk_vs.h"
 #include "tsk3/fs/tsk_fs.h"
 
+#include <string>
+#include <vector>
 
 
 #define TSK_AUTO_TAG 0x9191ABAB
@@ -40,6 +42,7 @@ typedef enum {
     TSK_FILTER_STOP = 0x01,     ///< Framework should stop processing the image
     TSK_FILTER_SKIP = 0x02,     ///< Framework should skip this object and go on to the next
 } TSK_FILTER_ENUM;
+
 
 /** \ingroup autolib
  * C++ class that automatically analyzes a disk image to extract files from it.  This class
@@ -52,6 +55,10 @@ typedef enum {
  * An image file must be first opened using openImage().  It can then be analyzed using one
  * of the findFilesInXXXX() methods.  The filterXX() methods can be used to skip volumes
  * and file systems. 
+ *
+ * This class, by default, will not stop if an error occurs.  It registers the error into an 
+ * internal list. Those can be retrieved with getErrorList().  If you want to deal with errors
+ * differently, you must implement handleError(). 
  */
 class TskAuto {
   public:
@@ -69,6 +76,11 @@ class TskAuto {
     virtual void closeImage();
 
     TSK_OFF_T getImageSize() const;
+    /**
+     * Returns true if all processing and recursion should stop. 
+     */
+    bool getStopProcessing() const;
+    
     uint8_t findFilesInImg();
     uint8_t findFilesInVs(TSK_OFF_T start);
     uint8_t findFilesInVs(TSK_OFF_T start, TSK_VS_TYPE_ENUM vtype);
@@ -124,28 +136,66 @@ class TskAuto {
      * The setFileFilterFlags() method can be used to set the criteria for what types of
      * files this should be called for. There are several methods, such as isDir() that
      * can be used by this method to help focus in on the files that you care about. 
+     * When errors are encountered, send them to registerError(). 
      *
      * @param fs_file file  details
      * @param path full path of parent directory
-     * @returns Whether to stop processing, an error occured, or if the processing should continue
+     * @returns STOP or OK. All error must have been registered. 
      */
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
         const char *path) = 0;
 
+    
     /**
-     * TskAuto calls this method when it encounters issues while processing an image,
-     * e.g. when opening various volume and file systems fail. This method allows users
-     * of the TskAuto class to choose an appropriate mechanism to present this information.
-     * The implementation of this method in the base class is a no-op.
+     * Internal method that TskAuto calls when it encounters issues while processing an image.
+     * It will add the error to an internal list and then call handleError() to allow the
+     * sub-class to decide what to do with the error.
+     * The tsk global error values must be set before this is called (tsk_error_set_errno, etc.).
+     * This method will reset the error values before it returns.
      *
-     * @param msg A text message describing the issue that was encountered.
-     */
-    virtual void handleNotification(const char *msg) {
+     * @returns 1 if the caller should stop processing (registerError() implementation should
+     * also call setStopProcessing() to ensure all processes stop) or 0 if they should continue. 
+     */    
+    uint8_t registerError();
+    
+    struct error_record {
+        int code;
+        std::string msg1;
+        std::string msg2;
     };
+    
+    /**
+     * Get the list of errors that were added to 
+     * the internal list.  This list could be empty 
+     * if the implementign class already acted on 
+     * the errors or never called addToErrorList().
+     * @returns list of errors.
+     */
+    const std::vector<error_record> getErrorList();
+    
+    /**
+     * Remove the errors on the internal list.
+     */
+    void resetErrorList();
+    
+    static std::string errorRecordToString(error_record &rec);
+    
 
+    /**
+     * Override this method to get called for each error that 
+     * is registered. This method allows you to log the message
+     * or stop processing. Use setStopProcessing() to do that.
+     *
+     * @return 1 to stop the processing flow and 0 to continue. 
+     */
+    virtual uint8_t handleError() {
+        return 0;
+    };
+    
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
     TSK_FS_DIR_WALK_FLAG_ENUM m_fileFilterFlags;
+    std::vector<error_record> m_errors;
 
     static TSK_WALK_RET_ENUM dirWalkCb(TSK_FS_FILE * fs_file,
         const char *path, void *ptr);
@@ -158,6 +208,8 @@ class TskAuto {
   protected:
     TSK_IMG_INFO * m_img_info;
     bool m_internalOpen;        ///< True if m_img_info was opened in TskAuto and false if passed in
+    bool m_stopAllProcessing;   ///< True if no further processing should occur
+    
     uint8_t isNtfsSystemFiles(TSK_FS_FILE * fs_file, const char *path);
     uint8_t isFATSystemFiles(TSK_FS_FILE * fs_file);
     uint8_t isDotDir(TSK_FS_FILE * fs_file, const char *path);
@@ -167,7 +219,7 @@ class TskAuto {
         const TSK_FS_ATTR * fs_attr);
     uint8_t isNonResident(const TSK_FS_ATTR * fs_attr);
 
-
+    
     TSK_RETVAL_ENUM processAttributes(TSK_FS_FILE * fs_file,
         const char *path);
 
@@ -181,12 +233,17 @@ class TskAuto {
      * @param fs_file File being analyzed.
      * @param fs_attr Attribute of the file.
      * @param path full path of parent directory
-     * @returns Whether to stop processing, an error occured, or if the processing should continue. 
+     * @returns STOP or OK. All error must have been registered.  
      */
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR * fs_attr, const char *path) {
         return TSK_OK;
     };
+    
+    /**
+     * When called, will cause TskAuto to not continue to recurse into directories and volumes. 
+     */
+    void setStopProcessing(); 
 };
 
 

@@ -76,7 +76,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(LIBEWF_HOME)msvscpp\release\libewf.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;copy &quot;$(LIBEWF_HOME)msvscpp\zlib\zlib1.dll&quot; &quot;$(OutDir)&quot;"
+				CommandLine="copy &quot;$(LIBEWF_HOME)msvscpp\release\libewf.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;IF EXIST &quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot; (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;) ELSE (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\zlib\zlib1.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;)&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -140,7 +140,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(LIBEWF_HOME)msvscpp\release\libewf.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;copy &quot;$(LIBEWF_HOME)msvscpp\zlib\zlib1.dll&quot; &quot;$(OutDir)&quot;"
+				CommandLine="copy &quot;$(LIBEWF_HOME)msvscpp\release\libewf.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;IF EXIST &quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot; (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;) ELSE (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\zlib\zlib1.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;)&#x0D;&#x0A;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -601,6 +601,10 @@
 			Name="hash"
 			>
 			<File
+				RelativePath="..\..\tsk3\hashdb\encase_index.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\tsk3\hashdb\hk_index.c"
 				>
 			</File>
@@ -670,14 +674,6 @@
 			</File>
 			<File
 				RelativePath="..\..\tsk3\img\raw.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tsk3\img\split.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tsk3\img\split.h"
 				>
 			</File>
 			<File

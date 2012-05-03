@@ -15,6 +15,7 @@
 #include <Windows.h>
 
 #include "framework.h"
+#include "Services/TskSystemPropertiesImpl.h"
 
 #include "Poco/AutoPtr.h"
 #include "Poco/Path.h"
@@ -117,7 +118,7 @@ bool ValidatePipeline::isValid(const char *a_configPath) const
                     result = true;
             }
         } catch (Poco::XML::SAXParseException& ex) {
-            fprintf(stdout, "Error parsing pipeline config file: %s\n", a_configPath);
+            fprintf(stderr, "Error parsing pipeline config file: %s (%s)\n", a_configPath, ex.what());
         }
 
     }
@@ -168,14 +169,13 @@ int main(int argc, char **argv)
     TskServices::Instance().setLog(log);
 
     std::wstring progDirPath = getProgDir();
-    Poco::AutoPtr<Poco::Util::XMLConfiguration> pXMLConfig = new Poco::Util::XMLConfiguration(frameworkConfigPath);
 
     // Initialize properties based on the config file. Do this to shutdown noise in validation.
     TskSystemPropertiesImpl systemProperties;
-    systemProperties.initialize(*pXMLConfig);
+    systemProperties.initialize(frameworkConfigPath);
     TskServices::Instance().setSystemProperties(systemProperties);
 
-    TSK_SYS_PROP_SET(TskSystemPropertiesImpl::PROG_DIR, progDirPath); 
+    TSK_SYS_PROP_SET(TskSystemProperties::PROG_DIR, progDirPath); 
 
     ValidatePipeline vp;
     bool valid = vp.isValid(pipelineConfigPath);

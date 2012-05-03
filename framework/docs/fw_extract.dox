@@ -1,0 +1,39 @@
+/*! \page fw_extract_page Extraction Phase and Populating the Database
+
+\section fw_extract_over Overview
+As outlined on the main page, there are three phases to the framework:
+- File Extraction: Where files are added to database for later analysis.
+- File Analysis: Where files are analyzed
+- Post Processing / Reporting: Where results are merged and final results are created. 
+
+This section of the document focuses on the first phase: extraction.  It describes how to get disk image contents into a database for later analysis.
+
+\section fw_extract_db Database
+The framework requires a database to store the results and file data.  As described in \ref fw_setup_min_serv Section, an instance of TskImgDB needs to be created.   Refer to that section and the implementation class documents for more details. 
+
+\section fw_extract_fs File System Files
+To get files from a disk image into the database, you will use an implementation of the TskImageFile interface.  The framework comes with a Sleuth Kit-based implementation in TskImageFileTsk.   Refer to the previous \ref fw_setup_min_serv Section for details on creating one of them and finding an implementation.
+
+After creating an instance of TskImageFile and calling one of the TskImageFile.open() methods, the TskImageFile.extractFiles() method is called.  This will analyze the partitions and files in the image and add all of its results to the TskImgDB instance that was registered with TskServices. 
+
+Note that TskImageFile should be calling Scheduler with a TaskType.FileAnalysis task for each file that it extracts so that the file can be later analyzed. 
+
+\section fw_extract_carve Carving Files
+The TskImageFile.extractFiles() method does not perform file carving.  To do that, you must perform additional work.  Note that the framework currently comes with interfaces for carving, but does not have implementations. 
+
+The CarvePrep interface focuses on getting data ready for carving.  Specifically this step will create one or more "unallocated images" that will be later carved.  TskImageDB.getFreeSectors() can be used to determine which sectors are not being used by files. 
+
+The CarvePrep implementation should be calling Scheduler with a TaskType.Carve task for each unallocated image file that it creates that needs to be carved.  The framework requires that each unallocated image file to be carved is assigned an ID.  You can get one by calling TskImageDB.addUnallocImg(). 
+
+TskImageDB has methods for storing information on what goes into each unallocated image file.  The TskImageDB.addAllocUnallocMapInfo() method will maintain a table in the database so that a file carved from the unallocated image file can be mapped to its location in the original image file. 
+
+The framework does not impose any requirements on where the unallocated image files must be stored (or if they are stored at all).  However, the later carving procedures must know how to find the unallocated image data based only on its ID.
+
+Carving is done using an implementation of CarveExtract.  This interface gets the unallocated image ID passed into it.   It must know how to find the unallocated image file. 
+
+For each carved file, that is found from the CarveExtract.processFile() method, it must be added to the database with TskImgDB.addCarvedFileInfo() and scheduled for analysis with Scheduler. TskImgDB.getUnallocRun() is used to map the location in the unallocated image to the original image. 
+
+\section fw_extract_conc Summary
+Before the files can be analyzed, they must be added to TskImgDB.  TskImgFile deals with the file system-based files and CarvePrep and CarveExtract deal with the carved files.  After the files are in the database, they can be analyzed in a pipeline.
+
+*/

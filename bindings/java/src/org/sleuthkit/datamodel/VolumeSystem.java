@@ -54,12 +54,13 @@ public class VolumeSystem extends AbstractContent {
 	
 	//byte offset
 	@Override
-	public byte[] read(long offset, long len) throws TskException{
+	public int read(byte[] readBuffer, long offset, long len) throws TskException{
 		if(volumeSystemHandle == 0){
 			volumeSystemHandle = SleuthkitJNI.openVs(this.getParent().getImageHandle(), imgOffset);
 		}
-		return SleuthkitJNI.readVs(volumeSystemHandle, offset, len);
+		return SleuthkitJNI.readVs(volumeSystemHandle, readBuffer, offset, len);
 	}
+	
 	
 	/**
 	 * get the sleuthkit database object

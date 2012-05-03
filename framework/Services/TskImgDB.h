@@ -22,50 +22,28 @@
 #include "framework_i.h"
 #include "Utilities/SectorRuns.h"
 #include "Utilities/UnallocRun.h"
+#include "TskBlackboardAttribute.h"
+#include "TskBlackboard.h"
+#include "TskBlackboardArtifact.h"
 
 using namespace std;
 
+class TskArtifactNames;
+class TskAttributeNames;
+
 typedef uint64_t artifact_t;
 
-/**
- * Contains data from a file record in the database.
- */
-struct TskFileRecord
-{
-    uint64_t fileId;
-    int typeId;
-    std::string name;
-    uint64_t parentFileId;
-    int dirType;
-    int metaType;
-    int dirFlags;
-    int metaFlags;
-    uint64_t size;
-    int ctime;
-    int crtime;
-    int atime;
-    int mtime;
-    int mode;
-    int uid;
-    int gid;
-    int status;
-    std::string md5;
-    std::string sha1;
-    std::string sha2_256;
-    std::string sha2_512;
-    std::string fullPath;
-};
 
 /**
  * Contains data from a volume/partition record in the database.
  */
 struct TskVolumeInfoRecord
 {
-    int vol_id;
-    uint64_t sect_start;
-    uint64_t sect_len;
+    uint64_t vol_id;
+    TSK_DADDR_T sect_start;
+    TSK_DADDR_T sect_len;
     std::string description;
-    int flags;
+    TSK_VS_PART_FLAG_ENUM flags;
 };
 
 /**
@@ -73,15 +51,15 @@ struct TskVolumeInfoRecord
  */
 struct TskFsInfoRecord
 {
-    int fs_id;
-    uint64_t img_byte_offset;
-    int vol_id;
-    int fs_type;
-    int block_size;
-    uint64_t block_count;
-    uint64_t root_inum;
-    uint64_t first_inum;
-    uint64_t last_inum;
+    uint64_t fs_id;
+    TSK_OFF_T img_byte_offset;
+    uint64_t vol_id;
+    TSK_FS_TYPE_ENUM  fs_type;
+    unsigned int block_size;
+    TSK_DADDR_T block_count;
+    TSK_INUM_T root_inum;
+    TSK_INUM_T first_inum;
+    TSK_INUM_T last_inum;
 };
 
 struct TskFileTypeRecord
@@ -91,48 +69,9 @@ struct TskFileTypeRecord
     uint64_t count; // count of files with this extension.
 };
 
-/**
- * Contains data about the module return status for a given file (as recorded in the database)
- */
-struct TskModuleStatus
-{
-    uint64_t file_id;
-    std::string module_name;
-    int status;
-};
-
-/**
- * Contains data for a blackboard entry for a given file and artifact ID
- */
-struct TskBlackboardRecord
-{
-    artifact_t artifactId;
-    uint64_t fileId;    ///< File that this information pertains to.
-    string attribute; ///< Name / type of the data being stored. Standard attribute names are defined in TskBlackboard
-    string source;  ///< Name of the module that added this data
-    string context; ///< Optional string that provides more context about the data.  For example, it may have "Last Printed" if the entry is a DATETIME entry about when a document was last printed.
-    int valueType; ///< Type of data being stored
-    int32_t valueInt32;
-    int64_t valueInt64;
-    string valueString;
-    double valueDouble;
-    vector<unsigned char> valueByte;
-
-    TskBlackboardRecord(artifact_t a_artifactId, uint64_t a_fileId, string a_attribute, string a_source, string a_context)
-        : artifactId(a_artifactId), fileId(a_fileId), attribute(a_attribute), source(a_source), context(a_context)
-    {
-    }
-    TskBlackboardRecord() {}
-};
-
-/**
- * Contains data about the current status for an unallocated chunk of data.
- */
-struct TskUnallocImgStatusRecord
-{
-    int unallocImgId;
-    int status; // UNALLOC_IMG_STATUS
-};
+struct TskModuleStatus;
+struct TskBlackboardRecord;
+struct TskUnallocImgStatusRecord;
 
 /**
  * Contains data about the mapping of data in the unallocated chunks back
@@ -142,9 +81,9 @@ struct TskAllocUnallocMapRecord
 {
     int vol_id;
     int unalloc_img_id;
-    uint64_t unalloc_img_sect_start;
-    uint64_t sect_len;
-    uint64_t orig_img_sect_start;
+    TSK_DADDR_T unalloc_img_sect_start;
+    TSK_DADDR_T sect_len;
+    TSK_DADDR_T orig_img_sect_start;
 };
 
 /**
@@ -153,9 +92,11 @@ struct TskAllocUnallocMapRecord
 struct TskUnusedSectorsRecord
 {
     uint64_t fileId;
-    uint64_t sectStart;
-    uint64_t sectLen;
+    TSK_DADDR_T sectStart;
+    TSK_DADDR_T sectLen;
 };
+
+struct TskFileRecord;
 
 /**
  * Interface for class that implments database storage for an image.
@@ -166,7 +107,7 @@ struct TskUnusedSectorsRecord
 class TSK_FRAMEWORK_API TskImgDB
 {
 public:
-    static enum FILE_TYPES
+    enum FILE_TYPES
     {
         IMGDB_FILES_TYPE_FS = 0,
         IMGDB_FILES_TYPE_CARVED,
@@ -174,7 +115,7 @@ public:
         IMGDB_FILES_TYPE_UNUSED
     };
 
-    static enum FILE_STATUS
+    enum FILE_STATUS
     {
         IMGDB_FILES_STATUS_CREATED = 0,
         IMGDB_FILES_STATUS_READY_FOR_ANALYSIS,
@@ -187,7 +128,7 @@ public:
     /**
      * Files have a 'known' status that is updated
      * with the use of hash databases. */
-    static enum KNOWN_STATUS
+    enum KNOWN_STATUS
     {
         IMGDB_FILES_KNOWN = 0,  ///< 'Known', but cannot differentiate between good or bad.  NSRL, for example, identifies known, but does not assign a good or bad status. 
         IMGDB_FILES_KNOWN_GOOD,  ///< Known to be good / safely ignorable.
@@ -196,7 +137,7 @@ public:
     };
 
     /// Hash types supported by framework
-    static enum HASH_TYPE 
+    enum HASH_TYPE 
     {
         MD5 = 0,    ///< 128-bit MD5
         SHA1,       ///< 160-bit SHA1
@@ -205,7 +146,7 @@ public:
     };
 
     /// Data types that can be stored in blackboard
-    static enum VALUE_TYPE
+    enum VALUE_TYPE
     {
         BB_VALUE_TYPE_BYTE = 0, ///< Single byte
         BB_VALUE_TYPE_STRING,   ///< String 
@@ -214,7 +155,7 @@ public:
         BB_VALUE_TYPE_DOUBLE    ///< double floating point
     };
 
-    static enum UNALLOC_IMG_STATUS
+    enum UNALLOC_IMG_STATUS
     {
         IMGDB_UNALLOC_IMG_STATUS_CREATED = 0,
         IMGDB_UNALLOC_IMG_STATUS_SCHEDULE_OK,
@@ -260,7 +201,23 @@ public:
                                         const bool isDirectory, const uint64_t size, const std::string& details,
                                         const int ctime, const int crtime, const int atime, const int mtime, uint64_t & fileId, std::string path) = 0;
     virtual int addFsBlockInfo(int fsID, uint64_t a_mFileId, int count, uint64_t blk_addr, uint64_t len) = 0;
-    virtual int addAllocUnallocMapInfo(int unallocVolID, int unallocImgID, uint64_t unallocImgStart, uint64_t length, uint64_t origImgStart) = 0;
+
+    /**
+     * Add information about how the unallocated images were created so that we can 
+     later 
+     * map where data was recovered from. This is typically used by CarvePrep and the results are 
+     * used by CarveExtract via getUnallocRun(). 
+     * @param a_volID Volume ID that the data was extracted from.
+     * @param unallocImgID ID of the unallocated image that the sectors were copied into. 
+     * @param unallocImgStart Sector offset of where in the unallocated image that t
+     he run starts.
+     * @param length Number of sectors that are in the run.
+     * @param origImgStart Sector offset in the original image (relative to start of
+        image) where the run starts  
+     * @returns 1 on errror
+     */
+    virtual int addAllocUnallocMapInfo(int a_volID, int unallocImgID, uint64_t unallocImgStart, uint64_t length, uint64_t origImgStart) = 0;
+
     virtual int getSessionID() const = 0;
     virtual int getFileIds(char *a_fileName, uint64_t *a_outBuffer, int a_buffSize) const = 0;
     virtual int getNumFiles() const = 0;
@@ -275,47 +232,49 @@ public:
     virtual int getImageInfo(int & type, int & sectorSize) const = 0;
     virtual int getVolumeInfo(std::list<TskVolumeInfoRecord> & volumeInfoList) const = 0;
     virtual int getFsInfo(std::list<TskFsInfoRecord> & fsInfoList) const = 0;
+    virtual int getFileInfoSummary(std::list<TskFileTypeRecord>& fileTypeInfoList) const = 0;
     virtual int getFileInfoSummary(FILE_TYPES fileType, std::list<TskFileTypeRecord> & fileTypeInfoList) const = 0;
-    virtual int getKnownStatus(const uint64_t fileId) const = 0;
+    /**
+     * Return the known status of the file with the given id
+     * @param fileId id of the file to get the status of
+     * @returns KNOWN_STATUS or -1 on error
+     */
+    virtual KNOWN_STATUS getKnownStatus(const uint64_t fileId) const = 0;
     
 
-    virtual UnallocRun * getUnallocRun(int file_id, int file_offset) const = 0; 
+    /**
+     * Given an offset in an unallocated image that was created for carving, 
+     * return information about where that data came from in the original image.
+     * This is used to map where a carved file is located in the original image.
+     * 
+     * @param a_unalloc_img_id ID of the unallocated image that you want data about
+     * @param a_file_offset Sector offset where file was found in the unallocated image
+     * @return NULL on error or a run descriptor.  
+     */
+    virtual UnallocRun * getUnallocRun(int a_unalloc_img_id, int a_file_offset) const = 0; 
+
+    /**
+     * Returns a list of the sectors that are not used by files and that
+     * are in unpartitioned space.  Typically this is used by CarvePrep.
+     */
     virtual SectorRuns * getFreeSectors() const = 0;
 
-    virtual int updateFileStatus(uint64_t a_file_id, int a_status) = 0;
-    virtual int updateKnownStatus(uint64_t a_file_id, int a_status) = 0;
+    /**
+     * update the status field in the database for a given file.
+     * @param a_file_id File to update.
+     * @param a_status Status flag to update to.
+     * @returns 1 on error.
+     */
+    virtual int updateFileStatus(uint64_t a_file_id, FILE_STATUS a_status) = 0;
+
+    /**
+     * update the known status field in the database for a given file.
+     * @param a_file_id File to update.
+     * @param a_status Status flag to update to.
+     * @returns 1 on error.
+     */
+    virtual int updateKnownStatus(uint64_t a_file_id, KNOWN_STATUS a_status) = 0;
 	virtual bool dbExist() const = 0;
-
-    // Blackboard read/write methods.
-
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<vector<unsigned char>> & values) const = 0;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<string> & values) const = 0;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<int32_t> & values) const = 0;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<int64_t> & values) const = 0;
-    virtual int getBlackboard(const uint64_t a_file_id, const string & attribute, vector<double> & values) const = 0;
-
-    // Create a new artifact with the given record.
-    virtual artifact_t addBlackboardInfo(const TskBlackboardRecord& blackboardRecord) const = 0;
-
-    virtual void getAllBlackboardRows(const uint64_t fileId, vector<TskBlackboardRecord> & bbRecords ) const = 0;
-    virtual void getAllBlackboardRows(std::string& condition, vector<TskBlackboardRecord> & bbRecords) const = 0;
-
-    // Convenience functions
-
-    // return the valueString field, if valueType is BB_VALUE_TYPE_STRING, otherwise raise exception
-    virtual string toString(const TskBlackboardRecord & rec) const;
-
-    // return the valueInt32 field, if valueType is BB_VALUE_TYPE_INT32, otherwise raise exception
-    virtual int32_t toInt32(const TskBlackboardRecord & rec) const;
-
-    // return the valueInt64 field, if valueType is BB_VALUE_TYPE_INT64, otherwise raise exception
-    virtual int64_t toInt64(const TskBlackboardRecord & rec) const;
-
-    // return the valueDouble field, if valueType is BB_VALUE_TYPE_DOUBLE, otherwise raise exception
-    virtual double toDouble(const TskBlackboardRecord & rec) const;
-
-    // --------------------
-
 
     // Get set of file ids that match the given condition (i.e. SQL where clause)
     virtual std::vector<uint64_t> getFileIds(std::string& condition) const = 0;
@@ -337,7 +296,13 @@ public:
     virtual int getModuleErrors(std::vector<TskModuleStatus> & moduleStatusList) const = 0;
     virtual std::string getFileName(uint64_t file_id) const = 0;
 
+    /**
+     * Used when a new unallocated image file is created for carving. 
+     * @param unallocImgId [out] Stores the unique ID assigned to the image.
+     * @returns -1 on error, 0 on success.
+     */
     virtual int addUnallocImg(int & unallocImgId) = 0;
+
     virtual int setUnallocImgStatus(int unallocImgId, TskImgDB::UNALLOC_IMG_STATUS status) = 0;
     virtual TskImgDB::UNALLOC_IMG_STATUS getUnallocImgStatus(int unallocImgId) const = 0;
     virtual int getAllUnallocImgStatus(std::vector<TskUnallocImgStatusRecord> & unallocImgStatusList) const = 0;
@@ -345,7 +310,111 @@ public:
     virtual int addUnusedSectors(int unallocImgId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList) = 0;
     virtual int getUnusedSector(uint64_t fileId, TskUnusedSectorsRecord & unusedSectorsRecord) const = 0;
 
+	// Quote and escape a string, the returned quoted string can be used as string literal in SQL statement.
+	virtual std::string quote(const std::string str) const = 0;
+
+    friend class TskDBBlackboard;
+
+protected:
+    // Blackboard methods.
+    virtual TskBlackboardArtifact createBlackboardArtifact(uint64_t file_id, int artifactTypeID) = 0;
+    virtual void addBlackboardAttribute(TskBlackboardAttribute attr) = 0;
+    
+    virtual string getArtifactTypeDisplayName(int artifactTypeID) = 0;
+    virtual int getArtifactTypeID(string artifactTypeString) = 0;
+    virtual string getArtifactTypeName(int artifactTypeID) = 0;
+    virtual vector<TskBlackboardArtifact> getMatchingArtifacts(string whereClause) = 0;
+
+    virtual void addArtifactType(int typeID, string artifactTypeName, string displayName) = 0;
+    virtual void addAttributeType(int typeID, string attributeTypeName, string displayName)= 0;
+
+    virtual string getAttributeTypeDisplayName(int attributeTypeID) = 0;
+    virtual int getAttributeTypeID(string attributeTypeString) = 0;
+    virtual string getAttributeTypeName(int attributeTypeID) = 0;
+    virtual vector<TskBlackboardAttribute> getMatchingAttributes(string whereClause) = 0;
+    TskBlackboardAttribute createAttribute(uint64_t artifactID, int attributeTypeID, uint64_t objectID, string moduleName, string context,
+		TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, uint64_t valueLong, double valueDouble, 
+		string valueString, vector<unsigned char> valueBytes);
+    TskBlackboardArtifact createArtifact(uint64_t artifactID, uint64_t objID, int artifactTypeID);
+    virtual map<int, TskArtifactNames> getAllArtifactTypes();
+    virtual map<int, TskAttributeNames> getAllAttributeTypes();
+    virtual vector<int> findAttributeTypes(int artifactTypeId) = 0;
+
 private:
+    
 };
+
+/**
+ * Contains data from a file record in the database.
+ */
+struct TskFileRecord
+{
+    uint64_t fileId;
+    TskImgDB::FILE_TYPES typeId;
+    std::string name;
+    uint64_t parentFileId;
+    TSK_FS_NAME_TYPE_ENUM dirType;
+    TSK_FS_META_TYPE_ENUM metaType;
+    TSK_FS_NAME_FLAG_ENUM dirFlags;
+    TSK_FS_META_FLAG_ENUM metaFlags;
+    TSK_OFF_T size;
+    time_t ctime;
+    time_t crtime;
+    time_t atime;
+    time_t mtime;
+    TSK_FS_META_MODE_ENUM mode;
+    TSK_UID_T uid;
+    TSK_GID_T gid;
+    TskImgDB::FILE_STATUS status;
+    std::string md5;
+    std::string sha1;
+    std::string sha2_256;
+    std::string sha2_512;
+    std::string fullPath;
+};
+
+/**
+ * Contains data about the module return status for a given file (as recorded in the database)
+ */
+struct TskModuleStatus
+{
+    uint64_t file_id;
+    std::string module_name;
+    int status;
+};
+
+/**
+ * Contains data for a blackboard entry for a given file and artifact ID
+ */
+struct TskBlackboardRecord
+{
+    artifact_t artifactId;
+    uint64_t fileId;    ///< File that this information pertains to.
+    string attribute; ///< Name / type of the data being stored. Standard attribute names are defined in TskBlackboard
+    string source;  ///< Name of the module that added this data
+    string context; ///< Optional string that provides more context about the data.  For example, it may have "Last Printed" if the entry is a DATETIME entry about when a document was last printed.
+    TskImgDB::VALUE_TYPE valueType; ///< Type of data being stored
+    int32_t valueInt32;
+    int64_t valueInt64;
+    string valueString;
+    double valueDouble;
+    vector<unsigned char> valueByte;
+
+    TskBlackboardRecord(artifact_t a_artifactId, uint64_t a_fileId, string a_attribute, string a_source, string a_context)
+        : artifactId(a_artifactId), fileId(a_fileId), attribute(a_attribute), source(a_source), context(a_context)
+    {
+    }
+    TskBlackboardRecord() {}
+};
+
+/**
+ * Contains data about the current status for an unallocated chunk of data.
+ */
+struct TskUnallocImgStatusRecord
+{
+    int unallocImgId;
+    TskImgDB::UNALLOC_IMG_STATUS status;
+};
+
 
 #endif

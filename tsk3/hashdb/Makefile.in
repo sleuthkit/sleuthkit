@@ -48,7 +48,7 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libtskhashdb_la_LIBADD =
 am_libtskhashdb_la_OBJECTS = tm_lookup.lo md5sum_index.lo \
-	nsrl_index.lo hk_index.lo idxonly_index.lo
+	nsrl_index.lo hk_index.lo idxonly_index.lo encase_index.lo
 libtskhashdb_la_OBJECTS = $(am_libtskhashdb_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/tsk3@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -197,7 +197,7 @@ AM_CFLAGS = -I../.. -I$(srcdir)/../.. -Wall
 EXTRA_DIST = .indent.pro
 noinst_LTLIBRARIES = libtskhashdb.la
 libtskhashdb_la_SOURCES = tm_lookup.c md5sum_index.c nsrl_index.c \
-    hk_index.c idxonly_index.c tsk_hashdb_i.h
+    hk_index.c idxonly_index.c encase_index.c tsk_hashdb_i.h
 
 all: all-am
 
@@ -250,6 +250,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/encase_index.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hk_index.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/idxonly_index.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5sum_index.Plo@am__quote@

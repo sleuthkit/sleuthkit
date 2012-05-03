@@ -13,6 +13,8 @@ The framework was also designed to be used in a distributed environment so that 
     <li><b>Services:</b> There are core services that the framework provides to the programs that incorporate the framework and to the modules that fit into the framework.  See \ref mod_stuff_services for more details.</li>
 
     <li><b>Pipelines and Plug-in Modules:</b> The framework provides a pipeline infrastructure that modules can be dropped into.  The framework comes with basic modules, but it is expected that other developers will provide modules that can be used.  See the links below on how to build pipelines and modules.</li>
+   
+    <li><b>Blackboard:</b> The framework uses the blackboard to allow modules to communicate. Modules can post results to the blackboard and other modules can query the it for previous findings. See \ref mod_bbpage for more details. </li>
 
     <li><b>Three Phases:</b> The framework has been designed on the idea that there are three major phases to the analysis process:
     <ul>
@@ -25,17 +27,24 @@ The framework was also designed to be used in a distributed environment so that 
 
 To compile the framework, refer to the <tt>BUILDING.TXT</tt> file that comes with the source code.
 
-<h3>Developers Guide to Building Modules</h3>
+<h3>General Concepts</h3>
+The following pages are relevant when developing modules and integrating the framework. 
+
   - \subpage pipeline_config_page
-  - \subpage mod_devpage
   - \subpage mod_bbpage
+
+<h3>Developers Guide to Building Modules</h3>
+The following pages are relevent when developing modules to be used in the framework.
+
+  - \subpage mod_devpage
   - \subpage mod_example_page
 
 <h3>Developers Guide to Using the Framework</h3>
-  - \subpage fw_setup 
-  - Extraction Phase and Populating the Database
-  - Running File Anaysis and Reporting Pipelines
-  - \subpage fw_example_page
+The following pages are relevant when integrating the framework into an existing application. 
 
+  - \subpage fw_setup_page 
+  - \subpage fw_extract_page
+  - \subpage fw_pipeline_page
+  - \subpage fw_example_page
 
 */
