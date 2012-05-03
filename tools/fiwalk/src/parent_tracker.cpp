@@ -23,17 +23,33 @@ int parent_tracker::process_dentry(const TSK_FS_DIR *dir,const TSK_FS_FILE *fs_f
     printf("Dir names_used:%d names_alloc:%d\n", dir->names_used, dir->names_alloc);
 
     int dot_file = is_dot_or_double_dot(fs_file);
-    printf("Dot File? %d\n", dot_file);
+    printf("Dot File? %d, %d\n", dot_file, !dot_file);
     if (!dot_file || parent_stack.empty())
     {
-        this->add_pt_dentry_info(dir);
+        if(parent_stack.empty())
+        {
+            this->add_pt_dentry_info(dir);
+        }
+        else if(fs_file->meta->type & TSK_FS_META_TYPE_DIR)
+        {
+            this->inc_dentry_counter(&parent_stack.top());
+            this->add_pt_dentry_info(dir);
+        }
         this->stat_dentry_stack();
-  //      this->inc_dentry_counter(&parent_stack.top());
-
+        if (dot_file)
+        {
+            this->inc_dentry_counter(&parent_stack.top());
+        }
     }else if(dot_file)
     {
         this->stat_dentry_stack();
         this->inc_dentry_counter(&parent_stack.top());
+    }
+
+    if(parent_stack.top().curr_entry == parent_stack.top().num_used_entries)
+    {
+        printf("Time To Pop?\n");
+        rm_pt_dentry_info();
     }
     this->stat_dentry_stack();
 /*
@@ -99,6 +115,14 @@ int parent_tracker::add_pt_dentry_info(const TSK_FS_DIR *dir){
     return 0;
 }
 
+int parent_tracker::rm_pt_dentry_info(){
+    PT_DENTRY_INFO *d_info = NULL;
+    d_info = &this->parent_stack.top();
+    this->parent_stack.pop();
+    //free(d_info);
+    return 0;
+}
+
 int parent_tracker::stat_dentry_stack(){
     if (this->parent_stack.empty())
     {
@@ -113,8 +137,8 @@ int parent_tracker::stat_dentry_stack(){
 
 int parent_tracker::is_dot_or_double_dot(const TSK_FS_FILE *fs_file){
 
-//DEBUG    printf("Is Dot: %d Is DoubleDot: %d\n", strcmp(fs_file->name->name,"."), strcmp(fs_file->name->name,"..")); //DEBUG
-    if (strcmp(fs_file->name->name,".") == 0 || !strcmp(fs_file->name->name,"..") == 0){
+//    printf("Is Dot: %d Is DoubleDot: %d\n", strcmp(fs_file->name->name,"."), strcmp(fs_file->name->name,"..")); //DEBUG
+    if (strcmp(fs_file->name->name,".") == 0 || strcmp(fs_file->name->name,"..") == 0){
         return 1;
     }
     return 0;

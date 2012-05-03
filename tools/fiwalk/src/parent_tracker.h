@@ -29,6 +29,7 @@ class parent_tracker{
 
     parent_tracker();
     int add_pt_dentry_info(const TSK_FS_DIR *);
+    int rm_pt_dentry_info();
     int stat_dentry_stack();
 
     int process_dentry(const TSK_FS_DIR *, const TSK_FS_FILE *);
