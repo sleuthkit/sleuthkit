@@ -3310,7 +3310,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         "hfs_load_extended_attrs: Uncompressing (inflating) data.");
                                 cmpSize = attributeLength - 16; // subt size of header
                                 // Uncompress the remainder of the attribute, and load as 128-0
-                                char *uncBuf = (uint8_t *) tsk_malloc(uncSize + 100);        // add some extra space
+                                char *uncBuf = (char *) tsk_malloc(uncSize + 100);        // add some extra space
                                 if (uncBuf == NULL) {
                                     error_returned
                                         (" - hfs_load_extended_attrs, space for the uncompressed attr");
