@@ -295,10 +295,10 @@ public:
     virtual std::vector<uint64_t> getUniqueFileIds(HASH_TYPE hashType) const = 0;
     virtual std::vector<uint64_t> getFileIds() const = 0;
 
-    virtual int setHash(uint64_t a_file_id, TskImgDB::HASH_TYPE hashType, const std::string hash) = 0;
-    virtual std::string getCfileName(uint64_t a_file_id) const = 0;
+    virtual int setHash(const uint64_t a_file_id, const TskImgDB::HASH_TYPE hashType, const std::string& hash) const = 0;
+    virtual std::string getCfileName(const uint64_t a_file_id) const = 0;
 
-    virtual int addModule(const std::string name, const std::string description, int & moduleId) = 0;
+    virtual int addModule(const std::string& name, const std::string& description, int & moduleId) = 0;
     virtual int setModuleStatus(uint64_t file_id, int module_id, int status) = 0;
     virtual int getModuleErrors(std::vector<TskModuleStatus> & moduleStatusList) const = 0;
     virtual std::string getFileName(uint64_t file_id) const = 0;

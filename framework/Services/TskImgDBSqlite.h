@@ -99,10 +99,10 @@ public:
     virtual std::vector<uint64_t> getUniqueFileIds(HASH_TYPE hashType) const;
     virtual std::vector<uint64_t> getFileIds() const;
 
-    virtual int setHash(uint64_t a_file_id, TskImgDB::HASH_TYPE hashType, const std::string hash);
-    virtual std::string getCfileName(uint64_t a_file_id) const;
+    virtual int setHash(const uint64_t a_file_id, const TskImgDB::HASH_TYPE hashType, const std::string& hash) const;
+    virtual std::string getCfileName(const uint64_t a_file_id) const;
 
-    virtual int addModule(const std::string name, const std::string description, int & moduleId);
+    virtual int addModule(const std::string& name, const std::string& description, int & moduleId);
     virtual int setModuleStatus(uint64_t file_id, int module_id, int status);
     virtual int getModuleErrors(std::vector<TskModuleStatus> & moduleStatusList) const;
     virtual std::string getFileName(uint64_t file_id) const;
@@ -147,7 +147,6 @@ private:
 
     static int busyHandler(void *, int);
     std::vector<uint64_t> getFileIdsWorker(std::string tableName, const std::string condition = "") const;
-    int getModuleId(const std::string name, int & moduleId) const;
     void constructStmt(std::string& stmt, std::string& condition) const;
     int addUnusedSector(uint64_t sectStart, uint64_t sectEnd, int volId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList);
     int getFileTypeRecords(std::string& stmt, std::list<TskFileTypeRecord>& fileTypeInfoList) const;

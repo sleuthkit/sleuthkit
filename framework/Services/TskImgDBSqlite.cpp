@@ -95,6 +95,9 @@ int TskImgDBSqlite::dropTables()
     sqlite3_exec(m_db, "DROP TABLE module_status", NULL, NULL, &errmsg);
     sqlite3_exec(m_db, "DROP TABLE unalloc_img_status", NULL, NULL, &errmsg);
     sqlite3_exec(m_db, "DROP TABLE unused_sectors", NULL, NULL, &errmsg);
+    sqlite3_exec(m_db, "DROP INDEX attrs_artifact_id", NULL, NULL, &errmsg);
+    sqlite3_exec(m_db, "DROP INDEX attrs_attribute_type", NULL, NULL, &errmsg);
+    sqlite3_exec(m_db, "DROP INDEX attrs_obj_id", NULL, NULL, &errmsg);
 
     return 0;
 }
@@ -264,7 +267,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- MODULES
-    stmt = "CREATE TABLE modules (module_id INTEGER, name TEXT PRIMARY KEY, description TEXT)";
+    stmt = "CREATE TABLE modules (module_id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, description TEXT)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) {
         _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating module table: %S", errmsg);
         LOGERROR(infoMessage);
@@ -338,6 +341,37 @@ int TskImgDBSqlite::initialize()
     stmt = "CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT, display_name TEXT)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) {
         _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating blackboard_attribute_types table: %S", errmsg);
+        LOGERROR(infoMessage);
+
+        sqlite3_free(errmsg);
+        return 1;
+    }
+
+    // ----- CREATE INDEXES
+    stmt = "CREATE INDEX attrs_artifact_id ON blackboard_attributes(artifact_id)";
+
+    if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) {
+        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating attrs_artifact_id index: %S", errmsg);
+        LOGERROR(infoMessage);
+
+        sqlite3_free(errmsg);
+        return 1;
+    }
+
+    stmt = "CREATE INDEX attrs_attribute_type ON blackboard_attributes(attribute_type_id)";
+
+    if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) {
+        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating attrs_attribute_type index: %S", errmsg);
+        LOGERROR(infoMessage);
+
+        sqlite3_free(errmsg);
+        return 1;
+    }
+
+    stmt = "CREATE INDEX attrs_obj_id ON blackboard_attributes(obj_id)";
+
+    if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) {
+        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating attrs_obj_id index: %S", errmsg);
         LOGERROR(infoMessage);
 
         sqlite3_free(errmsg);
@@ -1975,7 +2009,7 @@ void TskImgDBSqlite::constructStmt(std::string& stmt, std::string& condition) co
 
 // Set file hash for hashType for a_file_id
 // Return 1 on failure, 0 on success.
-int TskImgDBSqlite::setHash(uint64_t a_file_id, TskImgDB::HASH_TYPE hashType, const std::string hash)
+int TskImgDBSqlite::setHash(const uint64_t a_file_id, const TskImgDB::HASH_TYPE hashType, const std::string& hash) const 
 {
     if (!m_db)
         throw TskException("No database.");
@@ -2075,7 +2109,7 @@ int TskImgDBSqlite::setHash(uint64_t a_file_id, TskImgDB::HASH_TYPE hashType, co
     return 0;
 }
 
-std::string TskImgDBSqlite::getCfileName(uint64_t a_file_id) const
+std::string TskImgDBSqlite::getCfileName(const uint64_t a_file_id) const
 {
     if (!m_db)
         throw TskException("No database.");
@@ -2326,44 +2360,6 @@ int TskImgDBSqlite::getFileTypeRecords(std::string& stmt, std::list<TskFileTypeR
 }
 
 /**
- * Get the module id by module name.
- * @param name Module name
- * @param moduleId Module Id (output)
- * @returns 0 on success, -1 on error.
- */
-int TskImgDBSqlite::getModuleId(const std::string name, int & moduleId) const
-{
-    int rc = -1;
-
-    if (!m_db)
-        return rc;
-
-    // Select existing module by name, if any
-    sqlite3_stmt * statement;
-    char stmt[1024];
-    sqlite3_snprintf(1024, stmt, 
-        "SELECT module_id FROM modules WHERE name LIKE '%q';",
-        name.c_str());
-    if (sqlite3_prepare_v2(m_db, stmt, -1, &statement, 0) == SQLITE_OK) {
-        int result = sqlite3_step(statement);
-        if (result == SQLITE_ROW) {
-            // Already exists, return module_id
-            moduleId = sqlite3_column_int(statement, 0);
-            rc = 0;
-        }
-        sqlite3_finalize(statement);
-    }
-    else {
-        wchar_t infoMessage[MAX_BUFF_LENGTH];
-        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::getModuleId - "
-            L"Error querying module_id table : %S", sqlite3_errmsg(m_db));
-        LOGERROR(infoMessage);
-        throw TskException("SQL Failed.");
-    }
-    return rc;
-}
-
-/**
  * Insert the Module record, if module name does not already exist in modules table.
  * Returns Module Id associated with the Module record.
  * @param name Module name
@@ -2371,33 +2367,65 @@ int TskImgDBSqlite::getModuleId(const std::string name, int & moduleId) const
  * @param moduleId Module Id (output)
  * @returns 0 on success, -1 on error.
  */
-int TskImgDBSqlite::addModule(const std::string name, const std::string description, int & moduleId)
+int TskImgDBSqlite::addModule(const std::string& name, const std::string& description, int & moduleId)
 {
-    int rc = -1;
-
     if (!m_db)
-        return rc;
+        return -1;
 
-    // Insert a new one
-    char * errmsg;
-    char stmt[1024];
-    sqlite3_snprintf(1024, stmt, 
-        "INSERT INTO modules (module_id, name, description) VALUES ((SELECT count(*) + 1 FROM modules), '%q', '%q');",
-        name.c_str(), description.c_str());
-    if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) == SQLITE_OK) {
-        moduleId = sqlite3_last_insert_rowid(m_db);
-        rc = 0;
-    } else {
-        if (getModuleId(name, moduleId) == 0) {
-            rc = 0;
-        } else {
-            wchar_t infoMessage[MAX_BUFF_LENGTH];
-            _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::addModule - Error adding data to modules table: %S", errmsg);
-            LOGERROR(infoMessage);
-            sqlite3_free(errmsg);
-        }
+    if (name.empty())
+    {
+        LOGWARN(L"TskImgDBSqlite::addModule - Given an empty module name.");
+        return -1;
     }
-    return rc;
+
+    moduleId = 0;
+
+    sqlite3_stmt * statement;
+    char stmt[1024];
+    sqlite3_snprintf(1024, stmt, "SELECT module_id FROM modules WHERE name = '%q';",
+                     name.c_str());
+
+    if (sqlite3_prepare_v2(m_db, stmt, -1, &statement, 0) == SQLITE_OK) 
+    {
+        int result = sqlite3_step(statement);
+        if (result == SQLITE_ROW) 
+        {
+            // Already exists, return module_id
+            moduleId = sqlite3_column_int(statement, 0);
+        }
+        else
+        {
+            // Create a new module record.
+            char insertStmt[1024];
+            char * errmsg;
+            sqlite3_snprintf(1024, insertStmt, 
+                "INSERT INTO modules (module_id, name, description) VALUES (NULL, '%q', '%q');",
+                name.c_str(), description.c_str());
+            if (sqlite3_exec(m_db, insertStmt, NULL, NULL, &errmsg) == SQLITE_OK) 
+            {
+                moduleId = sqlite3_last_insert_rowid(m_db);
+            } 
+            else 
+            {
+                std::wstringstream msg;
+                msg << L"TskImgDBSqlite::addModule - Error adding record to modules table: " << errmsg;
+                LOGERROR(msg.str());
+                sqlite3_free(errmsg);
+            }
+        }
+        sqlite3_finalize(statement);
+    }
+    else
+    {
+        std::wstringstream msg;
+        msg << L"TskModule::addModule - Failed to prepare statement: " << stmt;
+        LOGERROR(msg.str());
+    }
+    
+    if (moduleId == 0)
+        return -1;
+
+    return 0;
 }
 
 /**
