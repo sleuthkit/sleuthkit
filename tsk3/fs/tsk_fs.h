@@ -665,6 +665,8 @@ extern "C" {
         a_fs_file, int a_idx);
     extern const TSK_FS_ATTR *tsk_fs_file_attr_get_type(TSK_FS_FILE *
         a_fs_file, TSK_FS_ATTR_TYPE_ENUM, uint16_t, uint8_t);
+    extern const TSK_FS_ATTR *tsk_fs_file_attr_get_id(TSK_FS_FILE *
+        a_fs_file, uint16_t);
 
     extern uint8_t tsk_fs_file_walk(TSK_FS_FILE * a_fs_file,
         TSK_FS_FILE_WALK_FLAG_ENUM a_flags, TSK_FS_FILE_WALK_CB a_action,
