@@ -339,7 +339,7 @@ uint8_t TSKAutoImpl::handleError()
 {
     // @@@ Possibly test tsk_errno to determine how the message should be logged.
     std::wstringstream msg;
-    msg << L"TskAutoImpl::handleError " << tsk_errror_get();
+    msg << L"TskAutoImpl::handleError " << tsk_error_get();
 
     LOGWARN(msg.str());
     return 0;
