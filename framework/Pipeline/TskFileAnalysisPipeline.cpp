@@ -34,11 +34,13 @@ TskFileAnalysisPipeline::~TskFileAnalysisPipeline()
 
 void TskFileAnalysisPipeline::run(const uint64_t fileId)
 {
-    if (m_modules.size() == 0)
-        return;
-
     // Get a file object for the given fileId
     std::auto_ptr<TskFile> file(TskFileManagerImpl::instance().getFile(fileId));
+
+    if (m_modules.size() == 0){
+        file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_COMPLETE);
+        return;
+    }
 
     // Run the file object through the pipeline.
     run(file.get());

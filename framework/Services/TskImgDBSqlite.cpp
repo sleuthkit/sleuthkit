@@ -1909,6 +1909,75 @@ std::vector<uint64_t> TskImgDBSqlite::getFileIds(std::string &condition) const
     }
     return results;
 }
+/*
+ * Get the list of file records that match the given criteria.
+ * The given string will be appended to "select ... from files".
+ *
+ * @param condition Must be a valid SQL string defining the selection criteria.
+ * @returns The collection of file records matching the selection criteria. Throws
+ * TskException if database not initialized.
+ */
+std::vector<const TskFileRecord> TskImgDBSqlite::getFileRecords(std::string &condition) const
+{
+    if (!m_db)
+        throw TskException("Database not initialized.");
+
+    std::vector<const TskFileRecord> results;
+
+    std::stringstream stmtstrm;
+
+    stmtstrm << "SELECT f.file_id, f.type_id, f.name, f.par_file_id, f.dir_type, f.meta_type, f.dir_flags, "
+        << "f.meta_flags, f.size, f.ctime, f.crtime, f.atime, f.mtime, f.mode, f.uid, f.gid, f.status, f.full_path, "
+        << "fh.md5, fh.sha1, fh.sha2_256, fh.sha2_512 "
+        << "FROM files f LEFT OUTER JOIN file_hashes fh ON f.file_id = fh.file_id ";
+
+    std::string stmt = stmtstrm.str();
+    constructStmt(stmt, condition);
+
+    sqlite3_stmt * statement;
+    if (sqlite3_prepare_v2(m_db, stmt.c_str(), -1, &statement, 0) == SQLITE_OK) 
+    {
+        while(sqlite3_step(statement) == SQLITE_ROW) {
+            TskFileRecord fileRecord;
+            fileRecord.fileId       = sqlite3_column_int64(statement, 0);
+            fileRecord.typeId       = (TskImgDB::FILE_TYPES) sqlite3_column_int(statement, 1);
+            fileRecord.name         = (char *)sqlite3_column_text(statement, 2);
+            fileRecord.parentFileId = sqlite3_column_int64(statement, 3);
+            fileRecord.dirType      = (TSK_FS_NAME_TYPE_ENUM) sqlite3_column_int(statement, 4);
+            fileRecord.metaType     = (TSK_FS_META_TYPE_ENUM) sqlite3_column_int(statement, 5);
+            fileRecord.dirFlags     = (TSK_FS_NAME_FLAG_ENUM) sqlite3_column_int(statement, 6);
+            fileRecord.metaFlags    = (TSK_FS_META_FLAG_ENUM) sqlite3_column_int(statement, 7);
+            fileRecord.size         = sqlite3_column_int64(statement, 8);
+            fileRecord.ctime        = sqlite3_column_int(statement, 9);
+            fileRecord.crtime       = sqlite3_column_int(statement, 10);
+            fileRecord.atime        = sqlite3_column_int(statement, 11);
+            fileRecord.mtime        = sqlite3_column_int(statement, 12);
+            fileRecord.mode         = (TSK_FS_META_MODE_ENUM) sqlite3_column_int(statement, 13);
+            fileRecord.uid          = sqlite3_column_int(statement, 14);
+            fileRecord.gid          = sqlite3_column_int(statement, 15);
+            fileRecord.status       = (TskImgDB::FILE_STATUS) sqlite3_column_int(statement, 16);
+            fileRecord.fullPath     = (char *)sqlite3_column_text(statement, 17);
+
+            if (sqlite3_column_type(statement, 18) == SQLITE_TEXT)
+                fileRecord.md5      = (char *)sqlite3_column_text(statement, 18);
+            if (sqlite3_column_type(statement, 19) == SQLITE_TEXT)
+                fileRecord.sha1     = (char *)sqlite3_column_text(statement, 19);
+            if (sqlite3_column_type(statement, 20) == SQLITE_TEXT)
+                fileRecord.sha2_256 = (char *)sqlite3_column_text(statement, 20);
+            if (sqlite3_column_type(statement, 21) == SQLITE_TEXT)
+                fileRecord.sha2_512 = (char *)sqlite3_column_text(statement, 21);
+            results.push_back(fileRecord);
+        }
+    }
+    else 
+    {
+        std::wstringstream msg;
+        msg << L"TskImgDBSqlite::getFilesRecords - Error getting file reocrds: " << sqlite3_errmsg(m_db);
+        LOGERROR(msg.str());
+    }
+    return results;
+}
+
 
 /**
  * Get the number of files that match the given criteria.

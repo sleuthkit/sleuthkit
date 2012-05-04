@@ -89,6 +89,7 @@ public:
 
     // Get set of file ids that match the given condition (i.e. SQL where clause)
     virtual std::vector<uint64_t> getFileIds(std::string& condition) const;
+    virtual std::vector<const TskFileRecord> getFileRecords(std::string& condition) const;
 
     // Get the number of files that match the given condition
     virtual int getFileCount(std::string& condition) const;
