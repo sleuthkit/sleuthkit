@@ -43,7 +43,6 @@ int parent_tracker::process_dentry(const TSK_FS_DIR *dir,const TSK_FS_FILE *fs_f
                 printf("\t\tDEBUG cannot open fs root\n");
             else
             {
-                this->last_parent_inum=fs_file->fs_info->root_inum;
                 this->add_pt_dentry_info(r_dir);
                 this->stat_dentry_stack();
             }
@@ -56,11 +55,11 @@ int parent_tracker::process_dentry(const TSK_FS_DIR *dir,const TSK_FS_FILE *fs_f
 
         if(fs_file->meta->type & TSK_FS_META_TYPE_DIR)
         {
-            this->inc_dentry_counter(&parent_stack.top());
-            if(parent_stack.top().curr_entry == parent_stack.top().num_used_entries)
+            this->inc_dentry_counter(&parent_stack.back());
+            if(parent_stack.back().curr_entry == parent_stack.back().num_used_entries)
             {
-                printf("\t DEBUG  Time To Pop?\n");
-                rm_pt_dentry_info();
+                printf("\t DEBUG  Last entry is a dir, delay popping me\n");
+                parent_stack.back().flags |= PT_FLAG_DELAY_POP;
             }
             printf("\t\tDebug Directory Doing an Inc and Push\n");
             this->add_pt_dentry_info(dir);
@@ -68,28 +67,29 @@ int parent_tracker::process_dentry(const TSK_FS_DIR *dir,const TSK_FS_FILE *fs_f
         else //if (dot_file)
         {
             printf("\t\tDebug Not a Directory doing an Inc \n");
-            this->inc_dentry_counter(&parent_stack.top());
+            this->inc_dentry_counter(&parent_stack.back());
         }
 
         this->stat_dentry_stack();
 
-    }else if(dot_file)
+    }
+    else if(dot_file)
     {
         printf("\t DEBUG DOT FILE DOING AN INC\n");
         this->stat_dentry_stack();
-        this->inc_dentry_counter(&parent_stack.top());
+        this->inc_dentry_counter(&parent_stack.back());
     }else
     {
         printf("\t DEBUG DEFAULT DOING AN INC\n");
-        this->inc_dentry_counter(&parent_stack.top());
+        this->inc_dentry_counter(&parent_stack.back());
     }
 
-    if(parent_stack.top().curr_entry == parent_stack.top().num_used_entries)
+ /*   if(parent_stack.top().curr_entry == parent_stack.top().num_used_entries)
     {
         printf("\t DEBUG  Time To Pop?\n");
         rm_pt_dentry_info();
     }
-    this->stat_dentry_stack();
+*/    this->stat_dentry_stack();
 
     return 0;
 }
@@ -110,30 +110,35 @@ int parent_tracker::dec_dentry_counter(PT_DENTRY_INFO * d_info)
 
 int parent_tracker::add_pt_dentry_info(const TSK_FS_DIR *dir){
     PT_DENTRY_INFO *d_info = new PT_DENTRY_INFO();
-    PT_DENTRY_INFO *d_info2 = NULL;
-
 
     if (d_info == NULL)
         return 1;
 
-    if (!parent_stack.empty())
-        this->last_parent_inum = parent_stack.top().addr;
-
+    if (!parent_stack.empty()){
+        d_info->p_addr = parent_stack.back().addr;
+    }
+    else{
+        d_info->p_addr = dir->addr;
+    }
+  
     d_info->num_entries = dir->names_alloc;
     d_info->num_used_entries = dir->names_used;
     d_info->addr = dir->addr;
     d_info->curr_entry = 0;
+    
 
-    this->parent_stack.push(*d_info);
+    this->parent_stack.push_back(*d_info);
+//    printf("\t\tAdd_pt_dentry_info: %p->%p\n", &this->ptr_dent, this->ptr_dent);
+//    printf("\t\tAdd_pt_dentry_info: %p->%p\n", &this->ptr_prev_dent, this->ptr_prev_dent);
     return 0;
 }
 
 int parent_tracker::rm_pt_dentry_info(){
-    PT_DENTRY_INFO *d_info = NULL;
-    d_info = &this->parent_stack.top();
-    this->last_parent_inum=parent_stack.top().addr;
-    this->parent_stack.pop();
-    this->set_just_popped();
+    printf("\t\tDEBUG rm_pt_dentry_info Popping\n");
+//    PT_DENTRY_INFO *d_info = NULL;
+//    d_info = &this->parent_stack.top();
+    this->parent_stack.pop_back();
+    this->set_flag(PT_FLAG_JUST_POPPED);
     this->stat_dentry_stack();
     //free(d_info);
     return 0;
@@ -145,10 +150,17 @@ int parent_tracker::stat_dentry_stack(){
         printf("Stack Empty\n");
         return 0;
     }
-    PT_DENTRY_INFO *d_info = &parent_stack.top();
-    printf("Stack Status: Empty %u, Size %u, Last_Parent: %u\n", parent_stack.empty(), parent_stack.size(), this->last_parent_inum);
-    printf("TOP ENTRY: ADDR: %u, Allocated: %d, Used: %d, Current %d\n", d_info->addr, d_info->num_entries, d_info->num_used_entries, d_info->curr_entry);
+    PT_DENTRY_INFO *d_info = &parent_stack.back();
+    printf("Stack Status:\n\tEmpty %u, Size %u\n", parent_stack.empty(), parent_stack.size());
+    stat_dentry(d_info);
     return 0;
+}
+
+int parent_tracker::stat_dentry(PT_DENTRY_INFO *d_info)
+{
+    printf("\tDentryStats: ADDR: %u,%u, Allocated: %d, Used: %d, Printed:%d, Current: %d\n ", 
+    d_info->addr, d_info->p_addr, d_info->num_entries, d_info->num_used_entries, d_info->num_printed, d_info->curr_entry);
+    
 }
 
 int parent_tracker::is_dot_or_double_dot(const TSK_FS_FILE *fs_file){
@@ -160,27 +172,60 @@ int parent_tracker::is_dot_or_double_dot(const TSK_FS_FILE *fs_file){
     return 0;
 }
 
+void  parent_tracker::inc_dentry_print_count(PT_DENTRY_INFO * d_info){
+        d_info->num_printed++;
+        return;
+}
+
 int parent_tracker::print_parent(const TSK_FS_FILE *fs_file){
+    int stack_size = parent_stack.size();
     if(fs_file->meta->type & TSK_FS_META_TYPE_DIR && !TSK_FS_ISDOT(fs_file->name->name))
-        file_info("inode", this->last_parent_inum);
-    else if(this->check_just_popped()){
-        file_info("inode", this->last_parent_inum);
-        this->clear_just_popped();
+    {
+        file_info("inode", parent_stack.back().p_addr);
+        printf("\t\tDEBUG incrementing num_printed: \n");
+        stat_dentry(&this->parent_stack.at(stack_size-2));
+        inc_dentry_print_count(&parent_stack.at(stack_size-2));
+        stat_dentry(&this->parent_stack.at(stack_size-2));
+        stat_dentry_stack();
+    }
+    else if(this->check_flag(PT_FLAG_JUST_POPPED))
+    {
+        file_info("inode", parent_stack.back().addr);
+        this->clear_flag(PT_FLAG_JUST_POPPED);
     }
     else
-        file_info("inode",parent_stack.top().addr);
+    {
+        file_info("inode",parent_stack.back().addr);
+        printf("\t\tDEBUG incrementing num_printed: ");
+        inc_dentry_print_count(&parent_stack.back());
+        stat_dentry_stack();
+    }
+    if (parent_stack.back().num_printed == parent_stack.back().num_used_entries)
+    {
+        if((parent_stack.back().flags & PT_FLAG_DELAY_POP)){
+            parent_stack.back().flags & ~PT_FLAG_DELAY_POP;
+        }
+        else
+        {
+            printf("\t\tDEBUG Popping: ");
+            while(parent_stack.back().num_printed == parent_stack.back().num_used_entries)
+                rm_pt_dentry_info();
+        }
+
+        stat_dentry_stack();
+    }
     return 0;
 }
 
-void parent_tracker::set_just_popped(){
-    this->flags |= 0x1;
+inline void parent_tracker::set_flag(uint8_t flag){
+    this->flags |= flag;
 }
 
-void parent_tracker::clear_just_popped(){
-    this->flags &= 0xFE;
+inline void parent_tracker::clear_flag(uint8_t flag){
+    this->flags &= flag;
 }
 
-int parent_tracker::check_just_popped(){
-    return this->flags & 0x1;
+inline int parent_tracker::check_flag(uint8_t flag){
+    return this->flags & flag;
 }
 

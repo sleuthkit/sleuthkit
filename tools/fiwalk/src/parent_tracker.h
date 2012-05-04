@@ -13,24 +13,35 @@
 class PT_DENTRY_INFO{
     public:
 
-    int addr;               //inode_num
+    uint64_t addr;               //inode_num
+    uint64_t p_addr;        //Parent_address
     int num_entries;
     int num_used_entries;
     int curr_entry;
+    uint32_t num_printed;
+    uint8_t flags;
+
 };
+
+#define    PT_FLAG_JUST_POPPED  0x01
+#define    PT_FLAG_DELAY_POP    0x02
 
 class parent_tracker{
     private:
     std::list<int> child_list;
-    std::stack<PT_DENTRY_INFO> parent_stack;
+    std::deque<PT_DENTRY_INFO> parent_stack;
     int is_dot_or_double_dot(const TSK_FS_FILE *);
     int inc_dentry_counter(PT_DENTRY_INFO *);
     int dec_dentry_counter(PT_DENTRY_INFO *);
-    uint64_t last_parent_inum;
+    void inc_dentry_print_count(PT_DENTRY_INFO *);
+//    PT_DENTRY_INFO *ptr_prev_dent;
+//    PT_DENTRY_INFO *ptr_dent;
     uint8_t flags; //1=just_popped
-    void set_just_popped();
-    void clear_just_popped();
-    int check_just_popped();
+    inline void set_flag(uint8_t);
+    inline void clear_flag(uint8_t);
+    inline int check_flag(uint8_t);
+    int stat_dentry_stack();
+    int stat_dentry(PT_DENTRY_INFO *);
 
     public:
 
@@ -38,7 +49,6 @@ class parent_tracker{
     int print_parent(const TSK_FS_FILE *);
     int add_pt_dentry_info(const TSK_FS_DIR *);
     int rm_pt_dentry_info();
-    int stat_dentry_stack();
 
     int process_dentry(const TSK_FS_DIR *, const TSK_FS_FILE *);
 
