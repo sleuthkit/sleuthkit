@@ -362,36 +362,15 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
 
     /* If the name has corresponding metadata, then walk it */
     if (fs_file->meta) {
-
        if(pt){
-
             dir = tsk_fs_dir_open_meta(fs_file->fs_info,fs_file->meta->addr);
-            if (dir == NULL)
-                printf("Cannot get dir entry, fs_root is %d\n", fs_file->fs_info->root_inum);
-            else
-            {
-                pt->process_dentry(dir, fs_file);
-            }
-/*            if(pt->parent_stack.empty())
-            {
-                pt->parent_stack.push(fs_file->fs_info->root_inum);
-            }
+//            if (dir == NULL)
+//                /*Cannot get a dir entry assuming that current dentry on stack is the parent*/
+//                printf("Cannot get dir entry, fs_root is %d\n", fs_file->fs_info->root_inum);
 
-            if(!pt->parent_stack.empty())
-            {
-                printf("Current Parent %u, %u, %u\n", pt->parent_stack.top(), pt->parent_stack.size(), fs_file->meta->addr);
-                printf("Dir_name: %s\n", fs_file->name->name);
-                printf("Is Dot: %d Is DoubleDot: %d\n", strcmp(fs_file->name->name,"."), strcmp(fs_file->name->name,".."));
-            }
-            if(pt->parent_stack.top() != fs_file->meta->addr && !(strcmp(fs_file->name->name,".") == 0)  && !(strcmp(fs_file->name->name,"..") == 0))
-            {
-                pt->parent_stack.push(fs_file->meta->addr);
-                printf("Current Parent %u, %u\n", pt->parent_stack.top(), pt->parent_stack.size());
-            }
-*/
+            pt->process_dentry(dir, fs_file);
         }
-
-	process_tsk_file(fs_file, path);
+    	process_tsk_file(fs_file, path);
     }
 
     return TSK_WALK_CONT;

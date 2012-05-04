@@ -26,6 +26,8 @@ class PT_DENTRY_INFO{
 #define    PT_FLAG_JUST_POPPED  0x01
 #define    PT_FLAG_DELAY_POP    0x02
 
+#define    PT_DEBUG     0
+
 class parent_tracker{
     private:
     std::list<int> child_list;
@@ -34,15 +36,14 @@ class parent_tracker{
     int inc_dentry_counter(PT_DENTRY_INFO *);
     int dec_dentry_counter(PT_DENTRY_INFO *);
     void inc_dentry_print_count(PT_DENTRY_INFO *);
-//    PT_DENTRY_INFO *ptr_prev_dent;
-//    PT_DENTRY_INFO *ptr_dent;
     uint8_t flags; //1=just_popped
     inline void set_flag(uint8_t);
     inline void clear_flag(uint8_t);
     inline int check_flag(uint8_t);
+#if PT_DEBUG
     int stat_dentry_stack();
     int stat_dentry(PT_DENTRY_INFO *);
-
+#endif
     public:
 
     parent_tracker();
