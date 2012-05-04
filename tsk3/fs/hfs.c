@@ -2216,6 +2216,7 @@ typedef struct {
     uint32_t length;
 } CMP_OFFSET_ENTRY;
 
+
 uint8_t
 hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
@@ -2852,6 +2853,7 @@ open_attr_file(TSK_FS_INFO * fs, ATTR_FILE_T * attr_file)
     return 0;
 }
 
+
 /** \internal
  * Closes and frees the data structures associated with ATTR_FILE_T
  */
@@ -2879,7 +2881,6 @@ close_attr_file(ATTR_FILE_T * attr_file)
 }
 
 
-
 static const char *
 hfs_attrTypeName(uint32_t typeNum)
 {
@@ -2898,8 +2899,6 @@ hfs_attrTypeName(uint32_t typeNum)
         return "UNKN";
     }
 }
-
-
 
 
 static uint8_t
@@ -3303,7 +3302,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                 }
 
                             }
-                            else {      // Leading byte is not 0xF
+                            else {      // Leading byte is not 0x0F
                                 reallyCompressed = TRUE;
 #ifdef HAVE_LIBZ
                                 if (tsk_verbose)
@@ -3311,7 +3310,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         "hfs_load_extended_attrs: Uncompressing (inflating) data.");
                                 cmpSize = attributeLength - 16; // subt size of header
                                 // Uncompress the remainder of the attribute, and load as 128-0
-                                uint8_t *uncBuf = (uint8_t *) tsk_malloc(uncSize + 100);        // add some extra space
+                                char *uncBuf = (uint8_t *) tsk_malloc(uncSize + 100);        // add some extra space
                                 if (uncBuf == NULL) {
                                     error_returned
                                         (" - hfs_load_extended_attrs, space for the uncompressed attr");
@@ -3385,7 +3384,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
 #endif
 
-                            }   // END if leading byte is 0xF  ELSE clause
+                            }   // END if leading byte is 0x0F  ELSE clause
                         }       // END if attributeLength <= 16  ELSE clause
                     }
                     else if (cmpType == 4) {
