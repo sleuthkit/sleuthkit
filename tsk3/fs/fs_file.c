@@ -311,6 +311,35 @@ tsk_fs_file_attr_get_type(TSK_FS_FILE * a_fs_file,
         return tsk_fs_attrlist_get(a_fs_file->meta->attr, a_type);
 }
 
+/** \ingroup fslib
+* Return a specific attribute by its ID for the file.  
+* @param a_fs_file File to get data from
+* @param a_id Id of attribute to load 
+* @returns NULL on error
+*/
+const TSK_FS_ATTR *
+tsk_fs_file_attr_get_id(TSK_FS_FILE * a_fs_file,
+    uint16_t a_id)
+{
+    int i, size;
+    if (tsk_fs_file_attr_check(a_fs_file, "tsk_fs_file_attr_get_type"))
+        return NULL;
+
+    size = tsk_fs_file_attr_getsize(a_fs_file);
+    for (i = 0; i < size; i++) {
+        const TSK_FS_ATTR *fs_attr = tsk_fs_file_attr_get_idx(a_fs_file, i);
+        if (fs_attr == NULL)
+            return NULL;
+
+        if (fs_attr->id == a_id)
+            return fs_attr;
+    }
+    tsk_error_set_errno(TSK_ERR_FS_ATTR_NOTFOUND);
+    tsk_error_set_errstr
+        ("tsk_fs_attr_get_id: Attribute ID %d not found", a_id);
+    return NULL;
+}
+
 
 /**
 * \ingroup fslib
