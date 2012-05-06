@@ -23,8 +23,7 @@ class PT_DENTRY_INFO{
 
 };
 
-#define    PT_FLAG_JUST_POPPED  0x01
-#define    PT_FLAG_DELAY_POP    0x02
+#define    PT_FLAG_DELAY_POP    0x01
 
 #define    PT_DEBUG     0
 

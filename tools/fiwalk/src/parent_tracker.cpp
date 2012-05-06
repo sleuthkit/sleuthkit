@@ -149,7 +149,6 @@ int parent_tracker::add_pt_dentry_info(const TSK_FS_DIR *dir){
 
 int parent_tracker::rm_pt_dentry_info(){
     this->parent_stack.pop_back();
-    this->set_flag(PT_FLAG_JUST_POPPED);
 #if PT_DEBUG
     this->stat_dentry_stack();
 #endif
@@ -196,8 +195,17 @@ int parent_tracker::print_parent(const TSK_FS_FILE *fs_file){
     int stack_size = parent_stack.size();
     if(fs_file->meta->type & TSK_FS_META_TYPE_DIR && !TSK_FS_ISDOT(fs_file->name->name))
     {
-        file_info("inode", parent_stack.back().p_addr);
+        if(x)
+        {
+            x->push("parent_object");
+            file_info("inode", parent_stack.back().p_addr);
+            if(x) x->pop();
+        }
+        if(t||a)
+        {
+            file_info("parent_inode", parent_stack.back().p_addr);
 //        printf("\t\tDEBUG incrementing num_printed: \n");
+        }
         if (stack_size>1)
         {
 //            stat_dentry(&this->parent_stack.at(stack_size-2));
@@ -212,18 +220,23 @@ int parent_tracker::print_parent(const TSK_FS_FILE *fs_file){
         }
 //        stat_dentry_stack();
     }
-    else if(this->check_flag(PT_FLAG_JUST_POPPED))
-    {
-        file_info("inode", parent_stack.back().addr);
-        this->clear_flag(PT_FLAG_JUST_POPPED);
-    }
     else
     {
-        file_info("inode",parent_stack.back().addr);
-//        printf("\t\tDEBUG incrementing num_printed: ");
+        if(x){
+            x->push("parent_object");
+            file_info("inode", parent_stack.back().addr);
+            if(x) x->pop();
+        }
+        if(t || a)
+            file_info("parent_inode", parent_stack.back().addr);
+
+        if(PT_DEBUG) printf("\t\tDEBUG incrementing num_printed: ");
         inc_dentry_print_count(&parent_stack.back());
-//        stat_dentry_stack();
+#if PT_DEBUG
+        stat_dentry_stack();
+#endif
     }
+
     if (parent_stack.back().num_printed >= parent_stack.back().num_used_entries)
     {
         if((parent_stack.back().flags & PT_FLAG_DELAY_POP)){
@@ -231,12 +244,15 @@ int parent_tracker::print_parent(const TSK_FS_FILE *fs_file){
         }
         else
         {
-//            printf("\t\tDEBUG Popping: \n");
+            if(PT_DEBUG) printf("\t\tDEBUG Popping: \n");
             while(parent_stack.back().num_printed == parent_stack.back().num_used_entries)
             {
                 rm_pt_dentry_info();
-                 if (parent_stack.empty())
-                 break;
+#if PT_DEBUG
+                stat_dentry_stack();
+#endif
+                if (parent_stack.empty())
+                    break;
             }
         }
 //        stat_dentry_stack();

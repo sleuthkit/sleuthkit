@@ -163,12 +163,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     /* Looks like we are processing */
     if(a) a->new_row();			// tell ARFF we are starting a new row
     if(x) x->push("fileobject"); 	// tell XML we are starting a new XML object
-    if(pt && x)
-    {
-        x->push("parent_object");
-        pt->print_parent(fs_file);
-        x->pop();
-    }
+    if(pt) pt->print_parent(fs_file);
 
     /* Get the content if needed */
     if(ci.need_file_walk() && (opt_maxgig==0 || fs_file->meta->size/1000000000 < opt_maxgig)){
