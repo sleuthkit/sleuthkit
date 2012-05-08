@@ -40,7 +40,7 @@ public class SleuthkitJNI {
 	private static native void addDbKnownBadNat(String hashDbPath, String hashDbName) throws TskException;
 	private static native String getDbName(String hashDbPath) throws TskException;
 	private static native void closeDbLookupsNat() throws TskException;
-	private static native int hashDBLookup(String hash, String[] names, int[] results) throws TskException;
+	private static native int hashDBLookup(String hash, String[] names, int[] results, int arraylen) throws TskException;
 
 	
 	//load image
@@ -504,7 +504,7 @@ public class SleuthkitJNI {
 		
 		String[] names = new String[MAX_DATABASES];
 		int[] results = new int[MAX_DATABASES];
-		hashDBLookup(hash, names, results);
+		hashDBLookup(hash, names, results, MAX_DATABASES);
 		
 		for(int i = 0; i < names.length; i++) {
 			String name = names[i];

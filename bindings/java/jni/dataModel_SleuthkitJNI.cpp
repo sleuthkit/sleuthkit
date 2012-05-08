@@ -17,8 +17,11 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <algorithm>
 using std::string;
+using std::vector;
 using std::map;
+using std::for_each;
 
 static std::vector<TSK_HDB_INFO *> nsrls;
 static std::vector<TSK_HDB_INFO *> knownbads;
@@ -262,7 +265,7 @@ JNIEXPORT jstring JNICALL
     TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
     tsk_hdb_nameinit(tempdb);
 
-    jstring jname = (*env).NewStringUTF(tempdb->db_name);
+    jstring jname = env->NewStringUTF(tempdb->db_name);
 
     tsk_hdb_close(tempdb);
     return jname;
@@ -273,18 +276,13 @@ JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupsNat(JNIEnv * env,
     jclass obj) {
 
-    std::vector<TSK_HDB_INFO *>::iterator it;
+    vector<TSK_HDB_INFO *>::iterator it;
 
-    for ( it = nsrls.begin() ; it < nsrls.end(); it++ )
-    {
-        tsk_hdb_close(*it);
-    }
+    for_each(nsrls.begin(), nsrls.end(), tsk_hdb_close);
     nsrls.clear();
 
-    for ( it = knownbads.begin() ; it < knownbads.end(); it++ )
-    {
-        tsk_hdb_close(*it);
-    }
+    for_each(knownbads.begin(), knownbads.end(), tsk_hdb_close);
+   
     knownbads.clear();
 }
 
@@ -294,7 +292,7 @@ JNIEXPORT void JNICALL
  * Signature: (Ljava/lang/String;)I
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
-(JNIEnv * env, jclass obj, jstring hash, jobjectArray names, jintArray results){
+(JNIEnv * env, jclass obj, jstring hash, jobjectArray names, jintArray results, jint maxArrayLen){
 
     jboolean isCopy;
     int index = 0;
@@ -302,10 +300,12 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
     const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
 
-    std::vector<TSK_HDB_INFO *>::iterator it;
+    vector<TSK_HDB_INFO *>::iterator it;
 
     for ( it = nsrls.begin() ; it < nsrls.end(); it++ )
     {
+        if(index >= maxArrayLen)
+            throwTskError(env);
         TSK_HDB_INFO * db = *it;
         int8_t retval = tsk_hdb_lookup_str(db, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
@@ -324,6 +324,8 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
 
     for ( it = knownbads.begin() ; it < knownbads.end(); it++ )
     {
+        if(index >= maxArrayLen)
+            throwTskError(env);
         TSK_HDB_INFO * db = *it;
         int8_t retval = tsk_hdb_lookup_str(db, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
@@ -434,8 +436,8 @@ JNIEXPORT void JNICALL
     // process the image (parts)
     if (tskAuto->startAddImage((int) num_imgs, imagepaths8,
             TSK_IMG_TYPE_DETECT, 0)) {
-        std::string msg = "Errors occured while ingesting image\n";
-        std::vector<TskAuto::error_record> errors = tskAuto->getErrorList();
+        string msg = "Errors occured while ingesting image\n";
+        vector<TskAuto::error_record> errors = tskAuto->getErrorList();
         for (size_t i = 0; i < errors.size(); i++) {
             msg.append(TskAuto::errorRecordToString(errors[i]));
             msg.append("\n");
@@ -1039,7 +1041,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
         return;
     }
 
-    strcpy(temp->db_name, nameT);
+    strncpy(temp->db_name, nameT, TSK_HDB_NAME_MAXLEN);
 
     TSK_TCHAR dbType[1024];
 

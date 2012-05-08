@@ -15,10 +15,6 @@
 
 #include "tsk_hashdb_i.h"
 
-#define STR_EMPTY ""
-#define MAX_TEXT_LINE_LENGTH 127
-#define MAXSTRLENGTH    255
-
 
 /**
  * Set db_name using information from this database type
@@ -29,28 +25,25 @@ void
 idxonly_name(TSK_HDB_INFO * hdb_info)
 {
     FILE * hFile = hdb_info->hIdx;
-    char buf[MAX_TEXT_LINE_LENGTH];
-    char ret[MAX_TEXT_LINE_LENGTH];
+    char buf[TSK_HDB_NAME_MAXLEN];
     int i = 0;
     int j = 0;
 
     if(!hFile)
         return;
     fseeko(hFile, 0, 0);
-    fgets(buf, MAX_TEXT_LINE_LENGTH, hFile);
-    fgets(buf, MAX_TEXT_LINE_LENGTH, hFile);
-    while(buf[i] != '+' && i < MAX_TEXT_LINE_LENGTH)
+    fgets(buf, TSK_HDB_NAME_MAXLEN, hFile);
+    fgets(buf, TSK_HDB_NAME_MAXLEN, hFile);
+    while(buf[i] != '+' && i < TSK_HDB_NAME_MAXLEN)
     {
         i++;
     }
     i++;
-    while(buf[i] != '\r' && buf[i] != '\n' && i < MAX_TEXT_LINE_LENGTH)
+    while(buf[i] != '\r' && buf[i] != '\n' && i < TSK_HDB_NAME_MAXLEN)
     {
-        ret[j++] = buf[i++];
+        hdb_info->db_name[j++] = buf[i++];
     }
-    ret[j] = '\0';
-
-    strncpy(hdb_info->db_name, ret, MAX_TEXT_LINE_LENGTH);
+    hdb_info->db_name[j] = '\0';
 }
 
 

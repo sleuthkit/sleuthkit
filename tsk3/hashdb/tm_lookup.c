@@ -1178,13 +1178,7 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
 
     hdb_info->db_fname =
         (TSK_TCHAR *) tsk_malloc(flen * sizeof(TSK_TCHAR));
-    hdb_info->db_name =
-        malloc(TSK_HDB_MAXLEN * sizeof(char));
     if (hdb_info->db_fname == NULL) {
-        free(hdb_info);
-        return NULL;
-    }
-    if (hdb_info->db_name == NULL) {
         free(hdb_info);
         return NULL;
     }
@@ -1262,9 +1256,6 @@ tsk_hdb_close(TSK_HDB_INFO * hdb_info)
     if (hdb_info->db_fname)
         free(hdb_info->db_fname);
 
-    if (hdb_info->db_name)
-        free(hdb_info->db_name);
-
     if (hdb_info->uns_fname)
         free(hdb_info->uns_fname);
 
@@ -1292,6 +1283,10 @@ tsk_hdb_makeindex(TSK_HDB_INFO * a_hdb_info, TSK_TCHAR * a_type)
     return a_hdb_info->makeindex(a_hdb_info, a_type);
 }
 
+/**
+ * Set db_name using database type-specific methods
+ * @param hdb_info the database object
+ */
 void
 tsk_hdb_nameinit(TSK_HDB_INFO * hdb_info)
 {

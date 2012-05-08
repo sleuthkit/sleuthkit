@@ -48,11 +48,10 @@ void
 encase_name(TSK_HDB_INFO * hdb_info)
 {
     FILE * hFile = hdb_info->hDb;
-    wchar_t buf[39];
-    char ret8[78];
+    wchar_t buf[40];
+    char ret8[80];
     UTF16 *utf16;
     UTF8 *utf8;
-    int retval;
     size_t ilen;
     if(!hFile)
         return;
@@ -67,7 +66,7 @@ encase_name(TSK_HDB_INFO * hdb_info)
     utf8 = (UTF8 *) ret8;
     utf16 = (UTF16 *) buf;
 
-    retval = tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
+    tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
         (const UTF16 **) &utf16,
         &utf16[ilen], &utf8, &utf8[78],
         TSKlenientConversion);
