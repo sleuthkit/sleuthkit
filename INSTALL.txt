@@ -3,7 +3,7 @@
 
                     Installation Instructions
 
-                     Last Modified: Feb 2012
+                     Last Modified: May 2012
 
 
 REQUIREMENTS
@@ -19,6 +19,7 @@ Tested Platform:
 Build System:
 - C/C++ compiler
 - GNU Make
+- GNU autoconf, automake, and libtool
 - Java compiler / JDK (if you want the java bindings)
 
 Optional Programs:
@@ -82,7 +83,10 @@ If you get an error like:
 
 Run:
     ./bootstrap 
-and then go back to running configure and make.
+
+and then go back to running configure and make.  To run 'bootstrap',
+you'll need to have the autotools installed (see the list at the
+top of this page).
 
 
 CONFIGURE OPTIONS
@@ -107,8 +111,5 @@ directories in it).
 
 -----------------------------------------------------------------------------
 
-If you are compiling 
-
------------------------------------------------------------------------------
 Brian Carrier
 carrier <at> sleuthkit <dot> org
