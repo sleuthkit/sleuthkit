@@ -357,6 +357,7 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
 
     /* If the name has corresponding metadata, then walk it */
     if (fs_file->meta) {
+       printf("*\tDEBUG  fs_file->name: %s\n", fs_file->name->name);
        if(pt){
             dir = tsk_fs_dir_open_meta(fs_file->fs_info,fs_file->meta->addr);
 //            if (dir == NULL)
@@ -366,6 +367,18 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
             pt->process_dentry(dir, fs_file);
         }
     	process_tsk_file(fs_file, path);
+    }
+    else
+    {
+       /*fs_file has no meta, it might be a deleted directory entry*/
+       if(1)
+       {
+          printf("Deleted Entry: %s\n", fs_file->name->name);
+       }
+       if(pt)
+       {
+          pt->inc_dentry_print_count();
+       }
     }
 
     return TSK_WALK_CONT;

@@ -11,21 +11,27 @@
 #include <stack>
 
 class PT_DENTRY_INFO{
+    private:
+    uint8_t flags;
+    
     public:
 
     uint64_t addr;               //inode_num
     uint64_t p_addr;        //Parent_address
-    int num_entries;
-    int num_used_entries;
-    int curr_entry;
-    uint32_t num_printed;
-    uint8_t flags;
-
+    uint64_t num_entries;
+    uint64_t num_used_entries;
+    uint64_t curr_entry;
+    uint64_t num_printed;
+    
+    PT_DENTRY_INFO();
+    inline void set_flag(uint8_t);
+    inline void clear_flag(uint8_t);
+    inline int check_flag(uint8_t);
 };
 
 #define    PT_FLAG_DELAY_POP    0x01
 
-#define    PT_DEBUG     0
+#define    PT_DEBUG     2
 
 class parent_tracker{
     private:
@@ -49,7 +55,7 @@ class parent_tracker{
     int print_parent(const TSK_FS_FILE *);
     int add_pt_dentry_info(const TSK_FS_DIR *);
     int rm_pt_dentry_info();
-
+    void inc_dentry_print_count(); //increments the print count of the top dentry
     int process_dentry(const TSK_FS_DIR *, const TSK_FS_FILE *);
 
 

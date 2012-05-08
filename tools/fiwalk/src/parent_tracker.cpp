@@ -20,7 +20,6 @@ using namespace std;
 
 
 parent_tracker::parent_tracker(){
-    this->flags=0;
 }
 
 int parent_tracker::process_dentry(const TSK_FS_DIR *dir,const TSK_FS_FILE *fs_file){
@@ -65,15 +64,15 @@ int parent_tracker::process_dentry(const TSK_FS_DIR *dir,const TSK_FS_FILE *fs_f
             this->inc_dentry_counter(&parent_stack.back());
             if(parent_stack.back().curr_entry == parent_stack.back().num_used_entries)
             {
-//                printf("\t DEBUG  Last entry is a dir, delay popping me\n");
-                parent_stack.back().flags |= PT_FLAG_DELAY_POP;
+                if(PT_DEBUG) printf("\t DEBUG  Last entry is a dir, delay popping me\n");
+                parent_stack.back().set_flag(PT_FLAG_DELAY_POP);
             }
-//            printf("\t\tDebug Directory Doing an Inc and Push: %s\n", fs_file->name->name);
+            if(PT_DEBUG) printf("\t\tDebug Directory Doing an Inc and Push: %s\n", fs_file->name->name);
             this->add_pt_dentry_info(dir);
         }
         else //if (dot_file)
         {
-//            printf("\t\tDebug Not a Directory doing an Inc \n");
+            if(PT_DEBUG) printf("\t\tDebug Not a Directory doing an Inc \n");
             this->inc_dentry_counter(&parent_stack.back());
         }
 
@@ -120,6 +119,7 @@ int parent_tracker::dec_dentry_counter(PT_DENTRY_INFO * d_info)
 int parent_tracker::add_pt_dentry_info(const TSK_FS_DIR *dir){
     PT_DENTRY_INFO *d_info = new PT_DENTRY_INFO();
 
+    if(PT_DEBUG) printf("*\tDEBUG add_pt_dentry_info\n");
     if (dir==NULL){
         printf("Dir is NULL!");
         return 1;       
@@ -127,6 +127,8 @@ int parent_tracker::add_pt_dentry_info(const TSK_FS_DIR *dir){
 
     if (d_info == NULL)
         return 1;
+    
+    this->stat_dentry_stack();
 
     if (!parent_stack.empty()){
         d_info->p_addr = parent_stack.back().addr;
@@ -191,6 +193,30 @@ void  parent_tracker::inc_dentry_print_count(PT_DENTRY_INFO * d_info){
         return;
 }
 
+void parent_tracker::inc_dentry_print_count(){
+    this->inc_dentry_print_count(&parent_stack.back());
+    if (parent_stack.back().num_printed >= parent_stack.back().num_used_entries)
+    {
+        if((parent_stack.back().check_flag(PT_FLAG_DELAY_POP))){
+            parent_stack.back().clear_flag(PT_FLAG_DELAY_POP);
+        }
+        else
+        {
+            if(PT_DEBUG) printf("\t\tDEBUG Popping: \n");
+            while(parent_stack.back().num_printed == parent_stack.back().num_used_entries)
+            {
+                rm_pt_dentry_info();
+#if PT_DEBUG
+                stat_dentry_stack();
+#endif
+                if (parent_stack.empty())
+                    break;
+            }
+        }
+//        stat_dentry_stack();
+    }
+}
+
 int parent_tracker::print_parent(const TSK_FS_FILE *fs_file){
     int stack_size = parent_stack.size();
     if(fs_file->meta->type & TSK_FS_META_TYPE_DIR && !TSK_FS_ISDOT(fs_file->name->name))
@@ -239,8 +265,8 @@ int parent_tracker::print_parent(const TSK_FS_FILE *fs_file){
 
     if (parent_stack.back().num_printed >= parent_stack.back().num_used_entries)
     {
-        if((parent_stack.back().flags & PT_FLAG_DELAY_POP)){
-            parent_stack.back().flags & ~PT_FLAG_DELAY_POP;
+        if((parent_stack.back().check_flag(PT_FLAG_DELAY_POP))){
+            parent_stack.back().clear_flag(PT_FLAG_DELAY_POP);
         }
         else
         {
@@ -260,15 +286,19 @@ int parent_tracker::print_parent(const TSK_FS_FILE *fs_file){
     return 0;
 }
 
-inline void parent_tracker::set_flag(uint8_t flag){
+PT_DENTRY_INFO::PT_DENTRY_INFO(){
+    flags = addr = p_addr = num_entries = num_used_entries = curr_entry = num_printed = 0;
+}
+
+inline void PT_DENTRY_INFO::set_flag(uint8_t flag){
     this->flags |= flag;
 }
 
-inline void parent_tracker::clear_flag(uint8_t flag){
-    this->flags &= flag;
+inline void PT_DENTRY_INFO::clear_flag(uint8_t flag){
+    this->flags &= ~flag;
 }
 
-inline int parent_tracker::check_flag(uint8_t flag){
+inline int PT_DENTRY_INFO::check_flag(uint8_t flag){
     return this->flags & flag;
 }
 
