@@ -1785,7 +1785,7 @@ std::map<uint64_t, std::string> TskImgDBSqlite::getUniqueCarvedFiles(HASH_TYPE h
                 stmt.str("");
                 stmt << "select c.file_id, f.name, 'cfile_' || c.vol_id || '_' || cs.sect_start || '_' "
                     << "|| c.file_id from files f, carved_files c, carved_sectors cs "
-                    << "where c.file_id = cs.file_id and cs.seq = 0 and f.file_id = c.file_id";
+                    << "where c.file_id = cs.file_id and cs.seq = 0 and f.file_id = c.file_id order by c.file_id";
                 getCarvedFileInfo(stmt.str(), results);
                 return results;
             }
@@ -1804,7 +1804,7 @@ std::map<uint64_t, std::string> TskImgDBSqlite::getUniqueCarvedFiles(HASH_TYPE h
     stmt << "select c.file_id, f.name, 'cfile_' || c.vol_id || '_' || cs.sect_start || '_' "
         << "|| c.file_id from files f, carved_files c, carved_sectors cs "
         << "where c.file_id = cs.file_id and cs.seq = 0 and f.file_id = c.file_id and c.file_id in "
-        << "(select min(file_id) from file_hashes where " << hash << " != '' group by " << hash << ")";
+        << "(select min(file_id) from file_hashes where " << hash << " != '' group by " << hash << ") order by c.file_id";
 
     getCarvedFileInfo(stmt.str(), results);
 
@@ -1814,7 +1814,7 @@ std::map<uint64_t, std::string> TskImgDBSqlite::getUniqueCarvedFiles(HASH_TYPE h
     stmt << "select c.file_id, f.name, 'cfile_' || c.vol_id || '_' || cs.sect_start || '_' "
         << "|| c.file_id from files f, carved_files c, carved_sectors cs "
         << "where c.file_id = cs.file_id and cs.seq = 0 and f.file_id = c.file_id and c.file_id in "
-        << "(select file_id from file_hashes where " << hash << " = '')";
+        << "(select file_id from file_hashes where " << hash << " = '') order by c.file_id";
 
     getCarvedFileInfo(stmt.str(), results);
 
