@@ -205,7 +205,7 @@ JNIEXPORT void JNICALL
 
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
     TSK_HDB_INFO * temp = tsk_hdb_open(pathT, flags);
-    strncpy(temp->db_name, nameT, strlen(nameT));
+    strncpy(temp->db_name, nameT, strlen(nameT)+1);
     nsrls.push_back(temp);
 
     env->ReleaseStringUTFChars(nameJ, nameT);
@@ -231,7 +231,7 @@ JNIEXPORT void JNICALL
 
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
     TSK_HDB_INFO * temp = tsk_hdb_open(pathT, flags);
-    strncpy(temp->db_name, nameT, strlen(nameT));
+    strncpy(temp->db_name, nameT, strlen(nameT)+1);
     knownbads.push_back(temp);
 
     env->ReleaseStringUTFChars(nameJ, nameT);
@@ -263,6 +263,8 @@ JNIEXPORT jstring JNICALL
     tsk_hdb_nameinit(tempdb);
 
     jstring jname = (*env).NewStringUTF(tempdb->db_name);
+
+    tsk_hdb_close(tempdb);
     return jname;
 }
 

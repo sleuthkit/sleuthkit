@@ -97,32 +97,7 @@ nsrl_test(FILE * hFile)
 void
 nsrl_name(TSK_HDB_INFO * hdb_info)
 {
-    size_t lastSeparatorIndex = 0;
-    size_t lastPeriodIndex = 0;
-    size_t len = TSTRLEN(hdb_info->db_fname);
-    size_t i = 0;
-#ifdef TSK_WIN32
-    char path_char = '\\';
-#else
-    char path_char = '/';
-#endif
-
-    for (i = len-1; i > 0; --i)
-    {
-        if (hdb_info->db_fname[i] == '.' && !lastPeriodIndex)
-            lastPeriodIndex = i;
-        if (hdb_info->db_fname[i] == path_char)
-        {
-            lastSeparatorIndex = ++i;
-            break;
-        }
-    }
-    for(i = 0; i < (len-lastSeparatorIndex) && i < (lastPeriodIndex-lastSeparatorIndex); i++)
-    {
-        hdb_info->db_name[i] = (char) hdb_info->db_fname[lastSeparatorIndex+i];
-    }
-
-    hdb_info->db_name[i] = '\0';
+    tsk_name_from_path(hdb_info);
 }
 
 /**

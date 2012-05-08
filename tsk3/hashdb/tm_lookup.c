@@ -1297,25 +1297,61 @@ tsk_hdb_nameinit(TSK_HDB_INFO * hdb_info)
 {
     /* Get database specific information */
     switch (hdb_info->db_type) {
-    case TSK_HDB_DBTYPE_NSRL_ID:
-        nsrl_name(hdb_info);
-        break;
+        case TSK_HDB_DBTYPE_NSRL_ID:
+            nsrl_name(hdb_info);
+            break;
 
-    case TSK_HDB_DBTYPE_MD5SUM_ID:
-        md5sum_name(hdb_info);
-        break;
+        case TSK_HDB_DBTYPE_MD5SUM_ID:
+            md5sum_name(hdb_info);
+            break;
 
-    case TSK_HDB_DBTYPE_ENCASE_ID:
-        encase_name(hdb_info);
-        break;
+        case TSK_HDB_DBTYPE_ENCASE_ID:
+            encase_name(hdb_info);
+            break;
 
-    case TSK_HDB_DBTYPE_HK_ID:
-        hk_name(hdb_info);
-        break;
+        case TSK_HDB_DBTYPE_HK_ID:
+            hk_name(hdb_info);
+            break;
 
-    case TSK_HDB_DBTYPE_IDXONLY_ID:
-        if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID));
-            idxonly_name(hdb_info);
-        break;
+        case TSK_HDB_DBTYPE_IDXONLY_ID:
+            if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID));
+                idxonly_name(hdb_info);
+            break;
+     }
+}
+
+/**
+ * Set db_name to the name of the database file
+ *
+ * @param hdb_info the hash database object
+ */
+void
+tsk_name_from_path(TSK_HDB_INFO * hdb_info)
+{
+    size_t lastSeparatorIndex = 0;
+    size_t lastPeriodIndex = 0;
+    size_t len = TSTRLEN(hdb_info->db_fname);
+    size_t i = 0;
+#ifdef TSK_WIN32
+    char path_char = '\\';
+#else
+    char path_char = '/';
+#endif
+
+    for (i = len-1; i > 0; --i)
+    {
+        if (hdb_info->db_fname[i] == '.' && !lastPeriodIndex)
+            lastPeriodIndex = i;
+        if (hdb_info->db_fname[i] == path_char)
+        {
+            lastSeparatorIndex = ++i;
+            break;
+        }
     }
+    for(i = 0; i < (len-lastSeparatorIndex) && i < (lastPeriodIndex-lastSeparatorIndex); i++)
+    {
+        hdb_info->db_name[i] = (char) hdb_info->db_fname[lastSeparatorIndex+i];
+    }
+
+    hdb_info->db_name[i] = '\0';
 }
