@@ -218,7 +218,7 @@ tsk_hdb_idxinitialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 #endif
 
     /* Print the header */
-    fprintf(hdb_info->hIdxTmp, "%s+%ls\n", TSK_HDB_IDX_HEAD_STR,
+    fprintf(hdb_info->hIdxTmp, "%s+%s\n", TSK_HDB_IDX_HEAD_STR,
         hdb_info->db_name);
     switch (hdb_info->db_type) {
     case TSK_HDB_DBTYPE_NSRL_ID:
@@ -1179,7 +1179,7 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
     hdb_info->db_fname =
         (TSK_TCHAR *) tsk_malloc(flen * sizeof(TSK_TCHAR));
     hdb_info->db_name =
-        (TSK_TCHAR *) tsk_malloc(40 * sizeof(TSK_TCHAR));
+        malloc(TSK_HDB_MAXLEN * sizeof(char));
     if (hdb_info->db_fname == NULL) {
         free(hdb_info);
         return NULL;
@@ -1261,6 +1261,9 @@ tsk_hdb_close(TSK_HDB_INFO * hdb_info)
 
     if (hdb_info->db_fname)
         free(hdb_info->db_fname);
+
+    if (hdb_info->db_name)
+        free(hdb_info->db_name);
 
     if (hdb_info->uns_fname)
         free(hdb_info->uns_fname);

@@ -40,25 +40,39 @@ encase_test(FILE * hFile)
 }
 
 /**
- * Return a char array containing the hashset's name
+ * Set db_name using information from this database type
  *
- * @param hFile File handle to hash database
- *
- * @return the name of the hashsed
+ * @param hdb_info the hash database object
  */
 void
 encase_name(TSK_HDB_INFO * hdb_info)
 {
     FILE * hFile = hdb_info->hDb;
-    TSK_TCHAR buf[39];
+    wchar_t buf[39];
+    char ret8[78];
+    UTF16 *utf16;
+    UTF8 *utf8;
+    int retval;
+    size_t ilen;
     if(!hFile)
         return;
 
     fseeko(hFile, 1032, SEEK_SET);
-    if (39 != fread(buf, sizeof(TSK_TCHAR), 39, hFile))
+    if (39 != fread(buf, sizeof(wchar_t), 39, hFile))
         return;
+
+    ilen = wcslen(buf);
+    buf[ilen++] = '\0';
+
+    utf8 = (UTF8 *) ret8;
+    utf16 = (UTF16 *) buf;
+
+    retval = tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
+        (const UTF16 **) &utf16,
+        &utf16[ilen], &utf8, &utf8[78],
+        TSKlenientConversion);
     
-    TSTRNCPY(hdb_info->db_name, buf, 39);
+    strncpy(hdb_info->db_name, ret8, strlen(ret8));
 }
 
 

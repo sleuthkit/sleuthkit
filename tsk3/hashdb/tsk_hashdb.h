@@ -106,7 +106,7 @@ extern "C" {
     */
     struct TSK_HDB_INFO {
 
-        TSK_TCHAR *db_name;          ///< Name of the database
+        char *db_name;          ///< Name of the database
 
         TSK_TCHAR *db_fname;    ///< Name of the database file
 

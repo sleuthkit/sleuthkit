@@ -53,41 +53,40 @@ md5sum_test(FILE * hFile)
 }
 
 /**
- * Return a char array containing the hashset's name
+ * Set db_name using information from this database type
  *
- * @param hFile File handle to hash database
- *
- * @return the name of the hashsed
+ * @param hdb_info the hash database object
  */
 void
 md5sum_name(TSK_HDB_INFO * hdb_info)
 {
-    size_t sepi = 0;
-    size_t peri = 0;
+    size_t lastSeparatorIndex = 0;
+    size_t lastPeriodIndex = 0;
     size_t maxlen = 40;
     size_t len = TSTRLEN(hdb_info->db_fname);
     size_t i;
     for (i = 0; i < len; i++)
     {
         if (hdb_info->db_fname[i] == '\\')
-            sepi = i;
+            lastSeparatorIndex = i;
         if (hdb_info->db_fname[i] == '.')
-            peri = i;
+            lastPeriodIndex = i;
     }
-    if(sepi && peri > sepi)
+    if(lastSeparatorIndex && lastPeriodIndex > lastSeparatorIndex)
     {
-        for(i = 1; i < (len-sepi) && i < maxlen && i < (peri-sepi); i++)
+        for(i = 1; i < (len-lastSeparatorIndex) && i < maxlen && i < (lastPeriodIndex-lastSeparatorIndex); i++)
         {
-            hdb_info->db_name[i-1] = hdb_info->db_fname[sepi+i];
+            hdb_info->db_name[i-1] = (char) hdb_info->db_fname[lastSeparatorIndex+i];
         }
     }
-    else if(sepi)
+    else if(lastSeparatorIndex)
     {
-        for(i = 1; i < (len-sepi) && i < maxlen; i++)
+        for(i = 1; i < (len-lastSeparatorIndex) && i < maxlen; i++)
         {
-            hdb_info->db_name[i-1] = hdb_info->db_fname[sepi+i];
+            hdb_info->db_name[i-1] = (char) hdb_info->db_fname[lastSeparatorIndex+i];
         }
     }
+    hdb_info->db_name[i-1] = '\0';
 }
 
 

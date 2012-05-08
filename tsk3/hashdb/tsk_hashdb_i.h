@@ -102,7 +102,6 @@ extern "C" {
     extern uint8_t idxonly_getentry(TSK_HDB_INFO *, const char *,
                                     TSK_OFF_T, TSK_HDB_FLAG_ENUM,
                                     TSK_HDB_LOOKUP_FN, void *);
-    extern BOOL char2wchar(TCHAR *, char *, int);
 #ifdef __cplusplus
 }
 #endif
