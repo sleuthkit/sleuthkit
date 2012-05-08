@@ -71,8 +71,7 @@ private:
     struct TSK_FRAMEWORK_API OPEN_FILE
     {
         TSK_FS_FILE * fsFile;
-        int attrType;
-        int attrId;
+        const TSK_FS_ATTR * fsAttr;
     };
 
     std::vector<OPEN_FILE *> m_openFiles; // maps handle returned from openFile() to the open TSK_FS_FILE object
