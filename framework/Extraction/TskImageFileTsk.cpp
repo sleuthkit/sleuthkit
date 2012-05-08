@@ -335,7 +335,8 @@ int TskImageFileTsk::readFile(const int handle,
         return -1;
     }
 
-    if (byte_offset >= openFile->fsAttr->size)
+    // fsAttr can be NULL if the file has no attributes.
+    if (openFile->fsAttr == NULL || byte_offset >= openFile->fsAttr->size)
     {
         // If the offset is larger than the attribute size then there is nothing left to read.
         return 0;
