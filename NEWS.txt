@@ -16,6 +16,9 @@ New Features:
 - Added Framework in (windows-only)
 - EnCase hash support
 - Libewf v2 support (it is now non-beta)
+- First file in a raw split or E01 can be specified and the rest of the files
+  are found. 
+- mactime displays times as 0 if the time is not set (isntead of 1970)
 
 Bug Fixes:
 - Relaxed checking when conflict exists between DOS and GPT partitions.

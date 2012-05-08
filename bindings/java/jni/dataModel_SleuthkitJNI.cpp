@@ -14,6 +14,7 @@
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
 #include <time.h>
+#include <string>
 
 static TSK_HDB_INFO * m_NSRLDb = NULL;
 static TSK_HDB_INFO * m_knownBadDb = NULL;
@@ -289,10 +290,11 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
  * @param env pointer to java environment this was called from
  * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
+ * @param noFatFsOrphans whether to skip processing orphans on FAT filesystems
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
-    jclass obj, jlong caseHandle, jstring timezone) {
+    jclass obj, jlong caseHandle, jstring timezone, jboolean noFatFsOrphans) {
     jboolean isCopy;
 
     TskCaseDb *tskCase = castCaseDb(env, caseHandle);
@@ -308,6 +310,10 @@ JNIEXPORT jlong JNICALL
     /* we should be checking this somehow */
     TZSET();
     TskAutoDb *tskAuto = tskCase->initAddImage();
+
+    const bool noFatFsOrhpansBool = noFatFsOrphans?true:false;
+    tskAuto->setNoFatFsOrphans(noFatFsOrhpansBool);
+
     return (jlong) tskAuto;
 }
 
@@ -323,7 +329,6 @@ JNIEXPORT jlong JNICALL
  * @param process the add-image process created by initAddImgNat
  * @param paths array of strings from java, the paths to the image parts
  * @param num_imgs number of image parts
- * @param outDir the output directory
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
@@ -370,6 +375,13 @@ JNIEXPORT void JNICALL
     // process the image (parts)
     if (tskAuto->startAddImage((int) num_imgs, imagepaths8,
             TSK_IMG_TYPE_DETECT, 0)) {
+        std::string msg = "Errors occured while ingesting image\n";
+        std::vector<TskAuto::error_record> errors = tskAuto->getErrorList();
+        for (size_t i = 0; i < errors.size(); i++) {
+            msg.append(TskAuto::errorRecordToString(errors[i]));
+            msg.append("\n");
+        }
+
         throwTskError(env);
         // @@@ We never get past this point now to do any cleanup
         deleteProcess = true;

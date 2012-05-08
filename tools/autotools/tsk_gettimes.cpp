@@ -45,6 +45,7 @@ public:
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
+    virtual uint8_t handleError();
     
 private:
     int m_curVolAddr;
@@ -58,6 +59,12 @@ TskGetTimes::TskGetTimes(int32_t a_secSkew)
     m_secSkew = a_secSkew;
 }
 
+// Print errors as they are encountered
+uint8_t TskGetTimes::handleError() 
+{
+    fprintf(stderr, "%s", tsk_error_get());
+    return 0;
+}
 
 
 TSK_RETVAL_ENUM TskGetTimes::processFile(TSK_FS_FILE * fs_file, const char *path)
@@ -193,11 +200,11 @@ main(int argc, char **argv1)
         tsk_error_print(stderr);
         exit(1);
     }
-
+    
     if (tskGetTimes.findFilesInImg()) {
-        tsk_error_print(stderr);
+        // we already logged the errors
         exit(1);
     }
-
+    
     exit(0);
 }

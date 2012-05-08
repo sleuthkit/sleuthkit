@@ -66,10 +66,12 @@ public:
     virtual std::vector<std::wstring> filenames() const = 0;
 
     /**
-     * Analyze the volume and file systems in the opened images and add
+     * Analyze the volume and file systems in the opened images and 
      * populate the TskImgDB instance registered with TskServices.  This
      * will not perform file carving.
-     * @returns 1 on error and 0 on success
+     * @returns 1 if there was a major error that prevented any extraction.  0 will
+     * be returned if there were minor errors during extraction or if there were 
+     * no errors.
      */
     virtual int extractFiles() = 0;
 

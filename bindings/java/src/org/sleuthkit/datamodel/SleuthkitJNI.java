@@ -41,7 +41,7 @@ public class SleuthkitJNI {
 
 	
 	//load image
-	private static native long initAddImgNat(long db, String timezone) throws TskException;
+	private static native long initAddImgNat(long db, String timezone, boolean noFatFsOrphans) throws TskException;
 	private static native void runAddImgNat(long process, String[] imgPath, int splits) throws TskException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
 	private static native void stopAddImgNat(long process) throws TskException;
 	private static native void revertAddImgNat(long process) throws TskException;
@@ -125,10 +125,12 @@ public class SleuthkitJNI {
 		/**
 		 * Start the process of adding a disk image to the case. 
 		 * @param timezone Timezone that image was from
+		 * @param noFatFsOrphans true if to skip processing of orphans on FAT filesystems 
+		 * 
 		 * @return Object that can be used to manage the process.
 		 */
-		AddImageProcess initAddImageProcess(String timezone) {
-			return new AddImageProcess(timezone);
+		AddImageProcess initAddImageProcess(String timezone, boolean noFatFsOrhpans) {
+			return new AddImageProcess(timezone, noFatFsOrhpans);
 		}
 		
 		/**
@@ -138,10 +140,12 @@ public class SleuthkitJNI {
 		 */
 		public class AddImageProcess {
 			String timezone;
+			boolean noFatFsOrphans;
 			long autoDbPointer;
 			
-			private AddImageProcess(String timezone) {
+			private AddImageProcess(String timezone, boolean noFatFsOrphans) {
 				this.timezone = timezone;
+				this.noFatFsOrphans = noFatFsOrphans;
 				autoDbPointer = 0;
 			}
 			
@@ -156,7 +160,7 @@ public class SleuthkitJNI {
 					throw new TskException("AddImgProcess:run: AutoDB pointer is already set");
 				}
 				
-				autoDbPointer = initAddImgNat(caseDbPointer, timezone);
+				autoDbPointer = initAddImgNat(caseDbPointer, timezone, noFatFsOrphans);
 				runAddImgNat(autoDbPointer, imgPath, imgPath.length);
 			}
 			
@@ -252,7 +256,7 @@ public class SleuthkitJNI {
 
 	/**
 	 * open the image and return the image info pointer
-	 * @param imageDirs the paths to the images
+	 * @param imageFiles the paths to the images
 	 * @return the image info pointer
 	 * @throws TskException
 	 */
