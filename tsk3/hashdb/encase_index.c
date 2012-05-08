@@ -72,7 +72,7 @@ encase_name(TSK_HDB_INFO * hdb_info)
         &utf16[ilen], &utf8, &utf8[78],
         TSKlenientConversion);
     
-    strncpy(hdb_info->db_name, ret8, strlen(ret8));
+    strncpy(hdb_info->db_name, ret8, strlen(ret8)+1);
 }
 
 

@@ -94,31 +94,30 @@ hk_name(TSK_HDB_INFO * hdb_info)
 {
     size_t lastSeparatorIndex = 0;
     size_t lastPeriodIndex = 0;
-    size_t maxlen = 40;
     size_t len = TSTRLEN(hdb_info->db_fname);
-    size_t i;
-    for (i = 0; i < len; i++)
+    size_t i = 0;
+#ifdef TSK_WIN32
+    char path_char = '\\';
+#else
+    char path_char = '/';
+#endif
+
+    for (i = len-1; i > 0; --i)
     {
-        if (hdb_info->db_fname[i] == '\\')
-            lastSeparatorIndex = i;
-        if (hdb_info->db_fname[i] == '.')
+        if (hdb_info->db_fname[i] == '.' && !lastPeriodIndex)
             lastPeriodIndex = i;
-    }
-    if(lastSeparatorIndex && lastPeriodIndex > lastSeparatorIndex)
-    {
-        for(i = 1; i < (len-lastSeparatorIndex) && i < maxlen && i < (lastPeriodIndex-lastSeparatorIndex); i++)
+        if (hdb_info->db_fname[i] == path_char)
         {
-            hdb_info->db_name[i-1] = (char) hdb_info->db_fname[lastSeparatorIndex+i];
+            lastSeparatorIndex = ++i;
+            break;
         }
     }
-    else if(lastSeparatorIndex)
+    for(i = 0; i < (len-lastSeparatorIndex) && i < (lastPeriodIndex-lastSeparatorIndex); i++)
     {
-        for(i = 1; i < (len-lastSeparatorIndex) && i < maxlen; i++)
-        {
-            hdb_info->db_name[i-1] = (char) hdb_info->db_fname[lastSeparatorIndex+i];
-        }
+        hdb_info->db_name[i] = (char) hdb_info->db_fname[lastSeparatorIndex+i];
     }
-    hdb_info->db_name[i-1] = '\0';
+
+    hdb_info->db_name[i] = '\0';
 }
 
 /**
