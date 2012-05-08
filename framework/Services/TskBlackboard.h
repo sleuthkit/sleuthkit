@@ -46,17 +46,17 @@ using namespace std;
  * you also add it there.  
  * See bindings/java/src/org/sleuthkit/datamodel/BlackboardArtifact.java */
 typedef enum TSK_ARTIFACT_TYPE {
-		TSK_ART_GEN_INFO = 1,///< The general info artifact, if information doesn't need its own artifact it should go here
-		TSK_ART_WEB_BOOKMARK = 2,///< A web bookmark. 
-		TSK_ART_WEB_COOKIE = 3,///< A web cookie. 
-		TSK_ART_WEB_HISTORY = 4,///< A web history enrty. 
-		TSK_ART_WEB_DOWNLOAD = 5,///< A web download. 
-		TSK_ART_RECENT_OBJECT = 6,///< A recently used object (MRU, recent document, etc.).
-		TSK_ART_TRACKPOINT = 7,///< A trackpoint from a GPS log.
-		TSK_ART_INSTALLED_PROG = 8,///< An installed program. 
-		TSK_ART_KEYWORD_HIT = 9,///< A keyword hit. 
-        TSK_ART_HASHSET_HIT = 10, ///< A hit within a known bad / notable hashset / hash database. 
-        TSK_ART_DEVICE_ATTACHED = 11, ///< An event for a device being attached to the host computer
+		TSK_GEN_INFO = 1,///< The general info artifact, if information doesn't need its own artifact it should go here
+		TSK_WEB_BOOKMARK = 2,///< A web bookmark. 
+		TSK_WEB_COOKIE = 3,///< A web cookie. 
+		TSK_WEB_HISTORY = 4,///< A web history enrty. 
+		TSK_WEB_DOWNLOAD = 5,///< A web download. 
+		TSK_RECENT_OBJECT = 6,///< A recently used object (MRU, recent document, etc.).
+		TSK_TRACKPOINT = 7,///< A trackpoint from a GPS log.
+		TSK_INSTALLED_PROG = 8,///< An installed program. 
+		TSK_KEYWORD_HIT = 9,///< A keyword hit. 
+        TSK_HASHSET_HIT = 10, ///< A hit within a known bad / notable hashset / hash database. 
+        TSK_DEVICE_ATTACHED = 11, ///< An event for a device being attached to the host computer
     /* SEE ABOVE:
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackboard.cpp
@@ -80,7 +80,6 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_DATETIME = 2,///< INT32: GMT based Unix time, defines number of secords elapsed since UTC Jan 1, 1970.
     TSK_NAME = 3,///< STRING: The name associated with an artifact
     TSK_PROG_NAME = 4,///< String of name of a program that was installed on the system
-    TSK_WEB_BOOKMARK = 5,///< STRING: Browser bookmark information -- DO NOT USED -- WILL BE REMOVED
     TSK_VALUE = 6,///< Some value associated with an artifact
     TSK_FLAG = 7,///< Some flag associated with an artifact
     TSK_PATH = 8,///< A filesystem path.  Should be fully qualified. Should set TSK_PATH_ID as well when this is set. TODO: Need to define this value more for cases with multiple images and multiple file systems per image. 
