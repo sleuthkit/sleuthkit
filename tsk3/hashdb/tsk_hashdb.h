@@ -106,7 +106,9 @@ extern "C" {
     */
     struct TSK_HDB_INFO {
 
-        TSK_TCHAR *db_fname;    ///< Name of the database
+        TSK_TCHAR *db_name;          ///< Name of the database
+
+        TSK_TCHAR *db_fname;    ///< Name of the database file
 
         TSK_TCHAR *uns_fname;   ///< Name of unsorted index file
 
@@ -148,6 +150,8 @@ extern "C" {
 
     extern uint8_t tsk_hdb_hasindex(TSK_HDB_INFO *, uint8_t htype);
     extern uint8_t tsk_hdb_makeindex(TSK_HDB_INFO *, TSK_TCHAR *);
+    extern uint8_t tsk_hdb_indexname(TSK_HDB_INFO *, TSK_TCHAR *);
+    extern void    tsk_hdb_nameinit(TSK_HDB_INFO *);
 
 
     /* Functions */

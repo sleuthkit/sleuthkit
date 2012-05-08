@@ -16,8 +16,44 @@
 #include "tsk_hashdb_i.h"
 
 #define STR_EMPTY ""
+#define MAX_TEXT_LINE_LENGTH 127
+#define MAXSTRLENGTH    255
 
 
+/**
+ * Return a char array containing the hashset's name
+ *
+ * @param hFile File handle to hash database
+ *
+ * @return the name of the hashsed
+ */
+void
+idxonly_name(TSK_HDB_INFO * hdb_info)
+{
+    FILE * hFile = hdb_info->hIdx;
+    char buf[MAX_TEXT_LINE_LENGTH];
+    TSK_TCHAR ret[MAX_TEXT_LINE_LENGTH];
+    int i = 0;
+    int j = 0;
+
+    if(!hFile)
+        return;
+    fseeko(hFile, 0, 0);
+    fgets(buf, MAX_TEXT_LINE_LENGTH, hFile);
+    fgets(buf, MAX_TEXT_LINE_LENGTH, hFile);
+    while(buf[i] != '+' && i < MAX_TEXT_LINE_LENGTH)
+    {
+        i++;
+    }
+    i++;
+    while(buf[i] != '\r' && buf[i] != '\n' && i < MAX_TEXT_LINE_LENGTH)
+    {
+        ret[j++] = (TSK_TCHAR)buf[i++];
+    }
+    ret[j] = '\0';
+
+    TSTRNCPY(hdb_info->db_name, ret, MAX_TEXT_LINE_LENGTH);
+}
 
 
 /**
@@ -64,4 +100,47 @@ idxonly_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
     tsk_error_set_errstr(
              "idxonly_getentry: Not supported when INDEX ONLY option is used");
     return 1;
+}
+
+
+//Destinition should be allocated memory of nDestStrLen TCHAR size
+BOOL char2wchar(TCHAR* pDest, char* pSrc, int nDestStrLen)
+{
+     int nSrcStrLen = 0;
+     int nOutputBuffLen = 0;
+     int retcode = 0;
+
+     if(pDest == NULL || pSrc == NULL)
+     {
+          //SysDebug(MID_EXCEPTION, "Char2Wchar: Input Args NULL\n");
+          return FALSE;
+     }
+
+     nSrcStrLen = strlen(pSrc);
+     if(nSrcStrLen == 0)
+     {  
+          //SysDebug(MID_EXCEPTION, "Char2Wchar: Strlen zero\n");
+          return FALSE;
+     }
+
+     nDestStrLen = nSrcStrLen;
+
+     if (nDestStrLen > MAXSTRLENGTH - 1)
+     {
+          //SysDebug(MID_EXCEPTION, "Char2Wchar: Check nSrcStrLen\n");
+          return FALSE;
+     }
+     memset(pDest,0,sizeof(TCHAR)*nDestStrLen);
+     nOutputBuffLen = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, pSrc,
+     nSrcStrLen, pDest, nDestStrLen);
+ 
+     if (nOutputBuffLen == 0)
+     {
+          retcode = GetLastError();
+          //Sysdebug("Char2Wchar : MultiByteToWideChar returned ERROR \n",0,0);  
+          return FALSE;
+     }
+
+     pDest[nOutputBuffLen] = '\0';
+     return TRUE;
 }

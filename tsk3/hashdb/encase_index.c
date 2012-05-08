@@ -39,6 +39,28 @@ encase_test(FILE * hFile)
     return 1;
 }
 
+/**
+ * Return a char array containing the hashset's name
+ *
+ * @param hFile File handle to hash database
+ *
+ * @return the name of the hashsed
+ */
+void
+encase_name(TSK_HDB_INFO * hdb_info)
+{
+    FILE * hFile = hdb_info->hDb;
+    TSK_TCHAR buf[39];
+    if(!hFile)
+        return;
+
+    fseeko(hFile, 1032, SEEK_SET);
+    if (39 != fread(buf, sizeof(TSK_TCHAR), 39, hFile))
+        return;
+    
+    TSTRNCPY(hdb_info->db_name, buf, 39);
+}
+
 
 /**
  * Process the database to create a sorted index of it. Consecutive

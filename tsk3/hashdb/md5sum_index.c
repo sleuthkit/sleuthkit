@@ -52,6 +52,44 @@ md5sum_test(FILE * hFile)
     return 0;
 }
 
+/**
+ * Return a char array containing the hashset's name
+ *
+ * @param hFile File handle to hash database
+ *
+ * @return the name of the hashsed
+ */
+void
+md5sum_name(TSK_HDB_INFO * hdb_info)
+{
+    size_t sepi = 0;
+    size_t peri = 0;
+    size_t maxlen = 40;
+    size_t len = TSTRLEN(hdb_info->db_fname);
+    size_t i;
+    for (i = 0; i < len; i++)
+    {
+        if (hdb_info->db_fname[i] == '\\')
+            sepi = i;
+        if (hdb_info->db_fname[i] == '.')
+            peri = i;
+    }
+    if(sepi && peri > sepi)
+    {
+        for(i = 1; i < (len-sepi) && i < maxlen && i < (peri-sepi); i++)
+        {
+            hdb_info->db_name[i-1] = hdb_info->db_fname[sepi+i];
+        }
+    }
+    else if(sepi)
+    {
+        for(i = 1; i < (len-sepi) && i < maxlen; i++)
+        {
+            hdb_info->db_name[i-1] = hdb_info->db_fname[sepi+i];
+        }
+    }
+}
+
 
 /**
  * Given a line of text from an MD5sum database, return pointers
