@@ -194,18 +194,20 @@ public class SleuthkitCase {
 	/**
 	 * Set the NSRL database
 	 * @param path The path to the database
+	 * @return a pointer to that database
 	 */
-	public void setNSRLDatabase(String path) throws TskException {
-		this.caseHandle.setNSRLDatabase(path);
+	public int setNSRLDatabase(String path) throws TskException {
+		return this.caseHandle.setNSRLDatabase(path);
 	}
 
 	/**
 	 * Add the known bad database
 	 * @param name The name of the database
 	 * @param path The path to the database
+	 * @return a pointer to that database
 	 */
-	public void addKnownBadDatabase(String path, String name) throws TskException {
-		this.caseHandle.addKnownBadDatabase(path,name);
+	public int addKnownBadDatabase(String path) throws TskException {
+		return this.caseHandle.addKnownBadDatabase(path);
 	}
 
 	public void clearLookupDatabases() throws TskException {
@@ -2110,7 +2112,7 @@ public class SleuthkitCase {
 	 * @return			Map from database name to known status
 	 * @throws			TskException
 	 */
-	public Map<String, TskData.FileKnown> lookupMd5(String md5Hash) throws TskException {
+	public Map<Integer, TskData.FileKnown> lookupMd5(String md5Hash) throws TskException {
 		return SleuthkitJNI.lookupHash(md5Hash);
 	}
 //	Useful if we want to queue sql updates for performance reasons

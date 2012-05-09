@@ -36,11 +36,11 @@ public class SleuthkitJNI {
 	private static native long newCaseDbNat(String dbPath) throws TskException;
 	private static native long openCaseDbNat(String path) throws TskException;
 	private static native void closeCaseDbNat(long db) throws TskException;
-	private static native void setDbNSRLNat(String hashDbPath) throws TskException;
-	private static native void addDbKnownBadNat(String hashDbPath, String hashDbName) throws TskException;
+	private static native int setDbNSRLNat(String hashDbPath) throws TskException;
+	private static native int addDbKnownBadNat(String hashDbPath) throws TskException;
 	private static native String getDbName(String hashDbPath) throws TskException;
 	private static native void closeDbLookupsNat() throws TskException;
-	private static native void hashDBLookup(String hash, String[] names, int[] results, int arraylen) throws TskException;
+	private static native void hashDBLookup(String hash, int[] results, int arraylen) throws TskException;
 
 	
 	//load image
@@ -111,18 +111,20 @@ public class SleuthkitJNI {
 		/**
 		 * Set the NSRL database
 		 * @param path The path to the database
+		 * @return a pointer to that database
 		 */
-		void setNSRLDatabase(String path) throws TskException {
-			setDbNSRLNat(path);
+		int setNSRLDatabase(String path) throws TskException {
+			return setDbNSRLNat(path);
 		}
 
 		/**
 		 * Add the known bad database
 		 * @param name The name of the database
 		 * @param path The path to the database
+		 * @return a pointer to that database
 		 */
-		void addKnownBadDatabase(String path, String name) throws TskException {
-			addDbKnownBadNat(path, name);
+		int addKnownBadDatabase(String path) throws TskException {
+			return addDbKnownBadNat(path);
 		}
 
 		
@@ -469,18 +471,20 @@ public class SleuthkitJNI {
 	/**
 	 * Set the NSRL database
 	 * @param path The path to the database
+	 * @return a pointer to that database
 	 */
-	public static void setNSRLDatabase(String path) throws TskException {
-		setDbNSRLNat(path);
+	public static int setNSRLDatabase(String path) throws TskException {
+		return setDbNSRLNat(path);
 	}
 
 	/**
 	 * Add the known bad database
 	 * @param name The name of the database
 	 * @param path The path to the database
+	 * @return a pointer to that database
 	 */
-	public static void addKnownBadDatabase(String path, String name) throws TskException {
-		addDbKnownBadNat(path, name);
+	public static int addKnownBadDatabase(String path) throws TskException {
+		return addDbKnownBadNat(path);
 	}
 
 	/**
@@ -494,24 +498,21 @@ public class SleuthkitJNI {
 	/**
 	 * Look up the given hash in the databases
 	 * @param hash
-	 * @return A map from database name to lookup result
+	 * @return A map from database pointer to known / known bad lookup result
 	 * @throws TskException 
 	 */
-	public static Map<String, TskData.FileKnown> lookupHash(String hash) throws TskException{
-		Map<String, TskData.FileKnown> ret = new HashMap<String, TskData.FileKnown>();
+	public static Map<Integer, TskData.FileKnown> lookupHash(String hash) throws TskException{
+		Map<Integer, TskData.FileKnown> ret = new HashMap<Integer, TskData.FileKnown>();
 		
-		String[] names = new String[MAX_DATABASES];
 		int[] results = new int[MAX_DATABASES];
-		hashDBLookup(hash, names, results, MAX_DATABASES);
+		hashDBLookup(hash, results, MAX_DATABASES);
 		
-		for(int i = 0; i < names.length; i++) {
-			String name = names[i];
+		for(int i = 0; i < results.length; i++) {
 			int result = results[i];
-			if(name == null || results == null) {
-				break;
+			if(result != 0) {
+				TskData.FileKnown fk = TskData.FileKnown.valueOf(result);
+				ret.put(i, fk);
 			}
-			TskData.FileKnown fk = TskData.FileKnown.valueOf(result);
-			ret.put(name, fk);
 		}
 		
 		return ret;
