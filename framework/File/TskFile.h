@@ -182,7 +182,7 @@ public:
      * Set the byte offset within the file. If the second parameter is not
      * supplied the offset will be set relative to the beginning of the file.
      * @param off Number off bytes to offset from origin.
-     * @param dir The point from which the given offset is relative to. Defaults
+     * @param origin The point from which the given offset is relative to. Defaults
      * to beginning of file. If origin is std::ios::end the offset must be a 
      * negative number.
      * @returns The absolute file offset resulting from the repositioning.

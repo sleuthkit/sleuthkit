@@ -257,7 +257,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
 
     const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
-    TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
+    TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
 
     if (m_NSRLDb != NULL) {
         int8_t retval = tsk_hdb_lookup_str(m_NSRLDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
@@ -265,7 +265,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
         if (retval == -1) {
             throwTskError(env);
         } else if (retval) {
-            file_known = TSK_AUTO_CASE_FILE_KNOWN_KNOWN;
+            file_known = TSK_DB_FILES_KNOWN_KNOWN;
         }
     }
 
@@ -275,7 +275,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
         if (retval == -1) {
             throwTskError(env);
         } else if (retval) {
-            file_known = TSK_AUTO_CASE_FILE_KNOWN_BAD;
+            file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
         }
     }
 
@@ -619,6 +619,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
  * @param len Length of bytes in buf
  * @returns Pointer to newly created java byte array or NULL if there is an error
  */
+#if 0
 static jbyteArray
 copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
 {
@@ -631,6 +632,7 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
 
     return return_array;
 }
+#endif
 
 /** move a local buffer into an existing Java array.
  * @param env JNI env

@@ -1921,7 +1921,7 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     TSK_FS_FILE *fs_file;
     iso9660_dentry dd;
     iso9660_inode *dinode;
-    char timeBuf[32];
+    char timeBuf[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();

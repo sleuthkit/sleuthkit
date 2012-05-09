@@ -72,7 +72,7 @@ class TskAuto {
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     virtual uint8_t openImageUtf8(int, const char *const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
-    virtual uint8_t openImage(TSK_IMG_INFO *);
+    virtual uint8_t openImageHandle(TSK_IMG_INFO *);
     virtual void closeImage();
 
     TSK_OFF_T getImageSize() const;
@@ -196,6 +196,10 @@ class TskAuto {
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
     TSK_FS_DIR_WALK_FLAG_ENUM m_fileFilterFlags;
     std::vector<error_record> m_errors;
+
+    // prevent copying until we add proper logic to handle it
+    TskAuto(const TskAuto&);
+    TskAuto & operator=(const TskAuto&);
 
     static TSK_WALK_RET_ENUM dirWalkCb(TSK_FS_FILE * fs_file,
         const char *path, void *ptr);

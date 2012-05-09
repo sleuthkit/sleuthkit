@@ -2457,7 +2457,7 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     hfs_plus_vh *sb = hfs->fs;
     time_t mac_time;
     TSK_INUM_T inode;
-    char timeBuf[32];
+    char timeBuf[128];
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "hfs_fstat: called\n");
@@ -2675,7 +2675,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     char hfs_mode[12];
     HFS_PRINT_ADDR print;
     HFS_ENTRY entry;
-    char timeBuf[32];
+    char timeBuf[128];
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
