@@ -85,7 +85,7 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupsN
  * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
-  (JNIEnv *, jclass, jstring, jobjectArray, jintArray);
+  (JNIEnv *, jclass, jstring, jobjectArray, jintArray, jint);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
