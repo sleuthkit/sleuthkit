@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <wchar.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>

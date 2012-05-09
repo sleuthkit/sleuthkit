@@ -175,7 +175,7 @@ typedef char TSK_TCHAR;         ///< Character data type that is UTF-16 (wchar_t
 #define TSTRNCPY strncpy
 #define TSTRNCAT strncat
 #define TSTRCHR	strchr
-#defile TSTRRCHR strrchr
+#define TSTRRCHR strrchr
 #define TSTRTOUL strtoul
 #define TSTRTOULL strtoull
 #define TATOI	atoi

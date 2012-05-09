@@ -1300,11 +1300,11 @@ void
 tsk_hdb_name_from_path(TSK_HDB_INFO * hdb_info)
 {
 #ifdef TSK_WIN32
-    char path_char = '\\';
+    const char PATH_CHAR = '\\';
 #else
-    char path_char = '/';
+    const char PATH_CHAR = '/';
 #endif
-    TSK_TCHAR * begin = TSTRRCHR(hdb_info->db_fname, path_char);
+    TSK_TCHAR * begin = TSTRRCHR(hdb_info->db_fname, PATH_CHAR);
     TSK_TCHAR * end = TSTRRCHR(hdb_info->db_fname, '.');
     int i;
 
