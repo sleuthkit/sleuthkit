@@ -675,6 +675,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
  * @param len Length of bytes in buf
  * @returns Pointer to newly created java byte array or NULL if there is an error
  */
+#if 0
 static jbyteArray
 copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
 {
@@ -687,6 +688,7 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
 
     return return_array;
 }
+#endif
 
 /** move a local buffer into an existing Java array.
  * @param env JNI env
