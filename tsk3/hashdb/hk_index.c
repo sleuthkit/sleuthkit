@@ -86,8 +86,6 @@ hk_test(FILE * hFile)
  * Return a char array containing the hashset's name
  *
  * @param hFile File handle to hash database
- *
- * @return the name of the hashsed
  */
 void
 hk_name(TSK_HDB_INFO * hdb_info)

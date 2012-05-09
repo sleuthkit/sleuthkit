@@ -62,6 +62,7 @@ encase_name(TSK_HDB_INFO * hdb_info)
     if (39 != fread(buf, sizeof(wchar_t), 39, hFile))
         return;
 
+    // do some arithmetic on type sizes to be platform independent
     ilen = wcslen(buf) * (sizeof(wchar_t) / sizeof(UTF16));
 
     utf8 = (UTF8 *) hdb_info->db_name;

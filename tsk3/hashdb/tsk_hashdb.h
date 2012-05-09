@@ -152,8 +152,6 @@ extern "C" {
 
     extern uint8_t tsk_hdb_hasindex(TSK_HDB_INFO *, uint8_t htype);
     extern uint8_t tsk_hdb_makeindex(TSK_HDB_INFO *, TSK_TCHAR *);
-    extern uint8_t tsk_hdb_indexname(TSK_HDB_INFO *, TSK_TCHAR *);
-    extern void    tsk_hdb_nameinit(TSK_HDB_INFO *);
 
 
     /* Functions */

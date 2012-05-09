@@ -23,7 +23,7 @@ using std::vector;
 using std::map;
 using std::for_each;
 
-static TSK_HDB_INFO * m_NSRLDb;
+static TSK_HDB_INFO * m_NSRLDb = NULL;
 static std::vector<TSK_HDB_INFO *> m_knownbads;
 
 /** Throw an TSK exception back up to the Java code with a specific message.
