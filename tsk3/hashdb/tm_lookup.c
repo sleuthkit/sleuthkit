@@ -1184,38 +1184,7 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
     }
     TSTRNCPY(hdb_info->db_fname, db_file, flen);
 
-    /* Get database specific information */
-    hdb_info->db_type = dbtype;
-    switch (dbtype) {
-    case TSK_HDB_DBTYPE_NSRL_ID:
-        hdb_info->getentry = nsrl_getentry;
-        hdb_info->makeindex = nsrl_makeindex;
-        break;
-
-    case TSK_HDB_DBTYPE_MD5SUM_ID:
-        hdb_info->getentry = md5sum_getentry;
-        hdb_info->makeindex = md5sum_makeindex;
-        break;
-
-    case TSK_HDB_DBTYPE_ENCASE_ID:
-        hdb_info->getentry = encase_getentry;
-        hdb_info->makeindex = encase_makeindex;
-        break;
-
-    case TSK_HDB_DBTYPE_HK_ID:
-        hdb_info->getentry = hk_getentry;
-        hdb_info->makeindex = hk_makeindex;
-        break;
-
-    case TSK_HDB_DBTYPE_IDXONLY_ID:
-        hdb_info->getentry = idxonly_getentry;
-        hdb_info->makeindex = idxonly_makeindex;
-        break;
-
-    default:
-        return NULL;
-    }
-
+    
     hdb_info->hash_type = 0;
     hdb_info->hash_len = 0;
     hdb_info->idx_fname = NULL;
@@ -1230,6 +1199,45 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
     hdb_info->idx_lbuf = NULL;
 
     tsk_init_lock(&hdb_info->lock);
+
+    /* Get database specific information */
+    hdb_info->db_type = dbtype;
+    switch (dbtype) {
+    case TSK_HDB_DBTYPE_NSRL_ID:
+        nsrl_name(hdb_info);
+        hdb_info->getentry = nsrl_getentry;
+        hdb_info->makeindex = nsrl_makeindex;
+        break;
+
+    case TSK_HDB_DBTYPE_MD5SUM_ID:
+        md5sum_name(hdb_info);
+        hdb_info->getentry = md5sum_getentry;
+        hdb_info->makeindex = md5sum_makeindex;
+        break;
+
+    case TSK_HDB_DBTYPE_ENCASE_ID:
+        encase_name(hdb_info);
+        hdb_info->getentry = encase_getentry;
+        hdb_info->makeindex = encase_makeindex;
+        break;
+
+    case TSK_HDB_DBTYPE_HK_ID:
+        hk_name(hdb_info);
+        hdb_info->getentry = hk_getentry;
+        hdb_info->makeindex = hk_makeindex;
+        break;
+
+    case TSK_HDB_DBTYPE_IDXONLY_ID:
+        if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID));
+            idxonly_name(hdb_info);
+        hdb_info->getentry = idxonly_getentry;
+        hdb_info->makeindex = idxonly_makeindex;
+        break;
+
+    default:
+        return NULL;
+    }
+
 
     return hdb_info;
 }
@@ -1284,38 +1292,6 @@ tsk_hdb_makeindex(TSK_HDB_INFO * a_hdb_info, TSK_TCHAR * a_type)
 }
 
 /**
- * Set db_name using database type-specific methods
- * @param hdb_info the database object
- */
-void
-tsk_hdb_nameinit(TSK_HDB_INFO * hdb_info)
-{
-    /* Get database specific information */
-    switch (hdb_info->db_type) {
-        case TSK_HDB_DBTYPE_NSRL_ID:
-            nsrl_name(hdb_info);
-            break;
-
-        case TSK_HDB_DBTYPE_MD5SUM_ID:
-            md5sum_name(hdb_info);
-            break;
-
-        case TSK_HDB_DBTYPE_ENCASE_ID:
-            encase_name(hdb_info);
-            break;
-
-        case TSK_HDB_DBTYPE_HK_ID:
-            hk_name(hdb_info);
-            break;
-
-        case TSK_HDB_DBTYPE_IDXONLY_ID:
-            if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID));
-                idxonly_name(hdb_info);
-            break;
-     }
-}
-
-/**
  * Set db_name to the name of the database file
  *
  * @param hdb_info the hash database object
@@ -1328,17 +1304,17 @@ tsk_hdb_name_from_path(TSK_HDB_INFO * hdb_info)
 #else
     char path_char = '/';
 #endif
-    char * begin = strrchr(hdb_info->db_fname, path_char);
-    char * end = strrchr(hdb_info->db_fname, '.');
+    TSK_TCHAR * begin = TSTRRCHR(hdb_info->db_fname, path_char);
+    TSK_TCHAR * end = TSTRRCHR(hdb_info->db_fname, '.');
     int i;
 
     if(!end)
-        end = begin + strlen(begin);
+        end = begin + TSTRLEN(begin);
 
-    for(i = 0; i < (end-begin); i++)
+    for(i = 0; i < (end-begin)-1; i++)
     {
-        hdb_info->db_name[i] = begin[i];
+        hdb_info->db_name[i] = (char) begin[i+1];
     }
 
-    hdb_info->db_name[i+1] = '\0';
+    hdb_info->db_name[i] = '\0';
 }

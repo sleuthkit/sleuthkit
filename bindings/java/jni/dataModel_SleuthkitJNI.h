@@ -7,6 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef org_sleuthkit_datamodel_SleuthkitJNI_MAX_DATABASES
+#define org_sleuthkit_datamodel_SleuthkitJNI_MAX_DATABASES 256L
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    getVersionNat
@@ -52,21 +54,21 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat
  * Method:    setDbNSRLNat
  * Signature: (Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_addDbNSRLNat
-  (JNIEnv *, jclass, jstring, jstring);
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_setDbNSRLNat
+  (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    addDbKnownBadNat
- * Signature: (Ljava/lang/String;)V
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_addDbKnownBadNat
   (JNIEnv *, jclass, jstring, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    setDbKnownBadNat
- * Signature: (Ljava/lang/String;)V
+ * Method:    getDbName
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbName
   (JNIEnv *, jclass, jstring);
@@ -82,7 +84,7 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupsN
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    hashDBLookup
- * Signature: ()V
+ * Signature: (Ljava/lang/String;[Ljava/lang/String;[II)V
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
   (JNIEnv *, jclass, jstring, jobjectArray, jintArray, jint);
@@ -242,7 +244,7 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    createLookupIndexNat
- * Signature: (Ljava/lang/String;)V
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat
   (JNIEnv *, jclass, jstring, jstring);

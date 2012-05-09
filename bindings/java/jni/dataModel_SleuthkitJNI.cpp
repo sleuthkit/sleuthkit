@@ -23,8 +23,8 @@ using std::vector;
 using std::map;
 using std::for_each;
 
-static std::vector<TSK_HDB_INFO *> nsrls;
-static std::vector<TSK_HDB_INFO *> knownbads;
+static TSK_HDB_INFO * m_NSRLDb;
+static std::vector<TSK_HDB_INFO *> m_knownbads;
 
 /** Throw an TSK exception back up to the Java code with a specific message.
  */
@@ -195,23 +195,20 @@ JNIEXPORT void JNICALL
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param pathJ the path to the database
- * @param nameJ the name of the database
  */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_addDbNSRLNat(JNIEnv * env,
-    jclass obj, jstring pathJ, jstring nameJ) {
-
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_setDbNSRLNat(JNIEnv * env,
+    jclass obj, jstring pathJ) {
+ 
+    if (m_NSRLDb != NULL) {
+        tsk_hdb_close(m_NSRLDb);
+        m_NSRLDb = NULL;
+    }
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
-    const char *nameT = env->GetStringUTFChars(nameJ, 0);
-
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-    TSK_HDB_INFO * temp = tsk_hdb_open(pathT, flags);
-    strncpy(temp->db_name, nameT, strlen(nameT)+1);
-    nsrls.push_back(temp);
-
-    env->ReleaseStringUTFChars(nameJ, nameT);
+    m_NSRLDb = tsk_hdb_open(pathT, flags);
     
     return;
 }
@@ -235,7 +232,7 @@ JNIEXPORT void JNICALL
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
     TSK_HDB_INFO * temp = tsk_hdb_open(pathT, flags);
     strncpy(temp->db_name, nameT, strlen(nameT)+1);
-    knownbads.push_back(temp);
+    m_knownbads.push_back(temp);
 
     env->ReleaseStringUTFChars(nameJ, nameT);
     
@@ -263,7 +260,6 @@ JNIEXPORT jstring JNICALL
         flags = TSK_HDB_OPEN_IDXONLY;
 
     TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
-    tsk_hdb_nameinit(tempdb);
 
     jstring jname = env->NewStringUTF(tempdb->db_name);
 
@@ -276,14 +272,16 @@ JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupsNat(JNIEnv * env,
     jclass obj) {
 
+    if (m_NSRLDb != NULL) {
+        tsk_hdb_close(m_NSRLDb);
+        m_NSRLDb = NULL;
+    }
+
     vector<TSK_HDB_INFO *>::iterator it;
 
-    for_each(nsrls.begin(), nsrls.end(), tsk_hdb_close);
-    nsrls.clear();
-
-    for_each(knownbads.begin(), knownbads.end(), tsk_hdb_close);
+    for_each(m_knownbads.begin(), m_knownbads.end(), tsk_hdb_close);
    
-    knownbads.clear();
+    m_knownbads.clear();
 }
 
 /*
@@ -300,14 +298,11 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
     const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
 
-    vector<TSK_HDB_INFO *>::iterator it;
-
-    for ( it = nsrls.begin() ; it < nsrls.end(); it++ )
+    if(m_NSRLDb != NULL)
     {
         if(index >= maxArrayLen)
             throwTskError(env);
-        TSK_HDB_INFO * db = *it;
-        int8_t retval = tsk_hdb_lookup_str(db, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
+        int8_t retval = tsk_hdb_lookup_str(m_NSRLDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
         TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
 
@@ -317,12 +312,13 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
             file_known = TSK_AUTO_CASE_FILE_KNOWN_KNOWN;
         }
         env->SetObjectArrayElement(  
-            names,index,env->NewStringUTF(db->db_name));
+            names,index,env->NewStringUTF(m_NSRLDb->db_name));
         env->SetIntArrayRegion(results, index++, 1, (jint*) &file_known);
         
     }
+    vector<TSK_HDB_INFO *>::iterator it;
 
-    for ( it = knownbads.begin() ; it < knownbads.end(); it++ )
+    for ( it = m_knownbads.begin() ; it < m_knownbads.end(); it++ )
     {
         if(index >= maxArrayLen)
             throwTskError(env);

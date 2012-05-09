@@ -66,7 +66,6 @@ extern "C" {
                                            TSK_OFF_T offset);
     extern uint8_t tsk_hdb_idxfinalize(TSK_HDB_INFO *);
     extern void tsk_hdb_name_from_path(TSK_HDB_INFO *);
-    extern void tsk_hdb_nameinit(TSK_HDB_INFO *);
 
 /* Functions */
 

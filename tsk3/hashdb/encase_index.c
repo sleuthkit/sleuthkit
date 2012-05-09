@@ -49,11 +49,10 @@ encase_name(TSK_HDB_INFO * hdb_info)
 {
     FILE * hFile = hdb_info->hDb;
     wchar_t buf[40];
-    char ret8[80];
     UTF16 *utf16;
     UTF8 *utf8;
     size_t ilen;
-    hdb_info->db_name[0] = '\0';
+    memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
     if(!hFile)
         return;
 
@@ -65,15 +64,13 @@ encase_name(TSK_HDB_INFO * hdb_info)
 
     ilen = wcslen(buf);
 
-    utf8 = (UTF8 *) ret8;
+    utf8 = (UTF8 *) hdb_info->db_name;
     utf16 = (UTF16 *) buf;
 
     tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
         (const UTF16 **) &utf16,
         &utf16[ilen], &utf8, &utf8[78],
         TSKlenientConversion);
-    
-    strncpy(hdb_info->db_name, ret8, strlen(ret8)+1);
 }
 
 

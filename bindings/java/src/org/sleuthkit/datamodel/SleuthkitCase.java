@@ -192,12 +192,11 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add the NSRL database
-	 * @param name The name of the database
+	 * Set the NSRL database
 	 * @param path The path to the database
 	 */
-	public void addNSRLDatabase(String path, String name) throws TskException {
-		this.caseHandle.addNSRLDatabase(path, name);
+	public void setNSRLDatabase(String path) throws TskException {
+		this.caseHandle.setNSRLDatabase(path);
 	}
 
 	/**

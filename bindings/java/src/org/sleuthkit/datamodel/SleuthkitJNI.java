@@ -36,11 +36,11 @@ public class SleuthkitJNI {
 	private static native long newCaseDbNat(String dbPath) throws TskException;
 	private static native long openCaseDbNat(String path) throws TskException;
 	private static native void closeCaseDbNat(long db) throws TskException;
-	private static native void addDbNSRLNat(String hashDbPath, String hashDbName) throws TskException;
+	private static native void setDbNSRLNat(String hashDbPath) throws TskException;
 	private static native void addDbKnownBadNat(String hashDbPath, String hashDbName) throws TskException;
 	private static native String getDbName(String hashDbPath) throws TskException;
 	private static native void closeDbLookupsNat() throws TskException;
-	private static native int hashDBLookup(String hash, String[] names, int[] results, int arraylen) throws TskException;
+	private static native void hashDBLookup(String hash, String[] names, int[] results, int arraylen) throws TskException;
 
 	
 	//load image
@@ -109,12 +109,11 @@ public class SleuthkitJNI {
 		}
 
 		/**
-		 * Add the NSRL database
-		 * @param name The name of the database
+		 * Set the NSRL database
 		 * @param path The path to the database
 		 */
-		void addNSRLDatabase(String path, String name) throws TskException {
-			addDbNSRLNat(path, name);
+		void setNSRLDatabase(String path) throws TskException {
+			setDbNSRLNat(path);
 		}
 
 		/**
@@ -468,12 +467,11 @@ public class SleuthkitJNI {
 	}
 	
 	/**
-	 * Add the NSRL database
-	 * @param name The name of the database
+	 * Set the NSRL database
 	 * @param path The path to the database
 	 */
-	public static void addNSRLDatabase(String path, String name) throws TskException {
-		addDbNSRLNat(path, name);
+	public static void setNSRLDatabase(String path) throws TskException {
+		setDbNSRLNat(path);
 	}
 
 	/**
