@@ -297,7 +297,7 @@ TSK_RETVAL_ENUM
     TskAutoDb::insertFileData(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
     const unsigned char *const md5,
-    const TSK_AUTO_CASE_KNOWN_FILE_ENUM known)
+    const TSK_DB_FILES_KNOWN_ENUM known)
 {
     if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId,
             m_curFileId)) {
@@ -505,7 +505,7 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
      * up if TSK is more consistent about if there should always be an attribute or not */
     TSK_RETVAL_ENUM retval;
     if (tsk_fs_file_attr_getsize(fs_file) == 0)
-        retval = insertFileData(fs_file, NULL, path, NULL, TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN);
+        retval = insertFileData(fs_file, NULL, path, NULL, TSK_DB_FILES_KNOWN_UNKNOWN);
     else
         retval = processAttributes(fs_file, path);
 
@@ -529,7 +529,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
         unsigned char *md5 = NULL;
         memset(hash, 0, 16);
 
-        TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
+        TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
 
 		if (m_fileHashFlag && isFile(fs_file)) {
             if (md5HashAttr(hash, fs_attr)) {
@@ -544,7 +544,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
                     registerError();
                     return TSK_OK;
                 } else if (retval) {
-                    file_known = TSK_AUTO_CASE_FILE_KNOWN_KNOWN;
+                    file_known = TSK_DB_FILES_KNOWN_KNOWN;
                 }
             }
 
@@ -554,7 +554,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
                     registerError();
                     return TSK_OK;
                 } else if (retval) {
-                    file_known = TSK_AUTO_CASE_FILE_KNOWN_BAD;
+                    file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
                 }
             }
         }

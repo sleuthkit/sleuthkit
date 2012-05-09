@@ -197,6 +197,10 @@ class TskAuto {
     TSK_FS_DIR_WALK_FLAG_ENUM m_fileFilterFlags;
     std::vector<error_record> m_errors;
 
+    // prevent copying until we add proper logic to handle it
+    TskAuto(const TskAuto&);
+    TskAuto & operator=(const TskAuto&);
+
     static TSK_WALK_RET_ENUM dirWalkCb(TSK_FS_FILE * fs_file,
         const char *path, void *ptr);
     static TSK_WALK_RET_ENUM vsWalkCb(TSK_VS_INFO * vs_info,

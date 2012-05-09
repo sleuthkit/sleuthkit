@@ -96,7 +96,7 @@ public:
      * Add a file to the system using the given file id and path.
      * This method saves a local copy of the file given in the path.
      * @param fileId ID of the new file.
-     * @param istr The path of the file to save.
+     * @param filePath The path of the file to save.
      * @throws TskFileException if a file with the given fileId already exists,
      * the file specified in filePath does not exist or an error is encountered 
      * while saving the file.
