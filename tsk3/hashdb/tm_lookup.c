@@ -218,23 +218,23 @@ tsk_hdb_idxinitialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 #endif
 
     /* Print the header */
-    fprintf(hdb_info->hIdxTmp, "%s+%s\n", TSK_HDB_IDX_HEAD_STR,
+    fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_NAME_STR,
         hdb_info->db_name);
     switch (hdb_info->db_type) {
     case TSK_HDB_DBTYPE_NSRL_ID:
-       fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_STR,
+       fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
             TSK_HDB_DBTYPE_NSRL_STR);
         break;
     case TSK_HDB_DBTYPE_MD5SUM_ID:
-        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_STR,
+        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
             TSK_HDB_DBTYPE_MD5SUM_STR);
         break;
     case TSK_HDB_DBTYPE_HK_ID:
-        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_STR,
+        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
             TSK_HDB_DBTYPE_HK_STR);
         break;
     case TSK_HDB_DBTYPE_ENCASE_ID:
-        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_STR,
+        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
             TSK_HDB_DBTYPE_ENCASE_STR);
         break;
         /* Used to stop warning messages about missing enum value */
@@ -550,7 +550,7 @@ hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
         return 1;
     }
 
-    if (strncmp(head, TSK_HDB_IDX_HEAD_STR, strlen(TSK_HDB_IDX_HEAD_STR))
+    if (strncmp(head, TSK_HDB_IDX_HEAD_TYPE_STR, strlen(TSK_HDB_IDX_HEAD_TYPE_STR))
         != 0) {
         tsk_release_lock(&hdb_info->lock);
         tsk_error_reset();
@@ -570,7 +570,7 @@ hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
         return 1;
     }
 
-    if (strncmp(head2, TSK_HDB_IDX_HEAD_STR, strlen(TSK_HDB_IDX_HEAD_STR))
+    if (strncmp(head2, TSK_HDB_IDX_HEAD_NAME_STR, strlen(TSK_HDB_IDX_HEAD_NAME_STR))
         != 0) {
         tsk_release_lock(&hdb_info->lock);
         tsk_error_reset();
@@ -584,7 +584,7 @@ hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
     hdb_info->idx_off = (uint16_t) (strlen(head) + strlen(head2));
 
     /* Skip the space */
-    ptr = &head[strlen(TSK_HDB_IDX_HEAD_STR) + 1];
+    ptr = &head[strlen(TSK_HDB_IDX_HEAD_TYPE_STR) + 1];
 
     ptr[strlen(ptr) - 1] = '\0';
     if ((ptr[strlen(ptr) - 1] == 10) || (ptr[strlen(ptr) - 1] == 13)) {

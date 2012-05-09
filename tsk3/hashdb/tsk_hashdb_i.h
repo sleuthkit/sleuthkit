@@ -52,9 +52,10 @@ extern "C" {
     ( TSK_HDB_HTYPE_LEN(x) + TSK_HDB_OFF_LEN + 2)
 
 /**
- * String used in index header.  It is one longer than a 
+ * Strings used in index header.  It is one longer than a 
  * sha-1 hash - so that it always sorts to the top */
-#define TSK_HDB_IDX_HEAD_STR	"00000000000000000000000000000000000000000"
+#define TSK_HDB_IDX_HEAD_TYPE_STR	"00000000000000000000000000000000000000000"
+#define TSK_HDB_IDX_HEAD_NAME_STR	"00000000000000000000000000000000000000001"
 
 
 

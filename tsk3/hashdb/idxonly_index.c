@@ -34,7 +34,7 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
     fseeko(hFile, 0, 0);
     fgets(buf, TSK_HDB_NAME_MAXLEN, hFile);
     fgets(buf, TSK_HDB_NAME_MAXLEN, hFile);
-    bufptr = strchr(buf, '+');
+    bufptr = strchr(buf, '|');
     bufptr++;
     while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
     {
