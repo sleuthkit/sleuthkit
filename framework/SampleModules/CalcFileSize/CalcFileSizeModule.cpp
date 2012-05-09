@@ -50,17 +50,6 @@ extern "C"
 
         try
         {
-            if (!pFile->exists())
-            {
-                std::wstringstream msg;
-                msg << L"File to be analyzed does not exist: " << pFile->getPath().c_str();
-                LOGERROR(msg.str());
-                return TskModule::FAIL;
-            }
-
-            // Open file.
-            pFile->open();
-
             long totalBytes = 0;
             char buffer[FILE_BUFFER_SIZE];
             int bytesRead = 0;
@@ -78,9 +67,6 @@ extern "C"
 
             TskBlackboardAttribute attr((int) TSK_VALUE, "CalcFileSizeModule", "ByteCount", totalBytes);
             genInfo.addAttribute(attr);
-
-            // Close file.
-            pFile->close();
         }
         catch (TskException& tskEx)
         {

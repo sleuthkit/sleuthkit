@@ -58,12 +58,15 @@ class TskAutoDb:public TskAuto {
     TSK_HDB_INFO * m_knownBadDb;
     bool m_noFatFsOrphans;
 
+    // prevent copying until we add proper logic to handle it
+    TskAutoDb(const TskAutoDb&);
+    TskAutoDb & operator=(const TskAutoDb&);
 
     uint8_t addImageDetails(const char *const images[], int);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path,
         const unsigned char *const md5,
-        const TSK_AUTO_CASE_KNOWN_FILE_ENUM known);
+        const TSK_DB_FILES_KNOWN_ENUM known);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
         const TSK_FS_ATTR * fs_attr, const char *path);
     static TSK_WALK_RET_ENUM md5HashCallback(TSK_FS_FILE * file,
@@ -91,6 +94,10 @@ class TskCaseDb {
     TskAutoDb *initAddImage();
 
   private:
+    // prevent copying until we add proper logic to handle it
+    TskCaseDb(const TskCaseDb&);
+    TskCaseDb & operator=(const TskCaseDb&);
+
     TskCaseDb(TskDbSqlite * a_db);
     TskDbSqlite *m_db;
     TSK_HDB_INFO * m_NSRLDb;

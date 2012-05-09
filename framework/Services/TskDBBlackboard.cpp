@@ -16,6 +16,7 @@
 #include "Services/TskServices.h"
 #include "File/TskFileTsk.h"
 #include "File/TskFile.h"
+#include "File/TskFileManagerImpl.h"
 
 TskDBBlackboard * TskDBBlackboard::m_pInstance = NULL;
 
@@ -189,8 +190,9 @@ TskBlackboardArtifact TskDBBlackboard::createArtifact(const uint64_t file_id, co
 }
 
 void TskDBBlackboard::createGenInfoAttribute(const uint64_t file_id, TskBlackboardAttribute& attr){
-    TskFileTsk file(file_id);
-    file.addGenInfoAttribute(attr);    
+    TskFile *file = TskFileManagerImpl::instance().getFile(file_id);
+    file->addGenInfoAttribute(attr);
+    delete file;
 }
 
 vector<int> TskDBBlackboard::findAttributeTypes(int artifactTypeId){

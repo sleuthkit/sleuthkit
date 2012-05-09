@@ -34,11 +34,13 @@ TskFileAnalysisPipeline::~TskFileAnalysisPipeline()
 
 void TskFileAnalysisPipeline::run(const uint64_t fileId)
 {
-    if (m_modules.size() == 0)
-        return;
-
     // Get a file object for the given fileId
     std::auto_ptr<TskFile> file(TskFileManagerImpl::instance().getFile(fileId));
+
+    if (m_modules.size() == 0){
+        file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_COMPLETE);
+        return;
+    }
 
     // Run the file object through the pipeline.
     run(file.get());
@@ -75,33 +77,54 @@ void TskFileAnalysisPipeline::run(TskFile* file)
 
         // If there is an Executable module in the pipeline we must
         // ensure that the file exists on disk.
-        bool bCreated = false;
-
-        if (!file->exists())
+        if (m_hasExeModule && !file->exists())
         {
             TskFileManagerImpl::instance().saveFile(file);
-            bCreated = true;
         }
+
+        bool bModuleFailed = false;
 
         for (int i = 0; i < m_modules.size(); i++)
         {
+            // we have no way of knowing if the file was closed by a module,
+            // so always make sure it is open
+            file->open();
+
             TskModule::Status status = m_modules[i]->run(file);
 
             imgDB.setModuleStatus(file->id(), m_modules[i]->getModuleId(), (int)status);
 
+            // Reset the file offset to the beginning of the file for the next module.
+            file->seek(0);
+
+            // If any module encounters a failure while processing a file
+            // we will set the file status to failed once the pipeline is complete.
+            if (status == TskModule::FAIL)
+                bModuleFailed = true;
+
             // Stop processing the file when a module tells us to.
-            if (status == TskModule::STOP)
+            else if (status == TskModule::STOP)
                 break;
         }
 
-        // Delete the file if we created it above.
-        if (bCreated)
+        // Delete the file if it exists. The file may have been created by us
+        // above or by a module that required it to exist on disk.
+        // Carved and derived files should not be deleted since the content is
+        // typically created by external tools.
+        if (file->typeId() != TskImgDB::IMGDB_FILES_TYPE_CARVED &&
+            file->typeId() != TskImgDB::IMGDB_FILES_TYPE_DERIVED &&
+            file->exists())
+        {
             TskFileManagerImpl::instance().deleteFile(file);
+        }
 
         // We allow modules to set status on the file so we only update it
-        // if the modules haven't
+        // if the modules haven't.
         if (file->status() == TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_IN_PROGRESS)
-            file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_COMPLETE);
+            if (bModuleFailed)
+                file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_FAILED);
+            else
+                file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_COMPLETE);
     }
     catch (std::exception& ex)
     {

@@ -18,7 +18,7 @@
 #include "Services/TskSchedulerQueue.h"
 #include "Services/TskSystemPropertiesImpl.h"
 #include "Services/TskImgDBSqlite.h"
-
+#include "File/TskFileManagerImpl.h"
 
 static uint8_t 
 makeDir(const TSK_TCHAR *dir) 
@@ -156,6 +156,9 @@ int main(int argc, char **argv1)
         return 1;
     }
     TskServices::Instance().setImageFile(imageFileTsk);
+
+    // Create a FileManager and register it with the framework.
+    TskServices::Instance().setFileManager(TskFileManagerImpl::instance());
 
     // Let's get the pipelines setup to make sure there are no errors.
     TskPipelineManager pipelineMgr;

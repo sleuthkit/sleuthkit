@@ -297,19 +297,18 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
 
     const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
-
     if(m_NSRLDb != NULL)
     {
         if(index >= maxArrayLen)
             throwTskError(env);
         int8_t retval = tsk_hdb_lookup_str(m_NSRLDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
-        TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
+        TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
 
         if (retval == -1) {
             throwTskError(env);
         } else if (retval) {
-            file_known = TSK_AUTO_CASE_FILE_KNOWN_KNOWN;
+            file_known = TSK_DB_FILES_KNOWN_KNOWN;
         }
         env->SetObjectArrayElement(  
             names,index,env->NewStringUTF(m_NSRLDb->db_name));
@@ -325,12 +324,12 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
         TSK_HDB_INFO * db = *it;
         int8_t retval = tsk_hdb_lookup_str(db, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
-        TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
+        TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
 
         if (retval == -1) {
             throwTskError(env);
         } else if (retval) {
-            file_known = TSK_AUTO_CASE_FILE_KNOWN_BAD;
+            file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
         }
         
         env->SetObjectArrayElement(  

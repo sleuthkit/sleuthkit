@@ -147,7 +147,7 @@ int
  * @returns 1 on error, 0 on success
  */
 int
- TskDbSqlite::addObject(DB_OBJECT_TYPES type, int64_t parObjId,
+ TskDbSqlite::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId,
     int64_t & objId)
 {
     char
@@ -371,7 +371,7 @@ int
 
     snprintf(stmt, 1024,
         "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, NULL, %d);",
-        DB_OBJECT_TYPE_IMG);
+        TSK_DB_OBJECT_TYPE_IMG);
     if (attempt_exec(stmt, "Error adding data to tsk_objects table: %s\n"))
         return 1;
 
@@ -413,7 +413,7 @@ int
     char
      stmt[1024];
 
-    if (addObject(DB_OBJECT_TYPE_VS, parObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_VS, parObjId, objId))
         return 1;
 
     snprintf(stmt, 1024,
@@ -440,7 +440,7 @@ int
     char
      stmt[1024];
 
-    if (addObject(DB_OBJECT_TYPE_VOL, parObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
         return 1;
 
     snprintf(stmt, 1024,
@@ -463,7 +463,7 @@ int
     char
      stmt[1024];
 
-    if (addObject(DB_OBJECT_TYPE_FS, parObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_FS, parObjId, objId))
         return 1;
 
     snprintf(stmt, 1024,
@@ -503,7 +503,7 @@ int
 int
  TskDbSqlite::addFsFile(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
-    const unsigned char *const md5, const TSK_AUTO_CASE_KNOWN_FILE_ENUM known,
+    const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known,
     int64_t fsObjId, int64_t & objId)
 {
     int64_t parObjId = 0;
@@ -589,7 +589,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & f
 int
  TskDbSqlite::addFile(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
-    const unsigned char *const md5, const TSK_AUTO_CASE_KNOWN_FILE_ENUM known,
+    const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known,
     int64_t fsObjId, int64_t parObjId,
     int64_t & objId)
 {
@@ -728,7 +728,7 @@ int
     }
 
 
-    if (addObject(DB_OBJECT_TYPE_FILE, parObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
         return 1;
 
     snprintf(foo, 1024,
@@ -743,7 +743,7 @@ int
         "%d,%d,%d,%d,%d,%d,%d,%s,%d,"
         "'%s')",
         fsObjId, objId,
-        DB_FILES_TYPE_FS,
+        TSK_DB_FILES_TYPE_FS,
         type, idx, name,
         fs_file->name->meta_addr,
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
@@ -885,7 +885,7 @@ int
         }
     }
 
-    if (addObject(DB_OBJECT_TYPE_FILE, fsObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, fsObjId, objId))
         return 1;
 
     snprintf(foo, 1024,
@@ -899,7 +899,7 @@ int
         "%" PRIuOFF ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
         fsObjId, objId,
-        DB_FILES_TYPE_CARVED,
+        TSK_DB_FILES_TYPE_CARVED,
         name,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
         TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_NAME_FLAG_UNALLOC, size);

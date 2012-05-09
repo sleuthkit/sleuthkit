@@ -27,16 +27,35 @@ TskFile::~TskFile(void)
 {
 }
 
-/**
- * 
- */
+
 void TskFile::initialize()
 {
     TskImgDB * imgDB = &TskServices::Instance().getImgDB();
+    // getDB will throw exception if ImgDB has not been setup
 
-    // XXX We never check the return value...
-    if (imgDB != NULL)
-        imgDB->getFileRecord(m_id, m_fileRecord);
+    if (imgDB != NULL) {
+        if (imgDB->getFileRecord(m_id, m_fileRecord)) {
+            throw TskException("TskFile::initialize: Error looking up file: " + m_id);
+        }
+    }
+}
+
+void TskFile::save()
+{
+    if (m_id == 0)
+    {
+        LOGERROR(L"TskFile::save - Attempt to save file with file id 0.");
+        throw TskException("Attempt to save file with file id 0.");
+    }
+
+    // If the file already exists we have nothing to do.
+    if (exists())
+        return;
+
+    // Make sure the file is open before saving.
+    open();
+
+    TskServices::Instance().getFileManager().saveFile(this);
 }
 
 /**
@@ -47,10 +66,7 @@ uint64_t TskFile::id() const
     return m_id;
 }
 
-/**
- * What is this files type id?
- */
-int TskFile::typeId() const
+TskImgDB::FILE_TYPES TskFile::typeId() const
 {
     return m_fileRecord.typeId;
 }
@@ -181,7 +197,7 @@ TSK_GID_T TskFile::gid() const
 /**
  * What is this files status?
  */
-int TskFile::status() const
+TskImgDB::FILE_STATUS TskFile::status() const
 {
     return m_fileRecord.status;
 }
@@ -194,7 +210,6 @@ std::string TskFile::fullPath() const
     return m_fileRecord.fullPath;
 }
 
-// Get the file hash
 std::string TskFile::getHash(TskImgDB::HASH_TYPE hashType) const
 {
     switch (hashType) {
@@ -236,7 +251,11 @@ void TskFile::setHash(TskImgDB::HASH_TYPE hashType, const std::string hash)
     }
 }
 
-/// Set the file status
+TskImgDB::KNOWN_STATUS TskFile::getKnownStatus() const
+{
+    return TskServices::Instance().getImgDB().getKnownStatus(id());
+}
+
 void TskFile::setStatus(TskImgDB::FILE_STATUS status)
 {
     m_fileRecord.status = status;
@@ -358,10 +377,10 @@ TskBlackboardArtifact TskFile::getGenInfo(){
     TskBlackboard& blackboard = TskServices::Instance().getBlackboard();
 
     vector<TskBlackboardArtifact> artifacts;
-    artifacts = getArtifacts(TSK_ART_GEN_INFO);
+    artifacts = getArtifacts(TSK_GEN_INFO);
 
     if(artifacts.size() == 0)
-        return createArtifact(TSK_ART_GEN_INFO);
+        return createArtifact(TSK_GEN_INFO);
     else
         return artifacts[0];
 }

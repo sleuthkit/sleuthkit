@@ -97,7 +97,6 @@ public class BlackboardAttribute {
 		TSK_DATETIME(2, "TSK_DATETIME", "Date/Time"),
 		TSK_NAME(3, "TSK_NAME", "Name"),
 		TSK_PROG_NAME(4, "TSK_PROG_NAME", "Program Name"),
-		TSK_WEB_BOOKMARK(5, "TSK_WEB_BOOKMARK", "Bookmark"),
 		TSK_VALUE(6, "TSK_VALUE", "Value"),
 		TSK_FLAG(7, "TSK_FLAG", "Flag"),
 		TSK_PATH(8, "TSK_PATH", "Path"),
