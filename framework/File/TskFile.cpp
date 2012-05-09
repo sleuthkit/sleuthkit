@@ -251,6 +251,11 @@ void TskFile::setHash(TskImgDB::HASH_TYPE hashType, const std::string hash)
     }
 }
 
+TskImgDB::KNOWN_STATUS TskFile::getKnownStatus() const
+{
+    return TskServices::Instance().getImgDB().getKnownStatus(id());
+}
+
 void TskFile::setStatus(TskImgDB::FILE_STATUS status)
 {
     m_fileRecord.status = status;
@@ -372,10 +377,10 @@ TskBlackboardArtifact TskFile::getGenInfo(){
     TskBlackboard& blackboard = TskServices::Instance().getBlackboard();
 
     vector<TskBlackboardArtifact> artifacts;
-    artifacts = getArtifacts(TSK_ART_GEN_INFO);
+    artifacts = getArtifacts(TSK_GEN_INFO);
 
     if(artifacts.size() == 0)
-        return createArtifact(TSK_ART_GEN_INFO);
+        return createArtifact(TSK_GEN_INFO);
     else
         return artifacts[0];
 }

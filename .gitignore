@@ -14,12 +14,19 @@
 /win32/Release/
 /win32/*/Release/
 /win32/*/*.user
+framework/win32/Debug/
+framework/win32/Release/
+framework/win32/*/Debug/
+framework/win32/*/Release/
+framework/win32/*/*.user
 
 # IntelliSense data
-/win32/tsk-win.ncb
+/win32/*.ncb
+framework/win32/framework/*.ncb
 
 # Visual Studio user options
 /win32/tsk-win.suo
+framework/win32/framework/*.suo
 
 # Make crud
 *.o

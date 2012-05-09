@@ -55,6 +55,7 @@ public:
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     uint8_t findFiles(TSK_OFF_T soffset, TSK_FS_TYPE_ENUM a_ftype, TSK_INUM_T a_dirInum);
+    uint8_t handleError();
     
 private:
     TSK_TCHAR * m_base_dir;
@@ -76,6 +77,13 @@ TskRecover::TskRecover(TSK_TCHAR * a_base_dir)
     m_writeVolumeDir = false;
     m_fileCount = 0;
 }
+
+// Print errors as they are encountered
+uint8_t TskRecover::handleError() 
+{
+    fprintf(stderr, "%s", tsk_error_get());
+    return 0;
+} 
 
 /** \internal
  * Callback used to walk file content and write the results to the recovery file.
@@ -351,19 +359,10 @@ uint8_t
 TskRecover::findFiles(TSK_OFF_T a_soffset, TSK_FS_TYPE_ENUM a_ftype, TSK_INUM_T a_dirInum)
 {
     uint8_t retval;
-
-    if (a_soffset) {
-        if (a_dirInum)
-            retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_ftype, a_dirInum);
-        else
-            retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_ftype);
-    }
-    else {
-        if (a_dirInum)
-            retval = findFilesInFs(0, a_ftype, a_dirInum);
-        else 
-            retval = findFilesInImg();
-    }
+    if (a_dirInum)
+        retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_ftype, a_dirInum);
+    else
+        retval = findFilesInFs(a_soffset * m_img_info->sector_size, a_ftype);
 
     printf("Files Recovered: %d\n", m_fileCount);
     return retval;
@@ -495,7 +494,7 @@ main(int argc, char **argv1)
     }
 
     if (tskRecover.findFiles(soffset, fstype, dirInum)) {
-        tsk_error_print(stderr);
+        // errors were already logged
         exit(1);
     }
 

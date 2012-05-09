@@ -29,7 +29,7 @@ typedef struct {
  * - in order of expected usage
  */
 static IMG_TYPES img_open_table[] = {
-    {"raw", TSK_IMG_TYPE_RAW_SING, "Single raw file (dd)"},
+    {"raw", TSK_IMG_TYPE_RAW, "Single or split raw file (dd)"},
 #if HAVE_LIBAFFLIB
     {"aff", TSK_IMG_TYPE_AFF_AFF, "Advanced Forensic Format"},
     {"afd", TSK_IMG_TYPE_AFF_AFD, "AFF Multiple File"},
@@ -40,7 +40,6 @@ static IMG_TYPES img_open_table[] = {
 #if HAVE_LIBEWF
     {"ewf", TSK_IMG_TYPE_EWF_EWF, "Expert Witness format (encase)"},
 #endif
-    {"split", TSK_IMG_TYPE_RAW_SPLIT, "Split raw files"},
     {0},
 };
 

@@ -129,6 +129,12 @@ public:
     void setHash(TskImgDB::HASH_TYPE hashType, const std::string hash);
     
     /**
+     * Return the known status of the file
+     * @returns KNOWN_STATUS or -1 on error
+     */
+    TskImgDB::KNOWN_STATUS getKnownStatus() const;
+
+    /**
      * Tests if a local copy of the file exists at the default location. 
      * @return True if a file exists, false otherwise
      */ 

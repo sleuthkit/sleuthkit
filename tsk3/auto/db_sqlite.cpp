@@ -90,7 +90,7 @@ int
 
 
 /**
- * Execute a statement.  
+ * Execute a statement and sets TSK error values on error 
  * @returns 1 on error, 0 on success
  */
 int

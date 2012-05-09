@@ -17,9 +17,16 @@
 #if HAVE_LIBAFFLIB
 
 #include <afflib/afflib.h>
+// mingw's pthread.h will try to read a config.h if HAVE_CONFIG_H
+#if HAVE_CONFIG_H
+#undef HAVE_CONFIG_H
 #include <afflib/afflib_i.h>
+#define HAVE_CONFIG_H 1
+#else
+#include <afflib/afflib_i.h>
+#endif
 
-extern TSK_IMG_INFO *aff_open(const char *const images[],
+extern TSK_IMG_INFO *aff_open(const TSK_TCHAR *const images[],
     unsigned int a_ssize);
 
 /** \internal

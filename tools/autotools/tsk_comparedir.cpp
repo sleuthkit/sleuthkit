@@ -57,6 +57,13 @@ usage()
 }
 
 
+// Print errors as they are encountered
+uint8_t TskCompareDir::handleError() 
+{
+    fprintf(stderr, "%s", tsk_error_get());
+    return 0;
+}
+
 /**
  * Process a local directory and compare its contents with the image.
  * This will recursively call itself on subdirectories. 
@@ -216,8 +223,10 @@ TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     //create the full path
     size_t len = strlen(a_fs_file->name->name) + strlen(a_path) + 1;
     char *fullPath = (char *) tsk_malloc(len);
-    if (fullPath == NULL)
-        return TSK_ERR;
+    if (fullPath == NULL) {
+        registerError();
+        return TSK_STOP;
+    }
     
     snprintf(fullPath, len, "/");
     strncat(fullPath, a_path, len-strlen(fullPath));
@@ -405,7 +414,7 @@ main(int argc, char **argv1)
     }
 
     if (tskCompareDir.compareDirs(soffset, inum, fstype, argv[argc - 1])) {
-        tsk_error_print(stderr);
+        // errors were already displayed
         exit(1);
     }
 

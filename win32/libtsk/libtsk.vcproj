@@ -677,14 +677,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\tsk3\img\split.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tsk3\img\split.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\tsk3\img\tsk_img.h"
 				>
 			</File>
