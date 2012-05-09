@@ -97,7 +97,7 @@ uint8_t
  * @param a_img_info Handle to an already opened disk image.
  * @returns 1 on error (messages were NOT registered) and 0 on success
  */
-uint8_t TskAuto::openImage(TSK_IMG_INFO * a_img_info)
+uint8_t TskAuto::openImageHandle(TSK_IMG_INFO * a_img_info)
 {
     if (m_img_info)
         closeImage();

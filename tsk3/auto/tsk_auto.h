@@ -72,7 +72,7 @@ class TskAuto {
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     virtual uint8_t openImageUtf8(int, const char *const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
-    virtual uint8_t openImage(TSK_IMG_INFO *);
+    virtual uint8_t openImageHandle(TSK_IMG_INFO *);
     virtual void closeImage();
 
     TSK_OFF_T getImageSize() const;
