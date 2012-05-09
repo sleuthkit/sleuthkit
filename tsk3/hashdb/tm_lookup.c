@@ -1321,32 +1321,24 @@ tsk_hdb_nameinit(TSK_HDB_INFO * hdb_info)
  * @param hdb_info the hash database object
  */
 void
-tsk_name_from_path(TSK_HDB_INFO * hdb_info)
+tsk_hdb_name_from_path(TSK_HDB_INFO * hdb_info)
 {
-    size_t lastSeparatorIndex = 0;
-    size_t lastPeriodIndex = 0;
-    size_t len = TSTRLEN(hdb_info->db_fname);
-    size_t i = 0;
 #ifdef TSK_WIN32
     char path_char = '\\';
 #else
     char path_char = '/';
 #endif
+    char * begin = strrchr(hdb_info->db_fname, path_char);
+    char * end = strrchr(hdb_info->db_fname, '.');
+    int i;
 
-    for (i = len-1; i > 0; --i)
+    if(!end)
+        end = begin + strlen(begin);
+
+    for(i = 0; i < (end-begin); i++)
     {
-        if (hdb_info->db_fname[i] == '.' && !lastPeriodIndex)
-            lastPeriodIndex = i;
-        if (hdb_info->db_fname[i] == path_char)
-        {
-            lastSeparatorIndex = ++i;
-            break;
-        }
-    }
-    for(i = 0; i < (len-lastSeparatorIndex) && i < (lastPeriodIndex-lastSeparatorIndex); i++)
-    {
-        hdb_info->db_name[i] = (char) hdb_info->db_fname[lastSeparatorIndex+i];
+        hdb_info->db_name[i] = begin[i];
     }
 
-    hdb_info->db_name[i] = '\0';
+    hdb_info->db_name[i+1] = '\0';
 }

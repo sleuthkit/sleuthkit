@@ -60,7 +60,7 @@ md5sum_test(FILE * hFile)
 void
 md5sum_name(TSK_HDB_INFO * hdb_info)
 {
-    tsk_name_from_path(hdb_info);
+    tsk_hdb_name_from_path(hdb_info);
 }
 
 
