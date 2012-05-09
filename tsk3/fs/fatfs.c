@@ -1147,7 +1147,7 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     TSK_FS_META_NAME_LIST *fs_name_list;
     FATFS_PRINT_ADDR print;
     fatfs_dentry dep;
-    char timeBuf[32];
+    char timeBuf[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
