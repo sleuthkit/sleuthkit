@@ -337,11 +337,16 @@ TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_
 
 uint8_t TSKAutoImpl::handleError()
 {
-    // @@@ Possibly test tsk_errno to determine how the message should be logged.
-    std::wstringstream msg;
-    msg << L"TskAutoImpl::handleError " << tsk_error_get();
+    const char * tskMsg = tsk_error_get();
 
-    LOGWARN(msg.str());
+    // @@@ Possibly test tsk_errno to determine how the message should be logged.
+    if (tskMsg != NULL)
+    {
+        std::wstringstream msg;
+        msg << L"TskAutoImpl::handleError " << tsk_error_get();
+
+        LOGWARN(msg.str());
+    }
     return 0;
 }
 
