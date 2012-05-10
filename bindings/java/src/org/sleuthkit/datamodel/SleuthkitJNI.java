@@ -26,6 +26,8 @@ import java.util.Map;
  * Interfaces with the sleuthkit c/c++ libraries to read data from image files
  */
 public class SleuthkitJNI {
+	private static final int MAX_DATABASES = 256;
+	
 	//Native methods
 	private static native String getVersionNat();
 	private static native void startVerboseLoggingNat(String logPath);
@@ -34,10 +36,12 @@ public class SleuthkitJNI {
 	private static native long newCaseDbNat(String dbPath) throws TskException;
 	private static native long openCaseDbNat(String path) throws TskException;
 	private static native void closeCaseDbNat(long db) throws TskException;
-	private static native void setDbNSRLNat(String hashDbPath) throws TskException;
-	private static native void setDbKnownBadNat(String hashDbPath) throws TskException;
+	private static native int setDbNSRLNat(String hashDbPath) throws TskException;
+	private static native int addDbKnownBadNat(String hashDbPath) throws TskException;
+	private static native String getDbName(String hashDbPath) throws TskException;
 	private static native void closeDbLookupsNat() throws TskException;
-	private static native int hashDBLookup(String hash) throws TskException;
+	private static native int knownBadDbLookup(String hash, int dbHandle) throws TskException;
+	private static native int nsrlDbLookup(String hash) throws TskException;
 
 	
 	//load image
@@ -104,20 +108,24 @@ public class SleuthkitJNI {
 		void clearLookupDatabases() throws TskException {
 			closeDbLookupsNat();
 		}
-		
-		
+
 		/**
-		 * Set the path to an NSRL database
+		 * Set the NSRL database
+		 * @param path The path to the database
+		 * @return a handle for that database
 		 */
-		void setNSRLDatabase(String path) throws TskException {
-			setDbNSRLNat(path);
+		int setNSRLDatabase(String path) throws TskException {
+			return setDbNSRLNat(path);
 		}
 
 		/**
-		 * Set the path to a known bad hash database
+		 * Add the known bad database
+		 * @param name The name of the database
+		 * @param path The path to the database
+		 * @return a handle for that database
 		 */
-		void setKnownBadDatabase(String path) throws TskException {
-			setDbKnownBadNat(path);
+		int addKnownBadDatabase(String path) throws TskException {
+			return addDbKnownBadNat(path);
 		}
 
 		
@@ -432,6 +440,7 @@ public class SleuthkitJNI {
 		//currently the fs handle is not being freed, it's cached for duration of the application
 		//closeFsNat(fsHandle);
 	}
+	
 	/**
 	 * frees the fileHandle pointer
 	 * @param fileHandle pointer to file structure in sleuthkit
@@ -442,7 +451,8 @@ public class SleuthkitJNI {
 	
 	/**
 	 * Create an index for the given database path.
-	 * @param dbPath
+	 * @param dbPath The path to the database
+	 * @param name The name to store in the index
 	 * @throws TskException 
 	 */
 	public static void createLookupIndex(String dbPath) throws TskException {
@@ -460,21 +470,50 @@ public class SleuthkitJNI {
 	}
 	
 	/**
-	 * Set the path to an NSRL database
+	 * Set the NSRL database
+	 * @param path The path to the database
+	 * @return a handle for that database
 	 */
-	public static void setNSRLDatabase(String path) throws TskException {
-		setDbNSRLNat(path);
+	public static int setNSRLDatabase(String path) throws TskException {
+		return setDbNSRLNat(path);
 	}
 
 	/**
-	 * Set the path to a known bad hash database
+	 * Add the known bad database
+	 * @param name The name of the database
+	 * @param path The path to the database
+	 * @return a handle for that database
 	 */
-	public static void setKnownBadDatabase(String path) throws TskException {
-		setDbKnownBadNat(path);
+	public static int addKnownBadDatabase(String path) throws TskException {
+		return addDbKnownBadNat(path);
+	}
+
+	/**
+	 * Get the name of the database
+	 * @param path The path to the database
+	 */
+	public static String getDatabaseName(String path) throws TskException {
+		return getDbName(path);
 	}
 	
-	public static TskData.FileKnown lookupHash(String hash) throws TskException{
-		return TskData.FileKnown.valueOf(hashDBLookup(hash));
+	/**
+	 * Look up the given hash in the NSRL database
+	 * @param hash
+	 * @return the status of the hash in the NSRL
+	 * @throws TskException 
+	 */
+	public static TskData.FileKnown nsrlHashLookup(String hash) throws TskException{
+		return TskData.FileKnown.valueOf(nsrlDbLookup(hash));
+	}
+	
+	/**
+	 * Look up the given hash in the known bad database
+	 * @param hash
+	 * @return the status of the hash in the known bad database
+	 * @throws TskException 
+	 */
+	public static TskData.FileKnown knownBadHashLookup(String hash, int dbHandle) throws TskException{
+		return TskData.FileKnown.valueOf(knownBadDbLookup(hash, dbHandle));
 	}
 	
 }

@@ -52,6 +52,17 @@ md5sum_test(FILE * hFile)
     return 0;
 }
 
+/**
+ * Set db_name using information from this database type
+ *
+ * @param hdb_info the hash database object
+ */
+void
+md5sum_name(TSK_HDB_INFO * hdb_info)
+{
+    tsk_hdb_name_from_path(hdb_info);
+}
+
 
 /**
  * Given a line of text from an MD5sum database, return pointers

@@ -15,9 +15,33 @@
 
 #include "tsk_hashdb_i.h"
 
-#define STR_EMPTY ""
 
-
+/**
+ * Set db_name using information from this database type
+ *
+ * @param hdb_info the hash database object
+ */
+void
+idxonly_name(TSK_HDB_INFO * hdb_info)
+{
+    FILE * hFile = hdb_info->hIdx;
+    char buf[TSK_HDB_NAME_MAXLEN];
+    char *bufptr = buf;
+    size_t i = 0;
+    memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
+    if(!hFile)
+        return;
+    fseeko(hFile, 0, 0);
+    fgets(buf, TSK_HDB_NAME_MAXLEN, hFile);
+    fgets(buf, TSK_HDB_NAME_MAXLEN, hFile);
+    bufptr = strchr(buf, '|');
+    bufptr++;
+    while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
+    {
+        hdb_info->db_name[i] = bufptr[i];
+        i++;
+    }
+}
 
 
 /**
