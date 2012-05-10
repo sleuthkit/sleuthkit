@@ -17,8 +17,7 @@ fiwalk_SOURCES = fiwalk.cpp  fiwalk_tsk.cpp fiwalk.h \
 	xml.cpp xml.h \
 	hash_t.h \
 	unicode_escape.cpp unicode_escape.h \
-	outfile.h base64.h base64.cpp  \
-	parent_tracker.cpp parent_tracker.h 
+	outfile.h base64.h base64.cpp
 
 test_arff_SOURCES = arff.cpp arff.h test_arff.cpp
 

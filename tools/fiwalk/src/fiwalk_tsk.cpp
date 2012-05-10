@@ -163,7 +163,19 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     /* Looks like we are processing */
     if(a) a->new_row();			// tell ARFF we are starting a new row
     if(x) x->push("fileobject"); 	// tell XML we are starting a new XML object
-    if(pt) pt->print_parent(fs_file);
+    if(opt_parent_tracking)
+    {
+        if(x)
+        {
+            x->push("parent_object");
+            file_info("inode", fs_file->p_addr);
+            if(x) x->pop();
+        }
+        if(t||a)
+        {
+            file_info("inode", fs_file->p_addr);
+        }
+    }
 
     /* Get the content if needed */
     if(ci.need_file_walk() && (opt_maxgig==0 || fs_file->meta->size/1000000000 < opt_maxgig)){
@@ -240,26 +252,6 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     file_info("uid",fs_file->meta->uid);
     file_info("gid",fs_file->meta->gid);
 
-/*
-     if(x){
-	  if(fs_file->meta->type & TSK_FS_META_TYPE_DIR )
-      {
-         printf("Directory: %u\n", fs_file->meta->addr);
-         //printf("Parent_Stack Empty? %d\n", x->parent_stack.empty());
-         if(x->parent_stack.empty())
-         {
-           printf("Parent_Stack is Empty \n");
-           x->parent_stack.push(fs_file->meta->addr);
-         }
-         else
-         {
-           if(fs_file->meta->addr != x->parent_stack.top());
-             x->parent_stack.push(fs_file->meta->addr);
-           printf("Stack Top: %u, size %u\n", x->parent_stack.top(), x->parent_stack.size());
-         }
-      }
-    }
-*/
 	/* Special processing for FAT */
 	if(TSK_FS_TYPE_ISFAT(fs_file->fs_info->ftype))
 	{
@@ -357,28 +349,7 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
 
     /* If the name has corresponding metadata, then walk it */
     if (fs_file->meta) {
-       printf("*\tDEBUG  fs_file->name: %s\n", fs_file->name->name);
-       if(pt){
-            dir = tsk_fs_dir_open_meta(fs_file->fs_info,fs_file->meta->addr);
-//            if (dir == NULL)
-//                /*Cannot get a dir entry assuming that current dentry on stack is the parent*/
-//                printf("Cannot get dir entry, fs_root is %d\n", fs_file->fs_info->root_inum);
-
-            pt->process_dentry(dir, fs_file);
-        }
     	process_tsk_file(fs_file, path);
-    }
-    else
-    {
-       /*fs_file has no meta, it might be a deleted directory entry*/
-       if(1)
-       {
-          printf("Deleted Entry: %s\n", fs_file->name->name);
-       }
-       if(pt)
-       {
-          pt->inc_dentry_print_count();
-       }
     }
 
     return TSK_WALK_CONT;

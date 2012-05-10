@@ -225,11 +225,13 @@ int parent_tracker::print_parent(const TSK_FS_FILE *fs_file){
         {
             x->push("parent_object");
             file_info("inode", parent_stack.back().p_addr);
+            file_info("fs_file_inode", fs_file->p_addr);
             if(x) x->pop();
         }
         if(t||a)
         {
             file_info("parent_inode", parent_stack.back().p_addr);
+            file_info("fs_file_inode", fs_file->p_addr);
 //        printf("\t\tDEBUG incrementing num_printed: \n");
         }
         if (stack_size>1)
@@ -251,10 +253,14 @@ int parent_tracker::print_parent(const TSK_FS_FILE *fs_file){
         if(x){
             x->push("parent_object");
             file_info("inode", parent_stack.back().addr);
+            file_info("fs_file_inode", fs_file->p_addr);
             if(x) x->pop();
         }
         if(t || a)
+        {
             file_info("parent_inode", parent_stack.back().addr);
+            file_info("fs_file_inode", fs_file->p_addr);
+        }
 
         if(PT_DEBUG) printf("\t\tDEBUG incrementing num_printed: ");
         inc_dentry_print_count(&parent_stack.back());

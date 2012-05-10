@@ -59,9 +59,6 @@ class arff *a = 0;			// ARFF generator
 class xml  *x = 0;
 FILE  *t = 0;				// text output or body file enabled
 
-/* Ouput Helper */
-class parent_tracker *pt = 0;
-
 /* Configurable options */
 
 /* Runtime options */
@@ -77,6 +74,7 @@ bool opt_no_data  = false;		// don't get the data
 bool opt_allocated_only = false;
 bool opt_body_file = false;
 bool opt_ignore_ntfs_system_files = false;
+bool opt_parent_tracking = false;
 
 const char *config_file = 0;
 int  file_count_max = 0;
@@ -588,7 +586,7 @@ int main(int argc, char * const *argv1)
 #else
 	const char *filename = argv[0];
 #endif
-    pt = new parent_tracker();
+    opt_parent_tracking = true;
 
     if(!filename){
 	errx(1,"must provide filename");
