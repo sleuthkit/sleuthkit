@@ -195,7 +195,7 @@ JNIEXPORT void JNICALL
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param pathJ the path to the database
- * @return a pointer to the nsrl database
+ * @return a handle for the nsrl database
  */
 JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_setDbNSRLNat(JNIEnv * env,
@@ -209,7 +209,15 @@ JNIEXPORT jint JNICALL
     toTCHAR(env, pathT, 1024, pathJ);
 
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-    m_NSRLDb = tsk_hdb_open(pathT, flags);
+    TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
+
+    if(tempdb == NULL)
+    {
+        throwTskError(env, "Error adding NSRL database");
+        return -1;
+    }
+    
+    m_NSRLDb = tempdb;
     
     return 0;
 }
@@ -219,7 +227,7 @@ JNIEXPORT jint JNICALL
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param pathJ the path to the database
- * @return a pointer to the known bad database
+ * @return a handle for the known bad database
  */
 JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_addDbKnownBadNat(JNIEnv * env,
@@ -230,6 +238,12 @@ JNIEXPORT jint JNICALL
 
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
     TSK_HDB_INFO * temp = tsk_hdb_open(pathT, flags);
+
+    if(temp == NULL)
+    {
+        throwTskError(env, "Error adding known bad database");
+        return -1;
+    }
 
     m_knownbads.push_back(temp);
     
@@ -258,6 +272,12 @@ JNIEXPORT jstring JNICALL
 
     TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
 
+    if(tempdb == NULL)
+    {
+        throwTskError(env, "Error opening database to get name");
+        return env->NewStringUTF("-1");
+    }
+
     jstring jname = env->NewStringUTF(tempdb->db_name);
 
     tsk_hdb_close(tempdb);
@@ -283,54 +303,62 @@ JNIEXPORT void JNICALL
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    hashDBLookup
+ * Method:    nsrlDbLookup
  * Signature: (Ljava/lang/String;)I
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
-(JNIEnv * env, jclass obj, jstring hash, jintArray results, jint maxArrayLen){
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
+(JNIEnv * env, jclass obj, jstring hash){
 
     jboolean isCopy;
-    int index = 0;
 
     const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
-    if(m_NSRLDb != NULL)
-    {
-        if(index >= maxArrayLen)
-            throwTskError(env);
+    TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
+
+    if (m_NSRLDb != NULL) {
         int8_t retval = tsk_hdb_lookup_str(m_NSRLDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
-        TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
-
         if (retval == -1) {
-            throwTskError(env);
+            throwTskError(env, "Error looking up hash");
         } else if (retval) {
             file_known = TSK_DB_FILES_KNOWN_KNOWN;
         }
-        env->SetIntArrayRegion(results, index, 1, (jint*) &file_known);
-        
-    }
-    vector<TSK_HDB_INFO *>::iterator it;
-    index = 1;
-
-    for ( it = m_knownbads.begin() ; it < m_knownbads.end(); it++ )
-    {
-        if(index >= maxArrayLen)
-            throwTskError(env);
-        TSK_HDB_INFO * db = *it;
-        int8_t retval = tsk_hdb_lookup_str(db, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
-
-        TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
-
-        if (retval == -1) {
-            throwTskError(env);
-        } else if (retval) {
-            file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
-        }
-        env->SetIntArrayRegion(results, index++, 1, (jint*) &file_known);
     }
 
     env->ReleaseStringUTFChars(hash, (const char *) md5);
+
+    return (int) file_known;
+}
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    knownBadDbLookup
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLookup
+(JNIEnv * env, jclass obj, jstring hash, jint dbHandle){
+
+    jboolean isCopy;
+
+    const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
+
+    TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
+
+    TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
+
+    if(db != NULL) {
+        int8_t retval = tsk_hdb_lookup_str(db, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
+
+        if (retval == -1) {
+            throwTskError(env, "Error looking up hash");
+        } else if (retval) {
+            file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
+        }
+    }
+
+    env->ReleaseStringUTFChars(hash, (const char *) md5);
+
+    return (int) file_known;
 }
 
 /*
@@ -1017,21 +1045,17 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
  */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
-    jclass obj, jstring dbPathJ, jstring dbNameJ)
+    jclass obj, jstring dbPathJ)
 {
     TSK_TCHAR dbPathT[1024];
     toTCHAR(env, dbPathT, 1024, dbPathJ);
 
-    const char *nameT = env->GetStringUTFChars(dbNameJ, 0);
-
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
     TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
     if (temp == NULL) {
-        throwTskError(env);
+        throwTskError(env, "Error opening database to create index");
         return;
     }
-
-    strncpy(temp->db_name, nameT, TSK_HDB_NAME_MAXLEN);
 
     TSK_TCHAR dbType[1024];
 
@@ -1049,12 +1073,10 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     }
 
     if (tsk_hdb_makeindex(temp, dbType)) {
-        throwTskError(env);
+        throwTskError(env, "Error creating index");
     }
 
     tsk_hdb_close(temp);
-
-    env->ReleaseStringUTFChars(dbNameJ, nameT);
 }
 
 /*
