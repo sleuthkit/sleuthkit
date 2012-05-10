@@ -382,7 +382,7 @@ JNIEXPORT void JNICALL
             msg.append("\n");
         }
 
-        throwTskError(env);
+        throwTskError(env, msg.c_str());
         // @@@ We never get past this point now to do any cleanup
         deleteProcess = true;
     }
