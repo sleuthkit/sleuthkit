@@ -213,7 +213,7 @@ JNIEXPORT jint JNICALL
 
     if(tempdb == NULL)
     {
-        throwTskError(env, "Error adding NSRL database");
+        throwTskError(env);
         return -1;
     }
     
@@ -241,7 +241,7 @@ JNIEXPORT jint JNICALL
 
     if(temp == NULL)
     {
-        throwTskError(env, "Error adding known bad database");
+        throwTskError(env);
         return -1;
     }
 
@@ -274,7 +274,7 @@ JNIEXPORT jstring JNICALL
 
     if(tempdb == NULL)
     {
-        throwTskError(env, "Error opening database to get name");
+        throwTskError(env);
         return env->NewStringUTF("-1");
     }
 
@@ -319,7 +319,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
         int8_t retval = tsk_hdb_lookup_str(m_NSRLDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
         if (retval == -1) {
-            throwTskError(env, "Error looking up hash");
+            throwTskError(env);
         } else if (retval) {
             file_known = TSK_DB_FILES_KNOWN_KNOWN;
         }
@@ -344,13 +344,18 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLooku
 
     TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
 
+    if(dbHandle >= m_knownbads.size()) {
+        throwTskError(env, "Invalid database handle");
+        return -1;
+    }
+
     TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
 
     if(db != NULL) {
         int8_t retval = tsk_hdb_lookup_str(db, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
         if (retval == -1) {
-            throwTskError(env, "Error looking up hash");
+            throwTskError(env);
         } else if (retval) {
             file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
         }
