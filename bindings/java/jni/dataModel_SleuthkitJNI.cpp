@@ -338,16 +338,18 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLookup
 (JNIEnv * env, jclass obj, jstring hash, jint dbHandle){
 
+    if(dbHandle >= m_knownbads.size()) {
+        throwTskError(env, "Invalid database handle");
+        return -1;
+    }
+
     jboolean isCopy;
 
     const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
     TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
 
-    if(dbHandle >= m_knownbads.size()) {
-        throwTskError(env, "Invalid database handle");
-        return -1;
-    }
+    
 
     TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
 
