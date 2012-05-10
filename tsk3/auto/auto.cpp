@@ -602,7 +602,7 @@ std::string TskAuto::errorRecordToString(error_record &rec) {
     tsk_error_reset();
     if (msg == NULL)
         return "";
-    else return string(msg);
+    else return std::string(msg);
 }
 
 uint8_t 
