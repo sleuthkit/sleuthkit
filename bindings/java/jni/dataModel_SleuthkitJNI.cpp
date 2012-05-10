@@ -456,9 +456,11 @@ JNIEXPORT void JNICALL
     // flag to free tskAuto if the process is interuppted
     bool deleteProcess = false;
 
+
     // process the image (parts)
-    if (tskAuto->startAddImage((int) num_imgs, imagepaths8,
-            TSK_IMG_TYPE_DETECT, 0)) {
+    uint8_t ret = 0;
+    if ( (ret = tskAuto->startAddImage((int) num_imgs, imagepaths8,
+        TSK_IMG_TYPE_DETECT, 0)) != 0) {
         string msg = "Errors occured while ingesting image\n";
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
         for (size_t i = 0; i < errors.size(); i++) {
@@ -466,9 +468,13 @@ JNIEXPORT void JNICALL
             msg.append("\n");
         }
 
+        //need to add a mechanism to flag (non-)fatal errors across jni
         throwTskError(env, msg.c_str());
-        // @@@ We never get past this point now to do any cleanup
-        deleteProcess = true;
+
+        if (ret == 1) {
+            //fatal error
+            deleteProcess = true;
+        }
     }
 
     // cleanup

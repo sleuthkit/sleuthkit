@@ -232,10 +232,12 @@ TSK_WALK_RET_ENUM
     if ((retval2 == TSK_STOP) || (tsk->getStopProcessing())) {
         return TSK_WALK_STOP;
     }
-    else if (retval2 != TSK_OK) {
-        if (tsk->registerError())
-            return TSK_WALK_STOP;
-    }
+
+    //all errors would have been registered
+    //else if (retval2 != TSK_OK) {
+    //   if (tsk->registerError())
+    //        return TSK_WALK_STOP;
+    //}
 
     return TSK_WALK_CONT;
 }
@@ -331,7 +333,6 @@ TSK_RETVAL_ENUM
     TSK_FS_INFO *fs_info;
     /* Try it as a file system */
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        
         tsk_error_set_errstr2("unable to open file system at offset %" PRIuOFF,
             a_start);
         registerError();
@@ -599,10 +600,11 @@ std::string TskAuto::errorRecordToString(error_record &rec) {
     tsk_error_set_errstr("%s", rec.msg1.c_str());
     tsk_error_set_errstr2("%s", rec.msg2.c_str());
     const char *msg = tsk_error_get();
+    std::string ret;
+    if  (msg != NULL)
+        ret = msg;
     tsk_error_reset();
-    if (msg == NULL)
-        return "";
-    else return std::string(msg);
+    return ret;
 }
 
 uint8_t 
