@@ -15,7 +15,6 @@
 
 #include "tsk_auto_i.h"
 #include "tsk3/fs/tsk_fatfs.h"
-#include <sstream>
 
 
 // @@@ Follow through some error paths for sanity check and update docs somewhere to relfect the new scheme
@@ -569,9 +568,15 @@ void TskAuto::resetErrorList() {
 }
 
 std::string TskAuto::errorRecordToString(error_record &rec) {
-    std::stringstream ss;
-    ss << "(" << rec.code << ") " << rec.msg1 << " " << rec.msg2;
-    return ss.str();
+    tsk_error_reset();
+    tsk_error_set_errno(rec.code);
+    tsk_error_set_errstr("%s", rec.msg1.c_str());
+    tsk_error_set_errstr2("%s", rec.msg2.c_str());
+    const char *msg = tsk_error_get();
+    tsk_error_reset();
+    if (msg == NULL)
+        return "";
+    else return string(msg);
 }
 
 
