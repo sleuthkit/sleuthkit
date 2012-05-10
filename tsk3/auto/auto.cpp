@@ -600,7 +600,9 @@ std::string TskAuto::errorRecordToString(error_record &rec) {
     tsk_error_set_errstr2("%s", rec.msg2.c_str());
     const char *msg = tsk_error_get();
     tsk_error_reset();
-    return msg;
+    if (msg == NULL)
+        return "";
+    else return string(msg);
 }
 
 uint8_t 
