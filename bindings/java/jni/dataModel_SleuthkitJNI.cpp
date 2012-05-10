@@ -338,7 +338,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLookup
 (JNIEnv * env, jclass obj, jstring hash, jint dbHandle){
 
-    if(dbHandle >= m_knownbads.size()) {
+    if((size_t) dbHandle > m_knownbads.size()) {
         throwTskError(env, "Invalid database handle");
         return -1;
     }
