@@ -165,15 +165,17 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     if(x) x->push("fileobject"); 	// tell XML we are starting a new XML object
     if(opt_parent_tracking)
     {
-        if(x)
-        {
-            x->push("parent_object");
-            file_info("inode", fs_file->p_addr);
-            if(x) x->pop();
-        }
-        if(t||a)
-        {
-            file_info("inode", fs_file->p_addr);
+        if(fs_file->p_addr){
+            if(x)
+            {
+                x->push("parent_object");
+                file_info("inode", fs_file->p_addr);
+                if(x) x->pop();
+            }
+            if(t||a)
+            {
+                file_info("parent_inode", fs_file->p_addr);
+            }
         }
     }
 
