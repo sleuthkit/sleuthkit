@@ -72,7 +72,7 @@ class TskAuto {
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     virtual uint8_t openImageUtf8(int, const char *const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
-    virtual uint8_t openImage(TSK_IMG_INFO *);
+    virtual uint8_t openImageHandle(TSK_IMG_INFO *);
     virtual void closeImage();
 
     TSK_OFF_T getImageSize() const;
@@ -103,9 +103,7 @@ class TskAuto {
      * @param vs_info volume system details
      * @returns Value to show if Vs should be processed, skipped, or process should stop.
      */
-    virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info) {
-        return TSK_FILTER_CONT;
-    };
+    virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
 
     /**
      * TskAuto calls this method before it processes each volume that is found in a 
@@ -116,9 +114,7 @@ class TskAuto {
      * @param vs_part Parition details
      * @returns Value to show if volume should be processed, skipped, or process should stop.
      */
-    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part) {
-        return TSK_FILTER_CONT;
-    };
+    virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
 
     /**
      * TskAuto calls this method before it processes each file system that is found in a 
@@ -127,9 +123,7 @@ class TskAuto {
      * @param fs_info file system details
      * @returns Value to show if FS should be processed, skipped, or process should stop.
      */
-    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info) {
-        return TSK_FILTER_CONT;
-    };
+    virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
 
     /**
      * TskAuto calls this method for each file and directory that it finds in an image. 
@@ -188,9 +182,7 @@ class TskAuto {
      *
      * @return 1 to stop the processing flow and 0 to continue. 
      */
-    virtual uint8_t handleError() {
-        return 0;
-    };
+    virtual uint8_t handleError();
     
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
@@ -240,9 +232,7 @@ class TskAuto {
      * @returns STOP or OK. All error must have been registered.  
      */
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE * fs_file,
-        const TSK_FS_ATTR * fs_attr, const char *path) {
-        return TSK_OK;
-    };
+                                             const TSK_FS_ATTR * fs_attr, const char *path);
     
     /**
      * When called, will cause TskAuto to not continue to recurse into directories and volumes. 

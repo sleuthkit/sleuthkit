@@ -42,7 +42,7 @@ uint8_t TSKAutoImpl::openImage(TSK_IMG_INFO *a_img_info)
     m_curFsId = 0;
     m_curVsId = 0;
 
-    return TskAuto::openImage(a_img_info);
+    return TskAuto::openImageHandle(a_img_info);
 }
 
 void

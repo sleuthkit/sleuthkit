@@ -196,7 +196,7 @@ int main(int argc, char **argv1)
     // @@@ this needs to cycle over the files to analyze, 10 is just here for testing 
     if (filePipeline && !filePipeline->isEmpty()) {
         TskSchedulerQueue::task_struct *task;
-        while ((task = scheduler.next()) != NULL) {
+        while ((task = scheduler.nextTask()) != NULL) {
             if (task->task != Scheduler::FileAnalysis)  {
                 fprintf(stderr, "WARNING: Skipping task %d\n", task->task);
                 continue;

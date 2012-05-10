@@ -4040,7 +4040,7 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
     const TSK_FS_ATTR *fs_attr;
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     ntfs_mft *mft;
-    char timeBuf[32];
+    char timeBuf[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();

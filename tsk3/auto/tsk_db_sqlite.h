@@ -1,3 +1,20 @@
+/*
+ ** The Sleuth Kit 
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2011-2012 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ **
+ */
+
+/**
+ * \file tsk_db_sqlite.h
+ * Contains the SQLite code for maintaining the case-level database.
+ * In the future, an interface will be developed for these so that 
+ * different databases can exist. 
+ */
+
 #ifndef _TSK_DB_SQLITE_H
 #define _TSK_DB_SQLITE_H
 
@@ -11,6 +28,9 @@ using std::map;
 typedef struct sqlite3 sqlite3;
 
 
+/**
+ * Values for the object type value.
+ */
 typedef enum {
     TSK_DB_OBJECT_TYPE_IMG = 0,
     TSK_DB_OBJECT_TYPE_VS,
@@ -19,6 +39,9 @@ typedef enum {
     TSK_DB_OBJECT_TYPE_FILE,
 } TSK_DB_OBJECT_TYPE_ENUM;
 
+/**
+ * Values for the files type column in the files table.
+ */
 typedef enum {
     TSK_DB_FILES_TYPE_FS = 0,
     TSK_DB_FILES_TYPE_CARVED,
@@ -40,7 +63,7 @@ typedef enum  {
 
 
 /** \internal
- * C++ class that wraps the specifics of interacting with a SQLite database for TskAutoDb 
+ * C++ class that wraps the database internals. 
  */
 class TskDbSqlite {
   public:
