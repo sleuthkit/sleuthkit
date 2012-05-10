@@ -125,6 +125,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define TSTRNCPY wcsncpy
 #define TSTRNCAT wcsncat
 #define TSTRCHR	wcschr
+#define TSTRRCHR wcsrchr
 #define TSTRTOUL wcstoul
 
 #define TATOI	_wtoi
@@ -174,6 +175,7 @@ typedef char TSK_TCHAR;         ///< Character data type that is UTF-16 (wchar_t
 #define TSTRNCPY strncpy
 #define TSTRNCAT strncat
 #define TSTRCHR	strchr
+#define TSTRRCHR strrchr
 #define TSTRTOUL strtoul
 #define TSTRTOULL strtoull
 #define TATOI	atoi

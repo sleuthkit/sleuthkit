@@ -192,19 +192,22 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Set the path to NSRL database
-	 * @param path Path to database ( not index )
+	 * Set the NSRL database
+	 * @param path The path to the database
+	 * @return a handle for that database
 	 */
-	public void setNSRLDatabase(String path) throws TskException {
-		this.caseHandle.setNSRLDatabase(path);
+	public int setNSRLDatabase(String path) throws TskException {
+		return this.caseHandle.setNSRLDatabase(path);
 	}
 
 	/**
-	 * Set the path to known bad database
-	 * @param path Path to database ( not index )
+	 * Add the known bad database
+	 * @param name The name of the database
+	 * @param path The path to the database
+	 * @return a handle for that database
 	 */
-	public void setKnownBadDatabase(String path) throws TskException {
-		this.caseHandle.setKnownBadDatabase(path);
+	public int addKnownBadDatabase(String path) throws TskException {
+		return this.caseHandle.addKnownBadDatabase(path);
 	}
 
 	public void clearLookupDatabases() throws TskException {
@@ -2103,15 +2106,25 @@ public class SleuthkitCase {
 //	}
 
 	/**
-	 * Look up the given hash in the known databases
-	 *
-	 * @param md5Hash	The hash of that content
-	 * @return			Known status from the databases
-	 * @throws			TskException
+	 * Look up the given hash in the NSRL database
+	 * @param md5hash The hash to look up
+	 * @return the status of the hash in the NSRL
+	 * @throws TskException 
 	 */
-	public TskData.FileKnown lookupMd5(String md5Hash) throws TskException {
-		return SleuthkitJNI.lookupHash(md5Hash);
+	public TskData.FileKnown nsrlLookupMd5(String md5Hash) throws TskException {
+		return SleuthkitJNI.nsrlHashLookup(md5Hash);
 	}
+	
+	/**
+	 * Look up the given hash in the known bad database
+	 * @param md5hash The hash to look up
+	 * @return the status of the hash in the known bad database
+	 * @throws TskException 
+	 */
+	public TskData.FileKnown knownBadLookupMd5(String md5Hash, int dbHandle) throws TskException {
+		return SleuthkitJNI.knownBadHashLookup(md5Hash, dbHandle);
+	}
+	
 //	Useful if we want to queue sql updates for performance reasons
 //	/**
 //	 * Calculate the given Content objects' md5 hashes, look them up in the
