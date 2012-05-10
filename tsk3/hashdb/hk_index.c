@@ -82,7 +82,16 @@ hk_test(FILE * hFile)
     return 0;
 }
 
-
+/**
+ * Return a char array containing the hashset's name
+ *
+ * @param hFile File handle to hash database
+ */
+void
+hk_name(TSK_HDB_INFO * hdb_info)
+{
+    tsk_hdb_name_from_path(hdb_info);
+}
 
 /**
  * Give a line from a hash keeper database, parse out the
