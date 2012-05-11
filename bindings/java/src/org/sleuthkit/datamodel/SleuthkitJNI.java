@@ -452,7 +452,6 @@ public class SleuthkitJNI {
 	/**
 	 * Create an index for the given database path.
 	 * @param dbPath The path to the database
-	 * @param name The name to store in the index
 	 * @throws TskException 
 	 */
 	public static void createLookupIndex(String dbPath) throws TskException {
@@ -480,7 +479,6 @@ public class SleuthkitJNI {
 
 	/**
 	 * Add the known bad database
-	 * @param name The name of the database
 	 * @param path The path to the database
 	 * @return a handle for that database
 	 */

@@ -41,8 +41,8 @@ public:
     /**
      * Schedule a new task for the range of IDs.
      * @param task Task to schedule
-     * @startId Starting ID of object to process
-     * @endId Ending ID of object to process.
+     * @param startId Starting ID of object to process
+     * @param endId Ending ID of object to process.
      * @returns 1 on error 
      */
     virtual int schedule(Scheduler::TaskType task, uint64_t startId, uint64_t endId) {
