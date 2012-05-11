@@ -1228,8 +1228,9 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
         break;
 
     case TSK_HDB_DBTYPE_IDXONLY_ID:
-        if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID));
+        if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID)) {
             idxonly_name(hdb_info);
+        }
         hdb_info->getentry = idxonly_getentry;
         hdb_info->makeindex = idxonly_makeindex;
         break;

@@ -272,7 +272,7 @@ JNIEXPORT jstring JNICALL
 
     TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
 
-    if(tempdb == NULL)
+    if(tempdb == NULL || tempdb->db_name[0] == '\0')
     {
         throwTskError(env);
         return env->NewStringUTF("-1");

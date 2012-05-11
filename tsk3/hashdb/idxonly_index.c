@@ -32,8 +32,20 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
     if(!hFile)
         return;
     fseeko(hFile, 0, 0);
-    fgets(buf, TSK_HDB_NAME_MAXLEN, hFile);
-    fgets(buf, TSK_HDB_NAME_MAXLEN, hFile);
+    if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_READIDX);
+        tsk_error_set_errstr(
+            "idxonly_name: Reading first header line from index failed");
+        return;
+    }
+    if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_READIDX);
+        tsk_error_set_errstr(
+            "idxonly_name: Reading second header line from index failed");
+        return;
+    }
     bufptr = strchr(buf, '|');
     bufptr++;
     while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
