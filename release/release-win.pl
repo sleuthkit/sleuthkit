@@ -8,20 +8,59 @@
 #
 #
 # This requires Cygwin with:
-# - svn
+# - git 
 # - zip
 #
 # It has been used with Visual Studio 9.0 Express.  It may work with other
 # versions.
 #
+# THIS IS NOT FULLY TESTED WITH GIT YET
 
 use strict;
 
-unless (@ARGV == 2) {
-	print stderr "Missing arguments: tag version and base directory\n";
-	print stderr "    for example: release-win.pl 3.1.0 branches/sleuthkit-3.1\n";
-	print stderr "    tag version: 3.1.0 if building from tags/sleuthkit-3.1.0\n";
-	print stderr "    base directory: trunk or branches/sleuthkit-3.1 so that libewf and zlib can be copied from there (must exist on local system and be able to be built)\n";
+my $TESTING = 1;
+print "TESTING MODE (no commits)\n" if ($TESTING);
+
+
+# Function to execute a command and send output to pipe
+# returns handle
+# exec_pipe(HANDLE, CMD);
+sub exec_pipe {
+    my $handle = shift(@_);
+    my $cmd    = shift(@_);
+
+    die "Can't open pipe for exec_pipe"
+      unless defined(my $pid = open($handle, '-|'));
+
+    if ($pid) {
+        return $handle;
+    }
+    else {
+        $| = 1;
+        exec("$cmd") or die "Can't exec program: $!";
+    }
+}
+
+
+
+# Read a line of text from an open exec_pipe handle
+sub read_pipe_line {
+    my $handle = shift(@_);
+    my $out;
+
+    for (my $i = 0; $i < 100; $i++) {
+        $out = <$handle>;
+        return $out if (defined $out);
+    }
+    return $out;
+}
+
+
+
+
+unless (@ARGV == 1) {
+	print stderr "Missing arguments: tag_version\n";
+	print stderr "    for example: release-win.pl sleuthkit-3.1.0\n";
 	die "stopping";
 }
 
@@ -30,11 +69,7 @@ my $RELDIR = `pwd`;	# The release directory
 chomp $RELDIR;
 my $SVNDIR = "$RELDIR/../";
 my $TAGNAME = $ARGV[0];
-my $TSKDIR = "${SVNDIR}/tags/sleuthkit-$TAGNAME";
-
-
-my $COPYDIR = $ARGV[1];
-die "Base dir missing $SVNDIR/$COPYDIR" unless (-d "$SVNDIR/$COPYDIR");
+my $TSKDIR = "${SVNDIR}";
 
 
 my $BUILD_LOC = `which vcbuild`;
@@ -52,11 +87,19 @@ die "Missing redist dir $REDIST_LOC" unless (-d "$REDIST_LOC");
 
 # Make sure src dir is up to date
 print "Updating source directory\n";
-chdir ("$SVNDIR") or die "Error changing to SVN dir $SVNDIR";
-`svn -q update`;
+chdir ("$TSKDIR") or die "Error changing to TSK dir $TSKDIR";
+`git pull`;
 
-die "tag directory ${TSKDIR} not in SVN" unless (-d "${TSKDIR}");
-chdir ("$TSKDIR") or die "Error changing directories to $TSKDIR";
+# Verify the tag exists
+exec_pipe(*OUT, "git tag | grep \"${TAGNAME}\"");
+my $foo = read_pipe_line(*OUT);
+if ($foo eq "") {
+    print "Tag ${TAGNAME} doesn't exist\n";
+    die "stopping";
+}
+close(OUT);
+
+`git checkout ${TAGNAME}`;
 
 # Parse the config file to get the version number
 open (IN, "<configure.ac") or die "error opening configure.ac to get version";
@@ -79,19 +122,10 @@ my $rdir = $RELDIR . "/" . $rfile;
 die "Release directory already exists: $rdir" if (-d "$rdir");
 
 
-
-print "Copying libewf source from base directory\n";
-die "Base dir missing libewf" unless (-d "$SVNDIR/$COPYDIR/win32/libewf");
-`cp -r \"$SVNDIR/$COPYDIR/win32/libewf\" win32`;
-die "Error copying libewf" unless (-d "win32/libewf");
-
-
-print "Building libewf source\n";
-chdir "win32/libewf/msvscpp" or die "Error changing directory into libewf";
-`vcbuild libewf.sln "Release|Win32"`; 
+# Verify LIBEWF is built
+die "LIBEWF missing" unless (-d "$ENV{'LIBEWF_HOME'}");
 die "libewf dll missing" 
-	unless (-e "release/libewf.dll" ); 
-chdir "../../../";
+	unless (-e "$ENV{'LIBEWF_HOME'}/msvscpp/release/libewf.dll" ); 
 
 
 print "Building TSK source\n";
@@ -121,8 +155,8 @@ mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdi
 
 `cp win32/release/*.exe \"${rdir}/bin\"`;
 `cp win32/release/*.lib \"${rdir}/lib\"`;
-`cp win32/libewf/msvscpp/release/libewf.dll \"${rdir}/bin\"`;
-`cp win32/libewf/msvscpp/zlib/zlib1.dll \"${rdir}/bin\"`;
+`cp $ENV{'LIBEWF_HOME'}/msvscpp/release/libewf.dll \"${rdir}/bin\"`;
+`cp $ENV{'LIBEWF_HOME'}/msvscpp/release/zlib.dll \"${rdir}/bin\"`;
 
 # basic cleanup
 `rm \"${rdir}/bin/callback-sample.exe\"`;
