@@ -234,10 +234,6 @@ TSK_WALK_RET_ENUM
     }
 
     //all errors would have been registered
-    //else if (retval2 != TSK_OK) {
-    //   if (tsk->registerError())
-    //        return TSK_WALK_STOP;
-    //}
 
     return TSK_WALK_CONT;
 }
