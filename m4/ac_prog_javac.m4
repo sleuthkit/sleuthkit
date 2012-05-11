@@ -39,7 +39,7 @@ if test "x$JAVAPREFIX" = x; then
 else
         test "x$JAVAC" = x && AC_CHECK_PROGS(JAVAC, "gcj$EXEEXT -C" guavac$EXEEXT jikes$EXEEXT javac$EXEEXT, $JAVAPREFIX)
 fi
-test "x$JAVAC" = x && AC_MSG_ERROR([no acceptable Java compiler found in \$PATH])
+test "x$JAVAC" = x && AC_MSG_WARN([no acceptable Java compiler found in \$PATH])
 AC_PROG_JAVAC_WORKS
 AC_PROVIDE([$0])dnl
 ])
