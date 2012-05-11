@@ -202,7 +202,6 @@ public class SleuthkitCase {
 
 	/**
 	 * Add the known bad database
-	 * @param name The name of the database
 	 * @param path The path to the database
 	 * @return a handle for that database
 	 */
@@ -2107,7 +2106,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Look up the given hash in the NSRL database
-	 * @param md5hash The hash to look up
+	 * @param md5Hash The hash to look up
 	 * @return the status of the hash in the NSRL
 	 * @throws TskException 
 	 */
@@ -2117,7 +2116,8 @@ public class SleuthkitCase {
 	
 	/**
 	 * Look up the given hash in the known bad database
-	 * @param md5hash The hash to look up
+	 * @param md5Hash The hash to look up
+     * @param dbHandle The handle of the open database to look in
 	 * @return the status of the hash in the known bad database
 	 * @throws TskException 
 	 */
