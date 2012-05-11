@@ -88,7 +88,7 @@ encase_name(TSK_HDB_INFO * hdb_info)
 uint8_t
 encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 {
-    char buf[19];
+    unsigned char buf[19];
     char phash[19];
     TSK_OFF_T offset = 0;
     int db_cnt = 0, idx_cnt = 0;
