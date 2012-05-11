@@ -93,11 +93,12 @@ nsrl_test(FILE * hFile)
  * Set db_name using information from this database type
  *
  * @param hdb_info the hash database object
+ * @return 1 on error and 0 on success.
  */
-void
+uint8_t
 nsrl_name(TSK_HDB_INFO * hdb_info)
 {
-    tsk_hdb_name_from_path(hdb_info);
+    return tsk_hdb_name_from_path(hdb_info);
 }
 
 /**

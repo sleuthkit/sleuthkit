@@ -566,22 +566,18 @@ hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
         tsk_error_set_errstr(
-                 "hdb_setupindex: Header line 2 of index file");
-        return 1;
-    }
-
-    if (strncmp(head2, TSK_HDB_IDX_HEAD_NAME_STR, strlen(TSK_HDB_IDX_HEAD_NAME_STR))
-        != 0) {
-        tsk_release_lock(&hdb_info->lock);
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
-        tsk_error_set_errstr(
-                 "hdb_setupindex: Invalid index file: Missing header line 2");
+                 "hdb_setupindex: Error reading line 2 of index file");
         return 1;
     }
 
     /* Set the offset to the start of the index entries */
-    hdb_info->idx_off = (uint16_t) (strlen(head) + strlen(head2));
+    if (strncmp(head2, TSK_HDB_IDX_HEAD_NAME_STR, strlen(TSK_HDB_IDX_HEAD_NAME_STR))
+        != 0) {
+        hdb_info->idx_off = (uint16_t) (strlen(head));
+    } else {
+        hdb_info->idx_off = (uint16_t) (strlen(head) + strlen(head2));
+    }
+
 
     /* Skip the space */
     ptr = &head[strlen(TSK_HDB_IDX_HEAD_TYPE_STR) + 1];
@@ -1216,7 +1212,9 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
         break;
 
     case TSK_HDB_DBTYPE_ENCASE_ID:
-        encase_name(hdb_info);
+        if(encase_name(hdb_info) != 0){
+            tsk_hdb_name_from_path(hdb_info);
+        }
         hdb_info->getentry = encase_getentry;
         hdb_info->makeindex = encase_makeindex;
         break;
@@ -1229,7 +1227,9 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
 
     case TSK_HDB_DBTYPE_IDXONLY_ID:
         if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID)) {
-            idxonly_name(hdb_info);
+            if(idxonly_name(hdb_info) != 0){
+                tsk_hdb_name_from_path(hdb_info);
+            }
         }
         hdb_info->getentry = idxonly_getentry;
         hdb_info->makeindex = idxonly_makeindex;
@@ -1296,8 +1296,9 @@ tsk_hdb_makeindex(TSK_HDB_INFO * a_hdb_info, TSK_TCHAR * a_type)
  * Set db_name to the name of the database file
  *
  * @param hdb_info the hash database object
+ * @return 1 on error and 0 on success
  */
-void
+uint8_t
 tsk_hdb_name_from_path(TSK_HDB_INFO * hdb_info)
 {
 #ifdef TSK_WIN32
@@ -1318,4 +1319,6 @@ tsk_hdb_name_from_path(TSK_HDB_INFO * hdb_info)
     }
 
     hdb_info->db_name[i] = '\0';
+
+    return 0;
 }

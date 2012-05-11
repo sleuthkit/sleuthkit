@@ -20,8 +20,10 @@
  * Set db_name using information from this database type
  *
  * @param hdb_info the hash database object
+
+ * @return 1 on error and 0 on success.
  */
-void
+uint8_t
 idxonly_name(TSK_HDB_INFO * hdb_info)
 {
     FILE * hFile = hdb_info->hIdx;
@@ -30,21 +32,16 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
     size_t i = 0;
     memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
     if(!hFile)
-        return;
+        return 1;
     fseeko(hFile, 0, 0);
     if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_READIDX);
-        tsk_error_set_errstr(
-            "idxonly_name: Reading first header line from index failed");
-        return;
+        return 1;
     }
     if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_READIDX);
-        tsk_error_set_errstr(
-            "idxonly_name: Reading second header line from index failed");
-        return;
+        return 1;
+    }
+    if(strncmp(buf, TSK_HDB_IDX_HEAD_NAME_STR, strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
+        return 1;
     }
     bufptr = strchr(buf, '|');
     bufptr++;
@@ -53,6 +50,7 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
         hdb_info->db_name[i] = bufptr[i];
         i++;
     }
+    return 0;
 }
 
 
