@@ -18,7 +18,7 @@
 #include "Services/TskSchedulerQueue.h"
 #include "Services/TskSystemPropertiesImpl.h"
 #include "Services/TskImgDBSqlite.h"
-
+#include "File/TskFileManagerImpl.h"
 
 static uint8_t 
 makeDir(const TSK_TCHAR *dir) 
@@ -157,6 +157,9 @@ int main(int argc, char **argv1)
     }
     TskServices::Instance().setImageFile(imageFileTsk);
 
+    // Create a FileManager and register it with the framework.
+    TskServices::Instance().setFileManager(TskFileManagerImpl::instance());
+
     // Let's get the pipelines setup to make sure there are no errors.
     TskPipelineManager pipelineMgr;
     TskPipeline *filePipeline;
@@ -193,7 +196,7 @@ int main(int argc, char **argv1)
     // @@@ this needs to cycle over the files to analyze, 10 is just here for testing 
     if (filePipeline && !filePipeline->isEmpty()) {
         TskSchedulerQueue::task_struct *task;
-        while ((task = scheduler.next()) != NULL) {
+        while ((task = scheduler.nextTask()) != NULL) {
             if (task->task != Scheduler::FileAnalysis)  {
                 fprintf(stderr, "WARNING: Skipping task %d\n", task->task);
                 continue;

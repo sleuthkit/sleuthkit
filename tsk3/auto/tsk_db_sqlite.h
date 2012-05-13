@@ -1,3 +1,20 @@
+/*
+ ** The Sleuth Kit 
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2011-2012 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ **
+ */
+
+/**
+ * \file tsk_db_sqlite.h
+ * Contains the SQLite code for maintaining the case-level database.
+ * In the future, an interface will be developed for these so that 
+ * different databases can exist. 
+ */
+
 #ifndef _TSK_DB_SQLITE_H
 #define _TSK_DB_SQLITE_H
 
@@ -11,36 +28,42 @@ using std::map;
 typedef struct sqlite3 sqlite3;
 
 
+/**
+ * Values for the object type value.
+ */
 typedef enum {
-    DB_FILES_TYPE_FS = 0,
-    DB_FILES_TYPE_CARVED,
-    DB_FILES_TYPE_DERIVED,
-    DB_FILES_TYPE_LOCAL
-} DB_FILES_TYPES;
+    TSK_DB_OBJECT_TYPE_IMG = 0,
+    TSK_DB_OBJECT_TYPE_VS,
+    TSK_DB_OBJECT_TYPE_VOL,
+    TSK_DB_OBJECT_TYPE_FS,
+    TSK_DB_OBJECT_TYPE_FILE,
+} TSK_DB_OBJECT_TYPE_ENUM;
 
-
+/**
+ * Values for the files type column in the files table.
+ */
 typedef enum {
-    DB_OBJECT_TYPE_IMG = 0,
-    DB_OBJECT_TYPE_VS,
-    DB_OBJECT_TYPE_VOL,
-    DB_OBJECT_TYPE_FS,
-    DB_OBJECT_TYPE_FILE,
-} DB_OBJECT_TYPES;
+    TSK_DB_FILES_TYPE_FS = 0,
+    TSK_DB_FILES_TYPE_CARVED,
+    TSK_DB_FILES_TYPE_DERIVED,
+    TSK_DB_FILES_TYPE_LOCAL
+} TSK_DB_FILES_TYPE_ENUM;
+
 
 
 /**
 * Values for the "known" column of the files table
 */
 typedef enum  {
-    TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN = 0,  ///< Not matched against an index
-    TSK_AUTO_CASE_FILE_KNOWN_KNOWN = 1,    ///< Match found in NSRL "known" file index
-    TSK_AUTO_CASE_FILE_KNOWN_BAD = 2,      ///< Match found in "known bad" index
-} TSK_AUTO_CASE_KNOWN_FILE_ENUM;
+    TSK_DB_FILES_KNOWN_UNKNOWN = 0,  ///< Not matched against an index
+    TSK_DB_FILES_KNOWN_KNOWN = 1,    ///< Match found in NSRL "known" file index
+    TSK_DB_FILES_KNOWN_KNOWN_BAD = 2,      ///< Match found in "known bad" index
+} TSK_DB_FILES_KNOWN_ENUM;
 
 
 
 /** \internal
- * C++ class that wraps the specifics of interacting with a SQLite database for TskAutoDb 
+ * C++ class that wraps the database internals. 
  */
 class TskDbSqlite {
   public:
@@ -62,7 +85,7 @@ class TskDbSqlite {
         int64_t & objId);
     int addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         const char *path, const unsigned char *const md5,
-        const TSK_AUTO_CASE_KNOWN_FILE_ENUM known, int64_t fsObjId,
+        const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t & objId);
     int addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
         uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
@@ -75,6 +98,10 @@ class TskDbSqlite {
     
 
   private:
+    // prevent copying until we add proper logic to handle it
+    TskDbSqlite(const TskDbSqlite&);
+    TskDbSqlite & operator=(const TskDbSqlite&);
+
     int initialize();
     int setupFilePreparedStmt();
     void cleanupFilePreparedStmt();
@@ -86,10 +113,10 @@ class TskDbSqlite {
             char **, char **), void *callback_arg, const char *errfmt);
     int attempt_exec(const char *sql, const char *errfmt);
     int prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt);
-    int addObject(DB_OBJECT_TYPES type, int64_t parObjId, int64_t & objId);
+    int addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId);
     int addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         const char *path, const unsigned char *const md5,
-        const TSK_AUTO_CASE_KNOWN_FILE_ENUM known, int64_t fsObjId,
+        const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t parObjId, int64_t & objId);
     int addCarvedFileInfo(int fsObjId, const char *fileName, uint64_t size,
         int64_t & objId);

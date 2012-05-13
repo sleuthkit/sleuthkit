@@ -26,7 +26,7 @@
 #include "Poco/DOM/Element.h"
 
 /**
- * The Pipeline class controls the processing of a data
+ * The Pipeline class controls the processing of data
  * through an ordered list of dynamic library or executable modules.
  * Different types of pipeline implementations exist for the different types of data. 
  * Pipelines are created by the TskPipelineManager class. 
@@ -86,11 +86,11 @@ public:
 
 protected:
     std::vector<TskModule*> m_modules;
+    bool m_hasExeModule;    ///< True if any module is an executable module
 
     bool excludeFile(const TskFile*);
 
 private:
-    bool m_hasExeModule;    ///< True if any module is an executable module
     bool m_loadDll;     ///< True if dlls should be loaded during initialize
 
     TskModule * createModule(Poco::XML::Element * pElem);

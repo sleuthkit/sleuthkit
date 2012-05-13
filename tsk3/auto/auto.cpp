@@ -97,7 +97,7 @@ uint8_t
  * @param a_img_info Handle to an already opened disk image.
  * @returns 1 on error (messages were NOT registered) and 0 on success
  */
-uint8_t TskAuto::openImage(TSK_IMG_INFO * a_img_info)
+uint8_t TskAuto::openImageHandle(TSK_IMG_INFO * a_img_info)
 {
     if (m_img_info)
         closeImage();
@@ -159,6 +159,24 @@ TSK_OFF_T TskAuto::getImageSize() const
 
     return m_img_info->size;
 }
+
+TSK_FILTER_ENUM 
+TskAuto::filterVs(const TSK_VS_INFO * vs_info) 
+{
+    return TSK_FILTER_CONT;
+}
+
+TSK_FILTER_ENUM 
+TskAuto::filterVol(const TSK_VS_PART_INFO * vs_part) 
+{
+    return TSK_FILTER_CONT;
+}
+
+TSK_FILTER_ENUM 
+TskAuto::filterFs(TSK_FS_INFO * fs_info) {
+    return TSK_FILTER_CONT;
+};
+
 
 
 /**
@@ -535,6 +553,14 @@ TSK_RETVAL_ENUM
 }
 
 
+TSK_RETVAL_ENUM 
+TskAuto::processAttribute(TSK_FS_FILE * fs_file,
+                                         const TSK_FS_ATTR * fs_attr, const char *path) 
+{
+    return TSK_OK;
+};
+
+
 void TskAuto::setStopProcessing() {
     m_stopAllProcessing = true;
 }
@@ -574,9 +600,15 @@ std::string TskAuto::errorRecordToString(error_record &rec) {
     tsk_error_set_errstr2("%s", rec.msg2.c_str());
     const char *msg = tsk_error_get();
     tsk_error_reset();
-    return msg;
+    if (msg == NULL)
+        return "";
+    else return std::string(msg);
 }
 
+uint8_t 
+TskAuto::handleError() {
+    return 0;
+};
 
 
 /**

@@ -12,16 +12,16 @@
 
 map<int, TskArtifactNames> initializeArtifactTypeMap(){
     map<int, TskArtifactNames> retval;
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_GEN_INFO, TskArtifactNames("TSK_ART_GEN_INFO", "General Info")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_WEB_BOOKMARK, TskArtifactNames("TSK_ART_WEB_BOOKMARK", "Date Time")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_WEB_COOKIE, TskArtifactNames("TSK_ART_WEB_COOKIE", "Web Cookie")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_WEB_HISTORY, TskArtifactNames("TSK_ART_WEB_HISTORY", "History")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_WEB_DOWNLOAD, TskArtifactNames("TSK_ART_WEB_DOWNLOAD", "Download")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_RECENT_OBJECT, TskArtifactNames("TSK_ART_RECENT_OBJECT", "Recent History Object")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_TRACKPOINT, TskArtifactNames("TSK_ART_TRACKPOINT", "Trackpoint")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_INSTALLED_PROG, TskArtifactNames("TSK_ART_INSTALLED_PROG", "Installed Program")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_KEYWORD_HIT, TskArtifactNames("TSK_ART_KEYWORD_HIT", "Keyword Hit")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_DEVICE_ATTACHED, TskArtifactNames("TSK_ART_DEVICE_ATTACHED", "Device Attached")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_GEN_INFO, TskArtifactNames("TSK_GEN_INFO", "General Info")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_BOOKMARK, TskArtifactNames("TSK_WEB_BOOKMARK", "Date Time")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_COOKIE, TskArtifactNames("TSK_WEB_COOKIE", "Web Cookie")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_HISTORY, TskArtifactNames("TSK_WEB_HISTORY", "History")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_DOWNLOAD, TskArtifactNames("TSK_WEB_DOWNLOAD", "Download")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_RECENT_OBJECT, TskArtifactNames("TSK_RECENT_OBJECT", "Recent History Object")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_TRACKPOINT, TskArtifactNames("TSK_TRACKPOINT", "Trackpoint")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_INSTALLED_PROG, TskArtifactNames("TSK_INSTALLED_PROG", "Installed Program")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_KEYWORD_HIT, TskArtifactNames("TSK_KEYWORD_HIT", "Keyword Hit")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_DEVICE_ATTACHED, TskArtifactNames("TSK_DEVICE_ATTACHED", "Device Attached")));
     return retval;
 }
 
@@ -31,7 +31,6 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME, TskAttributeNames("TSK_DATETIME", "Datetime")));
     retval.insert(pair<int, TskAttributeNames>(TSK_NAME, TskAttributeNames("TSK_NAME", "Name")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PROG_NAME, TskAttributeNames("TSK_PROG_NAME", "Program Name")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_WEB_BOOKMARK, TskAttributeNames("TSK_WEB_BOOKMARK", "Web Bookmark")));
     retval.insert(pair<int, TskAttributeNames>(TSK_VALUE, TskAttributeNames("TSK_VALUE", "Value")));
     retval.insert(pair<int, TskAttributeNames>(TSK_FLAG, TskAttributeNames("TSK_FLAG", "Flag")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PATH, TskAttributeNames("TSK_PATH", "Path")));

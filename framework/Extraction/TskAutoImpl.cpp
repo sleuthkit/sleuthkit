@@ -42,7 +42,7 @@ uint8_t TSKAutoImpl::openImage(TSK_IMG_INFO *a_img_info)
     m_curFsId = 0;
     m_curVsId = 0;
 
-    return TskAuto::openImage(a_img_info);
+    return TskAuto::openImageHandle(a_img_info);
 }
 
 void
@@ -335,11 +335,16 @@ TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_
 
 uint8_t TSKAutoImpl::handleError()
 {
-    // @@@ Possibly test tsk_errno to determine how the message should be logged.
-    std::wstringstream msg;
-    msg << L"TskAutoImpl::handleError " << tsk_error_get();
+    const char * tskMsg = tsk_error_get();
 
-    LOGWARN(msg.str());
+    // @@@ Possibly test tsk_errno to determine how the message should be logged.
+    if (tskMsg != NULL)
+    {
+        std::wstringstream msg;
+        msg << L"TskAutoImpl::handleError " << tsk_error_get();
+
+        LOGWARN(msg.str());
+    }
     return 0;
 }
 

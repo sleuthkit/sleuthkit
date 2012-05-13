@@ -1305,7 +1305,7 @@ ffs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     ffs_sb1 *sb1 = ffs->fs.sb1;
     ffs_sb2 *sb2 = ffs->fs.sb2;
     int flags;
-    char timeBuf[32];
+    char timeBuf[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -1688,7 +1688,7 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     FFS_PRINT_ADDR print;
     const TSK_FS_ATTR *fs_attr_indir;
     char *dino_buf;
-    char timeBuf[32];
+    char timeBuf[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();

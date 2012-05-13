@@ -1,3 +1,19 @@
+/*
+ ** The Sleuth Kit 
+ **
+ ** Brian Carrier [carrier <at> sleuthkit [dot] org]
+ ** Copyright (c) 2011-2012 Brian Carrier.  All Rights reserved
+ **
+ ** This software is distributed under the Common Public License 1.0
+ **
+ */
+
+/**
+ * \file tsk_case_db.h
+ * Contains the class that creates a case-level database of file system
+ * data. 
+ */
+
 #ifndef _TSK_AUTO_CASE_H
 #define _TSK_AUTO_CASE_H
 
@@ -9,8 +25,9 @@
 #define TSK_ADD_IMAGE_SAVEPOINT "ADDIMAGE"
 
 /** \internal
-* C++ class that implements TskAuto to load file metadata into a database. 
-*/
+ * C++ class that implements TskAuto to load file metadata into a database. 
+ * This is used by the TskCaseDb class. 
+ */
 class TskAutoDb:public TskAuto {
   public:
     TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb);
@@ -58,12 +75,15 @@ class TskAutoDb:public TskAuto {
     TSK_HDB_INFO * m_knownBadDb;
     bool m_noFatFsOrphans;
 
+    // prevent copying until we add proper logic to handle it
+    TskAutoDb(const TskAutoDb&);
+    TskAutoDb & operator=(const TskAutoDb&);
 
     uint8_t addImageDetails(const char *const images[], int);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path,
         const unsigned char *const md5,
-        const TSK_AUTO_CASE_KNOWN_FILE_ENUM known);
+        const TSK_DB_FILES_KNOWN_ENUM known);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
         const TSK_FS_ATTR * fs_attr, const char *path);
     static TSK_WALK_RET_ENUM md5HashCallback(TSK_FS_FILE * file,
@@ -75,6 +95,9 @@ class TskAutoDb:public TskAuto {
 
 #define TSK_CASE_DB_TAG 0xB0551A33
 
+/**
+ * Stores case-level information in a database on one or more disk images.
+ */
 class TskCaseDb {
   public:
     unsigned int m_tag;
@@ -83,14 +106,20 @@ class TskCaseDb {
 
     static TskCaseDb *newDb(const TSK_TCHAR * path);
     static TskCaseDb *openDb(const TSK_TCHAR * path);
+
     void clearLookupDatabases();
     uint8_t setNSRLHashDb(TSK_TCHAR * const indexFile);
     uint8_t setKnownBadHashDb(TSK_TCHAR * const indexFile);
+
     uint8_t addImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
     TskAutoDb *initAddImage();
 
   private:
+    // prevent copying until we add proper logic to handle it
+    TskCaseDb(const TskCaseDb&);
+    TskCaseDb & operator=(const TskCaseDb&);
+
     TskCaseDb(TskDbSqlite * a_db);
     TskDbSqlite *m_db;
     TSK_HDB_INFO * m_NSRLDb;

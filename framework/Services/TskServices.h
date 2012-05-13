@@ -17,9 +17,10 @@
 #include "Extraction/TskImageFile.h"
 #include "Services/TskBlackboard.h"
 #include "Services/TskSystemProperties.h"
+#include "File/TskFileManager.h"
 
 /**
- * Provices singleton access to many framework services.  This is used
+ * Provides singleton access to many framework services.  This is used
  * to register and access the classes that implement the services. 
  */
 class TSK_FRAMEWORK_API TskServices
@@ -45,6 +46,20 @@ public:
     void setSystemProperties(TskSystemProperties& systemProperties);
     TskSystemProperties& getSystemProperties();
 
+    /**
+     * Set the File Manager service.
+     * The standard framework implementation class is TskFileManagerImpl.
+     * @param fileManager A File Manager implementation.
+     * @throws TskException if one has already been set.
+     */
+    void setFileManager(TskFileManager& fileManager);
+    /**
+     * Return the File Manager service.
+     * @returns File Manager reference.
+     * @throws TskException if File Manager has not been set.
+     */
+    TskFileManager& getFileManager();
+
 private:
     // Private constructor, copy constructor and assignment operator
     // to prevent creation of multiple instances.
@@ -62,5 +77,6 @@ private:
     TskImageFile * m_imageFile;
     TskBlackboard * m_blackboard;
     TskSystemProperties * m_systemProperties;
+    TskFileManager * m_fileManager;
 };
 #endif
