@@ -135,7 +135,6 @@ file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char *buf,
     return TSK_WALK_CONT;
 }
 
-
 /* This is modeled on print_dent_act printit in ./tsk3/fs/fls_lib.c
  * See also tsk_fs_name_print() in ./tsk3/fs/fs_name.c
  */
@@ -144,7 +143,10 @@ static uint8_t
 process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
 {
     /* Make sure that the SleuthKit structures are properly set */
-    if ((fs_file->meta == NULL) || (fs_file->name == NULL)) return 1;
+    if (fs_file->name == NULL) 
+        return 1;
+    if (fs_file->meta == NULL && opt_debug)
+        printf("File: %s %s  has no meta\n", path, fs_file->name->name);
 
     /* SleuthKit meta types are defined in tsk_fs.h.*/
 
@@ -165,37 +167,40 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     if(x) x->push("fileobject"); 	// tell XML we are starting a new XML object
     if(opt_parent_tracking)
     {
-        if(fs_file->p_addr){
+        if(fs_file->name->par_addr){
             if(x)
             {
                 x->push("parent_object");
-                file_info("inode", fs_file->p_addr);
+                file_info("inode", fs_file->name->par_addr);
                 if(x) x->pop();
             }
             if(t||a)
             {
-                file_info("parent_inode", fs_file->p_addr);
+                file_info("parent_inode", fs_file->name->par_addr);
             }
         }
     }
 
-    /* Get the content if needed */
-    if(ci.need_file_walk() && (opt_maxgig==0 || fs_file->meta->size/1000000000 < opt_maxgig)){
-	int myflags = TSK_FS_FILE_WALK_FLAG_NOID;
-	if (opt_no_data) myflags |= TSK_FS_FILE_WALK_FLAG_AONLY;
-	if (tsk_fs_file_walk (fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) myflags, file_act, (void *) &ci)) {
-
-	    // ignore errors from deleted files that were being recovered
-	    //if (tsk_errno != TSK_ERR_FS_RECOVER) {
-	    if (tsk_error_get_errno() != TSK_ERR_FS_RECOVER) {
-		if(opt_debug){
-		    fprintf(stderr,"Processing: %s/%s (%" PRIuINUM ")\n", path,
-			   fs_file->name->name, fs_file->meta->addr);
-		    tsk_error_print(stderr);
-		}
-	    }
-	    tsk_error_reset();
-	}
+    if(fs_file->meta != NULL)
+    {
+        /* Get the content if needed */
+        if(ci.need_file_walk() && (opt_maxgig==0 || fs_file->meta->size/1000000000 < opt_maxgig)){
+    	int myflags = TSK_FS_FILE_WALK_FLAG_NOID;
+    	if (opt_no_data) myflags |= TSK_FS_FILE_WALK_FLAG_AONLY;
+    	if (tsk_fs_file_walk (fs_file, (TSK_FS_FILE_WALK_FLAG_ENUM) myflags, file_act, (void *) &ci)) {
+    
+    	    // ignore errors from deleted files that were being recovered
+    	    //if (tsk_errno != TSK_ERR_FS_RECOVER) {
+    	    if (tsk_error_get_errno() != TSK_ERR_FS_RECOVER) {
+    		if(opt_debug){
+    		    fprintf(stderr,"Processing: %s/%s (%" PRIuINUM ")\n", path,
+    			   fs_file->name->name, fs_file->meta->addr);
+    		    tsk_error_print(stderr);
+    		}
+    	    }
+    	    tsk_error_reset();
+    	}
+        }
     }
 
     if(file_count_max && file_count>file_count_max) return TSK_WALK_STOP;
@@ -206,7 +211,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
      */
 
     /* Finally output the informaton */
-    if(opt_body_file){
+    if(opt_body_file && (fs_file->meta != NULL)){
 #ifdef HAVE_TSK_FS_META_MAKE_LS
 	char ls[64];
 	tsk_fs_meta_make_ls(fs_file->meta,ls,sizeof(ls));
@@ -238,54 +243,70 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     file_info("id",next_id++);
     file_info("name_type",tsk_fs_name_type_str[fs_file->name->type]);
 
-    /* fs_file->meta */
-    file_info("filesize",fs_file->meta->size);
-    if(fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc",1);
-    if(fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) file_info("unalloc",1);
-    if(fs_file->meta->flags & TSK_FS_META_FLAG_USED)    file_info("used",1);
-    if(fs_file->meta->flags & TSK_FS_META_FLAG_UNUSED)  file_info("unused",1);
-    if(fs_file->meta->flags & TSK_FS_META_FLAG_ORPHAN)  file_info("orphan",1);
-    if(fs_file->meta->flags & TSK_FS_META_FLAG_COMP)    file_info("compressed",1);
-
-    file_info("inode",fs_file->meta->addr);
-    file_info("meta_type",fs_file->meta->type);
-    file_info("mode",fs_file->meta->mode); // *** REPLACE WITH drwx-rw-rw or whatever
-    file_info("nlink",fs_file->meta->nlink);
-    file_info("uid",fs_file->meta->uid);
-    file_info("gid",fs_file->meta->gid);
-
-	/* Special processing for FAT */
-	if(TSK_FS_TYPE_ISFAT(fs_file->fs_info->ftype))
-	{
-       if(fs_file->meta->mtime) file_infot("mtime",fs_file->meta->mtime, fs_file->fs_info->ftype);
-       if(fs_file->meta->ctime) file_infot("ctime",fs_file->meta->ctime, fs_file->fs_info->ftype);
-       if(fs_file->meta->atime) file_infot("atime",fs_file->meta->atime, fs_file->fs_info->ftype);
-       if(fs_file->meta->crtime) file_infot("crtime",fs_file->meta->crtime, fs_file->fs_info->ftype);
+    if(fs_file->meta != NULL)
+    {
+        /* fs_file->meta */
+        file_info("filesize",fs_file->meta->size);
+        if(fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc",1);
+        if(fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) file_info("unalloc",1);
+        if(fs_file->meta->flags & TSK_FS_META_FLAG_USED)    file_info("used",1);
+        if(fs_file->meta->flags & TSK_FS_META_FLAG_UNUSED)  file_info("unused",1);
+        if(fs_file->meta->flags & TSK_FS_META_FLAG_ORPHAN)  file_info("orphan",1);
+        if(fs_file->meta->flags & TSK_FS_META_FLAG_COMP)    file_info("compressed",1);
+    
+        file_info("inode",fs_file->meta->addr);
+        file_info("meta_type",fs_file->meta->type);
+        file_info("mode",fs_file->meta->mode); // *** REPLACE WITH drwx-rw-rw or whatever
+        file_info("nlink",fs_file->meta->nlink);
+        file_info("uid",fs_file->meta->uid);
+        file_info("gid",fs_file->meta->gid);
+    
+    	/* Special processing for FAT */
+    	if(TSK_FS_TYPE_ISFAT(fs_file->fs_info->ftype))
+    	{
+           if(fs_file->meta->mtime) file_infot("mtime",fs_file->meta->mtime, fs_file->fs_info->ftype);
+           if(fs_file->meta->ctime) file_infot("ctime",fs_file->meta->ctime, fs_file->fs_info->ftype);
+           if(fs_file->meta->atime) file_infot("atime",fs_file->meta->atime, fs_file->fs_info->ftype);
+           if(fs_file->meta->crtime) file_infot("crtime",fs_file->meta->crtime, fs_file->fs_info->ftype);
+        }
+    	else{
+           if(fs_file->meta->mtime) file_infot("mtime",fs_file->meta->mtime);
+           if(fs_file->meta->ctime) file_infot("ctime",fs_file->meta->ctime);
+           if(fs_file->meta->atime) file_infot("atime",fs_file->meta->atime);
+           if(fs_file->meta->crtime) file_infot("crtime",fs_file->meta->crtime);
+    	}
+    
+        /* TK: do content_ptr */
+        if(fs_file->meta->seq!=0) file_info("seq",fs_file->meta->seq);
+    
+        /* Special processing for EXT */
+        if(TSK_FS_TYPE_ISEXT(fs_file->fs_info->ftype)){
+    	if(fs_file->meta->time2.ext2.dtime){
+    	    file_infot("dtime",fs_file->meta->time2.ext2.dtime);
+    	}
+        }
+    
+        /* Special processing for HFS */
+        if(TSK_FS_TYPE_ISHFS(fs_file->fs_info->ftype)){
+    	if(fs_file->meta->time2.hfs.bkup_time){
+    	    file_infot("bkup_time",fs_file->meta->time2.hfs.bkup_time);
+    	}
+        }
     }
-	else{
-       if(fs_file->meta->mtime) file_infot("mtime",fs_file->meta->mtime);
-       if(fs_file->meta->ctime) file_infot("ctime",fs_file->meta->ctime);
-       if(fs_file->meta->atime) file_infot("atime",fs_file->meta->atime);
-       if(fs_file->meta->crtime) file_infot("crtime",fs_file->meta->crtime);
-	}
-
-    /* TK: do content_ptr */
-    if(fs_file->meta->seq!=0) file_info("seq",fs_file->meta->seq);
-
-    /* Special processing for EXT */
-    if(TSK_FS_TYPE_ISEXT(fs_file->fs_info->ftype)){
-	if(fs_file->meta->time2.ext2.dtime){
-	    file_infot("dtime",fs_file->meta->time2.ext2.dtime);
-	}
+    if(fs_file->meta == NULL)
+    {
+        if(fs_file->name->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc",1);
+        if(fs_file->name->flags & TSK_FS_META_FLAG_UNALLOC) file_info("unalloc",1);
+        if(fs_file->name->flags & TSK_FS_META_FLAG_USED)    file_info("used",1);
+        if(fs_file->name->flags & TSK_FS_META_FLAG_UNUSED)  file_info("unused",1);
+        if(fs_file->name->flags & TSK_FS_META_FLAG_ORPHAN)  file_info("orphan",1);
+        if(fs_file->name->flags & TSK_FS_META_FLAG_COMP)    file_info("compressed",1);
+    
+        if (fs_file->name->meta_addr!=0)file_info("inode",fs_file->name->meta_addr);
+        file_info("meta_type",fs_file->name->type);
+        
+        if(fs_file->name->meta_seq!=0) file_info("seq",fs_file->name->meta_seq);
     }
-
-    /* Special processing for HFS */
-    if(TSK_FS_TYPE_ISHFS(fs_file->fs_info->ftype)){
-	if(fs_file->meta->time2.hfs.bkup_time){
-	    file_infot("bkup_time",fs_file->meta->time2.hfs.bkup_time);
-	}
-    }
-
     /* Special processing for NTFS */
     if ((TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))){
 	/* Should we cycle through the attributes the way print_dent_act() does? */
@@ -297,12 +318,13 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
 	//file_info("sleuthkit_ntfs_id",buf);
     }
 
-    // ~/domex/src/dist/sleuthkit-3.1.0b1/tsk3/fs/fls_lib.c
-
     /* TK: do attr_state */
     /* TK: do name2 */
-    if(fs_file->meta->link && fs_file->meta->link[0]!=0){
-	file_info("link_target",fs_file->meta->link);
+    if(fs_file->meta != NULL)
+    {
+        if(fs_file->meta->link && fs_file->meta->link[0]!=0){
+    	file_info("link_target",fs_file->meta->link);
+        }
     }
     ci.write_record();
 
@@ -350,9 +372,7 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
         return TSK_WALK_CONT;
 
     /* If the name has corresponding metadata, then walk it */
-    if (fs_file->meta) {
-    	process_tsk_file(fs_file, path);
-    }
+   	process_tsk_file(fs_file, path);
 
     return TSK_WALK_CONT;
 }

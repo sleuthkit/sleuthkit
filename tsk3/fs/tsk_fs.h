@@ -635,7 +635,6 @@ extern "C" {
 
         TSK_FS_NAME *name;      ///< Pointer to name of file (or NULL if file was opened using metadata address)
         TSK_FS_META *meta;      ///< Pointer to metadata of file (or NULL if name has invalid metadata address)
-        TSK_INUM_T p_addr;      ///< Address of the meta data structure for the parent of this file
 
         TSK_FS_INFO *fs_info;   ///< Pointer to file system that the file is located in.
     };

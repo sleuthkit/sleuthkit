@@ -102,7 +102,7 @@
 
 #include "hash_t.h"
 #include "utils.h"
-#include "xml.h"
+#include "dfxml.h"
 #include "base64.h"
 #include "content.h"
 

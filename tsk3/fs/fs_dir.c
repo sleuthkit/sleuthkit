@@ -460,7 +460,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
         /* Point name to the buffer of names.  We need to be
          * careful about resetting this before we free fs_file */
         fs_file->name = (TSK_FS_NAME *) & fs_dir->names[i];
-        fs_file->p_addr = fs_dir->addr;
 
         /* load the fs_meta structure if possible.
          * Must have non-zero inode addr or have allocated name (if inode is 0) */

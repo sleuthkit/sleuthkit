@@ -19,7 +19,7 @@
 
 #include "tsk3/tsk_tools_i.h"
 
-#include "xml.h"
+#include "dfxml.h"
 #include <errno.h>
 
 #ifdef _MSC_VER
@@ -100,7 +100,7 @@ public:
     Regex(const char *pat):reg(){
 	memset(&reg,0,sizeof(reg));
 	if(regcomp(&reg,pat,REG_EXTENDED)){
-	    cerr << "xml.cpp: invalid regex pattern" << pat << "\n";
+	    cerr << "dfxml.cpp: invalid regex pattern" << pat << "\n";
 	    exit(1);
 	}
     }
