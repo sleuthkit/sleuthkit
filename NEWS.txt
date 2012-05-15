@@ -1786,3 +1786,4 @@ integer value.
 - added file system type of linux-ext2 (as ext3 is becoming more popular)
 - bug in file command that reported seek error for object files and STDIN
 
+
