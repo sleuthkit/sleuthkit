@@ -257,6 +257,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\tools\fiwalk\src\dfxml.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\tools\fiwalk\src\fiwalk.cpp"
 				>
 			</File>
@@ -288,10 +292,6 @@
 				RelativePath="..\..\tools\fiwalk\src\utils.c"
 				>
 			</File>
-			<File
-				RelativePath="..\..\tools\fiwalk\src\xml.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -312,6 +312,10 @@
 			</File>
 			<File
 				RelativePath="..\..\tools\fiwalk\src\content.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\tools\fiwalk\src\dfxml.h"
 				>
 			</File>
 			<File
@@ -344,10 +348,6 @@
 			</File>
 			<File
 				RelativePath="..\..\tools\fiwalk\src\utils.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tools\fiwalk\src\xml.h"
 				>
 			</File>
 		</Filter>
