@@ -2017,12 +2017,16 @@ public class SleuthkitCase {
 				out.write(readBytes);
 			}
 		} finally {
-			if (in != null) {
-				in.close();
-			}
-			if (out != null) {
-				out.flush();
-				out.close();
+			try {
+				if (in != null) {
+					in.close();
+				}
+				if (out != null) {
+					out.flush();
+					out.close();
+				}
+			} catch (IOException e) {
+				Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Could not close streams after db copy", e);
 			}
 			SleuthkitCase.dbReadUnlock();
 		}
