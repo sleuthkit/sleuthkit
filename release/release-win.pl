@@ -113,7 +113,7 @@ while (<IN>) {
 die "Error finding version in configure.ac" if ($VER eq "");
 print "Version found in configure.ac: $VER\n";
 die "tag name and configure.ac have different versions ($TAGNAME vs $VER)" 
-	if ($VER != $TAGNAME);
+	if ("sleuthkit-".$VER != $TAGNAME);
 
 
 # Verify that the directory does not already exist
@@ -155,8 +155,8 @@ mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdi
 
 `cp win32/release/*.exe \"${rdir}/bin\"`;
 `cp win32/release/*.lib \"${rdir}/lib\"`;
-`cp $ENV{'LIBEWF_HOME'}/msvscpp/release/libewf.dll \"${rdir}/bin\"`;
-`cp $ENV{'LIBEWF_HOME'}/msvscpp/release/zlib.dll \"${rdir}/bin\"`;
+`cp \"$ENV{'LIBEWF_HOME'}/msvscpp/release/libewf.dll\" \"${rdir}/bin\"`;
+`cp \"$ENV{'LIBEWF_HOME'}/msvscpp/release/zlib.dll\" \"${rdir}/bin\"`;
 
 # basic cleanup
 `rm \"${rdir}/bin/callback-sample.exe\"`;
