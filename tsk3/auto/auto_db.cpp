@@ -313,7 +313,7 @@ TSK_RETVAL_ENUM
  * all changes on error. When runProcess()
  * returns, user must call either commitAddImage() to commit the changes,
  * or revertAddImage() to revert them.
- * @returns 1 if any error occured (messages will be registered in list) and 0 on success
+ * @returns 1 if any error occured (messages will be registered in list), 2 if error occured but add image process can continue, and 0 on success
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
@@ -355,9 +355,8 @@ uint8_t
     }
     
     if (addFilesInImgToDb()) {
-        if (revertAddImage())
-            registerError();
-        return 1;
+        //do not roll back if errors in this case, but do report registered errors
+        return 2;
     }
     return 0;
 }
@@ -392,8 +391,7 @@ uint8_t
 
     m_imgTransactionOpen = true;
 
-    if (openImageUtf8(numImg, imagePaths, imgType, sSize)
-        || addFilesInImgToDb()) {
+    if (openImageUtf8(numImg, imagePaths, imgType, sSize)) {
         // rollback on error
 
         // rollbackSavepoint can throw errors too, need to make sure original
@@ -407,6 +405,13 @@ uint8_t
         }
         return 1;
     }
+
+    if (addFilesInImgToDb()) {
+        //do not roll back if errors in this case, but do report registered errors
+        return 2;
+    }
+
+
     return 0;
 }
 #endif
