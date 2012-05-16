@@ -53,14 +53,24 @@ encase_name(TSK_HDB_INFO * hdb_info)
     UTF8 *utf8;
     size_t ilen;
     memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
-    if(!hFile)
+    if(!hFile) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Error getting name from Encase hash db; using file name instead");
+        tsk_hdb_name_from_path(hdb_info);
         return;
+    }
 
     memset(buf, '\0', 40);
 
     fseeko(hFile, 1032, SEEK_SET);
-    if (39 != fread(buf, sizeof(wchar_t), 39, hFile))
+    if (39 != fread(buf, sizeof(wchar_t), 39, hFile)) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Error getting name from Encase hash db; using file name instead");
+        tsk_hdb_name_from_path(hdb_info);
         return;
+    }
 
     // do some arithmetic on type sizes to be platform independent
     ilen = wcslen(buf) * (sizeof(wchar_t) / sizeof(UTF16));
