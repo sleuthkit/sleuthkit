@@ -21,7 +21,7 @@ TSKAutoImpl::TSKAutoImpl() : m_db(TskServices::Instance().getImgDB()), m_numFile
     m_curFsId = 0;
     m_curVsId = 0;
     m_vsSeen = false;
-    m_startTime = time(NULL);
+    m_lastUpdateMsg = 0;
 
     setVolFilterFlags((TSK_VS_PART_FLAG_ENUM)(TSK_VS_PART_FLAG_ALLOC | TSK_VS_PART_FLAG_UNALLOC));
     setFileFilterFlags((TSK_FS_DIR_WALK_FLAG_ENUM)(TSK_FS_DIR_WALK_FLAG_ALLOC|TSK_FS_DIR_WALK_FLAG_UNALLOC));
@@ -320,12 +320,10 @@ TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_
         retval = processAttributes(a_fsFile, a_path);
     }
 
-    // @@@ This seems like a bug...
-    static time_t lastCheck = m_startTime;
     time_t timeNow = time(NULL);
-    if ((timeNow - lastCheck) > 3600)
+    if ((timeNow - m_lastUpdateMsg) > 3600)
     {
-        lastCheck = timeNow;
+        m_lastUpdateMsg = timeNow;
         std::wstringstream msg;
         msg << L"TSKAutoImpl::processFile : Processed " << m_numFilesSeen << " files.";
         LOGINFO(msg.str());
@@ -337,11 +335,16 @@ TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_
 
 uint8_t TSKAutoImpl::handleError()
 {
-    // @@@ Possibly test tsk_errno to determine how the message should be logged.
-    std::wstringstream msg;
-    msg << L"TskAutoImpl::handleError " << tsk_error_get();
+    const char * tskMsg = tsk_error_get();
 
-    LOGWARN(msg.str());
+    // @@@ Possibly test tsk_errno to determine how the message should be logged.
+    if (tskMsg != NULL)
+    {
+        std::wstringstream msg;
+        msg << L"TskAutoImpl::handleError " << tsk_error_get();
+
+        LOGWARN(msg.str());
+    }
     return 0;
 }
 
