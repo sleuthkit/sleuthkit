@@ -69,7 +69,7 @@ void TskFileAnalysisPipeline::run(TskFile* file)
             return;
         }
 
-        if (file->status() != TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS)
+        if (file->getStatus() != TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS)
             return;
 
         // Update status to indicate analysis is in progress.
@@ -92,7 +92,7 @@ void TskFileAnalysisPipeline::run(TskFile* file)
 
             TskModule::Status status = m_modules[i]->run(file);
 
-            imgDB.setModuleStatus(file->id(), m_modules[i]->getModuleId(), (int)status);
+            imgDB.setModuleStatus(file->getId(), m_modules[i]->getModuleId(), (int)status);
 
             // Reset the file offset to the beginning of the file for the next module.
             file->seek(0);
@@ -111,8 +111,8 @@ void TskFileAnalysisPipeline::run(TskFile* file)
         // above or by a module that required it to exist on disk.
         // Carved and derived files should not be deleted since the content is
         // typically created by external tools.
-        if (file->typeId() != TskImgDB::IMGDB_FILES_TYPE_CARVED &&
-            file->typeId() != TskImgDB::IMGDB_FILES_TYPE_DERIVED &&
+        if (file->getTypeId() != TskImgDB::IMGDB_FILES_TYPE_CARVED &&
+            file->getTypeId() != TskImgDB::IMGDB_FILES_TYPE_DERIVED &&
             file->exists())
         {
             TskFileManagerImpl::instance().deleteFile(file);
@@ -120,7 +120,7 @@ void TskFileAnalysisPipeline::run(TskFile* file)
 
         // We allow modules to set status on the file so we only update it
         // if the modules haven't.
-        if (file->status() == TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_IN_PROGRESS)
+        if (file->getStatus() == TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_IN_PROGRESS)
             if (bModuleFailed)
                 file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_FAILED);
             else
@@ -129,10 +129,10 @@ void TskFileAnalysisPipeline::run(TskFile* file)
     catch (std::exception& ex)
     {
         std::wstringstream msg;
-        msg << L"TskFileAnalysisPipeline::run - Error while processing file id (" << file->id()
+        msg << L"TskFileAnalysisPipeline::run - Error while processing file id (" << file->getId()
             << L") : " << ex.what();
         LOGERROR(msg.str());
-        imgDB.updateFileStatus(file->id(), TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_FAILED);
+        imgDB.updateFileStatus(file->getId(), TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_FAILED);
 
         // Rethrow the exception
         throw;

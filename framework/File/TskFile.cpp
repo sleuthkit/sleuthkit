@@ -61,12 +61,12 @@ void TskFile::save()
 /**
  * What is this files id?
  */
-uint64_t TskFile::id() const
+uint64_t TskFile::getId() const
 {
     return m_id;
 }
 
-TskImgDB::FILE_TYPES TskFile::typeId() const
+TskImgDB::FILE_TYPES TskFile::getTypeId() const
 {
     return m_fileRecord.typeId;
 }
@@ -74,7 +74,7 @@ TskImgDB::FILE_TYPES TskFile::typeId() const
 /**
  * What is this files name?
  */
-std::string TskFile::name() const
+std::string TskFile::getName() const
 {
     return m_fileRecord.name;
 }
@@ -82,7 +82,7 @@ std::string TskFile::name() const
 /**
  * What is this files extension?
  */
-std::string TskFile::extension() const
+std::string TskFile::getExtension() const
 {
     size_t pos = m_fileRecord.name.find_last_of(".");
     if (pos == std::string.npos)
@@ -94,7 +94,7 @@ std::string TskFile::extension() const
 /**
  * What is this files parent file id?
  */
-uint64_t TskFile::parentFileId() const
+uint64_t TskFile::getParentFileId() const
 {
     return m_fileRecord.parentFileId;
 }
@@ -102,14 +102,14 @@ uint64_t TskFile::parentFileId() const
 /**
  * What is this files directory type?
  */
-TSK_FS_NAME_TYPE_ENUM TskFile::dirType() const
+TSK_FS_NAME_TYPE_ENUM TskFile::getDirType() const
 {
     return m_fileRecord.dirType;
 }
 /**
  * What is this files metadata type?
  */
-TSK_FS_META_TYPE_ENUM TskFile::metaType() const
+TSK_FS_META_TYPE_ENUM TskFile::getMetaType() const
 {
     return m_fileRecord.metaType;
 }
@@ -117,7 +117,7 @@ TSK_FS_META_TYPE_ENUM TskFile::metaType() const
 /**
  * What are this files directory flags?
  */
-TSK_FS_NAME_FLAG_ENUM TskFile::dirFlags() const
+TSK_FS_NAME_FLAG_ENUM TskFile::getDirFlags() const
 {
     return m_fileRecord.dirFlags;
 }
@@ -125,7 +125,7 @@ TSK_FS_NAME_FLAG_ENUM TskFile::dirFlags() const
 /**
  * What are this files metadata flags?
  */
-TSK_FS_META_FLAG_ENUM TskFile::metaFlags() const
+TSK_FS_META_FLAG_ENUM TskFile::getMetaFlags() const
 {
     return m_fileRecord.metaFlags;
 }
@@ -133,7 +133,7 @@ TSK_FS_META_FLAG_ENUM TskFile::metaFlags() const
 /**
  * What is this files size?
  */
-TSK_OFF_T TskFile::size() const
+TSK_OFF_T TskFile::getSize() const
 {
     return m_fileRecord.size;
 }
@@ -141,7 +141,7 @@ TSK_OFF_T TskFile::size() const
 /**
  * What is this files change time?
  */
-time_t TskFile::ctime() const
+time_t TskFile::getCtime() const
 {
     return m_fileRecord.ctime;
 }
@@ -149,7 +149,7 @@ time_t TskFile::ctime() const
 /**
  * What is this files creation time?
  */
-time_t TskFile::crtime() const
+time_t TskFile::getCrtime() const
 {
     return m_fileRecord.crtime;
 }
@@ -157,7 +157,7 @@ time_t TskFile::crtime() const
 /**
  * What is this files access time?
  */
-time_t TskFile::atime() const
+time_t TskFile::getAtime() const
 {
     return m_fileRecord.atime;
 }
@@ -165,7 +165,7 @@ time_t TskFile::atime() const
 /**
  * What is this files modify time?
  */
-time_t TskFile::mtime() const
+time_t TskFile::getMtime() const
 {
     return m_fileRecord.mtime;
 }
@@ -173,7 +173,7 @@ time_t TskFile::mtime() const
 /**
  * What is this files mode?
  */
-TSK_FS_META_MODE_ENUM TskFile::mode() const
+TSK_FS_META_MODE_ENUM TskFile::getMode() const
 {
     return m_fileRecord.mode;
 }
@@ -181,7 +181,7 @@ TSK_FS_META_MODE_ENUM TskFile::mode() const
 /**
  * What is this files user id?
  */
-TSK_UID_T TskFile::uid() const
+TSK_UID_T TskFile::getUid() const
 {
     return m_fileRecord.uid;
 }
@@ -189,7 +189,7 @@ TSK_UID_T TskFile::uid() const
 /**
  * What is this files group id?
  */
-TSK_GID_T TskFile::gid() const
+TSK_GID_T TskFile::getGid() const
 {
     return m_fileRecord.gid;
 }
@@ -197,7 +197,7 @@ TSK_GID_T TskFile::gid() const
 /**
  * What is this files status?
  */
-TskImgDB::FILE_STATUS TskFile::status() const
+TskImgDB::FILE_STATUS TskFile::getStatus() const
 {
     return m_fileRecord.status;
 }
@@ -205,7 +205,7 @@ TskImgDB::FILE_STATUS TskFile::status() const
 /*
  * What is this files full path
  */
-std::string TskFile::fullPath() const
+std::string TskFile::getFullPath() const
 {
     return m_fileRecord.fullPath;
 }
@@ -253,13 +253,13 @@ void TskFile::setHash(TskImgDB::HASH_TYPE hashType, const std::string hash)
 
 TskImgDB::KNOWN_STATUS TskFile::getKnownStatus() const
 {
-    return TskServices::Instance().getImgDB().getKnownStatus(id());
+    return TskServices::Instance().getImgDB().getKnownStatus(getId());
 }
 
 void TskFile::setStatus(TskImgDB::FILE_STATUS status)
 {
     m_fileRecord.status = status;
-    TskServices::Instance().getImgDB().updateFileStatus(id(), status);
+    TskServices::Instance().getImgDB().updateFileStatus(getId(), status);
 }
 
 /**

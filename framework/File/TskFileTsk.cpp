@@ -83,7 +83,7 @@ void TskFileTsk::open()
         return;
     
     // Files inside of the file system
-    if (typeId() == TskImgDB::IMGDB_FILES_TYPE_FS)
+    if (getTypeId() == TskImgDB::IMGDB_FILES_TYPE_FS)
     {
         // Otherwise, we open a handle to the file in ImageFile
         m_handle = TskServices::Instance().getImageFile().openFile(m_id);
@@ -94,15 +94,15 @@ void TskFileTsk::open()
             throw TskFileException("Error opening file");
         }
     }
-    else if (typeId() == TskImgDB::IMGDB_FILES_TYPE_UNUSED)
+    else if (getTypeId() == TskImgDB::IMGDB_FILES_TYPE_UNUSED)
     {
-        if (TskServices::Instance().getImgDB().getUnusedSector(id(), m_unusedSectorsRecord) == -1) {
+        if (TskServices::Instance().getImgDB().getUnusedSector(getId(), m_unusedSectorsRecord) == -1) {
             LOGERROR(L"TskFileTsk::open - Error opening file.");
             throw TskFileException("Error opening file");
         }
     }
     // CARVED and DERIVED
-    else if ((typeId() == TskImgDB::IMGDB_FILES_TYPE_CARVED) || (typeId() == TskImgDB::IMGDB_FILES_TYPE_DERIVED)) {
+    else if ((getTypeId() == TskImgDB::IMGDB_FILES_TYPE_CARVED) || (getTypeId() == TskImgDB::IMGDB_FILES_TYPE_DERIVED)) {
         if (exists()) {
             // Open our input stream if not already open
             if (m_fileInStream == NULL)
@@ -122,7 +122,7 @@ void TskFileTsk::open()
     {
         std::wstringstream msg;
         msg << L"TskFileTsk::open - Open failed because file id (" << m_id
-            << ") has unknown type (" << typeId() << ").";
+            << ") has unknown type (" << getTypeId() << ").";
         LOGERROR(msg.str());
         throw TskFileException("Error opening file");
     }
@@ -148,7 +148,7 @@ void TskFileTsk::close()
         m_handle = -1;
     }
 
-    if (typeId() == TskImgDB::IMGDB_FILES_TYPE_UNUSED) {
+    if (getTypeId() == TskImgDB::IMGDB_FILES_TYPE_UNUSED) {
         m_handle = -1;
     }
 
@@ -167,7 +167,7 @@ ssize_t TskFileTsk::read(char *buf, const size_t count)
     }
     
     //if the file size is 0 don't bother trying to read
-    if (!size())
+    if (!getSize())
         return 0;
 
     try
@@ -189,7 +189,7 @@ ssize_t TskFileTsk::read(char *buf, const size_t count)
             }
             return m_fileInStream->gcount();
         }
-        else if (typeId() == TskImgDB::IMGDB_FILES_TYPE_FS)
+        else if (getTypeId() == TskImgDB::IMGDB_FILES_TYPE_FS)
         {
             // readFile will log any errors
             int bytesRead = TskServices::Instance().getImageFile().readFile(m_handle, m_offset, count, buf);
@@ -198,7 +198,7 @@ ssize_t TskFileTsk::read(char *buf, const size_t count)
 
             return bytesRead;
         }
-        else if (typeId() == TskImgDB::IMGDB_FILES_TYPE_UNUSED)
+        else if (getTypeId() == TskImgDB::IMGDB_FILES_TYPE_UNUSED)
         {
             int bytesRead = 0;
             uint64_t bytesToRead = 0;
@@ -267,7 +267,7 @@ TSK_OFF_T TskFileTsk::seek(const TSK_OFF_T off, std::ios::seekdir origin)
     {
         if (origin == std::ios::beg)
         {
-            if (off > size())
+            if (off > getSize())
             {
                 LOGERROR(L"TskFileTsk::seek - Attempt to seek beyond end of file.");
                 throw TskFileException("Attempt to seek beyond end of file.");
@@ -282,16 +282,16 @@ TSK_OFF_T TskFileTsk::seek(const TSK_OFF_T off, std::ios::seekdir origin)
                 LOGERROR(L"TskFileTsk::seek - Offset must be a negative number when seeking from end of file.");
                 throw TskFileException("Seek from end requires negative offset.");
             }
-            if (size() + off < 0)
+            if (getSize() + off < 0)
             {
                 LOGERROR(L"TskFileTsk::seek - Attempt to seek prior to start of file.");
                 throw TskFileException("Attempt to seek prior to start of file");
             }
-            m_offset = size() + off;
+            m_offset = getSize() + off;
         }
         else
         {
-            if (m_offset + off > size())
+            if (m_offset + off > getSize())
             {
                 LOGERROR(L"TskFileTsk::seek - Attempt to seek beyond end of file.");
                 throw TskFileException("Attempt to seek beyond end of file.");
