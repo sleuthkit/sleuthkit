@@ -24,17 +24,19 @@
 void
 idxonly_name(TSK_HDB_INFO * hdb_info)
 {
-    FILE * hFile = hdb_info->hIdx;
+    FILE * hFile;
     char buf[TSK_HDB_NAME_MAXLEN];
     char *bufptr = buf;
     size_t i = 0;
     memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
-    if(!hFile)
+    if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
         if (tsk_verbose)
             fprintf(stderr,
-                "Failed to get name from index (file does not exist); using file name instead");
+                "Failed to get name from index (index does not exist); using file name instead");
         tsk_hdb_name_from_path(hdb_info);
         return;
+    }
+    hFile = hdb_info->hIdx;
     fseeko(hFile, 0, 0);
     if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
         NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
