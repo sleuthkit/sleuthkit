@@ -84,6 +84,13 @@ die "Missing redist dir $REDIST_LOC" unless (-d "$REDIST_LOC");
 #######################
 # Build the execs
 
+# Make sure we have no changes in the current tree
+exec_pipe(*OUT, "git status -s | grep \"^ M\"");
+my $foo = read_pipe_line(*OUT);
+if ($foo ne "") {
+    print "Changes stil exist in current repository -- commit them\n";
+    die "stopping";
+}
 
 # Make sure src dir is up to date
 print "Updating source directory\n";
@@ -99,7 +106,7 @@ if ($foo eq "") {
 }
 close(OUT);
 
-`git checkout ${TAGNAME}`;
+`git checkout -q ${TAGNAME}`;
 
 # Parse the config file to get the version number
 open (IN, "<configure.ac") or die "error opening configure.ac to get version";
