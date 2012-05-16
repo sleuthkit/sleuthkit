@@ -86,12 +86,11 @@ hk_test(FILE * hFile)
  * Set the database name into HDB_INFO
  *
  * @param hdb_info File handle to hash database
- * @return 1 on error and 0 on success.
  */
-uint8_t
+void
 hk_name(TSK_HDB_INFO * hdb_info)
 {
-    return tsk_hdb_name_from_path(hdb_info);
+    tsk_hdb_name_from_path(hdb_info);
 }
 
 /**

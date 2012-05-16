@@ -20,10 +20,8 @@
  * Set db_name using information from this database type
  *
  * @param hdb_info the hash database object
-
- * @return 1 on error and 0 on success.
  */
-uint8_t
+void
 idxonly_name(TSK_HDB_INFO * hdb_info)
 {
     FILE * hFile = hdb_info->hIdx;
@@ -32,16 +30,22 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
     size_t i = 0;
     memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
     if(!hFile)
-        return 1;
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Failed to get name from index (file does not exist); using file name instead");
+        tsk_hdb_name_from_path(hdb_info);
+        return;
     fseeko(hFile, 0, 0);
-    if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile)) {
-        return 1;
-    }
-    if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile)) {
-        return 1;
-    }
-    if(strncmp(buf, TSK_HDB_IDX_HEAD_NAME_STR, strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
-        return 1;
+    if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+        NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+        strncmp(buf,
+                TSK_HDB_IDX_HEAD_NAME_STR,
+                strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Failed to read name from index; using file name instead");
+        tsk_hdb_name_from_path(hdb_info);
+        return;
     }
     bufptr = strchr(buf, '|');
     bufptr++;
@@ -50,7 +54,6 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
         hdb_info->db_name[i] = bufptr[i];
         i++;
     }
-    return 0;
 }
 
 

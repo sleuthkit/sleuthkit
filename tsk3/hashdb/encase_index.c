@@ -43,9 +43,8 @@ encase_test(FILE * hFile)
  * Set db_name using information from this database type
  *
  * @param hdb_info the hash database object
- * @return 1 on error and 0 on success.
  */
-uint8_t
+void
 encase_name(TSK_HDB_INFO * hdb_info)
 {
     FILE * hFile = hdb_info->hDb;
@@ -54,14 +53,24 @@ encase_name(TSK_HDB_INFO * hdb_info)
     UTF8 *utf8;
     size_t ilen;
     memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
-    if(!hFile)
-        return 1;
+    if(!hFile) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Error getting name from Encase hash db; using file name instead");
+        tsk_hdb_name_from_path(hdb_info);
+        return;
+    }
 
     memset(buf, '\0', 40);
 
     fseeko(hFile, 1032, SEEK_SET);
-    if (39 != fread(buf, sizeof(wchar_t), 39, hFile))
-        return 1;
+    if (39 != fread(buf, sizeof(wchar_t), 39, hFile)) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Error getting name from Encase hash db; using file name instead");
+        tsk_hdb_name_from_path(hdb_info);
+        return;
+    }
 
     // do some arithmetic on type sizes to be platform independent
     ilen = wcslen(buf) * (sizeof(wchar_t) / sizeof(UTF16));
@@ -73,8 +82,6 @@ encase_name(TSK_HDB_INFO * hdb_info)
         (const UTF16 **) &utf16,
         &utf16[ilen], &utf8, &utf8[78],
         TSKlenientConversion);
-
-    return 0;
 }
 
 

@@ -1212,9 +1212,7 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
         break;
 
     case TSK_HDB_DBTYPE_ENCASE_ID:
-        if(encase_name(hdb_info) != 0){
-            tsk_hdb_name_from_path(hdb_info);
-        }
+        encase_name(hdb_info);
         hdb_info->getentry = encase_getentry;
         hdb_info->makeindex = encase_makeindex;
         break;
@@ -1226,11 +1224,7 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
         break;
 
     case TSK_HDB_DBTYPE_IDXONLY_ID:
-        if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID)) {
-            if(idxonly_name(hdb_info) != 0){
-                tsk_hdb_name_from_path(hdb_info);
-            }
-        }
+        idxonly_name(hdb_info);
         hdb_info->getentry = idxonly_getentry;
         hdb_info->makeindex = idxonly_makeindex;
         break;
@@ -1296,9 +1290,8 @@ tsk_hdb_makeindex(TSK_HDB_INFO * a_hdb_info, TSK_TCHAR * a_type)
  * Set db_name to the name of the database file
  *
  * @param hdb_info the hash database object
- * @return 1 on error and 0 on success
  */
-uint8_t
+void
 tsk_hdb_name_from_path(TSK_HDB_INFO * hdb_info)
 {
 #ifdef TSK_WIN32
@@ -1319,6 +1312,4 @@ tsk_hdb_name_from_path(TSK_HDB_INFO * hdb_info)
     }
 
     hdb_info->db_name[i] = '\0';
-
-    return 0;
 }

@@ -67,40 +67,40 @@ extern "C" {
                                            unsigned char *hvalue, int hlen,
                                            TSK_OFF_T offset);
     extern uint8_t tsk_hdb_idxfinalize(TSK_HDB_INFO *);
-    extern uint8_t tsk_hdb_name_from_path(TSK_HDB_INFO *);
+    extern void tsk_hdb_name_from_path(TSK_HDB_INFO *);
 
 /* Functions */
 
     extern uint8_t nsrl_test(FILE *);
-    extern uint8_t nsrl_name(TSK_HDB_INFO *);
+    extern void nsrl_name(TSK_HDB_INFO *);
     extern uint8_t nsrl_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t nsrl_getentry(TSK_HDB_INFO *, const char *, TSK_OFF_T,
                                  TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                  void *);
 
     extern uint8_t md5sum_test(FILE *);
-    extern uint8_t md5sum_name(TSK_HDB_INFO *);
+    extern void md5sum_name(TSK_HDB_INFO *);
     extern uint8_t md5sum_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t md5sum_getentry(TSK_HDB_INFO *, const char *, TSK_OFF_T,
                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                    void *);
 
     extern uint8_t encase_test(FILE *);
-    extern uint8_t encase_name(TSK_HDB_INFO *);
+    extern void encase_name(TSK_HDB_INFO *);
     extern uint8_t encase_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t encase_getentry(TSK_HDB_INFO *, const char *, TSK_OFF_T,
                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                    void *);
 
     extern uint8_t hk_test(FILE *);
-    extern uint8_t hk_name(TSK_HDB_INFO *);
+    extern void hk_name(TSK_HDB_INFO *);
     extern uint8_t hk_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t hk_getentry(TSK_HDB_INFO *, const char *, TSK_OFF_T,
                                TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                void *);
 
     
-    extern uint8_t idxonly_name(TSK_HDB_INFO *);
+    extern void idxonly_name(TSK_HDB_INFO *);
     extern uint8_t idxonly_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t idxonly_getentry(TSK_HDB_INFO *, const char *,
                                     TSK_OFF_T, TSK_HDB_FLAG_ENUM,
