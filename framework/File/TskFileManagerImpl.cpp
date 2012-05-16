@@ -216,7 +216,7 @@ void TskFileManagerImpl::saveFile(TskFile* fileToSave)
 {
     // Determine what the path should be based on TskFile.id()
     // and call saveFile(fileToSave, path)
-    copyFile(fileToSave, getPath(fileToSave->id()));
+    copyFile(fileToSave, getPath(fileToSave->getId()));
 }
 
 void TskFileManagerImpl::saveFile(const uint64_t fileId)

@@ -38,72 +38,72 @@ public:
 
     /** Returns the file id.
      */
-    uint64_t id() const;
+    uint64_t getId() const;
 
     /**
      * Get the high-level type (file system, local, carved, etc.)
      */
-    TskImgDB::FILE_TYPES typeId() const;
+    TskImgDB::FILE_TYPES getTypeId() const;
 
     /** Get the name
      */
-    std::string name() const;
+    std::string getName() const;
 
     /** Get the extension
     */
-    std::string extension() const;
+    std::string getExtension() const;
 
     /** Get the parent file id
     */
-    uint64_t parentFileId() const;
+    uint64_t getParentFileId() const;
 
     /** Get the directory type
     */
-    TSK_FS_NAME_TYPE_ENUM dirType() const;
+    TSK_FS_NAME_TYPE_ENUM getDirType() const;
 
     /** Get the metadata flags
     */
-    TSK_FS_META_TYPE_ENUM metaType() const;
+    TSK_FS_META_TYPE_ENUM getMetaType() const;
 
     /** Get the directory flags
     */
-    TSK_FS_NAME_FLAG_ENUM dirFlags() const;
+    TSK_FS_NAME_FLAG_ENUM getDirFlags() const;
 
     /** Get the metadata flags
     */
-    TSK_FS_META_FLAG_ENUM metaFlags() const;
+    TSK_FS_META_FLAG_ENUM getMetaFlags() const;
 
     /** Get the file size
     */
-    TSK_OFF_T size() const;
+    TSK_OFF_T getSize() const;
 
     /** Get the change time
      */
-    time_t ctime() const;
+    time_t getCtime() const;
 
     /** Get the creation time
     */
-    time_t crtime() const;
+    time_t getCrtime() const;
 
     /** Get the last access time
     */
-    time_t atime() const;
+    time_t getAtime() const;
 
     /** Get the modify time
     */
-    time_t mtime() const;
+    time_t getMtime() const;
 
     /** Get the mode
     */
-    TSK_FS_META_MODE_ENUM  mode() const;
+    TSK_FS_META_MODE_ENUM  getMode() const;
 
     /** Get the user id
     */
-    TSK_UID_T uid() const;
+    TSK_UID_T getUid() const;
 
     /** Get the group id
     */
-    TSK_GID_T gid() const;
+    TSK_GID_T getGid() const;
 
     /**
      * Get the fully qualified path of where this file should
@@ -207,7 +207,7 @@ public:
 
     /** Get the analysis status of the file (where it is in the analysis life cycle)
      */
-    TskImgDB::FILE_STATUS status() const;
+    TskImgDB::FILE_STATUS getStatus() const;
 
     //Blackboard methods
     virtual TskBlackboardArtifact createArtifact(int artifactTypeID);
@@ -225,7 +225,7 @@ public:
     virtual void addGenInfoAttribute(TskBlackboardAttribute attr);
 
 
-    std::string fullPath() const;
+    std::string getFullPath() const;
 protected:
     // File id.
     uint64_t m_id;

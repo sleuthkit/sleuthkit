@@ -1,6 +1,6 @@
 [submodule "framework/TskModules/c_HashCalcModule"]
 	path = framework/TskModules/c_HashCalcModule
-	url = git@github.com:sleuthkit/c_HashCalcModule.git
+	url = git://github.com/sleuthkit/c_HashCalcModule.git
 [submodule "framework/TskModules/c_ZIPExtractionModule"]
 	path = framework/TskModules/c_ZIPExtractionModule
-	url = git@github.com:sleuthkit/c_ZIPExtractionModule.git
+	url = git://github.com/sleuthkit/c_ZIPExtractionModule.git

@@ -46,7 +46,7 @@ private:
     int m_curVsId;
     bool m_vsSeen;
     uint64_t m_numFilesSeen;
-    time_t m_startTime;
+    time_t m_lastUpdateMsg;
 
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path, uint64_t & fileId);
