@@ -139,7 +139,7 @@ print "Building TSK source\n";
 chdir "win32" or die "error changing directory into win32";
 # Get rid of everything in the release dir (since we'll be doing * copy)
 `rm -f release/*`;
-`vcbuild tsk-win.sln "Release|Win32"`; 
+`vcbuild /errfile:BuildErrors.txt tsk-win.sln "Release|Win32"`; 
 chdir "..";
 
 # Do a basic check on some of the executables
