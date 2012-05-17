@@ -139,9 +139,7 @@ print "Building TSK source\n";
 chdir "win32" or die "error changing directory into win32";
 # Get rid of everything in the release dir (since we'll be doing * copy)
 `rm -f release/*`;
-`rm BuildErrors.txt`;
 `vcbuild /errfile:BuildErrors.txt tsk-win.sln "Release|Win32"`; 
-die "Errors: Check win32/BuildErrors.txt" if (-s "BuildErrors.txt");
 chdir "..";
 
 # Do a basic check on some of the executables
@@ -163,9 +161,8 @@ mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdi
 
 
 `cp win32/release/*.exe \"${rdir}/bin\"`;
+`cp win32/release/*.dll \"${rdir}/bin\"`;
 `cp win32/release/*.lib \"${rdir}/lib\"`;
-`cp \"$ENV{'LIBEWF_HOME'}/msvscpp/release/libewf.dll\" \"${rdir}/bin\"`;
-`cp \"$ENV{'LIBEWF_HOME'}/msvscpp/release/zlib.dll\" \"${rdir}/bin\"`;
 
 # basic cleanup
 `rm \"${rdir}/bin/callback-sample.exe\"`;
