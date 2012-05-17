@@ -89,13 +89,13 @@ exec_pipe(*OUT, "git status -s | grep \"^ M\"");
 my $foo = read_pipe_line(*OUT);
 if ($foo ne "") {
     print "Changes stil exist in current repository -- commit them\n";
-    die "stopping";
+    # @@@ die "stopping";
 }
 
 # Make sure src dir is up to date
 print "Updating source directory\n";
 chdir ("$TSKDIR") or die "Error changing to TSK dir $TSKDIR";
-`git pull`;
+# @@@ `git pull`;
 
 # Verify the tag exists
 exec_pipe(*OUT, "git tag | grep \"${TAGNAME}\"");
@@ -106,7 +106,7 @@ if ($foo eq "") {
 }
 close(OUT);
 
-`git checkout -q ${TAGNAME}`;
+# @@@ `git checkout -q ${TAGNAME}`;
 
 # Parse the config file to get the version number
 open (IN, "<configure.ac") or die "error opening configure.ac to get version";
@@ -123,78 +123,153 @@ die "tag name and configure.ac have different versions ($TAGNAME vs $VER)"
 	if ("sleuthkit-".$VER != $TAGNAME);
 
 
-# Verify that the directory does not already exist
-my $rfile = "sleuthkit-win32-${VER}";
-my $rdir = $RELDIR . "/" . $rfile;
-die "Release directory already exists: $rdir" if (-d "$rdir");
-
-
 # Verify LIBEWF is built
 die "LIBEWF missing" unless (-d "$ENV{'LIBEWF_HOME'}");
 die "libewf dll missing" 
 	unless (-e "$ENV{'LIBEWF_HOME'}/msvscpp/release/libewf.dll" ); 
 
 
-print "Building TSK source\n";
-chdir "win32" or die "error changing directory into win32";
-# Get rid of everything in the release dir (since we'll be doing * copy)
-`rm -f release/*`;
-`vcbuild /errfile:BuildErrors.txt tsk-win.sln "Release|Win32"`; 
-chdir "..";
+sub build_core {
+	print "Building TSK source\n";
+	chdir "win32" or die "error changing directory into win32";
+	# Get rid of everything in the release dir (since we'll be doing * copy)
+	`rm -f release/*`;
+	`rm BuildErrors.txt`;
+	`vcbuild /errfile:BuildErrors.txt tsk-win.sln "Release|Win32"`; 
+	die "Build errors -- check win32/BuildErrors.txt" if (-s "BuildErrors.txt");
 
-# Do a basic check on some of the executables
-die "mmls missing" unless (-x "win32/release/mmls.exe");
-die "fls missing" unless (-x "win32/release/fls.exe");
-die "hfind missing" unless (-x "win32/release/hfind.exe");
+	# Do a basic check on some of the executables
+	die "mmls missing" unless (-x "release/mmls.exe");
+	die "fls missing" unless (-x "release/fls.exe");
+	die "hfind missing" unless (-x "release/hfind.exe");
+	chdir "..";
+}
 
 
 #######################
 # Package the execs
 
-# We already checked that it didn't exist
-print "Creating file in ${rdir}\n";
+# Runs in root sleuthkit dir
+sub package_core {
+	# Verify that the directory does not already exist
+	my $rfile = "sleuthkit-win32-${VER}";
+	my $rdir = $RELDIR . "/" . $rfile;
+	die "Release directory already exists: $rdir" if (-d "$rdir");
 
-mkdir ("$rdir") or die "error making release directory: $rdir";
-mkdir ("${rdir}/bin") or die "error making bin release directory: $rdir";
-mkdir ("${rdir}/lib") or die "error making lib release directory: $rdir";
-mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdir";
+	# We already checked that it didn't exist
+	print "Creating file in ${rdir}\n";
 
-
-`cp win32/release/*.exe \"${rdir}/bin\"`;
-`cp win32/release/*.dll \"${rdir}/bin\"`;
-`cp win32/release/*.lib \"${rdir}/lib\"`;
-
-# basic cleanup
-`rm \"${rdir}/bin/callback-sample.exe\"`;
-`rm \"${rdir}/bin/posix-sample.exe\"`;
+	mkdir ("$rdir") or die "error making release directory: $rdir";
+	mkdir ("${rdir}/bin") or die "error making bin release directory: $rdir";
+	mkdir ("${rdir}/lib") or die "error making lib release directory: $rdir";
+	mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdir";
 
 
-# mactime
-`echo 'my \$VER=\"$VER\";' > \"${rdir}/bin/mactime.pl\"`;
-`cat tools/timeline/mactime.base >> \"${rdir}/bin/mactime.pl\"`;
+	`cp win32/release/*.exe \"${rdir}/bin\"`;
+	`cp win32/release/*.dll \"${rdir}/bin\"`;
+	`cp win32/release/*.lib \"${rdir}/lib\"`;
+
+	# basic cleanup
+	`rm \"${rdir}/bin/callback-sample.exe\"`;
+	`rm \"${rdir}/bin/posix-sample.exe\"`;
 
 
-# Copy standard files
-`cp README.txt \"${rdir}\"`;
-`unix2dos \"${rdir}/README.txt\"`;
-`cp win32/docs/README-win32.txt \"${rdir}\"`;
-`cp NEWS.txt \"${rdir}\"`;
-`unix2dos \"${rdir}/NEWS.txt\"`;
-`cp licenses/cpl1.0.txt \"${rdir}/licenses\"`;
-`unix2dos \"${rdir}/licenses/cpl1.0.txt\"`;
-`cp licenses/IBM-LICENSE \"${rdir}/licenses\"`;
-`unix2dos \"${rdir}/licenses/IBM-LICENSE\"`;
+	# mactime
+	`echo 'my \$VER=\"$VER\";' > \"${rdir}/bin/mactime.pl\"`;
+	`cat tools/timeline/mactime.base >> \"${rdir}/bin/mactime.pl\"`;
 
-# MS Redist dlls and manifest
-`cp \"${REDIST_LOC}\"/* \"${rdir}/bin\"`;
-print "******* Using Updated Manifest File *******\n";
-`cp \"${RELDIR}/Microsoft.VC90.CRT.manifest\" \"${rdir}/bin\"`;
 
-# Zip up the files - move there to make the path in the zip short
-chdir ("$RELDIR") or die "Error changing directories to $RELDIR";
-`zip -r ${rfile}.zip ${rfile}`;
+	# Copy standard files
+	`cp README.txt \"${rdir}\"`;
+	`unix2dos \"${rdir}/README.txt\"`;
+	`cp win32/docs/README-win32.txt \"${rdir}\"`;
+	`cp NEWS.txt \"${rdir}\"`;
+	`unix2dos \"${rdir}/NEWS.txt\"`;
+	`cp licenses/cpl1.0.txt \"${rdir}/licenses\"`;
+	`unix2dos \"${rdir}/licenses/cpl1.0.txt\"`;
+	`cp licenses/IBM-LICENSE \"${rdir}/licenses\"`;
+	`unix2dos \"${rdir}/licenses/IBM-LICENSE\"`;
 
-die "ZIP file not created" unless (-e "${rfile}.zip");
+	# MS Redist dlls and manifest
+	`cp \"${REDIST_LOC}\"/* \"${rdir}/bin\"`;
+	print "******* Using Updated Manifest File *******\n";
+	`cp \"${RELDIR}/Microsoft.VC90.CRT.manifest\" \"${rdir}/bin\"`;
 
-print "File saved as ${rfile}.zip\n";
+	# Zip up the files - move there to make the path in the zip short
+	chdir ("$RELDIR") or die "Error changing directories to $RELDIR";
+	`zip -r ${rfile}.zip ${rfile}`;
 
+	die "ZIP file not created" unless (-e "${rfile}.zip");
+
+	print "File saved as ${rfile}.zip\n";
+}
+
+
+##############################
+
+# Starts and ends in root sleuthkit dir
+sub build_framework {
+	print "Building TSK framework\n";
+
+	chdir "framework/win32/framework" or die "error changing directory into framework/win32";
+	# Get rid of everything in the release dir (since we'll be doing * copy)
+	# @@@ `rm -f release/*`;
+	`rm BuildErrors.txt`;
+	`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
+	# @@@ die "Build errors -- check framework/win32/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
+
+	# Do a basic check on some of the executables
+	die "libtskframework.dll missing" unless (-x "Release/libtskframework.dll");
+	die "tsk_analyzeimg missing" unless (-x "Release/tsk_analyzeimg.exe");
+	die "HashCalcModule.dll missing" unless (-x "Release/HashCalcModule.dll");
+
+	chdir "../../..";
+}
+
+sub package_framework {
+	# Verify that the directory does not already exist
+	my $rfile = "sleuthkit-framework-win32-${VER}";
+	my $rdir = $RELDIR . "/" . $rfile;
+	die "Release directory already exists: $rdir" if (-d "$rdir");
+
+	# We already checked that it didn't exist
+	print "Creating file in ${rdir}\n";
+
+	mkdir ("$rdir") or die "error making release directory: $rdir";
+	mkdir ("${rdir}/bin") or die "error making bin release directory: $rdir";
+	mkdir ("${rdir}/modules") or die "error making module release directory: $rdir";
+	mkdir ("${rdir}/config") or die "error making config release directory: $rdir";
+	mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdir";
+
+	chdir "framework" or die "error changing directory into framework";
+
+	`cp win32/framework/release/*.exe \"${rdir}/bin\"`;
+	`cp win32/framework/release/*.dll \"${rdir}/bin\"`;
+
+
+	# Copy standard files
+	`cp README.txt \"${rdir}\"`;
+	`unix2dos \"${rdir}/README.txt\"`;
+	`cp ../licenses/cpl1.0.txt \"${rdir}/licenses\"`;
+	`unix2dos \"${rdir}/licenses/cpl1.0.txt\"`;
+	`cp ../licenses/IBM-LICENSE \"${rdir}/licenses\"`;
+	`unix2dos \"${rdir}/licenses/IBM-LICENSE\"`;
+
+	# MS Redist dlls and manifest
+	`cp \"${REDIST_LOC}\"/* \"${rdir}/bin\"`;
+	print "******* Using Updated Manifest File *******\n";
+	`cp \"${RELDIR}/Microsoft.VC90.CRT.manifest\" \"${rdir}/bin\"`;
+
+	# Zip up the files - move there to make the path in the zip short
+	chdir ("$RELDIR") or die "Error changing directories to $RELDIR";
+	`zip -r ${rfile}.zip ${rfile}`;
+
+	die "ZIP file not created" unless (-e "${rfile}.zip");
+
+	print "File saved as ${rfile}.zip\n";
+}
+
+#build_core();
+#package_core();
+build_framework();
+package_framework();
