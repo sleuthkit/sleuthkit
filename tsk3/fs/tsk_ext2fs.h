@@ -21,8 +21,8 @@
 extern "C" {
 #endif
 
-    typedef uint32_t EXT2_GRPNUM_T;
-#define PRI_EXT2GRP	PRIu32
+    typedef uint64_t EXT2_GRPNUM_T;
+#define PRI_EXT2GRP	PRIu64
 
 
 /** \internal
@@ -35,7 +35,7 @@ extern "C" {
 #define ext4_getu48(endian, x, y)   \
 (uint64_t)( ((endian) == TSK_LIT_ENDIAN)  ?	\
             ((uint64_t) \
-             ((uint64_t)((uint8_t *)(y))[0] <<  0)+ \
+             ((uint64_t)((uint8_t *)(y))[0] <<  0) + \
              ((uint64_t)((uint8_t *)(y))[1] <<  8) + \
              ((uint64_t)((uint8_t *)(y))[2] << 16) + \
              ((uint64_t)((uint8_t *)(y))[3] << 24) + \
@@ -43,12 +43,42 @@ extern "C" {
              ((uint64_t)((uint8_t *)(x))[1] << 40)) \
                                           : \
             ((uint64_t) \
-             ((uint64_t)((uint8_t *)(y))[5] <<  0)+ \
-             ((uint64_t)((uint8_t *)(y))[4] <<  8) + \
-             ((uint64_t)((uint8_t *)(y))[3] << 16) + \
-             ((uint64_t)((uint8_t *)(y))[2] << 24) + \
+             ((uint64_t)((uint8_t *)(y))[3] <<  0) + \
+             ((uint64_t)((uint8_t *)(y))[2] <<  8) + \
+             ((uint64_t)((uint8_t *)(y))[1] << 16) + \
+             ((uint64_t)((uint8_t *)(y))[0] << 24) + \
              ((uint64_t)((uint8_t *)(x))[1] << 32) + \
              ((uint64_t)((uint8_t *)(x))[0] << 40)) )\
+
+
+/** \internal
+* Read a 48-bit unsigned value.
+* @param endian Flag that identifies local ordering.
+* @param x 32-bit MSB byte array to read from
+* @param y 32-bit byte array to read from
+* @returns 48-bit unsigned value
+*/
+#define ext4_getu64(endian, x, y)   \
+(uint64_t)( ((endian) == TSK_LIT_ENDIAN)  ?	\
+            ((uint64_t) \
+             ((uint64_t)((uint8_t *)(y))[0] <<  0) + \
+             ((uint64_t)((uint8_t *)(y))[1] <<  8) + \
+             ((uint64_t)((uint8_t *)(y))[2] << 16) + \
+             ((uint64_t)((uint8_t *)(y))[3] << 24) + \
+             ((uint64_t)((uint8_t *)(x))[0] << 32) + \
+             ((uint64_t)((uint8_t *)(x))[1] << 40) + \
+             ((uint64_t)((uint8_t *)(x))[2] << 48) + \
+             ((uint64_t)((uint8_t *)(x))[3] << 56))\
+                                          : \
+            ((uint64_t) \
+             ((uint64_t)((uint8_t *)(y))[3] <<  0) + \
+             ((uint64_t)((uint8_t *)(y))[2] <<  8) + \
+             ((uint64_t)((uint8_t *)(y))[1] << 16) + \
+             ((uint64_t)((uint8_t *)(y))[0] << 24) + \
+             ((uint64_t)((uint8_t *)(x))[3] << 32) + \
+             ((uint64_t)((uint8_t *)(x))[2] << 40) + \
+             ((uint64_t)((uint8_t *)(x))[1] << 48) + \
+             ((uint64_t)((uint8_t *)(x))[0] << 56)) )\
 
 
 /*
@@ -124,7 +154,7 @@ extern "C" {
         uint8_t s_first_meta_bg[4];     /* u32 */
         uint8_t s_mkfs_time[4];         /* u32 */
         uint8_t s_jnl_blocks[17 * 4];   /* u32[17] */
-/* Valid if EXT4_FEATURE_COMPAT_64BIT*/
+/* Valid if EXT4_FEATURE_INCOMPAT_64BIT*/
         uint8_t s_blocks_count_hi[4];   /* u32 */
         uint8_t s_r_blocks_count_hi[4]; /* u32 */
         uint8_t s_free_blocks_count_hi[4]; /* u32 */
