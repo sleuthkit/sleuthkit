@@ -13,12 +13,21 @@
 #include <cstdlib>
 #include <string>
 
+
 #include "tsk3/tsk_tools_i.h" // Needed for tsk_getopt
 #include "framework.h"
 #include "Services/TskSchedulerQueue.h"
 #include "Services/TskSystemPropertiesImpl.h"
 #include "Services/TskImgDBSqlite.h"
 #include "File/TskFileManagerImpl.h"
+
+#ifdef TSK_WIN32
+#include <Windows.h>
+#else
+#error "Only Windows is currently supported"
+#endif
+
+#include "Poco/File.h"
 
 static uint8_t 
 makeDir(const TSK_TCHAR *dir) 
@@ -42,6 +51,27 @@ usage(const char *program)
     fprintf(stderr, "\t-p pipeline_config_file: Path to XML pipeline config file (overrides pipeline config specified with -c)\n");
     fprintf(stderr, "\t-d outdir: Path to output directory\n");
     exit(1);
+}
+
+// get the current directory
+// @@@ TODO: This should move into a framework utility
+static std::wstring getProgDir()
+{
+    wchar_t progPath[256];
+    wchar_t fullPath[256];
+    
+    GetModuleFileNameW(NULL, fullPath, 256);
+    for (int i = wcslen(fullPath)-1; i > 0; i--) {
+        if (i > 256)
+            break;
+
+        if (fullPath[i] == '\\') {
+            wcsncpy_s(progPath, fullPath, i+1);
+            progPath[i+1] = '\0';
+            break;
+        }
+    }
+    return std::wstring(progPath);
 }
 
 int main(int argc, char **argv1)
@@ -107,6 +137,16 @@ int main(int argc, char **argv1)
         systemProperties->initialize(framework_config);
         TskServices::Instance().setSystemProperties(*systemProperties);
     }
+    else {
+        Poco::File config("framework_config.xml");
+        if (config.exists()) {
+            TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();    
+            systemProperties->initialize("framework_config.xml");
+            TskServices::Instance().setSystemProperties(*systemProperties);
+        }
+    }
+
+    TSK_SYS_PROP_SET(TskSystemProperties::PROG_DIR, getProgDir()); 
 
     if (outDirPath == _TSK_T("")) {
         outDirPath.assign(imagePath);
