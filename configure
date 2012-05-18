@@ -20324,9 +20324,8 @@ done
 test -n "$JAVAC" || JAVAC="$JAVAPREFIX"
 
 fi
-test "x$JAVAC" = x && { { echo "$as_me:$LINENO: error: no acceptable Java compiler found in \$PATH" >&5
-echo "$as_me: error: no acceptable Java compiler found in \$PATH" >&2;}
-   { (exit 1); exit 1; }; }
+test "x$JAVAC" = x && { echo "$as_me:$LINENO: WARNING: no acceptable Java compiler found in \$PATH" >&5
+echo "$as_me: WARNING: no acceptable Java compiler found in \$PATH" >&2;}
 
 { echo "$as_me:$LINENO: checking if $JAVAC works" >&5
 echo $ECHO_N "checking if $JAVAC works... $ECHO_C" >&6; }
@@ -20337,7 +20336,7 @@ else
 JAVA_TEST=Test.java
 CLASS_TEST=Test.class
 cat << \EOF > $JAVA_TEST
-/* #line 20340 "configure" */
+/* #line 20339 "configure" */
 public class Test {
 }
 EOF
@@ -20349,9 +20348,8 @@ if { ac_try='$JAVAC $JAVACFLAGS $JAVA_TEST'
   (exit $ac_status); }; } >/dev/null 2>&1; then
   ac_cv_prog_javac_works=yes
 else
-  { { echo "$as_me:$LINENO: error: The Java compiler $JAVAC failed (see config.log, check the CLASSPATH?)" >&5
-echo "$as_me: error: The Java compiler $JAVAC failed (see config.log, check the CLASSPATH?)" >&2;}
-   { (exit 1); exit 1; }; }
+  { echo "$as_me:$LINENO: WARNING: The Java compiler $JAVAC failed (see config.log, check the CLASSPATH?)" >&5
+echo "$as_me: WARNING: The Java compiler $JAVAC failed (see config.log, check the CLASSPATH?)" >&2;}
   echo "configure: failed program was:" >&5
   cat $JAVA_TEST >&5
 fi
