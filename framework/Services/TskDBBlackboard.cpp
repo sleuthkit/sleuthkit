@@ -64,7 +64,7 @@ int TskDBBlackboard::addAttributeType(const string& attributeTypeName, const str
 }
 
 void TskDBBlackboard::addBlackboardAttribute(TskBlackboardAttribute& attr){
-    if(attrTypeIDToTypeName(attr.getAttributeTypeID))
+    if(attrTypeIDToTypeName(attr.getAttributeTypeID()).compare("") != 0)
         IMGDB().addBlackboardAttribute(attr);
     else
         throw new TskException("No attribute type for the id of the given attribute");
@@ -181,14 +181,14 @@ vector<TskBlackboardAttribute> TskDBBlackboard::getMatchingAttributes(const stri
 }
 
 TskBlackboardArtifact TskDBBlackboard::createArtifact(const uint64_t file_id, const int artifactTypeID){
-    if(artTypeIDToTypeName(artifactTypeID))
+    if(artTypeIDToTypeName(artifactTypeID).compare("") != 0)
         return IMGDB().createBlackboardArtifact(file_id, artifactTypeID);
     else
         throw new TskException("No Artifact type exists with that ID");
 }
 
 TskBlackboardArtifact TskDBBlackboard::createArtifact(const uint64_t file_id, const TSK_ARTIFACT_TYPE artifactType){
-    if(artTypeIDToTypeName(artifactType))
+    if(artTypeIDToTypeName(artifactType).compare("") != 0)
         return IMGDB().createBlackboardArtifact(file_id, artifactType);
     else
         throw new TskException("No Artifact type exists with that name");
@@ -209,18 +209,4 @@ void TskDBBlackboard::createGenInfoAttribute(const uint64_t file_id, TskBlackboa
 
 vector<int> TskDBBlackboard::findAttributeTypes(int artifactTypeId){
     return IMGDB().findAttributeTypes(artifactTypeId);
-}
-
-bool TskDBBlackboard::artifactTypeExists(const int artifactTypeID){
-    if(TskBlackboard::artifactTypeExists(artifactTypeID))
-        return true;
-    try{
-        IMGDB().getArtifactTypeName(artifactTypeID);
-        return true;
-    }
-    catch(TskException e){
-        return false;
-    }
-    return false;
-
 }
