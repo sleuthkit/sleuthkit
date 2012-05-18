@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual C++ Express 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "framework", "framework.vcproj", "{F791B16A-1489-4526-9FFF-CB481CEC5414}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtskframework", "framework.vcproj", "{F791B16A-1489-4526-9FFF-CB481CEC5414}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CalcFileSizeModule", "..\CalcFileSize\CalcFileSize.vcproj", "{FA3FF845-E341-4BE3-A17F-8042C99A374F}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -17,6 +17,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_analyzeimg", "..\tsk_an
 	ProjectSection(ProjectDependencies) = postProject
 		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HashCalcModule", "..\..\TskModules\c_HashCalcModule\win32\HashCalcModule\HashCalcModule.vcproj", "{1CA42FA6-A110-4BB1-B7D6-C0AB6C4FA1AD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZipExtractionModule", "..\..\TskModules\c_ZIPExtractionModule\win32\ZipExtractionModule.vcproj", "{506823BC-AE48-4827-B72A-BA4C9E1E4670}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,6 +44,14 @@ Global
 		{13BD0806-028E-42F1-A91D-5128565A9717}.Debug|Win32.Build.0 = Debug|Win32
 		{13BD0806-028E-42F1-A91D-5128565A9717}.Release|Win32.ActiveCfg = Release|Win32
 		{13BD0806-028E-42F1-A91D-5128565A9717}.Release|Win32.Build.0 = Release|Win32
+		{1CA42FA6-A110-4BB1-B7D6-C0AB6C4FA1AD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1CA42FA6-A110-4BB1-B7D6-C0AB6C4FA1AD}.Debug|Win32.Build.0 = Debug|Win32
+		{1CA42FA6-A110-4BB1-B7D6-C0AB6C4FA1AD}.Release|Win32.ActiveCfg = Release|Win32
+		{1CA42FA6-A110-4BB1-B7D6-C0AB6C4FA1AD}.Release|Win32.Build.0 = Release|Win32
+		{506823BC-AE48-4827-B72A-BA4C9E1E4670}.Debug|Win32.ActiveCfg = Debug|Win32
+		{506823BC-AE48-4827-B72A-BA4C9E1E4670}.Debug|Win32.Build.0 = Debug|Win32
+		{506823BC-AE48-4827-B72A-BA4C9E1E4670}.Release|Win32.ActiveCfg = Release|Win32
+		{506823BC-AE48-4827-B72A-BA4C9E1E4670}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
