@@ -21,7 +21,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InterestingFilesModule", ".
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RegRipperModule", "..\..\TskModules\c_RegRipperModule\win32\RegRipperModule.vcproj", "{4DD49717-8C15-4E07-8C18-D47A093184AA}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InterestingFilesModule", "..\..\TskModules\c_SaveInterestingFilesModule\win32\SaveInterestingFilesModule.vcproj", "{39CDF492-FCD0-42E8-B2E2-42D2E0F6D2CC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SaveInterestingFilesModule", "..\..\TskModules\c_SaveInterestingFilesModule\win32\SaveInterestingFilesModule.vcproj", "{39CDF492-FCD0-42E8-B2E2-42D2E0F6D2CC}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TskHashLookupModule", "..\..\TskModules\c_TskHashLookupModule\win32\TskHashLookupModule.vcproj", "{430B8E55-C5F4-4936-A0C7-DABD8B34788A}"
 EndProject
@@ -31,6 +31,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_analyzeimg", "..\tsk_an
 	ProjectSection(ProjectDependencies) = postProject
 		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SummaryReportModule", "..\..\TskModules\c_SummaryReportModule\win32\SummaryReportModule.vcproj", "{1CA42FA6-A110-4BB1-B7D6-C0AB6C4FA1AD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -50,10 +52,6 @@ Global
 		{352C3C04-1F31-4138-97A6-1DC6EC5FD379}.Debug|Win32.Build.0 = Debug|Win32
 		{352C3C04-1F31-4138-97A6-1DC6EC5FD379}.Release|Win32.ActiveCfg = Release|Win32
 		{352C3C04-1F31-4138-97A6-1DC6EC5FD379}.Release|Win32.Build.0 = Release|Win32
-		{13BD0806-028E-42F1-A91D-5128565A9717}.Debug|Win32.ActiveCfg = Debug|Win32
-		{13BD0806-028E-42F1-A91D-5128565A9717}.Debug|Win32.Build.0 = Debug|Win32
-		{13BD0806-028E-42F1-A91D-5128565A9717}.Release|Win32.ActiveCfg = Release|Win32
-		{13BD0806-028E-42F1-A91D-5128565A9717}.Release|Win32.Build.0 = Release|Win32
 		{00E3B0EE-B612-433A-A43E-1CE0B3DE1015}.Debug|Win32.ActiveCfg = Debug|Win32
 		{00E3B0EE-B612-433A-A43E-1CE0B3DE1015}.Debug|Win32.Build.0 = Debug|Win32
 		{00E3B0EE-B612-433A-A43E-1CE0B3DE1015}.Release|Win32.ActiveCfg = Release|Win32
@@ -82,6 +80,14 @@ Global
 		{506823BC-AE48-4827-B72A-BA4C9E1E4670}.Debug|Win32.Build.0 = Debug|Win32
 		{506823BC-AE48-4827-B72A-BA4C9E1E4670}.Release|Win32.ActiveCfg = Release|Win32
 		{506823BC-AE48-4827-B72A-BA4C9E1E4670}.Release|Win32.Build.0 = Release|Win32
+		{13BD0806-028E-42F1-A91D-5128565A9717}.Debug|Win32.ActiveCfg = Debug|Win32
+		{13BD0806-028E-42F1-A91D-5128565A9717}.Debug|Win32.Build.0 = Debug|Win32
+		{13BD0806-028E-42F1-A91D-5128565A9717}.Release|Win32.ActiveCfg = Release|Win32
+		{13BD0806-028E-42F1-A91D-5128565A9717}.Release|Win32.Build.0 = Release|Win32
+		{1CA42FA6-A110-4BB1-B7D6-C0AB6C4FA1AD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1CA42FA6-A110-4BB1-B7D6-C0AB6C4FA1AD}.Debug|Win32.Build.0 = Debug|Win32
+		{1CA42FA6-A110-4BB1-B7D6-C0AB6C4FA1AD}.Release|Win32.ActiveCfg = Release|Win32
+		{1CA42FA6-A110-4BB1-B7D6-C0AB6C4FA1AD}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

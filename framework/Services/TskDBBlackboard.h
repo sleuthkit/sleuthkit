@@ -94,7 +94,6 @@ protected:
 
     TskImgDB * m_pImgDB;
 
-
 private: 
 
 };

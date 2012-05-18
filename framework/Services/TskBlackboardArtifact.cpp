@@ -70,6 +70,7 @@ string TskBlackboardArtifact::getDisplayName()const{
 /**
 * Add an attribute to this artifact
 * @param attr attribute to be added
+* @throws error if the given attribute has a bad type
 */
 void TskBlackboardArtifact::addAttribute(TskBlackboardAttribute& attr){
     attr.setArtifactID(m_artifactID);
