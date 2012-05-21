@@ -2231,13 +2231,9 @@ public class SleuthkitCase {
 	 * @return text the escaped version
 	 */
 	private static String escapeForBlackboard(String text) {
-		try {
-			//text = text.replaceAll("\\\\'", URLEncoder.encode("\\'", "UTF-8"));
-			text = text.replaceAll("'", URLEncoder.encode("'", "UTF-8"));
-			//text = text.replaceAll("\"", URLEncoder.encode("\"", "UTF-8"));
-			//text = text.replaceAll("\\\\", URLEncoder.encode("\\", "UTF-8"));
-		} catch (UnsupportedEncodingException ex) {
-		}
+		if (text != null)
+			text = text.replaceAll("'", "''");
 		return text;
 	}
+
 }
