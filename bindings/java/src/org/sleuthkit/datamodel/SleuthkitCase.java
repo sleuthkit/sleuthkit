@@ -1061,7 +1061,7 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				BlackboardAttribute attr = new BlackboardAttribute(rs.getLong("artifact_id"), rs.getInt("attribute_type_id"), rs.getString("source"), rs.getString("context"),
 						BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")), rs.getInt("value_int32"), rs.getLong("value_int64"), rs.getDouble("value_double"),
-						SleuthkitCase.unescapeFromBlackboard(rs.getString("value_text")), rs.getBytes("value_byte"), this);
+						rs.getString("value_text"), rs.getBytes("value_byte"), this);
 				matches.add(attr);
 			}
 			rs.close();
@@ -2231,25 +2231,9 @@ public class SleuthkitCase {
 	 * @return text the escaped version
 	 */
 	private static String escapeForBlackboard(String text) {
-		try {
-			if (text != null)
-				text = text.replaceAll("'", URLEncoder.encode("'", "UTF-8"));
-		} catch (UnsupportedEncodingException ex) {
-		}
+		if (text != null)
+			text = text.replaceAll("'", "''");
 		return text;
 	}
-	
-	/**
-	 * Escape the single quotes in the given string so they can be added to the SQL db
-	 * @param text
-	 * @return text the escaped version
-	 */
-	private static String unescapeFromBlackboard(String text) {
-		try {
-			if (text != null)
-				text = text.replaceAll(URLEncoder.encode("'", "UTF-8"), "'");
-		} catch (UnsupportedEncodingException ex) {
-		}
-		return text;
-	}
+
 }
