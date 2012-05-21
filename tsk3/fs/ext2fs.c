@@ -1669,7 +1669,7 @@ ext4_fsstat_datablock_helper(TSK_FS_INFO *fs, FILE *hFile, unsigned int i, TSK_D
             }
         }
         tsk_fprintf(hFile, "    Data Blocks: ");
-        uint16_t db_offset = 0;
+        uint64_t db_offset = 0;
         if(ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i))
         {
             db_offset = cg_base
@@ -2042,15 +2042,34 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         else
             tsk_fprintf(hFile, "%" PRIuINUM "\n", fs->last_inum);
 
+#ifdef Ext4_DBG
+        printf("DEBUG: ext2_cgbase_lcl %"PRIuDADDR"\n", cg_base);
+        printf("DEBUG: fs->s_first_data_block %"PRIuDADDR"\n", tsk_getu32(fs->endian, sb->s_first_data_block));
+        printf("DEBUG: blocks_per_group %"PRIuDADDR"\n", tsk_getu32(fs->endian, sb->s_blocks_per_group));
+        printf("DEBUG: i %"PRIuDADDR" %"PRIuDADDR" %"PRIuDADDR"\n", i, tsk_getu32(fs->endian, sb->s_blocks_per_group),(uint64_t)i * (uint64_t)tsk_getu32(fs->endian, sb->s_blocks_per_group));
+        //printf("DEBUG: calculated %"PRIuDADDR"\n", )
+#endif
+       if (tsk_getu32(fs->endian, ext2fs->fs->s_feature_incompat) & EXT2FS_FEATURE_INCOMPAT_64BIT)
+       {
+            cg_base = ext4_cgbase_lcl(fs, sb, i);
+            tsk_fprintf(hFile,
+                "  Block Range: %" PRIuDADDR " - %" PRIuDADDR "\n", cg_base,
+                ((ext4_cgbase_lcl(fs, sb,
+                            i + 1) - 1) <
+                    fs->last_block) ? (ext4_cgbase_lcl(fs, sb,
+                        i + 1) - 1) : fs->last_block);
+       }
+       else
+       {
+            cg_base = ext2_cgbase_lcl(fs, sb, i);
+            tsk_fprintf(hFile,
+                "  Block Range: %" PRIuDADDR " - %" PRIuDADDR "\n", cg_base,
+                ((ext2_cgbase_lcl(fs, sb,
+                            i + 1) - 1) <
+                    fs->last_block) ? (ext2_cgbase_lcl(fs, sb,
+                        i + 1) - 1) : fs->last_block);
+       }
 
-        cg_base = ext2_cgbase_lcl(fs, sb, i);
-
-        tsk_fprintf(hFile,
-            "  Block Range: %" PRIuDADDR " - %" PRIuDADDR "\n", cg_base,
-            ((ext2_cgbase_lcl(fs, sb,
-                        i + 1) - 1) <
-                fs->last_block) ? (ext2_cgbase_lcl(fs, sb,
-                    i + 1) - 1) : fs->last_block);
 
 
         tsk_fprintf(hFile, "  Layout:\n");
@@ -2106,24 +2125,57 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         }
 
 
-        /* The block bitmap is a full block */
-        tsk_fprintf(hFile, "    Data bitmap: %" PRIu32 " - %" PRIu32 "\n",
-            tsk_getu32(fs->endian, ext2fs->grp_buf->bg_block_bitmap),
-            tsk_getu32(fs->endian, ext2fs->grp_buf->bg_block_bitmap));
-
-
-        /* The inode bitmap is a full block */
-        tsk_fprintf(hFile, "    Inode bitmap: %" PRIu32 " - %" PRIu32 "\n",
-            tsk_getu32(fs->endian, ext2fs->grp_buf->bg_inode_bitmap),
-            tsk_getu32(fs->endian, ext2fs->grp_buf->bg_inode_bitmap));
-
-
-        tsk_fprintf(hFile, "    Inode Table: %" PRIu32 " - %" PRIu32 "\n",
-            tsk_getu32(fs->endian, ext2fs->grp_buf->bg_inode_table),
-            tsk_getu32(fs->endian,
-                ext2fs->grp_buf->bg_inode_table) + ibpg - 1);
-
-        /* If we are in a sparse group, display the other addresses */
+       if (tsk_getu32(fs->endian, ext2fs->fs->s_feature_incompat) & EXT2FS_FEATURE_INCOMPAT_64BIT)
+       {
+            /* The block bitmap is a full block */
+            tsk_fprintf(hFile, "    Data bitmap: %" PRIuDADDR " - %" PRIuDADDR "\n",
+                ext4_getu64(fs->endian, 
+                        ext2fs->ext4_grp_buf->bg_block_bitmap_hi, 
+                        ext2fs->ext4_grp_buf->bg_block_bitmap_lo),
+                ext4_getu64(fs->endian, 
+                        ext2fs->ext4_grp_buf->bg_block_bitmap_hi, 
+                        ext2fs->ext4_grp_buf->bg_block_bitmap_lo));
+    
+    
+            /* The inode bitmap is a full block */
+            tsk_fprintf(hFile, "    Inode bitmap: %" PRIuDADDR " - %" PRIuDADDR "\n",
+                ext4_getu64(fs->endian, 
+                        ext2fs->ext4_grp_buf->bg_inode_bitmap_hi, 
+                        ext2fs->ext4_grp_buf->bg_inode_bitmap_lo),
+                ext4_getu64(fs->endian, 
+                        ext2fs->ext4_grp_buf->bg_inode_bitmap_hi, 
+                        ext2fs->ext4_grp_buf->bg_inode_bitmap_lo));
+    
+    
+            tsk_fprintf(hFile, "    Inode Table: %" PRIuDADDR " - %" PRIuDADDR "\n",
+                ext4_getu64(fs->endian, 
+                        ext2fs->ext4_grp_buf->bg_inode_table_hi, 
+                        ext2fs->ext4_grp_buf->bg_inode_table_lo),
+                ext4_getu64(fs->endian,
+                   ext2fs->ext4_grp_buf->bg_inode_table_hi,
+                   ext2fs->ext4_grp_buf->bg_inode_table_lo) 
+                     + ibpg - 1);
+       }
+       else
+       {
+            /* The block bitmap is a full block */
+            tsk_fprintf(hFile, "    Data bitmap: %" PRIuDADDR " - %" PRIuDADDR "\n",
+                tsk_getu32(fs->endian, ext2fs->grp_buf->bg_block_bitmap),
+                tsk_getu32(fs->endian, ext2fs->grp_buf->bg_block_bitmap));
+    
+    
+            /* The inode bitmap is a full block */
+            tsk_fprintf(hFile, "    Inode bitmap: %" PRIuDADDR " - %" PRIuDADDR "\n",
+                tsk_getu32(fs->endian, ext2fs->grp_buf->bg_inode_bitmap),
+                tsk_getu32(fs->endian, ext2fs->grp_buf->bg_inode_bitmap));
+    
+    
+            tsk_fprintf(hFile, "    Inode Table: %" PRIuDADDR " - %" PRIuDADDR "\n",
+                tsk_getu32(fs->endian, ext2fs->grp_buf->bg_inode_table),
+                tsk_getu32(fs->endian,
+                    ext2fs->grp_buf->bg_inode_table) + ibpg - 1);
+        }
+       /* If we are in a sparse group, display the other addresses */
         if(fs->ftype == TSK_FS_TYPE_EXT4)
         {
             ext4_fsstat_datablock_helper(fs, hFile, i, cg_base, gd_size);

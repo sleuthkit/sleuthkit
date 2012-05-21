@@ -302,6 +302,9 @@ extern "C" {
 	((TSK_DADDR_T)((tsk_getu32(fsi->endian, fs->s_blocks_per_group) * (c)) + \
 	tsk_getu32(fsi->endian, fs->s_first_data_block)))
 
+#define ext4_cgbase_lcl(fsi, fs, c)	\
+	((TSK_DADDR_T)((uint64_t)(tsk_getu32(fsi->endian, fs->s_blocks_per_group) * (uint64_t)(c)) + \
+	(uint64_t)tsk_getu32(fsi->endian, fs->s_first_data_block)))
 
 /*
  * Inode
