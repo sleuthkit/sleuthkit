@@ -152,48 +152,50 @@ public:
     /**
      * Get the artifact with the given id
      * @param artifactID id
-     * @returns the artifact
+     * @returns the artifact throws an error if no artifact matches that id.
      */
     virtual TskBlackboardArtifact getBlackboardArtifact(const long artifactID) = 0;
 
     /**
      * Get all artifacts that match the given condition
      * @param condition condition (implementation specific) to use for matching
-     * @returns vector of matching artifacts
+     * @returns vector of matching artifacts can return an empty vector if there are no matches
+     * @throws error if a bad condition string is supplied
      */
     virtual vector<TskBlackboardArtifact> getMatchingArtifacts(const string& condition)const = 0;
     /**
      * Get all artifacts with the given type name and file id
      * @param file_id associated file id
      * @param artifactTypeName type name
-     * @returns vector of matching artifacts
+     * @returns vector of matching artifacts can return an empty vector if there are no matches
      */
     virtual vector<TskBlackboardArtifact> getArtifacts(const uint64_t file_id, const string& artifactTypeName)const = 0;
     /**
      * Get all artifacts with the given type id and file id
      * @param file_id associated file id
      * @param artifactTypeID type id
-     * @returns vector of matching artifacts
+     * @returns vector of matching artifacts can return an empty vector if there are no matches
      */
     virtual vector<TskBlackboardArtifact> getArtifacts(const uint64_t file_id, int artifactTypeID)const = 0;
     /**
      * Get all artifacts with the given type and file id
      * @param file_id associated file id
      * @param artifactType name
-     * @returns vector of matching artifacts
+     * @returns vector of matching artifacts can return an empty vector if there are no matches
      */
     virtual vector<TskBlackboardArtifact> getArtifacts(const uint64_t file_id, TSK_ARTIFACT_TYPE artifactType)const = 0;
     /**
      * Get all artifacts with the given type
      * @param artifactType type
-     * @returns vector of matching artifacts
+     * @returns vector of matching artifacts can return an empty vector if there are no matches
      */
     virtual vector<TskBlackboardArtifact> getArtifacts(const TSK_ARTIFACT_TYPE artifactType)const = 0;
 
     /**
      * Get all attributes that match the given condition 
      * @param condition (implementation specific) to use for matching
-     * @returns vector of matching attributes
+     * @returns vector of matching attributes can return an empty vector if there are no matches
+     * @throws error if a bad condition string is supplied
      */
     virtual vector<TskBlackboardAttribute> getMatchingAttributes(const string& condition)const = 0;   
 
@@ -201,7 +203,7 @@ public:
      * Get all attributes with the given type name and file id
      * @param file_id associated file id
      * @param attributeTypeName type name
-     * @returns vector of matching attributes
+     * @returns vector of matching attributes can return an empty vector if there are no matches
      */
     virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, const string& attributeTypeName)const = 0;
 
@@ -209,44 +211,48 @@ public:
      * Get all attributes with the given type and file id
      * @param file_id associated file id
      * @param attributeTypeID Type of attribute to return
-     * @returns vector of matching attributes
+     * @returns vector of matching attributes can return an empty vector if there are no matches
      */
     virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, int attributeTypeID)const = 0;
 
     /** Get all attributes with the given type and file id
      * @param file_id associated file id
      * @param attributeType name
-     * @returns vector of matching attributes
+     * @returns vector of matching attributes can return an empty vector if there are no matches
      */
     virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, TSK_ATTRIBUTE_TYPE attributeType)const = 0;
     /**
      * Get all attributes with the given type
      * @param attributeType type
-     * @returns vector of matching attributes
+     * @returns vector of matching attributes can return an empty vector if there are no matches
      */
     virtual vector<TskBlackboardAttribute> getAttributes(const TSK_ATTRIBUTE_TYPE attributeType)const = 0;
     
 
     /**
      * Create a new blackboard artifact with the given type id and file id
-     * @param artifactTypeID artifact type id
-     * @param file_id associated file id
+     * @param artifactTypeID artifact type id 
+     * @param file_id associated file id 
      * @returns the new artifact
+     * @throws error if the artifact type does not exist
      */
     virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const int artifactTypeID) = 0;
 
     /**
      * Create a new blackboard artifact with the given type and file id
      * @param file_id associated file id
-     * @param artifactType artifact type
+     * @param artifactType artifact type 
      * @returns the new artifact
+     * @throws error if the artifact type does not exist
      */
     virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const TSK_ARTIFACT_TYPE artifactType) = 0;
 
     /**
      * Add a new artifact type with the given name and file id
      * @param file_id associated file id
-     * @param artifactTypeName System name of artifact type
+     * @param artifactTypeName System name of artifact type 
+     * @returns the new artifact
+     * @throws error if the artifact type does not exist
      */
     virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const string& artifactTypeName) = 0;
 
@@ -255,6 +261,7 @@ public:
      * @param file_id file id for the file to add the attribute to
      * @param attr and attribute populated with values. this attribute will have
      * its artifact_id and obj_id set by this method.
+     * @throws error if no file with the given id exists or if a bad attribute is passed in.
      */
     virtual void createGenInfoAttribute(const uint64_t file_id, TskBlackboardAttribute& attr) = 0;
 
@@ -262,7 +269,7 @@ public:
      * Search the entire blackboard for all attribute types associated with any
      * artifact of the given type.
      * @param artifactTypeId artifact type to search
-     * @returns a vector of attribute ids
+     * @returns a vector of attribute ids can return an empty vector if no types are found
      */
     virtual vector<int> findAttributeTypes(int artifactTypeId) = 0;
 
@@ -270,18 +277,21 @@ public:
      * Convert attribute type id to display name
      * @param attributeTypeID attribute type id
      * @returns display name
+     * @throws error if no type exists for that id
      */
     static string attrTypeIDToTypeDisplayName(const int attributeTypeID);
     /**
      * Convert attribute type name to id
      * @param attributeTypeString attribute type name
      * @returns attribute type id
+     * @throws error if no type exists with that name
      */
     static int attrTypeNameToTypeID(const string& attributeTypeString);
     /**
      * Convert attribute type id to name
      * @param attributeTypeID id
      * @returns attribute type name
+     * @throws error if no type exists with that name
      */
     static string attrTypeIDToTypeName(const int attributeTypeID);
 
@@ -290,6 +300,7 @@ public:
      * @param attributeTypeName name for the new attribute type. should be unique
      * @param displayName name to display for this type. need not be unique
      * @returns the new attribute type id generated for the type.
+     * @throws error if a type with that name already exists
      */
     static int addAttributeType(const string& attributeTypeName, const string& displayName);
 
@@ -297,18 +308,21 @@ public:
      * Convert artifact type id to display name
      * @param artifactTypeID artifact type id
      * @returns display name
+     * @throws error if no type exists with that id
      */
     static string artTypeIDToDisplayName(const int artifactTypeID);
     /**
      * Convert artifact type name to id
      * @param artifactTypeString artifact type name
      * @returns artifact type id
+     * @throws error if no type exists with that name
      */
     static int artTypeNameToTypeID(const string& artifactTypeString);
     /**
      * Convert artifact type id to name
      * @param artifactTypeID id
      * @returns artifact type name
+     * @throws error if no type exists with that id
      */
     static string artTypeIDToTypeName(const int artifactTypeID);
 
@@ -317,6 +331,7 @@ public:
      * @param artifactTypeName name for the new attribute type. should be unique
      * @param displayName name to display for this type. need not be unique
      * @returns the new artifact type id generated for the type.
+     * @throws error if a type with that name already exists
      */
     static int addArtifactType(const string& artifactTypeName, const string& displayName);
 
@@ -337,7 +352,7 @@ protected:
     virtual ~TskBlackboard() {};
     
 private:
-    
+
 };
 
 
