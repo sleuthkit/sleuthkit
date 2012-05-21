@@ -12,7 +12,7 @@ tsk_anlyzeimg [-c *framework_config_file*] [-p *pipeline_config_file*] [-d *outd
 
 # DESCRIPTION
 
-tsk_anlayzeimg is a command line tool that uses the Sleuth Kit Framework to analyze a disk image. The Sleuth Kit Framework can import plug-in modules to analyze the disk contents.  tsk_analyzeimg runs a file analysis pipeline on each file in the disk image and runs a post-processing pipeline after all files have been analyzed.
+tsk_anlayzeimg is a command line tool that uses the Sleuth Kit Framework to analyze a disk image. The types of analysis that will occur will depend on what modules have been loaded into the pipelines. tsk_analyzeimg runs a file analysis pipeline on each file in the disk image and runs a post-processing pipeline after all files have been analyzed.
 
 tsk_analyzeimg uses simple implementations of the framework services. It stores data in a SQLite database and uses a simple first in, first out queing method for the scheduler.
 
