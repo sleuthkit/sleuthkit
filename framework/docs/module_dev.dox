@@ -32,13 +32,13 @@ Next, you need to define several function that the framework will call when it u
 
 <pre>TskModule::Status TSK_MODULE_EXPORT initialize(std::string& args)</pre>
 
-The function takes a string argument, which  you supplied in the pipeline configuration file. It returns a status which should be TskModule::OK or TskModule::FAIL.  Returning TskModule::FAIL will indicate a fatal problem and will cause the pipeline to terminate. 
+The function takes a string argument, which  you supplied in the pipeline configuration file. It returns a status which should be TskModule::OK or TskModule::FAIL.  Returning TskModule::FAIL will indicate a fatal problem and (in the default implementation) will cause the pipeline to terminate. 
 
 \subsection mod_setup_run File Analysis Execution
 If your module will be running in a file analysis pipeline, then it must implement the <tt>run</tt> function. This function will be called for each file that is run through the file analysis pipeline.   It should have the following signature:
 <pre>TskModule::Status TSK_MODULE_EXPORT run(TskFile * pFile)</pre>
 
-The function is passed a pointer to a file and it must return either TskModule::OK, TskModule::FAIL, or TskModule::STOP.
+The function is passed a pointer to a file and it must return either TskModule::OK, TskModule::FAIL, or TskModule::STOP.  TskModule::OK should be returned if the module analyzed the file or decided that it did not need to analyze the file.  TskModule::FAIL should be returned if the module tried to analyze the file, but was unable to.  A TskModule::FAIL return value will be logged, but the pipeline will still continue to be analyzed.   TskModule::STOP should be returned if the module wants the pipeline to stop processing this file. 
 
 The file pointer is supplied by the framework and can be used to access both the metadata and the content associated with the file. The file object is managed by the framework and a module must therefore not delete it.  
 
@@ -46,9 +46,7 @@ A file analysis module has the ability to terminate the processing of a file in 
 
 \subsection mod_setup_report Report Execution
 If your module will be running in a reporting pipeline, then it must implement the <tt>report</tt> function.   It is similar to a file analysis function, except it is not passed in a reference to a specific file. The signature for a reporting module is:
-
 <pre>TskModule::Status TSK_MODULE_EXPORT report()</pre>
-
 The report module does not have access to an individual file pointer but a module writer may choose to get access to a set of files as described in the Accessing Specific Files section below.  As with the file analysis module, the report() function can choose to stop subsequent modules in the reporting pipeline by returning a TskModule::STOP status.
 
 
