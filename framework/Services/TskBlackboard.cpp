@@ -21,6 +21,7 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_TRACKPOINT, TskArtifactNames("TSK_TRACKPOINT", "Trackpoint")));
     retval.insert(pair<int, TskArtifactNames>(TSK_INSTALLED_PROG, TskArtifactNames("TSK_INSTALLED_PROG", "Installed Program")));
     retval.insert(pair<int, TskArtifactNames>(TSK_KEYWORD_HIT, TskArtifactNames("TSK_KEYWORD_HIT", "Keyword Hit")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_HASHSET_HIT, TskArtifactNames("TSK_HASHSET_HIT", "Hashset Hit")));
     retval.insert(pair<int, TskArtifactNames>(TSK_DEVICE_ATTACHED, TskArtifactNames("TSK_DEVICE_ATTACHED", "Device Attached")));
     return retval;
 }

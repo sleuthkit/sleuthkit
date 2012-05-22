@@ -46,10 +46,12 @@ makeDir(const TSK_TCHAR *dir)
 void 
 usage(const char *program) 
 {
-    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] [-d outdir] image_name\n", program);
+    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] [-d outdir] [-vV] image_name\n", program);
     fprintf(stderr, "\t-c framework_config_file: Path to XML framework config file\n");
     fprintf(stderr, "\t-p pipeline_config_file: Path to XML pipeline config file (overrides pipeline config specified with -c)\n");
     fprintf(stderr, "\t-d outdir: Path to output directory\n");
+    fprintf(stderr, "\t-v: Enable verbose mode to get more debug information\n");
+    fprintf(stderr, "\t-V: Display the tool version\n");
     exit(1);
 }
 
