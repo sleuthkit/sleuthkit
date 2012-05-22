@@ -4,15 +4,13 @@
       <MODULE order="1" type="plugin" location="HashCalcModule.dll"/>
       <MODULE order="2" type="plugin" location="EntropyModule.dll"/>
       <MODULE order="3" type="plugin" location="ZipExtractionModule.dll"/>
-      <!--The following module performs hash look ups using an NSRL database index. See http://www.sleuthkit.org/informer/sleuthkit-informer-7.html#nsrl
-           for instructions on using Sleuthkit hfind to create an index file-->
-      <!--<MODULE order="4" type="plugin" location="TskHashLookupModule.dll" arguments="TODO: Add path to NSRL index file"/>-->
+      <!--<MODULE order="4" type="plugin" location="TskHashLookupModule.dll" arguments="TODO: See README for how to create NSRL index file"/>-->
     </PIPELINE>
     <PIPELINE type="Report">
       <!--This pipeline configuration assumes that the RegRipper executable is named rip.exe and is present in the program directory-->
-      <MODULE order="1" type="plugin" location="RegRipperModule.dll" arguments="-e &quot;@PROGDIR\\RegRipper\\rip.exe&quot;;-o &quot;@OUT\\RegRipper\\&quot;"/>
-      <MODULE order="2" type="plugin" location="InterestingFilesModule.dll" arguments="-e &quot;@PROGDIR\\interesting_files.xml&quot;"/>
+      <MODULE order="1" type="plugin" location="RegRipperModule.dll" arguments="-e &quot;@PROGDIR\\RegRipper\\rip.exe&quot;; -o &quot;@OUT\\RegRipper\\&quot;"/>
+      <MODULE order="2" type="plugin" location="InterestingFilesModule.dll" arguments="&quot;@PROGDIR\\modules\\InterestingFilesModule\\interesting_files.xml&quot;"/>
       <MODULE order="3" type="plugin" location="SaveInterestingFilesModule.dll" arguments="&quot;@OUT\\InterestingFiles\\&quot;"/>
-      <MODULE order="4" type="plugin" location="SummaryModule.dll"/>
+      <MODULE order="4" type="plugin" location="SummaryReportModule.dll"/>
     </PIPELINE>
 </PIPELINE_CONFIG>
