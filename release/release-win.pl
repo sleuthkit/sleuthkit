@@ -276,10 +276,13 @@ sub package_framework {
 	#`cp README.txt \"${rdir}\"`;
 	#`unix2dos \"${rdir}/README.txt\"`;
 
+	# Licences
 	`cp ../licenses/cpl1.0.txt \"${rdir}/licenses\"`;
 	`unix2dos \"${rdir}/licenses/cpl1.0.txt\"`;
 	`cp ../licenses/IBM-LICENSE \"${rdir}/licenses\"`;
 	`unix2dos \"${rdir}/licenses/IBM-LICENSE\"`;
+	#`cp \"${ENV{'LIBEWF_HOME'}}/COPYING\" \"${rdir}/licenses\LGPL-COPYING\"`;
+	#`unix2dos \"${rdir}/licenses/LGPL-COPYING\"`;
 
 	# MS Redist dlls and manifest
 	`cp \"${REDIST_LOC}\"/* \"${rdir}/bin\"`;

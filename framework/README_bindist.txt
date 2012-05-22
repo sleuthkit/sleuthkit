@@ -58,6 +58,17 @@ on its contents. You can run the standard set of modules on an image or
 you can add other third-party modules.
 
 
+
+LICENSES
+
+
+The source code that make up the framework contains:
+- IBM Public License (original TCT code)
+- Common Public License (most of TSK)
+- LGPL (libewf)
+- ZLIB License (zlib, via libewf)
+- Boost Software License (POCO)
+
 -----------------------------------------------------------------------
 Brian Carrier
 carrier <at> sleuthkit <dot> org
