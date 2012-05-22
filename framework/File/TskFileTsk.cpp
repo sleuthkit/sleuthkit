@@ -251,7 +251,7 @@ TSK_OFF_T TskFileTsk::seek(const TSK_OFF_T off, std::ios::seekdir origin)
 {
     if (!m_isOpen)
     {
-        LOGERROR(L"TskFileTsk::tell : File not open.");
+        LOGERROR(L"TskFileTsk::seek : File not open.");
         throw TskFileException("File not open.");
     }
 
