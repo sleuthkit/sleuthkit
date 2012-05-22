@@ -129,6 +129,7 @@ die "libewf dll missing"
 	unless (-e "$ENV{'LIBEWF_HOME'}/msvscpp/release/libewf.dll" ); 
 
 
+# Starts and ends in sleuthkit
 sub build_core {
 	print "Building TSK source\n";
 	chdir "win32" or die "error changing directory into win32";
@@ -238,18 +239,43 @@ sub package_framework {
 	mkdir ("$rdir") or die "error making release directory: $rdir";
 	mkdir ("${rdir}/bin") or die "error making bin release directory: $rdir";
 	mkdir ("${rdir}/modules") or die "error making module release directory: $rdir";
-	mkdir ("${rdir}/config") or die "error making config release directory: $rdir";
 	mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdir";
+	mkdir ("${rdir}/docs") or die "error making docs release directory: $rdir";
 
 	chdir "framework" or die "error changing directory into framework";
 
 	`cp win32/framework/release/*.exe \"${rdir}/bin\"`;
-	`cp win32/framework/release/*.dll \"${rdir}/bin\"`;
+	`cp win32/framework/release/libtsk*.dll \"${rdir}/bin\"`;
+	`cp win32/framework/release/Poco*.dll \"${rdir}/bin\"`;
+	`cp win32/framework/release/libewf*.dll \"${rdir}/bin\"`;
+	`cp win32/framework/release/zlib.dll \"${rdir}/bin\"`;
+	`cp win32/framework/release/*Module.dll \"${rdir}/modules\"`;
 
+	`cp SampleConfig/framework_config_bindist.xml \"${rdir}/bin/framework_config.xml\"`;
+	`unix2dos \"${rdir}/bin/framework_config.xml\"`;
+
+	`cp SampleConfig/pipeline_config_template.xml \"${rdir}/bin/pipeline_config.xml\"`;
+	`unix2dos \"${rdir}/bin/pipeline_config.xml\"`;
+
+	# Copy the readme files for each module
+	opendir(my $modDir, "./TskModules") or die "Error opening TskModules folder";
+	while(my $f = readdir($modDir)) {
+		next unless ($f =~ /^c_\w+/);
+		if (-f "TskModules/$f/README.txt") {
+			`cp TskModules/$f/README.txt \"${rdir}/docs/README_${f}.txt\"`;
+			`unix2dos \"${rdir}/docs/README_${f}.txt\"`;
+			
+		}
+		else {
+			print "Didn't find readme in $f\n";
+		}
+	}
+	closedir($modDir);
 
 	# Copy standard files
-	`cp README.txt \"${rdir}\"`;
-	`unix2dos \"${rdir}/README.txt\"`;
+	#`cp README.txt \"${rdir}\"`;
+	#`unix2dos \"${rdir}/README.txt\"`;
+
 	`cp ../licenses/cpl1.0.txt \"${rdir}/licenses\"`;
 	`unix2dos \"${rdir}/licenses/cpl1.0.txt\"`;
 	`cp ../licenses/IBM-LICENSE \"${rdir}/licenses\"`;
@@ -267,9 +293,10 @@ sub package_framework {
 	die "ZIP file not created" unless (-e "${rfile}.zip");
 
 	print "File saved as ${rfile}.zip\n";
+	chdir "..";
 }
 
 #build_core();
 #package_core();
-build_framework();
+#build_framework();
 package_framework();
