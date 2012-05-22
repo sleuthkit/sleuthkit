@@ -479,11 +479,26 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
     rel_inum =
         (dino_inum - 1) - tsk_getu32(fs->endian,
         ext2fs->fs->s_inodes_per_group) * grp_num;
-    addr =
-        (TSK_OFF_T) tsk_getu32(fs->endian,
-        ext2fs->grp_buf->bg_inode_table) * (TSK_OFF_T) fs->block_size +
-        rel_inum * (TSK_OFF_T) ext2fs->inode_size;
-
+    if(EXT2FS_HAS_INCOMPAT_FEATURE(fs, ext2fs->fs, EXT2FS_FEATURE_INCOMPAT_64BIT) && 
+                    (tsk_getu16(fs->endian,ext2fs->fs->s_desc_size) >= 64))
+    {
+#ifdef Ext4_DBG
+        printf("DEBUG: d_inode_load 64bit gd_size=%d\n", tsk_getu16(fs->endian,ext2fs->fs->s_desc_size));
+#endif 
+        addr =
+                (TSK_OFF_T) ext4_getu64(fs->endian,
+                                ext2fs->ext4_grp_buf->bg_inode_table_hi, 
+                                ext2fs->ext4_grp_buf->bg_inode_table_lo)
+                * (TSK_OFF_T) fs->block_size +
+                rel_inum * (TSK_OFF_T) ext2fs->inode_size;
+    }
+    else
+    {
+        addr =
+            (TSK_OFF_T) tsk_getu32(fs->endian,
+            ext2fs->grp_buf->bg_inode_table) * (TSK_OFF_T) fs->block_size +
+            rel_inum * (TSK_OFF_T) ext2fs->inode_size;
+    }
     tsk_release_lock(&ext2fs->lock);
 
     cnt = tsk_fs_read(fs, addr, (char *) dino_buf, ext2fs->inode_size);
