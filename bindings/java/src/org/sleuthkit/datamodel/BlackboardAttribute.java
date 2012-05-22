@@ -170,20 +170,6 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching type: " + label);
 		}
 		
-		/**
-		 * get the attribute enum for the given id
-		 * @param id id int
-		 * @return the enum value
-		 */
-		static public ATTRIBUTE_TYPE fromID(int id) {
-			for (ATTRIBUTE_TYPE v : ATTRIBUTE_TYPE.values()) {
-				if(v.typeID == id) {
-					return v;
-				}
-			}
-			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching ID: " + id);
-		}
-
 		public String getDisplayName() {
 			return this.displayName;
 		}
