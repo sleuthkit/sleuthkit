@@ -946,39 +946,42 @@ TskDbSqlite::inTransaction()
  * Adds information about a unallocated file with layout ranges into the database.
  * Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
  * @param parentObjId Id of the parent object in the database (fs, volume, or image)
+ * @param hasFsParent true if parent is fs
  * @param size Number of bytes in file
  * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
  * @param objId object id of the file object created (output)
  * @returns TSK_OK on success or TSK_ERR on error.
  */
-int TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
-    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, size, ranges, objId);
+int TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, hasFsParent, size, ranges, objId);
 }
 
 /**
  * Adds information about a unused file with layout ranges into the database.
  * Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
  * @param parentObjId Id of the parent object in the database (fs, volume, or image)
+ * @param hasFsParent true if parent is fs
  * @param size Number of bytes in file
  * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
  * @param objId object id of the file object created (output)
  * @returns TSK_OK on success or TSK_ERR on error.
  */
-int TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
-    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, size, ranges, objId);
+int TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, hasFsParent, size, ranges, objId);
 }
     
 /**
  * Adds information about a carved file with layout ranges into the database.
  * Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
  * @param parentObjId Id of the parent object in the database (fs, volume, or image)
+ * @param hasFsParent true if parent is fs
  * @param size Number of bytes in file
  * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
  * @param objId object id of the file object created (output)
  * @returns TSK_OK on success or TSK_ERR on error.
  */
-int TskDbSqlite::addCarvedFile(const int64_t parentObjId, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
-    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, size, ranges, objId);
+int TskDbSqlite::addCarvedFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, hasFsParent, size, ranges, objId);
 }
 
 /**
@@ -986,7 +989,11 @@ int TskDbSqlite::addCarvedFile(const int64_t parentObjId, const uint64_t size, c
 * Generates file_name and populates tsk_files, tsk_objects and tsk_file_layout tables
 * returns TSK_ERR on error or TSK_OK on success
 */
-int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const bool hasFsParent, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
     //not yet implemented
+
+    //check if parent is fs
+
+
     return TSK_ERR;
 }
