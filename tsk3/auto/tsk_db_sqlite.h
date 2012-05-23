@@ -19,11 +19,13 @@
 #define _TSK_DB_SQLITE_H
 
 #include <map>
+#include <vector>
 
 #include "sqlite3.h"
 #include "tsk_auto_i.h"
 
 using std::map;
+using std::vector;
 
 typedef struct sqlite3 sqlite3;
 
@@ -62,7 +64,15 @@ typedef enum  {
     TSK_DB_FILES_KNOWN_KNOWN_BAD = 2,      ///< Match found in "known bad" index
 } TSK_DB_FILES_KNOWN_ENUM;
 
-
+/**
+* Data wrapping a single file_layout entry
+*/
+typedef struct {
+    int64_t a_fileObjId;
+    uint64_t a_byteStart;
+    uint64_t a_byteLen;
+    int a_sequence;
+} TSK_DB_FILE_LAYOUT_RANGE;
 
 /** \internal
  * C++ class that wraps the database internals. 
@@ -89,8 +99,16 @@ class TskDbSqlite {
         const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t & objId);
-    int addFileLayoutRange(int64_t a_fileObjId,
-        uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
+
+    int addUnallocBlockFile(const int64_t parentObjId, const uint64_t size, 
+        const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+    int addUnusedBlockFile(const int64_t parentObjId, const uint64_t size, 
+        const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+    int addCarvedFile(const int64_t parentObjId, const uint64_t size, 
+        const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+    
+    int addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange);
+    int addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
     
     bool dbExist() const;
     int createSavepoint(const char *name);
@@ -120,6 +138,8 @@ class TskDbSqlite {
         const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t parObjId, int64_t & objId);
+    int addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, 
+        const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
     int addCarvedFileInfo(int fsObjId, const char *fileName, uint64_t size,
         int64_t & objId);
     void storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId);
