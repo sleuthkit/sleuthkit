@@ -25,7 +25,7 @@ import java.util.List;
  * Represents a volume in a VolumeSystem.
  * Populated based on data in database.
  */
-public class Volume extends FileSystemParent {
+public class Volume extends AbstractContent implements FileSystemParent,LayoutContentParent {
 	// @@@ We should mark these as private and comment somewhere what the units are (bytes, sectors, etc.)
 	long addr, start, length, flags;
 	String desc;
@@ -216,5 +216,10 @@ public class Volume extends FileSystemParent {
 	@Override
 	public boolean isOnto() {
 		return true;
+	}
+
+	@Override
+	public List<LayoutContent> getLayoutChildren(TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException {
+		return db.getLayoutChildren(this, type);
 	}
 }

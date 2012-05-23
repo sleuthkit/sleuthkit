@@ -19,13 +19,14 @@
 package org.sleuthkit.datamodel;
 import java.sql.SQLException;
 import java.util.*;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 
 /**
  * Represents a file system. 
  * Populated based on data in database.
  */
 
-public class FileSystem extends AbstractContent{
+public class FileSystem extends AbstractContent implements LayoutContentParent{
 
 	long img_offset, fs_type, block_size, block_count, root_inum,
 	first_inum, last_inum;
@@ -188,5 +189,15 @@ public class FileSystem extends AbstractContent{
 	@Override
 	public boolean isOnto() {
 		return true;
+	}
+
+	@Override
+	public List<LayoutContent> getLayoutChildren(TSK_DB_FILES_TYPE_ENUM type) throws TskException {
+		return db.getLayoutChildren(this, type);
+	}
+
+	@Override
+	public long getImageHandle() throws TskException {
+		return getParent().getImageHandle();
 	}
 }

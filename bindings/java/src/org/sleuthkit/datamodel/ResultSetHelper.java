@@ -89,4 +89,8 @@ class ResultSetHelper {
 		return directory(rs, fs, rs.getString("name"));
 	}
 	
+	TskFileLayoutRange tskFileLayoutRange(ResultSet rs) throws SQLException {
+		return new TskFileLayoutRange(rs.getLong("obj_id"), rs.getLong("byte_start"),
+				rs.getLong("byte_len"), rs.getLong("sequence"));
+	}
 }

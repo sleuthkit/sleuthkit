@@ -106,4 +106,9 @@ public class Directory extends FsContent{
 	public boolean isOnto() {
 		return false;
 	}
+
+	@Override
+	public List<LayoutContent> getLayoutChildren(TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException {
+		return Collections.<LayoutContent>emptyList();
+	}
 }

@@ -25,7 +25,7 @@ import java.util.List;
  * Populated based on data in database.
  */
 
-public class Image extends FileSystemParent {
+public class Image extends AbstractContent implements FileSystemParent,LayoutContentParent {
 	//data about image
 
 	private long type, ssize;
@@ -239,5 +239,10 @@ public class Image extends FileSystemParent {
 	@Override
 	public boolean isOnto() {
 		return true;
+	}
+
+	@Override
+	public List<LayoutContent> getLayoutChildren(TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException {
+		return db.getLayoutChildren(this, type);
 	}
 }

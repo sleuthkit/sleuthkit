@@ -68,6 +68,14 @@ public interface Content extends SleuthkitVisitableItem{
 	 * @throws TskException
 	 */
 	public List<Content> getChildren() throws TskException;
+	
+	/**
+	 * Gets the child LayoutContents of the given type.
+	 * @return List of children
+	 * @throws TskException
+	 */
+	public List<LayoutContent> getLayoutChildren(TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException;
+	
 	/**
 	 * Add an artifact associated with this content to the blackboard
 	 * @param artifactTypeID id of the artifact type (if the id doesn't already exist

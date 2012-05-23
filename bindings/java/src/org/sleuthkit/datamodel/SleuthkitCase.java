@@ -43,6 +43,7 @@ import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 
 /**
@@ -1183,6 +1184,12 @@ public class SleuthkitCase {
 		addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
 	}
 
+	private LayoutContent getLayoutContentById(long id, LayoutContentParent parent) {
+		LayoutContent lay = new LayoutContent(this, id);
+		lay.setParent(parent);
+		return lay;
+	}
+
 	/**
 	 * Stores a pair of object ID and its type
 	 */
@@ -1259,7 +1266,7 @@ public class SleuthkitCase {
 
 			Directory parent;
 
-			if (parentInfo.type == ObjectType.FILE) {
+			if (parentInfo.type == ObjectType.ABSTRACTFILE) { // TODO: deal with new file types
 				parent = getDirectoryById(parentInfo.id, fsc.getFileSystem());
 			} else {
 				throw new TskException("Parent of FsContent (id: " + fsc.getId() + ") has wrong type to be directory: " + parentInfo.type);
@@ -1311,7 +1318,7 @@ public class SleuthkitCase {
 						ret = getFileSystemById(id, v);
 					}
 					break;
-				case FILE:
+				case ABSTRACTFILE: // TODO: deal with new file types
 					ret = getFsContentById(id);
 					break;
 				default:
@@ -1347,6 +1354,27 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 		throw new TskException("No file found for id " + id);
+	}
+	
+	public List<TskFileLayoutRange> getFileLayoutRanges(long id) throws TskException{
+		List<TskFileLayoutRange> ranges = new ArrayList<TskFileLayoutRange>();
+		dbReadLock();
+		try {
+			Statement s1 = con.createStatement();
+
+			ResultSet rs1 = s1.executeQuery("select * from tsk_file_layout where obj_id = " + id + " order by sequence");
+
+			while(rs1.next()) {
+				ranges.add(rsHelper.tskFileLayoutRange(rs1));
+			}
+			rs1.close();
+			s1.close();
+			return ranges;
+		} catch (SQLException ex) {
+			throw new TskException("Error getting TskFileLayoutRanges by ID.", ex);
+		} finally {
+			dbReadUnlock();
+		}
 	}
 
 	public Image getImageById(long id) throws TskException {
@@ -1523,6 +1551,11 @@ public class SleuthkitCase {
 			visitFsContent(d);
 			return null;
 		}
+		
+		@Override
+		public Void visit(LayoutContent u) {
+			return null;
+		}
 
 		@Override
 		public Void visit(File f) {
@@ -1621,6 +1654,12 @@ public class SleuthkitCase {
 			//should never get here
 			return null;
 		}
+		
+		@Override
+		public Collection<FileSystem> visit(LayoutContent unallocated) {
+			//should never get here
+			return null;
+		}
 
 		@Override
 		public Collection<FileSystem> visit(FileSystem fs) {
@@ -1664,7 +1703,7 @@ public class SleuthkitCase {
 	List<Content> getImageChildren(Image img) throws TskException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(img);
 
-		List<Content> children = new ArrayList<Content>(childInfos.size());
+		List<Content> children = new ArrayList<Content>();
 
 		for (ObjectInfo info : childInfos) {
 
@@ -1672,6 +1711,30 @@ public class SleuthkitCase {
 				children.add(getVolumeSystemById(info.id, img));
 			} else if (info.type == ObjectType.FS) {
 				children.add(getFileSystemById(info.id, img));
+			} else if (info.type == ObjectType.ABSTRACTFILE) {
+			} else {
+				throw new TskException("Image has child of invalid type: " + info.type);
+			}
+		}
+
+		return children;
+	}
+	
+	/**
+	 * Returns the list of Layout Children for a given Image
+	 */
+
+	List<LayoutContent> getLayoutChildren(LayoutContentParent parent, TSK_DB_FILES_TYPE_ENUM type) throws TskException {
+		Collection<ObjectInfo> childInfos = getChildrenInfo(parent);
+
+		List<LayoutContent> children = new ArrayList<LayoutContent>();
+
+		for (ObjectInfo info : childInfos) {
+
+			if (info.type == ObjectType.VS) {
+			} else if (info.type == ObjectType.FS) {
+			} else if (info.type == ObjectType.ABSTRACTFILE) {
+				children.add(getLayoutContentById(info.id, parent)); //TODO: actually limit this by file type
 			} else {
 				throw new TskException("Image has child of invalid type: " + info.type);
 			}
@@ -1686,12 +1749,13 @@ public class SleuthkitCase {
 	List<Content> getVolumeSystemChildren(VolumeSystem vs) throws TskException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(vs);
 
-		List<Content> children = new ArrayList<Content>(childInfos.size());
+		List<Content> children = new ArrayList<Content>();
 
 		for (ObjectInfo info : childInfos) {
 
 			if (info.type == ObjectType.VOL) {
 				children.add(getVolumeById(info.id, vs));
+			} else if (info.type == ObjectType.ABSTRACTFILE) {
 			} else {
 				throw new TskException("VolumeSystem has child of invalid type: " + info.type);
 			}
@@ -1706,11 +1770,12 @@ public class SleuthkitCase {
 	List<Content> getVolumeChildren(Volume vol) throws TskException {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(vol);
 
-		List<Content> children = new ArrayList<Content>(childInfos.size());
+		List<Content> children = new ArrayList<Content>();
 
 		for (ObjectInfo info : childInfos) {
 			if (info.type == ObjectType.FS) {
 				children.add(getFileSystemById(info.id, vol));
+			} else if (info.type == ObjectType.ABSTRACTFILE) {
 			} else {
 				throw new TskException("Volume has child of invalid type: " + info.type);
 			}
@@ -1889,7 +1954,7 @@ public class SleuthkitCase {
 	 * @return A List<FsContent> containing the results
 	 * @throws SQLException
 	 */
-	public List<FsContent> resultSetToFsContents(ResultSet rs) throws SQLException {
+	public List<FsContent> resultSetToFsContents(ResultSet rs) throws SQLException { // TODO: deal with new file types
 		SetParentVisitor setParent = new SetParentVisitor();
 		ArrayList<FsContent> results = new ArrayList<FsContent>();
 

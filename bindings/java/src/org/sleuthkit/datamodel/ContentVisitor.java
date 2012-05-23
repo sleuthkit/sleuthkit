@@ -33,6 +33,7 @@ public interface ContentVisitor<T> {
     T visit(Image i);
     T visit(Volume v);
     T visit(VolumeSystem vs);
+    T visit(LayoutContent u);
 	
 	static abstract public class Default<T> implements ContentVisitor<T> {
 
@@ -65,6 +66,11 @@ public interface ContentVisitor<T> {
 		@Override
 		public T visit(VolumeSystem vs) {
 			return defaultVisit(vs);
+		}
+		
+		@Override
+		public T visit(LayoutContent u) {
+			return defaultVisit(u);
 		}
 	}
     
