@@ -108,10 +108,10 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    runAddImgNat
- * Signature: (J[Ljava/lang/String;I)V
+ * Signature: (J[Ljava/lang/String;ILjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat
-  (JNIEnv *, jclass, jlong, jobjectArray, jint);
+  (JNIEnv *, jclass, jlong, jobjectArray, jint, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
