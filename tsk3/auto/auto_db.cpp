@@ -583,8 +583,8 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
             if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
                 continue;
 
-            // @@@ We probaly want ot keep on going here
-            if (m_db->addFsBlockInfo(m_curFsId, m_curFileId,
+            // @@@ We probaly want to keep on going here
+            if (m_db->addFileLayoutRange(m_curFileId,
                     run->addr * block_size, run->len * block_size, sequence++)) {
                 registerError();
                 return TSK_OK;

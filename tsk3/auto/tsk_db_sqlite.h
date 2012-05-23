@@ -43,10 +43,12 @@ typedef enum {
  * Values for the files type column in the files table.
  */
 typedef enum {
-    TSK_DB_FILES_TYPE_FS = 0,
-    TSK_DB_FILES_TYPE_CARVED,
-    TSK_DB_FILES_TYPE_DERIVED,
-    TSK_DB_FILES_TYPE_LOCAL
+    TSK_DB_FILES_TYPE_FS = 0,   ///< File that can be found in file system tree. 
+    TSK_DB_FILES_TYPE_CARVED,   ///< Set of blocks for a file found from carving.  Could be on top of a TSK_DB_FILES_TYPE_UNALLOC_BLOCKS range. 
+    TSK_DB_FILES_TYPE_DERIVED,  ///< File derived from a parent file (i.e. from ZIP)
+    TSK_DB_FILES_TYPE_LOCAL,    ///< Local file that was added (not from a disk image)
+    TSK_DB_FILES_TYPE_UNALLOC_BLOCKS,   ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout. 
+    TSK_DB_FILES_TYPE_UNUSED_BLOCKS ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
 } TSK_DB_FILES_TYPE_ENUM;
 
 
@@ -87,7 +89,7 @@ class TskDbSqlite {
         const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t & objId);
-    int addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
+    int addFileLayoutRange(int64_t a_fileObjId,
         uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
     
     bool dbExist() const;

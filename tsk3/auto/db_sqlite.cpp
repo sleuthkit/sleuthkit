@@ -199,47 +199,47 @@ int
     }
 
     if (attempt_exec
-        ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER);",
+        ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL);",
             "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER, type INTEGER, ssize INTEGER);",
+        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER);",
             "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_names (obj_id INTEGER, name TEXT, sequence INTEGER);",
+        ("CREATE TABLE tsk_image_names (obj_id INTEGER PRIMARY KEY, name TEXT NOT NULL, sequence INTEGER NOT NULL);",
             "Error creating tsk_image_names table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_vs_info (obj_id INTEGER, vs_type INTEGER, img_offset INTEGER NOT NULL, block_size INTEGER NOT NULL);",
+        ("CREATE TABLE tsk_vs_info (obj_id INTEGER PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset INTEGER NOT NULL, block_size INTEGER NOT NULL);",
             "Error creating tsk_vs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_vs_parts (obj_id INTEGER PRIMARY KEY, addr INTEGER, start INTEGER NOT NULL, length INTEGER NOT NULL, desc TEXT, flags INTEGER);",
+        ("CREATE TABLE tsk_vs_parts (obj_id INTEGER PRIMARY KEY, addr INTEGER NOT NULL, start INTEGER NOT NULL, length INTEGER NOT NULL, desc TEXT, flags INTEGER NOT NULL);",
             "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER, fs_type INTEGER, block_size INTEGER, block_count INTEGER, root_inum INTEGER, first_inum INTEGER, last_inum INTEGER);",
+        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL);",
             "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (fs_obj_id INTEGER NOT NULL, obj_id INTEGER NOT NULL UNIQUE, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT);",
-            "Error creating tsk_fs_files table: %s\n")
+        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT);",
+            "Error creating tsk_files table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_path (obj_id INTEGER, path TEXT)",
+        ("CREATE TABLE tsk_files_path (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL)",
             "Error creating tsk_files_path table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_derived (obj_id INTEGER UNIQUE, derived_id INTEGER, rederive TEXT)",
+        ("CREATE TABLE tsk_files_derived (obj_id INTEGER PRIMARY KEY, derived_id INTEGER NOT NULL, rederive TEXT)",
             "Error creating tsk_files_derived table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_derived_method (derived_id INTEGER PRIMARY KEY, tool_name TEXT, tool_version TEXT, other TEXT)",
+        ("CREATE TABLE tsk_files_derived_method (derived_id INTEGER PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)",
             "Error creating tsk_files_derived_method table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, artifact_type_id INTEGER)",
+        ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL)",
             "Error creating blackboard_artifact table: %s\n")
         ||
         attempt_exec
@@ -248,18 +248,18 @@ int
             "Error creating blackboard_attribute table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifact_types (artifact_type_id INTEGER PRIMARY KEY, type_name TEXT, display_name TEXT)",
+        ("CREATE TABLE blackboard_artifact_types (artifact_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
             "Error creating blackboard_artifact_types table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT, display_name TEXT)",
+        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
             "Error creating blackboard_attribute_types table: %s\n")) {
         return 1;
     }
 
     if (m_blkMapFlag) {
         if (attempt_exec
-            ("CREATE TABLE tsk_file_layout (fs_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, obj_id INTEGER, sequence INTEGER);",
+            ("CREATE TABLE tsk_file_layout (obj_id INTEGER PRIMARY KEY, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL);",
                 "Error creating tsk_fs_blocks table: %s\n")) {
             return 1;
         }
@@ -750,7 +750,7 @@ int
         size, crtime, ctime, atime, mtime, meta_mode, gid, uid, md5Text, known,
         escaped_path);
 
-    if (attempt_exec(foo, "Error adding data to tsk_fs_files table: %s\n")) {
+    if (attempt_exec(foo, "Error adding data to tsk_files table: %s\n")) {
         free(name);
         return 1;
     }
@@ -833,18 +833,18 @@ int
  * @returns 1 on error
  */
 int
- TskDbSqlite::addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
+ TskDbSqlite::addFileLayoutRange(int64_t a_fileObjId,
     uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence)
 {
     char
      foo[1024];
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_file_layout (fs_id, byte_start, byte_len, obj_id, sequence) VALUES (%lld, %lld, %llu, %llu, %d)",
-        a_fsObjId, a_byteStart, a_byteLen, a_fileObjId, a_sequence);
+        "INSERT INTO tsk_file_layout (byte_start, byte_len, obj_id, sequence) VALUES (%lld, %llu, %llu, %d)",
+        a_byteStart, a_byteLen, a_fileObjId, a_sequence);
 
     return attempt_exec(foo,
-        "Error adding data to tsk_fs_info table: %s\n");
+        "Error adding data to tsk_file_layout table: %s\n");
 }
 
 
@@ -904,7 +904,7 @@ int
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
         TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_NAME_FLAG_UNALLOC, size);
 
-    if (attempt_exec(foo, "Error adding data to tsk_fs_files table: %s\n")) {
+    if (attempt_exec(foo, "Error adding data to tsk_files table: %s\n")) {
         free(name);
         return 1;
     }
