@@ -17,6 +17,9 @@
 #ifndef _TSK_AUTO_CASE_H
 #define _TSK_AUTO_CASE_H
 
+#include <string>
+using std::string;
+
 
 #include "tsk_auto_i.h"
 #include "tsk_db_sqlite.h"
@@ -37,6 +40,7 @@ class TskAutoDb:public TskAuto {
     virtual uint8_t openImageUtf8(int, const char *const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     virtual void closeImage();
+    virtual void setTz(string tzone);
 
     uint8_t addFilesInImgToDb();
     virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
@@ -65,6 +69,7 @@ class TskAutoDb:public TskAuto {
     int64_t m_curVolId;
     int64_t m_curFsId;
     int64_t m_curFileId;
+    string m_curImgTZone;
     bool m_blkMapFlag;
     bool m_fileHashFlag;
     bool m_vsFound;

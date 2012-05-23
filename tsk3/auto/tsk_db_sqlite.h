@@ -19,12 +19,15 @@
 #define _TSK_DB_SQLITE_H
 
 #include <map>
+
+#include <string>
 #include <vector>
 
 #include "sqlite3.h"
 #include "tsk_auto_i.h"
 
 using std::map;
+using std::string;
 using std::vector;
 
 typedef struct sqlite3 sqlite3;
@@ -87,7 +90,7 @@ class TskDbSqlite {
     ~TskDbSqlite();
     int open(bool);
     int close();
-    int addImageInfo(int type, int size, int64_t & objId);
+    int addImageInfo(int type, int size, int64_t & objId, const string & timezone);
     int addImageName(int64_t objId, char const *imgName, int sequence);
     int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
         int64_t & objId);
