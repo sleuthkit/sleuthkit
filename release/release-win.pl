@@ -182,14 +182,14 @@ sub package_core {
 
 	# Copy standard files
 	`cp README.txt \"${rdir}\"`;
-	`unix2dos \"${rdir}/README.txt\"`;
+	`unix2dos \"${rdir}/README.txt\" 2> /dev/null`;
 	`cp win32/docs/README-win32.txt \"${rdir}\"`;
 	`cp NEWS.txt \"${rdir}\"`;
-	`unix2dos \"${rdir}/NEWS.txt\"`;
+	`unix2dos \"${rdir}/NEWS.txt\" 2> /dev/null`;
 	`cp licenses/cpl1.0.txt \"${rdir}/licenses\"`;
-	`unix2dos \"${rdir}/licenses/cpl1.0.txt\"`;
+	`unix2dos \"${rdir}/licenses/cpl1.0.txt\" 2> /dev/null`;
 	`cp licenses/IBM-LICENSE \"${rdir}/licenses\"`;
-	`unix2dos \"${rdir}/licenses/IBM-LICENSE\"`;
+	`unix2dos \"${rdir}/licenses/IBM-LICENSE\" 2> /dev/null`;
 
 	# MS Redist dlls and manifest
 	`cp \"${REDIST_LOC}\"/* \"${rdir}/bin\"`;
@@ -241,21 +241,40 @@ sub package_framework {
 	mkdir ("${rdir}/modules") or die "error making module release directory: $rdir";
 	mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdir";
 	mkdir ("${rdir}/docs") or die "error making docs release directory: $rdir";
+	mkdir ("${rdir}/man") or die "error making man release directory: $rdir";
 
 	chdir "framework" or die "error changing directory into framework";
 
-	`cp win32/framework/release/*.exe \"${rdir}/bin\"`;
-	`cp win32/framework/release/libtsk*.dll \"${rdir}/bin\"`;
-	`cp win32/framework/release/Poco*.dll \"${rdir}/bin\"`;
-	`cp win32/framework/release/libewf*.dll \"${rdir}/bin\"`;
-	`cp win32/framework/release/zlib.dll \"${rdir}/bin\"`;
-	`cp win32/framework/release/*Module.dll \"${rdir}/modules\"`;
+	chdir "win32/framework/release" or die "Error changing directory into release / framework";
+
+	`cp *.exe \"${rdir}/bin\"`;
+	`cp libtsk*.dll \"${rdir}/bin\"`;
+	`cp Poco*.dll \"${rdir}/bin\"`;
+	`cp libewf*.dll \"${rdir}/bin\"`;
+	`cp zlib.dll \"${rdir}/bin\"`;
+
+	
+	# Copy the modules and config dirs
+	opendir(DIR, ".") or die "Error opening framework release folder";
+	while(my $f = readdir(DIR)) {
+		next unless ($f =~ /Module\.dll$/);
+		`cp \"$f\" \"${rdir}/modules\"`;
+		my $base = $1 if ($f =~ /^(.*)\.dll$/);
+		if (-d "$base") {
+			`cp -r \"$base\" \"${rdir}/modules\"`;
+		}
+	}
+	closedir(DIR);
+	chdir "../../..";
+
 
 	`cp SampleConfig/framework_config_bindist.xml \"${rdir}/bin/framework_config.xml\"`;
-	`unix2dos \"${rdir}/bin/framework_config.xml\"`;
+	`unix2dos \"${rdir}/bin/framework_config.xml\" 2> /dev/null`;
 
-	`cp SampleConfig/pipeline_config_template.xml \"${rdir}/bin/pipeline_config.xml\"`;
-	`unix2dos \"${rdir}/bin/pipeline_config.xml\"`;
+
+	`cp SampleConfig/pipeline_config.xml \"${rdir}/bin/pipeline_config.xml\"`;
+	`unix2dos \"${rdir}/bin/pipeline_config.xml\" 2> /dev/null`;
+
 
 	# Copy the readme files for each module
 	opendir(my $modDir, "./TskModules") or die "Error opening TskModules folder";
@@ -263,7 +282,7 @@ sub package_framework {
 		next unless ($f =~ /^c_\w+/);
 		if (-f "TskModules/$f/README.txt") {
 			`cp TskModules/$f/README.txt \"${rdir}/docs/README_${f}.txt\"`;
-			`unix2dos \"${rdir}/docs/README_${f}.txt\"`;
+			`unix2dos \"${rdir}/docs/README_${f}.txt\" 2> /dev/null`;
 			
 		}
 		else {
@@ -272,15 +291,18 @@ sub package_framework {
 	}
 	closedir($modDir);
 
+	# Copy the  man pages
+	`cp man/*.html \"${rdir}/man\"`;
+
 	# Copy standard files
 	#`cp README.txt \"${rdir}\"`;
 	#`unix2dos \"${rdir}/README.txt\"`;
 
 	# Licences
 	`cp ../licenses/cpl1.0.txt \"${rdir}/licenses\"`;
-	`unix2dos \"${rdir}/licenses/cpl1.0.txt\"`;
+	`unix2dos \"${rdir}/licenses/cpl1.0.txt\" 2> /dev/null`;
 	`cp ../licenses/IBM-LICENSE \"${rdir}/licenses\"`;
-	`unix2dos \"${rdir}/licenses/IBM-LICENSE\"`;
+	`unix2dos \"${rdir}/licenses/IBM-LICENSE\" 2> /dev/null`;
 	#`cp \"${ENV{'LIBEWF_HOME'}}/COPYING\" \"${rdir}/licenses\LGPL-COPYING\"`;
 	#`unix2dos \"${rdir}/licenses/LGPL-COPYING\"`;
 
@@ -301,5 +323,5 @@ sub package_framework {
 
 #build_core();
 #package_core();
-#build_framework();
+build_framework();
 package_framework();
