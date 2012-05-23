@@ -85,7 +85,7 @@ Although not a service, you might also want to check out TskUtilities, which has
 
 \subsection mod_stuff_file Accessing File Content and Metadata
 
-A file analysis module will be passed a TskFile object for the file to analyze.  TskFile objects can represent all types of files, including allocated and deleted files, carved files, and derived files (i.e. a file stored inside of a ZIP file). From this object, you can read content using the TskFile.read() method.  You can also access specific types of file metadata using specific methods, such as TskFile.size(), TskFile.crtime(), and TskFile.gePath(). Refer to the TskFile documentation for a list of all methods. 
+A file analysis module will be passed a TskFile object for the file to analyze.  TskFile objects can represent all types of files, including allocated and deleted files, carved files, and derived files (i.e. a file stored inside of a ZIP file). From this object, you can read content using the TskFile.read() method.  You can also access specific types of file metadata using specific methods, such as TskFile.getSize(), TskFile.getCrtime(), and TskFile.getPath(). Refer to the TskFile documentation for a list of all methods. 
 
 
 \subsection mod_stuff_files Accessing Other Files
