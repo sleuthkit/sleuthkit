@@ -825,7 +825,6 @@ int
 /**
  * Add block info to the database.  This table stores the run information for each file so that we
  * can map which blocks are used by what files.
- * @param a_fsObjId Id that the file is located in
  * @param a_fileObjId ID of the file
  * @param a_byteStart Byte address relative to the start of the image file
  * @param a_byteLen Length of the run in bytes
