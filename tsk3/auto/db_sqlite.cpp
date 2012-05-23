@@ -203,7 +203,7 @@ int
             "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER);",
+        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT);",
             "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
@@ -364,7 +364,7 @@ void
  * @returns 1 on error, 0 on success
  */
 int
- TskDbSqlite::addImageInfo(int type, int size, int64_t & objId)
+ TskDbSqlite::addImageInfo(int type, int size, int64_t & objId, const string & timezone)
 {
     char
      stmt[1024];
@@ -378,8 +378,8 @@ int
     objId = sqlite3_last_insert_rowid(m_db);
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_image_info (obj_id, type, ssize) VALUES (%lld, %d, %d);",
-        objId, type, size);
+        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone) VALUES (%lld, %d, %d, '%s');",
+        objId, type, size, timezone.c_str());
     return attempt_exec(stmt,
         "Error adding data to tsk_image_info table: %s\n");
 }

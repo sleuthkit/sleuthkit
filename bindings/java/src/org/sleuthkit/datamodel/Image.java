@@ -32,6 +32,7 @@ public class Image extends FileSystemParent {
 	private String name;
 	private String[] paths;
 	private long imageHandle = 0;
+	private String timezone;
 	
 	/**
 	 * constructor most inputs are from the database
@@ -40,15 +41,17 @@ public class Image extends FileSystemParent {
 	 * @param type
 	 * @param ssize
 	 * @param name
-	 * @param paths  
+	 * @param paths 
+	 * @param timezone 
 	 */	
 	
-	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths) throws TskException {
+	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone) throws TskException {
 		super(db, obj_id);
 		this.type = type;
 		this.ssize = ssize;
 		this.name = name;
 		this.paths = paths;
+		this.timezone = timezone;
 	}
 
 	/**
@@ -137,6 +140,14 @@ public class Image extends FileSystemParent {
 	 */
 	public String[] getPaths() {
 		return paths;
+	}
+
+	/**
+	 * get the timezone
+	 * @return 
+	 */
+	public String getTimeZone() {
+		return timezone;
 	}
 
 	// ----- Here all the methods for Image Type conversion / mapping -----

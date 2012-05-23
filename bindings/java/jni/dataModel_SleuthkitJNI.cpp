@@ -413,10 +413,11 @@ JNIEXPORT jlong JNICALL
  * @param process the add-image process created by initAddImgNat
  * @param paths array of strings from java, the paths to the image parts
  * @param num_imgs number of image parts
+ * @param timezone the timezone the image is from
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jobjectArray paths, jint num_imgs) {
+    jclass obj, jlong process, jobjectArray paths, jint num_imgs, jstring timezone) {
     jboolean isCopy;
 
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
@@ -452,10 +453,14 @@ JNIEXPORT void JNICALL
             return;
         }
     }
+    
+    const char * tzchar = env->
+            GetStringUTFChars(timezone, &isCopy);
 
     // flag to free tskAuto if the process is interuppted
     bool deleteProcess = false;
 
+    tskAuto->setTz(string(tzchar));
 
     // process the image (parts)
     uint8_t ret = 0;
@@ -484,6 +489,9 @@ JNIEXPORT void JNICALL
             env->GetObjectArrayElement(paths, i), imagepaths8[i]);
     }
     free(imagepaths8);
+
+    env->ReleaseStringUTFChars(timezone, tzchar);
+
     // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
     tskAuto->closeImage();
 
