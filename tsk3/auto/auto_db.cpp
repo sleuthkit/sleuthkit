@@ -174,7 +174,7 @@ uint8_t
 TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
 {
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
-            m_curImgId)) {
+            m_curImgId, m_curImgTZone)) {
         return 1;
     }
 
@@ -494,6 +494,15 @@ TskAutoDb::commitAddImage()
     return m_curImgId;
 }
 
+/**
+ * Set the current image's timezone
+ */
+void
+TskAutoDb::setTz(string tzone)
+{
+    m_curImgTZone = tzone;
+}
+
 TSK_RETVAL_ENUM
 TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
@@ -583,8 +592,8 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
             if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
                 continue;
 
-            // @@@ We probaly want ot keep on going here
-            if (m_db->addFsBlockInfo(m_curFsId, m_curFileId,
+            // @@@ We probaly want to keep on going here
+            if (m_db->addFileLayoutRange(m_curFileId,
                     run->addr * block_size, run->len * block_size, sequence++)) {
                 registerError();
                 return TSK_OK;
