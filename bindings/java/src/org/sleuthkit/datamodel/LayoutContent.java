@@ -58,8 +58,11 @@ public class LayoutContent extends AbstractContent{
 					long offsetInImage = offsetInRange + range.getByteStart(); // how far into the image to start reading
 					int lenToRead = (int) Math.min((range.getByteLen() - offsetInRange), (realLen-bytesRead)); // how much we can read this time
 					byte[] currentBuffer = new byte[lenToRead]; // the buffer for the current range object
-					SleuthkitJNI.readImg(getParent().getImageHandle(), currentBuffer, offsetInImage, lenToRead); //TODO: makes sure this returns same as lenToRead
+					int read = SleuthkitJNI.readImg(getParent().getImageHandle(), currentBuffer, offsetInImage, lenToRead); //TODO: makes sure this returns same as lenToRead
 					System.arraycopy(currentBuffer, 0, buf, bytesRead, lenToRead); // copy what we just read into the main buffer
+					if(lenToRead != read) { // If read failed for one reason or another
+						break;
+					}
 					bytesRead += lenToRead; // assuming the above method call works correctly
 					currentUnallocatedFileOffset += range.getByteLen(); // should be last range maybe?
 				}
