@@ -98,7 +98,9 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
         // Size our list based on the number of modules
         m_modules.resize(modules->length());
 
-        // Iterate through the module elements, make sure the order starts with 1 with no gaps
+        // Iterate through the module elements, make sure they are increasing order
+        // we now allow for gaps to make it easier to comment things out.
+        int prevOrder = -1;
         for (unsigned int i = 0; i < modules->length(); i++)
         {
             Poco::XML::Node * pNode = modules->item(i);
@@ -107,7 +109,7 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
             if (orderStr == "") {
                 throw TskException("TskPipeline::initialize: Module order missing.");
             }
-            unsigned int order;
+            int order;
             try 
             {
                 order = Poco::NumberParser::parse(orderStr);
@@ -117,15 +119,17 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
                 msg << "TskPipeline::initialize - Module order must a decimal number. Got " << orderStr.c_str();
                 throw TskException(msg.str());
             }
-            if (order != i+1) 
+            if (order <= prevOrder) 
             {
                 std::stringstream msg;
-                msg << "TskPipeline::initialize - Expecting order " << i+1 << ", got " << order;
+                msg << "TskPipeline::initialize - Expecting order bigger than " << prevOrder << ", got " << order;
                 throw TskException(msg.str());
             }
+            prevOrder = order;
         }
 
         // Iterate through the module elements creating a new Module for each one
+        m_modules.clear();
         for (unsigned int i = 0; i < modules->length(); i++)
         {
             Poco::XML::Node * pNode = modules->item(i);
@@ -145,42 +149,27 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
             // Put the new module into the list if the slot isn't already taken.
             int order = Poco::NumberParser::parse(pElem->getAttribute(TskPipeline::MODULE_ORDER_ATTR));
             
-            // Subtract 1 to reflect 0 based vector indexing.
-            order--;
-
-            if (order > m_modules.max_size())
-            {
-                std::stringstream errorMsg;
-                errorMsg << "TskPipeline::initialize - Module order (" << order
-                    << ") is greater than the number of modules (" << m_modules.max_size() << ")" ;
-                throw TskException(errorMsg.str());
-            }
-
-            if (m_modules[order] != NULL)
-            {
-                std::stringstream errorMsg;
-                errorMsg << "TskPipeline::initialize - Position (" << order 
-                    << ") is already occupied by a module." ;
-                throw TskException(errorMsg.str());
-            }
-
-            m_modules[order] = pModule;
 
             if (m_loadDll) {
                 TskImgDB& imgDB = TskServices::Instance().getImgDB();
 
                 // Insert into Modules table
                 int moduleId = 0;
-                if (imgDB.addModule(m_modules[order]->getName(), "", moduleId)) {
+                if (imgDB.addModule(pModule->getName(), "", moduleId)) {
                     std::stringstream errorMsg;
-                    errorMsg << "TskPipeline::initialize - Failed to insert into Modules table. Module order=" << order 
-                             << " module name=" << m_modules[order]->getName() ;
+                    errorMsg << "TskPipeline::initialize - Failed to insert into Modules table. "  
+                             << " module name=" << pModule->getName() ;
                     throw TskException(errorMsg.str());
                 } else {
-                    m_modules[order]->setModuleId(moduleId);
+                    pModule->setModuleId(moduleId);
                 }
             }
+            m_modules.push_back(pModule);
         }
+    }
+    // rethrow this, otherwise it is caught by std::exception and we lose the detail.
+    catch (TskException& ex) {
+        throw(ex);
     }
     catch (std::exception& ex)
     {
