@@ -15,7 +15,15 @@
 
 #include "tsk_db_sqlite.h"
 #include "sqlite3.h"
+
 #include <string.h>
+
+#include <sstream>
+#include <algorithm>
+
+using std::stringstream;
+using std::sort;
+using std::for_each;
 
 
 #define TSK_SCHEMA_VER 2
@@ -259,7 +267,7 @@ int
 
     if (m_blkMapFlag) {
         if (attempt_exec
-            ("CREATE TABLE tsk_file_layout (obj_id INTEGER PRIMARY KEY, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL);",
+            ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL);",
                 "Error creating tsk_fs_blocks table: %s\n")) {
             return 1;
         }
@@ -281,12 +289,16 @@ int
     return
         attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
         "Error creating tsk_objects index on par_obj_id: %s\n")||
+         attempt_exec("CREATE INDEX objIDFileLayout ON tsk_file_layout(obj_id);",
+        "Error creating objID index on tsk_file_layout: %s\n")||
         attempt_exec("CREATE INDEX objID ON blackboard_artifacts(obj_id);",
         "Error creating objID index on blackboard_artifacts: %s\n")||
         attempt_exec("CREATE INDEX artifactID ON blackboard_artifacts(artifact_id);",
         "Error creating artifact_id index on blackboard_artifacts: %s\n")||
         attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
         "Error creating artifact_id index on blackboard_attributes: %s\n");
+
+    
 
     
 }
@@ -837,8 +849,8 @@ int
      foo[1024];
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_file_layout (byte_start, byte_len, obj_id, sequence) VALUES (%lld, %llu, %llu, %d)",
-        a_byteStart, a_byteLen, a_fileObjId, a_sequence);
+        "INSERT INTO tsk_file_layout(obj_id, byte_start, byte_len, sequence) VALUES (%lld, %llu, %llu, %d)",
+        a_fileObjId, a_byteStart, a_byteLen, a_sequence);
 
     return attempt_exec(foo,
         "Error adding data to tsk_file_layout table: %s\n");
@@ -851,23 +863,23 @@ int
  * @returns 1 on error
  */
 int TskDbSqlite::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange) {
-    return addFileLayoutRange(fileLayoutRange.a_fileObjId, fileLayoutRange.a_byteStart, fileLayoutRange.a_byteLen, fileLayoutRange.a_sequence);
+    return addFileLayoutRange(fileLayoutRange.fileObjId, fileLayoutRange.byteStart, fileLayoutRange.byteLen, fileLayoutRange.sequence);
 }
 
 
 
 /**
- * Adds information about a carved file into the database.
+ * Adds entry for to tsk_files for a layout file into the database.
+ * @param fsObjId fs obj id in the database, or 0 if parent it not fs (NULL)
+ * @param dbFileType type (unallocated, carved, unused)
+ * @param fileName file name for the layout file
  * @param size Number of bytes in file
- * @param runStarts Array with starting sector (relative to start of image) for each run in file.
- * @param runLengths Array with number of sectors in each run 
- * @param numRuns Number of entries in previous arrays
- * @param fileId Carved file Id (output)
+ * @param objId layout file Id (output)
  * @returns 0 on success or 1 on error.
  */
 int
- TskDbSqlite::addCarvedFileInfo(int fsObjId, const char *fileName,
-    uint64_t size, int64_t & objId)
+ TskDbSqlite::addLayoutFileInfo(const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName,
+    const uint64_t size, int64_t & objId)
 {
     char
      foo[1024];
@@ -896,18 +908,24 @@ int
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, fsObjId, objId))
         return 1;
 
+    //fsObjId can be NULL
+    stringstream fsObjIdS;
+    if (fsObjId == 0) 
+        fsObjIdS << "NULL";
+    else fsObjIdS << fsObjId;
+
     snprintf(foo, 1024,
-        "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
-        "%d,%lld,"
+        "1,%s,%lld,"
         "%d,"
         "NULL,NULL,'%s',"
         "NULL,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
-        fsObjId, objId,
-        TSK_DB_FILES_TYPE_CARVED,
+        fsObjIdS.str().c_str(), objId,
+        dbFileType,
         name,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
         TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_NAME_FLAG_UNALLOC, size);
@@ -952,7 +970,7 @@ TskDbSqlite::inTransaction()
  * @param objId object id of the file object created (output)
  * @returns TSK_OK on success or TSK_ERR on error.
  */
-int TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+int TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
     return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, hasFsParent, size, ranges, objId);
 }
 
@@ -966,7 +984,7 @@ int TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, const bool hasFs
  * @param objId object id of the file object created (output)
  * @returns TSK_OK on success or TSK_ERR on error.
  */
-int TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+int TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
     return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, hasFsParent, size, ranges, objId);
 }
     
@@ -980,20 +998,164 @@ int TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const bool hasFsP
  * @param objId object id of the file object created (output)
  * @returns TSK_OK on success or TSK_ERR on error.
  */
-int TskDbSqlite::addCarvedFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+int TskDbSqlite::addCarvedFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
     return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, hasFsParent, size, ranges, objId);
 }
+
+typedef struct _checkRangeOverlap{
+    const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
+    bool hasOverlap;
+
+    _checkRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges) : ranges(ranges),hasOverlap(false) {}
+
+    bool getHasOverlap() { return hasOverlap; }
+    void operator() (const TSK_DB_FILE_LAYOUT_RANGE & range)  {
+        if (hasOverlap)
+            return; //no need to check other
+
+        uint64_t start = range.byteStart;
+        uint64_t end = start + range.byteLen;
+
+        vector<TSK_DB_FILE_LAYOUT_RANGE>::const_iterator it;
+        for (it = ranges.begin(); it != ranges.end(); ++it) {
+            const TSK_DB_FILE_LAYOUT_RANGE * otherRange = &(*it);
+            if (&range == otherRange)
+                continue; //skip, it's the same range
+            uint64_t otherStart = otherRange->byteStart;
+            uint64_t otherEnd = otherStart + otherRange->byteLen;
+            if (start <= otherEnd && end >= otherStart) {
+                hasOverlap = true;
+                break;
+            }       
+        }
+    }
+   
+} checkRangeOverlap;
 
 /**
 * Internal helper method to add unalloc, unused and carved files with layout ranges to db
 * Generates file_name and populates tsk_files, tsk_objects and tsk_file_layout tables
 * returns TSK_ERR on error or TSK_OK on success
 */
-int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const bool hasFsParent, const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const bool hasFsParent, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
     //not yet implemented
 
-    //check if parent is fs
+    const size_t numRanges = ranges.size();
 
+    if (numRanges < 1) {
+        //TODO err msg
+        return TSK_ERR;
+    }
+    
 
-    return TSK_ERR;
+    stringstream fileNameSs;
+    switch (dbFileType) {
+        case TSK_DB_FILES_TYPE_UNALLOC_BLOCKS:
+            fileNameSs << "Unalloc";
+            break;
+
+        case TSK_DB_FILES_TYPE_UNUSED_BLOCKS:
+            fileNameSs << "Unused";     
+            break;
+
+        case TSK_DB_FILES_TYPE_CARVED:
+            fileNameSs << "Carved";
+            break;
+        default:
+            //set error, unsupported file type for file layout range
+            return TSK_ERR;
+    }
+
+    //ensure layout ranges are sorted (to generate file name) TODO might need to sort by blocks to gen name
+    sort(ranges.begin(), ranges.end());
+
+    //basic checking
+
+    //ensure there is no overlap and each range has unique bytes
+    checkRangeOverlap & overlapRes = for_each(ranges.begin(), ranges.end(), checkRangeOverlap(ranges));
+    if (overlapRes.getHasOverlap() ) {
+        //TODO err message
+        return TSK_ERR;
+    }
+
+    //TODO should we check size matches ranges, or should we just calculate and not require caller to pass size?
+
+    //construct filename with parent obj id, start byte of first range, end byte of last range
+    fileNameSs << "_" << parentObjId << "_" << ranges[0].byteStart;
+    fileNameSs << "_" << (ranges[numRanges-1].byteStart + ranges[numRanges-1].byteLen);
+    
+    //insert into tsk files
+    int64_t fsObjId = hasFsParent?parentObjId:0;
+    if (addLayoutFileInfo(fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId) ) {
+        //TODO err msg
+        return TSK_ERR;
+    }
+
+    //insert into tsk objects
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentObjId, objId))
+        return TSK_ERR;
+
+    //fill in fileObjId and insert ranges
+    for (vector<TSK_DB_FILE_LAYOUT_RANGE>::iterator it = ranges.begin();
+        it != ranges.end(); ++it) {
+        TSK_DB_FILE_LAYOUT_RANGE & range = *it;
+        range.fileObjId = objId;
+        if (this->addFileLayoutRange(range) ) {
+            //TODO err msg
+            return TSK_ERR;
+        }
+
+    }
+   
+    return TSK_OK;
 }
+
+//TODO
+uint8_t TskDbSqlite::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) {
+    return TSK_OK;
+}
+
+ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo) {
+    os << fsInfo.objId << "," << fsInfo.imgOffset << "," << fsInfo.fType
+        << "," << fsInfo.block_size << "," << fsInfo.block_count 
+        << "," << fsInfo.root_inum << "," << fsInfo.first_inum << "," << fsInfo.last_inum;
+    os << std::endl;
+    return os;
+}
+
+/**
+* Query tsk_fs_info and return rows for every entry in tsk_fs_info table
+* @param fsInfos (out) TSK_DB_FS_INFO row representations to return
+* $returns 1 on error, 0 on success
+*/
+uint8_t TskDbSqlite::getFsInfos(vector<TSK_DB_FS_INFO> & fsInfos) {
+    sqlite3_stmt * fsInfosStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum FROM tsk_fs_info", 
+        &fsInfosStatement) ) {
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_FS_INFO rowData;
+    while (sqlite3_step(fsInfosStatement) == SQLITE_ROW) {
+        rowData.objId = sqlite3_column_int64(fsInfosStatement, 0);
+        rowData.imgOffset = sqlite3_column_int64(fsInfosStatement, 1);
+        rowData.fType = (TSK_FS_TYPE_ENUM)sqlite3_column_int(fsInfosStatement, 2);
+        rowData.block_size = sqlite3_column_int(fsInfosStatement, 3);
+        rowData.block_count = sqlite3_column_int64(fsInfosStatement, 4);
+        rowData.root_inum = sqlite3_column_int64(fsInfosStatement, 5);
+        rowData.first_inum = sqlite3_column_int64(fsInfosStatement, 6);
+        rowData.last_inum = sqlite3_column_int64(fsInfosStatement, 7);
+
+        //insert a copy of the rowData
+        fsInfos.push_back(rowData);
+    }
+
+    //cleanup
+    if (fsInfosStatement != NULL) {
+        sqlite3_finalize(fsInfosStatement);
+        fsInfosStatement = NULL;
+    }
+
+     return TSK_OK;
+ }

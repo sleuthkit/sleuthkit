@@ -16,6 +16,9 @@
 #include "tsk_case_db.h"
 #include <string.h>
 
+#include <algorithm>
+using std::for_each;
+
 
 /**
  * @param a_db Database to add an image to
@@ -36,6 +39,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_NSRLDb = a_NSRLDb;
     m_knownBadDb = a_knownBadDb;
     m_noFatFsOrphans = false;
+    m_processUnallocSpace = true; //TODO use setter
 }
 
 TskAutoDb::~TskAutoDb()
@@ -354,10 +358,13 @@ uint8_t
         return 1;
     }
     
-    if (addFilesInImgToDb()) {
-        //do not roll back if errors in this case, but do report registered errors
+    uint8_t addFilesRet = addFilesInImgToDb();
+    uint8_t addUnallocRet = addUnallocSpaceToDb();
+
+    //do not roll back if errors in this case, but do report registered errors
+    if (addFilesRet || addUnallocRet)
         return 2;
-    }
+
     return 0;
 }
 
@@ -406,11 +413,12 @@ uint8_t
         return 1;
     }
 
-    if (addFilesInImgToDb()) {
-        //do not roll back if errors in this case, but do report registered errors
-        return 2;
-    }
+    uint8_t addFilesRet = addFilesInImgToDb();
+    uint8_t addUnallocRet = addUnallocSpaceToDb();
 
+    //do not roll back if errors in this case, but do report registered errors
+    if (addFilesRet || addUnallocRet)
+        return 2;
 
     return 0;
 }
@@ -644,5 +652,114 @@ TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
     }
 
     TSK_MD5_Final(md5Hash, &md);
+    return 0;
+}
+
+
+TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr) {
+    TskAutoDb * tskAutoDb = (TskAutoDb *) a_ptr;
+
+    //TODO create chunks on the fly
+    tskAutoDb->m_curFsUnallocBlocks.push_back(a_block->addr);
+
+    return TSK_WALK_CONT;
+}
+
+
+
+int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
+    //open the fs we have from database
+    TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
+    if (fsInfo == NULL) {
+        //log error
+        return 1;
+    }
+
+    //walk unalloc blocks on the fs
+    m_curFsUnallocBlocks.clear();
+    uint8_t block_walk_ret = tsk_fs_block_walk(fsInfo, fsInfo->first_block, fsInfo->last_block, TSK_FS_BLOCK_WALK_FLAG_UNALLOC, 
+        fsWalkUnallocBlocksCb, this);
+
+    
+    if (block_walk_ret == 1) {
+        //registerError();
+
+        tsk_fs_close(fsInfo);
+        return TSK_ERR;
+    }
+
+    //process blocks, create file entry with 1 or more consec. block ranges
+
+    TSK_DADDR_T curBlock = 0;
+    TSK_DADDR_T curRangeStart = 0;
+    vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+    size_t curSequence = 0;
+    uint64_t fileSize = 0;
+    TSK_DB_FILE_LAYOUT_RANGE tempRange;
+
+    const size_t numBlocks = m_curFsUnallocBlocks.size();
+    for (size_t i=0; i< numBlocks; ++i) {
+        curBlock = m_curFsUnallocBlocks[i];
+        if (i == 0) {
+            curRangeStart = curBlock;
+        }
+        else {
+            //check if non-consecutive blocks, make range if needed
+            const TSK_DADDR_T prevBlock = m_curFsUnallocBlocks[i-1];
+            if (curBlock != prevBlock +1) {
+                //make a new range inclusive from curChunkStart to prevBlock
+                tempRange.sequence = ++curSequence;
+                tempRange.fileObjId = 0; //filled by db layer
+                tempRange.byteStart = curRangeStart * fsInfo->block_size + fsInfo->offset;
+                tempRange.byteLen = (1 + prevBlock - curRangeStart) * fsInfo->block_size;
+                ranges.push_back(tempRange);
+
+                fileSize += tempRange.byteLen;
+
+                //advance range start to a new range
+                curRangeStart = curBlock;
+            } 
+        }
+
+        //check if curBlock is last block, if so, make range inclusive from inclusive from curChunkStart to curBlock
+        if (i == numBlocks -1) {
+            tempRange.sequence = ++curSequence;
+            tempRange.fileObjId = 0; //filled by db layer
+            tempRange.byteStart = curRangeStart * fsInfo->block_size + fsInfo->offset;
+            tempRange.byteLen = (1 + curBlock - curRangeStart) * fsInfo->block_size;
+            ranges.push_back(tempRange);
+
+            fileSize += tempRange.byteLen;
+        }
+
+    }
+
+    tsk_fs_close(fsInfo);
+
+    int64_t fileObjId = 0;
+    m_db->addUnallocBlockFile(dbFsInfo.objId, true, fileSize, ranges, fileObjId); 
+ 
+    return TSK_OK; 
+
+}
+
+/**
+* Process unallocated space and create "virtual" files with layouts
+*/
+uint8_t TskAutoDb::addUnallocSpaceToDb() {
+    vector<TSK_DB_FS_INFO> fsInfos;
+
+    //traverse filesystems, walk blocks
+    uint16_t ret = m_db->getFsInfos(fsInfos);
+    if (ret == 1) {
+        return 1;
+    }
+
+    for (vector<TSK_DB_FS_INFO>::iterator it = fsInfos.begin(); it!= fsInfos.end(); ++it)
+        processFsInfoUnalloc(*it);
+   
+
+    //traverse unallocated volumes
+
     return 0;
 }

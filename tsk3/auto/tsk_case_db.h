@@ -79,6 +79,7 @@ class TskAutoDb:public TskAuto {
     TSK_HDB_INFO * m_NSRLDb;
     TSK_HDB_INFO * m_knownBadDb;
     bool m_noFatFsOrphans;
+    bool m_processUnallocSpace;
 
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);
@@ -95,6 +96,11 @@ class TskAutoDb:public TskAuto {
         TSK_OFF_T offset, TSK_DADDR_T addr, char *buf, size_t size,
         TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);
     int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
+
+    static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
+    int16_t processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
+    uint8_t addUnallocSpaceToDb();
+    vector<TSK_DADDR_T> m_curFsUnallocBlocks; //temporary, will remove in next version.
 };
 
 
