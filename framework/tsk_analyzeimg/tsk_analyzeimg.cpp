@@ -146,6 +146,9 @@ int main(int argc, char **argv1)
             systemProperties->initialize("framework_config.xml");
             TskServices::Instance().setSystemProperties(*systemProperties);
         }
+        else {
+            LOGINFO(L"No framework config file found");
+        }
     }
 
     TSK_SYS_PROP_SET(TskSystemProperties::PROG_DIR, getProgDir()); 
@@ -224,6 +227,11 @@ int main(int argc, char **argv1)
         reportPipeline = NULL;
     }
 
+    if ((filePipeline == NULL) && (reportPipeline)) {
+        fprintf(stderr, "No pipelines configured.  Stopping\n");
+        exit(1);
+    }
+
     // now we analyze the data.
     // Extract
     if (imageFileTsk.extractFiles() != 0) {
@@ -232,10 +240,7 @@ int main(int argc, char **argv1)
         return 1;
     }
 
-    // @@@ go through the scheduler queue....
-
     //Run pipeline on all files
-    // @@@ this needs to cycle over the files to analyze, 10 is just here for testing 
     if (filePipeline && !filePipeline->isEmpty()) {
         TskSchedulerQueue::task_struct *task;
         while ((task = scheduler.nextTask()) != NULL) {

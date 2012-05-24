@@ -56,6 +56,7 @@ TskPipelineManager::~TskPipelineManager()
 }
 
 /**
+ * Creates a pipeline object by loading the config file. 
  * Looks for pipeline config file in either the system properties or with the
  * name TskPipelineManager::DEFAULT_PIPELINE_CONFIG in the CONFIG_DIR (as defined
  * in the sytem properties).  
