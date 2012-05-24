@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -90,12 +90,12 @@ void TskFileAnalysisPipeline::run(TskFile* file)
             // so always make sure it is open
             file->open();
 
+            // Reset the file offset to the beginning of the file.
+            file->seek(0);
+
             TskModule::Status status = m_modules[i]->run(file);
 
             imgDB.setModuleStatus(file->getId(), m_modules[i]->getModuleId(), (int)status);
-
-            // Reset the file offset to the beginning of the file for the next module.
-            file->seek(0);
 
             // If any module encounters a failure while processing a file
             // we will set the file status to failed once the pipeline is complete.

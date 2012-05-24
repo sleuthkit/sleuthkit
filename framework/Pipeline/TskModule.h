@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -31,6 +31,7 @@ public:
     static const std::wstring OUT_MACRO;
     static const std::wstring SESSION_MACRO;
     static const std::wstring PROGDIR_MACRO;
+    static const std::wstring MODDIR_MACRO;
     static const std::wstring TASK_MACRO;
     static const std::wstring NODE_MACRO;
     static const std::wstring SEQUENCE_MACRO;

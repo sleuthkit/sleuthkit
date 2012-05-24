@@ -3,7 +3,7 @@
  *  The Sleuth Kit
  *
  *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- *  Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ *  Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  *  reserved.
  *
  *  This software is distributed under the Common Public License 1.0
@@ -40,6 +40,7 @@ const std::wstring TskModule::FILE_MACRO = L"@FILE";    ///< The file id current
 const std::wstring TskModule::OUT_MACRO = L"@OUT";  ///< The path to the preferred output folder (as supplied by the program that configured the pipeline).
 const std::wstring TskModule::SESSION_MACRO = L"@SESSION";  ///< The session id assigned by to this job (as assigned by the program that configured the pipeline).
 const std::wstring TskModule::PROGDIR_MACRO = L"@PROGDIR";  ///< The path to the directory where the program that is using the pipeline is installed.
+const std::wstring TskModule::MODDIR_MACRO = L"@MODDIR";  ///< The path to the module directory has been configured to be. 
 const std::wstring TskModule::TASK_MACRO = L"@TASK";    ///< The name of the currently executing task (e.g. FileAnalysis, Carving etc.)
 const std::wstring TskModule::NODE_MACRO = L"@NODE";    ///< The name of the computer on which the task is running.
 const std::wstring TskModule::SEQUENCE_MACRO = L"@SEQUENCE";    ///< The job sequence number
@@ -139,52 +140,69 @@ std::string TskModule::parameterSubstitution(const std::string& paramString, con
     }
 
     // Replace all occurences of OUT_MACRO with the output directory.
-    Poco::replaceInPlace(resultString, 
+    if (resultString.find(TskUtilities::toUTF8(TskModule::OUT_MACRO)) != string::npos)
+        Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::OUT_MACRO), 
                          TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemProperties::OUT_DIR)));
 
     // Replace all occurences of PROGDIR_MACRO with the program directory.
-    Poco::replaceInPlace(resultString, 
+    if (resultString.find(TskUtilities::toUTF8(TskModule::PROGDIR_MACRO)) != string::npos)
+        Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::PROGDIR_MACRO), 
                          TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemProperties::PROG_DIR)));
 
+    if (resultString.find(TskUtilities::toUTF8(TskModule::MODDIR_MACRO)) != string::npos)
+        Poco::replaceInPlace(resultString, 
+                         TskUtilities::toUTF8(TskModule::MODDIR_MACRO), 
+                         TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemProperties::MODULE_DIR)));
+
     // Replace all occurences of SESSION_MACRO with the session id.
-    Poco::replaceInPlace(resultString, 
+    if (resultString.find(TskUtilities::toUTF8(TskModule::SESSION_MACRO)) != string::npos)
+        Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::SESSION_MACRO), 
                          TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemProperties::SESSION_ID)));
 
     // Replace all occurences of TASK_MACRO with the task name.
-    Poco::replaceInPlace(resultString, 
+    if (resultString.find(TskUtilities::toUTF8(TskModule::TASK_MACRO)) != string::npos)
+        Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::TASK_MACRO), 
                          TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskModule::TASK_MACRO)));
     
     // Replace all occurences of NODE_MACRO with the computer name.
-    Poco::replaceInPlace(resultString, 
+    if (resultString.find(TskUtilities::toUTF8(TskModule::NODE_MACRO)) != string::npos)
+        Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::NODE_MACRO), 
                          TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskModule::NODE_MACRO)));
 
     // Replace all occurences of SEQUENCE_MACRO with the job sequence number.
-    Poco::replaceInPlace(resultString, 
+    if (resultString.find(TskUtilities::toUTF8(TskModule::SEQUENCE_MACRO)) != string::npos)
+        Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::SEQUENCE_MACRO),
                          TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskModule::SEQUENCE_MACRO)));
 
     // Replace all occurences of PID_MACRO with the process id.
-    Poco::replaceInPlace(resultString, 
+    if (resultString.find(TskUtilities::toUTF8(TskModule::PID_MACRO)) != string::npos)
+        Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::PID_MACRO),
                          TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskModule::PID_MACRO)));
 
     // Replace all occurences of STARTTIME_MACRO with the process start time
-    Poco::replaceInPlace(resultString, 
+    if (resultString.find(TskUtilities::toUTF8(TskModule::STARTTIME_MACRO)) != string::npos)
+        Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::STARTTIME_MACRO),
                          TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskModule::STARTTIME_MACRO)));
 
-    Poco::replaceInPlace(resultString, 
+    if (resultString.find(TskUtilities::toUTF8(TskModule::UNIQUE_ID_MACRO)) != string::npos)
+        Poco::replaceInPlace(resultString, 
                          TskUtilities::toUTF8(TskModule::UNIQUE_ID_MACRO),
                          TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskModule::UNIQUE_ID_MACRO)));
 
-    Poco::LocalDateTime localDateTime;
-    std::string curTimeStr = Poco::DateTimeFormatter::format(localDateTime, "%Y_%m_%d_%H_%M_%S");
-    Poco::replaceInPlace(resultString, TskUtilities::toUTF8(TskModule::CURTIME_MACRO), curTimeStr);
+
+    if (resultString.find(TskUtilities::toUTF8(TskModule::CURTIME_MACRO)) != string::npos) {
+        Poco::LocalDateTime localDateTime;
+        std::string curTimeStr = Poco::DateTimeFormatter::format(localDateTime, "%Y_%m_%d_%H_%M_%S");
+        Poco::replaceInPlace(resultString, TskUtilities::toUTF8(TskModule::CURTIME_MACRO), curTimeStr);
+    }
 
     return resultString;
 }
