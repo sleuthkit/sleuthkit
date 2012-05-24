@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -43,11 +43,6 @@ const std::string TskPipeline::MODULE_PLUGIN_TYPE = "plugin";
 
 TskPipeline::TskPipeline() : m_hasExeModule(false), m_loadDll(true)
 {
-}
-
-TskPipeline::TskPipeline(TskPipeline& pipeline) : m_hasExeModule(false), m_loadDll(true)
-{
-    m_modules = pipeline.m_modules;
 }
 
 TskPipeline::~TskPipeline()
