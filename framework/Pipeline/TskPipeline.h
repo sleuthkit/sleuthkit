@@ -43,13 +43,7 @@ public:
     static const std::string MODULE_EXECUTABLE_TYPE; ///< value of MODULE_TYPE_ATTR for executable modules
     static const std::string MODULE_PLUGIN_TYPE; ///< value of MODULE_TYPE_ATTR for library modules
 
-    // Default constructor
     TskPipeline();
-
-    // Copy constructor
-    TskPipeline(TskPipeline& pipeline);
-
-    // Destructor
     ~TskPipeline();
 
     void validate(const std::string& pipelineConfig);
@@ -91,6 +85,10 @@ protected:
     bool excludeFile(const TskFile*);
 
 private:
+    // Disallow copying
+    TskPipeline(const TskPipeline&);
+    TskPipeline& operator=(const TskPipeline&);
+
     bool m_loadDll;     ///< True if dlls should be loaded during initialize
 
     TskModule * createModule(Poco::XML::Element * pElem);

@@ -45,11 +45,6 @@ TskPipeline::TskPipeline() : m_hasExeModule(false), m_loadDll(true)
 {
 }
 
-TskPipeline::TskPipeline(TskPipeline& pipeline) : m_hasExeModule(false), m_loadDll(true)
-{
-    m_modules = pipeline.m_modules;
-}
-
 TskPipeline::~TskPipeline()
 {
     // Delete modules
