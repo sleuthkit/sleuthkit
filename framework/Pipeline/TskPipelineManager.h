@@ -21,6 +21,7 @@
 
 /**
  * Responsible for creation and destruction of of TskPipeline objects.
+ * This class is responsible for reading the pipeline configuration file.
  */
 class TSK_FRAMEWORK_API TskPipelineManager
 {

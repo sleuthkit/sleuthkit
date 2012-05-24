@@ -31,6 +31,7 @@ public:
     static const std::wstring OUT_MACRO;
     static const std::wstring SESSION_MACRO;
     static const std::wstring PROGDIR_MACRO;
+    static const std::wstring MODDIR_MACRO;
     static const std::wstring TASK_MACRO;
     static const std::wstring NODE_MACRO;
     static const std::wstring SEQUENCE_MACRO;

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Used in binary distribution of framework -->
 <TSK_FRAMEWORK_CONFIG>
   <MODULE_DIR>..\modules\</MODULE_DIR>  
   <CONFIG_DIR>.\</CONFIG_DIR>
