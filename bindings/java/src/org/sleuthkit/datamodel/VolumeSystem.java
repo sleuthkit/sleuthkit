@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -152,6 +153,6 @@ public class VolumeSystem extends AbstractContent {
 
 	@Override
 	public List<LayoutContent> getLayoutChildren(TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException {
-		throw new UnsupportedOperationException("Not supported yet.");
+		return Collections.<LayoutContent>emptyList();
 	}
 }

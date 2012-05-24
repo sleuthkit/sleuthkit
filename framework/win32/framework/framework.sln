@@ -9,18 +9,39 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CalcFileSizeModule", "..\Ca
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EntropyModule", "..\..\TskModules\c_EntropyModule\win32\EntropyModule.vcproj", "{00E3B0EE-B612-433A-A43E-1CE0B3DE1015}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HashCalcModule", "..\..\TskModules\c_HashCalcModule\win32\HashCalcModule.vcproj", "{46CD18AC-3A1C-405D-B39F-F86BA0FD1820}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InterestingFilesModule", "..\..\TskModules\c_InterestingFilesModule\win32\InterestingFilesModule.vcproj", "{8F956113-11D2-4288-985D-53CBF84648E0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RegRipperModule", "..\..\TskModules\c_RegRipperModule\win32\RegRipperModule.vcproj", "{4DD49717-8C15-4E07-8C18-D47A093184AA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SaveInterestingFilesModule", "..\..\TskModules\c_SaveInterestingFilesModule\win32\SaveInterestingFilesModule.vcproj", "{39CDF492-FCD0-42E8-B2E2-42D2E0F6D2CC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TskHashLookupModule", "..\..\TskModules\c_TskHashLookupModule\win32\TskHashLookupModule.vcproj", "{430B8E55-C5F4-4936-A0C7-DABD8B34788A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZipExtractionModule", "..\..\TskModules\c_ZIPExtractionModule\win32\ZipExtractionModule.vcproj", "{506823BC-AE48-4827-B72A-BA4C9E1E4670}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_analyzeimg", "..\tsk_analyzeimg\tsk_analyzeimg.vcproj", "{13BD0806-028E-42F1-A91D-5128565A9717}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -28,8 +49,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_analyzeimg", "..\tsk_an
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SummaryReportModule", "..\..\TskModules\c_SummaryReportModule\win32\SummaryReportModule.vcproj", "{1CA42FA6-A110-4BB1-B7D6-C0AB6C4FA1AD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_validatePipeline", "..\tsk_validatepipeline\tsk_validatepipeline.vcproj", "{352C3C04-1F31-4138-97A6-1DC6EC5FD379}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_validatepipeline", "..\tsk_validatepipeline\tsk_validatepipeline.vcproj", "{352C3C04-1F31-4138-97A6-1DC6EC5FD379}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

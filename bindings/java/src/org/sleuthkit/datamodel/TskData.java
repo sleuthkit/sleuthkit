@@ -305,6 +305,10 @@ public class TskData {
 			}
 			throw new IllegalArgumentException("No TSK_FILE_TYPE_ENUM of value: " + fileType);
 		}
+		
+		public long getFileType() {
+			return fileType;
+		}
 	}
 	
 	public enum FileKnown {

@@ -241,7 +241,6 @@ sub package_framework {
 	mkdir ("${rdir}/modules") or die "error making module release directory: $rdir";
 	mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdir";
 	mkdir ("${rdir}/docs") or die "error making docs release directory: $rdir";
-	mkdir ("${rdir}/man") or die "error making man release directory: $rdir";
 
 	chdir "framework" or die "error changing directory into framework";
 
@@ -291,8 +290,8 @@ sub package_framework {
 	}
 	closedir($modDir);
 
-	# Copy the  man pages
-	`cp man/*.html \"${rdir}/man\"`;
+	# Copy the man pages into docs
+	`cp man/*.html \"${rdir}/docs\"`;
 
 	# Copy standard files
 	#`cp README.txt \"${rdir}\"`;

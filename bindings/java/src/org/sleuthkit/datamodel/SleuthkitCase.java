@@ -1184,8 +1184,8 @@ public class SleuthkitCase {
 		addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
 	}
 
-	private LayoutContent getLayoutContentById(long id, LayoutContentParent parent) {
-		LayoutContent lay = new LayoutContent(this, id);
+	private LayoutContent getLayoutContentById(long id, LayoutContentParent parent, TskData.TSK_DB_FILES_TYPE_ENUM type) {
+		LayoutContent lay = new LayoutContent(this, id, type);
 		lay.setParent(parent);
 		return lay;
 	}
@@ -1203,18 +1203,38 @@ public class SleuthkitCase {
 			this.type = type;
 		}
 	}
+	
+	/**
+	 * Stores a pair of object ID and its file type
+	 */
+	private static class FileInfo {
+		
+		long id;
+		TskData.TSK_DB_FILES_TYPE_ENUM type;
+		
+		FileInfo(long id, TskData.TSK_DB_FILES_TYPE_ENUM type) {
+			this.id = id;
+			this.type = type;
+		}
+	}
 
 	/**
 	 * Get info about children of a given Content from the database.
+	 * TODO: the results of this method are volumes, file systems, and fs files.
 	 * @param c Parent object to run query against
 	 */
 	Collection<ObjectInfo> getChildrenInfo(Content c) throws TskException {
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("select obj_id, type from tsk_objects "
-					+ "where par_obj_id = " + c.getId());
-
+			String query = "select tsk_objects.obj_id, tsk_objects.type ";
+			query += "from tsk_objects left join tsk_files ";
+			query += "on tsk_objects.obj_id=tsk_files.obj_id ";
+			query += "where tsk_objects.par_obj_id = " + c.getId() + " ";
+			query += "and (tsk_files.type is null ";
+			query += "or tsk_files.type = " + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + ")";
+			ResultSet rs = s.executeQuery(query);
+			
 			Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
 
 			while (rs.next()) {
@@ -1721,25 +1741,52 @@ public class SleuthkitCase {
 	}
 	
 	/**
+	 * Get info about children of a given Content from the database.
+	 * TODO: the results of this method are volumes, file systems, and fs files.
+	 * @param c Parent object to run query against
+	 */
+	Collection<FileInfo> getLayoutChildrenInfo(Content c, TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException {
+		dbReadLock();
+		try {
+			Statement s = con.createStatement();
+			String query = "select tsk_objects.obj_id, tsk_files.type ";
+			query += "from tsk_objects join tsk_files ";
+			query += "on tsk_objects.obj_id=tsk_files.obj_id ";
+			query += "where (tsk_objects.par_obj_id = " + c.getId() + " ";
+			query += "and tsk_files.type = " + type.getFileType() + ")";
+			ResultSet rs = s.executeQuery(query);
+			
+			Collection<FileInfo> infos = new ArrayList<FileInfo>();
+
+			while (rs.next()) {
+				infos.add(new FileInfo(rs.getLong("obj_id"), TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getLong("type"))));
+			}
+			rs.close();
+			s.close();	
+			return infos;
+		} catch (SQLException ex) {
+			throw new TskException("Error getting Layout Children Info for Content.", ex);
+		} finally {
+			dbReadUnlock();
+		}
+	}
+	
+	/**
 	 * Returns the list of Layout Children for a given Image
 	 */
 
 	List<LayoutContent> getLayoutChildren(LayoutContentParent parent, TSK_DB_FILES_TYPE_ENUM type) throws TskException {
-		Collection<ObjectInfo> childInfos = getChildrenInfo(parent);
+		Collection<FileInfo> childInfos = getLayoutChildrenInfo(parent, type);
 
 		List<LayoutContent> children = new ArrayList<LayoutContent>();
 
-		for (ObjectInfo info : childInfos) {
-
-			if (info.type == ObjectType.VS) {
-			} else if (info.type == ObjectType.FS) {
-			} else if (info.type == ObjectType.ABSTRACTFILE) {
-				children.add(getLayoutContentById(info.id, parent)); //TODO: actually limit this by file type
+		for (FileInfo info : childInfos) {
+			if (info.type == type) {
+				children.add(getLayoutContentById(info.id, parent, type));
 			} else {
-				throw new TskException("Image has child of invalid type: " + info.type);
+				throw new TskException("Layout Content Parent has child of invalid type: " + info.type);
 			}
 		}
-
 		return children;
 	}
 
@@ -1802,7 +1849,8 @@ public class SleuthkitCase {
 			Statement s = con.createStatement();
 			ResultSet rs = s.executeQuery("select tsk_files.* from tsk_files join "
 					+ "tsk_objects on tsk_files.obj_id = tsk_objects.obj_id "
-					+ "where par_obj_id = " + par_obj_id + " order by name asc");
+					+ "where par_obj_id = " + par_obj_id + " and tsk_files.type = "
+					+ TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + " order by name asc");
 
 
 			while (rs.next()) {

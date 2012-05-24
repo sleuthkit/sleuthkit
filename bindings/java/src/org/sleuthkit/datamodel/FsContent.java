@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Collections;
+import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 
 /**
@@ -313,6 +315,17 @@ public abstract class FsContent extends AbstractContent {
 	 */
 	public String getModeAsString(){
 		return FsContent.modeToString(mode, meta_type);
+	}
+	
+	/**
+	 * Get this FSContent's Layout Content children (none)
+	 * @param type
+	 * @return
+	 * @throws TskException 
+	 */
+	@Override
+	public List<LayoutContent> getLayoutChildren(TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException {
+		return Collections.<LayoutContent>emptyList();
 	}
 	
 	public FileKnown getKnown() {
