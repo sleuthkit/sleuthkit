@@ -30,22 +30,22 @@ public class LayoutContent extends AbstractContent{
 	
 	private List<TskFileLayoutRange> ranges;
 	private LayoutContentParent parent;
+	private TskData.TSK_DB_FILES_TYPE_ENUM type;
 	
-	public LayoutContent(SleuthkitCase db, long obj_id) {
+	public LayoutContent(SleuthkitCase db, long obj_id, TskData.TSK_DB_FILES_TYPE_ENUM type) {
 		super(db, obj_id);
+		this.type = type;
 	}
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskException {
-		if(len + offset > calcSize()) {
-			throw new IllegalArgumentException("boo");
-		}
+		long realLen = Math.min(len, calcSize()-offset);
 		int currentUnallocatedFileOffset = 0;
 		int bytesRead = 0;
 		Iterator<TskFileLayoutRange> it = getRanges().iterator();
 		while(it.hasNext()) {
 			TskFileLayoutRange range = it.next();
-			if (bytesRead < len) { // we have to read
+			if (bytesRead < realLen) { // we have to read
 				
 				if (currentUnallocatedFileOffset + range.getByteLen() < offset) { // if we aren't yet able to read, continue
 					currentUnallocatedFileOffset += range.getByteLen(); // should be last range maybe?
@@ -56,7 +56,7 @@ public class LayoutContent extends AbstractContent{
 						offsetInRange = (offset - currentUnallocatedFileOffset);
 					}
 					long offsetInImage = offsetInRange + range.getByteStart(); // how far into the image to start reading
-					int lenToRead = (int) Math.min((range.getByteLen() - offsetInRange), (len-bytesRead)); // how much we can read this time
+					int lenToRead = (int) Math.min((range.getByteLen() - offsetInRange), (realLen-bytesRead)); // how much we can read this time
 					byte[] currentBuffer = new byte[lenToRead]; // the buffer for the current range object
 					SleuthkitJNI.readImg(getParent().getImageHandle(), currentBuffer, offsetInImage, lenToRead); //TODO: makes sure this returns same as lenToRead
 					System.arraycopy(currentBuffer, 0, buf, bytesRead, lenToRead); // copy what we just read into the main buffer
@@ -67,12 +67,7 @@ public class LayoutContent extends AbstractContent{
 				break;
 			}
 		}
-		if (bytesRead < len) {
-			// we didn't read as much as we wanted to. :(
-			return -1;
-		} else {
-			return bytesRead;
-		}
+		return bytesRead;
 	}
 	
 	/**
@@ -101,8 +96,11 @@ public class LayoutContent extends AbstractContent{
 	
 	private long calcSize() {
 		int size = 0;
-		for(TskFileLayoutRange range : ranges) {
-			size += range.getByteLen();
+		try {
+			for (TskFileLayoutRange range : getRanges()) {
+				size += range.getByteLen();
+			}
+		}catch (TskException ex) {
 		}
 		return size;
 	}
@@ -130,6 +128,10 @@ public class LayoutContent extends AbstractContent{
 	@Override
 	public List<LayoutContent> getLayoutChildren(TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException {
 		throw new UnsupportedOperationException("Not supported yet.");
+	}
+	
+	public TskData.TSK_DB_FILES_TYPE_ENUM getType() {
+		return type;
 	}
 	
 }

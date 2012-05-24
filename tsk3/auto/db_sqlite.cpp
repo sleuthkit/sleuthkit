@@ -259,7 +259,7 @@ int
 
     if (m_blkMapFlag) {
         if (attempt_exec
-            ("CREATE TABLE tsk_file_layout (obj_id INTEGER PRIMARY KEY, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL);",
+            ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL);",
                 "Error creating tsk_fs_blocks table: %s\n")) {
             return 1;
         }
@@ -281,8 +281,10 @@ int
     return
         attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
         "Error creating tsk_objects index on par_obj_id: %s\n")||
-        attempt_exec("CREATE INDEX objID ON blackboard_artifacts(obj_id);",
-        "Error creating objID index on blackboard_artifacts: %s\n")||
+        attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
+        "Error creating artifact_objID index on blackboard_artifacts: %s\n")||
+        attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
+        "Error creating layout_objID index on tsk_file_layout: %s\n")||
         attempt_exec("CREATE INDEX artifactID ON blackboard_artifacts(artifact_id);",
         "Error creating artifact_id index on blackboard_artifacts: %s\n")||
         attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
