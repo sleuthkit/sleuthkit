@@ -565,6 +565,7 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = framework/docs/main.dox \
+                         framework/docs/basics.dox \
                          framework/docs/module_dev.dox \
                          framework/docs/module_blackboard.dox \
                          framework/docs/pipeline.dox \

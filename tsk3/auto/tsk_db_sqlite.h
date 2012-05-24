@@ -20,10 +20,15 @@
 
 #include <map>
 
+#include <string>
+#include <vector>
+
 #include "sqlite3.h"
 #include "tsk_auto_i.h"
 
 using std::map;
+using std::string;
+using std::vector;
 
 typedef struct sqlite3 sqlite3;
 
@@ -43,10 +48,12 @@ typedef enum {
  * Values for the files type column in the files table.
  */
 typedef enum {
-    TSK_DB_FILES_TYPE_FS = 0,
-    TSK_DB_FILES_TYPE_CARVED,
-    TSK_DB_FILES_TYPE_DERIVED,
-    TSK_DB_FILES_TYPE_LOCAL
+    TSK_DB_FILES_TYPE_FS = 0,   ///< File that can be found in file system tree. 
+    TSK_DB_FILES_TYPE_CARVED,   ///< Set of blocks for a file found from carving.  Could be on top of a TSK_DB_FILES_TYPE_UNALLOC_BLOCKS range. 
+    TSK_DB_FILES_TYPE_DERIVED,  ///< File derived from a parent file (i.e. from ZIP)
+    TSK_DB_FILES_TYPE_LOCAL,    ///< Local file that was added (not from a disk image)
+    TSK_DB_FILES_TYPE_UNALLOC_BLOCKS,   ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout. 
+    TSK_DB_FILES_TYPE_UNUSED_BLOCKS ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
 } TSK_DB_FILES_TYPE_ENUM;
 
 
@@ -60,7 +67,15 @@ typedef enum  {
     TSK_DB_FILES_KNOWN_KNOWN_BAD = 2,      ///< Match found in "known bad" index
 } TSK_DB_FILES_KNOWN_ENUM;
 
-
+/**
+* Data wrapping a single file_layout entry
+*/
+typedef struct {
+    int64_t a_fileObjId;
+    uint64_t a_byteStart;
+    uint64_t a_byteLen;
+    int a_sequence;
+} TSK_DB_FILE_LAYOUT_RANGE;
 
 /** \internal
  * C++ class that wraps the database internals. 
@@ -75,7 +90,7 @@ class TskDbSqlite {
     ~TskDbSqlite();
     int open(bool);
     int close();
-    int addImageInfo(int type, int size, int64_t & objId);
+    int addImageInfo(int type, int size, int64_t & objId, const string & timezone);
     int addImageName(int64_t objId, char const *imgName, int sequence);
     int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
         int64_t & objId);
@@ -87,8 +102,16 @@ class TskDbSqlite {
         const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t & objId);
-    int addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
-        uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
+
+    int addUnallocBlockFile(const int64_t parentObjId, const uint64_t size, 
+        const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+    int addUnusedBlockFile(const int64_t parentObjId, const uint64_t size, 
+        const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+    int addCarvedFile(const int64_t parentObjId, const uint64_t size, 
+        const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+    
+    int addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange);
+    int addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
     
     bool dbExist() const;
     int createSavepoint(const char *name);
@@ -118,6 +141,8 @@ class TskDbSqlite {
         const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t parObjId, int64_t & objId);
+    int addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, 
+        const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
     int addCarvedFileInfo(int fsObjId, const char *fileName, uint64_t size,
         int64_t & objId);
     void storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId);
