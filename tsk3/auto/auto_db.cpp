@@ -676,7 +676,7 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     }
 
     //walk unalloc blocks on the fs
-    m_curFsUnallocBlocks.clear();
+    
     uint8_t block_walk_ret = tsk_fs_block_walk(fsInfo, fsInfo->first_block, fsInfo->last_block, TSK_FS_BLOCK_WALK_FLAG_UNALLOC, 
         fsWalkUnallocBlocksCb, this);
 
@@ -685,6 +685,7 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
         //registerError();
 
         tsk_fs_close(fsInfo);
+        m_curFsUnallocBlocks.clear();
         return TSK_ERR;
     }
 
@@ -721,7 +722,7 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
             } 
         }
 
-        //check if curBlock is last block, if so, make range inclusive from inclusive from curChunkStart to curBlock
+        //check if curBlock is last block, if so, make range inclusive from curChunkStart to curBlock
         if (i == numBlocks -1) {
             tempRange.sequence = ++curSequence;
             tempRange.fileObjId = 0; //filled by db layer
@@ -733,9 +734,11 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
         }
 
     }
-
+    //cleanup 
+    m_curFsUnallocBlocks.clear();
     tsk_fs_close(fsInfo);
 
+    //add unalloc block file and ranges to db
     int64_t fileObjId = 0;
     m_db->addUnallocBlockFile(dbFsInfo.objId, true, fileSize, ranges, fileObjId); 
  

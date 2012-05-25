@@ -1078,8 +1078,6 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
         return TSK_ERR;
     }
 
-    //TODO should we check size matches ranges, or should we just calculate and not require caller to pass size?
-
     //construct filename with parent obj id, start byte of first range, end byte of last range
     fileNameSs << "_" << parentObjId << "_" << ranges[0].byteStart;
     fileNameSs << "_" << (ranges[numRanges-1].byteStart + ranges[numRanges-1].byteLen);
@@ -1091,9 +1089,6 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
         return TSK_ERR;
     }
 
-    //insert into tsk objects
-    //if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentObjId, objId))
-     //   return TSK_ERR;
 
     //fill in fileObjId and insert ranges
     for (vector<TSK_DB_FILE_LAYOUT_RANGE>::iterator it = ranges.begin();
@@ -1110,15 +1105,65 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
     return TSK_OK;
 }
 
-//TODO
+/**
+* Query tsk_file_layout and return rows for every entry in tsk_file_layout table
+* @param fileLayouts (out) TSK_DB_FILE_LAYOUT_RANGE row representations to return
+* $returns 1 on error, 0 on success
+*/
 uint8_t TskDbSqlite::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) {
-    return TSK_OK;
+    sqlite3_stmt * fileLayoutsStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, byte_start, byte_len, sequence FROM tsk_file_layout", 
+        &fileLayoutsStatement) ) {
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_FILE_LAYOUT_RANGE rowData;
+  
+    while (sqlite3_step(fileLayoutsStatement) == SQLITE_ROW) {
+        rowData.fileObjId = sqlite3_column_int64(fileLayoutsStatement, 0);
+        rowData.byteStart = sqlite3_column_int64(fileLayoutsStatement, 1);
+        rowData.byteLen = sqlite3_column_int64(fileLayoutsStatement, 2);
+        rowData.sequence = sqlite3_column_int(fileLayoutsStatement, 3);
+        
+        //insert a copy of the rowData
+        fileLayouts.push_back(rowData);
+    }
+
+    //cleanup
+    if (fileLayoutsStatement != NULL) {
+        sqlite3_finalize(fileLayoutsStatement);
+        fileLayoutsStatement = NULL;
+    }
+
+     return TSK_OK;
+}
+
+ostream& operator <<(ostream &os,const TSK_DB_FILE_LAYOUT_RANGE &layoutRange) {
+    os << layoutRange.fileObjId << "," << layoutRange.byteStart << ","
+        << layoutRange.byteLen << "," << layoutRange.sequence;
+    os << std::endl;
+    return os;
 }
 
 ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo) {
     os << fsInfo.objId << "," << fsInfo.imgOffset << "," << fsInfo.fType
         << "," << fsInfo.block_size << "," << fsInfo.block_count 
         << "," << fsInfo.root_inum << "," << fsInfo.first_inum << "," << fsInfo.last_inum;
+    os << std::endl;
+    return os;
+}
+
+ostream& operator <<(ostream &os,const TSK_DB_VS_INFO &vsInfo) {
+    os << vsInfo.objId << "," << vsInfo.vstype << "," << vsInfo.offset
+        << "," << vsInfo.block_size;
+    os << std::endl;
+    return os;
+}
+
+ostream& operator <<(ostream &os,const TSK_DB_VS_PART_INFO &vsPartInfo) {
+    os << vsPartInfo.objId << "," << vsPartInfo.addr << "," << vsPartInfo.start
+        << "," << vsPartInfo.len << "," << vsPartInfo.desc << "," << vsPartInfo.flags;
     os << std::endl;
     return os;
 }
@@ -1159,3 +1204,77 @@ uint8_t TskDbSqlite::getFsInfos(vector<TSK_DB_FS_INFO> & fsInfos) {
 
      return TSK_OK;
  }
+
+
+/**
+* Query tsk_vs_info and return rows for every entry in tsk_vs_info table
+* @param vsInfos (out) TSK_DB_VS_INFO row representations to return
+* $returns 1 on error, 0 on success
+*/
+uint8_t TskDbSqlite::getVsInfos(vector<TSK_DB_VS_INFO> & vsInfos) {
+    sqlite3_stmt * vsInfosStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info", 
+        &vsInfosStatement) ) {
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_VS_INFO rowData;
+    while (sqlite3_step(vsInfosStatement) == SQLITE_ROW) {
+        rowData.objId = sqlite3_column_int64(vsInfosStatement, 0);
+        rowData.vstype = (TSK_VS_TYPE_ENUM)sqlite3_column_int(vsInfosStatement, 1);
+        rowData.offset = sqlite3_column_int64(vsInfosStatement, 2);
+        rowData.block_size = sqlite3_column_int(vsInfosStatement, 3);
+
+        //insert a copy of the rowData
+        vsInfos.push_back(rowData);
+    }
+
+    //cleanup
+    if (vsInfosStatement != NULL) {
+        sqlite3_finalize(vsInfosStatement);
+        vsInfosStatement = NULL;
+    }
+
+     return TSK_OK;
+ }
+
+
+/**
+* Query tsk_vs_part and return rows for every entry in tsk_vs_part table
+* @param vsPartInfos (out) TSK_DB_VS_PART_INFO row representations to return
+* $returns 1 on error, 0 on success
+*/
+uint8_t TskDbSqlite::getVsPartInfos(vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
+    sqlite3_stmt * vsPartInfosStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info", 
+        &vsPartInfosStatement) ) {
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_VS_PART_INFO rowData;
+    while (sqlite3_step(vsPartInfosStatement) == SQLITE_ROW) {
+        rowData.objId = sqlite3_column_int64(vsPartInfosStatement, 0);
+        rowData.addr = sqlite3_column_int(vsPartInfosStatement, 1);
+        rowData.start = sqlite3_column_int64(vsPartInfosStatement, 2);
+        rowData.len = sqlite3_column_int64(vsPartInfosStatement, 3);
+        const unsigned char * text = sqlite3_column_text(vsPartInfosStatement, 4);
+        size_t textLen = sqlite3_column_bytes(vsPartInfosStatement, 4);
+        const size_t copyChars = textLen < TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1?textLen:TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1;
+        strncpy (rowData.desc,(char*)text,copyChars);
+        rowData.desc[copyChars] = '\0';
+        rowData.flags = (TSK_VS_PART_FLAG_ENUM)sqlite3_column_int(vsPartInfosStatement, 5);
+        //insert a copy of the rowData
+        vsPartInfos.push_back(rowData);
+    }
+
+    //cleanup
+    if (vsPartInfosStatement != NULL) {
+        sqlite3_finalize(vsPartInfosStatement);
+        vsPartInfosStatement = NULL;
+    }
+
+     return TSK_OK;
+ }
+

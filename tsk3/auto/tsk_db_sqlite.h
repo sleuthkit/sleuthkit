@@ -71,7 +71,7 @@ typedef enum  {
 } TSK_DB_FILES_KNOWN_ENUM;
 
 /**
-* Data wrapping a single file_layout entry
+* Structure wrapping a single file_layout db entry
 */
 typedef struct _TSK_DB_FILE_LAYOUT_RANGE {
     int64_t fileObjId; ///< set to 0 if unknown (before it becomes a db object)
@@ -85,8 +85,10 @@ typedef struct _TSK_DB_FILE_LAYOUT_RANGE {
 
 } TSK_DB_FILE_LAYOUT_RANGE;
 
+ostream& operator <<(ostream &os,const TSK_DB_FILE_LAYOUT_RANGE &layoutRange);
+
 /**
-* Data wrapping a single fs info entry
+* Structure wrapping a single fs info db entry
 */
 typedef struct _TSK_DB_FS_INFO {
     int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
@@ -101,6 +103,33 @@ typedef struct _TSK_DB_FS_INFO {
 
 ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo);
 
+
+/**
+* Structure wrapping a single vs info db entry
+*/
+typedef struct _TSK_DB_VS_INFO {
+    int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
+    TSK_VS_TYPE_ENUM vstype;
+    TSK_DADDR_T offset;
+    unsigned int block_size;  
+} TSK_DB_VS_INFO;
+
+ostream& operator <<(ostream &os,const TSK_DB_VS_INFO &vsInfo);
+
+/**
+* Structure wrapping a single vs part db entry
+*/
+#define TSK_MAX_DB_VS_PART_INFO_DESC_LEN 512
+typedef struct _TSK_DB_VS_PART_INFO {
+    int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
+    TSK_PNUM_T addr;
+    TSK_DADDR_T start;
+    TSK_DADDR_T len;
+    char desc[TSK_MAX_DB_VS_PART_INFO_DESC_LEN];
+    TSK_VS_PART_FLAG_ENUM flags;  
+} TSK_DB_VS_PART_INFO;
+
+ostream& operator <<(ostream &os,const TSK_DB_VS_PART_INFO &vsPartInfos);
 
 /** \internal
  * C++ class that wraps the database internals. 
@@ -147,6 +176,8 @@ class TskDbSqlite {
     //query methods / getters
     uint8_t getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts);
     uint8_t getFsInfos(vector<TSK_DB_FS_INFO> & fsInfos);
+    uint8_t getVsInfos(vector<TSK_DB_VS_INFO> & vsInfos);
+    uint8_t getVsPartInfos(vector<TSK_DB_VS_PART_INFO> & vsPartInfos);
 
 
   private:
