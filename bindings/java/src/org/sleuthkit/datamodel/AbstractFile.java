@@ -18,12 +18,25 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.List;
+
 /**
  *
  * @author dfickling
  */
-public interface FileSystemParent extends Content {
-	
-	public long getImageHandle() throws TskException;
-	
+public abstract class AbstractFile extends AbstractContent {
+    
+    private TskData.TSK_DB_FILES_TYPE_ENUM type;
+    
+    protected AbstractFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type) {
+        super(db, obj_id, name);
+        this.type = type;
+    }
+    
+    public TskData.TSK_DB_FILES_TYPE_ENUM getType() {
+        return type;
+    }
+    
+    public abstract List<TskFileRange> getRanges() throws TskException;
+    
 }

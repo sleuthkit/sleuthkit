@@ -21,29 +21,77 @@ package org.sleuthkit.datamodel;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author dfickling
  */
-public class LayoutContent extends AbstractContent{
-    
-    private List<TskFileLayoutRange> ranges;
-    private LayoutContentParent parent;
-    private TskData.TSK_DB_FILES_TYPE_ENUM type;
-    
-    public LayoutContent(SleuthkitCase db, long obj_id, TskData.TSK_DB_FILES_TYPE_ENUM type) {
-        super(db, obj_id);
-        this.type = type;
+public class LayoutFile extends AbstractFile{
+	
+	private List<TskFileRange> ranges;
+    private AbstractFileParent parent;
+	
+	protected LayoutFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type) {
+		super(db, obj_id, name, type);
+	}
+	
+	/**
+     * set the parent class, will be called by the parent
+     * @param p parent
+     */
+    protected void setParent(AbstractFileParent p){
+        parent = p;
     }
+	
+	public int getNumParts() {
+		int size = 0;
+		try {
+			size = getRanges().size();
+		} catch (TskException ex) {
+			Logger.getLogger(LayoutFile.class.getName()).log(Level.INFO, "Error getting layout content ranges for size", ex);
+		}
+		return size;
+	}
 
-    @Override
+	@Override
+	public List<TskFileRange> getRanges() throws TskException {
+		if(ranges == null) {
+            ranges = getSleuthkitCase().getFileRanges(this.getId());
+        }
+        return ranges;
+	}
+
+	@Override
+	public List<Content> getChildren() throws TskException {
+		return Collections.<Content>emptyList();
+	}
+	
+	@Override
+    public long getSize() {
+        return calcSize();
+    }
+    
+    private long calcSize() {
+        long size = 0;
+        try {
+            for (TskFileRange range : getRanges()) {
+                size += range.getByteLen();
+            }
+        }catch (TskException ex) {
+			Logger.getLogger(LayoutFile.class.getName()).log(Level.INFO, "boo", ex);
+        }
+        return size;
+    }
+	
+	@Override
     public int read(byte[] buf, long offset, long len) throws TskException {
         int offsetInThisLayoutContent = 0; // current offset in this LayoutContent
         int bytesRead = 0; // Bytes read so far
-        Iterator<TskFileLayoutRange> it = getRanges().iterator();
+        Iterator<TskFileRange> it = getRanges().iterator();
         while(it.hasNext()) {
-            TskFileLayoutRange range = it.next();
+            TskFileRange range = it.next();
             if (bytesRead < len) { // we haven't read enough yet
                 if (offset < offsetInThisLayoutContent + range.getByteLen()) { // if we are in a range object we want to read from
                     long offsetInRange = 0; // how far into the current range object to start reading
@@ -65,6 +113,15 @@ public class LayoutContent extends AbstractContent{
         }
         return bytesRead;
     }
+	
+	/**
+	 * Convert an internal offset to an image offset
+	 * @param layoutOffset the offset in this layout file
+	 * @return the corresponding offset in the image
+	 */
+	public long convertToImgOffset(long layoutOffset) {
+		throw new UnsupportedOperationException("Not supported yet!");
+	}
     
 	/*
 	 * Read bytes from an image into a buffer, starting at given position in buffer
@@ -81,69 +138,19 @@ public class LayoutContent extends AbstractContent{
         System.arraycopy(currentBuffer, 0, buf, offsetInBuf, lenToRead); // copy what we just read into the main buffer
         return lenRead;
     }
-    
-    /**
-     * set the parent class, will be called by the parent
-     * @param p parent
-     */
-    protected void setParent(LayoutContentParent p){
-        parent = p;
-    }
-    
-    private List<TskFileLayoutRange> getRanges() throws TskException{
-        if(ranges == null) {
-            ranges = db.getFileLayoutRanges(this.getId());
-        }
-        return ranges;
-    }
-    
-    public LayoutContentParent getParent(){
+
+	@Override
+	public <T> T accept(ContentVisitor<T> v) {
+		return v.visit(this);
+	}
+
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> v) {
+		return v.visit(this);
+	}
+	
+    private AbstractFileParent getParent(){
         return parent;
     }
-
-    @Override
-    public long getSize() {
-        return calcSize();
-    }
-    
-    private long calcSize() {
-        int size = 0;
-        try {
-            for (TskFileLayoutRange range : getRanges()) {
-                size += range.getByteLen();
-            }
-        }catch (TskException ex) {
-        }
-        return size;
-    }
-
-    @Override
-    public <T> T accept(ContentVisitor<T> v) {
-        return v.visit(this);
-    }
-
-    @Override
-    public boolean isOnto() {
-        return false;
-    }
-
-    @Override
-    public List<Content> getChildren() throws TskException {
-        return Collections.<Content>emptyList();
-    }
-
-    @Override
-    public <T> T accept(SleuthkitItemVisitor<T> v) {
-        return v.visit(this);
-    }
-
-    @Override
-    public List<LayoutContent> getLayoutChildren(TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-    
-    public TskData.TSK_DB_FILES_TYPE_ENUM getType() {
-        return type;
-    }
-    
+	
 }
