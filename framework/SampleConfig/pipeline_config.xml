@@ -2,9 +2,9 @@
 <PIPELINE_CONFIG>
     <PIPELINE type="FileAnalysis">
       <MODULE order="1" type="plugin" location="HashCalcModule.dll"/>
-      <MODULE order="2" type="plugin" location="EntropyModule.dll"/>
-      <MODULE order="3" type="plugin" location="ZipExtractionModule.dll"/>
-      <!--<MODULE order="4" type="plugin" location="TskHashLookupModule.dll" arguments="TODO: See README for how to create NSRL index file"/>-->
+<!--<MODULE order="2" type="plugin" location="TskHashLookupModule.dll" arguments="TODO: See README for how to create NSRL index file"/>-->
+      <MODULE order="3" type="plugin" location="EntropyModule.dll"/>
+      <MODULE order="4" type="plugin" location="ZipExtractionModule.dll"/>
     </PIPELINE>
 
     <PIPELINE type="Report">
@@ -16,5 +16,6 @@
       <MODULE order="3" type="plugin" location="SaveInterestingFilesModule.dll" arguments="@OUT\\InterestingFiles\\"/>
 
       <MODULE order="4" type="plugin" location="SummaryReportModule.dll"/>
+
     </PIPELINE>
 </PIPELINE_CONFIG>

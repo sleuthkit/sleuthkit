@@ -227,7 +227,7 @@ int main(int argc, char **argv1)
         reportPipeline = NULL;
     }
 
-    if ((filePipeline == NULL) && (reportPipeline)) {
+    if ((filePipeline == NULL) && (reportPipeline == NULL)) {
         fprintf(stderr, "No pipelines configured.  Stopping\n");
         exit(1);
     }
