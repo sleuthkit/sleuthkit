@@ -1299,16 +1299,42 @@ tsk_hdb_name_from_path(TSK_HDB_INFO * hdb_info)
 #else
     const char PATH_CHAR = '/';
 #endif
-    TSK_TCHAR * begin = TSTRRCHR(hdb_info->db_fname, PATH_CHAR);
-    TSK_TCHAR * end = TSTRRCHR(hdb_info->db_fname, '.');
+    TSK_TCHAR * begin;
+    TSK_TCHAR * end;
     int i;
 
-    if(!end)
-        end = begin + TSTRLEN(begin);
+    hdb_info->db_name[0] = '\0';
 
-    for(i = 0; i < (end-begin)-1; i++)
+    begin = TSTRRCHR(hdb_info->db_fname, PATH_CHAR);
+#ifdef TSK_WIN32
+    // cygwin can have forward slashes, so try that too on Windows
+    if (!begin) {
+        begin = TSTRRCHR(hdb_info->db_fname, '/');
+    }
+#endif
+
+    if (!begin) {
+        begin = hdb_info->db_fname;
+    }
+    else {
+        // unlikely since this means that the dbname is "/"
+        if (TSTRLEN(begin) == 1)
+            return;
+        else
+            begin++;
+    }
+
+    // end points to the byte after the last one we want to use
+    if ((TSTRLEN(hdb_info->db_fname) > 4) && (TSTRICMP(&hdb_info->db_fname[TSTRLEN(hdb_info->db_fname)-4], _TSK_T(".idx")) == 0)) 
+        end = &hdb_info->db_fname[TSTRLEN(hdb_info->db_fname)-4];
+    else
+        end = begin + TSTRLEN(begin);
+        
+
+    // @@@ TODO: Use TskUTF16_to_UTF8 to properly convert for Windows
+    for(i = 0; i < (end-begin); i++)
     {
-        hdb_info->db_name[i] = (char) begin[i+1];
+        hdb_info->db_name[i] = (char) begin[i];
     }
 
     hdb_info->db_name[i] = '\0';
