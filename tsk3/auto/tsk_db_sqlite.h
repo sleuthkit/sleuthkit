@@ -157,11 +157,11 @@ class TskDbSqlite {
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t & objId);
 
-    int addUnallocBlockFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, 
+    int addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
-    int addUnusedBlockFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, 
+    int addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
-    int addCarvedFile(const int64_t parentObjId, const bool hasFsParent, const uint64_t size, 
+    int addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
     
     int addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange);
@@ -201,7 +201,7 @@ class TskDbSqlite {
         const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t parObjId, int64_t & objId);
-    int addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const bool hasFsParent,
+    int addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId,
         const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
     int addLayoutFileInfo(const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size,
         int64_t & objId);

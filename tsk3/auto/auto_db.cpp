@@ -693,9 +693,7 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 
     TSK_DADDR_T curBlock = 0;
     TSK_DADDR_T curRangeStart = 0;
-    vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
     size_t curSequence = 0;
-    uint64_t fileSize = 0;
     TSK_DB_FILE_LAYOUT_RANGE tempRange;
 
     const size_t numBlocks = m_curFsUnallocBlocks.size();
@@ -713,9 +711,14 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
                 tempRange.fileObjId = 0; //filled by db layer
                 tempRange.byteStart = curRangeStart * fsInfo->block_size + fsInfo->offset;
                 tempRange.byteLen = (1 + prevBlock - curRangeStart) * fsInfo->block_size;
-                ranges.push_back(tempRange);
 
-                fileSize += tempRange.byteLen;
+                //add unalloc block file per single range to db
+                vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+                ranges.push_back(tempRange);
+                int64_t fileObjId = 0;
+                m_db->addUnallocBlockFile(dbFsInfo.objId, true, tempRange.byteLen, ranges, fileObjId);
+
+                //fileSize += tempRange.byteLen;
 
                 //advance range start to a new range
                 curRangeStart = curBlock;
@@ -728,9 +731,12 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
             tempRange.fileObjId = 0; //filled by db layer
             tempRange.byteStart = curRangeStart * fsInfo->block_size + fsInfo->offset;
             tempRange.byteLen = (1 + curBlock - curRangeStart) * fsInfo->block_size;
+            
+            //add unalloc block file per single range to db
+            vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
             ranges.push_back(tempRange);
-
-            fileSize += tempRange.byteLen;
+            int64_t fileObjId = 0;
+            m_db->addUnallocBlockFile(dbFsInfo.objId, true, tempRange.byteLen, ranges, fileObjId);
         }
 
     }
@@ -738,9 +744,6 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     m_curFsUnallocBlocks.clear();
     tsk_fs_close(fsInfo);
 
-    //add unalloc block file and ranges to db
-    int64_t fileObjId = 0;
-    m_db->addUnallocBlockFile(dbFsInfo.objId, true, fileSize, ranges, fileObjId); 
  
     return TSK_OK; 
 
