@@ -1084,7 +1084,7 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
     fileNameSs << "_" << parentObjId << "_" << ranges[0].byteStart;
     fileNameSs << "_" << (ranges[numRanges-1].byteStart + ranges[numRanges-1].byteLen);
     
-    //insert into tsk files
+    //insert into tsk files and tsk objects
     int64_t fsObjId = hasFsParent?parentObjId:0;
     if (addLayoutFileInfo(fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId) ) {
         //TODO err msg
@@ -1092,8 +1092,8 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
     }
 
     //insert into tsk objects
-    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentObjId, objId))
-        return TSK_ERR;
+    //if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentObjId, objId))
+     //   return TSK_ERR;
 
     //fill in fileObjId and insert ranges
     for (vector<TSK_DB_FILE_LAYOUT_RANGE>::iterator it = ranges.begin();
