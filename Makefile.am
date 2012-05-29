@@ -3,49 +3,43 @@ ACLOCAL_AMFLAGS = -I m4
 # Files that we want to include in the dist
 EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     licenses/GNU-COPYING licenses/IBM-LICENSE licenses/cpl1.0.txt \
+    m4/*.m4 \
     docs/README.txt \
     packages/sleuthkit.spec \
     win32/BUILDING.txt \
-    win32/blkcalc/blkcalc.vcproj win32/blkcat/blkcat.vcproj \
-    win32/blkls/blkls.vcproj win32/blkstat/blkstat.vcproj \
-    win32/ffind/ffind.vcproj win32/fls/fls.vcproj \
-    win32/fsstat/fsstat.vcproj win32/hfind/hfind.vcproj \
-    win32/icat/icat.vcproj win32/ifind/ifind.vcproj \
-    win32/ils/ils.vcproj win32/img_cat/img_cat.vcproj \
-    win32/img_stat/img_stat.vcproj \
-    win32/istat/istat.vcproj win32/jcat/jcat.vcproj \
-    win32/jls/jls.vcproj win32/mmls/mmls.vcproj \
-    win32/mmstat/mmstat.vcproj win32/mmcat/mmcat.vcproj \
-    win32/tsk_recover/tsk_recover.vcproj win32/tsk_loaddb/tsk_loaddb.vcproj \
-    win32/tsk_comparedir/tsk_compare.vcproj \
-    win32/tsk_gettimes/tsk_gettimes.vcproj \
+    win32/*/*.vcproj \
     win32/tsk-win.sln \
-    win32/libauxtools/libauxtools.vcproj \
-    win32/libfstools/libfstools.vcproj \
-    win32/libhashdbtools/libhashdbtools.vcproj \
-    win32/libimgtools/libimgtools.vcproj \
-    win32/libmmtools/libmmtools.vcproj  \
-    win32/libautotools/libautotools.vcproj  \
-    win32/posix-sample/posix-sample.vcproj \
-    win32/callback-sample/callback-sample.vcproj \
+    win32/docs/* \
     bindings/java/README.txt \
-    bindings/java/build.xml \
-    bindings/java/src/org/sleuthkit/datamodel/AbstractContent.java \
-    bindings/java/src/org/sleuthkit/datamodel/Content.java \
-    bindings/java/src/org/sleuthkit/datamodel/ContentVisitor.java \
-    bindings/java/src/org/sleuthkit/datamodel/Directory.java \
-    bindings/java/src/org/sleuthkit/datamodel/File.java \
-    bindings/java/src/org/sleuthkit/datamodel/FileSystem.java \
-    bindings/java/src/org/sleuthkit/datamodel/FileSystemParent.java \
-    bindings/java/src/org/sleuthkit/datamodel/FsContent.java \
-    bindings/java/src/org/sleuthkit/datamodel/Image.java \
-    bindings/java/src/org/sleuthkit/datamodel/ResultSetHelper.java \
-    bindings/java/src/org/sleuthkit/datamodel/SleuthkitCase.java \
-    bindings/java/src/org/sleuthkit/datamodel/SleuthkitJNI.java \
-    bindings/java/src/org/sleuthkit/datamodel/TskData.java \
-    bindings/java/src/org/sleuthkit/datamodel/TskException.java \
-    bindings/java/src/org/sleuthkit/datamodel/Volume.java \
-    bindings/java/src/org/sleuthkit/datamodel/VolumeSystem.java 
+    bindings/java/*.xml \
+    bindings/java/javadoc/* \
+    bindings/java/nbproject/* \
+    bindings/java/src/org/sleuthkit/datamodel/*.java \
+    bindings/java/src/org/sleuthkit/datamodel/*.html \
+    bindings/java/src/*.html \
+    bindings/java/test \
+    bindings/java/teststandards \
+    framework/*.txt \
+    framework/*.h \
+    framework/Extraction/*.cpp \
+    framework/Extraction/*.h \
+    framework/File/*.cpp \
+    framework/File/*.h \
+    framework/Pipeline/*.cpp \
+    framework/Pipeline/*.h \
+    framework/SampleConfig/*.xml \
+    framework/SampleModules/* \
+    framework/Services/*.cpp \
+    framework/Services/*.h \
+    framework/TskModules/* \
+    framework/Utilities/*.cpp \
+    framework/Utilities/*.h \
+    framework/docs/* \
+    framework/man/* \
+    framework/tsk_analyzeimg/*.cpp \
+    framework/tsk_validatepipeline/*.cpp \
+    framework/win32/*/*.vcproj \
+    framework/win32/*/*.sln
 
 CLEANFILES = tsk3/tsk_incs.h
 
