@@ -25,8 +25,6 @@ import java.util.List;
  * @author dfickling
  */
 public interface AbstractFileParent extends Content {
-
-	public List<AbstractFile> getAbstractFileChildren(TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException;
-
+	
 	public long getImageHandle() throws TskException;
 }

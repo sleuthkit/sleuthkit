@@ -1490,8 +1490,7 @@ public class SleuthkitCase {
         
         @Override
         public Collection<FileSystem> visit(LayoutFile lf) {
-            //should never get here
-            return null;
+            return Collections.<FileSystem>emptyList();
         }
 
         @Override
