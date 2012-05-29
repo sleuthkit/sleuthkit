@@ -964,15 +964,12 @@ public class SleuthkitCase {
 	List<AbstractFile> getAbstractFileChildren(AbstractFileParent parent, TSK_DB_FILES_TYPE_ENUM type) throws TskException {
 
         SetParentVisitor setParent = new SetParentVisitor();
-		if(type == TSK_DB_FILES_TYPE_ENUM.FS) {
-			throw new UnsupportedOperationException("FsContent not supported yet");
-		}
 		List<AbstractFile> children = new ArrayList<AbstractFile>();
 
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
-			String query = "select tsk_objects.obj_id, tsk_files.type, tsk_files.name ";
+			String query = "select tsk_files.* ";
 			query += "from tsk_objects join tsk_files ";
 			query += "on tsk_objects.obj_id=tsk_files.obj_id ";
 			query += "where (tsk_objects.par_obj_id = " + parent.getId() + " ";
@@ -1032,8 +1029,6 @@ public class SleuthkitCase {
             query += "from tsk_objects left join tsk_files ";
             query += "on tsk_objects.obj_id=tsk_files.obj_id ";
             query += "where tsk_objects.par_obj_id = " + c.getId() + " ";
-            query += "and (tsk_files.type is null ";
-            query += "or tsk_files.type = " + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + ")";
             ResultSet rs = s.executeQuery(query);
             
             Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
@@ -1550,6 +1545,7 @@ public class SleuthkitCase {
             } else if (info.type == ObjectType.FS) {
                 children.add(getFileSystemById(info.id, img));
             } else if (info.type == ObjectType.ABSTRACTFILE) {
+				children.add(getAbstractFileById(info.id));
             } else {
                 throw new TskException("Image has child of invalid type: " + info.type);
             }
@@ -1571,6 +1567,7 @@ public class SleuthkitCase {
             if (info.type == ObjectType.VOL) {
                 children.add(getVolumeById(info.id, vs));
             } else if (info.type == ObjectType.ABSTRACTFILE) {
+				children.add(getAbstractFileById(info.id));
             } else {
                 throw new TskException("VolumeSystem has child of invalid type: " + info.type);
             }
@@ -1591,6 +1588,7 @@ public class SleuthkitCase {
             if (info.type == ObjectType.FS) {
                 children.add(getFileSystemById(info.id, vol));
             } else if (info.type == ObjectType.ABSTRACTFILE) {
+				children.add(getAbstractFileById(info.id));
             } else {
                 throw new TskException("Volume has child of invalid type: " + info.type);
             }
@@ -1603,14 +1601,22 @@ public class SleuthkitCase {
      * Returns a list of FSContent children for a given file system
      */
     List<AbstractFile> getFileSystemChildren(FileSystem fs) throws TskException {
-        return getAbstractFileChildren(fs, TskData.TSK_DB_FILES_TYPE_ENUM.FS);
+        List<AbstractFile> ret = new ArrayList<AbstractFile>();
+		for(TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
+			ret.addAll(this.getAbstractFileChildren(fs, type));
+		}
+		return ret;
     }
 
     /**
      * Returns a list of FSContent children for a given directory
      */
     List<AbstractFile> getDirectoryChildren(Directory dir) throws TskException {
-        return getAbstractFileChildren(dir, TskData.TSK_DB_FILES_TYPE_ENUM.FS);
+        List<AbstractFile> ret = new ArrayList<AbstractFile>();
+		for(TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
+			ret.addAll(this.getAbstractFileChildren(dir, type));
+		}
+		return ret;
     }
 
     /**
