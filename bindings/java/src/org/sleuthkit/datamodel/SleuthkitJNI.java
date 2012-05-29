@@ -49,7 +49,7 @@ public class SleuthkitJNI {
 
 	
 	//load image
-	private static native long initAddImgNat(long db, String timezone, boolean noFatFsOrphans) throws TskException;
+	private static native long initAddImgNat(long db, String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) throws TskException;
 	private static native void runAddImgNat(long process, String[] imgPath, int splits, String timezone) throws TskException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
 	private static native void stopAddImgNat(long process) throws TskException;
 	private static native void revertAddImgNat(long process) throws TskException;
@@ -137,12 +137,13 @@ public class SleuthkitJNI {
 		/**
 		 * Start the process of adding a disk image to the case. 
 		 * @param timezone Timezone that image was from
+		 * @param processUnallocSpace true if to process unallocated space in the image
 		 * @param noFatFsOrphans true if to skip processing of orphans on FAT filesystems 
 		 * 
 		 * @return Object that can be used to manage the process.
 		 */
-		AddImageProcess initAddImageProcess(String timezone, boolean noFatFsOrhpans) {
-			return new AddImageProcess(timezone, noFatFsOrhpans);
+		AddImageProcess initAddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrhpans) {
+			return new AddImageProcess(timezone, processUnallocSpace, noFatFsOrhpans);
 		}
 		
 		/**
@@ -152,11 +153,13 @@ public class SleuthkitJNI {
 		 */
 		public class AddImageProcess {
 			String timezone;
+			boolean processUnallocSpace;
 			boolean noFatFsOrphans;
 			long autoDbPointer;
 			
-			private AddImageProcess(String timezone, boolean noFatFsOrphans) {
+			private AddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) {
 				this.timezone = timezone;
+				this.processUnallocSpace = processUnallocSpace;
 				this.noFatFsOrphans = noFatFsOrphans;
 				autoDbPointer = 0;
 			}
@@ -172,7 +175,7 @@ public class SleuthkitJNI {
 					throw new TskException("AddImgProcess:run: AutoDB pointer is already set");
 				}
 				
-				autoDbPointer = initAddImgNat(caseDbPointer, longToShort(timezone), noFatFsOrphans);
+				autoDbPointer = initAddImgNat(caseDbPointer, longToShort(timezone), processUnallocSpace, noFatFsOrphans);
 				runAddImgNat(autoDbPointer, imgPath, imgPath.length, timezone);
 			}
 			

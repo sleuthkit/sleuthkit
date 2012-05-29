@@ -189,11 +189,12 @@ public class SleuthkitCase {
      * Adding an image is a multi-step process and this returns
      * an object that allows it to happen.
      * @param timezone TZ timezone string to use for ingest of image.
+	 * @param processUnallocSpace set to true if to process unallocated space on the image
      * @param noFatFsOrphans true if to skip processing orphans on FAT filesystems
      * @return object to start ingest
      */
-    public AddImageProcess makeAddImageProcess(String timezone, boolean noFatFsOrphans) {
-        return this.caseHandle.initAddImageProcess(timezone, noFatFsOrphans);
+    public AddImageProcess makeAddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) {
+        return this.caseHandle.initAddImageProcess(timezone, processUnallocSpace, noFatFsOrphans);
     }
 
     /**

@@ -39,7 +39,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_NSRLDb = a_NSRLDb;
     m_knownBadDb = a_knownBadDb;
     m_noFatFsOrphans = false;
-    m_processUnallocSpace = true; //TODO use setter
+    m_processUnallocSpace = false;
 }
 
 TskAutoDb::~TskAutoDb()
@@ -82,6 +82,16 @@ void
 void TskAutoDb::setNoFatFsOrphans(bool noFatFsOrphans)
 {
     m_noFatFsOrphans = noFatFsOrphans;
+}
+
+/**
+* Setter to process unallocated space 
+* When enabled, unallocated space will be processed, but it will slow down creation of the database
+* @param processUnallocSpace flag set to true if to process all unallocated space in the image
+*/
+void TskAutoDb::setProcessUnallocSpace(bool processUnallocSpace)
+{
+    m_processUnallocSpace = processUnallocSpace;
 }
 
 /**
