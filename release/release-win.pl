@@ -88,14 +88,15 @@ exec_pipe(*OUT, "git status -s | grep \"^ M\"");
 my $foo = read_pipe_line(*OUT);
 if ($foo ne "") {
     print "Changes stil exist in current repository -- commit them\n";
-    # @@@ die "stopping";
+    die "stopping";
 }
 
 # Make sure src dir is up to date
 print "Updating source directory\n";
 chdir ("$TSKDIR") or die "Error changing to TSK dir $TSKDIR";
-# @@@ `git pull`;
-# @@@ `git submodule update`;
+`git pull`;
+`git submodule update`;
+`git submodule foreach git checkout master`;
 
 # Verify the tag exists
 exec_pipe(*OUT, "git tag | grep \"${TAGNAME}\"");
@@ -106,7 +107,7 @@ if ($foo eq "") {
 }
 close(OUT);
 
-# @@@ `git checkout -q ${TAGNAME}`;
+`git checkout -q ${TAGNAME}`;
 
 # Parse the config file to get the version number
 open (IN, "<configure.ac") or die "error opening configure.ac to get version";
@@ -214,10 +215,10 @@ sub build_framework {
 
 	chdir "framework/win32/framework" or die "error changing directory into framework/win32";
 	# Get rid of everything in the release dir (since we'll be doing * copy)
-	# @@@ `rm -f release/*`;
+	`rm -f release/*`;
 	`rm BuildErrors.txt`;
 	`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
-	# @@@ die "Build errors -- check framework/win32/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
+	die "Build errors -- check framework/win32/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
 
 	# Do a basic check on some of the executables
 	die "libtskframework.dll missing" unless (-x "Release/libtskframework.dll");
@@ -320,7 +321,7 @@ sub package_framework {
 	chdir "..";
 }
 
-#build_core();
-#package_core();
+build_core();
+package_core();
 build_framework();
 package_framework();
