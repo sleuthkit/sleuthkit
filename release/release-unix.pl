@@ -19,7 +19,7 @@ my $GITDIR;
 my $TARBALL;
 my $BRANCH;
 
-my $TESTING = 1;
+my $TESTING = 0;
 print "TESTING MODE (no commits)\n" if ($TESTING);
 
 ######################################################
