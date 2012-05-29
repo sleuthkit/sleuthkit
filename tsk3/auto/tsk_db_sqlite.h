@@ -91,7 +91,7 @@ typedef struct _TSK_DB_FILE_LAYOUT_RANGE {
     uint64_t byteLen;
     int sequence;
 
-    //default comparator by a_sequence
+    //default comparator by sequence
     bool operator< (const struct _TSK_DB_FILE_LAYOUT_RANGE & rhs) const
     { return sequence < rhs.sequence; }
 
