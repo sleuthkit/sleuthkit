@@ -870,6 +870,7 @@ int TskDbSqlite::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutR
 
 /**
  * Adds entry for to tsk_files for a layout file into the database.
+ * @param parObjId parent obj id in the database
  * @param fsObjId fs obj id in the database, or 0 if parent it not fs (NULL)
  * @param dbFileType type (unallocated, carved, unused)
  * @param fileName file name for the layout file
@@ -878,7 +879,7 @@ int TskDbSqlite::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutR
  * @returns 0 on success or 1 on error.
  */
 int
- TskDbSqlite::addLayoutFileInfo(const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName,
+ TskDbSqlite::addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName,
     const uint64_t size, int64_t & objId)
 {
     char
@@ -905,7 +906,7 @@ int
         }
     }
 
-    if (addObject(TSK_DB_OBJECT_TYPE_FILE, fsObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
         return 1;
 
     //fsObjId can be NULL
@@ -1083,7 +1084,7 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
     fileNameSs << "_" << (ranges[numRanges-1].byteStart + ranges[numRanges-1].byteLen);
     
     //insert into tsk files and tsk objects
-    if (addLayoutFileInfo(fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId) ) {
+    if (addLayoutFileInfo(parentObjId, fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId) ) {
         //TODO err msg
         return TSK_ERR;
     }
@@ -1167,6 +1168,12 @@ ostream& operator <<(ostream &os,const TSK_DB_VS_PART_INFO &vsPartInfo) {
     return os;
 }
 
+ostream& operator <<(ostream &os,const TSK_DB_OBJECT &dbObject) {
+    os << dbObject.objId << "," << dbObject.parObjId << "," << dbObject.type;
+    os << std::endl;
+    return os;
+}
+
 /**
 * Query tsk_fs_info and return rows for every entry in tsk_fs_info table
 * @param fsInfos (out) TSK_DB_FS_INFO row representations to return
@@ -1246,7 +1253,7 @@ uint8_t TskDbSqlite::getVsInfos(vector<TSK_DB_VS_INFO> & vsInfos) {
 */
 uint8_t TskDbSqlite::getVsPartInfos(vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
     sqlite3_stmt * vsPartInfosStatement = NULL;
-    if (prepare_stmt("SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info", 
+    if (prepare_stmt("SELECT obj_id, addr, start, length, desc, flags FROM tsk_vs_parts", 
         &vsPartInfosStatement) ) {
         return TSK_ERR;
     }
@@ -1276,4 +1283,63 @@ uint8_t TskDbSqlite::getVsPartInfos(vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
 
      return TSK_OK;
  }
+
+uint8_t TskDbSqlite::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
+
+    sqlite3_stmt * objectsStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, par_obj_id, type FROM tsk_objects WHERE obj_id IS ?", 
+        &objectsStatement) ) {
+        return TSK_ERR;
+    }
+
+    if (attempt(sqlite3_bind_int64(objectsStatement, 1, objId),
+        "Error binding objId to statment: %s (result code %d)\n")
+        || attempt(sqlite3_step(objectsStatement), SQLITE_ROW,
+        "Error selecting object by objid: %s (result code %d)\n")) {
+            sqlite3_finalize(objectsStatement);
+            return TSK_ERR;
+    }
+
+    objectInfo.objId = sqlite3_column_int64(objectsStatement, 0);
+    objectInfo.parObjId = sqlite3_column_int64(objectsStatement, 1);
+    objectInfo.type = (TSK_DB_OBJECT_TYPE_ENUM) sqlite3_column_int(objectsStatement, 2);
+
+    //cleanup
+    if (objectsStatement != NULL) {
+        sqlite3_finalize(objectsStatement);
+        objectsStatement = NULL;
+    }
+
+    return TSK_OK;
+}
+
+uint8_t TskDbSqlite::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
+    sqlite3_stmt * vsInfoStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info WHERE obj_id IS ?", 
+        &vsInfoStatement) ) {
+        return TSK_ERR;
+    }
+
+    if (attempt(sqlite3_bind_int64(vsInfoStatement, 1, objId),
+        "Error binding objId to statment: %s (result code %d)\n")
+        || attempt(sqlite3_step(vsInfoStatement), SQLITE_ROW,
+        "Error selecting object by objid: %s (result code %d)\n")) {
+            sqlite3_finalize(vsInfoStatement);
+            return TSK_ERR;
+    }
+
+    vsInfo.objId = sqlite3_column_int64(vsInfoStatement, 0);
+    vsInfo.vstype = (TSK_VS_TYPE_ENUM)sqlite3_column_int(vsInfoStatement, 1);
+    vsInfo.offset = sqlite3_column_int64(vsInfoStatement, 2);
+    vsInfo.block_size = sqlite3_column_int(vsInfoStatement, 3);
+
+    //cleanup
+    if (vsInfoStatement != NULL) {
+        sqlite3_finalize(vsInfoStatement);
+        vsInfoStatement = NULL;
+    }
+
+    return TSK_OK;
+
+}
 

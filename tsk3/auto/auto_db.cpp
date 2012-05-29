@@ -667,7 +667,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 
 
 
-int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
+int8_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     //open the fs we have from database
     TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
@@ -693,7 +693,6 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 
     TSK_DADDR_T curBlock = 0;
     TSK_DADDR_T curRangeStart = 0;
-    size_t curSequence = 0;
     TSK_DB_FILE_LAYOUT_RANGE tempRange;
 
     const size_t numBlocks = m_curFsUnallocBlocks.size();
@@ -707,7 +706,7 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
             const TSK_DADDR_T prevBlock = m_curFsUnallocBlocks[i-1];
             if (curBlock != prevBlock +1) {
                 //make a new range inclusive from curChunkStart to prevBlock
-                tempRange.sequence = ++curSequence;
+                tempRange.sequence = 0;
                 tempRange.fileObjId = 0; //filled by db layer
                 tempRange.byteStart = curRangeStart * fsInfo->block_size + fsInfo->offset;
                 tempRange.byteLen = (1 + prevBlock - curRangeStart) * fsInfo->block_size;
@@ -716,7 +715,7 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
                 vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
                 ranges.push_back(tempRange);
                 int64_t fileObjId = 0;
-                m_db->addUnallocBlockFile(dbFsInfo.objId, true, tempRange.byteLen, ranges, fileObjId);
+                m_db->addUnallocBlockFile(dbFsInfo.objId, dbFsInfo.objId, tempRange.byteLen, ranges, fileObjId);
 
                 //fileSize += tempRange.byteLen;
 
@@ -727,7 +726,7 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 
         //check if curBlock is last block, if so, make range inclusive from curChunkStart to curBlock
         if (i == numBlocks -1) {
-            tempRange.sequence = ++curSequence;
+            tempRange.sequence = 0;
             tempRange.fileObjId = 0; //filled by db layer
             tempRange.byteStart = curRangeStart * fsInfo->block_size + fsInfo->offset;
             tempRange.byteLen = (1 + curBlock - curRangeStart) * fsInfo->block_size;
@@ -736,7 +735,7 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
             vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
             ranges.push_back(tempRange);
             int64_t fileObjId = 0;
-            m_db->addUnallocBlockFile(dbFsInfo.objId, true, tempRange.byteLen, ranges, fileObjId);
+            m_db->addUnallocBlockFile(dbFsInfo.objId, dbFsInfo.objId, tempRange.byteLen, ranges, fileObjId);
         }
 
     }
@@ -753,19 +752,78 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 * Process unallocated space and create "virtual" files with layouts
 */
 uint8_t TskAutoDb::addUnallocSpaceToDb() {
+    
+    uint8_t retFsSpace = addUnallocFsSpaceToDb(); 
+    uint8_t retVsSpace = addUnallocVsSpaceToDb();
+    
+    return retFsSpace || retVsSpace;
+}
+
+//traverse filesystems, walk blocks
+//create files for unalloc content
+uint8_t TskAutoDb::addUnallocFsSpaceToDb() {
+
     vector<TSK_DB_FS_INFO> fsInfos;
 
-    //traverse filesystems, walk blocks
     uint16_t ret = m_db->getFsInfos(fsInfos);
     if (ret == 1) {
         return 1;
     }
 
+    int8_t allFsProcessRet = 0;
     for (vector<TSK_DB_FS_INFO>::iterator it = fsInfos.begin(); it!= fsInfos.end(); ++it)
-        processFsInfoUnalloc(*it);
-   
+        allFsProcessRet |= processFsInfoUnalloc(*it);
 
-    //traverse unallocated volumes
+    return TSK_OK;
+}
+
+//traverse volumes
+//create files for unalloc content
+uint8_t TskAutoDb::addUnallocVsSpaceToDb() {
+
+    vector<TSK_DB_VS_PART_INFO> vsPartInfos;
+
+    uint8_t ret = m_db->getVsPartInfos(vsPartInfos);
+    if (ret) {
+        return ret;
+    }
+
+    for (vector<TSK_DB_VS_PART_INFO>::iterator it = vsPartInfos.begin();
+        it != vsPartInfos.end(); ++it) {
+        TSK_DB_VS_PART_INFO &vsPart = *it;
+
+        //interested in unalloc and meta
+        if ( (vsPart.flags & (TSK_VS_PART_FLAG_UNALLOC | TSK_VS_PART_FLAG_META)) == 0)
+            continue;
+
+        //get sector size and image offset from parent vs info
+
+        //get parent id of this vs part
+        TSK_DB_OBJECT vsPartObj;     
+        if (m_db->getObjectInfo(vsPart.objId, vsPartObj) ) {
+            //TODO err message, can't get obj info
+            return TSK_ERR;
+        }
+
+        TSK_DB_VS_INFO vsInfo;
+        if (m_db->getVsInfo(vsPartObj.parObjId, vsInfo) ) {
+            //TODO err message, can't get parent vs info
+            return TSK_ERR;
+        }
+
+
+        //create a unalloc file with unalloc part to db, with vs part as parent
+        //add unalloc block file per single range to db
+        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+        TSK_DB_FILE_LAYOUT_RANGE tempRange;
+        tempRange.byteStart = vsInfo.offset + vsInfo.block_size * vsPart.start;
+        tempRange.byteLen = vsInfo.block_size * vsPart.len; 
+        tempRange.sequence = 0;
+        ranges.push_back(tempRange);
+        int64_t fileObjId = 0;
+        m_db->addUnallocBlockFile(vsPart.objId, 0, tempRange.byteLen, ranges, fileObjId);
+    }
+
 
     return 0;
 }

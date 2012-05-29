@@ -70,6 +70,18 @@ typedef enum  {
     TSK_DB_FILES_KNOWN_KNOWN_BAD = 2,      ///< Match found in "known bad" index
 } TSK_DB_FILES_KNOWN_ENUM;
 
+
+/**
+* Structure wrapping a single tsk objects db entry
+*/
+typedef struct _TSK_DB_OBJECT {
+    int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
+    int64_t parObjId;
+    TSK_DB_OBJECT_TYPE_ENUM type;    
+} TSK_DB_OBJECT;
+
+ostream& operator <<(ostream &os,const TSK_DB_OBJECT &dbObject);
+
 /**
 * Structure wrapping a single file_layout db entry
 */
@@ -177,7 +189,9 @@ class TskDbSqlite {
     uint8_t getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts);
     uint8_t getFsInfos(vector<TSK_DB_FS_INFO> & fsInfos);
     uint8_t getVsInfos(vector<TSK_DB_VS_INFO> & vsInfos);
+    uint8_t getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo);
     uint8_t getVsPartInfos(vector<TSK_DB_VS_PART_INFO> & vsPartInfos);
+    uint8_t getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo);
 
 
   private:
@@ -203,7 +217,7 @@ class TskDbSqlite {
         int64_t parObjId, int64_t & objId);
     int addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId,
         const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
-    int addLayoutFileInfo(const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size,
+    int addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size,
         int64_t & objId);
     void storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId);
     int64_t findParObjId(const TSK_FS_FILE * fs_file, const int64_t & fsObjId);
