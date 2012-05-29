@@ -98,8 +98,10 @@ class TskAutoDb:public TskAuto {
     int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
 
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
-    int16_t processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
+    int8_t processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
     uint8_t addUnallocSpaceToDb();
+    uint8_t addUnallocFsSpaceToDb();
+    uint8_t addUnallocVsSpaceToDb();
     vector<TSK_DADDR_T> m_curFsUnallocBlocks; //temporary, will remove in next version.
 };
 
