@@ -51,6 +51,7 @@ class TskAutoDb:public TskAuto {
     virtual void createBlockMap(bool flag);
     virtual void hashFiles(bool flag);
     virtual void setNoFatFsOrphans(bool noFatFsOrphans);
+    virtual void setProcessUnallocSpace(bool processUnallocSpace);
 
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
@@ -108,9 +109,9 @@ class TskAutoDb:public TskAuto {
 
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
     int8_t processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
-    uint8_t addUnallocSpaceToDb();
     uint8_t addUnallocFsSpaceToDb();
     uint8_t addUnallocVsSpaceToDb();
+    uint8_t addUnallocSpaceToDb();
 
 };
 

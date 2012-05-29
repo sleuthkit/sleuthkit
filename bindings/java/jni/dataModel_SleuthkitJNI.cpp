@@ -294,8 +294,6 @@ JNIEXPORT void JNICALL
         m_NSRLDb = NULL;
     }
 
-    vector<TSK_HDB_INFO *>::iterator it;
-
     for_each(m_knownbads.begin(), m_knownbads.end(), tsk_hdb_close);
    
     m_knownbads.clear();
@@ -374,11 +372,12 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLooku
  * @param env pointer to java environment this was called from
  * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
+ * @param processUnallocSpace whether to process unallocated filesystem blocks and volumes in the image
  * @param noFatFsOrphans whether to skip processing orphans on FAT filesystems
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
-    jclass obj, jlong caseHandle, jstring timezone, jboolean noFatFsOrphans) {
+    jclass obj, jlong caseHandle, jstring timezone, jboolean processUnallocSpace, jboolean noFatFsOrphans) {
     jboolean isCopy;
 
     TskCaseDb *tskCase = castCaseDb(env, caseHandle);
@@ -395,8 +394,8 @@ JNIEXPORT jlong JNICALL
     TZSET();
     TskAutoDb *tskAuto = tskCase->initAddImage();
 
-    const bool noFatFsOrhpansBool = noFatFsOrphans?true:false;
-    tskAuto->setNoFatFsOrphans(noFatFsOrhpansBool);
+    tskAuto->setProcessUnallocSpace(processUnallocSpace?true:false);
+    tskAuto->setNoFatFsOrphans(noFatFsOrphans?true:false);
 
     return (jlong) tskAuto;
 }
