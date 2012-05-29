@@ -510,6 +510,7 @@ exec_pipe(*OUT, "git tag | grep \"${TSK_RELDIR}\"");
 my $foo = read_pipe_line(*OUT);
 if ($foo ne "") {
     print "Tag ${TSK_RELDIR} already exists\n";
+    print "Remove with 'git tag -d ${TSK_RELDIR}'\n";
     die "stopping";
 }
 close(OUT);
@@ -536,4 +537,4 @@ tag_dir();
 make_tar();
 verify_tar();
 
-print "File saved as ${TARBALL}\n";
+print "File saved as ${TARBALL} (in root folder)\n";
