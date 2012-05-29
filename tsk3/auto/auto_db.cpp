@@ -676,7 +676,7 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     }
 
     //walk unalloc blocks on the fs
-    m_curFsUnallocBlocks.clear();
+    
     uint8_t block_walk_ret = tsk_fs_block_walk(fsInfo, fsInfo->first_block, fsInfo->last_block, TSK_FS_BLOCK_WALK_FLAG_UNALLOC, 
         fsWalkUnallocBlocksCb, this);
 
@@ -685,6 +685,7 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
         //registerError();
 
         tsk_fs_close(fsInfo);
+        m_curFsUnallocBlocks.clear();
         return TSK_ERR;
     }
 
@@ -692,9 +693,7 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 
     TSK_DADDR_T curBlock = 0;
     TSK_DADDR_T curRangeStart = 0;
-    vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
     size_t curSequence = 0;
-    uint64_t fileSize = 0;
     TSK_DB_FILE_LAYOUT_RANGE tempRange;
 
     const size_t numBlocks = m_curFsUnallocBlocks.size();
@@ -712,32 +711,39 @@ int16_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
                 tempRange.fileObjId = 0; //filled by db layer
                 tempRange.byteStart = curRangeStart * fsInfo->block_size + fsInfo->offset;
                 tempRange.byteLen = (1 + prevBlock - curRangeStart) * fsInfo->block_size;
-                ranges.push_back(tempRange);
 
-                fileSize += tempRange.byteLen;
+                //add unalloc block file per single range to db
+                vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+                ranges.push_back(tempRange);
+                int64_t fileObjId = 0;
+                m_db->addUnallocBlockFile(dbFsInfo.objId, true, tempRange.byteLen, ranges, fileObjId);
+
+                //fileSize += tempRange.byteLen;
 
                 //advance range start to a new range
                 curRangeStart = curBlock;
             } 
         }
 
-        //check if curBlock is last block, if so, make range inclusive from inclusive from curChunkStart to curBlock
+        //check if curBlock is last block, if so, make range inclusive from curChunkStart to curBlock
         if (i == numBlocks -1) {
             tempRange.sequence = ++curSequence;
             tempRange.fileObjId = 0; //filled by db layer
             tempRange.byteStart = curRangeStart * fsInfo->block_size + fsInfo->offset;
             tempRange.byteLen = (1 + curBlock - curRangeStart) * fsInfo->block_size;
+            
+            //add unalloc block file per single range to db
+            vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
             ranges.push_back(tempRange);
-
-            fileSize += tempRange.byteLen;
+            int64_t fileObjId = 0;
+            m_db->addUnallocBlockFile(dbFsInfo.objId, true, tempRange.byteLen, ranges, fileObjId);
         }
 
     }
-
+    //cleanup 
+    m_curFsUnallocBlocks.clear();
     tsk_fs_close(fsInfo);
 
-    int64_t fileObjId = 0;
-    m_db->addUnallocBlockFile(dbFsInfo.objId, true, fileSize, ranges, fileObjId); 
  
     return TSK_OK; 
 
