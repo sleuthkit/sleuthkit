@@ -2,7 +2,7 @@ Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
 
----------------- VERSION 3.3.0 --------------
+---------------- VERSION 4.0.0 --------------
 New Features:
 - Added multithreaded support
 - Added C++ wrapper classes
