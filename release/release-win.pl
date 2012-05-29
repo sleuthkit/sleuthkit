@@ -14,11 +14,10 @@
 # It has been used with Visual Studio 9.0 Express.  It may work with other
 # versions.
 #
-# THIS IS NOT FULLY TESTED WITH GIT YET
 
 use strict;
 
-my $TESTING = 1;
+my $TESTING = 0;
 print "TESTING MODE (no commits)\n" if ($TESTING);
 
 
@@ -96,6 +95,7 @@ if ($foo ne "") {
 print "Updating source directory\n";
 chdir ("$TSKDIR") or die "Error changing to TSK dir $TSKDIR";
 # @@@ `git pull`;
+# @@@ `git submodule update`;
 
 # Verify the tag exists
 exec_pipe(*OUT, "git tag | grep \"${TAGNAME}\"");
@@ -294,8 +294,8 @@ sub package_framework {
 	`cp man/*.html \"${rdir}/docs\"`;
 
 	# Copy standard files
-	#`cp README.txt \"${rdir}\"`;
-	#`unix2dos \"${rdir}/README.txt\"`;
+	`cp README_bindist.txt \"${rdir}/README.txt\"`;
+	`unix2dos \"${rdir}/README.txt\"`;
 
 	# Licences
 	`cp ../licenses/cpl1.0.txt \"${rdir}/licenses\"`;
