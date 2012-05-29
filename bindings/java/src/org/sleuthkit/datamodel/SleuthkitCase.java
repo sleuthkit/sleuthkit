@@ -958,10 +958,9 @@ public class SleuthkitCase {
 	
 	/**
 	 * Returns the list of AbstractFile Children for a given AbstractFileParent
-	 * TODO: support FsContent children
 	 */
 
-	List<AbstractFile> getAbstractFileChildren(AbstractFileParent parent, TSK_DB_FILES_TYPE_ENUM type) throws TskException {
+	List<AbstractFile> getAbstractFileChildren(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskException {
 
         SetParentVisitor setParent = new SetParentVisitor();
 		List<AbstractFile> children = new ArrayList<AbstractFile>();
@@ -1082,7 +1081,7 @@ public class SleuthkitCase {
 
             Directory parent;
 
-            if (parentInfo.type == ObjectType.ABSTRACTFILE) { // TODO: deal with new file types
+            if (parentInfo.type == ObjectType.ABSTRACTFILE) {
                 parent = getDirectoryById(parentInfo.id, fsc.getFileSystem());
             } else {
                 throw new TskException("Parent of FsContent (id: " + fsc.getId() + ") has wrong type to be directory: " + parentInfo.type);
@@ -1134,7 +1133,7 @@ public class SleuthkitCase {
                         ret = getFileSystemById(id, v);
                     }
                     break;
-                case ABSTRACTFILE: // TODO: deal with new file types
+                case ABSTRACTFILE:
                     ret = getAbstractFileById(id);
                     break;
                 default:
@@ -1372,7 +1371,7 @@ public class SleuthkitCase {
         public Void visit(LayoutFile lf) {
             try {
                 ObjectInfo parentInfo = getParentInfo(lf);
-				AbstractFileParent parent;
+				Content parent;
 				if (parentInfo.type == ObjectType.IMG) {
 					parent = getImageById(parentInfo.id);
 				} else if (parentInfo.type == ObjectType.VOL) {

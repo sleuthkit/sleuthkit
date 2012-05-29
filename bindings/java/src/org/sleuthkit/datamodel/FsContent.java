@@ -125,6 +125,17 @@ public abstract class FsContent extends AbstractFile {
 	public FileSystem getFileSystem() {
 		return parentFileSystem;
 	}
+	
+	/**
+	 * get the image handle
+	 * @return the handle to the root image
+	 * @throws TskException 
+	 */
+
+	@Override
+	public long getImageHandle() throws TskException {
+		return this.getFileSystem().getImageHandle();
+	}
 
 	/**
 	 * get the attribute type

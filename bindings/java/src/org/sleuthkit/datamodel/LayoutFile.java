@@ -31,7 +31,7 @@ import java.util.logging.Logger;
 public class LayoutFile extends AbstractFile{
 	
 	private List<TskFileRange> ranges;
-    private AbstractFileParent parent;
+    private Content parent;
 	
 	protected LayoutFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type) {
 		super(db, obj_id, name, type);
@@ -41,7 +41,7 @@ public class LayoutFile extends AbstractFile{
      * set the parent class, will be called by the parent
      * @param p parent
      */
-    protected void setParent(AbstractFileParent p){
+    protected void setParent(Content p){
         parent = p;
     }
 	
@@ -100,7 +100,7 @@ public class LayoutFile extends AbstractFile{
                     }
                     long offsetInImage = range.getByteStart() + offsetInRange; // how far into the image to start reading
                     long lenToRead = Math.min(range.getByteLen() - offsetInRange, len-bytesRead); // how much we can read this time
-                    int lenRead = readImgToOffset(this.getParent().getImageHandle(), buf, bytesRead, offsetInImage, (int) lenToRead);
+                    int lenRead = readImgToOffset(getImageHandle(), buf, bytesRead, offsetInImage, (int) lenToRead);
                     bytesRead += lenRead;
                     if(lenToRead != lenRead) { // If image read failed or was cut short
                         break;
@@ -149,8 +149,13 @@ public class LayoutFile extends AbstractFile{
 		return v.visit(this);
 	}
 	
-    public AbstractFileParent getParent(){
-        return parent;
-    }
+	public Content getParent() {
+		return parent;
+	}
+	
+	@Override
+	public long getImageHandle() throws TskException{
+		return getParent().getImageHandle();
+	}
 	
 }

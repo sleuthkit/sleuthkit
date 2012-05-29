@@ -128,13 +128,18 @@ public class VolumeSystem extends AbstractContent {
 		return v.visit(this);
     }
 
-    @Override
+	@Override
 	public List<Content> getChildren() throws TskException {
 		try {
 			return getSleuthkitCase().getVolumeSystemChildren(this);
 		} catch (Exception ex) {
 			throw new TskException("Error getting VolumeSystem children.", ex);
-    }
+		}
 	}
-    
+	
+	@Override
+	public long getImageHandle() throws TskException {
+		return getParent().getImageHandle();
+	}
+
 }

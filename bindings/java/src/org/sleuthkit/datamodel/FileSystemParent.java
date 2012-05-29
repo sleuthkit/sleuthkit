@@ -24,6 +24,4 @@ package org.sleuthkit.datamodel;
  */
 public interface FileSystemParent extends Content {
 	
-	public long getImageHandle() throws TskException;
-	
 }

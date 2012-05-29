@@ -25,7 +25,7 @@ import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
  * Represents a disk image file.
  * Populated based on data in database.
  */
-public class Image extends AbstractContent implements FileSystemParent,AbstractFileParent {
+public class Image extends AbstractContent implements FileSystemParent{
 	//data about image
 
 	private long type, ssize;

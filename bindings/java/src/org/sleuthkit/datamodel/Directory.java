@@ -20,13 +20,12 @@ package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 
 /**
  *
  * @author dfickling
  */
-public class Directory extends FsContent implements AbstractFileParent{
+public class Directory extends FsContent{
 
 	//constructor used for getdir from tskDb
     protected Directory(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr,
@@ -65,10 +64,5 @@ public class Directory extends FsContent implements AbstractFileParent{
 		children.addAll(getSleuthkitCase().getDirectoryChildren(this));
 		return children;
     }
-
-	@Override
-	public long getImageHandle() throws TskException {
-		throw new UnsupportedOperationException("Not supported yet.");
-	}
 
 }
