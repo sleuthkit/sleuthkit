@@ -774,7 +774,7 @@ uint8_t TskAutoDb::addUnallocFsSpaceToDb() {
     for (vector<TSK_DB_FS_INFO>::iterator it = fsInfos.begin(); it!= fsInfos.end(); ++it)
         allFsProcessRet |= processFsInfoUnalloc(*it);
 
-    return TSK_OK;
+    return allFsProcessRet;
 }
 
 //traverse volumes
