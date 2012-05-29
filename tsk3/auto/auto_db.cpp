@@ -787,7 +787,7 @@ uint8_t TskAutoDb::addUnallocFsSpaceToDb() {
 
     uint16_t ret = m_db->getFsInfos(fsInfos);
     if (!ret) {
-        return TSK_ERR
+        return TSK_ERR;
     }
 
     int8_t allFsProcessRet = TSK_OK;
