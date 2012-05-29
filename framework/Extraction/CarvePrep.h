@@ -30,7 +30,7 @@ public:
     /**
      * Make one or more files to carve. 
      * @param a_toSchedule True if the scheduler should be called to queue
-     * up the data or false if it shoudl be processed now.
+     * up the data or false if it should be processed now.
      * @returns 1 on error 
      */
     virtual int processSectors(bool a_toSchedule) = 0;

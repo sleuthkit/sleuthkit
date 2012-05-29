@@ -8,8 +8,6 @@ libtsk3_la_LIBADD = base/libtskbase.la img/libtskimg.la \
     vs/libtskvs.la fs/libtskfs.la hashdb/libtskhashdb.la \
     auto/libtskauto.la
 # current:revision:age
-libtsk3_la_LDFLAGS = -version-info 0:0:0
+libtsk3_la_LDFLAGS = -version-info 8:0:5
 
-EXTRA_DIST = tsk_tools_i.h docs/Doxyfile docs/main.dox \
-    docs/basics.dox docs/img.dox docs/vs.dox docs/fs.dox \
-    docs/base.dox docs/hashdb.dox docs/footer.html docs/auto.dox
+EXTRA_DIST = tsk_tools_i.h docs/Doxyfile docs/*.dox docs/*.html
