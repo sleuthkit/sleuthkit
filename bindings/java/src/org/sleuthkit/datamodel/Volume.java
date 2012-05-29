@@ -212,10 +212,5 @@ public class Volume extends AbstractContent implements FileSystemParent,Abstract
 	public long getImageHandle() throws TskException {
 		return getParent().getParent().getImageHandle();
     }
-
-	@Override
-	public List<AbstractFile> getAbstractFileChildren(TSK_DB_FILES_TYPE_ENUM type) throws TskException {
-		return getSleuthkitCase().getAbstractFileChildren(this, type);
-	}
     
 }

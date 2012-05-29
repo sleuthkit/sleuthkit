@@ -187,11 +187,6 @@ public class FileSystem extends AbstractContent implements AbstractFileParent {
 		children.addAll(getSleuthkitCase().getFileSystemChildren(this));
 		return children;
 	}
-	
-	@Override
-	public List<AbstractFile> getAbstractFileChildren(TSK_DB_FILES_TYPE_ENUM type) throws TskException{
-		return getSleuthkitCase().getAbstractFileChildren(this, type);
-	}
 
 	@Override
 	public long getImageHandle() throws TskException {
