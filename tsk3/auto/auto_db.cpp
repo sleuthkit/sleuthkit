@@ -369,7 +369,10 @@ uint8_t
     }
     
     uint8_t addFilesRet = addFilesInImgToDb();
-    uint8_t addUnallocRet = addUnallocSpaceToDb();
+    uint8_t addUnallocRet = 0;
+    
+    if (m_processUnallocSpace)
+        addUnallocRet = addUnallocSpaceToDb();
 
     //do not roll back if errors in this case, but do report registered errors
     if (addFilesRet || addUnallocRet)
@@ -424,7 +427,10 @@ uint8_t
     }
 
     uint8_t addFilesRet = addFilesInImgToDb();
-    uint8_t addUnallocRet = addUnallocSpaceToDb();
+    uint8_t addUnallocRet = 0;
+
+    if (m_processUnallocSpace)
+        addUnallocRet = addUnallocSpaceToDb();
 
     //do not roll back if errors in this case, but do report registered errors
     if (addFilesRet || addUnallocRet)
