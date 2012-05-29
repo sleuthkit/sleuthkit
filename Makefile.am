@@ -20,12 +20,7 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     win32/tsk_comparedir/tsk_compare.vcproj \
     win32/tsk_gettimes/tsk_gettimes.vcproj \
     win32/tsk-win.sln \
-    win32/libauxtools/libauxtools.vcproj \
-    win32/libfstools/libfstools.vcproj \
-    win32/libhashdbtools/libhashdbtools.vcproj \
-    win32/libimgtools/libimgtools.vcproj \
-    win32/libmmtools/libmmtools.vcproj  \
-    win32/libautotools/libautotools.vcproj  \
+    win32/libtsk/libtsk.vcproj \
     win32/posix-sample/posix-sample.vcproj \
     win32/callback-sample/callback-sample.vcproj \
     bindings/java/README.txt \
@@ -45,7 +40,28 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     bindings/java/src/org/sleuthkit/datamodel/TskData.java \
     bindings/java/src/org/sleuthkit/datamodel/TskException.java \
     bindings/java/src/org/sleuthkit/datamodel/Volume.java \
-    bindings/java/src/org/sleuthkit/datamodel/VolumeSystem.java 
+    bindings/java/src/org/sleuthkit/datamodel/VolumeSystem.java \
+    framework/*.txt \
+    framework/*.h \
+    framework/Extraction/*.cpp \
+    framework/Extraction/*.h \
+    framework/File/*.cpp \
+    framework/File/*.h \
+    framework/Pipeline/*.cpp \
+    framework/Pipeline/*.h \
+    framework/SampleConfig/*.xml \
+    framework/SampleModules/* \
+    framework/Services/*.cpp \
+    framework/Services/*.h \
+    framework/TskModules/* \
+    framework/Utilities/*.cpp \
+    framework/Utilities/*.h \
+    framework/docs/* \
+    framework/man/* \
+    framework/tsk_analyzeimg/*.cpp \
+    framework/tsk_validatepipeline/*.cpp \
+    framework/win32/*/*.vcproj \
+    framework/win32/*/*.sln
 
 CLEANFILES = tsk3/tsk_incs.h
 
