@@ -1,1 +1,0 @@
-/opt/local/share/aclocal/lt~obsolete.m4

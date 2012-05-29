@@ -43,6 +43,12 @@ libtool
 tsk3/stamp-h1
 tsk3/tsk_config.h
 tsk3/tsk_incs.h
+config/ltmain.sh
+configure
+m4/libtool.m4
+m4/lt~obsolete.m4
+m4/ltoptions.m4
+m4/ltversion.m4
 
 # Don't include compiled programs
 
