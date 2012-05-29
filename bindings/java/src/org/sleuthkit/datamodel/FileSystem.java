@@ -183,7 +183,9 @@ public class FileSystem extends AbstractContent implements AbstractFileParent {
 
 	@Override
 	public List<Content> getChildren() throws TskException {
-		return getSleuthkitCase().getFileSystemChildren(this);
+		List<Content> children = new ArrayList<Content>();
+		children.addAll(getSleuthkitCase().getFileSystemChildren(this));
+		return children;
 	}
 	
 	@Override

@@ -149,7 +149,7 @@ public class LayoutFile extends AbstractFile{
 		return v.visit(this);
 	}
 	
-    private AbstractFileParent getParent(){
+    public AbstractFileParent getParent(){
         return parent;
     }
 	

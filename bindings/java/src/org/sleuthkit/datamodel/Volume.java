@@ -43,7 +43,7 @@ public class Volume extends AbstractContent implements FileSystemParent,Abstract
 	 * @param desc  
 	 */
 	protected Volume(SleuthkitCase db, long obj_id, long addr, long start, long length, long flags, String desc) {
-		super(db, obj_id, desc);
+		super(db, obj_id, "vol"+Long.toString(addr));
 		this.addr = addr;
 		this.start = start;
 		this.length = length;
