@@ -22,12 +22,32 @@ package org.sleuthkit.datamodel;
  *
  * @author dfickling
  */
-public interface LayoutContentParent extends Content{
+public class TskFileRange {
+	private long obj_id;
+	private long byteStart;
+	private long byteLen;
+	private long sequence;
 	
-	/**
-	 * get the handle to the sleuthkit image info object
-	 * @return the object pointer
-	 */
-	long getImageHandle() throws TskException;
+	public TskFileRange(long obj_id, long byteStart, long byteLen, long sequence) {
+		this.obj_id = obj_id;
+		this.byteStart = byteStart;
+		this.byteLen = byteLen;
+		this.sequence = sequence;
+	}
 	
+	public long getID() {
+		return obj_id;
+	}
+	
+	public long getByteStart() {
+		return byteStart;
+	}
+	
+	public long getByteLen() {
+		return byteLen;
+	}
+	
+	public long getSequence() {
+		return sequence;
+	}
 }

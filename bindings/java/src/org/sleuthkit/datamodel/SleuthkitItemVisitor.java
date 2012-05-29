@@ -35,7 +35,7 @@ public interface SleuthkitItemVisitor<T> {
     T visit(VolumeSystem vs);
     T visit(BlackboardArtifact ba);
     T visit(BlackboardArtifact.ARTIFACT_TYPE tw);
-	T visit(LayoutContent u);
+	T visit(LayoutFile lf);
 
     static abstract public class Default<T> implements SleuthkitItemVisitor<T> {
 
@@ -81,8 +81,8 @@ public interface SleuthkitItemVisitor<T> {
         }
 		
 		@Override
-		public T visit(LayoutContent u) {
-			return defaultVisit(u);
+		public T visit(LayoutFile lf) {
+			return defaultVisit(lf);
 		}
     }
 }

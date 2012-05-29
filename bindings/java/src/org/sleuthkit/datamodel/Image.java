@@ -1,15 +1,15 @@
 /*
- * Sleuth Kit Data Model
- *
+ * Autopsy Forensic Browser
+ * 
  * Copyright 2011 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,17 +19,16 @@
 package org.sleuthkit.datamodel;
 
 import java.util.List;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 
 /**
  * Represents a disk image file.
  * Populated based on data in database.
  */
-
-public class Image extends AbstractContent implements FileSystemParent,LayoutContentParent {
+public class Image extends AbstractContent implements FileSystemParent,AbstractFileParent {
 	//data about image
 
 	private long type, ssize;
-	private String name;
 	private String[] paths;
 	private long imageHandle = 0;
 	private String timezone;
@@ -46,22 +45,13 @@ public class Image extends AbstractContent implements FileSystemParent,LayoutCon
 	 */	
 	
 	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone) throws TskException {
-		super(db, obj_id);
+		super(db, obj_id, name);
 		this.type = type;
 		this.ssize = ssize;
-		this.name = name;
 		this.paths = paths;
 		this.timezone = timezone;
 	}
-
-	/**
-	 * sets a new image path (NOT CURRENTLY IMPLEMENTED)
-	 * @param newPath new image path
-	 */
-	public void setPath(String newPath) {
-		//check if path is valid/leads to an image
-	}
-
+	
 	/**
 	 * get the handle to the sleuthkit image info object
 	 * @return the object pointer
@@ -70,8 +60,8 @@ public class Image extends AbstractContent implements FileSystemParent,LayoutCon
 	public long getImageHandle() throws TskException {
 		if (imageHandle == 0) {
 			imageHandle = SleuthkitJNI.openImage(paths);
-		}
-		
+	}
+
 		return imageHandle;
 	}
 	
@@ -80,7 +70,7 @@ public class Image extends AbstractContent implements FileSystemParent,LayoutCon
 		super.finalize();
 		if(imageHandle != 0){
 			SleuthkitJNI.closeImg(imageHandle);
-		}
+	}
 	}
 
 	/**
@@ -96,7 +86,7 @@ public class Image extends AbstractContent implements FileSystemParent,LayoutCon
 		// read from the image
 		return SleuthkitJNI.readImg(getImageHandle(), buf, offset, len);
 	}
-	
+
 	
 
 	/**
@@ -124,14 +114,6 @@ public class Image extends AbstractContent implements FileSystemParent,LayoutCon
 	 */
 	public long getSsize() {
 		return ssize;
-	}
-
-	/**
-	 * get the name
-	 * @return name
-	 */
-	public String getName() {
-		return name;
 	}
 
 	/**
@@ -233,16 +215,12 @@ public class Image extends AbstractContent implements FileSystemParent,LayoutCon
 
 	@Override
 	public List<Content> getChildren() throws TskException {
-		return db.getImageChildren(this);
+		return getSleuthkitCase().getImageChildren(this);
 	}
 
 	@Override
-	public boolean isOnto() {
-		return true;
+	public List<AbstractFile> getAbstractFileChildren(TSK_DB_FILES_TYPE_ENUM type) throws TskException{
+		return getSleuthkitCase().getAbstractFileChildren(this, type);
 	}
-
-	@Override
-	public List<LayoutContent> getLayoutChildren(TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException {
-		return db.getLayoutChildren(this, type);
-	}
+	
 }

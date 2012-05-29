@@ -18,36 +18,15 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.List;
+
 /**
  *
  * @author dfickling
  */
-public class TskFileLayoutRange {
-	private long obj_id;
-	private long byteStart;
-	private long byteLen;
-	private long sequence;
-	
-	public TskFileLayoutRange(long obj_id, long byteStart, long byteLen, long sequence) {
-		this.obj_id = obj_id;
-		this.byteStart = byteStart;
-		this.byteLen = byteLen;
-		this.sequence = sequence;
-	}
-	
-	public long getID() {
-		return obj_id;
-	}
-	
-	public long getByteStart() {
-		return byteStart;
-	}
-	
-	public long getByteLen() {
-		return byteLen;
-	}
-	
-	public long getSequence() {
-		return sequence;
-	}
+public interface AbstractFileParent extends Content {
+
+	public List<AbstractFile> getAbstractFileChildren(TskData.TSK_DB_FILES_TYPE_ENUM type) throws TskException;
+
+	public long getImageHandle() throws TskException;
 }

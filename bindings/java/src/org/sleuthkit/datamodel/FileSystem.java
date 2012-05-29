@@ -1,15 +1,15 @@
 /*
- * Sleuth Kit Data Model
- *
+ * Autopsy Forensic Browser
+ * 
  * Copyright 2011 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 package org.sleuthkit.datamodel;
+
 import java.sql.SQLException;
 import java.util.*;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
@@ -25,18 +26,17 @@ import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
  * Represents a file system. 
  * Populated based on data in database.
  */
-
-public class FileSystem extends AbstractContent implements LayoutContentParent{
+public class FileSystem extends AbstractContent implements AbstractFileParent {
 
 	long img_offset, fs_type, block_size, block_count, root_inum,
-	first_inum, last_inum;
+			first_inum, last_inum;
 	private FileSystemParent parent;
 	private long filesystemHandle = 0;
 
 	/**
 	 * Constructor most inputs are from the database
 	 * @param db java database class
-	 * @param obj_id 
+	 * @param obj_id
 	 * @param img_offset
 	 * @param fs_type
 	 * @param block_size
@@ -45,11 +45,11 @@ public class FileSystem extends AbstractContent implements LayoutContentParent{
 	 * @param first_inum
 	 * @param last_inum
 	 */
-	protected FileSystem(SleuthkitCase db, long obj_id, long img_offset,
+	protected FileSystem(SleuthkitCase db, long obj_id, String name, long img_offset,
 			long fs_type, long block_size, long block_count, long root_inum,
-			long first_inum, long last_inum){
-		super(db, obj_id);
-		this.img_offset = img_offset; 
+			long first_inum, long last_inum) {
+		super(db, obj_id, name);
+		this.img_offset = img_offset;
 		this.fs_type = fs_type;
 		this.block_size = block_size;
 		this.block_count = block_count;
@@ -57,7 +57,7 @@ public class FileSystem extends AbstractContent implements LayoutContentParent{
 		this.first_inum = first_inum;
 		this.last_inum = last_inum;
 	}
-	
+
 	/**
 	 * set the parent class, will be called by the parent
 	 * @param p parent volume
@@ -78,7 +78,7 @@ public class FileSystem extends AbstractContent implements LayoutContentParent{
 	public int read(byte[] buf, long offset, long len) throws TskException{
 		return SleuthkitJNI.readFs(getFileSystemHandle(), buf, offset, len);
 	}
-	
+
 
 	/**
 	 * get the parent volume
@@ -168,7 +168,7 @@ public class FileSystem extends AbstractContent implements LayoutContentParent{
 	public void finalize(){
 		if(filesystemHandle != 0){
 			SleuthkitJNI.closeFs(filesystemHandle);
-		}
+	}
 	}
 
 	@Override
@@ -179,21 +179,18 @@ public class FileSystem extends AbstractContent implements LayoutContentParent{
     @Override
     public <T> T accept(ContentVisitor<T> v) {
         return v.visit(this);
-    }
+}
 
 	@Override
 	public List<Content> getChildren() throws TskException {
-		return db.getFileSystemChildren(this);
+		List<Content> children = new ArrayList<Content>();
+		children.addAll(getSleuthkitCase().getFileSystemChildren(this));
+		return children;
 	}
-
+	
 	@Override
-	public boolean isOnto() {
-		return true;
-	}
-
-	@Override
-	public List<LayoutContent> getLayoutChildren(TSK_DB_FILES_TYPE_ENUM type) throws TskException {
-		return db.getLayoutChildren(this, type);
+	public List<AbstractFile> getAbstractFileChildren(TSK_DB_FILES_TYPE_ENUM type) throws TskException{
+		return getSleuthkitCase().getAbstractFileChildren(this, type);
 	}
 
 	@Override
