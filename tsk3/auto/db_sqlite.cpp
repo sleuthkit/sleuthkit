@@ -1003,6 +1003,7 @@ int TskDbSqlite::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId,
     return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, fsObjId, size, ranges, objId);
 }
 
+//internal function object to check for range overlap
 typedef struct _checkRangeOverlap{
     const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
     bool hasOverlap;
@@ -1036,11 +1037,9 @@ typedef struct _checkRangeOverlap{
 /**
 * Internal helper method to add unalloc, unused and carved files with layout ranges to db
 * Generates file_name and populates tsk_files, tsk_objects and tsk_file_layout tables
-* returns TSK_ERR on error or TSK_OK on success
+* @returns TSK_ERR on error or TSK_OK on success
 */
 int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
-    //not yet implemented
-
     const size_t numRanges = ranges.size();
 
     if (numRanges < 1) {
@@ -1048,7 +1047,6 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
         return TSK_ERR;
     }
     
-
     stringstream fileNameSs;
     switch (dbFileType) {
         case TSK_DB_FILES_TYPE_UNALLOC_BLOCKS:
@@ -1067,12 +1065,11 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
             return TSK_ERR;
     }
 
-    //ensure layout ranges are sorted (to generate file name) TODO might need to sort by blocks to gen name
+    //ensure layout ranges are sorted (to generate file name and to be inserted in sequence order)
     sort(ranges.begin(), ranges.end());
 
-    //basic checking
-
-    //ensure there is no overlap and each range has unique bytes
+    //dome some checking
+    //ensure there is no overlap and each range has unique byte range
     checkRangeOverlap & overlapRes = for_each(ranges.begin(), ranges.end(), checkRangeOverlap(ranges));
     if (overlapRes.getHasOverlap() ) {
         //TODO err message
@@ -1089,7 +1086,6 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
         return TSK_ERR;
     }
 
-
     //fill in fileObjId and insert ranges
     for (vector<TSK_DB_FILE_LAYOUT_RANGE>::iterator it = ranges.begin();
         it != ranges.end(); ++it) {
@@ -1099,7 +1095,6 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
             //TODO err msg
             return TSK_ERR;
         }
-
     }
    
     return TSK_OK;
@@ -1108,7 +1103,7 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
 /**
 * Query tsk_file_layout and return rows for every entry in tsk_file_layout table
 * @param fileLayouts (out) TSK_DB_FILE_LAYOUT_RANGE row representations to return
-* $returns 1 on error, 0 on success
+* @returns TSK_ERR on error, TSK_OK on success
 */
 uint8_t TskDbSqlite::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) {
     sqlite3_stmt * fileLayoutsStatement = NULL;
@@ -1136,7 +1131,7 @@ uint8_t TskDbSqlite::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayou
         fileLayoutsStatement = NULL;
     }
 
-     return TSK_OK;
+    return TSK_OK;
 }
 
 ostream& operator <<(ostream &os,const TSK_DB_FILE_LAYOUT_RANGE &layoutRange) {
@@ -1177,7 +1172,7 @@ ostream& operator <<(ostream &os,const TSK_DB_OBJECT &dbObject) {
 /**
 * Query tsk_fs_info and return rows for every entry in tsk_fs_info table
 * @param fsInfos (out) TSK_DB_FS_INFO row representations to return
-* $returns 1 on error, 0 on success
+* @returns TSK_ERR on error, TSK_OK on success
 */
 uint8_t TskDbSqlite::getFsInfos(vector<TSK_DB_FS_INFO> & fsInfos) {
     sqlite3_stmt * fsInfosStatement = NULL;
@@ -1208,14 +1203,14 @@ uint8_t TskDbSqlite::getFsInfos(vector<TSK_DB_FS_INFO> & fsInfos) {
         fsInfosStatement = NULL;
     }
 
-     return TSK_OK;
+    return TSK_OK;
  }
 
 
 /**
 * Query tsk_vs_info and return rows for every entry in tsk_vs_info table
 * @param vsInfos (out) TSK_DB_VS_INFO row representations to return
-* $returns 1 on error, 0 on success
+* @returns TSK_ERR on error, TSK_OK on success
 */
 uint8_t TskDbSqlite::getVsInfos(vector<TSK_DB_VS_INFO> & vsInfos) {
     sqlite3_stmt * vsInfosStatement = NULL;
@@ -1242,14 +1237,14 @@ uint8_t TskDbSqlite::getVsInfos(vector<TSK_DB_VS_INFO> & vsInfos) {
         vsInfosStatement = NULL;
     }
 
-     return TSK_OK;
+    return TSK_OK;
  }
 
 
 /**
 * Query tsk_vs_part and return rows for every entry in tsk_vs_part table
 * @param vsPartInfos (out) TSK_DB_VS_PART_INFO row representations to return
-* $returns 1 on error, 0 on success
+* @returns TSK_ERR on error, TSK_OK on success
 */
 uint8_t TskDbSqlite::getVsPartInfos(vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
     sqlite3_stmt * vsPartInfosStatement = NULL;
@@ -1281,9 +1276,15 @@ uint8_t TskDbSqlite::getVsPartInfos(vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
         vsPartInfosStatement = NULL;
     }
 
-     return TSK_OK;
+    return TSK_OK;
  }
 
+/**
+* Query tsk_objects with given id and returns object info entry
+* @param objId object id to query
+* @param objectInfo (out) TSK_DB_OBJECT entry representation to return
+* @returns TSK_ERR on error (or if not found), TSK_OK on success
+*/
 uint8_t TskDbSqlite::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
 
     sqlite3_stmt * objectsStatement = NULL;
@@ -1313,6 +1314,12 @@ uint8_t TskDbSqlite::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
     return TSK_OK;
 }
 
+/**
+* Query tsk_vs_info with given id and returns TSK_DB_VS_INFO info entry
+* @param objId vs id to query
+* @param vsInfo (out) TSK_DB_VS_INFO entry representation to return
+* @returns TSK_ERR on error (or if not found), TSK_OK on success
+*/
 uint8_t TskDbSqlite::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
     sqlite3_stmt * vsInfoStatement = NULL;
     if (prepare_stmt("SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info WHERE obj_id IS ?", 
@@ -1340,6 +1347,6 @@ uint8_t TskDbSqlite::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
     }
 
     return TSK_OK;
-
 }
+
 

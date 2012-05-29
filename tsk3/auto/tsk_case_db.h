@@ -81,6 +81,15 @@ class TskAutoDb:public TskAuto {
     bool m_noFatFsOrphans;
     bool m_processUnallocSpace;
 
+    //internal structure to keep track of temp. unalloc block range
+    struct {
+        TSK_FS_INFO * fsInfo;
+        TSK_DADDR_T curRangeStart;
+        TSK_DADDR_T prevBlock;
+        bool isStart;
+        int64_t fsObjId;
+    } unallocBlockWlkTrack;
+
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);
     TskAutoDb & operator=(const TskAutoDb&);
@@ -102,7 +111,7 @@ class TskAutoDb:public TskAuto {
     uint8_t addUnallocSpaceToDb();
     uint8_t addUnallocFsSpaceToDb();
     uint8_t addUnallocVsSpaceToDb();
-    vector<TSK_DADDR_T> m_curFsUnallocBlocks; //temporary, will remove in next version.
+
 };
 
 
