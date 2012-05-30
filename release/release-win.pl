@@ -14,11 +14,10 @@
 # It has been used with Visual Studio 9.0 Express.  It may work with other
 # versions.
 #
-# THIS IS NOT FULLY TESTED WITH GIT YET
 
 use strict;
 
-my $TESTING = 1;
+my $TESTING = 0;
 print "TESTING MODE (no commits)\n" if ($TESTING);
 
 
@@ -89,13 +88,15 @@ exec_pipe(*OUT, "git status -s | grep \"^ M\"");
 my $foo = read_pipe_line(*OUT);
 if ($foo ne "") {
     print "Changes stil exist in current repository -- commit them\n";
-    # @@@ die "stopping";
+    die "stopping";
 }
 
 # Make sure src dir is up to date
 print "Updating source directory\n";
 chdir ("$TSKDIR") or die "Error changing to TSK dir $TSKDIR";
-# @@@ `git pull`;
+`git pull`;
+`git submodule update`;
+`git submodule foreach git checkout master`;
 
 # Verify the tag exists
 exec_pipe(*OUT, "git tag | grep \"${TAGNAME}\"");
@@ -106,7 +107,7 @@ if ($foo eq "") {
 }
 close(OUT);
 
-# @@@ `git checkout -q ${TAGNAME}`;
+`git checkout -q ${TAGNAME}`;
 
 # Parse the config file to get the version number
 open (IN, "<configure.ac") or die "error opening configure.ac to get version";
@@ -202,7 +203,8 @@ sub package_core {
 
 	die "ZIP file not created" unless (-e "${rfile}.zip");
 
-	print "File saved as ${rfile}.zip\n";
+	print "File saved as ${rfile}.zip in release\n";
+	chdir ("..") or die "Error changing to root dir";
 }
 
 
@@ -214,10 +216,10 @@ sub build_framework {
 
 	chdir "framework/win32/framework" or die "error changing directory into framework/win32";
 	# Get rid of everything in the release dir (since we'll be doing * copy)
-	# @@@ `rm -f release/*`;
+	`rm -rf release/*`;
 	`rm BuildErrors.txt`;
 	`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
-	# @@@ die "Build errors -- check framework/win32/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
+	die "Build errors -- check framework/win32/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
 
 	# Do a basic check on some of the executables
 	die "libtskframework.dll missing" unless (-x "Release/libtskframework.dll");
@@ -294,8 +296,8 @@ sub package_framework {
 	`cp man/*.html \"${rdir}/docs\"`;
 
 	# Copy standard files
-	#`cp README.txt \"${rdir}\"`;
-	#`unix2dos \"${rdir}/README.txt\"`;
+	`cp README_bindist.txt \"${rdir}/README.txt\"`;
+	`unix2dos \"${rdir}/README.txt\"`;
 
 	# Licences
 	`cp ../licenses/cpl1.0.txt \"${rdir}/licenses\"`;
@@ -316,11 +318,11 @@ sub package_framework {
 
 	die "ZIP file not created" unless (-e "${rfile}.zip");
 
-	print "File saved as ${rfile}.zip\n";
+	print "File saved as ${rfile}.zip in release\n";
 	chdir "..";
 }
 
-#build_core();
-#package_core();
+build_core();
+package_core();
 build_framework();
 package_framework();
