@@ -203,7 +203,8 @@ sub package_core {
 
 	die "ZIP file not created" unless (-e "${rfile}.zip");
 
-	print "File saved as ${rfile}.zip\n";
+	print "File saved as ${rfile}.zip in release\n";
+	chdir ("..") or die "Error changing to root dir";
 }
 
 
@@ -215,7 +216,7 @@ sub build_framework {
 
 	chdir "framework/win32/framework" or die "error changing directory into framework/win32";
 	# Get rid of everything in the release dir (since we'll be doing * copy)
-	`rm -f release/*`;
+	`rm -rf release/*`;
 	`rm BuildErrors.txt`;
 	`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
 	die "Build errors -- check framework/win32/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
@@ -317,7 +318,7 @@ sub package_framework {
 
 	die "ZIP file not created" unless (-e "${rfile}.zip");
 
-	print "File saved as ${rfile}.zip\n";
+	print "File saved as ${rfile}.zip in release\n";
 	chdir "..";
 }
 
