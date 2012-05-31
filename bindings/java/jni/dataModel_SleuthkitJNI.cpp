@@ -450,7 +450,7 @@ JNIEXPORT void JNICALL
     jboolean isCopy;
 
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
-    if (tskAuto->m_tag != TSK_AUTO_TAG) {
+    if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         throwTskCoreError(env,
             "runAddImgNat: Invalid TskAutoDb object passed in");
         return;
@@ -538,7 +538,7 @@ JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_stopAddImgNat(JNIEnv * env,
     jclass obj, jlong process) {
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
-    if (tskAuto->m_tag != TSK_AUTO_TAG) {
+    if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         throwTskCoreError(env,
             "stopAddImgNat: Invalid TskAutoDb object passed in");
         return;
@@ -557,7 +557,7 @@ JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_revertAddImgNat(JNIEnv * env,
     jclass obj, jlong process) {
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
-    if (tskAuto->m_tag != TSK_AUTO_TAG) {
+    if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         throwTskCoreError(env,
             "revertAddImgNat: Invalid TskAutoDb object passed in");
         return;
@@ -567,6 +567,7 @@ JNIEXPORT void JNICALL
         return;
     }
     delete tskAuto;
+    tskAuto = 0;
 }
 
 
@@ -580,13 +581,14 @@ JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_commitAddImgNat(JNIEnv * env,
     jclass obj, jlong process) {
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
-    if (tskAuto->m_tag != TSK_AUTO_TAG) {
+    if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         throwTskCoreError(env,
              "commitAddImgNat: Invalid TskAutoDb object passed in");
         return -1;
     }
     int64_t imgId = tskAuto->commitAddImage();
     delete tskAuto;
+    tskAuto = 0;
     if (imgId == -1) {
         throwTskCoreError(env);
         return -1;
