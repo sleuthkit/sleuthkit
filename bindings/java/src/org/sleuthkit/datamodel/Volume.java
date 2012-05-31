@@ -25,7 +25,7 @@ import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
  * Represents a volume in a VolumeSystem.
  * Populated based on data in database.
  */
-public class Volume extends AbstractContent implements FileSystemParent{
+public class Volume extends AbstractContent{
 	// @@@ We should mark these as private and comment somewhere what the units are (bytes, sectors, etc.)
 	long addr, start, length, flags;
 	String desc;
@@ -209,8 +209,8 @@ public class Volume extends AbstractContent implements FileSystemParent{
     }
 
     @Override
-	public long getImageHandle() throws TskException {
-		return getParent().getImageHandle();
+	public Image getImage() throws TskException {
+		return getParent().getImage();
     }
     
 }

@@ -18,9 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.sql.SQLException;
 import java.util.*;
-import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 
 /**
  * Represents a file system. 
@@ -30,7 +28,7 @@ public class FileSystem extends AbstractContent{
 
 	long img_offset, fs_type, block_size, block_count, root_inum,
 			first_inum, last_inum;
-	private FileSystemParent parent;
+	private Content parent;
 	private long filesystemHandle = 0;
 
 	/**
@@ -60,9 +58,10 @@ public class FileSystem extends AbstractContent{
 
 	/**
 	 * set the parent class, will be called by the parent
-	 * @param p parent volume
+	 * @param p parent volume or image.
+	 * Should only be called by methods which ensure p is a volume or image
 	 */
-	protected void setParent(FileSystemParent p){
+	protected void setParent(Content p){
 		parent = p;
 	}
 
@@ -84,7 +83,7 @@ public class FileSystem extends AbstractContent{
 	 * get the parent volume
 	 * @return volume object
 	 */
-	public FileSystemParent getParent(){
+	public Content getParent(){
 		return parent;
 	}
 
@@ -105,7 +104,7 @@ public class FileSystem extends AbstractContent{
 	 */
 	long getFileSystemHandle() throws TskException{
 		if (filesystemHandle == 0){
-			filesystemHandle = SleuthkitJNI.openFs(parent.getImageHandle(), img_offset);
+			filesystemHandle = SleuthkitJNI.openFs(getImage().getImageHandle(), img_offset);
 		}
 		return this.filesystemHandle;
 	}
@@ -189,7 +188,7 @@ public class FileSystem extends AbstractContent{
 	}
 
 	@Override
-	public long getImageHandle() throws TskException {
-		return getParent().getImageHandle();
+	public Image getImage() throws TskException {
+		return getParent().getImage();
 	}
 }

@@ -63,10 +63,10 @@ public interface Content extends SleuthkitVisitableItem{
     public long getId();
 	
 	/**
-	 * Get a handle to the root image
-	 * @return image handle
+	 * Get the root image
+	 * @return image
 	 */
-	public long getImageHandle() throws TskException;
+	public Image getImage() throws TskException;
     
     /**
      * Gets the child contents.

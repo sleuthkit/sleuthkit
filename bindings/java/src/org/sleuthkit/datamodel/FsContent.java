@@ -133,8 +133,8 @@ public abstract class FsContent extends AbstractFile {
 	 */
 
 	@Override
-	public long getImageHandle() throws TskException {
-		return this.getFileSystem().getImageHandle();
+	public Image getImage() throws TskException {
+		return this.getFileSystem().getImage();
 	}
 
 	/**

@@ -100,7 +100,7 @@ public class LayoutFile extends AbstractFile{
                     }
                     long offsetInImage = range.getByteStart() + offsetInRange; // how far into the image to start reading
                     long lenToRead = Math.min(range.getByteLen() - offsetInRange, len-bytesRead); // how much we can read this time
-                    int lenRead = readImgToOffset(getImageHandle(), buf, bytesRead, offsetInImage, (int) lenToRead);
+                    int lenRead = readImgToOffset(getImage().getImageHandle(), buf, bytesRead, offsetInImage, (int) lenToRead);
                     bytesRead += lenRead;
                     if(lenToRead != lenRead) { // If image read failed or was cut short
                         break;
@@ -154,8 +154,8 @@ public class LayoutFile extends AbstractFile{
 	}
 	
 	@Override
-	public long getImageHandle() throws TskException{
-		return getParent().getImageHandle();
+	public Image getImage() throws TskException{
+		return getParent().getImage();
 	}
 	
 }

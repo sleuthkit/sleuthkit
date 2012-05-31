@@ -55,8 +55,8 @@ class ResultSetHelper {
 		vol.setParent(parent);
 		return vol;
 	}
-
-	FileSystem fileSystem(ResultSet rs, FileSystemParent parent) throws SQLException {
+	
+	FileSystem fileSystem(ResultSet rs, Content parent) throws SQLException {
 
 		FileSystem fs = new FileSystem(db, rs.getLong("obj_id"), "File System", rs.getLong("img_offset"),
 				rs.getLong("fs_type"), rs.getLong("block_size"), rs.getLong("block_count"),

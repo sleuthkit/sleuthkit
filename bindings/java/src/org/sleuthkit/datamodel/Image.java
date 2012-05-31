@@ -25,7 +25,7 @@ import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
  * Represents a disk image file.
  * Populated based on data in database.
  */
-public class Image extends AbstractContent implements FileSystemParent{
+public class Image extends AbstractContent{
 	//data about image
 
 	private long type, ssize;
@@ -56,13 +56,17 @@ public class Image extends AbstractContent implements FileSystemParent{
 	 * get the handle to the sleuthkit image info object
 	 * @return the object pointer
 	 */
-	@Override
 	public long getImageHandle() throws TskException {
 		if (imageHandle == 0) {
 			imageHandle = SleuthkitJNI.openImage(paths);
 	}
 
 		return imageHandle;
+	}
+	
+	@Override
+	public Image getImage() {
+		return this;
 	}
 	
 	@Override

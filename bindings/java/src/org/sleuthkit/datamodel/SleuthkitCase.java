@@ -1256,8 +1256,16 @@ public class SleuthkitCase {
         }
     }
 
-    FileSystem getFileSystemById(long id, FileSystemParent parent) throws TskException {
-        dbReadLock();
+    FileSystem getFileSystemById(long id, Image parent) throws TskException {
+        return getFileSystemByIdHelper(id, parent);
+    }
+	
+	FileSystem getFileSystemById(long id, Volume parent) throws TskException {
+		return getFileSystemByIdHelper(id, parent);
+	}
+	
+	private FileSystem getFileSystemByIdHelper(long id, Content parent) throws TskException {
+		dbReadLock();
         try {
             Statement s = con.createStatement();
             FileSystem temp;
@@ -1281,7 +1289,7 @@ public class SleuthkitCase {
         } finally {
             dbReadUnlock();
         }
-    }
+	}
 
     Volume getVolumeById(long id, VolumeSystem parent) throws TskException {
         dbReadLock();
@@ -1351,7 +1359,7 @@ public class SleuthkitCase {
                 long fileSystemId = fc.fs_obj_id;
                 FileSystem parent = fileSystemCache.get(fileSystemId);
                 if (parent == null) {
-                    parent = getFileSystemById(fileSystemId, null);
+                    parent = getFileSystemByIdHelper(fileSystemId, null);
                     parent.accept(this);
                     fileSystemCache.put(fileSystemId, parent);
                 }
@@ -1377,7 +1385,7 @@ public class SleuthkitCase {
 				} else if (parentInfo.type == ObjectType.VOL) {
 					parent = getVolumeById(parentInfo.id, null);
 				} else if (parentInfo.type == ObjectType.FS) {
-					parent = getFileSystemById(parentInfo.id, null);
+					parent = getFileSystemByIdHelper(parentInfo.id, null);
 				} else {
 					throw new IllegalStateException("Parent has wrong type to be FileSystemParent: " + parentInfo.type);
 				}
@@ -1399,7 +1407,7 @@ public class SleuthkitCase {
         public Void visit(FileSystem fs) {
             try {
                 ObjectInfo parentInfo = getParentInfo(fs);
-                FileSystemParent parent;
+                Content parent;
                 if (parentInfo.type == ObjectType.IMG) {
                     parent = getImageById(parentInfo.id);
                 } else if (parentInfo.type == ObjectType.VOL) {
