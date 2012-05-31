@@ -44,7 +44,7 @@ public class Image extends AbstractContent{
 	 * @param timezone 
 	 */	
 	
-	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone) throws TskException {
+	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone) throws TskCoreException {
 		super(db, obj_id, name);
 		this.type = type;
 		this.ssize = ssize;
@@ -56,7 +56,7 @@ public class Image extends AbstractContent{
 	 * get the handle to the sleuthkit image info object
 	 * @return the object pointer
 	 */
-	public long getImageHandle() throws TskException {
+	public long getImageHandle() throws TskCoreException {
 		if (imageHandle == 0) {
 			imageHandle = SleuthkitJNI.openImage(paths);
 	}
@@ -86,7 +86,7 @@ public class Image extends AbstractContent{
 	 * @throws TskException
 	 */
 	@Override
-	public int read(byte[] buf, long offset, long len) throws TskException {
+	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		// read from the image
 		return SleuthkitJNI.readImg(getImageHandle(), buf, offset, len);
 	}
@@ -218,7 +218,7 @@ public class Image extends AbstractContent{
 	}
 
 	@Override
-	public List<Content> getChildren() throws TskException {
+	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getImageChildren(this);
 	}
 	

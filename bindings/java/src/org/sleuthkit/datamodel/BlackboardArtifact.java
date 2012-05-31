@@ -186,7 +186,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param attr the attribute to add
 	 * @throws TskException
 	 */
-	public void addAttribute(BlackboardAttribute attr) throws TskException {
+	public void addAttribute(BlackboardAttribute attr) throws TskCoreException {
 		attr.setArtifactID(artifactID);
 		attr.setCase(Case);
 		Case.addBlackboardAttribute(attr);
@@ -197,7 +197,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param attributes List of attributes to add
 	 * @throws TskException
 	 */
-	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskException {
+	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskCoreException {
 		if (attributes.isEmpty()) {
 			return;
 		}
@@ -214,7 +214,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @return a list of attributes
 	 * @throws TskException
 	 */
-	public ArrayList<BlackboardAttribute> getAttributes() throws TskException {
+	public ArrayList<BlackboardAttribute> getAttributes() throws TskCoreException {
 		return Case.getMatchingAttributes("WHERE artifact_id = " + artifactID);
 	}
 

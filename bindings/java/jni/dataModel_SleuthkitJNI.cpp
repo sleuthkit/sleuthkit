@@ -18,32 +18,54 @@
 #include <map>
 #include <string>
 #include <algorithm>
+#include <sstream>
 using std::string;
 using std::vector;
 using std::map;
+using std::stringstream;
 using std::for_each;
 
 static TSK_HDB_INFO * m_NSRLDb = NULL;
 static std::vector<TSK_HDB_INFO *> m_knownbads;
 
-/** Throw an TSK exception back up to the Java code with a specific message.
+/** Throw an TSK core exception back up to the Java code with a specific message.
  */
 static void
-throwTskError(JNIEnv * env, const char *msg)
+throwTskCoreError(JNIEnv * env, const char *msg)
 {
     jclass exception;
-    exception = env->FindClass("org/sleuthkit/datamodel/TskException");
+    exception = env->FindClass("org/sleuthkit/datamodel/TskCoreException");
     env->ThrowNew(exception, msg);
 }
 
-/* Throw and exception to java
+/* Throw core exception to java
  * @param the java environment to send the exception to
  */
 static void
-throwTskError(JNIEnv * env)
+throwTskCoreError(JNIEnv * env)
 {
     const char *msg = tsk_error_get();
-    throwTskError(env, msg);
+    throwTskCoreError(env, msg);
+}
+
+/** Throw an TSK data exception back up to the Java code with a specific message.
+ */
+static void
+throwTskDataError(JNIEnv * env, const char *msg)
+{
+    jclass exception;
+    exception = env->FindClass("org/sleuthkit/datamodel/TskDataException");
+    env->ThrowNew(exception, msg);
+}
+
+/* Throw data exception to java
+ * @param the java environment to send the exception to
+ */
+static void
+throwTskDataError(JNIEnv * env)
+{
+    const char *msg = tsk_error_get();
+    throwTskCoreError(env, msg);
 }
 
 
@@ -54,7 +76,7 @@ castImgInfo(JNIEnv * env, jlong ptr)
 {
     TSK_IMG_INFO *lcl = (TSK_IMG_INFO *) ptr;
     if (lcl->tag != TSK_IMG_INFO_TAG) {
-        throwTskError(env, "Invalid IMG_INFO object");
+        throwTskCoreError(env, "Invalid IMG_INFO object");
     }
     return lcl;
 }
@@ -65,7 +87,7 @@ castVsInfo(JNIEnv * env, jlong ptr)
 {
     TSK_VS_INFO *lcl = (TSK_VS_INFO *) ptr;
     if (lcl->tag != TSK_VS_INFO_TAG) {
-        throwTskError(env, "Invalid VS_INFO object");
+        throwTskCoreError(env, "Invalid VS_INFO object");
     }
 
     return lcl;
@@ -76,7 +98,7 @@ castVsPartInfo(JNIEnv * env, jlong ptr)
 {
     TSK_VS_PART_INFO *lcl = (TSK_VS_PART_INFO *) ptr;
     if (lcl->tag != TSK_VS_PART_INFO_TAG) {
-        throwTskError(env, "Invalid VS_PART_INFO object");
+        throwTskCoreError(env, "Invalid VS_PART_INFO object");
     }
 
     return lcl;
@@ -87,7 +109,7 @@ castFsInfo(JNIEnv * env, jlong ptr)
 {
     TSK_FS_INFO *lcl = (TSK_FS_INFO *) ptr;
     if (lcl->tag != TSK_FS_INFO_TAG) {
-        throwTskError(env, "Invalid FS_INFO object");
+        throwTskCoreError(env, "Invalid FS_INFO object");
     }
     return lcl;
 }
@@ -98,7 +120,7 @@ castFsFile(JNIEnv * env, jlong ptr)
 {
     TSK_FS_FILE *lcl = (TSK_FS_FILE *) ptr;
     if (lcl->tag != TSK_FS_FILE_TAG) {
-        throwTskError(env, "Invalid FS_FILE object");
+        throwTskCoreError(env, "Invalid FS_FILE object");
     }
     return lcl;
 }
@@ -108,7 +130,7 @@ castCaseDb(JNIEnv * env, jlong ptr)
 {
     TskCaseDb *lcl = ((TskCaseDb *) ptr);
     if (lcl->m_tag != TSK_CASE_DB_TAG) {
-        throwTskError(env,
+        throwTskCoreError(env,
             "Invalid TskCaseDb object");
     }
 
@@ -142,7 +164,7 @@ JNIEXPORT jlong JNICALL
     TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT);
 
     if (tskCase == NULL) {
-        throwTskError(env);
+        throwTskCoreError(env);
         return NULL;               
     }
 
@@ -167,7 +189,7 @@ JNIEXPORT jlong JNICALL
     TskCaseDb *tskCase = TskCaseDb::openDb(dbPathT);
 
     if (tskCase == NULL) {
-        throwTskError(env);
+        throwTskCoreError(env);
         return NULL;
     }
 
@@ -213,7 +235,7 @@ JNIEXPORT jint JNICALL
 
     if(tempdb == NULL)
     {
-        throwTskError(env);
+        throwTskCoreError(env);
         return -1;
     }
     
@@ -241,7 +263,7 @@ JNIEXPORT jint JNICALL
 
     if(temp == NULL)
     {
-        throwTskError(env);
+        throwTskCoreError(env);
         return -1;
     }
 
@@ -274,7 +296,7 @@ JNIEXPORT jstring JNICALL
 
     if(tempdb == NULL)
     {
-        throwTskError(env);
+        throwTskCoreError(env);
         return env->NewStringUTF("-1");
     }
 
@@ -317,7 +339,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
         int8_t retval = tsk_hdb_lookup_str(m_NSRLDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
         if (retval == -1) {
-            throwTskError(env);
+            throwTskCoreError(env);
         } else if (retval) {
             file_known = TSK_DB_FILES_KNOWN_KNOWN;
         }
@@ -337,7 +359,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLooku
 (JNIEnv * env, jclass obj, jstring hash, jint dbHandle){
 
     if((size_t) dbHandle > m_knownbads.size()) {
-        throwTskError(env, "Invalid database handle");
+        throwTskCoreError(env, "Invalid database handle");
         return -1;
     }
 
@@ -355,7 +377,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLooku
         int8_t retval = tsk_hdb_lookup_str(db, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
         if (retval == -1) {
-            throwTskError(env);
+            throwTskCoreError(env);
         } else if (retval) {
             file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
         }
@@ -368,7 +390,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLooku
 
 /*
  * Create an add-image process that can later be run with specific inputs
- * @return the pointer to the process
+ * @return the pointer to the process or NULL on error
  * @param env pointer to java environment this was called from
  * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
@@ -386,13 +408,21 @@ JNIEXPORT jlong JNICALL
     snprintf(envstr, 32, "TZ=%s", env->GetStringUTFChars(timezone,
             &isCopy));
     if (0 != putenv(envstr)) {
-        throwTskError(env, "Error setting timezone environment");
-        return 1;
+        stringstream ss;
+        ss << "Error setting timezone environment, using: ";
+        ss << envstr;
+        throwTskCoreError(env, ss.str().c_str());
+        return 0;
     }
 
     /* we should be checking this somehow */
     TZSET();
+
     TskAutoDb *tskAuto = tskCase->initAddImage();
+    if (tskAuto == NULL) {
+        throwTskCoreError(env, "Error getting tskAuto handle from initAddImage");
+        return 0;
+    }
 
     tskAuto->setProcessUnallocSpace(processUnallocSpace?true:false);
     tskAuto->setNoFatFsOrphans(noFatFsOrphans?true:false);
@@ -421,7 +451,7 @@ JNIEXPORT void JNICALL
 
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (tskAuto->m_tag != TSK_AUTO_TAG) {
-        throwTskError(env,
+        throwTskCoreError(env,
             "runAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
@@ -438,7 +468,7 @@ JNIEXPORT void JNICALL
     // get pointers to each of the file names
     char **imagepaths8 = (char **) tsk_malloc(num_imgs * sizeof(char *));
     if (imagepaths8 == NULL) {
-        throwTskError(env);
+        throwTskCoreError(env);
         return;
     }
     for (int i = 0; i < num_imgs; i++) {
@@ -447,7 +477,7 @@ JNIEXPORT void JNICALL
             GetStringUTFChars((jstring) env->GetObjectArrayElement(paths,
                 i), &isCopy);
         if (imagepaths8[i] == NULL) {
-            throwTskError(env,
+            throwTskCoreError(env,
                 "runAddImgNat: Can't convert path strings.");
             return;
         }
@@ -456,8 +486,6 @@ JNIEXPORT void JNICALL
     const char * tzchar = env->
             GetStringUTFChars(timezone, &isCopy);
 
-    // flag to free tskAuto if the process is interuppted
-    bool deleteProcess = false;
 
     tskAuto->setTz(string(tzchar));
 
@@ -472,12 +500,13 @@ JNIEXPORT void JNICALL
             msg.append("\n");
         }
 
-        //need to add a mechanism to flag (non-)fatal errors across jni
-        throwTskError(env, msg.c_str());
-
         if (ret == 1) {
             //fatal error
-            deleteProcess = true;
+            throwTskCoreError(env, msg.c_str());
+        }
+        else if (ret == 2) {
+            //non fatal error
+            throwTskDataError(env, msg.c_str());
         }
     }
 
@@ -494,9 +523,6 @@ JNIEXPORT void JNICALL
     // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
     tskAuto->closeImage();
 
-    if (deleteProcess) {
-        delete tskAuto;
-    }
     // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
 
@@ -513,7 +539,7 @@ JNIEXPORT void JNICALL
     jclass obj, jlong process) {
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (tskAuto->m_tag != TSK_AUTO_TAG) {
-        throwTskError(env,
+        throwTskCoreError(env,
             "stopAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
@@ -532,12 +558,12 @@ JNIEXPORT void JNICALL
     jclass obj, jlong process) {
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (tskAuto->m_tag != TSK_AUTO_TAG) {
-        throwTskError(env,
+        throwTskCoreError(env,
             "revertAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
     if (tskAuto->revertAddImage()) {
-        throwTskError(env);
+        throwTskCoreError(env);
         return;
     }
     delete tskAuto;
@@ -555,14 +581,14 @@ JNIEXPORT jlong JNICALL
     jclass obj, jlong process) {
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (tskAuto->m_tag != TSK_AUTO_TAG) {
-        throwTskError(env,
+        throwTskCoreError(env,
              "commitAddImgNat: Invalid TskAutoDb object passed in");
         return -1;
     }
     int64_t imgId = tskAuto->commitAddImage();
     delete tskAuto;
     if (imgId == -1) {
-        throwTskError(env);
+        throwTskCoreError(env);
         return -1;
     }
     return imgId;
@@ -587,7 +613,7 @@ JNIEXPORT jlong JNICALL
     // get pointers to each of the file names
     char **imagepaths8 = (char **) tsk_malloc(num_imgs * sizeof(char *));
     if (imagepaths8 == NULL) {
-        throwTskError(env);
+        throwTskCoreError(env);
         return NULL;
     }
     for (int i = 0; i < num_imgs; i++) {
@@ -603,7 +629,7 @@ JNIEXPORT jlong JNICALL
         tsk_img_open_utf8((int) num_imgs, imagepaths8, TSK_IMG_TYPE_DETECT,
         0);
     if (img_info == NULL) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
     }
 
     // cleanup
@@ -634,7 +660,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openVsNat
 
     vs_info = tsk_vs_open(img_info, vsOffset, TSK_VS_TYPE_DETECT);
     if (vs_info == NULL) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
     }
     return (jlong) vs_info;
 }
@@ -657,7 +683,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openVolNat(JNIEnv * env,
 
     vol_part_info = tsk_vs_part_get(vs_info, (TSK_PNUM_T) vol_id);
     if (vol_part_info == NULL) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
     }
     return (jlong) vol_part_info;
 }
@@ -680,7 +706,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
         tsk_fs_open_img(img_info, (TSK_OFF_T) fs_offset,
         TSK_FS_TYPE_DETECT);
     if (fs_info == NULL) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
     }
     return (jlong) fs_info;
 }
@@ -703,7 +729,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
 
     file_info = tsk_fs_file_open_meta(fs_info, NULL, (TSK_INUM_T) file_id);
     if (file_info == NULL) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
     }
 
     return (jlong) file_info;
@@ -722,7 +748,7 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
 {
     jbyteArray return_array = env->NewByteArray(len);
     if (return_array == NULL) {
-        throwTskError(env, "NewByteArray returned error while getting an array to copy buffer into.");
+        throwTskCoreError(env, "NewByteArray returned error while getting an array to copy buffer into.");
         return NULL;
     }
     env->SetByteArrayRegion(return_array, 0, len, (jbyte*)buf);
@@ -760,7 +786,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
 {
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
         return -1;
     }
 
@@ -770,7 +796,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
         tsk_img_read(img_info, (TSK_OFF_T) offset, buf, (size_t) len);
     if (bytesread == -1) {
         free(buf);
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
         return -1;
     }
 
@@ -784,7 +810,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
     ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
     free(buf);
 	if (copiedbytes == -1) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
     }
     return copiedbytes;
 }
@@ -805,7 +831,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
 {
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
-        throwTskError(env);
+        throwTskCoreError(env);
         return -1;
     }
     TSK_VS_INFO *vs_info = castVsInfo(env, a_vs_info);
@@ -813,7 +839,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
     ssize_t bytesread = tsk_vs_read_block(vs_info, (TSK_DADDR_T) offset, buf,
         (size_t) len);
     if (bytesread == -1) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
     }
 
     // package it up for return
@@ -826,7 +852,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
     ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
     free(buf);
     if (copiedbytes == -1) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
     }
     return copiedbytes;
 }
@@ -848,7 +874,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
 {
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
-        throwTskError(env);
+        throwTskCoreError(env);
         return -1;
     }
 
@@ -858,7 +884,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
         tsk_vs_part_read(vol_part_info, (TSK_OFF_T) offset, buf,
         (size_t) len);
     if (bytesread == -1) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
         free(buf);
         return -1;
     }
@@ -873,7 +899,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
     ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
     free(buf);
     if (copiedbytes == -1) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
     }
     return copiedbytes;
 }
@@ -894,7 +920,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
 {
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
-        throwTskError(env);
+        throwTskCoreError(env);
         return -1;
     }
     TSK_FS_INFO *fs_info = castFsInfo(env, a_fs_info);
@@ -903,7 +929,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
         tsk_fs_read(fs_info, (TSK_OFF_T) offset, buf, (size_t) len);
     if (bytesread == -1) {
         free(buf);
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
         return -1;
     }
 
@@ -917,7 +943,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
     ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
     free(buf);
     if (copiedbytes == -1) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
     }
     return copiedbytes;
 }
@@ -940,7 +966,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
 {
     char *buf = (char *) tsk_malloc((size_t) len);
     if (buf == NULL) {
-        throwTskError(env);
+        throwTskCoreError(env);
         return -1;
     }
 
@@ -951,7 +977,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
         TSK_FS_FILE_READ_FLAG_NONE);
     if (bytesread == -1) {
 		free(buf);
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
 		return -1;
     }
 
@@ -965,7 +991,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
     ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
     free(buf);
     if (copiedbytes == -1) {
-        throwTskError(env, tsk_error_get());
+        throwTskCoreError(env, tsk_error_get());
     }
     return copiedbytes;
 }
@@ -1051,7 +1077,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
     jboolean isCopy;
     char *str8 = (char *) env->GetStringUTFChars(logPath, &isCopy);
     if (freopen(str8, "a", stderr) == NULL) {
-        throwTskError(env, "Couldn't open verbose log file for appending.");
+        throwTskCoreError(env, "Couldn't open verbose log file for appending.");
         return;
     }
     tsk_verbose++;
@@ -1073,7 +1099,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
     TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
     if (temp == NULL) {
-        throwTskError(env, "Error opening database to create index");
+        throwTskCoreError(env, "Error opening database to create index");
         return;
     }
 
@@ -1093,7 +1119,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     }
 
     if (tsk_hdb_makeindex(temp, dbType)) {
-        throwTskError(env, "Error creating index");
+        throwTskCoreError(env, "Error creating index");
     }
 
     tsk_hdb_close(temp);

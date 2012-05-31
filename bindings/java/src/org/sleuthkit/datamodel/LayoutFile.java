@@ -49,14 +49,14 @@ public class LayoutFile extends AbstractFile{
 		int size = 0;
 		try {
 			size = getRanges().size();
-		} catch (TskException ex) {
+		} catch (TskCoreException ex) {
 			Logger.getLogger(LayoutFile.class.getName()).log(Level.INFO, "Error getting layout content ranges for size", ex);
 		}
 		return size;
 	}
 
 	@Override
-	public List<TskFileRange> getRanges() throws TskException {
+	public List<TskFileRange> getRanges() throws TskCoreException {
 		if(ranges == null) {
             ranges = getSleuthkitCase().getFileRanges(this.getId());
         }
@@ -64,7 +64,7 @@ public class LayoutFile extends AbstractFile{
 	}
 
 	@Override
-	public List<Content> getChildren() throws TskException {
+	public List<Content> getChildren() throws TskCoreException {
 		return Collections.<Content>emptyList();
 	}
 	
@@ -79,14 +79,14 @@ public class LayoutFile extends AbstractFile{
             for (TskFileRange range : getRanges()) {
                 size += range.getByteLen();
             }
-        }catch (TskException ex) {
+        }catch (TskCoreException ex) {
 			Logger.getLogger(LayoutFile.class.getName()).log(Level.INFO, "boo", ex);
         }
         return size;
     }
 	
 	@Override
-    public int read(byte[] buf, long offset, long len) throws TskException {
+    public int read(byte[] buf, long offset, long len) throws TskCoreException {
         int offsetInThisLayoutContent = 0; // current offset in this LayoutContent
         int bytesRead = 0; // Bytes read so far
         Iterator<TskFileRange> it = getRanges().iterator();
@@ -132,7 +132,7 @@ public class LayoutFile extends AbstractFile{
 	 * @param offsetInImage	where to start in the image
 	 * @param lenToRead		how far to read in the image
 	 */
-    private int readImgToOffset(long imgHandle, byte[] buf, int offsetInBuf, long offsetInImage, int lenToRead) throws TskException {
+    private int readImgToOffset(long imgHandle, byte[] buf, int offsetInBuf, long offsetInImage, int lenToRead) throws TskCoreException {
         byte[] currentBuffer = new byte[lenToRead]; // the buffer for the current range object
         int lenRead = SleuthkitJNI.readImg(imgHandle, currentBuffer, offsetInImage, lenToRead);
         System.arraycopy(currentBuffer, 0, buf, offsetInBuf, lenToRead); // copy what we just read into the main buffer
@@ -154,7 +154,7 @@ public class LayoutFile extends AbstractFile{
 	}
 	
 	@Override
-	public Image getImage() throws TskException{
+	public Image getImage() throws TskCoreException{
 		return getParent().getImage();
 	}
 	

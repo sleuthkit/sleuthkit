@@ -61,7 +61,7 @@ public class File extends FsContent{
     }
 
     @Override
-    public List<Content> getChildren() throws TskException {
+    public List<Content> getChildren() throws TskCoreException {
         return Collections.<Content>emptyList();
     }
 }

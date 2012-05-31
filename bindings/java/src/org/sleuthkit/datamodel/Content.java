@@ -34,7 +34,7 @@ public interface Content extends SleuthkitVisitableItem{
      * @return num of bytes read, or -1 on error
      * @throws TskException  
      */
-    public int read(byte[] buf, long offset, long len) throws TskException;
+    public int read(byte[] buf, long offset, long len) throws TskCoreException;
     
     /**
      * get the size of the content
@@ -66,14 +66,14 @@ public interface Content extends SleuthkitVisitableItem{
 	 * Get the root image
 	 * @return image
 	 */
-	public Image getImage() throws TskException;
+	public Image getImage() throws TskCoreException;
     
     /**
      * Gets the child contents.
      * @return List of children
      * @throws TskException
      */
-    public List<Content> getChildren() throws TskException;
+    public List<Content> getChildren() throws TskCoreException;
     
     /**
      * Add an artifact associated with this content to the blackboard
@@ -82,7 +82,7 @@ public interface Content extends SleuthkitVisitableItem{
      * @return the blackboard artifact (the artifact type id can be looked up from this)
      * @throws TskException
      */
-    public BlackboardArtifact newArtifact(int artifactTypeID) throws TskException;
+    public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException;
     
     /**
      * Add an artifact associated with this content to the blackboard
@@ -90,7 +90,7 @@ public interface Content extends SleuthkitVisitableItem{
      * @return the blackboard artifact 
      * @throws TskException
      */
-    public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskException;
+    public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
     
     /**
      * Get all artifacts associated with this content that have the given type name
@@ -98,7 +98,7 @@ public interface Content extends SleuthkitVisitableItem{
      * @return a list of blackboard artifacts
      * @throws TskException
      */
-    public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskException;
+    public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException;
     
     /**
      * Get all artifacts associated with this content that have the given type id
@@ -106,7 +106,7 @@ public interface Content extends SleuthkitVisitableItem{
      * @return a list of blackboard artifacts
      * @throws TskException
      */
-    public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskException;
+    public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException;
     
     /**
      * Get all artifacts associated with this content that have the given type
@@ -114,12 +114,12 @@ public interface Content extends SleuthkitVisitableItem{
      * @return a list of blackboard artifacts
      * @throws TskException
      */
-    public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskException;
+    public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
     
     /**
      * Get all artifacts associated with this content
      * @return a list of blackboard artifacts
      * @throws TskException
      */
-    public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskException;
+    public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException;
 }

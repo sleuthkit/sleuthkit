@@ -344,7 +344,7 @@ public class BlackboardAttribute {
 	 * get the attribute type id
 	 * @return type id
 	 */
-	public String getAttributeTypeName() throws TskException {
+	public String getAttributeTypeName() throws TskCoreException {
 		return Case.getAttrTypeString(attributeTypeID);
 	}
 
@@ -352,7 +352,7 @@ public class BlackboardAttribute {
 	 * get the attribute type id
 	 * @return type id
 	 */
-	public String getAttributeTypeDisplayName() throws TskException {
+	public String getAttributeTypeDisplayName() throws TskCoreException {
 		return Case.getAttrTypeDisplayName(attributeTypeID);
 	}
 
@@ -427,7 +427,7 @@ public class BlackboardAttribute {
 	 * @return artifact
 	 * @throws TskException
 	 */
-	public BlackboardArtifact getParentArtifact() throws TskException {
+	public BlackboardArtifact getParentArtifact() throws TskCoreException {
 		return Case.getBlackboardArtifact(artifactID);
 	}
 

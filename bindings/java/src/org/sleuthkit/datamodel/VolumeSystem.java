@@ -54,7 +54,7 @@ public class VolumeSystem extends AbstractContent {
 
 	//byte offset
     @Override
-	public int read(byte[] readBuffer, long offset, long len) throws TskException{
+	public int read(byte[] readBuffer, long offset, long len) throws TskCoreException{
 		if(volumeSystemHandle == 0){
 			volumeSystemHandle = SleuthkitJNI.openVs(getImage().getImageHandle(), imgOffset);
 		}
@@ -103,7 +103,7 @@ public class VolumeSystem extends AbstractContent {
 	 * @return volume system Handle pointer
 	 * @throws TskException  
 	 */
-	protected long getVolumeSystemHandle() throws TskException{
+	protected long getVolumeSystemHandle() throws TskCoreException{
 		if (volumeSystemHandle == 0){
 			volumeSystemHandle = SleuthkitJNI.openVs(getImage().getImageHandle(), imgOffset);
 		}
@@ -129,16 +129,16 @@ public class VolumeSystem extends AbstractContent {
     }
 
 	@Override
-	public List<Content> getChildren() throws TskException {
+	public List<Content> getChildren() throws TskCoreException {
 		try {
 			return getSleuthkitCase().getVolumeSystemChildren(this);
 		} catch (Exception ex) {
-			throw new TskException("Error getting VolumeSystem children.", ex);
+			throw new TskCoreException("Error getting VolumeSystem children.", ex);
 		}
 	}
 	
 	@Override
-	public Image getImage() throws TskException {
+	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
 	}
 

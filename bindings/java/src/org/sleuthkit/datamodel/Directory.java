@@ -59,7 +59,7 @@ public class Directory extends FsContent{
     }
 
     @Override
-    public List<Content> getChildren() throws TskException {
+    public List<Content> getChildren() throws TskCoreException {
 		List<Content> children = new ArrayList<Content>();
 		children.addAll(getSleuthkitCase().getDirectoryChildren(this));
 		return children;

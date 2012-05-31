@@ -72,28 +72,28 @@ public abstract class AbstractContent implements Content {
     }
     
 	@Override
-	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskException{
+	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException{
 		return db.newBlackboardArtifact(artifactTypeID, obj_id);
 }
 	@Override
-	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskException{
+	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException{
 		return db.newBlackboardArtifact(type, obj_id);
 	}
 	
 	@Override
-	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskException{
+	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException{
 		return db.getBlackboardArtifacts(artifactTypeName, obj_id);
 	}
 	@Override
-	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskException{
+	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException{
 		return db.getBlackboardArtifacts(artifactTypeID, obj_id);
 	}
 	@Override
-	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskException{
+	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException{
 		return db.getBlackboardArtifacts(type, obj_id);
 	}
 	@Override
-	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskException{
+	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException{
 		return db.getMatchingArtifacts("WHERE obj_id = " + obj_id);
 	}
 }

@@ -92,7 +92,7 @@ public class ReprDataModel {
 		readContent(c);
 		try {
 			reprChildren(c.getChildren());
-		} catch (TskException ex) {
+		} catch (TskCoreException ex) {
 			throw new RuntimeException(ex);
 		}
 		tail();
@@ -112,7 +112,7 @@ public class ReprDataModel {
 
 			repr("read", "md5=" + hash);
 
-		} catch (TskException ex) {
+		} catch (TskCoreException ex) {
 			repr("read", ex);
 		} catch (NoSuchAlgorithmException ex) {
 			throw new RuntimeException(ex);
@@ -276,7 +276,7 @@ public class ReprDataModel {
 				}
 			}
 			
-		} catch (TskException ex) {
+		} catch (TskCoreException ex) {
 			throw new RuntimeException(ex);
 		}
 	}
