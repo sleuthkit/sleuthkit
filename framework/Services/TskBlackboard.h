@@ -57,6 +57,7 @@ typedef enum TSK_ARTIFACT_TYPE {
 		TSK_KEYWORD_HIT = 9,///< A keyword hit. 
         TSK_HASHSET_HIT = 10, ///< A hit within a known bad / notable hashset / hash database. 
         TSK_DEVICE_ATTACHED = 11, ///< An event for a device being attached to the host computer
+        TSK_INTERESTING_FILE_HIT = 12, ///< A file that was flagged because it matched some search criteria for being interesting (i.e. because of its name, extension, etc.)
     /* SEE ABOVE:
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackboard.cpp
@@ -111,6 +112,10 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_IP_ADDRESS = 34,///<String of IP Address
     TSK_PHONE_NUMBER = 35,///<String of phone number
     TSK_PATH_ID = 36,///< Object ID from database that a TSK_PATH attribute corresponds to.  Set to -1 if path is for a file that is not in database (i.e. deleted). 
+    TSK_SET_NAME = 37,///< STRING: The name of a set that was used to find this artifact (to be used for hash hits, keyword hits, interesting files, etc.)
+    TSK_ENCRYPTION_DETECTED = 38,///< STRING: The type of encryption that is believed to have been used on the file.
+    TSK_MALWARE_DETECTED = 39,///< STRING: The name of the malware that was detected in this file.
+    TSK_STEG_DETECTED = 40,///< STRING: The name of the steganography technique that was detected in this file.
     /* SEE ABOVE: 
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackBoard.cpp too */
