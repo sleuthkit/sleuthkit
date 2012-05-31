@@ -51,7 +51,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG", "Installed Programs"),
 		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT", "Keyword Hits"),
 		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", "Hashset Hits"),
-		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Device Attached");
+		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Device Attached"),
+		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", "Interesting File");
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
 		private int typeID;
