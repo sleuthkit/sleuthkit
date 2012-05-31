@@ -297,10 +297,6 @@ int
         "Error creating artifact_id index on blackboard_artifacts: %s\n")||
         attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
         "Error creating artifact_id index on blackboard_attributes: %s\n");
-
-    
-
-    
 }
 
 
@@ -883,7 +879,7 @@ int
     const uint64_t size, int64_t & objId)
 {
     char
-     foo[1024];
+     sql_stat[1024];
 
     // clean up special characters in name before we insert
     size_t len = strlen(fileName);
@@ -915,7 +911,7 @@ int
         fsObjIdS << "NULL";
     else fsObjIdS << fsObjId;
 
-    snprintf(foo, 1024,
+    snprintf(sql_stat, 1024,
         "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
         "1,%s,%lld,"
@@ -931,7 +927,7 @@ int
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
         TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_NAME_FLAG_UNALLOC, size);
 
-    if (attempt_exec(foo, "Error adding data to tsk_files table: %s\n")) {
+    if (attempt_exec(sql_stat, "Error adding data to tsk_files table: %s\n")) {
         free(name);
         return 1;
     }
@@ -1043,7 +1039,9 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
     const size_t numRanges = ranges.size();
 
     if (numRanges < 1) {
-        //TODO err msg
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Error addFileWithLayoutRange() - no ranges present");
         return TSK_ERR;
     }
     
@@ -1072,7 +1070,9 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
     //ensure there is no overlap and each range has unique byte range
     checkRangeOverlap & overlapRes = for_each(ranges.begin(), ranges.end(), checkRangeOverlap(ranges));
     if (overlapRes.getHasOverlap() ) {
-        //TODO err message
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Error addFileWithLayoutRange() - overlap detected between ranges");
         return TSK_ERR;
     }
 
@@ -1082,7 +1082,6 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
     
     //insert into tsk files and tsk objects
     if (addLayoutFileInfo(parentObjId, fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId) ) {
-        //TODO err msg
         return TSK_ERR;
     }
 
@@ -1092,7 +1091,6 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
         TSK_DB_FILE_LAYOUT_RANGE & range = *it;
         range.fileObjId = objId;
         if (this->addFileLayoutRange(range) ) {
-            //TODO err msg
             return TSK_ERR;
         }
     }

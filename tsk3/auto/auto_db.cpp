@@ -728,7 +728,6 @@ int8_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     //open the fs we have from database
     TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
-        //log error
         return TSK_ERR;
     }
 
@@ -744,7 +743,6 @@ int8_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
         fsWalkUnallocBlocksCb, this);
 
     if (block_walk_ret == 1) {
-        //registerError();
         unallocBlockWlkTrack.fsInfo = NULL;
         tsk_fs_close(fsInfo);
         return TSK_ERR;
@@ -830,13 +828,11 @@ uint8_t TskAutoDb::addUnallocVsSpaceToDb() {
         //get parent id of this vs part
         TSK_DB_OBJECT vsPartObj;     
         if (m_db->getObjectInfo(vsPart.objId, vsPartObj) ) {
-            //TODO err message, can't get obj info
             return TSK_ERR;
         }
 
         TSK_DB_VS_INFO vsInfo;
         if (m_db->getVsInfo(vsPartObj.parObjId, vsInfo) ) {
-            //TODO err message, can't get parent vs info
             return TSK_ERR;
         }
 
