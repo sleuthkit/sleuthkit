@@ -2942,6 +2942,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             tsk_fprintf(stderr,
                 "hfs_load_extended_attrs: Attributes file is empty\n");
         close_attr_file(&attrFile);
+        *isCompressed = FALSE;
+        *compDataInRSRC = FALSE;
         return 0;
     }
 
@@ -3810,7 +3812,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
     TSK_FS_ATTR_RUN *attr_run;
     hfs_fork *forkx;
     unsigned char resource_fork_has_contents = FALSE;
-    unsigned char compression_flag;
+    unsigned char compression_flag = FALSE;
 
 
     // clean up any error messages that are lying around
@@ -3914,14 +3916,13 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
     // We do these first, so that we can detect the mode of compression, if
     // any.  We need to know that mode in order to handle the forks.
 
-    unsigned char isCompressed, compDataInRSRCFork;
+    unsigned char isCompressed = FALSE;
+    unsigned char compDataInRSRCFork = FALSE;
     uint64_t uncompressedSize;
-
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "hfs_load_attrs: loading the HFS+ extended attributes\n");
-
 
     if (hfs_load_extended_attrs(fs_file, &isCompressed,
             &compDataInRSRCFork, &uncompressedSize)) {
