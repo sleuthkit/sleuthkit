@@ -23,6 +23,7 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_KEYWORD_HIT, TskArtifactNames("TSK_KEYWORD_HIT", "Keyword Hit")));
     retval.insert(pair<int, TskArtifactNames>(TSK_HASHSET_HIT, TskArtifactNames("TSK_HASHSET_HIT", "Hashset Hit")));
     retval.insert(pair<int, TskArtifactNames>(TSK_DEVICE_ATTACHED, TskArtifactNames("TSK_DEVICE_ATTACHED", "Device Attached")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_INTERESTING_FILE_HIT, TskArtifactNames("TSK_INTERESTING_FILE_HIT", "Interesting File")));
     return retval;
 }
 
@@ -63,6 +64,10 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_IP_ADDRESS, TskAttributeNames("TSK_IP_ADDRESS", "IP Address")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER, TskAttributeNames("TSK_PHONE_NUMBER", "Phone Number")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PATH_ID, TskAttributeNames("TSK_PATH_ID", "Id of Path")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_SET_NAME, TskAttributeNames("TSK_SET_NAME", "Set Name")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_ENCRYPTION_DETECTED, TskAttributeNames("TSK_ENCRYPTION_DETECTED", "File Encryption Detected")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_MALWARE_DETECTED, TskAttributeNames("TSK_MALWARE_DETECTED", "Malware Detected")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_STEG_DETECTED, TskAttributeNames("TSK_STEG_DETECTED", "Steganography Detected")));
 
     return retval;
 }
