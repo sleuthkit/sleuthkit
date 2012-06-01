@@ -676,10 +676,13 @@ TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
 * A single file entry per consecutive range of blocks
 * @param a_block block being walked
 * @param a_ptr point to TskAutoDb class
-* @returns TSK_WALK_CONT
+* @returns TSK_WALK_CONT if continue, otherwise TSK_WALK_STOP if stop processing requested
 */
 TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr) {
     TskAutoDb * tskAutoDb = (TskAutoDb *) a_ptr;
+
+    if (tskAutoDb->m_stopAllProcessing)
+        return TSK_WALK_STOP;
 
     if (tskAutoDb->unallocBlockWlkTrack.isStart) {
         tskAutoDb->unallocBlockWlkTrack.isStart = false;
@@ -754,6 +757,12 @@ int8_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
         return TSK_ERR;
     }
 
+    if(m_stopAllProcessing) {
+        unallocBlockWlkTrack.fsInfo = NULL;
+        tsk_fs_close(fsInfo);
+        return TSK_OK;
+    }
+
     //handle creation of the last range
     //make range inclusive from curBlockStart to prevBlock
     TSK_DB_FILE_LAYOUT_RANGE tempRange;
@@ -795,6 +804,10 @@ uint8_t TskAutoDb::addUnallocFsSpaceToDb() {
 
     vector<TSK_DB_FS_INFO> fsInfos;
 
+    if(m_stopAllProcessing) {
+        return TSK_OK;
+    }
+
     uint16_t ret = m_db->getFsInfos(fsInfos);
     if (ret) {
         tsk_error_set_errstr2("addUnallocFsSpaceToDb: error getting fs infos from db");
@@ -803,8 +816,12 @@ uint8_t TskAutoDb::addUnallocFsSpaceToDb() {
     }
 
     int8_t allFsProcessRet = TSK_OK;
-    for (vector<TSK_DB_FS_INFO>::iterator it = fsInfos.begin(); it!= fsInfos.end(); ++it)
+    for (vector<TSK_DB_FS_INFO>::iterator it = fsInfos.begin(); it!= fsInfos.end(); ++it) {
+        if(m_stopAllProcessing) {
+            break;
+        }
         allFsProcessRet |= processFsInfoUnalloc(*it);
+    }
 
     return allFsProcessRet;
 }
@@ -827,6 +844,9 @@ uint8_t TskAutoDb::addUnallocVsSpaceToDb() {
 
     for (vector<TSK_DB_VS_PART_INFO>::iterator it = vsPartInfos.begin();
         it != vsPartInfos.end(); ++it) {
+        if(m_stopAllProcessing) {
+            break;
+        }
         TSK_DB_VS_PART_INFO &vsPart = *it;
 
         //interested in unalloc and meta
