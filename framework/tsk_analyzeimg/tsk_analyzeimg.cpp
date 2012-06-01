@@ -12,7 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-
+#include <sstream>
 
 #include "tsk3/tsk_tools_i.h" // Needed for tsk_getopt
 #include "framework.h"
@@ -20,6 +20,7 @@
 #include "Services/TskSystemPropertiesImpl.h"
 #include "Services/TskImgDBSqlite.h"
 #include "File/TskFileManagerImpl.h"
+#include "Extraction/TskCarvePrepSectorConcat.h"
 
 #ifdef TSK_WIN32
 #include <Windows.h>
@@ -239,6 +240,12 @@ int main(int argc, char **argv1)
         tsk_error_print(stderr);
         return 1;
     }
+
+    // Prepare the unallocated sectors in the image for carving.
+    std::wstringstream carveOutputFolder; 
+    carveOutputFolder << TSK_SYS_PROP_GET(TskSystemProperties::OUT_DIR) << L"\\Carve";
+    TskCarvePrepSectorConcat carvePrep = TskCarvePrepSectorConcat(carveOutputFolder.str(), L"unalloc.bin", 1000000000);
+    carvePrep.processSectors(false);
 
     //Run pipeline on all files
     if (filePipeline && !filePipeline->isEmpty()) {
