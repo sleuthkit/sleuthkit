@@ -74,7 +74,7 @@ public class Volume extends AbstractContent{
 	 * @throws TskException
 	 */
     @Override
-	public int read(byte[] buf, long offset, long len) throws TskException {
+	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		// read from the volume
 		if(volumeHandle == 0){
 			volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
@@ -204,12 +204,12 @@ public class Volume extends AbstractContent{
     }
 
     @Override
-	public List<Content> getChildren() throws TskException {
+	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getVolumeChildren(this);
     }
 
     @Override
-	public Image getImage() throws TskException {
+	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
     }
     

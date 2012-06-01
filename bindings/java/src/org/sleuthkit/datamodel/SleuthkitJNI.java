@@ -37,36 +37,36 @@ public class SleuthkitJNI {
 	private static native void startVerboseLoggingNat(String logPath);
 	
 	//database
-	private static native long newCaseDbNat(String dbPath) throws TskException;
-	private static native long openCaseDbNat(String path) throws TskException;
-	private static native void closeCaseDbNat(long db) throws TskException;
-	private static native int setDbNSRLNat(String hashDbPath) throws TskException;
-	private static native int addDbKnownBadNat(String hashDbPath) throws TskException;
-	private static native String getDbName(String hashDbPath) throws TskException;
-	private static native void closeDbLookupsNat() throws TskException;
-	private static native int knownBadDbLookup(String hash, int dbHandle) throws TskException;
-	private static native int nsrlDbLookup(String hash) throws TskException;
+	private static native long newCaseDbNat(String dbPath) throws TskCoreException;
+	private static native long openCaseDbNat(String path) throws TskCoreException;
+	private static native void closeCaseDbNat(long db) throws TskCoreException;
+	private static native int setDbNSRLNat(String hashDbPath) throws TskCoreException;
+	private static native int addDbKnownBadNat(String hashDbPath) throws TskCoreException;
+	private static native String getDbName(String hashDbPath) throws TskCoreException;
+	private static native void closeDbLookupsNat() throws TskCoreException;
+	private static native int knownBadDbLookup(String hash, int dbHandle) throws TskCoreException;
+	private static native int nsrlDbLookup(String hash) throws TskCoreException;
 
 	
 	//load image
-	private static native long initAddImgNat(long db, String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) throws TskException;
-	private static native void runAddImgNat(long process, String[] imgPath, int splits, String timezone) throws TskException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
-	private static native void stopAddImgNat(long process) throws TskException;
-	private static native void revertAddImgNat(long process) throws TskException;
-	private static native long commitAddImgNat(long process) throws TskException;
+	private static native long initAddImgNat(long db, String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
+	private static native void runAddImgNat(long process, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
+	private static native void stopAddImgNat(long process) throws TskCoreException;
+	private static native void revertAddImgNat(long process) throws TskCoreException;
+	private static native long commitAddImgNat(long process) throws TskCoreException;
 	//open functions
-	private static native long openImgNat(String[] imgPath, int splits) throws TskException;
-	private static native long openVsNat(long imgHandle, long vsOffset) throws TskException;
-	private static native long openVolNat(long vsHandle, long volId) throws TskException;
-	private static native long openFsNat(long imgHandle, long fsId) throws TskException;
-	private static native long openFileNat(long fsHandle, long fileId) throws TskException;
+	private static native long openImgNat(String[] imgPath, int splits) throws TskCoreException;
+	private static native long openVsNat(long imgHandle, long vsOffset) throws TskCoreException;
+	private static native long openVolNat(long vsHandle, long volId) throws TskCoreException;
+	private static native long openFsNat(long imgHandle, long fsId) throws TskCoreException;
+	private static native long openFileNat(long fsHandle, long fileId) throws TskCoreException;
  
 	//read functions
-	private static native int readImgNat(long imgHandle, byte[] readBuffer, long offset, long len) throws TskException;
-	private static native int readVsNat(long vsHandle, byte[] readBuffer, long offset, long len) throws TskException;
-	private static native int readVolNat(long volHandle, byte[] readBuffer, long offset, long len) throws TskException;
-	private static native int readFsNat(long fsHandle, byte[] readBuffer, long offset, long len) throws TskException;
-	private static native int readFileNat(long fileHandle, byte[] readBuffer, long offset, long len) throws TskException;
+	private static native int readImgNat(long imgHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
+	private static native int readVsNat(long vsHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
+	private static native int readVolNat(long volHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
+	private static native int readFsNat(long fsHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
+	private static native int readFileNat(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
 
 	//close functions
 	private static native void closeImgNat(long imgHandle);
@@ -75,8 +75,8 @@ public class SleuthkitJNI {
 	private static native void closeFileNat(long fileHandle);
 	
 	//hash-lookup database functions
-	private static native void createLookupIndexNat(String dbPath) throws TskException;
-	private static native boolean lookupIndexExistsNat(String dbPath) throws TskException;
+	private static native void createLookupIndexNat(String dbPath) throws TskCoreException;
+	private static native boolean lookupIndexExistsNat(String dbPath) throws TskCoreException;
 
 	static {
 		try {
@@ -106,10 +106,10 @@ public class SleuthkitJNI {
 			this.caseDbPointer = pointer;
 		}
 		
-		void free() throws TskException {
+		void free() throws TskCoreException {
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 		}
-		void clearLookupDatabases() throws TskException {
+		void clearLookupDatabases() throws TskCoreException {
 			closeDbLookupsNat();
 		}
 
@@ -118,7 +118,7 @@ public class SleuthkitJNI {
 		 * @param path The path to the database
 		 * @return a handle for that database
 		 */
-		int setNSRLDatabase(String path) throws TskException {
+		int setNSRLDatabase(String path) throws TskCoreException {
 			return setDbNSRLNat(path);
 		}
 
@@ -128,7 +128,7 @@ public class SleuthkitJNI {
 		 * @param path The path to the database
 		 * @return a handle for that database
 		 */
-		int addKnownBadDatabase(String path) throws TskException {
+		int addKnownBadDatabase(String path) throws TskCoreException {
 			return addDbKnownBadNat(path);
 		}
 
@@ -168,14 +168,18 @@ public class SleuthkitJNI {
 			 * Start the process of adding an image to the case database. 
 			 * MUST call either commit() or revert() after calling run().
 			 * @param imgPath Full path(s) to the image file(s).
-			 * @throws TskException
+			 * @throws TskCoreException, TskDataException
 			 */
-			public void run(String[] imgPath) throws TskException {
+			public void run(String[] imgPath) throws TskCoreException, TskDataException {
 				if (autoDbPointer != 0) {
-					throw new TskException("AddImgProcess:run: AutoDB pointer is already set");
+					throw new TskCoreException("AddImgProcess:run: AutoDB pointer is already set");
 				}
 				
 				autoDbPointer = initAddImgNat(caseDbPointer, longToShort(timezone), processUnallocSpace, noFatFsOrphans);
+				if (autoDbPointer == 0) {
+					//additional check in case initAddImgNat didn't throw exception
+					throw new TskCoreException("AddImgProcess::run: AutoDB pointer is NULL after initAddImgNat");
+				}
 				runAddImgNat(autoDbPointer, imgPath, imgPath.length, timezone);
 			}
 			
@@ -183,11 +187,11 @@ public class SleuthkitJNI {
 			 * Call while run() is executing in another thread to prematurely
 			 * halt the process. Must call revert() in the other thread once
 			 * the stopped run() returns.
-			 * @throws TskException
+			 * @throws TskCoreException
 			 */
-			public void stop() throws TskException {
+			public void stop() throws TskCoreException {
 				if (autoDbPointer == 0) {
-					throw new TskException("AddImgProcess::stop: AutoDB pointer is NULL");
+					throw new TskCoreException("AddImgProcess::stop: AutoDB pointer is NULL");
 				}
 				
 				stopAddImgNat(autoDbPointer);
@@ -198,11 +202,11 @@ public class SleuthkitJNI {
 			 * database.  This releases the C++ object and no additional 
 			 * operations can be performed. 
 			 * 
-			 * @throws TskException
+			 * @throws TskCoreException
 			 */
-			public void revert() throws TskException {
+			public void revert() throws TskCoreException {
 				if (autoDbPointer == 0) {
-					throw new TskException("AddImgProcess::revert: AutoDB pointer is NULL");
+					throw new TskCoreException("AddImgProcess::revert: AutoDB pointer is NULL");
 				}
 				
 				revertAddImgNat(autoDbPointer);
@@ -215,11 +219,11 @@ public class SleuthkitJNI {
 			 * transaction and committing the new image data to the database.
 			 * @return The id of the image that was added. This releases the 
 			 * C++ object and no additional operations can be performed. 
-			 * @throws TskException 
+			 * @throws TskCoreException 
 			 */
-			public long commit() throws TskException {
+			public long commit() throws TskCoreException {
 				if (autoDbPointer == 0) {
-					throw new TskException("AddImgProcess::commit: AutoDB pointer is NULL");
+					throw new TskCoreException("AddImgProcess::commit: AutoDB pointer is NULL");
 				}
 	
 				long id = commitAddImgNat(autoDbPointer);
@@ -235,9 +239,9 @@ public class SleuthkitJNI {
 	 * when done.
 	 * @param path Location to create the database at.
 	 * @return Handle for a new TskCaseDb instance.
-	 * @throws TskException 
+	 * @throws TskCoreException 
 	 */
-	static CaseDbHandle newCaseDb(String path) throws TskException {
+	static CaseDbHandle newCaseDb(String path) throws TskCoreException {
 		return new CaseDbHandle(newCaseDbNat(path));
 	}
 	
@@ -246,9 +250,9 @@ public class SleuthkitJNI {
 	 * instance when done.
 	 * @param path Location of the existing database.
 	 * @return Handle for a new TskCaseDb instance.
-	 * @throws TskException 
+	 * @throws TskCoreException 
 	 */
-	static CaseDbHandle openCaseDb(String path) throws TskException {
+	static CaseDbHandle openCaseDb(String path) throws TskCoreException {
 		return new CaseDbHandle(openCaseDbNat(path));
 	}
 	
@@ -273,9 +277,9 @@ public class SleuthkitJNI {
 	 * open the image and return the image info pointer
 	 * @param imageFiles the paths to the images
 	 * @return the image info pointer
-	 * @throws TskException
+	 * @throws TskCoreException
 	 */
-	public synchronized static long openImage(String[] imageFiles) throws TskException{
+	public synchronized static long openImage(String[] imageFiles) throws TskCoreException{
 		long imageHandle = 0;
 		
 		StringBuilder keyBuilder = new StringBuilder();
@@ -302,7 +306,7 @@ public class SleuthkitJNI {
 	 * @param vsOffset byte offset in the image to the volume system (usually 0)
 	 * @return pointer to a vsHandle structure in the sleuthkit
 	 */
-	public static long openVs(long imgHandle, long vsOffset) throws TskException{
+	public static long openVs(long imgHandle, long vsOffset) throws TskCoreException{
 		return openVsNat(imgHandle, vsOffset);
 	}
 
@@ -312,9 +316,9 @@ public class SleuthkitJNI {
 	 * @param vsHandle pointer to the volume system structure in the sleuthkit
 	 * @param volId id of the volume
 	 * @return pointer to a volHandle structure in the sleuthkit
-	 * @throws TskException  
+	 * @throws TskCoreException  
 	 */
-	public static long openVsPart(long vsHandle, long volId) throws TskException{
+	public static long openVsPart(long vsHandle, long volId) throws TskCoreException{
 		//returned long is ptr to vs Handle object in tsk
 		return openVolNat(vsHandle, volId);
 	}
@@ -324,9 +328,9 @@ public class SleuthkitJNI {
 	 * @param imgHandle pointer to imgHandle in sleuthkit
 	 * @param fsOffset byte offset to the file system
 	 * @return pointer to a fsHandle structure in the sleuthkit
-	 * @throws TskException  
+	 * @throws TskCoreException  
 	 */
-	public synchronized static long openFs(long imgHandle, long fsOffset) throws TskException{
+	public synchronized static long openFs(long imgHandle, long fsOffset) throws TskCoreException{
 		long fsHandle = 0;
 		final Map<Long,Long> imgOffSetToFsHandle = CaseDbHandle.fsHandleCache.get(imgHandle);
 		if (imgOffSetToFsHandle.containsKey(fsOffset)) {
@@ -346,9 +350,9 @@ public class SleuthkitJNI {
 	 * @param fsHandle fsHandle pointer in the sleuthkit
 	 * @param fileId id of the file
 	 * @return pointer to a file structure in the sleuthkit
-	 * @throws TskException  
+	 * @throws TskCoreException  
 	 */
-	public static long openFile(long fsHandle, long fileId) throws TskException{
+	public static long openFile(long fsHandle, long fileId) throws TskCoreException{
 		return openFileNat(fsHandle, fileId);
 	}
 
@@ -360,9 +364,9 @@ public class SleuthkitJNI {
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
 	 * @return the number of characters read, or -1 if the end of the stream has been reached 
-	 * @throws TskException  
+	 * @throws TskCoreException  
 	 */
-	public static int readImg(long imgHandle, byte[] readBuffer, long offset, long len) throws TskException{
+	public static int readImg(long imgHandle, byte[] readBuffer, long offset, long len) throws TskCoreException{
 		//returned byte[] is the data buffer
 		return readImgNat(imgHandle, readBuffer, offset, len);
 	}
@@ -373,9 +377,9 @@ public class SleuthkitJNI {
 	 * @param offset sector offset in the image to start at
 	 * @param len amount of data to read
 	 * @return the number of characters read, or -1 if the end of the stream has been reached 
-	 * @throws TskException  
+	 * @throws TskCoreException  
 	 */
-	public static int readVs(long vsHandle, byte[] readBuffer, long offset, long len) throws TskException{
+	public static int readVs(long vsHandle, byte[] readBuffer, long offset, long len) throws TskCoreException{
 		return readVsNat(vsHandle, readBuffer, offset, len);
 	}
 	/**
@@ -385,9 +389,9 @@ public class SleuthkitJNI {
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
 	 * @return the number of characters read, or -1 if the end of the stream has been reached 
-	 * @throws TskException  
+	 * @throws TskCoreException  
 	 */
-	public static int readVsPart(long volHandle, byte[] readBuffer, long offset, long len) throws TskException{
+	public static int readVsPart(long volHandle, byte[] readBuffer, long offset, long len) throws TskCoreException{
 		//returned byte[] is the data buffer
 		return readVolNat(volHandle, readBuffer, offset, len);
 	}
@@ -398,9 +402,9 @@ public class SleuthkitJNI {
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
 	 * @return the number of characters read, or -1 if the end of the stream has been reached 
-	 * @throws TskException  
+	 * @throws TskCoreException  
 	 */
-	public static int readFs(long fsHandle, byte[] readBuffer, long offset, long len) throws TskException{
+	public static int readFs(long fsHandle, byte[] readBuffer, long offset, long len) throws TskCoreException{
 		//returned byte[] is the data buffer
 		return readFsNat(fsHandle, readBuffer, offset, len);
 	}
@@ -413,9 +417,9 @@ public class SleuthkitJNI {
 	 * @param offset byte offset in the image to start at
 	 * @param len amount of data to read
 	 * @return the number of characters read, or -1 if the end of the stream has been reached 
-	 * @throws TskException  
+	 * @throws TskCoreException  
 	 */
-	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskException {
+	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		return readFileNat(fileHandle, readBuffer, offset, len);
 	}
 
@@ -459,9 +463,9 @@ public class SleuthkitJNI {
 	/**
 	 * Create an index for the given database path.
 	 * @param dbPath The path to the database
-	 * @throws TskException 
+	 * @throws TskCoreException 
 	 */
-	public static void createLookupIndex(String dbPath) throws TskException {
+	public static void createLookupIndex(String dbPath) throws TskCoreException {
 		createLookupIndexNat(dbPath);
 	}
 	
@@ -469,9 +473,9 @@ public class SleuthkitJNI {
 	 * Check if an index exists for the given database path.
 	 * @param dbPath
 	 * @return true if index exists
-	 * @throws TskException 
+	 * @throws TskCoreException 
 	 */
-	public static boolean lookupIndexExists(String dbPath) throws TskException {
+	public static boolean lookupIndexExists(String dbPath) throws TskCoreException {
 		return lookupIndexExistsNat(dbPath);
 	}
 	
@@ -480,7 +484,7 @@ public class SleuthkitJNI {
 	 * @param path The path to the database
 	 * @return a handle for that database
 	 */
-	public static int setNSRLDatabase(String path) throws TskException {
+	public static int setNSRLDatabase(String path) throws TskCoreException {
 		return setDbNSRLNat(path);
 	}
 
@@ -489,7 +493,7 @@ public class SleuthkitJNI {
 	 * @param path The path to the database
 	 * @return a handle for that database
 	 */
-	public static int addKnownBadDatabase(String path) throws TskException {
+	public static int addKnownBadDatabase(String path) throws TskCoreException {
 		return addDbKnownBadNat(path);
 	}
 
@@ -497,7 +501,7 @@ public class SleuthkitJNI {
 	 * Get the name of the database
 	 * @param path The path to the database
 	 */
-	public static String getDatabaseName(String path) throws TskException {
+	public static String getDatabaseName(String path) throws TskCoreException {
 		return getDbName(path);
 	}
 	
@@ -505,9 +509,9 @@ public class SleuthkitJNI {
 	 * Look up the given hash in the NSRL database
 	 * @param hash
 	 * @return the status of the hash in the NSRL
-	 * @throws TskException 
+	 * @throws TskCoreException 
 	 */
-	public static TskData.FileKnown nsrlHashLookup(String hash) throws TskException{
+	public static TskData.FileKnown nsrlHashLookup(String hash) throws TskCoreException{
 		return TskData.FileKnown.valueOf(nsrlDbLookup(hash));
 	}
 	
@@ -515,9 +519,9 @@ public class SleuthkitJNI {
 	 * Look up the given hash in the known bad database
 	 * @param hash
 	 * @return the status of the hash in the known bad database
-	 * @throws TskException 
+	 * @throws TskCoreException 
 	 */
-	public static TskData.FileKnown knownBadHashLookup(String hash, int dbHandle) throws TskException{
+	public static TskData.FileKnown knownBadHashLookup(String hash, int dbHandle) throws TskCoreException{
 		return TskData.FileKnown.valueOf(knownBadDbLookup(hash, dbHandle));
 	}
 	

@@ -74,7 +74,7 @@ public class FileSystem extends AbstractContent{
 	 * @throws TskException
 	 */
 	@Override
-	public int read(byte[] buf, long offset, long len) throws TskException{
+	public int read(byte[] buf, long offset, long len) throws TskCoreException{
 		return SleuthkitJNI.readFs(getFileSystemHandle(), buf, offset, len);
 	}
 
@@ -102,7 +102,7 @@ public class FileSystem extends AbstractContent{
 	 * @return a filesystem pointer from the sleuthkit
 	 * @throws TskException  
 	 */
-	long getFileSystemHandle() throws TskException{
+	long getFileSystemHandle() throws TskCoreException{
 		if (filesystemHandle == 0){
 			filesystemHandle = SleuthkitJNI.openFs(getImage().getImageHandle(), img_offset);
 		}
@@ -181,14 +181,14 @@ public class FileSystem extends AbstractContent{
 }
 
 	@Override
-	public List<Content> getChildren() throws TskException {
+	public List<Content> getChildren() throws TskCoreException {
 		List<Content> children = new ArrayList<Content>();
 		children.addAll(getSleuthkitCase().getFileSystemChildren(this));
 		return children;
 	}
 
 	@Override
-	public Image getImage() throws TskException {
+	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
 	}
 }

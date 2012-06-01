@@ -17,7 +17,7 @@ class ResultSetHelper {
 		this.db = db;
 	}
 
-	Image image(ResultSet rs, String name, String[] imagePaths) throws TskException, SQLException {
+	Image image(ResultSet rs, String name, String[] imagePaths) throws TskCoreException, SQLException {
 
 		long obj_id, type, ssize;
 		String tzone;

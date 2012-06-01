@@ -81,7 +81,7 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	@Override
-	public int read(byte[] buf, long offset, long len) throws TskException {
+	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		if (fileHandle == 0) {
 			fileHandle = SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), meta_addr);
 		}
@@ -114,7 +114,7 @@ public abstract class FsContent extends AbstractFile {
 		return parentFileSystem.getRoot_inum() == this.getMeta_addr();
 	}
 
-	public Directory getParentDirectory() throws TskException {
+	public Directory getParentDirectory() throws TskCoreException {
 		return getSleuthkitCase().getParentDirectory(this);
 	}
 
@@ -133,7 +133,7 @@ public abstract class FsContent extends AbstractFile {
 	 */
 
 	@Override
-	public Image getImage() throws TskException {
+	public Image getImage() throws TskCoreException {
 		return this.getFileSystem().getImage();
 	}
 

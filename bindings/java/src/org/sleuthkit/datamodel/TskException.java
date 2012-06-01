@@ -20,10 +20,10 @@
 package org.sleuthkit.datamodel;
 
 /**
- * General exception that is thrown from Sleuthkit classes.
+ * General parent exception that is thrown from Sleuthkit classes.
  */
-public class TskException extends Exception{
-    private static final long serialVersionUID = 123049876L;
+public abstract class TskException extends Exception{
+    private static final long serialVersionUID = 123049873L;
 
 	public TskException(String msg){
 		super(msg);
@@ -33,4 +33,3 @@ public class TskException extends Exception{
 		super(msg, ex);
 	}
 }
-
