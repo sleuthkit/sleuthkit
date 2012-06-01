@@ -70,7 +70,7 @@ class ResultSetHelper {
 				rs.getLong("attr_id"), rs.getString("name"), rs.getLong("dir_type"),
 				rs.getLong("meta_type"), rs.getLong("dir_flags"), rs.getLong("meta_flags"), rs.getLong("size"),
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getLong("mode"), rs.getLong("uid"), rs.getLong("gid"), rs.getLong("known"), rs.getString("parent_path"));
+				rs.getLong("mode"), rs.getLong("uid"), rs.getLong("gid"), rs.getLong("known"), rs.getString("parent_path"), rs.getString("md5"));
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -80,7 +80,7 @@ class ResultSetHelper {
 				rs.getLong("attr_id"), name, rs.getLong("dir_type"),
 				rs.getLong("meta_type"), rs.getLong("dir_flags"), rs.getLong("meta_flags"), rs.getLong("size"),
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getLong("mode"), rs.getLong("uid"), rs.getLong("gid"), rs.getLong("known"), rs.getString("parent_path"));
+				rs.getLong("mode"), rs.getLong("uid"), rs.getLong("gid"), rs.getLong("known"), rs.getString("parent_path"), rs.getString("md5"));
 		dir.setFileSystem(fs);
 		return dir;
 	}

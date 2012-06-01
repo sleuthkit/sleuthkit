@@ -38,6 +38,11 @@ public abstract class FsContent extends AbstractFile {
 	 * path of parent directory
 	 */
 	protected String parent_path;
+	
+	/*
+	 * md5 hash
+	 */
+	protected String md5Hash;
 	/**
 	 * parent file system
 	 */
@@ -50,7 +55,7 @@ public abstract class FsContent extends AbstractFile {
 	public FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
 			long attr_type, long attr_id, long meta_type, long dir_type, long dir_flags,
 			long meta_flags, long size, long ctime, long crtime, long atime, long mtime, long uid, long gid, long mode, long known,
-			String parent_path) {
+			String parent_path, String md5Hash) {
 		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS);
 		this.fs_obj_id = fs_obj_id;
 		this.meta_addr = meta_addr;
@@ -70,6 +75,7 @@ public abstract class FsContent extends AbstractFile {
 		this.mode = mode;
 		this.known = known;
 		this.parent_path = parent_path;
+		this.md5Hash = md5Hash;
 	}
 
 	/**
@@ -341,6 +347,10 @@ public abstract class FsContent extends AbstractFile {
 
 	public String getParentPath() {
 		return this.parent_path;
+	}
+	
+	public String getMd5Hash() {
+		return this.md5Hash;
 	}
 
 	@Override

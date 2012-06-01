@@ -34,11 +34,11 @@ public class File extends FsContent{
             long attr_id, String name, long dir_type, long meta_type,
             long dir_flags, long meta_flags, long size, long ctime, long crtime,
             long atime, long mtime, long mode, long uid, long gid, long known,
-            String parent_path) {
+            String parent_path, String md5Hash) {
         super(db, obj_id, name, fs_obj_id, meta_addr,
 			attr_type, attr_id, meta_type, dir_type, dir_flags,
 			meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known,
-			parent_path);
+			parent_path, md5Hash);
     }
 
     /**	
