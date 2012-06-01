@@ -8,8 +8,8 @@
  * This software is distributed under the Common Public License 1.0
  */
 
-#ifndef _OSS_CARVEPREP_H
-#define _OSS_CARVEPREP_H
+#ifndef _TSK_CARVE_PREP_H
+#define _TSK_CARVE_PREP_H
 
 #include "Services/TskImgDB.h"
 
@@ -26,7 +26,8 @@
 class TSK_FRAMEWORK_API CarvePrep
 {
 public:
-    virtual ~CarvePrep(void) = 0;
+    virtual ~CarvePrep(void) {};
+    
     /**
      * Make one or more files to carve. 
      * @param a_toSchedule True if the scheduler should be called to queue
