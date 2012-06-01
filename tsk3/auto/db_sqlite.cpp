@@ -1059,7 +1059,12 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
             fileNameSs << "Carved";
             break;
         default:
-            //set error, unsupported file type for file layout range
+            stringstream sserr;
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            sserr << "Error addFileWithLayoutRange() - unsupported file type for file layout range: ";
+            sserr << (int) dbFileType;
+            tsk_error_set_errstr(sserr.str().c_str());
             return TSK_ERR;
     }
 
