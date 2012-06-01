@@ -390,29 +390,61 @@ ext2fs_imap_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     /*
      * Look up the inode allocation bitmap.
      */
-    if (tsk_getu32(fs->endian,
-            ext2fs->grp_buf->bg_inode_bitmap) > fs->last_block) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
-        tsk_error_set_errstr
-            ("ext2fs_imap_load: Block too large for image: %" PRIu32 "",
-            tsk_getu32(fs->endian, ext2fs->grp_buf->bg_inode_bitmap));
-    }
-
-    cnt = tsk_fs_read(fs,
-        (TSK_DADDR_T) tsk_getu32(fs->endian,
-            ext2fs->grp_buf->bg_inode_bitmap) * fs->block_size,
-        (char *) ext2fs->imap_buf, ext2fs->fs_info.block_size);
-
-    if (cnt != ext2fs->fs_info.block_size) {
-        if (cnt >= 0) {
+    if(EXT2FS_HAS_INCOMPAT_FEATURE(fs, ext2fs->fs, EXT2FS_FEATURE_INCOMPAT_64BIT))
+    {
+        if( ext4_getu64(fs->endian, ext2fs->ext4_grp_buf->bg_block_bitmap_hi, ext2fs->ext4_grp_buf->bg_block_bitmap_lo)
+                > fs->last_block)
+        {
             tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_READ);
+            tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
+            tsk_error_set_errstr
+                ("ext2fs_imap_load: Block too large for image: %" PRIu64 "",
+                ext4_getu64(fs->endian, ext2fs->ext4_grp_buf->bg_block_bitmap_hi, ext2fs->ext4_grp_buf->bg_block_bitmap_lo));
+        }       
+
+        cnt = tsk_fs_read(fs,
+            (TSK_DADDR_T) ext4_getu64(fs->endian,
+                ext2fs->ext4_grp_buf->bg_inode_bitmap_hi, ext2fs->ext4_grp_buf->bg_block_bitmap_lo) * fs->block_size,
+            (char *) ext2fs->imap_buf, ext2fs->fs_info.block_size);
+
+        if (cnt != ext2fs->fs_info.block_size) {
+             if (cnt >= 0) {
+                 tsk_error_reset();
+                 tsk_error_set_errno(TSK_ERR_FS_READ);
+             }
+             tsk_error_set_errstr2("ext2fs_imap_load: Inode bitmap %"
+                PRI_EXT2GRP " at %" PRIu32, grp_num, tsk_getu32(fs->endian,
+                    ext2fs->grp_buf->bg_inode_bitmap));
         }
-        tsk_error_set_errstr2("ext2fs_imap_load: Inode bitmap %"
-            PRI_EXT2GRP " at %" PRIu32, grp_num, tsk_getu32(fs->endian,
-                ext2fs->grp_buf->bg_inode_bitmap));
     }
+    else
+    {
+        if (tsk_getu32(fs->endian,
+                ext2fs->grp_buf->bg_inode_bitmap) > fs->last_block) 
+        {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
+            tsk_error_set_errstr
+                ("ext2fs_imap_load: Block too large for image: %" PRIu32 "",
+                tsk_getu32(fs->endian, ext2fs->grp_buf->bg_inode_bitmap));
+        }
+
+        cnt = tsk_fs_read(fs,
+            (TSK_DADDR_T) tsk_getu32(fs->endian,
+                ext2fs->grp_buf->bg_inode_bitmap) * fs->block_size,
+            (char *) ext2fs->imap_buf, ext2fs->fs_info.block_size);
+
+        if (cnt != ext2fs->fs_info.block_size) {
+            if (cnt >= 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_READ);
+            }
+            tsk_error_set_errstr2("ext2fs_imap_load: Inode bitmap %"
+                PRI_EXT2GRP " at %" PRIu32, grp_num, tsk_getu32(fs->endian,
+                    ext2fs->grp_buf->bg_inode_bitmap));
+        }
+    }
+
 
     ext2fs->imap_grp_num = grp_num;
     if (tsk_verbose > 1)
