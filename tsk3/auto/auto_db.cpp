@@ -367,13 +367,14 @@ uint8_t
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
 {
     if (tsk_verbose)
-        tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+        tsk_fprintf(stderr, "TskAutoDb::startAddImage_utf8: Starting add image process\n");
    
 
     if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
+        registerError();
         return 1;
     }
 
@@ -382,27 +383,23 @@ uint8_t
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
+        registerError();
         return 1;
     }
 
 
-    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT))
+    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
+        registerError();
         return 1;
+    }
 
     m_imgTransactionOpen = true;
 
     if (openImageUtf8(numImg, imagePaths, imgType, sSize)) {
-        // rollback on error
-
-        // rollbackSavepoint can throw errors too, need to make sure original
-        // error message is preserved;
-        const char *prior_msg = tsk_error_get();
-        if (revertAddImage()) {
-            if (prior_msg) {
-                tsk_error_set_errstr("%s caused: %s", prior_msg,
-                    tsk_error_get());
-            }
-        }
+        tsk_error_set_errstr2("TskAutoDb::startAddImage");
+        registerError();
+        if (revertAddImage())
+            registerError();
         return 1;
     }
 
@@ -410,7 +407,6 @@ uint8_t
         //do not roll back if errors in this case, but do report registered errors
         return 2;
     }
-
 
     return 0;
 }

@@ -207,7 +207,7 @@ int
             "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_names (obj_id INTEGER PRIMARY KEY, name TEXT NOT NULL, sequence INTEGER NOT NULL);",
+        ("CREATE TABLE tsk_image_names (obj_id INTEGER NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL);",
             "Error creating tsk_image_names table: %s\n")
         ||
         attempt_exec
