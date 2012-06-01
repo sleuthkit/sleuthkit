@@ -17,6 +17,8 @@
 #include <string.h>
 
 #include <algorithm>
+#include <sstream>
+using std::stringstream;
 using std::for_each;
 
 
@@ -725,6 +727,8 @@ int8_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     //open the fs we have from database
     TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
+        tsk_error_set_errstr2("processFsInfoUnalloc: error opening fs");
+        registerError();
         return TSK_ERR;
     }
 
@@ -740,8 +744,13 @@ int8_t TskAutoDb::processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
         fsWalkUnallocBlocksCb, this);
 
     if (block_walk_ret == 1) {
+        stringstream errss;
         unallocBlockWlkTrack.fsInfo = NULL;
         tsk_fs_close(fsInfo);
+        errss << "processFsInfoUnalloc: error walking fs unalloc blocks, fs id: ";
+        errss << unallocBlockWlkTrack.fsObjId;
+        tsk_error_set_errstr2(errss.str().c_str());
+        registerError();
         return TSK_ERR;
     }
 
@@ -788,6 +797,8 @@ uint8_t TskAutoDb::addUnallocFsSpaceToDb() {
 
     uint16_t ret = m_db->getFsInfos(fsInfos);
     if (ret) {
+        tsk_error_set_errstr2("addUnallocFsSpaceToDb: error getting fs infos from db");
+        registerError();
         return TSK_ERR;
     }
 
@@ -809,6 +820,8 @@ uint8_t TskAutoDb::addUnallocVsSpaceToDb() {
 
     uint8_t ret = m_db->getVsPartInfos(vsPartInfos);
     if (ret) {
+        tsk_error_set_errstr2("addUnallocVsSpaceToDb: error getting vs part infos from db");
+        registerError();
         return ret;
     }
 
@@ -825,11 +838,19 @@ uint8_t TskAutoDb::addUnallocVsSpaceToDb() {
         //get parent id of this vs part
         TSK_DB_OBJECT vsPartObj;     
         if (m_db->getObjectInfo(vsPart.objId, vsPartObj) ) {
+            stringstream errss;
+            errss << "addUnallocVsSpaceToDb: error getting object info for vs part from db, objId: " << vsPart.objId;
+            tsk_error_set_errstr2(errss.str().c_str());
+            registerError();
             return TSK_ERR;
         }
 
         TSK_DB_VS_INFO vsInfo;
         if (m_db->getVsInfo(vsPartObj.parObjId, vsInfo) ) {
+            stringstream errss;
+            errss << "addUnallocVsSpaceToDb: error getting volume system info from db, objId: " << vsPartObj.parObjId;
+            tsk_error_set_errstr2(errss.str().c_str());
+            registerError();
             return TSK_ERR;
         }
 
