@@ -3,14 +3,38 @@
  *  The Sleuth Kit
  *
  *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- *  Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
- *  reserved.
  *
- *  This software is distributed under the Common Public License 1.0
+ *  This is free and unencumbered software released into the public domain.
+ *  
+ *  Anyone is free to copy, modify, publish, use, compile, sell, or
+ *  distribute this software, either in source code form or as a compiled
+ *  binary, for any purpose, commercial or non-commercial, and by any
+ *  means.
+ *  
+ *  In jurisdictions that recognize copyright laws, the author or authors
+ *  of this software dedicate any and all copyright interest in the
+ *  software to the public domain. We make this dedication for the benefit
+ *  of the public at large and to the detriment of our heirs and
+ *  successors. We intend this dedication to be an overt act of
+ *  relinquishment in perpetuity of all present and future rights to this
+ *  software under copyright law.
+ *  
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ *  IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ *  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ *  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ *  OTHER DEALINGS IN THE SOFTWARE. 
  */
 
-
-/* Sample module that reads a file and posts the size to the blackboard */
+/**
+ * \file CalcFileSizeModule.cpp
+ * This sample module shows a basic Sleuth Kit Framework module.  It is
+ * released as public domain and you are free to remove this header,  use
+ * it as a starting point for your module, and choose whatever license that
+ * you want.  Note that the framework itself is NOT public domain.
+ */
 
 #include <sstream>
 #include <math.h>
@@ -24,9 +48,13 @@ static const uint32_t FILE_BUFFER_SIZE = 8193;
 extern "C" 
 {
     /**
-     * Module initialization function. Takes a string as input that allows
-     * arguments to be passed into the module.
-     * @param arguments This module takes no arguments
+     * Module initialization function. Receives a string of initialization arguments, 
+     * typically read by the caller from a pipeline configuration file. 
+     * Returns TskModule::OK or TskModule::FAIL. Returning TskModule::FAIL indicates 
+     * the module is not in an operational state.  
+     *
+     * @param args a string of initialization arguments.
+     * @return TskModule::OK if initialization succeeded, otherwise TskModule::FAIL.
      */
     TskModule::Status TSK_MODULE_EXPORT initialize(std::string& arguments)
     {    
@@ -34,11 +62,15 @@ extern "C"
     }
  
     /**
-     * The run() method is where the modules work is performed.
-     * The module will be passed a pointer to a file from which both
-     * content and metadata can be retrieved.
+     * Module execution function. Receives a pointer to a file the module is to
+     * process. The file is represented by a TskFile interface from which both
+     * file content and file metadata can be retrieved. Returns TskModule::OK, 
+     * TskModule::FAIL, or TskModule::STOP. Returning TskModule::FAIL indicates 
+     * the module experienced an error processing the file. Returning TskModule::STOP
+     * is a request to terminate processing of the file.
+     *
      * @param pFile A pointer to a file to be processed.
-     * @returns TskModule::OK on success and TskModule::FAIL on error.
+     * @returns TskModule::OK on success, TskModule::FAIL on error, or TskModule::STOP.
      */
     TskModule::Status TSK_MODULE_EXPORT run(TskFile * pFile)
     {
@@ -50,17 +82,6 @@ extern "C"
 
         try
         {
-            if (!pFile->exists())
-            {
-                std::wstringstream msg;
-                msg << L"File to be analyzed does not exist: " << pFile->getPath().c_str();
-                LOGERROR(msg.str());
-                return TskModule::FAIL;
-            }
-
-            // Open file.
-            pFile->open();
-
             long totalBytes = 0;
             char buffer[FILE_BUFFER_SIZE];
             int bytesRead = 0;
@@ -78,9 +99,6 @@ extern "C"
 
             TskBlackboardAttribute attr((int) TSK_VALUE, "CalcFileSizeModule", "ByteCount", totalBytes);
             genInfo.addAttribute(attr);
-
-            // Close file.
-            pFile->close();
         }
         catch (TskException& tskEx)
         {
@@ -99,6 +117,12 @@ extern "C"
         return TskModule::OK;
     }
 
+    /**
+     * Module cleanup function. This is where the module should free any resources 
+     * allocated during initialization or execution.
+     *
+     * @returns TskModule::OK on success and TskModule::FAIL on error.
+     */
     TskModule::Status TSK_MODULE_EXPORT finalize()
     {
         return TskModule::OK;

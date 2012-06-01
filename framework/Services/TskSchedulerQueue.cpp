@@ -9,13 +9,6 @@
  */
 #include "TskSchedulerQueue.h"
 
-
-// REMOVE THIS ONCE WE SWITCH OTHER SYSTEM OVER TO NEW API
-int TskSchedulerQueue::scheduleTask(int task, const void * args)
-{
-    return 0;
-}
-
 int TskSchedulerQueue::schedule(Scheduler::TaskType task, uint64_t startId, uint64_t endId)
 {
     if (endId < startId) {
@@ -32,11 +25,7 @@ int TskSchedulerQueue::schedule(Scheduler::TaskType task, uint64_t startId, uint
     return 0;
 };
 
-/**
- * Get the next task in the queue.
- * @returns NULL if no more tasks or pointer to task.  Caller must free the task.
- */
-TskSchedulerQueue::task_struct *TskSchedulerQueue::next() 
+Scheduler::task_struct *TskSchedulerQueue::nextTask() 
 {
     if (m_queue.empty())
         return NULL;

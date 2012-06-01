@@ -3,7 +3,7 @@
  *  The Sleuth Kit
  *
  *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- *  Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ *  Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  *  reserved.
  *
  *  This software is distributed under the Common Public License 1.0
@@ -224,6 +224,13 @@ public:
     virtual int getMaxFileIdReadyForAnalysis(uint64_t a_lastFileId, uint64_t & maxFileId) const = 0;
     virtual int getMinFileIdReadyForAnalysis(uint64_t & minFileId) const = 0;
     virtual uint64_t getFileId(int fsId, uint64_t fs_file_id) const = 0;
+
+    /**
+     * Queries the blackboard for raw information about a specific file. 
+     * @param fileId ID of file to lookup
+     * @param fileRecord Location where data should be stored
+     * @returns -1 on error and 0 on success.
+     */
     virtual int getFileRecord(const uint64_t fileId, TskFileRecord& fileRecord) const = 0;
     virtual SectorRuns * getFileSectors(uint64_t fileId) const = 0;
     virtual std::vector<std::wstring> getImageNames() const = 0;
@@ -278,20 +285,21 @@ public:
 
     // Get set of file ids that match the given condition (i.e. SQL where clause)
     virtual std::vector<uint64_t> getFileIds(std::string& condition) const = 0;
+    virtual std::vector<const TskFileRecord> getFileRecords(std::string& condition) const = 0;
 
     // Get the number of files that match the given condition
     virtual int getFileCount(std::string& condition) const = 0;
 
-    virtual std::vector<uint64_t> getUniqueCarvedFileIds(HASH_TYPE hashType) const = 0;
+    virtual std::map<uint64_t, std::string> getUniqueCarvedFiles(HASH_TYPE hashType) const = 0;
     virtual std::vector<uint64_t> getCarvedFileIds() const = 0;
 
     virtual std::vector<uint64_t> getUniqueFileIds(HASH_TYPE hashType) const = 0;
     virtual std::vector<uint64_t> getFileIds() const = 0;
 
-    virtual int setHash(uint64_t a_file_id, TskImgDB::HASH_TYPE hashType, const std::string hash) = 0;
-    virtual std::string getCfileName(uint64_t a_file_id) const = 0;
+    virtual int setHash(const uint64_t a_file_id, const TskImgDB::HASH_TYPE hashType, const std::string& hash) const = 0;
+    virtual std::string getCfileName(const uint64_t a_file_id) const = 0;
 
-    virtual int addModule(const std::string name, const std::string description, int & moduleId) = 0;
+    virtual int addModule(const std::string& name, const std::string& description, int & moduleId) = 0;
     virtual int setModuleStatus(uint64_t file_id, int module_id, int status) = 0;
     virtual int getModuleErrors(std::vector<TskModuleStatus> & moduleStatusList) const = 0;
     virtual std::string getFileName(uint64_t file_id) const = 0;

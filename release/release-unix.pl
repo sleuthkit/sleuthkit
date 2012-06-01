@@ -19,7 +19,7 @@ my $GITDIR;
 my $TARBALL;
 my $BRANCH;
 
-my $TESTING = 1;
+my $TESTING = 0;
 print "TESTING MODE (no commits)\n" if ($TESTING);
 
 ######################################################
@@ -84,6 +84,7 @@ sub clean_src() {
 sub verify_precheckin {
 
     system ("git pull");
+    system ("git submodule update");
 
     print "Verifying everything is checked in\n";
     exec_pipe(*OUT, "git status -s | grep \"^ M\"");
@@ -509,6 +510,7 @@ exec_pipe(*OUT, "git tag | grep \"${TSK_RELDIR}\"");
 my $foo = read_pipe_line(*OUT);
 if ($foo ne "") {
     print "Tag ${TSK_RELDIR} already exists\n";
+    print "Remove with 'git tag -d ${TSK_RELDIR}'\n";
     die "stopping";
 }
 close(OUT);
@@ -535,4 +537,4 @@ tag_dir();
 make_tar();
 verify_tar();
 
-print "File saved as ${TARBALL}\n";
+print "File saved as ${TARBALL} (in root folder)\n";

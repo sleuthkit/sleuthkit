@@ -2390,8 +2390,6 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
             return 1;
         }
 
-
-
         // Uncompress the chunk of data
         if (tsk_verbose)
             tsk_fprintf(stderr,
@@ -2636,20 +2634,20 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     }
 
     uint64_t cummulativeSize = 0;
-    uint32_t startUnit;
-    uint32_t startUnitOffset;
-    uint32_t endUnit;
+    uint32_t startUnit = 0;
+    uint32_t startUnitOffset = 0;
+    uint32_t endUnit = 0;
 
     // Compute the range of compression units needed for the request
     for (indx = 0; indx < tableSize; indx++) {
         if (cummulativeSize <= a_offset &&
-            cummulativeSize + COMPRESSION_UNIT_SIZE > a_offset) {
+            (cummulativeSize + COMPRESSION_UNIT_SIZE > a_offset)) {
             startUnit = indx;
             startUnitOffset = a_offset - cummulativeSize;
         }
 
-        if (cummulativeSize < a_offset + a_len &&
-            cummulativeSize + COMPRESSION_UNIT_SIZE >= a_offset + a_len) {
+        if ((cummulativeSize < a_offset + a_len) &&
+            (cummulativeSize + COMPRESSION_UNIT_SIZE >= a_offset + a_len)) {
             endUnit = indx;
         }
         cummulativeSize += COMPRESSION_UNIT_SIZE;
@@ -2689,8 +2687,6 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
             free(uncBuf);
             return -1;
         }
-
-
 
         // Uncompress the chunk of data
         if (tsk_verbose)
@@ -3612,7 +3608,6 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         return NULL;
     }
 
-
     // JUST read the resource fork header
     hfs_resource_fork_header rfHeader;
 
@@ -3661,9 +3656,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
     uint16_t nameListOffset =
         tsk_getu16(fs_info->endian, mapHdr->nameListOffset);
     unsigned char hasNameList;
-    char *nameListBegin;
-    char *nameBuffer;
-
+    char *nameListBegin = NULL;
 
     if (nameListOffset >= mapLength || nameListOffset == 0) {
         hasNameList = FALSE;
@@ -3694,6 +3687,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
                     refOff)) + pindx;
             int16_t nameOffset =
                 tsk_gets16(fs_info->endian, item->resNameOffset);
+            char *nameBuffer = NULL;
 
             if (hasNameList && nameOffset != -1) {
                 char *name = nameListBegin + nameOffset;
@@ -4582,6 +4576,7 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     hfs_plus_vh *sb = hfs->fs;
     time_t mac_time;
     TSK_INUM_T inode;
+    char timeBuf[128];
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "hfs_fstat: called\n");
@@ -4665,21 +4660,24 @@ hfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     // (creation date is in local time zone, not UTC, according to TN 1150)
     mac_time =
         hfs_convert_2_unix_time(tsk_getu32(fs->endian, hfs->fs->cr_date));
-    tsk_fprintf(hFile, "\nCreation Date: \t%s",
-        asctime(gmtime(&mac_time)));
+    tsk_fprintf(hFile, "\nCreation Date: \t%s\n",
+                tsk_fs_time_to_str(mktime(gmtime(&mac_time)), timeBuf));
 
     mac_time =
         hfs_convert_2_unix_time(tsk_getu32(fs->endian, hfs->fs->m_date));
-    tsk_fprintf(hFile, "Last Written Date: \t%s", ctime(&mac_time));
+    tsk_fprintf(hFile, "Last Written Date: \t%s\n",
+                tsk_fs_time_to_str(mac_time, timeBuf));
 
     mac_time =
         hfs_convert_2_unix_time(tsk_getu32(fs->endian,
             hfs->fs->bkup_date));
-    tsk_fprintf(hFile, "Last Backup Date: \t%s", ctime(&mac_time));
+    tsk_fprintf(hFile, "Last Backup Date: \t%s\n",
+                tsk_fs_time_to_str(mac_time, timeBuf));
 
     mac_time =
         hfs_convert_2_unix_time(tsk_getu32(fs->endian, hfs->fs->chk_date));
-    tsk_fprintf(hFile, "Last Checked Date: \t%s", ctime(&mac_time));
+    tsk_fprintf(hFile, "Last Checked Date: \t%s\n",
+                tsk_fs_time_to_str(mac_time, timeBuf));
 
 
     if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_VH_ATTR_SOFTWARE_LOCK)
@@ -4882,8 +4880,6 @@ output_print_addr(HFS_PRINT_ADDR * print)
     }
 }
 
-
-
 static TSK_WALK_RET_ENUM
 print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
@@ -4910,11 +4906,6 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     return TSK_WALK_CONT;
 }
 
-
-
-
-
-
 /**
  * Print details on a specific file to a file handle. 
  *
@@ -4935,6 +4926,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     char hfs_mode[12];
     HFS_PRINT_ADDR print;
     HFS_ENTRY entry;
+    char timeBuf[128];
 
     tsk_error_reset();
 
@@ -5126,21 +5118,17 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         fs_file->meta->crtime -= sec_skew;
         fs_file->meta->time2.hfs.bkup_time -= sec_skew;
 
-        if (fs_file->meta->crtime != -sec_skew)
-            tsk_fprintf(hFile, "Created:\t%s",
-                ctime(&fs_file->meta->crtime));
-        if (fs_file->meta->mtime != -sec_skew)
-            tsk_fprintf(hFile, "Content Modified:\t%s",
-                ctime(&fs_file->meta->mtime));
-        if (fs_file->meta->ctime != -sec_skew)
-            tsk_fprintf(hFile, "Attributes Modified:\t%s",
-                ctime(&fs_file->meta->ctime));
-        if (fs_file->meta->atime != -sec_skew)
-            tsk_fprintf(hFile, "Accessed:\t%s",
-                ctime(&fs_file->meta->atime));
-        if (fs_file->meta->time2.hfs.bkup_time != -sec_skew)
-            tsk_fprintf(hFile, "Backed Up:\t%s",
-                ctime(&fs_file->meta->time2.hfs.bkup_time));
+        tsk_fprintf(hFile, "Created:\t%s\n",
+                    tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+        tsk_fprintf(hFile, "Content Modified:\t%s\n",
+                    tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
+        tsk_fprintf(hFile, "Attributes Modified:\t%s\n",
+                    tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n",
+                    tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
+        tsk_fprintf(hFile, "Backed Up:\t%s\n",
+                    tsk_fs_time_to_str(fs_file->meta->time2.hfs.bkup_time,
+                                       timeBuf));
 
         fs_file->meta->mtime += sec_skew;
         fs_file->meta->atime += sec_skew;
@@ -5153,21 +5141,16 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "\nTimes:\n");
     }
 
-    if (fs_file->meta->crtime != 0)
-        tsk_fprintf(hFile, "Created:\t\t%s",
-            ctime(&fs_file->meta->crtime));
-    if (fs_file->meta->mtime != 0)
-        tsk_fprintf(hFile, "Content Modified:\t%s",
-            ctime(&fs_file->meta->mtime));
-    if (fs_file->meta->ctime != 0)
-        tsk_fprintf(hFile, "Attributes Modified:\t%s",
-            ctime(&fs_file->meta->ctime));
-    if (fs_file->meta->atime != 0)
-        tsk_fprintf(hFile, "Accessed:\t\t%s",
-            ctime(&fs_file->meta->atime));
-    if (fs_file->meta->time2.hfs.bkup_time != 0)
-        tsk_fprintf(hFile, "Backed Up:\t\t%s",
-            ctime(&fs_file->meta->time2.hfs.bkup_time));
+    tsk_fprintf(hFile, "Created:\t%s\n",
+                tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+    tsk_fprintf(hFile, "Content Modified:\t%s\n",
+                tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
+    tsk_fprintf(hFile, "Attributes Modified:\t%s\n",
+                tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
+    tsk_fprintf(hFile, "Accessed:\t%s\n",
+                tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
+    tsk_fprintf(hFile, "Backed Up:\t%s\n",
+                tsk_fs_time_to_str(fs_file->meta->time2.hfs.bkup_time, timeBuf));
 
     // IF this is a regular file, then print out the blocks of the DATA and RSRC forks.
     if (tsk_getu16(fs->endian, entry.cat.std.rec_type) == HFS_FILE_RECORD) {
@@ -5708,11 +5691,12 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     return fs;
 }
 
+
 /*
  * Error Handling
  */
+
 /**
- * \ingroup baselib
  * Call this when an error is first detected.  It sets the error code and it also
  * sets the primary error string, describing the lowest level of error.  (Actually,
  * it appends to the error string.)
@@ -5753,9 +5737,7 @@ error_detected(uint32_t errnum, char *errstr, ...)
 
 }
 
-
 /**
- * \ingroup baselib
  * Call this when a called TSK function returns an error.  Presumably, that
  * function will have set the error code and the primary error string.  This
  * *appends* to the secondary error string.  It should be called to describe

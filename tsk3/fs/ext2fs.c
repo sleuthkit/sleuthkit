@@ -1144,7 +1144,7 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     ext2fs_sb *sb = ext2fs->fs;
     int ibpg;
     time_t tmptime;
-    char timeBuf[32];
+    char timeBuf[128];
 
 
     // clean up any error messages that are lying around
@@ -1642,7 +1642,7 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     EXT2FS_PRINT_ADDR print;
     const TSK_FS_ATTR *fs_attr_indir;
     ext2fs_inode *dino_buf = NULL;
-    char timeBuf[32];
+    char timeBuf[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();

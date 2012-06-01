@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="ValidatePipeline"
+	Name="tsk_validatepipeline"
 	ProjectGUID="{352C3C04-1F31-4138-97A6-1DC6EC5FD379}"
 	RootNamespace="ValidatePipeline"
 	Keyword="Win32Proj"
@@ -61,8 +61,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="libtskframework.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="$(POCO_HOME)\lib"
+				AdditionalLibraryDirectories="&quot;$(TSK_HOME)\framework\win32\framework\$(ConfigurationName)&quot;;&quot;$(POCO_HOME)\lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -135,8 +136,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="libtskframework.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="$(POCO_HOME)\lib"
+				AdditionalLibraryDirectories="&quot;$(TSK_HOME)\framework\win32\framework\$(ConfigurationName)&quot;;&quot;$(POCO_HOME)\lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -175,15 +177,9 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\ValidatePipeline\ValidatePipeline.cpp"
+				RelativePath="..\..\tsk_validatePipeline\tsk_validatePipeline.cpp"
 				>
 			</File>
-		</Filter>
-		<Filter
-			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
-			>
 		</Filter>
 	</Files>
 	<Globals>

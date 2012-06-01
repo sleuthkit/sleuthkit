@@ -97,7 +97,6 @@ public class BlackboardAttribute {
 		TSK_DATETIME(2, "TSK_DATETIME", "Date/Time"),
 		TSK_NAME(3, "TSK_NAME", "Name"),
 		TSK_PROG_NAME(4, "TSK_PROG_NAME", "Program Name"),
-		TSK_WEB_BOOKMARK(5, "TSK_WEB_BOOKMARK", "Bookmark"),
 		TSK_VALUE(6, "TSK_VALUE", "Value"),
 		TSK_FLAG(7, "TSK_FLAG", "Flag"),
 		TSK_PATH(8, "TSK_PATH", "Path"),
@@ -128,7 +127,11 @@ public class BlackboardAttribute {
 		TSK_LAST_ACCESSED(33, "TSK_LAST_ACCESSED", "Last Time Accessed"), // @@@ Review this instead of using DATETIME
 		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", "IP Address"),
 		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", "Phone Number"),
-		TSK_PATH_ID(36, "TSK_PATH_ID", "Path ID");
+		TSK_PATH_ID(36, "TSK_PATH_ID", "Path ID"),
+		TSK_SET_NAME(37, "TSK_SET_NAME", "Set Name"),
+		TSK_ENCRYPTION_DETECTED(38, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"),
+		TSK_MALWARE_DETECTED(39, "TSK_MALWARE_DETECTED", "Malware Detected"),
+		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED", "Steganography Detected");
 		
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		private String label;
@@ -170,7 +173,7 @@ public class BlackboardAttribute {
 			}
 			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching type: " + label);
 		}
-
+		
 		public String getDisplayName() {
 			return this.displayName;
 		}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Used in binary distribution of framework -->
+<TSK_FRAMEWORK_CONFIG>
+  <MODULE_DIR>..\modules\</MODULE_DIR>  
+  <CONFIG_DIR>.\</CONFIG_DIR>
+  <PIPELINE_CONFIG_FILE>pipeline_config.xml</PIPELINE_CONFIG_FILE>
+</TSK_FRAMEWORK_CONFIG>

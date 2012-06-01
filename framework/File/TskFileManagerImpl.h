@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -40,9 +40,6 @@ public:
     // Return a File object for the given file id.
     virtual TskFile* getFile(const uint64_t fileId);
 
-    // Return a TskFile object for the given file id and path
-    virtual TskFile* getFile(const uint64_t fileId, const std::wstring& path);
-
     // Return the path including the file name for the given file id.
     virtual std::wstring getPath(const uint64_t fileId);
 
@@ -50,12 +47,14 @@ public:
     virtual void saveFile(TskFile* fileToSave);
     virtual void saveFile(const uint64_t fileId);
 
-    // Save the given file to the specified fully qualified file name
-    virtual void saveFile(TskFile* fileToSave, const std::wstring& filePath);
-    virtual void saveFile(const uint64_t fileId, const std::wstring& filePath);
+    // Copy the given file to the specified fully qualified file name
+    virtual void copyFile(TskFile* fileToSave, const std::wstring& filePath);
+    virtual void copyFile(const uint64_t fileId, const std::wstring& filePath);
 
     // Save the contents of the input stream to a file with the given fileId
-    virtual void saveFile(const uint64_t fileId, std::istream& istr);
+    virtual void addFile(const uint64_t fileId, std::istream& istr);
+
+    virtual void addFile(const uint64_t fileId, std::wstring& filePath);
 
     // Delete the file from disk.
     virtual void deleteFile(TskFile* fileToDelete);

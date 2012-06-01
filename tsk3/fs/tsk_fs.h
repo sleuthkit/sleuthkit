@@ -678,6 +678,8 @@ extern "C" {
         a_fs_file, int a_idx);
     extern const TSK_FS_ATTR *tsk_fs_file_attr_get_type(TSK_FS_FILE *
         a_fs_file, TSK_FS_ATTR_TYPE_ENUM, uint16_t, uint8_t);
+    extern const TSK_FS_ATTR *tsk_fs_file_attr_get_id(TSK_FS_FILE *
+        a_fs_file, uint16_t);
 
     extern uint8_t tsk_fs_file_walk(TSK_FS_FILE * a_fs_file,
         TSK_FS_FILE_WALK_FLAG_ENUM a_flags, TSK_FS_FILE_WALK_CB a_action,
@@ -1649,7 +1651,7 @@ class TskFsInfo {
     }
 
     /**
-        * Read arbitrary data from inside of the file system. 
+    * Read arbitrary data from inside of the file system. 
     * See tsk_fs_block_free() for details
     * @param a_off The byte offset to start reading from (relative to start of file system)
     * @param a_buf The buffer to store the block in.
@@ -1664,7 +1666,7 @@ class TskFsInfo {
     };
 
     /**
-        * Read a file system block.
+    * Read a file system block.
     * See tsk_fs_read_block() for details
     * @param a_addr The starting block file system address. 
     * @param a_buf The char * buffer to store the block data in.
@@ -1679,7 +1681,7 @@ class TskFsInfo {
     };
 
     /**
-        * Walk a range of metadata structures and call a callback for each
+    * Walk a range of metadata structures and call a callback for each
     * structure that matches the flags supplied.   For example, it can
     * call the callback on only allocated or unallocated entries. 
     * See tsk_fs_meta_walk() for details
@@ -1832,7 +1834,7 @@ class TskFsInfo {
     * @param a_str String to parse.
     * @returns ID of string (or unsupported if the name is unknown)
     */
-    static const TSK_FS_TYPE_ENUM typeToId(const TSK_TCHAR * a_str) {
+    static TSK_FS_TYPE_ENUM typeToId(const TSK_TCHAR * a_str) {
         return tsk_fs_type_toid(a_str);
     };
 

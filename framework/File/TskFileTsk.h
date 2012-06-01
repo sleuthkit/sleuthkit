@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -35,19 +35,12 @@
 class TSK_FRAMEWORK_API TskFileTsk : public TskFile
 {
 public:
-    // Construct a file for the given id.
-	TskFileTsk(const uint64_t id);
-
-    // Construct a file for the given id and path.
-    // The path is must be the fully qualified path to a
-    // file on disk and the file must exist and be readable.
-    TskFileTsk(const uint64_t id, const std::string& path);
+    
 
 	virtual ~TskFileTsk();
 
     /// Fully qualified path to on-disk representation of file.
     virtual std::string getPath() const;
-    virtual void setPath(const std::string& path);
 
     /// Does a file exist on disk for this TskFile object.
     /**
@@ -74,6 +67,10 @@ public:
     /// Close the file.
     virtual void close();
 
+    virtual TSK_OFF_T tell() const;
+
+    virtual TSK_OFF_T seek(const TSK_OFF_T off, std::ios::seekdir origin = std::ios::beg);
+
     /**
      * @param buf Buffer into which file content will be placed.
      * Must be at least "count" bytes in size.
@@ -82,10 +79,14 @@ public:
      */
     virtual ssize_t read(char * buf, const size_t count);
 
-    // Read "count" bytes into "buf" starting at "offset".
-    virtual ssize_t read(const int64_t offset, char * buf, const size_t count);
-
 protected:
+    friend class TskFileManagerImpl;
+
+    // Construct a file for the given id.
+	TskFileTsk(const uint64_t id);
+
+    TskFileTsk() {};
+
     // A handle to the file on disk
     Poco::File m_file;
 

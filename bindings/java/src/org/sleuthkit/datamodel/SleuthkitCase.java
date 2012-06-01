@@ -18,6 +18,13 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.sql.Connection;
@@ -192,19 +199,21 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Set the path to NSRL database
-	 * @param path Path to database ( not index )
+	 * Set the NSRL database
+	 * @param path The path to the database
+	 * @return a handle for that database
 	 */
-	public void setNSRLDatabase(String path) throws TskException {
-		this.caseHandle.setNSRLDatabase(path);
+	public int setNSRLDatabase(String path) throws TskException {
+		return this.caseHandle.setNSRLDatabase(path);
 	}
 
 	/**
-	 * Set the path to known bad database
-	 * @param path Path to database ( not index )
+	 * Add the known bad database
+	 * @param path The path to the database
+	 * @return a handle for that database
 	 */
-	public void setKnownBadDatabase(String path) throws TskException {
-		this.caseHandle.setKnownBadDatabase(path);
+	public int addKnownBadDatabase(String path) throws TskException {
+		return this.caseHandle.addKnownBadDatabase(path);
 	}
 
 	public void clearLookupDatabases() throws TskException {
@@ -555,7 +564,7 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 	}
-	
+
 	/**
 	 * helper method to get all artifacts matching the type id name
 	 * @param artifactTypeID artifact type id
@@ -615,9 +624,7 @@ public class SleuthkitCase {
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskException {
 		return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel(), obj_id);
 	}
-	
-	
-	
+
 	/**
 	 * Get all blackboard artifacts of a given type
 	 * @param artifactTypeName artifact type name
@@ -628,7 +635,6 @@ public class SleuthkitCase {
 		return getArtifactsHelper(artifactTypeID, artifactTypeName);
 	}
 
-	
 	/**
 	 * Get all blackboard artifacts of a given type 
 	 * @param artifactType artifact type enum
@@ -1991,6 +1997,42 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Make a duplicate / backup copy of the current case database
+	 * Makes a new copy only, and continues to use the current db
+	 * 
+	 * @param newDBPath path to the copy to be created.  File will be overwritten if it exists
+	 * @throws IOException if copying fails
+	 */
+	public void copyCaseDB(String newDBPath) throws IOException {
+		InputStream in = null;
+		OutputStream out = null;
+		SleuthkitCase.dbReadLock();
+		try {
+			InputStream inFile = new FileInputStream(this.dbPath);
+			in = new BufferedInputStream(inFile);
+			OutputStream outFile = new FileOutputStream(newDBPath);
+			out = new BufferedOutputStream(outFile);
+			int readBytes = 0;
+			while ((readBytes = in.read()) != -1) {
+				out.write(readBytes);
+			}
+		} finally {
+			try {
+				if (in != null) {
+					in.close();
+				}
+				if (out != null) {
+					out.flush();
+					out.close();
+				}
+			} catch (IOException e) {
+				Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Could not close streams after db copy", e);
+			}
+			SleuthkitCase.dbReadUnlock();
+		}
+	}
+
+	/**
 	 * Store the known status for the FsContent in the database
 	 * Note: will not update status if content is already 'Known Bad'
 	 *
@@ -2103,15 +2145,26 @@ public class SleuthkitCase {
 //	}
 
 	/**
-	 * Look up the given hash in the known databases
-	 *
-	 * @param md5Hash	The hash of that content
-	 * @return			Known status from the databases
-	 * @throws			TskException
+	 * Look up the given hash in the NSRL database
+	 * @param md5Hash The hash to look up
+	 * @return the status of the hash in the NSRL
+	 * @throws TskException 
 	 */
-	public TskData.FileKnown lookupMd5(String md5Hash) throws TskException {
-		return SleuthkitJNI.lookupHash(md5Hash);
+	public TskData.FileKnown nsrlLookupMd5(String md5Hash) throws TskException {
+		return SleuthkitJNI.nsrlHashLookup(md5Hash);
 	}
+
+	/**
+	 * Look up the given hash in the known bad database
+	 * @param md5Hash The hash to look up
+	 * @param dbHandle The handle of the open database to look in
+	 * @return the status of the hash in the known bad database
+	 * @throws TskException 
+	 */
+	public TskData.FileKnown knownBadLookupMd5(String md5Hash, int dbHandle) throws TskException {
+		return SleuthkitJNI.knownBadHashLookup(md5Hash, dbHandle);
+	}
+
 //	Useful if we want to queue sql updates for performance reasons
 //	/**
 //	 * Calculate the given Content objects' md5 hashes, look them up in the
@@ -2145,7 +2198,6 @@ public class SleuthkitCase {
 //		}
 //		throw new TskException("Error analyzing files");
 //	}
-
 	/**
 	 * Return the number of objects in the database of a given file type.
 	 *
@@ -2179,13 +2231,9 @@ public class SleuthkitCase {
 	 * @return text the escaped version
 	 */
 	private static String escapeForBlackboard(String text) {
-		try {
-			//text = text.replaceAll("\\\\'", URLEncoder.encode("\\'", "UTF-8"));
-			text = text.replaceAll("'", URLEncoder.encode("'", "UTF-8"));
-			//text = text.replaceAll("\"", URLEncoder.encode("\"", "UTF-8"));
-			//text = text.replaceAll("\\\\", URLEncoder.encode("\\", "UTF-8"));
-		} catch (UnsupportedEncodingException ex) {
-		}
+		if (text != null)
+			text = text.replaceAll("'", "''");
 		return text;
 	}
+
 }

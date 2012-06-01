@@ -502,7 +502,10 @@ sub print_tl {
         #
         my $date_string;
         if ($year_first) {
-            if ($month_num) {
+            if ($time == 0) {
+                $date_string = "0000 Xxx 00 Xxx 00:00:00";
+            }
+            elsif ($month_num) {
                 $date_string =
                   "$yeart $mon $mday $digit_to_day{$wday} $hour:$min:$sec";
             }
@@ -512,7 +515,10 @@ sub print_tl {
             }
         }
         else {
-            if ($month_num) {
+            if ($time == 0) {
+                $date_string = "Xxx Xxx 00 0000 00:00:00";
+            }
+            elsif ($month_num) {
                 $date_string =
                   "$digit_to_day{$wday} $mon $mday $yeart $hour:$min:$sec";
             }

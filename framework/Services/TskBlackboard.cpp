@@ -2,7 +2,7 @@
 * The Sleuth Kit
 *
 * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
-* Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+* Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
 * reserved.
 *
 * This software is distributed under the Common Public License 1.0
@@ -12,16 +12,18 @@
 
 map<int, TskArtifactNames> initializeArtifactTypeMap(){
     map<int, TskArtifactNames> retval;
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_GEN_INFO, TskArtifactNames("TSK_ART_GEN_INFO", "General Info")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_WEB_BOOKMARK, TskArtifactNames("TSK_ART_WEB_BOOKMARK", "Date Time")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_WEB_COOKIE, TskArtifactNames("TSK_ART_WEB_COOKIE", "Web Cookie")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_WEB_HISTORY, TskArtifactNames("TSK_ART_WEB_HISTORY", "History")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_WEB_DOWNLOAD, TskArtifactNames("TSK_ART_WEB_DOWNLOAD", "Download")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_RECENT_OBJECT, TskArtifactNames("TSK_ART_RECENT_OBJECT", "Recent History Object")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_TRACKPOINT, TskArtifactNames("TSK_ART_TRACKPOINT", "Trackpoint")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_INSTALLED_PROG, TskArtifactNames("TSK_ART_INSTALLED_PROG", "Installed Program")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_KEYWORD_HIT, TskArtifactNames("TSK_ART_KEYWORD_HIT", "Keyword Hit")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_ART_DEVICE_ATTACHED, TskArtifactNames("TSK_ART_DEVICE_ATTACHED", "Device Attached")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_GEN_INFO, TskArtifactNames("TSK_GEN_INFO", "General Info")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_BOOKMARK, TskArtifactNames("TSK_WEB_BOOKMARK", "Date Time")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_COOKIE, TskArtifactNames("TSK_WEB_COOKIE", "Web Cookie")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_HISTORY, TskArtifactNames("TSK_WEB_HISTORY", "History")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_DOWNLOAD, TskArtifactNames("TSK_WEB_DOWNLOAD", "Download")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_RECENT_OBJECT, TskArtifactNames("TSK_RECENT_OBJECT", "Recent History Object")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_TRACKPOINT, TskArtifactNames("TSK_TRACKPOINT", "Trackpoint")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_INSTALLED_PROG, TskArtifactNames("TSK_INSTALLED_PROG", "Installed Program")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_KEYWORD_HIT, TskArtifactNames("TSK_KEYWORD_HIT", "Keyword Hit")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_HASHSET_HIT, TskArtifactNames("TSK_HASHSET_HIT", "Hashset Hit")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_DEVICE_ATTACHED, TskArtifactNames("TSK_DEVICE_ATTACHED", "Device Attached")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_INTERESTING_FILE_HIT, TskArtifactNames("TSK_INTERESTING_FILE_HIT", "Interesting File")));
     return retval;
 }
 
@@ -31,7 +33,6 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME, TskAttributeNames("TSK_DATETIME", "Datetime")));
     retval.insert(pair<int, TskAttributeNames>(TSK_NAME, TskAttributeNames("TSK_NAME", "Name")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PROG_NAME, TskAttributeNames("TSK_PROG_NAME", "Program Name")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_WEB_BOOKMARK, TskAttributeNames("TSK_WEB_BOOKMARK", "Web Bookmark")));
     retval.insert(pair<int, TskAttributeNames>(TSK_VALUE, TskAttributeNames("TSK_VALUE", "Value")));
     retval.insert(pair<int, TskAttributeNames>(TSK_FLAG, TskAttributeNames("TSK_FLAG", "Flag")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PATH, TskAttributeNames("TSK_PATH", "Path")));
@@ -63,6 +64,10 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_IP_ADDRESS, TskAttributeNames("TSK_IP_ADDRESS", "IP Address")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER, TskAttributeNames("TSK_PHONE_NUMBER", "Phone Number")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PATH_ID, TskAttributeNames("TSK_PATH_ID", "Id of Path")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_SET_NAME, TskAttributeNames("TSK_SET_NAME", "Set Name")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_ENCRYPTION_DETECTED, TskAttributeNames("TSK_ENCRYPTION_DETECTED", "File Encryption Detected")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_MALWARE_DETECTED, TskAttributeNames("TSK_MALWARE_DETECTED", "Malware Detected")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_STEG_DETECTED, TskAttributeNames("TSK_STEG_DETECTED", "Steganography Detected")));
 
     return retval;
 }

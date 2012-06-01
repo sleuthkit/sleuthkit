@@ -3,7 +3,7 @@
  *  The Sleuth Kit
  *
  *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- *  Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ *  Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  *  reserved.
  *
  *  This software is distributed under the Common Public License 1.0
@@ -89,20 +89,21 @@ public:
 
     // Get set of file ids that match the given condition (i.e. SQL where clause)
     virtual std::vector<uint64_t> getFileIds(std::string& condition) const;
+    virtual std::vector<const TskFileRecord> getFileRecords(std::string& condition) const;
 
     // Get the number of files that match the given condition
     virtual int getFileCount(std::string& condition) const;
 
-    virtual std::vector<uint64_t> getUniqueCarvedFileIds(HASH_TYPE hashType) const;
+    virtual std::map<uint64_t, std::string> getUniqueCarvedFiles(HASH_TYPE hashType) const;
     virtual std::vector<uint64_t> getCarvedFileIds() const;
 
     virtual std::vector<uint64_t> getUniqueFileIds(HASH_TYPE hashType) const;
     virtual std::vector<uint64_t> getFileIds() const;
 
-    virtual int setHash(uint64_t a_file_id, TskImgDB::HASH_TYPE hashType, const std::string hash);
-    virtual std::string getCfileName(uint64_t a_file_id) const;
+    virtual int setHash(const uint64_t a_file_id, const TskImgDB::HASH_TYPE hashType, const std::string& hash) const;
+    virtual std::string getCfileName(const uint64_t a_file_id) const;
 
-    virtual int addModule(const std::string name, const std::string description, int & moduleId);
+    virtual int addModule(const std::string& name, const std::string& description, int & moduleId);
     virtual int setModuleStatus(uint64_t file_id, int module_id, int status);
     virtual int getModuleErrors(std::vector<TskModuleStatus> & moduleStatusList) const;
     virtual std::string getFileName(uint64_t file_id) const;
@@ -147,11 +148,11 @@ private:
 
     static int busyHandler(void *, int);
     std::vector<uint64_t> getFileIdsWorker(std::string tableName, const std::string condition = "") const;
-    int getModuleId(const std::string name, int & moduleId) const;
     void constructStmt(std::string& stmt, std::string& condition) const;
     int addUnusedSector(uint64_t sectStart, uint64_t sectEnd, int volId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList);
     int getFileTypeRecords(std::string& stmt, std::list<TskFileTypeRecord>& fileTypeInfoList) const;
     virtual vector<TskBlackboardArtifact> getArtifactsHelper(uint64_t file_id, int artifactTypeID, string artifactTypeName);
+    void getCarvedFileInfo(const std::string& stmt, std::map<uint64_t, std::string>& results) const;
 };
 
 #endif

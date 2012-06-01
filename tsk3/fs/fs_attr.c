@@ -279,8 +279,6 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T init_size, TSK_OFF_T alloc_size,
     TSK_FS_ATTR_FLAG_ENUM flags, uint32_t compsize)
 {
-    TSK_FS_INFO *fs;
-
     if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -293,8 +291,6 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
         tsk_error_set_errstr("Null fs_attr in tsk_fs_attr_set_run");
         return 1;
     }
-
-    fs = a_fs_file->fs_info;
 
     if (alloc_size < size) {
         tsk_error_reset();

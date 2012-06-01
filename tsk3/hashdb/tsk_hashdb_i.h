@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <wchar.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -51,9 +52,10 @@ extern "C" {
     ( TSK_HDB_HTYPE_LEN(x) + TSK_HDB_OFF_LEN + 2)
 
 /**
- * String used in index header.  It is one longer than a 
+ * Strings used in index header.  It is one longer than a 
  * sha-1 hash - so that it always sorts to the top */
-#define TSK_HDB_IDX_HEAD_STR	"00000000000000000000000000000000000000000"
+#define TSK_HDB_IDX_HEAD_TYPE_STR	"00000000000000000000000000000000000000000"
+#define TSK_HDB_IDX_HEAD_NAME_STR	"00000000000000000000000000000000000000001"
 
 
 
@@ -65,33 +67,40 @@ extern "C" {
                                            unsigned char *hvalue, int hlen,
                                            TSK_OFF_T offset);
     extern uint8_t tsk_hdb_idxfinalize(TSK_HDB_INFO *);
+    extern void tsk_hdb_name_from_path(TSK_HDB_INFO *);
 
 /* Functions */
 
     extern uint8_t nsrl_test(FILE *);
+    extern void nsrl_name(TSK_HDB_INFO *);
     extern uint8_t nsrl_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t nsrl_getentry(TSK_HDB_INFO *, const char *, TSK_OFF_T,
                                  TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                  void *);
 
     extern uint8_t md5sum_test(FILE *);
+    extern void md5sum_name(TSK_HDB_INFO *);
     extern uint8_t md5sum_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t md5sum_getentry(TSK_HDB_INFO *, const char *, TSK_OFF_T,
                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                    void *);
 
     extern uint8_t encase_test(FILE *);
+    extern void encase_name(TSK_HDB_INFO *);
     extern uint8_t encase_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t encase_getentry(TSK_HDB_INFO *, const char *, TSK_OFF_T,
                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                    void *);
 
     extern uint8_t hk_test(FILE *);
+    extern void hk_name(TSK_HDB_INFO *);
     extern uint8_t hk_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t hk_getentry(TSK_HDB_INFO *, const char *, TSK_OFF_T,
                                TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                void *);
 
+    
+    extern void idxonly_name(TSK_HDB_INFO *);
     extern uint8_t idxonly_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t idxonly_getentry(TSK_HDB_INFO *, const char *,
                                     TSK_OFF_T, TSK_HDB_FLAG_ENUM,

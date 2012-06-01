@@ -14,10 +14,17 @@
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
 #include <time.h>
+#include <vector>
+#include <map>
 #include <string>
+#include <algorithm>
+using std::string;
+using std::vector;
+using std::map;
+using std::for_each;
 
 static TSK_HDB_INFO * m_NSRLDb = NULL;
-static TSK_HDB_INFO * m_knownBadDb = NULL;
+static std::vector<TSK_HDB_INFO *> m_knownbads;
 
 /** Throw an TSK exception back up to the Java code with a specific message.
  */
@@ -26,7 +33,6 @@ throwTskError(JNIEnv * env, const char *msg)
 {
     jclass exception;
     exception = env->FindClass("org/sleuthkit/datamodel/TskException");
-
     env->ThrowNew(exception, msg);
 }
 
@@ -188,12 +194,13 @@ JNIEXPORT void JNICALL
  * Set the NSRL database to use for hash lookups.
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
- * @param caseHandle the pointer to the case
+ * @param pathJ the path to the database
+ * @return a handle for the nsrl database
  */
-JNIEXPORT void JNICALL
+JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_setDbNSRLNat(JNIEnv * env,
     jclass obj, jstring pathJ) {
-
+ 
     if (m_NSRLDb != NULL) {
         tsk_hdb_close(m_NSRLDb);
         m_NSRLDb = NULL;
@@ -202,31 +209,79 @@ JNIEXPORT void JNICALL
     toTCHAR(env, pathT, 1024, pathJ);
 
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-    m_NSRLDb = tsk_hdb_open(pathT, flags);
+    TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
+
+    if(tempdb == NULL)
+    {
+        throwTskError(env);
+        return -1;
+    }
     
-    return;
+    m_NSRLDb = tempdb;
+    
+    return 0;
 }
 
 /*
  * Set the "known bad" database to use for hash lookups.
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
- * @param caseHandle the pointer to the case
+ * @param pathJ the path to the database
+ * @return a handle for the known bad database
  */
-JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_setDbKnownBadNat(JNIEnv * env,
+JNIEXPORT jint JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_addDbKnownBadNat(JNIEnv * env,
     jclass obj, jstring pathJ) {
-
-    if (m_knownBadDb != NULL) {
-        tsk_hdb_close(m_knownBadDb);
-        m_knownBadDb = NULL;
-    }
 
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-    m_knownBadDb = tsk_hdb_open(pathT, flags);
+    TSK_HDB_INFO * temp = tsk_hdb_open(pathT, flags);
+
+    if(temp == NULL)
+    {
+        throwTskError(env);
+        return -1;
+    }
+
+    m_knownbads.push_back(temp);
+    
+    return m_knownbads.size();
+}
+
+/*
+ * Get the name of the database pointed to by path
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param pathJ the path to the database
+ */
+JNIEXPORT jstring JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbName(JNIEnv * env,
+    jclass obj, jstring pathJ) {
+
+    TSK_HDB_OPEN_ENUM flags;
+    TSK_TCHAR pathT[1024];
+    toTCHAR(env, pathT, 1024, pathJ);
+    struct STAT_STR buffer;
+
+    if( TSTAT(pathT, &buffer) != -1 )
+        flags = TSK_HDB_OPEN_NONE;
+    else
+        flags = TSK_HDB_OPEN_IDXONLY;
+
+    TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
+
+    if(tempdb == NULL)
+    {
+        throwTskError(env);
+        return env->NewStringUTF("-1");
+    }
+
+    jstring jname = env->NewStringUTF(tempdb->db_name);
+
+    tsk_hdb_close(tempdb);
+    return jname;
 }
 
 
@@ -239,25 +294,26 @@ JNIEXPORT void JNICALL
         m_NSRLDb = NULL;
     }
 
-    if (m_knownBadDb != NULL) {
-        tsk_hdb_close(m_knownBadDb);
-        m_knownBadDb = NULL;
-    }
+    vector<TSK_HDB_INFO *>::iterator it;
+
+    for_each(m_knownbads.begin(), m_knownbads.end(), tsk_hdb_close);
+   
+    m_knownbads.clear();
 }
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    hashDBLookup
+ * Method:    nsrlDbLookup
  * Signature: (Ljava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
 (JNIEnv * env, jclass obj, jstring hash){
 
     jboolean isCopy;
 
     const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
-    TSK_AUTO_CASE_KNOWN_FILE_ENUM file_known = TSK_AUTO_CASE_FILE_KNOWN_UNKNOWN;
+    TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
 
     if (m_NSRLDb != NULL) {
         int8_t retval = tsk_hdb_lookup_str(m_NSRLDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
@@ -265,17 +321,45 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDBLookup
         if (retval == -1) {
             throwTskError(env);
         } else if (retval) {
-            file_known = TSK_AUTO_CASE_FILE_KNOWN_KNOWN;
+            file_known = TSK_DB_FILES_KNOWN_KNOWN;
         }
     }
 
-    if (m_knownBadDb != NULL) {
-        int8_t retval = tsk_hdb_lookup_str(m_knownBadDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
+    env->ReleaseStringUTFChars(hash, (const char *) md5);
+
+    return (int) file_known;
+}
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    knownBadDbLookup
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLookup
+(JNIEnv * env, jclass obj, jstring hash, jint dbHandle){
+
+    if((size_t) dbHandle > m_knownbads.size()) {
+        throwTskError(env, "Invalid database handle");
+        return -1;
+    }
+
+    jboolean isCopy;
+
+    const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
+
+    TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
+
+    
+
+    TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
+
+    if(db != NULL) {
+        int8_t retval = tsk_hdb_lookup_str(db, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
         if (retval == -1) {
             throwTskError(env);
         } else if (retval) {
-            file_known = TSK_AUTO_CASE_FILE_KNOWN_BAD;
+            file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
         }
     }
 
@@ -329,10 +413,11 @@ JNIEXPORT jlong JNICALL
  * @param process the add-image process created by initAddImgNat
  * @param paths array of strings from java, the paths to the image parts
  * @param num_imgs number of image parts
+ * @param timezone the timezone the image is from
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jobjectArray paths, jint num_imgs) {
+    jclass obj, jlong process, jobjectArray paths, jint num_imgs, jstring timezone) {
     jboolean isCopy;
 
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
@@ -368,23 +453,33 @@ JNIEXPORT void JNICALL
             return;
         }
     }
+    
+    const char * tzchar = env->
+            GetStringUTFChars(timezone, &isCopy);
 
     // flag to free tskAuto if the process is interuppted
     bool deleteProcess = false;
 
+    tskAuto->setTz(string(tzchar));
+
     // process the image (parts)
-    if (tskAuto->startAddImage((int) num_imgs, imagepaths8,
-            TSK_IMG_TYPE_DETECT, 0)) {
-        std::string msg = "Errors occured while ingesting image\n";
-        std::vector<TskAuto::error_record> errors = tskAuto->getErrorList();
+    uint8_t ret = 0;
+    if ( (ret = tskAuto->startAddImage((int) num_imgs, imagepaths8,
+        TSK_IMG_TYPE_DETECT, 0)) != 0) {
+        string msg = "Errors occured while ingesting image\n";
+        vector<TskAuto::error_record> errors = tskAuto->getErrorList();
         for (size_t i = 0; i < errors.size(); i++) {
             msg.append(TskAuto::errorRecordToString(errors[i]));
             msg.append("\n");
         }
 
-        throwTskError(env);
-        // @@@ We never get past this point now to do any cleanup
-        deleteProcess = true;
+        //need to add a mechanism to flag (non-)fatal errors across jni
+        throwTskError(env, msg.c_str());
+
+        if (ret == 1) {
+            //fatal error
+            deleteProcess = true;
+        }
     }
 
     // cleanup
@@ -394,6 +489,9 @@ JNIEXPORT void JNICALL
             env->GetObjectArrayElement(paths, i), imagepaths8[i]);
     }
     free(imagepaths8);
+
+    env->ReleaseStringUTFChars(timezone, tzchar);
+
     // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
     tskAuto->closeImage();
 
@@ -619,6 +717,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
  * @param len Length of bytes in buf
  * @returns Pointer to newly created java byte array or NULL if there is an error
  */
+#if 0
 static jbyteArray
 copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
 {
@@ -631,6 +730,7 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
 
     return return_array;
 }
+#endif
 
 /** move a local buffer into an existing Java array.
  * @param env JNI env
@@ -974,7 +1074,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
     TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
     if (temp == NULL) {
-        throwTskError(env);
+        throwTskError(env, "Error opening database to create index");
         return;
     }
 
@@ -994,7 +1094,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     }
 
     if (tsk_hdb_makeindex(temp, dbType)) {
-        throwTskError(env);
+        throwTskError(env, "Error creating index");
     }
 
     tsk_hdb_close(temp);
