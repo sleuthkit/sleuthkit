@@ -103,10 +103,12 @@ my %uid2names = ();
 
 my $_HAS_DATETIME_TIMEZONE = 0;
 
-eval {
-     use DateTime::TimeZone;
-     $_HAS_DATETIME_TIMEZONE = 1;
-} or $_HAS_DATETIME_TIMEZONE = 0;
+eval "use DateTime::TimeZone";
+if ($@) {
+    $_HAS_DATETIME_TIMEZONE = 0;
+} else {
+    $_HAS_DATETIME_TIMEZONE = 1;
+}
 
 sub get_timezone_list() {
     my @t_list;
@@ -212,17 +214,23 @@ while ((scalar(@ARGV) > 0) && (($_ = $ARGV[0]) =~ /^-(.)(.*)/)) {
         if (defined $ARGV[0]) {
             my $tz = "$ARGV[0]";
 
-            if ($tz =~ m/^list$/i && $_HAS_DATETIME_TIMEZONE) {
-                my $txt  = "
+            if ($tz =~ m/^list$/i) {
+                if ($_HAS_DATETIME_TIMEZONE) {
+                    my $txt  = "
 -----------------------------------
         TIMEZONE LIST
 -----------------------------------\n";
-                foreach ( get_timezone_list() ) {
-                    $txt .= $_ . "\n";
+                    foreach ( get_timezone_list() ) {
+                        $txt .= $_ . "\n";
+                    }
+                    print( $txt );
                 }
-                print( $txt );
+                else {
+                    print "DateTime module not loaded -- cannot list timezones\n";
+                }
                 exit(0);
             }
+            // validate the string if we have DateTime module
             elsif ($_HAS_DATETIME_TIMEZONE) {
                 my $realtz = 0;
                 foreach ( get_timezone_list() ) {
@@ -239,6 +247,7 @@ while ((scalar(@ARGV) > 0) && (($_ = $ARGV[0]) =~ /^-(.)(.*)/)) {
                     usage();
                 }
             }
+            // blindly take it otherwise
             else {
                 $ENV{TZ} = $tz;
             }      
