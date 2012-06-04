@@ -260,7 +260,7 @@ public class TskData {
 		VS(1),
 		VOL(2),
 		FS(3),
-		FILE(4);
+		ABSTRACTFILE(4);
 
 		
 		private long objectType;
@@ -280,6 +280,34 @@ public class TskData {
 				}
 			}
 			throw new IllegalArgumentException("No ObjectType of value: " + objectType);
+		}
+	}
+	
+	public enum TSK_DB_FILES_TYPE_ENUM {
+		FS(0),
+		CARVED(1),
+		DERIVED(2),
+		LOCAL(3),
+		UNALLOC_BLOCKS(4),
+		UNUSED_BLOCKS(5);
+		
+		private long fileType;
+		
+		private TSK_DB_FILES_TYPE_ENUM(long fileType) {
+			this.fileType = fileType;
+		}
+		
+		public static TSK_DB_FILES_TYPE_ENUM valueOf(long fileType) {
+			for(TSK_DB_FILES_TYPE_ENUM type : TSK_DB_FILES_TYPE_ENUM.values()) {
+				if(type.fileType == fileType) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_FILE_TYPE_ENUM of value: " + fileType);
+		}
+		
+		public long getFileType() {
+			return fileType;
 		}
 	}
 	

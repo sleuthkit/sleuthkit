@@ -33,39 +33,45 @@ public interface ContentVisitor<T> {
     T visit(Image i);
     T visit(Volume v);
     T visit(VolumeSystem vs);
-	
-	static abstract public class Default<T> implements ContentVisitor<T> {
+    T visit(LayoutFile u);
+    
+    static abstract public class Default<T> implements ContentVisitor<T> {
 
-		protected abstract T defaultVisit(Content c);
-		@Override
-		public T visit(Directory d) {
-			return defaultVisit(d);
-		}
+        protected abstract T defaultVisit(Content c);
+        @Override
+        public T visit(Directory d) {
+            return defaultVisit(d);
+        }
 
-		@Override
-		public T visit(File f) {
-			return defaultVisit(f);
-		}
+        @Override
+        public T visit(File f) {
+            return defaultVisit(f);
+        }
 
-		@Override
-		public T visit(FileSystem fs) {
-			return defaultVisit(fs);
-		}
+        @Override
+        public T visit(FileSystem fs) {
+            return defaultVisit(fs);
+        }
 
-		@Override
-		public T visit(Image i) {
-			return defaultVisit(i);
-		}
+        @Override
+        public T visit(Image i) {
+            return defaultVisit(i);
+        }
 
-		@Override
-		public T visit(Volume v) {
-			return defaultVisit(v);
-		}
+        @Override
+        public T visit(Volume v) {
+            return defaultVisit(v);
+        }
 
-		@Override
-		public T visit(VolumeSystem vs) {
-			return defaultVisit(vs);
-		}
-	}
+        @Override
+        public T visit(VolumeSystem vs) {
+            return defaultVisit(vs);
+        }
+        
+        @Override
+        public T visit(LayoutFile lf) {
+            return defaultVisit(lf);
+        }
+    }
     
 }

@@ -56,10 +56,10 @@ public class Hash {
             while (hashText.length() < 32) {
                 hashText = "0" + hashText;
             }
-            fsContent.getSleuthkit().setMd5Hash(fsContent, hashText);
+            fsContent.getSleuthkitCase().setMd5Hash(fsContent, hashText);
         } catch (NoSuchAlgorithmException ex) {
             logger.log(Level.WARNING, "No algorithm known as 'md5'", ex);
-        } catch (TskException ex) {
+        } catch (TskCoreException ex) {
             logger.log(Level.WARNING, "Error updating content's md5 in database", ex);
         }
         return hashText;
