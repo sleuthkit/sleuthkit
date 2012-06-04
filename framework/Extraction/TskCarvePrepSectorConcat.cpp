@@ -36,8 +36,8 @@
 #include "Poco/File.h"
 #include "Poco/Exception.h"
 
-TskCarvePrepSectorConcat::TskCarvePrepSectorConcat(const std::wstring &outputFolderPath, const std::wstring &outputFileName, uint64_t maxOutputFileSize) :
-    m_outputFolderPath(outputFolderPath), m_outputFileName(outputFileName), m_maxOutputFileSize(maxOutputFileSize)
+TskCarvePrepSectorConcat::TskCarvePrepSectorConcat(const std::wstring &outputFileName, uint64_t maxOutputFileSize) :
+    m_outputFileName(outputFileName), m_maxOutputFileSize(maxOutputFileSize)
 {
 }
 
@@ -81,6 +81,20 @@ void TskCarvePrepSectorConcat::processFiles(const std::string &fileName, bool sc
     }
 }
 
+std::wstring TskCarvePrepSectorConcat::outputFolderPath() const
+{
+    static std::wstring folderPath;
+
+    if (folderPath.empty())
+    {
+        std::wstringstream pathBuilder;
+        pathBuilder << TskServices::Instance().getSystemProperties().get(TskSystemProperties::OUT_DIR) << L"\\Carve";
+        folderPath = pathBuilder.str();
+    }
+
+    return folderPath;
+}
+
 void TskCarvePrepSectorConcat::onFileCreated(int unallocImgId, bool scheduleCarving) const
 {
     TskImgDB &imgDB = TskServices::Instance().getImgDB();
@@ -105,12 +119,12 @@ void TskCarvePrepSectorConcat::prepareOutputFolder() const
 
     if (!folderCreationAttempted) {
         folderCreationAttempted = true;
-        folderCreated = createFolder(m_outputFolderPath);
+        folderCreated = createFolder(outputFolderPath());
     }
 
     if (!folderCreated) {
         std::stringstream msg;
-        msg << "TskCarvePrepSectorConcat failed to create output folder " << TskUtilities::toUTF8(m_outputFolderPath);
+        msg << "TskCarvePrepSectorConcat failed to create output folder " << TskUtilities::toUTF8(outputFolderPath());
         throw TskException(msg.str());
     }
 }
@@ -220,7 +234,7 @@ void TskCarvePrepSectorConcat::createOutputFile(int outputFileNumber, HANDLE& ou
 {
     // Create a subdirectory named for the file number.
     std::wstringstream path;
-    path << m_outputFolderPath << L"\\" << outputFileNumber;
+    path << outputFolderPath() << L"\\" << outputFileNumber;
     createFolder(path.str());
     
     // Create an output file in the subdirectory.

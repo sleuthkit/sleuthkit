@@ -242,9 +242,7 @@ int main(int argc, char **argv1)
     }
 
     // Prepare the unallocated sectors in the image for carving.
-    std::wstringstream carveOutputFolder; 
-    carveOutputFolder << TSK_SYS_PROP_GET(TskSystemProperties::OUT_DIR) << L"\\Carve";
-    TskCarvePrepSectorConcat carvePrep = TskCarvePrepSectorConcat(carveOutputFolder.str(), L"unalloc.bin", 1000000000);
+    TskCarvePrepSectorConcat carvePrep(L"unalloc.bin", 1000000000);
     carvePrep.processSectors(false);
 
     //Run pipeline on all files

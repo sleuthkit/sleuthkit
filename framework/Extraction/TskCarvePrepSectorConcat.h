@@ -26,12 +26,11 @@ class TSK_FRAMEWORK_API TskCarvePrepSectorConcat : public CarvePrep
 public:
     /**
      * Constructor.
-     * @param outputFolderPath Absolute path of directory where output files are to be written
      * @param outputFileName Filename to be used for each output file; the files will be distinguished
      * by storing them in subdirectories named for the output file number.
      * @param maxOutputFileSize 
      */
-     TskCarvePrepSectorConcat(const std::wstring &outputFolderPath, const std::wstring &outputFileName, uint64_t maxOutputFileSize);
+     TskCarvePrepSectorConcat(const std::wstring &outputFileName, uint64_t maxOutputFileSize);
 
     /**
      * Implementation of CarvePrep interface. Concatenates unallocated sector runs 
@@ -51,8 +50,17 @@ public:
     void processFiles(const std::string& fileName, bool scheduleCarving) const;
 
 protected:
+
     /**
-     * Called by createFilesToBeCarved to allow specialization of behvior when
+     * Supplies the base output folder path. The default implementation adds
+     * a subdirectory named Carve to the output folder specified in the system
+     * properties.
+     * @return An absolute path to the base directory for output files.
+     */
+    virtual std::wstring outputFolderPath() const;
+
+    /**
+     * Called by createFilesToBeCarved to allow specialization of behavior when
      * an output file is produced. The default implementation is to optionally 
      * schedule carving of the output file.
      * @param unallocImgId Id assigned to the file in the unallocated 
@@ -116,7 +124,6 @@ private:
      */ 
     void storeOutputfileToImageMapping(int outputFileNumber, HANDLE outputFileHandle, uint64_t startingFileOffset, uint64_t endingFileOffset, int imgVolumeID, uint64_t startingImageOffset) const;
 
-    const std::wstring m_outputFolderPath; 
     const std::wstring m_outputFileName; 
     uint64_t m_maxOutputFileSize;
     static const uint64_t SECTORS_PER_READ = 32; 
