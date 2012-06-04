@@ -67,7 +67,7 @@ void TskCarvePrepSectorConcat::processFiles(const std::string &fileName, bool sc
     // Get the file ids for any files with the the specified file name.
     TskImgDB &imgDB = TskServices::Instance().getImgDB();
     std::stringstream condition;
-    condition << "WHERE files.name = " << fileName;
+    condition << "WHERE files.name = " << "'" << fileName << "'";
 
     // Write contents of file to output files suitable for carving.
     std::auto_ptr<SectorRuns> sectorRuns;
