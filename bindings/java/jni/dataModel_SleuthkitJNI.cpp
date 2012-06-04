@@ -509,20 +509,22 @@ JNIEXPORT void JNICALL
     uint8_t ret = 0;
     if ( (ret = tskAuto->startAddImage((int) num_imgs, imagepaths8,
         TSK_IMG_TYPE_DETECT, 0)) != 0) {
-        string msg = "Errors occured while ingesting image\n";
+        stringstream msgss;
+        msgss << "Errors occured while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
         for (size_t i = 0; i < errors.size(); i++) {
-            msg.append(TskAuto::errorRecordToString(errors[i]));
-            msg.append("\n");
+            msgss << (i+1) << ". ";
+            msgss << (TskAuto::errorRecordToString(errors[i]));
+            msgss << " " << std::endl;
         }
 
         if (ret == 1) {
             //fatal error
-            setThrowTskCoreError(env, msg.c_str());
+            setThrowTskCoreError(env, msgss.str().c_str());
         }
         else if (ret == 2) {
             //non fatal error
-            setThrowTskDataError(env, msg.c_str());
+            setThrowTskDataError(env, msgss.str().c_str());
         }
     }
 
