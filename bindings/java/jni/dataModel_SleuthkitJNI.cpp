@@ -410,12 +410,12 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLooku
  * @param env pointer to java environment this was called from
  * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
- * @param processUnallocSpace whether to process unallocated filesystem blocks and volumes in the image
+ * @param addUnallocSpace whether to process unallocated filesystem blocks and volumes in the image
  * @param noFatFsOrphans whether to skip processing orphans on FAT filesystems
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
-    jclass obj, jlong caseHandle, jstring timezone, jboolean processUnallocSpace, jboolean noFatFsOrphans) {
+    jclass obj, jlong caseHandle, jstring timezone, jboolean addUnallocSpace, jboolean noFatFsOrphans) {
     jboolean isCopy;
 
     TskCaseDb *tskCase = castCaseDb(env, caseHandle);
@@ -440,7 +440,7 @@ JNIEXPORT jlong JNICALL
         return 0;
     }
 
-    tskAuto->setProcessUnallocSpace(processUnallocSpace?true:false);
+    tskAuto->setAddUnallocSpace(addUnallocSpace?true:false);
     tskAuto->setNoFatFsOrphans(noFatFsOrphans?true:false);
 
     return (jlong) tskAuto;
