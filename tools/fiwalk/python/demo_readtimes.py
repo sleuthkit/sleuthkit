@@ -42,7 +42,7 @@ if __name__=="__main__":
 
     parser = OptionParser()
     parser.add_option("-d","--debug",help="prints debugging info",dest="debug")
-    parser.add_option("-x","--xmlfile",help="XML file (required)")
+    parser.add_option("-x","--xmlfile",help="XML file (optional)")
     parser.add_option("-i","--imagefile",help="image file (required)")
     parser.usage = '%prog [options] xmlfile diskimage'
     (options,args) = parser.parse_args()
@@ -53,13 +53,15 @@ if __name__=="__main__":
 
     # Read the redaction configuration file
     imagefile = open(options.imagefile,"r")
-    xmlfile   = open(options.xmlfile,"r")
+    if options.xmlfile:
+        xmlfile   = open(options.xmlfile,"r")
+    else:
+        xmlfile   = None
 
-    t0 = time.time()
-    
+    t0  = time.time()
     fis = fiwalk.fileobjects_using_sax(imagefile=imagefile,xmlfile=xmlfile)
-    t1 = time.time()
-    print "Time to read %s: %g seconds" % (xmlfile.name,t1-t0)
+    t1  = time.time()
+    print("Time to read file objects: {} seconds".format(t1-t0))
 
     # Create a new array with just those that we can read
     def resident_file(fi):

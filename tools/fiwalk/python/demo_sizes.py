@@ -1,18 +1,28 @@
-import fiwalk,math
+#!/usr/bin/env python3.2
 
-total = 0 
-total2 = 0
-count = 0
+#
+# Demo program that shows how to calculate the average size of file objects in a DFXML file
+#
+
+import dfxml,math,sys
+import collections
+
+sums = collections.Counter()
+sum_of_squares= collections.Counter()
+count = collections.Counter()
 
 def func(fi):
-    global total,total2,count
-    if fi.ext()=='txt':
-        total += fi.filesize()
-        total2 += fi.filesize() ** 2
-        count += 1
+    ext = fi.ext()
+    count[ext]  += 1
+    sums[ext] += fi.filesize()
+    sum_of_squares[ext] = fi.filesize() ** 2
 
-fiwalk.fiwalk_using_sax(imagefile=open("small.dmg"),callback=func)
-print "count=",count
-print "average=",total/count
-print "stddev=",math.sqrt(total2/count - (total/count)**2)
-
+dfxml.read_dfxml(xmlfile=open(sys.argv[1],'rb'),callback=func)
+fmt = "{:8}    {:8} {:8} {:8} {:8}"
+print(fmt.format("Ext","Count","Total","Average","StdDev"))
+for ext in sums.keys():
+    print(fmt.format(ext,
+                     count[ext],
+                     sums[ext],
+                     sums[ext]/count[ext],
+                     math.sqrt(sum_of_squares[ext]/count[ext] - (sums[ext]/count[ext])**2)))

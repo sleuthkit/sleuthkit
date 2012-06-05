@@ -7,8 +7,12 @@ if __name__=="__main__":
     from optparse import OptionParser
     from sys import stdout
     parser = OptionParser()
-    parser.usage = '%prog [options] xmlfile '
+    parser.usage = '%prog [options] (xmlfile or imagefile)'
     (options,args) = parser.parse_args()
+
+    if not args:
+        parser.print_usage()
+        exit(1)
 
     sizes = []
     dates = {}
@@ -18,15 +22,13 @@ if __name__=="__main__":
             date = val.datetime()
             dates[date] = dates.get(date,0)+1
 
-    fiwalk.fiwalk_using_sax(xmlfile=open(args[0],"r"),callback=callback)
-    try:
-        import pylab
-        pylab.grid()
-        pylab.hist(times,100)
-        pylab.show()
-    except ImportError:
-        print("pylab not installed.")
-        print("Date\tActivity Count:")
-        for date in sorted(dates.keys()):
-            print("%s\t%d" % (date,dates[date]))
+    fn = args[0]
+    if fn.endswith(".xml"):
+        fiwalk.fiwalk_using_sax(xmlfile=open(fn),callback=callback)
+    else:
+        fiwalk.fiwalk_using_sax(imagefile=open(fn),callback=callback)
+
+    print("Here is the dates array:")
+    for d in sorted(dates.keys()):
+        print("{}   {}".format(d,dates[d]))
 

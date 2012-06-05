@@ -78,7 +78,6 @@ def E01_glob(fn):
             else:
                 return ret
         # Got through E99, now do EAA through EZZ
-        print "ret=",ret
         fmt = fn.replace(".E01",".E%c%c")
         for i in range(0,26):
             for j in range(0,26):
@@ -100,7 +99,7 @@ def fiwalk_xml_stream(imagefile=None,flags=0,fiwalk="fiwalk"):
     try:
         res = Popen([fiwalk,'-V'],stdout=PIPE).communicate()[0]
     except OSError:
-        raise RuntimeError,"Cannot execute fiwalk executable: "+fiwalk
+        raise RuntimeError("Cannot execute fiwalk executable: "+fiwalk)
     p = Popen([fiwalk,fiwalk_args] + E01_glob(imagefile.name),stdout=PIPE)
     return p.stdout
 

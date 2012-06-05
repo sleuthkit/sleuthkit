@@ -31,10 +31,12 @@ where encoding, if present, is 0 for raw, 1 for NTFS compressed.
 from sys import stderr
 from subprocess import Popen,PIPE
 import base64
+import hashlib
 
-__version__ = "1.0.0"
 
-"Flags"
+__version__ = "1.0.1"
+
+tsk_virtual_filenames = set(['$FAT1','$FAT2'])
 
 def isone(x):
     """Return true if something is one (number or string)"""
@@ -70,6 +72,13 @@ class GMTMIN(tzinfo):
         return timedelta(0)
     def tzname(self,dt):
          return "GMT+%02d%02d" % (self.minoffset/60,self.minoffset%60)
+
+def parse_iso8601(ts):
+    import datetime
+    Z = ts.find('Z')
+    if Z>0:
+        return datetime.datetime.strptime(ts[:Z],"%Y-%m-%dT%H:%M:%S")
+    raise RuntimeError("parse_iso8601: ISO8601 format {} not recognized".format(ts))
 
 
 import re
@@ -138,18 +147,19 @@ class byte_run:
 
     def __str__(self):
         try:
-            return "byte_run[img_offset=%d; file_offset=%d len=%d] " % \
-                (self.img_offset,self.file_offset,self.len)
+            return "byte_run[img_offset={0}; file_offset={1} len={2}] ".format(
+                self.img_offset,self.file_offset,self.len)
+        except (AttributeError, TypeError):
+            #Catch attributes that are missing or mis-typed (e.g. NoneType)
+            pass
+        try:
+            return "byte_run[file_offset={0}; fill={1}; len={2}]".format(
+                self.file_offset,self.fill,self.len)
         except AttributeError:
             pass
         try:
-            return "byte_run[file_offset=%d; fill=%d; len=%d]" % \
-                (self.file_offset,self.fill,self.len)
-        except AttributeError:
-            pass
-        try:
-            return "byte_run[file_offset=%d; uncompressed_len=%d]" % \
-                (self.file_offset,self.uncompressed_len)
+            return "byte_run[file_offset={0}; uncompressed_len={1}]".format(
+                self.file_offset,self.uncompressed_len)
         except AttributeError:
             return "byte_run"+str(dir(self))
     
@@ -222,16 +232,24 @@ class ComparableMixin(object):
     def __ne__(self, other):
         return self._compare(other, lambda s, o: s != o)
 
+import sys
 class dftime(ComparableMixin):
     """Represents a DFXML time. Automatically converts between representations and caches the
     results as necessary.."""
     UTC = GMTMIN(0)
+
     def ts2datetime(self,ts):
         import datetime
         return datetime.datetime.utcfromtimestamp(ts).replace(tzinfo=dftime.UTC)
 
     def __init__(self,val):
-        if type(val)==str or type(val)==unicode:
+        #'unicode' is not a type in Python 3; 'basestring' is not a type in Python 2.
+        if sys.version_info >= (3,0):
+            _basestring = str
+        else:
+            _basestring = basestring
+        if isinstance(val, str) or isinstance(val,_basestring):
+            #
             #Test for ISO format - "YYYY-MM-DD" should have hyphen at val[4]
             if len(val)>5 and val[4]=="-":
                 self.iso8601_ = val
@@ -250,10 +268,13 @@ class dftime(ComparableMixin):
         else:
             raise ValueError("Unknown type '%s' for DFXML time value" % (str(type(val))))
     def __str__(self):
-        return self.iso8601()
+        return self.iso8601() or ""
     def __repr__(self):
-        return self.iso8601()
-
+        return self.iso8601() or "None"
+    def __le__(self,b):
+        return self.iso8601().__le__(b.iso8601())
+    def __gt__(self,b):
+        return self.iso8601().__gt__(b.iso8601())
     def _cmpkey(self):
         """Provide a key to use for comparisons; for use with ComparableMixin parent class."""
         return self.timestamp()
@@ -262,23 +283,7 @@ class dftime(ComparableMixin):
         if b == None:
             #This will always be False - if self were None, we wouldn't be in this __eq__ method.
             return False
-        # See if there is a common representation in a form that can be compared
-        # before forcing a conversion
-        try:
-            return self.timestamp_==b.timestamp_
-        except AttributeError:
-            pass
-
-        try:
-            return self.datetime_.utctimetuple() == b.datetime_.utctimetuple()
-        except AttributeError:
-            pass
-
-        # Okay, convert to datetime and then redo the datetime.
-        # The actual datetimes may be the same. If they aren't, the UTC times may be the same.
-        if self.datetime()==b.datetime():
-            return True
-        return self.datetime_.utctimetuple() == b.datetime_.utctimetuple()
+        return self.timestamp()==b.timestamp()
 
     def iso8601(self):
         # Do we have a cached representation?
@@ -298,7 +303,7 @@ class dftime(ComparableMixin):
             return self.iso8601_
     
     def timestamp(self):
-        import time,dateutil.parser
+        import time
         # Do we have a cached representation?
         try:
             return self.timestamp_
@@ -310,19 +315,19 @@ class dftime(ComparableMixin):
             self.timestamp_ = time.mktime(self.datetime_.timetuple())
             return self.timestamp_
         except AttributeError:
-            self.datetime_ = dateutil.parser.parse(self.iso8601_)
+            self.datetime_ = parse_iso8601(self.iso8601_)
             self.timestamp_ = time.mktime(self.datetime_.timetuple())
             return self.timestamp_
         
     def datetime(self):
-        import datetime,dateutil.parser
+        import datetime
         # return the datetime from parsing either iso8601 or from parsing timestamp
         try:
             self.datetime_ = self.ts2datetime(self.timestamp_)
             # This needs to be in UTC offset. How annoying.
             return self.datetime_
         except AttributeError:
-            self.datetime_ = dateutil.parser.parse(self.iso8601_)
+            self.datetime_ = parse_iso8601(self.iso8601_)
             return self.datetime_
 
 class registry_object:
@@ -343,15 +348,9 @@ class registry_cell_object:
         """This is a pointer to a registry_key_object.  The root node has no parent key."""
         self.parent_key = None
 
-        """This is the name of the present key or value."""
-        self.name        = None
+        self._name        = None
 
-        """
-        This is the full path from the root of the hive, with keys acting like directories and the value name acting like the basename.
-        
-        Unlike DFXML, registry paths are delimited with a backslash due to the forward slash being a legal and commonly observed character in cell names.
-        """
-        self.full_path   = None
+        self._full_path   = None
 
         """Keys have two types:  "root" (0x2c,0xac) and not-root.  Values have several more types."""
         self.type        = None
@@ -361,6 +360,21 @@ class registry_cell_object:
         
         """Name the cell type, for str() and repr()."""
         self._cell_type = "(undefined cell object type)"
+
+        """Only applicable to values."""
+        self._sha1 = None
+
+    def name(self):
+        """This is the name of the present key or value."""
+        return self._name
+
+    def full_path(self):
+        """
+        This is the full path from the root of the hive, with keys acting like directories and the value name acting like the basename.
+
+        Unlike DFXML, registry paths are delimited with a backslash due to the forward slash being a legal and commonly observed character in cell names.
+        """
+        return self._full_path
 
     def _myname(self):
         """This function is called by repr and str, due to (vague memories of) the possibility of an infinite loop if __repr__ calls __self__."""
@@ -383,6 +397,12 @@ class registry_cell_object:
         #If this idiom is confusing, see:  http://henry.precheur.org/python/copy_list
         ret = list(self._byte_runs)
         return ret
+
+    def sha1(self):
+        """
+        Return None. Meant to be overwritten.
+        """
+        return None
 
 class registry_key_object(registry_cell_object):
     def __init__(self):
@@ -407,6 +427,7 @@ class registry_value_object(registry_cell_object):
         
         """List for the string-list type of value."""
         self.strings = None
+
     def mtime(self):
         """Return nothing.  Alternatively, we might return mtime of parent key in the future."""
         return None
@@ -414,6 +435,24 @@ class registry_value_object(registry_cell_object):
     #        return self.parent_key.mtime()
     #    else:
     #        return None
+
+    def sha1(self):
+        """
+        Return cached hash, populating cache if necessary.
+        If self.value_data is None, this should return None.
+        """
+        if self._sha1 is None:
+            if self.value_data != None:
+                h = hashlib.sha1()
+                if type(self.value_data) == type(""):
+                    #String data take a little extra care:
+                    #"The bytes in your ... file are being automatically decoded to Unicode by Python 3 as you read from the file"
+                    #http://stackoverflow.com/a/7778340/1207160
+                    h.update(self.value_data.encode("utf-8"))
+                else:
+                    h.update(self.value_data)
+                self._sha1 = h.hexdigest()
+        return self._sha1
 
 class fileobject:
     """The base class for file objects created either through XML DOM or EXPAT"""
@@ -435,7 +474,7 @@ class fileobject:
         return self.tag("partition")
 
     def filename(self):
-        """Name of the file"""
+        """Complement name of the file (sometimes called pathname)"""
         return self.tag("filename")
 
     def ext(self):
@@ -445,7 +484,7 @@ class fileobject:
         if ext == '':
             return None
         else:
-            return string.lstrip(ext, '\.')
+            return ext[1:]
 
     def filesize(self):
         """Size of the file, in bytes"""
@@ -470,23 +509,33 @@ class fileobject:
     def ctime(self):
         """Metadata Change Time (sometimes Creation Time), as number of seconds
         since January 1, 1970 (Unix time)"""
-        return dftime(self.tag("ctime"))   
+        t = self.tag("ctime")
+        if t: return dftime(t)
+        return None
         
     def atime(self):
         """Access time, as number of seconds since January 1, 1970 (Unix time)"""
-        return dftime(self.tag("atime"))   
+        t = self.tag("atime")
+        if t: return dftime(t)
+        return None
         
     def crtime(self):
         """CR time, as number of seconds since January 1, 1970 (Unix time)"""
-        return dftime(self.tag("crtime"))  
+        t = self.tag("crtime")
+        if t: return dftime(t)
+        return None
         
     def mtime(self):
         """Modify time, as number of seconds since January 1, 1970 (Unix time)"""
-        return dftime(self.tag("mtime"))  
+        t = self.tag("mtime")
+        if t: return dftime(t)
+        return None
         
     def dtime(self):
         """ext2 dtime"""
-        return dftime(self.tag("dtime"))
+        t = self.tag("dtime")
+        if t: return dftime(t)
+        return None
 
     def times(self):
         """Return a dictionary of all times that the system has"""
@@ -515,13 +564,17 @@ class fileobject:
         """Return the contents of the name_type tag"""
         return self.tag("name_type")
 
+    def is_virtual(self):
+        """Returns true if the fi entry is a TSK virtual entry"""
+        return self.filename() in tsk_virtual_filenames
+
     def is_dir(self):
         """Returns true if file is a directory"""
         return self.name_type()=='d'
 
     def is_file(self):
         """Returns true if file is a file"""
-        return self.name_type()=='r'
+        return self.name_type()=='r' or self.name_type()==None
 
     def inode(self):
         """Inode; may be a number or SleuthKit x-y-z formatr"""
@@ -545,7 +598,6 @@ class fileobject:
 
     def file_present(self,imagefile=None):
         """Returns true if the file is present in the disk image"""
-        import hashlib
         if self.filesize()==0:
             return False               # empty files are never present
         if imagefile==None:
@@ -601,11 +653,15 @@ class fileobject:
                 inode = self.inode()
                 if inode :
                     block_size = 512
-                    cmd = ['icat','-b',str(block_size),'-o',str(offset/block_size),imagefile.name,str(inode)] 
+                    fstype_flag = ""
+                    fstype = self.volume.ftype_str()
+                    if fstype != None:
+                        fstype_flag = '-f' + fstype
+                    cmd = ['icat',fstype_flag,'-b',str(block_size),'-o',str(offset/block_size),imagefile.name,str(inode)] 
                     (data,err) = Popen(cmd, stdout=PIPE,stderr=PIPE).communicate()
                     # Check for an error
                     if len(err) > 0 :  
-                        raise ValueError("icat error: "+" ".join(cmd))
+                        raise ValueError("icat error (" + err.strip() + "): "+" ".join(cmd))
                     return data
                 else :
                     raise ValueError("Inode missing from file in compressed format.")
@@ -619,7 +675,7 @@ class fileobject:
         """Return the contents of imagefile in a named temporary file. If
         calcMD5 or calcSHA1 are set TRUE, then the object returned has a
         haslib object as self.md5 or self.sha1 with the requested hash."""
-        import tempfile,hashlib
+        import tempfile
         tf = tempfile.NamedTemporaryFile()
         if calcMD5: tf.md5 = hashlib.md5()
         if calcSHA1: tf.sha1 = hashlib.sha1()
@@ -629,6 +685,7 @@ class fileobject:
             while count>0:
                 xfer_len = min(count,1024*1024)        # transfer up to a megabyte at a time
                 buf = self.imagefile.read(xfer_len)
+                if len(buf)==0: break
                 tf.write(buf)
                 if calcMD5: tf.md5.update(buf)
                 if calcSHA1: tf.sha1.update(buf)
@@ -636,6 +693,20 @@ class fileobject:
         tf.flush()
         return tf
         
+    def savefile(self,filename=None):
+        """Saves the file."""
+        with open(filename,"wb") as f:
+            for run in self.byte_runs():
+                self.imagefile.seek(run.img_start)
+                count = run.len
+                while count>0:
+                    xfer_len = min(count,1024*1024)        # transfer up to a megabyte at a time 
+                    buf = self.imagefile.read(xfer_len)
+                    if len(buf)==0: break
+                    f.write(buf)
+                    count -= xfer_len
+
+
     def frag_start_sector(self,fragment):
         return self.byte_runs()[fragment].img_offset / 512
 
@@ -689,8 +760,6 @@ class fileobject_dom(fileobject):
         ret.sort(key=lambda r:r.file_offset)
         return ret
 
-
-
 class saxobject:
     # saxobject is a mix-in that makes it easy to turn XML tags into functions.
     # If the sax tag is registered, then a function with the tag's name is created.
@@ -706,6 +775,7 @@ class saxobject:
 
 def register_sax_tag(tagclass,name):
     setattr(tagclass,name,lambda self:self.tag(name))
+
 
 class fileobject_sax(fileobject,saxobject):
     """file objects created through expat. This class is created with a tags array and a set of byte runs."""
@@ -751,16 +821,36 @@ register_sax_tag(imageobject_sax,'image_filename')
 
 ################################################################
 
+def safe_b64decode(b64data):
+    """
+    This function takes care of the logistics of base64 decoding XML data in Python 2 and 3.
+    Recall that Python3 requires b64decode operate on bytes, not a string.
+        Ref: <http://bugs.python.org/issue4769#msg115690>
+    A forum post that noted several encoding differences between Python 2 and 3:
+        <http://stackoverflow.com/questions/9327993/python3-unicode-escape-doesnt-work-with-non-ascii-bytes>
+    """
+    if sys.version_info.major == 2:
+        return base64.b64decode(b64data).decode("unicode_escape")
+    elif sys.version_info.major == 3:
+        dtype = str(type(b64data))
+        to_decode = None
+        if dtype == "<class 'str'>":
+            to_decode = b64data.encode("ascii")
+        elif dtype == "<class 'bytes'>":
+            to_decode = b64data
+        return base64.b64decode(to_decode).decode("unicode_escape")
+    else:
+        raise Exception("Not sure how to parse base64 data outside Python versions 2 or 3.")
+
 class xml_reader:
     def __init__(self):
-        self.data = None
+        self.cdata = None
         self.tagstack = ['xml']
     
     def _char_data(self, data):
         """Handles XML data"""
-        if self.data != None:
-            self.data += data
-
+        if self.cdata != None:
+            self.cdata += data
 
     def process_xml_stream(self,xml_stream,callback):
         "Run the reader on a given XML input stream"
@@ -812,63 +902,59 @@ class regxml_reader(xml_reader):
             if new_object.parent_key == None:
                 assert new_object.used == False or new_object.type == "root"
 
-            enc = attrs.get("name_encoding")
-            name_data = str(attrs.get("name"))
+            #Define new_object.name
+            #Force a name for keys. If the key has no recorded name, apply artificial name prefix to nonce.
+            name_data = attrs.get("name")
             if name_data == None:
-                name_data = str(self.nonce)
+                new_object._name = "__DFXML_NONCE_" + str(self.nonce)
                 self.nonce += 1
-
-            if enc == "base64":
-                try:
-                    #new_object.name = unicode(name_data.decode("base64")) #AJN TODO Correct non-isprint character printing
-                    new_object.name = "(Base-64 encounter #%d)" % self.nonce
-                    self.nonce += 1
-                except:
-                    print "name_data=" + name_data
-                    print "type(name_data)=" + str(type(name_data))
-                    raise
             else:
-                new_object.name = unicode(name_data)
+                enc = attrs.get("name_encoding")
+                if enc == "base64":
+                    new_object._name = safe_b64decode(name_data)
+                else:
+                    new_object._name = name_data
 
             if new_object.parent_key == None:
-                new_object.full_path = u"\\" + new_object.name #TODO need a name scheme for orphan references, when we start processing orphans
+                new_object._full_path = "\\" + new_object.name()
+                # TODO need a name scheme for orphan references, when we start processing orphans
             else:
-                new_object.full_path = new_object.parent_key.full_path + u"\\" + new_object.name
+                new_object._full_path = new_object.parent_key.full_path() + "\\" + new_object.name()
             self.objectstack.append(new_object)
         elif name in ["value"]:
             new_object = registry_value_object()
             new_object.parent_key = self.objectstack[-1]
             new_object.type = attrs.get("type",None)
 
-            if new_object.type == u"string-list":
+            if new_object.type == "string-list":
                 new_object.strings = []
             
             #Store decoded name
-            if attrs.get("default",None) == u"1":
-                new_object.name = "Default" #TODO Check for concurrently set name and default flag?
+            if attrs.get("default",None) == "1":
+                new_object._name = "Default"
+                if attrs.get("name",attrs.get("key",None)) is not None:
+                    #TODO Notify: concurrently set name attribute and default-name flag
+                    pass
             else:
                 enc = attrs.get("name_encoding",attrs.get("key_encoding"))
                 name_data = attrs.get("name",attrs.get("key",None))
                 if enc == "base64":
                     try:
-                        new_object.name = base64.b64decode(name_data)
-                        new_object.name = "(Base-64 encounter #%d)" % self.nonce
-                        self.nonce += 1
+                        new_object._name = base64.b64decode(name_data.encode("ascii")).decode("unicode_escape")
                     except:
-                        print "name_data=" + name_data
-                        print "type(name_data)=" + str(type(name_data))
+                        sys.stderr.write("name_data={}  type={}\n".format(name_data,type(name_data)))
                         raise
                 else:
-                    new_object.name = unicode(name_data)
-            new_object.full_path = new_object.parent_key.full_path + "\\" + new_object.name
+                    new_object._name = name_data
+            new_object._full_path = new_object.parent_key.full_path() + "\\" + new_object.name()
 
             #Store decoded value
             new_object.value_data = self.decoded_value(attrs)
             self.objectstack.append(new_object)
         elif name in ["mtime"]:
-            self.data = ""
+            self.cdata = ""
         elif name in ["string"]:
-            self.data = ""
+            self.cdata = ""
         elif name in ["byte_runs"]:
             pass
         elif name in ["byte_run"]:
@@ -883,8 +969,12 @@ class regxml_reader(xml_reader):
     def decoded_value(self, attrs):
         value_data = attrs.get("value",None)
         if value_data:
-            value_encoding = attrs.get("encoding", attrs.get("value_encoding")) #TODO adjust hivexml to not use a plain "encoding" attribute
+            # TODO adjust hivexml to not use a plain "encoding" attribute
+            value_encoding = attrs.get("encoding", attrs.get("value_encoding")) 
             if value_encoding == "base64":
+                import sys
+                if sys.version_info.major>2:
+                    value_data = bytes(value_data,encoding='ascii')
                 return base64.b64decode(value_data)
             else:
                 return value_data
@@ -901,25 +991,26 @@ class regxml_reader(xml_reader):
         elif name in ["key","node"]:
             finished_object = self.objectstack.pop()
             #Add finished object to object index
-            if finished_object.full_path in self.registry_object.object_index:
-                raise ValueError("regxml_reader._end_element:  Same key path found more than once: " + finished_object.full_path)
-            self.registry_object.object_index[finished_object.full_path] = finished_object
+            if finished_object.full_path() in self.registry_object.object_index:
+                raise ValueError("regxml_reader._end_element:  Same key path found more than once: " +
+                                 finished_object.full_path())
+            self.registry_object.object_index[finished_object.full_path()] = finished_object
             self.callback(finished_object)
         elif name in ["mtime"]:
-            self.objectstack[-1]._mtime = dftime(self.data)
-            self.data = None
+            self.objectstack[-1]._mtime = dftime(self.cdata)
+            self.cdata = None
         elif name in ["value"]:
             finished_object = self.objectstack.pop()
             #TODO Simplify once hivexml is patched to have value/@value instead of value/[cdata]
             if finished_object.value_data == None:
-                finished_object.value_data = self.data
+                finished_object.value_data = self.cdata
             self.callback(finished_object)
         elif name in ["string"]:
             value_object = self.objectstack[-1]
             if value_object.strings == None:
                 raise ValueError("regxml_reader._end_element:  parsing error, string found but parent's type can't support a string list.")
-            value_object.strings.append(self.data)
-            self.data = None
+            value_object.strings.append(self.cdata)
+            self.cdata = None
         elif name in ["byte_runs","byte_run"]:
             pass
         else:
@@ -931,6 +1022,7 @@ class fileobject_reader(xml_reader):
     volumeobject_sax and fileobject_sax objects, but just returns the filoeobject
     objects.."""
     def __init__(self,imagefile=None,flags=None):
+        self.creator      = None
         self.volumeobject = None
         self.fileobject   = None
         self.imageobject  = imageobject_sax()
@@ -941,62 +1033,62 @@ class fileobject_reader(xml_reader):
     def _start_element(self, name, attrs):
         """ Handles the start of an element for the XPAT scanner"""
         self.tagstack.append(name)
+        self.cdata = ""          # new element, so reset the data
         if name=="volume":
             self.volumeobject            = volumeobject_sax()
             self.volumeobject.block_size = 512 # reasonable default
             self.volumeobject.image      = self.imageobject
-            self.data                    = ""
-            if "offset" in attrs: self.volumeobject.offset = int(attrs["offset"]) 
+            if "offset" in attrs:
+                self.volumeobject.offset = int(attrs["offset"]) 
             return
         if name=="block_size":
-            self.data = ""
+            pass
         if name=="fileobject":
             self.fileobject = fileobject_sax(imagefile=self.imagefile)
             self.fileobject.volume = self.volumeobject
             return
         if name=='hashdigest':
-            self.hashdigest_type = attrs['type'] # remember the type
-        if not self.fileobject: return
-        if name=="run" or name=="byte_run":
+            self.hashdigest_type = attrs['type'] 
+        if self.fileobject and (name=="run" or name=="byte_run"):
             b = byte_run()
             b.decode_sax_attributes(attrs)
             self.fileobject._byte_runs.append(b)
             return
-        self.data = ""                 # new element; otherwise data is ignored
+
 
     def _end_element(self, name):
         """Handles the end of an eleement for the XPAT scanner"""
-        assert(self.tagstack.pop()==name)
+        assert(self.tagstack.pop()==name) # make sure that the stack matches
         if name=="volume":
             self.volumeobject = None
             return
         if name=="block_size" and len(self.tagstack) > 1 : 
             if self.tagstack[-1] == "volume" : 
-                self.volumeobject.block_size = int(self.data)
-                self.data=None
+                self.volumeobject.block_size = int(self.cdata)
+                self.cdata=None
             return
         if name=="fileobject":
             self.callback(self.fileobject)
             self.fileobject = None
             return
-        if name=='hashdigest' and self.fileobject:
+        if name=='hashdigest' and len(self.tagstack)>0:
             top = self.tagstack[-1]            # what the hash was for
             alg = self.hashdigest_type.lower() # name of the hash algorithm used
             if top=='byte_run':
-                self.fileobject._byte_runs[-1].hashdigest[alg] = self.data
-            if top=='fileobject':
-                self.fileobject._tags[alg] = self.data # legacy
-                self.fileobject.hashdigest[alg] = self.data
-            self.data = None
+                self.fileobject._byte_runs[-1].hashdigest[alg] = self.cdata
+            if top=="fileobject":
+                self.fileobject._tags[alg] = self.cdata # legacy
+                self.fileobject.hashdigest[alg] = self.cdata
+            self.cdata = None
             return
         if self.fileobject:             # in a file object, all tags are remembered
-            self.fileobject._tags[name] = self.data
-            self.data = None
+            self.fileobject._tags[name] = self.cdata
+            self.cdata = None
             return
         # Special case: <source><image_filename>fn</image_filename></source>
         # gets put in <image_filename>fn</image_filename>
         if name in ['image_filename','imagefile'] and self.tagstack[-1]=='source':
-            self.imageobject._tags['image_filename'] = self.data
+            self.imageobject._tags['image_filename'] = self.cdata
 
 class volumeobject_reader(xml_reader):
     def __init__(self):
@@ -1011,10 +1103,10 @@ class volumeobject_reader(xml_reader):
             self.volumeobject = volumeobject_sax()
             self.volumeobject.image = self.imageobject
             return
-        if name=='fileobject':
-            self.data = None            # don't record this
+        if name=="fileobject":
+            self.cdata = None            # don't record this
             return
-        self.data = ""                  # new element; otherwise data is ignored
+        self.cdata = ""                  # new element; otherwise data is ignored
 
     def _end_element(self, name):
         """Handles the end of an eleement for the XPAT scanner"""
@@ -1024,16 +1116,16 @@ class volumeobject_reader(xml_reader):
             self.volumeobject = None
             return
         if self.tagstack[-1]=='volume' and self.volumeobject:             # in the volume
-            self.volumeobject._tags[name] = self.data
-            self.data = None
+            self.volumeobject._tags[name] = self.cdata
+            self.cdata = None
             return
         if self.tagstack[-1] in ['fiwalk','dfxml']:
-            self.imageobject._tags[name] = self.data
+            self.imageobject._tags[name] = self.cdata
             return
 
         # Special case: <source><image_filename>fn</image_filename></source> gets put in <image_filename>fn</image_filename>
         if name in ['image_filename','imagefile'] and self.tagstack[-1]=='source':
-            self.imageobject._tags['image_filename'] = self.data
+            self.imageobject._tags['image_filename'] = self.cdata
         return
 
 
@@ -1233,6 +1325,25 @@ if __name__=="__main__":
         print("a=%s b=%s want=%s greater=%s%s" % (da,db,want,result,warn))
 
     if options.regress:
+        print("Testing unicode value parsing.")
+        #Test base64 encoding of the "Registered" symbol, encountered in a key name in the M57-Patents corpus.
+        test_unicode_string = "\xae"
+        if sys.version_info.major == 2:
+            #The test string doesn't quite get defined right that way in Python 2
+            test_unicode_string = unicode(test_unicode_string, encoding="latin-1")
+            test_unicode_string_escaped = test_unicode_string.encode("unicode_escape")
+            test_base64_bytes = base64.b64encode(test_unicode_string_escaped)
+        elif sys.version_info.major == 3:
+            test_unicode_string_escaped = test_unicode_string.encode("unicode_escape")
+            test_base64_bytes = base64.b64encode(test_unicode_string_escaped)
+        else:
+            #Just hard-code value, no examples yet for this language version.
+            test_base64_bytes = b'XHhhZQ=='
+        test_base64_string = test_base64_bytes.decode("ascii")
+        #test_base64_string is the kind of string data you'd expect to encounter in base64-encoded values processing RegXML.
+        assert test_unicode_string == safe_b64decode(test_base64_bytes)
+        assert test_unicode_string == safe_b64decode(test_base64_string)
+        print("Unicode value parsing good!")
         print("Testing dftime values")
         check_equal("1900-01-02T02:03:04Z",-2208895016,True)
         check_equal("2000-01-02T02:03:04Z","2000-01-02T03:03:04-0100",False)
@@ -1244,6 +1355,7 @@ if __name__=="__main__":
         check_greater("2009-11-17T00:33:30.9375Z","2009-11-17T00:33:30Z",True)
         check_equal("2009-11-17T00:33:30.9375Z","2009-11-17T00:33:30Z",False)
         check_equal("2009-11-17T00:33:30.0000Z","2009-11-17T00:33:30Z",True)
+        print("dftime values passed.")
         print("Testing byte_run overlap engine:")
         db = extentdb()
         a = byte_run(img_offset=0,len=5)
@@ -1263,4 +1375,3 @@ if __name__=="__main__":
         assert db.intersects(byte_run(-1,1))==None
         assert db.intersects(byte_run(10,1))==None
         print("Overlap engine good!")
-
