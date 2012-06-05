@@ -31,7 +31,7 @@ const std::string TskPluginModule::REPORT_SYMBOL = "report";
 const std::string TskPluginModule::INITIALIZE_SYMBOL = "initialize";
 const std::string TskPluginModule::FINALIZE_SYMBOL = "finalize";
 
-typedef TskModule::Status (*InitializeFunc)(std::string& args);
+typedef TskModule::Status (*InitializeFunc)(const char* args);
 typedef TskModule::Status (*FinalizeFunc)();
 typedef TskModule::Status (*RunFunc)(TskFile*);
 typedef TskModule::Status (*ReportFunc)();
@@ -105,7 +105,7 @@ void TskPluginModule::initialize()
         InitializeFunc init = (InitializeFunc) m_sharedLibrary.getSymbol(TskPluginModule::INITIALIZE_SYMBOL);
         std::string arguments = parameterSubstitution(m_arguments, 0);
 
-        if (init(arguments) != TskModule::OK)
+        if (init(arguments.c_str()) != TskModule::OK)
         {
             LOGERROR(L"TskPluginModule::Initialize - Module initialization failed.");
 
