@@ -50,9 +50,9 @@ extern "C"
     /**
      * Module identification function. 
      *
-     * @return The name of the module as a std::string.
+     * @return The name of the module.
      */
-    const char* name()
+    TSK_MODULE_EXPORT const char *name()
     {
         return "CalcFileSize";
     }
@@ -60,9 +60,9 @@ extern "C"
     /**
      * Module identification function. 
      *
-     * @return A description of the module as a std::string.
+     * @return A description of the module.
      */
-    const char* description()
+    TSK_MODULE_EXPORT const char *description()
     {
         return "";
     }
@@ -70,9 +70,9 @@ extern "C"
     /**
      * Module identification function. 
      *
-     * @return The version of the module as a std::string.
+     * @return The version of the module.
      */
-    const char* version()
+    TSK_MODULE_EXPORT const char *version()
     {
         return "0.0.0";
     }
