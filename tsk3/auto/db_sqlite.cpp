@@ -1000,13 +1000,14 @@ int TskDbSqlite::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId,
 }
 
 //internal function object to check for range overlap
-typedef struct _checkRangeOverlap{
+typedef struct _checkFileLayoutRangeOverlap{
     const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
     bool hasOverlap;
 
-    _checkRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges) : ranges(ranges),hasOverlap(false) {}
+    _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
+        : ranges(ranges),hasOverlap(false) {}
 
-    bool getHasOverlap() { return hasOverlap; }
+    bool getHasOverlap() const { return hasOverlap; }
     void operator() (const TSK_DB_FILE_LAYOUT_RANGE & range)  {
         if (hasOverlap)
             return; //no need to check other
@@ -1028,7 +1029,7 @@ typedef struct _checkRangeOverlap{
         }
     }
    
-} checkRangeOverlap;
+} checkFileLayoutRangeOverlap;
 
 /**
 * Internal helper method to add unalloc, unused and carved files with layout ranges to db
@@ -1073,7 +1074,8 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
 
     //dome some checking
     //ensure there is no overlap and each range has unique byte range
-    checkRangeOverlap & overlapRes = for_each(ranges.begin(), ranges.end(), checkRangeOverlap(ranges));
+    const checkFileLayoutRangeOverlap & overlapRes = 
+        for_each(ranges.begin(), ranges.end(), checkFileLayoutRangeOverlap(ranges));
     if (overlapRes.getHasOverlap() ) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
