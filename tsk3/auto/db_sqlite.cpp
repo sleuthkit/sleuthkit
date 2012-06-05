@@ -1147,7 +1147,7 @@ ostream& operator <<(ostream &os,const TSK_DB_FILE_LAYOUT_RANGE &layoutRange) {
 }
 
 ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo) {
-    os << fsInfo.objId << "," << fsInfo.imgOffset << "," << fsInfo.fType
+    os << fsInfo.objId << "," << fsInfo.imgOffset << "," << (int)fsInfo.fType
         << "," << fsInfo.block_size << "," << fsInfo.block_count 
         << "," << fsInfo.root_inum << "," << fsInfo.first_inum << "," << fsInfo.last_inum;
     os << std::endl;
@@ -1155,7 +1155,7 @@ ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo) {
 }
 
 ostream& operator <<(ostream &os,const TSK_DB_VS_INFO &vsInfo) {
-    os << vsInfo.objId << "," << vsInfo.vstype << "," << vsInfo.offset
+    os << vsInfo.objId << "," << (int)vsInfo.vstype << "," << vsInfo.offset
         << "," << vsInfo.block_size;
     os << std::endl;
     return os;
@@ -1163,13 +1163,13 @@ ostream& operator <<(ostream &os,const TSK_DB_VS_INFO &vsInfo) {
 
 ostream& operator <<(ostream &os,const TSK_DB_VS_PART_INFO &vsPartInfo) {
     os << vsPartInfo.objId << "," << vsPartInfo.addr << "," << vsPartInfo.start
-        << "," << vsPartInfo.len << "," << vsPartInfo.desc << "," << vsPartInfo.flags;
+        << "," << vsPartInfo.len << "," << vsPartInfo.desc << "," << (int)vsPartInfo.flags;
     os << std::endl;
     return os;
 }
 
 ostream& operator <<(ostream &os,const TSK_DB_OBJECT &dbObject) {
-    os << dbObject.objId << "," << dbObject.parObjId << "," << dbObject.type;
+    os << dbObject.objId << "," << dbObject.parObjId << "," << (int)dbObject.type;
     os << std::endl;
     return os;
 }
