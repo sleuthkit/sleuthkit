@@ -110,6 +110,16 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     TSK_FS_INFO *fs = (TSK_FS_INFO *) ext2fs;
     int gd_size = tsk_getu16(fs->endian,ext2fs->fs->s_desc_size);
 
+    if(!gd_size){
+        if(fs->ftype == TSK_FS_TYPE_EXT4 &&
+           EXT2FS_HAS_INCOMPAT_FEATURE(fs,ext2fs->fs,EXT2FS_FEATURE_INCOMPAT_64BIT))
+        {
+            gd_size=sizeof(ext4fs_gd);
+        }else{
+            gd_size=sizeof(ext2fs_gd);
+        }
+    }
+    
 
     /*
      * Sanity check
