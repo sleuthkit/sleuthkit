@@ -1000,13 +1000,14 @@ int TskDbSqlite::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId,
 }
 
 //internal function object to check for range overlap
-typedef struct _checkRangeOverlap{
+typedef struct _checkFileLayoutRangeOverlap{
     const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
     bool hasOverlap;
 
-    _checkRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges) : ranges(ranges),hasOverlap(false) {}
+    _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
+        : ranges(ranges),hasOverlap(false) {}
 
-    bool getHasOverlap() { return hasOverlap; }
+    bool getHasOverlap() const { return hasOverlap; }
     void operator() (const TSK_DB_FILE_LAYOUT_RANGE & range)  {
         if (hasOverlap)
             return; //no need to check other
@@ -1028,7 +1029,7 @@ typedef struct _checkRangeOverlap{
         }
     }
    
-} checkRangeOverlap;
+} checkFileLayoutRangeOverlap;
 
 /**
 * Internal helper method to add unalloc, unused and carved files with layout ranges to db
@@ -1073,7 +1074,8 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
 
     //dome some checking
     //ensure there is no overlap and each range has unique byte range
-    checkRangeOverlap & overlapRes = for_each(ranges.begin(), ranges.end(), checkRangeOverlap(ranges));
+    const checkFileLayoutRangeOverlap & overlapRes = 
+        for_each(ranges.begin(), ranges.end(), checkFileLayoutRangeOverlap(ranges));
     if (overlapRes.getHasOverlap() ) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -1145,7 +1147,7 @@ ostream& operator <<(ostream &os,const TSK_DB_FILE_LAYOUT_RANGE &layoutRange) {
 }
 
 ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo) {
-    os << fsInfo.objId << "," << fsInfo.imgOffset << "," << fsInfo.fType
+    os << fsInfo.objId << "," << fsInfo.imgOffset << "," << (int)fsInfo.fType
         << "," << fsInfo.block_size << "," << fsInfo.block_count 
         << "," << fsInfo.root_inum << "," << fsInfo.first_inum << "," << fsInfo.last_inum;
     os << std::endl;
@@ -1153,7 +1155,7 @@ ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo) {
 }
 
 ostream& operator <<(ostream &os,const TSK_DB_VS_INFO &vsInfo) {
-    os << vsInfo.objId << "," << vsInfo.vstype << "," << vsInfo.offset
+    os << vsInfo.objId << "," << (int)vsInfo.vstype << "," << vsInfo.offset
         << "," << vsInfo.block_size;
     os << std::endl;
     return os;
@@ -1161,13 +1163,13 @@ ostream& operator <<(ostream &os,const TSK_DB_VS_INFO &vsInfo) {
 
 ostream& operator <<(ostream &os,const TSK_DB_VS_PART_INFO &vsPartInfo) {
     os << vsPartInfo.objId << "," << vsPartInfo.addr << "," << vsPartInfo.start
-        << "," << vsPartInfo.len << "," << vsPartInfo.desc << "," << vsPartInfo.flags;
+        << "," << vsPartInfo.len << "," << vsPartInfo.desc << "," << (int)vsPartInfo.flags;
     os << std::endl;
     return os;
 }
 
 ostream& operator <<(ostream &os,const TSK_DB_OBJECT &dbObject) {
-    os << dbObject.objId << "," << dbObject.parObjId << "," << dbObject.type;
+    os << dbObject.objId << "," << dbObject.parObjId << "," << (int)dbObject.type;
     os << std::endl;
     return os;
 }
