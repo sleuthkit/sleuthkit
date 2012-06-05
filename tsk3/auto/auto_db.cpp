@@ -744,7 +744,7 @@ int8_t TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
         tsk_fs_close(fsInfo);
         errss << "processFsInfoUnalloc: error walking fs unalloc blocks, fs id: ";
         errss << unallocBlockWlkTrack.fsObjId;
-        tsk_error_set_errstr2(errss.str().c_str());
+        tsk_error_set_errstr2("%s", errss.str().c_str());
         registerError();
         return TSK_ERR;
     }
@@ -848,7 +848,7 @@ uint8_t TskAutoDb::addUnallocVsSpaceToDb() {
         if (m_db->getObjectInfo(vsPart.objId, vsPartObj) ) {
             stringstream errss;
             errss << "addUnallocVsSpaceToDb: error getting object info for vs part from db, objId: " << vsPart.objId;
-            tsk_error_set_errstr2(errss.str().c_str());
+            tsk_error_set_errstr2("%s", errss.str().c_str());
             registerError();
             return TSK_ERR;
         }
@@ -857,7 +857,7 @@ uint8_t TskAutoDb::addUnallocVsSpaceToDb() {
         if (m_db->getVsInfo(vsPartObj.parObjId, vsInfo) ) {
             stringstream errss;
             errss << "addUnallocVsSpaceToDb: error getting volume system info from db, objId: " << vsPartObj.parObjId;
-            tsk_error_set_errstr2(errss.str().c_str());
+            tsk_error_set_errstr2("%s", errss.str().c_str());
             registerError();
             return TSK_ERR;
         }
