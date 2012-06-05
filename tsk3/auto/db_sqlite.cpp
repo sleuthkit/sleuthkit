@@ -1065,7 +1065,7 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
             sserr << "Error addFileWithLayoutRange() - unsupported file type for file layout range: ";
             sserr << (int) dbFileType;
-            tsk_error_set_errstr(sserr.str().c_str());
+            tsk_error_set_errstr("%s", sserr.str().c_str());
             return TSK_ERR;
     }
 
