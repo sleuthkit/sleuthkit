@@ -18,8 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.text.SimpleDateFormat;
-import java.util.TimeZone;
 
 /**
  *
@@ -38,7 +36,6 @@ public class BlackboardAttribute {
 	private String valueString;
 	private byte[] valueBytes;
 	private SleuthkitCase Case;
-
 
 	/**
 	 * Attribute value type (indicates what value type is stored in an attribute)
@@ -135,6 +132,7 @@ public class BlackboardAttribute {
 		TSK_ENCRYPTION_DETECTED(38, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"),
 		TSK_MALWARE_DETECTED(39, "TSK_MALWARE_DETECTED", "Malware Detected"),
 		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED", "Steganography Detected");
+		
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		private String label;
 		private int typeID;
@@ -175,7 +173,7 @@ public class BlackboardAttribute {
 			}
 			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching type: " + label);
 		}
-
+		
 		public String getDisplayName() {
 			return this.displayName;
 		}
