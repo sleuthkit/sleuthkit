@@ -168,7 +168,7 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
  * @return the pointer to the case
  * @param env pointer to java environment this was called from
  * @param dbPath location for the database
- * @rerurns NULL on error
+ * @rerurns 0 on error (sets java exception), pointer to newly opened TskCaseDb object on success
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbNat(JNIEnv * env,
@@ -181,7 +181,7 @@ JNIEXPORT jlong JNICALL
 
     if (tskCase == NULL) {
         setThrowTskCoreError(env);
-        return NULL;               
+        return 0;               
     }
 
     return (jlong) tskCase;
@@ -206,7 +206,7 @@ JNIEXPORT jlong JNICALL
 
     if (tskCase == NULL) {
         setThrowTskCoreError(env);
-        return NULL;
+        return 0;
     }
 
     return (jlong) tskCase;
@@ -410,12 +410,12 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLooku
  * @param env pointer to java environment this was called from
  * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
- * @param processUnallocSpace whether to process unallocated filesystem blocks and volumes in the image
+ * @param addUnallocSpace whether to process unallocated filesystem blocks and volumes in the image
  * @param noFatFsOrphans whether to skip processing orphans on FAT filesystems
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
-    jclass obj, jlong caseHandle, jstring timezone, jboolean processUnallocSpace, jboolean noFatFsOrphans) {
+    jclass obj, jlong caseHandle, jstring timezone, jboolean addUnallocSpace, jboolean noFatFsOrphans) {
     jboolean isCopy;
 
     TskCaseDb *tskCase = castCaseDb(env, caseHandle);
@@ -440,7 +440,7 @@ JNIEXPORT jlong JNICALL
         return 0;
     }
 
-    tskAuto->setProcessUnallocSpace(processUnallocSpace?true:false);
+    tskAuto->setAddUnallocSpace(addUnallocSpace?true:false);
     tskAuto->setNoFatFsOrphans(noFatFsOrphans?true:false);
 
     return (jlong) tskAuto;
@@ -634,7 +634,7 @@ JNIEXPORT jlong JNICALL
     char **imagepaths8 = (char **) tsk_malloc(num_imgs * sizeof(char *));
     if (imagepaths8 == NULL) {
         setThrowTskCoreError(env);
-        return NULL;
+        return 0;
     }
     for (int i = 0; i < num_imgs; i++) {
         imagepaths8[i] =
@@ -769,7 +769,7 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
     jbyteArray return_array = env->NewByteArray(len);
     if (return_array == NULL) {
         setThrowTskCoreError(env, "NewByteArray returned error while getting an array to copy buffer into.");
-        return NULL;
+        return 0;
     }
     env->SetByteArrayRegion(return_array, 0, len, (jbyte*)buf);
 

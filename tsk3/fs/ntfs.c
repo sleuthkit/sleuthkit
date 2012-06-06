@@ -4153,10 +4153,15 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
 
         if (sec_skew != 0) {
             tsk_fprintf(hFile, "\nAdjusted times:\n");
-            fs_file->meta->mtime -= sec_skew;
-            fs_file->meta->atime -= sec_skew;
-            fs_file->meta->ctime -= sec_skew;
-            fs_file->meta->crtime -= sec_skew;
+            if (fs_file->meta->mtime)
+                fs_file->meta->mtime -= sec_skew;
+            if (fs_file->meta->atime)
+                fs_file->meta->atime -= sec_skew;
+            if (fs_file->meta->ctime)
+                fs_file->meta->ctime -= sec_skew;
+            if (fs_file->meta->crtime)
+                fs_file->meta->crtime -= sec_skew;
+            
             tsk_fprintf(hFile, "Created:\t%s\n",
                 tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
             tsk_fprintf(hFile, "File Modified:\t%s\n",
@@ -4165,10 +4170,16 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                 tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
             tsk_fprintf(hFile, "Accessed:\t%s\n",
                 tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
-            fs_file->meta->mtime += sec_skew;
-            fs_file->meta->atime += sec_skew;
-            fs_file->meta->ctime += sec_skew;
-            fs_file->meta->crtime += sec_skew;
+
+            if (fs_file->meta->mtime == 0)
+                fs_file->meta->mtime += sec_skew;
+            if (fs_file->meta->atime == 0)
+                fs_file->meta->atime += sec_skew;
+            if (fs_file->meta->ctime == 0)
+                fs_file->meta->ctime += sec_skew;
+            if (fs_file->meta->crtime == 0)
+                fs_file->meta->crtime += sec_skew;
+            
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
 

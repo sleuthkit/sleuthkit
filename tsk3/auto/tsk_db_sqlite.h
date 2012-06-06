@@ -86,6 +86,13 @@ ostream& operator <<(ostream &os,const TSK_DB_OBJECT &dbObject);
 * Structure wrapping a single file_layout db entry
 */
 typedef struct _TSK_DB_FILE_LAYOUT_RANGE {
+    //default constructor
+    _TSK_DB_FILE_LAYOUT_RANGE()
+        : fileObjId(0),byteStart(0),byteLen(0),sequence(0) {}
+    //constructor for non-db object (before it becomes one)
+    _TSK_DB_FILE_LAYOUT_RANGE(uint64_t byteStart, uint64_t byteLen, int sequence)
+        : fileObjId(0),byteStart(byteStart),byteLen(byteLen),sequence(sequence) {}
+ 
     int64_t fileObjId; ///< set to 0 if unknown (before it becomes a db object)
     uint64_t byteStart;
     uint64_t byteLen;

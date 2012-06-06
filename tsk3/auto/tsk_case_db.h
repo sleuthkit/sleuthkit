@@ -51,7 +51,7 @@ class TskAutoDb:public TskAuto {
     virtual void createBlockMap(bool flag);
     virtual void hashFiles(bool flag);
     virtual void setNoFatFsOrphans(bool noFatFsOrphans);
-    virtual void setProcessUnallocSpace(bool processUnallocSpace);
+    virtual void setAddUnallocSpace(bool addUnallocSpace);
 
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
@@ -80,20 +80,23 @@ class TskAutoDb:public TskAuto {
     TSK_HDB_INFO * m_NSRLDb;
     TSK_HDB_INFO * m_knownBadDb;
     bool m_noFatFsOrphans;
-    bool m_processUnallocSpace;
-
-    //internal structure to keep track of temp. unalloc block range
-    struct {
-        TSK_FS_INFO * fsInfo;
-        TSK_DADDR_T curRangeStart;
-        TSK_DADDR_T prevBlock;
-        bool isStart;
-        int64_t fsObjId;
-    } unallocBlockWlkTrack;
+    bool m_addUnallocSpace;
 
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);
     TskAutoDb & operator=(const TskAutoDb&);
+
+    //internal structure to keep track of temp. unalloc block range
+    typedef struct _UNALLOC_BLOCK_WLK_TRACK {
+        _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDb & tskAutoDb, const TSK_FS_INFO & fsInfo, const int64_t fsObjId)
+            : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0),prevBlock(0),isStart(true) {}
+        const TskAutoDb & tskAutoDb;
+        const TSK_FS_INFO & fsInfo;
+        const int64_t fsObjId;
+        TSK_DADDR_T curRangeStart;
+        TSK_DADDR_T prevBlock;
+        bool isStart;
+    } UNALLOC_BLOCK_WLK_TRACK;
 
     uint8_t addImageDetails(const char *const images[], int);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
@@ -108,7 +111,7 @@ class TskAutoDb:public TskAuto {
     int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
 
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
-    int8_t processFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
+    int8_t addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
     uint8_t addUnallocFsSpaceToDb();
     uint8_t addUnallocVsSpaceToDb();
     uint8_t addUnallocSpaceToDb();
