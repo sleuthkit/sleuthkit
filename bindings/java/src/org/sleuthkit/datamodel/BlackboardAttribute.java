@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
 
 /**
  *
@@ -36,6 +38,8 @@ public class BlackboardAttribute {
 	private String valueString;
 	private byte[] valueBytes;
 	private SleuthkitCase Case;
+	private static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
 
 	/**
 	 * Attribute value type (indicates what value type is stored in an attribute)
@@ -132,7 +136,6 @@ public class BlackboardAttribute {
 		TSK_ENCRYPTION_DETECTED(38, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"),
 		TSK_MALWARE_DETECTED(39, "TSK_MALWARE_DETECTED", "Malware Detected"),
 		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED", "Steganography Detected");
-		
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		private String label;
 		private int typeID;
@@ -173,7 +176,7 @@ public class BlackboardAttribute {
 			}
 			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching type: " + label);
 		}
-		
+
 		public String getDisplayName() {
 			return this.displayName;
 		}
@@ -445,5 +448,14 @@ public class BlackboardAttribute {
 	 */
 	protected void setCase(SleuthkitCase Case) {
 		this.Case = Case;
+	}
+
+	public static String getStringTime(long epochSeconds, TimeZone tzone) {
+		String time = "0000-00-00 00:00:00";
+		if (epochSeconds != 0) {
+			dateFormatter.setTimeZone(tzone);
+			time = dateFormatter.format(new java.util.Date(epochSeconds * 1000));
+		}
+		return time;
 	}
 }
