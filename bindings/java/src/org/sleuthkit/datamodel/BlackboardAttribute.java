@@ -38,7 +38,6 @@ public class BlackboardAttribute {
 	private String valueString;
 	private byte[] valueBytes;
 	private SleuthkitCase Case;
-	private static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 
 	/**
@@ -448,14 +447,5 @@ public class BlackboardAttribute {
 	 */
 	protected void setCase(SleuthkitCase Case) {
 		this.Case = Case;
-	}
-
-	public static String getStringTime(long epochSeconds, TimeZone tzone) {
-		String time = "0000-00-00 00:00:00";
-		if (epochSeconds != 0) {
-			dateFormatter.setTimeZone(tzone);
-			time = dateFormatter.format(new java.util.Date(epochSeconds * 1000));
-		}
-		return time;
 	}
 }
