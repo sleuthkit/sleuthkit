@@ -1197,7 +1197,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
         if (fs_attr->nrd.compsize <= 0) {
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
             tsk_error_set_errstr
-                ("ntfs_attrwalk_special: Compressed attribute has compsize of 0");
+                ("ntfs_attrwalk_special: Compressed attribute has compsize of 0 (%"PRIuINUM")", 
+				fs_attr->fs_file->meta->addr);
             return 1;
         }
 
@@ -1234,10 +1235,11 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                     else
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("Filler Entry exists in fs_attr_run %" PRIuDADDR
-                        "@%" PRIuDADDR " - type: %" PRIu32 "  id: %d",
+                        ("ntfs_attr_walk_special: Filler Entry exists in fs_attr_run %" PRIuDADDR
+						"@%" PRIuDADDR " - type: %" PRIu32 "  id: %d Meta: %"PRIuINUM " Status: %s",
                         fs_attr_run->len, fs_attr_run->addr, fs_attr->type,
-                        fs_attr->id);
+                        fs_attr->id, fs_attr->fs_file->meta->addr, 
+						(fs_attr->fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)?"Allocated":"Deleted");
                     free(comp_unit);
                     ntfs_uncompress_done(&comp);
                     return 1;
@@ -1262,8 +1264,10 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                     else
                         tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
                     tsk_error_set_errstr
-                        ("Invalid address in run (too large): %" PRIuDADDR
-                        "", addr);
+						("ntfs_attr_walk_special: Invalid address in run (too large): %" PRIuDADDR
+						" Meta: %"PRIuINUM" Status: %s", 
+						addr, fs_attr->fs_file->meta->addr,
+						(fs_attr->fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)?"Allocated":"Deleted");
 
                     free(comp_unit);
                     ntfs_uncompress_done(&comp);
@@ -1282,6 +1286,10 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                     // decompress the unit
                     if (ntfs_proc_compunit(ntfs, &comp, comp_unit,
                             comp_unit_idx)) {
+								tsk_error_set_errstr2("%" PRIuINUM " - type: %" PRIu32 "  id: %d Status: %s",
+							fs_attr->fs_file->meta->addr, fs_attr->type,
+							fs_attr->id,
+							(fs_attr->fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)?"Allocated":"Deleted");
                         free(comp_unit);
                         ntfs_uncompress_done(&comp);
                         return 1;
@@ -1321,9 +1329,10 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
                             tsk_error_set_errstr
                                 ("ntfs_attrwalk_special: Trying to read past end of uncompressed buffer: %"
-                                PRIuSIZE " %" PRIuSIZE "",
+								PRIuSIZE " %" PRIuSIZE " Meta: %"PRIuINUM" Status: %s",
                                 i * fs->block_size + read_len,
-                                comp.uncomp_idx);
+                                comp.uncomp_idx, fs_attr->fs_file->meta->addr,
+								(fs_attr->fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)?"Allocated":"Deleted");
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
                             return 1;
@@ -1425,8 +1434,8 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         if (a_offset >= a_fs_attr->size) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
-            tsk_error_set_errstr("ntfs_file_read_special - %" PRIuOFF,
-                a_offset);
+			tsk_error_set_errstr("ntfs_file_read_special - %" PRIuOFF " Meta: %"PRIuINUM,
+                a_offset, a_fs_attr->fs_file->meta->addr);
             return -1;
         }
 
@@ -1509,6 +1518,10 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                     // decompress the unit
                     if (ntfs_proc_compunit(ntfs, &comp, comp_unit,
                             comp_unit_idx)) {
+								tsk_error_set_errstr2("%" PRIuINUM " - type: %" PRIu32 "  id: %d  Status: %s",
+							a_fs_attr->fs_file->meta->addr, a_fs_attr->type,
+							a_fs_attr->id,
+							(a_fs_attr->fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)?"Allocated":"Deleted");
                         free(comp_unit);
                         ntfs_uncompress_done(&comp);
                         return -1;
@@ -2372,7 +2385,8 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
              * unallocated.  If so, then the list entry could
              * have been reallocated, so we will just ignore it
              */
-            if ((tsk_getu16(fs->endian, mft->flags) & NTFS_MFT_INUSE) == 0) {
+            if (((tsk_getu16(fs->endian, mft->flags) & NTFS_MFT_INUSE) == 0) ||
+                (fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)) {
                 continue;
             }
             else {
@@ -3028,7 +3042,7 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     uint32_t sii_sechash = 0;
     uint32_t sds_sechash = 0;
     uint64_t sds_file_off = 0;
-    uint32_t sds_ent_size = 0;
+    //uint32_t sds_ent_size = 0;
     uint64_t sii_sds_file_off = 0;
     uint32_t sii_sds_ent_size = 0;
 
@@ -3092,7 +3106,7 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     sds_secid = tsk_getu32(fs->endian, sds->sec_id);
     sds_sechash = tsk_getu32(fs->endian, sds->hash_sec_desc);
     sds_file_off = tsk_getu64(fs->endian, sds->file_off);
-    sds_ent_size = tsk_getu32(fs->endian, sds->ent_size);
+    //sds_ent_size = tsk_getu32(fs->endian, sds->ent_size);
 
     // Sanity check to make sure the $SII entry points to
     // the correct $SDS entry.
@@ -4026,7 +4040,7 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
     const TSK_FS_ATTR *fs_attr;
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     ntfs_mft *mft;
-    char timeBuf[32];
+    char timeBuf[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -4139,10 +4153,15 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
 
         if (sec_skew != 0) {
             tsk_fprintf(hFile, "\nAdjusted times:\n");
-            fs_file->meta->mtime -= sec_skew;
-            fs_file->meta->atime -= sec_skew;
-            fs_file->meta->ctime -= sec_skew;
-            fs_file->meta->crtime -= sec_skew;
+            if (fs_file->meta->mtime)
+                fs_file->meta->mtime -= sec_skew;
+            if (fs_file->meta->atime)
+                fs_file->meta->atime -= sec_skew;
+            if (fs_file->meta->ctime)
+                fs_file->meta->ctime -= sec_skew;
+            if (fs_file->meta->crtime)
+                fs_file->meta->crtime -= sec_skew;
+            
             tsk_fprintf(hFile, "Created:\t%s\n",
                 tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
             tsk_fprintf(hFile, "File Modified:\t%s\n",
@@ -4151,10 +4170,16 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                 tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
             tsk_fprintf(hFile, "Accessed:\t%s\n",
                 tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
-            fs_file->meta->mtime += sec_skew;
-            fs_file->meta->atime += sec_skew;
-            fs_file->meta->ctime += sec_skew;
-            fs_file->meta->crtime += sec_skew;
+
+            if (fs_file->meta->mtime == 0)
+                fs_file->meta->mtime += sec_skew;
+            if (fs_file->meta->atime == 0)
+                fs_file->meta->atime += sec_skew;
+            if (fs_file->meta->ctime == 0)
+                fs_file->meta->ctime += sec_skew;
+            if (fs_file->meta->crtime == 0)
+                fs_file->meta->crtime += sec_skew;
+            
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
 

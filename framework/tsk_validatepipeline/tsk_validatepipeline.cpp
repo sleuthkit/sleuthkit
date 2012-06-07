@@ -3,7 +3,7 @@
 *  The Sleuth Kit
 *
 *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
-*  Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+*  Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
 *  reserved.
 *
 *  This software is distributed under the Common Public License 1.0
@@ -15,6 +15,7 @@
 #include <Windows.h>
 
 #include "framework.h"
+#include "Services/TskSystemPropertiesImpl.h"
 
 #include "Poco/AutoPtr.h"
 #include "Poco/Path.h"
@@ -48,9 +49,9 @@ static char *progname;
 
 static void usage()
 {
-    fprintf(stderr, "Usage: %s system_configfile pipeline_configfile \n", progname);
-    fprintf(stderr, "\tsystem_configfile: Framework config file that identifies where module directory, etc. is found.\n");
-    fprintf(stderr, "\tpipeline_configfile: Pipeline config file to validate.\n");
+    fprintf(stderr, "Usage: %s framework_config_file pipeline_config_file \n", progname);
+    fprintf(stderr, "\tframework_config_file: Framework config file that identifies where module directory, etc. is found.\n");
+    fprintf(stderr, "\tpipeline_config_file: Pipeline config file to validate.\n");
 }
 
 ValidatePipeline::ValidatePipeline()
@@ -70,7 +71,7 @@ bool ValidatePipeline::isValid(const char *a_configPath) const
     bool result = false;
     std::ifstream in(a_configPath);
     if (!in) {
-        fprintf(stdout, "Error opening config file: %s\n", a_configPath);
+        fprintf(stdout, "Error opening pipeline config file: %s\n", a_configPath);
     } else {
         try {
             Poco::XML::InputSource src(in);
@@ -117,7 +118,7 @@ bool ValidatePipeline::isValid(const char *a_configPath) const
                     result = true;
             }
         } catch (Poco::XML::SAXParseException& ex) {
-            fprintf(stdout, "Error parsing pipeline config file: %s\n", a_configPath);
+            fprintf(stderr, "Error parsing pipeline config file: %s (%s)\n", a_configPath, ex.what());
         }
 
     }
@@ -168,11 +169,10 @@ int main(int argc, char **argv)
     TskServices::Instance().setLog(log);
 
     std::wstring progDirPath = getProgDir();
-    Poco::AutoPtr<Poco::Util::XMLConfiguration> pXMLConfig = new Poco::Util::XMLConfiguration(frameworkConfigPath);
 
     // Initialize properties based on the config file. Do this to shutdown noise in validation.
     TskSystemPropertiesImpl systemProperties;
-    systemProperties.initialize(*pXMLConfig);
+    systemProperties.initialize(frameworkConfigPath);
     TskServices::Instance().setSystemProperties(systemProperties);
 
     TSK_SYS_PROP_SET(TskSystemProperties::PROG_DIR, progDirPath); 

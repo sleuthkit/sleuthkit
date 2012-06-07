@@ -2,16 +2,18 @@
 .SH NAME
 tsk_gettimes - Collect MAC times from a disk image into a body file.
 .SH SYNOPSIS
-.B tsk_gettimes [-vV] [-i
+.B tsk_gettimes [-vV] [ -f
+.I fstype
+.B ] [ -i
 .I imgtype
-.B ] [-b
+.B ] [ -b
 .I dev_sector_size
-.B ] [-z
+.B ] [ -z
 .I zone
-.B ] [-s
+.B ] [ -s
 .I seconds
 .B ] 
-.I image
+.I image [images]
 .SH DESCRIPTION
 .B tsk_gettimes
 examines each of the file systems in a disk image and returns the data about them in the MACtime body format (the same as running 'fls -m' on each file system).  The output of this can be used as input to mactime to make a timeline of file activity. The data is printed to STDOUT, which can then be redirected to a file.
@@ -21,11 +23,16 @@ The arguments are as follows:
 verbose output to stderr
 .IP -V
 Print version
+.IP "-f fstype"
+Specify the file system type.
+Use '\-f list' to list the supported file system types.
+If not given, autodetection methods are used.
 .IP "-i imgtype"
-The format of the image file (use '-i list' for supported types)
+The format of the image file, such as raw.
+Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-b dev_sector_size"
-The size (in bytes) of the device sectors
+The size (in bytes) of the device sectors.
 If not given, autodetection methods are used.  
 .IP "-o sector_offset"
 Sector offset for a volume to recover (recovers only that volume)
@@ -38,7 +45,10 @@ original system was 100 seconds slow, this value would be \-100.
 The ASCII string of the time zone of the original system.  For
 example, EST or GMT.  These strings must be defined by your operating
 system and may vary.
-.IP "-s sec_skew" T
+.IP "image [images]"
+The disk or partition image to read, whose format is given with '\-i'.
+Multiple image file names can be given if the image is split into multiple segments.
+If only one image file is given, and its name is the first in a sequence (e.g., as indicated by ending in '.001'), subsequent image segments will be included automatically.
 
 .SH EXAMPLES
 To collect data about image image.dd:

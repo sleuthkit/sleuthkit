@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -26,10 +26,9 @@ public:
     virtual ~CarveExtract() = 0;
     /**
      * Carve a specified unallocated image. 
-     * @param imgDB DB for the image being analyzed
      * @param unallocImgId Id of the unallocated image to carve
      * @returns 1 on error 
      */
-    virtual int processFile(TskImgDB * imgDB, int unallocImgId) = 0;
+    virtual int processFile(int unallocImgId) = 0;
 };
 #endif

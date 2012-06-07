@@ -11,7 +11,7 @@
 
 /**
  * \file mult_files.c
- * Internal code to find remainder of files in a split / E01 / etc. set
+ * Internal code to find remainder of files in a split raw set
  */
 
 #include "tsk_img_i.h"

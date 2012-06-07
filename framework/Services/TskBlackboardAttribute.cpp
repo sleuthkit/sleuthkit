@@ -2,7 +2,7 @@
 * The Sleuth Kit
 *
 * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
-* Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+* Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
 * reserved.
 *
 * This software is distributed under the Common Public License 1.0
@@ -102,7 +102,7 @@ m_valueBytes(){}
 * @param context additional context 
 * @param valueBytes byte array value
 */	
-TskBlackboardAttribute::TskBlackboardAttribute(const int attributeTypeID, const string& moduleName, const string& context, const vector<unsigned char> valueBytes): 
+TskBlackboardAttribute::TskBlackboardAttribute(const int attributeTypeID, const string& moduleName, const string& context, const vector<unsigned char>& valueBytes): 
 m_attributeTypeID(attributeTypeID),
 m_moduleName(moduleName),
 m_context(context),
@@ -127,9 +127,9 @@ m_valueString(){}
 * @param valueBytes byte array value
 * @param objectID object the attribute is associated with
 */	
-TskBlackboardAttribute::TskBlackboardAttribute(uint64_t artifactID, const int attributeTypeID, uint64_t objectID, const string moduleName, const string context,
+TskBlackboardAttribute::TskBlackboardAttribute(const uint64_t artifactID, const int attributeTypeID, const uint64_t objectID, const string& moduleName, const string& context,
                                                const TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, const int valueInt, const uint64_t valueLong, const double valueDouble, 
-                                               const string& valueString, const vector<unsigned char> valueBytes):
+                                               const string& valueString, const vector<unsigned char>& valueBytes):
 m_artifactID(artifactID), 
 m_attributeTypeID(attributeTypeID),
 m_moduleName(moduleName),

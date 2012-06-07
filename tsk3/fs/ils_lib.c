@@ -87,7 +87,6 @@ static void
 print_header_mac()
 {
     char hostnamebuf[BUFSIZ];
-    time_t now;
 
 #ifndef TSK_WIN32
     if (gethostname(hostnamebuf, sizeof(hostnamebuf) - 1) < 0) {
@@ -99,8 +98,6 @@ print_header_mac()
 #else
     strcpy(hostnamebuf, "unknown");
 #endif
-    now = time((time_t *) 0);
-
 
     /*
      * Identify the fields in the data that follow.

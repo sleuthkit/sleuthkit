@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -36,7 +36,7 @@ public:
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
-    virtual void handleNotification(const char * msg);
+    virtual uint8_t handleError();
 
     uint8_t scanImgForFs(const uint64_t sect_start, const uint64_t sect_count = 1024);
 
@@ -46,7 +46,7 @@ private:
     int m_curVsId;
     bool m_vsSeen;
     uint64_t m_numFilesSeen;
-    time_t m_startTime;
+    time_t m_lastUpdateMsg;
 
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path, uint64_t & fileId);

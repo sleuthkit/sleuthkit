@@ -1783,8 +1783,8 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     int ibpg;
     int gd_size;
     time_t tmptime;
+    char timeBuf[128];
     const char *tmptypename;
-    char timeBuf[32];
 
 
     // clean up any error messages that are lying around
@@ -2346,18 +2346,18 @@ ext2fs_make_acl_str(char *str, int len, uint16_t perm)
     }
     if (perm & EXT2_PACL_PERM_WRITE) {
         if (i) {
-            snprintf(&str[i], len - 1, ", ");
+            snprintf(&str[i], len-i-1, ", ");
             i += 2;
         }
-        snprintf(&str[i], len - 1, "Write");
+        snprintf(&str[i], len-i-1, "Write");
         i += 5;
     }
     if (perm & EXT2_PACL_PERM_EXEC) {
         if (i) {
-            snprintf(&str[i], len - 1, ", ");
+            snprintf(&str[i], len-i-1, ", ");
             i += 2;
         }
-        snprintf(&str[i], len - 1, "Execute");
+        snprintf(&str[i], len-i-1, "Execute");
         i += 7;
     }
 }
@@ -2421,7 +2421,8 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     EXT2FS_PRINT_ADDR print;
     const TSK_FS_ATTR *fs_attr_indir;
     ext2fs_inode *dino_buf = NULL;
-    char * timeBuf = NULL;
+    char timeBuf[128];
+//    char * timeBuf = NULL;
     unsigned int size;
     unsigned int large_inodes;
 
@@ -2430,15 +2431,15 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     if (ext2fs->inode_size > 128)
     {
         large_inodes = 1;
-        timeBuf = (char *)tsk_malloc(sizeof(char) * 64);
+//        timeBuf = (char *)tsk_malloc(sizeof(char) * 64);
     }
     else
     {
         large_inodes = 0;
-        timeBuf = (char *)tsk_malloc(sizeof(char) * 32);
+//        timeBuf = (char *)tsk_malloc(sizeof(char) * 32);
     }
-    if(timeBuf == NULL)
-        return 1;
+//    if(timeBuf == NULL)
+//        return 1;
 
     size = ext2fs->inode_size > sizeof(ext2fs_inode) ? ext2fs->inode_size : sizeof(ext2fs_inode);
     if ((dino_buf =
@@ -2654,7 +2655,8 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
 
             /* Is the value location and size valid? */
-            if ((tsk_getu32(fs->endian,
+            //if ((tsk_getu32(fs->endian,
+            if ((tsk_getu16(fs->endian,
                         ea_entry->val_off) > fs->block_size)
                 || ((tsk_getu16(fs->endian,
                             ea_entry->val_off) + tsk_getu32(fs->endian,
@@ -2800,9 +2802,12 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     if (sec_skew != 0) {
         tsk_fprintf(hFile, "\nAdjusted Inode Times:\n");
-        fs_meta->mtime -= sec_skew;
-        fs_meta->atime -= sec_skew;
-        fs_meta->ctime -= sec_skew;
+        if (fs_meta->mtime)
+            fs_meta->mtime -= sec_skew;
+        if (fs_meta->atime)
+            fs_meta->atime -= sec_skew;
+        if (fs_meta->ctime)
+            fs_meta->ctime -= sec_skew;
 
 
         if(fs->ftype == TSK_FS_TYPE_EXT4 && large_inodes)
@@ -2839,9 +2844,12 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             fs_meta->time2.ext2.dtime += sec_skew;
         }
 
-        fs_meta->mtime += sec_skew;
-        fs_meta->atime += sec_skew;
-        fs_meta->ctime += sec_skew;
+        if (fs_meta->mtime == 0)
+            fs_meta->mtime += sec_skew;
+        if (fs_meta->atime == 0)
+            fs_meta->atime += sec_skew;
+        if (fs_meta->ctime == 0)
+            fs_meta->ctime += sec_skew;
 
         tsk_fprintf(hFile, "\nOriginal Inode Times:\n");
     }
@@ -2937,8 +2945,8 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fs_file_close(fs_file);
     if (dino_buf != NULL)
         free((char *) dino_buf);
-    if(timeBuf != NULL)
-        free(timeBuf);
+//    if(timeBuf != NULL)
+//        free(timeBuf);
 
     return 0;
 }
@@ -3187,6 +3195,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->block_getflags = ext2fs_block_getflags;
 
     fs->get_default_attr_type = tsk_fs_unix_get_default_attr_type;
+    //fs->load_attrs = tsk_fs_unix_make_data_run;
     fs->load_attrs = ext2fs_load_attrs;
 
     fs->file_add_meta = ext2fs_inode_lookup;

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PIPELINE_CONFIG>
+    <PIPELINE type="FileAnalysis">
+      <MODULE order="1" type="plugin" location="HashCalcModule.dll"/>
+<!--<MODULE order="2" type="plugin" location="TskHashLookupModule.dll" arguments="TODO: See README for how to create NSRL index file"/>-->
+      <MODULE order="3" type="plugin" location="EntropyModule.dll"/>
+      <MODULE order="4" type="plugin" location="ZipExtractionModule.dll"/>
+    </PIPELINE>
+
+    <PIPELINE type="Report">
+      <!--This pipeline configuration assumes that the RegRipper executable is named rip.exe and is present in the program directory-->
+      <!--<MODULE order="1" type="plugin" location="RegRipperModule.dll" arguments="-e @PROGDIR\\RegRipper\\rip.exe; -o @OUT\\RegRipper\\"/>-->
+
+      <MODULE order="2" type="plugin" location="InterestingFilesModule.dll" arguments="@MODDIR\\InterestingFilesModule\\interesting_files.xml"/>
+
+      <MODULE order="3" type="plugin" location="SaveInterestingFilesModule.dll" arguments="@OUT\\InterestingFiles\\"/>
+
+      <MODULE order="4" type="plugin" location="SummaryReportModule.dll"/>
+
+    </PIPELINE>
+</PIPELINE_CONFIG>

@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -16,6 +16,7 @@
 #include "Services/TskServices.h"
 #include "File/TskFileTsk.h"
 #include "File/TskFile.h"
+#include "File/TskFileManagerImpl.h"
 
 TskDBBlackboard * TskDBBlackboard::m_pInstance = NULL;
 
@@ -63,7 +64,10 @@ int TskDBBlackboard::addAttributeType(const string& attributeTypeName, const str
 }
 
 void TskDBBlackboard::addBlackboardAttribute(TskBlackboardAttribute& attr){
-    IMGDB().addBlackboardAttribute(attr);
+    if(attrTypeIDToTypeName(attr.getAttributeTypeID()).compare("") != 0)
+        IMGDB().addBlackboardAttribute(attr);
+    else
+        throw new TskException("No attribute type for the id of the given attribute");
 }
 
 string TskDBBlackboard::attrTypeIDToTypeDisplayName(const int attributeTypeID){
@@ -177,20 +181,30 @@ vector<TskBlackboardAttribute> TskDBBlackboard::getMatchingAttributes(const stri
 }
 
 TskBlackboardArtifact TskDBBlackboard::createArtifact(const uint64_t file_id, const int artifactTypeID){
-    return IMGDB().createBlackboardArtifact(file_id, artifactTypeID);
+    if(artTypeIDToTypeName(artifactTypeID).compare("") != 0)
+        return IMGDB().createBlackboardArtifact(file_id, artifactTypeID);
+    else
+        throw new TskException("No Artifact type exists with that ID");
 }
 
 TskBlackboardArtifact TskDBBlackboard::createArtifact(const uint64_t file_id, const TSK_ARTIFACT_TYPE artifactType){
-    return IMGDB().createBlackboardArtifact(file_id, artifactType);
+    if(artTypeIDToTypeName(artifactType).compare("") != 0)
+        return IMGDB().createBlackboardArtifact(file_id, artifactType);
+    else
+        throw new TskException("No Artifact type exists with that name");
 }
 
 TskBlackboardArtifact TskDBBlackboard::createArtifact(const uint64_t file_id, const string& artifactTypeName){
-    return IMGDB().createBlackboardArtifact(file_id, attrTypeNameToTypeID(artifactTypeName));
+    if(artTypeNameToTypeID(artifactTypeName))
+        return IMGDB().createBlackboardArtifact(file_id, attrTypeNameToTypeID(artifactTypeName));
+    else
+        throw new TskException("Artifact type does not exist. Bad enum value.");
 }
 
 void TskDBBlackboard::createGenInfoAttribute(const uint64_t file_id, TskBlackboardAttribute& attr){
-    TskFileTsk file(file_id);
-    file.addGenInfoAttribute(attr);    
+    TskFile *file = TskFileManagerImpl::instance().getFile(file_id);
+    file->addGenInfoAttribute(attr);
+    delete file;
 }
 
 vector<int> TskDBBlackboard::findAttributeTypes(int artifactTypeId){

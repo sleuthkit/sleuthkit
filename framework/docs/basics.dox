@@ -1,0 +1,22 @@
+/*! \page basics_page Basic Framework Concepts
+
+  <h3>Basic Concepts</h3>
+  <ul>
+    <li><b>Central Database:</b> All data is stored in a central database, which can be as simple as a local SQLite file or a database server.  The details are hidden from the modules. The TskImgDB class is used to store and retrieve data.</li>
+
+    <li><b>Services:</b> There are core services that the framework provides to the programs that incorporate the framework and to the modules that fit into the framework.  See \ref mod_stuff_services for more details.</li>
+
+    <li><b>Pipelines and Plug-in Modules:</b> The framework provides a pipeline infrastructure that modules can be dropped into.  The framework comes with basic modules, but it is expected that other developers will provide modules that can be used.  See the links below on how to build pipelines and modules.</li>
+   
+    <li><b>Blackboard:</b> The framework uses the blackboard to allow modules to communicate. Modules can post results to the blackboard and other modules can query the it for previous findings. See \ref mod_bbpage for more details. </li>
+
+    <li><b>Three Phases:</b> The framework has been designed on the idea that there are three major phases to the analysis process:
+    <ul>
+      <li>File Extraction: Where files are identified based on file system data, carving, and other types of data recovery.</li>
+      <li>File Analysis: Where each file is analyzed to pull data out of it.  The framework supports plug-in modules to perform file analysis.</li>
+      <li>Post Processing / Reporting: Where the results of the individual file analysis are analyzed a file report and analysis tecniques are conducted. The framework supports plug-in modules to perform post processing.</li>
+    </ul>
+  </li>
+</ul>
+
+*/

@@ -1,15 +1,15 @@
 /*
- * Sleuth Kit Data Model
- *
+ * Autopsy Forensic Browser
+ * 
  * Copyright 2011 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,7 +28,7 @@ public class VolumeSystem extends AbstractContent {
 	private long volumeSystemHandle = 0;
 	private long type, imgOffset, blockSize;
 	private Image parent;
-
+    
 	/**
 	 * Constructor most inputs are from the database
 	 * @param db database object
@@ -37,13 +37,13 @@ public class VolumeSystem extends AbstractContent {
 	 * @param imgOffset
 	 * @param blockSize
 	 */
-	protected VolumeSystem(SleuthkitCase db, long obj_id, long type, long imgOffset, long blockSize){
-		super(db, obj_id);
+	protected VolumeSystem(SleuthkitCase db, long obj_id, String name, long type, long imgOffset, long blockSize){
+		super(db, obj_id, name);
 		this.type = type;
 		this.imgOffset = imgOffset;
 		this.blockSize = blockSize;
-	}
-	
+    }
+
 	/**
 	 * set the parent image called by parent on creation
 	 * @param parent parent image
@@ -51,24 +51,17 @@ public class VolumeSystem extends AbstractContent {
 	protected void setParent(Image parent){
 		this.parent = parent;
 	}
-	
+
 	//byte offset
-	@Override
-	public byte[] read(long offset, long len) throws TskException{
+    @Override
+	public int read(byte[] readBuffer, long offset, long len) throws TskCoreException{
 		if(volumeSystemHandle == 0){
-			volumeSystemHandle = SleuthkitJNI.openVs(this.getParent().getImageHandle(), imgOffset);
+			volumeSystemHandle = SleuthkitJNI.openVs(getImage().getImageHandle(), imgOffset);
 		}
-		return SleuthkitJNI.readVs(volumeSystemHandle, offset, len);
-	}
-	
-	/**
-	 * get the sleuthkit database object
-	 * @return the sleuthkit object
-	 */
-	public SleuthkitCase getSleuthkit(){
-		return db;
+		return SleuthkitJNI.readVs(volumeSystemHandle, readBuffer, offset, len);
 	}
 
+	
 	/**
 	 * get the parent image
 	 * @return parent image
@@ -81,9 +74,9 @@ public class VolumeSystem extends AbstractContent {
 	 * @return the size of the volume system
 	 */
 	@Override
-	public long getSize() {
+    public long getSize() {
 		return 0;
-	}
+    }
 	/**
 	 * get the type
 	 * @return type
@@ -110,42 +103,43 @@ public class VolumeSystem extends AbstractContent {
 	 * @return volume system Handle pointer
 	 * @throws TskException  
 	 */
-	protected long getVolumeSystemHandle() throws TskException{
+	protected long getVolumeSystemHandle() throws TskCoreException{
 		if (volumeSystemHandle == 0){
-			volumeSystemHandle = SleuthkitJNI.openVs(this.getParent().getImageHandle(), imgOffset);
+			volumeSystemHandle = SleuthkitJNI.openVs(getImage().getImageHandle(), imgOffset);
 		}
 
 		return volumeSystemHandle;
 	}
 
-	@Override
+    @Override
 	public void finalize(){
 		if (volumeSystemHandle != 0) {
 			SleuthkitJNI.closeVs(volumeSystemHandle);
-		}
+    }
 	}
 
-	@Override
+    @Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
 	@Override
-	public <T> T accept(ContentVisitor<T> v) {
+    public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
-	}
+    }
 
 	@Override
-	public List<Content> getChildren() throws TskException {
+	public List<Content> getChildren() throws TskCoreException {
 		try {
-			return db.getVolumeSystemChildren(this);
+			return getSleuthkitCase().getVolumeSystemChildren(this);
 		} catch (Exception ex) {
-			throw new TskException("Error getting VolumeSystem children.", ex);
+			throw new TskCoreException("Error getting VolumeSystem children.", ex);
 		}
 	}
-
+	
 	@Override
-	public boolean isOnto() {
-		return false;
+	public Image getImage() throws TskCoreException {
+		return getParent().getImage();
 	}
+
 }

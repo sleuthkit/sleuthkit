@@ -3,7 +3,7 @@
  *  The Sleuth Kit
  *
  *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- *  Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ *  Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  *  reserved.
  *
  *  This software is distributed under the Common Public License 1.0
@@ -33,8 +33,13 @@
 class TSK_FRAMEWORK_API TskSystemPropertiesImpl : public TskSystemProperties
 {
 public:
-    TskSystemPropertiesImpl() { m_abstractConfig = (Poco::Util::AbstractConfiguration *)NULL; };
-    TskSystemPropertiesImpl(Poco::Util::AbstractConfiguration & abstractConfig) { m_abstractConfig = &abstractConfig; };
+    TskSystemPropertiesImpl() { 
+        m_abstractConfig = (Poco::Util::AbstractConfiguration *)NULL; 
+    };
+
+    TskSystemPropertiesImpl(Poco::Util::AbstractConfiguration & abstractConfig) {
+        m_abstractConfig = &abstractConfig; 
+    };
 
     virtual ~TskSystemPropertiesImpl() {};
 
@@ -42,13 +47,26 @@ public:
 
     void set(std::wstring name, std::wstring value);
 
-    /// Initialize with POCO AbstractConfiguration
-    void initialize(Poco::Util::AbstractConfiguration & abstractConfig);
+    /**
+     * Load the XML Config file
+     * @param configfile Path to XML file
+     */
+    void initialize(const std::wstring configfile);
 
-    /// initialize with a memory-based mapping only (no local file)
+    /**
+     * Load the XML Config file
+     * @param configfile Path to XML file
+     */
+    void initialize(const char *configfile);
+
+    /**
+     * Use memory-based config settings only (no local file)
+     */
     void initialize();
 private:
     TskSystemPropertiesImpl(TskSystemPropertiesImpl const&) {};
+    // Initialize with POCO AbstractConfiguration
+    void initialize(Poco::Util::AbstractConfiguration & abstractConfig);
 
     Poco::AutoPtr<Poco::Util::AbstractConfiguration> m_abstractConfig;
 };

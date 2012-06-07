@@ -3,7 +3,7 @@
 ffind \- Finds the name of the file or directory using a given inode
 .SH SYNOPSIS
 .B ffind [-aduvV] [-f fstype] [-i imgtype] [-o imgoffset] [-b dev_sector_size] 
-.I image inode
+.I image [images] inode
 .SH DESCRIPTION
 .B ffind
 finds the names of files or directories that are allocated to 
@@ -14,12 +14,6 @@ By default it only will only return the first name it finds.  With
 some file systems, this will find deleted file names.
 
 .SH ARGUMENTS
-.IP "image [images]"
-One (or more if split) disk or partition images whose format is given with '\-i'.
-.IP inode
-Integer of inode to find.
-
-The optional arguments are:
 .IP -a
 Find all occurrences of inode.
 .IP -d
@@ -31,7 +25,8 @@ If not given, autodetection methods are used.
 .IP -u
 Find undeleted entries only.
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types.
+Identify the type of image file, such as raw.
+Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
@@ -41,6 +36,12 @@ The size, in bytes, of the underlying device sectors.  If not given, the value i
 Verbose output to stderr.
 .IP -V
 Display version.
+.IP "image [images]"
+The disk or partition image to read, whose format is given with '\-i'.
+Multiple image file names can be given if the image is split into multiple segments.
+If only one image file is given, and its name is the first in a sequence (e.g., as indicated by ending in '.001'), subsequent image segments will be included automatically.
+.IP inode
+Integer of inode to find.
 
 .PP
 This program searches all directory entries looking for the
