@@ -13,12 +13,21 @@
 #include <cstdlib>
 #include <string>
 
+
 #include "tsk3/tsk_tools_i.h" // Needed for tsk_getopt
 #include "framework.h"
 #include "Services/TskSchedulerQueue.h"
 #include "Services/TskSystemPropertiesImpl.h"
 #include "Services/TskImgDBSqlite.h"
+#include "File/TskFileManagerImpl.h"
 
+#ifdef TSK_WIN32
+#include <Windows.h>
+#else
+#error "Only Windows is currently supported"
+#endif
+
+#include "Poco/File.h"
 
 static uint8_t 
 makeDir(const TSK_TCHAR *dir) 
@@ -37,11 +46,34 @@ makeDir(const TSK_TCHAR *dir)
 void 
 usage(const char *program) 
 {
-    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] [-d outdir] image_name\n", program);
+    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] [-d outdir] [-vV] image_name\n", program);
     fprintf(stderr, "\t-c framework_config_file: Path to XML framework config file\n");
     fprintf(stderr, "\t-p pipeline_config_file: Path to XML pipeline config file (overrides pipeline config specified with -c)\n");
     fprintf(stderr, "\t-d outdir: Path to output directory\n");
+    fprintf(stderr, "\t-v: Enable verbose mode to get more debug information\n");
+    fprintf(stderr, "\t-V: Display the tool version\n");
     exit(1);
+}
+
+// get the current directory
+// @@@ TODO: This should move into a framework utility
+static std::wstring getProgDir()
+{
+    wchar_t progPath[256];
+    wchar_t fullPath[256];
+    
+    GetModuleFileNameW(NULL, fullPath, 256);
+    for (int i = wcslen(fullPath)-1; i > 0; i--) {
+        if (i > 256)
+            break;
+
+        if (fullPath[i] == '\\') {
+            wcsncpy_s(progPath, fullPath, i+1);
+            progPath[i+1] = '\0';
+            break;
+        }
+    }
+    return std::wstring(progPath);
 }
 
 int main(int argc, char **argv1)
@@ -107,6 +139,19 @@ int main(int argc, char **argv1)
         systemProperties->initialize(framework_config);
         TskServices::Instance().setSystemProperties(*systemProperties);
     }
+    else {
+        Poco::File config("framework_config.xml");
+        if (config.exists()) {
+            TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();    
+            systemProperties->initialize("framework_config.xml");
+            TskServices::Instance().setSystemProperties(*systemProperties);
+        }
+        else {
+            LOGINFO(L"No framework config file found");
+        }
+    }
+
+    TSK_SYS_PROP_SET(TskSystemProperties::PROG_DIR, getProgDir()); 
 
     if (outDirPath == _TSK_T("")) {
         outDirPath.assign(imagePath);
@@ -157,6 +202,9 @@ int main(int argc, char **argv1)
     }
     TskServices::Instance().setImageFile(imageFileTsk);
 
+    // Create a FileManager and register it with the framework.
+    TskServices::Instance().setFileManager(TskFileManagerImpl::instance());
+
     // Let's get the pipelines setup to make sure there are no errors.
     TskPipelineManager pipelineMgr;
     TskPipeline *filePipeline;
@@ -179,6 +227,11 @@ int main(int argc, char **argv1)
         reportPipeline = NULL;
     }
 
+    if ((filePipeline == NULL) && (reportPipeline == NULL)) {
+        fprintf(stderr, "No pipelines configured.  Stopping\n");
+        exit(1);
+    }
+
     // now we analyze the data.
     // Extract
     if (imageFileTsk.extractFiles() != 0) {
@@ -187,13 +240,10 @@ int main(int argc, char **argv1)
         return 1;
     }
 
-    // @@@ go through the scheduler queue....
-
     //Run pipeline on all files
-    // @@@ this needs to cycle over the files to analyze, 10 is just here for testing 
     if (filePipeline && !filePipeline->isEmpty()) {
         TskSchedulerQueue::task_struct *task;
-        while ((task = scheduler.next()) != NULL) {
+        while ((task = scheduler.nextTask()) != NULL) {
             if (task->task != Scheduler::FileAnalysis)  {
                 fprintf(stderr, "WARNING: Skipping task %d\n", task->task);
                 continue;

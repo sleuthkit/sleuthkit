@@ -1911,7 +1911,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
             /* Are we past the end of the FS?
              * that means we could not find enough unallocated clusters
              * for the file size */
-            if (sbase > fs->last_block) {
+            if (sbase + fatfs->csize - 1 > fs->last_block) {
                 canRecover = 0;
 
                 if (tsk_verbose)
@@ -2030,14 +2030,14 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
             /* Convert the cluster addr to a sector addr */
             sbase = FATFS_CLUST_2_SECT(fatfs, clust);
 
-            if (sbase > fs->last_block) {
+            if (sbase + fatfs->csize - 1 > fs->last_block) {
                 fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
                 tsk_error_reset();
 
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr
                     ("fatfs_make_data_run: Invalid sector address in FAT (too large): %"
-                    PRIuDADDR, sbase);
+                    PRIuDADDR" (plus %d sectors)", sbase, fatfs->csize);
                 return 1;
             }
 

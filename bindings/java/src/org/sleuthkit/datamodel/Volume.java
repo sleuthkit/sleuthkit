@@ -1,15 +1,15 @@
 /*
- * Sleuth Kit Data Model
- *
+ * Autopsy Forensic Browser
+ * 
  * Copyright 2011 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,20 +18,20 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.sql.SQLException;
 import java.util.List;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 
 /**
  * Represents a volume in a VolumeSystem.
  * Populated based on data in database.
  */
-public class Volume extends FileSystemParent {
+public class Volume extends AbstractContent{
 	// @@@ We should mark these as private and comment somewhere what the units are (bytes, sectors, etc.)
 	long addr, start, length, flags;
 	String desc;
 	private VolumeSystem parentVs;
 	private long volumeHandle = 0;
-
+    
 	/**
 	 * Constructor most inputs are from the database
 	 * @param db database object
@@ -42,8 +42,8 @@ public class Volume extends FileSystemParent {
 	 * @param flags
 	 * @param desc  
 	 */
-	protected Volume(SleuthkitCase db, long obj_id, long addr, long start, long length, long flags, String desc){
-		super(db, obj_id);
+	protected Volume(SleuthkitCase db, long obj_id, long addr, long start, long length, long flags, String desc) {
+		super(db, obj_id, "vol"+Long.toString(addr));
 		this.addr = addr;
 		this.start = start;
 		this.length = length;
@@ -73,21 +73,21 @@ public class Volume extends FileSystemParent {
 	 * @return number bytes read, or -1 if error
 	 * @throws TskException
 	 */
-	@Override
-	public int read(byte[] buf, long offset, long len) throws TskException {
+    @Override
+	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		// read from the volume
 		if(volumeHandle == 0){
 			volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
-		}
+    }
 		return SleuthkitJNI.readVsPart(volumeHandle, buf, offset, len);
 	}
-	
 
-	@Override
-	public long getSize() {
+
+    @Override
+    public long getSize() {
 		// size of the volume
 		return length;
-	}
+    }
 
 	/**
 	 * get the parent volume system
@@ -193,28 +193,24 @@ public class Volume extends FileSystemParent {
 		return result;
 	}
 
-	@Override
+    @Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
-	}
+    }
 
-	@Override
+    @Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
-	}
+    }
 
-	@Override
-	public List<Content> getChildren() throws TskException {
-		return db.getVolumeChildren(this);
-	}
+    @Override
+	public List<Content> getChildren() throws TskCoreException {
+		return getSleuthkitCase().getVolumeChildren(this);
+    }
 
-	@Override
-	public long getImageHandle() throws TskException {
-		return getParent().getParent().getImageHandle();
-	}
-
-	@Override
-	public boolean isOnto() {
-		return true;
-	}
+    @Override
+	public Image getImage() throws TskCoreException {
+		return getParent().getImage();
+    }
+    
 }

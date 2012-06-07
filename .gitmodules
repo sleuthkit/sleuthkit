@@ -1,3 +1,24 @@
 [submodule "framework/TskModules/c_HashCalcModule"]
 	path = framework/TskModules/c_HashCalcModule
-	url = git@github.com:sleuthkit/c_HashCalcModule.git
+	url = git://github.com/sleuthkit/c_HashCalcModule.git
+[submodule "framework/TskModules/c_ZIPExtractionModule"]
+	path = framework/TskModules/c_ZIPExtractionModule
+	url = git://github.com/sleuthkit/c_ZIPExtractionModule.git
+[submodule "framework/TskModules/c_EntropyModule"]
+	path = framework/TskModules/c_EntropyModule
+	url = git://github.com/sleuthkit/c_EntropyModule.git
+[submodule "framework/TskModules/c_SaveInterestingFilesModule"]
+	path = framework/TskModules/c_SaveInterestingFilesModule
+	url = git://github.com/sleuthkit/c_SaveInterestingFilesModule.git
+[submodule "framework/TskModules/c_RegRipperModule"]
+	path = framework/TskModules/c_RegRipperModule
+	url = git://github.com/sleuthkit/c_RegRipperModule.git
+[submodule "framework/TskModules/c_InterestingFilesModule"]
+	path = framework/TskModules/c_InterestingFilesModule
+	url = git://github.com/sleuthkit/c_InterestingFilesModule.git
+[submodule "framework/TskModules/c_TskHashLookupModule"]
+	path = framework/TskModules/c_TskHashLookupModule
+	url = git://github.com/sleuthkit/c_TskHashLookupModule.git
+[submodule "framework/TskModules/c_SummaryReportModule"]
+	path = framework/TskModules/c_SummaryReportModule
+	url = git://github.com/sleuthkit/c_SummaryReportModule.git

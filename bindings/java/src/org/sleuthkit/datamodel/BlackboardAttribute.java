@@ -97,15 +97,13 @@ public class BlackboardAttribute {
 		TSK_DATETIME(2, "TSK_DATETIME", "Date/Time"),
 		TSK_NAME(3, "TSK_NAME", "Name"),
 		TSK_PROG_NAME(4, "TSK_PROG_NAME", "Program Name"),
-		TSK_WEB_BOOKMARK(5, "TSK_WEB_BOOKMARK", "Bookmark"),
 		TSK_VALUE(6, "TSK_VALUE", "Value"),
 		TSK_FLAG(7, "TSK_FLAG", "Flag"),
 		TSK_PATH(8, "TSK_PATH", "Path"),
-		TSK_GEO(9, "TSK_GEO", "Geo"),
 		TSK_KEYWORD(10, "TSK_KEYWORD", "Keyword"),
 		TSK_KEYWORD_REGEXP(11, "TSK_KEYWORD_REGEXP", "Keyword Regular Expression"),
 		TSK_KEYWORD_PREVIEW(12, "TSK_KEYWORD_PREVIEW", "Keyword Preview"),
-		TSK_KEYWORD_SET(13, "TSK_KEYWORD_SET", "Keyword Set"),
+		TSK_KEYWORD_SET(13, "TSK_KEYWORD_SET", "Keyword Set"), // @@@ Deprecated
 		TSK_USERNAME(14, "TSK_USERNAME", "Username"),
 		TSK_DOMAIN(15, "TSK_DOMAIN", "Domain"),
 		TSK_PASSWORD(16, "TSK_PASSWORD", "Password"),
@@ -122,15 +120,40 @@ public class BlackboardAttribute {
 		TSK_TEXT_FILE(27, "TSK_TEXT_FILE", "Text File"),
 		TSK_TEXT_LANGUAGE(28, "TSK_TEXT_LANGUAGE", "Text Language"),
 		TSK_ENTROPY(29, "TSK_ENTROPY", "Entropy"),
-		TSK_HASHSET_NAME(30, "TSK_HASHSET_NAME", "Hashset Name"),
+		TSK_HASHSET_NAME(30, "TSK_HASHSET_NAME", "Hashset Name"), // @@@ Deprecated
 		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", "Interesting File"),
 		TSK_REFERRER(32, "TSK_REFERRER", "Referrer URL"),
 		TSK_LAST_ACCESSED(33, "TSK_LAST_ACCESSED", "Last Time Accessed"), // @@@ Review this instead of using DATETIME
 		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", "IP Address"),
 		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", "Phone Number"),
-		TSK_PATH_ID(36, "TSK_PATH_ID", "Path ID");
-		
+		TSK_PATH_ID(36, "TSK_PATH_ID", "Path ID"),
+		TSK_SET_NAME(37, "TSK_SET_NAME", "Set Name"),
+		TSK_ENCRYPTION_DETECTED(38, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"),
+		TSK_MALWARE_DETECTED(39, "TSK_MALWARE_DETECTED", "Malware Detected"),
+		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED", "Steganography Detected"),
+		TSK_EMAIL_TO(41,"TSK_EMAIL_TO","E-Mail To"),
+		TSK_EMAIL_CC(42,"TSK_EMAIL_CC","E-Mail CC"),
+		TSK_EMAIL_BCC(43,"TSK_EMAIL_BCC","E-Mail BCC"),
+		TSK_EMAIL_FROM(44,"TSK_EMAIL_FROM","E-Mail From"),
+		TSK_EMAIL_CONTENT_PLAIN(45, "TSK_EMAIL_CONTENT_PLAIN", "Message (Plaintext)"),
+		TSK_EMAIL_CONTENT_HTML(46, "TSK_EMAIL_CONTENT_HTML", "Message (HTML)"),
+		TSK_EMAIL_CONTENT_RTF(47, "TSK_EMAIL_CONTENT_RTF", "Message (RTF)"),
+		TSK_MSG_ID(48,"TSK_MSG_ID","Message ID"),
+		TSK_MSG_REPLY_ID(49,"TSK_MSG_REPLY_ID","Message Reply ID"),
+		TSK_DATETIME_RCVD(50, "TSK_DATETIME_RCVD", "Date Received"),
+		TSK_DATETIME_SENT(51, "TSK_DATETIME_SENT", "Date Sent"),
+		TSK_SUBJECT(52, "TSK_SUBJECT", "Subject"),
+		TSK_TITLE(53, "TSK_TITLE", "Title"),
+		TSK_GEO_LATITUDE(54, "TSK_GEO_LATITUDE", "Latitude"),
+		TSK_GEO_LONGITUDE(55, "TSK_GEO_LONGITUDE", "Longitude"),
+		TSK_GEO_VELOCITY(56, "TSK_GEO_VELOCITY", "Velocity"),
+		TSK_GEO_ALTITUDE(57, "TSK_GEO_ALTITUDE", "Altitude"),
+		TSK_GEO_BEARING(58, "TSK_GEO_BEARING", "Bearing"),
+		TSK_GEO_HPRECISION(59, "TSK_GEO_HPRECISION", "Horizontal Precision"),
+		TSK_GEO_VPRECISION(60, "TSK_GEO_VPRECISION", "Vertical Precision"),
+		TSK_GEO_MAPDATUM(61, "TSK_GEO_MAPDATUM", "Map Datum");
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
+		
 		private String label;
 		private int typeID;
 		private String displayName;
@@ -170,7 +193,7 @@ public class BlackboardAttribute {
 			}
 			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching type: " + label);
 		}
-
+		
 		public String getDisplayName() {
 			return this.displayName;
 		}
@@ -341,7 +364,7 @@ public class BlackboardAttribute {
 	 * get the attribute type id
 	 * @return type id
 	 */
-	public String getAttributeTypeName() throws TskException {
+	public String getAttributeTypeName() throws TskCoreException {
 		return Case.getAttrTypeString(attributeTypeID);
 	}
 
@@ -349,7 +372,7 @@ public class BlackboardAttribute {
 	 * get the attribute type id
 	 * @return type id
 	 */
-	public String getAttributeTypeDisplayName() throws TskException {
+	public String getAttributeTypeDisplayName() throws TskCoreException {
 		return Case.getAttrTypeDisplayName(attributeTypeID);
 	}
 
@@ -424,7 +447,7 @@ public class BlackboardAttribute {
 	 * @return artifact
 	 * @throws TskException
 	 */
-	public BlackboardArtifact getParentArtifact() throws TskException {
+	public BlackboardArtifact getParentArtifact() throws TskCoreException {
 		return Case.getBlackboardArtifact(artifactID);
 	}
 

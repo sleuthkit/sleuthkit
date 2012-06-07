@@ -1,0 +1,29 @@
+.TH tsk_validatepipeline 1 "May 2012" "user manual"
+.SH NAME
+.PP
+tsk_validatepipeline - Process a TSK framework pipeline configuration
+file to ensure that it is valid and all modules can be found.
+.SH SYNOPSIS
+.PP
+tsk_validatepipeline framework_config_file pipeline_config_file
+.SH DESCRIPTION
+.PP
+tsk_validatepipeline is a command line tool for the Sleuth Kit (TSK)
+Framework that enables you to validate if a pipeline configuration file
+has valid syntax and that all modules can be loaded.
+This tool is useful if you are using the framework in an automated or
+distributed environment where the pipeline is run without user
+interaction and you want to verify that the configuration file is
+correct before adding it to the system.
+.PP
+Refer to the online
+docs (http://www.sleuthkit.org/sleuthkit/docs/framework-docs/) for more
+details on the framework and the pipelines.
+.SH CONTACT
+.PP
+The Sleuth Kit source code and documentation can be downloaded from:
+<http://www.sleuthkit.org/>.
+.PP
+Send documentation updates to < doc-updates at sleuthkit dot org >.
+.SH AUTHORS
+Brian Carrier.

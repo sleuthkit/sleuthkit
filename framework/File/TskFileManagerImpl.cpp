@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -10,7 +10,7 @@
 
 /**
  * \file TskFileManagerImpl.cpp
- * Default implementation of the TskFileManagerImpl class.
+ * Default implementation of the TskFileManager class.
  */
 
 #include <sstream>
@@ -78,47 +78,17 @@ void TskFileManagerImpl::initialize()
     }
 }
 
-/**
- * Create a TskFile object for the given id.
- */
+
 TskFile * TskFileManagerImpl::getFile(const uint64_t fileId)
 {
-    // Check to see if a file named fileId exists.
-    std::stringstream filePath;
-    filePath << m_storageDir->path() << Poco::Path::separator()
-        << fileId / FILES_PER_DIR << Poco::Path::separator() << fileId;
-
-    Poco::File pocoFile(filePath.str());
-
-    // call the relevant File constructor.
-    if (pocoFile.exists())
-        return new TskFileTsk(fileId, filePath.str());
-    else
-        return new TskFileTsk(fileId);
+    /* If we were to ever have different subclasses of TskFile
+     * that differentiate file types, this is where the logic
+     * should go to create the correct version. 
+     */
+    return new TskFileTsk(fileId);
 }
 
-/**
- * Create a file object for the given fileId with on disk storage
- * located in the given path. The path must exist and must be a file.
- */
-TskFile * TskFileManagerImpl::getFile(const uint64_t fileId, const std::wstring& path)
-{
-    Poco::File pocoFile(TskUtilities::toUTF8(path));
 
-    if (pocoFile.exists() && pocoFile.isFile())
-    {
-        return new TskFileTsk(fileId, pocoFile.path());
-    }
-    else
-    {
-        throw new TskFileException("Failed to create file using " + pocoFile.path());
-    }
-}
-
-/**
- * Returns the fully qualified path for the given fileId.
- * Will create the parent directory if it does not exist.
- */
 std::wstring TskFileManagerImpl::getPath(const uint64_t fileId)
 {
     // Determine which directory the file should live in.
@@ -143,12 +113,8 @@ std::wstring TskFileManagerImpl::getPath(const uint64_t fileId)
     return path;
 }
 
-/**
- * Save the file to the given fully qualifed file path. The path includes the
- * name of the file. Directories along the path will be created if they do not exist.
- * If the destination file exists it will be replaced.
- */
-void TskFileManagerImpl::saveFile(TskFile* fileToSave, const std::wstring& filePath)
+
+void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& filePath)
 {
     try 
     {
@@ -213,9 +179,6 @@ void TskFileManagerImpl::saveFile(TskFile* fileToSave, const std::wstring& fileP
             fos.flush();
             fos.close();
 
-            // Set the path for the newly saved file
-            fileToSave->setPath(destFile.path());
-
             // Close the file
             fileToSave->close();
         }
@@ -248,14 +211,12 @@ void TskFileManagerImpl::saveFile(TskFile* fileToSave, const std::wstring& fileP
     }
 }
 
-/**
- * Save the file to it's default path
- */
+
 void TskFileManagerImpl::saveFile(TskFile* fileToSave)
 {
     // Determine what the path should be based on TskFile.id()
     // and call saveFile(fileToSave, path)
-    saveFile(fileToSave, getPath(fileToSave->id()));
+    copyFile(fileToSave, getPath(fileToSave->getId()));
 }
 
 void TskFileManagerImpl::saveFile(const uint64_t fileId)
@@ -264,16 +225,13 @@ void TskFileManagerImpl::saveFile(const uint64_t fileId)
     TskFileManager::saveFile(fileId);
 }
 
-void TskFileManagerImpl::saveFile(const uint64_t fileId, const std::wstring& filePath)
+void TskFileManagerImpl::copyFile(const uint64_t fileId, const std::wstring& filePath)
 {
     // Use the default implementation in our parent class
-    TskFileManager::saveFile(fileId, filePath);
+    TskFileManager::copyFile(fileId, filePath);
 }
 
-/**
- * Save the file content represented by the input stream as the given file id.
- */
-void TskFileManagerImpl::saveFile(const uint64_t fileId, std::istream& istr)
+void TskFileManagerImpl::addFile(const uint64_t fileId, std::istream& istr)
 {
     // If a file with this id already exists we raise an error
     TskFile * pFile = getFile(fileId);
@@ -300,15 +258,29 @@ void TskFileManagerImpl::saveFile(const uint64_t fileId, std::istream& istr)
     catch (Poco::Exception& ex)
     {
         std::wstringstream msg;
-        msg << L"TskFileManagerImpl::saveFile - Error saving file from stream : " << ex.displayText().c_str();
+        msg << L"TskFileManagerImpl::addFile - Error saving file from stream : " << ex.displayText().c_str();
         LOGERROR(msg.str());
         throw TskFileException("Error saving file from stream.");
     }
 }
 
-/**
- * Delete the given file.
- */
+void TskFileManagerImpl::addFile(const uint64_t fileId, std::wstring& filePath)
+{
+    try
+    {
+        Poco::File sourceFile(TskUtilities::toUTF8(filePath));
+        sourceFile.copyTo(TskUtilities::toUTF8(getPath(fileId)));
+    }
+    catch (Poco::Exception& ex)
+    {
+        std::wstringstream msg;
+        msg << L"TskFileManagerImpl::addFile - Error opening file " << TskUtilities::toUTF8(filePath).c_str()  
+            << L" : " << ex.displayText().c_str();
+        LOGERROR(msg.str());
+        throw TskFileException("Error opening input file.");
+    }
+}
+
 void TskFileManagerImpl::deleteFile(TskFile* fileToDelete)
 {
     try
@@ -323,7 +295,6 @@ void TskFileManagerImpl::deleteFile(TskFile* fileToDelete)
         {
             Poco::File targetFile(fileToDelete->getPath());
             targetFile.remove();
-            fileToDelete->setPath("");
         }
     }
     catch (Poco::Exception& ex)

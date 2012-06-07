@@ -218,22 +218,24 @@ tsk_hdb_idxinitialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 #endif
 
     /* Print the header */
+    fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_NAME_STR,
+        hdb_info->db_name);
     switch (hdb_info->db_type) {
     case TSK_HDB_DBTYPE_NSRL_ID:
-        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_STR,
-                TSK_HDB_DBTYPE_NSRL_STR);
+       fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
+            TSK_HDB_DBTYPE_NSRL_STR);
         break;
     case TSK_HDB_DBTYPE_MD5SUM_ID:
-        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_STR,
-                TSK_HDB_DBTYPE_MD5SUM_STR);
+        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
+            TSK_HDB_DBTYPE_MD5SUM_STR);
         break;
     case TSK_HDB_DBTYPE_HK_ID:
-        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_STR,
-                TSK_HDB_DBTYPE_HK_STR);
+        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
+            TSK_HDB_DBTYPE_HK_STR);
         break;
     case TSK_HDB_DBTYPE_ENCASE_ID:
-        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_STR,
-                TSK_HDB_DBTYPE_ENCASE_STR);
+        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
+            TSK_HDB_DBTYPE_ENCASE_STR);
         break;
         /* Used to stop warning messages about missing enum value */
     case TSK_HDB_DBTYPE_IDXONLY_ID:
@@ -435,6 +437,7 @@ static uint8_t
 hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
 {
     char head[TSK_HDB_MAXLEN];
+    char head2[TSK_HDB_MAXLEN];
     char *ptr;
  
     // Lock for lazy load of hIdx and lazy alloc of idx_lbuf.
@@ -547,7 +550,7 @@ hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
         return 1;
     }
 
-    if (strncmp(head, TSK_HDB_IDX_HEAD_STR, strlen(TSK_HDB_IDX_HEAD_STR))
+    if (strncmp(head, TSK_HDB_IDX_HEAD_TYPE_STR, strlen(TSK_HDB_IDX_HEAD_TYPE_STR))
         != 0) {
         tsk_release_lock(&hdb_info->lock);
         tsk_error_reset();
@@ -557,11 +560,27 @@ hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
         return 1;
     }
 
+    /* Do some testing on the second line */
+    if (NULL == fgets(head2, TSK_HDB_MAXLEN, hdb_info->hIdx)) {
+        tsk_release_lock(&hdb_info->lock);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_READIDX);
+        tsk_error_set_errstr(
+                 "hdb_setupindex: Error reading line 2 of index file");
+        return 1;
+    }
+
     /* Set the offset to the start of the index entries */
-    hdb_info->idx_off = (uint16_t) strlen(head);
+    if (strncmp(head2, TSK_HDB_IDX_HEAD_NAME_STR, strlen(TSK_HDB_IDX_HEAD_NAME_STR))
+        != 0) {
+        hdb_info->idx_off = (uint16_t) (strlen(head));
+    } else {
+        hdb_info->idx_off = (uint16_t) (strlen(head) + strlen(head2));
+    }
+
 
     /* Skip the space */
-    ptr = &head[strlen(TSK_HDB_IDX_HEAD_STR) + 1];
+    ptr = &head[strlen(TSK_HDB_IDX_HEAD_TYPE_STR) + 1];
 
     ptr[strlen(ptr) - 1] = '\0';
     if ((ptr[strlen(ptr) - 1] == 10) || (ptr[strlen(ptr) - 1] == 13)) {
@@ -1150,38 +1169,18 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
 
     hdb_info->hDb = hDb;
 
-    /* Get database specific information */
-    hdb_info->db_type = dbtype;
-    switch (dbtype) {
-    case TSK_HDB_DBTYPE_NSRL_ID:
-        hdb_info->getentry = nsrl_getentry;
-        hdb_info->makeindex = nsrl_makeindex;
-        break;
+    /* Copy the database name into the structure */
+    flen = TSTRLEN(db_file) + 8;        // + 32;
 
-    case TSK_HDB_DBTYPE_MD5SUM_ID:
-        hdb_info->getentry = md5sum_getentry;
-        hdb_info->makeindex = md5sum_makeindex;
-        break;
-
-    case TSK_HDB_DBTYPE_ENCASE_ID:
-        hdb_info->getentry = encase_getentry;
-        hdb_info->makeindex = encase_makeindex;
-        break;
-
-    case TSK_HDB_DBTYPE_HK_ID:
-        hdb_info->getentry = hk_getentry;
-        hdb_info->makeindex = hk_makeindex;
-        break;
-
-    case TSK_HDB_DBTYPE_IDXONLY_ID:
-        hdb_info->getentry = idxonly_getentry;
-        hdb_info->makeindex = idxonly_makeindex;
-        break;
-
-    default:
+    hdb_info->db_fname =
+        (TSK_TCHAR *) tsk_malloc(flen * sizeof(TSK_TCHAR));
+    if (hdb_info->db_fname == NULL) {
+        free(hdb_info);
         return NULL;
     }
+    TSTRNCPY(hdb_info->db_fname, db_file, flen);
 
+    
     hdb_info->hash_type = 0;
     hdb_info->hash_len = 0;
     hdb_info->idx_fname = NULL;
@@ -1195,19 +1194,45 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
 
     hdb_info->idx_lbuf = NULL;
 
+    tsk_init_lock(&hdb_info->lock);
 
-    /* Copy the database name into the structure */
-    flen = TSTRLEN(db_file) + 8;        // + 32;
+    /* Get database specific information */
+    hdb_info->db_type = dbtype;
+    switch (dbtype) {
+    case TSK_HDB_DBTYPE_NSRL_ID:
+        nsrl_name(hdb_info);
+        hdb_info->getentry = nsrl_getentry;
+        hdb_info->makeindex = nsrl_makeindex;
+        break;
 
-    hdb_info->db_fname =
-        (TSK_TCHAR *) tsk_malloc(flen * sizeof(TSK_TCHAR));
-    if (hdb_info->db_fname == NULL) {
-        free(hdb_info);
+    case TSK_HDB_DBTYPE_MD5SUM_ID:
+        md5sum_name(hdb_info);
+        hdb_info->getentry = md5sum_getentry;
+        hdb_info->makeindex = md5sum_makeindex;
+        break;
+
+    case TSK_HDB_DBTYPE_ENCASE_ID:
+        encase_name(hdb_info);
+        hdb_info->getentry = encase_getentry;
+        hdb_info->makeindex = encase_makeindex;
+        break;
+
+    case TSK_HDB_DBTYPE_HK_ID:
+        hk_name(hdb_info);
+        hdb_info->getentry = hk_getentry;
+        hdb_info->makeindex = hk_makeindex;
+        break;
+
+    case TSK_HDB_DBTYPE_IDXONLY_ID:
+        idxonly_name(hdb_info);
+        hdb_info->getentry = idxonly_getentry;
+        hdb_info->makeindex = idxonly_makeindex;
+        break;
+
+    default:
         return NULL;
     }
-    TSTRNCPY(hdb_info->db_fname, db_file, flen);
 
-    tsk_init_lock(&hdb_info->lock);
 
     return hdb_info;
 }
@@ -1259,4 +1284,58 @@ uint8_t
 tsk_hdb_makeindex(TSK_HDB_INFO * a_hdb_info, TSK_TCHAR * a_type)
 {
     return a_hdb_info->makeindex(a_hdb_info, a_type);
+}
+
+/**
+ * Set db_name to the name of the database file
+ *
+ * @param hdb_info the hash database object
+ */
+void
+tsk_hdb_name_from_path(TSK_HDB_INFO * hdb_info)
+{
+#ifdef TSK_WIN32
+    const char PATH_CHAR = '\\';
+#else
+    const char PATH_CHAR = '/';
+#endif
+    TSK_TCHAR * begin;
+    TSK_TCHAR * end;
+    int i;
+
+    hdb_info->db_name[0] = '\0';
+
+    begin = TSTRRCHR(hdb_info->db_fname, PATH_CHAR);
+#ifdef TSK_WIN32
+    // cygwin can have forward slashes, so try that too on Windows
+    if (!begin) {
+        begin = TSTRRCHR(hdb_info->db_fname, '/');
+    }
+#endif
+
+    if (!begin) {
+        begin = hdb_info->db_fname;
+    }
+    else {
+        // unlikely since this means that the dbname is "/"
+        if (TSTRLEN(begin) == 1)
+            return;
+        else
+            begin++;
+    }
+
+    // end points to the byte after the last one we want to use
+    if ((TSTRLEN(hdb_info->db_fname) > 4) && (TSTRICMP(&hdb_info->db_fname[TSTRLEN(hdb_info->db_fname)-4], _TSK_T(".idx")) == 0)) 
+        end = &hdb_info->db_fname[TSTRLEN(hdb_info->db_fname)-4];
+    else
+        end = begin + TSTRLEN(begin);
+        
+
+    // @@@ TODO: Use TskUTF16_to_UTF8 to properly convert for Windows
+    for(i = 0; i < (end-begin); i++)
+    {
+        hdb_info->db_name[i] = (char) begin[i];
+    }
+
+    hdb_info->db_name[i] = '\0';
 }

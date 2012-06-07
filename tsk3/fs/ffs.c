@@ -1305,7 +1305,7 @@ ffs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     ffs_sb1 *sb1 = ffs->fs.sb1;
     ffs_sb2 *sb2 = ffs->fs.sb2;
     int flags;
-    char timeBuf[32];
+    char timeBuf[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -1688,7 +1688,7 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     FFS_PRINT_ADDR print;
     const TSK_FS_ATTR *fs_attr_indir;
     char *dino_buf;
-    char timeBuf[32];
+    char timeBuf[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -1722,9 +1722,12 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     if (sec_skew != 0) {
         tsk_fprintf(hFile, "\nAdjusted Inode Times:\n");
-        fs_meta->mtime -= sec_skew;
-        fs_meta->atime -= sec_skew;
-        fs_meta->ctime -= sec_skew;
+        if (fs_meta->mtime)
+            fs_meta->mtime -= sec_skew;
+        if (fs_meta->atime)
+            fs_meta->atime -= sec_skew;
+        if (fs_meta->ctime)
+            fs_meta->ctime -= sec_skew;
 
         tsk_fprintf(hFile, "Accessed:\t%s\n",
             tsk_fs_time_to_str(fs_meta->atime, timeBuf));
@@ -1733,9 +1736,12 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "Inode Modified:\t%s\n",
             tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
 
-        fs_meta->mtime += sec_skew;
-        fs_meta->atime += sec_skew;
-        fs_meta->ctime += sec_skew;
+        if (fs_meta->mtime == 0)
+            fs_meta->mtime += sec_skew;
+        if (fs_meta->atime == 0)
+            fs_meta->atime += sec_skew;
+        if (fs_meta->ctime == 0)
+            fs_meta->ctime += sec_skew;
 
         tsk_fprintf(hFile, "\nOriginal Inode Times:\n");
     }

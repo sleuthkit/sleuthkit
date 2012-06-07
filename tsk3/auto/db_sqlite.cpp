@@ -15,7 +15,15 @@
 
 #include "tsk_db_sqlite.h"
 #include "sqlite3.h"
+
 #include <string.h>
+
+#include <sstream>
+#include <algorithm>
+
+using std::stringstream;
+using std::sort;
+using std::for_each;
 
 
 #define TSK_SCHEMA_VER 2
@@ -90,7 +98,7 @@ int
 
 
 /**
- * Execute a statement.  
+ * Execute a statement and sets TSK error values on error 
  * @returns 1 on error, 0 on success
  */
 int
@@ -147,7 +155,7 @@ int
  * @returns 1 on error, 0 on success
  */
 int
- TskDbSqlite::addObject(DB_OBJECT_TYPES type, int64_t parObjId,
+ TskDbSqlite::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId,
     int64_t & objId)
 {
     char
@@ -199,47 +207,47 @@ int
     }
 
     if (attempt_exec
-        ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER);",
+        ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL);",
             "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER, type INTEGER, ssize INTEGER);",
+        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT);",
             "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_names (obj_id INTEGER, name TEXT, sequence INTEGER);",
+        ("CREATE TABLE tsk_image_names (obj_id INTEGER NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL);",
             "Error creating tsk_image_names table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_vs_info (obj_id INTEGER, vs_type INTEGER, img_offset INTEGER NOT NULL, block_size INTEGER NOT NULL);",
+        ("CREATE TABLE tsk_vs_info (obj_id INTEGER PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset INTEGER NOT NULL, block_size INTEGER NOT NULL);",
             "Error creating tsk_vs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_vs_parts (obj_id INTEGER PRIMARY KEY, addr INTEGER, start INTEGER NOT NULL, length INTEGER NOT NULL, desc TEXT, flags INTEGER);",
+        ("CREATE TABLE tsk_vs_parts (obj_id INTEGER PRIMARY KEY, addr INTEGER NOT NULL, start INTEGER NOT NULL, length INTEGER NOT NULL, desc TEXT, flags INTEGER NOT NULL);",
             "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER, fs_type INTEGER, block_size INTEGER, block_count INTEGER, root_inum INTEGER, first_inum INTEGER, last_inum INTEGER);",
+        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL);",
             "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (fs_obj_id INTEGER NOT NULL, obj_id INTEGER NOT NULL UNIQUE, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT);",
-            "Error creating tsk_fs_files table: %s\n")
+        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT);",
+            "Error creating tsk_files table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_path (obj_id INTEGER, path TEXT)",
+        ("CREATE TABLE tsk_files_path (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL)",
             "Error creating tsk_files_path table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_derived (obj_id INTEGER UNIQUE, derived_id INTEGER, rederive TEXT)",
+        ("CREATE TABLE tsk_files_derived (obj_id INTEGER PRIMARY KEY, derived_id INTEGER NOT NULL, rederive TEXT)",
             "Error creating tsk_files_derived table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_derived_method (derived_id INTEGER PRIMARY KEY, tool_name TEXT, tool_version TEXT, other TEXT)",
+        ("CREATE TABLE tsk_files_derived_method (derived_id INTEGER PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)",
             "Error creating tsk_files_derived_method table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, artifact_type_id INTEGER)",
+        ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL)",
             "Error creating blackboard_artifact table: %s\n")
         ||
         attempt_exec
@@ -248,18 +256,18 @@ int
             "Error creating blackboard_attribute table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifact_types (artifact_type_id INTEGER PRIMARY KEY, type_name TEXT, display_name TEXT)",
+        ("CREATE TABLE blackboard_artifact_types (artifact_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
             "Error creating blackboard_artifact_types table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT, display_name TEXT)",
+        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
             "Error creating blackboard_attribute_types table: %s\n")) {
         return 1;
     }
 
     if (m_blkMapFlag) {
         if (attempt_exec
-            ("CREATE TABLE tsk_file_layout (fs_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, obj_id INTEGER, sequence INTEGER);",
+            ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL);",
                 "Error creating tsk_fs_blocks table: %s\n")) {
             return 1;
         }
@@ -281,14 +289,14 @@ int
     return
         attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
         "Error creating tsk_objects index on par_obj_id: %s\n")||
-        attempt_exec("CREATE INDEX objID ON blackboard_artifacts(obj_id);",
-        "Error creating objID index on blackboard_artifacts: %s\n")||
+        attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
+        "Error creating artifact_objID index on blackboard_artifacts: %s\n")||
+        attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
+        "Error creating layout_objID index on tsk_file_layout: %s\n")||
         attempt_exec("CREATE INDEX artifactID ON blackboard_artifacts(artifact_id);",
         "Error creating artifact_id index on blackboard_artifacts: %s\n")||
         attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
         "Error creating artifact_id index on blackboard_attributes: %s\n");
-
-    
 }
 
 
@@ -364,22 +372,22 @@ void
  * @returns 1 on error, 0 on success
  */
 int
- TskDbSqlite::addImageInfo(int type, int size, int64_t & objId)
+ TskDbSqlite::addImageInfo(int type, int size, int64_t & objId, const string & timezone)
 {
     char
      stmt[1024];
 
     snprintf(stmt, 1024,
         "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, NULL, %d);",
-        DB_OBJECT_TYPE_IMG);
+        TSK_DB_OBJECT_TYPE_IMG);
     if (attempt_exec(stmt, "Error adding data to tsk_objects table: %s\n"))
         return 1;
 
     objId = sqlite3_last_insert_rowid(m_db);
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_image_info (obj_id, type, ssize) VALUES (%lld, %d, %d);",
-        objId, type, size);
+        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone) VALUES (%lld, %d, %d, '%s');",
+        objId, type, size, timezone.c_str());
     return attempt_exec(stmt,
         "Error adding data to tsk_image_info table: %s\n");
 }
@@ -413,7 +421,7 @@ int
     char
      stmt[1024];
 
-    if (addObject(DB_OBJECT_TYPE_VS, parObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_VS, parObjId, objId))
         return 1;
 
     snprintf(stmt, 1024,
@@ -440,7 +448,7 @@ int
     char
      stmt[1024];
 
-    if (addObject(DB_OBJECT_TYPE_VOL, parObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
         return 1;
 
     snprintf(stmt, 1024,
@@ -463,7 +471,7 @@ int
     char
      stmt[1024];
 
-    if (addObject(DB_OBJECT_TYPE_FS, parObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_FS, parObjId, objId))
         return 1;
 
     snprintf(stmt, 1024,
@@ -503,7 +511,7 @@ int
 int
  TskDbSqlite::addFsFile(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
-    const unsigned char *const md5, const TSK_AUTO_CASE_KNOWN_FILE_ENUM known,
+    const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known,
     int64_t fsObjId, int64_t & objId)
 {
     int64_t parObjId = 0;
@@ -589,7 +597,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & f
 int
  TskDbSqlite::addFile(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
-    const unsigned char *const md5, const TSK_AUTO_CASE_KNOWN_FILE_ENUM known,
+    const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known,
     int64_t fsObjId, int64_t parObjId,
     int64_t & objId)
 {
@@ -728,7 +736,7 @@ int
     }
 
 
-    if (addObject(DB_OBJECT_TYPE_FILE, parObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
         return 1;
 
     snprintf(foo, 1024,
@@ -743,14 +751,14 @@ int
         "%d,%d,%d,%d,%d,%d,%d,%s,%d,"
         "'%s')",
         fsObjId, objId,
-        DB_FILES_TYPE_FS,
+        TSK_DB_FILES_TYPE_FS,
         type, idx, name,
         fs_file->name->meta_addr,
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
         size, crtime, ctime, atime, mtime, meta_mode, gid, uid, md5Text, known,
         escaped_path);
 
-    if (attempt_exec(foo, "Error adding data to tsk_fs_files table: %s\n")) {
+    if (attempt_exec(foo, "Error adding data to tsk_files table: %s\n")) {
         free(name);
         return 1;
     }
@@ -820,12 +828,9 @@ int
 
 
 
-
-
 /**
- * Add block info to the database.  This table stores the run information for each file so that we
- * can map which blocks are used by what files.
- * @param a_fsObjId Id that the file is located in
+ * Add file layout info to the database.  This table stores the run information for each file so that we
+ * can map which parts of an image are used by what files.
  * @param a_fileObjId ID of the file
  * @param a_byteStart Byte address relative to the start of the image file
  * @param a_byteLen Length of the run in bytes
@@ -833,36 +838,48 @@ int
  * @returns 1 on error
  */
 int
- TskDbSqlite::addFsBlockInfo(int64_t a_fsObjId, int64_t a_fileObjId,
+ TskDbSqlite::addFileLayoutRange(int64_t a_fileObjId,
     uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence)
 {
     char
      foo[1024];
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_file_layout (fs_id, byte_start, byte_len, obj_id, sequence) VALUES (%lld, %lld, %llu, %llu, %d)",
-        a_fsObjId, a_byteStart, a_byteLen, a_fileObjId, a_sequence);
+        "INSERT INTO tsk_file_layout(obj_id, byte_start, byte_len, sequence) VALUES (%lld, %llu, %llu, %d)",
+        a_fileObjId, a_byteStart, a_byteLen, a_sequence);
 
     return attempt_exec(foo,
-        "Error adding data to tsk_fs_info table: %s\n");
+        "Error adding data to tsk_file_layout table: %s\n");
+}
+
+/**
+ * Add file layout info to the database.  This table stores the run information for each file so that we
+ * can map which parts of an image are used by what files.
+ * @param fileLayoutRange TSK_DB_FILE_LAYOUT_RANGE object storing a single file layout range entry
+ * @returns 1 on error
+ */
+int TskDbSqlite::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange) {
+    return addFileLayoutRange(fileLayoutRange.fileObjId, fileLayoutRange.byteStart, fileLayoutRange.byteLen, fileLayoutRange.sequence);
 }
 
 
+
 /**
- * Adds information about a carved file into the database.
+ * Adds entry for to tsk_files for a layout file into the database.
+ * @param parObjId parent obj id in the database
+ * @param fsObjId fs obj id in the database, or 0 if parent it not fs (NULL)
+ * @param dbFileType type (unallocated, carved, unused)
+ * @param fileName file name for the layout file
  * @param size Number of bytes in file
- * @param runStarts Array with starting sector (relative to start of image) for each run in file.
- * @param runLengths Array with number of sectors in each run 
- * @param numRuns Number of entries in previous arrays
- * @param fileId Carved file Id (output)
+ * @param objId layout file Id (output)
  * @returns 0 on success or 1 on error.
  */
 int
- TskDbSqlite::addCarvedFileInfo(int fsObjId, const char *fileName,
-    uint64_t size, int64_t & objId)
+ TskDbSqlite::addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName,
+    const uint64_t size, int64_t & objId)
 {
     char
-     foo[1024];
+     sql_stat[1024];
 
     // clean up special characters in name before we insert
     size_t len = strlen(fileName);
@@ -885,26 +902,32 @@ int
         }
     }
 
-    if (addObject(DB_OBJECT_TYPE_FILE, fsObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
         return 1;
 
-    snprintf(foo, 1024,
-        "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+    //fsObjId can be NULL
+    stringstream fsObjIdS;
+    if (fsObjId == 0) 
+        fsObjIdS << "NULL";
+    else fsObjIdS << fsObjId;
+
+    snprintf(sql_stat, 1024,
+        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
-        "%d,%lld,"
+        "1,%s,%lld,"
         "%d,"
         "NULL,NULL,'%s',"
         "NULL,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
-        fsObjId, objId,
-        DB_FILES_TYPE_CARVED,
+        fsObjIdS.str().c_str(), objId,
+        dbFileType,
         name,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
         TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_NAME_FLAG_UNALLOC, size);
 
-    if (attempt_exec(foo, "Error adding data to tsk_fs_files table: %s\n")) {
+    if (attempt_exec(sql_stat, "Error adding data to tsk_files table: %s\n")) {
         free(name);
         return 1;
     }
@@ -932,3 +955,403 @@ TskDbSqlite::inTransaction()
 {
     return (sqlite3_get_autocommit(m_db) == 0);
 }
+
+
+/**
+ * Adds information about a unallocated file with layout ranges into the database.
+ * Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+ * @param parentObjId Id of the parent object in the database (fs, volume, or image)
+ * @param fsObjId parent fs, or NULL if the file is not associated with fs
+ * @param size Number of bytes in file
+ * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+ * @param objId object id of the file object created (output)
+ * @returns TSK_OK on success or TSK_ERR on error.
+ */
+int TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
+}
+
+/**
+ * Adds information about a unused file with layout ranges into the database.
+ * Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+ * @param parentObjId Id of the parent object in the database (fs, volume, or image)
+ * @param fsObjId parent fs, or NULL if the file is not associated with fs
+ * @param size Number of bytes in file
+ * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+ * @param objId object id of the file object created (output)
+ * @returns TSK_OK on success or TSK_ERR on error.
+ */
+int TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
+}
+    
+/**
+ * Adds information about a carved file with layout ranges into the database.
+ * Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+ * @param parentObjId Id of the parent object in the database (fs, volume, or image)
+ * @param fsObjId fs id associated with the file, or NULL
+ * @param size Number of bytes in file
+ * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+ * @param objId object id of the file object created (output)
+ * @returns TSK_OK on success or TSK_ERR on error.
+ */
+int TskDbSqlite::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, fsObjId, size, ranges, objId);
+}
+
+//internal function object to check for range overlap
+typedef struct _checkFileLayoutRangeOverlap{
+    const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
+    bool hasOverlap;
+
+    _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
+        : ranges(ranges),hasOverlap(false) {}
+
+    bool getHasOverlap() const { return hasOverlap; }
+    void operator() (const TSK_DB_FILE_LAYOUT_RANGE & range)  {
+        if (hasOverlap)
+            return; //no need to check other
+
+        uint64_t start = range.byteStart;
+        uint64_t end = start + range.byteLen;
+
+        vector<TSK_DB_FILE_LAYOUT_RANGE>::const_iterator it;
+        for (it = ranges.begin(); it != ranges.end(); ++it) {
+            const TSK_DB_FILE_LAYOUT_RANGE * otherRange = &(*it);
+            if (&range == otherRange)
+                continue; //skip, it's the same range
+            uint64_t otherStart = otherRange->byteStart;
+            uint64_t otherEnd = otherStart + otherRange->byteLen;
+            if (start <= otherEnd && end >= otherStart) {
+                hasOverlap = true;
+                break;
+            }       
+        }
+    }
+   
+} checkFileLayoutRangeOverlap;
+
+/**
+* Internal helper method to add unalloc, unused and carved files with layout ranges to db
+* Generates file_name and populates tsk_files, tsk_objects and tsk_file_layout tables
+* @returns TSK_ERR on error or TSK_OK on success
+*/
+int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    const size_t numRanges = ranges.size();
+
+    if (numRanges < 1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Error addFileWithLayoutRange() - no ranges present");
+        return TSK_ERR;
+    }
+    
+    stringstream fileNameSs;
+    switch (dbFileType) {
+        case TSK_DB_FILES_TYPE_UNALLOC_BLOCKS:
+            fileNameSs << "Unalloc";
+            break;
+
+        case TSK_DB_FILES_TYPE_UNUSED_BLOCKS:
+            fileNameSs << "Unused";     
+            break;
+
+        case TSK_DB_FILES_TYPE_CARVED:
+            fileNameSs << "Carved";
+            break;
+        default:
+            stringstream sserr;
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            sserr << "Error addFileWithLayoutRange() - unsupported file type for file layout range: ";
+            sserr << (int) dbFileType;
+            tsk_error_set_errstr("%s", sserr.str().c_str());
+            return TSK_ERR;
+    }
+
+    //ensure layout ranges are sorted (to generate file name and to be inserted in sequence order)
+    sort(ranges.begin(), ranges.end());
+
+    //dome some checking
+    //ensure there is no overlap and each range has unique byte range
+    const checkFileLayoutRangeOverlap & overlapRes = 
+        for_each(ranges.begin(), ranges.end(), checkFileLayoutRangeOverlap(ranges));
+    if (overlapRes.getHasOverlap() ) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Error addFileWithLayoutRange() - overlap detected between ranges");
+        return TSK_ERR;
+    }
+
+    //construct filename with parent obj id, start byte of first range, end byte of last range
+    fileNameSs << "_" << parentObjId << "_" << ranges[0].byteStart;
+    fileNameSs << "_" << (ranges[numRanges-1].byteStart + ranges[numRanges-1].byteLen);
+    
+    //insert into tsk files and tsk objects
+    if (addLayoutFileInfo(parentObjId, fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId) ) {
+        return TSK_ERR;
+    }
+
+    //fill in fileObjId and insert ranges
+    for (vector<TSK_DB_FILE_LAYOUT_RANGE>::iterator it = ranges.begin();
+        it != ranges.end(); ++it) {
+        TSK_DB_FILE_LAYOUT_RANGE & range = *it;
+        range.fileObjId = objId;
+        if (this->addFileLayoutRange(range) ) {
+            return TSK_ERR;
+        }
+    }
+   
+    return TSK_OK;
+}
+
+/**
+* Query tsk_file_layout and return rows for every entry in tsk_file_layout table
+* @param fileLayouts (out) TSK_DB_FILE_LAYOUT_RANGE row representations to return
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+uint8_t TskDbSqlite::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) {
+    sqlite3_stmt * fileLayoutsStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, byte_start, byte_len, sequence FROM tsk_file_layout", 
+        &fileLayoutsStatement) ) {
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_FILE_LAYOUT_RANGE rowData;
+  
+    while (sqlite3_step(fileLayoutsStatement) == SQLITE_ROW) {
+        rowData.fileObjId = sqlite3_column_int64(fileLayoutsStatement, 0);
+        rowData.byteStart = sqlite3_column_int64(fileLayoutsStatement, 1);
+        rowData.byteLen = sqlite3_column_int64(fileLayoutsStatement, 2);
+        rowData.sequence = sqlite3_column_int(fileLayoutsStatement, 3);
+        
+        //insert a copy of the rowData
+        fileLayouts.push_back(rowData);
+    }
+
+    //cleanup
+    if (fileLayoutsStatement != NULL) {
+        sqlite3_finalize(fileLayoutsStatement);
+        fileLayoutsStatement = NULL;
+    }
+
+    return TSK_OK;
+}
+
+ostream& operator <<(ostream &os,const TSK_DB_FILE_LAYOUT_RANGE &layoutRange) {
+    os << layoutRange.fileObjId << "," << layoutRange.byteStart << ","
+        << layoutRange.byteLen << "," << layoutRange.sequence;
+    os << std::endl;
+    return os;
+}
+
+ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo) {
+    os << fsInfo.objId << "," << fsInfo.imgOffset << "," << (int)fsInfo.fType
+        << "," << fsInfo.block_size << "," << fsInfo.block_count 
+        << "," << fsInfo.root_inum << "," << fsInfo.first_inum << "," << fsInfo.last_inum;
+    os << std::endl;
+    return os;
+}
+
+ostream& operator <<(ostream &os,const TSK_DB_VS_INFO &vsInfo) {
+    os << vsInfo.objId << "," << (int)vsInfo.vstype << "," << vsInfo.offset
+        << "," << vsInfo.block_size;
+    os << std::endl;
+    return os;
+}
+
+ostream& operator <<(ostream &os,const TSK_DB_VS_PART_INFO &vsPartInfo) {
+    os << vsPartInfo.objId << "," << vsPartInfo.addr << "," << vsPartInfo.start
+        << "," << vsPartInfo.len << "," << vsPartInfo.desc << "," << (int)vsPartInfo.flags;
+    os << std::endl;
+    return os;
+}
+
+ostream& operator <<(ostream &os,const TSK_DB_OBJECT &dbObject) {
+    os << dbObject.objId << "," << dbObject.parObjId << "," << (int)dbObject.type;
+    os << std::endl;
+    return os;
+}
+
+/**
+* Query tsk_fs_info and return rows for every entry in tsk_fs_info table
+* @param fsInfos (out) TSK_DB_FS_INFO row representations to return
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+uint8_t TskDbSqlite::getFsInfos(vector<TSK_DB_FS_INFO> & fsInfos) {
+    sqlite3_stmt * fsInfosStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum FROM tsk_fs_info", 
+        &fsInfosStatement) ) {
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_FS_INFO rowData;
+    while (sqlite3_step(fsInfosStatement) == SQLITE_ROW) {
+        rowData.objId = sqlite3_column_int64(fsInfosStatement, 0);
+        rowData.imgOffset = sqlite3_column_int64(fsInfosStatement, 1);
+        rowData.fType = (TSK_FS_TYPE_ENUM)sqlite3_column_int(fsInfosStatement, 2);
+        rowData.block_size = sqlite3_column_int(fsInfosStatement, 3);
+        rowData.block_count = sqlite3_column_int64(fsInfosStatement, 4);
+        rowData.root_inum = sqlite3_column_int64(fsInfosStatement, 5);
+        rowData.first_inum = sqlite3_column_int64(fsInfosStatement, 6);
+        rowData.last_inum = sqlite3_column_int64(fsInfosStatement, 7);
+
+        //insert a copy of the rowData
+        fsInfos.push_back(rowData);
+    }
+
+    //cleanup
+    if (fsInfosStatement != NULL) {
+        sqlite3_finalize(fsInfosStatement);
+        fsInfosStatement = NULL;
+    }
+
+    return TSK_OK;
+ }
+
+
+/**
+* Query tsk_vs_info and return rows for every entry in tsk_vs_info table
+* @param vsInfos (out) TSK_DB_VS_INFO row representations to return
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+uint8_t TskDbSqlite::getVsInfos(vector<TSK_DB_VS_INFO> & vsInfos) {
+    sqlite3_stmt * vsInfosStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info", 
+        &vsInfosStatement) ) {
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_VS_INFO rowData;
+    while (sqlite3_step(vsInfosStatement) == SQLITE_ROW) {
+        rowData.objId = sqlite3_column_int64(vsInfosStatement, 0);
+        rowData.vstype = (TSK_VS_TYPE_ENUM)sqlite3_column_int(vsInfosStatement, 1);
+        rowData.offset = sqlite3_column_int64(vsInfosStatement, 2);
+        rowData.block_size = sqlite3_column_int(vsInfosStatement, 3);
+
+        //insert a copy of the rowData
+        vsInfos.push_back(rowData);
+    }
+
+    //cleanup
+    if (vsInfosStatement != NULL) {
+        sqlite3_finalize(vsInfosStatement);
+        vsInfosStatement = NULL;
+    }
+
+    return TSK_OK;
+ }
+
+
+/**
+* Query tsk_vs_part and return rows for every entry in tsk_vs_part table
+* @param vsPartInfos (out) TSK_DB_VS_PART_INFO row representations to return
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+uint8_t TskDbSqlite::getVsPartInfos(vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
+    sqlite3_stmt * vsPartInfosStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, addr, start, length, desc, flags FROM tsk_vs_parts", 
+        &vsPartInfosStatement) ) {
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_VS_PART_INFO rowData;
+    while (sqlite3_step(vsPartInfosStatement) == SQLITE_ROW) {
+        rowData.objId = sqlite3_column_int64(vsPartInfosStatement, 0);
+        rowData.addr = sqlite3_column_int(vsPartInfosStatement, 1);
+        rowData.start = sqlite3_column_int64(vsPartInfosStatement, 2);
+        rowData.len = sqlite3_column_int64(vsPartInfosStatement, 3);
+        const unsigned char * text = sqlite3_column_text(vsPartInfosStatement, 4);
+        size_t textLen = sqlite3_column_bytes(vsPartInfosStatement, 4);
+        const size_t copyChars = textLen < TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1?textLen:TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1;
+        strncpy (rowData.desc,(char*)text,copyChars);
+        rowData.desc[copyChars] = '\0';
+        rowData.flags = (TSK_VS_PART_FLAG_ENUM)sqlite3_column_int(vsPartInfosStatement, 5);
+        //insert a copy of the rowData
+        vsPartInfos.push_back(rowData);
+    }
+
+    //cleanup
+    if (vsPartInfosStatement != NULL) {
+        sqlite3_finalize(vsPartInfosStatement);
+        vsPartInfosStatement = NULL;
+    }
+
+    return TSK_OK;
+ }
+
+/**
+* Query tsk_objects with given id and returns object info entry
+* @param objId object id to query
+* @param objectInfo (out) TSK_DB_OBJECT entry representation to return
+* @returns TSK_ERR on error (or if not found), TSK_OK on success
+*/
+uint8_t TskDbSqlite::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
+
+    sqlite3_stmt * objectsStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, par_obj_id, type FROM tsk_objects WHERE obj_id IS ?", 
+        &objectsStatement) ) {
+        return TSK_ERR;
+    }
+
+    if (attempt(sqlite3_bind_int64(objectsStatement, 1, objId),
+        "Error binding objId to statment: %s (result code %d)\n")
+        || attempt(sqlite3_step(objectsStatement), SQLITE_ROW,
+        "Error selecting object by objid: %s (result code %d)\n")) {
+            sqlite3_finalize(objectsStatement);
+            return TSK_ERR;
+    }
+
+    objectInfo.objId = sqlite3_column_int64(objectsStatement, 0);
+    objectInfo.parObjId = sqlite3_column_int64(objectsStatement, 1);
+    objectInfo.type = (TSK_DB_OBJECT_TYPE_ENUM) sqlite3_column_int(objectsStatement, 2);
+
+    //cleanup
+    if (objectsStatement != NULL) {
+        sqlite3_finalize(objectsStatement);
+        objectsStatement = NULL;
+    }
+
+    return TSK_OK;
+}
+
+/**
+* Query tsk_vs_info with given id and returns TSK_DB_VS_INFO info entry
+* @param objId vs id to query
+* @param vsInfo (out) TSK_DB_VS_INFO entry representation to return
+* @returns TSK_ERR on error (or if not found), TSK_OK on success
+*/
+uint8_t TskDbSqlite::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
+    sqlite3_stmt * vsInfoStatement = NULL;
+    if (prepare_stmt("SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info WHERE obj_id IS ?", 
+        &vsInfoStatement) ) {
+        return TSK_ERR;
+    }
+
+    if (attempt(sqlite3_bind_int64(vsInfoStatement, 1, objId),
+        "Error binding objId to statment: %s (result code %d)\n")
+        || attempt(sqlite3_step(vsInfoStatement), SQLITE_ROW,
+        "Error selecting object by objid: %s (result code %d)\n")) {
+            sqlite3_finalize(vsInfoStatement);
+            return TSK_ERR;
+    }
+
+    vsInfo.objId = sqlite3_column_int64(vsInfoStatement, 0);
+    vsInfo.vstype = (TSK_VS_TYPE_ENUM)sqlite3_column_int(vsInfoStatement, 1);
+    vsInfo.offset = sqlite3_column_int64(vsInfoStatement, 2);
+    vsInfo.block_size = sqlite3_column_int(vsInfoStatement, 3);
+
+    //cleanup
+    if (vsInfoStatement != NULL) {
+        sqlite3_finalize(vsInfoStatement);
+        vsInfoStatement = NULL;
+    }
+
+    return TSK_OK;
+}
+
+

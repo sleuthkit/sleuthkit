@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -29,6 +29,7 @@ TskServices &TskServices::Instance()
         m_pInstance->m_blackboard = NULL;
         m_pInstance->m_systemProperties = NULL;
         m_pInstance->m_imageFile = NULL;
+        m_pInstance->m_fileManager = NULL;
     }
     return *m_pInstance;
 }
@@ -214,4 +215,24 @@ TskSystemProperties& TskServices::getSystemProperties()
         LOGINFO(L"TskServices::getSystemProperties - SystemProperties has not been set, using default implementation.");
     }
     return *m_systemProperties;
+}
+
+void TskServices::setFileManager(TskFileManager& fileManager)
+{
+    if (m_fileManager) {
+        LOGERROR(L"TskServices::setFileManager - File Manager has already been initialized.");
+        throw TskException("FileManager already initialized.");
+    } else {
+        m_fileManager = &fileManager;
+    }
+}
+
+TskFileManager& TskServices::getFileManager()
+{
+    if (m_fileManager == NULL)
+    {
+        LOGERROR(L"TskServices::getFileManager - File Manager has not been initialized.");
+        throw TskException("File Manager not initialized.");
+    }
+    return *m_fileManager;
 }

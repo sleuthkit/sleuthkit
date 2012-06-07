@@ -158,6 +158,8 @@
 		02F9DE680D9BFCF2009C3F0E /* mmstat.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = mmstat.cpp; sourceTree = "<group>"; };
 		D70295221469E7DD0087E028 /* case_db.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = case_db.cpp; sourceTree = "<group>"; };
 		D70295231469E7E40087E028 /* db_sqlite.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = db_sqlite.cpp; sourceTree = "<group>"; };
+		D70B6982155AF1A4006D783E /* tsk_case_db.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tsk_case_db.h; sourceTree = "<group>"; };
+		D70B6983155AF1A4006D783E /* tsk_db_sqlite.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tsk_db_sqlite.h; sourceTree = "<group>"; };
 		D721CF8A126B5A3500AA2B16 /* tsk_gettimes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = tsk_gettimes.cpp; sourceTree = "<group>"; };
 		D7774DF413E30DD100742A51 /* mult_files.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mult_files.c; sourceTree = "<group>"; };
 		D7864D7A134E2EFC00036A41 /* tsk_lock.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = tsk_lock.c; sourceTree = "<group>"; };
@@ -227,6 +229,8 @@
 		024D5A781166D46E00299079 /* auto */ = {
 			isa = PBXGroup;
 			children = (
+				D70B6982155AF1A4006D783E /* tsk_case_db.h */,
+				D70B6983155AF1A4006D783E /* tsk_db_sqlite.h */,
 				D70295231469E7E40087E028 /* db_sqlite.cpp */,
 				D70295221469E7DD0087E028 /* case_db.cpp */,
 				D79CAB5F1215B2A4004F70CE /* tsk_auto_i.h */,

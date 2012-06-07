@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.lang.String;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -51,7 +50,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG", "Installed Programs"),
 		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT", "Keyword Hits"),
 		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", "Hashset Hits"),
-		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Device Attached");
+		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Device Attached"),
+		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", "Interesting File"),
+		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", "E-Mail Message");
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
 		private int typeID;
@@ -185,7 +186,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param attr the attribute to add
 	 * @throws TskException
 	 */
-	public void addAttribute(BlackboardAttribute attr) throws TskException {
+	public void addAttribute(BlackboardAttribute attr) throws TskCoreException {
 		attr.setArtifactID(artifactID);
 		attr.setCase(Case);
 		Case.addBlackboardAttribute(attr);
@@ -196,7 +197,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param attributes List of attributes to add
 	 * @throws TskException
 	 */
-	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskException {
+	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskCoreException {
 		if (attributes.isEmpty()) {
 			return;
 		}
@@ -213,7 +214,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @return a list of attributes
 	 * @throws TskException
 	 */
-	public ArrayList<BlackboardAttribute> getAttributes() throws TskException {
+	public ArrayList<BlackboardAttribute> getAttributes() throws TskCoreException {
 		return Case.getMatchingAttributes("WHERE artifact_id = " + artifactID);
 	}
 

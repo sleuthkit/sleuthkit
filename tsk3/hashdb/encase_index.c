@@ -39,6 +39,51 @@ encase_test(FILE * hFile)
     return 1;
 }
 
+/**
+ * Set db_name using information from this database type
+ *
+ * @param hdb_info the hash database object
+ */
+void
+encase_name(TSK_HDB_INFO * hdb_info)
+{
+    FILE * hFile = hdb_info->hDb;
+    wchar_t buf[40];
+    UTF16 *utf16;
+    UTF8 *utf8;
+    size_t ilen;
+    memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
+    if(!hFile) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Error getting name from Encase hash db; using file name instead");
+        tsk_hdb_name_from_path(hdb_info);
+        return;
+    }
+
+    memset(buf, '\0', 40);
+
+    fseeko(hFile, 1032, SEEK_SET);
+    if (39 != fread(buf, sizeof(wchar_t), 39, hFile)) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Error getting name from Encase hash db; using file name instead");
+        tsk_hdb_name_from_path(hdb_info);
+        return;
+    }
+
+    // do some arithmetic on type sizes to be platform independent
+    ilen = wcslen(buf) * (sizeof(wchar_t) / sizeof(UTF16));
+
+    utf8 = (UTF8 *) hdb_info->db_name;
+    utf16 = (UTF16 *) buf;
+
+    tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
+        (const UTF16 **) &utf16,
+        &utf16[ilen], &utf8, &utf8[78],
+        TSKlenientConversion);
+}
+
 
 /**
  * Process the database to create a sorted index of it. Consecutive
@@ -53,7 +98,7 @@ encase_test(FILE * hFile)
 uint8_t
 encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 {
-    char buf[19];
+    unsigned char buf[19];
     char phash[19];
     TSK_OFF_T offset = 0;
     int db_cnt = 0, idx_cnt = 0;

@@ -2,7 +2,7 @@
 * The Sleuth Kit
 *
 * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
-* Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+* Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
 * reserved.
 *
 * This software is distributed under the Common Public License 1.0
@@ -86,9 +86,9 @@ public:
     * @param context additional context 
     * @param valueBytes byte array value
     */
-    TskBlackboardAttribute(const int attributeTypeID, const string& moduleName, const string& context, const vector<unsigned char> valueBytes);
+    TskBlackboardAttribute(const int attributeTypeID, const string& moduleName, const string& context, const vector<unsigned char>& valueBytes);
     /*
-    * detructor
+    * destructor
     */
     ~TskBlackboardAttribute();
 
@@ -163,9 +163,9 @@ protected:
     void setArtifactID(uint64_t artifactID);
     void setObjectID(uint64_t objectID);
 
-    TskBlackboardAttribute(uint64_t artifactID, const int attributeTypeID, uint64_t objectID, const string moduleName, const string context,
+    TskBlackboardAttribute(const uint64_t artifactID, const int attributeTypeID, const uint64_t objectID, const string& moduleName, const string& context,
         const TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, const int valueInt, const uint64_t valueLong, const double valueDouble, 
-        const string& valueString, const vector<unsigned char> valueBytes);
+        const string& valueString, const vector<unsigned char>& valueBytes);
 private:
     uint64_t m_artifactID;
     int m_attributeTypeID;

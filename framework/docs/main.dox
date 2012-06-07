@@ -1,47 +1,30 @@
 /*! \mainpage The Sleuth Kit (TSK) Framework User's Guide and API Reference
 
   <h3>Overview</h3>
-  The framework in TSK allows you to write digital forensics applications and easily incorporate a variety of anlaysis techniques using its plug-in modules.  
-The framework was also designed to be used in a distributed environment so that jobs could be scheduled among a cluster of computers. 
+  The framework in TSK makes it easier to build automated, end-to-end digital forensics applications.  It's plug-in pipelines allow you to incorporate a variety of analysis techniques.  The framework was designed to be used in a distributed environment so that jobs could be scheduled among a cluster of computers, but it can also be used in a simple desktop environment. The tsk_analyzeimg program is an example of a desktop program that uses the framework. 
 
   If you need only volume and file system-level support, then the original Sleuth Kit library maybe all you need.  If you want an end-to-end solution though, then the framework will help solve your problems. 
 
-  <h3>Basic Concepts</h3>
-  <ul>
-    <li><b>Central Database:</b> All data is stored in a central database, which can be as simple as a local SQLite file or a database server.  The details are hidden from the modules. The TskImgDB class is used to store and retrieve data.</li>
+This document is for:
+  - Users of tools that leverage the framework.
+  - Developers who want to make modules for the framework.
+  - Developers who want to integrate the framework into a larger system.
 
-    <li><b>Services:</b> There are core services that the framework provides to the programs that incorporate the framework and to the modules that fit into the framework.  See \ref mod_stuff_services for more details.</li>
-
-    <li><b>Pipelines and Plug-in Modules:</b> The framework provides a pipeline infrastructure that modules can be dropped into.  The framework comes with basic modules, but it is expected that other developers will provide modules that can be used.  See the links below on how to build pipelines and modules.</li>
-   
-    <li><b>Blackboard:</b> The framework uses the blackboard to allow modules to communicate. Modules can post results to the blackboard and other modules can query the it for previous findings. See \ref mod_bbpage for more details. </li>
-
-    <li><b>Three Phases:</b> The framework has been designed on the idea that there are three major phases to the analysis process:
-    <ul>
-      <li>File Extraction: Where files are identified based on file system data, carving, and other types of data recovery.</li>
-      <li>File Analysis: Where each file is analyzed to pull data out of it.  The framework supports plug-in modules to perform file analysis.</li>
-      <li>Post Processing / Reporting: Where the results of the individual file analysis are analyzed a file report and analysis tecniques are conducted. The framework supports plug-in modules to perform post processing.</li>
-    </ul>
-  </li>
-</ul>
-
-To compile the framework, refer to the <tt>BUILDING.TXT</tt> file that comes with the source code.
-
-<h3>General Concepts</h3>
-The following pages are relevant when developing modules and integrating the framework. 
-
+<h3>Overview</h3>
+The following pages contain an overview of the framework.  Both users and developers should be familiar with this content. 
+  - \subpage basics_page
   - \subpage pipeline_config_page
   - \subpage mod_bbpage
 
-<h3>Developers Guide to Building Modules</h3>
-The following pages are relevent when developing modules to be used in the framework.
 
+<h3>Developers Guide to Building Modules</h3>
+The following pages are relevant when developing modules to be used in the framework.  To compile the framework, refer to the <tt>BUILDING.TXT</tt> file that comes with the source code.
   - \subpage mod_devpage
   - \subpage mod_example_page
 
+
 <h3>Developers Guide to Using the Framework</h3>
 The following pages are relevant when integrating the framework into an existing application. 
-
   - \subpage fw_setup_page 
   - \subpage fw_extract_page
   - \subpage fw_pipeline_page

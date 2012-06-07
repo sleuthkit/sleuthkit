@@ -3,7 +3,7 @@
  *  The Sleuth Kit
  *
  *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- *  Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ *  Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  *  reserved.
  *
  *  This software is distributed under the Common Public License 1.0
@@ -166,7 +166,9 @@ int TskImageFileTsk::getByteData(const uint64_t byte_start,
     int retval = tsk_img_read(m_img_info, byte_start, buffer, (size_t)(byte_len));
     if (retval == -1) {
         std::wstringstream message;
-        message << L"TskImageFileTsk::getByteData - tsk_img_read: " << tsk_error_get() << std::endl;
+        message << L"TskImageFileTsk::getByteData - tsk_img_read -- start: " 
+            << byte_start << " -- len: " << byte_len
+            << "(" << tsk_error_get() << ")" << std::endl;
         LOGERROR(message.str());
         return -1;
     }
@@ -174,11 +176,6 @@ int TskImageFileTsk::getByteData(const uint64_t byte_start,
     return retval;
 }
 
-/*
- * PRocesses the file system and extracts files to the DB.  Uses the images
- * that were already opened with an open() method. 
- * @returns 1 on error
- */
 int TskImageFileTsk::extractFiles()
 {
     // @@@ Add Sanity check that DB is empty 
@@ -228,8 +225,7 @@ int TskImageFileTsk::extractFiles()
         return 1;
     }
 
-    // Notification messages produced by findFilesInImg() will be handled
-    // by TskAutoImpl.
+    // TskAutoImpl will log errors as they occur
     tskAutoImpl.findFilesInImg();
 
     // It's possible that this is an image with no volumes or file systems.
@@ -273,8 +269,7 @@ int TskImageFileTsk::openFile(const uint64_t fileId)
         if (fsInfo == NULL)
         {
             std::wstringstream errorMsg;
-            errorMsg << L"TskImageFileTsk::openFile - Error opening file system : "
-                << tsk_error_get() << std::endl;
+            errorMsg << L"TskImageFileTsk::openFile - Error opening file system : " << tsk_error_get();
             LOGERROR(errorMsg.str());
             return -1;
         }
@@ -288,16 +283,30 @@ int TskImageFileTsk::openFile(const uint64_t fileId)
     if (fsFile == NULL)
     {
         std::wstringstream errorMsg;
-        errorMsg << L"TskImageFileTsk::openFile - Error opening file : "
-            << tsk_error_get() << std::endl;
+        errorMsg << L"TskImageFileTsk::openFile - Error opening file : " << tsk_error_get();
         LOGERROR(errorMsg.str());
         return -1;
     }
 
+    const TSK_FS_ATTR * fsAttr = tsk_fs_file_attr_get_id(fsFile, attrId);
+
+    // @@@ TSK_ATTR_TYPE_ENUM should have a value added to it to represent an
+    // empty (or null) attribute type and we should then compare attrType against
+    // this enum value instead of 0.
+
+    // It is possible to have a file with no attributes. We only report an
+    // error if we are expecting a valid attribute.
+    if (attrType != 0 && fsAttr == NULL)
+    {
+        std::wstringstream msg;
+        msg << L"TskImageFileTsk::openFile - Error getting attribute : " << tsk_error_get();
+        LOGERROR(msg.str());
+        return -1;
+    }
+
     TskImageFileTsk::OPEN_FILE * openFile = new TskImageFileTsk::OPEN_FILE();
-    openFile->attrId = attrId;
-    openFile->attrType = attrType;
     openFile->fsFile = fsFile;
+    openFile->fsAttr = fsAttr;
 
     m_openFiles.push_back(openFile);
 
@@ -320,23 +329,28 @@ int TskImageFileTsk::readFile(const int handle,
         return -1;
     }
 
-    if (byte_offset >= openFile->fsFile->meta->size)
+    // fsAttr can be NULL if the file has no attributes.
+    if (openFile->fsAttr == NULL || byte_offset >= openFile->fsAttr->size)
     {
-        // If the offset is larger than the file then there is nothing left to read.
+        // If the offset is larger than the attribute size then there is nothing left to read.
         return 0;
     }
 
     int bytesRead = tsk_fs_file_read_type(openFile->fsFile,
-                                          static_cast<TSK_FS_ATTR_TYPE_ENUM>(openFile->attrType),
-                                          openFile->attrId,
+                                          static_cast<TSK_FS_ATTR_TYPE_ENUM>(openFile->fsAttr->type),
+                                          openFile->fsAttr->id,
                                           byte_offset, buffer, 
                                           byte_len, TSK_FS_FILE_READ_FLAG_NONE);
 
     if (bytesRead == -1)
     {
         std::wstringstream errorMsg;
-        errorMsg << L"TskImageFileTsk::readFile - Error reading file: "
-            << tsk_error_get() << std::endl;
+        errorMsg << L"TskImageFileTsk::readFile - Error reading file (FS_OFFSET: " 
+            << openFile->fsFile->fs_info->offset << " - ID: "
+            << openFile->fsFile->meta->addr << " - " 
+            << ((openFile->fsFile->meta->flags & TSK_FS_META_FLAG_ALLOC) ? "Allocated" : "Deleted")
+            << ") (" 
+            << tsk_error_get() << ")" << std::endl;
         LOGERROR(errorMsg.str());
     }
 

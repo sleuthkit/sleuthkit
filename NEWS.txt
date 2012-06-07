@@ -2,7 +2,7 @@ Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
 
----------------- VERSION 3.3.0 --------------
+---------------- VERSION 4.0.0 --------------
 New Features:
 - Added multithreaded support
 - Added C++ wrapper classes
@@ -18,6 +18,7 @@ New Features:
 - Libewf v2 support (it is now non-beta)
 - First file in a raw split or E01 can be specified and the rest of the files
   are found. 
+- mactime displays times as 0 if the time is not set (isntead of 1970)
 
 Bug Fixes:
 - Relaxed checking when conflict exists between DOS and GPT partitions.
@@ -1784,4 +1785,5 @@ integer value.
 - removed file system types of linux1 and linux2 and linux
 - added file system type of linux-ext2 (as ext3 is becoming more popular)
 - bug in file command that reported seek error for object files and STDIN
+
 

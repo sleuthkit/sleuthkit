@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -30,7 +30,7 @@ public:
     /**
      * Make one or more files to carve. 
      * @param a_toSchedule True if the scheduler should be called to queue
-     * up the data or false if it shoudl be processed now.
+     * up the data or false if it should be processed now.
      * @returns 1 on error 
      */
     virtual int processSectors(bool a_toSchedule) = 0;

@@ -23,33 +23,37 @@ You will need to include the framework header file to get access to the framewor
 
 <pre>\#include "TskModuleDev.h" </pre>
 
-You should be able to find this header file by ensuring that the TSK_HOME environment variable is set to the root of TSK (in a Windows environment) and that $(TSK_HOME) and $TSK_HOME/framework are in the include search path. 
+You should be able to find this header file by ensuring that the TSK_HOME environment variable is set to the root of TSK (in a Windows environment) and that $TSK_HOME and $TSK_HOME/framework are in the include search path. 
 
 Next, you need to define several function that the framework will call when it uses the module.   Those are described in the following sections. 
 
 \subsection mod_setup_init Module InitializationThe <tt>initialize</tt> function is where you perform one time module configuration tasks such as validating input or output folders or establishing a connection to an external system such as a database server.
 The module initialization function must be implemented and it must have the following signature:
 
-<pre>TskModule::Status initialize(std::string& args) (VERIFY)</pre>
+<pre>TskModule::Status TSK_MODULE_EXPORT initialize(std::string& args)</pre>
 
-The function takes a string argument, which  you supplied in the pipeline configuration file. It returns a status which should be TskModule::OK or TskModule::FAIL.  Returning TskModule::FAIL will indicate a fatal problem and will cause the pipeline to terminate. 
-\subsection mod_setup_run File Analysis Execution
+The function takes a string argument, which  you supplied in the pipeline configuration file. It returns a status which should be TskModule::OK or TskModule::FAIL.  Returning TskModule::FAIL will indicate a fatal problem and (in the default implementation) will cause the pipeline to terminate. 
+
+\subsection mod_setup_run File Analysis Execution
 If your module will be running in a file analysis pipeline, then it must implement the <tt>run</tt> function. This function will be called for each file that is run through the file analysis pipeline.   It should have the following signature:
-<pre>TskModule::Status run(TskFile* pFile)</pre>
-The function is passed a pointer to a file and it must return either TskModule::OK, TskModule::FAIL, or TskModule::STOP.
+<pre>TskModule::Status TSK_MODULE_EXPORT run(TskFile * pFile)</pre>
+
+The function is passed a pointer to a file and it must return either TskModule::OK, TskModule::FAIL, or TskModule::STOP.  TskModule::OK should be returned if the module analyzed the file or decided that it did not need to analyze the file.  TskModule::FAIL should be returned if the module tried to analyze the file, but was unable to.  A TskModule::FAIL return value will be logged, but the pipeline will still continue to be analyzed.   TskModule::STOP should be returned if the module wants the pipeline to stop processing this file. 
 
 The file pointer is supplied by the framework and can be used to access both the metadata and the content associated with the file. The file object is managed by the framework and a module must therefore not delete it.  
-A file analysis module has the ability to terminate the processing of a file in the pipeline by  returning the TskModule::STOP status. This is useful if a module determines that a particular file is not relevant (e.g. by identifying it as a known good file).
+
+A file analysis module has the ability to terminate the processing of a file in the pipeline by  returning the TskModule::STOP status. This is useful if a module determines that a particular file is not relevant (e.g. by identifying it as a known good file).
 
 \subsection mod_setup_report Report Execution
 If your module will be running in a reporting pipeline, then it must implement the <tt>report</tt> function.   It is similar to a file analysis function, except it is not passed in a reference to a specific file. The signature for a reporting module is:
-<pre>TskModule::Status report()</pre>
+<pre>TskModule::Status TSK_MODULE_EXPORT report()</pre>
 The report module does not have access to an individual file pointer but a module writer may choose to get access to a set of files as described in the Accessing Specific Files section below.  As with the file analysis module, the report() function can choose to stop subsequent modules in the reporting pipeline by returning a TskModule::STOP status.
 
 
 \subsection mod_setup_cleanup Module Cleanup
 When the pipeline is being destroyed, the <tt>finalize</tt> function on each module will be called. This is where you should free any resources that you allocated during initialization or execution. The module termination function must have the following signature:
-<pre>TskModule::Status finalize()</pre>
+
+<pre>TskModule::Status TSK_MODULE_EXPORT finalize()</pre>
 
 \section mod_stuff Doing Stuff in a Module
 Now that we know where to put code in the module, we'll examine what we can do in those places. 
@@ -81,7 +85,7 @@ Although not a service, you might also want to check out TskUtilities, which has
 
 \subsection mod_stuff_file Accessing File Content and Metadata
 
-A file analysis module will be passed a TskFile object for the file to analyze.  TskFile objects can represent all types of files, including allocated and deleted files, carved files, and derived files (i.e. a file stored inside of a ZIP file). From this object, you can read content using the TskFile.read() method.  You can also access specific types of file metadata using specific methods, such as TskFile.size(), TskFile.crtime(), and TskFile.gePath(). Refer to the TskFile documentation for a list of all methods. 
+A file analysis module will be passed a TskFile object for the file to analyze.  TskFile objects can represent all types of files, including allocated and deleted files, carved files, and derived files (i.e. a file stored inside of a ZIP file). From this object, you can read content using the TskFile.read() method.  You can also access specific types of file metadata using specific methods, such as TskFile.getSize(), TskFile.getCrtime(), and TskFile.getPath(). Refer to the TskFile documentation for a list of all methods. 
 
 
 \subsection mod_stuff_files Accessing Other Files
