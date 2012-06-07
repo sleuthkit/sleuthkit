@@ -98,7 +98,7 @@ public:
     int close();
     const wchar_t * getLogPath();
 
-private:
+protected:
     wchar_t m_filePath[MAX_BUFF_LENGTH];
     FILE * m_logFile;
 };

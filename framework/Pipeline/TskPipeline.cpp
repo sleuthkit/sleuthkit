@@ -31,6 +31,7 @@
 #include "Poco/DOM/DOMParser.h"
 #include "Poco/DOM/Nodelist.h"
 #include "Poco/DOM/Document.h"
+#include "Poco/UnicodeConverter.h"
 
 const std::string TskPipeline::MODULE_ELEMENT = "MODULE";
 const std::string TskPipeline::MODULE_TYPE_ATTR = "type";
@@ -159,7 +160,20 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
                     pModule->setModuleId(moduleId);
                 }
             }
-            m_modules.push_back(pModule);
+            bool duplicate = false;
+            for (std::vector<TskModule*>::iterator it = m_modules.begin(); it != m_modules.end(); it++)
+                if((*it)->getModuleId() == pModule->getModuleId()){
+                    duplicate = true;
+                    std::wstringstream msg;
+                    std::wstring utf16name;
+                    Poco::UnicodeConverter::toUTF16(pModule->getName(), utf16name);
+
+                    msg << L"TskPipeline::initialize - " << utf16name << L" is a duplicate module. " <<
+                        L"the duplicate will not be added to the pipeline";
+                    LOGERROR(msg.str());
+                }
+            if(!duplicate)
+                m_modules.push_back(pModule);
         }
     }
     // rethrow this, otherwise it is caught by std::exception and we lose the detail.

@@ -14,6 +14,7 @@
 #include <string>
 #include <sstream>
 
+
 #include "tsk3/tsk_tools_i.h" // Needed for tsk_getopt
 #include "framework.h"
 #include "Services/TskSchedulerQueue.h"
@@ -29,6 +30,7 @@
 #endif
 
 #include "Poco/File.h"
+#include "Poco/UnicodeConverter.h"
 
 static uint8_t 
 makeDir(const TSK_TCHAR *dir) 
@@ -44,6 +46,57 @@ makeDir(const TSK_TCHAR *dir)
     return 0;
 }
 
+class stderrLog : public Log
+{
+public:
+    stderrLog(){
+        Log::Log();
+    }
+
+    ~stderrLog(){
+        Log::~Log();
+    }
+
+    void log(Channel a_channel, const std::wstring &a_msg)
+    {
+        bool toStderr = false;
+        wchar_t level[10];
+        switch (a_channel)
+        {
+        case Error:
+            wcsncpy_s(level, 10, L"[ERROR]", 7);
+            toStderr = true;
+            break;
+        case Warn:
+            wcsncpy_s(level, 10, L"[WARN]", 6);
+            break;
+        case Info:
+            wcsncpy_s(level, 10, L"[INFO]", 6);
+            break;
+        }
+
+        struct tm newtime;
+        time_t aclock;
+
+        time(&aclock);   // Get time in seconds
+        localtime_s(&newtime, &aclock);   // Convert time to struct tm form 
+        char timeStr[64];
+        _snprintf_s(timeStr, 64, "%.2d/%.2d/%.2d %.2d:%.2d:%.2d",
+            newtime.tm_mon+1,newtime.tm_mday,newtime.tm_year % 100, 
+            newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
+
+        if (m_logFile) {
+            fwprintf(m_logFile, L"%S %s %s\n", timeStr, level, a_msg.data());
+            fflush(m_logFile);
+            if(toStderr)
+                fwprintf(stderr, L"%S %s %s\n", timeStr, level, a_msg.data());
+        }
+        else {
+            fwprintf(stderr, L"%S %s %s\n", timeStr, level, a_msg.data());
+        }
+    }
+};
+
 void 
 usage(const char *program) 
 {
@@ -53,6 +106,7 @@ usage(const char *program)
     fprintf(stderr, "\t-d outdir: Path to output directory\n");
     fprintf(stderr, "\t-v: Enable verbose mode to get more debug information\n");
     fprintf(stderr, "\t-V: Display the tool version\n");
+    fprintf(stderr, "\t-L: Supress stderr logs\n");
     exit(1);
 }
 
@@ -86,6 +140,7 @@ int main(int argc, char **argv1)
     TSK_TCHAR *pipeline_config = NULL;
     TSK_TCHAR *framework_config = NULL;
     std::wstring outDirPath;
+    bool suppressSTDERR = false;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -99,7 +154,7 @@ int main(int argc, char **argv1)
 #endif
 
     while ((ch =
-        GETOPT(argc, argv, _TSK_T("d:c:p:vV"))) > 0) {
+        GETOPT(argc, argv, _TSK_T("d:c:p:vVL"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -121,6 +176,9 @@ int main(int argc, char **argv1)
             break;
         case _TSK_T('d'):
             outDirPath.assign(OPTARG);
+            break;
+        case _TSK_T('L'):
+            suppressSTDERR = true;
             break;
         }
     }
@@ -148,7 +206,7 @@ int main(int argc, char **argv1)
             TskServices::Instance().setSystemProperties(*systemProperties);
         }
         else {
-            LOGINFO(L"No framework config file found");
+            fprintf(stderr, "No framework config file found");
         }
     }
 
@@ -159,12 +217,33 @@ int main(int argc, char **argv1)
         outDirPath.append(_TSK_T("_tsk_out"));
     }
     if (TSTAT(outDirPath.c_str(), &stat_buf) == 0) {
-        fprintf(stderr, "Output directory already exists (%"PRIttocTSK")\n", outDirPath.c_str());
+        std::wstringstream msg;
+        msg << L"Output directory already exists " << outDirPath.c_str();
+        LOGERROR(msg.str());
         return 1;
     }
 
     if (makeDir(outDirPath.c_str())) {
         return 1;
+    }
+
+    std::wstring logDir = outDirPath;
+    logDir.append(L"\\Logs");
+
+    if (makeDir(logDir.c_str())) {
+        return 1;
+    }
+
+    logDir.append(L"\\analyzeimg_log.txt");
+    if(suppressSTDERR){
+        Log * log = new Log();
+        log->open(logDir.c_str());
+        TskServices::Instance().setLog(*log);
+    }
+    else{
+        stderrLog * log = new stderrLog();
+        log->open(logDir.c_str());
+        TskServices::Instance().setLog(*log);
     }
 
     // @@@ Not UNIX-friendly
@@ -174,8 +253,9 @@ int main(int argc, char **argv1)
     std::auto_ptr<TskImgDB> pImgDB(NULL);
     pImgDB = std::auto_ptr<TskImgDB>(new TskImgDBSqlite(outDirPath.c_str()));
     if (pImgDB->initialize() != 0) {
-        fprintf(stderr, "Error initializing SQLite database\n");
-        tsk_error_print(stderr);
+        std::wstringstream msg;
+        msg << L"Error initializing SQLite database\n" << outDirPath.c_str();
+        LOGERROR(msg.str());
         return 1;
     }
 
@@ -197,8 +277,9 @@ int main(int argc, char **argv1)
     // Create an ImageFile and register it with the framework.
     TskImageFileTsk imageFileTsk;
     if (imageFileTsk.open(imagePath) != 0) {
-        fprintf(stderr, "Error opening image: %"PRIttocTSK"\n", imagePath);
-        tsk_error_print(stderr);
+        std::wstringstream msg;
+        msg << L"Error opening image: " << imagePath;
+        LOGERROR(msg.str());
         return 1;
     }
     TskServices::Instance().setImageFile(imageFileTsk);
@@ -213,8 +294,11 @@ int main(int argc, char **argv1)
         filePipeline = pipelineMgr.createPipeline(TskPipelineManager::FILE_ANALYSIS_PIPELINE);
     }
     catch (TskException &e ) {
-        fprintf(stderr, "Error creating file analysis pipeline\n");
-        std::cerr << e.message() << endl;
+        std::wstringstream msg;
+        std::wstring exceptionMsg;
+        Poco::UnicodeConverter::toUTF16(e.message(), exceptionMsg);
+        msg << L"Error creating file analysis pipeline\n" << exceptionMsg << endl;
+        LOGERROR(msg.str());
         filePipeline = NULL;
     }
 
@@ -223,21 +307,27 @@ int main(int argc, char **argv1)
         reportPipeline = pipelineMgr.createPipeline(TskPipelineManager::REPORTING_PIPELINE);
     }
     catch (TskException &e ) {
-        fprintf(stderr, "Error creating reporting pipeline\n");
-        std::cerr << e.message() << endl;
+        std::wstringstream msg;
+        std::wstring exceptionMsg;
+        Poco::UnicodeConverter::toUTF16(e.message(), exceptionMsg);
+        msg << L"Error creating reporting pipeline\n" << exceptionMsg << endl;
+        LOGERROR(msg.str());
         reportPipeline = NULL;
     }
 
     if ((filePipeline == NULL) && (reportPipeline == NULL)) {
-        fprintf(stderr, "No pipelines configured.  Stopping\n");
+        std::wstringstream msg;
+        msg << L"No pipelines configured.  Stopping\n" << endl;
+        LOGERROR(msg.str());
         exit(1);
     }
 
     // now we analyze the data.
     // Extract
     if (imageFileTsk.extractFiles() != 0) {
-        fprintf(stderr, "Error adding file system info to database\n");
-        tsk_error_print(stderr);
+        std::wstringstream msg;
+        msg << L"Error adding file system info to database\n" << endl;
+        LOGERROR(msg.str());
         return 1;
     }
 
@@ -250,7 +340,9 @@ int main(int argc, char **argv1)
         TskSchedulerQueue::task_struct *task;
         while ((task = scheduler.nextTask()) != NULL) {
             if (task->task != Scheduler::FileAnalysis)  {
-                fprintf(stderr, "WARNING: Skipping task %d\n", task->task);
+                std::wstringstream msg;
+                msg << L"WARNING: Skipping task " << task->task << endl;
+                LOGWARN(msg.str());
                 continue;
             }
             //printf("processing file: %d\n", (int)task->id);
@@ -268,12 +360,16 @@ int main(int argc, char **argv1)
             reportPipeline->run();
         }
         catch (...) {
-            fprintf(stderr, "Error running reporting pipeline\n");
+            std::wstringstream msg;
+            msg << L"Error running reporting pipeline\n" << endl;
+            LOGERROR(msg.str());
             return 1;
         }
     }
 
-    fprintf(stderr, "image analysis complete\n");
+    std::wstringstream msg;
+    msg << L"image analysis complete\n" << endl;
+    LOGINFO(msg.str());
     return 0;
 }
 
