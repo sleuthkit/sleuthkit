@@ -73,6 +73,9 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_CC, TskAttributeNames("TSK_EMAIL_CC", "E-Mail CC")));
     retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_BCC, TskAttributeNames("TSK_EMAIL_BCC", "E-Mail BCC")));
     retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_FROM, TskAttributeNames("TSK_EMAIL_FROM", "E-Mail From")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_CONTENT_PLAIN, TskAttributeNames("TSK_EMAIL_CONTENT_PLAIN", "Content (Plain Text)")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_CONTENT_HTML, TskAttributeNames("TSK_EMAIL_CONTENT_HTML", "Content (HTML)")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_CONTENT_RTF, TskAttributeNames("TSK_EMAIL_CONTENT_RTF", "Content (RTF)")));
     retval.insert(pair<int, TskAttributeNames>(TSK_MSG_ID, TskAttributeNames("TSK_MSG_ID", "Message ID")));
     retval.insert(pair<int, TskAttributeNames>(TSK_MSG_REPLY_ID, TskAttributeNames("TSK_MSG_REPLY_ID", "Message Reply ID")));
     retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_RCVD, TskAttributeNames("TSK_DATETIME_RCVD", "Date Received")));

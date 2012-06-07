@@ -120,20 +120,23 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_EMAIL_CC = 42, ///< String of an e-mail address that a message is being sent to as a cc:.
     TSK_EMAIL_BCC = 43, ///< String of an e-mail address that a message is being sent to as a bcc:.
     TSK_EMAIL_FROM = 44, ///< String of an e-mail address that a message is being sent from.
-    TSK_MSG_ID = 45, ///< String of a message ID (such as one of an e-mail message)
-    TSK_MSG_REPLY_ID = 46, ///< String of a message ID that a given message is in response to (such as one of an e-mail message) 
-    TSK_DATETIME_RCVD = 47, ///< Time in Unix epoch that something was received.
-    TSK_DATETIME_SENT = 48, ///< Time in Unix epoch that something was sent.
-    TSK_SUBJECT = 49, ///< String of a subject (such as one of an e-mail message)
-    TSK_TITLE = 50, ///< String of a title (such as a webpage or other document)
-    TSK_GEO_LATITUDE = 51, ///< Floating point of latitude coordinate.  Should be in WGS84. Positive North, Negative South. 
-    TSK_GEO_LONGITUDE = 52, ///< Floating point of longitude coordinate.  Should be in WGS84.  Positive East, Negative West.
-    TSK_GEO_VELOCITY = 53, ///< Floating point of velocity in geo coordinate in meters per second.
-    TSK_GEO_ALTITUDE = 54, ///< Floating point of altitude in geo coordinate in meters.
-    TSK_GEO_BEARING = 55, ///< Floating point of bearing in geo coordinate in true degrees.
-    TSK_GEO_HPRECISION = 56, ///< Floating point of horizontal precision in geo coordinate in meters.
-    TSK_GEO_VPRECISION = 57, ///< Floating point of vertical precision in geo coordinate in meters.
-    TSK_GEO_MAPDATUM = 58, ///< String of map datum used for coordinates if not WGS84.
+    TSK_EMAIL_CONTENT_PLAIN = 45, ///< String of e-mail message body in plain text
+    TSK_EMAIL_CONTENT_HTML = 46, ///< STring of e-mail message body in HTML
+    TSK_EMAIL_CONTENT_RTF = 47, ///< STring of e-mail message body in RTF
+    TSK_MSG_ID = 48, ///< String of a message ID (such as one of an e-mail message)
+    TSK_MSG_REPLY_ID = 49, ///< String of a message ID that a given message is in response to (such as one of an e-mail message) 
+    TSK_DATETIME_RCVD = 50, ///< Time in Unix epoch that something was received.
+    TSK_DATETIME_SENT = 51, ///< Time in Unix epoch that something was sent.
+    TSK_SUBJECT = 52, ///< String of a subject (such as one of an e-mail message)
+    TSK_TITLE = 53, ///< String of a title (such as a webpage or other document)
+    TSK_GEO_LATITUDE = 54, ///< Floating point of latitude coordinate.  Should be in WGS84. Positive North, Negative South. 
+    TSK_GEO_LONGITUDE = 55, ///< Floating point of longitude coordinate.  Should be in WGS84.  Positive East, Negative West.
+    TSK_GEO_VELOCITY = 56, ///< Floating point of velocity in geo coordinate in meters per second.
+    TSK_GEO_ALTITUDE = 57, ///< Floating point of altitude in geo coordinate in meters.
+    TSK_GEO_BEARING = 58, ///< Floating point of bearing in geo coordinate in true degrees.
+    TSK_GEO_HPRECISION = 59, ///< Floating point of horizontal precision in geo coordinate in meters.
+    TSK_GEO_VPRECISION = 60, ///< Floating point of vertical precision in geo coordinate in meters.
+    TSK_GEO_MAPDATUM = 61, ///< String of map datum used for coordinates if not WGS84.
 
     /* SEE ABOVE: 
      * - KEEP JAVA CODE IN SYNC 
