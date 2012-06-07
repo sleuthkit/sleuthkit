@@ -100,7 +100,6 @@ public class BlackboardAttribute {
 		TSK_VALUE(6, "TSK_VALUE", "Value"),
 		TSK_FLAG(7, "TSK_FLAG", "Flag"),
 		TSK_PATH(8, "TSK_PATH", "Path"),
-		TSK_GEO(9, "TSK_GEO", "Geo"),
 		TSK_KEYWORD(10, "TSK_KEYWORD", "Keyword"),
 		TSK_KEYWORD_REGEXP(11, "TSK_KEYWORD_REGEXP", "Keyword Regular Expression"),
 		TSK_KEYWORD_PREVIEW(12, "TSK_KEYWORD_PREVIEW", "Keyword Preview"),
@@ -131,9 +130,27 @@ public class BlackboardAttribute {
 		TSK_SET_NAME(37, "TSK_SET_NAME", "Set Name"),
 		TSK_ENCRYPTION_DETECTED(38, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"),
 		TSK_MALWARE_DETECTED(39, "TSK_MALWARE_DETECTED", "Malware Detected"),
-		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED", "Steganography Detected");
-		
+		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED", "Steganography Detected"),
+		TSK_EMAIL_TO(41,"TSK_EMAIL_TO","E-Mail To"),
+		TSK_EMAIL_CC(42,"TSK_EMAIL_CC","E-Mail CC"),
+		TSK_EMAIL_BCC(43,"TSK_EMAIL_BCC","E-Mail BCC"),
+		TSK_EMAIL_FROM(44,"TSK_EMAIL_FROM","E-Mail From"),
+		TSK_MSG_ID(45,"TSK_MSG_ID","Message ID"),
+		TSK_MSG_REPLY_ID(46,"TSK_MSG_REPLY_ID","Message Reply ID"),
+		TSK_DATETIME_RCVD(47, "TSK_DATETIME_RCVD", "Date Received"),
+		TSK_DATETIME_SENT(48, "TSK_DATETIME_SENT", "Date Sent"),
+		TSK_SUBJECT(49, "TSK_SUBJECT", "Subject"),
+		TSK_TITLE(50, "TSK_TITLE", "Title"),
+		TSK_GEO_LATITUDE(51, "TSK_GEO_LATITUDE", "Latitude"),
+		TSK_GEO_LONGITUDE(52, "TSK_GEO_LONGITUDE", "Longitude"),
+		TSK_GEO_VELOCITY(53, "TSK_GEO_VELOCITY", "Velocity"),
+		TSK_GEO_ALTITUDE(54, "TSK_GEO_ALTITUDE", "Altitude"),
+		TSK_GEO_BEARING(55, "TSK_GEO_BEARING", "Bearing"),
+		TSK_GEO_HPRECISION(56, "TSK_GEO_HPRECISION", "Horizontal Precision"),
+		TSK_GEO_VPRECISION(57, "TSK_GEO_VPRECISION", "Vertical Precision"),
+		TSK_GEO_MAPDATUM(58, "TSK_GEO_MAPDATUM", "Map Datum");
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
+		
 		private String label;
 		private int typeID;
 		private String displayName;

@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.lang.String;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -52,7 +51,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT", "Keyword Hits"),
 		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", "Hashset Hits"),
 		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Device Attached"),
-		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", "Interesting File");
+		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", "Interesting File"),
+		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", "E-Mail Message");
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
 		private int typeID;
