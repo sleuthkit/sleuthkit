@@ -317,7 +317,7 @@ tsk_fs_time_to_str(time_t time, char buf[128])
  * @returns Pointer to buffer that was passed in.
  */
 char *
-tsk_fs_time_to_str_subsecs(time_t time, unsigned int subsecs, char *buf)
+tsk_fs_time_to_str_subsecs(time_t time, unsigned int subsecs, char buf[128])
 {
     buf[0] = '\0';
     if (time <= 0) {
