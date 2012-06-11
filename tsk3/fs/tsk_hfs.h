@@ -143,6 +143,17 @@
 
 #define HFS_HARDLINK_FILE_TYPE 0x686C6E6B       /* hlnk */
 #define HFS_HARDLINK_FILE_CREATOR 0x6866732B    /* hfs+ */
+#define HFS_LINKDIR_FILE_TYPE 0x66647270        /* fdrp */
+#define HFS_LINKDIR_FILE_CREATOR 0x4D414353     /* MACS */
+
+#define UTF16_NULL 0x0000
+#define UTF16_NULL_REPLACE 0x005e
+#define UTF16_SLASH 0x002f
+#define UTF16_COLON 0x003a
+#define UTF16_LEAST_PRINTABLE 0x0020
+#define UTF8_NULL_REPLACE "^"
+//#define UTF8_NULL_REPLACE "\xef\xbf\xbd"
+
 
 #define HFS_CATALOGNAME "$CatalogFile"
 #define HFS_EXTENTSNAME "$ExtentsFile"
@@ -629,6 +640,18 @@ typedef struct {
     hfs_btree_header_record extents_header;
 
     TSK_OFF_T hfs_wrapper_offset;       /* byte offset of this FS within an HFS wrapper */
+
+    /* Creation times needed for hard link recognition */
+    time_t root_crtime;  // creation time of the root directory, cnid = 2
+    time_t meta_crtime;   // creation time of the dir with path /^^^^HFS+ Private Data       (those are nulls)
+    time_t metadir_crtime; // creation time of dir with path /.HFS+ Private Directory Data^  (that's a carriage return)
+    unsigned char has_root_crtime;  // Boolean -- are the crtime fields set?
+    unsigned char has_meta_crtime;
+    unsigned char has_meta_dir_crtime;
+
+    TSK_INUM_T meta_inum;
+    TSK_INUM_T meta_dir_inum;
+
 } HFS_INFO;
 
 typedef struct {
@@ -722,6 +745,11 @@ extern uint8_t hfs_jblk_walk(TSK_FS_INFO *, TSK_DADDR_T, TSK_DADDR_T, int,
 extern uint8_t hfs_jentry_walk(TSK_FS_INFO *, int, TSK_FS_JENTRY_WALK_CB,
     void *);
 
+extern TSK_INUM_T hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * entry, unsigned char * is_error);
+extern uint8_t hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
+		unsigned char follow_hard_link);
+extern void error_returned(char *errstr, ...);
+extern void error_detected(uint32_t errnum, char *errstr, ...);
 
 typedef uint8_t(*TSK_HFS_BTREE_CB) (HFS_INFO *, int8_t level_type,
     const void *targ_key, const hfs_btree_key_cat * cur_key,

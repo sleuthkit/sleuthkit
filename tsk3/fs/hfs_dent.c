@@ -73,11 +73,6 @@
 #include "tsk_fs_i.h"
 #include "tsk_hfs.h"
 
-#define UTF16_NULL 0x0000
-#define UTF16_NULL_REPLACE 0x005e
-#define UTF16_SLASH 0x002f
-#define UTF16_COLON 0x003a
-#define UTF16_LEAST_PRINTABLE 0x0020
 
 /* convert HFS+'s UTF16 to UTF8
  * replaces null characters with another character (0xfffd)
@@ -290,11 +285,37 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
         /* This is a normal file in the folder */
         else if (rec_type == HFS_FILE_RECORD) {
             hfs_file *file = (hfs_file *) & rec_buf[rec_off2];
-            info->fs_name->meta_addr =
-                tsk_getu32(hfs->fs_info.endian, file->std.cnid);
-            info->fs_name->type =
-                hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
-                    file->std.perm.mode));
+            // This could be a hard link.  We need to test this CNID, and follow it if necessary.
+            unsigned char is_err;
+            TSK_INUM_T file_cnid = tsk_getu32(hfs->fs_info.endian, file->std.cnid);
+            TSK_INUM_T target_cnid =
+            		hfs_follow_hard_link(hfs, file, &is_err);
+            if(is_err > 1) {
+            	error_returned("hfs_dir_open_meta_cb: trying to follow a possible hard link in the directory");
+            	return HFS_BTREE_CB_ERR;
+            }
+            if(target_cnid != file_cnid) {
+            	// This is a hard link.  We need to fill in the name->type and name->meta_addr from the target
+            	info->fs_name->meta_addr = target_cnid;
+            	// get the Catalog entry for the target CNID
+            	HFS_ENTRY entry;
+            	uint8_t lkup = hfs_cat_file_lookup(hfs, target_cnid, &entry,
+            			FALSE);
+            	if(lkup != 0) {
+            		error_returned("hfs_dir_open_meta_cb: retrieving the catalog entry for the target of a hard link");
+            		return HFS_BTREE_CB_ERR;
+            	}
+            	info->fs_name->type =
+            			hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
+            					entry.cat.std.perm.mode));
+            } else {
+            	// This is NOT a hard link.
+            	info->fs_name->meta_addr =
+            			tsk_getu32(hfs->fs_info.endian, file->std.cnid);
+            	info->fs_name->type =
+            			hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
+            					file->std.perm.mode));
+            }
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
             if (hfs_UTF16toUTF8(fs, (uint8_t *) cur_key->name.unicode,
                     tsk_getu16(hfs->fs_info.endian, cur_key->name.length),
