@@ -130,11 +130,7 @@ public class VolumeSystem extends AbstractContent {
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		try {
-			return getSleuthkitCase().getVolumeSystemChildren(this);
-		} catch (Exception ex) {
-			throw new TskCoreException("Error getting VolumeSystem children.", ex);
-		}
+		return getSleuthkitCase().getVolumeSystemChildren(this);
 	}
 	
 	@Override

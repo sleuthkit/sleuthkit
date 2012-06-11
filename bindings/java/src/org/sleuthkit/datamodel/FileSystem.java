@@ -182,9 +182,7 @@ public class FileSystem extends AbstractContent{
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		List<Content> children = new ArrayList<Content>();
-		children.addAll(getSleuthkitCase().getFileSystemChildren(this));
-		return children;
+		return new ArrayList<Content>(getSleuthkitCase().getFileSystemChildren(this));
 	}
 
 	@Override
