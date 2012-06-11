@@ -143,8 +143,8 @@ typedef enum TSK_ATTRIBUTE_TYPE {
      * - UPDATE map in TskBlackBoard.cpp too */
 };
 
-/*
- * class to store attibute type names in the id to name map
+/**
+ * Class used to store the pair of type and display names of attributes.
  */
 class TskAttributeNames{
 public:
@@ -155,8 +155,8 @@ public:
         displayName(display){}
 };
 
-/*
- * class to store artifact type names in the id to name map
+/**
+ * Class used to store the pair of type and display names of artifacts.
  */
 class TskArtifactNames{
 public:
