@@ -114,7 +114,16 @@ public:
      * @returns Original path of the file.
      */
     std::string getFullPath() const;
-
+    
+    /**
+     * Get the path of the file in the disk image.  This
+     * will not include the file name but will include 
+     * either information about the file system or volume that
+     * it was found in or an indicator that the file was produced
+     * by carving. 
+     * @returns Original path of the file.
+     */
+    std::string getUniquePath() const;
 
     /**
      * Get the fully qualified path of where this file should
