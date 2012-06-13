@@ -347,7 +347,6 @@ AC_CONFIG_FILES([Makefile
                  tools/timeline/Makefile
                  tools/fiwalk/Makefile
 		 tools/fiwalk/src/Makefile
-		 tools/fiwalk/python/Makefile
 		 tools/fiwalk/plugins/Makefile
                  tests/Makefile
                  samples/Makefile

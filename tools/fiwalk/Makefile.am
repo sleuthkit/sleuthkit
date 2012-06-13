@@ -1,4 +1,4 @@
-SUBDIRS = src plugins python
+SUBDIRS = src plugins
 
 RELEASE_USER = simsong@
 RELEASE_HOST = www.afflib.org
