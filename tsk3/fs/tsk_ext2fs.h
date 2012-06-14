@@ -534,6 +534,13 @@ extern "C" {
 
 #define EXT2_JMAGIC	0xC03b3998
 
+/*JBD2 Feature Flags */
+#define JBD2_FEATURE_COMPAT_CHECKSUM        0x00000001
+
+#define JBD2_FEATURE_INCOMPAT_REVOKE        0x00000001
+#define JBD2_FEATURE_INCOMPAT_64BIT         0x00000002
+#define JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT  0x00000004
+
     typedef struct {
         uint8_t magic[4];
         uint8_t entrytype[4];
@@ -574,6 +581,25 @@ extern "C" {
         uint8_t entry_type[4];
         uint8_t entry_seq[4];
     } ext2fs_journ_head;
+
+/* JBD2 Checksum types */
+#define JBD2_CRC32_CHKSUM   1
+#define JBD2_MD5_CHKSUM     2
+#define JBD2_SHA1_CHKSUM    3
+
+#define JBD2_CRC32_CHKSUM_SIZE  4
+#define JBD2_CHECKSUM_BYTES (32/ sizeof(unsigned int))
+
+/* Header for ext4 commit blocks */
+    typedef struct {
+        ext2fs_journ_head c_header;
+        uint8_t chksum_type;
+        uint8_t chksum_size;
+        uint8_t padding[2];
+        uint8_t chksum[4*JBD2_CHECKSUM_BYTES];
+        uint8_t commit_sec[8];
+        uint8_t commit_nsec[4];
+    } ext4fs_journ_commit_head;
 
 
 /* dentry flags */

@@ -139,6 +139,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
     TSK_FS_LOAD_FILE buf1;
     TSK_DADDR_T i;
     int b_desc_seen = 0;
+    ext2fs_journ_sb * journ_sb = NULL;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -187,7 +188,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
     /* Process the journal 
      * Cycle through each block
      */
-    tsk_printf("JBlk\tDescriptrion\n");
+    tsk_printf("JBlk\tDescription\n");
 
     /* Note that 'i' is incremented when we find a descriptor block and
      * process its contents. */
@@ -325,6 +326,20 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
             (big_tsk_getu32(head->entry_type) == EXT2_J_ETYPE_SB2)) {
             tsk_printf("%" PRIuDADDR ":\tSuperblock (seq: %" PRIu32 ")\n",
                 i, big_tsk_getu32(head->entry_seq));
+            journ_sb = head;
+            tsk_printf("sb version: %d\n", big_tsk_getu32(head->entry_type));
+            tsk_printf("sb version: %d\n", big_tsk_getu32(journ_sb->entrytype));
+            tsk_printf("sb feature_compat flags 0x%08X\n", big_tsk_getu32(journ_sb->feature_compat));
+            if(big_tsk_getu32(journ_sb->feature_compat) && JBD2_FEATURE_COMPAT_CHECKSUM)
+                tsk_printf("\tJOURNAL_CHECKSUMS\n");
+            tsk_printf("sb feature_incompat flags 0x%08X\n", big_tsk_getu32(journ_sb->feature_incompat));
+            if(big_tsk_getu32(journ_sb->feature_incompat) && JBD2_FEATURE_INCOMPAT_REVOKE) 
+                tsk_printf("\tJOURNAL_REVOKE\n");
+            if(big_tsk_getu32(journ_sb->feature_incompat) && JBD2_FEATURE_INCOMPAT_64BIT) 
+                tsk_printf("\tJOURNAL_64BIT\n");
+            if(big_tsk_getu32(journ_sb->feature_incompat) && JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT) 
+                tsk_printf("\tJOURNAL_ASYNC_COMMIT\n");
+            tsk_printf("sb feature_ro_incompat flags 0x%08X\n", big_tsk_getu32(journ_sb->feature_ro_incompat));
         }
 
         /* Revoke Block */
@@ -343,6 +358,27 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
                     || (big_tsk_getu32(head->entry_seq) <
                         jinfo->start_seq)) ? "Unallocated " : "Allocated ",
                 big_tsk_getu32(head->entry_seq));
+            ext4fs_journ_commit_head *commit_head=head;
+            tsk_printf("commit seq %" PRIu32 "\n", big_tsk_getu32(commit_head->c_header.entry_seq));
+            tsk_printf("commit checksum_type %d \n", commit_head->chksum_type);
+            switch(commit_head->chksum_type){
+                case JBD2_CRC32_CHKSUM:
+                    tsk_printf("\tCRC32\n");
+                    break;
+                case JBD2_MD5_CHKSUM:
+                    tsk_printf("\tMD5\n");
+                    break;
+                case JBD2_SHA1_CHKSUM:
+                    tsk_printf("\tSHA1\n");
+                    break;
+                default:
+                    tsk_printf("\tChecksum type unknown\n");
+                    break;
+            }
+            tsk_printf("commit checksum_size %d \n", commit_head->chksum_size);
+            tsk_printf("commit chksum 0x%08X\n", big_tsk_getu32(commit_head->chksum));
+            tsk_printf("commit sec 0x%08llX\n", tsk_getu64( TSK_BIG_ENDIAN,commit_head->commit_sec));
+            tsk_printf("commit nsec 0x%08X\n", tsk_getu32( TSK_BIG_ENDIAN,commit_head->commit_nsec));
         }
 
         /* The descriptor describes the FS blocks that follow it */
