@@ -86,8 +86,16 @@ public class SleuthkitJNI {
 		catch (UnsatisfiedLinkError e) {
 			// @@@ LOG??
 		}
-		System.loadLibrary("libtsk_jni");
-		//System.load("/Users/brianc/proj/github/bindings/java/jni/.libs/libtsk_jni.0.dylib");
+		
+		/* We should rename the Windows dll, to remove the lib prefix.
+		 * First try windows version of the name and then try Unix-style.
+		 */
+		try {
+			System.loadLibrary("libtsk_jni");
+		}
+		catch (UnsatisfiedLinkError e) {
+			System.loadLibrary("tsk_jni");
+		} 
 	}
 
 
