@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 
 /**
  * Core exception that is thrown from Sleuthkit classes.
+ * Indicates a critical error within TSK
  */
 public class TskCoreException extends TskException{
     private static final long serialVersionUID = 123049876L;

@@ -21,7 +21,8 @@ package org.sleuthkit.datamodel;
 import java.util.ArrayList;
 
 /**
- * Implements some general methods from the Content interface. 
+ * Implements some general methods from the Content interface 
+ * common across many content sub types
  */
 public abstract class AbstractContent implements Content {
 
@@ -35,16 +36,28 @@ public abstract class AbstractContent implements Content {
         this.name = name;
     }
     
+	/**
+	 * Gets name associated with the content object
+	 * @return the content name 
+	 */
     @Override
     public String getName() {
         return this.name;
     }
     
+	/**
+	 * Gets unique id associated with the content object
+	 * @return the content id
+	 */
     @Override
     public long getId() {
         return this.obj_id;
     }
     
+	/**
+	 * Gets handle of SleuthkitCase to which this content belongs
+	 * @return the case handle
+	 */
     public SleuthkitCase getSleuthkitCase() {
         return db;
     }
@@ -71,27 +84,66 @@ public abstract class AbstractContent implements Content {
         return hash;
     }
     
+	/**
+	 * Creates new blackboard artifact for this content
+	 * @param artifactTypeID type id of the artifact to create (refer to BlackboardArtifact.ARTIFACT_TYPE)
+	 * @return the artifact created
+	 */
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException{
 		return db.newBlackboardArtifact(artifactTypeID, obj_id);
-}
+	}
+	
+	
+	/**
+	 * Creates new blackboard artifact for this content
+	 * @param type type of the artifact to create
+	 * @return the artifact created
+	 */
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException{
 		return db.newBlackboardArtifact(type, obj_id);
 	}
 	
+	/**
+	 * Gets all blackboard artifacts (of a given type), associated with this content object
+	 * @param artifactTypeName type name of the artifacts to get
+	 * @return list of artifacts for this content, matching the type
+	 * @throws TskCoreException exception thrown if a critical error occurs in tsk core
+	 */
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException{
 		return db.getBlackboardArtifacts(artifactTypeName, obj_id);
 	}
+	
+	/**
+	 * Gets all blackboard artifacts (of a given type), associated with this content object
+	 * 
+	 * @param artifactTypeID type of the artifacts to get, refer to BlackboardArtifact.ARTIFACT_TYPE
+	 * @return list of artifacts for this content, matching the type
+	 * @throws TskCoreException exception thrown if a critical error occurs in tsk core
+	 */
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException{
 		return db.getBlackboardArtifacts(artifactTypeID, obj_id);
 	}
+	
+	/**
+	 * Gets all blackboard artifacts (of a given type), associated with this content object
+	 * @param type type of the artifacts to get
+	 * @return list of artifacts for this content, matching the type
+	 * @throws TskCoreException exception thrown if a critical error occurs in tsk core
+	 */
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException{
 		return db.getBlackboardArtifacts(type, obj_id);
 	}
+	
+	/**
+	 * Gets all blackboard artifacts associated with this content object
+	 * @return list of artifacts for this content, matching the type
+	 * @throws TskCoreException exception thrown if a critical error occurs in tsk core
+	 */
 	@Override
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException{
 		return db.getMatchingArtifacts("WHERE obj_id = " + obj_id);

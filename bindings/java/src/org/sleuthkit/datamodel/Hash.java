@@ -26,6 +26,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.InputStream;
 
+
+/**
+ * Utility to calculate a hash for FsContent and store in tsk database
+ */
 public class Hash {
 
     private final static int BUFFER_SIZE = 8192;

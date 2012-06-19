@@ -19,21 +19,24 @@
 package org.sleuthkit.datamodel;
 
 import java.util.List;
-import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 
 /**
- * Represents a volume in a VolumeSystem.
+ * Represents a volume in a VolumeSystem, object stored in tsk_vs_parts table.
  * Populated based on data in database.
  */
-public class Volume extends AbstractContent{
-	// @@@ We should mark these as private and comment somewhere what the units are (bytes, sectors, etc.)
-	long addr, start, length, flags;
-	String desc;
+public class Volume extends AbstractContent {
+	// @@@ We should comment somewhere what the units are (bytes, sectors, etc.)
+
+	private long addr;
+	private long start; //in sectors, relative to volume system start
+	private long length; //in sectors
+	private long flags;
+	private String desc;
 	private VolumeSystem parentVs;
 	private long volumeHandle = 0;
-    
+
 	/**
-	 * Constructor most inputs are from the database
+	 * Constructor to create the data object mapped from tsk_vs_parts entry
 	 * @param db database object
 	 * @param obj_id 
 	 * @param addr
@@ -43,15 +46,14 @@ public class Volume extends AbstractContent{
 	 * @param desc  
 	 */
 	protected Volume(SleuthkitCase db, long obj_id, long addr, long start, long length, long flags, String desc) {
-		super(db, obj_id, "vol"+Long.toString(addr));
+		super(db, obj_id, "vol" + Long.toString(addr));
 		this.addr = addr;
 		this.start = start;
 		this.length = length;
 		this.flags = flags;
-		if(!desc.equals("")){
+		if (!desc.equals("")) {
 			this.desc = desc;
-		}
-		else{
+		} else {
 			this.desc = "Unknown";
 		}
 	}
@@ -60,10 +62,9 @@ public class Volume extends AbstractContent{
 	 * set the parent volume system. called by the parent on creation
 	 * @param parent parent volume system
 	 */
-	protected void setParent(VolumeSystem parent){
+	protected void setParent(VolumeSystem parent) {
 		parentVs = parent;
 	}
-
 
 	/**
 	 * read from this volume
@@ -71,44 +72,47 @@ public class Volume extends AbstractContent{
 	 * @param offset in bytes
 	 * @param len in bytes
 	 * @return number bytes read, or -1 if error
-	 * @throws TskException
+	 * @throws TskCoreException exception thrown if critical error occurs within TSK core
 	 */
-    @Override
+	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		// read from the volume
-		if(volumeHandle == 0){
+		if (volumeHandle == 0) {
 			volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
-    }
+		}
 		return SleuthkitJNI.readVsPart(volumeHandle, buf, offset, len);
 	}
 
-
-    @Override
-    public long getSize() {
+	/**
+	 * Get size of the volume 
+	 * @return size of the volume in sectors
+	 */
+	@Override
+	public long getSize() {
 		// size of the volume
 		return length;
-    }
+	}
 
 	/**
 	 * get the parent volume system
+	 * 
 	 * @return parent volume system object
 	 */
-	public VolumeSystem getParent(){
+	public VolumeSystem getParent() {
 		return parentVs;
 	}
 
 	//methods get exact data from database. could be manipulated to get more
 	//meaningful data.
-
-	
-	
 	/**
 	 * get the partition address
+	 * 
 	 * @return partition address in volume system
 	 */
 	public long getAddr() {
 		return addr;
 	}
+
 	/**
 	 * get the starting byte offset
 	 * @return starting byte offset
@@ -116,6 +120,7 @@ public class Volume extends AbstractContent{
 	public long getStart() {
 		return start;
 	}
+
 	/**
 	 * get the length
 	 * @return length
@@ -123,6 +128,7 @@ public class Volume extends AbstractContent{
 	public long getLength() {
 		return length;
 	}
+
 	/**
 	 * get the flags
 	 * @return flags
@@ -130,6 +136,7 @@ public class Volume extends AbstractContent{
 	public long getFlags() {
 		return flags;
 	}
+
 	/**
 	 * get the flags as String
 	 * @return flags as String
@@ -142,36 +149,51 @@ public class Volume extends AbstractContent{
 	 * get the description
 	 * @return description
 	 */
-	public String getDescription(){
+	public String getDescription() {
 		return desc;
 	}
 
 	// ----- Here all the methods for vs flags conversion / mapping -----
-	public static String vsFlagToValue(long vsFlag){
+	/**
+	 * Convert volume type flag to string 
+	 * @param vsFlag long flag to convert
+	 * @return string representation
+	 */
+	public static String vsFlagToValue(long vsFlag) {
 
 		String result = "";
 
-		for (TskData.TSK_VS_PART_FLAG_ENUM flag : TskData.TSK_VS_PART_FLAG_ENUM.values()){
-			if(flag.getVsFlag() == vsFlag){
+		for (TskData.TSK_VS_PART_FLAG_ENUM flag : TskData.TSK_VS_PART_FLAG_ENUM.values()) {
+			if (flag.getVsFlag() == vsFlag) {
 				result = flag.toString();
 			}
 		}
 		return result;
 	}
 
-	public static long valueToVsFlag(String vsFlag){
+	/**
+	 * Convert volume flag string to long
+	 * @param vsFlag string representation of the flag
+	 * @return long representation of the flag
+	 */
+	public static long valueToVsFlag(String vsFlag) {
 
 		long result = 0;
 
-		for (TskData.TSK_VS_PART_FLAG_ENUM flag : TskData.TSK_VS_PART_FLAG_ENUM.values()){
-			if(flag.toString().equals(vsFlag)){
+		for (TskData.TSK_VS_PART_FLAG_ENUM flag : TskData.TSK_VS_PART_FLAG_ENUM.values()) {
+			if (flag.toString().equals(vsFlag)) {
 				result = flag.getVsFlag();
 			}
 		}
 		return result;
 	}
 
-	public static String vsFlagToString(long vsFlag){
+	/**
+	 * Convert long representation of the flag to user readable format
+	 * @param vsFlag long repr. of the flag
+	 * @return user readable string representation
+	 */
+	public static String vsFlagToString(long vsFlag) {
 
 		String result = "";
 
@@ -182,10 +204,10 @@ public class Volume extends AbstractContent{
 		long metaFlag = TskData.TSK_VS_PART_FLAG_ENUM.TSK_VS_PART_FLAG_META.getVsFlag();
 		long allFlag = TskData.TSK_VS_PART_FLAG_ENUM.TSK_VS_PART_FLAG_ALL.getVsFlag();
 
-		if((vsFlag & allocFlag) == allocFlag){
+		if ((vsFlag & allocFlag) == allocFlag) {
 			result = "Allocated";
 		}
-		if((vsFlag & unallocFlag) == unallocFlag){
+		if ((vsFlag & unallocFlag) == unallocFlag) {
 			result = "Unallocated";
 		}
 		// ... add more code here if needed
@@ -193,24 +215,49 @@ public class Volume extends AbstractContent{
 		return result;
 	}
 
-    @Override
+	
+	/**
+     * Visitor pattern support for sleuthkit item objects 
+	 * (tsk database objects, such as content and artifacts)
+     * @param <T> visitor algorithm return type
+     * @param v visitor supplying an algorithm to run on the sleuthkit item object
+     * @return visitor return value resulting from running the algorithm
+     */
+	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
-    }
+	}
 
-    @Override
+	/**
+	 * Visitor pattern support for content objects only
+	 * 
+	 * @param <T> visitor algorithm return type
+	 * @param v visitor supplying an algorithm to run on the content object
+	 * @return visitor return value resulting from running the algorithm
+	 */
+	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
-    }
+	}
 
-    @Override
+	/**
+	 * Gets child content objects of this volume
+	 * 
+	 * @return list of child content objects
+	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core
+	 */
+	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getVolumeChildren(this);
-    }
+	}
 
-    @Override
+	/**
+	 * get the image this volume belongs to
+	 * @return the parent image object
+	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core 
+	 */
+	@Override
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
-    }
-    
+	}
 }

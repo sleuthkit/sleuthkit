@@ -22,8 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
- * @author dfickling
+ * Representation of Directory object, stored in tsk_files table.
+ * Directory can have other content children associated with it.
+ * There are many similarities to a File otherwise, which are defined in the parent FsContent class.
  */
 public class Directory extends FsContent{
 
@@ -48,16 +49,34 @@ public class Directory extends FsContent{
         return true;
     }
 
+	/**
+     * Visitor pattern support for sleuthkit item objects 
+	 * (tsk database objects, such as content and artifacts)
+     * @param <T> visitor algorithm return type
+     * @param v visitor supplying an algorithm to run on the sleuthkit item object
+     * @return visitor return value resulting from running the algorithm
+     */
     @Override
     public <T> T accept(SleuthkitItemVisitor<T> v) {
         return v.visit(this);
     }
 
+	/**
+     * Visitor pattern support for content objects only
+     * @param <T> visitor algorithm return type
+     * @param v visitor supplying an algorithm to run on the content object
+     * @return visitor return value resulting from running the algorithm
+     */
     @Override
     public <T> T accept(ContentVisitor<T> v) {
         return v.visit(this);
     }
 
+	/**
+	 * Gets child content objects of this directory
+	 * @return list of child content objects
+	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core
+	 */
     @Override
     public List<Content> getChildren() throws TskCoreException {
 		return new ArrayList<Content>(getSleuthkitCase().getDirectoryChildren(this));

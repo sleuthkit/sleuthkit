@@ -45,8 +45,12 @@ import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 
 /**
- * Highest level object in Sleuthkit hierarchy that represents the database.
- * Stores one or more Images and children data.
+ * Represents the case database and abstracts out the most commonly used
+ * database operations.
+ * 
+ * Also provides case database-level lock that protect access to the database resource.
+ * The lock is available outside of the class to synchronize certain actions (such as addition of an image)
+ * with concurrent database writes, for database implementations (such as SQLite) that might need it.
  */
 public class SleuthkitCase {
 
@@ -61,10 +65,10 @@ public class SleuthkitCase {
     private static final Lock caseDbLock = rwLock.writeLock(); //use the same lock for reads and writes
 
     /**
-     * constructor
+     * constructor (private) - client uses openCase() and newCase() instead
      * @param dbPath path to the database
-     * @throws SQLException
-     * @throws ClassNotFoundException
+     * @throws SQLException thrown if SQL error occurred
+     * @throws ClassNotFoundException thrown if database driver could not be loaded
      */
     private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException, TskCoreException {
         Class.forName("org.sqlite.JDBC");
@@ -122,7 +126,7 @@ public class SleuthkitCase {
     }
 
     /**
-     * Open an existing case.
+     * Open an existing case
      * @param dbPath Path to SQLite database.
      * @return Case object
      */
@@ -215,6 +219,10 @@ public class SleuthkitCase {
         return this.caseHandle.addKnownBadDatabase(path);
     }
 
+	/**
+	 * Reset currently used lookup databases on that case object
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
+	 */
     public void clearLookupDatabases() throws TskCoreException {
         this.caseHandle.clearLookupDatabases();
     }
@@ -222,6 +230,7 @@ public class SleuthkitCase {
     /**
      * Get the list of root objects, meaning image files or local files.
      * @return list of content objects.
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public List<Content> getRootObjects() throws TskCoreException {
         Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
@@ -261,6 +270,7 @@ public class SleuthkitCase {
      * Get all blackboard artifacts of a given type
      * @param artifactTypeID artifact type id (must exist in database)
      * @return list of blackboard artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID) throws TskCoreException {
         String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
@@ -288,6 +298,7 @@ public class SleuthkitCase {
     /**
      * Get all blackboard artifact types
      * @return list of blackboard artifact types
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypes() throws TskCoreException {
         dbReadLock();
@@ -311,12 +322,12 @@ public class SleuthkitCase {
     }
 
     /**
-     * helper method to get all artifacts matching the type id name and object id
+     * Helper method to get all artifacts matching the type id name and object id
      * @param artifactTypeID artifact type id
      * @param artifactTypeName artifact type name
      * @param obj_id associated object id
      * @return list of blackboard artifacts
-     * @throws TskException
+     * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     private ArrayList<BlackboardArtifact> getArtifactsHelper(int artifactTypeID, String artifactTypeName, long obj_id) throws TskCoreException {
         dbReadLock();
@@ -343,7 +354,7 @@ public class SleuthkitCase {
      * @param artifactTypeID artifact type id
      * @param artifactTypeName artifact type name
      * @return list of blackboard artifacts
-     * @throws TskException
+     * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     private ArrayList<BlackboardArtifact> getArtifactsHelper(int artifactTypeID, String artifactTypeName) throws TskCoreException {
         dbReadLock();
@@ -370,6 +381,7 @@ public class SleuthkitCase {
      * @param artifactTypeName artifact type name
      * @param obj_id object id
      * @return list of blackboard artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName, long obj_id) throws TskCoreException {
         int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
@@ -381,6 +393,7 @@ public class SleuthkitCase {
      * @param artifactTypeID artifact type id (must exist in database)
      * @param obj_id object id
      * @return list of blackboard artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, long obj_id) throws TskCoreException {
         String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
@@ -390,9 +403,11 @@ public class SleuthkitCase {
 
     /**
      * Get all blackboard artifacts of a given type for the given object id
+	 * 
      * @param artifactType artifact type enum
      * @param obj_id object id
      * @return list of blackboard artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
         return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel(), obj_id);
@@ -400,8 +415,10 @@ public class SleuthkitCase {
 
     /**
      * Get all blackboard artifacts of a given type
+	 * 
      * @param artifactTypeName artifact type name
      * @return list of blackboard artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName) throws TskCoreException {
         int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
@@ -410,8 +427,10 @@ public class SleuthkitCase {
 
     /**
      * Get all blackboard artifacts of a given type 
+	 * 
      * @param artifactType artifact type enum
      * @return list of blackboard artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType) throws TskCoreException {
         return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel());
@@ -419,8 +438,10 @@ public class SleuthkitCase {
 
     /**
      * Get the blackboard artifact with the given artifact id
+	 * 
      * @param artifactID artifact ID
      * @return blackboard artifact
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public BlackboardArtifact getBlackboardArtifact(long artifactID) throws TskCoreException {
         dbReadLock();
@@ -445,7 +466,9 @@ public class SleuthkitCase {
 
     /**
      * Add a blackboard attribute. All information for the attribute should be in the given attribute
+	 * 
      * @param attr a blackboard attribute. All necessary information should be filled in.
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public void addBlackboardAttribute(BlackboardAttribute attr) throws TskCoreException {
         dbWriteLock();
@@ -486,7 +509,9 @@ public class SleuthkitCase {
 
     /**
      * Add a blackboard attributes in bulk. All information for the attribute should be in the given attribute
+	 * 
      * @param attributes collection of blackboard attributes. All necessary information should be filled in.
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public void addBlackboardAttributes(Collection<BlackboardAttribute> attributes) throws TskCoreException {
         dbWriteLock();
@@ -550,9 +575,10 @@ public class SleuthkitCase {
 
     /**
      * add an attribute type with the given name
+	 * 
      * @param attrTypeString name of the new attribute
      * @return the id of the new attribute
-     * @throws TskException
+     * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public int addAttrType(String attrTypeString, String displayName) throws TskCoreException {
         addAttrType(attrTypeString, displayName, attributeIDcounter);
@@ -564,9 +590,10 @@ public class SleuthkitCase {
 
     /**
      * helper method. add an attribute type with the given name and id
+	 * 
      * @param attrTypeString type name
      * @param typeID type id
-     * @throws TskException
+     * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     private void addAttrType(String attrTypeString, String displayName, int typeID) throws TskCoreException {
         dbWriteLock();
@@ -592,8 +619,10 @@ public class SleuthkitCase {
     /**
      * Get the attribute id that corresponds to the given string. If that string does not exist
      * it will be added to the table.
+	 * 
      * @param attrTypeString attribute type string
      * @return attribute id
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public int getAttrTypeID(String attrTypeString) throws TskCoreException {
         dbReadLock();
@@ -621,8 +650,10 @@ public class SleuthkitCase {
 
     /**
      * Get the string associated with the given id. Will throw an error if that id does not exist
+	 * 
      * @param attrTypeID attribute id
      * @return string associated with the given id
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public String getAttrTypeString(int attrTypeID) throws TskCoreException {
         dbReadLock();
@@ -651,8 +682,10 @@ public class SleuthkitCase {
 
     /**
      * Get the display name for the attribute with the given id. Will throw an error if that id does not exist
+	 * 
      * @param attrTypeID attribute id
      * @return string associated with the given id
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public String getAttrTypeDisplayName(int attrTypeID) throws TskCoreException {
         dbReadLock();
@@ -682,8 +715,10 @@ public class SleuthkitCase {
     /**
      * Get artifact type id for the given string. Will throw an error if one with that
      * name does not exist.
+	 * 
      * @param artifactTypeString name for an artifact type
      * @return artifact type
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     int getArtifactTypeID(String artifactTypeString) throws TskCoreException {
         dbReadLock();
@@ -713,8 +748,10 @@ public class SleuthkitCase {
     /**
      * Get artifact type name for the given string. Will throw an error if that artifact doesn't
      * exist. Use addArtifactType(...) to create a new one.
+	 * 
      * @param artifactTypeID id for an artifact type
      * @return name of that artifact type
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     String getArtifactTypeString(int artifactTypeID) throws TskCoreException {
         dbReadLock();
@@ -744,8 +781,10 @@ public class SleuthkitCase {
     /**
      * Get artifact type display name for the given string. Will throw an error if that artifact doesn't
      * exist. Use addArtifactType(...) to create a new one.
+	 * 
      * @param artifactTypeID id for an artifact type
      * @return display name of that artifact type
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     String getArtifactTypeDisplayName(int artifactTypeID) throws TskCoreException {
         dbReadLock();
@@ -775,9 +814,11 @@ public class SleuthkitCase {
     /**
      * Add an artifact type with the given name. Will return an id that can be used
      * to look that artifact type up.
+	 * 
      * @param artifactTypeName System (unique) name of artifact
      * @param displayName Display (non-unique) name of artifact
      * @return ID of artifact added
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
         addArtifactType(artifactTypeName, displayName, artifactIDcounter);
@@ -788,9 +829,10 @@ public class SleuthkitCase {
 
     /**
      * helper method. add an artifact with the given type and id
+	 * 
      * @param artifactTypeName type name
      * @param typeID type id
-     * @throws TskException
+     * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     private void addArtifactType(String artifactTypeName, String displayName, int typeID) throws TskCoreException {
         dbWriteLock();
@@ -817,8 +859,10 @@ public class SleuthkitCase {
     /**
      * Get all attributes that match a where clause. The clause should begin with
      * "WHERE" or "JOIN". To use this method you must know the database tables
+	 * 
      * @param whereClause a sqlite where clause
      * @return a list of matching attributes
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public ArrayList<BlackboardAttribute> getMatchingAttributes(String whereClause) throws TskCoreException {
         ArrayList<BlackboardAttribute> matches = new ArrayList<BlackboardAttribute>();
@@ -851,8 +895,10 @@ public class SleuthkitCase {
     /**
      * Get all artifacts that match a where clause. The clause should begin with
      * "WHERE" or "JOIN". To use this method you must know the database tables
+	 * 
      * @param whereClause a sqlite where clause
      * @return a list of matching artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     public ArrayList<BlackboardArtifact> getMatchingArtifacts(String whereClause) throws TskCoreException {
         ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
@@ -881,8 +927,10 @@ public class SleuthkitCase {
      * Add a new blackboard artifact with the given type. If that artifact type does not
      * exist an error will be thrown. The artifact typename can be looked up in the
      * returned blackboard artifact
+	 * 
      * @param artifactTypeID the type the given artifact should have
      * @return a new blackboard artifact
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
         dbWriteLock();
@@ -909,8 +957,10 @@ public class SleuthkitCase {
 
     /**
      * Add a new blackboard artifact with the given type.
+	 * 
      * @param artifactType the type the given artifact should have
      * @return a new blackboard artifact
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
         dbWriteLock();
@@ -939,18 +989,21 @@ public class SleuthkitCase {
     }
 
     /**
-     * add one of the built in artifact types
+     * Add one of the built in artifact types
+	 * 
      * @param type type enum
      * @throws TskException
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     private void addBuiltInArtifactType(ARTIFACT_TYPE type) throws TskCoreException {
         addArtifactType(type.getLabel(), type.getDisplayName(), type.getTypeID());
     }
 
     /**
-     * add one of the built in attribute types
+     * Add one of the built in attribute types
+	 * 
      * @param type type enum
-     * @throws TskException
+     * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     private void addBuiltInAttrType(ATTRIBUTE_TYPE type) throws TskCoreException {
         addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
@@ -958,8 +1011,10 @@ public class SleuthkitCase {
 	
 	/**
 	 * Returns the list of AbstractFile Children for a given AbstractFileParent
+	 * @param parent the content parent to get abstract file children for 
+	 * @param type children type to look for, defined in TSK_DB_FILES_TYPE_ENUM
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
 	 */
-
 	List<AbstractFile> getAbstractFileChildren(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
 
         SetParentVisitor setParent = new SetParentVisitor();
@@ -1019,6 +1074,7 @@ public class SleuthkitCase {
      * Get info about children of a given Content from the database.
      * TODO: the results of this method are volumes, file systems, and fs files.
      * @param c Parent object to run query against
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
     Collection<ObjectInfo> getChildrenInfo(Content c) throws TskCoreException {
         dbReadLock();
@@ -1045,6 +1101,13 @@ public class SleuthkitCase {
         }
     }
 
+	
+	/**
+	 * Get parent info for the parent of the content object
+	 * @param c content object to get parent info for
+	 * @return the parent object info with the parent object type and id
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
+	 */
     ObjectInfo getParentInfo(Content c) throws TskCoreException {
         dbReadLock();
         try {
@@ -1073,6 +1136,14 @@ public class SleuthkitCase {
         }
     }
 
+	
+	/**
+	 * Gets parent directory for FsContent object
+	 * 
+	 * @param fsc FsContent to get parent dir for
+	 * @return the parent Directory
+	 * @throws TskCoreException thrown if critical error occurred within tsk core
+	 */
     Directory getParentDirectory(FsContent fsc) throws TskCoreException {
         if (fsc.isRoot()) {
             throw new TskCoreException("Given FsContent (id: " + fsc.getId() + ") is a root object (can't have parent directory).");
@@ -1091,6 +1162,12 @@ public class SleuthkitCase {
         }
     }
 
+	/**
+	 * Get content object by content id
+	 * @param id to get content object for
+	 * @return instance of a Content object (one of its subclasses)
+	 * @throws TskCoreException thrown if critical error occurred within tsk core
+	 */
     public Content getContentById(long id) throws TskCoreException {
         dbReadLock();
         try {
@@ -1150,6 +1227,12 @@ public class SleuthkitCase {
         }
     }
 
+	/**
+	 * Get abstract file object from tsk_files table by its id
+	 * @param id id of the file object in tsk_files table
+	 * @return AbstractFile object populated
+	 * @throws TskCoreException thrown if critical error occurred within tsk core
+	 */
     public AbstractFile getAbstractFileById(long id) throws TskCoreException {
         dbReadLock();
         try {
@@ -1171,6 +1254,13 @@ public class SleuthkitCase {
         throw new TskCoreException("No file found for id " + id);
     }
     
+	
+	/**
+	 * Get file layout ranges from tsk_file_layout, for a file with specified id
+	 * @param id of the file to get file layout ranges for
+	 * @return list of populated file ranges
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core
+	 */
     public List<TskFileRange> getFileRanges(long id) throws TskCoreException{
         List<TskFileRange> ranges = new ArrayList<TskFileRange>();
         dbReadLock();
@@ -1192,6 +1282,13 @@ public class SleuthkitCase {
         }
     }
 
+	
+	/**
+	 * Get am image by the image object id
+	 * @param id of the image object
+	 * @return Image object populated
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core
+	 */
     public Image getImageById(long id) throws TskCoreException {
         dbReadLock();
         try {
@@ -1230,6 +1327,14 @@ public class SleuthkitCase {
         }
     }
 
+	
+	/**
+	 * Get a volume system by the volume system object id
+	 * @param id id of the volume system
+	 * @param parent image containing the volume system
+	 * @return populated VolumeSystem object
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core
+	 */
     VolumeSystem getVolumeSystemById(long id, Image parent) throws TskCoreException {
         dbReadLock();
         try {
@@ -1256,14 +1361,38 @@ public class SleuthkitCase {
         }
     }
 
+	
+	/**
+	 * Get a file system by the object id
+	 * @param id of the filesystem 
+	 * @param parent parent Image of the file system
+	 * @return populated FileSystem object
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core
+	 */
     FileSystem getFileSystemById(long id, Image parent) throws TskCoreException {
         return getFileSystemByIdHelper(id, parent);
     }
 	
+	
+	/**
+	 * Get a file system by the object id
+	 * @param id of the filesystem 
+	 * @param parent parent Volume of the file system
+	 * @return populated FileSystem object
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core
+	 */
 	FileSystem getFileSystemById(long id, Volume parent) throws TskCoreException {
 		return getFileSystemByIdHelper(id, parent);
 	}
 	
+	
+	/**
+	 * Get file system by id and Content parent
+	 * @param id of the filesystem to get
+	 * @param parent a direct parent Content object
+	 * @return populated FileSystem object
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core
+	 */
 	private FileSystem getFileSystemByIdHelper(long id, Content parent) throws TskCoreException {
 		dbReadLock();
         try {
@@ -1291,6 +1420,14 @@ public class SleuthkitCase {
         }
 	}
 
+	
+	/**
+	 * Get volume by id
+	 * @param id
+	 * @param parent volume system
+	 * @return populated Volume object
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core
+	 */
     Volume getVolumeById(long id, VolumeSystem parent) throws TskCoreException {
         dbReadLock();
         try {
@@ -1317,6 +1454,14 @@ public class SleuthkitCase {
         }
     }
 
+	
+	/**
+	 * Get a directory by id
+	 * @param id of the directory object
+	 * @param parentFs parent file system
+	 * @return populated Directory object
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core
+	 */
     Directory getDirectoryById(long id, FileSystem parentFs) throws TskCoreException {
         dbReadLock();
         try {
@@ -1468,6 +1613,7 @@ public class SleuthkitCase {
 
     /**
      * Helper to return FileSystems in an Image
+	 * 
      * @param image Image to lookup FileSystem for
      * @return Collection of FileSystems in the image
      */
@@ -1476,9 +1622,8 @@ public class SleuthkitCase {
     }
 
     /**
-     * top-down FileSystem visitor to be be visited on parent of FileSystem
-     * and return a Collection<FileSystem> for that parent
-     * visiting children of FileSystem is not supported
+     * top-down FileSystem visitor, traverses Content (any parent of FileSystem)
+     * and returns all FileSystem children of that parent
      */
     private static class GetFileSystemsVisitor implements
             ContentVisitor<Collection<FileSystem>> {
@@ -1486,13 +1631,13 @@ public class SleuthkitCase {
         @Override
         public Collection<FileSystem> visit(Directory directory) {
             //should never get here
-            return null;
+            return Collections.<FileSystem>emptyList();
         }
 
         @Override
         public Collection<FileSystem> visit(File file) {
             //should never get here
-            return null;
+            return Collections.<FileSystem>emptyList();
         }
         
         @Override
@@ -1536,9 +1681,13 @@ public class SleuthkitCase {
         }
     }
 
-    /**
-     * Returns the list of children for a given Image
-     */
+	/**
+	 * Returns the list of direct children for a given Image
+	 * 
+	 * @param img image to get children for
+	 * @return list of Contents (direct image children)
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core 
+	 */
     List<Content> getImageChildren(Image img) throws TskCoreException {
         Collection<ObjectInfo> childInfos = getChildrenInfo(img);
 
@@ -1561,7 +1710,10 @@ public class SleuthkitCase {
     }
 
     /**
-     * Returns the list of children for a given VolumeSystem
+     * Returns the list of direct children for a given VolumeSystem
+	 * 
+	 * @param vs volume system to get children for
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core 
      */
     List<Content> getVolumeSystemChildren(VolumeSystem vs) throws TskCoreException {
         Collection<ObjectInfo> childInfos = getChildrenInfo(vs);
@@ -1583,7 +1735,9 @@ public class SleuthkitCase {
     }
 
     /**
-     * Returns a list of children for a given Volume
+     * Returns a list of direct children for a given Volume
+	 * @param vol volume to get children of
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core 
      */
     List<Content> getVolumeChildren(Volume vol) throws TskCoreException {
         Collection<ObjectInfo> childInfos = getChildrenInfo(vol);
@@ -1604,7 +1758,10 @@ public class SleuthkitCase {
     }
 
     /**
-     * Returns a list of FSContent children for a given file system
+     * Returns a list of direct children for a given file system
+	 * @param fs file system to get the list of children for
+	 * @return the list of direct files children of the filesystem 
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core 
      */
     List<AbstractFile> getFileSystemChildren(FileSystem fs) throws TskCoreException {
         List<AbstractFile> ret = new ArrayList<AbstractFile>();
@@ -1615,7 +1772,10 @@ public class SleuthkitCase {
     }
 
     /**
-     * Returns a list of FSContent children for a given directory
+     * Returns a list of direct children for a given directory
+	 * @param dir directory to get the list of direct children for
+	 * @return list of direct children (files) for a given directory
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core 
      */
     List<AbstractFile> getDirectoryChildren(Directory dir) throws TskCoreException {
         List<AbstractFile> ret = new ArrayList<AbstractFile>();
@@ -1627,6 +1787,9 @@ public class SleuthkitCase {
 
     /**
      * Returns a map of image object IDs to a list of fully qualified file paths for that image
+	 * 
+	 * @return map of image object IDs to file paths
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core 
      */
     public Map<Long, List<String>> getImagePaths() throws TskCoreException {
         Map<Long, List<String>> imgPaths = new LinkedHashMap<Long, List<String>>();
@@ -1664,9 +1827,10 @@ public class SleuthkitCase {
 
     /**
      * Set the file paths for the image given by obj_id
+	 * 
      * @param obj_id the ID of the image to update
      * @param paths the fully qualified path to the files that make up the image
-     * @throws TskException if sql update fails
+     * @throws TskCoreException exception thrown when critical error occurs within tsk core and the update fails
      */
     public void setImagePaths(long obj_id, List<String> paths) throws TskCoreException {
 
@@ -1689,12 +1853,13 @@ public class SleuthkitCase {
     }
 	
 	/**
-     * Creates FsContents from a SQL query result set of rows from the tsk_files
+     * Creates file object from a SQL query result set of rows from the tsk_files
      * table.  Assumes that the query was of the form
      * "SELECT * FROM tsk_files WHERE XYZ".
+	 * 
      * @param rs ResultSet to get content from. Caller is responsible for closing it.
-     * @return A List<FsContent> containing the results
-     * @throws SQLException
+     * @return list of file objects from tsk_files table containing the results
+     * @throws SQLException if the query fails
      */
     public List<AbstractFile> resultSetToAbstractFiles(ResultSet rs) throws SQLException { 
         SetParentVisitor setParent = new SetParentVisitor();
@@ -1703,7 +1868,7 @@ public class SleuthkitCase {
         dbReadLock();
 		try {
 			while (rs.next()) {
-				if (rs.getLong("type") == 0) {
+				if (rs.getLong("type") == TSK_DB_FILES_TYPE_ENUM.FS.getFileType() ) {
 					FsContent result;
 					if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
 						result = rsHelper.directory(rs, null);
@@ -1725,6 +1890,13 @@ public class SleuthkitCase {
         return results;
     }
 	
+	/**
+	 * Creates FsContent objects from SQL query result set on tsk_files table
+	 * 
+	 * @param rs the result set with the query results
+	 * @return list of fscontent objects matching the query
+	 * @throws SQLException if SQL query result getting failed
+	 */
 	public List<FsContent> resultSetToFsContents(ResultSet rs) throws SQLException {
 		List<FsContent> results = new ArrayList<FsContent>();
 		List<AbstractFile> temp = resultSetToAbstractFiles(rs);
@@ -1737,14 +1909,15 @@ public class SleuthkitCase {
 	}
 
     /**
-     * Process a read-only query on the database, e.g. to find files of a given criteria.
+     * Process a read-only query on the tsk database, any table
+	 * Can be used to e.g. to find files of a given criteria.
      * resultSetToFsContents() will convert the results to useful objects.
      * MUST CALL closeRunQuery() when done
      *
      * @param query  the given string query to run
 	 * @return	   the resultSet from running the query.
      * Caller MUST CALL closeRunQuery(resultSet) as soon as possible, when done with retrieving data from the resultSet
-     * @throws SQLException
+     * @throws SQLException if error occurred during the query
      */
     public ResultSet runQuery(String query) throws SQLException {
         Statement statement;
@@ -1764,7 +1937,7 @@ public class SleuthkitCase {
      * Closes ResultSet and its Statement previously retrieved from runQuery()
      *
      * @param resultSet with its Statement to close
-     * @throws SQLException
+     * @throws SQLException of closing the query results failed
      */
     public void closeRunQuery(ResultSet resultSet) throws SQLException {
         final Statement statement = resultSet.getStatement();
@@ -1774,6 +1947,10 @@ public class SleuthkitCase {
         }
     }
 
+	/**
+	 * DO NOT CALL THIS
+	 * ensures database is closed when the object is garbage collected
+	 */
     @Override
     public void finalize() {
         close();
@@ -1863,7 +2040,7 @@ public class SleuthkitCase {
 	 * @param	fsContent	The FsContent object
 	 * @param	fileKnown	The object's known status
 	 * @return				true if the known status was updated, false otherwise
-	 * @throws				TskException
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core 
      */
     public boolean setKnown(FsContent fsContent, FileKnown fileKnown) throws TskCoreException {
         long id = fsContent.getId();
@@ -1891,7 +2068,7 @@ public class SleuthkitCase {
      *
 	 * @param	fsContent	The FsContent object
 	 * @param	md5Hash		The object's md5Hash
-	 * @throws				TskException
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core 
      */
     void setMd5Hash(FsContent fsContent, String md5Hash) throws TskCoreException {
         long id = fsContent.getId();
@@ -1972,7 +2149,7 @@ public class SleuthkitCase {
      * Look up the given hash in the NSRL database
      * @param md5Hash The hash to look up
      * @return the status of the hash in the NSRL
-     * @throws TskException 
+     * @throws TskCoreException thrown if a critical error occurred within tsk core  
      */
     public TskData.FileKnown nsrlLookupMd5(String md5Hash) throws TskCoreException {
         return SleuthkitJNI.nsrlHashLookup(md5Hash);
@@ -1983,7 +2160,7 @@ public class SleuthkitCase {
      * @param md5Hash The hash to look up
      * @param dbHandle The handle of the open database to look in
      * @return the status of the hash in the known bad database
-     * @throws TskException 
+     * @throws TskCoreException thrown if a critical error occurred within tsk core 
      */
     public TskData.FileKnown knownBadLookupMd5(String md5Hash, int dbHandle) throws TskCoreException {
         return SleuthkitJNI.knownBadHashLookup(md5Hash, dbHandle);
@@ -2027,7 +2204,7 @@ public class SleuthkitCase {
      *
      * @param contentType Type of file to count
      * @return Number of objects with that type.
-     * @throws  TSKException
+     * @throws TskCoreException thrown if a critical error occurred within tsk core 
      */
     public int countFsContentType(TskData.TSK_FS_META_TYPE_ENUM contentType) throws TskCoreException {
         int count = 0;
@@ -2051,6 +2228,7 @@ public class SleuthkitCase {
 
     /**
      * Escape the single quotes in the given string so they can be added to the SQL db
+	 * 
      * @param text
      * @return text the escaped version
      */

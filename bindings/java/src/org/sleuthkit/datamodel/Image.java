@@ -19,20 +19,21 @@
 package org.sleuthkit.datamodel;
 
 import java.util.List;
-import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 
 /**
- * Represents a disk image file.
+ * Represents a disk image file, stored in tsk_image_info.
  * Populated based on data in database.
+ * 
+ * Caches internal tsk image handle and reuses it for reads
  */
-public class Image extends AbstractContent{
+public class Image extends AbstractContent {
 	//data about image
 
 	private long type, ssize;
 	private String[] paths;
 	private long imageHandle = 0;
 	private String timezone;
-	
+
 	/**
 	 * constructor most inputs are from the database
 	 * @param db database object
@@ -42,8 +43,7 @@ public class Image extends AbstractContent{
 	 * @param name
 	 * @param paths 
 	 * @param timezone 
-	 */	
-	
+	 */
 	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone) throws TskCoreException {
 		super(db, obj_id, name);
 		this.type = type;
@@ -51,39 +51,49 @@ public class Image extends AbstractContent{
 		this.paths = paths;
 		this.timezone = timezone;
 	}
-	
+
 	/**
-	 * get the handle to the sleuthkit image info object
+	 * Get the handle to the sleuthkit image info object
 	 * @return the object pointer
 	 */
 	public long getImageHandle() throws TskCoreException {
 		if (imageHandle == 0) {
 			imageHandle = SleuthkitJNI.openImage(paths);
-	}
+		}
 
 		return imageHandle;
 	}
-	
+
+	/**
+	 * Get the image for this image.  Does not do anything, returns itself.
+	 * @return the same image object
+	 */
 	@Override
 	public Image getImage() {
 		return this;
 	}
-	
+
+	/**
+	 * DO NOT CALL
+	 * Ensures internal tsk image handle is closed and resources deallocated
+	 * when java object is garbage-collected
+	 * @throws Throwable 
+	 */
 	@Override
 	public void finalize() throws Throwable {
 		super.finalize();
-		if(imageHandle != 0){
+		if (imageHandle != 0) {
 			SleuthkitJNI.closeImg(imageHandle);
-	}
+		}
 	}
 
 	/**
-	 * read from the image
+	 * Read data from the image
 	 * @param buf the buffer to read to
 	 * @param offset in bytes
 	 * @param len in bytes
 	 * @return number of bytes read, -1 if error
-	 * @throws TskException
+	 * @throws TskCoreException exception thrown if critical tsk error occurred and data could not be read
 	 */
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
@@ -91,29 +101,28 @@ public class Image extends AbstractContent{
 		return SleuthkitJNI.readImg(getImageHandle(), buf, offset, len);
 	}
 
-	
-
 	/**
-	 * get the image size
-	 * @return image size
+	 * Get the image size, not applicable to image.
+	 * Use this method on content children (volumes, file systems, ...) instead.
+	 * @return returns 0
 	 */
 	@Override
 	public long getSize() {
 		return 0;
 	}
 
-	//methods get exact data from database. could be manipulated to get more
-	//meaningful data.
+	//Methods for retrieval of meta-data attributes
+	
 	/**
-	 * get the type
-	 * @return type
+	 * Get the image type
+	 * @return image type
 	 */
 	public long getType() {
 		return type;
 	}
 
 	/**
-	 * get the sector size
+	 * Get the sector size
 	 * @return sector size
 	 */
 	public long getSsize() {
@@ -121,48 +130,66 @@ public class Image extends AbstractContent{
 	}
 
 	/**
-	 * get the path
-	 * @return path
+	 * Get the image path
+	 * @return image path
 	 */
 	public String[] getPaths() {
 		return paths;
 	}
 
 	/**
-	 * get the timezone
-	 * @return 
+	 * Get the timezone set for the image
+	 * @return timezone string representation
 	 */
 	public String getTimeZone() {
 		return timezone;
 	}
 
-	// ----- Here all the methods for Image Type conversion / mapping -----
-
-	public static String imageTypeToValue(long imageType){
+	// ----- Methods for Image Type conversion / mapping -----
+	
+	
+	
+	/**
+	 * Convert image type id to string value
+	 * @param imageType to convert
+	 * @return string representation of the image type
+	 */
+	public static String imageTypeToValue(long imageType) {
 
 		String result = "";
 
-		for (TskData.TSK_IMG_TYPE_ENUM imgType : TskData.TSK_IMG_TYPE_ENUM.values()){
-			if(imgType.getImageType() == imageType){
+		for (TskData.TSK_IMG_TYPE_ENUM imgType : TskData.TSK_IMG_TYPE_ENUM.values()) {
+			if (imgType.getImageType() == imageType) {
 				result = imgType.toString();
 			}
 		}
 		return result;
 	}
 
-	public static long valueToImageType(String imageType){
+	
+	/**
+	 * Convert image type value string to image type id
+	 * @param imageType value string to convert
+	 * @return image type id
+	 */
+	public static long valueToImageType(String imageType) {
 
 		long result = 0;
 
-		for (TskData.TSK_IMG_TYPE_ENUM imgType : TskData.TSK_IMG_TYPE_ENUM.values()){
-			if(imgType.toString().equals(imageType)){
+		for (TskData.TSK_IMG_TYPE_ENUM imgType : TskData.TSK_IMG_TYPE_ENUM.values()) {
+			if (imgType.toString().equals(imageType)) {
 				result = imgType.getImageType();
 			}
 		}
 		return result;
 	}
 
-	public static String imageTypeToString(long imageType){
+	/**
+	 * Convert image type id to string representation
+	 * @param imageType to convert
+	 * @return user-readable string representation of the image type
+	 */
+	public static String imageTypeToString(long imageType) {
 
 		String result = "";
 
@@ -176,50 +203,72 @@ public class Image extends AbstractContent{
 		long ewf = TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_EWF_EWF.getImageType();
 		long unsupported = TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_UNSUPP.getImageType();
 
-		if(imageType == detect){
+		if (imageType == detect) {
 			result = "Auto Detection";
 		}
-		if(imageType == raw){
+		if (imageType == raw) {
 			result = "Single raw file (dd)";
 		}
-		if(imageType == split){
+		if (imageType == split) {
 			result = "Split raw files";
 		}
-		if(imageType == aff){
+		if (imageType == aff) {
 			result = "Advanced Forensic Format";
 		}
-		if(imageType == afd){
+		if (imageType == afd) {
 			result = "AFF Multiple File";
 		}
-		if(imageType == afm){
+		if (imageType == afm) {
 			result = "AFF with external metadata";
 		}
-		if(imageType == afflib){
+		if (imageType == afflib) {
 			result = "All AFFLIB image formats (including beta ones)";
 		}
-		if(imageType == ewf){
+		if (imageType == ewf) {
 			result = "Expert Witness format (encase)";
 		}
-		if(imageType == unsupported){
+		if (imageType == unsupported) {
 			result = "Unsupported Image Type";
 		}
 
 		return result;
 	}
 
+	
+	/**
+     * Visitor pattern support for sleuthkit item objects 
+	 * (tsk database objects, such as content and artifacts)
+     * @param <T> visitor algorithm return type
+     * @param v visitor supplying an algorithm to run on the sleuthkit item object
+     * @return visitor return value resulting from running the algorithm
+     */
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
+	
+	/**
+     * Visitor pattern support for content objects only
+	 * 
+     * @param <T> visitor algorithm return type
+     * @param v visitor supplying an algorithm to run on the content object
+     * @return visitor return value resulting from running the algorithm
+     */
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
 
+	
+	/**
+	 * Gets child content objects of this image
+	 * 
+	 * @return list of child content objects
+	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core
+	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getImageChildren(this);
 	}
-	
 }

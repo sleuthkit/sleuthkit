@@ -25,12 +25,21 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
- * @author dfickling
+ * Layout file object representation of a layout file stored in tsk_files table.
+ * Layout files are not fs files, but "virtual" files created from blocks of data (e.g. unallocated)
+ * that are treated as files for convenience and uniformity.
+ * 
+ * Because layout files are not real fs files, they only utilize a subset of meta-data attributes.
+ * A layout file normally contains 1 or more entry in tsk_file_layout table 
+ * that define ordered byte block ranges, with respect to the image.
+ * 
+ * The class also supports reads of layout files, reading blocks across ranges in a sequence
  */
 public class LayoutFile extends AbstractFile{
 	
+	//layout ranges associated with this file
 	private List<TskFileRange> ranges;
+	
     private Content parent;
 	
 	protected LayoutFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type) {
@@ -38,13 +47,18 @@ public class LayoutFile extends AbstractFile{
 	}
 	
 	/**
-     * set the parent class, will be called by the parent
+     * Set the parent class, will be called by the parent
+	 * 
      * @param p parent
      */
     protected void setParent(Content p){
         parent = p;
     }
 	
+	/**
+	 * Get number of file layout ranges associated with this layout file
+	 * @return number of file layout ranges objects associated
+	 */
 	public int getNumParts() {
 		int size = 0;
 		try {
@@ -55,6 +69,12 @@ public class LayoutFile extends AbstractFile{
 		return size;
 	}
 
+	
+	/**
+	 * Get the file layout ranges associated with the file
+	 * @return the file layout ranges associated
+	 * @throws TskCoreException exception thrown if a critical error occurred within tsk core
+	 */
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
 		if(ranges == null) {
@@ -63,16 +83,31 @@ public class LayoutFile extends AbstractFile{
         return ranges;
 	}
 
+	
+	/**
+	 * Get children of the file.  
+	 * Returns empty list - layout file is a leaf child in the content hierarchy.
+	 * @return an empty list
+	 * @throws TskCoreException if a critical error occurred within tsk core (not thrown in current implementation)
+	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return Collections.<Content>emptyList();
 	}
 	
+	/**
+	 * Get the size of all blocks summed up together
+	 * @return the total content size
+	 */
 	@Override
     public long getSize() {
         return calcSize();
     }
     
+	/**
+	 * Calculate the size from all ranges / blocks
+	 * @return total content size in bytes
+	 */
     private long calcSize() {
         long size = 0;
         try {
@@ -85,6 +120,14 @@ public class LayoutFile extends AbstractFile{
         return size;
     }
 	
+	/**
+	 * Read data from the blocks, across multiple ranges as needed
+	 * @param buf buffer to write read data to
+	 * @param offset in the file to start reading from
+	 * @param len number of bytes to read
+	 * @return number of bytes read or -1 on error
+	 * @throws TskCoreException exception thrown if critical error occurred within tsk core
+	 */
 	@Override
     public int read(byte[] buf, long offset, long len) throws TskCoreException {
         int offsetInThisLayoutContent = 0; // current offset in this LayoutContent
@@ -139,20 +182,46 @@ public class LayoutFile extends AbstractFile{
         return lenRead;
     }
 
+	
+	/**
+     * Visitor pattern support for content objects only
+	 * 
+     * @param <T> visitor algorithm return type
+     * @param v visitor supplying an algorithm to run on the content object
+     * @return visitor return value resulting from running the algorithm
+     */
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
 
+	
+	/**
+     * Visitor pattern support for sleuthkit item objects 
+	 * (tsk database objects, such as content and artifacts)
+	 * 
+     * @param <T> visitor algorithm return type
+     * @param v visitor supplying an algorithm to run on the sleuthkit item object
+     * @return visitor return value resulting from running the algorithm
+     */
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 	
+	/**
+	 * Get parent content object (either filesystem, or volume)
+	 * @return the parent content object
+	 */
 	public Content getParent() {
 		return parent;
 	}
 	
+	/**
+	 * Get the image for this file
+	 * @return the parent image object
+	 * @throws TskCoreException exception thrown if critical error occurred within tsk core
+	 */
 	@Override
 	public Image getImage() throws TskCoreException{
 		return getParent().getImage();

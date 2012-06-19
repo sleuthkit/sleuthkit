@@ -21,10 +21,13 @@ package org.sleuthkit.datamodel;
 import java.util.*;
 
 /**
- * Represents a file system. 
- * Populated based on data in database.
+ * Represents a file system object stored in tsk_fs_info table
+ * FileSystem has a parent content object (volume or image) and children content objects (files and directories)
+ * and fs-specific attributes.
+ * The object also maintains a handle to internal file-system structures 
+ * and the handle is reused across reads.
  */
-public class FileSystem extends AbstractContent{
+public class FileSystem extends AbstractContent {
 
 	long img_offset, fs_type, block_size, block_count, root_inum,
 			first_inum, last_inum;
@@ -57,39 +60,41 @@ public class FileSystem extends AbstractContent{
 	}
 
 	/**
-	 * set the parent class, will be called by the parent
+	 * Set the parent content object, will be called by the parent 
+	 * when populating the object from database.
+	 * 
 	 * @param p parent volume or image.
 	 * Should only be called by methods which ensure p is a volume or image
 	 */
-	protected void setParent(Content p){
+	protected void setParent(Content p) {
 		parent = p;
 	}
 
 	/**
-	 * read data from the filesystem
+	 * Read data from the file system
 	 * @param buf buffer to read to
-	 * @param offset offset in bytes from the start of the filesystem
+	 * @param offset offset in bytes from the start of the file system
 	 * @param len how many bytes to read
 	 * @return number bytes read, or -1 if error
 	 * @throws TskException
 	 */
 	@Override
-	public int read(byte[] buf, long offset, long len) throws TskCoreException{
+	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		return SleuthkitJNI.readFs(getFileSystemHandle(), buf, offset, len);
 	}
 
-
 	/**
-	 * get the parent volume
-	 * @return volume object
+	 * Get the parent volume or image Content object
+	 * @return parent content object (volume or image)
 	 */
-	public Content getParent(){
+	public Content getParent() {
 		return parent;
 	}
 
 	/**
-	 * get the size of the filesystem
-	 * @return size of the filesystem
+	 * Get the size of the file system
+	 * 
+	 * @return size of the file system
 	 */
 	@Override
 	public long getSize() {
@@ -98,93 +103,130 @@ public class FileSystem extends AbstractContent{
 	}
 
 	/**
-	 * lazily loads the filesystem pointer ie: won't be loaded until this is called
+	 * Lazily loads the internal file system structure: won't be loaded until this is called
+	 * and maintains the handle to it to reuse it
 	 * @return a filesystem pointer from the sleuthkit
-	 * @throws TskException  
+	 * @throws TskCoreException exception throw if an internal tsk core error occurs  
 	 */
-	long getFileSystemHandle() throws TskCoreException{
-		if (filesystemHandle == 0){
+	long getFileSystemHandle() throws TskCoreException {
+		if (filesystemHandle == 0) {
 			filesystemHandle = SleuthkitJNI.openFs(getImage().getImageHandle(), img_offset);
 		}
 		return this.filesystemHandle;
 	}
 
-	//methods get exact data from database. could be manipulated to get more
-	//meaningful data.
-
 	/**
-	 * get the byte offset of this filesystem in the image
+	 * Get the byte offset of this file system in the image
+	 * 
 	 * @return offset
 	 */
 	public long getImg_offset() {
 		return img_offset;
-	}	 	
+	}
 
 	/**
-	 * get the file system type
+	 * Get the file system type
+	 * 
 	 * @return enum number from sleuthkit database
 	 */
 	public long getFs_type() {
 		return fs_type;
-	}	 	
+	}
+
 	/**
-	 * get the block size
+	 * Get the block size
+	 * 
 	 * @return block size
 	 */
 	public long getBlock_size() {
 		return block_size;
-	}	 	
+	}
+
 	/**
-	 * get the number of blocks
+	 * Get the number of blocks
+	 * 
 	 * @return block count
 	 */
 	public long getBlock_count() {
 		return block_count;
-	}	 	
+	}
+
 	/**
-	 * get the inum of the root directory
+	 * Get the inum of the root directory
+	 * 
 	 * @return Root metadata address of the file system
 	 */
 	public long getRoot_inum() {
 		return root_inum;
-	}	
+	}
+
 	/**
-	 * get the first inum in this file system
+	 * Get the first inum in this file system
+	 * 
 	 * @return first inum
 	 */
 	public long getFirst_inum() {
 		return first_inum;
-	}	 	
+	}
+
 	/**
-	 * get the last inum
+	 * Get the last inum
 	 * @return last inum
 	 */
 	public long getLast_inum() {
 		return last_inum;
-	}	
+	}
 
+	/**
+	 * DO NOT USE
+	 * Ensures the cached internal tsk fs handle is closed 
+	 * when the object is garbage-collected
+	 */
 	@Override
-	public void finalize(){
-		if(filesystemHandle != 0){
+	public void finalize() {
+		if (filesystemHandle != 0) {
 			SleuthkitJNI.closeFs(filesystemHandle);
-	}
+		}
 	}
 
+	/**
+	 * Visitor pattern support for sleuthkit item objects 
+	 * (tsk database objects, such as content and artifacts)
+	 * @param <T> visitor algorithm return type
+	 * @param v visitor supplying an algorithm to run on the sleuthkit item object
+	 * @return visitor return value resulting from running the algorithm
+	 */
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
-    @Override
-    public <T> T accept(ContentVisitor<T> v) {
-        return v.visit(this);
-}
+	/**
+	 * Visitor pattern support for content objects only
+	 * @param <T> visitor algorithm return type
+	 * @param v visitor supplying an algorithm to run on the content object
+	 * @return visitor return value resulting from running the algorithm
+	 */
+	@Override
+	public <T> T accept(ContentVisitor<T> v) {
+		return v.visit(this);
+	}
 
+	/**
+	 * Gets child content objects of this file system
+	 * @return list of child content objects
+	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core
+	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return new ArrayList<Content>(getSleuthkitCase().getFileSystemChildren(this));
 	}
 
+	/**
+	 * Gets the parent image of this parent system
+	 * @return the parent image
+	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core 
+	 */
 	@Override
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();

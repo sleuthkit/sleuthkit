@@ -24,8 +24,10 @@ import java.util.List;
 
 
 /**
- * Represents a file in a file system. 
- * Populated based on data in database.
+ * Representation of File object, stored in tsk_files table.
+ * This is for a file-system file (allocated, not-derived, or a "virtual" file)
+ * File does not have content children objects associated with it.
+ * There are many similarities to a Directory otherwise, which are defined in the parent FsContent class.
  */
 public class File extends FsContent{
 
@@ -42,7 +44,7 @@ public class File extends FsContent{
     }
 
     /**	
-     * is this a file?
+     * Is this a file?
      * @return true, it is a file
      */
     @Override
@@ -50,16 +52,37 @@ public class File extends FsContent{
         return true;
     }
 
+	/**
+     * Visitor pattern support for sleuthkit item objects 
+	 * (tsk database objects, such as content and artifacts)
+     * @param <T> visitor algorithm return type
+     * @param v visitor supplying an algorithm to run on the sleuthkit item object
+     * @return visitor return value resulting from running the algorithm
+     */
     @Override
     public <T> T accept(SleuthkitItemVisitor<T> v) {
         return v.visit(this);
     }
 
+	
+	/**
+     * Visitor pattern support for content objects only
+     * @param <T> visitor algorithm return type
+     * @param v visitor supplying an algorithm to run on the content object
+     * @return visitor return value resulting from running the algorithm
+     */
     @Override
     public <T> T accept(ContentVisitor<T> v) {
         return v.visit(this);
     }
 
+	/**
+	 * Gets child content objects associated with the file - an empty list.
+	 * This type of a file (physical fs file, not derived) does not have children associated with it.
+	 * But any future subclasses could.
+	 * @return list of child content objects
+	 * @throws TskCoreException exception thrown if a critical error occurred within tsk core
+	 */
     @Override
     public List<Content> getChildren() throws TskCoreException {
         return Collections.<Content>emptyList();
