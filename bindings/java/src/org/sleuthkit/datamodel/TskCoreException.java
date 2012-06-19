@@ -26,10 +26,29 @@ package org.sleuthkit.datamodel;
 public class TskCoreException extends TskException{
     private static final long serialVersionUID = 123049876L;
 
+	
+	/**
+	 * Default constructor when error message is not available
+	 */
+	public TskCoreException(){
+		super("No error message available.");
+	}
+	
+	
+	/**
+	 * Create exception containing the error message
+	 * @param msg the message 
+	 */
 	public TskCoreException(String msg){
 		super(msg);
 	}
 	
+	
+	/**
+	 * Create exception containing the error message and cause exception
+	 * @param msg the message 
+	 * @param wrapped cause exception
+	 */
 	public TskCoreException(String msg, Exception ex){
 		super(msg, ex);
 	}
