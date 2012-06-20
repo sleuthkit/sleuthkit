@@ -21,22 +21,43 @@ package org.sleuthkit.datamodel;
 import java.util.List;
 
 /**
- *
- * @author dfickling
+ * Common fields methods for objects stored in tsk_files table
+ * Abstract files are divided into subtypes defined in TSK_DB_FILES_TYPE_ENUM
+ * and further divided into files and directories
  */
 public abstract class AbstractFile extends AbstractContent {
     
     private TskData.TSK_DB_FILES_TYPE_ENUM type;
     
+	/**
+	 * Initializes common fields used by AbstactFile implementations (objects in tsk_files table)
+	 * 
+	 * @param db case / db handle where this file belongs to
+	 * @param obj_id object id in tsk_objects table
+	 * @param name name field of the file
+	 * @param type type of the file
+	 */
     protected AbstractFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type) {
         super(db, obj_id, name);
         this.type = type;
     }
     
+	/**
+	 * Gets type of the abstract file as defined in TSK_DB_FILES_TYPE_ENUM
+	 * 
+	 * @return the type of the abstract file
+	 */
     public TskData.TSK_DB_FILES_TYPE_ENUM getType() {
         return type;
     }
     
+	/**
+	 * Gets file ranges associated with the file.  File ranges are objects in tsk_file_layout table
+	 * Any file type (especially unallocated) may have 1 or more block ranges associated with it
+	 * 
+	 * @return list of file layout ranges
+	 * @throws TskCoreException exception thrown if critical error occurred within tsk core
+	 */
     public abstract List<TskFileRange> getRanges() throws TskCoreException;
     
 }

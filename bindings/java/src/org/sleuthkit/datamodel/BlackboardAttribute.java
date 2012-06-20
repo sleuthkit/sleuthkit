@@ -20,8 +20,11 @@ package org.sleuthkit.datamodel;
 
 
 /**
- *
- * @author alawrence
+ * BlackboardAttribute class, a representation of db objects in tsk_blackboard_attributes table
+ * Blackboard attributes have a type and value.  Value can store any type of data.
+ * Blackboard attributes are associated with blackboard artifacts - they should not exist otherwise.
+ * Attributes also have a module name (that created it) and context (optional) - a hint 
+ * that adds more meaningful information about the data context / origin
  */
 public class BlackboardAttribute {
 
@@ -56,23 +59,23 @@ public class BlackboardAttribute {
 		}
 
 		/**
-		 * get the type id for this enum
+		 * Get the type id for this attribute type enum
 		 */
 		public long getType() {
 			return type;
 		}
 
 		/**
-		 * get the label string for this enum
+		 * Get the label string for this attribute type enum
 		 */
 		public String getLabel() {
 			return this.label;
 		}
 
 		/**
-		 * get the enum for the given type id
+		 * Get the enum type for the given type id
 		 * @param type type id
-		 * @return enum
+		 * @return enum type
 		 */
 		static public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE fromType(long type) {
 			for (TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE v : TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.values()) {
@@ -165,7 +168,8 @@ public class BlackboardAttribute {
 		}
 
 		/**
-		 * get label string
+		 * Get label string of this attribute
+		 * 
 		 * @return label string
 		 */
 		public String getLabel() {
@@ -173,7 +177,8 @@ public class BlackboardAttribute {
 		}
 
 		/**
-		 * get type id
+		 * Get type id of this attribute
+		 * 
 		 * @return type id
 		 */
 		public int getTypeID() {
@@ -181,7 +186,8 @@ public class BlackboardAttribute {
 		}
 
 		/**
-		 * get the attribute enum for the given label
+		 * Get the attribute enum for the given label
+		 * 
 		 * @param label label string
 		 * @return the enum value
 		 */
@@ -200,7 +206,8 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * constructor for a blackboard attribute. should only be used by sleuthkitCase
+	 * Constructor for a blackboard attribute. Should only be used by SleuthkitCase
+	 * 
 	 * @param artifactID artifact id for this attribute
 	 * @param attributeTypeID type id
 	 * @param moduleName module that created this attribute
@@ -231,7 +238,7 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * create a blackboard attribute that stores an int (creates an attribute that can be
+	 * Create a blackboard attribute that stores an int (creates an attribute that can be
 	 * added to an artifact)
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
@@ -253,7 +260,7 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * create a blackboard attribute that stores a long (creates an attribute that can be
+	 * Create a blackboard attribute that stores a long (creates an attribute that can be
 	 * added to an artifact)
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
@@ -276,7 +283,7 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * create a blackboard attribute that stores a double (creates an attribute that can be
+	 * Create a blackboard attribute that stores a double (creates an attribute that can be
 	 * added to an artifact)
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
@@ -299,7 +306,7 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * create a blackboard attribute that stores a string (creates an attribute that can be
+	 * Create a blackboard attribute that stores a string (creates an attribute that can be
 	 * added to an artifact)
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
@@ -322,7 +329,7 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * create a blackboard attribute that stores a byte array (creates an attribute that can be
+	 * Create a blackboard attribute that stores a byte array (creates an attribute that can be
 	 * added to an artifact)
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
@@ -345,7 +352,7 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * get the artifact id 
+	 * Get the artifact id 
 	 * @return artifact id
 	 */
 	public long getArtifactID() {
@@ -353,7 +360,7 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * get the attribute type id
+	 * Get the attribute type id
 	 * @return type id
 	 */
 	public int getAttributeTypeID() {
@@ -361,24 +368,26 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * get the attribute type id
-	 * @return type id
+	 * Get the attribute type name string
+	 * @return type name string
 	 */
 	public String getAttributeTypeName() throws TskCoreException {
 		return Case.getAttrTypeString(attributeTypeID);
 	}
 
 	/**
-	 * get the attribute type id
-	 * @return type id
+	 * Get the attribute type display name
+	 * @return type display name
 	 */
 	public String getAttributeTypeDisplayName() throws TskCoreException {
 		return Case.getAttrTypeDisplayName(attributeTypeID);
 	}
 
 	/**
-	 * get the value type (this should be used to identify the type of value and call
-	 * the right value get method)
+	 * Get the value type 
+	 * This should be used to identify the type of value and call
+	 * the right value get method.
+	 * 
 	 * @return value type
 	 */
 	public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() {
@@ -386,7 +395,8 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * get the value if it is an int
+	 * Get the value if it is an int
+	 * 
 	 * @return value
 	 */
 	public int getValueInt() {
@@ -394,7 +404,8 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * get value if it is a long
+	 * Get value if it is a long
+	 * 
 	 * @return value
 	 */
 	public long getValueLong() {
@@ -402,7 +413,8 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * get value if it is a double
+	 * Get value if it is a double
+	 * 
 	 * @return value
 	 */
 	public double getValueDouble() {
@@ -410,7 +422,8 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * get value if it is a string
+	 * Get value if it is a string
+	 * 
 	 * @return value
 	 */
 	public String getValueString() {
@@ -418,7 +431,8 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * get value if it is a byte array
+	 * Get value if it is a byte array
+	 * 
 	 * @return value
 	 */
 	public byte[] getValueBytes() {
@@ -426,7 +440,8 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * get module name
+	 * Get module name of the module that created the attribute
+	 * 
 	 * @return name
 	 */
 	public String getModuleName() {
@@ -434,7 +449,8 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * get context
+	 * Get context of the data stored in the attribute, if set
+	 * 
 	 * @return context
 	 */
 	public String getContext() {
@@ -442,26 +458,30 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * get the artifact that this is associated (which can be used to find the associated
-	 * file
+	 * Get the artifact that this attribute is associated with 
+	 * The artifact can be used to find the associated file and other attributes
+	 * associated with this artifact.
+	 * 
 	 * @return artifact
-	 * @throws TskException
+	 * @throws TskException exception thrown when critical error occurred within tsk core
 	 */
 	public BlackboardArtifact getParentArtifact() throws TskCoreException {
 		return Case.getBlackboardArtifact(artifactID);
 	}
 
 	/**
-	 * set the artifactID, this should only be used by sleuthkitCase
-	 * @param artifactID artifactID
+	 * Set the artifactID, this should only be used by sleuthkitCase
+	 * 
+	 * @param artifactID artifactID to set on a newly created attribute
 	 */
 	protected void setArtifactID(long artifactID) {
 		this.artifactID = artifactID;
 	}
 
 	/**
-	 * set the sleuthkitCase, this should only be used by sleuthkitCase
-	 * @param Case case
+	 * Set the SleuthkitCase handle, this should only be used by SleuthkitCase
+	 * on a newly created attribute
+	 * @param Case case handle to associated with this attribute
 	 */
 	protected void setCase(SleuthkitCase Case) {
 		this.Case = Case;
