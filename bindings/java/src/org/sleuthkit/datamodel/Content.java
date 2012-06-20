@@ -27,9 +27,9 @@ import java.util.List;
 public interface Content extends SleuthkitVisitableItem{
     
     /**
-     * Read data from the content in the sleuthkit
-     * @param buf a character array of data (in bytes) to write to 
-     * @param offset offset to start reading from
+     * Read data from the content object 
+     * @param buf a character array of data (in bytes) to copy read data to 
+     * @param offset offset in the content to start reading from
      * @param len amount of data to read (in bytes)
      * @return num of bytes read, or -1 on error
      * @throws TskCoreException if critical error occurred during read in the tsk core

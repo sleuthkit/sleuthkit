@@ -47,14 +47,6 @@ public class ReadContentInputStream extends InputStream {
         return read(b, 0, b.length);
     }
 
-	/**
-	 * Read content into a buffer
-	 * @param b buffer to write read data into
-	 * @param off offset in the buffer to start writing to
-	 * @param len length bytes to read
-	 * @return number of bytes read or -1 if end of stream
-	 * @throws IOException exception thrown if error occurred and data could not be read, signifying end of stream
-	 */
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         

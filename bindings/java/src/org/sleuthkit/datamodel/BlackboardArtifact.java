@@ -116,12 +116,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 			return this.displayName;
 		}
 
-		/**
-		 * A method to accept a visitor SleuthkitItemVisitor, and execute an algorithm on this object
-		 * @param <T> the visitor generic class type, object of that type needs to be returned
-		 * @param v the visitor to accept
-		 * @return object of generic type T to return
-		 */
+
 		@Override
 		public <T> T accept(SleuthkitItemVisitor<T> v) {
 			return v.visit(this);
@@ -247,12 +242,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		return Case;
 	}
 
-	/**
-	 * Compare this artifact with the given object
-	 * Ensure that the artifacts have the same ID
-	 * @param obj other object of any type
-	 * @return Whether this object is equal to the given one (is of the same type and has the same id)
-	 */
+
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == null) {

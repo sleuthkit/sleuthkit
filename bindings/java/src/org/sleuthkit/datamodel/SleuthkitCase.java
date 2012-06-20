@@ -1947,10 +1947,7 @@ public class SleuthkitCase {
         }
     }
 
-	/**
-	 * DO NOT CALL THIS
-	 * ensures database is closed when the object is garbage collected
-	 */
+
     @Override
     public void finalize() {
         close();

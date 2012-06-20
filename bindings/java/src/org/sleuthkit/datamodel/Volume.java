@@ -66,14 +66,7 @@ public class Volume extends AbstractContent {
 		parentVs = parent;
 	}
 
-	/**
-	 * read from this volume
-	 * @param buf buffer to read to
-	 * @param offset in bytes
-	 * @param len in bytes
-	 * @return number bytes read, or -1 if error
-	 * @throws TskCoreException exception thrown if critical error occurs within TSK core
-	 */
+	
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		// read from the volume
@@ -83,10 +76,7 @@ public class Volume extends AbstractContent {
 		return SleuthkitJNI.readVsPart(volumeHandle, buf, offset, len);
 	}
 
-	/**
-	 * Get size of the volume 
-	 * @return size of the volume in sectors
-	 */
+
 	@Override
 	public long getSize() {
 		// size of the volume
@@ -216,46 +206,25 @@ public class Volume extends AbstractContent {
 	}
 
 	
-	/**
-     * Visitor pattern support for sleuthkit item objects 
-	 * (tsk database objects, such as content and artifacts)
-     * @param <T> visitor algorithm return type
-     * @param v visitor supplying an algorithm to run on the sleuthkit item object
-     * @return visitor return value resulting from running the algorithm
-     */
+
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
-	/**
-	 * Visitor pattern support for content objects only
-	 * 
-	 * @param <T> visitor algorithm return type
-	 * @param v visitor supplying an algorithm to run on the content object
-	 * @return visitor return value resulting from running the algorithm
-	 */
+
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
 
-	/**
-	 * Gets child content objects of this volume
-	 * 
-	 * @return list of child content objects
-	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core
-	 */
+
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getVolumeChildren(this);
 	}
 
-	/**
-	 * get the image this volume belongs to
-	 * @return the parent image object
-	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core 
-	 */
+
 	@Override
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();

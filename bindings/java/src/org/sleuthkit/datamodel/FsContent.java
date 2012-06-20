@@ -112,14 +112,7 @@ public abstract class FsContent extends AbstractFile {
 		parentFileSystem = parent;
 	}
 
-	/**
-	 * 
-	 * @param buf buffer to read to
-	 * @param offset byte offset of the file system where to start reading
-	 * @param len length bytes to read
-	 * @return number of bytes read of -1
-	 * @throws TskCoreException exception thrown if error occurred within tsk core and data could not be read
-	 */
+
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		if (fileHandle == 0) {
@@ -177,11 +170,7 @@ public abstract class FsContent extends AbstractFile {
 		return parentFileSystem;
 	}
 	
-	/**
-	 * Get the image handle
-	 * @return the handle to the root image
-	 * @throws TskCoreException exception thrown if error occurred in tsk core
-	 */
+
 	@Override
 	public Image getImage() throws TskCoreException {
 		return this.getFileSystem().getImage();
@@ -275,23 +264,13 @@ public abstract class FsContent extends AbstractFile {
 		return FsContent.metaFlagToString(meta_flags);
 	}
 
-	/**
-	 * Get the size of the content
-	 * @return size of the content
-	 */
+
 	@Override
 	public long getSize() {
 		return size;
 	}
 
-	/**
-	 * Get file layout ranges info for this FsContent
-	 * Ranges are stored in tsk_file_layout table
-	 * A file can have one or more ordered layout objects that specify physical layout of the file on disk
-	 * This is especially useful for creating "virtual" files from blocks of data to analyze them as files,
-	 * but layout for "real" file-system files can also be stored.
-	 * @return list of file layout ranges
-	 */
+
 	@Override
 	public List<TskFileRange> getRanges() {
 		return Collections.<TskFileRange>emptyList();
@@ -420,11 +399,7 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	
-	/**
-	 * DO NOT CALL
-	 * Ensures that internal tsk object is closed and deallocated when the FsContent object
-	 * is garbage-collected
-	 */
+
 	@Override
 	public void finalize() {
 		if (fileHandle != 0) {

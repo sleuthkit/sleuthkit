@@ -53,14 +53,7 @@ public class VolumeSystem extends AbstractContent {
 		this.parent = parent;
 	}
 
-	/**
-	 * Read data from the volume system
-	 * @param readBuffer buffer to copy read data to
-	 * @param offset byte offset in the volume system to start reading from
-	 * @param len number of bytes to read
-	 * @return number of bytes read or -1 if error
-	 * @throws TskCoreException exception thrown if critical error occurred within TSK core
-	 */
+
 	@Override
 	public int read(byte[] readBuffer, long offset, long len) throws TskCoreException {
 		if (volumeSystemHandle == 0) {
@@ -77,10 +70,7 @@ public class VolumeSystem extends AbstractContent {
 		return parent;
 	}
 
-	/**
-	 * get the size of the volume system
-	 * @return the size of the volume system
-	 */
+
 	@Override
 	public long getSize() {
 		return 0;
@@ -124,10 +114,7 @@ public class VolumeSystem extends AbstractContent {
 		return volumeSystemHandle;
 	}
 
-	/**
-	 * DO NOT CALL
-	 * Ensures volume systme handle is closed when the object is garbage collected
-	 */
+
 	@Override
 	public void finalize() {
 		if (volumeSystemHandle != 0) {
@@ -135,48 +122,27 @@ public class VolumeSystem extends AbstractContent {
 		}
 	}
 
-	/**
-	 * Visitor pattern support for sleuthkit item objects 
-	 * (tsk database objects, such as content and artifacts)
-	 * @param <T> visitor algorithm return type
-	 * @param v visitor supplying an algorithm to run on the sleuthkit item object
-	 * @return visitor return value resulting from running the algorithm
-	 */
+
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
-	/**
-	 * Visitor pattern support for content objects only
-	 * 
-	 * @param <T> visitor algorithm return type
-	 * @param v visitor supplying an algorithm to run on the content object
-	 * @return visitor return value resulting from running the algorithm
-	 */
+
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
 
 	
-	/**
-	 * Gets child content objects of this volume system
-	 * 
-	 * @return list of child content objects
-	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core
-	 */
+
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getVolumeSystemChildren(this);
 	}
 
 	
-	/**
-	 * Get the image this volume system belongs to
-	 * @return the parent image object
-	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core
-	 */
+
 	@Override
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();

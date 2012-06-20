@@ -64,21 +64,13 @@ public class Image extends AbstractContent {
 		return imageHandle;
 	}
 
-	/**
-	 * Get the image for this image.  Does not do anything, returns itself.
-	 * @return the same image object
-	 */
+
 	@Override
 	public Image getImage() {
 		return this;
 	}
 
-	/**
-	 * DO NOT CALL
-	 * Ensures internal tsk image handle is closed and resources deallocated
-	 * when java object is garbage-collected
-	 * @throws Throwable 
-	 */
+
 	@Override
 	public void finalize() throws Throwable {
 		super.finalize();
@@ -87,25 +79,13 @@ public class Image extends AbstractContent {
 		}
 	}
 
-	/**
-	 * Read data from the image
-	 * @param buf the buffer to read to
-	 * @param offset in bytes
-	 * @param len in bytes
-	 * @return number of bytes read, -1 if error
-	 * @throws TskCoreException exception thrown if critical tsk error occurred and data could not be read
-	 */
+
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		// read from the image
 		return SleuthkitJNI.readImg(getImageHandle(), buf, offset, len);
 	}
 
-	/**
-	 * Get the image size, not applicable to image.
-	 * Use this method on content children (volumes, file systems, ...) instead.
-	 * @return returns 0
-	 */
 	@Override
 	public long getSize() {
 		return 0;
@@ -235,38 +215,20 @@ public class Image extends AbstractContent {
 	}
 
 	
-	/**
-     * Visitor pattern support for sleuthkit item objects 
-	 * (tsk database objects, such as content and artifacts)
-     * @param <T> visitor algorithm return type
-     * @param v visitor supplying an algorithm to run on the sleuthkit item object
-     * @return visitor return value resulting from running the algorithm
-     */
+
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
-	
-	/**
-     * Visitor pattern support for content objects only
-	 * 
-     * @param <T> visitor algorithm return type
-     * @param v visitor supplying an algorithm to run on the content object
-     * @return visitor return value resulting from running the algorithm
-     */
+
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
 
 	
-	/**
-	 * Gets child content objects of this image
-	 * 
-	 * @return list of child content objects
-	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core
-	 */
+	
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getImageChildren(this);

@@ -70,14 +70,7 @@ public class FileSystem extends AbstractContent {
 		parent = p;
 	}
 
-	/**
-	 * Read data from the file system
-	 * @param buf buffer to read to
-	 * @param offset offset in bytes from the start of the file system
-	 * @param len how many bytes to read
-	 * @return number bytes read, or -1 if error
-	 * @throws TskException
-	 */
+
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		return SleuthkitJNI.readFs(getFileSystemHandle(), buf, offset, len);
@@ -91,11 +84,7 @@ public class FileSystem extends AbstractContent {
 		return parent;
 	}
 
-	/**
-	 * Get the size of the file system
-	 * 
-	 * @return size of the file system
-	 */
+
 	@Override
 	public long getSize() {
 		// size of the file system
@@ -177,11 +166,7 @@ public class FileSystem extends AbstractContent {
 		return last_inum;
 	}
 
-	/**
-	 * DO NOT USE
-	 * Ensures the cached internal tsk fs handle is closed 
-	 * when the object is garbage-collected
-	 */
+
 	@Override
 	public void finalize() {
 		if (filesystemHandle != 0) {
@@ -189,44 +174,25 @@ public class FileSystem extends AbstractContent {
 		}
 	}
 
-	/**
-	 * Visitor pattern support for sleuthkit item objects 
-	 * (tsk database objects, such as content and artifacts)
-	 * @param <T> visitor algorithm return type
-	 * @param v visitor supplying an algorithm to run on the sleuthkit item object
-	 * @return visitor return value resulting from running the algorithm
-	 */
+
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
-	/**
-	 * Visitor pattern support for content objects only
-	 * @param <T> visitor algorithm return type
-	 * @param v visitor supplying an algorithm to run on the content object
-	 * @return visitor return value resulting from running the algorithm
-	 */
+
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
 
-	/**
-	 * Gets child content objects of this file system
-	 * @return list of child content objects
-	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core
-	 */
+
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return new ArrayList<Content>(getSleuthkitCase().getFileSystemChildren(this));
 	}
 
-	/**
-	 * Gets the parent image of this parent system
-	 * @return the parent image
-	 * @throws TskCoreException exception thrown if a critical exception occurred within tsk core 
-	 */
+
 	@Override
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
