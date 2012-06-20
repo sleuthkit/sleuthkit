@@ -21,7 +21,8 @@ package org.sleuthkit.datamodel;
 import java.util.ArrayList;
 
 /**
- * Implements some general methods from the Content interface. 
+ * Implements some general methods from the Content interface 
+ * common across many content sub types
  */
 public abstract class AbstractContent implements Content {
 
@@ -35,16 +36,21 @@ public abstract class AbstractContent implements Content {
         this.name = name;
     }
     
+
     @Override
     public String getName() {
         return this.name;
     }
-    
+
     @Override
     public long getId() {
         return this.obj_id;
     }
     
+	/**
+	 * Gets handle of SleuthkitCase to which this content belongs
+	 * @return the case handle
+	 */
     public SleuthkitCase getSleuthkitCase() {
         return db;
     }
@@ -71,27 +77,38 @@ public abstract class AbstractContent implements Content {
         return hash;
     }
     
+
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException{
 		return db.newBlackboardArtifact(artifactTypeID, obj_id);
-}
+	}
+	
+	
+
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException{
 		return db.newBlackboardArtifact(type, obj_id);
 	}
 	
+
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException{
 		return db.getBlackboardArtifacts(artifactTypeName, obj_id);
 	}
+	
+
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException{
 		return db.getBlackboardArtifacts(artifactTypeID, obj_id);
 	}
+	
+
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException{
 		return db.getBlackboardArtifacts(type, obj_id);
 	}
+	
+
 	@Override
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException{
 		return db.getMatchingArtifacts("WHERE obj_id = " + obj_id);
