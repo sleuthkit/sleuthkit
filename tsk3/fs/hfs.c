@@ -1266,7 +1266,10 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 
 	*is_error = 0;  // default, not an error
 
-	// TODO:  TEST entry for non-null and good data here
+	if(cat == NULL) {
+		error_detected(TSK_ERR_FS_ARG, "hfs_follow_hard_link: Pointer to Catalog entry (2nd arg) is null");
+		return 0;
+	}
 
 	TSK_FS_INFO * fs = (TSK_FS_INFO *) hfs;
 	TSK_INUM_T cnid = tsk_getu32(fs->endian, cat->std.cnid);
@@ -1300,7 +1303,6 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 				(hfs->has_meta_dir_crtime && crtime == hfs->metadir_crtime) ||
 				(hfs->has_root_crtime && crtime == hfs->root_crtime)) {
 			// OK, this is a hard link to a file.
-			//printf("hardlink file case ");
 			fflush(stdout);
 			uint32_t linkNum = tsk_getu32(fs->endian, cat->std.perm.special.inum);
 			char fNameBuf[50];
@@ -1308,12 +1310,10 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 			snprintf(fNameBuf, 50, "/" UTF8_NULL_REPLACE  UTF8_NULL_REPLACE UTF8_NULL_REPLACE UTF8_NULL_REPLACE
 					"HFS+ Private Data/iNode%" PRIu32, linkNum);
 			TSK_INUM_T target_cnid;   //  This is the real CNID of the file.
-			TSK_FS_FILE * result_file;
 
 			int8_t result = tsk_fs_path2inum(fs, fNameBuf, &target_cnid, NULL);
 			if(result == 0) {
 				// Succeeded in finding that target_cnid in the Catalog file
-				//printf(" %" PRIuINUM " --> %" PRIuINUM "\n", cnid, target_cnid);
 				return target_cnid;
 			} else {
 				// This should be a hard link, BUT...
@@ -1345,31 +1345,23 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 			return cnid;
 		}
 
-		//printf("crtime = %u  meta cr time = %u  dir cr time = %u  root cr time = %u\n",
-		//		crtime, hfs->meta_crtime, hfs->metadir_crtime, hfs->root_crtime);
-
 		// Now we need to check the creation time against the three FS creation times
 		if((hfs->has_meta_crtime && crtime == hfs->meta_crtime) ||
 				(hfs->has_meta_dir_crtime && crtime == hfs->metadir_crtime) ||
 				(hfs->has_root_crtime && crtime == hfs->root_crtime)) {
 			// OK, this is a hard link to a directory.
-			//printf("hardlink directory case ");
 			fflush(stdout);
 			uint32_t linkNum = tsk_getu32(fs->endian, cat->std.perm.special.inum);
 			char fNameBuf[50];
 			memset(fNameBuf, 0, 50);
 			snprintf(fNameBuf, 50, "/.HFS+ Private Directory Data%c/dir_%" PRIu32, (char) 0xD, linkNum);
 			TSK_INUM_T target_cnid;   //  This is the real CNID of the file.
-			TSK_FS_FILE * result_file;
 
-			//printf("Calling path2inum, with %s\n", fNameBuf);
-			//fflush(stdout);
+
 			int8_t result = tsk_fs_path2inum(fs, fNameBuf, &target_cnid, NULL);
-			//printf("path2inum result = %d\n", result);
-			//fflush(stdout);
+
 			if(result == 0) {
 				// Succeeded in finding that target_cnid in the Catalog file
-				//printf(" %" PRIuINUM " --> %" PRIuINUM "\n", cnid, target_cnid);
 				return target_cnid;
 			} else {
 				// This should be a hard link to a directory, BUT...
@@ -1393,7 +1385,6 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 			}
 		}
 	}
-	//printf("not a hard link case\n");
 	// It cannot be a hard link (file or directory)
 	return cnid;
 }
@@ -2177,9 +2168,10 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
     TSK_FS_FILE * a_fs_file)
 {
 
-	// Note, a_hfs_entry->cat is really of type hfs_file.  But, the first
-	// member of that struct is a hfs_file_folder.  So, this cast is appropriate.
-	const hfs_file_folder * a_entry = &(a_hfs_entry->cat);
+	// Note, a_hfs_entry->cat is really of type hfs_file.  But, hfs_file_folder is a union
+	// of that type with hfs_folder.  Both of hfs_file and hfs_folder have the same first member.
+	// So, this cast is appropriate.
+	const hfs_file_folder * a_entry = (hfs_file_folder *) &(a_hfs_entry->cat);
 
 	TSK_FS_META * a_fs_meta = a_fs_file->meta;
 
@@ -2416,10 +2408,10 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
         return 1;
 
     /* Copy the structure in hfs to generic fs_inode */
-    if (hfs_dinode_copy(hfs, (const hfs_file_folder *) &entry,
-            a_fs_file)) {
+    if (hfs_dinode_copy(hfs,  &entry,   a_fs_file)) {
         return 1;
     }
+
 
     return 0;
 }
@@ -2437,7 +2429,7 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
 {
     TSK_FS_INFO *fs;
-    HFS_INFO *hfs;
+    //HFS_INFO *hfs;
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
@@ -2466,11 +2458,11 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     }
 
     fs = fs_attr->fs_file->fs_info;
-    hfs = (HFS_INFO *) fs;
+    //hfs = (HFS_INFO *) fs;
     TSK_ENDIAN_ENUM endian = fs->endian;
 
     /* This MUST be a compressed attribute     */
-    if (!fs_attr->flags & TSK_FS_ATTR_COMP) {
+    if (!(fs_attr->flags & TSK_FS_ATTR_COMP)) {
         error_detected(TSK_ERR_FS_FWALK,
             "hfs_attr_walk_special: called with non-special attribute: %x",
             fs_attr->flags);
@@ -2686,7 +2678,7 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         tsk_fprintf(stderr,
             "hfs_file_read_special: called because this file is compressed, with data in the resource fork\n");
     TSK_FS_INFO *fs = NULL;
-    HFS_INFO *hfs = NULL;
+    //HFS_INFO *hfs = NULL;
 
     // Reading zero bytes?  OK at any offset, I say!
     if (a_len == 0)
@@ -2701,11 +2693,11 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     }
 
     fs = a_fs_attr->fs_file->fs_info;
-    hfs = (HFS_INFO *) fs;
+    //hfs = (HFS_INFO *) fs;
     TSK_ENDIAN_ENUM endian = fs->endian;
 
     // This should be a compressed file.  If not, that's an error!
-    if (!a_fs_attr->flags & TSK_FS_ATTR_COMP) {
+    if (!(a_fs_attr->flags & TSK_FS_ATTR_COMP)) {
         error_detected(TSK_ERR_FS_ARG,
             "hfs_file_read_special: called with non-special attribute: %x",
             a_fs_attr->flags);
@@ -3464,8 +3456,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                         tsk_getu64(TSK_LIT_ENDIAN,
                         cmph->uncompressed_size);
                     *uncompressedSize = uncSize;
-                    unsigned char reallyCompressed;
-                    uint64_t cmpSize = 0;
+                    //unsigned char reallyCompressed;
+                    //uint64_t cmpSize = 0;
                     if (cmpType == 3) {
                         // Data is inline.  We will load the uncompressed data as a resident attribute.
                         if (tsk_verbose)
@@ -3495,8 +3487,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                     tsk_fprintf(stderr,
                                         "hfs_load_extended_attrs: Leading byte, 0x0F, indicates that the data is not really compressed.\n"
                                         "hfs_load_extended_attrs:  Loading the default DATA attribute.");
-                                reallyCompressed = FALSE;
-                                cmpSize = attributeLength - 17; // subtr. size of header + 1 indicator byte
+                                //reallyCompressed = FALSE;
+                                //cmpSize = attributeLength - 17; // subtr. size of header + 1 indicator byte
 
                                 // Load the remainder of the attribute as 128-0
                                 // set the details in the fs_attr structure.  Note, we are loading this
@@ -3516,12 +3508,12 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                             }
                             else {      // Leading byte is not 0x0F
-                                reallyCompressed = TRUE;
+                                //reallyCompressed = TRUE;
 #ifdef HAVE_LIBZ
                                 if (tsk_verbose)
                                     tsk_fprintf(stderr,
                                         "hfs_load_extended_attrs: Uncompressing (inflating) data.");
-                                cmpSize = attributeLength - 16; // subt size of header
+                                // cmpSize = attributeLength - 16; // subt size of header
                                 // Uncompress the remainder of the attribute, and load as 128-0
                                 char *uncBuf = (char *) tsk_malloc(uncSize + 100);        // add some extra space
                                 if (uncBuf == NULL) {
@@ -3602,7 +3594,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     }
                     else if (cmpType == 4) {
                         // Data is compressed in the resource fork
-                        reallyCompressed = TRUE;
+                        //reallyCompressed = TRUE;
                         *compDataInRSRC = TRUE; // The compressed data is in the RSRC fork
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
@@ -4061,100 +4053,6 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                 "hfs_load_attrs: Previous attempt to load attributes resulted in error\n");
         return 1;
     }
-
-    /* Some notes on how to implement hard links.
-     *
-     @@@ We need to detect hard links and load up the indirect node info
-     instead of the current node info.
-
-     //Detect Hard links
-     else if ((tsk_getu32(fs->endian,
-     entry.cat.std.u_info.file_type) == HFS_HARDLINK_FILE_TYPE)
-     && (tsk_getu32(fs->endian,
-     entry.cat.std.u_info.file_cr) ==
-     HFS_HARDLINK_FILE_CREATOR)) {
-
-     //  Get the indirect node value
-     tsk_getu32(fs->endian, entry.cat.std.perm.special.inum)
-
-     // Find the indirect node
-     "/____HFS+ Private Data/iNodeXXXX"
-     // Load its runs and look in extents for others (based on its CNID)
-     *
-     * PROPOSED:
-     if ((tsk_getu32(fs->endian,
-     entry.cat.std.u_info.file_type) == HFS_HARDLINK_FILE_TYPE)
-     && (tsk_getu32(fs->endian,
-     entry.cat.std.u_info.file_cr) ==
-     HFS_HARDLINK_FILE_CREATOR)) {
-
-     //  Get the indirect node value
-     uint32_t iinum = tsk_getu32(fs->endian, entry.cat.std.perm.special.inum);
-
-     Now, need to find the  file.  iinum is actually part of the
-     filename.  We find *that* file and then use its cnid (or inum).
-
-     #include "tsk_fs.h"  <- need this
-
-     fs_file = tsk_fs_open_file_meta(fs, NULL, @@@iinum);
-
-     // Now repeat the logic from above. This fs_file must be well formed
-     if ((fs_file == NULL) || (fs_file->meta == NULL)
-     || (fs_file->fs_info == NULL)) {
-     tsk_errno = TSK_ERR_FS_ARG;
-     tsk_error_set_errstr(
-     "hfs_load_attrs: fs_file or meta is NULL");
-     return 1;
-     }
-
-     // All is well.  No need to recompute fs and hfs -- they should be the same
-
-     }  // OK, now continue with normal processing, but use the new fs_file.
-
-     *************** END of proposed hardlink code ***********************************/
-//  I am saving the following Hardlink code -- trying a different approach.
-
-//    printf("BB Meta = %llu\n", (long long unsigned int)fs_file->meta);
-//    fflush(stdout);
-//
-//    TSK_FS_FILE *link_file;
-//    unsigned char is_error;
-//    link_file = hfs_is_hard_link(fs_file, NULL, &is_error);
-//    if(is_error) {
-//    	tsk_fprintf(stderr, "WARNING: Error occurred in trying to test for a"
-//    			" hard link.  Will treat file as a non-link.\n");
-//    	tsk_error_print(stderr);
-//    	tsk_error_reset();
-//    } else if(link_file != NULL){
-//    	if(link_file->meta == NULL) {
-//    		tsk_fprintf(stderr, "hfs_load_attrs: WARNING, hard link target exists"
-//    				" but does not have metadata.\n");
-//    	} else {
-//    		if(tsk_verbose)
-//    			tsk_fprintf(stderr, "hfs_load_attrs: File is a hard link, real inum (CNID) is %"
-//    					PRIuINUM "\n", link_file->meta->addr);
-//    		tsk_fs_meta_close(fs_file->meta);
-//    		fs_file->meta = link_file->meta;
-//
-//    		// Now, we want to "close" the link_file, but that would also free the metadata,
-//    		// which we want to save. So, we do it by hand.
-//    		if ( (link_file->tag == TSK_FS_FILE_TAG)) {
-//
-//    			link_file->tag = 0;
-//    			if (link_file->name) {
-//    				tsk_fs_name_free(link_file->name);
-//    				link_file->name = NULL;
-//    			}
-//
-//    			free(link_file);
-//    		}
-//
-//    	}
-//    }
-//
-//    printf("CC Meta = %llu\n", (long long unsigned int) fs_file->meta);
-//    fflush(stdout);
-
 
     // Initialize the attribute counter
     reset_attribute_counter();
@@ -6003,9 +5901,12 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     // Now the metadata directory
     TSK_INUM_T inum;
-    // TODO:  I may need to construct this string more carefully, so that the "null replacement"
-    // is given by a parameter.  Vanilla TSK uses '^' but other systems such as Mac Marshal
-    // use 0xfffd (UTF16).  This is claimed to translate to 0xEF 0xBF 0xBD.
+    // The metadata directory is a sub-directory of the root.  Its name begins with four nulls, followed
+    // by "HFS+ Private Data".  The file system parsing code replaces nulls in filenames with UTF8_NULL_REPLACE.
+    // In the released version of TSK, this replacement is the character '^'.
+    // NOTE: There is a standard Unicode replacement which is 0xfffd in UTF16 and 0xEF 0xBF 0xBD in UTF8.
+    // Systems that require the standard definition can redefine UTF8_NULL_REPLACE and UTF16_NULL_REPLACE
+    // in tsk_hfs.h
     int8_t result = tsk_fs_path2inum(fs, "/" UTF8_NULL_REPLACE UTF8_NULL_REPLACE UTF8_NULL_REPLACE UTF8_NULL_REPLACE
     		"HFS+ Private Data", &inum, NULL);
     if(result == 0) {
@@ -6024,6 +5925,10 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     // Now, the directory metadata directory!
     char dirn[31];
     memset(dirn, 0, 31);
+
+    // The "directory" metadata directory, where hardlinked directories actually live, is a subdirectory
+    // of the root.  The beginning of the name of this directory is ".HFS+ Private Directory Data" which
+    // is followed by a carriage return (ASCII 13).
     strncpy(dirn, "/.HFS+ Private Directory Data", 29);
     dirn[29] = (char) 13;
 

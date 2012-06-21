@@ -148,10 +148,16 @@
 
 #define UTF16_NULL 0x0000
 #define UTF16_NULL_REPLACE 0x005e
+
+// This is the standard Unicode replacement character in UTF16
+//#define UTF16_NULL_REPLACE 0xfffd
+
 #define UTF16_SLASH 0x002f
 #define UTF16_COLON 0x003a
 #define UTF16_LEAST_PRINTABLE 0x0020
 #define UTF8_NULL_REPLACE "^"
+
+// This is the standard Unicode replacement character in UTF8
 //#define UTF8_NULL_REPLACE "\xef\xbf\xbd"
 
 
