@@ -22,8 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
- * @author dfickling
+ * Representation of Directory object, stored in tsk_files table.
+ * Directory can have other content children associated with it.
+ * There are many similarities to a File otherwise, which are defined in the parent FsContent class.
  */
 public class Directory extends FsContent{
 
@@ -39,24 +40,24 @@ public class Directory extends FsContent{
 			parent_path, md5Hash);
     }
 
-    /**
-     * is this a directory?
-     * @return true, it is a directory
-     */
+
     @Override
 	public boolean isDir(){
         return true;
     }
+
 
     @Override
     public <T> T accept(SleuthkitItemVisitor<T> v) {
         return v.visit(this);
     }
 
+
     @Override
     public <T> T accept(ContentVisitor<T> v) {
         return v.visit(this);
     }
+
 
     @Override
     public List<Content> getChildren() throws TskCoreException {
