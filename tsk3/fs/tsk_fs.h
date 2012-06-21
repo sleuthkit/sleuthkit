@@ -235,10 +235,10 @@ extern "C" {
 
         // Types for HFS+ File Attributes
         TSK_FS_ATTR_TYPE_HFS_DEFAULT = 0x01,    // 1    Data fork of fs special files and misc
-        TSK_FS_ATTR_TYPE_HFS_DATA = 0x80,       // 128  Data and RSRC forks of regular files
-        TSK_FS_ATTR_TYPE_HFS_EXT_ATTR = 0xE0,   // 224  Extended Attributes, exc. compression records
-        TSK_FS_ATTR_TYPE_HFS_COMP_REC = 0x110,  // 272  Compression records
-        TSK_FS_ATTR_TYPE_HFS_RSRC = 0x120       // 288  Individual resources in the RSRC fork
+        TSK_FS_ATTR_TYPE_HFS_DATA = 0x1100,     // 4352 Data fork of regular files
+        TSK_FS_ATTR_TYPE_HFS_RSRC = 0x1101,     // 4353 Resource fork of regular files
+        TSK_FS_ATTR_TYPE_HFS_EXT_ATTR = 0x1102, // 4354 Extended Attributes, except compression records
+        TSK_FS_ATTR_TYPE_HFS_COMP_REC = 0x1103, // 4355 Compression records
     } TSK_FS_ATTR_TYPE_ENUM;
 
 #define TSK_FS_ATTR_ID_DEFAULT  0       ///< Default Data ID used if file system does not assign one.

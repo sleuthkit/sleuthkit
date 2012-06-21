@@ -306,9 +306,8 @@ extern "C" {
 #define TSK_ERR_MASK	0x00ffffff
 
 #define TSK_ERR_AUX_MALLOC	(TSK_ERR_AUX | 0)
-#define TSK_ERR_AUX_BLANK   (TSK_ERR_AUX | 1)
 #define TSK_ERR_AUX_GENERIC (TSK_ERR_AUX | 2)
-#define TSK_ERR_AUX_MAX		3
+#define TSK_ERR_AUX_MAX		2
 
 #define TSK_ERR_IMG_NOFILE	(TSK_ERR_IMG | 0)
 #define TSK_ERR_IMG_OFFSET	(TSK_ERR_IMG | 1)
