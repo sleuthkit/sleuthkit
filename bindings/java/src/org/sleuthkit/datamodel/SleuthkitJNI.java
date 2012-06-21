@@ -46,6 +46,7 @@ public class SleuthkitJNI {
 	private static native void closeDbLookupsNat() throws TskCoreException;
 	private static native int knownBadDbLookup(String hash, int dbHandle) throws TskCoreException;
 	private static native int nsrlDbLookup(String hash) throws TskCoreException;
+	private static native int getIndexSizeNat(String hashDbPath) throws TskCoreException;
 
 	
 	//load image
@@ -531,6 +532,16 @@ public class SleuthkitJNI {
 	 */
 	public static TskData.FileKnown knownBadHashLookup(String hash, int dbHandle) throws TskCoreException{
 		return TskData.FileKnown.valueOf(knownBadDbLookup(hash, dbHandle));
+	}
+	
+	/**
+	 * Get the size of the index of the given database
+	 * @param path the path to the database
+	 * @return the size of the index or -1 if it doesn't exist
+	 * @throws TskCoreException
+	 */
+	public static int getIndexSize(String path) throws TskCoreException{
+		return getIndexSizeNat(path);
 	}
 	
 	/**
