@@ -161,15 +161,16 @@ public class SleuthkitJNI {
 		
 	
 		/**
-		 * Start the process of adding a disk image to the case. 
+		 * Start the process of adding a disk image to the case
+		 * 
 		 * @param timezone Timezone that image was from
 		 * @param processUnallocSpace true if to process unallocated space in the image
 		 * @param noFatFsOrphans true if to skip processing of orphans on FAT filesystems 
 		 * 
 		 * @return Object that can be used to manage the process.
 		 */
-		AddImageProcess initAddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrhpans) {
-			return new AddImageProcess(timezone, processUnallocSpace, noFatFsOrhpans);
+		AddImageProcess initAddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) {
+			return new AddImageProcess(timezone, processUnallocSpace, noFatFsOrphans);
 		}
 		
 		/**
@@ -330,6 +331,7 @@ public class SleuthkitJNI {
 
 	/**
 	 * Get volume system Handle
+	 * @param imgHandle a handle to previously opened image
 	 * @param vsOffset byte offset in the image to the volume system (usually 0)
 	 * @return pointer to a vsHandle structure in the sleuthkit
 	 * @throws TskCoreException exception thrown if critical error occurs within TSK
@@ -556,6 +558,7 @@ public class SleuthkitJNI {
 	/**
 	 * Look up the given hash in the known bad database
 	 * @param hash
+	 * @param dbHandle previously opened hash db handle
 	 * @return the status of the hash in the known bad database
 	 * @throws TskCoreException if a critical error occurs within TSK core 
 	 */

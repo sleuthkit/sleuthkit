@@ -36,15 +36,16 @@ public class FileSystem extends AbstractContent {
 
 	/**
 	 * Constructor most inputs are from the database
-	 * @param db java database class
-	 * @param obj_id
-	 * @param img_offset
-	 * @param fs_type
-	 * @param block_size
-	 * @param block_count
-	 * @param root_inum
-	 * @param first_inum
-	 * @param last_inum
+	 * @param db the case handle
+	 * @param obj_id the unique object id
+	 * @param name filesystem name
+	 * @param img_offset image offset
+	 * @param fs_type filesystem type
+	 * @param block_size block size in this fs
+	 * @param block_count number of blocks in this fs
+	 * @param root_inum the root inum
+	 * @param first_inum the first inum
+	 * @param last_inum the last inum
 	 */
 	protected FileSystem(SleuthkitCase db, long obj_id, String name, long img_offset,
 			long fs_type, long block_size, long block_count, long root_inum,

@@ -67,8 +67,10 @@ public class SleuthkitCase {
     /**
      * constructor (private) - client uses openCase() and newCase() instead
      * @param dbPath path to the database
+	 * @param caseHandle handle to the case database API
      * @throws SQLException thrown if SQL error occurred
      * @throws ClassNotFoundException thrown if database driver could not be loaded
+	 * @throws TskCoreException thrown if critical error occurred within TSK case
      */
     private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException, TskCoreException {
         Class.forName("org.sqlite.JDBC");
@@ -577,6 +579,7 @@ public class SleuthkitCase {
      * add an attribute type with the given name
 	 * 
      * @param attrTypeString name of the new attribute
+	 * @param displayName the (non-unique) display name of the attribute type
      * @return the id of the new attribute
      * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
@@ -592,6 +595,7 @@ public class SleuthkitCase {
      * helper method. add an attribute type with the given name and id
 	 * 
      * @param attrTypeString type name
+	 * @param displayName the (non-unique) display name of the attribute type
      * @param typeID type id
      * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
@@ -831,6 +835,7 @@ public class SleuthkitCase {
      * helper method. add an artifact with the given type and id
 	 * 
      * @param artifactTypeName type name
+	 * @param displayName Display (non-unique) name of artifact
      * @param typeID type id
      * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
@@ -929,6 +934,7 @@ public class SleuthkitCase {
      * returned blackboard artifact
 	 * 
      * @param artifactTypeID the type the given artifact should have
+	 * @param obj_id the content object id associated with this artifact
      * @return a new blackboard artifact
 	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
@@ -959,6 +965,7 @@ public class SleuthkitCase {
      * Add a new blackboard artifact with the given type.
 	 * 
      * @param artifactType the type the given artifact should have
+	 * @param obj_id the content object id associated with this artifact
      * @return a new blackboard artifact
 	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
      */
@@ -2082,65 +2089,6 @@ public class SleuthkitCase {
             SleuthkitCase.dbWriteUnlock();
         }
     }
-//	/**
-//	 * Update the given hash and known status of the object in the DB denoted by id
-//	 *
-//	 * @param id		The object's unique ID in the database
-//	 * @param md5Hash	The object's calculated md5 hash
-//	 * @param fileKnown	The object's known status
-//	 * @throws SQLException
-//	 */
-//	private void updateHashAndKnown(long id, String md5Hash, FileKnown fileKnown) throws SQLException {
-//		synchronized (caseLock) {
-//			Statement s = con.createStatement();
-//			s.executeUpdate("UPDATE tsk_files "
-//					+ "SET known='" + fileKnown.toLong() + "', md5='" + md5Hash + "' "
-//					+ "WHERE obj_id=" + id);
-//			s.close();
-//		}
-//	}
-//
-//	Useful if we want to queue sql updates for performance reasons
-//	/**
-//	 * Update the given hash and known status of the objects in the DB denoted by id
-//	 *
-//	 * @param ids		The objects' unique IDs in the database
-//	 * @param md5Hashes	The objects' calculated md5 hashes
-//	 * @param knowns	The objects' known statuses
-//	 * @throws SQLException
-//	 */
-//	private void updateHashesAndKnowns(List<Long> ids, List<String> md5Hashes, List<Long> knowns) throws SQLException{
-//		int idsSize = ids.size();
-//		int md5sSize = md5Hashes.size();
-//		int knownsSize = knowns.size();
-//		if(idsSize == md5sSize && md5sSize == knownsSize && knownsSize == idsSize){
-//			StringBuilder query = new StringBuilder("UPDATE tsk_files SET known = CASE obj_id");
-//			for(int i = 0; i<idsSize; i++){
-//				// " WHEN id THEN known"
-//				query.append(" WHEN ").append(ids.get(i))
-//					 .append(" THEN ").append(knowns.get(i));
-//			}
-//			query.append(" END, md5 = CASE obj_id");
-//			for(int i = 0; i<idsSize; i++){
-//				// " WHEN id THEN hash"
-//				query.append(" WHEN ").append(ids.get(i))
-//				     .append(" THEN '").append(md5Hashes.get(i)).append("'");
-//			}
-//			query.append(" END WHERE id in (");
-//			for(int i = 0; i<idsSize; i++){
-//				// "1,2,3,4,"
-//				query.append(ids.get(i)).append(",");
-//			}
-//			// remove the last unnecessary comma
-//			query.deleteCharAt(query.length()-1);
-//			query.append(")");
-//			Statement s = con.createStatement();
-//			s.executeUpdate(query.toString());
-//			s.close();
-//		}else{
-//			throw new IllegalArgumentException("Lists must be of equal length!");
-//		}
-//	}
 
     /**
      * Look up the given hash in the NSRL database
@@ -2163,39 +2111,7 @@ public class SleuthkitCase {
         return SleuthkitJNI.knownBadHashLookup(md5Hash, dbHandle);
     }
 
-//	Useful if we want to queue sql updates for performance reasons
-//	/**
-//	 * Calculate the given Content objects' md5 hashes, look them up in the
-//	 * known databases, and then update the case database with both hash and
-//	 * known status
-//	 *
-//	 * @param cont The list of contents whose md5s you want to look up
-//	 * @return	   The contents' known statuses from the databases
-//	 * @throws TskException
-//	 */
-//	public List<Long> lookupFilesMd5(List<? extends Content> cont) throws TskException{
-//		List<Long> ids = new ArrayList<Long>();
-//		List<String> md5Hashes = new ArrayList<String>();
-//		List<Long> knowns = new ArrayList<Long>();
-//
-//		try{
-//			for(Content c : cont){
-//				ids.add(c.getId());
-//				String md5Hash = Hash.calculateMd5(c);
-//				md5Hashes.add(md5Hash);
-//				knowns.add(SleuthkitJNI.lookupHash(md5Hash).toLong());
-//			}
-//			updateHashesAndKnowns(ids, md5Hashes, knowns);
-//			return knowns;
-//		} catch (TskException ex) {
-//			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE,
-//					"Error looking up known status", ex);
-//		} catch(SQLException ex) {
-//			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE,
-//				"Error updating SQL database", ex);
-//		}
-//		throw new TskException("Error analyzing files");
-//	}
+	
     /**
      * Return the number of objects in the database of a given file type.
      *

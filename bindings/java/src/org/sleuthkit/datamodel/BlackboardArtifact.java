@@ -136,6 +136,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param objID the object this artifact is associated with
 	 * @param artifactTypeID the type id of this artifact
 	 * @param artifactTypeName the type name of this artifact
+	 * @param displayName the display name of this artifact
 	 */
 	protected BlackboardArtifact(SleuthkitCase Case, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName) {
 		this.Case = Case;

@@ -47,7 +47,7 @@ public class TskCoreException extends TskException{
 	/**
 	 * Create exception containing the error message and cause exception
 	 * @param msg the message 
-	 * @param wrapped cause exception
+	 * @param ex cause exception
 	 */
 	public TskCoreException(String msg, Exception ex){
 		super(msg, ex);
