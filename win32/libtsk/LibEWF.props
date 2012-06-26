@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <LIBEWF_HOME>$(SolutionDir)\libewf</LIBEWF_HOME>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemDefinitionGroup>
+    <Lib>
+      <AdditionalLibraryDirectories>$(TargetDir);$(SolutionDir)\libewf\msvscpp\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <Link>
+      <AdditionalOptions>zlib.lib libewf.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalLibraryDirectories>$(LIBEWF_HOME)\msvscpp\release</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <BuildMacro Include="LIBEWF_HOME">
+      <Value>$(LIBEWF_HOME)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+  </ItemGroup>
+</Project>

@@ -295,11 +295,14 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             	return HFS_BTREE_CB_ERR;
             }
             if(target_cnid != file_cnid) {
+				HFS_ENTRY entry;
+				uint8_t lkup;  // lookup result
+
             	// This is a hard link.  We need to fill in the name->type and name->meta_addr from the target
             	info->fs_name->meta_addr = target_cnid;
             	// get the Catalog entry for the target CNID
-            	HFS_ENTRY entry;
-            	uint8_t lkup = hfs_cat_file_lookup(hfs, target_cnid, &entry,
+            	
+            	lkup = hfs_cat_file_lookup(hfs, target_cnid, &entry,
             			FALSE);
             	if(lkup != 0) {
             		error_returned("hfs_dir_open_meta_cb: retrieving the catalog entry for the target of a hard link");

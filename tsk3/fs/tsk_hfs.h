@@ -503,6 +503,9 @@ typedef struct {
 #define HFS_ATTR_RECORD_FORK_DATA 0x20
 #define HFS_ATTR_RECORD_EXTENTS 0x30
 
+// Maximum UTF8 size of an attribute name = 127 * 3 + 1; // 382
+#define MAX_ATTR_NAME_LENGTH 382
+
 /*
  * If a file is compressed, then it will have an extended attribute
  * with name com.apple.decmpfs.  The value of that attribute is a data
@@ -529,7 +532,7 @@ typedef struct {
 } DECMPFS_DISK_HEADER;
 
 
-#define COMPRESSION_UNIT_SIZE 65536
+#define COMPRESSION_UNIT_SIZE 65536U
 
 
 /********* CATALOG Record structures *********/
