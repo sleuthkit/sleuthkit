@@ -330,14 +330,14 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
             tsk_printf("sb version: %d\n", big_tsk_getu32(head->entry_type));
             tsk_printf("sb version: %d\n", big_tsk_getu32(journ_sb->entrytype));
             tsk_printf("sb feature_compat flags 0x%08X\n", big_tsk_getu32(journ_sb->feature_compat));
-            if(big_tsk_getu32(journ_sb->feature_compat) && JBD2_FEATURE_COMPAT_CHECKSUM)
+            if(big_tsk_getu32(journ_sb->feature_compat) & JBD2_FEATURE_COMPAT_CHECKSUM)
                 tsk_printf("\tJOURNAL_CHECKSUMS\n");
             tsk_printf("sb feature_incompat flags 0x%08X\n", big_tsk_getu32(journ_sb->feature_incompat));
-            if(big_tsk_getu32(journ_sb->feature_incompat) && JBD2_FEATURE_INCOMPAT_REVOKE) 
+            if(big_tsk_getu32(journ_sb->feature_incompat) & JBD2_FEATURE_INCOMPAT_REVOKE) 
                 tsk_printf("\tJOURNAL_REVOKE\n");
-            if(big_tsk_getu32(journ_sb->feature_incompat) && JBD2_FEATURE_INCOMPAT_64BIT) 
+            if(big_tsk_getu32(journ_sb->feature_incompat) & JBD2_FEATURE_INCOMPAT_64BIT) 
                 tsk_printf("\tJOURNAL_64BIT\n");
-            if(big_tsk_getu32(journ_sb->feature_incompat) && JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT) 
+            if(big_tsk_getu32(journ_sb->feature_incompat) & JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT) 
                 tsk_printf("\tJOURNAL_ASYNC_COMMIT\n");
             tsk_printf("sb feature_ro_incompat flags 0x%08X\n", big_tsk_getu32(journ_sb->feature_ro_incompat));
         }
@@ -359,26 +359,28 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
                         jinfo->start_seq)) ? "Unallocated " : "Allocated ",
                 big_tsk_getu32(head->entry_seq));
             ext4fs_journ_commit_head *commit_head=head;
-            tsk_printf("commit seq %" PRIu32 "\n", big_tsk_getu32(commit_head->c_header.entry_seq));
-            tsk_printf("commit checksum_type %d \n", commit_head->chksum_type);
-            switch(commit_head->chksum_type){
-                case JBD2_CRC32_CHKSUM:
-                    tsk_printf("\tCRC32\n");
-                    break;
-                case JBD2_MD5_CHKSUM:
-                    tsk_printf("\tMD5\n");
-                    break;
-                case JBD2_SHA1_CHKSUM:
-                    tsk_printf("\tSHA1\n");
-                    break;
-                default:
-                    tsk_printf("\tChecksum type unknown\n");
-                    break;
+            //tsk_printf("commit seq %" PRIu32 "\n", big_tsk_getu32(commit_head->c_header.entry_seq));
+            if(big_tsk_getu32(journ_sb->feature_compat) & JBD2_FEATURE_COMPAT_CHECKSUM)
+            {
+                tsk_printf("\t\tchecksum_type: %d,", commit_head->chksum_type);
+                switch(commit_head->chksum_type){
+                    case JBD2_CRC32_CHKSUM:
+                        tsk_printf("\tCRC32\n");
+                        break;
+                    case JBD2_MD5_CHKSUM:
+                        tsk_printf("\tMD5\n");
+                        break;
+                    case JBD2_SHA1_CHKSUM:
+                        tsk_printf("\tSHA1\n");
+                        break;
+                    default:
+                        tsk_printf("\tUNKOWN\n");
+                        break;
+                }
+                tsk_printf("\t\tchecksum_size: %d \n", commit_head->chksum_size);
+                tsk_printf("\t\tchksum: 0x%08X\n", big_tsk_getu32(commit_head->chksum));
             }
-            tsk_printf("commit checksum_size %d \n", commit_head->chksum_size);
-            tsk_printf("commit chksum 0x%08X\n", big_tsk_getu32(commit_head->chksum));
-            tsk_printf("commit sec 0x%08llX\n", tsk_getu64( TSK_BIG_ENDIAN,commit_head->commit_sec));
-            tsk_printf("commit nsec 0x%08X\n", tsk_getu32( TSK_BIG_ENDIAN,commit_head->commit_nsec));
+            tsk_printf("\t\tsec: %llu.%u\n", tsk_getu64( TSK_BIG_ENDIAN,commit_head->commit_sec), NSEC_PER_SEC/10 * tsk_getu32(TSK_BIG_ENDIAN,commit_head->commit_nsec));
         }
 
         /* The descriptor describes the FS blocks that follow it */

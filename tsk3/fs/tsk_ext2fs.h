@@ -590,6 +590,8 @@ extern "C" {
 #define JBD2_CRC32_CHKSUM_SIZE  4
 #define JBD2_CHECKSUM_BYTES (32/ sizeof(unsigned int))
 
+#define NSEC_PER_SEC 1000000000L
+
 /* Header for ext4 commit blocks */
     typedef struct {
         ext2fs_journ_head c_header;
