@@ -32,11 +32,12 @@ public class VolumeSystem extends AbstractContent {
 
 	/**
 	 * Constructor most inputs are from the database
-	 * @param db database object
-	 * @param obj_id 
-	 * @param type
-	 * @param imgOffset
-	 * @param blockSize
+	 * @param db case database handle
+	 * @param obj_id the unique content object id for the volume system
+	 * @param name name of the volume system
+	 * @param type type of the volume system
+	 * @param imgOffset offset of the volume system with respect to image
+	 * @param blockSize block size of this volume system
 	 */
 	protected VolumeSystem(SleuthkitCase db, long obj_id, String name, long type, long imgOffset, long blockSize) {
 		super(db, obj_id, name);
