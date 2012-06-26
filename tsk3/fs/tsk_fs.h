@@ -810,7 +810,7 @@ extern "C" {
     enum TSK_FS_INFO_FLAG_ENUM {
         TSK_FS_INFO_FLAG_NONE        = 0x00,   ///< No Flags
         TSK_FS_INFO_FLAG_HAVE_SEQ    = 0x01,   ///< File system has sequence numbers in the inode addresses.
-	TSK_FS_INFO_FLAG_HAVE_SUBSEC = 0x02    ///< File system has subsecond time fields 
+        TSK_FS_INFO_FLAG_HAVE_SUBSEC = 0x02    ///< File system has subsecond time fields 
     };
     typedef enum TSK_FS_INFO_FLAG_ENUM TSK_FS_INFO_FLAG_ENUM;
 

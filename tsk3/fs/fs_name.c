@@ -709,24 +709,24 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
             tsk_fprintf(hFile, "%" PRIuOFF "|", fs_file->meta->size);
 	
         /* atime, mtime, ctime, crtime */
-        if (fs_file->fs_info->flags | TSK_FS_INFO_FLAG_HAVE_SUBSEC)
+        if (fs_file->fs_info->flags &  TSK_FS_INFO_FLAG_HAVE_SUBSEC)
         {
             if (fs_file->meta->atime)
-                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->atime - time_skew, fs_file->meta->atime_nano);
+                tsk_fprintf(hFile, "%" PRIu32 ".%.9" PRIu32 "|",  fs_file->meta->atime - time_skew, fs_file->meta->atime_nano);
             else
-                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->atime, fs_file->meta->atime_nano);
+                tsk_fprintf(hFile, "%" PRIu32 ".%.9" PRIu32 "|",  fs_file->meta->atime, fs_file->meta->atime_nano);
             if (fs_file->meta->mtime)
-                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32, fs_file->meta->mtime - time_skew, fs_file->meta->mtime_nano);
+                tsk_fprintf(hFile, "%" PRIu32 ".%.9" PRIu32 "|", fs_file->meta->mtime - time_skew, fs_file->meta->mtime_nano);
             else
-                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32, fs_file->meta->mtime, fs_file->meta->mtime_nano);
+                tsk_fprintf(hFile, "%" PRIu32 ".%.9" PRIu32 "|", fs_file->meta->mtime, fs_file->meta->mtime_nano);
             if (fs_file->meta->ctime)
-                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->ctime - time_skew, fs_file->meta->ctime_nano);
+                tsk_fprintf(hFile, "%" PRIu32 ".%.9" PRIu32 "|",  fs_file->meta->ctime - time_skew, fs_file->meta->ctime_nano);
             else
-                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->ctime , fs_file->meta->ctime_nano);
+                tsk_fprintf(hFile, "%" PRIu32 ".%.9" PRIu32 "|",  fs_file->meta->ctime , fs_file->meta->ctime_nano);
             if (fs_file->meta->crtime)
-                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->crtime - time_skew, fs_file->meta->crtime_nano);
+                tsk_fprintf(hFile, "%" PRIu32 ".%.9" PRIu32 "|",  fs_file->meta->crtime - time_skew, fs_file->meta->crtime_nano);
             else
-                tsk_fprintf(hFile, "|%" PRIu32 ".%.9" PRIu32,  fs_file->meta->crtime, fs_file->meta->crtime_nano);
+                tsk_fprintf(hFile, "%" PRIu32 ".%.9" PRIu32,  fs_file->meta->crtime, fs_file->meta->crtime_nano);
             tsk_fprintf(hFile, "\n");
         }
         else
