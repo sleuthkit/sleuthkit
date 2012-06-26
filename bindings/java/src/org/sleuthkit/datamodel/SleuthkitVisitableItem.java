@@ -19,13 +19,12 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Interface for all visitable datatypes that can be found in the database
+ * Interface for all visitable datatypes that can be found in the tsk database
  */
 public interface SleuthkitVisitableItem {
 
     /**
      * visitor pattern support
-     * @param <T> visitor return type
      * @param v visitor
      * @return visitor return value
      */

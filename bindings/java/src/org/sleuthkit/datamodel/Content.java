@@ -44,7 +44,6 @@ public interface Content extends SleuthkitVisitableItem{
     
     /**
      * Visitor pattern support
-     * @param <T> visitor algorithm return type
      * @param v visitor supplying an algorithm to run on the content object
      * @return visitor return value resulting from running the algorithm
      */

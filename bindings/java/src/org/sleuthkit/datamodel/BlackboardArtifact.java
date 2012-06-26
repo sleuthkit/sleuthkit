@@ -226,7 +226,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * A method to accept a visitor SleuthkitItemVisitor, and execute an algorithm on this object
-	 * @param <T> the visitor generic class type, object of that type needs to be returned
 	 * @param v the visitor to accept
 	 * @return object of generic type T to return
 	 */
