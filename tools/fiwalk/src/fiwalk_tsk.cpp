@@ -24,6 +24,7 @@
 #include "arff.h"
 #include "plugin.h"
 #include "unicode_escape.h"
+#include "tsk3/fs/tsk_fatfs.h"
 
 #ifdef HAVE_ERR_H
 #include "err.h"
@@ -410,7 +411,18 @@ int proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
     current_partition_num++;
     current_partition_start = fs_info->offset;
     partition_info("partition_offset",fs_info->offset);
-    partition_info("block_size",fs_info->block_size);
+
+    /*Special Processing for FAT to report cluster and sector size*/
+    if(TSK_FS_TYPE_ISFAT(fs_info->ftype))
+    {
+        partition_info("sector_size",((FATFS_INFO *)fs_info)->ssize);
+        partition_info("block_size",((FATFS_INFO *)fs_info)->csize * ((FATFS_INFO *)fs_info)->ssize);
+    }
+    else
+    {
+        partition_info("block_size",fs_info->block_size);
+    }
+
     partition_info("ftype",fs_info->ftype);
     partition_info("ftype_str",tsk_fs_type_toname(fs_info->ftype));
     partition_info("block_count",fs_info->block_count);
