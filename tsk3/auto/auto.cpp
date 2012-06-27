@@ -37,6 +37,14 @@ TskAuto::~TskAuto()
 }
 
 
+void TskAuto::setCurVsPartDescr(const std::string & curVsPartDescr) {
+    m_curVsPartDescr = curVsPartDescr;
+}
+
+std::string TskAuto::getCurVsPartDescr() const {
+    return m_curVsPartDescr;
+}
+
 /**
  * Opens the disk image to be analyzed.  This must be called before any
  * of the findFilesInXXX() methods.
@@ -218,6 +226,9 @@ TSK_WALK_RET_ENUM
         return TSK_WALK_STOP;
     }
 
+    //save the current volume description
+    tsk->setCurVsPartDescr(a_vs_part->desc);
+
     // see if the super class wants to continue with this.
     TSK_FILTER_ENUM retval1 = tsk->filterVol(a_vs_part);
     if (retval1 == TSK_FILTER_SKIP)
@@ -329,8 +340,8 @@ TSK_RETVAL_ENUM
     TSK_FS_INFO *fs_info;
     /* Try it as a file system */
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        tsk_error_set_errstr2("unable to open file system at offset %" PRIuOFF,
-            a_start);
+        tsk_error_set_errstr2 ("Unable to open file system at offset %" PRIuOFF ", partition: [%s]",
+            a_start, getCurVsPartDescr().c_str() );
         registerError();
 
         /* We could do some carving on the volume data at this point */
@@ -410,8 +421,8 @@ uint8_t
     /* Try it as a file system */
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
         tsk_error_set_errstr2(
-            "Unable to open file system at offset %" PRIuOFF,
-            a_start);
+            "Unable to open file system at offset %" PRIuOFF ", partition: [%s]",
+            a_start, getCurVsPartDescr().c_str());
         registerError();
 
 
