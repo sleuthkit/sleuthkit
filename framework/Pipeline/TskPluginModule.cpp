@@ -103,7 +103,7 @@ void TskPluginModule::initialize()
     if (m_sharedLibrary.hasSymbol(TskPluginModule::INITIALIZE_SYMBOL))
     {
         InitializeFunc init = (InitializeFunc) m_sharedLibrary.getSymbol(TskPluginModule::INITIALIZE_SYMBOL);
-        std::string arguments = parameterSubstitution(m_arguments, 0);
+        std::string arguments = expandArgumentMacros(m_arguments, 0);
 
         if (init(arguments.c_str()) != TskModule::OK)
         {

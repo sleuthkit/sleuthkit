@@ -15,6 +15,8 @@
 #include <time.h>
 #include <string>
 
+// @@@ TODO: Resolve circular references between TskServices.h and this header by replacing macros with inline functions in TskServices.h
+
 /**
  * \file Log.h
  * Interface and default logging infrastructure that enables applications and framework

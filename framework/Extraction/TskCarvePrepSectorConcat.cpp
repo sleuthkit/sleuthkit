@@ -16,8 +16,7 @@
  * file as a run of unallocated sectors.
  */
 
-// Include the class definition first to ensure it does not depend on
-// subsequent includes in this file.
+// Include the class definition first to ensure it does not depend on subsequent includes in this file.
 #include "TskCarvePrepSectorConcat.h" 
 
 // TSK framework includes
@@ -34,6 +33,7 @@
 // Poco library includes. Include last to avoid applying Poco pragmas to 
 // non-Poco files.
 #include "Poco/File.h"
+#include "Poco/Path.h"
 #include "Poco/Exception.h"
 
 TskCarvePrepSectorConcat::TskCarvePrepSectorConcat(const std::wstring &outputFileName, uint64_t maxOutputFileSize) :
@@ -88,7 +88,7 @@ std::wstring TskCarvePrepSectorConcat::outputFolderPath() const
     if (folderPath.empty())
     {
         std::wstringstream pathBuilder;
-        pathBuilder << TskServices::Instance().getSystemProperties().get(TskSystemProperties::OUT_DIR) << L"\\Carve";
+        pathBuilder << GetSystemPropertyW(TskSystemProperties::OUT_DIR) << Poco::Path::separator() << L"Carve";
         folderPath = pathBuilder.str();
     }
 
