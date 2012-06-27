@@ -129,7 +129,7 @@ uint8_t
  * @param a_images Images to open
  * @param a_type Image file format
  * @param a_ssize Sector size in bytes
- * @return Resturns 1 on error
+ * @return Returns 1 on error
  */
 uint8_t
     TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
