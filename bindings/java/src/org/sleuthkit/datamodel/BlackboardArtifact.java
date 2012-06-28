@@ -22,17 +22,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * Blackboard Artifact class used to store a set of name-value pairs
+ * Represents an artifact as stored in the Blackboard. Artifacts are a collection
+ * of name value pairs and have a type that represents the type of data they are
+ * storing.  This class is used to create artifacts on the blackboard and is used
+ * to represent artifacts queried from the blackboard.
+ * 
  * @author alawrence
  */
 public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
-	 * Enum for artifact types. 
+	 * Enum for artifact types.  The C++ code has the full description of 
+	 * how to use these. 
 	 * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
 	 * for details on which attributes should be used for each artifact.
-	 * The enum typeIDs will be populated at database creation
-	 * time, so they will always match the ids stored in the database.
 	 */
 	/* It is very important that this list be kept up to
 	 * date and in sync with the C++ code.  Do not add
