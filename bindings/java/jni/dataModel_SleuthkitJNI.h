@@ -99,6 +99,14 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getIndexSizeNat
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getIndexSizeNat
+  (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    initAddImgNat
  * Signature: (JLjava/lang/String;ZZ)J
  */

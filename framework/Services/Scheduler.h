@@ -24,6 +24,7 @@
 class TSK_FRAMEWORK_API Scheduler
 {
 public:
+    /// Types of tasks that can be scheduled or performed. 
     enum TaskType {
         Extract, ///< Analyze image and add files to database.
         Carve,  ///< Carve a file that contains unallocated data.
@@ -31,6 +32,8 @@ public:
         Reporting   ///< Run the reporting / post-processing pipeline
     };
 
+    
+    /// Describes a single task to be scheduled or perform. 
     typedef struct {
         Scheduler::TaskType task;   ///< type of task to perform
         uint64_t id;    ///< ID of object to run task on

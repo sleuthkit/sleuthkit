@@ -24,8 +24,10 @@ import java.util.List;
 
 
 /**
- * Represents a file in a file system. 
- * Populated based on data in database.
+ * Representation of File object, stored in tsk_files table.
+ * This is for a file-system file (allocated, not-derived, or a "virtual" file)
+ * File does not have content children objects associated with it.
+ * There are many similarities to a Directory otherwise, which are defined in the parent FsContent class.
  */
 public class File extends FsContent{
 
@@ -41,24 +43,25 @@ public class File extends FsContent{
 			parent_path, md5Hash);
     }
 
-    /**	
-     * is this a file?
-     * @return true, it is a file
-     */
+
     @Override
     public boolean isFile(){
         return true;
     }
+
 
     @Override
     public <T> T accept(SleuthkitItemVisitor<T> v) {
         return v.visit(this);
     }
 
+	
+
     @Override
     public <T> T accept(ContentVisitor<T> v) {
         return v.visit(this);
     }
+
 
     @Override
     public List<Content> getChildren() throws TskCoreException {

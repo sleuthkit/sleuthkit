@@ -4675,7 +4675,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
-            ("Not a NTFS file system (invalid sector size)");
+            ("Not a NTFS file system (invalid sector size %d))", ntfs->ssize_b);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid sector size: %d\n",
                 ntfs->ssize_b);
@@ -4695,7 +4695,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
-            ("Not a NTFS file system (invalid cluster size)");
+            ("Not a NTFS file system (invalid cluster size %d)", ntfs->fs->csize);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid cluster size: %d\n",
                 ntfs->fs->csize);
@@ -4767,9 +4767,9 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
-            ("Not a NTFS file system (invalid idx record size)");
+            ("Not a NTFS file system (invalid idx record size %d)", ntfs->idx_rsize_b);
         if (tsk_verbose)
-            fprintf(stderr, "ntfs_open: invalid idx record size\n");
+            fprintf(stderr, "ntfs_open: invalid idx record size %d\n", ntfs->idx_rsize_b);
         return NULL;
     }
 
