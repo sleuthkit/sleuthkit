@@ -2048,6 +2048,8 @@ int TskImgDBSqlite::getFileCount(std::string& condition) const
     return result;
 }
 
+/* Append condition to stmt to make a single SQL query.
+ */
 void TskImgDBSqlite::constructStmt(std::string& stmt, std::string& condition) const
 {
     if (!condition.empty())
@@ -2060,10 +2062,11 @@ void TskImgDBSqlite::constructStmt(std::string& stmt, std::string& condition) co
         std::string leftClause("LEFT");
         std::string orderClause("ORDER");
 
-        // If the condition doesn't start with a WHERE clause and it doesn't
-        // start with a comma it is presumably extending the FROM clause with
-        // one or more table names. In this case we need to add the comma to
-        // the statement.
+        /* If the condition doesn't start with one of the below statements 
+         * (WHERE, JOIN, etc.), then 
+         * it is presumably extending the FROM clause with
+         * one or more table names. In this case we need to add the comma to
+         * the statement. */
         if (strnicmp(condition.c_str(), whereClause.c_str(), whereClause.length()) != 0 &&
             strnicmp(condition.c_str(), joinClause.c_str(), joinClause.length()) != 0 &&
             strnicmp(condition.c_str(), leftClause.c_str(), leftClause.length()) != 0 &&
