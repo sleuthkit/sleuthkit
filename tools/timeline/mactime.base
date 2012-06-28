@@ -230,7 +230,7 @@ while ((scalar(@ARGV) > 0) && (($_ = $ARGV[0]) =~ /^-(.)(.*)/)) {
                 }
                 exit(0);
             }
-            // validate the string if we have DateTime module
+            # validate the string if we have DateTime module
             elsif ($_HAS_DATETIME_TIMEZONE) {
                 my $realtz = 0;
                 foreach ( get_timezone_list() ) {
@@ -247,7 +247,7 @@ while ((scalar(@ARGV) > 0) && (($_ = $ARGV[0]) =~ /^-(.)(.*)/)) {
                     usage();
                 }
             }
-            // blindly take it otherwise
+            # blindly take it otherwise
             else {
                 $ENV{TZ} = $tz;
             }      
