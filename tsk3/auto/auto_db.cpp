@@ -728,7 +728,7 @@ int8_t TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     //open the fs we have from database
     TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
-        tsk_error_set_errstr2("processFsInfoUnalloc: error opening fs");
+        tsk_error_set_errstr2("TskAutoDb::addFsInfoUnalloc: error opening fs at offset %"PRIuOFF, dbFsInfo.imgOffset);
         registerError();
         return TSK_ERR;
     }
@@ -742,7 +742,7 @@ int8_t TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     if (block_walk_ret == 1) {
         stringstream errss;
         tsk_fs_close(fsInfo);
-        errss << "processFsInfoUnalloc: error walking fs unalloc blocks, fs id: ";
+        errss << "TskAutoDb::addFsInfoUnalloc: error walking fs unalloc blocks, fs id: ";
         errss << unallocBlockWlkTrack.fsObjId;
         tsk_error_set_errstr2("%s", errss.str().c_str());
         registerError();
