@@ -796,7 +796,7 @@ uint8_t TskAutoDb::addUnallocFsSpaceToDb() {
         return TSK_OK;
     }
 
-    uint16_t ret = m_db->getFsInfos(fsInfos);
+    uint16_t ret = m_db->getFsInfos(m_curImgId, fsInfos);
     if (ret) {
         tsk_error_set_errstr2("addUnallocFsSpaceToDb: error getting fs infos from db");
         registerError();
@@ -823,7 +823,7 @@ uint8_t TskAutoDb::addUnallocVsSpaceToDb() {
 
     vector<TSK_DB_VS_PART_INFO> vsPartInfos;
 
-    uint8_t ret = m_db->getVsPartInfos(vsPartInfos);
+    uint8_t ret = m_db->getVsPartInfos(m_curImgId, vsPartInfos);
     if (ret) {
         tsk_error_set_errstr2("addUnallocVsSpaceToDb: error getting vs part infos from db");
         registerError();

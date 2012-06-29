@@ -194,11 +194,12 @@ class TskDbSqlite {
 
     //query methods / getters
     uint8_t getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts);
-    uint8_t getFsInfos(vector<TSK_DB_FS_INFO> & fsInfos);
-    uint8_t getVsInfos(vector<TSK_DB_VS_INFO> & vsInfos);
+    uint8_t getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos);
+    uint8_t getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos);
     uint8_t getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo);
-    uint8_t getVsPartInfos(vector<TSK_DB_VS_PART_INFO> & vsPartInfos);
+    uint8_t getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos);
     uint8_t getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo);
+    int64_t getParentImageId (const int64_t objId);
 
 
   private:
