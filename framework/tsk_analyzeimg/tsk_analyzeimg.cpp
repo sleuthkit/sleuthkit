@@ -247,7 +247,17 @@ int main(int argc, char **argv1)
         return 1;
     }
 
-    logDir.append(L"\\analyzeimg_log.txt");
+    struct tm newtime;
+    time_t aclock;
+
+    time(&aclock);   // Get time in seconds
+    localtime_s(&newtime, &aclock);   // Convert time to struct tm form 
+    wchar_t filename[MAX_BUFF_LENGTH];
+    _snwprintf_s(filename, MAX_BUFF_LENGTH, MAX_BUFF_LENGTH, L"\\log_%.4d-%.2d-%.2d-%.2d-%.2d-%.2d.txt",
+        newtime.tm_year + 1900, newtime.tm_mon+1, newtime.tm_mday,  
+        newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
+
+    logDir.append(filename);
     if(suppressSTDERR){
         Log * log = new Log();
         log->open(logDir.c_str());
