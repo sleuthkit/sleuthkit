@@ -64,7 +64,7 @@ extern "C"
      */
     TSK_MODULE_EXPORT const char *description()
     {
-        return "";
+        return "Calculates file sizes and posts them to the blackboard as a demonstration of how to develop a module";
     }
 
     /**

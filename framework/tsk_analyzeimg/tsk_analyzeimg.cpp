@@ -103,12 +103,11 @@ public:
 void 
 usage(const char *program) 
 {
-    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] [-d outdir] [-s scalpel_dir_path] [-S scalpel_config_file_path] [-vV] [-L] image_name\n", program);
+    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] [-d outdir] [-C] [-v] [-V] [-L] image_name\n", program);
     fprintf(stderr, "\t-c framework_config_file: Path to XML framework config file\n");
     fprintf(stderr, "\t-p pipeline_config_file: Path to XML pipeline config file (overrides pipeline config specified with -c)\n");
     fprintf(stderr, "\t-d outdir: Path to output directory\n");
-    fprintf(stderr, "\t-s scalpel_dir_path: Path to Scalpel install dir, if carving desired, or set SCALPEL_DIR_PATH in framework config file\n");
-    fprintf(stderr, "\t-S scalpel_config_file_path: Path to Scalpel config file or set SCALPEL_CONFIG_FILE_PATH in framework config file, defaults to scalple.conf in SCALPEL_DIR_PATH\n");
+    fprintf(stderr, "\t-C: Disable carving, overriding framework config file settings\n");
     fprintf(stderr, "\t-v: Enable verbose mode to get more debug information\n");
     fprintf(stderr, "\t-V: Display the tool version\n");
     fprintf(stderr, "\t-L: Supress stderr logs\n");
@@ -145,9 +144,8 @@ int main(int argc, char **argv1)
     TSK_TCHAR *pipeline_config = NULL;
     TSK_TCHAR *framework_config = NULL;
     std::wstring outDirPath;
-    std::wstring scalpelDirPath;
-    std::wstring scalpelConfigFilePath;
     bool suppressSTDERR = false;
+    bool doCarving = true;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -161,7 +159,7 @@ int main(int argc, char **argv1)
 #endif
 
     while ((ch =
-        GETOPT(argc, argv, _TSK_T("d:c:p:s:S:vVL"))) > 0) {
+        GETOPT(argc, argv, _TSK_T("d:c:p:vVLC"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -184,11 +182,8 @@ int main(int argc, char **argv1)
         case _TSK_T('d'):
             outDirPath.assign(OPTARG);
             break;
-        case _TSK_T('s'):
-            scalpelDirPath.assign(OPTARG);
-            break;
-        case _TSK_T('S'):
-            scalpelConfigFilePath.assign(OPTARG);
+        case _TSK_T('C'):
+            doCarving = false;
             break;
         case _TSK_T('L'):
             suppressSTDERR = true;
@@ -272,16 +267,6 @@ int main(int argc, char **argv1)
     // @@@ Not UNIX-friendly
     SetSystemPropertyW(TskSystemProperties::OUT_DIR, outDirPath);
 
-    if (!scalpelDirPath.empty())
-    {
-        SetSystemPropertyW(L"SCALPEL_DIR_PATH", scalpelDirPath);
-    }
-
-    if (!scalpelConfigFilePath.empty())
-    {
-        SetSystemPropertyW(L"SCALPEL_CONFIG_FILE_PATH", scalpelConfigFilePath);
-    }
-
     // Create and register our SQLite ImgDB class   
     std::auto_ptr<TskImgDB> pImgDB(NULL);
     pImgDB = std::auto_ptr<TskImgDB>(new TskImgDBSqlite(outDirPath.c_str()));
@@ -364,14 +349,20 @@ int main(int argc, char **argv1)
         return 1;
     }
 
-    // Prepare the unallocated sectors in the image for carving using Scalpel or, post-execution, by other means.
-    // Scheduling of carving will only be done if SCALPEL_DIR_PATH has been set via the command line or
-    // framework config file.
-    TskCarvePrepSectorConcat carvePrep;
-    carvePrep.processSectors(!GetSystemProperty("SCALPEL_DIR_PATH").empty());
+    // If carving has not been turned off via the command line and a path to an installation of Scalpel has been provided, prep for carving.
+    std::auto_ptr<TskCarveExtractScalpel> carver;
+    if (doCarving)
+    {
+        doCarving = !GetSystemProperty("SCALPEL_DIR_PATH").empty();
 
-    // Do file analysis tasks.
-    TskCarveExtractScalpel carver;
+        if (doCarving)
+        {
+            TskCarvePrepSectorConcat carvePrep;
+            carvePrep.processSectors(true);
+            carver.reset(new TskCarveExtractScalpel());
+        }
+    }
+
     TskSchedulerQueue::task_struct *task;
     while ((task = scheduler.nextTask()) != NULL) 
     {
@@ -381,9 +372,9 @@ int main(int argc, char **argv1)
             {
                 filePipeline->run(task->id);
             }
-            else if (task->task == Scheduler::Carve)
+            else if (task->task == Scheduler::Carve && carver.get())
             {
-                carver.processFile(static_cast<int>(task->id));
+                carver->processFile(static_cast<int>(task->id));
             }
             else
             {

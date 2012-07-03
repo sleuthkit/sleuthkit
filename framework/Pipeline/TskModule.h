@@ -70,6 +70,12 @@ public:
     /// Get the module name
     std::string getName() const { return m_name; }
 
+    /// Get the module description
+    std::string getDescription() const { return m_description; }
+
+    /// Get the module version
+    std::string getVersion() const { return m_version; }
+
     /// Set the module id
     void setModuleId(int moduleId) { m_moduleId = moduleId; }
 
@@ -80,6 +86,8 @@ protected:
     std::string m_modulePath;
     std::string m_arguments;
     std::string m_name;
+    std::string m_description;
+    std::string m_version;
     int m_moduleId;
 
     static std::string expandArgumentMacros(const std::string &args, const TskFile *fileToAnalyze);

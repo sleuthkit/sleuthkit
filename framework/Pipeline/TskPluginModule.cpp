@@ -26,11 +26,15 @@
 #include "Poco/String.h"
 #include "Poco/Path.h"
 
+const std::string TskPluginModule::NAME_SYMBOL = "name";
+const std::string TskPluginModule::DESCRIPTION_SYMBOL = "description";
+const std::string TskPluginModule::VERSION_SYMBOL = "version";
 const std::string TskPluginModule::RUN_SYMBOL = "run";
 const std::string TskPluginModule::REPORT_SYMBOL = "report";
 const std::string TskPluginModule::INITIALIZE_SYMBOL = "initialize";
 const std::string TskPluginModule::FINALIZE_SYMBOL = "finalize";
 
+typedef const char* (*MetaDataFunc)();
 typedef TskModule::Status (*InitializeFunc)(const char* args);
 typedef TskModule::Status (*FinalizeFunc)();
 typedef TskModule::Status (*RunFunc)(TskFile*);
@@ -72,8 +76,31 @@ void TskPluginModule::setPath(const std::string& location)
         // Call parent to search for location
         TskModule::setPath(location);
 
-        // Confirm that the plugin module implements the required interface.
+        // Load the library.
         m_sharedLibrary.load(m_modulePath);
+
+        if (m_sharedLibrary.isLoaded())
+        {
+            MetaDataFunc metaDataFunc = NULL;
+
+            if (m_sharedLibrary.hasSymbol(TskPluginModule::NAME_SYMBOL))
+            {
+                metaDataFunc = (MetaDataFunc)m_sharedLibrary.getSymbol(TskPluginModule::NAME_SYMBOL);
+                m_name = metaDataFunc();
+            }
+
+            if (m_sharedLibrary.hasSymbol(TskPluginModule::DESCRIPTION_SYMBOL))
+            {
+                metaDataFunc = (MetaDataFunc)m_sharedLibrary.getSymbol(TskPluginModule::DESCRIPTION_SYMBOL);
+                m_description = metaDataFunc();
+            }
+
+            if (m_sharedLibrary.hasSymbol(TskPluginModule::VERSION_SYMBOL))
+            {
+                metaDataFunc = (MetaDataFunc)m_sharedLibrary.getSymbol(TskPluginModule::VERSION_SYMBOL);
+                m_version = metaDataFunc();
+            }
+        }
     }
     catch (TskException& ex)
     {
@@ -89,7 +116,6 @@ void TskPluginModule::setPath(const std::string& location)
 
         throw TskException("Failed to set path: " + m_modulePath);
     }
-
 }
 
 /**

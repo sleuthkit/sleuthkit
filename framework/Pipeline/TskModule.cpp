@@ -27,7 +27,7 @@
 
 const std::string TskModule::CURRENT_FILE_MACRO = "#CURRENT_FILE#";
 
-TskModule::TskModule() : m_modulePath(""), m_arguments(""), m_name(""), m_moduleId(0)
+TskModule::TskModule() : m_moduleId(0)
 {
 }
 
@@ -100,7 +100,6 @@ void TskModule::setPath(const std::string& location)
     }
 
     m_modulePath = tempPath.toString();
-    m_name = tempPath.getBaseName();
 }
 
 std::string TskModule::expandArgumentMacros(const std::string &args, const TskFile *fileToAnalyze)

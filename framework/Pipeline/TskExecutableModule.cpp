@@ -156,6 +156,8 @@ void TskExecutableModule::setPath(const std::string& location)
         // Call our parent to validate the location.
         TskModule::setPath(location);
 
+        m_name = Poco::Path(m_modulePath).getBaseName();
+
         // Verify that the file is executable.
         Poco::File exeFile(m_modulePath);
 
