@@ -20,11 +20,11 @@ package org.sleuthkit.datamodel;
 
 
 /**
- * BlackboardAttribute class, a representation of db objects in tsk_blackboard_attributes table
- * Blackboard attributes have a type and value.  Value can store any type of data.
- * Blackboard attributes are associated with blackboard artifacts - they should not exist otherwise.
- * Attributes also have a module name (that created it) and context (optional) - a hint 
- * that adds more meaningful information about the data context / origin
+ * Represents an attribute as stored in the Blackboard. Attributes are a name value
+ * pair.  The name represents the type of data being stored.  Attributes are grouped
+ * together into an Artifact as represented by a BlackboardArtifact object. 
+ * This class is used to create attribute on the blackboard and is used
+ * to represent attribute queried from the blackboard.
  */
 public class BlackboardAttribute {
 
@@ -41,7 +41,7 @@ public class BlackboardAttribute {
 	private SleuthkitCase Case;
 
 	/**
-	 * Attribute value type (indicates what value type is stored in an attribute)
+	 * Enum for the data type (int, double, etc.) of this attribute's value.
 	 */
 	public enum TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE {
 
@@ -88,7 +88,9 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Built in attribute types
+	 * Standard attribute types.  Refer to the C++ code for the full
+	 * description of their intended use. See http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
+	 * for more information. 
 	 */
 	public enum ATTRIBUTE_TYPE {
 		/* It is very important that this list be kept up to
