@@ -151,7 +151,7 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
 
                 // Insert into Modules table
                 int moduleId = 0;
-                if (imgDB.addModule(pModule->getName(), "", moduleId)) {
+                if (imgDB.addModule(pModule->getName(), pModule->getDescription(), moduleId)) {
                     std::stringstream errorMsg;
                     errorMsg << "TskPipeline::initialize - Failed to insert into Modules table. "  
                              << " module name=" << pModule->getName() ;

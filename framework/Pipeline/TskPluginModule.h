@@ -50,6 +50,9 @@ public:
     virtual void checkInterface() = 0;
 
 protected:
+    static const std::string NAME_SYMBOL;
+    static const std::string DESCRIPTION_SYMBOL;
+    static const std::string VERSION_SYMBOL;
     static const std::string RUN_SYMBOL;
     static const std::string REPORT_SYMBOL;
     static const std::string INITIALIZE_SYMBOL;
