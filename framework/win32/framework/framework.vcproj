@@ -172,10 +172,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\Extraction\CarveExtract.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\Services\Log.cpp"
 				>
 			</File>
@@ -201,6 +197,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Services\TskBlackboardAttribute.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Extraction\TskCarveExtractScalpel.cpp"
 				>
 			</File>
 			<File
@@ -354,6 +354,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Extraction\TskCarveExtractScalpel.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Extraction\TskCarvePrepSectorConcat.h"
 				>
 			</File>
@@ -457,12 +461,6 @@
 				RelativePath="..\..\Utilities\UnallocRun.h"
 				>
 			</File>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
 		</Filter>
 	</Files>
 	<Globals>

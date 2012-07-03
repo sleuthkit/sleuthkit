@@ -10,122 +10,119 @@
 
 /**
  * \file TskCarvePrepSectorConcat.h
- * Definition of a class that concatenates unallocated sectors as a
- * series of files with a configurable maximum size. The output files are
- * optionally scheduled for carving.
+ * Definition of a class that concatenates unallocated sectors from an 
+ * image as a series of files with a configurable maximum size. These files 
+ * are optionally scheduled for carving. Instances of this class are also 
+ * able to treat a file as a run of unallocated sectors. Instances of the class
+ * use the following system properties: CARVE_PREP_OUTPUT_PATH, 
+ * CARVE_PREP_OUTPUT_FILE_NAME, and CARVE_PREP_MAX_OUTPUT_FILE_SIZE. 
+ *
+ * This class assumes the availability of the Microsoft Windows API.
+ * @@@ TODO: Use Poco API instead.
  */
 
 #ifndef _TSK_CARVE_PREP_CONCAT_H
 #define _TSK_CARVE_PREP_CONCAT_H
 
+// TSK Framework includes
 #include "CarvePrep.h"
+
+// System includes
 #include <string>
 
 class TSK_FRAMEWORK_API TskCarvePrepSectorConcat : public CarvePrep
 {
 public:
     /**
-     * Constructor.
-     * @param outputFileName Filename to be used for each output file; the files will be distinguished
-     * by storing them in subdirectories named for the output file number.
-     * @param maxOutputFileSize 
-     */
-     TskCarvePrepSectorConcat(const std::wstring &outputFileName, uint64_t maxOutputFileSize);
-
-    /**
-     * Implementation of CarvePrep interface. Concatenates unallocated sector runs 
-     * and writes the contents of the sectors to zero to many output files for later carving. 
-     * @param scheduleCarving True if carving of the output files should be scheduled.
-     * @returns Returns 0 on success or logs errors and returns 1 to indicate failure
+     * Implementation of CarvePrep interface. Concatenates unallocated sector 
+     * runs and writes the contents of the sectors to zero to many unallocated
+     * sectors image files for later carving. 
+     *
+     * @param scheduleCarving True if carving of the output files should be
+     * scheduled.
+     * @returns Returns 0 on success or logs errors and returns 1 to indicate 
+     * failure.
      */
     virtual int processSectors(bool scheduleCarving);
 
     /**
-     * Treats the contents of a set of file as sector runs and writes the contents of the 
-     * files to zero to many output files for later carving. 
-     * @param fileName Will prep all files with this name for carving
-     * @param scheduleCarving True if carving of the output files should be scheduled.
-     * @return Throws TskException on error
+     * Treats the contents of a set of files as unallocated sector runs and 
+     * writes the contents of the files to zero to many unallocated sectors 
+     * image files for later carving. This may be useful for carving page
+     * files, hibernation files, etc.
+     *
+     * @param fileName Output files for all files with this name will be 
+     * generated.
+     * @param scheduleCarving Set to true if carving of the output files should
+     * be scheduled.
+     * @return Throws TskException on error.
      */
-    void processFiles(const std::string& fileName, bool scheduleCarving) const;
+    void processFiles(const std::string &fileName, bool scheduleCarving) const;
 
 protected:
 
     /**
-     * Supplies the base output folder path. The default implementation adds
-     * a subdirectory named Carve to the output folder specified in the system
-     * properties.
-     * @return An absolute path to the base directory for output files.
-     */
-    virtual std::wstring outputFolderPath() const;
-
-    /**
-     * Called by createFilesToBeCarved to allow specialization of behavior when
-     * an output file is produced. The default implementation is to optionally 
+     * Called by createOutputFiles to allow specialization of behavior when
+     * an unallocated sectors image file is produced (i.e., uses the Template 
+     * Method design pattern). The default implementation is to optionally 
      * schedule carving of the output file.
-     * @param unallocImgId Id assigned to the file in the unallocated 
-     * image files table
-     * @param scheduleCarving True if carving of the output file should be
-     * scheduled.
-     * @return Default implementation throws TskException on error
+     *
+     * @param unallocSectorsImgId Id assigned to the file by 
+     * TskImgDB::addUnallocImg().
+     * @param scheduleCarving Set to true if carving of the output file should
+     * be scheduled.
+     * @return Default implementation throws TskException on error.
      */
-    virtual void onFileCreated(int unallocImgId, bool scheduleCarving) const; 
+    virtual void onOutputFileCreated(int unallocSectorsImgId, bool scheduleCarving) const; 
 
 private:
-    /**
-     * Creates the output folder with the path passed in to the constructor. 
-     * If the output folder already exists, it is deleted.
-     * @return Throws TskException on error
-     */
-    void prepareOutputFolder() const;
+    // Creates the output folder indicated by the CARVE_PREP_OUTPUT_PATH 
+    // system property. If the output folder already exists, it is deleted.
+    //
+    // @return Throws TskException on error.
+    std::string prepareOutputFolder() const;
 
-    /**
-     * Writes each sector run in the sector runs passed into the function
-     * to one or more output files. The maximum size of any single output file 
-     * will not exceed the maximum output file size passed to the constructor and 
-     * each output file will contain sectors from only a single volume. 
-     * @param sectorRuns Sector runs to be written to the output files
-     * @param scheduleCarving Whether or not to schedule carving of files created
-     * @return Throws TskException on error
-     */
-    void createFilesToBeCarved(SectorRuns &sectorRuns, bool scheduleCarving) const;
+    // Writes each sector run in the sector runs passed into the function
+    // to one or more unallocated sectors image files. The maximum size of any
+    // single output file will not exceed the value of the 
+    // MAX_UNALLOC_IMG_FILE_SIZE system property and each output file will 
+    // contain sectors from only a single volume. 
+    //
+    // @param sectorRuns Sector runs to be written to the output files.
+    // @param scheduleCarving Whether or not to schedule carving of the output 
+    // files.
+    // @return Throws TskException on error.
+    void createOutputFiles(const std::string &outputFolderPath, SectorRuns &sectorRuns, bool scheduleCarving) const;
 
-    /**
-     * Create an output file. The name of the file will be the file name passed to the
-     * constructor. Files will be distinguished by storing them in subdirectories named 
-     * for the output file number.
-     * @param outputFileNumber Number assigned to the file by TskImgDB::addUnallocImg()
-     * @param outputFileHandle File handle the caller will use to access the file
-     * @return Throws TskException on error
-     */
-    void createOutputFile(int outputFileNumber, HANDLE& outputFileHandle) const;
+    // Creates a folder. If the specified folder already exists, delete it first.
+    //
+    // @param path Path of the folder to be created.
+    // @return Throws TskException on error
+    void createFolder(const std::string &path) const;
 
-    /**
-     * Create a folder. If the specified folder already exists, delete it first.
-     * @param path Path of the folder to be created.
-     * @return Throws TskException on error
-     */
-    bool createFolder(const std::wstring &path) const;
+    // Maps the sectors written to an unallocated sectors image file to the 
+    // corresponding sectors in the image and writes the results to the image 
+    // database.
+    //
+    // @param unallocSectorsImgId Id assigned to the unallocated sectors image
+    // file by TskImgDB::addUnallocImg().
+    // @param outputFileHandle File handle used to access the unallocated sectors 
+    // image file.
+    // @param startingFileOffset Starting offset in the unallocated sectors 
+    // image file (in bytes) of the unallocated sectors run or part of a 
+    // sectors run that was written to the file. 
+    // @param endingFileOffset Ending offset in the unallocated sectors image
+    // file (in bytes) of the unallocated sectors run or part of a sectors run
+    // that was written to the file.
+    // @param volumeID Volume Id of the volume that was the source of the 
+    // unallocated sectors run or part of a sectors run that was written to the
+    // unallocated sectors image file.
+    // @param startingImageOffset Starting offset in the image (in sectors) of 
+    // the unallocated sectors run or part of a sectors run that was written to 
+    // the unallocated sectors image file.  
+    // @return Throws TskException on error.
+    void storeOutputfileToImageMapping(uint64_t unallocSectorsImgId, HANDLE outputFileHandle, uint64_t startingFileOffset, uint64_t endingFileOffset, int volumeID, uint64_t startingImageOffset) const;
 
-    /**
-     * Stores a mapping of some sectors written to the output file to the corresponding
-     * sectors in the image.
-     * @param outputFileNumber Number assigned to the output file by TskImgDB::addUnallocImg()
-     * @param outputFileHandle File handle used to access the output file
-     * @param startingFileOffset Starting offset in the output file (in bytes) of the sector run 
-     * or part of a sector run that was written to the file 
-     * @param endingFileOffset Ending offset in the output file (in bytes) of the sector run 
-     * or part of a sector run that was written to the file
-     * @param imgVolumeID Volume Id of the volume that was the source of the sector run 
-     * or part of a sector run that was written to the file
-     * @param startingImageOffset Starting offset in the image (in sectors) of the sector run 
-     * or part of a sector run that was written to the file  
-     * @return Throws TskException on error
-     */ 
-    void storeOutputfileToImageMapping(int outputFileNumber, HANDLE outputFileHandle, uint64_t startingFileOffset, uint64_t endingFileOffset, int imgVolumeID, uint64_t startingImageOffset) const;
-
-    const std::wstring m_outputFileName; 
-    uint64_t m_maxOutputFileSize;
     static const uint64_t SECTORS_PER_READ = 32; 
 };
 

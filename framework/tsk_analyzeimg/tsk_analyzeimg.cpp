@@ -14,7 +14,6 @@
 #include <string>
 #include <sstream>
 
-
 #include "tsk3/tsk_tools_i.h" // Needed for tsk_getopt
 #include "framework.h"
 #include "Services/TskSchedulerQueue.h"
@@ -22,6 +21,10 @@
 #include "Services/TskImgDBSqlite.h"
 #include "File/TskFileManagerImpl.h"
 #include "Extraction/TskCarvePrepSectorConcat.h"
+#include "Extraction/TskCarveExtractScalpel.h"
+
+#include "Poco/Path.h"
+#include "Poco/File.h"
 
 #ifdef TSK_WIN32
 #include <Windows.h>
@@ -100,10 +103,12 @@ public:
 void 
 usage(const char *program) 
 {
-    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] [-d outdir] [-vV] image_name\n", program);
+    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] [-d outdir] [-s scalpel_dir_path] [-S scalpel_config_file_path] [-vV] [-L] image_name\n", program);
     fprintf(stderr, "\t-c framework_config_file: Path to XML framework config file\n");
     fprintf(stderr, "\t-p pipeline_config_file: Path to XML pipeline config file (overrides pipeline config specified with -c)\n");
     fprintf(stderr, "\t-d outdir: Path to output directory\n");
+    fprintf(stderr, "\t-s scalpel_dir_path: Path to Scalpel install dir, if carving desired, or set SCALPEL_DIR_PATH in framework config file\n");
+    fprintf(stderr, "\t-S scalpel_config_file_path: Path to Scalpel config file or set SCALPEL_CONFIG_FILE_PATH in framework config file, defaults to scalple.conf in SCALPEL_DIR_PATH\n");
     fprintf(stderr, "\t-v: Enable verbose mode to get more debug information\n");
     fprintf(stderr, "\t-V: Display the tool version\n");
     fprintf(stderr, "\t-L: Supress stderr logs\n");
@@ -140,6 +145,8 @@ int main(int argc, char **argv1)
     TSK_TCHAR *pipeline_config = NULL;
     TSK_TCHAR *framework_config = NULL;
     std::wstring outDirPath;
+    std::wstring scalpelDirPath;
+    std::wstring scalpelConfigFilePath;
     bool suppressSTDERR = false;
 
 #ifdef TSK_WIN32
@@ -154,7 +161,7 @@ int main(int argc, char **argv1)
 #endif
 
     while ((ch =
-        GETOPT(argc, argv, _TSK_T("d:c:p:vVL"))) > 0) {
+        GETOPT(argc, argv, _TSK_T("d:c:p:s:S:vVL"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -176,6 +183,12 @@ int main(int argc, char **argv1)
             break;
         case _TSK_T('d'):
             outDirPath.assign(OPTARG);
+            break;
+        case _TSK_T('s'):
+            scalpelDirPath.assign(OPTARG);
+            break;
+        case _TSK_T('S'):
+            scalpelConfigFilePath.assign(OPTARG);
             break;
         case _TSK_T('L'):
             suppressSTDERR = true;
@@ -210,7 +223,7 @@ int main(int argc, char **argv1)
         }
     }
 
-    TSK_SYS_PROP_SET(TskSystemProperties::PROG_DIR, getProgDir()); 
+    SetSystemPropertyW(TskSystemProperties::PROG_DIR, getProgDir()); 
 
     if (outDirPath == _TSK_T("")) {
         outDirPath.assign(imagePath);
@@ -234,7 +247,17 @@ int main(int argc, char **argv1)
         return 1;
     }
 
-    logDir.append(L"\\analyzeimg_log.txt");
+    struct tm newtime;
+    time_t aclock;
+
+    time(&aclock);   // Get time in seconds
+    localtime_s(&newtime, &aclock);   // Convert time to struct tm form 
+    wchar_t filename[MAX_BUFF_LENGTH];
+    _snwprintf_s(filename, MAX_BUFF_LENGTH, MAX_BUFF_LENGTH, L"\\log_%.4d-%.2d-%.2d-%.2d-%.2d-%.2d.txt",
+        newtime.tm_year + 1900, newtime.tm_mon+1, newtime.tm_mday,  
+        newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
+
+    logDir.append(filename);
     if(suppressSTDERR){
         Log * log = new Log();
         log->open(logDir.c_str());
@@ -247,7 +270,17 @@ int main(int argc, char **argv1)
     }
 
     // @@@ Not UNIX-friendly
-    TSK_SYS_PROP_SET(TskSystemProperties::OUT_DIR, outDirPath);
+    SetSystemPropertyW(TskSystemProperties::OUT_DIR, outDirPath);
+
+    if (!scalpelDirPath.empty())
+    {
+        SetSystemPropertyW(L"SCALPEL_DIR_PATH", scalpelDirPath);
+    }
+
+    if (!scalpelConfigFilePath.empty())
+    {
+        SetSystemPropertyW(L"SCALPEL_CONFIG_FILE_PATH", scalpelConfigFilePath);
+    }
 
     // Create and register our SQLite ImgDB class   
     std::auto_ptr<TskImgDB> pImgDB(NULL);
@@ -268,7 +301,7 @@ int main(int argc, char **argv1)
 
     // @@@ Not UNIX-friendly
     if (pipeline_config != NULL) 
-        TSK_SYS_PROP_SET(TskSystemProperties::PIPELINE_CONFIG, pipeline_config);
+        SetSystemPropertyW(TskSystemProperties::PIPELINE_CONFIG_FILE, pipeline_config);
 
     // Create a Scheduler and register it
     TskSchedulerQueue scheduler;
@@ -331,30 +364,42 @@ int main(int argc, char **argv1)
         return 1;
     }
 
-    // Prepare the unallocated sectors in the image for carving.
-    TskCarvePrepSectorConcat carvePrep(L"unalloc.bin", 1000000000);
-    carvePrep.processSectors(false);
+    // Prepare the unallocated sectors in the image for carving using Scalpel or, post-execution, by other means.
+    // Scheduling of carving will only be done if SCALPEL_DIR_PATH has been set via the command line or
+    // framework config file.
+    TskCarvePrepSectorConcat carvePrep;
+    carvePrep.processSectors(!GetSystemProperty("SCALPEL_DIR_PATH").empty());
 
-    //Run pipeline on all files
-    if (filePipeline && !filePipeline->isEmpty()) {
-        TskSchedulerQueue::task_struct *task;
-        while ((task = scheduler.nextTask()) != NULL) {
-            if (task->task != Scheduler::FileAnalysis)  {
+    // Do file analysis tasks.
+    TskCarveExtractScalpel carver;
+    TskSchedulerQueue::task_struct *task;
+    while ((task = scheduler.nextTask()) != NULL) 
+    {
+        try
+        {
+            if (task->task == Scheduler::FileAnalysis && filePipeline && !filePipeline->isEmpty())
+            {
+                filePipeline->run(task->id);
+            }
+            else if (task->task == Scheduler::Carve)
+            {
+                carver.processFile(static_cast<int>(task->id));
+            }
+            else
+            {
                 std::wstringstream msg;
-                msg << L"WARNING: Skipping task " << task->task << endl;
+                msg << L"WARNING: Skipping task " << task->task;
                 LOGWARN(msg.str());
                 continue;
             }
-            //printf("processing file: %d\n", (int)task->id);
-            try {
-                filePipeline->run(task->id);
-            }
-            catch (...) {
-                // error message has been logged already.
-            }
+        }
+        catch (...) 
+        {
+            // Error message has been logged already.
         }
     }
 
+    // Do image analysis tasks.
     if (reportPipeline) {
         try {
             reportPipeline->run();
