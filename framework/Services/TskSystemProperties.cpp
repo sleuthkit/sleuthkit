@@ -157,6 +157,7 @@ void TskSystemProperties::expandMacros(const std::string &inputStr, std::string 
         std::wstringstream msg;
         msg << L"TskSystemProperties::expandMacros reached maximum depth (" << MAX_DEPTH << L") of recursion, cannot complete expansion of " << inputStr.c_str();
         LOGERROR(msg.str());
+        return;
     }
 
     Poco::StringTokenizer tokenizer(inputStr, "#");
