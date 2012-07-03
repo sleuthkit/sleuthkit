@@ -16,24 +16,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.sleuthkit.datamodel;
 
 /**
- * Interface for all objects that could be a parent to a FileSystem
- * object. 
+ * Core exception that is thrown from Sleuthkit classes.
+ * Indicates a critical error within TSK
  */
+public class TskCoreException extends TskException{
+    private static final long serialVersionUID = 123049876L;
 
-public abstract class FileSystemParent extends AbstractContent{
 	
-	FileSystemParent(SleuthkitCase db, long obj_id) {
-		super(db, obj_id);
+	/**
+	 * Default constructor when error message is not available
+	 */
+	public TskCoreException(){
+		super("No error message available.");
 	}
 	
 	
+	/**
+	 * Create exception containing the error message
+	 * @param msg the message 
+	 */
+	public TskCoreException(String msg){
+		super(msg);
+	}
+	
 	
 	/**
-	 * get the handle to the sleuthkit image info object
-	 * @return the object pointer
+	 * Create exception containing the error message and cause exception
+	 * @param msg the message 
+	 * @param ex cause exception
 	 */
-	abstract long getImageHandle() throws TskException;
+	public TskCoreException(String msg, Exception ex){
+		super(msg, ex);
+	}
 }
+

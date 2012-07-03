@@ -75,7 +75,7 @@ public class ReadContentInputStream extends InputStream {
                     position += lenRead;
                     return lenRead;
                 }
-            } catch (TskException ex) {
+            } catch (TskCoreException ex) {
                 throw new IOException(ex);
             }
         } else {
