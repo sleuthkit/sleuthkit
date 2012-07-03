@@ -19,19 +19,26 @@ After creating an instance of TskImageFile and calling one of the TskImageFile.o
 Note that TskImageFile should be calling Scheduler with a TaskType.FileAnalysis task for each file that it extracts so that the file can be later analyzed. 
 
 \section fw_extract_carve Carving Files
-The TskImageFile.extractFiles() method does not perform file carving.  To do that, you must perform additional work.  Note that the framework currently comes with interfaces for carving, but does not have implementations. 
+The TskImageFile.extractFiles() method does not perform file carving.  It only focuses on file system-level files.  To carve, you need some additional classes. 
 
-The CarvePrep interface focuses on getting data ready for carving.  Specifically this step will create one or more "unallocated images" that will be later carved.  TskImageDB.getFreeSectors() can be used to determine which sectors are not being used by files. 
 
-The CarvePrep implementation should be calling Scheduler with a TaskType.Carve task for each unallocated image file that it creates that needs to be carved.  The framework requires that each unallocated image file to be carved is assigned an ID.  You can get one by calling TskImageDB.addUnallocImg(). 
+\subsection fw_extract_carve_prep Preparing for Carving
+The CarvePrep interface focuses on getting data ready for carving.  Specifically this step will create one or more "unallocated images" that will be later carved.  
+The framework comes with the TskCarvePrepSectorConcat class that concatenates unallocated sectors together into chunks. This should serve most of your carving needs. 
 
-TskImageDB has methods for storing information on what goes into each unallocated image file.  The TskImageDB.addAllocUnallocMapInfo() method will maintain a table in the database so that a file carved from the unallocated image file can be mapped to its location in the original image file. 
+Regardless of the approach used to prepare for carving, the class should be calling Scheduler with a TaskType.Carve task for each unallocated image file that it creates that needs to be carved.  The framework requires that each unallocated image file to be carved is assigned an ID.  You can get one by calling TskImageDB.addUnallocImg(). 
+
+TskImageDB has methods for storing information on what went into each unallocated image file.  The TskImageDB.addAllocUnallocMapInfo() method maintains a table in the database so that a file carved from the unallocated image file can be mapped to its location in the original image file. 
 
 The framework does not impose any requirements on where the unallocated image files must be stored (or if they are stored at all).  However, the later carving procedures must know how to find the unallocated image data based only on its ID.
 
-Carving is done using an implementation of CarveExtract.  This interface gets the unallocated image ID passed into it.   It must know how to find the unallocated image file. 
+\subsection fw_extract_carve_extract Performing the Carve
+Carving is done using an implementation of CarveExtract.  This interface gets the unallocated image ID passed into it.   It must know how to find the unallocated image file, which is dependent on the implementation of CarvePrep that was used. 
 
-For each carved file, that is found from the CarveExtract.processFile() method, it must be added to the database with TskImgDB.addCarvedFileInfo() and scheduled for analysis with Scheduler. TskImgDB.getUnallocRun() is used to map the location in the unallocated image to the original image. 
+The framework comes with TskCarveExtractScalpel, which is an implementation using Scalpel. Refer to its description for details on using it. You can use it as an example if you want to incorporate your own carving tool. 
+
+The CarveExtract class will analyze an unallocated image file when its
+CarveExtract.processFile() method is called.  For each file that it finds, it must add the file to the database with TskImgDB.addCarvedFileInfo() and schedule it for analysis with Scheduler. TskImgDB.getUnallocRun() is used to map the location in the unallocated image to the original image. 
 
 \section fw_extract_conc Summary
 Before the files can be analyzed, they must be added to TskImgDB.  TskImgFile deals with the file system-based files and CarvePrep and CarveExtract deal with the carved files.  After the files are in the database, they can be analyzed in a pipeline.
