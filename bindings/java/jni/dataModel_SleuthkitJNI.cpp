@@ -1168,4 +1168,31 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndex
     tsk_hdb_close(temp);
     return (jboolean) retval == 1;
 }
-    
+
+/*
+ * Get the size of the index for the database at the given path
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbPathJ the path for the database
+ * @return -1 on error, otherwise size of index
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getIndexSizeNat
+  (JNIEnv * env, jclass obj, jstring dbPathJ) {
+
+    TSK_TCHAR dbPathT[1024];
+    toTCHAR(env, dbPathT, 1024, dbPathJ);
+
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+    TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
+    if (temp == NULL) {
+        return -1;
+    }
+
+    if(tsk_hdb_hasindex(temp, TSK_HDB_HTYPE_MD5_ID)) {
+        return (jint) ((temp->idx_size - temp->idx_off) / (temp->idx_llen));
+    }
+
+
+    tsk_hdb_close(temp);
+    return -1;
+}
