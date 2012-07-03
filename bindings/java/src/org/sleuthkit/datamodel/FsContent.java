@@ -1,15 +1,15 @@
 /*
  * Sleuth Kit Data Model
- *
+ * 
  * Copyright 2011 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,27 +18,31 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Collections;
+import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 
 /**
  * Generalized class that stores metadata that are common to both 
- * files and directories.
+ * File and Directory objects stored in tsk_files table
+ * Caches internal tsk file handle and reuses it for reads
  */
-public abstract class FsContent extends AbstractContent {
+public abstract class FsContent extends AbstractFile {
 
 	/*
 	 * database fields
 	 */
-	protected long fs_obj_id, meta_addr, attr_type, attr_id, dirtype, meta_type, dir_type, dir_flags,
-	meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known;
+	protected long fs_obj_id, meta_addr, attr_type, attr_id, meta_type, dir_type, dir_flags,
+			meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known;
 	/*
 	 * path of parent directory
 	 */
 	protected String parent_path;
-	/**
-	 * name from the database
+	
+	/*
+	 * md5 hash
 	 */
-	protected String name;
+	protected String md5Hash;
 	/**
 	 * parent file system
 	 */
@@ -47,444 +51,602 @@ public abstract class FsContent extends AbstractContent {
 	 * file Handle
 	 */
 	protected long fileHandle = 0;
-	
-	FsContent(SleuthkitCase db, long obj_id, long fs_obj_id) {
-		super(db, obj_id);
+
+	/**
+	 * Constructor to create FsContent object instance from database
+	 * @param db
+	 * @param obj_id
+	 * @param name
+	 * @param fs_obj_id
+	 * @param meta_addr
+	 * @param attr_type
+	 * @param attr_id
+	 * @param meta_type
+	 * @param dir_type
+	 * @param dir_flags
+	 * @param meta_flags
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param uid
+	 * @param gid
+	 * @param mode
+	 * @param known
+	 * @param parent_path
+	 * @param md5Hash 
+	 */
+	public FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
+			long attr_type, long attr_id, long meta_type, long dir_type, long dir_flags,
+			long meta_flags, long size, long ctime, long crtime, long atime, long mtime, long uid, long gid, long mode, long known,
+			String parent_path, String md5Hash) {
+		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS);
 		this.fs_obj_id = fs_obj_id;
+		this.meta_addr = meta_addr;
+		this.attr_type = attr_type;
+		this.attr_id = attr_id;
+		this.meta_type = meta_type;
+		this.dir_type = dir_type;
+		this.dir_flags = dir_flags;
+		this.meta_flags = meta_flags;
+		this.size = size;
+		this.ctime = ctime;
+		this.crtime = crtime;
+		this.atime = atime;
+		this.mtime = mtime;
+		this.uid = uid;
+		this.gid = gid;
+		this.mode = mode;
+		this.known = known;
+		this.parent_path = parent_path;
+		this.md5Hash = md5Hash;
 	}
 
 	/**
-	 * sets the parent, called by parent on creation
+	 * Sets the parent file system, called by parent during object creation
+	 * 
 	 * @param parent parent file system object
 	 */
-	protected void setFileSystem(FileSystem parent){
+	protected void setFileSystem(FileSystem parent) {
 		parentFileSystem = parent;
 	}
 
 
 	@Override
-	public int read(byte[] buf, long offset, long len) throws TskException{
-		if (fileHandle == 0){
+	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+		if (fileHandle == 0) {
 			fileHandle = SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), meta_addr);
 		}
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 	}
 	
+	
+	/*
+	 * -------------------------------------------------------------------------
+	 * Getters to retrieve meta-data attributes values
+	 * -------------------------------------------------------------------------
+	 */
 
-	//methods get exact data from database. could be manipulated to get more
-	//meaningful data.
 	/**
-	 * is this a file?
+	 * Is this object a file
 	 * @return false unless overridden by a subclass (specifically the file subclass)
 	 */
-	public boolean isFile(){
+	public boolean isFile() {
 		return false;
 	}
+
 	/**
-	 * is this a directory?
+	 * Is this object a directory
 	 * @return false unless overridden by a subclass (specifically the directory subclass)
 	 */
-	public boolean isDir(){
+	public boolean isDir() {
 		return false;
 	}
-	
+
 	/**
 	 * Is this the root of its parent filesystem?
 	 * @return true if this is the root inode
 	 */
 	public boolean isRoot() {
-		return parentFileSystem.getRoot_inum() == this.getMeta_addr(); 
+		return parentFileSystem.getRoot_inum() == this.getMeta_addr();
 	}
+
 	
-	public Directory getParentDirectory() throws TskException {
-		return db.getParentDirectory(this);
+	/**
+	 * Gets parent directory
+	 * @return the parent Directory
+	 * @throws TskCoreException exception thrown if error occurred in tsk core
+	 */
+	public Directory getParentDirectory() throws TskCoreException {
+		return getSleuthkitCase().getParentDirectory(this);
 	}
 
 	/**
-	 * get the parent file system
+	 * Get the parent file system
 	 * @return the file system object of the parent
 	 */
-	public FileSystem getFileSystem(){
+	public FileSystem getFileSystem() {
 		return parentFileSystem;
 	}
+	
 
-	/**
-	 * get the sleuthkit database object
-	 * @return the sleuthkit object
-	 */
-	public SleuthkitCase getSleuthkit(){
-		return db;
+	@Override
+	public Image getImage() throws TskCoreException {
+		return this.getFileSystem().getImage();
 	}
 
 	/**
-	 * get the name
-	 * @return name
-	 */
-	public String getName(){
-		return name;
-	}
-
-	/**
-	 * get the attribute type
+	 * Get the attribute type
 	 * @return attribute type
 	 */
-	public long getAttr_type(){
+	public long getAttr_type() {
 		return attr_type;
 	}
 
 	/**
-	 * get the attribute id
+	 * Get the attribute id
 	 * @return attribute id
 	 */
-	public long getAttr_id(){
+	public long getAttr_id() {
 		return attr_id;
 	}
 
 	/**
-	 * get the directory type
-	 * @return directory type
+	 * Get the meta data type
+	 * @return meta data type
 	 */
-	public long getDirtype(){
-		return dirtype;
+	public long getMeta_type() {
+		return meta_type;
 	}
 
 	/**
-	 * get the meta data type
-	 * @return meta data type
-	 */
-	public long getMeta_type(){
-		return meta_type;
-	}
-	/**
-	 * get the meta data type as String
+	 * Get the meta data type as String
 	 * @return meta data type as String
 	 */
-	public String getMetaTypeAsString(){
+	public String getMetaTypeAsString() {
 		return FsContent.metaTypeToString(meta_type);
 	}
 
 	/**
-	 * get the directory type
-	 * @return directory type
+	 * Get the directory type id
+	 * @return directory type id
 	 */
-	public long getDir_type(){
+	public long getDir_type() {
 		return dir_type;
 	}
+
 	/**
-	 * get the directory type as String
+	 * Get the directory type as String
 	 * @return directory type as String
 	 */
-	public String getDirTypeAsString(){
+	public String getDirTypeAsString() {
 		return FsContent.dirTypeToString(dir_type);
 	}
 
 	/**
-	 * get the directory flags
+	 * Get the directory flags
 	 * @return directory flags
 	 */
-	public long getDir_flags(){
+	public long getDir_flags() {
 		return dir_flags;
 	}
+
 	/**
-	 * get the directory flags as String
+	 * Get the directory flags as String
 	 * @return directory flags as String
 	 */
-	public String getDirFlagsAsString(){
+	public String getDirFlagsAsString() {
 		return FsContent.dirFlagToString(dir_flags);
 	}
-	
+
 	/**
-	 * get the file address
-	 * @return Address of the meta data structure for this file. 
+	 * Get the file meta address
+	 * @return Address of the meta data structure
 	 */
 	public long getMeta_addr() {
 		return meta_addr;
 	}
-	
 
 	/**
-	 * get the meta data flags
+	 * Get the meta data flags
 	 * @return meta data flags
 	 */
-	public long getMeta_flags(){
+	public long getMeta_flags() {
 		return meta_flags;
 	}
+
 	/**
-	 * get the meta data flags as String
+	 * Get the meta data flags as String
 	 * @return meta data flags as String
 	 */
-	public String getMetaFlagsAsString(){
+	public String getMetaFlagsAsString() {
 		return FsContent.metaFlagToString(meta_flags);
 	}
 
-	/**
-	 * get the size of the content
-	 * @return size of the content
-	 */
+
 	@Override
-	public long getSize(){
+	public long getSize() {
 		return size;
 	}
+
+
+	@Override
+	public List<TskFileRange> getRanges() {
+		return Collections.<TskFileRange>emptyList();
+	}
+
 	/**
-	 * get the change time
+	 * Get the change time
 	 * @return change time
 	 */
-	public long getCtime(){
+	public long getCtime() {
 		return ctime;
 	}
+
 	/**
-	 * get the change time as Date
+	 * Get the change time as Date
 	 * @return change time as Date
 	 */
-	public String getCtimeAsDate(){
+	public String getCtimeAsDate() {
 		return FsContent.epochToTime(ctime);
 	}
 
 	/**
-	 * get the creation time
+	 * Get the creation time
 	 * @return creation time
 	 */
-	public long getCrtime(){
+	public long getCrtime() {
 		return crtime;
 	}
+
 	/**
-	 * get the creation time as Date
+	 * Get the creation time as Date
 	 * @return creation time as Date
 	 */
-	public String getCrtimeAsDate(){
+	public String getCrtimeAsDate() {
 		return FsContent.epochToTime(crtime);
 	}
 
 	/**
-	 * get the access time
+	 * Get the access time
 	 * @return access time
 	 */
-	public long getAtime(){
+	public long getAtime() {
 		return atime;
 	}
+
 	/**
-	 * get the access time as Date
+	 * Get the access time as Date
 	 * @return access time as Date
 	 */
-	public String getAtimeAsDate(){
+	public String getAtimeAsDate() {
 		return FsContent.epochToTime(atime);
 	}
 
 	/**
-	 * get the modified time
+	 * Get the modified time
 	 * @return modified time
 	 */
-	public long getMtime(){
+	public long getMtime() {
 		return mtime;
 	}
+
 	/**
-	 * get the modified time as Date
+	 * Get the modified time as Date
 	 * @return modified time as Date
 	 */
-	public String getMtimeAsDate(){
+	public String getMtimeAsDate() {
 		return FsContent.epochToTime(mtime);
 	}
 
 	/**
-	 * get the user id
+	 * Get the user id
 	 * @return user id
 	 */
-	public long getUid(){
+	public long getUid() {
 		return uid;
 	}
+
 	/**
-	 * get the group id
+	 * Get the group id
 	 * @return group id
 	 */
-	public long getGid(){
+	public long getGid() {
 		return gid;
 	}
 
 	/**
-	 * get the mode
+	 * Get the mode
 	 * @return mode
 	 */
-	public long getMode(){
+	public long getMode() {
 		return mode;
 	}
+
 	/**
-	 * get the mode as String
+	 * Get the mode as String
 	 * @return mode as String
 	 */
-	public String getModeAsString(){
+	public String getModeAsString() {
 		return FsContent.modeToString(mode, meta_type);
 	}
-	
+
+	/**
+	 * Get "known" file status - after running a HashDB ingest on it
+	 * As marked by a known file database, such as NSRL
+	 * @return file known status enum value
+	 */
 	public FileKnown getKnown() {
 		return FileKnown.valueOf(this.known);
 	}
-	
+
+	/**
+	 * Get the absolute parent path string of this FsContent
+	 * @return the parent path string
+	 */
 	public String getParentPath() {
 		return this.parent_path;
 	}
 	
+	/**
+	 * Get the md5 hash value as calculated, if present
+	 * 
+	 * @return md5 hash string, if it is present
+	 */
+	public String getMd5Hash() {
+		return this.md5Hash;
+	}
+
+	
+
 	@Override
-	public void finalize(){
-		if(fileHandle != 0){
+	public void finalize() {
+		if (fileHandle != 0) {
 			SleuthkitJNI.closeFile(fileHandle);
 		}
 	}
 
 	/*
 	 * -------------------------------------------------------------------------
-	 * All the methods below are used to convert / map the data
+	 * Util methods to convert / map the data
 	 * -------------------------------------------------------------------------
 	 */
-
-	// return the epoch into string in ISO 8601 dateTime format
-	public static String epochToTime(long epoch){
+	
+	 
+	/**
+	 * Return the epoch into string in ISO 8601 dateTime format
+	 * @param epoch time in seconds
+	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 */
+	public static String epochToTime(long epoch) {
 		String time = "0000-00-00 00:00:00";
-		if(epoch != 0){
-			// Note: new java.util.Date(long date) -> date represent the specific number of milliseconds since the standard base time known.
-			// Therefore we need to times the date / epoch with 1000.
-			time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(epoch*1000));
+		if (epoch != 0) {
+			time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(epoch * 1000));
 		}
 		return time;
 	}
 
-	// return the date in the ISO 8601 dateTime format into epoch
-	public static long timeToEpoch(String time){
+	
+	/**
+	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
+	 * @param time formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 * @return epoch time in seconds
+	 */
+	public static long timeToEpoch(String time) {
 		long epoch = 0;
-		try{
-			epoch = new java.text.SimpleDateFormat ("yyyy-MM-dd HH:mm:ss").parse(time).getTime() / 1000;
+		try {
+			epoch = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(time).getTime() / 1000;
+		} catch (Exception e) {
 		}
-		catch(Exception e){}
 
 		return epoch;
 	}
 
-	// --- Here are all the methods for Directory Type conversion / mapping ---
-	public static String dirTypeToValue(long dirType){
+	
+	/*
+	 * -------------------------------------------------------------------------
+	 * Methods for Directory type conversion / mapping ---
+	 * -------------------------------------------------------------------------
+	 */
+	
+	
+	/**
+	 * Get a string value of a directory type from dir type id
+	 * as defined in TSK_FS_NAME_TYPE_ENUM
+	 * @param dirType to convert
+	 * @return dir type value string representation
+	 */
+	public static String dirTypeToValue(long dirType) {
 
 		String result = "";
 
-		for (TskData.TSK_FS_NAME_TYPE_ENUM type : TskData.TSK_FS_NAME_TYPE_ENUM.values()){
-			if(type.getDirType() == dirType){
+		for (TskData.TSK_FS_NAME_TYPE_ENUM type : TskData.TSK_FS_NAME_TYPE_ENUM.values()) {
+			if (type.getDirType() == dirType) {
 				result = type.toString();
 			}
 		}
 		return result;
 	}
 
-	public static long valueToDirType(String dirType){
+	
+	/**
+	 * Get a value type id from value type string
+	 * @param dirType value string to convert
+	 * @return directory type id
+	 */
+	public static long valueToDirType(String dirType) {
 
 		long result = 0;
 
-		for (TskData.TSK_FS_NAME_TYPE_ENUM type : TskData.TSK_FS_NAME_TYPE_ENUM.values()){
-			if(type.toString().equals(dirType)){
+		for (TskData.TSK_FS_NAME_TYPE_ENUM type : TskData.TSK_FS_NAME_TYPE_ENUM.values()) {
+			if (type.toString().equals(dirType)) {
 				result = type.getDirType();
 			}
 		}
 		return result;
 	}
 
-	public static String dirTypeToString(long dirType){
+	
+	/**
+	 * Get a dir type label string from dir type id
+	 * @param dirType dir type id to convert
+	 * @return dir type label string
+	 */
+	public static String dirTypeToString(long dirType) {
 		return TskData.TSK_FS_NAME_TYPE_ENUM.fromType(dirType).getLabel();
 	}
 
-
-	// -------- Here all the methods for Meta Type conversion / mapping --------
-	public static String metaTypeToValue(long metaType){
+	// -------- Methods for Meta Type conversion / mapping --------
+	
+	/**
+	 * Convert meta type id to string value
+	 * @param metaType to convert
+	 * @return string value representation of meta type
+	 */
+	public static String metaTypeToValue(long metaType) {
 
 		String result = "";
 
-		for (TskData.TSK_FS_META_TYPE_ENUM type : TskData.TSK_FS_META_TYPE_ENUM.values()){
-			if(type.getMetaType() == metaType){
+		for (TskData.TSK_FS_META_TYPE_ENUM type : TskData.TSK_FS_META_TYPE_ENUM.values()) {
+			if (type.getMetaType() == metaType) {
 				result = type.toString();
 			}
 		}
 		return result;
 	}
 
-	public static long valueToMetaType(String metaType){
+	/**
+	 * Convert meta type string value to meta type id
+	 * @param metaType to convert
+	 * @return meta type id
+	 */
+	public static long valueToMetaType(String metaType) {
 
 		long result = 0;
 
-		for (TskData.TSK_FS_META_TYPE_ENUM type : TskData.TSK_FS_META_TYPE_ENUM.values()){
-			if(type.toString().equals(metaType)){
+		for (TskData.TSK_FS_META_TYPE_ENUM type : TskData.TSK_FS_META_TYPE_ENUM.values()) {
+			if (type.toString().equals(metaType)) {
 				result = type.getMetaType();
 			}
 		}
 		return result;
 	}
 
-	public static String metaTypeToString(long metaType){
-		return TskData.tsk_fs_meta_type_str[(int)metaType];
+	
+	/**
+	 * Convert meta type id to string representation
+	 * @param metaType to convert
+	 * @return string representation of the meta type
+	 */
+	public static String metaTypeToString(long metaType) {
+		return TskData.tsk_fs_meta_type_str[(int) metaType];
 	}
 
-	// ----- Here all the methods for Directory Flags conversion / mapping -----
-	public static String dirFlagToValue(long dirFlag){
+// ----- Methods for Directory Flags conversion / mapping -----
+	
+	
+	/**
+	 * Convert dir flags to string value
+	 * @param dirFlag to convert
+	 * @return dir flags string representation
+	 */
+	public static String dirFlagToValue(long dirFlag) {
 
 		String result = "";
 
-		for (TskData.TSK_FS_NAME_FLAG_ENUM flag : TskData.TSK_FS_NAME_FLAG_ENUM.values()){
-			if(flag.getDirFlag() == dirFlag){
+		for (TskData.TSK_FS_NAME_FLAG_ENUM flag : TskData.TSK_FS_NAME_FLAG_ENUM.values()) {
+			if (flag.getDirFlag() == dirFlag) {
 				result = flag.toString();
 			}
 		}
 		return result;
 	}
 
-	public static long valueToDirFlag(String dirFlag){
+	
+	/**
+	 * Convert string value to dir flag id
+	 * @param dirFlag to convert
+	 * @return dir flag id
+	 */
+	public static long valueToDirFlag(String dirFlag) {
 
 		long result = 0;
 
-		for (TskData.TSK_FS_NAME_FLAG_ENUM flag : TskData.TSK_FS_NAME_FLAG_ENUM.values()){
-			if(flag.toString().equals(dirFlag)){
+		for (TskData.TSK_FS_NAME_FLAG_ENUM flag : TskData.TSK_FS_NAME_FLAG_ENUM.values()) {
+			if (flag.toString().equals(dirFlag)) {
 				result = flag.getDirFlag();
 			}
 		}
 		return result;
 	}
 
-	public static String dirFlagToString(long dirFlag){
+	/**
+	 * Convert dir flag to user displayable string
+	 * @param dirFlag dir flags id to convert
+	 * @return formatted user-readable string representation of dir flag
+	 */
+	public static String dirFlagToString(long dirFlag) {
 
 		String result = "";
 
 		long allocFlag = TskData.TSK_FS_NAME_FLAG_ENUM.TSK_FS_NAME_FLAG_ALLOC.getDirFlag();
 		long unallocFlag = TskData.TSK_FS_NAME_FLAG_ENUM.TSK_FS_NAME_FLAG_UNALLOC.getDirFlag();
 
-		if((dirFlag & allocFlag) == allocFlag){
+		if ((dirFlag & allocFlag) == allocFlag) {
 			result = "Allocated";
 		}
-		if((dirFlag & unallocFlag) == unallocFlag){
+		if ((dirFlag & unallocFlag) == unallocFlag) {
 			result = "Unallocated";
 		}
 
 		return result;
 	}
 
-	// ----- Here all the methods for Meta Flags conversion / mapping -----
-	public static String metaFlagToValue(long metaFlag){
+	// ----- Methods for Meta Flags conversion / mapping -----
+	
+	
+	/**
+	 * Convert meta flags to string value
+	 * @param metaFlag to convert
+	 * @return string representation
+	 */
+	public static String metaFlagToValue(long metaFlag) {
 
 		String result = "";
 
-		for (TskData.TSK_FS_META_FLAG_ENUM flag : TskData.TSK_FS_META_FLAG_ENUM.values()){
-			if(flag.getMetaFlag() == metaFlag){
+		for (TskData.TSK_FS_META_FLAG_ENUM flag : TskData.TSK_FS_META_FLAG_ENUM.values()) {
+			if (flag.getMetaFlag() == metaFlag) {
 				result = flag.toString();
 			}
 		}
 		return result;
 	}
 
-	public static long valueToMetaFlag(String metaFlag){
+	/**
+	 * Convert string representation of meta flags to long
+	 * @param metaFlag string to convert
+	 * @return long meta flag representation
+	 */
+	public static long valueToMetaFlag(String metaFlag) {
 
 		long result = 0;
 
-		for (TskData.TSK_FS_META_FLAG_ENUM flag : TskData.TSK_FS_META_FLAG_ENUM.values()){
-			if(flag.toString().equals(metaFlag)){
+		for (TskData.TSK_FS_META_FLAG_ENUM flag : TskData.TSK_FS_META_FLAG_ENUM.values()) {
+			if (flag.toString().equals(metaFlag)) {
 				result = flag.getMetaFlag();
 			}
 		}
 		return result;
 	}
 
-	public static String metaFlagToString(long metaFlag){
+	
+	/**
+	 * Convert meta flag long to user-readable string / label
+	 * @param metaFlag to convert
+	 * @return string formatted meta flag representation
+	 */
+	public static String metaFlagToString(long metaFlag) {
 
 		String result = "";
 
@@ -497,10 +659,10 @@ public abstract class FsContent extends AbstractContent {
 		long compFlag = TskData.TSK_FS_META_FLAG_ENUM.COMP.getMetaFlag();
 		long orphanFlag = TskData.TSK_FS_META_FLAG_ENUM.ORPHAN.getMetaFlag();
 
-		if((metaFlag & allocFlag) == allocFlag){
+		if ((metaFlag & allocFlag) == allocFlag) {
 			result = TskData.TSK_FS_META_FLAG_ENUM.ALLOC.getLabel();
-			}
-		if((metaFlag & unallocFlag) == unallocFlag){
+		}
+		if ((metaFlag & unallocFlag) == unallocFlag) {
 			result = TskData.TSK_FS_META_FLAG_ENUM.UNALLOC.getLabel();
 		}
 
@@ -508,14 +670,19 @@ public abstract class FsContent extends AbstractContent {
 		return result;
 	}
 
-	// ----- Here is the method to convert Mode to String -----
-	public static String modeToString(long mode, long metaType){
+	/**
+	 * Convert mode and meta type to a user-displayable string
+	 * @param mode mode attribute of the file/dir
+	 * @param metaType meta type attribute of the file/dir
+	 * @return converted, formatted user-displayable string
+	 */
+	public static String modeToString(long mode, long metaType) {
 
 		String result = "";
 
 		long metaTypeMax = TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_STR_MAX.getMetaType();
 
-		long isuid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISUID.getMode(); 
+		long isuid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISUID.getMode();
 		long isgid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISGID.getMode();
 		long isvtx = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISVTX.getMode();
 
@@ -525,108 +692,105 @@ public abstract class FsContent extends AbstractContent {
 
 		long irgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IRGRP.getMode();
 		long iwgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWGRP.getMode();
-		long ixgrp= TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXGRP.getMode();
+		long ixgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXGRP.getMode();
 
 		long iroth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IROTH.getMode();
 		long iwoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWOTH.getMode();
 		long ixoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXOTH.getMode();
 
 		// first character = the Meta Type
-		if(metaType < metaTypeMax){
+		if (metaType < metaTypeMax) {
 			result += FsContent.metaTypeToString(metaType);
+		} else {
+			result += "-";
 		}
-		else{result += "-";}
 
 		// second and third characters = user permissions
-		if((mode & irusr) == irusr){
+		if ((mode & irusr) == irusr) {
 			result += "r";
+		} else {
+			result += "-";
 		}
-		else{result += "-";}
-		if((mode & iwusr) == iwusr){
+		if ((mode & iwusr) == iwusr) {
 			result += "w";
+		} else {
+			result += "-";
 		}
-		else{result += "-";}
 
 		// fourth character = set uid
-		if((mode & isuid) == isuid){
-			if((mode & ixusr) == ixusr){
+		if ((mode & isuid) == isuid) {
+			if ((mode & ixusr) == ixusr) {
 				result += "s";
-			}
-			else{
+			} else {
 				result += "S";
 			}
-		}
-		else{
-			if((mode & ixusr) == ixusr){
+		} else {
+			if ((mode & ixusr) == ixusr) {
 				result += "x";
-			}
-			else{
+			} else {
 				result += "-";
 			}
 		}
 
 		// fifth and sixth characters = group permissions
-		if((mode & irgrp) == irgrp){
+		if ((mode & irgrp) == irgrp) {
 			result += "r";
+		} else {
+			result += "-";
 		}
-		else{result += "-";}
-		if((mode & iwgrp) == iwgrp){
+		if ((mode & iwgrp) == iwgrp) {
 			result += "w";
+		} else {
+			result += "-";
 		}
-		else{result += "-";}
 
 		// seventh character = set gid
-		if((mode & isgid) == isgid){
-			if((mode & ixgrp) == ixgrp){
+		if ((mode & isgid) == isgid) {
+			if ((mode & ixgrp) == ixgrp) {
 				result += "s";
-			}
-			else{
+			} else {
 				result += "S";
 			}
-		}
-		else{
-			if((mode & ixgrp) == ixgrp){
+		} else {
+			if ((mode & ixgrp) == ixgrp) {
 				result += "x";
-			}
-			else{
+			} else {
 				result += "-";
 			}
 		}
 
 		// eighth and ninth character = other permissions
-		if((mode & iroth) == iroth){
+		if ((mode & iroth) == iroth) {
 			result += "r";
+		} else {
+			result += "-";
 		}
-		else{result += "-";}
-		if((mode & iwoth) == iwoth){
+		if ((mode & iwoth) == iwoth) {
 			result += "w";
+		} else {
+			result += "-";
 		}
-		else{result += "-";}
 
 		// tenth character = sticky bit
-		if((mode & isvtx) == isvtx){
-			if((mode & ixoth) == ixoth){
+		if ((mode & isvtx) == isvtx) {
+			if ((mode & ixoth) == ixoth) {
 				result += "t";
-			}
-			else{
+			} else {
 				result += "T";
 			}
-		}
-		else{
-			if((mode & ixoth) == ixoth){
+		} else {
+			if ((mode & ixoth) == ixoth) {
 				result += "x";
-			}
-			else{
+			} else {
 				result += "-";
 			}
 		}
 
 		// check the result
-		if(result.length() != 10){
+		if (result.length() != 10) {
 			// throw error here
 			result = "ERROR";
 		}
 		return result;
 	}
-
 }

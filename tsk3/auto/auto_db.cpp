@@ -16,6 +16,11 @@
 #include "tsk_case_db.h"
 #include <string.h>
 
+#include <algorithm>
+#include <sstream>
+using std::stringstream;
+using std::for_each;
+
 
 /**
  * @param a_db Database to add an image to
@@ -36,6 +41,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_NSRLDb = a_NSRLDb;
     m_knownBadDb = a_knownBadDb;
     m_noFatFsOrphans = false;
+    m_addUnallocSpace = false;
 }
 
 TskAutoDb::~TskAutoDb()
@@ -78,6 +84,16 @@ void
 void TskAutoDb::setNoFatFsOrphans(bool noFatFsOrphans)
 {
     m_noFatFsOrphans = noFatFsOrphans;
+}
+
+/**
+* Setter to process unallocated space 
+* When enabled, unallocated space will be processed, but it will slow down creation of the database
+* @param addUnallocSpace flag set to true if to process all unallocated space in the image
+*/
+void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace)
+{
+    m_addUnallocSpace = addUnallocSpace;
 }
 
 /**
@@ -354,10 +370,16 @@ uint8_t
         return 1;
     }
     
-    if (addFilesInImgToDb()) {
-        //do not roll back if errors in this case, but do report registered errors
+    uint8_t addFilesRet = addFilesInImgToDb();
+    uint8_t addUnallocRet = 0;
+    
+    if (m_addUnallocSpace)
+        addUnallocRet = addUnallocSpaceToDb();
+
+    //do not roll back if errors in this case, but do report registered errors
+    if (addFilesRet || addUnallocRet)
         return 2;
-    }
+
     return 0;
 }
 
@@ -367,13 +389,14 @@ uint8_t
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
 {
     if (tsk_verbose)
-        tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+        tsk_fprintf(stderr, "TskAutoDb::startAddImage_utf8: Starting add image process\n");
    
 
     if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
+        registerError();
         return 1;
     }
 
@@ -382,35 +405,35 @@ uint8_t
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
+        registerError();
         return 1;
     }
 
 
-    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT))
+    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
+        registerError();
         return 1;
+    }
 
     m_imgTransactionOpen = true;
 
     if (openImageUtf8(numImg, imagePaths, imgType, sSize)) {
-        // rollback on error
-
-        // rollbackSavepoint can throw errors too, need to make sure original
-        // error message is preserved;
-        const char *prior_msg = tsk_error_get();
-        if (revertAddImage()) {
-            if (prior_msg) {
-                tsk_error_set_errstr("%s caused: %s", prior_msg,
-                    tsk_error_get());
-            }
-        }
+        tsk_error_set_errstr2("TskAutoDb::startAddImage");
+        registerError();
+        if (revertAddImage())
+            registerError();
         return 1;
     }
 
-    if (addFilesInImgToDb()) {
-        //do not roll back if errors in this case, but do report registered errors
-        return 2;
-    }
+    uint8_t addFilesRet = addFilesInImgToDb();
+    uint8_t addUnallocRet = 0;
 
+    if (m_addUnallocSpace)
+        addUnallocRet = addUnallocSpaceToDb();
+
+    //do not roll back if errors in this case, but do report registered errors
+    if (addFilesRet || addUnallocRet)
+        return 2;
 
     return 0;
 }
@@ -645,4 +668,209 @@ TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
 
     TSK_MD5_Final(md5Hash, &md);
     return 0;
+}
+
+/**
+* Callback invoked per every unallocated block in the filesystem
+* Creates file ranges and file entries 
+* A single file entry per consecutive range of blocks
+* @param a_block block being walked
+* @param a_ptr point to TskAutoDb class
+* @returns TSK_WALK_CONT if continue, otherwise TSK_WALK_STOP if stop processing requested
+*/
+TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr) {
+    UNALLOC_BLOCK_WLK_TRACK * unallocBlockWlkTrack = (UNALLOC_BLOCK_WLK_TRACK *) a_ptr;
+
+    if (unallocBlockWlkTrack->tskAutoDb.m_stopAllProcessing)
+        return TSK_WALK_STOP;
+
+    if (unallocBlockWlkTrack->isStart) {
+        unallocBlockWlkTrack->isStart = false;
+        unallocBlockWlkTrack->curRangeStart = a_block->addr;
+        unallocBlockWlkTrack->prevBlock = a_block->addr;
+    }
+    else {
+        //check if non-consecutive blocks, make range if needed
+        if (a_block->addr != unallocBlockWlkTrack->prevBlock + 1) {
+            //make a new range inclusive from curRangeStart to prevBlock
+            const uint64_t byteStart = unallocBlockWlkTrack->curRangeStart * unallocBlockWlkTrack->fsInfo.block_size 
+                + unallocBlockWlkTrack->fsInfo.offset;
+            const uint64_t byteLen = (1 + unallocBlockWlkTrack->prevBlock - unallocBlockWlkTrack->curRangeStart) 
+                * unallocBlockWlkTrack->fsInfo.block_size;
+            TSK_DB_FILE_LAYOUT_RANGE tempRange(byteStart, byteLen, 0);
+            //add unalloc block file per single range to db
+            vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+            ranges.push_back(tempRange);
+            int64_t fileObjId = 0;
+            unallocBlockWlkTrack->tskAutoDb.m_db->addUnallocBlockFile(unallocBlockWlkTrack->fsObjId, 
+                unallocBlockWlkTrack->fsObjId, tempRange.byteLen, ranges, fileObjId);
+            //advance range start to a new range
+            unallocBlockWlkTrack->curRangeStart = a_block->addr;
+        } 
+        //update prev block
+        unallocBlockWlkTrack->prevBlock = a_block->addr;
+    }
+
+    //we don't know what the last unalloc block is in advance
+    //and will handle the last range in addFsInfoUnalloc()
+    
+    return TSK_WALK_CONT;
+}
+
+
+/**
+* Add unallocated space in the fs
+* Create files for consecutive unalloc block ranges
+* @param dbFsInfo fs to process
+* @returns TSK_OK on success, TSK_ERR on error
+*/
+int8_t TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
+    //open the fs we have from database
+    TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
+    if (fsInfo == NULL) {
+        tsk_error_set_errstr2("processFsInfoUnalloc: error opening fs");
+        registerError();
+        return TSK_ERR;
+    }
+
+    //walk unalloc blocks on the fs and process them
+    //initialize the unalloc block walk tracking 
+    UNALLOC_BLOCK_WLK_TRACK unallocBlockWlkTrack(*this, *fsInfo, dbFsInfo.objId);
+    uint8_t block_walk_ret = tsk_fs_block_walk(fsInfo, fsInfo->first_block, fsInfo->last_block, TSK_FS_BLOCK_WALK_FLAG_UNALLOC, 
+        fsWalkUnallocBlocksCb, &unallocBlockWlkTrack);
+
+    if (block_walk_ret == 1) {
+        stringstream errss;
+        tsk_fs_close(fsInfo);
+        errss << "processFsInfoUnalloc: error walking fs unalloc blocks, fs id: ";
+        errss << unallocBlockWlkTrack.fsObjId;
+        tsk_error_set_errstr2("%s", errss.str().c_str());
+        registerError();
+        return TSK_ERR;
+    }
+
+    if(m_stopAllProcessing) {
+        tsk_fs_close(fsInfo);
+        return TSK_OK;
+    }
+
+    //handle creation of the last range
+    //make range inclusive from curBlockStart to prevBlock
+    const uint64_t byteStart = unallocBlockWlkTrack.curRangeStart * fsInfo->block_size + fsInfo->offset;
+    const uint64_t byteLen = (1 + unallocBlockWlkTrack.prevBlock - unallocBlockWlkTrack.curRangeStart) * fsInfo->block_size;
+    TSK_DB_FILE_LAYOUT_RANGE tempRange(byteStart, byteLen, 0);
+    //add unalloc block file per single range to db
+    vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+    ranges.push_back(tempRange);
+    int64_t fileObjId = 0;
+    m_db->addUnallocBlockFile(dbFsInfo.objId, dbFsInfo.objId, tempRange.byteLen, ranges, fileObjId);
+    
+    //cleanup 
+    tsk_fs_close(fsInfo);
+
+    return TSK_OK; 
+}
+
+/**
+* Process all unallocated space and create "virtual" files with layouts
+* @returns TSK_OK on success, TSK_ERR on error
+*/
+uint8_t TskAutoDb::addUnallocSpaceToDb() {
+    
+    uint8_t retFsSpace = addUnallocFsSpaceToDb(); 
+    uint8_t retVsSpace = addUnallocVsSpaceToDb();
+    
+    return retFsSpace || retVsSpace;
+}
+
+/**
+* traverse filesystems, walk blocks
+* create files for unalloc content
+* @returns TSK_OK on success, TSK_ERR on error (if some or all fs could not be processed)
+*/
+uint8_t TskAutoDb::addUnallocFsSpaceToDb() {
+
+    vector<TSK_DB_FS_INFO> fsInfos;
+
+    if(m_stopAllProcessing) {
+        return TSK_OK;
+    }
+
+    uint16_t ret = m_db->getFsInfos(fsInfos);
+    if (ret) {
+        tsk_error_set_errstr2("addUnallocFsSpaceToDb: error getting fs infos from db");
+        registerError();
+        return TSK_ERR;
+    }
+
+    int8_t allFsProcessRet = TSK_OK;
+    for (vector<TSK_DB_FS_INFO>::iterator it = fsInfos.begin(); it!= fsInfos.end(); ++it) {
+        if(m_stopAllProcessing) {
+            break;
+        }
+        allFsProcessRet |= addFsInfoUnalloc(*it);
+    }
+
+    return allFsProcessRet;
+}
+
+/**
+* traverse volumes
+* create files for unalloc content
+* @returns TSK_OK on success, TSK_ERR on error
+*/
+uint8_t TskAutoDb::addUnallocVsSpaceToDb() {
+
+    vector<TSK_DB_VS_PART_INFO> vsPartInfos;
+
+    uint8_t ret = m_db->getVsPartInfos(vsPartInfos);
+    if (ret) {
+        tsk_error_set_errstr2("addUnallocVsSpaceToDb: error getting vs part infos from db");
+        registerError();
+        return ret;
+    }
+
+    for (vector<TSK_DB_VS_PART_INFO>::iterator it = vsPartInfos.begin();
+        it != vsPartInfos.end(); ++it) {
+        if(m_stopAllProcessing) {
+            break;
+        }
+        TSK_DB_VS_PART_INFO &vsPart = *it;
+
+        //interested in unalloc and meta
+        if ( (vsPart.flags & (TSK_VS_PART_FLAG_UNALLOC | TSK_VS_PART_FLAG_META)) == 0)
+            continue;
+
+        //get sector size and image offset from parent vs info
+
+        //get parent id of this vs part
+        TSK_DB_OBJECT vsPartObj;     
+        if (m_db->getObjectInfo(vsPart.objId, vsPartObj) ) {
+            stringstream errss;
+            errss << "addUnallocVsSpaceToDb: error getting object info for vs part from db, objId: " << vsPart.objId;
+            tsk_error_set_errstr2("%s", errss.str().c_str());
+            registerError();
+            return TSK_ERR;
+        }
+
+        TSK_DB_VS_INFO vsInfo;
+        if (m_db->getVsInfo(vsPartObj.parObjId, vsInfo) ) {
+            stringstream errss;
+            errss << "addUnallocVsSpaceToDb: error getting volume system info from db, objId: " << vsPartObj.parObjId;
+            tsk_error_set_errstr2("%s", errss.str().c_str());
+            registerError();
+            return TSK_ERR;
+        }
+
+        //create an unalloc file with unalloc part, with vs part as parent
+        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+        const uint64_t byteStart = vsInfo.offset + vsInfo.block_size * vsPart.start;
+        const uint64_t byteLen = vsInfo.block_size * vsPart.len; 
+        TSK_DB_FILE_LAYOUT_RANGE tempRange(byteStart, byteLen, 0);
+        ranges.push_back(tempRange);
+        int64_t fileObjId = 0;
+        m_db->addUnallocBlockFile(vsPart.objId, 0, tempRange.byteLen, ranges, fileObjId);
+    }
+
+    return TSK_OK;
 }

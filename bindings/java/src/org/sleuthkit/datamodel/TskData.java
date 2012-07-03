@@ -50,14 +50,27 @@ public class TskData {
 			this.label = label;
 		}
 
+		/**
+		 * Get dir type 
+		 * @return the dir type long value
+		 */
 		public long getDirType(){
 			return dir_type;
 		}
 		
+		/**
+		 * Get the label string
+		 * @return the label string value
+		 */
 		public String getLabel() {
 			return this.label;
 		}
 		
+		/**
+		 * Convert to the enum type from the long value
+		 * @param dir_type enum type value to convert
+		 * @return converted long value
+		 */
 		static public TSK_FS_NAME_TYPE_ENUM fromType(long dir_type) {
 			for (TSK_FS_NAME_TYPE_ENUM v : TSK_FS_NAME_TYPE_ENUM.values()) {
 				if (v.dir_type == dir_type) {
@@ -69,8 +82,10 @@ public class TskData {
 	}
 
 
-
-	// Enum and Array for Meta Type
+	
+	/**
+	 * Meta Type
+	 */
 	public enum TSK_FS_META_TYPE_ENUM {
 		TSK_FS_META_TYPE_UNDEF(0),
 		TSK_FS_META_TYPE_REG(1),        ///< Regular file
@@ -91,6 +106,10 @@ public class TskData {
 			meta_type = type;
 		}
 
+		/**
+		 * Get meta type long value
+		 * @return the meta type long value
+		 */
 		public long getMetaType(){
 			return meta_type;
 		}
@@ -98,7 +117,9 @@ public class TskData {
 
 	public static String[] tsk_fs_meta_type_str = { "-", "r", "d", "p", "c", "b", "l", "s", "h", "w", "v"};
 
-	// Enum for Directory Flags
+	/**
+	 * FS Flags
+	 */
 	public enum TSK_FS_NAME_FLAG_ENUM {
 		TSK_FS_NAME_FLAG_ALLOC(1),      ///< Name is in an allocated state
 		TSK_FS_NAME_FLAG_UNALLOC(2);    ///< Name is in an unallocated state
@@ -109,13 +130,20 @@ public class TskData {
 			dir_flag = flag;
 		}
 
+		/**
+		 * Get long value of the flag
+		 * @return the long flag value
+		 */
 		public long getDirFlag(){
 			return dir_flag;
 		}
 	}
 
 
-	// Enum for Meta Flags
+	
+	/**
+	 * META flags
+	 */
 	public enum TSK_FS_META_FLAG_ENUM {
 		ALLOC(1, "Allocated"),      ///< Metadata structure is currently in an allocated state
 		UNALLOC(2, "Unallocated"),    ///< Metadata structure is currently in an unallocated state
@@ -132,19 +160,28 @@ public class TskData {
 			this.label = label;
 		}
 
+		/**
+		 * Get meta flags long value
+		 * @return the long value of meta flags
+		 */
 		public long getMetaFlag(){
 			return meta_flag;
 		}
 		
+		
+		/**
+		 * Get string label of the metal flags
+		 * @return string meta flags label
+		 */
 		public String getLabel(){
 			return label;
 		}
 		
 		
 		/**
-		 * Returns all the emum elements that match the flags in metaFlag
+		 * Returns all the enum elements that match the flags in metaFlag
 		 * @param metaFlag
-		 * @return matching TSK_FS_META_FLAG_ENUM elemetns
+		 * @return matching TSK_FS_META_FLAG_ENUM elements
 		 */
 		public static Set<TSK_FS_META_FLAG_ENUM> getFlags(long metaFlag) {
 			Set<TSK_FS_META_FLAG_ENUM> matchedFlags = EnumSet.noneOf(TSK_FS_META_FLAG_ENUM.class);
@@ -161,7 +198,9 @@ public class TskData {
 		}
 	}
 
-	// Enum for Volume System Flags
+	/**
+	 * Volume system flags
+	 */
 	public enum TSK_VS_PART_FLAG_ENUM{
 		TSK_VS_PART_FLAG_ALLOC(1),      ///< Sectors are allocated to a volume in the volume system
 		TSK_VS_PART_FLAG_UNALLOC(2),    ///< Sectors are not allocated to a volume
@@ -174,12 +213,18 @@ public class TskData {
 			vs_flag = flag;
 		}
 
+		/**
+		 * Get long value of the vs flag
+		 * @return the long value of the flag
+		 */
 		public long getVsFlag(){
 			return vs_flag;
 		}
 	} 
 
-	// Enum for Mode
+	/**
+	 * Meta mode
+	 */
 	public enum TSK_FS_META_MODE_ENUM {
 		/* The following describe the file permissions */
 		TSK_FS_META_MODE_ISUID(0004000),       ///< set user id on execution
@@ -204,12 +249,18 @@ public class TskData {
 			this.mode = mode;
 		}
 
+		/**
+		 * Get long value of the meta mode
+		 * @return the long value of the meta mode
+		 */
 		public long getMode(){
 			return mode;
 		}
 	};
 
-	// Enum for Image Type
+	/**
+	 * Image type
+	 */
 	public enum TSK_IMG_TYPE_ENUM {
 		/* The following describe the image type */
 		TSK_IMG_TYPE_DETECT(0),       // Auto Detection
@@ -228,12 +279,18 @@ public class TskData {
 			this.imgType = type;
 		}
 
+		/**
+		 * Get long value of the image tyoe
+		 * @return the long value of the image type
+		 */
 		public long getImageType(){
 			return imgType;
 		}
 	};
     
-    // Enum for Volume System Type.  
+	/**
+	 * Volume System type
+	 */
     public enum TSK_VS_TYPE_ENUM {
         TSK_VS_TYPE_DETECT(0x0000),    ///< Use autodetection methods
         TSK_VS_TYPE_DOS(0x0001),       ///< DOS Partition table
@@ -249,18 +306,26 @@ public class TskData {
             this.vsType = type;
         }
         
+		
+		/**
+		 * Get long value of the vs type
+		 * @return the long value of the vs type
+		 */
         public long getVsType() {
             return vsType;
         }
     };
 	
 	
+	/**
+	 * Object type
+	 */
 	public enum ObjectType {
 		IMG(0),
 		VS(1),
 		VOL(2),
 		FS(3),
-		FILE(4);
+		ABSTRACTFILE(4);
 
 		
 		private long objectType;
@@ -269,10 +334,20 @@ public class TskData {
 			this.objectType = objectType;
 		}
 		
+		/**
+		 * Get long value of the object type
+		 * @return the long value of the object type
+		 */
 		public long getObjectType(){
 			return objectType;
 		}
 		
+		
+		/**
+		 * Convert object type long value to the enum type
+		 * @param objectType long value to convert
+		 * @return the enum type
+		 */
 		public static ObjectType valueOf(long objectType) {
 			for (ObjectType v : ObjectType.values()) {
 				if (v.objectType == objectType) {
@@ -283,10 +358,57 @@ public class TskData {
 		}
 	}
 	
+	
+	/**
+	 * DB files type
+	 */
+	public enum TSK_DB_FILES_TYPE_ENUM {
+		FS(0), ///< File that can be found in file system tree. 
+		CARVED(1), ///< Set of blocks for a file found from carving.  Could be on top of a TSK_DB_FILES_TYPE_UNALLOC_BLOCKS range. 
+		DERIVED(2), ///< File derived from a parent file (i.e. from ZIP)
+		LOCAL(3), ///< Local file that was added (not from a disk image)
+		UNALLOC_BLOCKS(4), ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout. 
+		UNUSED_BLOCKS(5); ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
+		
+		private long fileType;
+		
+		private TSK_DB_FILES_TYPE_ENUM(long fileType) {
+			this.fileType = fileType;
+		}
+		
+		
+		/**
+		 * Convert db files type long value to the enum type
+		 * @param fileType long value to convert
+		 * @return the enum type
+		 */
+		public static TSK_DB_FILES_TYPE_ENUM valueOf(long fileType) {
+			for(TSK_DB_FILES_TYPE_ENUM type : TSK_DB_FILES_TYPE_ENUM.values()) {
+				if(type.fileType == fileType) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_FILE_TYPE_ENUM of value: " + fileType);
+		}
+		
+		
+		/**
+		 * Get long value of the file type
+		 * @return the long value of the file type
+		 */
+		public long getFileType() {
+			return fileType;
+		}
+	}
+	
+	
+	/**
+	 * FileKnown status
+	 */
 	public enum FileKnown {
-		UKNOWN(0, "unknown"),
-		KNOWN(1, "known"),
-		BAD(2, "known bad");
+		UKNOWN(0, "unknown"), ///< File marked as unknown by hash db
+		KNOWN(1, "known"),  ///< File marked as a known by hash db
+		BAD(2, "known bad"); ///< File marked as known and bad/notable/interesting by hash db
 		
 		private long known;
 		private String name;
@@ -296,6 +418,12 @@ public class TskData {
 			this.name = name;
 		}
 		
+		
+		/**
+		 * Convert file known type long value to the enum type
+		 * @param known long value to convert
+		 * @return the enum type
+		 */
 		public static FileKnown valueOf(long known) {
 			for (FileKnown v : FileKnown.values()) {
 				if (v.known == known) {
@@ -305,10 +433,15 @@ public class TskData {
 			throw new IllegalArgumentException("No FileKnown of value: " + known);
 		}
 		
+		
 		public String getName() {
 			return this.name;
 		}
 		
+		/**
+		 * Get long value of the file known status
+		 * @return the long value of the file known status
+		 */
 		public long toLong() {
 			return this.known;
 		}

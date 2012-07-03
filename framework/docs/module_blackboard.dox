@@ -38,7 +38,7 @@ Example artifact types include:
 
 \subsection bb_art_types_add Creating Artifact Types
 
-If you need an artifact that does not exist in the framework, you can make one.  Simply call the TskBlackboard.addArtifactType() method.  It will return the artifact ID that you can then use to create an artifact.  To test if a type already exists, use XXX.
+If you need an artifact that does not exist in the framework, you can make one.  Simply call the TskBlackboard.addArtifactType() method.  It will return the artifact ID that you can then use to create an artifact.  To test if a type already exists, use one of the mapping methods in TskBlackboard.
 
 
 \section bb_attr_types Attribute Types
@@ -69,7 +69,7 @@ As an example, if you have a module that analyzes a Microsoft Word file, then it
 
 \subsection bb_attr_types_add Creating Attribute Types
 
-If you need an attribute that does not exist in the framework, you can make one.  Simply call the TskBlackboard.addAttributeType() method.  It will return the attribute ID that you can then use to create an attribute.  To test if a type already exists, use XXX.
+If you need an attribute that does not exist in the framework, you can make one.  Simply call the TskBlackboard.addAttributeType() method.  It will return the attribute ID that you can then use to create an attribute.  To test if a type already exists, use one of the mapping methods in TskBlackboard.
 
 <!-- 
   MAKE SURE THIS MOVES TO THE CODE WHERE THE ARTIFACT EXAMPLES ARE DEFINED
