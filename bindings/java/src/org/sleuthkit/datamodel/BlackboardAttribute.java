@@ -156,7 +156,10 @@ public class BlackboardAttribute {
 		TSK_GEO_BEARING(58, "TSK_GEO_BEARING", "Bearing"),
 		TSK_GEO_HPRECISION(59, "TSK_GEO_HPRECISION", "Horizontal Precision"),
 		TSK_GEO_VPRECISION(60, "TSK_GEO_VPRECISION", "Vertical Precision"),
-		TSK_GEO_MAPDATUM(61, "TSK_GEO_MAPDATUM", "Map Datum");
+		TSK_GEO_MAPDATUM(61, "TSK_GEO_MAPDATUM", "Map Datum"),
+		TSK_FILE_TYPE_SIG(62, "TSK_FILE_TYPE_SIG", "File Type (signature)"),
+		TSK_FILE_TYPE_EXT(63, "TSK_FILE_TYPE_EXT", "File Type (extension)");
+		
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		
 		private String label;

@@ -138,6 +138,8 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_GEO_HPRECISION = 59, ///< Floating point of horizontal precision in geo coordinate in meters.
     TSK_GEO_VPRECISION = 60, ///< Floating point of vertical precision in geo coordinate in meters.
     TSK_GEO_MAPDATUM = 61, ///< String of map datum used for coordinates if not WGS84.
+    TSK_FILE_TYPE_SIG = 62, ///< String of file type based on signature detection in file content.
+    TSK_FILE_TYPE_EXT = 63, ///< String of file type based on file name extension.
 
     /* SEE ABOVE: 
      * - KEEP JAVA CODE IN SYNC 
