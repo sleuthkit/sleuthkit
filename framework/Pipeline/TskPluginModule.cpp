@@ -86,20 +86,38 @@ void TskPluginModule::setPath(const std::string& location)
             if (m_sharedLibrary.hasSymbol(TskPluginModule::NAME_SYMBOL))
             {
                 metaDataFunc = (MetaDataFunc)m_sharedLibrary.getSymbol(TskPluginModule::NAME_SYMBOL);
-                m_name = metaDataFunc();
+                if (metaDataFunc)
+                {
+                    m_name = metaDataFunc();
+                    metaDataFunc = NULL;
+                }
             }
 
             if (m_sharedLibrary.hasSymbol(TskPluginModule::DESCRIPTION_SYMBOL))
             {
                 metaDataFunc = (MetaDataFunc)m_sharedLibrary.getSymbol(TskPluginModule::DESCRIPTION_SYMBOL);
-                m_description = metaDataFunc();
+                if (metaDataFunc)
+                {
+                    m_description = metaDataFunc();
+                    metaDataFunc = NULL;
+                }
             }
 
             if (m_sharedLibrary.hasSymbol(TskPluginModule::VERSION_SYMBOL))
             {
                 metaDataFunc = (MetaDataFunc)m_sharedLibrary.getSymbol(TskPluginModule::VERSION_SYMBOL);
-                m_version = metaDataFunc();
+                if (metaDataFunc)
+                {
+                    m_version = metaDataFunc();
+                    metaDataFunc = NULL;
+                }
             }
+        }
+
+        if (m_name.empty())
+        {
+            Poco::Path modulePath(m_modulePath);
+            m_name = modulePath.getBaseName();
         }
     }
     catch (TskException& ex)
