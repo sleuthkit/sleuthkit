@@ -22,17 +22,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * Blackboard Artifact class, a representation of db objects in tsk_blackboard_artifacts table
- * Blackboard artifacts have a type and attributes - generic type-value pairs that store any data
+ * Represents an artifact as stored in the Blackboard. Artifacts are a collection
+ * of name value pairs and have a type that represents the type of data they are
+ * storing.  This class is used to create artifacts on the blackboard and is used
+ * to represent artifacts queried from the blackboard.
  */
 public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
-	 * Enum for artifact types. 
+	 * Enum for artifact types.  The C++ code has the full description of 
+	 * how to use these. 
 	 * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
 	 * for details on which attributes should be used for each artifact.
-	 * The enum typeIDs will be populated at database creation
-	 * time, so they will always match the ids stored in the database.
 	 */
 	/* It is very important that this list be kept up to
 	 * date and in sync with the C++ code.  Do not add
@@ -52,7 +53,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", "Hashset Hits"), ///< hashset hits
 		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Device Attached"), ///< attached devices
 		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", "Interesting File"), ///< an interesting/notable file hit
-		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", "E-Mail Message"); ///< email message
+		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", "E-Mail Message"), ///< email message
+		TSK_EMAIL_MSG(14, "TSK_EXTRACTED_TEXT", "Extracted Text"); ///< text extracted from file
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
 		private int typeID;
