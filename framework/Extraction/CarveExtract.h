@@ -8,8 +8,12 @@
  * This software is distributed under the Common Public License 1.0
  */
 
-#ifndef _OSS_CARVEEXTRACT_H
-#define _OSS_CARVEEXTRACT_H
+/**
+ * \file CarveExtract.h
+ * Contains the interface of the abstract CarveExtract class.
+ */
+#ifndef _TSK_CARVEEXTRACT_H
+#define _TSK_CARVEEXTRACT_H
 
 #include "Services/TskImgDB.h"
 
@@ -21,7 +25,12 @@
 class TSK_FRAMEWORK_API CarveExtract
 {
 public:
+    /**
+     * Virtual destructor to ensure derived class constructors are called
+     * polymorphically.
+     */
     virtual ~CarveExtract() {}
+
     /**
      * Carve a specified unallocated sectors image file. 
      *

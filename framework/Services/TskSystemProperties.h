@@ -10,7 +10,7 @@
 
 /**
  * \file TskSystemProperties.h
- * Contains the definition of the TskSystemProperties class.
+ * Contains the interface of the TskSystemProperties class.
  */
 
 #ifndef _TSK_SYSTEMPROPERTIES_H
@@ -22,12 +22,13 @@
 #include <set>
 
 /**
- * A base class for setting and retrieving system-wide name/value pairs.
- * Typically used to store system settings so that all modules and classes can
- * access the settings. Can be registered with and retrieved from TskServices.
- * The class is abstract; derived classes supply property storage options and 
- * implement the private virtual functions setProperty and getProperty (the 
- * class design makes use of Herb Sutter's Non-Virtual Interface [NVI] idiom).
+ * The TskSystemProperties class is a base class for setting and retrieving 
+ * system-wide name/value pairs. Typically used to store system settings so 
+ * that all modules and classes can access the settings. Can be registered with
+ * and retrieved from TskServices. The class is abstract; derived classes 
+ * supply property storage options and implement the private virtual functions
+ * setProperty and getProperty (the class design makes use of Herb Sutter's 
+ * Non-Virtual Interface [NVI] idiom).
  */
 class TSK_FRAMEWORK_API TskSystemProperties
 {
@@ -42,9 +43,9 @@ public:
      * define the OUT_DIR system property as a directory relative to the 
      * PROG_DIR property.
      *
-     *  TskSystemProperties sysProps;
-     *  sysProps.set(TskSystemProperties::PROG_DIR, progDir);
-     *  sysProps.set(TskSystemProperties::OUT_DIR, "#PROG_DIR#\\out");
+     *    TskSystemProperties sysProps;
+     *    sysProps.set(TskSystemProperties::PROG_DIR, progDir);
+     *    sysProps.set(TskSystemProperties::OUT_DIR, "#PROG_DIR#\\out");
      */
     enum PredefinedProperty
     {
@@ -153,10 +154,10 @@ public:
     /** 
      * Associates a string value with a name.
      *
-     * @param prop An element of the /ref PredefinedProperty enum.
+     * @param prop An element of the PredefinedProperty enum.
      * @param value The value to associate with the name corresponding to the
-     * /ref PredefinedProperty enum element.
-     * @return Throws /ref TskException if prop is out of range.
+     *  PredefinedProperty enum element.
+     * @return Throws TskException if prop is out of range.
      */
     void setW(PredefinedProperty prop, const std::wstring &value);
     
@@ -165,17 +166,17 @@ public:
      *
      * @param name The name with which to associate the value.
      * @param value The value to associate with the name.
-     * @return Throws /ref TskException if name is empty.
+     * @return Throws TskException if name is empty.
      */
     void setW(const std::wstring &name, const std::wstring &value);
 
     /** 
      * Associates a string value with a name.
      *
-     * @param prop An element of the /ref PredefinedProperty enum.
+     * @param prop An element of the PredefinedProperty enum.
      * @param value The value to associate with the name corresponding to the
-     * /ref PredefinedProperty enum element.
-     * @return Throws /ref TskException if prop is out of range.
+     *  PredefinedProperty enum element.
+     * @return Throws TskException if prop is out of range.
      */
     void set(PredefinedProperty prop, const std::string &value);
 
@@ -184,22 +185,22 @@ public:
      *
      * @param name The name with which to associate the value.
      * @param value The value to associate with the name.
-     * @return Throws /ref TskException if name is empty.
+     * @return Throws TskException if name is empty.
      */
     void set(const std::string &name, const std::string &value);
 
     /** 
-     * Retrieves the string value associated with the given name.
+     * Retrieves the string value associated with a name.
      *
-     * @param prop An element of the /ref PredefinedProperty enum.
+     * @param prop An element of the  PredefinedProperty enum.
      * @returns String value corresponding to prop. Throws
-     * /ref TskException if the requested value is for a required predefined 
+     * TskException if the requested value is for a required predefined 
      * property that is not set.
      */
     std::wstring getW(PredefinedProperty prop) const;
 
     /** 
-     * Retrieves the string value associated with the given name.
+     * Retrieves the string value associated with a name.
      *
      * @param name Name of value to retrieve.
      * @returns String value or empty string if name was not found. 
@@ -207,17 +208,17 @@ public:
     std::wstring getW(const std::wstring &name) const;
 
     /** 
-     * Retrieves the string value associated with the given name.
+     * Retrieves the string value associated with a name.
      *
-     * @param prop An element of the /ref PredefinedProperty enum.
+     * @param prop An element of the  PredefinedProperty enum.
      * @returns String value corresponding to prop. Throws
-     * /ref TskException if the requested value is for a required predefined 
+     * TskException if the requested value is for a required predefined 
      * property that is not set.
      */
     std::string get(PredefinedProperty prop) const;
     
     /** 
-     * Retrieves the string value associated with the given name.
+     * Retrieves the string value associated with a name.
      *
      * @param name Name of value to retrieve.
      * @returns String value or empty string if name was not found. 
@@ -225,7 +226,7 @@ public:
     std::string get(const std::string &name) const;
 
     /**
-     * Recursively expands any system property macros in a given string. 
+     * Expands any system property macros in a given string. 
      *
      * @param inputStr The input string.
      * @return A copy of the input string with all system property macros
@@ -234,7 +235,7 @@ public:
     std::wstring expandMacrosW(const std::wstring &inputStr) const;
 
     /**
-     * Recursively expands any system property macros in a given string. 
+     * Expands any system property macros in a given string. 
      *
      * @param inputStr The input string.
      * @return A copy of the input string with all system property macros
@@ -243,14 +244,47 @@ public:
     std::string expandMacros(const std::string &inputStr) const;
 
 private:
-    // The calling functions ensure that name is non-empty. Implementations should of getProperty should return an empty string if there is no value associated with name.
+    /**
+     * Associates a string value with a name. Called by the public interface of
+     * this class in accordance with Herb Sutter's Non-Virtual Interface (NVI) 
+     * idiom.
+     *
+     * @param name The name with which to associate the value.
+     * @param value The value to associate with the name.
+     */
     virtual void setProperty(const std::string &name, const std::string &value) = 0;
+
+    /** 
+     * Retrieves the string value associated with a name. Called by the public 
+     * interface of this class in accordance with Herb Sutter's Non-Virtual 
+     * Interface (NVI) idiom.
+     *
+     * @param name Name of value to retrieve.
+     * @returns String value or empty string if name was not found. 
+     */
     virtual std::string getProperty(const std::string &name) const = 0;
 
+    /**
+     * Recursively expands the system property macros in a given string with
+     * recursion not to exceed TskSystemProperties::MAX_RECURSION_DEPTH. 
+     *
+     * @param inputStr The input string.
+     * @param outputStr The output string.
+     * @param depth The current depth of the recursion.
+     * @return A copy of the input string with all system property macros
+     * at the current recursion depth expanded.
+     */
     void expandMacros(const std::string &inputStr, std::string &outputStr, std::size_t depth) const;
 
-    const static std::size_t MAX_DEPTH = 10;
+    /**
+     * Constant used to guarantee a recursion stop condition for the expandMacros 
+     * member function.
+     */
+    const static std::size_t MAX_RECURSION_DEPTH = 10;
 
+    /**
+     * Used to define a predefined system property.
+     */
     struct PredefProp
     {
         PredefProp(PredefinedProperty propId, const std::string &macroToken, bool propRequired) : id(propId), token(macroToken), required(propRequired) {}
@@ -259,10 +293,31 @@ private:
         bool required;
     };
 
+    /**
+     * Array of PredefProp objects used to define the predefined system
+     * properties.
+     */
     const static PredefProp predefinedProperties[]; 
 
+    /**
+     * Lookup data structure used to map elements of the 
+     * PredefinedProperty enum to name strings. Populated from the 
+     * predefinedProperties array.
+     */
     std::vector<std::string> predefPropNames;
+
+    /**
+     * Lookup data structure used to determine whether or not a token in a 
+     * string passed to the expandMacros function corresponds to a predefined 
+     * system property. Populated from the predefinedProperties array.
+     */
     std::set<std::string> predefPropTokens;
+
+    /**
+     * Lookup data structure used to determine whether or not a predefined 
+     * system property is required. Populated from the predefinedProperties 
+     * array.
+     */
     std::set<PredefinedProperty> requiredProps; 
 };
 

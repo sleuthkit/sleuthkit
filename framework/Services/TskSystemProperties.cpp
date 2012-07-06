@@ -20,9 +20,7 @@
 #include "Services/Log.h"
 #include "Utilities/TskUtilities.h"
 #include "Utilities/TskException.h"
-
 #include <sstream>
-
 #include "Poco/StringTokenizer.h"
 #include "Poco/LocalDateTime.h"
 #include "Poco/DateTimeFormatter.h"
@@ -152,10 +150,10 @@ std::string TskSystemProperties::expandMacros(const std::string &inputStr) const
 
 void TskSystemProperties::expandMacros(const std::string &inputStr, std::string &outputStr, std::size_t depth) const
 {
-    if (depth > MAX_DEPTH)
+    if (depth > MAX_RECURSION_DEPTH)
     {
         std::wstringstream msg;
-        msg << L"TskSystemProperties::expandMacros reached maximum depth (" << MAX_DEPTH << L") of recursion, cannot complete expansion of " << inputStr.c_str();
+        msg << L"TskSystemProperties::expandMacros reached maximum depth (" << MAX_RECURSION_DEPTH << L") of recursion, cannot complete expansion of " << inputStr.c_str();
         LOGERROR(msg.str());
         return;
     }

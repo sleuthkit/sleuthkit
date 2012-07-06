@@ -9,35 +9,22 @@
  */
 
 /**
- * \file TskCarvePrepSectorConcat.cpp
- * Implementation of a class that concatenates unallocated sectors from an 
- * image as a series of files with a configurable maximum size. These files 
- * are optionally scheduled for carving. Instances of this class are also 
- * able to treat a file as a run of unallocated sectors. Instances of the class
- * use the following system properties: CARVE_PREP_OUTPUT_PATH, 
- * CARVE_PREP_OUTPUT_FILE_NAME, and CARVE_PREP_MAX_OUTPUT_FILE_SIZE. 
- *
- * This class assumes the availability of the Microsoft Windows API.
- * @@@ TODO: Use Poco API instead.
+ * \file TskCarvePrepSectorConcat.h
+ * Contains the implementation of the TskCarvePrepSectorConcat class.
  */
 
 // Include the class definition first to ensure it does not depend on
 // subsequent includes in this file.
 #include "TskCarvePrepSectorConcat.h" 
 
-// TSK framework includes
 #include "Services/TskImgDB.h"
 #include "Services/TskServices.h"
 #include "Services/Log.h"
 #include "Utilities/TskUtilities.h"
-
-// System includes
 #include <assert.h>
 #include <string>
 #include <sstream>
 #include <cstdlib>
-
-// Poco library includes 
 #include "Poco/File.h"
 #include "Poco/Exception.h"
 #include "Poco/Path.h"
