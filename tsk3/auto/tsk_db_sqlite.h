@@ -19,16 +19,19 @@
 #define _TSK_DB_SQLITE_H
 
 #include <map>
+#include <vector>
 
 #include <string>
-#include <vector>
+#include <ostream>
+
 
 #include "sqlite3.h"
 #include "tsk_auto_i.h"
 
 using std::map;
-using std::string;
 using std::vector;
+using std::string;
+using std::ostream;
 
 typedef struct sqlite3 sqlite3;
 
@@ -67,15 +70,85 @@ typedef enum  {
     TSK_DB_FILES_KNOWN_KNOWN_BAD = 2,      ///< Match found in "known bad" index
 } TSK_DB_FILES_KNOWN_ENUM;
 
+
 /**
-* Data wrapping a single file_layout entry
+* Structure wrapping a single tsk objects db entry
 */
-typedef struct {
-    int64_t a_fileObjId;
-    uint64_t a_byteStart;
-    uint64_t a_byteLen;
-    int a_sequence;
+typedef struct _TSK_DB_OBJECT {
+    int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
+    int64_t parObjId;
+    TSK_DB_OBJECT_TYPE_ENUM type;    
+} TSK_DB_OBJECT;
+
+ostream& operator <<(ostream &os,const TSK_DB_OBJECT &dbObject);
+
+/**
+* Structure wrapping a single file_layout db entry
+*/
+typedef struct _TSK_DB_FILE_LAYOUT_RANGE {
+    //default constructor
+    _TSK_DB_FILE_LAYOUT_RANGE()
+        : fileObjId(0),byteStart(0),byteLen(0),sequence(0) {}
+    //constructor for non-db object (before it becomes one)
+    _TSK_DB_FILE_LAYOUT_RANGE(uint64_t byteStart, uint64_t byteLen, int sequence)
+        : fileObjId(0),byteStart(byteStart),byteLen(byteLen),sequence(sequence) {}
+ 
+    int64_t fileObjId; ///< set to 0 if unknown (before it becomes a db object)
+    uint64_t byteStart;
+    uint64_t byteLen;
+    int sequence;
+
+    //default comparator by sequence
+    bool operator< (const struct _TSK_DB_FILE_LAYOUT_RANGE & rhs) const
+    { return sequence < rhs.sequence; }
+
 } TSK_DB_FILE_LAYOUT_RANGE;
+
+ostream& operator <<(ostream &os,const TSK_DB_FILE_LAYOUT_RANGE &layoutRange);
+
+/**
+* Structure wrapping a single fs info db entry
+*/
+typedef struct _TSK_DB_FS_INFO {
+    int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
+    TSK_OFF_T imgOffset;
+    TSK_FS_TYPE_ENUM fType;
+    unsigned int block_size;
+    TSK_DADDR_T block_count;
+    TSK_INUM_T root_inum;
+    TSK_INUM_T first_inum;
+    TSK_INUM_T last_inum;     
+} TSK_DB_FS_INFO;
+
+ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo);
+
+
+/**
+* Structure wrapping a single vs info db entry
+*/
+typedef struct _TSK_DB_VS_INFO {
+    int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
+    TSK_VS_TYPE_ENUM vstype;
+    TSK_DADDR_T offset;
+    unsigned int block_size;  
+} TSK_DB_VS_INFO;
+
+ostream& operator <<(ostream &os,const TSK_DB_VS_INFO &vsInfo);
+
+/**
+* Structure wrapping a single vs part db entry
+*/
+#define TSK_MAX_DB_VS_PART_INFO_DESC_LEN 512
+typedef struct _TSK_DB_VS_PART_INFO {
+    int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
+    TSK_PNUM_T addr;
+    TSK_DADDR_T start;
+    TSK_DADDR_T len;
+    char desc[TSK_MAX_DB_VS_PART_INFO_DESC_LEN];
+    TSK_VS_PART_FLAG_ENUM flags;  
+} TSK_DB_VS_PART_INFO;
+
+ostream& operator <<(ostream &os,const TSK_DB_VS_PART_INFO &vsPartInfos);
 
 /** \internal
  * C++ class that wraps the database internals. 
@@ -103,12 +176,12 @@ class TskDbSqlite {
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t & objId);
 
-    int addUnallocBlockFile(const int64_t parentObjId, const uint64_t size, 
-        const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
-    int addUnusedBlockFile(const int64_t parentObjId, const uint64_t size, 
-        const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
-    int addCarvedFile(const int64_t parentObjId, const uint64_t size, 
-        const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+    int addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+    int addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+    int addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
     
     int addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange);
     int addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
@@ -118,7 +191,16 @@ class TskDbSqlite {
     int revertSavepoint(const char *name);
     int releaseSavepoint(const char *name);
     bool inTransaction();
-    
+
+    //query methods / getters
+    uint8_t getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts);
+    uint8_t getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos);
+    uint8_t getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos);
+    uint8_t getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo);
+    uint8_t getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos);
+    uint8_t getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo);
+    int64_t getParentImageId (const int64_t objId);
+
 
   private:
     // prevent copying until we add proper logic to handle it
@@ -141,9 +223,9 @@ class TskDbSqlite {
         const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t parObjId, int64_t & objId);
-    int addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, 
-        const uint64_t size, const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
-    int addCarvedFileInfo(int fsObjId, const char *fileName, uint64_t size,
+    int addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId,
+        const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+    int addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size,
         int64_t & objId);
     void storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId);
     int64_t findParObjId(const TSK_FS_FILE * fs_file, const int64_t & fsObjId);

@@ -24,6 +24,9 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_HASHSET_HIT, TskArtifactNames("TSK_HASHSET_HIT", "Hashset Hit")));
     retval.insert(pair<int, TskArtifactNames>(TSK_DEVICE_ATTACHED, TskArtifactNames("TSK_DEVICE_ATTACHED", "Device Attached")));
     retval.insert(pair<int, TskArtifactNames>(TSK_INTERESTING_FILE_HIT, TskArtifactNames("TSK_INTERESTING_FILE_HIT", "Interesting File")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_EMAIL_MSG, TskArtifactNames("TSK_EMAIL_MSG", "E-Mail Message")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_EXTRACTED_TEXT, TskArtifactNames("TSK_EXTRACTED_TEXT", "Extracted Text")));
+
     return retval;
 }
 
@@ -36,7 +39,6 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_VALUE, TskAttributeNames("TSK_VALUE", "Value")));
     retval.insert(pair<int, TskAttributeNames>(TSK_FLAG, TskAttributeNames("TSK_FLAG", "Flag")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PATH, TskAttributeNames("TSK_PATH", "Path")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_GEO, TskAttributeNames("TSK_GEO", "Geo")));
     retval.insert(pair<int, TskAttributeNames>(TSK_KEYWORD, TskAttributeNames("TSK_KEYWORD", "Keyword")));
     retval.insert(pair<int, TskAttributeNames>(TSK_KEYWORD_REGEXP, TskAttributeNames("TSK_KEYWORD_REGEXP", "Keyword Regular Expression")));
     retval.insert(pair<int, TskAttributeNames>(TSK_KEYWORD_PREVIEW, TskAttributeNames("TSK_KEYWORD_PREVIEW", "Keyword Preview")));
@@ -68,6 +70,28 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_ENCRYPTION_DETECTED, TskAttributeNames("TSK_ENCRYPTION_DETECTED", "File Encryption Detected")));
     retval.insert(pair<int, TskAttributeNames>(TSK_MALWARE_DETECTED, TskAttributeNames("TSK_MALWARE_DETECTED", "Malware Detected")));
     retval.insert(pair<int, TskAttributeNames>(TSK_STEG_DETECTED, TskAttributeNames("TSK_STEG_DETECTED", "Steganography Detected")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_TO, TskAttributeNames("TSK_EMAIL_TO", "E-Mail To")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_CC, TskAttributeNames("TSK_EMAIL_CC", "E-Mail CC")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_BCC, TskAttributeNames("TSK_EMAIL_BCC", "E-Mail BCC")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_FROM, TskAttributeNames("TSK_EMAIL_FROM", "E-Mail From")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_CONTENT_PLAIN, TskAttributeNames("TSK_EMAIL_CONTENT_PLAIN", "Content (Plain Text)")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_CONTENT_HTML, TskAttributeNames("TSK_EMAIL_CONTENT_HTML", "Content (HTML)")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_CONTENT_RTF, TskAttributeNames("TSK_EMAIL_CONTENT_RTF", "Content (RTF)")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_MSG_ID, TskAttributeNames("TSK_MSG_ID", "Message ID")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_MSG_REPLY_ID, TskAttributeNames("TSK_MSG_REPLY_ID", "Message Reply ID")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_RCVD, TskAttributeNames("TSK_DATETIME_RCVD", "Date Received")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_SENT, TskAttributeNames("TSK_DATETIME_SENT", "Date Sent")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_SUBJECT, TskAttributeNames("TSK_SUBJECT", "Subject")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_LATITUDE, TskAttributeNames("TSK_GEO_LATITUDE", "Latitude")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_LONGITUDE, TskAttributeNames("TSK_GEO_LONGITUDE", "Longitude")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_VELOCITY, TskAttributeNames("TSK_GEO_VELOCITY", "Velocity")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_ALTITUDE, TskAttributeNames("TSK_GEO_ALTITUDE", "Altitude")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_BEARING, TskAttributeNames("TSK_GEO_BEARING", "Bearing")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_HPRECISION, TskAttributeNames("TSK_GEO_HPRECISION", "Horizontal Precision")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_VPRECISION, TskAttributeNames("TSK_GEO_VPRECISION", "Vertical Precision")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_MAPDATUM, TskAttributeNames("TSK_GEO_MAPDATUM", "Map Datum")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_SIG, TskAttributeNames("TSK_FILE_TYPE_SIG", "File Type (by signature)")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_EXT, TskAttributeNames("TSK_FILE_TYPE_EXT", "File Type (by extension)")));
 
     return retval;
 }

@@ -26,6 +26,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.InputStream;
 
+
+/**
+ * Utility to calculate a hash for FsContent and store in tsk database
+ */
 public class Hash {
 
     private final static int BUFFER_SIZE = 8192;
@@ -56,10 +60,10 @@ public class Hash {
             while (hashText.length() < 32) {
                 hashText = "0" + hashText;
             }
-            fsContent.getSleuthkit().setMd5Hash(fsContent, hashText);
+            fsContent.getSleuthkitCase().setMd5Hash(fsContent, hashText);
         } catch (NoSuchAlgorithmException ex) {
             logger.log(Level.WARNING, "No algorithm known as 'md5'", ex);
-        } catch (TskException ex) {
+        } catch (TskCoreException ex) {
             logger.log(Level.WARNING, "Error updating content's md5 in database", ex);
         }
         return hashText;

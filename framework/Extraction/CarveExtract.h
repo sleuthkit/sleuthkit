@@ -14,20 +14,19 @@
 #include "Services/TskImgDB.h"
 
 /**
- * Interface for class that will carve an unallocated image file. 
- * The design assumption is that the unallocated image file was
- * created by a CarvePrep implementation.  The framework does not
- * place any requirements on where the unallocated image files are
- * stored -- it is up to CarvePrep to decide. 
+ * Interface for class that will carve an unallocated sectors image file. The 
+ * design assumes that the unallocated sectors image file was created by a 
+ * CarvePrep implementation. 
  */
 class TSK_FRAMEWORK_API CarveExtract
 {
 public:
-    virtual ~CarveExtract() = 0;
+    virtual ~CarveExtract() {}
     /**
-     * Carve a specified unallocated image. 
-     * @param unallocImgId Id of the unallocated image to carve
-     * @returns 1 on error 
+     * Carve a specified unallocated sectors image file. 
+     *
+     * @param unallocImgId Id of the file to carve.
+     * @returns 1 on error. 
      */
     virtual int processFile(int unallocImgId) = 0;
 };

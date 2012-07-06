@@ -16,6 +16,8 @@
       <li>File Analysis: Where each file is analyzed to pull data out of it.  The framework supports plug-in modules to perform file analysis.</li>
       <li>Post Processing / Reporting: Where the results of the individual file analysis are analyzed a file report and analysis tecniques are conducted. The framework supports plug-in modules to perform post processing.</li>
     </ul>
+    These phases can be seen in this diagram: </br>
+    \image html pipelines.png
   </li>
 </ul>
 

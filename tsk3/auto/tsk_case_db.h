@@ -42,15 +42,36 @@ class TskAutoDb:public TskAuto {
     virtual void closeImage();
     virtual void setTz(string tzone);
 
-    uint8_t addFilesInImgToDb();
     virtual TSK_FILTER_ENUM filterVs(const TSK_VS_INFO * vs_info);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
         const char *path);
     virtual void createBlockMap(bool flag);
+
+    /**
+     * Calculate hash values of files and add them to database.
+     * Default is false.  Will be set to true if a Hash DB is configured.
+     *
+     * @args flag True to calculate hash values and look them up.
+     */
     virtual void hashFiles(bool flag);
+
+    /**
+     * Skip processing of orphans on FAT filesystems.  
+     * This will make the loading of the database much faster
+     * but you will not have all deleted files.  Default value is false. 
+     * @param noFatFsOrphans flag set to true if to skip processing orphans on FAT fs
+     */
     virtual void setNoFatFsOrphans(bool noFatFsOrphans);
+
+    /**
+     * When enabled, records for unallocated file system space will be added to the database. Default value is false.
+     * @param addUnallocSpace If true, create records for contigious unallocated file system sectors. 
+     */
+    virtual void setAddUnallocSpace(bool addUnallocSpace);
+
+    uint8_t addFilesInImgToDb();
 
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
@@ -79,10 +100,23 @@ class TskAutoDb:public TskAuto {
     TSK_HDB_INFO * m_NSRLDb;
     TSK_HDB_INFO * m_knownBadDb;
     bool m_noFatFsOrphans;
+    bool m_addUnallocSpace;
 
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);
     TskAutoDb & operator=(const TskAutoDb&);
+
+    //internal structure to keep track of temp. unalloc block range
+    typedef struct _UNALLOC_BLOCK_WLK_TRACK {
+        _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDb & tskAutoDb, const TSK_FS_INFO & fsInfo, const int64_t fsObjId)
+            : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0),prevBlock(0),isStart(true) {}
+        const TskAutoDb & tskAutoDb;
+        const TSK_FS_INFO & fsInfo;
+        const int64_t fsObjId;
+        TSK_DADDR_T curRangeStart;
+        TSK_DADDR_T prevBlock;
+        bool isStart;
+    } UNALLOC_BLOCK_WLK_TRACK;
 
     uint8_t addImageDetails(const char *const images[], int);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
@@ -95,6 +129,13 @@ class TskAutoDb:public TskAuto {
         TSK_OFF_T offset, TSK_DADDR_T addr, char *buf, size_t size,
         TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);
     int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
+
+    static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
+    int8_t addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
+    uint8_t addUnallocFsSpaceToDb();
+    uint8_t addUnallocVsSpaceToDb();
+    uint8_t addUnallocSpaceToDb();
+
 };
 
 

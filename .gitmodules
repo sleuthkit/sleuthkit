@@ -22,3 +22,6 @@
 [submodule "framework/TskModules/c_SummaryReportModule"]
 	path = framework/TskModules/c_SummaryReportModule
 	url = git://github.com/sleuthkit/c_SummaryReportModule.git
+[submodule "framework/TskModules/c_FileTypeSigModule"]
+	path = framework/TskModules/c_FileTypeSigModule
+	url = git://github.com/sleuthkit/c_FileTypeSigModule.git

@@ -106,6 +106,26 @@ public:
     TSK_GID_T getGid() const;
 
     /**
+     * Get the path of the file in the disk image.  This
+     * will not include the file name and will not include 
+     * any information about the file system or volume that
+     * it was found in (if there were multiple file systems
+     * in the image. 
+     * @returns Original path of the file.
+     */
+    std::string getFullPath() const;
+    
+    /**
+     * Get the path of the file in the disk image.  This
+     * will not include the file name but will include 
+     * either information about the file system or volume that
+     * it was found in or an indicator that the file was produced
+     * by carving. 
+     * @returns Original path of the file.
+     */
+    std::string getUniquePath() const;
+
+    /**
      * Get the fully qualified path of where this file should
      * be locally stored.  It does not check if the file is 
      * locally stored.   Use exists() for that.
@@ -225,7 +245,6 @@ public:
     virtual void addGenInfoAttribute(TskBlackboardAttribute attr);
 
 
-    std::string getFullPath() const;
 protected:
     // File id.
     uint64_t m_id;

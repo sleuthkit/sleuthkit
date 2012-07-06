@@ -34,9 +34,6 @@ TSKAutoImpl::~TSKAutoImpl()
 {
 }
 
-/**
- * @returns 1 on error
- */
 uint8_t TSKAutoImpl::openImage(TSK_IMG_INFO *a_img_info)
 {
     m_curFsId = 0;

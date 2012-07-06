@@ -12,7 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-
+#include <sstream>
 
 #include "tsk3/tsk_tools_i.h" // Needed for tsk_getopt
 #include "framework.h"
@@ -20,6 +20,11 @@
 #include "Services/TskSystemPropertiesImpl.h"
 #include "Services/TskImgDBSqlite.h"
 #include "File/TskFileManagerImpl.h"
+#include "Extraction/TskCarvePrepSectorConcat.h"
+#include "Extraction/TskCarveExtractScalpel.h"
+
+#include "Poco/Path.h"
+#include "Poco/File.h"
 
 #ifdef TSK_WIN32
 #include <Windows.h>
@@ -28,6 +33,7 @@
 #endif
 
 #include "Poco/File.h"
+#include "Poco/UnicodeConverter.h"
 
 static uint8_t 
 makeDir(const TSK_TCHAR *dir) 
@@ -43,15 +49,68 @@ makeDir(const TSK_TCHAR *dir)
     return 0;
 }
 
+class stderrLog : public Log
+{
+public:
+    stderrLog(){
+        Log::Log();
+    }
+
+    ~stderrLog(){
+        Log::~Log();
+    }
+
+    void log(Channel a_channel, const std::wstring &a_msg)
+    {
+        bool toStderr = false;
+        wchar_t level[10];
+        switch (a_channel)
+        {
+        case Error:
+            wcsncpy_s(level, 10, L"[ERROR]", 7);
+            toStderr = true;
+            break;
+        case Warn:
+            wcsncpy_s(level, 10, L"[WARN]", 6);
+            break;
+        case Info:
+            wcsncpy_s(level, 10, L"[INFO]", 6);
+            break;
+        }
+
+        struct tm newtime;
+        time_t aclock;
+
+        time(&aclock);   // Get time in seconds
+        localtime_s(&newtime, &aclock);   // Convert time to struct tm form 
+        char timeStr[64];
+        _snprintf_s(timeStr, 64, "%.2d/%.2d/%.2d %.2d:%.2d:%.2d",
+            newtime.tm_mon+1,newtime.tm_mday,newtime.tm_year % 100, 
+            newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
+
+        if (m_logFile) {
+            fwprintf(m_logFile, L"%S %s %s\n", timeStr, level, a_msg.data());
+            fflush(m_logFile);
+            if(toStderr)
+                fwprintf(stderr, L"%S %s %s\n", timeStr, level, a_msg.data());
+        }
+        else {
+            fwprintf(stderr, L"%S %s %s\n", timeStr, level, a_msg.data());
+        }
+    }
+};
+
 void 
 usage(const char *program) 
 {
-    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] [-d outdir] [-vV] image_name\n", program);
+    fprintf(stderr, "%s [-c framework_config_file] [-p pipeline_config_file] [-d outdir] [-C] [-v] [-V] [-L] image_name\n", program);
     fprintf(stderr, "\t-c framework_config_file: Path to XML framework config file\n");
     fprintf(stderr, "\t-p pipeline_config_file: Path to XML pipeline config file (overrides pipeline config specified with -c)\n");
     fprintf(stderr, "\t-d outdir: Path to output directory\n");
+    fprintf(stderr, "\t-C: Disable carving, overriding framework config file settings\n");
     fprintf(stderr, "\t-v: Enable verbose mode to get more debug information\n");
     fprintf(stderr, "\t-V: Display the tool version\n");
+    fprintf(stderr, "\t-L: Supress stderr logs\n");
     exit(1);
 }
 
@@ -85,6 +144,8 @@ int main(int argc, char **argv1)
     TSK_TCHAR *pipeline_config = NULL;
     TSK_TCHAR *framework_config = NULL;
     std::wstring outDirPath;
+    bool suppressSTDERR = false;
+    bool doCarving = true;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -98,7 +159,7 @@ int main(int argc, char **argv1)
 #endif
 
     while ((ch =
-        GETOPT(argc, argv, _TSK_T("d:c:p:vV"))) > 0) {
+        GETOPT(argc, argv, _TSK_T("d:c:p:vVLC"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -120,6 +181,12 @@ int main(int argc, char **argv1)
             break;
         case _TSK_T('d'):
             outDirPath.assign(OPTARG);
+            break;
+        case _TSK_T('C'):
+            doCarving = false;
+            break;
+        case _TSK_T('L'):
+            suppressSTDERR = true;
             break;
         }
     }
@@ -147,18 +214,20 @@ int main(int argc, char **argv1)
             TskServices::Instance().setSystemProperties(*systemProperties);
         }
         else {
-            LOGINFO(L"No framework config file found");
+            fprintf(stderr, "No framework config file found");
         }
     }
 
-    TSK_SYS_PROP_SET(TskSystemProperties::PROG_DIR, getProgDir()); 
+    SetSystemPropertyW(TskSystemProperties::PROG_DIR, getProgDir()); 
 
     if (outDirPath == _TSK_T("")) {
         outDirPath.assign(imagePath);
         outDirPath.append(_TSK_T("_tsk_out"));
     }
     if (TSTAT(outDirPath.c_str(), &stat_buf) == 0) {
-        fprintf(stderr, "Output directory already exists (%"PRIttocTSK")\n", outDirPath.c_str());
+        std::wstringstream msg;
+        msg << L"Output directory already exists " << outDirPath.c_str();
+        LOGERROR(msg.str());
         return 1;
     }
 
@@ -166,15 +235,45 @@ int main(int argc, char **argv1)
         return 1;
     }
 
+    std::wstring logDir = outDirPath;
+    logDir.append(L"\\Logs");
+
+    if (makeDir(logDir.c_str())) {
+        return 1;
+    }
+
+    struct tm newtime;
+    time_t aclock;
+
+    time(&aclock);   // Get time in seconds
+    localtime_s(&newtime, &aclock);   // Convert time to struct tm form 
+    wchar_t filename[MAX_BUFF_LENGTH];
+    _snwprintf_s(filename, MAX_BUFF_LENGTH, MAX_BUFF_LENGTH, L"\\log_%.4d-%.2d-%.2d-%.2d-%.2d-%.2d.txt",
+        newtime.tm_year + 1900, newtime.tm_mon+1, newtime.tm_mday,  
+        newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
+
+    logDir.append(filename);
+    if(suppressSTDERR){
+        Log * log = new Log();
+        log->open(logDir.c_str());
+        TskServices::Instance().setLog(*log);
+    }
+    else{
+        stderrLog * log = new stderrLog();
+        log->open(logDir.c_str());
+        TskServices::Instance().setLog(*log);
+    }
+
     // @@@ Not UNIX-friendly
-    TSK_SYS_PROP_SET(TskSystemProperties::OUT_DIR, outDirPath);
+    SetSystemPropertyW(TskSystemProperties::OUT_DIR, outDirPath);
 
     // Create and register our SQLite ImgDB class   
     std::auto_ptr<TskImgDB> pImgDB(NULL);
     pImgDB = std::auto_ptr<TskImgDB>(new TskImgDBSqlite(outDirPath.c_str()));
     if (pImgDB->initialize() != 0) {
-        fprintf(stderr, "Error initializing SQLite database\n");
-        tsk_error_print(stderr);
+        std::wstringstream msg;
+        msg << L"Error initializing SQLite database\n" << outDirPath.c_str();
+        LOGERROR(msg.str());
         return 1;
     }
 
@@ -187,7 +286,7 @@ int main(int argc, char **argv1)
 
     // @@@ Not UNIX-friendly
     if (pipeline_config != NULL) 
-        TSK_SYS_PROP_SET(TskSystemProperties::PIPELINE_CONFIG, pipeline_config);
+        SetSystemPropertyW(TskSystemProperties::PIPELINE_CONFIG_FILE, pipeline_config);
 
     // Create a Scheduler and register it
     TskSchedulerQueue scheduler;
@@ -196,8 +295,9 @@ int main(int argc, char **argv1)
     // Create an ImageFile and register it with the framework.
     TskImageFileTsk imageFileTsk;
     if (imageFileTsk.open(imagePath) != 0) {
-        fprintf(stderr, "Error opening image: %"PRIttocTSK"\n", imagePath);
-        tsk_error_print(stderr);
+        std::wstringstream msg;
+        msg << L"Error opening image: " << imagePath;
+        LOGERROR(msg.str());
         return 1;
     }
     TskServices::Instance().setImageFile(imageFileTsk);
@@ -212,8 +312,11 @@ int main(int argc, char **argv1)
         filePipeline = pipelineMgr.createPipeline(TskPipelineManager::FILE_ANALYSIS_PIPELINE);
     }
     catch (TskException &e ) {
-        fprintf(stderr, "Error creating file analysis pipeline\n");
-        std::cerr << e.message() << endl;
+        std::wstringstream msg;
+        std::wstring exceptionMsg;
+        Poco::UnicodeConverter::toUTF16(e.message(), exceptionMsg);
+        msg << L"Error creating file analysis pipeline\n" << exceptionMsg << endl;
+        LOGERROR(msg.str());
         filePipeline = NULL;
     }
 
@@ -222,53 +325,87 @@ int main(int argc, char **argv1)
         reportPipeline = pipelineMgr.createPipeline(TskPipelineManager::REPORTING_PIPELINE);
     }
     catch (TskException &e ) {
-        fprintf(stderr, "Error creating reporting pipeline\n");
-        std::cerr << e.message() << endl;
+        std::wstringstream msg;
+        std::wstring exceptionMsg;
+        Poco::UnicodeConverter::toUTF16(e.message(), exceptionMsg);
+        msg << L"Error creating reporting pipeline\n" << exceptionMsg << endl;
+        LOGERROR(msg.str());
         reportPipeline = NULL;
     }
 
     if ((filePipeline == NULL) && (reportPipeline == NULL)) {
-        fprintf(stderr, "No pipelines configured.  Stopping\n");
+        std::wstringstream msg;
+        msg << L"No pipelines configured.  Stopping\n" << endl;
+        LOGERROR(msg.str());
         exit(1);
     }
 
     // now we analyze the data.
     // Extract
     if (imageFileTsk.extractFiles() != 0) {
-        fprintf(stderr, "Error adding file system info to database\n");
-        tsk_error_print(stderr);
+        std::wstringstream msg;
+        msg << L"Error adding file system info to database\n" << endl;
+        LOGERROR(msg.str());
         return 1;
     }
 
-    //Run pipeline on all files
-    if (filePipeline && !filePipeline->isEmpty()) {
-        TskSchedulerQueue::task_struct *task;
-        while ((task = scheduler.nextTask()) != NULL) {
-            if (task->task != Scheduler::FileAnalysis)  {
-                fprintf(stderr, "WARNING: Skipping task %d\n", task->task);
-                continue;
-            }
-            //printf("processing file: %d\n", (int)task->id);
-            try {
-                filePipeline->run(task->id);
-            }
-            catch (...) {
-                // error message has been logged already.
-            }
+    // If carving has not been turned off via the command line and a path to an installation of Scalpel has been provided, prep for carving.
+    std::auto_ptr<TskCarveExtractScalpel> carver;
+    if (doCarving)
+    {
+        doCarving = !GetSystemProperty("SCALPEL_DIR_PATH").empty();
+
+        if (doCarving)
+        {
+            TskCarvePrepSectorConcat carvePrep;
+            carvePrep.processSectors(true);
+            carver.reset(new TskCarveExtractScalpel());
         }
     }
 
+    TskSchedulerQueue::task_struct *task;
+    while ((task = scheduler.nextTask()) != NULL) 
+    {
+        try
+        {
+            if (task->task == Scheduler::FileAnalysis && filePipeline && !filePipeline->isEmpty())
+            {
+                filePipeline->run(task->id);
+            }
+            else if (task->task == Scheduler::Carve && carver.get())
+            {
+                carver->processFile(static_cast<int>(task->id));
+            }
+            else
+            {
+                std::wstringstream msg;
+                msg << L"WARNING: Skipping task " << task->task;
+                LOGWARN(msg.str());
+                continue;
+            }
+        }
+        catch (...) 
+        {
+            // Error message has been logged already.
+        }
+    }
+
+    // Do image analysis tasks.
     if (reportPipeline) {
         try {
             reportPipeline->run();
         }
         catch (...) {
-            fprintf(stderr, "Error running reporting pipeline\n");
+            std::wstringstream msg;
+            msg << L"Error running reporting pipeline\n" << endl;
+            LOGERROR(msg.str());
             return 1;
         }
     }
 
-    fprintf(stderr, "image analysis complete\n");
+    std::wstringstream msg;
+    msg << L"image analysis complete\n" << endl;
+    LOGINFO(msg.str());
     return 0;
 }
 

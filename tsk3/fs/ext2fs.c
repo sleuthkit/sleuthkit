@@ -1948,9 +1948,12 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     if (sec_skew != 0) {
         tsk_fprintf(hFile, "\nAdjusted Inode Times:\n");
-        fs_meta->mtime -= sec_skew;
-        fs_meta->atime -= sec_skew;
-        fs_meta->ctime -= sec_skew;
+        if (fs_meta->mtime)
+            fs_meta->mtime -= sec_skew;
+        if (fs_meta->atime)
+            fs_meta->atime -= sec_skew;
+        if (fs_meta->ctime)
+            fs_meta->ctime -= sec_skew;
 
         tsk_fprintf(hFile, "Accessed:\t%s\n",
             tsk_fs_time_to_str(fs_meta->atime, timeBuf));
@@ -1966,9 +1969,12 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             fs_meta->time2.ext2.dtime += sec_skew;
         }
 
-        fs_meta->mtime += sec_skew;
-        fs_meta->atime += sec_skew;
-        fs_meta->ctime += sec_skew;
+        if (fs_meta->mtime == 0)
+            fs_meta->mtime += sec_skew;
+        if (fs_meta->atime == 0)
+            fs_meta->atime += sec_skew;
+        if (fs_meta->ctime == 0)
+            fs_meta->ctime += sec_skew;
 
         tsk_fprintf(hFile, "\nOriginal Inode Times:\n");
     }

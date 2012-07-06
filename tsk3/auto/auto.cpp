@@ -37,6 +37,14 @@ TskAuto::~TskAuto()
 }
 
 
+void TskAuto::setCurVsPartDescr(const std::string & curVsPartDescr) {
+    m_curVsPartDescr = curVsPartDescr;
+}
+
+std::string TskAuto::getCurVsPartDescr() const {
+    return m_curVsPartDescr;
+}
+
 /**
  * Opens the disk image to be analyzed.  This must be called before any
  * of the findFilesInXXX() methods.
@@ -52,6 +60,7 @@ uint8_t
     TskAuto::openImage(int a_numImg, const TSK_TCHAR * const a_images[],
     TSK_IMG_TYPE_ENUM a_imgType, unsigned int a_sSize)
 {
+    resetErrorList();
     if (m_img_info)
         closeImage();
 
@@ -79,6 +88,7 @@ uint8_t
     TskAuto::openImageUtf8(int a_numImg, const char *const a_images[],
     TSK_IMG_TYPE_ENUM a_imgType, unsigned int a_sSize)
 {
+    resetErrorList();
     if (m_img_info)
         closeImage();
 
@@ -99,6 +109,7 @@ uint8_t
  */
 uint8_t TskAuto::openImageHandle(TSK_IMG_INFO * a_img_info)
 {
+    resetErrorList();
     if (m_img_info)
         closeImage();
 
@@ -188,8 +199,6 @@ TskAuto::filterFs(TSK_FS_INFO * fs_info) {
 uint8_t
 TskAuto::findFilesInImg()
 {
-    resetErrorList();
-    
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
@@ -217,6 +226,9 @@ TSK_WALK_RET_ENUM
         // we have no way to register an error...
         return TSK_WALK_STOP;
     }
+
+    //save the current volume description
+    tsk->setCurVsPartDescr(a_vs_part->desc);
 
     // see if the super class wants to continue with this.
     TSK_FILTER_ENUM retval1 = tsk->filterVol(a_vs_part);
@@ -250,8 +262,6 @@ TSK_WALK_RET_ENUM
 uint8_t
 TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
 {
-    resetErrorList();
-    
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
@@ -316,8 +326,6 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start)
 TSK_RETVAL_ENUM
     TskAuto::findFilesInFsRet(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
 {
-    resetErrorList();
-    
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
@@ -329,8 +337,8 @@ TSK_RETVAL_ENUM
     TSK_FS_INFO *fs_info;
     /* Try it as a file system */
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        tsk_error_set_errstr2("unable to open file system at offset %" PRIuOFF,
-            a_start);
+        tsk_error_set_errstr2 ("Sector offset: %" PRIuOFF ", Partition Type: %s",
+            a_start/512, getCurVsPartDescr().c_str() );
         registerError();
 
         /* We could do some carving on the volume data at this point */
@@ -396,8 +404,6 @@ uint8_t
     TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype,
     TSK_INUM_T a_inum)
 {
-    resetErrorList();
-    
     if (!m_img_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);
@@ -410,8 +416,8 @@ uint8_t
     /* Try it as a file system */
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
         tsk_error_set_errstr2(
-            "Unable to open file system at offset %" PRIuOFF,
-            a_start);
+            "Unable to open file system at offset %" PRIuOFF ", partition: [%s]",
+            a_start, getCurVsPartDescr().c_str());
         registerError();
 
 
@@ -453,7 +459,6 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
 uint8_t
 TskAuto::findFilesInFs(TSK_FS_INFO * a_fs_info)
 {
-    resetErrorList();
     if (a_fs_info == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_NOTOPEN);

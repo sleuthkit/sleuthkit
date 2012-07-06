@@ -27,18 +27,14 @@
 class TSK_FRAMEWORK_API TskModule
 {
 public:
-    static const std::wstring FILE_MACRO;
-    static const std::wstring OUT_MACRO;
-    static const std::wstring SESSION_MACRO;
-    static const std::wstring PROGDIR_MACRO;
-    static const std::wstring MODDIR_MACRO;
-    static const std::wstring TASK_MACRO;
-    static const std::wstring NODE_MACRO;
-    static const std::wstring SEQUENCE_MACRO;
-    static const std::wstring PID_MACRO;
-    static const std::wstring STARTTIME_MACRO;
-    static const std::wstring CURTIME_MACRO;
-    static const std::wstring UNIQUE_ID_MACRO;
+    /**
+     * The TskModule class supports the use of a string macro that is expanded
+     * to the path of the file currently under analysis. This macro is intended
+     * to be used in the arguments strings passed to the initialization
+     * functions of file analysis modules. "#CURRENT_FILE#" is the literal form
+     * of the macro.
+     */
+    static const std::string CURRENT_FILE_MACRO;
 
     /// Standard values that module methods can return.
     enum Status
@@ -74,6 +70,12 @@ public:
     /// Get the module name
     std::string getName() const { return m_name; }
 
+    /// Get the module description
+    std::string getDescription() const { return m_description; }
+
+    /// Get the module version
+    std::string getVersion() const { return m_version; }
+
     /// Set the module id
     void setModuleId(int moduleId) { m_moduleId = moduleId; }
 
@@ -84,9 +86,11 @@ protected:
     std::string m_modulePath;
     std::string m_arguments;
     std::string m_name;
+    std::string m_description;
+    std::string m_version;
     int m_moduleId;
 
-    std::string parameterSubstitution(const std::string& paramString, const TskFile* fileToAnalyze);
+    static std::string expandArgumentMacros(const std::string &args, const TskFile *fileToAnalyze);
 
 private:
 

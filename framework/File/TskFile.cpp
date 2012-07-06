@@ -210,6 +210,33 @@ std::string TskFile::getFullPath() const
     return m_fileRecord.fullPath;
 }
 
+std::string TskFile::getUniquePath() const
+{
+    std::stringstream path;
+    
+    if (m_fileRecord.typeId == TskImgDB::IMGDB_FILES_TYPE_CARVED)
+    {
+        path << "/carved/" << m_fileRecord.fullPath;
+    }
+    else
+    {
+        uint64_t fileSystemSectorOffset = 0;
+        uint64_t unusedUint = 0;
+        int unusedInt = 0;
+        if (m_fileRecord.typeId == TskImgDB::IMGDB_FILES_TYPE_DERIVED)
+        {
+            TskServices::Instance().getImgDB().getFileUniqueIdentifiers(m_fileRecord.parentFileId, fileSystemSectorOffset, unusedUint, unusedInt, unusedInt);
+        }
+        else
+        {
+            TskServices::Instance().getImgDB().getFileUniqueIdentifiers(m_fileRecord.fileId, fileSystemSectorOffset, unusedUint, unusedInt, unusedInt);
+        }
+        path << "/FsOffset-" << fileSystemSectorOffset << "/" << m_fileRecord.fullPath;
+    }
+
+    return path.str();
+}
+
 std::string TskFile::getHash(TskImgDB::HASH_TYPE hashType) const
 {
     switch (hashType) {

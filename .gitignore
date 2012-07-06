@@ -27,6 +27,7 @@ framework/win32/framework/*.ncb
 # Visual Studio user options
 /win32/tsk-win.suo
 framework/win32/framework/*.suo
+*.sln.cache
 
 # Make crud
 *.o
@@ -35,3 +36,7 @@ framework/win32/framework/*.suo
 Makefile
 .deps
 .libs
+
+#javadoc generated
+/bindings/java/javadoc
+

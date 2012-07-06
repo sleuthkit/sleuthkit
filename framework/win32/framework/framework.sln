@@ -58,6 +58,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_validatepipeline", "..\
 		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FileTypeSigModule", "..\..\TskModules\c_FileTypeSigModule\win32\FileTypeSigModule.vcproj", "{18EC105E-A0F9-43D2-B66E-287828E61E7D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -112,6 +114,10 @@ Global
 		{352C3C04-1F31-4138-97A6-1DC6EC5FD379}.Debug|Win32.Build.0 = Debug|Win32
 		{352C3C04-1F31-4138-97A6-1DC6EC5FD379}.Release|Win32.ActiveCfg = Release|Win32
 		{352C3C04-1F31-4138-97A6-1DC6EC5FD379}.Release|Win32.Build.0 = Release|Win32
+		{18EC105E-A0F9-43D2-B66E-287828E61E7D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{18EC105E-A0F9-43D2-B66E-287828E61E7D}.Debug|Win32.Build.0 = Debug|Win32
+		{18EC105E-A0F9-43D2-B66E-287828E61E7D}.Release|Win32.ActiveCfg = Release|Win32
+		{18EC105E-A0F9-43D2-B66E-287828E61E7D}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

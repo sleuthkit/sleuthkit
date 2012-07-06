@@ -4170,10 +4170,15 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
 
         if (sec_skew != 0) {
             tsk_fprintf(hFile, "\nAdjusted times:\n");
-            fs_file->meta->mtime -= sec_skew;
-            fs_file->meta->atime -= sec_skew;
-            fs_file->meta->ctime -= sec_skew;
-            fs_file->meta->crtime -= sec_skew;
+            if (fs_file->meta->mtime)
+                fs_file->meta->mtime -= sec_skew;
+            if (fs_file->meta->atime)
+                fs_file->meta->atime -= sec_skew;
+            if (fs_file->meta->ctime)
+                fs_file->meta->ctime -= sec_skew;
+            if (fs_file->meta->crtime)
+                fs_file->meta->crtime -= sec_skew;
+            
             tsk_fprintf(hFile, "Created:\t%s\n",
                 tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
             tsk_fprintf(hFile, "File Modified:\t%s\n",
@@ -4182,10 +4187,16 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                 tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
             tsk_fprintf(hFile, "Accessed:\t%s\n",
                 tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
-            fs_file->meta->mtime += sec_skew;
-            fs_file->meta->atime += sec_skew;
-            fs_file->meta->ctime += sec_skew;
-            fs_file->meta->crtime += sec_skew;
+
+            if (fs_file->meta->mtime == 0)
+                fs_file->meta->mtime += sec_skew;
+            if (fs_file->meta->atime == 0)
+                fs_file->meta->atime += sec_skew;
+            if (fs_file->meta->ctime == 0)
+                fs_file->meta->ctime += sec_skew;
+            if (fs_file->meta->crtime == 0)
+                fs_file->meta->crtime += sec_skew;
+            
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
 
@@ -4681,7 +4692,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
-            ("Not a NTFS file system (invalid sector size)");
+            ("Not a NTFS file system (invalid sector size %d))", ntfs->ssize_b);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid sector size: %d\n",
                 ntfs->ssize_b);
@@ -4701,7 +4712,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
-            ("Not a NTFS file system (invalid cluster size)");
+            ("Not a NTFS file system (invalid cluster size %d)", ntfs->fs->csize);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid cluster size: %d\n",
                 ntfs->fs->csize);
@@ -4773,9 +4784,9 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
-            ("Not a NTFS file system (invalid idx record size)");
+            ("Not a NTFS file system (invalid idx record size %d)", ntfs->idx_rsize_b);
         if (tsk_verbose)
-            fprintf(stderr, "ntfs_open: invalid idx record size\n");
+            fprintf(stderr, "ntfs_open: invalid idx record size %d\n", ntfs->idx_rsize_b);
         return NULL;
     }
 

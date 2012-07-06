@@ -46,7 +46,7 @@ use strict;
 my $debug = 0;
 
 # %month_to_digit = ("Jan", 1, "Feb", 2, "Mar", 3, "Apr", 4, "May", 5, "Jun", 6,
-#	"Jul", 7, "Aug", 8, "Sep", 9, "Oct", 10, "Nov", 11, "Dec", 12);
+#                    "Jul", 7, "Aug", 8, "Sep", 9, "Oct", 10, "Nov", 11, "Dec", 12);
 my %digit_to_month = (
     "01", "Jan", "02", "Feb", "03", "Mar", "04", "Apr",
     "05", "May", "06", "Jun", "07", "Jul", "08", "Aug",
@@ -60,17 +60,17 @@ my %digit_to_day = (
 sub usage {
     print <<EOF;
 mactime [-b body_file] [-p password_file] [-g group_file] [-i day|hour idx_file] [-d] [-h] [-V] [-y] [-z TIME_ZONE] [DATE]
-	-b: Specifies the body file location, else STDIN is used
-	-d: Output timeline and index file in comma delimited format
-	-h: Display a header with session information
-	-i [day | hour] file: Specifies the index file with a summary of results
-	-g: Specifies the group file location, else GIDs are used
-	-p: Specifies the password file location, else UIDs are used
-	-V: Prints the version to STDOUT
-	-y: Dates have year first (yyyy/mm/dd) instead of (mm/dd/yyyy)
-	-m: Dates have month as number instead of word (can be used with -y)
-	-z: Specify the timezone the data came from (in the local system format)
-	[DATE]: starting date (yyyy-mm-dd) or range (yyyy-mm-dd..yyyy-mm-dd)
+		-b: Specifies the body file location, else STDIN is used
+		-d: Output timeline and index file in comma delimited format
+		-h: Display a header with session information
+		-i [day | hour] file: Specifies the index file with a summary of results
+		-g: Specifies the group file location, else GIDs are used
+		-p: Specifies the password file location, else UIDs are used
+		-V: Prints the version to STDOUT
+		-y: Dates have year first (yyyy/mm/dd) instead of (mm/dd/yyyy)
+		-m: Dates have month as number instead of word (can be used with -y)
+		-z: Specify the timezone the data came from (in the local system format)
+		[DATE]: starting date (yyyy-mm-dd) or range (yyyy-mm-dd..yyyy-mm-dd)
 EOF
     exit(1);
 }
@@ -100,6 +100,31 @@ my %file2other;
 
 my %gid2names = ();
 my %uid2names = ();
+
+my $_HAS_DATETIME_TIMEZONE = 0;
+
+eval "use DateTime::TimeZone";
+if ($@) {
+    $_HAS_DATETIME_TIMEZONE = 0;
+} else {
+    $_HAS_DATETIME_TIMEZONE = 1;
+}
+
+sub get_timezone_list() {
+    my @t_list;
+    if ( ! $_HAS_DATETIME_TIMEZONE ) {
+       return @t_list;
+    }
+
+    foreach ( DateTime::TimeZone->all_names() ) {
+        push( @t_list, $_ );
+    }
+    foreach( keys( %{DateTime::TimeZone->links()})  ) {
+        push( @t_list, $_ );
+    }
+
+    return sort { $a cmp $b } @t_list;
+}
 
 usage() if (scalar(@ARGV) == 0);
 
@@ -187,7 +212,45 @@ while ((scalar(@ARGV) > 0) && (($_ = $ARGV[0]) =~ /^-(.)(.*)/)) {
     elsif (/^-z$/) {
         shift(@ARGV);
         if (defined $ARGV[0]) {
-            $ENV{TZ} = "$ARGV[0]";
+            my $tz = "$ARGV[0]";
+
+            if ($tz =~ m/^list$/i) {
+                if ($_HAS_DATETIME_TIMEZONE) {
+                    my $txt  = "
+-----------------------------------
+        TIMEZONE LIST
+-----------------------------------\n";
+                    foreach ( get_timezone_list() ) {
+                        $txt .= $_ . "\n";
+                    }
+                    print( $txt );
+                }
+                else {
+                    print "DateTime module not loaded -- cannot list timezones\n";
+                }
+                exit(0);
+            }
+            # validate the string if we have DateTime module
+            elsif ($_HAS_DATETIME_TIMEZONE) {
+                my $realtz = 0;
+                foreach ( get_timezone_list() ) {
+                    if ($tz =~ m/$_/i) {
+                        $realtz = $_;
+                        last;
+                    }
+                }
+                if ($realtz) {
+                    $ENV{TZ} = $realtz;
+                }
+                else {
+                    print "invalid timezone provided. Use -z to list valid timezones.\n";
+                    usage();
+                }
+            }
+            # blindly take it otherwise
+            else {
+                $ENV{TZ} = $tz;
+            }      
         }
         else {
             print "-z requires the time zone argument\n";
