@@ -25,6 +25,16 @@
  * A base class for setting and retrieving system-wide name/value pairs.
  * Typically used to store system settings so that all modules and classes can
  * access the settings. Can be registered with and retrieved from TskServices.
+ *
+ * The class defines several standard 'names' in the PredefinedProperties
+ * enum.  Any 'name' can be used though.
+ *
+ * Values can refer to other 'names' in the SystemProperties.  When the
+ * values are retrieved via one of the get() methods, the value is searched
+ * for words between two '#' characters.  If the word is a defined system 
+ * property, then its value will be replaced. For example, \#PROG_DIR\# would 
+ * be replaced by the PROG_DIR system property value in "#PROG_DIR#\\foo". 
+ * 
  * The class is abstract; derived classes supply property storage options and 
  * implement the private virtual functions setProperty and getProperty (the 
  * class design makes use of Herb Sutter's Non-Virtual Interface [NVI] idiom).
@@ -34,17 +44,7 @@ class TSK_FRAMEWORK_API TskSystemProperties
 public:
     /**
      * The TSK Framework predefines a set of system properties. Some of these
-     * properties are considered to be required. The Framework also supports
-     * the use of system property macros formed by delimiting a predefined 
-     * property name with '#' characters. These macros may be used to define
-     * system properties in terms of other properties and may be included in 
-     * module argument strings. For example, the following statement statements 
-     * define the OUT_DIR system property as a directory relative to the 
-     * PROG_DIR property.
-     *
-     *  TskSystemProperties sysProps;
-     *  sysProps.set(TskSystemProperties::PROG_DIR, progDir);
-     *  sysProps.set(TskSystemProperties::OUT_DIR, "#PROG_DIR#\\out");
+     * properties are considered to be required. 
      */
     enum PredefinedProperty
     {
@@ -152,48 +152,56 @@ public:
 
     /** 
      * Associates a string value with a name.
+     * See the class description for more details on setting properties
+     * based on other properties. 
      *
-     * @param prop An element of the /ref PredefinedProperty enum.
+     * @param prop An element of the PredefinedProperty enum.
      * @param value The value to associate with the name corresponding to the
-     * /ref PredefinedProperty enum element.
-     * @return Throws /ref TskException if prop is out of range.
+     * PredefinedProperty enum element.
+     * @return Throws TskException if prop is out of range.
      */
     void setW(PredefinedProperty prop, const std::wstring &value);
     
     /** 
-     * Associates a string value with a name.
+     * Associates a string value with an unofficial name.
+     * See the class description for more details on setting properties
+     * based on other properties. 
      *
      * @param name The name with which to associate the value.
      * @param value The value to associate with the name.
-     * @return Throws /ref TskException if name is empty.
+     * @return Throws TskException if name is empty.
      */
     void setW(const std::wstring &name, const std::wstring &value);
 
     /** 
      * Associates a string value with a name.
+     * See the class description for more details on setting properties
+     * based on other properties. 
      *
-     * @param prop An element of the /ref PredefinedProperty enum.
+     * @param prop An element of the PredefinedProperty enum.
      * @param value The value to associate with the name corresponding to the
-     * /ref PredefinedProperty enum element.
-     * @return Throws /ref TskException if prop is out of range.
+     * PredefinedProperty enum element.
+     * @return Throws TskException if prop is out of range.
      */
     void set(PredefinedProperty prop, const std::string &value);
 
     /** 
-     * Associates a string value with a name.
+     * Associates a string value with an unofficial name.
+     * See the class description for more details on setting properties
+     * based on other properties. 
      *
      * @param name The name with which to associate the value.
      * @param value The value to associate with the name.
-     * @return Throws /ref TskException if name is empty.
+     * @return Throws TskException if name is empty.
      */
     void set(const std::string &name, const std::string &value);
 
     /** 
      * Retrieves the string value associated with the given name.
      *
-     * @param prop An element of the /ref PredefinedProperty enum.
+     * @param prop An element of the PredefinedProperty enum.
      * @returns String value corresponding to prop. Throws
-     * /ref TskException if the requested value is for a required predefined 
+     *  TskException if the requested value is for a required predefined 
      * property that is not set.
      */
     std::wstring getW(PredefinedProperty prop) const;
@@ -209,9 +217,9 @@ public:
     /** 
      * Retrieves the string value associated with the given name.
      *
-     * @param prop An element of the /ref PredefinedProperty enum.
+     * @param prop An element of the PredefinedProperty enum.
      * @returns String value corresponding to prop. Throws
-     * /ref TskException if the requested value is for a required predefined 
+     * TskException if the requested value is for a required predefined 
      * property that is not set.
      */
     std::string get(PredefinedProperty prop) const;
