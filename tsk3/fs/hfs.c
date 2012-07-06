@@ -70,18 +70,20 @@
  * Contains the general internal TSK HFS metadata and data unit code -- Not included in code by default.
  */
 
-// TODO:  Should be string.h for windows, strings.h for everyone else
-#include <string.h>
-#include <stdarg.h>
 #include "tsk_fs_i.h"
 #include "tsk_hfs.h"
+
+#include <stdarg.h>
+#ifdef TSK_WIN32
+#include <string.h>
+#else
+#include <strings.h>
+#endif
 
 // Compression Stuff
 
 #ifdef HAVE_LIBZ
-
 #include <zlib.h>
-
 #endif
 
 #define XSWAP(a,b) { a ^= b; b ^= a; a ^= b; }
@@ -128,7 +130,7 @@ zlib_inflate(char *source, uint64_t sourceLen, char *dest, uint64_t destLen, uin
     unsigned char in[CHUNK];
     unsigned char out[CHUNK];
 
-	// Some vars to help with copying bytes into "in"
+    // Some vars to help with copying bytes into "in"
     char *srcPtr = source;
     char *destPtr = dest;
     uint64_t srcAvail = sourceLen;      //uint64_t
