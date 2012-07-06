@@ -90,8 +90,8 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_GEO_HPRECISION, TskAttributeNames("TSK_GEO_HPRECISION", "Horizontal Precision")));
     retval.insert(pair<int, TskAttributeNames>(TSK_GEO_VPRECISION, TskAttributeNames("TSK_GEO_VPRECISION", "Vertical Precision")));
     retval.insert(pair<int, TskAttributeNames>(TSK_GEO_MAPDATUM, TskAttributeNames("TSK_GEO_MAPDATUM", "Map Datum")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_SIG, TskAttributeNames("TSK_FILE_TYPE_SIG", "File Type (by signature")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_EXT, TskAttributeNames("TSK_FILE_TYPE_EXT", "File Type (by extension")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_SIG, TskAttributeNames("TSK_FILE_TYPE_SIG", "File Type (by signature)")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_EXT, TskAttributeNames("TSK_FILE_TYPE_EXT", "File Type (by extension)")));
 
     return retval;
 }
