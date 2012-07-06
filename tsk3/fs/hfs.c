@@ -592,8 +592,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 if (rec_off > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("hfs_ext_find_extent_record_attr: offset of record %d in index node %d too large (%zu vs %"
-                        PRIu16 ")", rec, cur_node, rec_off, nodesize);
+                        ("hfs_ext_find_extent_record_attr: offset of record %d in index node %d too large (%d vs %"
+			 PRIu16 ")", rec, cur_node, (int)rec_off, nodesize);
                     free(node);
                     return 1;
                 }
@@ -620,8 +620,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     if (rec_off + keylen > nodesize) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                         tsk_error_set_errstr
-                            ("hfs_ext_find_extent_record_attr: offset and keylenth of record %d in index node %d too large (%zu vs %"
-                            PRIu16 ")", rec, cur_node, rec_off + keylen,
+                            ("hfs_ext_find_extent_record_attr: offset and keylenth of record %d in index node %d too large (%d vs %"
+			     PRIu16 ")", rec, cur_node, (int)rec_off + keylen,
                             nodesize);
                         free(node);
                         return 1;
@@ -676,8 +676,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 if (rec_off > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("hfs_ext_find_extent_record_attr: offset of record %d in leaf node %d too large (%zu vs %"
-                        PRIu16 ")", rec, cur_node, rec_off, nodesize);
+                        ("hfs_ext_find_extent_record_attr: offset of record %d in leaf node %d too large (%d vs %"
+			 PRIu16 ")", rec, cur_node, (int) rec_off, nodesize);
                     free(node);
                     return 1;
                 }
@@ -730,8 +730,8 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 if (rec_off + keylen > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("hfs_ext_find_extent_record_attr: offset and keylenth of record %d in leaf node %d too large (%zu vs %"
-                        PRIu16 ")", rec, cur_node, rec_off + keylen,
+                        ("hfs_ext_find_extent_record_attr: offset and keylenth of record %d in leaf node %d too large (%d vs %"
+			 PRIu16 ")", rec, cur_node, (int)rec_off + keylen,
                         nodesize);
                     free(node);
                     return 1;
@@ -918,8 +918,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                 if (rec_off > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("hfs_cat_traverse: offset of record %d in index node %d too large (%zu vs %"
-                        PRIu16 ")", rec, cur_node, rec_off, nodesize);
+                        ("hfs_cat_traverse: offset of record %d in index node %d too large (%d vs %"
+			 PRIu16 ")", rec, cur_node, (int) rec_off, nodesize);
                     free(node);
                     return 1;
                 }
@@ -955,8 +955,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                     if (rec_off + keylen > nodesize) {
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                         tsk_error_set_errstr
-                            ("hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%zu vs %"
-                            PRIu16 ")", rec, cur_node, rec_off + keylen,
+                            ("hfs_cat_traverse: offset of record and keylength %d in index node %d too large (%d vs %"
+			     PRIu16 ")", rec, cur_node, (int)rec_off + keylen,
                             nodesize);
                         free(node);
                         return 1;
@@ -999,8 +999,8 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                 if (rec_off > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("hfs_cat_traverse: offset of record %d in leaf node %d too large (%zu vs %"
-                        PRIu16 ")", rec, cur_node, rec_off, nodesize);
+                        ("hfs_cat_traverse: offset of record %d in leaf node %d too large (%d vs %"
+			 PRIu16 ")", rec, cur_node, (int) rec_off, nodesize);
                     free(node);
                     return 1;
                 }
