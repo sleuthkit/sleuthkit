@@ -36,13 +36,13 @@ TskModule::~TskModule()
 }
 
 /**
- * Determines the fully qualified path to a module given either an
- * absolute or relative location string. For relative paths we look for the
+ * Sets the location of the module given an absolute or relative location.
+ * For relative paths we look for the
  * module first in PROG_DIR, then MODULE_DIR, then the
  * current directory, and 
  * finally the system path. Will throw an exception if the module cannot 
  * be found.
- * @param location Absolute or relative path string.
+ * @param location Absolute or relative path string for module.
  */
 void TskModule::setPath(const std::string& location)
 {

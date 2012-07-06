@@ -50,15 +50,23 @@ public:
     // Virtual destructor since Module must be subclassed to be useful
     virtual ~TskModule();
 
-    // This is where Module processing occurs and must be implemented by
-    // subclasses.
+    /**
+     * Method that is used to run file analysis modules.
+     * @returns Status of module
+     */
     virtual Status run(TskFile* fileToAnalyze) = 0;
 
-    // Override this for report modules.
+    /**
+     * Method that is used to run report modules.
+     * @returns Status of module
+     */
     virtual Status report() { return TskModule::OK; };
 
     virtual void setPath(const std::string& location);
 
+    /**
+     * Returns the fully qualified path to the module.
+     */
     virtual std::string getPath() const { return m_modulePath; }
 
     /// Set the arguments to be passed to the module.

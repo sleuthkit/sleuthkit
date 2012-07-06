@@ -31,14 +31,25 @@ Both file analysis and reporting pipelines are configured through an XML file.  
     &lt;PIPELINE type="Report"&gt;        &lt;MODULE order="1" type="plugin" location="SummaryReport.dll" arguments="@OUT\Summary.htm"/&gt;    &lt;/PIPELINE&gt;&lt;/PIPELINE_CONFIG&gt;
 </pre>
 
-Each module is represented by a MODULE entry in the configuration file consisting of the following attributes:
+
+Each module in the pipeline is represented by a MODULE entry in the configuration file.  Each entry can have the following attributes:
 
 <table>
 <tr><th>Attribute</th><th>Description</th></tr>
-<tr><td>order</td><td>The position of the module within the pipeline.</td></tr><tr><td>type</td><td>Either "executable" or "plugin".</td></tr><tr><td>location</td><td>The path to either the executable or dynamic library file to be run. This can either be a fully qualified or relative path. If relative, the framework will look for the file in the system path or the located specified in TskSystemPropertiesImpl::MODULE_DIR in the TskSystemProperties service.</td></tr><tr><td>arguments</td><td>The arguments to pass to the module.  These will be parsed by the module.  See the section below on using macro substation to pass in file-specific details.</td></tr> <tr><td>output</td><td>The path to a file where output from the module should be written. This attribute applies only to executable modules.   See the section below on using macro substation to pass in file-specific details. </td></tr>
+
+<tr><td>order</td><td>The position of the module within the pipeline. </td></tr>
+<tr><td>type</td><td>Either "executable" or "plugin".</td></tr>
+<tr><td>location</td><td>The path to either the executable or dynamic library file to be run. This can either be a fully qualified or relative path. If relative, the framework will look for the file in the system path or the located specified in TskSystemProperties::MODULE_DIR in the TskSystemProperties service.</td></tr>
+<tr><td>arguments</td><td>The arguments to pass to the module.  These will be parsed by the module.  See the section below on using macro substitution to pass in file-specific details.</td></tr> 
+<tr><td>output</td><td>The path to a file where output from the module should be written. This attribute applies only to executable modules.   See the section below on using macro substation to pass in file-specific details. </td></tr>
+
 </table>
 
-When configuring a pipeline module pay particular attention to the following details: - Module ordering must start at 1 and must be sequential (i.e. you must not have any gaps in the list of modules). - Redirected output will be appended to the specified output file.  - Attempting to write output to a shared file may result in file access errors when multiple framework sessions (in a distributed environment) attempt to write data to the same file. You can avoid this by using the \@UNIQUE_ID macro. - You must escape the following characters if you wish to include them in the command line:
+When configuring a pipeline module pay particular attention to the following details: 
+- Module ordering does not need to be sequential (i.t. there can be gaps), but you cannot have two modules with the same order value.
+- Redirected output on executable modules will be appended to the specified output file.  
+- Attempting to write output to a shared file may result in file access errors when multiple framework sessions (in a distributed environment) attempt to write data to the same file. You can avoid this by using the \@UNIQUE_ID macro. 
+- You must escape the following characters if you wish to include them in the command line:
 
 <table><tr><th>Character</th><th>Escaped Character</th></tr><tr><td>&amp;</td><td>&amp;amp;</td></tr><tr><td>&quot;</td><td>&amp;quot;</td></tr><tr><td>&gt;</td><td>&amp;gt;</td></tr><tr><td>&lt;</td><td>&amp;lt;</td></tr><tr><td>&apos;</td><td>&amp;apos;</td></tr>
 </table>
@@ -47,8 +58,10 @@ When configuring a pipeline module pay particular attention to the following det
 
 \subsection pipe_config_macro Macro Substitution
 
-The "arguments" and "output" attributes in the configuration file allow for the substitution of run-time values.  Refer to the TskModule documentation for the full list (such as TskModule::FILE_MACRO), but some examples are given here. 
+The "arguments" and "output" attributes in the configuration file allow for the substitution of run-time values.  Any system property can be inserted and there are file-specific values that can be inserted.  
 
-Placing &quot;\@FILE&quot; in the attribute will cause the pipeline to replace it with the unique ID that the file has been assigned.  Or, &quot;\@OUT&quot; will be replaced by the preferred output folder (as defined by the program using the pipeline).  
+To substitute a system property in a string, surround the system property name with '#' marks.  Refer to the TskSystemProperties::PredefinedProperty list for the set of official system properties.  For example, use "#OUT_DIR#/file1.txt" to refer to a file named "file1.txt" in the output directory. 
+
+You can also get the path to the currently analyzed file using the string defined in TskModule::CURRENT_FILE_MACRO.  Because many files can be analyzed at the same time, this is not defined in SystemProperties. 
 
 */
