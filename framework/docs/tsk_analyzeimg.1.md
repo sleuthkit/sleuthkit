@@ -18,7 +18,7 @@ In general though, tsk_analyzeimg will process the disk image using The Sleuth K
 
 tsk_analyzeimg uses simple implementations of the framework services. It stores data in a SQLite database and uses a simple first in, first out queing method for the scheduler.
 
-Carving is disabled by default because you need to install scalpel on your own. To enable carving, download and install [Scalpel](http://www.digitalforensicssolutions.com/Scalpel/).  Edit the framework configuration file to uncomment the SCALPEL settings and update them to the correct path.  See below for command line options to disable carving even after you have configured it in the configuration file.   
+Carving is disabled by default because you need to install scalpel on your own. To enable carving, download and install [Scalpel](http://www.digitalforensicssolutions.com/Scalpel/).  Edit the framework configuration file to uncomment the SCALPEL_DIR setting and update them to the correct path.  See below for command line options to disable carving even after you have configured it in the configuration file.   
 
 Refer to the [online docs](http://www.sleuthkit.org/sleuthkit/docs/framework-docs/) for more details on the framework and the pipelines.
 
