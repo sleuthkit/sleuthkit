@@ -273,14 +273,13 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
     TSK_VS_INFO *vs_info;
     // USE mm_walk to get the volumes
     if ((vs_info = tsk_vs_open(m_img_info, a_start, a_vtype)) == NULL) {
-        tsk_error_set_errstr2("Unable to open volume system at offset %" PRIuOFF,
-                           a_start);
-        if (registerError())
-            return 1;
-
         /* There was no volume system, but there could be a file system */
         if (findFilesInFs(a_start)) {
-            return 1;
+            /* No file system, either */
+            tsk_error_set_errstr2("Unable to open volume system or file system"
+                " at offset %" PRIuOFF, a_start);
+            if (registerError())
+                return 1;
         }
     }
     // process the volume system
