@@ -353,7 +353,7 @@ int main(int argc, char **argv1)
     std::auto_ptr<TskCarveExtractScalpel> carver;
     if (doCarving)
     {
-        doCarving = !GetSystemProperty("SCALPEL_DIR_PATH").empty();
+        doCarving = !GetSystemProperty("SCALPEL_DIR").empty();
 
         if (doCarving)
         {
