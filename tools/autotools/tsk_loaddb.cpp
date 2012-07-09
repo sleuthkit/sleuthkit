@@ -167,6 +167,8 @@ main(int argc, char **argv1)
         for (size_t i = 0; i < errors.size(); i++) {
             fprintf(stderr, "Error: %s\n", TskAuto::errorRecordToString(errors[i]).c_str());
         } 
+        autoDb->closeImage();
+        delete tskCase;
         exit(1);
     }
 
@@ -174,6 +176,9 @@ main(int argc, char **argv1)
         tsk_error_print(stderr);
         exit(1);
     }
+
+    autoDb->closeImage();
+    delete tskCase;
     
     exit(0);
 }
