@@ -313,6 +313,9 @@ extern "C" {
 
     extern Boolean tsk_isLegalUTF8Sequence(const UTF8 * source,
         const UTF8 * sourceEnd);
+
+    extern void
+        tsk_cleanupUTF8(char * source, const char replacement);
 #endif
 //@}
 
