@@ -9,35 +9,22 @@
  */
 
 /**
- * \file TskCarvePrepSectorConcat.cpp
- * Implementation of a class that concatenates unallocated sectors from an 
- * image as a series of files with a configurable maximum size. These files 
- * are optionally scheduled for carving. Instances of this class are also 
- * able to treat a file as a run of unallocated sectors. Instances of the class
- * use the following system properties: CARVE_PREP_OUTPUT_PATH, 
- * CARVE_PREP_OUTPUT_FILE_NAME, and CARVE_PREP_MAX_OUTPUT_FILE_SIZE. 
- *
- * This class assumes the availability of the Microsoft Windows API.
- * @@@ TODO: Use Poco API instead.
+ * \file TskCarvePrepSectorConcat.h
+ * Contains the implementation of the TskCarvePrepSectorConcat class.
  */
 
 // Include the class definition first to ensure it does not depend on
 // subsequent includes in this file.
 #include "TskCarvePrepSectorConcat.h" 
 
-// TSK framework includes
 #include "Services/TskImgDB.h"
 #include "Services/TskServices.h"
 #include "Services/Log.h"
 #include "Utilities/TskUtilities.h"
-
-// System includes
 #include <assert.h>
 #include <string>
 #include <sstream>
 #include <cstdlib>
-
-// Poco library includes 
 #include "Poco/File.h"
 #include "Poco/Exception.h"
 #include "Poco/Path.h"
@@ -117,7 +104,7 @@ std::string TskCarvePrepSectorConcat::prepareOutputFolder() const
 
     if (outputFolderPath.empty()) 
     {
-        outputFolderPath = GetSystemProperty("CARVE_PREP_OUTPUT_PATH");
+        outputFolderPath = GetSystemProperty("CARVE_PREP_DIR");
 
         if (outputFolderPath.empty())
         {
@@ -127,7 +114,7 @@ std::string TskCarvePrepSectorConcat::prepareOutputFolder() const
             outputFolderPath = pathBuilder.str();
 
             // Set the property for the carve extract implementation(s).
-            SetSystemProperty("CARVE_PREP_OUTPUT_PATH", outputFolderPath);            
+            SetSystemProperty("CARVE_PREP_DIR", outputFolderPath);            
         }
 
         createFolder(outputFolderPath);
@@ -141,20 +128,20 @@ void TskCarvePrepSectorConcat::createOutputFiles(const std::string &outputFolder
     TskImgDB &imgDB = TskServices::Instance().getImgDB();
 
     // The output files all have the same name, but are written to subdirectories bearing the name of the unallocated sectors image id corresponding to the file.
-    std::string outputFileName = GetSystemProperty("CARVE_PREP_OUTPUT_FILE_NAME");
+    std::string outputFileName = GetSystemProperty("CARVE_PREP_FILE_NAME");
     if (outputFileName.empty())
     {
         outputFileName = "unalloc.bin"; 
-        SetSystemProperty("CARVE_PREP_OUTPUT_FILE_NAME", outputFileName);            
+        SetSystemProperty("CARVE_PREP_FILE_NAME", outputFileName);            
     }
 
     // Get the maximum size for each output file.
     // @@@ TODO: Replace strtoul() call with a strtoull() call when a newer version of C++ is available.
-    std::string maxOutputFileSizeStr = GetSystemProperty("CARVE_PREP_MAX_OUTPUT_FILE_SIZE");
+    std::string maxOutputFileSizeStr = GetSystemProperty("CARVE_PREP_MAX_FILE_SIZE");
     if (maxOutputFileSizeStr.empty())
     {
         maxOutputFileSizeStr = "1000000000";
-        SetSystemProperty("CARVE_PREP_MAX_OUTPUT_FILE_SIZE", maxOutputFileSizeStr);            
+        SetSystemProperty("CARVE_PREP_MAX_FILE_SIZE", maxOutputFileSizeStr);            
     }
     uint64_t maxOutputFileSize = strtoul(maxOutputFileSizeStr.c_str(), NULL, 10);
    

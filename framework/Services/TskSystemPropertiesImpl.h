@@ -10,8 +10,7 @@
 
 /**
  * \file TskSystemPropertiesImpl.h
- * Contains an implementation of the TskSystemProperties class
- * that uses the Poco Configuration package.
+ * Contains the interface of the TskSystemPropertiesImpl class.
  */
 
 #ifndef _TSK_SYSTEMPROPERTIESIMPL_H
@@ -46,7 +45,7 @@ class TSK_FRAMEWORK_API TskSystemPropertiesImpl : public TskSystemProperties
 {
 public:
     /**
-     * Default constructor. The TskSystemPropertiesImpl must still be 
+     * Default constructor. The TskSystemPropertiesImpl object must then be 
      * initialized with a call to one of the initialize() member functions
      * before the object can be used.
      */ 
@@ -74,13 +73,17 @@ public:
     void initialize();
 
 private:
-    // Prohibit copying. 
+    // Prohibit copying by declaring copy control functions without implementations. 
     TskSystemPropertiesImpl(const TskSystemPropertiesImpl&);
     TskSystemPropertiesImpl& operator=(const TskSystemPropertiesImpl&);
 
     virtual void setProperty(const std::string &name, const std::string &value);
     virtual std::string getProperty(const std::string &name) const;
 
+    /**
+     * Manages a pointer to a Poco::Util::XMLConfiguration or
+     * Poco::Util::MapConfiguration object that maps names to values. 
+     */ 
     Poco::AutoPtr<Poco::Util::AbstractConfiguration> m_abstractConfig;
 };
 

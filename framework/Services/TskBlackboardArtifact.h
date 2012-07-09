@@ -31,8 +31,8 @@ class TSK_FRAMEWORK_API TskBlackboardArtifact
 {
 public:
     /**
-    * Get the artifact type id for this artifact
-    * @returns artifact type id
+    * Get the artifact id for this artifact
+    * @returns artifact id
     */
     uint64_t getArtifactID() const;
     /**

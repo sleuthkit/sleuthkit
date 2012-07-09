@@ -8,6 +8,10 @@
  * This software is distributed under the Common Public License 1.0
  */
 
+/**
+ * \file CarvePrep.h
+ * Contains the interface of the abstract CarvePrep class.
+ */
 #ifndef _TSK_CARVE_PREP_H
 #define _TSK_CARVE_PREP_H
 
@@ -25,6 +29,10 @@
 class TSK_FRAMEWORK_API CarvePrep
 {
 public:
+    /**
+     * Virtual destructor to ensure derived class constructors are called
+     * polymorphically.
+     */
     virtual ~CarvePrep(void) {}
     
     /**
