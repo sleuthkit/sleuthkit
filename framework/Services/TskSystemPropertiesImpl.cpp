@@ -11,9 +11,8 @@
 
 /**
  * \file TskSystemPropertiesImpl.cpp
- * Contains an implementation of the TskSystemProperties abstract base class
- * that uses the Poco Configuration package for storing properties.
-*/
+ * Contains the implementation of the TskSystemPropertiesImpl class.
+ */
 
 // Include the class definition first to ensure it does not depend on subsequent includes in this file.
 #include "TskSystemPropertiesImpl.h"
