@@ -63,10 +63,6 @@ std::string TskSystemPropertiesImpl::getProperty(const std::string &name) const
     } 
     catch (Poco::NotFoundException &) 
     {
-        std::wstringstream msg;
-        msg << L"TskSystemPropertiesImpl::get - No value found for: " << name.c_str();
-        LOGWARN(msg.str());
-
         // Return empty string per documentation of base class interface.
         return "";
     }
