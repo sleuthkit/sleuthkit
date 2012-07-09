@@ -24,9 +24,9 @@
 /**
  * The TskCarveExtractScalpel class implements the CarveExtract interface to 
  * carve unallocated sectors image files using Scalpel. Instances of the class
- * use the following system properties: SCALPEL_DIR, SCALPEL_CONFIG_FILE_PATH, 
- * CARVE_PREP_OUTPUT_PATH, CARVE_PREP_OUTPUT_FILE_NAME, 
- * CARVE_EXTRACT_KEEP_INPUT_FILES, and CARVE_EXTRACT_KEEP_OUTPUT_FILES.
+ * use the following system properties: SCALPEL_DIR, SCALPEL_CONFIG_FILE, 
+ * CARVE_PREP_DIR, CARVE_PREP_FILE_NAME, CARVE_EXTRACT_KEEP_INPUT_FILES, and 
+ * CARVE_EXTRACT_KEEP_OUTPUT_FILES.
  */
 class TSK_FRAMEWORK_API TskCarveExtractScalpel : public CarveExtract
 {
@@ -150,17 +150,17 @@ private:
     std::string scalpelExePath;
 
     /**
-     * Stores the SCALPEL_CONFIG_FILE_PATH system property.
+     * Stores the SCALPEL_CONFIG_FILE system property.
      */
     std::string scalpelConfigFilePath;
 
     /**
-     * Stores the CARVE_PREP_OUTPUT_PATH system property.
+     * Stores the CARVE_PREP_DIR system property.
      */
     std::string carvePrepOutputPath;
 
     /**
-     * Stores the CARVE_PREP_OUTPUT_FILE_NAME system property.
+     * Stores the CARVE_PREP_FILE_NAME system property.
      */
     std::string carvePrepOutputFileName;
 

@@ -130,7 +130,7 @@ void TskCarveExtractScalpel::configure()
 {
     try
     {
-        std::string scalpelDirPath = GetSystemProperty("SCALPEL_DIR_PATH");
+        std::string scalpelDirPath = GetSystemProperty("SCALPEL_DIR");
         if (scalpelDirPath.empty())
         {
             throw TskException("TskCarveExtractScalpel::configure - Scalpel directory not set");
@@ -170,7 +170,7 @@ void TskCarveExtractScalpel::configure()
             throw TskException(msg.str());
         }
 
-        carvePrepOutputPath = GetSystemProperty("CARVE_PREP_OUTPUT_PATH");
+        carvePrepOutputPath = GetSystemProperty("CARVE_PREP_DIR");
         if (carvePrepOutputPath.empty())
         {
             throw TskException("TskCarveExtractScalpel::configure - carve prep output path not set");
@@ -182,7 +182,7 @@ void TskCarveExtractScalpel::configure()
             throw TskException(msg.str());
         }
 
-        carvePrepOutputFileName = GetSystemProperty("CARVE_PREP_OUTPUT_FILE_NAME");
+        carvePrepOutputFileName = GetSystemProperty("CARVE_PREP_FILE_NAME");
         if (carvePrepOutputFileName.empty())
         {
             throw TskException("TskCarveExtractScalpel::configure - carve prep output file name not set");
