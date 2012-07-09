@@ -76,12 +76,12 @@ public:
         PIPELINE_CONFIG_FILE,
 
         /** 
-         * Hostname of central database (if one is being used). 
+         * Hostname of database server (if one is being used). 
          */
         DB_HOST,
 
         /** 
-         * Port of central database (if one is being used) 
+         * Port of database server (if one is being used) 
          */
         DB_PORT,
 

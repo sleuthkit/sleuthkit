@@ -26,8 +26,8 @@
  * configurable maximum size. These output files are optionally scheduled for
  * carving. Instances of this class are also able to treat a file as a run of
  * unallocated sectors. TskCarvePrepSectorConcat objects use the following 
- * system properties: CARVE_PREP_OUTPUT_PATH, CARVE_PREP_OUTPUT_FILE_NAME, and 
- * CARVE_PREP_MAX_OUTPUT_FILE_SIZE. 
+ * system properties: CARVE_PREP_DIR, CARVE_PREP_FILE_NAME, and 
+ * CARVE_PREP_MAX_FILE_SIZE. 
  *
  * This class assumes the availability of the Microsoft Windows API.
  * @@@ TODO: Use Poco API instead.
@@ -69,7 +69,7 @@ protected:
 
 private:
     /** 
-     * Creates the output folder indicated by the CARVE_PREP_OUTPUT_PATH 
+     * Creates the output folder indicated by the CARVE_PREP_DIR 
      * system property. If the output folder already exists, it is deleted.
      *
      * @return Throws TskException on error.

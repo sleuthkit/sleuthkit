@@ -104,7 +104,7 @@ std::string TskCarvePrepSectorConcat::prepareOutputFolder() const
 
     if (outputFolderPath.empty()) 
     {
-        outputFolderPath = GetSystemProperty("CARVE_PREP_OUTPUT_PATH");
+        outputFolderPath = GetSystemProperty("CARVE_PREP_DIR");
 
         if (outputFolderPath.empty())
         {
@@ -114,7 +114,7 @@ std::string TskCarvePrepSectorConcat::prepareOutputFolder() const
             outputFolderPath = pathBuilder.str();
 
             // Set the property for the carve extract implementation(s).
-            SetSystemProperty("CARVE_PREP_OUTPUT_PATH", outputFolderPath);            
+            SetSystemProperty("CARVE_PREP_DIR", outputFolderPath);            
         }
 
         createFolder(outputFolderPath);
@@ -128,20 +128,20 @@ void TskCarvePrepSectorConcat::createOutputFiles(const std::string &outputFolder
     TskImgDB &imgDB = TskServices::Instance().getImgDB();
 
     // The output files all have the same name, but are written to subdirectories bearing the name of the unallocated sectors image id corresponding to the file.
-    std::string outputFileName = GetSystemProperty("CARVE_PREP_OUTPUT_FILE_NAME");
+    std::string outputFileName = GetSystemProperty("CARVE_PREP_FILE_NAME");
     if (outputFileName.empty())
     {
         outputFileName = "unalloc.bin"; 
-        SetSystemProperty("CARVE_PREP_OUTPUT_FILE_NAME", outputFileName);            
+        SetSystemProperty("CARVE_PREP_FILE_NAME", outputFileName);            
     }
 
     // Get the maximum size for each output file.
     // @@@ TODO: Replace strtoul() call with a strtoull() call when a newer version of C++ is available.
-    std::string maxOutputFileSizeStr = GetSystemProperty("CARVE_PREP_MAX_OUTPUT_FILE_SIZE");
+    std::string maxOutputFileSizeStr = GetSystemProperty("CARVE_PREP_MAX_FILE_SIZE");
     if (maxOutputFileSizeStr.empty())
     {
         maxOutputFileSizeStr = "1000000000";
-        SetSystemProperty("CARVE_PREP_MAX_OUTPUT_FILE_SIZE", maxOutputFileSizeStr);            
+        SetSystemProperty("CARVE_PREP_MAX_FILE_SIZE", maxOutputFileSizeStr);            
     }
     uint64_t maxOutputFileSize = strtoul(maxOutputFileSizeStr.c_str(), NULL, 10);
    

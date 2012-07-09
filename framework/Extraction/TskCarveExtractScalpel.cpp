@@ -154,7 +154,7 @@ void TskCarveExtractScalpel::configure()
             throw TskException(msg.str());
         }
 
-        scalpelConfigFilePath = GetSystemProperty("SCALPEL_CONFIG_FILE_PATH");
+        scalpelConfigFilePath = GetSystemProperty("SCALPEL_CONFIG_FILE");
         if (scalpelConfigFilePath.empty())
         {
             pathBuilder.str("");
