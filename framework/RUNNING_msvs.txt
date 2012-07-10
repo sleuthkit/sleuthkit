@@ -1,0 +1,7 @@
+This file contains some notes on running this library and tools as a developer from within Visual Studio.
+
+The libframework project will copy a framework config file into the debug or release folder. This is specially crafted to refer to the directory structure of the source code folder (which is different from the directory structure of the binary distribution of tsk_analyzeimg). 
+
+You should be able to run tsk_analyzeimg from inside of the debug or release folders. tsk_analyzeimg will find the framework_config file in the current folder and then refer to the pipeline config file in the SampleConfig folder. 
+
+If you want to debug tsk_analyzeimg, then you will need to edit the debug properties to change the working directory.  By default, Visual Studio will put you in the folder above the Debug or Release folders.  Set the "Working Directory" (set in Properties -> Configuration Properties -> Debugging) to be $(OutDir), which will be set to the Debug or Release folder.  You should then be able to use the Visual Studio debugger and use the standard framework and pipeline settings. 
