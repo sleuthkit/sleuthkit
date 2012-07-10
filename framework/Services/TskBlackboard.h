@@ -58,6 +58,8 @@ typedef enum TSK_ARTIFACT_TYPE {
         TSK_HASHSET_HIT = 10, ///< A hit within a known bad / notable hashset / hash database. 
         TSK_DEVICE_ATTACHED = 11, ///< An event for a device being attached to the host computer
         TSK_INTERESTING_FILE_HIT = 12, ///< A file that was flagged because it matched some search criteria for being interesting (i.e. because of its name, extension, etc.)
+        TSK_EMAIL_MSG = 13, ///< An e-mail message that was extracted from a file.
+        TSK_EXTRACTED_TEXT = 14, ///< Text that was extracted from a file.
     /* SEE ABOVE:
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackboard.cpp
@@ -84,11 +86,10 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_VALUE = 6,///< Some value associated with an artifact
     TSK_FLAG = 7,///< Some flag associated with an artifact
     TSK_PATH = 8,///< A filesystem path.  Should be fully qualified. Should set TSK_PATH_ID as well when this is set. TODO: Need to define this value more for cases with multiple images and multiple file systems per image. 
-    TSK_GEO = 9,///< STRING: TBD
     TSK_KEYWORD = 10,///< STRING: Keyword that was found in this file. 
     TSK_KEYWORD_REGEXP = 11,///< STRING: A regular expression string
     TSK_KEYWORD_PREVIEW = 12,///< STRING: A text preview
-    TSK_KEYWORD_SET = 13,///< STRING: A keyword set 
+    TSK_KEYWORD_SET = 13,///< STRING: A keyword set -- Deprecated in favor of TSK_SET_NAME
     TSK_USERNAME = 14,///< String of a user name.  Use TskBlackboard::TSK_DOMAIN to store the domain that the username is from (if it is known). 
     TSK_DOMAIN = 15,///< String of a DNS Domain name, e.g. sleuthkit.org  use TskBlackboad::TSK_URL for a full URL.
     TSK_PASSWORD = 16,///< String of a password that was found.  Use TskBlackboard::TSK_USERNAME and TskBlackboard::TSK_DOMAIN to link the password to a given user and site. 
@@ -96,16 +97,16 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_DEVICE_MODEL = 18,///< String of manufacturer name of device that was connected (or somehow related to) the data being analyzed
     TSK_DEVICE_MAKE = 19,///< String of make of a device that was connected (or somehow related to) the data being analyzed
     TSK_DEVICE_ID = 20,///< String of ID/serial number of a device that was connected (or somehow related to) the data being analyzed
-    TSK_EMAIL = 21,///< String of e-mail address in the form of user@host.com
+    TSK_EMAIL = 21,///< String of e-mail address in the form of user@host.com (note that there are also more specific TSK_EMAIL_TO and TSK_EMAIL_FROM attributes if you know the use of the address)
     TSK_HASH_HD5 = 22,///< STRING: MD5 hash
     TSK_HASH_SHA1 = 23,///< STRING: SHA1 hash
     TSK_HASH_SHA2_256 = 24,///< STRING: SHA2 256 bit hash
     TSK_HASH_SHA2_512 = 25,///< STRING: SHA2 512 bit hash
-    TSK_TEXT = 26,///< String of text extracted from a file.
-    TSK_TEXT_FILE = 27,///< String of path to file containing text. May be absolute or relative. If relative, will be evaluated relative to OUT_DIR setting.
-    TSK_TEXT_LANGUAGE = 28,///< String of the detected language in ISO 639-3 language code of TskBlackboard::TSK_TEXT data.
+    TSK_TEXT = 26,///< String of text extracted from a file (should be part of TSK_EXTRACTED_TEXT artifact).
+    TSK_TEXT_FILE = 27,///< String of path to file containing text. May be absolute or relative. If relative, will be evaluated relative to OUT_DIR setting. Should be part of TSK_EXTRACTED_TEXT artifact)
+    TSK_TEXT_LANGUAGE = 28,///< String of the detected language in ISO 639-3 language code of TskBlackboard::TSK_TEXT data in the same artifact (TSK_EXTRACTED_TEXT, for example).
     TSK_ENTROPY = 29,///< DOUBLE: Entropy value of file
-    TSK_HASHSET_NAME = 30,///< String of the name or file name of the hashset 
+    TSK_HASHSET_NAME = 30,///< String of the name or file name of the hashset -- Deprecated in favor of TSK_SET_NAME
     TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path
     TSK_REFERRER = 32,///< String of referrer URL
     TSK_LAST_ACCESSED = 33,///<last time access, review this instead of DATETIME
@@ -116,13 +117,37 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_ENCRYPTION_DETECTED = 38,///< STRING: The type of encryption that is believed to have been used on the file.
     TSK_MALWARE_DETECTED = 39,///< STRING: The name of the malware that was detected in this file.
     TSK_STEG_DETECTED = 40,///< STRING: The name of the steganography technique that was detected in this file.
+    TSK_EMAIL_TO = 41, ///< String of an e-mail address that a message is being sent to directly (not cc:).
+    TSK_EMAIL_CC = 42, ///< String of an e-mail address that a message is being sent to as a cc:.
+    TSK_EMAIL_BCC = 43, ///< String of an e-mail address that a message is being sent to as a bcc:.
+    TSK_EMAIL_FROM = 44, ///< String of an e-mail address that a message is being sent from.
+    TSK_EMAIL_CONTENT_PLAIN = 45, ///< String of e-mail message body in plain text
+    TSK_EMAIL_CONTENT_HTML = 46, ///< STring of e-mail message body in HTML
+    TSK_EMAIL_CONTENT_RTF = 47, ///< STring of e-mail message body in RTF
+    TSK_MSG_ID = 48, ///< String of a message ID (such as one of an e-mail message)
+    TSK_MSG_REPLY_ID = 49, ///< String of a message ID that a given message is in response to (such as one of an e-mail message) 
+    TSK_DATETIME_RCVD = 50, ///< Time in Unix epoch that something was received.
+    TSK_DATETIME_SENT = 51, ///< Time in Unix epoch that something was sent.
+    TSK_SUBJECT = 52, ///< String of a subject (such as one of an e-mail message)
+    TSK_TITLE = 53, ///< String of a title (such as a webpage or other document)
+    TSK_GEO_LATITUDE = 54, ///< Floating point of latitude coordinate.  Should be in WGS84. Positive North, Negative South. 
+    TSK_GEO_LONGITUDE = 55, ///< Floating point of longitude coordinate.  Should be in WGS84.  Positive East, Negative West.
+    TSK_GEO_VELOCITY = 56, ///< Floating point of velocity in geo coordinate in meters per second.
+    TSK_GEO_ALTITUDE = 57, ///< Floating point of altitude in geo coordinate in meters.
+    TSK_GEO_BEARING = 58, ///< Floating point of bearing in geo coordinate in true degrees.
+    TSK_GEO_HPRECISION = 59, ///< Floating point of horizontal precision in geo coordinate in meters.
+    TSK_GEO_VPRECISION = 60, ///< Floating point of vertical precision in geo coordinate in meters.
+    TSK_GEO_MAPDATUM = 61, ///< String of map datum used for coordinates if not WGS84.
+    TSK_FILE_TYPE_SIG = 62, ///< String of file type based on signature detection in file content.
+    TSK_FILE_TYPE_EXT = 63, ///< String of file type based on file name extension.
+
     /* SEE ABOVE: 
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackBoard.cpp too */
 };
 
-/*
- * class to store attibute type names in the id to name map
+/**
+ * Class used to store the pair of type and display names of attributes.
  */
 class TskAttributeNames{
 public:
@@ -133,8 +158,8 @@ public:
         displayName(display){}
 };
 
-/*
- * class to store artifact type names in the id to name map
+/**
+ * Class used to store the pair of type and display names of artifacts.
  */
 class TskArtifactNames{
 public:

@@ -66,26 +66,20 @@ TskPipelineManager::~TskPipelineManager()
 TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType)
 {
     // Get location of Pipeline configuration file.
-    std::wstring pipelineConfig = TSK_SYS_PROP_GET(TskSystemProperties::PIPELINE_CONFIG);
-    std::string utf8PipelineConfig;
-
-    Poco::UnicodeConverter::toUTF8(pipelineConfig, utf8PipelineConfig);
+    std::string pipelineConfig = GetSystemProperty(TskSystemProperties::PIPELINE_CONFIG_FILE);
 
     // If we haven't been provided with the name of a config file, use the default
-    if (utf8PipelineConfig.empty())
-        utf8PipelineConfig = TskPipelineManager::DEFAULT_PIPELINE_CONFIG;
+    if (pipelineConfig.empty())
+        pipelineConfig = TskPipelineManager::DEFAULT_PIPELINE_CONFIG;
 
-    Poco::Path configFile(utf8PipelineConfig);
+    Poco::Path configFile(pipelineConfig);
 
     // If the path is not absolute then we look for the pipeline
     // config file in the "config" folder.
     if (!configFile.isAbsolute())
     {
-        std::wstring configDir = TSK_SYS_PROP_GET(TskSystemProperties::CONFIG_DIR);
-        std::string utf8ConfigDir;
-        Poco::UnicodeConverter::toUTF8(configDir, utf8ConfigDir);
-
-        Poco::Path confDir(utf8ConfigDir);
+        std::string configDir = GetSystemProperty(TskSystemProperties::CONFIG_DIR);
+        Poco::Path confDir(configDir);
         confDir.append(configFile);
         configFile = confDir;
     }

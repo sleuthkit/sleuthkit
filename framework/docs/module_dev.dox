@@ -17,7 +17,7 @@ The framework source code has some sample modules that you should refer to for e
 
 
 \section mod_build Building the Module
-The module will be written as a dynamic library.  This document assumes that you know how to configure your compiler and development environment to make a dynamic link library. 
+The module will be written as a dynamic library.  This document assumes that you know how to configure your compiler and development environment to make a dynamic link library.  The framework will not allow multiple modules with the same name, so you may want to incorporate your project or company name into the module name to prevent collisions.
 
 You will need to include the framework header file to get access to the framework classes. 
 
@@ -25,12 +25,14 @@ You will need to include the framework header file to get access to the framewor
 
 You should be able to find this header file by ensuring that the TSK_HOME environment variable is set to the root of TSK (in a Windows environment) and that $TSK_HOME and $TSK_HOME/framework are in the include search path. 
 
-Next, you need to define several function that the framework will call when it uses the module.   Those are described in the following sections. 
+Next, you need to define several functions that the framework will call when it uses the module.   Those are described in the following sections. 
 
-\subsection mod_setup_init Module InitializationThe <tt>initialize</tt> function is where you perform one time module configuration tasks such as validating input or output folders or establishing a connection to an external system such as a database server.
-The module initialization function must be implemented and it must have the following signature:
+\subsection mod_setup_init Module Initialization
 
-<pre>TskModule::Status TSK_MODULE_EXPORT initialize(std::string& args)</pre>
+The <tt>initialize</tt> function is where you perform one time module configuration tasks such as validating input or output folders or establishing a connection to an external system such as a database server.
+The module initialization function must be implemented and it must have the following signature:
+
+<pre>TskModule::Status TSK_MODULE_EXPORT initialize(const char *args)</pre>
 
 The function takes a string argument, which  you supplied in the pipeline configuration file. It returns a status which should be TskModule::OK or TskModule::FAIL.  Returning TskModule::FAIL will indicate a fatal problem and (in the default implementation) will cause the pipeline to terminate. 
 
@@ -54,6 +56,15 @@ If your module will be running in a reporting pipeline, then it must implement t
 When the pipeline is being destroyed, the <tt>finalize</tt> function on each module will be called. This is where you should free any resources that you allocated during initialization or execution. The module termination function must have the following signature:
 
 <pre>TskModule::Status TSK_MODULE_EXPORT finalize()</pre>
+
+\subsection mod_setup_other Other Methods
+You should also implement methods to return the version, name, and description of the module as follows:
+
+<pre>
+    TSK_MODULE_EXPORT const char *name()
+    TSK_MODULE_EXPORT const char *description()
+    TSK_MODULE_EXPORT const char *version()
+</pre>
 
 \section mod_stuff Doing Stuff in a Module
 Now that we know where to put code in the module, we'll examine what we can do in those places. 
@@ -98,5 +109,8 @@ Reporting modules may want to access specific files. To gain access to a file, y
 Notice that the condition is simply a SQL "WHERE" clause. The "dir_type = TSK_FS_NAME_TYPE_REG" condition limits our query to files rather than directories.
 
 Once you have a file ID, you can get the corresponding TskFile object with the TskFileManager, specifically the TskFileManager.getFile() method. 
+
+\subsection mod_stuff_utilities Utilities
+If you find yourself needing to do some routine data conversions, then check out the TskUtilities class.  It may have methods that are relevant.  If it doesn't, then you may also want to check out the Poco library that the framework depends on.  It may also have some standard methods for doing things instead of you needing to write them from scratch.
 
 */

@@ -183,6 +183,12 @@ class TskAuto {
      * @return 1 to stop the processing flow and 0 to continue. 
      */
     virtual uint8_t handleError();
+
+    /**
+    * get volume description of the lastly processed volume
+    * @return volume description string of the lastly processed volume
+    */
+    std::string getCurVsPartDescr() const;
     
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
@@ -199,6 +205,9 @@ class TskAuto {
         const TSK_VS_PART_INFO * vs_part, void *ptr);
 
     TSK_RETVAL_ENUM findFilesInFsInt(TSK_FS_INFO *, TSK_INUM_T inum);
+
+    std::string m_curVsPartDescr; ///< description string of the current volume being processed
+    void setCurVsPartDescr(const std::string & curVsPartDescr);
 
 
   protected:

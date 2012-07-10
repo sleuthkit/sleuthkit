@@ -1,5 +1,4 @@
 /*
- *
  *  The Sleuth Kit
  *
  *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
@@ -11,63 +10,80 @@
 
 /**
  * \file TskSystemPropertiesImpl.h
- * Contains an implementation of the TskSystemProperties class
- * that uses the Poco Configuration package.
+ * Contains the interface of the TskSystemPropertiesImpl class.
  */
 
 #ifndef _TSK_SYSTEMPROPERTIESIMPL_H
 #define _TSK_SYSTEMPROPERTIESIMPL_H
 
-#include <string>
-
 #include "framework_i.h"
 #include "TskSystemProperties.h"
-
 #include "Poco/Util/AbstractConfiguration.h"
+#include <string>
 
 /**
  * An implementation of TskSystemProperties that uses Poco
  * AbstractConfiguration class to set and retrieve name/value
- * pairs from an XML file.
+ * pairs from an XML file. Allows system property values to refer 
+ * to other system property values (see the TskSystemProperties class 
+ * description for more details).
+ * 
+ * The XML schema for this is that the name of the value is the tag and
+ * the value is stored in the tag.  Here is an example:
+ * 
+ * \verbatim
+ <?xml version="1.0" encoding="utf-8"?>
+ <TSK_FRAMEWORK_CONFIG>
+   <CONFIG_DIR>#PROG_DIR#/Config</CONFIG_DIR>
+   <MODULE_DIR>#PROG_DIR#/Modules</MODULE_DIR>
+ </TSK_FRAMEWORK_CONFIG>
+ * \endverbatim
+ * You can make up your own tags and the values will be inserted and 
+ * available via the TskSystemProperties service. 
  */
 class TSK_FRAMEWORK_API TskSystemPropertiesImpl : public TskSystemProperties
 {
 public:
-    TskSystemPropertiesImpl() { 
-        m_abstractConfig = (Poco::Util::AbstractConfiguration *)NULL; 
-    };
-
-    TskSystemPropertiesImpl(Poco::Util::AbstractConfiguration & abstractConfig) {
-        m_abstractConfig = &abstractConfig; 
-    };
-
-    virtual ~TskSystemPropertiesImpl() {};
-
-    std::wstring get(std::wstring name) const;
-
-    void set(std::wstring name, std::wstring value);
+    /**
+     * Default constructor. The TskSystemPropertiesImpl object must then be 
+     * initialized with a call to one of the initialize() member functions
+     * before the object can be used.
+     */ 
+    TskSystemPropertiesImpl() : m_abstractConfig(static_cast<Poco::Util::AbstractConfiguration*>(NULL)) {}
 
     /**
-     * Load the XML Config file
-     * @param configfile Path to XML file
+     * Initialize using a configuration file.
+     *
+     * @param configFile Path to the XML file to be used to initialize the
+     * system properties.
      */
-    void initialize(const std::wstring configfile);
+    void initialize(const std::wstring &configfile);
 
     /**
-     * Load the XML Config file
-     * @param configfile Path to XML file
+     * Initialize using a configuration file.
+     *
+     * @param configFile Path to the XML file to be used to initialize the
+     * system properties.
      */
-    void initialize(const char *configfile);
+    void initialize(const std::string &configfile);
 
     /**
-     * Use memory-based config settings only (no local file)
+     * Initialize with no initial system property settings.
      */
     void initialize();
-private:
-    TskSystemPropertiesImpl(TskSystemPropertiesImpl const&) {};
-    // Initialize with POCO AbstractConfiguration
-    void initialize(Poco::Util::AbstractConfiguration & abstractConfig);
 
+private:
+    // Prohibit copying by declaring copy control functions without implementations. 
+    TskSystemPropertiesImpl(const TskSystemPropertiesImpl&);
+    TskSystemPropertiesImpl& operator=(const TskSystemPropertiesImpl&);
+
+    virtual void setProperty(const std::string &name, const std::string &value);
+    virtual std::string getProperty(const std::string &name) const;
+
+    /**
+     * Manages a pointer to a Poco::Util::XMLConfiguration or
+     * Poco::Util::MapConfiguration object that maps names to values. 
+     */ 
     Poco::AutoPtr<Poco::Util::AbstractConfiguration> m_abstractConfig;
 };
 

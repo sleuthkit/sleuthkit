@@ -48,6 +48,36 @@ static const uint32_t FILE_BUFFER_SIZE = 8193;
 extern "C" 
 {
     /**
+     * Module identification function. 
+     *
+     * @return The name of the module.
+     */
+    TSK_MODULE_EXPORT const char *name()
+    {
+        return "CalcFileSize";
+    }
+
+    /**
+     * Module identification function. 
+     *
+     * @return A description of the module.
+     */
+    TSK_MODULE_EXPORT const char *description()
+    {
+        return "Calculates file sizes and posts them to the blackboard as a demonstration of how to develop a module";
+    }
+
+    /**
+     * Module identification function. 
+     *
+     * @return The version of the module.
+     */
+    TSK_MODULE_EXPORT const char *version()
+    {
+        return "0.0.0";
+    }
+
+    /**
      * Module initialization function. Receives a string of initialization arguments, 
      * typically read by the caller from a pipeline configuration file. 
      * Returns TskModule::OK or TskModule::FAIL. Returning TskModule::FAIL indicates 
@@ -56,7 +86,7 @@ extern "C"
      * @param args a string of initialization arguments.
      * @return TskModule::OK if initialization succeeded, otherwise TskModule::FAIL.
      */
-    TskModule::Status TSK_MODULE_EXPORT initialize(std::string& arguments)
+    TskModule::Status TSK_MODULE_EXPORT initialize(const char* arguments)
     {    
         return TskModule::OK;
     }
@@ -114,6 +144,7 @@ extern "C"
             LOGERROR(msg.str());
             return TskModule::FAIL;
         }
+
         return TskModule::OK;
     }
 

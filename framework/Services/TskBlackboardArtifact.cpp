@@ -28,8 +28,8 @@ TskBlackboardArtifact::~TskBlackboardArtifact(){
 }
 
 /**
-* Get the artifact type id
-* @returns artifact type id
+* Get the artifact id
+* @returns artifact id
 */
 uint64_t TskBlackboardArtifact::getArtifactID()const{
     return m_artifactID;

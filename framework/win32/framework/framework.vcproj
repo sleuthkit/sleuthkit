@@ -86,7 +86,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy &quot;$(POCO_HOME)\bin\PocoFoundationd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoNetd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoUtild.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoXMLd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\libewf.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;IF EXIST &quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot; (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;) ELSE (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\zlib\zlib1.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;)&#x0D;&#x0A;del &quot;$(OutDir)\framework_config.xml&quot; &#x0D;&#x0A;xcopy &quot;$(ProjectDir)..\..\SampleConfig\framework_config_win32dev.xml&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;ren &quot;$(OutDir)\framework_config_win32dev.xml&quot; framework_config.xml &#x0D;&#x0A;"
+				CommandLine="xcopy &quot;$(POCO_HOME)\bin\PocoFoundationd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoNetd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoUtild.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoXMLd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\libewf.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;IF EXIST &quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot; (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;) ELSE (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\zlib\zlib1.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;)&#x0D;&#x0A;del &quot;$(OutDir)\framework_config.xml&quot;&#x0D;&#x0A;xcopy &quot;$(ProjectDir)..\..\SampleConfig\framework_config_win32dev.xml&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;ren &quot;$(OutDir)\framework_config_win32dev.xml&quot; framework_config.xml&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -159,7 +159,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy &quot;$(POCO_HOME)\bin\PocoFoundation.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoNet.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoUtil.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoXML.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\libewf.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;IF EXIST &quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot; (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;) ELSE (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\zlib\zlib1.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;)&#x0D;&#x0A;del &quot;$(OutDir)\framework_config.xml&quot; &#x0D;&#x0A;xcopy &quot;$(ProjectDir)..\..\SampleConfig\framework_config_win32dev.xml&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;ren &quot;$(OutDir)\framework_config_win32dev.xml&quot; framework_config.xml "
+				CommandLine="xcopy &quot;$(POCO_HOME)\bin\PocoFoundation.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoNet.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoUtil.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoXML.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\libewf.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;IF EXIST &quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot; (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;) ELSE (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\zlib\zlib1.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;)&#x0D;&#x0A;del &quot;$(OutDir)\framework_config.xml&quot;&#x0D;&#x0A;xcopy &quot;$(ProjectDir)..\..\SampleConfig\framework_config_win32dev.xml&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;ren &quot;$(OutDir)\framework_config_win32dev.xml&quot; framework_config.xml&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -171,14 +171,6 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
-			<File
-				RelativePath="..\..\Extraction\CarveExtract.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Extraction\CarvePrep.cpp"
-				>
-			</File>
 			<File
 				RelativePath="..\..\Services\Log.cpp"
 				>
@@ -205,6 +197,14 @@
 			</File>
 			<File
 				RelativePath="..\..\Services\TskBlackboardAttribute.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Extraction\TskCarveExtractScalpel.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Extraction\TskCarvePrepSectorConcat.cpp"
 				>
 			</File>
 			<File
@@ -354,6 +354,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Extraction\TskCarveExtractScalpel.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Extraction\TskCarvePrepSectorConcat.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Services\TskDBBlackboard.h"
 				>
 			</File>
@@ -453,12 +461,6 @@
 				RelativePath="..\..\Utilities\UnallocRun.h"
 				>
 			</File>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
 		</Filter>
 	</Files>
 	<Globals>

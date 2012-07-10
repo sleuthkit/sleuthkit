@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # NetBeans user-specific settings
 /bindings/java/nbproject/private/
 
@@ -37,3 +38,47 @@ akefile
 .libs
 Makefile.in
 *.swp
+=======
+# NetBeans user-specific settings
+/bindings/java/nbproject/private/
+
+# Bindings dependecies and build folders
+/bindings/java/lib/
+/bindings/java/build/
+/bindings/java/dist
+
+# Windows build folders
+/win32/Debug_NoLibs/
+/win32/*/Debug_NoLibs/
+/win32/Debug/
+/win32/*/Debug/
+/win32/Release/
+/win32/*/Release/
+/win32/*/*.user
+framework/win32/Debug/
+framework/win32/Release/
+framework/win32/*/Debug/
+framework/win32/*/Release/
+framework/win32/*/*.user
+
+# IntelliSense data
+/win32/*.ncb
+framework/win32/framework/*.ncb
+
+# Visual Studio user options
+/win32/tsk-win.suo
+framework/win32/framework/*.suo
+*.sln.cache
+
+# Make crud
+*.o
+*.lo
+*.la
+Makefile
+.deps
+.libs
+
+#javadoc generated
+/bindings/java/javadoc
+
+>>>>>>> e18c23933a80dfe30d66ef846eafa83d408896c2
