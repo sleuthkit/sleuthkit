@@ -362,23 +362,27 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
             //tsk_printf("commit seq %" PRIu32 "\n", big_tsk_getu32(commit_head->c_header.entry_seq));
             if(big_tsk_getu32(journ_sb->feature_compat) & JBD2_FEATURE_COMPAT_CHECKSUM)
             {
-                tsk_printf(", checksum_type: %d", commit_head->chksum_type);
-                switch(commit_head->chksum_type){
-                    case JBD2_CRC32_CHKSUM:
-                        tsk_printf("-CRC32");
-                        break;
-                    case JBD2_MD5_CHKSUM:
-                        tsk_printf("-MD5");
-                        break;
-                    case JBD2_SHA1_CHKSUM:
-                        tsk_printf("-SHA1");
-                        break;
-                    default:
-                        tsk_printf("-UNKOWN");
-                        break;
+                int chksum_type = commit_head->chksum_type;
+                if(chksum_type)
+                {
+                    tsk_printf(", checksum_type: %d", commit_head->chksum_type);
+                    switch(commit_head->chksum_type){
+                        case JBD2_CRC32_CHKSUM:
+                            tsk_printf("-CRC32");
+                            break;
+                        case JBD2_MD5_CHKSUM:
+                            tsk_printf("-MD5");
+                            break;
+                        case JBD2_SHA1_CHKSUM:
+                            tsk_printf("-SHA1");
+                            break;
+                        default:
+                            tsk_printf("-UNKOWN");
+                            break;
+                    }
+                    tsk_printf(", checksum_size: %d", commit_head->chksum_size);
+                    tsk_printf(", chksum: 0x%08X", big_tsk_getu32(commit_head->chksum));
                 }
-                tsk_printf(", checksum_size: %d", commit_head->chksum_size);
-                tsk_printf(", chksum: 0x%08X", big_tsk_getu32(commit_head->chksum));
             }
             tsk_printf(", sec: %llu.%u", tsk_getu64( TSK_BIG_ENDIAN,commit_head->commit_sec), NSEC_PER_SEC/10 * tsk_getu32(TSK_BIG_ENDIAN,commit_head->commit_nsec));
             tsk_printf(")\n");
