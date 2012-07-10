@@ -1,44 +1,3 @@
-<<<<<<< HEAD
-# NetBeans user-specific settings
-/bindings/java/nbproject/private/
-
-# Bindings dependecies and build folders
-/bindings/java/lib/
-/bindings/java/build/
-/bindings/java/dist
-
-# Windows build folders
-/win32/Debug_NoLibs/
-/win32/*/Debug_NoLibs/
-/win32/Debug/
-/win32/*/Debug/
-/win32/Release/
-/win32/*/Release/
-/win32/*/*.user
-framework/win32/Debug/
-framework/win32/Release/
-framework/win32/*/Debug/
-framework/win32/*/Release/
-framework/win32/*/*.user
-
-# IntelliSense data
-/win32/*.ncb
-framework/win32/framework/*.ncb
-
-# Visual Studio user options
-/win32/tsk-win.suo
-framework/win32/framework/*.suo
-
-# Make crud
-*.o
-*.lo
-*.la
-akefile
-.deps
-.libs
-Makefile.in
-*.swp
-=======
 # NetBeans user-specific settings
 /bindings/java/nbproject/private/
 
@@ -70,15 +29,77 @@ framework/win32/framework/*.ncb
 framework/win32/framework/*.suo
 *.sln.cache
 
-# Make crud
-*.o
-*.lo
+# No object files:
 *.la
-Makefile
+*.lo
+*.o
+
+#  No backup files
+*~
+*.bak
+*.swp
+
+# Don't include autoconf-generated files
 .deps
 .libs
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache/
+config.log
+config.status
+libtool
+tsk3/stamp-h1
+tsk3/tsk_config.h
+tsk3/tsk_incs.h
+config/ltmain.sh
+configure
+m4/libtool.m4
+m4/lt~obsolete.m4
+m4/ltoptions.m4
+m4/ltversion.m4
+
+# Don't include compiled programs
+
+samples/callback_cpp_style
+samples/callback_style
+samples/posix_cpp_style
+samples/posix_style
+tests/fs_attrlist_apis
+tests/fs_fname_apis
+tests/fs_thread_test
+tests/read_apis
+tools/autotools/tsk_comparedir
+tools/autotools/tsk_gettimes
+tools/autotools/tsk_loaddb
+tools/autotools/tsk_recover
+tools/fiwalk/plugins/jpeg_extract
+tools/fiwalk/src/fiwalk
+tools/fiwalk/src/test_arff
+tools/fstools/blkcalc
+tools/fstools/blkcat
+tools/fstools/blkls
+tools/fstools/blkstat
+tools/fstools/ffind
+tools/fstools/fls
+tools/fstools/fsstat
+tools/fstools/icat
+tools/fstools/ifind
+tools/fstools/ils
+tools/fstools/istat
+tools/fstools/jcat
+tools/fstools/jls
+tools/hashtools/hfind
+tools/imgtools/img_cat
+tools/imgtools/img_stat
+tools/sorter/sorter
+tools/srchtools/sigfind
+tools/srchtools/srch_strings
+tools/timeline/mactime
+tools/vstools/mmcat
+tools/vstools/mmls
+tools/vstools/mmstat
 
 #javadoc generated
 /bindings/java/javadoc
 
->>>>>>> e18c23933a80dfe30d66ef846eafa83d408896c2
