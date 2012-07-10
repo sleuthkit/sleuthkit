@@ -18,6 +18,7 @@
 
 #include "TskUtilities.h"
 #include "Services/TskServices.h"
+#include <tsk3/base/tsk_base_i.h>
 
 #include "Poco/UnicodeConverter.h"
 #include "Poco/Net/DNS.h"
@@ -78,4 +79,11 @@ bool TskUtilities::getHostIP(const std::string& host, std::string & host_ip)
         LOGERROR(msg.str());
         return false;
     }
+}
+
+
+void
+TskUtilities::cleanUTF8(char *buf)
+{
+    tsk_cleanupUTF8(buf, '^'); 
 }

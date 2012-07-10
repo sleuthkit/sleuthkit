@@ -435,6 +435,37 @@ tsk_isLegalUTF8Sequence(const UTF8 * source, const UTF8 * sourceEnd)
     return isLegalUTF8(source, length);
 }
 
+/**
+ * Cleans up the passed in string to replace invalid
+ * UTF-8 values with the passed in character.
+ * @param source String to be cleaned up
+ * @param replacement Character to insert into source as needed.
+ */
+void
+tsk_cleanupUTF8(char * source, const char replacement)
+{
+    size_t total_len = strlen(source);
+    size_t cur_idx = 0;
+
+    while (cur_idx < total_len) {
+        int length = trailingBytesForUTF8[(UTF8)source[cur_idx]] + 1;
+        if (cur_idx + length > total_len) {
+            while (cur_idx < total_len) {
+                source[cur_idx] = replacement;
+                cur_idx++;
+            }
+            break;
+        }
+        if (isLegalUTF8((UTF8 *)&source[cur_idx], length) == false) {
+            int i;
+            for (i = 0; i < length; i++) {
+                source[cur_idx + i] = replacement;
+            }
+        }
+        cur_idx += length;
+    }
+}
+
 /* --------------------------------------------------------------------- */
 
 

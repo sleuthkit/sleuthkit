@@ -54,8 +54,7 @@ void TskFileManagerImpl::initialize()
 {
     try
     {
-        std::string storagePath = TskUtilities::toUTF8(TSK_SYS_PROP_GET(TskSystemProperties::OUT_DIR));
-    
+        std::string storagePath = GetSystemProperty(TskSystemProperties::OUT_DIR);
         m_storageDir = new Poco::File(storagePath + Poco::Path::separator() + FILES_DIRECTORY);
 
         // Create the directory if it does not exist.

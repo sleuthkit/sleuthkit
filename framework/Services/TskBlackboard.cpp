@@ -25,6 +25,7 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_DEVICE_ATTACHED, TskArtifactNames("TSK_DEVICE_ATTACHED", "Device Attached")));
     retval.insert(pair<int, TskArtifactNames>(TSK_INTERESTING_FILE_HIT, TskArtifactNames("TSK_INTERESTING_FILE_HIT", "Interesting File")));
     retval.insert(pair<int, TskArtifactNames>(TSK_EMAIL_MSG, TskArtifactNames("TSK_EMAIL_MSG", "E-Mail Message")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_EXTRACTED_TEXT, TskArtifactNames("TSK_EXTRACTED_TEXT", "Extracted Text")));
 
     return retval;
 }
@@ -89,6 +90,8 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_GEO_HPRECISION, TskAttributeNames("TSK_GEO_HPRECISION", "Horizontal Precision")));
     retval.insert(pair<int, TskAttributeNames>(TSK_GEO_VPRECISION, TskAttributeNames("TSK_GEO_VPRECISION", "Vertical Precision")));
     retval.insert(pair<int, TskAttributeNames>(TSK_GEO_MAPDATUM, TskAttributeNames("TSK_GEO_MAPDATUM", "Map Datum")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_SIG, TskAttributeNames("TSK_FILE_TYPE_SIG", "File Type (by signature)")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_EXT, TskAttributeNames("TSK_FILE_TYPE_EXT", "File Type (by extension)")));
 
     return retval;
 }

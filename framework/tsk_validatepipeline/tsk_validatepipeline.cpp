@@ -175,7 +175,7 @@ int main(int argc, char **argv)
     systemProperties.initialize(frameworkConfigPath);
     TskServices::Instance().setSystemProperties(systemProperties);
 
-    TSK_SYS_PROP_SET(TskSystemProperties::PROG_DIR, progDirPath); 
+    SetSystemPropertyW(TskSystemProperties::PROG_DIR, progDirPath); 
 
     ValidatePipeline vp;
     bool valid = vp.isValid(pipelineConfigPath);

@@ -59,6 +59,7 @@ typedef enum TSK_ARTIFACT_TYPE {
         TSK_DEVICE_ATTACHED = 11, ///< An event for a device being attached to the host computer
         TSK_INTERESTING_FILE_HIT = 12, ///< A file that was flagged because it matched some search criteria for being interesting (i.e. because of its name, extension, etc.)
         TSK_EMAIL_MSG = 13, ///< An e-mail message that was extracted from a file.
+        TSK_EXTRACTED_TEXT = 14, ///< Text that was extracted from a file.
     /* SEE ABOVE:
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackboard.cpp
@@ -101,9 +102,9 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_HASH_SHA1 = 23,///< STRING: SHA1 hash
     TSK_HASH_SHA2_256 = 24,///< STRING: SHA2 256 bit hash
     TSK_HASH_SHA2_512 = 25,///< STRING: SHA2 512 bit hash
-    TSK_TEXT = 26,///< String of text extracted from a file.
-    TSK_TEXT_FILE = 27,///< String of path to file containing text. May be absolute or relative. If relative, will be evaluated relative to OUT_DIR setting.
-    TSK_TEXT_LANGUAGE = 28,///< String of the detected language in ISO 639-3 language code of TskBlackboard::TSK_TEXT data.
+    TSK_TEXT = 26,///< String of text extracted from a file (should be part of TSK_EXTRACTED_TEXT artifact).
+    TSK_TEXT_FILE = 27,///< String of path to file containing text. May be absolute or relative. If relative, will be evaluated relative to OUT_DIR setting. Should be part of TSK_EXTRACTED_TEXT artifact)
+    TSK_TEXT_LANGUAGE = 28,///< String of the detected language in ISO 639-3 language code of TskBlackboard::TSK_TEXT data in the same artifact (TSK_EXTRACTED_TEXT, for example).
     TSK_ENTROPY = 29,///< DOUBLE: Entropy value of file
     TSK_HASHSET_NAME = 30,///< String of the name or file name of the hashset -- Deprecated in favor of TSK_SET_NAME
     TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path
@@ -137,14 +138,16 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_GEO_HPRECISION = 59, ///< Floating point of horizontal precision in geo coordinate in meters.
     TSK_GEO_VPRECISION = 60, ///< Floating point of vertical precision in geo coordinate in meters.
     TSK_GEO_MAPDATUM = 61, ///< String of map datum used for coordinates if not WGS84.
+    TSK_FILE_TYPE_SIG = 62, ///< String of file type based on signature detection in file content.
+    TSK_FILE_TYPE_EXT = 63, ///< String of file type based on file name extension.
 
     /* SEE ABOVE: 
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackBoard.cpp too */
 };
 
-/*
- * class to store attibute type names in the id to name map
+/**
+ * Class used to store the pair of type and display names of attributes.
  */
 class TskAttributeNames{
 public:
@@ -155,8 +158,8 @@ public:
         displayName(display){}
 };
 
-/*
- * class to store artifact type names in the id to name map
+/**
+ * Class used to store the pair of type and display names of artifacts.
  */
 class TskArtifactNames{
 public:

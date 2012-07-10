@@ -61,16 +61,16 @@ TskModule::Status TskExecutableModule::run(TskFile* fileToAnalyze)
             throw TskNullPointerException();
         }
 
-        // Perform parameter substitution on command line args.
-        std::string arguments = parameterSubstitution(m_arguments, fileToAnalyze);
+        // Perform macro expansion on command line args.
+        std::string arguments = expandArgumentMacros(m_arguments, fileToAnalyze);
 
         // Split the arguments into a vector of strings.
         Poco::StringTokenizer tokenizer(arguments, " ");
 
         std::vector<std::string> vectorArgs(tokenizer.begin(), tokenizer.end());
 
-        // Perform parameter substitution on our output location
-        std::string outFilePath = parameterSubstitution(m_output, fileToAnalyze);
+        // Perform macro expansion on our output location
+        std::string outFilePath = expandArgumentMacros(m_output, fileToAnalyze);
 
         // If an output file has been specified we need to ensure that anything
         // written to stdout gets put in the file. This is accomplished by passing
@@ -155,6 +155,8 @@ void TskExecutableModule::setPath(const std::string& location)
     {
         // Call our parent to validate the location.
         TskModule::setPath(location);
+
+        m_name = Poco::Path(m_modulePath).getBaseName();
 
         // Verify that the file is executable.
         Poco::File exeFile(m_modulePath);

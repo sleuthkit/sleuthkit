@@ -44,7 +44,7 @@ There are some settings in TskSystemProperties that must be set.  Note that TskS
 
 Some of the services have default configurations that will be created as needed if a specific instance is not created and registered.   Those are described in this section. 
 
-- System Properties: The TskSystemProperties interface can serve two purposes.  One is a run-time service that provides name and value pairs for system settings.  The other purpose is to store those settings in a local file that can be read and loaded each time.  The values returned by TskSystemProperties can seamlessly come from either a local file or be memory-based and set by another object.  The default instance created is a memory-based one.  But, there is also a TskSystemPropertiesImpl class that can load an XML file.
+- System Properties: The values returned by TskSystemProperties can be populated with a series of calls to set() when a program launches or it can be populated by a local configuration file.  TskSystemPropertiesImpl allows you to store configuration data in an XML file.  See its descsription for more details. 
 - Log: The Log interface allows messages from the framework and modules to go to a single location.  If a specific instance is not set, messages will be sent to STDERR.  Otherwise, Log can be explicitly created with a path to where a log file should be created. 
 
 
