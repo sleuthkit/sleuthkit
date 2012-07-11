@@ -1,7 +1,7 @@
                        Sleuth Kit Framework
                       Building Instructions
 
-                           Dec 7, 2011
+                           July 11, 2012
 
 
 
@@ -55,10 +55,20 @@ project in the Sleuth Kit solution although you may choose to build
 the entire solution. Once complete you should see a file named
 "libtsk.lib" in either the "Debug" or "Release" folder under "win32".
 
+Before you compile the framework, ensure that you have downloaded
+all of the modules (or some of the projects in the solution file
+will fail).  The modules are loaded as git Submodules. Use the
+following commands to download all of the modules before compiling:
+
+% git submodule init
+% git submodule update
+
+
 To compile the framework, open the solution file in
 "framework/win32/framework". Compile the framework project to get
 the release or debug version.  This will create a dll file that
-includes the libtsk static library.
+includes the libtsk static library.  There are other projects in 
+the solution for other modules and command line tools. 
 
 If you get errors about not being able to find POCO header files,
 ensure that you defined the POCO_HOME environment variable and
