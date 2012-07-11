@@ -54,7 +54,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Device Attached"), ///< attached devices
 		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", "Interesting File"), ///< an interesting/notable file hit
 		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", "E-Mail Message"), ///< email message
-		TSK_EMAIL_MSG(14, "TSK_EXTRACTED_TEXT", "Extracted Text"); ///< text extracted from file
+		TSK_EXTRACTED_TEXT(14, "TSK_EXTRACTED_TEXT", "Extracted Text"); ///< text extracted from file
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
 		private int typeID;
