@@ -13,10 +13,12 @@
 #include <share.h>
 #include "string.h"
 #include "Log.h"
+#include "Utilities/TskUtilities.h"
 #include "sys/stat.h"
 
 // @@@ imports for directory creation and deletion
 #include "windows.h"
+
 
 Log::Log()
 : m_logFile(NULL)
@@ -88,11 +90,22 @@ Log::~Log()
     close();
 }
 
-/**
- * Generate a log message with a given level.
- * @param a_channel Level of log to make
- * @param a_msg Message to record.
- */
+
+void Log::log(Channel a_channel, char const *format, ...)
+{
+    char buf[2048];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buf, 2048, format, args);
+    va_end(args);
+}
+
+void Log::log(Channel a_channel, const std::string &a_msg)
+{
+    std::wstring msg_w = TskUtilities::toUTF16(a_msg);
+    log(a_channel, msg_w);
+}
+
 void Log::log(Channel a_channel, const std::wstring &a_msg)
 {
     wchar_t level[10];

@@ -65,15 +65,25 @@ void TskFileAnalysisPipeline::run(TskFile* file)
         // we return without processing.
         if (excludeFile(file))
         {
+            std::stringstream msg;
+            msg << "TskFileAnalysisPipeline::run: Skipping file (excluded) "  << file->getName() << "(" << file->getId() << ")";
+            LOGINFO(msg.str());
             file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_SKIPPED);
             return;
         }
 
-        if (file->getStatus() != TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS)
+        if (file->getStatus() != TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS) {
+            std::stringstream msg;
+            msg << "TskFileAnalysisPipeline::run: Skipping file (not ready) " << file->getName() << "(" << file->getId() << ")";
+            LOGINFO(msg.str());
             return;
+        }
 
         // Update status to indicate analysis is in progress.
         file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_IN_PROGRESS);
+        std::stringstream msg;
+        msg << "TskFileAnalysisPipeline::run: Analyzing " << file->getName() << "(" << file->getId() << ")";
+        LOGINFO(msg.str());
 
         // If there is an Executable module in the pipeline we must
         // ensure that the file exists on disk.
