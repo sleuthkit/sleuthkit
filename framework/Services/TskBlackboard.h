@@ -98,7 +98,7 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_DEVICE_MAKE = 19,///< String of make of a device that was connected (or somehow related to) the data being analyzed
     TSK_DEVICE_ID = 20,///< String of ID/serial number of a device that was connected (or somehow related to) the data being analyzed
     TSK_EMAIL = 21,///< String of e-mail address in the form of user@host.com (note that there are also more specific TSK_EMAIL_TO and TSK_EMAIL_FROM attributes if you know the use of the address)
-    TSK_HASH_HD5 = 22,///< STRING: MD5 hash
+    TSK_HASH_MD5 = 22,///< STRING: MD5 hash
     TSK_HASH_SHA1 = 23,///< STRING: SHA1 hash
     TSK_HASH_SHA2_256 = 24,///< STRING: SHA2 256 bit hash
     TSK_HASH_SHA2_512 = 25,///< STRING: SHA2 512 bit hash
