@@ -71,12 +71,6 @@ public:
 
     virtual TSK_OFF_T seek(const TSK_OFF_T off, std::ios::seekdir origin = std::ios::beg);
 
-    /**
-     * @param buf Buffer into which file content will be placed.
-     * Must be at least "count" bytes in size.
-     * @param count The number of bytes to read from the file.
-     * @return The number of bytes read or 0 for end of file.
-     */
     virtual ssize_t read(char * buf, const size_t count);
 
 protected:
