@@ -73,6 +73,11 @@
 #include "tsk_fs_i.h"
 #include "tsk_hfs.h"
 
+extern void msg(int incr, char *m, ...);
+
+extern void enter( char * msg, ...);
+
+extern void leave( char * msg, ...);
 
 /* convert HFS+'s UTF16 to UTF8
  * replaces null characters with another character (0xfffd)
@@ -205,6 +210,8 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
     HFS_DIR_OPEN_META_INFO *info = (HFS_DIR_OPEN_META_INFO *) ptr;
     TSK_FS_INFO *fs = &hfs->fs_info;
 
+    enter("dir open meta CB");
+
     if (tsk_verbose)
         fprintf(stderr,
             "hfs_dir_open_meta_cb: want %" PRIu32 " vs got %" PRIu32
@@ -214,10 +221,14 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
     if (level_type == HFS_BT_NODE_TYPE_IDX) {
         if (tsk_getu32(hfs->fs_info.endian,
-                cur_key->parent_cnid) < *cnid_p)
+                cur_key->parent_cnid) < *cnid_p) {
+        	leave("dir open meta CB -- IDX - LT");
             return HFS_BTREE_CB_IDX_LT;
-        else
+        }
+        else {
+        	leave("dir open meta CB -- IDX - EQGT");
             return HFS_BTREE_CB_IDX_EQGT;
+        }
     }
     else {
         uint8_t *rec_buf = (uint8_t *) cur_key;
@@ -225,12 +236,15 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
         size_t rec_off2;
 
         if (tsk_getu32(hfs->fs_info.endian,
-                cur_key->parent_cnid) < *cnid_p)
+                cur_key->parent_cnid) < *cnid_p) {
+        	leave("dir open meta CB - LEAF GO");
             return HFS_BTREE_CB_LEAF_GO;
+        }
         else if (tsk_getu32(hfs->fs_info.endian,
-                cur_key->parent_cnid) > *cnid_p)
+                cur_key->parent_cnid) > *cnid_p) {
+        	leave("dir open meta CB -- LEAF STOP");
             return HFS_BTREE_CB_LEAF_STOP;
-
+        }
         rec_off2 = 2 + tsk_getu16(hfs->fs_info.endian, cur_key->key_len);
         // @@@ NEED TO REPLACE THIS SOMEHOW, but need to figure out the max length
         /*
@@ -251,6 +265,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             tsk_error_set_errstr("hfs_dir_open_meta: Entry"
                 " is a file, not a folder");
+        	leave("dir open meta CB -- error A");
             return HFS_BTREE_CB_ERR;
         }
 
@@ -262,10 +277,12 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
                 tsk_getu32(hfs->fs_info.endian, thread->parent_cnid);
             info->fs_name->type = TSK_FS_NAME_TYPE_DIR;
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+            msg(0, "dir open meta CB -- link to the parent ..");
         }
 
         /* This is a folder in the folder */
         else if (rec_type == HFS_FOLDER_RECORD) {
+        	msg(0, "dir open meta CB -- this is a folder");
             hfs_folder *folder = (hfs_folder *) & rec_buf[rec_off2];
 
             info->fs_name->meta_addr =
@@ -278,12 +295,14 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
                     tsk_getu16(hfs->fs_info.endian, cur_key->name.length),
                     info->fs_name->name, HFS_MAXNAMLEN + 1,
                     HFS_U16U8_FLAG_REPLACE_SLASH)) {
+            	leave("dir open meta CB -- error B");
                 return HFS_BTREE_CB_ERR;
             }
         }
 
         /* This is a normal file in the folder */
         else if (rec_type == HFS_FILE_RECORD) {
+        	msg(0, "dir open meta CB -- this is a file");
             hfs_file *file = (hfs_file *) & rec_buf[rec_off2];
             // This could be a hard link.  We need to test this CNID, and follow it if necessary.
             unsigned char is_err;
@@ -292,9 +311,11 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             		hfs_follow_hard_link(hfs, file, &is_err);
             if(is_err > 1) {
             	error_returned("hfs_dir_open_meta_cb: trying to follow a possible hard link in the directory");
+            	leave("dir open meta CB -- error C");
             	return HFS_BTREE_CB_ERR;
             }
             if(target_cnid != file_cnid) {
+            	msg(0, "dir open meta CB -- It IS A HARD LINK");
 				HFS_ENTRY entry;
 				uint8_t lkup;  // lookup result
 
@@ -306,12 +327,14 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             			FALSE);
             	if(lkup != 0) {
             		error_returned("hfs_dir_open_meta_cb: retrieving the catalog entry for the target of a hard link");
+                	leave("dir open meta CB -- error D");
             		return HFS_BTREE_CB_ERR;
             	}
             	info->fs_name->type =
             			hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
             					entry.cat.std.perm.mode));
             } else {
+            	msg(0, "dir open meta CB -- it is not a hard link");
             	// This is NOT a hard link.
             	info->fs_name->meta_addr =
             			tsk_getu32(hfs->fs_info.endian, file->std.cnid);
@@ -324,6 +347,7 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
                     tsk_getu16(hfs->fs_info.endian, cur_key->name.length),
                     info->fs_name->name, HFS_MAXNAMLEN + 1,
                     HFS_U16U8_FLAG_REPLACE_SLASH)) {
+            	leave("dir open meta CB -- error E");
                 return HFS_BTREE_CB_ERR;
             }
         }
@@ -333,12 +357,15 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             tsk_error_set_errstr
                 ("hfs_dir_open_meta: Unknown record type %d in leaf node",
                 rec_type);
+        	leave("dir open meta CB -- error F");
             return HFS_BTREE_CB_ERR;
         }
 
         if (tsk_fs_dir_add(info->fs_dir, info->fs_name)) {
+        	leave("dir open meta CB -- error G");
             return HFS_BTREE_CB_ERR;
         }
+    	leave("dir open meta CB -- LEAF GO");
         return HFS_BTREE_CB_LEAF_GO;
     }
 }
@@ -366,6 +393,8 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
     TSK_FS_NAME *fs_name;
     HFS_DIR_OPEN_META_INFO info;
 
+    enter("Dir Open Meta of inum %" PRIuINUM, a_addr);
+
     tsk_error_reset();
 
     cnid = (uint32_t) a_addr;
@@ -379,6 +408,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
         tsk_error_set_errstr("hfs_dir_open_meta: Invalid inode value: %"
             PRIuINUM, a_addr);
+        leave("dir open meta -- error A");
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
@@ -386,6 +416,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
             ("hfs_dir_open_meta: NULL fs_dir argument given");
+        leave("dir open meta -- error B");
         return TSK_ERR;
     }
 
@@ -400,10 +431,12 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
     }
     else if ((*a_fs_dir = fs_dir =
             tsk_fs_dir_alloc(fs, a_addr, 128)) == NULL) {
+    	leave("dir open meta -- error C");
         return TSK_ERR;
     }
 
     if ((fs_name = tsk_fs_name_alloc(HFS_MAXNAMLEN, 0)) == NULL) {
+    	leave("dir open meta -- error D");
         return TSK_ERR;
     }
     info.fs_dir = fs_dir;
@@ -413,6 +446,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
             tsk_fs_file_open_meta(fs, NULL, a_addr)) == NULL) {
         tsk_error_errstr2_concat(" - hfs_dir_open_meta");
         tsk_fs_name_free(fs_name);
+        leave("dir open meta -- error E");
         return TSK_ERR;
     }
 
@@ -466,6 +500,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
             fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
             if (tsk_fs_dir_add(fs_dir, fs_name)) {
                 tsk_fs_name_free(fs_name);
+                leave("dir open meta -- error F");
                 return TSK_ERR;
             }
         }
@@ -473,10 +508,12 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
 
     if (hfs_cat_traverse(hfs, &cnid, hfs_dir_open_meta_cb, &info)) {
         tsk_fs_name_free(fs_name);
+        leave("dir open meta -- error G");
         return TSK_ERR;
     }
 
     tsk_fs_name_free(fs_name);
+    leave("dir open meta -- OK");
     return TSK_OK;
 }
 
