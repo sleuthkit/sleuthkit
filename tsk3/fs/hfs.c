@@ -1374,9 +1374,13 @@ hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum, unsigned char is_direct
 
 	enter("LOOKUP hardlink for linknum %u", linknum);
 	if(is_directory) {
+
+		tsk_take_lock(&(hfs->metadata_dir_cache_lock));
 		if(hfs->dir_meta_dir == NULL) {
 			hfs->dir_meta_dir = hfs_open_meta_dir(hfs, TRUE);
 		}
+		tsk_release_lock(&(hfs->metadata_dir_cache_lock));
+
 		if(hfs->dir_meta_dir == NULL) {
 			error_returned("hfs_lookup_hard_link: could not open the dir metadata directory");
 			leave("could not open dir_meta_dir");
@@ -1385,9 +1389,13 @@ hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum, unsigned char is_direct
 			mdir = hfs->dir_meta_dir;
 		snprintf(fBuff, 30, "dir_%" PRIuINUM, linknum);
 	} else {
+
+		tsk_take_lock(&(hfs->metadata_dir_cache_lock));
 		if(hfs->meta_dir == NULL) {
 			hfs->meta_dir = hfs_open_meta_dir(hfs, FALSE);
 		}
+		tsk_release_lock(&(hfs->metadata_dir_cache_lock));
+
 		if(hfs->meta_dir == NULL) {
 			error_returned("hfs_lookup_hard_link: could not open file metadata directory");
 			leave("could not open meta_dir");
@@ -6024,6 +6032,8 @@ static void
 hfs_close(TSK_FS_INFO * fs)
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;
+    // We'll grab this lock a bit early.
+    tsk_take_lock(&(hfs->metadata_dir_cache_lock));
     fs->tag = 0;
 
     free(hfs->fs);
@@ -6043,6 +6053,9 @@ hfs_close(TSK_FS_INFO * fs)
     	tsk_fs_dir_close(hfs->dir_meta_dir);
     	hfs->dir_meta_dir = NULL;
     }
+
+    tsk_release_lock(&(hfs->metadata_dir_cache_lock));
+    tsk_deinit_lock(&(hfs->metadata_dir_cache_lock));
 
     free(hfs);
 }
@@ -6382,6 +6395,8 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     hfs->meta_dir = NULL;
     hfs->dir_meta_dir = NULL;
 
+    // Initialize the lock
+    tsk_init_lock(&(hfs->metadata_dir_cache_lock));
 
     return fs;
 }

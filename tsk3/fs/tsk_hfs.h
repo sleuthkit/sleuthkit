@@ -665,6 +665,10 @@ typedef struct {
     TSK_FS_DIR * meta_dir;
     TSK_FS_DIR * dir_meta_dir;
 
+    // We need a lock to protect the two metadata directory caches (if this is multi-threaded)
+    // and will also use this to protect the rest of the HFS_INFO struct.
+    tsk_lock_t metadata_dir_cache_lock;
+
 } HFS_INFO;
 
 typedef struct {
