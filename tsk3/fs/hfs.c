@@ -98,79 +98,6 @@ void error_detected(uint32_t errnum, char *errstr, ...);
 void error_returned(char *errstr, ...);
 
 
-int depth = 0;
-
-#define TRACE 1
-#define DEPTH_LIM 10
-
-/*
-
-extern void msg(int incr, char *m, ...);
-
-extern void enter( char * msg, ...);
-
-extern void leave( char * msg, ...);
-
- */
-
-void msg(int incr, char * m, ...) {
-	va_list args;
-	va_start(args, m);
-	{
-#ifdef TRACE
-		char buff[300];
-		//memset(buff, 0, 300);
-		vsnprintf(buff, 300, m, args);
-		if(depth < DEPTH_LIM) {
-			fprintf(stdout, "%*s%s\n", (depth+ incr)*3 + 1, " ", buff);
-			fflush(stdout);
-		}
-#endif
-	}
-	va_end(args);
-}
-
-void enter(char * msg, ...) {
-	va_list args;
-	va_start(args, msg);
-	{
-#ifdef TRACE
-		if(depth < DEPTH_LIM) {
-			char buff[300];
-			vsnprintf(buff, 300, msg, args);
-			fprintf(stdout, "%*sENTER %s\n", depth*3 + 1, " ", buff);
-			fflush(stdout);
-		}
-		if(depth == DEPTH_LIM) {
-			fprintf(stdout, "%*s>>>>>>>>>\n", depth*3 + 1, " ");
-			fflush(stdout);
-		}
-#endif
-		depth++;
-	}
-	va_end(args);
-}
-
-void leave(char * msg, ...) {
-	va_list args;
-	va_start(args, msg);
-	{
-		depth --;
-#ifdef TRACE
-		if(depth < DEPTH_LIM) {
-			char buff[300];
-			vsnprintf(buff, 300, msg, args);
-			fprintf(stdout, "%*sLEAVE %s\n", depth*3 + 1, " ", buff);
-			fflush(stdout);
-		}
-		if(depth == DEPTH_LIM) {
-			fprintf(stdout, "%*s<<<<<<<<<<\n", depth*3 + 1, " ");
-			fflush(stdout);
-		}
-#endif
-	}
-	va_end(args);
-}
 
 
 #ifdef HAVE_LIBZ
@@ -1334,9 +1261,6 @@ hfs_open_meta_dir(HFS_INFO * hfs, unsigned char is_directory) {
 	TSK_FS_DIR * result2;
 	TSK_FS_INFO * fs = (TSK_FS_INFO *) hfs;
 	TSK_INUM_T meta_cnid;
-	enter("OPEN Metadir %s", is_directory?"DIR":"FILE");
-	fprintf(stderr, "OPEN METADIR\n");
-	fflush(stderr);
 
 	if(!is_directory)
 		result = tsk_fs_path2inum(fs, "/" UTF8_NULL_REPLACE  UTF8_NULL_REPLACE
@@ -1350,16 +1274,13 @@ hfs_open_meta_dir(HFS_INFO * hfs, unsigned char is_directory) {
 	}
 	if(result != 0) {
 		error_returned("hfs_open_meta_dir: could not resolve path to metadata directory");
-		leave("open meta dir failed");
 		return NULL;
 	}
 
 	result2 = tsk_fs_dir_open_meta(fs, meta_cnid);
 	if(result2 == NULL)
 		error_returned("hfs_open_meta_dir: could not open the metadata directory");
-	leave("DONE Opening meta dir\n");
-	fprintf(stderr, "DONE OPENING METADIR\n");
-	fflush(stderr);
+
 	return result2;
 }
 
@@ -1372,7 +1293,6 @@ hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum, unsigned char is_direct
 	TSK_FS_FILE * a_file;  // in the metadata directory
 	TSK_FS_INFO * fs = (TSK_FS_INFO *) hfs;
 
-	enter("LOOKUP hardlink for linknum %u", linknum);
 	if(is_directory) {
 
 		tsk_take_lock(&(hfs->metadata_dir_cache_lock));
@@ -1383,7 +1303,6 @@ hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum, unsigned char is_direct
 
 		if(hfs->dir_meta_dir == NULL) {
 			error_returned("hfs_lookup_hard_link: could not open the dir metadata directory");
-			leave("could not open dir_meta_dir");
 			return 0;
 		} else
 			mdir = hfs->dir_meta_dir;
@@ -1398,7 +1317,6 @@ hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum, unsigned char is_direct
 
 		if(hfs->meta_dir == NULL) {
 			error_returned("hfs_lookup_hard_link: could not open file metadata directory");
-			leave("could not open meta_dir");
 			return 0;
 		} else
 			mdir = hfs->meta_dir;
@@ -1409,31 +1327,10 @@ hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum, unsigned char is_direct
 		if((mdir->names != NULL)  && mdir->names[indx].name &&
 				(fs->name_cmp(fs, mdir->names[indx].name, fBuff) == 0)) {
 			// OK this is the one
-			leave("Found hardlink target for %" PRIuINUM " is  %" PRIuINUM ,
-					linknum, mdir->names[indx].meta_addr);
 			return mdir->names[indx].meta_addr;
 		}
-
-//		if((a_file = tsk_fs_dir_get(mdir, indx)) == NULL) {
-//			error_returned("hfs_lookup_hard_link: trouble getting an entry in the metadata directory");
-//			leave("trouble accessing entry in metadata dir");
-//			return 0;
-//		}
-//
-//		if((a_file->name->name) &&
-//				(fs->name_cmp(fs, a_file->name->name, fBuff) == 0)) {
-//			// This is the one
-//			if(a_file->meta)
-//				msg(0, "meta, addr found is %" PRIuINUM " filename %s", a_file->meta->addr, a_file->name->name);
-//			else
-//				msg(0, "meta for this file is null");
-//			leave("Found hardlink target for %" PRIuINUM " is  %" PRIuINUM ,
-//					linknum, a_file->name->meta_addr);
-//			return a_file->name->meta_addr;
-//		}
 	}
 	// OK, we did not find that linknum
-	leave("lookup -- did not find the linknum in metadata dir");
 	return 0;
 }
 
@@ -1466,8 +1363,6 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 	uint32_t file_type;
 	uint32_t file_creator;
 
-	enter("FOLLOW hardlink");
-
 	*is_error = 0;  // default, not an error
 
 	if(cat == NULL) {
@@ -1476,11 +1371,9 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 	}
 
 	cnid = tsk_getu32(fs->endian, cat->std.cnid);
-	msg(0, "following cnid: %u", cnid);
 
 	if(cnid < HFS_FIRST_USER_CNID) {
 		// Can't be a hard link.  And, cannot look up in Catalog file either!
-		leave("follow -- cnid is too small");
 		return cnid;
 	}
 
@@ -1500,7 +1393,6 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 			tsk_fprintf(stderr, "WARNING: hfs_follow_hard_link: File system creation times are not set. "
 					"Cannot test inode for hard link. File type and creator indicate that this"
 					" is a hard link (file), with LINK ID = %" PRIu32 "\n", linkNum);
-			leave("follow -- FS creation times are not accessible, so not following");
 			return cnid;
 		}
 
@@ -1524,15 +1416,11 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 			target_cnid = hfs_lookup_hard_link(hfs, linkNum, FALSE);
 			
 			if(target_cnid != 0) {
-				leave("DONE following -- it is a hard link file\n");
-
 				// Succeeded in finding that target_cnid in the Catalog file
 				return target_cnid;
 			} else {
 				// This should be a hard link, BUT...
 				// Did not find the target_cnid in the Catalog file.
-				leave( "error in looking up target");
-
 				error_returned("hfs_follow_hard_link: got an error looking up the target of the link");
 				*is_error = -1;
 				return 0;
@@ -1561,7 +1449,6 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 			tsk_fprintf(stderr, "WARNING: hfs_follow_hard_link: File system creation times are not set. "
 					"Cannot test inode for hard link. File type and creator indicate that this"
 					" is a hard link (directory), with LINK ID = %" PRIu32 "\n", linkNum);
-			leave("follow -- FS creation times not accessible");
 			return cnid;
 		}
 
@@ -1578,14 +1465,11 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 			target_cnid = hfs_lookup_hard_link(hfs, linkNum, TRUE);
 
 			if(target_cnid != 0) {
-				leave("DONE following -- it is a hard link directory\n");
 				// Succeeded in finding that target_cnid in the Catalog file
 				return target_cnid;
 			} else {
 				// This should be a hard link, BUT...
 				// Did not find the target_cnid in the Catalog file.
-				leave("follow -- error in looking up link target");
-
 				error_returned("hfs_follow_hard_link: got an error looking up the target of the link");
 				*is_error = -1;
 				return 0;
@@ -1621,7 +1505,6 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 		}
 	}
 	// It cannot be a hard link (file or directory)
-	leave("DONE following -- NOT a hard link");
 	return cnid;
 }
 
@@ -1651,8 +1534,6 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
 
     tsk_error_reset();
 
-    enter("cat file lookup of %" PRIuINUM, inum);
-
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "hfs_cat_file_lookup: called for inum %" PRIuINUM "\n", inum);
@@ -1667,7 +1548,6 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
         tsk_error_set_errstr
             ("hfs_cat_file_lookup: Called on special file: %" PRIuINUM,
             inum);
-        leave("cat file lookup -- error A");
         return 1;
     }
 
@@ -1698,7 +1578,6 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
                 (" hfs_cat_file_lookup: thread for file (%" PRIuINUM ")",
                 inum);
         }
-        leave("cat file lookup -- error B");
         return 1;
     }
 
@@ -1706,7 +1585,6 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
     if (hfs_cat_read_thread_record(hfs, off, &thread)) {
         tsk_error_set_errstr2(" hfs_cat_file_lookup: file (%" PRIuINUM ")",
             inum);
-        leave("cat file lookup -- error C");
         return 1;
     }
 
@@ -1738,7 +1616,6 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
             tsk_error_set_errstr2(" hfs_cat_file_lookup: file (%" PRIuINUM
                 ")", inum);
         }
-        leave("cat file lookup -- error D");
         return 1;
     }
 
@@ -1746,7 +1623,6 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
     if (hfs_cat_read_file_folder_record(hfs, off, &record)) {
         tsk_error_set_errstr2(" hfs_cat_file_lookup: file (%" PRIuINUM ")",
             inum);
-        leave("cat file lookup -- error E");
         return 1;
     }
 
@@ -1776,16 +1652,6 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
     entry->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
     entry->inum = inum;
 
-    // hacking around
-    if(thread.name.length > 0) {
-    	char nBuff[100];
-    	int rslt;
-    	rslt = hfs_UTF16toUTF8(fs, thread.name.unicode,
-    			tsk_getu16(fs->endian, thread.name.length), nBuff, 100, 0);
-    	if(rslt == 0)
-    		msg(0, "cat file lookup -- filename is %s", &(nBuff[0]));
-    }
-
     // end of hack
 
     if(follow_hard_link) {
@@ -1795,7 +1661,6 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
     	if(is_err > 1) {
     		error_returned("hfs_cat_file_lookup: error occurred while following a possible hard link for "
     				"inum (cnid) =  %" PRIuINUM , inum);
-    		leave("cat file lookup -- error E");
     		return 1;
     	}
     	if(target_cnid != inum) {
@@ -1805,7 +1670,6 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
     			error_returned("hfs_cat_file_lookup: error occurred while looking up the Catalog entry for "
     					"the target of inum (cnid) = %" PRIuINUM " target", inum);
     		}
-    		leave("cat file lookup -- error  in looking up hard link target");
     		return 1;
     	}
 
@@ -1814,7 +1678,6 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "hfs_cat_file_lookup exiting\n");
-    leave("cat file lookup -- success");
     return 0;
 }
 
@@ -2604,13 +2467,9 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 	HFS_INFO *hfs = (HFS_INFO *) fs;
 	HFS_ENTRY entry;
 
-	enter( "hfs inode lookup: inum = %" PRIuINUM " is the inum", inum);
-
-
 	if (a_fs_file == NULL) {
 		tsk_error_set_errno(TSK_ERR_FS_ARG);
 		tsk_error_set_errstr("hfs_inode_lookup: fs_file is NULL");
-		leave( "inode lookup -- error A");
 		return 1;
 	}
 
@@ -2618,7 +2477,6 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 		a_fs_file->meta = tsk_fs_meta_alloc(HFS_FILE_CONTENT_LEN);
 	}
 	if (a_fs_file->meta == NULL) {
-		leave( "inode lookup -- error B");
 		return 1;
 	}
 	else {
@@ -2635,78 +2493,63 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 	 * the special ones have their metadata stored in the volume header */
 	if (inum == HFS_EXTENTS_FILE_ID) {
 		if (hfs_make_extents(hfs, a_fs_file)) {
-			leave( "inode lookup -- special file ERROR");
 			return 1;
 		}
 		else {
-			leave( "inode lookup -- special file");
 			return 0;
 		}
 	}
 	else if (inum == HFS_CATALOG_FILE_ID) {
 		if (hfs_make_catalog(hfs, a_fs_file)){
-			leave( "inode lookup -- special file ERROR");
 			return 1;
 		}
 		else {
-			leave( "inode lookup -- special file");
 			return 0;
 		}
 	}
 	else if (inum == HFS_BAD_BLOCK_FILE_ID) {
 		if (hfs_make_badblockfile(hfs, a_fs_file)) {
-			leave( "inode lookup -- special file ERROR");
 			return 1;
 		}
 		else {
-			leave( "inode lookup -- special file");
 			return 0;
 		}
 	}
 	else if (inum == HFS_ALLOCATION_FILE_ID) {
 		if (hfs_make_blockmap(hfs, a_fs_file)) {
-			leave( "inode lookup -- special file ERROR");
 			return 1;
 		}
 		else {
-			leave( "inode lookup -- special file");
 			return 0;
 		}
 	}
 	else if (inum == HFS_STARTUP_FILE_ID) {
 		if (hfs_make_startfile(hfs, a_fs_file)) {
-			leave( "inode lookup -- special file ERROR");
 			return 1;
 		}
 		else {
-			leave( "inode lookup -- special file");
 			return 0;
 		}
 	}
 	else if (inum == HFS_ATTRIBUTES_FILE_ID) {
 		if (hfs_make_attrfile(hfs, a_fs_file)) {
-			leave( "inode lookup -- special file ERROR");
 			return 1;
 		}
 		else {
-			leave( "inode lookup -- special file");
 			return 0;
 		}
 	}
 
 	/* Lookup inode and store it in the HFS structure */
 	if (hfs_cat_file_lookup(hfs, inum, &entry, TRUE)) {
-		leave( "inode lookup -- error in cat file lookup");
 		return 1;
 	}
 
 	/* Copy the structure in hfs to generic fs_inode */
 	if (hfs_dinode_copy(hfs,  &entry,   a_fs_file)) {
-		leave( "inode lookup -- error in dinode copy");
 		return 1;
 	}
 
-	leave(" inode lookup");
 	return 0;
 }
 
