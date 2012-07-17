@@ -11,31 +11,22 @@
 
 /**
  * \file TskCarveExtractScalpel.cpp
- * Implementation of a class that implements the CarveExtract interface to
- * carve unallocated sectors image files using Scalpel. Instances of the class
- * use the following system properties: SCALPEL_DIR, SCALPEL_CONFIG_FILE_PATH, 
- * CARVE_PREP_OUTPUT_PATH, CARVE_PREP_OUTPUT_FILE_NAME, 
- * CARVE_EXTRACT_KEEP_INPUT_FILES, and CARVE_EXTRACT_KEEP_OUTPUT_FILES.
+ * Contains the implementation of the TskCarveExtractScalpel class.
  */
 
 // Include the class definition first to ensure it does not depend on subsequent includes in this file.
 #include "TskCarveExtractScalpel.h"
 
-// Framework includes
 #include "Services/TskServices.h"
 #include "Services/TskImgDB.h"
 #include "Utilities/TskUtilities.h"
 #include "Utilities/UnallocRun.h"
 #include "Utilities/TskException.h"
-
-// System includes
 #include <sstream>
 #include <fstream>
 #include <cstdlib>
 #include <vector>
 #include <algorithm>
-
-// Poco library includes 
 #include "Poco/Path.h"
 #include "Poco/File.h"
 #include "Poco/Process.h"
@@ -139,7 +130,7 @@ void TskCarveExtractScalpel::configure()
 {
     try
     {
-        std::string scalpelDirPath = GetSystemProperty("SCALPEL_DIR_PATH");
+        std::string scalpelDirPath = GetSystemProperty("SCALPEL_DIR");
         if (scalpelDirPath.empty())
         {
             throw TskException("TskCarveExtractScalpel::configure - Scalpel directory not set");
@@ -163,7 +154,7 @@ void TskCarveExtractScalpel::configure()
             throw TskException(msg.str());
         }
 
-        scalpelConfigFilePath = GetSystemProperty("SCALPEL_CONFIG_FILE_PATH");
+        scalpelConfigFilePath = GetSystemProperty("SCALPEL_CONFIG_FILE");
         if (scalpelConfigFilePath.empty())
         {
             pathBuilder.str("");
@@ -179,7 +170,7 @@ void TskCarveExtractScalpel::configure()
             throw TskException(msg.str());
         }
 
-        carvePrepOutputPath = GetSystemProperty("CARVE_PREP_OUTPUT_PATH");
+        carvePrepOutputPath = GetSystemProperty("CARVE_PREP_DIR");
         if (carvePrepOutputPath.empty())
         {
             throw TskException("TskCarveExtractScalpel::configure - carve prep output path not set");
@@ -191,7 +182,7 @@ void TskCarveExtractScalpel::configure()
             throw TskException(msg.str());
         }
 
-        carvePrepOutputFileName = GetSystemProperty("CARVE_PREP_OUTPUT_FILE_NAME");
+        carvePrepOutputFileName = GetSystemProperty("CARVE_PREP_FILE_NAME");
         if (carvePrepOutputFileName.empty())
         {
             throw TskException("TskCarveExtractScalpel::configure - carve prep output file name not set");

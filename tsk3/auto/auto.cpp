@@ -273,15 +273,16 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
     TSK_VS_INFO *vs_info;
     // USE mm_walk to get the volumes
     if ((vs_info = tsk_vs_open(m_img_info, a_start, a_vtype)) == NULL) {
-        tsk_error_set_errstr2("Unable to open volume system at offset %" PRIuOFF,
-                           a_start);
-        if (registerError())
-            return 1;
+        /* we're going to ignore this error to avoid confusion if the
+         * fs_open passes. */
+        tsk_error_reset();
 
-        /* There was no volume system, but there could be a file system */
-        if (findFilesInFs(a_start)) {
-            return 1;
-        }
+        if(tsk_verbose)
+            fprintf(stderr, "findFilesInVs: Error opening volume system, trying as a file system\n");
+
+        /* There was no volume system, but there could be a file system 
+         * Errors will have been registered */
+        findFilesInFs(a_start);
     }
     // process the volume system
     else {
@@ -335,14 +336,10 @@ TSK_RETVAL_ENUM
     }
 
     TSK_FS_INFO *fs_info;
-    /* Try it as a file system */
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
         tsk_error_set_errstr2 ("Sector offset: %" PRIuOFF ", Partition Type: %s",
             a_start/512, getCurVsPartDescr().c_str() );
         registerError();
-
-        /* We could do some carving on the volume data at this point */
-
         return TSK_ERR;
     }
 
@@ -413,18 +410,14 @@ uint8_t
     }
 
     TSK_FS_INFO *fs_info;
-    /* Try it as a file system */
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
         tsk_error_set_errstr2(
-            "Unable to open file system at offset %" PRIuOFF ", partition: [%s]",
-            a_start, getCurVsPartDescr().c_str());
+            "Sector offset: %" PRIuOFF ", Partition Type: %s",
+            a_start / 512, getCurVsPartDescr().c_str());
         registerError();
-
-
-        /* We could do some carving on the volume data at this point */
-
         return 1;
     }
+
     findFilesInFsInt(fs_info, a_inum);
     tsk_fs_close(fs_info);
     return m_errors.empty() ? 0 : 1;

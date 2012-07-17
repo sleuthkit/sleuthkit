@@ -29,7 +29,7 @@
  * @param msg Message to log
  * @returns void
  */
-#define LOGERROR(msg) TskServices::Instance().getLog().logError(msg)
+#define LOGERROR(msg) TskServices::Instance().getLog().log(Log::Error, msg)
 
 /**
  * Macro that gets the log service and writes a warning message in a
@@ -37,7 +37,7 @@
  * @param msg Message to log
  * @returns void
  */
-#define LOGWARN(msg) TskServices::Instance().getLog().logWarn(msg)
+#define LOGWARN(msg) TskServices::Instance().getLog().log(Log::Warn, msg)
 
 
 /**
@@ -46,7 +46,7 @@
  * @param msg Message to log
  * @returns void
  */
-#define LOGINFO(msg) TskServices::Instance().getLog().logInfo(msg)
+#define LOGINFO(msg) TskServices::Instance().getLog().log(Log::Info, msg)
 
 
 /**
@@ -75,7 +75,28 @@ public:
 
     Log();
     virtual ~Log();
+
+    /**
+     * Generate a log message with a given level (wide string).
+     * @param a_channel Level of log to make
+     * @param a_msg Message to record.
+     */
     virtual void log(Channel a_channel, const std::wstring &a_msg);
+
+    /**
+     * Generate a log message with a given level (narrow string).
+     * @param a_channel Level of log to make
+     * @param a_msg Message to record.
+     */
+    virtual void log(Channel a_channel, const std::string &a_msg);
+
+    /**
+     * Generate a log message with a given level (printf-style arguments).
+     * @param a_channel Level of log to make
+     * @param a_msg Message to record.
+     */
+    virtual void log(Channel a_channel, char const *format, ...);
+
 
     /**
      * Log an error message.

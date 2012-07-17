@@ -49,54 +49,27 @@ makeDir(const TSK_TCHAR *dir)
     return 0;
 }
 
-class stderrLog : public Log
+/**
+ * Logs all messages to a log file and prints
+ * error messages to STDERR
+ */
+class StderrLog : public Log
 {
 public:
-    stderrLog(){
-        Log::Log();
+    StderrLog() : Log() {
     }
 
-    ~stderrLog(){
+    ~StderrLog() {
         Log::~Log();
     }
 
     void log(Channel a_channel, const std::wstring &a_msg)
     {
-        bool toStderr = false;
-        wchar_t level[10];
-        switch (a_channel)
-        {
-        case Error:
-            wcsncpy_s(level, 10, L"[ERROR]", 7);
-            toStderr = true;
-            break;
-        case Warn:
-            wcsncpy_s(level, 10, L"[WARN]", 6);
-            break;
-        case Info:
-            wcsncpy_s(level, 10, L"[INFO]", 6);
-            break;
+        Log::log(a_channel, a_msg);
+        if (a_channel != Error) {
+            return;
         }
-
-        struct tm newtime;
-        time_t aclock;
-
-        time(&aclock);   // Get time in seconds
-        localtime_s(&newtime, &aclock);   // Convert time to struct tm form 
-        char timeStr[64];
-        _snprintf_s(timeStr, 64, "%.2d/%.2d/%.2d %.2d:%.2d:%.2d",
-            newtime.tm_mon+1,newtime.tm_mday,newtime.tm_year % 100, 
-            newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
-
-        if (m_logFile) {
-            fwprintf(m_logFile, L"%S %s %s\n", timeStr, level, a_msg.data());
-            fflush(m_logFile);
-            if(toStderr)
-                fwprintf(stderr, L"%S %s %s\n", timeStr, level, a_msg.data());
-        }
-        else {
-            fwprintf(stderr, L"%S %s %s\n", timeStr, level, a_msg.data());
-        }
+        fprintf(stderr, "%S\n", a_msg.c_str());
     }
 };
 
@@ -110,7 +83,7 @@ usage(const char *program)
     fprintf(stderr, "\t-C: Disable carving, overriding framework config file settings\n");
     fprintf(stderr, "\t-v: Enable verbose mode to get more debug information\n");
     fprintf(stderr, "\t-V: Display the tool version\n");
-    fprintf(stderr, "\t-L: Supress stderr logs\n");
+    fprintf(stderr, "\t-L: Print no error messages to STDERR -- only log them\n");
     exit(1);
 }
 
@@ -253,16 +226,16 @@ int main(int argc, char **argv1)
         newtime.tm_hour, newtime.tm_min, newtime.tm_sec);
 
     logDir.append(filename);
-    if(suppressSTDERR){
-        Log * log = new Log();
-        log->open(logDir.c_str());
-        TskServices::Instance().setLog(*log);
-    }
-    else{
-        stderrLog * log = new stderrLog();
-        log->open(logDir.c_str());
-        TskServices::Instance().setLog(*log);
-    }
+    Log *log = NULL;
+
+    if(suppressSTDERR)
+        log = new Log();
+    else
+        log = new StderrLog();
+
+    log->open(logDir.c_str());
+    TskServices::Instance().setLog(*log);
+
 
     // @@@ Not UNIX-friendly
     SetSystemPropertyW(TskSystemProperties::OUT_DIR, outDirPath);
@@ -272,7 +245,7 @@ int main(int argc, char **argv1)
     pImgDB = std::auto_ptr<TskImgDB>(new TskImgDBSqlite(outDirPath.c_str()));
     if (pImgDB->initialize() != 0) {
         std::wstringstream msg;
-        msg << L"Error initializing SQLite database\n" << outDirPath.c_str();
+        msg << L"Error initializing SQLite database: " << outDirPath.c_str();
         LOGERROR(msg.str());
         return 1;
     }
@@ -315,7 +288,7 @@ int main(int argc, char **argv1)
         std::wstringstream msg;
         std::wstring exceptionMsg;
         Poco::UnicodeConverter::toUTF16(e.message(), exceptionMsg);
-        msg << L"Error creating file analysis pipeline\n" << exceptionMsg << endl;
+        msg << L"Error creating file analysis pipeline: " << exceptionMsg;
         LOGERROR(msg.str());
         filePipeline = NULL;
     }
@@ -328,14 +301,14 @@ int main(int argc, char **argv1)
         std::wstringstream msg;
         std::wstring exceptionMsg;
         Poco::UnicodeConverter::toUTF16(e.message(), exceptionMsg);
-        msg << L"Error creating reporting pipeline\n" << exceptionMsg << endl;
+        msg << L"Error creating reporting pipeline: " << exceptionMsg;
         LOGERROR(msg.str());
         reportPipeline = NULL;
     }
 
     if ((filePipeline == NULL) && (reportPipeline == NULL)) {
         std::wstringstream msg;
-        msg << L"No pipelines configured.  Stopping\n" << endl;
+        msg << L"No pipelines configured.  Stopping";
         LOGERROR(msg.str());
         exit(1);
     }
@@ -344,7 +317,7 @@ int main(int argc, char **argv1)
     // Extract
     if (imageFileTsk.extractFiles() != 0) {
         std::wstringstream msg;
-        msg << L"Error adding file system info to database\n" << endl;
+        msg << L"Error adding file system info to database";
         LOGERROR(msg.str());
         return 1;
     }
@@ -353,7 +326,7 @@ int main(int argc, char **argv1)
     std::auto_ptr<TskCarveExtractScalpel> carver;
     if (doCarving)
     {
-        doCarving = !GetSystemProperty("SCALPEL_DIR_PATH").empty();
+        doCarving = !GetSystemProperty("SCALPEL_DIR").empty();
 
         if (doCarving)
         {
@@ -379,7 +352,7 @@ int main(int argc, char **argv1)
             else
             {
                 std::wstringstream msg;
-                msg << L"WARNING: Skipping task " << task->task;
+                msg << L"WARNING: Skipping task: " << task->task;
                 LOGWARN(msg.str());
                 continue;
             }
@@ -397,14 +370,14 @@ int main(int argc, char **argv1)
         }
         catch (...) {
             std::wstringstream msg;
-            msg << L"Error running reporting pipeline\n" << endl;
+            msg << L"Error running reporting pipeline";
             LOGERROR(msg.str());
             return 1;
         }
     }
 
     std::wstringstream msg;
-    msg << L"image analysis complete\n" << endl;
+    msg << L"image analysis complete";
     LOGINFO(msg.str());
     return 0;
 }
