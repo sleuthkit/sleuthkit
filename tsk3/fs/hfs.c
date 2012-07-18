@@ -2627,7 +2627,7 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
 
     // find the attribute for the resource fork
     rAttr =
-        tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_DATA,
+        tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_RSRC,
         HFS_FS_ATTR_ID_RSRC, TRUE);
     if (rAttr == NULL) {
         error_returned
@@ -2906,7 +2906,7 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 
     // find the attribute for the resource fork
     rAttr =
-        tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_DATA,
+        tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_RSRC,
         HFS_FS_ATTR_ID_RSRC, TRUE);
     if (rAttr == NULL) {
         error_returned
