@@ -4466,7 +4466,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
 
             // add the runs to the attribute and the attribute to the file.
             if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run, "RSRC",
-                    TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_RSRC,
+                    TSK_FS_ATTR_TYPE_HFS_RSRC, HFS_FS_ATTR_ID_RSRC,
                     tsk_getu64(fs->endian, forkx->logic_sz),
                     tsk_getu64(fs->endian, forkx->logic_sz),
                     (TSK_OFF_T) tsk_getu32(fs->endian,
@@ -5616,7 +5616,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             print.blockCount = 0;
 
             if (tsk_fs_file_walk_type(fs_file,
-                    TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_RSRC,
+                    TSK_FS_ATTR_TYPE_HFS_RSRC, HFS_FS_ATTR_ID_RSRC,
                     (TSK_FS_FILE_WALK_FLAG_AONLY |
                         TSK_FS_FILE_WALK_FLAG_SLACK), print_addr_act,
                     (void *) &print)) {
