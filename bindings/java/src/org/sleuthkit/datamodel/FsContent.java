@@ -428,6 +428,7 @@ public abstract class FsContent extends AbstractFile {
 		}
 		
 		sb.append(getParentPath());
+		sb.append(getName());
 		
 		unique_path = sb.toString();
 		return unique_path;
