@@ -4031,7 +4031,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
 
     // find the attribute for the resource fork
     rAttr =
-        tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_DATA,
+        tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_RSRC,
         HFS_FS_ATTR_ID_RSRC, TRUE);
 
 
