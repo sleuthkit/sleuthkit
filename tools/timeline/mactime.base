@@ -76,7 +76,7 @@ EOF
 }
 
 sub version {
-    print "The Sleuth Kit ver $VER\n";
+    print "The Sleuth Kit ver x\n";
 }
 
 my $BODY       = "";
