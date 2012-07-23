@@ -750,18 +750,42 @@ int8_t TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 * @returns TSK_OK on success, TSK_ERR on error
 */
 uint8_t TskAutoDb::addUnallocSpaceToDb() {
+    if(m_stopAllProcessing) {
+        return TSK_OK;
+    }
+
+    size_t numVsP = 0;
+    size_t numFs = 0;
+    uint8_t retFsSpace = addUnallocFsSpaceToDb(numFs); 
+    uint8_t retVsSpace = addUnallocVsSpaceToDb(numVsP);
+
+    //handle case when no fs and no vs partitions
+    uint8_t retImgFile = TSK_OK;
+    if (numVsP == 0 && numFs == 0) {
+        const TSK_OFF_T imgSize = getImageSize();
+        if (imgSize == -1) {
+            tsk_error_set_errstr("addUnallocSpaceToDb: error getting current image size, can't create unalloc block file for the image.");
+            registerError();
+            retImgFile = TSK_ERR;
+        }
+
+        TSK_DB_FILE_LAYOUT_RANGE tempRange(0, imgSize, 0);
+        //add unalloc block file for the entire image
+        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+        ranges.push_back(tempRange);
+        int64_t fileObjId = 0;
+        retImgFile = m_db->addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId);
+    }
     
-    uint8_t retFsSpace = addUnallocFsSpaceToDb(); 
-    uint8_t retVsSpace = addUnallocVsSpaceToDb();
-    
-    return retFsSpace || retVsSpace;
+    return retFsSpace || retVsSpace || retImgFile;
 }
 
 /**
 * Process each file system in the database and add its unallocated sectors to virtual files. 
+* @param numFs (out) number of filesystems found
 * @returns TSK_OK on success, TSK_ERR on error (if some or all fs could not be processed)
 */
-uint8_t TskAutoDb::addUnallocFsSpaceToDb() {
+uint8_t TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
 
     vector<TSK_DB_FS_INFO> fsInfos;
 
@@ -776,6 +800,8 @@ uint8_t TskAutoDb::addUnallocFsSpaceToDb() {
         return TSK_ERR;
     }
 
+    numFs = fsInfos.size();
+
     int8_t allFsProcessRet = TSK_OK;
     for (vector<TSK_DB_FS_INFO>::iterator it = fsInfos.begin(); it!= fsInfos.end(); ++it) {
         if(m_stopAllProcessing) {
@@ -789,9 +815,10 @@ uint8_t TskAutoDb::addUnallocFsSpaceToDb() {
 
 /**
 * Process each volume in the database and add its unallocated sectors to virtual files. 
+* @param numVsP (out) number of vs partitions found
 * @returns TSK_OK on success, TSK_ERR on error
 */
-uint8_t TskAutoDb::addUnallocVsSpaceToDb() {
+uint8_t TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
 
     vector<TSK_DB_VS_PART_INFO> vsPartInfos;
 
@@ -801,6 +828,8 @@ uint8_t TskAutoDb::addUnallocVsSpaceToDb() {
         registerError();
         return ret;
     }
+
+    numVsP = vsPartInfos.size();
 
     for (vector<TSK_DB_VS_PART_INFO>::iterator it = vsPartInfos.begin();
         it != vsPartInfos.end(); ++it) {
