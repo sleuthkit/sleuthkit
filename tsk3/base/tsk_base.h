@@ -289,6 +289,12 @@ extern "C" {
     /** \name Error Handling */
 //@{
 
+    //  I think I don't want this in the multi-threaded version!
+    //  @@@@@
+    //extern uint32_t tsk_errno;
+    extern const char *tsk_error_get();
+    extern void tsk_error_print(FILE *);
+    extern void tsk_error_reset();
 
 
 #define TSK_ERR_AUX	0x01000000
@@ -300,6 +306,7 @@ extern "C" {
 #define TSK_ERR_MASK	0x00ffffff
 
 #define TSK_ERR_AUX_MALLOC	(TSK_ERR_AUX | 0)
+#define TSK_ERR_AUX_GENERIC (TSK_ERR_AUX | 2)
 #define TSK_ERR_AUX_MAX		2
 
 #define TSK_ERR_IMG_NOFILE	(TSK_ERR_IMG | 0)

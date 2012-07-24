@@ -17,6 +17,7 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
+
 /** \internal
 * Allocate a FS_DIR structure to load names into.
 *
@@ -490,7 +491,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     a_dinfo->list_inum_named = NULL;
                     a_dinfo->save_inum_named = 0;
                 }
-
                 return TSK_WALK_STOP;
             }
             else if (retval == TSK_WALK_ERROR) {
@@ -573,7 +573,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     save_bak = a_dinfo->save_inum_named;
                     a_dinfo->save_inum_named = 0;
                 }
-
                 retval = tsk_fs_dir_walk_lcl(a_fs,
                     a_dinfo, fs_file->name->meta_addr, a_flags,
                     a_action, a_ptr);

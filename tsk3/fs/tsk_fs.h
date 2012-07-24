@@ -4,6 +4,11 @@
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
+** Matt Stillerman [matt@atc-nycorp.com]
+** Copyright (c) 2012 ATC-NY.  All rights reserved.
+** This file contains data developed with support from the National
+** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
+**
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
 ** 
@@ -204,6 +209,7 @@ extern "C" {
 
     /**
     * These are based on the NTFS type values. 
+     * Added types for HFS+.
     */
     typedef enum {
         TSK_FS_ATTR_TYPE_DEFAULT = 0x01,        // 1
@@ -225,7 +231,14 @@ extern "C" {
         TSK_FS_ATTR_TYPE_NTFS_EA = 0xE0,        // 224
         TSK_FS_ATTR_TYPE_NTFS_PROP = 0xF0,      //  (NT)
         TSK_FS_ATTR_TYPE_NTFS_LOG = 0x100,      //  (2K)
-        TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001    //  Indirect blocks for UFS and ExtX file systems
+        TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001,   //  Indirect blocks for UFS and ExtX file systems
+
+        // Types for HFS+ File Attributes
+        TSK_FS_ATTR_TYPE_HFS_DEFAULT = 0x01,    // 1    Data fork of fs special files and misc
+        TSK_FS_ATTR_TYPE_HFS_DATA = 0x1100,     // 4352 Data fork of regular files
+        TSK_FS_ATTR_TYPE_HFS_RSRC = 0x1101,     // 4353 Resource fork of regular files
+        TSK_FS_ATTR_TYPE_HFS_EXT_ATTR = 0x1102, // 4354 Extended Attributes, except compression records
+        TSK_FS_ATTR_TYPE_HFS_COMP_REC = 0x1103, // 4355 Compression records
     } TSK_FS_ATTR_TYPE_ENUM;
 
 #define TSK_FS_ATTR_ID_DEFAULT  0       ///< Default Data ID used if file system does not assign one.
@@ -1405,9 +1418,7 @@ class TskFsAttribute {
                     return new TskFsAttrRun(run);
                 i++;
                 run = run->next;
-            }
-        }
-        return NULL;
+        }} return NULL;
     };
 
     /**
@@ -1421,9 +1432,7 @@ class TskFsAttribute {
             while (run != NULL) {
                 size++;
                 run = run->next;
-            }
-        }
-        return size;
+        }} return size;
     }
 
     /**
@@ -2092,8 +2101,7 @@ class TskFsInfo {
             return m_fsInfo->img_info;
         else
             return NULL;
-    }
-};                              //TskFsInfo
+}};                             //TskFsInfo
 
 
 
@@ -2287,8 +2295,7 @@ class TskFsMeta {
             while (nameList != NULL) {
                 nameList = nameList->next;
                 numOfList += 1;
-            }
-            m_nameListLen = numOfList;
+            } m_nameListLen = numOfList;
         }
         else {
             m_nameList = NULL;
@@ -2557,9 +2564,7 @@ class TskFsMeta {
             while (name != NULL) {
                 size++;
                 name = name->next;
-            }
-        }
-        return size;
+        }} return size;
     };
 
     /**
@@ -2576,9 +2581,7 @@ class TskFsMeta {
                     return new TskFsMetaName(name);
                 i++;
                 name = name->next;
-            }
-        }
-        return NULL;
+        }} return NULL;
     };
 
   private:
