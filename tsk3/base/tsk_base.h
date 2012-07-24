@@ -286,16 +286,6 @@ extern "C" {
     //TODO: make this per-thread?
     extern int tsk_verbose;     ///< Set to 1 to have verbose debug messages printed to stderr
 
-    /** \name Error Handling */
-//@{
-
-    //  I think I don't want this in the multi-threaded version!
-    //  @@@@@
-    //extern uint32_t tsk_errno;
-    extern const char *tsk_error_get();
-    extern void tsk_error_print(FILE *);
-    extern void tsk_error_reset();
-
 
 #define TSK_ERR_AUX	0x01000000
 #define TSK_ERR_IMG	0x02000000

@@ -89,8 +89,6 @@
 #define XSWAP(a,b) { a ^= b; b ^= a; a ^= b; }
 
 // Forward declarations:
-static uint16_t next_attribute_id();
-static void reset_attribute_counter();
 static uint8_t hfs_load_extended_attrs(TSK_FS_FILE * file,
     unsigned char *isCompressed, unsigned char *compDataInRSRC,
     uint64_t * uncSize);
@@ -1833,8 +1831,6 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         return 1;
     }
 
-    reset_attribute_counter();
-
     fs_file->meta->addr = HFS_CATALOG_FILE_ID;
     strncpy(fs_file->meta->name2->name, HFS_CATALOGNAME,
         TSK_FS_META_NAME_LIST_NSIZE);
@@ -1914,8 +1910,6 @@ hfs_make_extents(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         return 1;
     }
 
-    reset_attribute_counter();
-
     fs_file->meta->addr = HFS_EXTENTS_FILE_ID;
     strncpy(fs_file->meta->name2->name, HFS_EXTENTSNAME,
         TSK_FS_META_NAME_LIST_NSIZE);
@@ -1985,8 +1979,6 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         error_returned(" - hfs_make_blockmap");
         return 1;
     }
-
-    reset_attribute_counter();
 
     fs_file->meta->addr = HFS_ALLOCATION_FILE_ID;
     strncpy(fs_file->meta->name2->name, HFS_ALLOCATIONNAME,
@@ -2070,8 +2062,6 @@ hfs_make_startfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         return 1;
     }
 
-    reset_attribute_counter();
-
     fs_file->meta->addr = HFS_STARTUP_FILE_ID;
     strncpy(fs_file->meta->name2->name, HFS_STARTUPNAME,
         TSK_FS_META_NAME_LIST_NSIZE);
@@ -2150,8 +2140,6 @@ hfs_make_attrfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         return 1;
     }
 
-    reset_attribute_counter();
-
     fs_file->meta->addr = HFS_ATTRIBUTES_FILE_ID;
     strncpy(fs_file->meta->name2->name, HFS_ATTRIBUTESNAME,
         TSK_FS_META_NAME_LIST_NSIZE);
@@ -2225,8 +2213,6 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         error_returned(" - hfs_make_badblockfile");
         return 1;
     }
-
-    reset_attribute_counter();
 
     fs_file->meta->addr = HFS_BAD_BLOCK_FILE_ID;
     strncpy(fs_file->meta->name2->name, HFS_BAD_BLOCK_FILE_NAME,
@@ -3370,6 +3356,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     uint32_t nodeID;            // The number or ID of the Attributes file node to read.
     hfs_btree_key_attr *keyB;   // ptr to the key of the Attr file record.
 	unsigned char done; // Flag to indicate that we are done looping over leaf nodes
+	uint16_t attribute_counter = 2;   // The ID of the next attribute to be loaded.
 
 	tsk_error_reset();
 
@@ -3892,13 +3879,14 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // set the details in the fs_attr structure
                 if (tsk_fs_attr_set_str(fs_file, fs_attr, nameBuff,
-                        attrType, next_attribute_id(), (void *) buffer,
+                        attrType, attribute_counter, (void *) buffer,
                         attributeLength)) {
                     error_returned(" - hfs_load_extended_attrs");
                     free(nodeData);
                     close_attr_file(&attrFile);
                     return 1;
                 }
+                attribute_counter++;
 
             }                   // END if comp == 0
             if (comp == 1) {
@@ -4271,37 +4259,6 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
 
 
 
-/******************  Attribute Counter ************************
- * This counter is used to supply attribute IDs that are increasing
- * and are unique across the attributes of a file.  It is initialized
- * at the beginning of hfs_load_attrs, and is called by each function
- * that loads an attribute.  It is also initialized by each of the functions
- * that loads attributes for a special file (e.g. hfs_make_catalog)
- *
- * Note that the Data fork, if it exists has ID=0 and the RSRC fork,
- * if it exists, has ID=1.  Thus, this counter is used for other
- * attributes and starts at 2.
- */
-static uint16_t attribute_counter = 2;
-
-static uint16_t
-next_attribute_id()
-{
-    uint16_t result = attribute_counter;
-    attribute_counter++;
-    return result;
-}
-
-static void
-reset_attribute_counter()
-{
-    attribute_counter = 2;
-}
-
-
-
-
-
 static uint8_t
 hfs_load_attrs(TSK_FS_FILE * fs_file)
 {
@@ -4351,9 +4308,6 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                 "hfs_load_attrs: Previous attempt to load attributes resulted in error\n");
         return 1;
     }
-
-    // Initialize the attribute counter
-    reset_attribute_counter();
 
     // Now (re)-initialize the attrlist that will hold the list of attributes
     if (fs_file->meta->attr != NULL) {
