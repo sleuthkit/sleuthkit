@@ -13,6 +13,7 @@
 **
 ** Judson Powers [jpowers@atc-nycorp.com]
 ** Matt Stillerman [matt@atc-nycorp.com]
+** Rob Joyce [rob@atc-nycorp.com]
 ** Copyright (c) 2008, 2012 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
 ** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
@@ -67,7 +68,7 @@
 */
 
 /** \file hfs.c
- * Contains the general internal TSK HFS metadata and data unit code -- Not included in code by default.
+ * Contains the general internal TSK HFS metadata and data unit code
  */
 
 #include "tsk_fs_i.h"
@@ -89,6 +90,7 @@
 #define XSWAP(a,b) { a ^= b; b ^= a; a ^= b; }
 
 // Forward declarations:
+static uint8_t hfs_load_attrs(TSK_FS_FILE * fs_file);
 static uint8_t hfs_load_extended_attrs(TSK_FS_FILE * file,
     unsigned char *isCompressed, unsigned char *compDataInRSRC,
     uint64_t * uncSize);
@@ -321,7 +323,6 @@ hfs_ext_compare_keys(HFS_INFO * hfs, uint32_t cnid,
 }
 
 
-
 /** \internal
  * Returns the length of an HFS+ B-tree INDEX key based on the tree header
  * structure and the length claimed in the record.  With some trees,
@@ -438,7 +439,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
     uint32_t cur_node;          /* node id of the current node */
     char *node = NULL;
     uint8_t is_done;
-	uint8_t desiredType;
+    uint8_t desiredType;
 
     tsk_error_reset();
 
@@ -449,9 +450,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             dataForkQ ? "data fork" : "resource fork");
 
     // Are we looking for extents of the data fork or the resource fork?
-    //unsigned char desiredType;	
     desiredType = dataForkQ ? HFS_EXT_KEY_TYPE_DATA : HFS_EXT_KEY_TYPE_RSRC;
-
 
     // Load the extents attribute, if it has not been done so yet.
     if (hfs->extents_file == NULL) {
@@ -1507,8 +1506,6 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 }
 
 
-
-
 /** \internal
  * Lookup an entry in the catalog file and save it into the entry.  Do not
  * call this for the special files that do not have an entry in the catalog. 
@@ -1703,7 +1700,6 @@ hfs_find_highest_inum(HFS_INFO * hfs)
         return (TSK_INUM_T) tsk_getu32(fs->endian,
             hfs->fs->next_cat_id) - 1;
 }
-
 
 
 static TSK_FS_META_MODE_ENUM
@@ -2021,7 +2017,6 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         return 1;
     }
 
-    
 
     result =
         hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
@@ -2534,6 +2529,17 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 	/* Copy the structure in hfs to generic fs_inode */
 	if (hfs_dinode_copy(hfs,  &entry,   a_fs_file)) {
 		return 1;
+	}
+
+	/* If this is potentially a compressed file, its
+	 * actual size is unknown until we examine the
+	 * extended attributes */
+	if ( ( a_fs_file->meta->size == 0 ) &&
+	     ( a_fs_file->meta->type == TSK_FS_META_TYPE_REG) &&
+	     ( a_fs_file->meta->attr_state != TSK_FS_META_ATTR_ERROR ) &&
+	     ( (a_fs_file->meta->attr_state != TSK_FS_META_ATTR_STUDIED) ||
+	       (a_fs_file->meta->attr == NULL) ) ) {
+		hfs_load_attrs(a_fs_file);
 	}
 
 	return 0;
@@ -4257,8 +4263,6 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
 }
 
 
-
-
 static uint8_t
 hfs_load_attrs(TSK_FS_FILE * fs_file)
 {
@@ -4886,6 +4890,29 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     return 0;
 }
 
+/* return the name of a file at a given inode
+ * in a newly-allocated string, or NULL on error
+ */
+char *hfs_get_inode_name(TSK_FS_INFO * fs, TSK_INUM_T inum) {
+    HFS_INFO *hfs = (HFS_INFO *) fs;
+    HFS_ENTRY entry;
+	
+    if (hfs_cat_file_lookup(hfs, inum, &entry, FALSE))
+        return NULL;
+
+	char *fn = malloc( HFS_MAXNAMLEN + 1 );
+	if ( fn == NULL )
+		return NULL;
+	
+    if (hfs_UTF16toUTF8(fs, entry.thread.name.unicode,
+					  tsk_getu16(fs->endian, entry.thread.name.length), fn,
+					  HFS_MAXNAMLEN + 1, HFS_U16U8_FLAG_REPLACE_SLASH)) {
+		free(fn);
+        return NULL;
+	}
+	
+	return fn;
+}
 
 /* print the name of a file at a given inode
  * returns 0 on success, 1 on error */
@@ -5351,17 +5378,6 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         error_returned("hfs_istat: getting metadata for the file");
         return 1;
     }
-
-    if (fs_file->meta->attr_state == TSK_FS_META_ATTR_ERROR) {
-        error_detected(TSK_ERR_FS_CORRUPT,
-            "hfs_istat: already tried to load attributes, and that failed");
-        return 1;
-    }
-
-    if (fs_file->meta->attr_state != TSK_FS_META_ATTR_STUDIED ||
-        fs_file->meta->attr == NULL)
-        hfs_load_attrs(fs_file);
-
 
     if (inum >= HFS_FIRST_USER_CNID) {
 		int rslt;
