@@ -8,17 +8,17 @@ tsk_analyzeimg - Process a disk image using the TSK framework and pipelines.
 
 # SYNOPSIS
 
-tsk_anlyzeimg [-c *framework_config_file*] [-p *pipeline_config_file*] [-d *outdir*] [-vV] image_name
+tsk_anlyzeimg [-c *framework_config_file*] [-p *pipeline_config_file*] [-d *outdir*] [-CLvV] image_name
 
 # DESCRIPTION
 
 tsk_anlayzeimg is a command line tool that uses the Sleuth Kit Framework to analyze a disk image. The types of analysis that will occur will depend on what modules have been loaded into the pipelines. 
 
-In general though, tsk_analyzeimg will process the disk image using The Sleuth Kit and schedule each file for analysis.  If configured for carving, it will also carve the unallocated space to find deleted files and schedule them for analysis.  For each file that is found, it will run a file analysis pipeline and will run a post-processing pipeline after all files have been analyzed.
+tsk_analyzeimg will process the file systems in the disk image using The Sleuth Kit to identify allocated and deleted files.  If configured for carving, it will also carve the unallocated space to find deleted files.  For each file that is found, it will run a file analysis pipeline and will run a post-processing pipeline after all files have been analyzed.
 
-tsk_analyzeimg uses simple implementations of the framework services. It stores data in a SQLite database and uses a simple first in, first out queing method for the scheduler.
+tsk_analyzeimg uses simple implementations of the framework services. It stores data in a SQLite database and uses a simple queing method for the scheduler.
 
-Carving is disabled by default because you need to install scalpel on your own. To enable carving, download and install [Scalpel](http://www.digitalforensicssolutions.com/Scalpel/).  Edit the framework configuration file to uncomment the SCALPEL_DIR setting and update them to the correct path.  See below for command line options to disable carving even after you have configured it in the configuration file.   
+Carving is disabled by default.  To enable carving, download and install [Scalpel](http://www.digitalforensicssolutions.com/Scalpel/).  Edit the framework configuration file to uncomment the SCALPEL_DIR setting and update it to the correct path.  See below for command line options to disable carving even after you have configured it in the configuration file.   
 
 Refer to the [online docs](http://www.sleuthkit.org/sleuthkit/docs/framework-docs/) for more details on the framework and the pipelines.
 
@@ -33,6 +33,12 @@ Refer to the [online docs](http://www.sleuthkit.org/sleuthkit/docs/framework-doc
 
 -d *outdir*
 :   Location where output from analysis should be stored.  If not specified, then a directory with a name similar to the input image will be created in the directory with the input image. 
+
+-C
+:   Do not carve even if carving has been enabled in the framework configuration file.  This can be useful if you have scenarios that you quickly want to anlayze allocated data and not spend time on carving.
+
+-L 
+:   Disable all logging to STDERR.  By default, error messages are printed.
 
 -V
 :   Print version.

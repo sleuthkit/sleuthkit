@@ -3,7 +3,7 @@
                         Binary Distribution
 
 
-                            May 2012
+                           July 2012
 
 
 OVERVIEW
@@ -14,7 +14,7 @@ Framework.  The framework makes it easier to develop end-to-end digital
 forensics systems that analyze disk images.  It provides a plug-in
 infrastructure that allows you to have modules to do various types of
 file analysis.  The binary distribution of the framework comes with
-pre-compiled tools that use the framework, including the a basic set of
+pre-compiled tools that use the framework, including a basic set of
 "official" modules.   You can find other third-party modules that you
 can also use with the framework.
 
@@ -49,18 +49,17 @@ folder.
 
 USING THE FRAMEWORK
 
-
 The framework will be most useful when it starts to get incorporated into
 more tools and starts to have more modules written for it.  For now, the
 easiest way to use the framework is using tsk_analyzeimg.  It will take
 a disk image as input, populate a SQLite datbase, and run the pipelines
 on its contents. You can run the standard set of modules on an image or
-you can add other third-party modules.
+you can add other third-party modules.  It can optionally carve data with
+scalpel.  See the tsk_analyzeimg help file for more details. 
 
 
 
 LICENSES
-
 
 The source code that make up the framework contains:
 - IBM Public License (original TCT code)
