@@ -425,6 +425,8 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         for (i = 0; i < 6; i++) {
             switch (i) {
             case 0:
+            	if(!hfs->has_extents_file)
+            		continue;
                 strncpy(fs_name->name, HFS_EXTENTS_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_EXTENTS_FILE_ID;
@@ -435,6 +437,9 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                 fs_name->meta_addr = HFS_CATALOG_FILE_ID;
                 break;
             case 2:
+            	// Note: the Extents file and the BadBlocks file are really the same.
+            	if(!hfs->has_extents_file)
+            		continue;
                 strncpy(fs_name->name, HFS_BAD_BLOCK_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_BAD_BLOCK_FILE_ID;
@@ -445,11 +450,15 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                 fs_name->meta_addr = HFS_ALLOCATION_FILE_ID;
                 break;
             case 4:
+            	if(!hfs->has_startup_file)
+            		continue;
                 strncpy(fs_name->name, HFS_STARTUP_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_STARTUP_FILE_ID;
                 break;
             case 5:
+            	if(!hfs->has_attributes_file)
+            		continue;
                 strncpy(fs_name->name, HFS_ATTRIBUTES_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_ATTRIBUTES_FILE_ID;

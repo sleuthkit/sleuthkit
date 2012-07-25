@@ -448,6 +448,11 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
             PRIu32 " %s\n", cnid,
             dataForkQ ? "data fork" : "resource fork");
 
+    if(!hfs->has_extents_file) {
+    	// No extents file (which is optional), and so, no further extents are possible.
+    	return 0;
+    }
+
     // Are we looking for extents of the data fork or the resource fork?
     //unsigned char desiredType;	
     desiredType = dataForkQ ? HFS_EXT_KEY_TYPE_DATA : HFS_EXT_KEY_TYPE_RSRC;
@@ -1394,6 +1399,13 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 			return cnid;
 		}
 
+		if( (!hfs->has_root_crtime) || (! hfs->has_meta_crtime)) {
+			tsk_fprintf(stderr,
+					"WARNING: hfs_follow_hard_link: Either the root folder or the"
+					" file metadata folder is not accessible.  Testing this potential hard link"
+					" may be impaired.\n");
+		}
+
 		// Now we need to check the creation time against the three FS creation times
 		if((hfs->has_meta_crtime && crtime == hfs->meta_crtime) ||
 				(hfs->has_meta_dir_crtime && crtime == hfs->metadir_crtime) ||
@@ -1449,6 +1461,15 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 					" is a hard link (directory), with LINK ID = %" PRIu32 "\n", linkNum);
 			return cnid;
 		}
+
+		if( (!hfs->has_root_crtime) || (! hfs->has_meta_crtime) || (! hfs->has_meta_dir_crtime)) {
+			tsk_fprintf(stderr,
+					"WARNING: hfs_follow_hard_link: Either the root folder or the"
+					" file metadata folder or the directory metatdata folder is"
+					" not accessible.  Testing this potential hard linked folder "
+					"may be impaired.\n");
+		}
+
 
 		// Now we need to check the creation time against the three FS creation times
 		if((hfs->has_meta_crtime && crtime == hfs->meta_crtime) ||
@@ -1649,8 +1670,6 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
 
     entry->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
     entry->inum = inum;
-
-    // end of hack
 
     if(follow_hard_link) {
     	// TEST to see if this is a hard link
@@ -2478,6 +2497,10 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 	/* First see if this is a special entry
 	 * the special ones have their metadata stored in the volume header */
 	if (inum == HFS_EXTENTS_FILE_ID) {
+		if(!hfs->has_extents_file) {
+			error_detected(TSK_ERR_FS_INODE_NUM, "Extents File not present");
+			return 1;
+		}
 		if (hfs_make_extents(hfs, a_fs_file)) {
 			return 1;
 		}
@@ -2494,6 +2517,11 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 		}
 	}
 	else if (inum == HFS_BAD_BLOCK_FILE_ID) {
+		// Note: the Extents file and the BadBlocks file are really the same.
+		if(!hfs->has_extents_file) {
+			error_detected(TSK_ERR_FS_INODE_NUM, "BadBlocks File not present");
+			return 1;
+		}
 		if (hfs_make_badblockfile(hfs, a_fs_file)) {
 			return 1;
 		}
@@ -2510,6 +2538,10 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 		}
 	}
 	else if (inum == HFS_STARTUP_FILE_ID) {
+		if(!hfs->has_startup_file) {
+			error_detected(TSK_ERR_FS_INODE_NUM, "Startup File not present");
+			return 1;
+		}
 		if (hfs_make_startfile(hfs, a_fs_file)) {
 			return 1;
 		}
@@ -2518,6 +2550,10 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 		}
 	}
 	else if (inum == HFS_ATTRIBUTES_FILE_ID) {
+		if(!hfs->has_attributes_file) {
+			error_detected(TSK_ERR_FS_INODE_NUM, "Attributes File not present");
+			return 1;
+		}
 		if (hfs_make_attrfile(hfs, a_fs_file)) {
 			return 1;
 		}
@@ -2724,7 +2760,7 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "hfs_attr_walk_special: reading one compression unit, number %d, length%d\n",
+                "hfs_attr_walk_special: reading one compression unit, number %d, length %d\n",
                 indx, len );
 
         // Read in the chunk of (potentially) compressed data
@@ -3357,6 +3393,9 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     hfs_btree_key_attr *keyB;   // ptr to the key of the Attr file record.
 	unsigned char done; // Flag to indicate that we are done looping over leaf nodes
 	uint16_t attribute_counter = 2;   // The ID of the next attribute to be loaded.
+	HFS_INFO * hfs;
+
+
 
 	tsk_error_reset();
 
@@ -3368,6 +3407,13 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         error_detected(TSK_ERR_FS_ARG,
             "hfs_load_extended_attrs: NULL fs arg");
         return 1;
+    }
+
+    hfs = (HFS_INFO *) fs;
+
+    if(! hfs->has_attributes_file) {
+    	// No attributes file, and so, no extended attributes
+    	return 0;
     }
 
     if (tsk_verbose)
@@ -6245,18 +6291,59 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     if(hfs->has_root_crtime && hfs->has_meta_crtime && hfs->has_meta_dir_crtime) {
     	if(tsk_verbose)
-    		tsk_fprintf(stderr, "Creation times for key folders have been read and cached.\n");
-    } else if (hfs->has_root_crtime || hfs->has_meta_crtime || hfs->has_meta_dir_crtime) {
-        tsk_fprintf(stderr, "WARNING: Could not open the root directory or one of the metadata directories"
-        		" to determine creation time.  Hard-link detection will be impaired.\n");
-    } else {
-    	tsk_fprintf(stderr, "WARNING: Could not open the root directory AND both of the metadata directories"
-    			" to determine creation times.  Hard-link detection will be turned off.\n");
+    		tsk_fprintf(stderr, "hfs_open: Creation times for key folders have been read and cached.\n");
+    }
+    if(! hfs->has_root_crtime) {
+    	tsk_fprintf(stderr, "hfs_open: Warning: Could not open the root directory.  Hard link detection and some other functions will be impaired\n");
+    } else if(tsk_verbose) {
+    	tsk_fprintf(stderr, "hfs_open: The root directory is accessible.\n");
+    }
+
+    if(tsk_verbose) {
+    	if(hfs->has_meta_crtime)
+    		tsk_fprintf(stderr, "hfs_open: \"/^^^^HFS+ Private Data\" metadata folder is accessible.\n");
+    	else
+    		tsk_fprintf(stderr, "hfs_open: Optional \"^^^^HFS+ Private Data\" metadata folder is not accessible, or does not exist.\n");
+    	if(hfs->has_meta_dir_crtime)
+    		tsk_fprintf(stderr, "hfs_open: \"/HFS+ Private Directory Data^\" metadata folder is accessible.\n");
+    	else
+    		tsk_fprintf(stderr, "hfs_open: Optional \"/HFS+ Private Directory Data^\" metadata folder is not accessible, or does not exist.\n");
     }
 
     // These caches will be set, if they are needed.
     hfs->meta_dir = NULL;
     hfs->dir_meta_dir = NULL;
+
+
+    if(tsk_getu32(fs->endian, hfs->fs->start_file.extents[0].blk_cnt) == 0) {
+    	if(tsk_verbose)
+    		tsk_fprintf(stderr, "hfs_open: Optional Startup File is not present.\n");
+    	hfs->has_startup_file = FALSE;
+    }  else {
+    	if(tsk_verbose)
+    		tsk_fprintf(stderr, "hfs_open: Startup File is present.\n");
+    	hfs->has_startup_file = TRUE;
+    }
+
+    if(tsk_getu32(fs->endian, hfs->fs->ext_file.extents[0].blk_cnt) == 0) {
+    	if(tsk_verbose)
+    		tsk_fprintf(stderr, "hfs_open: Optional Extents File (and Badblocks File) is not present.\n");
+    	hfs->has_extents_file = FALSE;
+    }  else {
+    	if(tsk_verbose)
+    		tsk_fprintf(stderr, "hfs_open: Extents File (and BadBlocks File) is present.\n");
+    	hfs->has_extents_file = TRUE;
+    }
+
+    if(tsk_getu32(fs->endian, hfs->fs->attr_file.extents[0].blk_cnt) == 0) {
+    	if(tsk_verbose)
+    		tsk_fprintf(stderr, "hfs_open: Optional Attributes File is not present.\n");
+    	hfs->has_attributes_file = FALSE;
+    }  else {
+    	if(tsk_verbose)
+    		tsk_fprintf(stderr, "hfs_open: Attributes File is present.\n");
+    	hfs->has_attributes_file = TRUE;
+    }
 
     // Initialize the lock
     tsk_init_lock(&(hfs->metadata_dir_cache_lock));
