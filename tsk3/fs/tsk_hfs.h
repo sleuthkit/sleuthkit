@@ -669,6 +669,11 @@ typedef struct {
     // and will also use this to protect the rest of the HFS_INFO struct.
     tsk_lock_t metadata_dir_cache_lock;
 
+    // These special files are optional.
+    unsigned char has_extents_file;  // and also the Bad Blocks file
+    unsigned char has_startup_file;
+    unsigned char has_attributes_file;
+
 } HFS_INFO;
 
 typedef struct {
