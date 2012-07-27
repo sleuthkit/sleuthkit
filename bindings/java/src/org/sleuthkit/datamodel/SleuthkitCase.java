@@ -2150,5 +2150,69 @@ public class SleuthkitCase {
             text = text.replaceAll("'", "''");
         return text;
     }
+	
+	/**
+	 * Find all the files with the given MD5 hash.
+	 * @param md5Hash	hash value to match files with
+	 * @return List of FsContent with the given hash
+	 */
+	public List<FsContent> findFilesByMd5(String md5Hash) {
+		ResultSet rs = null;
+		Statement s = null;
+        try {
+			s = con.createStatement();
+            rs = s.executeQuery("SELECT * FROM tsk_files "
+                    + "WHERE type = '" + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + "' "
+					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getDirType() + "' "
+                    + "AND md5 = '" + md5Hash + "'");
+            return resultSetToFsContents(rs);
+        } catch (SQLException ex) {
+            Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Error querying database.", ex);
+        } finally {
+            if(rs != null) {
+                try {
+                    rs.close();
+					s.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unable to close ResultSet and Statement.", ex);
+                }
+            }
+        }
+        return new ArrayList<FsContent>();
+	}
+	
+	/**
+	 * Query all the files to check if any are missing an MD5 hash. If any files
+	 * are missing a hash, it is assumed hashing has not finished, and most
+	 * likely that ingest has not finished.
+	 * @return true if MD5 hashing has finished
+	 */
+	public boolean md5HashFinished() {
+		ResultSet rs = null;
+		Statement s = null;
+        try {
+			s = con.createStatement();
+            rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files "
+                    + "WHERE type = '" + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + "' "
+                    + "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getDirType() + "' "
+                    + "AND md5 = ''");
+            rs.next();
+            int size = rs.getInt(1);
+            if(size==0) {
+                return true;
+            }
+        } catch (SQLException ex) {
+            Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Failed to query for all the files.", ex);
+        } finally {
+            if(rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Failed to close the result set.", ex);
+                }
+            }
+        }
+		return false;
+	}
 
 }
