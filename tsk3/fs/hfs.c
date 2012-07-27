@@ -2430,25 +2430,45 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
     if (std->perm.o_flags & HFS_PERM_OFLAG_COMPRESSED)
         a_fs_meta->flags |= TSK_FS_META_FLAG_COMP;
 
-    /* TODO @@@ could fill in name2 with this entry's name and parent inode
-       from Catalog entry */
-
-    /* If a sym link, copy the destination to a_fs_meta->link */
-    /*
-       if (fs_file->meta->type == TSK_FS_META_TYPE_LNK) {
-       @@@ Need to do this.  We need to read the file content,
-       but we don't really have enough context (i.e. FS_FILE)
-       to simply use the existing load and read functions. 
-       Probably need to make a dummy TSK_FS_FILE. 
-       }
-     */
-
     // We copy this inum (or cnid) here, because this file *might* have been a hard link.  In
     // that case, we want to make sure that a_fs_file points consistently to the target of the
     // link.
-
+    
     if(a_fs_file->name != NULL) {
     	a_fs_file->name->meta_addr = a_fs_meta->addr;
+    }
+    
+    /* TODO @@@ could fill in name2 with this entry's name and parent inode
+       from Catalog entry */
+
+    /* set the link string (if the file is a link)
+     * The size check is a sanity check so that we don't try to allocate
+     * a huge amount of memory for a bad inode value
+     */
+    if ( (a_fs_meta->type == TSK_FS_META_TYPE_LNK) &&
+         (a_fs_meta->size >= 0) &&
+         (a_fs_meta->size < HFS_MAXPATHLEN) ) {
+
+        ssize_t bytes_read;
+
+        a_fs_meta->link = tsk_malloc((size_t) a_fs_meta->size + 1);
+        if (a_fs_meta->link == NULL)
+            return 1;
+
+        bytes_read = tsk_fs_file_read( a_fs_file, (TSK_OFF_T) 0,
+                                       a_fs_meta->link, a_fs_meta->size,
+                                       TSK_FS_FILE_READ_FLAG_NONE );
+        a_fs_meta->link[a_fs_meta->size] = '\0';
+        
+        if ( bytes_read != a_fs_meta->size ) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "hfs_dinode_copy: failed to read contents of symbolic link; "
+                            "expected %u bytes but tsk_fs_file_read() returned %u\n",
+                            a_fs_meta->size, bytes_read);
+            free(a_fs_meta->link);
+            a_fs_meta->link = NULL;
+            return 1;
+        }        
     }
 
     return 0;
@@ -3388,22 +3408,21 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     unsigned char *isCompressed, unsigned char *compDataInRSRC,
     uint64_t * uncompressedSize)
 {
-	TSK_FS_INFO *fs = fs_file->fs_info;
-	uint64_t fileID;
-	ATTR_FILE_T attrFile;
-	int cnt;                    // count of chars read from file.
-	uint8_t *nodeData;
-	TSK_ENDIAN_ENUM endian;
+    TSK_FS_INFO *fs = fs_file->fs_info;
+    uint64_t fileID;
+    ATTR_FILE_T attrFile;
+    int cnt;                    // count of chars read from file.
+    uint8_t *nodeData;
+    TSK_ENDIAN_ENUM endian;
     hfs_btree_node *nodeDescriptor;  // The node descriptor
     uint32_t nodeID;            // The number or ID of the Attributes file node to read.
     hfs_btree_key_attr *keyB;   // ptr to the key of the Attr file record.
-	unsigned char done; // Flag to indicate that we are done looping over leaf nodes
-	uint16_t attribute_counter = 2;   // The ID of the next attribute to be loaded.
-	HFS_INFO * hfs;
+    unsigned char done; // Flag to indicate that we are done looping over leaf nodes
+    uint16_t attribute_counter = 2;   // The ID of the next attribute to be loaded.
+    HFS_INFO * hfs;
 
 
-
-	tsk_error_reset();
+    tsk_error_reset();
 
     // The CNID (or inode number) of the file
     //  Note that in TSK such numbers are 64 bits, but in HFS+ they are only 32 bits.
@@ -3429,14 +3448,11 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
 
     // Open the Attributes File
-
     if (open_attr_file(fs, &attrFile)) {
         error_returned
             ("hfs_load_extended_attrs: could not open Attributes file");
         return 1;
     }
-
-   
 
     // Is the Attributes file empty?
     if (attrFile.rootNode == 0) {
@@ -5454,6 +5470,9 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fprintf(hFile, "Mode:\t%s\n", hfs_mode);
     tsk_fprintf(hFile, "Size:\t%" PRIuOFF "\n", fs_file->meta->size);
 
+    if (fs_file->meta->link)
+        tsk_fprintf(hFile, "Symbolic link to:\t%s\n", fs_file->meta->link);
+    
     tsk_fprintf(hFile, "uid / gid: %" PRIuUID " / %" PRIuGID "\n",
         fs_file->meta->uid, fs_file->meta->gid);
 
@@ -5710,10 +5729,8 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     }
 
-    // Just force the loading of all attributes.
+    // Force the loading of all attributes.
     (void) tsk_fs_file_attr_get(fs_file);
-
-    
 
     /* Print all of the attributes */
     tsk_fprintf(hFile, "\nAttributes: \n");
@@ -5888,35 +5905,6 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     }
     // This is OK to call with NULL
     free_res_descriptor(rd);
-
-    if(fs_file->meta->type == TSK_FS_META_TYPE_LNK) {
-    	// This is a symbolic link.  So, print out the link target
-    	//char path_buf[fs_file->meta->size + 1] ;
-		char * path_buf = (char *) tsk_malloc((size_t) fs_file->meta->size + 1);
-		if(path_buf == NULL) {
-			tsk_fprintf(hFile, "WARNING, could not allocate space for the symbolic link target\n");
-			tsk_error_reset();
-		} else {
-			ssize_t bytes_read;
-			memset(&path_buf[0], 0, (size_t)fs_file->meta->size + 1);
-			bytes_read = tsk_fs_file_read(fs_file, (TSK_OFF_T) 0,
-				path_buf, (size_t)(fs_file->meta->size + 1),
-				TSK_FS_FILE_READ_FLAG_NONE);
-			if(bytes_read == -1) {
-				error_returned("hfs_istat: reading the path of the symbolic link");
-				tsk_fs_file_close(fs_file);
-				return 1;
-			} else if(bytes_read != fs_file->meta->size) {
-				error_detected(TSK_ERR_FS_CORRUPT,
-					"hfs_istat: Reading the path of the symbolic link, expected %u bytes, but found %u bytes",
-					fs_file->meta->size, bytes_read);
-				tsk_fs_file_close(fs_file);
-				return 1;
-			}
-			tsk_fprintf(hFile, "\nThis is a symbolic link, with target:\n   %s\n", path_buf);
-		}
-
-    }
 
     tsk_fs_file_close(fs_file);
     return 0;
