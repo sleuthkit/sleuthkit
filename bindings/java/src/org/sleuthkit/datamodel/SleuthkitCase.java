@@ -2184,12 +2184,10 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Query all the files to check if any are missing an MD5 hash. If any files
-	 * are missing a hash, it is assumed hashing has not finished, and most
-	 * likely that ingest has not finished.
-	 * @return true if MD5 hashing has finished
+	 * Query all the files to verify if they have an MD5 hash associated with them.
+	 * @return true if all files have an MD5 hash
 	 */
-	public boolean md5HashFinished() {
+	public boolean allFilesMd5Hashed() {
 		ResultSet rs = null;
 		Statement s = null;
         dbReadLock();
