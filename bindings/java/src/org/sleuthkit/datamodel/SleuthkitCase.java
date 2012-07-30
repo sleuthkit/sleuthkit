@@ -2159,6 +2159,7 @@ public class SleuthkitCase {
 	public List<FsContent> findFilesByMd5(String md5Hash) {
 		ResultSet rs = null;
 		Statement s = null;
+        dbReadLock();
         try {
 			s = con.createStatement();
             rs = s.executeQuery("SELECT * FROM tsk_files "
@@ -2177,6 +2178,7 @@ public class SleuthkitCase {
                     Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unable to close ResultSet and Statement.", ex);
                 }
             }
+            dbReadUnlock();
         }
         return new ArrayList<FsContent>();
 	}
@@ -2190,6 +2192,7 @@ public class SleuthkitCase {
 	public boolean md5HashFinished() {
 		ResultSet rs = null;
 		Statement s = null;
+        dbReadLock();
         try {
 			s = con.createStatement();
             rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files "
@@ -2211,6 +2214,7 @@ public class SleuthkitCase {
                     Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Failed to close the result set.", ex);
                 }
             }
+            dbReadUnlock();
         }
 		return false;
 	}
