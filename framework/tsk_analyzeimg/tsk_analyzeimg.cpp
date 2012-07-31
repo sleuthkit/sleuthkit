@@ -330,18 +330,12 @@ int main(int argc, char **argv1)
         return 1;
     }
 
-    // If carving has not been turned off via the command line and a path to an installation of Scalpel has been provided, prep for carving.
     std::auto_ptr<TskCarveExtractScalpel> carver;
-    if (doCarving)
+    if (doCarving && !GetSystemProperty("SCALPEL_DIR").empty())
     {
-        doCarving = !GetSystemProperty("SCALPEL_DIR").empty();
-
-        if (doCarving)
-        {
-            TskCarvePrepSectorConcat carvePrep;
-            carvePrep.processSectors(true);
-            carver.reset(new TskCarveExtractScalpel());
-        }
+        TskCarvePrepSectorConcat carvePrep;
+        carvePrep.processSectors(true);
+        carver.reset(new TskCarveExtractScalpel());
     }
 
     TskSchedulerQueue::task_struct *task;

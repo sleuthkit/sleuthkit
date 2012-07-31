@@ -16,7 +16,10 @@
 #ifndef _TSK_CARVE_PREP_CONCAT_H
 #define _TSK_CARVE_PREP_CONCAT_H
 
+// TSK Framework includes
 #include "CarvePrep.h"
+
+// C/C++ library includes
 #include <string>
 
 /**
@@ -54,7 +57,7 @@ public:
 protected:
 
     /**
-     * Called by createOutputFiles to allow specialization of behavior when
+     * Called by createUnallocSectorsImgFiles to allow specialization of behavior when
      * an unallocated sectors image file is produced (i.e., uses the Template 
      * Method design pattern). The default implementation is simply to 
      * optionally schedule carving of the output file.
@@ -65,30 +68,37 @@ protected:
      * be scheduled.
      * @return Default implementation throws TskException on error.
      */
-    virtual void onOutputFileCreated(int unallocSectorsImgId, bool scheduleCarving) const; 
+    virtual void onUnallocSectorsImgFileCreated(int unallocSectorsImgId, bool scheduleCarving) const; 
 
 private:
-    /** 
-     * Creates the output folder indicated by the CARVE_PREP_DIR 
-     * system property. If the output folder already exists, it is deleted.
+    /**
+     * Reads in the CARVE_PREP_DIR, CARVE_PREP_FILE_NAME, and 
+     * CARVE_PREP_MAX_FILE_SIZE system properties and cretaes the output folder
+     * if it doesn't already exist.
      *
+     * @param outputFolderPath Gets the value of the CARVE_PREP_DIR system property.
+     * @param outputFileName  Gets the value of the CARVE_PREP_FILE_NAME system property.
+     * @param maxOutputFileSize  Gets the value of the CARVE_PREP_MAX_FILE_SIZE system property.
      * @return Throws TskException on error.
      */
-    std::string prepareOutputFolder() const;
+    void setUpForCarvePrep(std::string &outputFolderPath, std::string &outputFileName, uint64_t &maxOutputFileSize) const;
 
     /** 
-     *  Writes each sector run in the sector runs passed into the function
-     *  to one or more unallocated sectors image files. The maximum size of any
-     *  single output file will not exceed the value of the 
-     *  MAX_UNALLOC_IMG_FILE_SIZE system property and each output file will 
-     *  contain sectors from only a single volume. 
+     * Writes each sector run in the sector runs passed into the function
+     * to one or more unallocated sectors image files. The maximum size of any
+     * single output file will not exceed the value of the 
+     * MAX_UNALLOC_IMG_FILE_SIZE system property and each output file will 
+     * contain sectors from only a single volume. 
      * 
-     *  @param sectorRuns Sector runs to be written to the output files.
-     *  @param scheduleCarving Whether or not to schedule carving of the output 
-     *  files.
-     *  @return Throws TskException on error.
+     * @param outputFolderPath Folder to which the output files are written.
+     * @param outputFileName  Name given to the output files.
+     * @param maxOutputFileSize  Maximum output file size.
+     * @param sectorRuns Sector runs to be written to the output files.
+     * @param scheduleCarving Whether or not to schedule carving of the output 
+     * files.
+     * @return Throws TskException on error.
      */
-    void createOutputFiles(const std::string &outputFolderPath, SectorRuns &sectorRuns, bool scheduleCarving) const;
+    void createUnallocSectorsImgFiles(const std::string &outputFolderPath, const std::string &outputFileName, uint64_t maxOutputFileSize, SectorRuns &sectorRuns, bool scheduleCarving) const;
 
     /** 
      *  Creates a folder. If the specified folder already exists, delete it first.
@@ -121,7 +131,7 @@ private:
      *  the unallocated sectors image file.  
      *  @return Throws TskException on error.
      */
-    void storeOutputfileToImageMapping(uint64_t unallocSectorsImgId, HANDLE outputFileHandle, uint64_t startingFileOffset, uint64_t endingFileOffset, int volumeID, uint64_t startingImageOffset) const;
+    void mapFileToImage(int unallocSectorsImgId, HANDLE outputFileHandle, uint64_t startingFileOffset, uint64_t endingFileOffset, int volumeID, uint64_t startingImageOffset) const;
 
     /** 
      * Constant that defines the chunk size for reading from unallocated 
