@@ -189,13 +189,13 @@ int main(int argc, char **argv1)
                 TskServices::Instance().setSystemProperties(*systemProperties);
             }
             else {
-                fprintf(stderr, "No framework config file found");
+                fprintf(stderr, "No framework config file found\n");
             }
         }
     }
     catch (TskException& ex)
     {
-        fprintf(stderr, "%s", ex.message().c_str());
+        fprintf(stderr, "%s\n", ex.message().c_str());
         return 1;
     }
 
