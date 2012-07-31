@@ -73,7 +73,7 @@ public class FileSystem extends AbstractContent {
 
 
 	@Override
-	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+	public synchronized int read(byte[] buf, long offset, long len) throws TskCoreException {
 		return SleuthkitJNI.readFs(getFileSystemHandle(), buf, offset, len);
 	}
 

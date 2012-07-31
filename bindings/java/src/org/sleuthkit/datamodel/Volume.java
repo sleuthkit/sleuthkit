@@ -68,7 +68,7 @@ public class Volume extends AbstractContent {
 
 	
 	@Override
-	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+	public synchronized int read(byte[] buf, long offset, long len) throws TskCoreException {
 		// read from the volume
 		if (volumeHandle == 0) {
 			volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);

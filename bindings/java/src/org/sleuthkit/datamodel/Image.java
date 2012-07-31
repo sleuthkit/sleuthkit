@@ -81,7 +81,7 @@ public class Image extends AbstractContent {
 
 
 	@Override
-	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+	public synchronized int read(byte[] buf, long offset, long len) throws TskCoreException {
 		// read from the image
 		return SleuthkitJNI.readImg(getImageHandle(), buf, offset, len);
 	}

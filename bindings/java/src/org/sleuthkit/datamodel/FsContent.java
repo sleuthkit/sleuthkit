@@ -120,7 +120,7 @@ public abstract class FsContent extends AbstractFile {
 
 
 	@Override
-	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+	public synchronized int read(byte[] buf, long offset, long len) throws TskCoreException {
 		if (fileHandle == 0) {
 			fileHandle = SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), meta_addr);
 		}

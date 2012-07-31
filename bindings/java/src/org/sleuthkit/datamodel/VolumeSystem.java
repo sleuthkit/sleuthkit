@@ -56,7 +56,7 @@ public class VolumeSystem extends AbstractContent {
 
 
 	@Override
-	public int read(byte[] readBuffer, long offset, long len) throws TskCoreException {
+	public synchronized int read(byte[] readBuffer, long offset, long len) throws TskCoreException {
 		if (volumeSystemHandle == 0) {
 			volumeSystemHandle = SleuthkitJNI.openVs(getImage().getImageHandle(), imgOffset);
 		}
