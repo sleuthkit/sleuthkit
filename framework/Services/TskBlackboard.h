@@ -60,6 +60,7 @@ typedef enum TSK_ARTIFACT_TYPE {
         TSK_INTERESTING_FILE_HIT = 12, ///< A file that was flagged because it matched some search criteria for being interesting (i.e. because of its name, extension, etc.)
         TSK_EMAIL_MSG = 13, ///< An e-mail message that was extracted from a file.
         TSK_EXTRACTED_TEXT = 14, ///< Text that was extracted from a file.
+        TSK_WEB_SEARCH_QUERY = 15, ///< Web search engine query extracted from web history.
     /* SEE ABOVE:
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackboard.cpp
