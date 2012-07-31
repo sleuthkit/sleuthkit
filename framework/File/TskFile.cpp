@@ -85,7 +85,7 @@ std::string TskFile::getName() const
 std::string TskFile::getExtension() const
 {
     size_t pos = m_fileRecord.name.find_last_of(".");
-    if (pos == std::string.npos)
+    if (pos == std::string::npos)
         return std::string("");
     else
         return m_fileRecord.name.substr(pos + 1);
