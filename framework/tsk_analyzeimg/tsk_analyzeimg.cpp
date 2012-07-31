@@ -173,30 +173,29 @@ int main(int argc, char **argv1)
     TSK_TCHAR *imagePath = argv[OPTIND];
 
     // Load the framework config if they specified it
-
-    if (!framework_config)
-        framework_config = L"framework_config.xml";
-
-    Poco::Path configFilePath(TskUtilities::toUTF8(framework_config));
-    Poco::Path progDirPath(TskUtilities::toUTF8(getProgDir()));
-
-    // Make the path absolute if it is relative. The program directory is taken as the base.
-    configFilePath.makeAbsolute(progDirPath);
-
-    try {
-        // Initialize properties based on the config file.
-        TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();    
-        systemProperties->initialize(configFilePath.toString());
-        TskServices::Instance().setSystemProperties(*systemProperties);
-    }
-    catch (Poco::FileNotFoundException& )
+    try
     {
-        fprintf(stderr, "Framework config file not found: %s", configFilePath.toString().c_str());
-        return 1;
+        if (framework_config) {
+            // Initialize properties based on the config file.
+            TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();
+            systemProperties->initialize(framework_config);
+            TskServices::Instance().setSystemProperties(*systemProperties);
+        }
+        else {
+            Poco::File config("framework_config.xml");
+            if (config.exists()) {
+                TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();
+                systemProperties->initialize("framework_config.xml");
+                TskServices::Instance().setSystemProperties(*systemProperties);
+            }
+            else {
+                fprintf(stderr, "No framework config file found");
+            }
+        }
     }
-    catch (std::exception& ex)
+    catch (TskException& ex)
     {
-        fprintf(stderr, "Failed to initialize framework: %s", ex.what());
+        fprintf(stderr, "%s", ex.message().c_str());
         return 1;
     }
 
