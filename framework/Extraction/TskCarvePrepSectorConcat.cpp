@@ -17,34 +17,41 @@
 // subsequent includes in this file.
 #include "TskCarvePrepSectorConcat.h" 
 
+// TSK Framework includes
 #include "Services/TskImgDB.h"
 #include "Services/TskServices.h"
 #include "Services/Log.h"
 #include "Utilities/TskUtilities.h"
+
+// Poco includes
+#include "Poco/File.h"
+#include "Poco/Exception.h"
+#include "Poco/Path.h"
+
+// C/C++ library includes
 #include <assert.h>
 #include <string>
 #include <sstream>
 #include <cstdlib>
-#include "Poco/File.h"
-#include "Poco/Exception.h"
-#include "Poco/Path.h"
 
 int TskCarvePrepSectorConcat::processSectors(bool scheduleCarving)
 {
     try 
     {
-        std::string outputFolderPath = prepareOutputFolder();
-
-        // Write contents of unallocated sectors to output files suitable for carving.
+        std::string outputFolderPath;
+        std::string outputFileName;
+        uint64_t maxOutputFileSize;
+        setUpForCarvePrep(outputFolderPath, outputFileName, maxOutputFileSize);
+        
         std::auto_ptr<SectorRuns> sectorRuns(TskServices::Instance().getImgDB().getFreeSectors());
         if (sectorRuns.get())
         {
-            createOutputFiles(outputFolderPath, *sectorRuns, scheduleCarving);
+            createUnallocSectorsImgFiles(outputFolderPath, outputFileName, maxOutputFileSize, *sectorRuns, scheduleCarving);
         }
     }
     catch (TskException &ex) 
     {
-        LOGERROR(TskUtilities::toUTF16(ex.message()));
+        LOGERROR(ex.message());
         return 1;
     }
 
@@ -53,12 +60,16 @@ int TskCarvePrepSectorConcat::processSectors(bool scheduleCarving)
 
 void TskCarvePrepSectorConcat::processFiles(const std::string &fileName, bool scheduleCarving) const
 {
+    assert(!fileName.empty());
     if (fileName.empty())
     {
-        throw TskException("TskCarvePrepSectorConcat::processFiles passed empty file name");
+        throw TskException("TskCarvePrepSectorConcat::processFiles : Empty file name argument");
     }
 
-    std::string outputFolderPath = prepareOutputFolder();
+    std::string outputFolderPath;
+    std::string outputFileName;
+    uint64_t maxOutputFileSize;
+    setUpForCarvePrep(outputFolderPath, outputFileName, maxOutputFileSize);
 
     // Get the file ids for any files with the the specified file name.
     TskImgDB &imgDB = TskServices::Instance().getImgDB();
@@ -66,20 +77,20 @@ void TskCarvePrepSectorConcat::processFiles(const std::string &fileName, bool sc
     condition << "WHERE files.name = " << "'" << fileName << "'";
     std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
 
-    // Write contents of file to output files suitable for carving.
     std::auto_ptr<SectorRuns> sectorRuns;
     for (std::vector<uint64_t>::const_iterator it = fileIds.begin(); it != fileIds.end(); ++it)
     {
         sectorRuns.reset(imgDB.getFileSectors(*it));
         if (sectorRuns.get()) 
         {
-            createOutputFiles(outputFolderPath, *sectorRuns, scheduleCarving);
+            createUnallocSectorsImgFiles(outputFolderPath, outputFileName, maxOutputFileSize, *sectorRuns, scheduleCarving);
         }
     }
 }
 
-void TskCarvePrepSectorConcat::onOutputFileCreated(int unallocSectorsImgId, bool scheduleCarving) const
+void TskCarvePrepSectorConcat::onUnallocSectorsImgFileCreated(int unallocSectorsImgId, bool scheduleCarving) const
 {
+    // Schedule the file for carving.
     TskImgDB &imgDB = TskServices::Instance().getImgDB();
     if (scheduleCarving) 
     {
@@ -91,60 +102,61 @@ void TskCarvePrepSectorConcat::onOutputFileCreated(int unallocSectorsImgId, bool
         {
             imgDB.setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_SCHEDULE_ERR);
             std::stringstream msg;
-            msg << "TskCarvePrepSectorConcat::onOutputFileCreated failed to schedule carving of unallocated image file " << unallocSectorsImgId; 
+            msg << "TskCarvePrepSectorConcat::onUnallocSectorsImgFileCreated : Failed to schedule carving of unallocated image file " << unallocSectorsImgId; 
             throw TskException(msg.str());
         }
     }
 }
 
-std::string TskCarvePrepSectorConcat::prepareOutputFolder() const
+void TskCarvePrepSectorConcat::setUpForCarvePrep(std::string &outputFolderPath, std::string &outputFileName, uint64_t &maxOutputFileSize) const
 {
-    // This function is designed to be safely called by multiple calls to processSectors() and/or processFiles().
-    static std::string outputFolderPath;
-
-    if (outputFolderPath.empty()) 
+    try
     {
+        // Get the output folder path.
         outputFolderPath = GetSystemProperty("CARVE_PREP_DIR");
-
+        assert(!outputFolderPath.empty());
         if (outputFolderPath.empty())
         {
-            // Default to a subfolder of the output directory. This should work because the output folder is a required system property.
-            std::stringstream pathBuilder;
-            pathBuilder << GetSystemProperty(TskSystemProperties::OUT_DIR) << Poco::Path::separator() << "Carving";
-            outputFolderPath = pathBuilder.str();
-
-            // Set the property for the carve extract implementation(s).
-            SetSystemProperty("CARVE_PREP_DIR", outputFolderPath);            
+            throw TskException("TskCarvePrepSectorConcat::createFolder : CARVE_PREP_DIR system property not set");
         }
 
-        createFolder(outputFolderPath);
-    }
+        // Get the output file name.
+        outputFileName = GetSystemProperty("CARVE_PREP_FILE_NAME");
+        assert(!outputFileName.empty());
+        if (outputFileName.empty())
+        {
+            throw TskException("TskCarvePrepSectorConcat::createFolder : CARVE_PREP_FILE_NAME system property not set");
+        }
 
-    return outputFolderPath;
+        // Get the maximum size for each output file.
+        // @@@ TODO: Replace strtoul() call with a strtoull() call when a newer version of C++ is available.
+        std::string maxOutputFileSizeStr = GetSystemProperty("CARVE_PREP_MAX_FILE_SIZE");
+        assert(!maxOutputFileSizeStr.empty());
+        if (maxOutputFileSizeStr.empty())
+        {
+            throw TskException("TskCarvePrepSectorConcat::createFolder : CARVE_PREP_MAX_FILE_SIZE system property not set");
+        }
+        maxOutputFileSize = strtoul(maxOutputFileSizeStr.c_str(), NULL, 10);
+
+        // Create the output folder. Since multiple calls to processSectors() and/or processFiles() are possible, check to see if the folder already exists.
+        Poco::File folder(outputFolderPath);
+        if (!folder.exists())
+        {
+            folder.createDirectory();
+        }
+    }
+    catch (Poco::Exception &ex) 
+    {
+        // Replace Poco exceptions with a TSK exceptions for uniformity.
+        std::stringstream msg;
+        msg << "TskCarvePrepSectorConcat::createFolder : Poco exception: " << ex.displayText();
+        throw TskException(msg.str());
+    }
 }
 
-void TskCarvePrepSectorConcat::createOutputFiles(const std::string &outputFolderPath, SectorRuns &sectorRuns, bool scheduleCarving) const
+void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &outputFolderPath, const std::string &outputFileName, uint64_t maxOutputFileSize, SectorRuns &sectorRuns, bool scheduleCarving) const
 {
-    TskImgDB &imgDB = TskServices::Instance().getImgDB();
-
-    // The output files all have the same name, but are written to subdirectories bearing the name of the unallocated sectors image id corresponding to the file.
-    std::string outputFileName = GetSystemProperty("CARVE_PREP_FILE_NAME");
-    if (outputFileName.empty())
-    {
-        outputFileName = "unalloc.bin"; 
-        SetSystemProperty("CARVE_PREP_FILE_NAME", outputFileName);            
-    }
-
-    // Get the maximum size for each output file.
-    // @@@ TODO: Replace strtoul() call with a strtoull() call when a newer version of C++ is available.
-    std::string maxOutputFileSizeStr = GetSystemProperty("CARVE_PREP_MAX_FILE_SIZE");
-    if (maxOutputFileSizeStr.empty())
-    {
-        maxOutputFileSizeStr = "1000000000";
-        SetSystemProperty("CARVE_PREP_MAX_FILE_SIZE", maxOutputFileSizeStr);            
-    }
-    uint64_t maxOutputFileSize = strtoul(maxOutputFileSizeStr.c_str(), NULL, 10);
-   
+    TskImgDB &imgDB = TskServices::Instance().getImgDB();       
     int volumeID = -1;
     char sectorBuffer[SECTORS_PER_READ * 512];
     int unallocSectorsImgId = 0;
@@ -177,7 +189,7 @@ void TskCarvePrepSectorConcat::createOutputFiles(const std::string &outputFolder
                 // Store the mapping of the sectors written to the output file to the corresponding sectors in the image.
                 if (currentFileOffset != startingFileOffset) 
                 {
-                    storeOutputfileToImageMapping(unallocSectorsImgId, outputFileHandle, startingFileOffset, currentFileOffset, sectorRuns.getVolID(), startingImageOffset);
+                    mapFileToImage(unallocSectorsImgId, outputFileHandle, startingFileOffset, currentFileOffset, sectorRuns.getVolID(), startingImageOffset);
 
                     // Advance the starting image offset to accurately reflect the starting image offset for the next output file.  
                     startingImageOffset += (currentFileOffset - startingFileOffset) / 512;
@@ -189,16 +201,16 @@ void TskCarvePrepSectorConcat::createOutputFiles(const std::string &outputFolder
                     CloseHandle(outputFileHandle);
                 }
 
-                // Schedule the current output file for carving. Note that derived classes can change this behavior by overriding onOutputFileCreated.
+                // Schedule the current output file for carving. Note that derived classes can change this behavior by overriding onUnallocSectorsImgFileCreated.
                 if (currentFileOffset > 0) 
                 {
-                    onOutputFileCreated(unallocSectorsImgId, scheduleCarving); 
+                    onUnallocSectorsImgFileCreated(unallocSectorsImgId, scheduleCarving); 
                 }
 
                 // Get the next output file number. 
                 if (imgDB.addUnallocImg(unallocSectorsImgId) == -1) 
                 {
-                    throw TskException("TskCarvePrepSectorConcat::createOutputFiles failed to get next output file number");
+                    throw TskException("TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : Failed to get next output file number");
                 }
 
                 // Create a subdirectory named for the file number.
@@ -214,7 +226,7 @@ void TskCarvePrepSectorConcat::createOutputFiles(const std::string &outputFolder
                     TskServices::Instance().getImgDB().setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CARVED_ERR);
 
                     std::stringstream msg;
-                    msg << "TskCarvePrepSectorConcat::createOutputFiles failed to create output file " << unallocSectorsImgId;
+                    msg << "TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : Failed to create output file " << unallocSectorsImgId;
                     throw TskException(msg.str());
                 }
 
@@ -228,7 +240,7 @@ void TskCarvePrepSectorConcat::createOutputFiles(const std::string &outputFolder
             int sectorsRead = sectorRuns.getData(sectorRunOffset, static_cast<int>(sectorsToRead), sectorBuffer);
             if (sectorsRead == -1)
             {
-                throw TskException("TskCarvePrepSectorConca::createOutputFilest encountered error reading sector contents from sector run");
+                throw TskException("TskCarvePrepSectorConca::createUnallocSectorsImgFiles : Error reading sector contents from sector run");
             }
 
             // Write the chunk of sectors to the output file.
@@ -237,7 +249,7 @@ void TskCarvePrepSectorConcat::createOutputFiles(const std::string &outputFolder
             {
                 imgDB.setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CARVED_ERR);
                 std::stringstream msg;
-                msg << "TskCarvePrepSectorConcat::createOutputFiles encountered error writing to output file " << unallocSectorsImgId;
+                msg << "TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : Error writing to output file " << unallocSectorsImgId;
                 throw TskException(msg.str());
             }
 
@@ -254,7 +266,7 @@ void TskCarvePrepSectorConcat::createOutputFiles(const std::string &outputFolder
         // Store the mapping of the sectors written to the output file to the corresponding sectors in the image.
         if (currentFileOffset != startingFileOffset)
         {
-            storeOutputfileToImageMapping(unallocSectorsImgId, outputFileHandle, startingFileOffset, currentFileOffset, sectorRuns.getVolID(), startingImageOffset);
+            mapFileToImage(unallocSectorsImgId, outputFileHandle, startingFileOffset, currentFileOffset, sectorRuns.getVolID(), startingImageOffset);
         }
     } 
     while(sectorRuns.next() != -1);
@@ -268,7 +280,7 @@ void TskCarvePrepSectorConcat::createOutputFiles(const std::string &outputFolder
     // Schedule the final output file.
     if (currentFileOffset > 0)
     {
-        onOutputFileCreated(unallocSectorsImgId, scheduleCarving);
+        onUnallocSectorsImgFileCreated(unallocSectorsImgId, scheduleCarving);
     }
 }
 
@@ -288,12 +300,12 @@ void TskCarvePrepSectorConcat::createFolder(const std::string &path) const
     {
         // Replace the Poco exception with a TSK exception.
         std::stringstream msg;
-        msg << "TskCarvePrepSectorConcat::createFolder failed to create folder '" << path << L"': " << ex.message();
+        msg << "TskCarvePrepSectorConcat::createFolder : Failed to create folder '" << path << "': " << ex.message();
         throw TskException(msg.str());
     }
 }
 
-void TskCarvePrepSectorConcat::storeOutputfileToImageMapping(uint64_t unallocSectorsImgId, HANDLE outputFileHandle, uint64_t startingFileOffset, uint64_t endingFileOffset, int volumeID, uint64_t startingImageOffset) const
+void TskCarvePrepSectorConcat::mapFileToImage(int unallocSectorsImgId, HANDLE outputFileHandle, uint64_t startingFileOffset, uint64_t endingFileOffset, int volumeID, uint64_t startingImageOffset) const
 {
     // Convert the starting offset in the output file from a byte offset to a sector offset and calculate the number of sectors written to the file.
     uint64_t startingFileOffsetInSectors = startingFileOffset / 512;
@@ -304,7 +316,7 @@ void TskCarvePrepSectorConcat::storeOutputfileToImageMapping(uint64_t unallocSec
     {
         CloseHandle(outputFileHandle); 
         std::stringstream msg;
-        msg << "TskCarvePrepSectorConcat::storeOutputfileToImageMapping failed to add mapping to image for output file " << unallocSectorsImgId;
+        msg << "TskCarvePrepSectorConcat::mapFileToImage : Failed to add mapping to image for output file " << unallocSectorsImgId;
         throw TskException(msg.str());
     }
 }

@@ -11,12 +11,12 @@
   <!-- Location of pipeline configuration file -->
   <PIPELINE_CONFIG_FILE>pipeline_config.xml</PIPELINE_CONFIG_FILE>
 
-  <!-- Directory where unallocated sectors image files will be stored pending carving; the default value is #OUT_DIR#\Carving -->
-  <!-- <CARVE_PREP_DIR>X</CARVE_PREP_DIR> -->
-  <!-- File name to be given to all unallocated sectors image files; the default value is unalloc.bin -->
-  <!-- <CARVE_PREP_FILE_NAME>X</CARVE_PREP_FILE_NAME> -->
-  <!-- Maximum allowable size for unallocated sectors image files; the default value is 1000000000 bytes -->
-  <!-- <CARVE_PREP_MAX_FILE_SIZE>X</CARVE_PREP_MAX_FILE_SIZE> -->
+  <!-- Directory where unallocated sectors image files will be stored pending carving-->
+  <!-- <CARVE_PREP_DIR>#OUT_DIR#\Carving</CARVE_PREP_DIR> -->
+  <!-- File name to be given to all unallocated sectors image files-->
+  <!-- <CARVE_PREP_FILE_NAME>unalloc.bin</CARVE_PREP_FILE_NAME> -->
+  <!-- Maximum allowable size for unallocated sectors image files-->
+  <!-- <CARVE_PREP_MAX_FILE_SIZE>1000000000</CARVE_PREP_MAX_FILE_SIZE> -->
   <!-- If true, unallocated sectors image files are not deleted after carving; the default value is false -->
   <!-- <CARVE_EXTRACT_KEEP_INPUT_FILES>true</CARVE_EXTRACT_KEEP_INPUT_FILES> -->
   <!-- If true, carved files are not deleted from the carving output directory after they are copied to file storage; the default value is false -->

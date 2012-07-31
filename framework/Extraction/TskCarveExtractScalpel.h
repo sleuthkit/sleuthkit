@@ -16,10 +16,15 @@
 #ifndef _TSK_CARVEEXTRACTSCALPEL_H
 #define _TSK_CARVEEXTRACTSCALPEL_H
 
+// TSK Framework includes
 #include "Extraction/CarveExtract.h"
+
+// Poco includes
+#include "Poco/Pipe.h"
+
+// C/C++ library includes
 #include <string>
 #include <vector>
-#include "Poco/Pipe.h"
 
 /**
  * The TskCarveExtractScalpel class implements the CarveExtract interface to 
