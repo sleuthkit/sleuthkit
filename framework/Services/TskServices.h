@@ -70,6 +70,9 @@ private:
     // Private destructor to prevent deletion of our instance.
     ~TskServices() {};
 
+    // Default log instance that is used until TskServices::setLog() is called.
+    Log m_defaultLog;
+
     static TskServices *m_pInstance;
     Log *m_log;
     Scheduler *m_scheduler;
