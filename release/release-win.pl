@@ -2,9 +2,8 @@
 
 # Release script for Windows Executables.  Note that this is run
 # after release-unix.pl, which will create the needed tag directories
-# and update the version variables accordingly.  This assumes that you
-# have been building TSK with libewf on your system in one of the trunk
-# or branch directories and it will copy libewf from there. 
+# and update the version variables accordingly.  This assumes that 
+# libewf has been compiled in LIBEWF_HOME
 #
 #
 # This requires Cygwin with:
@@ -20,6 +19,43 @@ use strict;
 my $TESTING = 0;
 print "TESTING MODE (no commits)\n" if ($TESTING);
 
+
+
+unless (@ARGV == 1) {
+	print stderr "Missing arguments: tag_version\n";
+	print stderr "    for example: release-win.pl sleuthkit-3.1.0\n";
+	print stderr "    or to use current working code: release-win.pl no-tag\n";
+	die "stopping";
+
+}
+
+
+
+my $RELDIR = `pwd`;	# The release directory
+chomp $RELDIR;
+my $SVNDIR = "$RELDIR/../";
+my $TSKDIR = "${SVNDIR}";
+
+my $TAGNAME = $ARGV[0];
+my $VER = "";
+
+
+my $BUILD_LOC = `which vcbuild`;
+chomp $BUILD_LOC;
+die "Unsupported build system.  Verify redist location" 
+    unless ($BUILD_LOC =~ /Visual Studio 9\.0/);
+
+my $REDIST_LOC = $BUILD_LOC . "/../../redist/x86/Microsoft.VC90.CRT";
+die "Missing redist dir $REDIST_LOC" unless (-d "$REDIST_LOC");
+
+
+# Verify LIBEWF is built
+die "LIBEWF missing" unless (-d "$ENV{'LIBEWF_HOME'}");
+die "libewf dll missing" 
+	unless (-e "$ENV{'LIBEWF_HOME'}/msvscpp/release/libewf.dll" ); 
+
+
+#######################
 
 # Function to execute a command and send output to pipe
 # returns handle
@@ -56,80 +92,66 @@ sub read_pipe_line {
 
 
 
+############## CODE SPECIFIC STUFF ##########
 
-unless (@ARGV == 1) {
-	print stderr "Missing arguments: tag_version\n";
-	print stderr "    for example: release-win.pl sleuthkit-3.1.0\n";
-	die "stopping";
-}
+# Checkout a specific tag 
+# Starts and ends in sleuthkit
+sub update_code {
 
-
-my $RELDIR = `pwd`;	# The release directory
-chomp $RELDIR;
-my $SVNDIR = "$RELDIR/../";
-my $TAGNAME = $ARGV[0];
-my $TSKDIR = "${SVNDIR}";
+	my $no_tag = 0;
+	$no_tag = 1 if ($TAGNAME eq "no-tag");
 
 
-my $BUILD_LOC = `which vcbuild`;
-chomp $BUILD_LOC;
-die "Unsupported build system.  Verify redist location" 
-    unless ($BUILD_LOC =~ /Visual Studio 9\.0/);
+	if ($no_tag == 0) {
+		# Make sure we have no changes in the current tree
+		exec_pipe(*OUT, "git status -s | grep \"^ M\"");
+		my $foo = read_pipe_line(*OUT);
+		if ($foo ne "") {
+		    print "Changes stil exist in current repository -- commit them\n";
+		    die "stopping";
+		}
 
-my $REDIST_LOC = $BUILD_LOC . "/../../redist/x86/Microsoft.VC90.CRT";
-die "Missing redist dir $REDIST_LOC" unless (-d "$REDIST_LOC");
+		# Make sure src dir is up to date
+		print "Updating source directory\n";
+		`git pull`;
+		`git submodule update`;
+		`git submodule foreach git checkout master`;
 
+		# Verify the tag exists
+		exec_pipe(*OUT, "git tag | grep \"${TAGNAME}\"");
+		my $foo = read_pipe_line(*OUT);
+		if ($foo eq "") {
+		    print "Tag ${TAGNAME} doesn't exist\n";
+		    die "stopping";
+		}
+		close(OUT);
 
-#######################
-# Build the execs
-
-# Make sure we have no changes in the current tree
-exec_pipe(*OUT, "git status -s | grep \"^ M\"");
-my $foo = read_pipe_line(*OUT);
-if ($foo ne "") {
-    print "Changes stil exist in current repository -- commit them\n";
-    die "stopping";
-}
-
-# Make sure src dir is up to date
-print "Updating source directory\n";
-chdir ("$TSKDIR") or die "Error changing to TSK dir $TSKDIR";
-`git pull`;
-`git submodule update`;
-`git submodule foreach git checkout master`;
-
-# Verify the tag exists
-exec_pipe(*OUT, "git tag | grep \"${TAGNAME}\"");
-my $foo = read_pipe_line(*OUT);
-if ($foo eq "") {
-    print "Tag ${TAGNAME} doesn't exist\n";
-    die "stopping";
-}
-close(OUT);
-
-`git checkout -q ${TAGNAME}`;
-
-# Parse the config file to get the version number
-open (IN, "<configure.ac") or die "error opening configure.ac to get version";
-my $VER = "";
-while (<IN>) {
-	if (/^AC_INIT\(sleuthkit, ([\d\w\.]+)\)/) {
-		$VER = $1;
-		last;
+		`git checkout -q ${TAGNAME}`;
 	}
+
+
+	# Parse the config file to get the version number
+	open (IN, "<configure.ac") or die "error opening configure.ac to get version";
+	$VER = "";
+	while (<IN>) {
+		if (/^AC_INIT\(sleuthkit, ([\d\w\.]+)\)/) {
+			$VER = $1;
+			last;
+		}
+	}
+	die "Error finding version in configure.ac" if ($VER eq "");
+	print "Version found in configure.ac: $VER\n";
+
+	if ($no_tag == 0) {
+		die "tag name and configure.ac have different versions ($TAGNAME vs $VER)" 
+			if ("sleuthkit-".$VER != $TAGNAME);
+	}
+
 }
-die "Error finding version in configure.ac" if ($VER eq "");
-print "Version found in configure.ac: $VER\n";
-die "tag name and configure.ac have different versions ($TAGNAME vs $VER)" 
-	if ("sleuthkit-".$VER != $TAGNAME);
 
 
-# Verify LIBEWF is built
-die "LIBEWF missing" unless (-d "$ENV{'LIBEWF_HOME'}");
-die "libewf dll missing" 
-	unless (-e "$ENV{'LIBEWF_HOME'}/msvscpp/release/libewf.dll" ); 
 
-
+# Compile Core TSK
 # Starts and ends in sleuthkit
 sub build_core {
 	print "Building TSK source\n";
@@ -322,6 +344,9 @@ sub package_framework {
 	chdir "..";
 }
 
+chdir ("$TSKDIR") or die "Error changing to TSK dir $TSKDIR";
+
+update_code();
 build_core();
 package_core();
 build_framework();
