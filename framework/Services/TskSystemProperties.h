@@ -129,7 +129,12 @@ public:
          */
         UNIQUE_ID,
 
-        END_PROPS
+        /** 
+         * Image file path, as stored in the image_names table. 
+         */
+        IMAGE_FILE,
+
+		END_PROPS
     };
 
     /** 

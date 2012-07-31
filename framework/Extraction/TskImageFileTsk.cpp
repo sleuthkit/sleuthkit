@@ -214,6 +214,8 @@ int TskImageFileTsk::extractFiles()
 #endif
 
         m_db.addImageName(img_ptr);
+        if (i == 0) // Only set the first image file path
+            SetSystemProperty(TskSystemProperties::IMAGE_FILE, img_ptr);
      }
 
     TSKAutoImpl tskAutoImpl;
