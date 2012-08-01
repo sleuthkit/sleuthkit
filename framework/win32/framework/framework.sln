@@ -59,6 +59,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tsk_validatepipeline", "..\
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FileTypeSigModule", "..\..\TskModules\c_FileTypeSigModule\win32\FileTypeSigModule.vcproj", "{18EC105E-A0F9-43D2-B66E-287828E61E7D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

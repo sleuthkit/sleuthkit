@@ -163,7 +163,7 @@ ssize_t TskFileTsk::read(char *buf, const size_t count)
     if (!m_isOpen)
     {
         LOGERROR(L"TskFileTsk::read - File not open.");
-        throw TskFileException("File not open.");
+        return -1;
     }
     
     //if the file size is 0 don't bother trying to read
