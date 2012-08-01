@@ -98,7 +98,7 @@ public class FileSystem extends AbstractContent {
 	 * @return a filesystem pointer from the sleuthkit
 	 * @throws TskCoreException exception throw if an internal tsk core error occurs  
 	 */
-	long getFileSystemHandle() throws TskCoreException {
+	synchronized long getFileSystemHandle() throws TskCoreException {
 		if (filesystemHandle == 0) {
 			filesystemHandle = SleuthkitJNI.openFs(getImage().getImageHandle(), img_offset);
 		}
