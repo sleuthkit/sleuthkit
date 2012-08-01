@@ -95,7 +95,7 @@ public:
      * @param a_channel Level of log to make
      * @param a_msg Message to record.
      */
-    virtual void log(Channel a_channel, char const *format, ...);
+    virtual void logf(Channel a_channel, char const *format, ...);
 
 
     /**
