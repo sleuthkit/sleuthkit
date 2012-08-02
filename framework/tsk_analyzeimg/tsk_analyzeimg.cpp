@@ -365,16 +365,29 @@ int main(int argc, char **argv1)
         }
     }
 
+    if (filePipeline && !filePipeline->isEmpty())
+    {
+        filePipeline->logModuleExecutionTimes();
+    }
+
     // Do image analysis tasks.
-    if (reportPipeline) {
-        try {
+    if (reportPipeline) 
+    {
+        try 
+        {
             reportPipeline->run();
         }
-        catch (...) {
+        catch (...) 
+        {
             std::wstringstream msg;
             msg << L"Error running reporting pipeline";
             LOGERROR(msg.str());
             return 1;
+        }
+        
+        if (!reportPipeline->isEmpty())
+        {
+            reportPipeline->logModuleExecutionTimes();
         }
     }
 

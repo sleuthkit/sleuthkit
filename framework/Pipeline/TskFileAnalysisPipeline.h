@@ -16,11 +16,14 @@
 #ifndef _TSK_FILEANALYSISPIPELINE_H
 #define _TSK_FILEANALYSISPIPELINE_H
 
-#include <string>
+// TSK Framework includes
 #include "TskModule.h"
 #include "TskPipeline.h"
 #include "TskPluginModule.h"
 #include "TskFileAnalysisPluginModule.h"
+
+// C/C++ library includes
+#include <string>
 
 /**
  * Controls the processing of a file analysis pipeline.  
@@ -28,10 +31,6 @@
 class TSK_FRAMEWORK_API TskFileAnalysisPipeline : public TskPipeline
 {
 public:
-    TskFileAnalysisPipeline();
-
-    ~TskFileAnalysisPipeline();
-
     void initialize(const std::string& pipelineConfig);
     virtual void run(const uint64_t fileId);
     virtual void run(TskFile* file);
@@ -39,8 +38,8 @@ public:
     // Run through all the modules in the Pipeline for Reporting.
     virtual void run() {}; // NOP
 
-    // Create a module for the pipeline
-    TskPluginModule * createPluginModule() { 
+    TskPluginModule * createPluginModule() 
+    { 
         return (new TskFileAnalysisPluginModule()); 
     };
 };
