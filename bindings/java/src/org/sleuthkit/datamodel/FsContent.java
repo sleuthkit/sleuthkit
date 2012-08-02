@@ -24,9 +24,9 @@ import java.util.StringTokenizer;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 
 /**
- * Generalized class that stores metadata that are common to both 
- * File and Directory objects stored in tsk_files table
- * Caches internal tsk file handle and reuses it for reads
+ * Generalized class that stores metadata that are common to both File and
+ * Directory objects stored in tsk_files table Caches internal tsk file handle
+ * and reuses it for reads
  */
 public abstract class FsContent extends AbstractFile {
 
@@ -39,12 +39,10 @@ public abstract class FsContent extends AbstractFile {
 	 * path of parent directory
 	 */
 	protected String parent_path;
-	
 	/*
 	 * Unique path containing image and volume
 	 */
 	protected String unique_path;
-	
 	/*
 	 * md5 hash
 	 */
@@ -60,6 +58,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Constructor to create FsContent object instance from database
+	 *
 	 * @param db
 	 * @param obj_id
 	 * @param name
@@ -81,7 +80,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param mode
 	 * @param known
 	 * @param parent_path
-	 * @param md5Hash 
+	 * @param md5Hash
 	 */
 	public FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
 			long attr_type, long attr_id, long meta_type, long dir_type, long dir_flags,
@@ -111,32 +110,33 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Sets the parent file system, called by parent during object creation
-	 * 
+	 *
 	 * @param parent parent file system object
 	 */
 	protected void setFileSystem(FileSystem parent) {
 		parentFileSystem = parent;
 	}
 
-
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
-		if (fileHandle == 0) {
-			fileHandle = SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), meta_addr);
+		synchronized (this) {
+			if (fileHandle == 0) {
+				fileHandle = SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), meta_addr);
+			}
 		}
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 	}
-	
-	
+
 	/*
 	 * -------------------------------------------------------------------------
 	 * Getters to retrieve meta-data attributes values
 	 * -------------------------------------------------------------------------
 	 */
-
 	/**
 	 * Is this object a file
-	 * @return false unless overridden by a subclass (specifically the file subclass)
+	 *
+	 * @return false unless overridden by a subclass (specifically the file
+	 * subclass)
 	 */
 	public boolean isFile() {
 		return false;
@@ -144,7 +144,9 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Is this object a directory
-	 * @return false unless overridden by a subclass (specifically the directory subclass)
+	 *
+	 * @return false unless overridden by a subclass (specifically the directory
+	 * subclass)
 	 */
 	public boolean isDir() {
 		return false;
@@ -152,15 +154,16 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Is this the root of its parent filesystem?
+	 *
 	 * @return true if this is the root inode
 	 */
 	public boolean isRoot() {
 		return parentFileSystem.getRoot_inum() == this.getMeta_addr();
 	}
 
-	
 	/**
 	 * Gets parent directory
+	 *
 	 * @return the parent Directory
 	 * @throws TskCoreException exception thrown if error occurred in tsk core
 	 */
@@ -170,12 +173,12 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the parent file system
+	 *
 	 * @return the file system object of the parent
 	 */
 	public FileSystem getFileSystem() {
 		return parentFileSystem;
 	}
-	
 
 	@Override
 	public Image getImage() throws TskCoreException {
@@ -184,6 +187,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the attribute type
+	 *
 	 * @return attribute type
 	 */
 	public long getAttr_type() {
@@ -192,6 +196,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the attribute id
+	 *
 	 * @return attribute id
 	 */
 	public long getAttr_id() {
@@ -200,6 +205,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the meta data type
+	 *
 	 * @return meta data type
 	 */
 	public long getMeta_type() {
@@ -208,6 +214,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the meta data type as String
+	 *
 	 * @return meta data type as String
 	 */
 	public String getMetaTypeAsString() {
@@ -216,6 +223,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the directory type id
+	 *
 	 * @return directory type id
 	 */
 	public long getDir_type() {
@@ -224,6 +232,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the directory type as String
+	 *
 	 * @return directory type as String
 	 */
 	public String getDirTypeAsString() {
@@ -232,6 +241,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the directory flags
+	 *
 	 * @return directory flags
 	 */
 	public long getDir_flags() {
@@ -240,6 +250,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the directory flags as String
+	 *
 	 * @return directory flags as String
 	 */
 	public String getDirFlagsAsString() {
@@ -248,6 +259,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the file meta address
+	 *
 	 * @return Address of the meta data structure
 	 */
 	public long getMeta_addr() {
@@ -256,6 +268,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the meta data flags
+	 *
 	 * @return meta data flags
 	 */
 	public long getMeta_flags() {
@@ -264,18 +277,17 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the meta data flags as String
+	 *
 	 * @return meta data flags as String
 	 */
 	public String getMetaFlagsAsString() {
 		return FsContent.metaFlagToString(meta_flags);
 	}
 
-
 	@Override
 	public long getSize() {
 		return size;
 	}
-
 
 	@Override
 	public List<TskFileRange> getRanges() {
@@ -284,6 +296,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the change time
+	 *
 	 * @return change time
 	 */
 	public long getCtime() {
@@ -292,6 +305,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the change time as Date
+	 *
 	 * @return change time as Date
 	 */
 	public String getCtimeAsDate() {
@@ -300,6 +314,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the creation time
+	 *
 	 * @return creation time
 	 */
 	public long getCrtime() {
@@ -308,6 +323,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the creation time as Date
+	 *
 	 * @return creation time as Date
 	 */
 	public String getCrtimeAsDate() {
@@ -316,6 +332,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the access time
+	 *
 	 * @return access time
 	 */
 	public long getAtime() {
@@ -324,6 +341,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the access time as Date
+	 *
 	 * @return access time as Date
 	 */
 	public String getAtimeAsDate() {
@@ -332,6 +350,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the modified time
+	 *
 	 * @return modified time
 	 */
 	public long getMtime() {
@@ -340,6 +359,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the modified time as Date
+	 *
 	 * @return modified time as Date
 	 */
 	public String getMtimeAsDate() {
@@ -348,6 +368,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the user id
+	 *
 	 * @return user id
 	 */
 	public long getUid() {
@@ -356,6 +377,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the group id
+	 *
 	 * @return group id
 	 */
 	public long getGid() {
@@ -364,6 +386,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the mode
+	 *
 	 * @return mode
 	 */
 	public long getMode() {
@@ -372,6 +395,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the mode as String
+	 *
 	 * @return mode as String
 	 */
 	public String getModeAsString() {
@@ -379,8 +403,9 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	/**
-	 * Get "known" file status - after running a HashDB ingest on it
-	 * As marked by a known file database, such as NSRL
+	 * Get "known" file status - after running a HashDB ingest on it As marked
+	 * by a known file database, such as NSRL
+	 *
 	 * @return file known status enum value
 	 */
 	public FileKnown getKnown() {
@@ -389,17 +414,18 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Get the absolute parent path string of this FsContent
+	 *
 	 * @return the parent path string
 	 */
 	public String getParentPath() {
 		return this.parent_path;
 	}
-	
+
 	/**
-	 * Get the absolute unique across all files in the case 
-	 * parent path string of this FsContent
-	 * The path contains image and volume-system partition
+	 * Get the absolute unique across all files in the case parent path string
+	 * of this FsContent The path contains image and volume-system partition
 	 * After first call, every subsequent call returns the cached string
+	 *
 	 * @return unique absolute file path (cached after first call)
 	 * @throws TskCoreException thrown when critical error occurred in Tsk Core
 	 * and unique absolute path could not be queried
@@ -408,7 +434,7 @@ public abstract class FsContent extends AbstractFile {
 		if (unique_path != null) {
 			return unique_path;
 		}
-		
+
 		StringBuilder sb = new StringBuilder();
 		//prepend image and volume to file path
 		Image image = this.getImage();
@@ -420,30 +446,28 @@ public abstract class FsContent extends AbstractFile {
 		sb.append("/").append(imageName);
 		if (parentFileSystem != null) {
 			Content vol = parentFileSystem.getParent();
-			if (vol != null 
-					&& ! vol.equals(image)) {
+			if (vol != null
+					&& !vol.equals(image)) {
 				sb.append("/");
 				sb.append(vol.getName());
 			}
 		}
-		
+
 		sb.append(getParentPath());
 		sb.append(getName());
-		
+
 		unique_path = sb.toString();
 		return unique_path;
 	}
-	
+
 	/**
 	 * Get the md5 hash value as calculated, if present
-	 * 
+	 *
 	 * @return md5 hash string, if it is present
 	 */
 	public String getMd5Hash() {
 		return this.md5Hash;
 	}
-
-	
 
 	@Override
 	public void finalize() {
@@ -457,10 +481,9 @@ public abstract class FsContent extends AbstractFile {
 	 * Util methods to convert / map the data
 	 * -------------------------------------------------------------------------
 	 */
-	
-	 
 	/**
 	 * Return the epoch into string in ISO 8601 dateTime format
+	 *
 	 * @param epoch time in seconds
 	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
 	 */
@@ -472,9 +495,9 @@ public abstract class FsContent extends AbstractFile {
 		return time;
 	}
 
-	
 	/**
 	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
+	 *
 	 * @param time formatted date time string as "yyyy-MM-dd HH:mm:ss"
 	 * @return epoch time in seconds
 	 */
@@ -488,17 +511,15 @@ public abstract class FsContent extends AbstractFile {
 		return epoch;
 	}
 
-	
 	/*
 	 * -------------------------------------------------------------------------
 	 * Methods for Directory type conversion / mapping ---
 	 * -------------------------------------------------------------------------
 	 */
-	
-	
 	/**
-	 * Get a string value of a directory type from dir type id
-	 * as defined in TSK_FS_NAME_TYPE_ENUM
+	 * Get a string value of a directory type from dir type id as defined in
+	 * TSK_FS_NAME_TYPE_ENUM
+	 *
 	 * @param dirType to convert
 	 * @return dir type value string representation
 	 */
@@ -514,9 +535,9 @@ public abstract class FsContent extends AbstractFile {
 		return result;
 	}
 
-	
 	/**
 	 * Get a value type id from value type string
+	 *
 	 * @param dirType value string to convert
 	 * @return directory type id
 	 */
@@ -532,9 +553,9 @@ public abstract class FsContent extends AbstractFile {
 		return result;
 	}
 
-	
 	/**
 	 * Get a dir type label string from dir type id
+	 *
 	 * @param dirType dir type id to convert
 	 * @return dir type label string
 	 */
@@ -543,9 +564,9 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	// -------- Methods for Meta Type conversion / mapping --------
-	
 	/**
 	 * Convert meta type id to string value
+	 *
 	 * @param metaType to convert
 	 * @return string value representation of meta type
 	 */
@@ -563,6 +584,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Convert meta type string value to meta type id
+	 *
 	 * @param metaType to convert
 	 * @return meta type id
 	 */
@@ -578,9 +600,9 @@ public abstract class FsContent extends AbstractFile {
 		return result;
 	}
 
-	
 	/**
 	 * Convert meta type id to string representation
+	 *
 	 * @param metaType to convert
 	 * @return string representation of the meta type
 	 */
@@ -589,10 +611,9 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 // ----- Methods for Directory Flags conversion / mapping -----
-	
-	
 	/**
 	 * Convert dir flags to string value
+	 *
 	 * @param dirFlag to convert
 	 * @return dir flags string representation
 	 */
@@ -608,9 +629,9 @@ public abstract class FsContent extends AbstractFile {
 		return result;
 	}
 
-	
 	/**
 	 * Convert string value to dir flag id
+	 *
 	 * @param dirFlag to convert
 	 * @return dir flag id
 	 */
@@ -628,6 +649,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Convert dir flag to user displayable string
+	 *
 	 * @param dirFlag dir flags id to convert
 	 * @return formatted user-readable string representation of dir flag
 	 */
@@ -649,10 +671,9 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	// ----- Methods for Meta Flags conversion / mapping -----
-	
-	
 	/**
 	 * Convert meta flags to string value
+	 *
 	 * @param metaFlag to convert
 	 * @return string representation
 	 */
@@ -670,6 +691,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Convert string representation of meta flags to long
+	 *
 	 * @param metaFlag string to convert
 	 * @return long meta flag representation
 	 */
@@ -685,9 +707,9 @@ public abstract class FsContent extends AbstractFile {
 		return result;
 	}
 
-	
 	/**
 	 * Convert meta flag long to user-readable string / label
+	 *
 	 * @param metaFlag to convert
 	 * @return string formatted meta flag representation
 	 */
@@ -717,6 +739,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Convert mode and meta type to a user-displayable string
+	 *
 	 * @param mode mode attribute of the file/dir
 	 * @param metaType meta type attribute of the file/dir
 	 * @return converted, formatted user-displayable string

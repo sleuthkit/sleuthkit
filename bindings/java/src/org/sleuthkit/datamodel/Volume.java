@@ -37,13 +37,14 @@ public class Volume extends AbstractContent {
 
 	/**
 	 * Constructor to create the data object mapped from tsk_vs_parts entry
+	 *
 	 * @param db database object
-	 * @param obj_id 
+	 * @param obj_id
 	 * @param addr
 	 * @param start
 	 * @param length
 	 * @param flags
-	 * @param desc  
+	 * @param desc
 	 */
 	protected Volume(SleuthkitCase db, long obj_id, long addr, long start, long length, long flags, String desc) {
 		super(db, obj_id, "vol" + Long.toString(addr));
@@ -60,22 +61,23 @@ public class Volume extends AbstractContent {
 
 	/**
 	 * set the parent volume system. called by the parent on creation
+	 *
 	 * @param parent parent volume system
 	 */
 	protected void setParent(VolumeSystem parent) {
 		parentVs = parent;
 	}
 
-	
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
-		// read from the volume
-		if (volumeHandle == 0) {
-			volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
+		synchronized (this) {
+			// read from the volume
+			if (volumeHandle == 0) {
+				volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
+			}
 		}
 		return SleuthkitJNI.readVsPart(volumeHandle, buf, offset, len);
 	}
-
 
 	@Override
 	public long getSize() {
@@ -85,7 +87,7 @@ public class Volume extends AbstractContent {
 
 	/**
 	 * get the parent volume system
-	 * 
+	 *
 	 * @return parent volume system object
 	 */
 	public VolumeSystem getParent() {
@@ -96,7 +98,7 @@ public class Volume extends AbstractContent {
 	//meaningful data.
 	/**
 	 * get the partition address
-	 * 
+	 *
 	 * @return partition address in volume system
 	 */
 	public long getAddr() {
@@ -105,6 +107,7 @@ public class Volume extends AbstractContent {
 
 	/**
 	 * get the starting byte offset
+	 *
 	 * @return starting byte offset
 	 */
 	public long getStart() {
@@ -113,6 +116,7 @@ public class Volume extends AbstractContent {
 
 	/**
 	 * get the length
+	 *
 	 * @return length
 	 */
 	public long getLength() {
@@ -121,6 +125,7 @@ public class Volume extends AbstractContent {
 
 	/**
 	 * get the flags
+	 *
 	 * @return flags
 	 */
 	public long getFlags() {
@@ -129,6 +134,7 @@ public class Volume extends AbstractContent {
 
 	/**
 	 * get the flags as String
+	 *
 	 * @return flags as String
 	 */
 	public String getFlagsAsString() {
@@ -137,6 +143,7 @@ public class Volume extends AbstractContent {
 
 	/**
 	 * get the description
+	 *
 	 * @return description
 	 */
 	public String getDescription() {
@@ -145,7 +152,8 @@ public class Volume extends AbstractContent {
 
 	// ----- Here all the methods for vs flags conversion / mapping -----
 	/**
-	 * Convert volume type flag to string 
+	 * Convert volume type flag to string
+	 *
 	 * @param vsFlag long flag to convert
 	 * @return string representation
 	 */
@@ -163,6 +171,7 @@ public class Volume extends AbstractContent {
 
 	/**
 	 * Convert volume flag string to long
+	 *
 	 * @param vsFlag string representation of the flag
 	 * @return long representation of the flag
 	 */
@@ -180,6 +189,7 @@ public class Volume extends AbstractContent {
 
 	/**
 	 * Convert long representation of the flag to user readable format
+	 *
 	 * @param vsFlag long repr. of the flag
 	 * @return user readable string representation
 	 */
@@ -205,25 +215,20 @@ public class Volume extends AbstractContent {
 		return result;
 	}
 
-	
-
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
-
 
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
 
-
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getVolumeChildren(this);
 	}
-
 
 	@Override
 	public Image getImage() throws TskCoreException {
