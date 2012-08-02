@@ -168,6 +168,11 @@ void TskSystemProperties::expandMacros(const std::string &inputStr, std::string 
             {
                 outputStr += Poco::DateTimeFormatter::format(Poco::LocalDateTime(), "%Y_%m_%d_%H_%M_%S");
             }
+            else if (*token == predefPropNames[IMAGE_FILE])
+            {
+                    std::vector<std::wstring> imgNames = TskServices::Instance().getImgDB().getImageNames();
+                    outputStr += TskUtilities::toUTF8(imgNames[0]);
+            }
             else
             {
                 expandMacros(getProperty(*token), outputStr, depth + 1);
