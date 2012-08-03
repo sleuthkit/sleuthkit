@@ -244,7 +244,6 @@ int main(int argc, char **argv1)
     log->open(logDir.c_str());
     TskServices::Instance().setLog(*log);
 
-
     // @@@ Not UNIX-friendly
     SetSystemPropertyW(TskSystemProperties::OUT_DIR, outDirPath);
 
@@ -387,6 +386,7 @@ int main(int argc, char **argv1)
     std::wstringstream msg;
     msg << L"image analysis complete";
     LOGINFO(msg.str());
+    wcout << L"Results saved to " << outDirPath;
     return 0;
 }
 
