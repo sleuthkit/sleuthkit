@@ -43,8 +43,8 @@ Log& TskServices::getLog()
 {
     // create a default one if it has not been set yet
     if (!m_log) {
-        m_log = new Log;
-        m_log->logInfo(L"TskServices::getLog - Log has not been set, using default implementation.");
+        m_defaultLog.logInfo(L"TskServices::getLog - Log has not been set, using default implementation.");
+        return m_defaultLog;
     }
     return *m_log;
 }

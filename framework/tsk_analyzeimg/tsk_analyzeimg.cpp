@@ -173,22 +173,30 @@ int main(int argc, char **argv1)
     TSK_TCHAR *imagePath = argv[OPTIND];
 
     // Load the framework config if they specified it
-    if (framework_config) {
-        // Initialize properties based on the config file.
-        TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();    
-        systemProperties->initialize(framework_config);
-        TskServices::Instance().setSystemProperties(*systemProperties);
-    }
-    else {
-        Poco::File config("framework_config.xml");
-        if (config.exists()) {
-            TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();    
-            systemProperties->initialize("framework_config.xml");
+    try
+    {
+        if (framework_config) {
+            // Initialize properties based on the config file.
+            TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();
+            systemProperties->initialize(framework_config);
             TskServices::Instance().setSystemProperties(*systemProperties);
         }
         else {
-            fprintf(stderr, "No framework config file found");
+            Poco::File config("framework_config.xml");
+            if (config.exists()) {
+                TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();
+                systemProperties->initialize("framework_config.xml");
+                TskServices::Instance().setSystemProperties(*systemProperties);
+            }
+            else {
+                fprintf(stderr, "No framework config file found\n");
+            }
         }
+    }
+    catch (TskException& ex)
+    {
+        fprintf(stderr, "%s\n", ex.message().c_str());
+        return 1;
     }
 
     SetSystemPropertyW(TskSystemProperties::PROG_DIR, getProgDir()); 
@@ -235,7 +243,6 @@ int main(int argc, char **argv1)
 
     log->open(logDir.c_str());
     TskServices::Instance().setLog(*log);
-
 
     // @@@ Not UNIX-friendly
     SetSystemPropertyW(TskSystemProperties::OUT_DIR, outDirPath);
@@ -379,6 +386,7 @@ int main(int argc, char **argv1)
     std::wstringstream msg;
     msg << L"image analysis complete";
     LOGINFO(msg.str());
+    wcout << L"Results saved to " << outDirPath;
     return 0;
 }
 

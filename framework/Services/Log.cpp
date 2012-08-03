@@ -91,12 +91,20 @@ Log::~Log()
 }
 
 
-void Log::log(Channel a_channel, char const *format, ...)
+void Log::logf(Channel a_channel, char const *format, ...)
 {
-    char buf[2048];
     va_list args;
     va_start(args, format);
-    vsnprintf(buf, 2048, format, args);
+
+    char buf[2048];
+#ifdef TSK_WIN32
+    vsnprintf_s(buf, 2048, _TRUNCATE, format, args);
+#else
+    buf[2047] = '\0';
+    vsnprintf(buf, 2047, format, args);
+#endif
+    std::string msg(buf);
+    log(a_channel, buf);
     va_end(args);
 }
 
