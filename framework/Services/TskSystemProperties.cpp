@@ -41,7 +41,7 @@ const TskSystemProperties::PredefProp TskSystemProperties::predefinedProperties[
     PredefProp(PID, "PID", false),
     PredefProp(START_TIME, "START_TIME", false),
     PredefProp(CURRENT_TIME, "CURRENT_TIME", false),
-    PredefProp(UNIQUE_ID, "CURRENT_TIME", false),
+    PredefProp(UNIQUE_ID, "UNIQUE_ID", false),
     PredefProp(IMAGE_FILE, "IMAGE_FILE", false),
 };
 
