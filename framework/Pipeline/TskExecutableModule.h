@@ -39,7 +39,7 @@ public:
 
 private:
     std::string m_output;
-    virtual Status execute(TskFile* fileToAnalyze);
+    Status execute(TskFile* fileToAnalyze);
 
 };
 

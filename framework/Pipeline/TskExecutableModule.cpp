@@ -176,7 +176,7 @@ TskModule::Status TskExecutableModule::execute(TskFile * fileToAnalyze){
             {
                 // If a module fails we log a warning message and continue.
                 std::wstringstream msg;
-                msg << L"TskExecutableModule::report - Module (" << m_modulePath.c_str()
+                msg << L"TskExecutableModule::execute - Module (" << m_modulePath.c_str()
                     << L") failed with exit code: " << exitCode << std::endl;
                 LOGWARN(msg.str());
             }
@@ -193,7 +193,7 @@ TskModule::Status TskExecutableModule::execute(TskFile * fileToAnalyze){
             {
                 // If a module fails we log a warning message and continue.
                 std::wstringstream msg;
-                msg << L"TskExecutableModule::report - Module (" << m_modulePath.c_str()
+                msg << L"TskExecutableModule::execute - Module (" << m_modulePath.c_str()
                     << L") failed with exit code: " << exitCode << std::endl;
                 LOGWARN(msg.str());
             }
@@ -202,7 +202,7 @@ TskModule::Status TskExecutableModule::execute(TskFile * fileToAnalyze){
     catch (Poco::Exception& ex)
     {
         std::wstringstream errorMsg;
-        errorMsg << L"TskExecutableModule::report - Error: " << ex.displayText().c_str() << std::endl;
+        errorMsg << L"TskExecutableModule::execute - Error: " << ex.displayText().c_str() << std::endl;
         LOGERROR(errorMsg.str());
         throw TskException("Module execution failed.");
     }
