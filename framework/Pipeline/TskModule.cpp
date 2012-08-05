@@ -86,11 +86,10 @@ void TskModule::setPath(const std::string& location)
 
     if (!moduleFile.exists())
     {
-        std::wstringstream msg;
-        msg << L"TskModule::setPath - Module not found: "
+        std::stringstream msg;
+        msg << "TskModule::setPath - Module not found: "
             << tempPath.toString().c_str();
-        LOGERROR(msg.str());
-        throw TskException("Module not found.");
+        throw TskException(msg.str());
     }
     else {
         std::wstringstream msg;

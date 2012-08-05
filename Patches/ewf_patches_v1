@@ -1,0 +1,37 @@
+diff --git a/tsk3/img/ewf.c b/tsk3/img/ewf.c
+index ad16b70..c1e5c95 100644
+--- a/tsk3/img/ewf.c
++++ b/tsk3/img/ewf.c
+@@ -178,9 +178,9 @@ ewf_open(int a_num_img, const TSK_TCHAR * const a_images[],
+     //if (img_file_header_signature_ncmp(images[0],
+     //        "\x45\x56\x46\x09\x0d\x0a\xff\x00", 8) != 1) {
+ #if defined (TSK_WIN32)
+-    if (libewf_check_file_signature_wide(ewf_info->images[0]) == 0) {
++    if (libewf_check_file_signature_wide(ewf_info->images[0], ewf_info->error) == 0) {
+ #else
+-    if (libewf_check_file_signature(ewf_info->images[0]) == 0) {
++    if (libewf_check_file_signature(ewf_info->images[0], ewf_info->error) == 0) {
+ #endif
+         tsk_error_reset();
+         tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
+diff --git a/tsk3/img/ewf.h b/tsk3/img/ewf.h
+index 49c6c31..89a2b50 100644
+--- a/tsk3/img/ewf.h
++++ b/tsk3/img/ewf.h
+@@ -29,12 +29,16 @@
+ extern "C" {
+ #endif
+ 
++#define LIBEWF_HANDLE libewf_handle_t
++#define LIBEWF_ERROR libewf_error_t
++
+     extern TSK_IMG_INFO *ewf_open(int, const TSK_TCHAR * const images[],
+         unsigned int a_ssize);
+ 
+     typedef struct {
+         TSK_IMG_INFO img_info;
+         LIBEWF_HANDLE *handle;
++		LIBEWF_ERROR *error;
+         char md5hash[33];
+         int md5hash_isset;
+         TSK_TCHAR **images;

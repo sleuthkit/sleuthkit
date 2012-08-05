@@ -1,13 +1,13 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
-** 
-** Copyright (c) 1997,1998,1999, International Business Machines          
+**
+** Copyright (c) 1997,1998,1999, International Business Machines
 ** Corporation and others. All Rights Reserved.
 */
 
@@ -36,7 +36,7 @@
 #include "tsk3/img/tsk_img_i.h"
 #include "tsk3/vs/tsk_vs_i.h"
 
-// Include the external file 
+// Include the external file
 #include "tsk_fs.h"
 
 #include <time.h>
@@ -166,6 +166,7 @@ extern "C" {
         const TSK_FS_NAME * a_fs_name_from);
     extern void tsk_fs_name_reset(TSK_FS_NAME * a_fs_name);
     extern char *tsk_fs_time_to_str(time_t, char buf[128]);
+    extern char *tsk_fs_time_to_str_subsecs(time_t, unsigned int subsecs, char buf[128]);
 
     /* Utilities */
     extern uint8_t tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file);

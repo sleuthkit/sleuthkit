@@ -1,14 +1,14 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
-** 
-** Copyright (c) 1997,1998,1999, International Business Machines          
+**
+** Copyright (c) 1997,1998,1999, International Business Machines
 ** Corporation and others. All Rights Reserved.
 */
 
@@ -38,8 +38,8 @@
 typedef struct {
     const TSK_TCHAR *image;
 
-/* number of seconds time skew of system 
- * if the system was 100 seconds fast, the value should be +100 
+/* number of seconds time skew of system
+ * if the system was 100 seconds fast, the value should be +100
  */
     int32_t sec_skew;
 
@@ -138,6 +138,18 @@ ils_act(TSK_FS_FILE * fs_file, void *ptr)
         fs_file->meta->ctime -= data->sec_skew;
         fs_file->meta->crtime -= data->sec_skew;
     }
+    if(fs_file->fs_info->ftype==TSK_FS_TYPE_EXT4 && fs_file->fs_info->inode_size > 128){
+            tsk_printf("%" PRIuINUM "|%c|%" PRIuUID "|%" PRIuGID "|%" PRIu32 ".%.9u|%"
+        PRIu32 ".%.9u|%" PRIu32 ".%.9u|%" PRIu32 ".%.9u",
+        fs_file->meta->addr,
+        (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC) ? 'a' : 'f',
+        fs_file->meta->uid, fs_file->meta->gid,
+        (uint32_t) fs_file->meta->mtime, fs_file->meta->mtime_nano,
+        (uint32_t) fs_file->meta->atime, fs_file->meta->atime_nano,
+        (uint32_t) fs_file->meta->ctime, fs_file->meta->ctime_nano,
+        (uint32_t) fs_file->meta->crtime, fs_file->meta->crtime_nano);
+    }
+    else{
     tsk_printf("%" PRIuINUM "|%c|%" PRIuUID "|%" PRIuGID "|%" PRIu32 "|%"
         PRIu32 "|%" PRIu32 "|%" PRIu32,
         fs_file->meta->addr,
@@ -145,6 +157,7 @@ ils_act(TSK_FS_FILE * fs_file, void *ptr)
         fs_file->meta->uid, fs_file->meta->gid,
         (uint32_t) fs_file->meta->mtime, (uint32_t) fs_file->meta->atime,
         (uint32_t) fs_file->meta->ctime, (uint32_t) fs_file->meta->crtime);
+    }
 
     if (data->sec_skew != 0) {
         fs_file->meta->mtime += data->sec_skew;
@@ -228,7 +241,7 @@ ils_mac_act(TSK_FS_FILE * fs_file, void *ptr)
  * @param skew clock skew in seconds
  * @param img Path to disk image name for header
  *
- * @returns 1 on error and 0 on success 
+ * @returns 1 on error and 0 on success
  */
 uint8_t
 tsk_fs_ils(TSK_FS_INFO * fs, TSK_FS_ILS_FLAG_ENUM lclflags,

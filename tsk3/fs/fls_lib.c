@@ -51,7 +51,7 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
     const TSK_FS_ATTR * fs_attr, const FLS_DATA * fls_data)
 {
     unsigned int i;
-
+    
     if ((!(fls_data->flags & TSK_FS_FLS_FULL)) && (a_path)) {
         uint8_t printed = 0;
         // lazy way to find out how many dirs there could be

@@ -132,8 +132,8 @@ class TskAutoDb:public TskAuto {
 
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
     int8_t addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
-    uint8_t addUnallocFsSpaceToDb();
-    uint8_t addUnallocVsSpaceToDb();
+    uint8_t addUnallocFsSpaceToDb(size_t & numFs);
+    uint8_t addUnallocVsSpaceToDb(size_t & numVsP);
     uint8_t addUnallocSpaceToDb();
 
 };
