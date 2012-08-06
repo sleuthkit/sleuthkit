@@ -2431,7 +2431,6 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     const TSK_FS_ATTR *fs_attr_indir;
     ext2fs_inode *dino_buf = NULL;
     char timeBuf[128];
-//    char * timeBuf = NULL;
     unsigned int size;
     unsigned int large_inodes;
 
@@ -2440,15 +2439,11 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     if (ext2fs->inode_size > 128)
     {
         large_inodes = 1;
-//        timeBuf = (char *)tsk_malloc(sizeof(char) * 64);
     }
     else
     {
         large_inodes = 0;
-//        timeBuf = (char *)tsk_malloc(sizeof(char) * 32);
     }
-//    if(timeBuf == NULL)
-//        return 1;
 
     size = ext2fs->inode_size > sizeof(ext2fs_inode) ? ext2fs->inode_size : sizeof(ext2fs_inode);
     if ((dino_buf =
@@ -2954,9 +2949,6 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fs_file_close(fs_file);
     if (dino_buf != NULL)
         free((char *) dino_buf);
-//    if(timeBuf != NULL)
-//        free(timeBuf);
-
     return 0;
 }
 
