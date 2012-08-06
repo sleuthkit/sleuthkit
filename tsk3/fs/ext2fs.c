@@ -1977,6 +1977,15 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
     tsk_fprintf(hFile, "Free Inodes: %" PRIu32 "\n",
         tsk_getu32(fs->endian, sb->s_free_inode_count));
+    /*
+       Only print size of inode for Ext4
+       This determines if you will get nanosecs and crtime
+     */
+    if(!strcmp(tmptypename, "Ext4"))
+    {
+        tsk_fprintf(hFile, "Inode Size: %" PRIu16 "\n",
+            tsk_getu16(fs->endian, sb->s_inode_size));
+    }
 
 
     if (tsk_getu32(fs->endian, sb->s_last_orphan)) {
