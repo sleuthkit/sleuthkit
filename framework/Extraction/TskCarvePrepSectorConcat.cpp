@@ -18,6 +18,7 @@
 #include "TskCarvePrepSectorConcat.h" 
 
 // TSK Framework includes
+#include "Extraction/TskCarveParams.h"
 #include "Services/TskImgDB.h"
 #include "Services/TskServices.h"
 #include "Services/Log.h"
@@ -63,7 +64,7 @@ void TskCarvePrepSectorConcat::processFiles(const std::string &fileName, bool sc
     assert(!fileName.empty());
     if (fileName.empty())
     {
-        throw TskException("TskCarvePrepSectorConcat::processFiles : Empty file name argument");
+        throw TskException("TskCarvePrepSectorConcat::processFiles : empty file name argument");
     }
 
     std::string outputFolderPath;
@@ -102,7 +103,7 @@ void TskCarvePrepSectorConcat::onUnallocSectorsImgFileCreated(int unallocSectors
         {
             imgDB.setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_SCHEDULE_ERR);
             std::stringstream msg;
-            msg << "TskCarvePrepSectorConcat::onUnallocSectorsImgFileCreated : Failed to schedule carving of unallocated image file " << unallocSectorsImgId; 
+            msg << "TskCarvePrepSectorConcat::onUnallocSectorsImgFileCreated : failed to schedule carving of unallocated image file " << unallocSectorsImgId; 
             throw TskException(msg.str());
         }
     }
@@ -114,29 +115,29 @@ void TskCarvePrepSectorConcat::setUpForCarvePrep(std::string &outputFolderPath, 
     {
         // Get the output folder path.
         outputFolderPath = GetSystemProperty("CARVE_PREP_DIR");
-        assert(!outputFolderPath.empty());
         if (outputFolderPath.empty())
         {
-            throw TskException("TskCarvePrepSectorConcat::createFolder : CARVE_PREP_DIR system property not set");
+            outputFolderPath = ExpandSystemPropertyMacros(DEFAULT_CARVE_DIR);
         }
 
         // Get the output file name.
         outputFileName = GetSystemProperty("CARVE_PREP_FILE_NAME");
-        assert(!outputFileName.empty());
         if (outputFileName.empty())
         {
-            throw TskException("TskCarvePrepSectorConcat::createFolder : CARVE_PREP_FILE_NAME system property not set");
+            outputFileName = ExpandSystemPropertyMacros(DEFAULT_CARVE_PREP_FILE_NAME);
         }
 
         // Get the maximum size for each output file.
         // @@@ TODO: Replace strtoul() call with a strtoull() call when a newer version of C++ is available.
         std::string maxOutputFileSizeStr = GetSystemProperty("CARVE_PREP_MAX_FILE_SIZE");
-        assert(!maxOutputFileSizeStr.empty());
-        if (maxOutputFileSizeStr.empty())
+        if (!maxOutputFileSizeStr.empty())
         {
-            throw TskException("TskCarvePrepSectorConcat::createFolder : CARVE_PREP_MAX_FILE_SIZE system property not set");
+            maxOutputFileSize = strtoul(maxOutputFileSizeStr.c_str(), NULL, 10);
         }
-        maxOutputFileSize = strtoul(maxOutputFileSizeStr.c_str(), NULL, 10);
+        else
+        {
+            maxOutputFileSize = DEFAULT_CARVE_PREP_MAX_FILE_SIZE;
+        }
 
         // Create the output folder. Since multiple calls to processSectors() and/or processFiles() are possible, check to see if the folder already exists.
         Poco::File folder(outputFolderPath);
@@ -210,7 +211,7 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
                 // Get the next output file number. 
                 if (imgDB.addUnallocImg(unallocSectorsImgId) == -1) 
                 {
-                    throw TskException("TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : Failed to get next output file number");
+                    throw TskException("TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : failed to get next output file number");
                 }
 
                 // Create a subdirectory named for the file number.
@@ -226,7 +227,7 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
                     TskServices::Instance().getImgDB().setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CARVED_ERR);
 
                     std::stringstream msg;
-                    msg << "TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : Failed to create output file " << unallocSectorsImgId;
+                    msg << "TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : failed to create output file " << unallocSectorsImgId;
                     throw TskException(msg.str());
                 }
 
@@ -240,7 +241,7 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
             int sectorsRead = sectorRuns.getData(sectorRunOffset, static_cast<int>(sectorsToRead), sectorBuffer);
             if (sectorsRead == -1)
             {
-                throw TskException("TskCarvePrepSectorConca::createUnallocSectorsImgFiles : Error reading sector contents from sector run");
+                throw TskException("TskCarvePrepSectorConca::createUnallocSectorsImgFiles : error reading sector contents from sector run");
             }
 
             // Write the chunk of sectors to the output file.
@@ -249,7 +250,7 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
             {
                 imgDB.setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CARVED_ERR);
                 std::stringstream msg;
-                msg << "TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : Error writing to output file " << unallocSectorsImgId;
+                msg << "TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : error writing to output file " << unallocSectorsImgId;
                 throw TskException(msg.str());
             }
 
@@ -300,7 +301,7 @@ void TskCarvePrepSectorConcat::createFolder(const std::string &path) const
     {
         // Replace the Poco exception with a TSK exception.
         std::stringstream msg;
-        msg << "TskCarvePrepSectorConcat::createFolder : Failed to create folder '" << path << "': " << ex.message();
+        msg << "TskCarvePrepSectorConcat::createFolder : failed to create folder '" << path << "': " << ex.message();
         throw TskException(msg.str());
     }
 }
@@ -316,7 +317,7 @@ void TskCarvePrepSectorConcat::mapFileToImage(int unallocSectorsImgId, HANDLE ou
     {
         CloseHandle(outputFileHandle); 
         std::stringstream msg;
-        msg << "TskCarvePrepSectorConcat::mapFileToImage : Failed to add mapping to image for output file " << unallocSectorsImgId;
+        msg << "TskCarvePrepSectorConcat::mapFileToImage : failed to add mapping to image for output file " << unallocSectorsImgId;
         throw TskException(msg.str());
     }
 }

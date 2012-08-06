@@ -29,8 +29,8 @@
  * configurable maximum size. These output files are optionally scheduled for
  * carving. Instances of this class are also able to treat a file as a run of
  * unallocated sectors. TskCarvePrepSectorConcat objects use the following 
- * system properties: CARVE_PREP_DIR, CARVE_PREP_FILE_NAME, and 
- * CARVE_PREP_MAX_FILE_SIZE. 
+ * system properties, if the properties are set: CARVE_DIR, 
+ * CARVE_PREP_FILE_NAME, and CARVE_PREP_MAX_FILE_SIZE. 
  *
  * This class assumes the availability of the Microsoft Windows API.
  * @@@ TODO: Use Poco API instead.
@@ -57,10 +57,10 @@ public:
 protected:
 
     /**
-     * Called by createUnallocSectorsImgFiles to allow specialization of behavior when
-     * an unallocated sectors image file is produced (i.e., uses the Template 
-     * Method design pattern). The default implementation is simply to 
-     * optionally schedule carving of the output file.
+     * Called by createUnallocSectorsImgFiles to allow specialization of 
+     * behavior when an unallocated sectors image file is produced (i.e., uses 
+     * the Template Method design pattern). The default implementation is simply 
+     * to optionally schedule carving of the output file.
      *
      * @param unallocSectorsImgId Id assigned to the file by 
      * TskImgDB::addUnallocImg().
@@ -72,13 +72,16 @@ protected:
 
 private:
     /**
-     * Reads in the CARVE_PREP_DIR, CARVE_PREP_FILE_NAME, and 
-     * CARVE_PREP_MAX_FILE_SIZE system properties and cretaes the output folder
+     * Reads in the CARVE_DIR, CARVE_PREP_FILE_NAME, and 
+     * CARVE_PREP_MAX_FILE_SIZE system properties and creates the output folder
      * if it doesn't already exist.
      *
-     * @param outputFolderPath Gets the value of the CARVE_PREP_DIR system property.
-     * @param outputFileName  Gets the value of the CARVE_PREP_FILE_NAME system property.
-     * @param maxOutputFileSize  Gets the value of the CARVE_PREP_MAX_FILE_SIZE system property.
+     * @param outputFolderPath The value of the CARVE_DIR system property 
+     * or a default value.
+     * @param outputFileName  The value of the CARVE_PREP_FILE_NAME system 
+     * property or a default value.
+     * @param maxOutputFileSize  The value of the CARVE_PREP_MAX_FILE_SIZE 
+     * system property or a default value.
      * @return Throws TskException on error.
      */
     void setUpForCarvePrep(std::string &outputFolderPath, std::string &outputFileName, uint64_t &maxOutputFileSize) const;

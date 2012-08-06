@@ -358,6 +358,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Extraction\TskCarveParams.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Extraction\TskCarvePrepSectorConcat.h"
 				>
 			</File>
