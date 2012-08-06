@@ -820,6 +820,8 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
     tsk_take_lock(&a_fs->list_inum_named_lock);
     if (a_fs->list_inum_named != NULL) {
         tsk_release_lock(&a_fs->list_inum_named_lock);
+        if (tsk_verbose)
+            fprintf(stderr, "tsk_fs_dir_load_inum_named: List already populated.  Skipping walk.\n");
         return TSK_OK;
     }
     tsk_release_lock(&a_fs->list_inum_named_lock);
