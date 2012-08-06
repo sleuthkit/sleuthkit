@@ -112,8 +112,50 @@ AS_IF([test "x$with_afflib" != "xno"],
       [AC_CHECK_LIB([afflib], [af_open])]
     )]
 )
+
+
+
+# Check if we should link zlib
+AC_ARG_WITH([zlib],
+    [AS_HELP_STRING([--without-zlib],[Do not use ZLIB even if it is installed])]
+    [AS_HELP_STRING([--with-zlib=dir],[Specify that ZLIB is installed in directory 'dir'])],
+    # If --with-zlib or --without-zlib is given
+    [],
+    # if nothing was specified, default to a test
+    [with_zlib=yes])
+
+
+# check for the lib if they did not specify no
+AS_IF(
+   [test "x$with_zlib" != "xno"],
+   [AC_MSG_NOTICE([checking for zlib])]
+   # Test the dir if they specified something beyond yes/no
+   [AS_IF([test "x$with_zlib" != "xyes"],
+       [AC_MSG_NOTICE([LOOKING for zlib in ${with_zlib}])]
+       [AS_IF([test -d ${with_zlib}],
+           [CFLAGS="$CFLAGS -I${with_zlib}/include"
+                LDFLAGS="$LDFLAGS -L${with_zlib}/lib"],
+           # Dir given was not correct
+           [AC_MSG_FAILURE([ZLIB directory not found at ${with_zlib}])]
+       )]
+    )]
+    # Check for the header file first to make sure they have the dev install
+    [AC_CHECK_HEADERS([zlib.h],
+      [AC_CHECK_LIB([z], [inflate],
+         [],
+         [AC_MSG_WARN([Found zlib headers, but could not link to zlib library.  Will build without zlib.])]
+         [with_zlib=no]
+      )],
+      [AC_MSG_WARN([Could not find usable zlib headers.  Will build without zlib.])]
+      [with_zlib=no]
+    )],
+    [AC_MSG_NOTICE([NOT checking for zlib because with_zlib is no])]
+)
+
+
 #needed for sqllite
 AC_CHECK_LIB(dl, dlopen) 
+
 
 
 # Check if we should link libewf.

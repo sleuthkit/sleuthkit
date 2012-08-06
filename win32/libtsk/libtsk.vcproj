@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..\&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE; HAVE_LIBEWF;WIN32;_DEBUG;_LIB"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..\&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;;&quot;$(ZLIB_HOME)\include&quot;"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -76,7 +76,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(LIBEWF_HOME)msvscpp\release\libewf.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;IF EXIST &quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot; (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;) ELSE (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\zlib\zlib1.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;)&#x0D;&#x0A;"
+				CommandLine="copy &quot;$(LIBEWF_HOME)\msvscpp\release\libewf.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;copy &quot;$(ZLIB_HOME)\lib\zlib1.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -106,8 +106,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..\&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE; HAVE_LIBEWF;WIN32;NDEBUG;_LIB"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..\&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;;&quot;$(ZLIB_HOME)\include&quot;"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -140,7 +140,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy &quot;$(LIBEWF_HOME)msvscpp\release\libewf.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;IF EXIST &quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot; (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;) ELSE (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\zlib\zlib1.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;)&#x0D;&#x0A;&#x0D;&#x0A;"
+				CommandLine="copy &quot;$(LIBEWF_HOME)\msvscpp\release\libewf.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;copy &quot;$(ZLIB_HOME)\lib\zlib1.dll&quot; &quot;$(OutDir)&quot;&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration

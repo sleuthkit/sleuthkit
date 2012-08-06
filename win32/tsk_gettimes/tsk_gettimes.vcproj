@@ -60,9 +60,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libewf.lib"
+				AdditionalDependencies="libewf.lib zdll.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="$(LIBEWF_HOME)\msvscpp\release"
+				AdditionalLibraryDirectories="&quot;$(LIBEWF_HOME)\msvscpp\release&quot;;&quot;$(ZLIB_HOME)\lib&quot;"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
 				TargetMachine="1"
@@ -133,9 +133,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libewf.lib"
+				AdditionalDependencies="libewf.lib zdll.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="$(LIBEWF_HOME)\msvscpp\release"
+				AdditionalLibraryDirectories="&quot;$(LIBEWF_HOME)\msvscpp\release&quot;;&quot;$(ZLIB_HOME)\lib&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
