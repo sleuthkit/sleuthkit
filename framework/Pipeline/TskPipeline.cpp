@@ -156,21 +156,19 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
                     m_moduleNames.insert(std::make_pair(moduleId, pModule->getName()));
                     m_moduleExecTimes.insert(std::make_pair(moduleId, Poco::Timespan()));
                 }
-            }
-            bool duplicate = false;
-            for (std::vector<TskModule*>::iterator it = m_modules.begin(); it != m_modules.end(); it++)
-                if((*it)->getModuleId() == pModule->getModuleId()){
-                    duplicate = true;
-                    std::wstringstream msg;
-                    std::wstring utf16name;
-                    Poco::UnicodeConverter::toUTF16(pModule->getName(), utf16name);
-
-                    msg << L"TskPipeline::initialize - " << utf16name << L" is a duplicate module. " <<
-                        L"the duplicate will not be added to the pipeline";
-                    LOGERROR(msg.str());
+                bool duplicate = false;
+                for (std::vector<TskModule*>::iterator it = m_modules.begin(); it != m_modules.end(); it++) {
+                    if ((*it)->getModuleId() == pModule->getModuleId()) {
+                        duplicate = true;
+                        std::stringstream msg;
+                        msg << "TskPipeline::initialize - " << pModule->getName() << " is a duplicate module. " <<
+                            "The duplicate will not be added to the pipeline";
+                        throw TskException(msg.str());
+                    }
                 }
-            if(!duplicate)
-                m_modules.push_back(pModule);
+                if (!duplicate)
+                    m_modules.push_back(pModule);
+            }
         }
     }
     // rethrow this, otherwise it is caught by std::exception and we lose the detail.
