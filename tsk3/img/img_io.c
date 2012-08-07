@@ -14,10 +14,11 @@
 
 /**
  * \internal
- * XXX
- * @param a_img_info Disk image to read from
- * @param ent XXX
- * @returns XXX
+ * Promotes the selected cache entry, since it has been recently requested.
+ * This must be called while already under the cache lock.
+ * @param a_img_info Disk image containing cache
+ * @param ent Index of the cache entry to promote
+ * @returns New index of the cache entry (currently always zero)
  */
 static inline int
 tsk_cache_promote(TSK_IMG_INFO * a_img_info, int ent)
@@ -35,11 +36,16 @@ tsk_cache_promote(TSK_IMG_INFO * a_img_info, int ent)
 
 /**
  * \internal
- * XXX
+ * Ensures that the disk block at the specified offset is in the cache,
+ * either by finding the already-cached block or by reading it from disk.
+ * This must be called while already under the cache lock.
  * @param a_img_info Disk image to read from
- * @param a_off XXX
- * @param a_entry XXX
- * @returns 0 on error or 1 on success
+ * @param a_off      Byte offset of the disk block; required to be a multiple of
+ *                   TSK_IMG_INFO_CACHE_LEN
+ * @param a_entry    Output: address of a pointer to a cache info entry that will
+ *                   be set by this function. (Address should not be used if
+ *                   the function returns an error.)
+ * @returns          0 on error or 1 on success
  */
 static inline int
 tsk_get_cache_block(TSK_IMG_INFO * a_img_info,
