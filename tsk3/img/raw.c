@@ -717,8 +717,7 @@ tsk_img_malloc(size_t a_len)
     TSK_IMG_INFO *imgInfo;
     if ((imgInfo = (TSK_IMG_INFO *) tsk_malloc(a_len)) == NULL)
         return NULL;
-    //init lock
-    tsk_init_lock(&(imgInfo->cache_lock));
+
     imgInfo->tag = TSK_IMG_INFO_TAG;
 
 	long cachesz = TSK_IMG_INFO_CACHE_NUM * TSK_IMG_INFO_CACHE_LEN;
@@ -742,8 +741,7 @@ tsk_img_malloc(size_t a_len)
 
 	int retval;
 	if ((retval = posix_memalign(&imgInfo->cache, pagesz, cachesz)) != 0) {
-		tsk_fprintf(stderr, "tsk_img_malloc: unable to allocate cache (%d)\n", retval);
-		exit(-1);	// XXX fix
+		imgInfo->cache = NULL;
 	}
 	
 #else // ! POSIX_MEMALIGN
@@ -753,8 +751,11 @@ tsk_img_malloc(size_t a_len)
 	
 	if (imgInfo->cache == NULL) {
 		tsk_fprintf(stderr, "tsk_img_malloc: unable to allocate cache\n");
-		exit(-1);	// XXX fix
+		return NULL;
 	}
+
+    //init lock
+    tsk_init_lock(&(imgInfo->cache_lock));
 
     return (void *) imgInfo;
 }
