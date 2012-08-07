@@ -88,6 +88,18 @@ extern "C" {
 #define tsk_gets16(endian, x)	\
 ((int16_t)tsk_getu16(endian, x))
 
+/** \internal
+ * Read a 24-bit unsigned value into a uint32_t variable.
+ * @param endian Flag that identifies local ordering.
+ * @param x Byte array to read from
+ * @returns 16-bit unsigned value
+ */
+#define tsk_getu24(endian, x)   \
+		(uint32_t)(((endian) == TSK_LIT_ENDIAN) ? \
+				(((uint8_t *)(x))[0] + (((uint8_t *)(x))[1] << 8) + (((uint8_t *)(x))[2] << 16)) :    \
+				(((uint8_t *)(x))[2] + (((uint8_t *)(x))[1] << 8) + (((uint8_t *)(x))[0] << 16)) )
+
+
 
 /** \internal
 * Read a 32-bit unsigned value.

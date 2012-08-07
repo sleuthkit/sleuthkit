@@ -2,7 +2,7 @@ This file describes how to build TSK using Visual Studio (see README_win32.txt f
 
     http://www.microsoft.com/express/vc/
 
-The Visual Studio Solution file has three build targets: Debug, Debug_NoLibs, and Release.  Debug and Release require that libewf exist and be compiled (libewf provides support for E01 image files).   Debug_NoLibs does not require libewf and you should be able to compile Debug_NoLibs without any additional setup.
+The Visual Studio Solution file has three build targets: Debug, Debug_NoLibs, and Release.  Debug and Release require that libewf exists (to provide support for E01 image files) and that zlib exists (to provide support for HFS+ compressed data).   Debug_NoLibs does not require libewf or zlib and you should be able to compile Debug_NoLibs without any additional setup.
 
 The steps below outline the process required to compile the Debug and Release targets.
 
@@ -13,11 +13,15 @@ The steps below outline the process required to compile the Debug and Release ta
 
 3) Set the LIBEWF_HOME environment variable to point to the libewf folder that you created and built in step 2. 
 
-4) Open the TSK Visual Studio Solution file in the win32 directory. 
+4) Set the ZLIB_HOME environment variable to point to the location of the zlib dll and header files (the named directory should contain include/ and lib/ subdirectories).  For zlib as used to build libewf, this may be $(LIBEWF_HOME)/msvscpp/zlib/.
 
-5) Compile a Debug or Release version of the libraries or executables. 
+5) Set the JDK_HOME environment variable to point to the top directory of your Java SDK.
 
-6) Note that the libraries and executables will depend on the libewf and zlib dll files (which are located in libewf/msvscpp/release  and libewf/msvscpp/zlib). 
+6) Open the TSK Visual Studio Solution file, tsk-win.sln, in the win32 directory. 
+
+7) Compile a Debug, Debug_NoLibs, or Release version of the libraries and executables.  The resulting libraries and executables will be put in win32/Debug, win32/Debug_NoLibs, or win32/Release as appropriate.
+
+8) Note that the libraries and executables will depend on the libewf and zlib dll files (which are copied to the TSK build directories). 
 
 Refer to the API docs at http://sleuthkit.org/sleuthkit/docs/api-docs/ for details on how to use the library in an application.
 

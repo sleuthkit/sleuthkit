@@ -8,6 +8,7 @@
  */
 
 #include "tsk_base_i.h"
+#include "tsk_base.h"
 
 /**
  * \file tsk_error.c
@@ -23,7 +24,7 @@ int tsk_verbose = 0;
 /* Error messages */
 static const char *tsk_err_aux_str[TSK_ERR_IMG_MAX] = {
     "Insufficient memory",
-    ""
+    "TSK Error"
 };
 
 /* imagetools specific error strings */
@@ -421,3 +422,5 @@ tsk_error_reset()
     info->errstr2[0] = 0;
     info->errstr_print[0] = 0;
 }
+
+

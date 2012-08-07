@@ -21,8 +21,7 @@ package org.sleuthkit.datamodel;
 import java.util.List;
 
 /**
- * Represents a volume system.
- * Populated based on data in database.
+ * Represents a volume system. Populated based on data in database.
  */
 public class VolumeSystem extends AbstractContent {
 
@@ -32,6 +31,7 @@ public class VolumeSystem extends AbstractContent {
 
 	/**
 	 * Constructor most inputs are from the database
+	 *
 	 * @param db case database handle
 	 * @param obj_id the unique content object id for the volume system
 	 * @param name name of the volume system
@@ -48,29 +48,31 @@ public class VolumeSystem extends AbstractContent {
 
 	/**
 	 * set the parent image called by parent on creation
+	 *
 	 * @param parent parent image
 	 */
 	protected void setParent(Image parent) {
 		this.parent = parent;
 	}
 
-
 	@Override
 	public int read(byte[] readBuffer, long offset, long len) throws TskCoreException {
-		if (volumeSystemHandle == 0) {
-			volumeSystemHandle = SleuthkitJNI.openVs(getImage().getImageHandle(), imgOffset);
+		synchronized (this) {
+			if (volumeSystemHandle == 0) {
+				volumeSystemHandle = SleuthkitJNI.openVs(getImage().getImageHandle(), imgOffset);
+			}
 		}
 		return SleuthkitJNI.readVs(volumeSystemHandle, readBuffer, offset, len);
 	}
 
 	/**
 	 * get the parent image
+	 *
 	 * @return parent image
 	 */
 	public Image getParent() {
 		return parent;
 	}
-
 
 	@Override
 	public long getSize() {
@@ -79,6 +81,7 @@ public class VolumeSystem extends AbstractContent {
 
 	/**
 	 * get the type
+	 *
 	 * @return type
 	 */
 	public long getType() {
@@ -87,6 +90,7 @@ public class VolumeSystem extends AbstractContent {
 
 	/**
 	 * get the byte offset
+	 *
 	 * @return byte offset
 	 */
 	public long getOffset() {
@@ -95,6 +99,7 @@ public class VolumeSystem extends AbstractContent {
 
 	/**
 	 * get the block size
+	 *
 	 * @return block size
 	 */
 	public long getBlockSize() {
@@ -102,19 +107,19 @@ public class VolumeSystem extends AbstractContent {
 	}
 
 	/**
-	 * get the volume system Handle pointer
-	 * Open a new handle if needed, otherwise resuse the existing handle.
+	 * get the volume system Handle pointer Open a new handle if needed,
+	 * otherwise resuse the existing handle.
+	 *
 	 * @return volume system Handle pointer
-	 * @throws TskException  
+	 * @throws TskException
 	 */
-	protected long getVolumeSystemHandle() throws TskCoreException {
+	protected synchronized long getVolumeSystemHandle() throws TskCoreException {
 		if (volumeSystemHandle == 0) {
 			volumeSystemHandle = SleuthkitJNI.openVs(getImage().getImageHandle(), imgOffset);
 		}
 
 		return volumeSystemHandle;
 	}
-
 
 	@Override
 	public void finalize() {
@@ -123,26 +128,20 @@ public class VolumeSystem extends AbstractContent {
 		}
 	}
 
-
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
-
 
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
 
-	
-
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getVolumeSystemChildren(this);
 	}
-
-	
 
 	@Override
 	public Image getImage() throws TskCoreException {
