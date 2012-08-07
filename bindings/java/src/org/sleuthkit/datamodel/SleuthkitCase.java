@@ -2165,7 +2165,8 @@ public class SleuthkitCase {
             rs = s.executeQuery("SELECT * FROM tsk_files "
                     + "WHERE type = '" + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + "' "
 					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getDirType() + "' "
-                    + "AND md5 = '" + md5Hash + "'");
+                    + "AND md5 = '" + md5Hash + "' "
+					+ "AND size > '0'");
             return resultSetToFsContents(rs);
         } catch (SQLException ex) {
             Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Error querying database.", ex);
@@ -2196,7 +2197,8 @@ public class SleuthkitCase {
             rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files "
                     + "WHERE type = '" + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + "' "
                     + "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getDirType() + "' "
-                    + "AND md5 = ''");
+                    + "AND md5 IS NULL "
+					+ "AND size > '0'");
             rs.next();
             int size = rs.getInt(1);
             if(size==0) {
@@ -2208,6 +2210,7 @@ public class SleuthkitCase {
             if(rs != null) {
                 try {
                     rs.close();
+					s.close();
                 } catch (SQLException ex) {
                     Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Failed to close the result set.", ex);
                 }
