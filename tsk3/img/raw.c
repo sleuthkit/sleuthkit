@@ -721,8 +721,33 @@ tsk_img_malloc(size_t a_len)
     tsk_init_lock(&(imgInfo->cache_lock));
     imgInfo->tag = TSK_IMG_INFO_TAG;
 
-	// alloc cache
-	imgInfo->cache = valloc(TSK_IMG_INFO_CACHE_NUM * TSK_IMG_INFO_CACHE_LEN);
+	long cachesz = TSK_IMG_INFO_CACHE_NUM * TSK_IMG_INFO_CACHE_LEN;
+
+#ifdef TSK_WIN32
+#else
+
+// unistd.h
+
+#ifdef _SC_PAGESIZE
+	long pagesz = sysconf(_SC_PAGESIZE);
+#else
+#ifdef _SC_PAGE_SIZE
+	long pagesz = sysconf(_SC_PAGE_SIZE);
+#else
+	long pagesz = TSK_IMG_INFO_CACHE_LEN;
+#endif
+#endif // PAGESIZE
+
+#ifdef HAVE_POSIX_MEMALIGN
+	int retval;
+	if ((retval = posix_memalign(&imgInfo->cache, pagesz, cachesz)) != 0) {
+		tsk_fprintf("tsk_img_malloc: unable to allocate cache (%d)\n", retval);
+		exit(-1);	// XXX fix
+	}
+#else // HAVE_POSIX_MEMALIGN
+	imgInfo->cache = malloc(TSK_IMG_INFO_CACHE_NUM * TSK_IMG_INFO_CACHE_LEN);
+#endif // HAVE_POSIX_MEMALIGN
+#endif
 
     return (void *) imgInfo;
 }

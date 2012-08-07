@@ -13,14 +13,14 @@
 #include "tsk_img_i.h"
 
 /**
- * \ingroup imglib
+ * \internal
  * XXX
  * @param a_img_info Disk image to read from
  * @param ent XXX
  * @returns XXX
  */
-static int
-cache_promote(TSK_IMG_INFO * a_img_info, int ent)
+static inline int
+tsk_cache_promote(TSK_IMG_INFO * a_img_info, int ent)
 {
 	if (ent == 0)
 		return 0;
@@ -34,15 +34,15 @@ cache_promote(TSK_IMG_INFO * a_img_info, int ent)
 }
 
 /**
- * \ingroup imglib
+ * \internal
  * XXX
  * @param a_img_info Disk image to read from
  * @param a_off XXX
  * @param a_entry XXX
  * @returns 0 on error or 1 on success
  */
-static int
-get_cache_block(TSK_IMG_INFO * a_img_info,
+static inline int
+tsk_get_cache_block(TSK_IMG_INFO * a_img_info,
 	TSK_OFF_T a_off, struct TSK_IMG_INFO_CACHE_ENTRY ** a_entry)
 {
 	// we require that we're called with a page-aligned offset
@@ -56,7 +56,7 @@ get_cache_block(TSK_IMG_INFO * a_img_info,
 	// find existing cache page
 	for (ent = 0; ent < a_img_info->cache_used; ent++) {
 		if (a_img_info->cache_info[ent].offset == a_off) {
-			ent = cache_promote(a_img_info, ent);
+			ent = tsk_cache_promote(a_img_info, ent);
 			*a_entry = &(a_img_info->cache_info[ent]);
 			return 1;
 		}
@@ -85,7 +85,7 @@ get_cache_block(TSK_IMG_INFO * a_img_info,
 		return 0;
 	}
 
-	ent = cache_promote(a_img_info, ent);
+	ent = tsk_cache_promote(a_img_info, ent);
 	*a_entry = &(a_img_info->cache_info[ent]);
 	return 1;
 }
@@ -152,7 +152,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 	
 	while (rlen > 0) {
 		// get the current block from cache (possibly reading from disk)
-		if (! get_cache_block(a_img_info, block_addr, & cache_entry)) {
+		if (! tsk_get_cache_block(a_img_info, block_addr, & cache_entry)) {
 			tsk_release_lock(&(a_img_info->cache_lock));
 			return len2 - rlen;
 		}
