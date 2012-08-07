@@ -2,8 +2,9 @@
  * unicode_escape.cpp:
  * Escape unicode that is not valid.
  * 
- * See:
+ * References:
  * http://www.ietf.org/rfc/rfc3987.txt
+ * http://en.wikipedia.org/wiki/UTF-8
  *
  * @author Simson Garfinkel
  *
@@ -23,8 +24,8 @@
  * not subject to copyright.
  */
 
-#ifndef STANDALONE
-#include "tsk3/tsk_tools_i.h"
+#ifndef PACKAGE_NAME
+#include "config.h"
 #endif
 
 #include "unicode_escape.h"
@@ -42,7 +43,9 @@
 
 #define IS_IN_RANGE(c, f, l)    (((c) >= (f)) && ((c) <= (l)))
 
-std::string esc(unsigned char ch)
+#include "utf8.h"
+
+std::string hexesc(unsigned char ch)
 {
     char buf[10];
     snprintf(buf,sizeof(buf),"\\x%02X",ch);
@@ -55,14 +58,24 @@ bool utf8cont(unsigned char ch)
     return ((ch&0x80)==0x80) &&  ((ch & 0x40)==0);
 }
 
-bool invalid_unichar(uint32_t unichar)
+/**
+ * After a UTF-8 sequence is decided, this function is called
+ * to determine if the character is invalid. The UTF-8 spec now
+ * says that if a UTF-8 decoding produces an invalid character, or
+ * a surrogate, it is not valid. (There were some nasty security
+ * vulnerabilities that were exploited before this came out.)
+ * So we do a lot of checks here.
+ */
+bool invalid_utf8unichar(uint32_t unichar)
 {
+    // Check for invalid characters in the bmp
     switch(unichar){
-    case 0xfffe: return true;
+    case 0xfffe: return true;		// reversed BOM
     case 0xffff: return true;
     default:
 	break;
     }
+    if(unichar >= 0xd800 && unichar <=0xdfff) return true; // high and low surrogates
     if(unichar < 0x10000) return false;	// looks like it is in the BMP
 
     // check some regions outside the bmp
@@ -101,18 +114,18 @@ std::string validateOrEscapeUTF8(std::string input)
 	// utf8 1 byte prefix (0xxx xxxx)
 	if((ch & 0x80)==0x00){			// 00 .. 0x7f
 	    if(ch=='\\'){			// escape the escape character
-		output += "\\\\";
+		output += hexesc(ch);
 		i++;
 		continue;
 	    }
 
-	    if( ch>=' ' ){	// printable
-		output += ch;
+	    if( ch < ' '){		// not printable
+		output += hexesc(ch);
 		i++;
 		continue;
 	    }
 
-	    output += esc(ch);
+	    output += ch;		// printable
 	    i++;
 	    continue;
 	}
@@ -122,9 +135,13 @@ std::string validateOrEscapeUTF8(std::string input)
 	   && (i+1 < input.length())
 	   && utf8cont((uint8_t)input.at(i+1))){
 	    wchar_t unichar = (((uint8_t)input.at(i) & 0x1f) << 6) | (((uint8_t)input.at(i+1) & 0x3f));
-	    if(((uint8_t)input.at(i)==0xc0) || (unichar < 0x7f)){		// invalid code point for this encoding
-		output += esc((uint8_t)input.at(i++));
-		output += esc((uint8_t)input.at(i++));
+
+	    // check for invalid code point for this encoding
+	    if(invalid_utf8unichar(unichar)
+	       || ((uint8_t)input.at(i)==0xc0)
+	       || (unichar <= 0x7f)){ 
+		output += hexesc((uint8_t)input.at(i++));
+		output += hexesc((uint8_t)input.at(i++));
 		continue;
 	    }
 			      
@@ -138,11 +155,13 @@ std::string validateOrEscapeUTF8(std::string input)
 	   && (i+2 < input.length())
 	   && utf8cont((uint8_t)input.at(i+1))
 	   && utf8cont((uint8_t)input.at(i+2))){
-	    uint32_t unichar = (((uint8_t)input.at(i) & 0x0f) << 12) | (((uint8_t)input.at(i+1) & 0x3f) << 6) | (((uint8_t)input.at(i+2) & 0x3f));
+	    uint32_t unichar = (((uint8_t)input.at(i) & 0x0f) << 12)
+		| (((uint8_t)input.at(i+1) & 0x3f) << 6)
+		| (((uint8_t)input.at(i+2) & 0x3f));
 	    
-	    if(invalid_unichar(unichar) || unichar<0x7ff){ // invalid code points
-		output += esc((uint8_t)input.at(i++));
-		output += esc((uint8_t)input.at(i++));
+	    if(invalid_utf8unichar(unichar) || unichar<=0x7ff){ // invalid code points
+		output += hexesc((uint8_t)input.at(i++));
+		output += hexesc((uint8_t)input.at(i++));
 		continue;
 	    }
 
@@ -154,7 +173,7 @@ std::string validateOrEscapeUTF8(std::string input)
 	    
 	// utf8 4 bytes (1111 0xxx prefix)
 	if((( ch & 0xf8) == 0xf0)
-	   && (i+2 < input.length())
+	   && (i+3 < input.length())
 	   && utf8cont((uint8_t)input.at(i+1))
 	   && utf8cont((uint8_t)input.at(i+2))
 	   && utf8cont((uint8_t)input.at(i+3))){
@@ -163,11 +182,11 @@ std::string validateOrEscapeUTF8(std::string input)
 				|(((uint8_t)input.at(i+2) & 0x3f) <<  6)
 				|(((uint8_t)input.at(i+3) & 0x3f)));
 
-	    if(invalid_unichar(unichar)){
-		output += esc((uint8_t)input.at(i++)); // byte 1
-		output += esc((uint8_t)input.at(i++)); // byte 2
-		output += esc((uint8_t)input.at(i++)); // byte 3
-		output += esc((uint8_t)input.at(i++)); // byte 4
+	    if(invalid_utf8unichar(unichar)){
+		output += hexesc((uint8_t)input.at(i++)); // byte 1
+		output += hexesc((uint8_t)input.at(i++)); // byte 2
+		output += hexesc((uint8_t)input.at(i++)); // byte 3
+		output += hexesc((uint8_t)input.at(i++)); // byte 4
 		continue;
 	    }
 	    output += (uint8_t)input.at(i++);	// byte1
@@ -178,7 +197,7 @@ std::string validateOrEscapeUTF8(std::string input)
 	}
 
 	// Just escape it
-	output += esc((uint8_t)input.at(i++));
+	output += hexesc((uint8_t)input.at(i++));
     }
     return output;
 }
@@ -187,6 +206,35 @@ std::string validateOrEscapeUTF8(std::string input)
 
 int main(int argc,char **argv)
 {
+    /* Try all 4-byte sequences */
+    for(uint32_t i=0;i<=0xFFFFFFFF;i++){
+	std::string ugly((char *)&i,4);
+	std::string res = validateOrEscapeUTF8(ugly);
+	std::wstring utf16;
+	/* Now check to make sure it is valid UTF8 */
+	try {
+	    utf8::utf8to16(res.begin(),res.end(),std::back_inserter(utf16));
+	} catch(utf8::exception){
+	    printf("utf8 error i=%d  hex sequence: ",i);
+	    for(size_t j=0;j<ugly.size();j++){
+		printf("%02x ",(unsigned char)ugly[j]);
+	    }
+	    printf(" encoded as: ");
+	    for(size_t j=0;j<res.size();j++){
+		printf("%02x ",(unsigned char)res[j]);
+	    }
+	    printf("\n");
+	} catch(std::exception){
+	    std::cout << "other exception on i=" << i << "\n";
+	}
+	if(i%1000000==0) std::cout << "i=" << i << "\n";
+    }
+    std::cout << "done\n";
+    exit(1);
+
+    /* Generic fuzzing. Try random attempts */
+    
+
     std::string line;
     while(getline(std::cin,line)){
 	std::cout << validateOrEscapeUTF8(line) << "\n";
