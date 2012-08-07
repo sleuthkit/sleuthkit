@@ -469,6 +469,7 @@ documentation and/or software.
     void TSK_SHA_Final(BYTE * output, TSK_SHA_CTX *);
 //@}
 
+#if 0
 /* crc16.h */
 
 /*
@@ -487,10 +488,11 @@ documentation and/or software.
 
    extern uint16_t const crc16_table[256];
    extern uint16_t crc16(uint16_t crc, const uint8_t *buffer, size_t len);
-   static inline uint16_t crc16_byte(uint16_t crc, const uint8_t data)
+   uint16_t crc16_byte(uint16_t crc, const uint8_t data)
    {
       return (crc >> 8) ^ crc16_table[(crc ^ data) & 0xff];
    }
+#endif
 
 #ifdef __cplusplus
 }
