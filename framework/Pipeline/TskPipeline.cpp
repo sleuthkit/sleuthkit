@@ -264,7 +264,7 @@ void TskPipeline::logModuleExecutionTimes() const
         assert(m_moduleNames.find(it->first) != m_moduleNames.end());
         std::stringstream msg;
         msg << "TskPipeline::logModuleExecutionTimes : "  << m_moduleNames.find(it->first)->second << " total execution time was "
-        << it->second.days() << ":" << it->second.hours() << ":" << it->second.hours() << ":" << it->second.minutes() << ":" << it->second.seconds() << ":" << it->second.milliseconds()
+        << it->second.days() << ":" << it->second.hours() << ":" << it->second.minutes() << ":" << it->second.seconds() << ":" << it->second.milliseconds()
         << " (days:hrs:mins:secs:ms)";
         LOGINFO(msg.str());
     }
