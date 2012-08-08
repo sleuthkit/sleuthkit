@@ -12,6 +12,8 @@
 
 #include "tsk_img_i.h"
 
+#define MIN(x,y) ( (x) < (y) ? (x) : (y) )
+
 /**
  * \internal
  * Promotes the selected cache entry, since it has been recently requested.
