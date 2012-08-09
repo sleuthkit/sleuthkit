@@ -2768,7 +2768,7 @@ int TskImgDBSqlite::addUnusedSectors(int unallocImgId, std::vector<TskUnusedSect
 
     std::stringstream stmt;
     stmt << "SELECT vol_id, unalloc_img_sect_start, sect_len, orig_img_sect_start FROM alloc_unalloc_map "
-        "WHERE unalloc_img_id = " << unallocImgId << " ORDER BY unalloc_img_sect_start ASC";
+        "WHERE unalloc_img_id = " << unallocImgId << " ORDER BY orig_img_sect_start ASC";
 
     sqlite3_stmt * statement;
     if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) {
@@ -2785,65 +2785,51 @@ int TskImgDBSqlite::addUnusedSectors(int unallocImgId, std::vector<TskUnusedSect
         }
         sqlite3_finalize(statement);
 
-        uint64_t totalSectStart = allocUnallocMapList[0].unalloc_img_sect_start;
-        uint64_t totalSectEnd = allocUnallocMapList[allocUnallocMapList.size() - 1].orig_img_sect_start +
-                                allocUnallocMapList[allocUnallocMapList.size() - 1].sect_len;
-        uint64_t unusedSectStart = totalSectStart;
-        uint64_t unusedSectEnd = 0;
+        for (std::vector<TskAllocUnallocMapRecord>::const_iterator it = allocUnallocMapList.begin();
+             it != allocUnallocMapList.end(); it++)
+        {
+            // Sector position tracks our position through the unallocated map record.
+            uint64_t sectPos = it->orig_img_sect_start;
 
-        stmt.str("");
-        stmt << "SELECT c.file_id, s.sect_start, s.sect_len FROM carved_files c, carved_sectors s "
-             << "WHERE c.file_id = s.file_id AND c.vol_id = " << allocUnallocMapList[0].vol_id << " ORDER BY s.sect_start ASC";
+            uint64_t endSect = it->orig_img_sect_start + it->sect_len;
 
-        uint64_t cfileSectStart;
-        uint64_t cfileSectLen;
-        uint64_t fileId;
-        int count = 0;
+            // Retrieve all carved_sector records in range for this section of unallocated space.
+            stmt.str("");
+            stmt << "SELECT cs.sect_start, cs.sect_len FROM carved_files cf, carved_sectors cs"
+                << " WHERE cf.file_id = cs.file_id AND cs.sect_start >= " << it->orig_img_sect_start
+                << " AND cs.sect_start < " << endSect << " ORDER BY cs.sect_start ASC";
 
-        if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) {
-            while (sqlite3_step(statement) == SQLITE_ROW) {
-                count++;
-                fileId = (uint64_t)sqlite3_column_int64(statement, 0);
-                cfileSectStart = (uint64_t)sqlite3_column_int64(statement, 1);
-                cfileSectLen = (uint64_t)sqlite3_column_int64(statement, 2);
-                if (cfileSectStart > unusedSectEnd) {
-                    // found an unused sector between unusedSectStart and cfileSectStart
-                    if (addUnusedSector(unusedSectEnd, cfileSectStart, allocUnallocMapList[0].vol_id, unusedSectorsList)) {
-                        // Log error
-                        std::wstringstream msg;
-                        msg << L"TskImgDBSqlite::addUnusedSectors - Error adding sector: sectorStart="
-                            << unusedSectStart << " sectorEnd=" << cfileSectStart ;
-                        LOGERROR(msg.str());
-                        return rc;
+            if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) {
+                while (sqlite3_step(statement) == SQLITE_ROW) {
+                    uint64_t cfileSectStart = (uint64_t)sqlite3_column_int64(statement, 0);
+                    uint64_t cfileSectLen = (uint64_t)sqlite3_column_int64(statement, 1);
+                    if (cfileSectStart > sectPos)
+                    {
+                        // We have a block of unused sectors between this position in the unallocated map
+                        // and the start of the carved file.
+                        addUnusedSector(sectPos, cfileSectStart, it->vol_id, unusedSectorsList);
                     }
+
+                    sectPos = cfileSectStart + cfileSectLen;
                 }
-                // setup the next unusedSectEnd
-                unusedSectEnd = cfileSectStart + cfileSectLen;
+
+                // Handle case where there is slack at the end of the unalloc range
+                if (sectPos < endSect)
+                    addUnusedSector(sectPos, endSect, it->vol_id, unusedSectorsList);
+
+                sqlite3_finalize(statement);
+            } else {
+                wchar_t infoMessage[MAX_BUFF_LENGTH];
+                _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::addUnusedSectors - Error querying carved_files, carved_sectors table: %S", sqlite3_errmsg(m_db));
+                LOGERROR(infoMessage);
             }
-            sqlite3_finalize(statement);
-            // Handle the last one
-            if (count && unusedSectEnd < totalSectEnd) {
-               if (addUnusedSector(unusedSectEnd, totalSectEnd, allocUnallocMapList[0].vol_id, unusedSectorsList)) {
-                    // Log error
-                    std::wstringstream msg;
-                    msg << L"TskImgDBSqlite::addUnusedSectors - Error adding sector: sectorStart="
-                        << cfileSectStart + cfileSectLen << " sectorEnd=" << totalSectEnd ;
-                    LOGERROR(msg.str());
-                    return rc;
-               }
-            }
-            rc = 0;
-        } else {
-            wchar_t infoMessage[MAX_BUFF_LENGTH];
-            _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::addUnusedSectors - Error querying carved_files, carved_sectors table: %S", sqlite3_errmsg(m_db));
-            LOGERROR(infoMessage);
         }
     } else {
         wchar_t infoMessage[MAX_BUFF_LENGTH];
         _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::addUnusedSectors - Error querying alloc_unalloc_map table: %S", sqlite3_errmsg(m_db));
         LOGERROR(infoMessage);
     }
-    return rc;
+    return 0;
 }
 
 /**
