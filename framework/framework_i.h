@@ -24,4 +24,8 @@
     #define TSK_FRAMEWORK_API __declspec(dllimport)
 #endif
 
+#if defined(_MSC_VER)
+#pragma warning(disable:4251) // ... needs to have dll-interface warning
+#endif
+
 #endif
