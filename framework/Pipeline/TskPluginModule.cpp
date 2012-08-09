@@ -129,7 +129,7 @@ void TskPluginModule::setPath(const std::string& location)
     {
         // Log a message and throw a framework exception.
         std::wstringstream msg;
-        msg << L"TskPluginModule::setPath - " << ex.what() << std::endl;
+        msg << L"TskPluginModule::setPath - " << ex.what();
         LOGERROR(msg.str());
 
         throw TskException("Failed to set path: " + m_modulePath);
