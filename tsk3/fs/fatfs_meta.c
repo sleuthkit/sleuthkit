@@ -194,7 +194,7 @@ dos2unixtime(uint16_t date, uint16_t time, uint8_t timetens)
     if (ret < 0) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "dos2unixtime: Error running mktime(): %d:%d:%d %d/%d/%d",
+                "dos2unixtime: Error running mktime() on: %d:%d:%d %d/%d/%d\n",
                 ((time & FATFS_HOUR_MASK) >> FATFS_HOUR_SHIFT),
                 ((time & FATFS_MIN_MASK) >> FATFS_MIN_SHIFT),
                 ((time & FATFS_SEC_MASK) >> FATFS_SEC_SHIFT) * 2,
