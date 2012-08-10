@@ -18,22 +18,22 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.lang.String;
 import java.util.ArrayList;
 import java.util.Collection;
 
 /**
- * Blackboard Artifact class used to store a set of name-value pairs
- * @author alawrence
+ * Represents an artifact as stored in the Blackboard. Artifacts are a collection
+ * of name value pairs and have a type that represents the type of data they are
+ * storing.  This class is used to create artifacts on the blackboard and is used
+ * to represent artifacts queried from the blackboard.
  */
 public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
-	 * Enum for artifact types. 
+	 * Enum for artifact types.  The C++ code has the full description of 
+	 * how to use these. 
 	 * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
 	 * for details on which attributes should be used for each artifact.
-	 * The enum typeIDs will be populated at database creation
-	 * time, so they will always match the ids stored in the database.
 	 */
 	/* It is very important that this list be kept up to
 	 * date and in sync with the C++ code.  Do not add
@@ -42,16 +42,20 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
 		TSK_GEN_INFO(1, "TSK_GEN_INFO", "General Info"), ///< Default type
-		TSK_WEB_BOOKMARK(2, "TSK_WEB_BOOKMARK", "Bookmarks"),
-		TSK_WEB_COOKIE(3, "TSK_WEB_COOKIE", "Cookies"),
-		TSK_WEB_HISTORY(4, "TSK_WEB_HISTORY", "Web History"),
-		TSK_WEB_DOWNLOAD(5, "TSK_WEB_DOWNLOAD", "Downloads"),
-		TSK_RECENT_OBJECT(6, "TSK_RECENT_OBJ", "Recent Documents"),
-		TSK_TRACKPOINT(7, "TSK_TRACKPOINT", "Trackpoints"),
-		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG", "Installed Programs"),
-		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT", "Keyword Hits"),
-		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", "Hashset Hits"),
-		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Device Attached");
+		TSK_WEB_BOOKMARK(2, "TSK_WEB_BOOKMARK", "Bookmarks"), ///< web bookmarks
+		TSK_WEB_COOKIE(3, "TSK_WEB_COOKIE", "Cookies"), ///< web cookies
+		TSK_WEB_HISTORY(4, "TSK_WEB_HISTORY", "Web History"), ///< web history
+		TSK_WEB_DOWNLOAD(5, "TSK_WEB_DOWNLOAD", "Downloads"), ///< web downloads
+		TSK_RECENT_OBJECT(6, "TSK_RECENT_OBJ", "Recent Documents"), ///< recent objects 
+		TSK_TRACKPOINT(7, "TSK_TRACKPOINT", "Trackpoints"), ///< trackpoint (geo location data)
+		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG", "Installed Programs"), ///< installed programs
+		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT", "Keyword Hits"), ///< keyword search hits
+		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", "Hashset Hits"), ///< hashset hits
+		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Device Attached"), ///< attached devices
+		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", "Interesting File"), ///< an interesting/notable file hit
+		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", "E-Mail Message"), ///< email message
+		TSK_EXTRACTED_TEXT(14, "TSK_EXTRACTED_TEXT", "Extracted Text"), ///< text extracted from file
+		TSK_WEB_SEARCH_QUERY(15, "TSK_WEB_SEARCH_QUERY", "Web Search Engine Query"); ///< web search engine query extracted from web history
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
 		private int typeID;
@@ -64,7 +68,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		/**
-		 * get the label string for the enum
+		 * Gets the label string for the artifact type enum
 		 * @return label string
 		 */
 		public String getLabel() {
@@ -72,7 +76,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		/**
-		 * get the type id for the enum
+		 * Gets the type id for the artifact type enum
 		 * @return type id
 		 */
 		public int getTypeID() {
@@ -80,7 +84,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		/**
-		 * get the enum value that corresponds to the given label
+		 * Gets the artifact type enum value that corresponds to the given label
 		 * @param label label string
 		 * @return the corresponding enum
 		 */
@@ -94,7 +98,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		/**
-		 * get the enum value that corresponds to the given id
+		 * Gets the artifact type enum value that corresponds to the given id
 		 * @param ID the id
 		 * @return the corresponding enum
 		 */
@@ -107,9 +111,14 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 			throw new IllegalArgumentException("No ARTIFACT_TYPE matching type: " + ID);
 		}
 
+		/**
+		 * Gets display name of the artifact
+		 * @return display name string
+		 */
 		public String getDisplayName() {
 			return this.displayName;
 		}
+
 
 		@Override
 		public <T> T accept(SleuthkitItemVisitor<T> v) {
@@ -124,12 +133,13 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	private SleuthkitCase Case;
 
 	/**
-	 * constuctor for an artifact. should only be used by SleuthkitCase
+	 * Constructor for an artifact. Should only be used by SleuthkitCase
 	 * @param Case the case that can be used to access the database this artifact is part of
 	 * @param artifactID the id for this artifact
 	 * @param objID the object this artifact is associated with
 	 * @param artifactTypeID the type id of this artifact
 	 * @param artifactTypeName the type name of this artifact
+	 * @param displayName the display name of this artifact
 	 */
 	protected BlackboardArtifact(SleuthkitCase Case, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName) {
 		this.Case = Case;
@@ -141,7 +151,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
 	/**
-	 * get the id for this artifact
+	 * Get the id for this artifact
 	 * @return id
 	 */
 	public long getArtifactID() {
@@ -149,7 +159,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
 	/**
-	 * get the object id this artifact is associated with
+	 * Get the object id of the object this artifact is associated with
 	 * @return object id
 	 */
 	public long getObjectID() {
@@ -157,7 +167,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
 	/**
-	 * get the artifact type id for this artifact
+	 * Get the artifact type id for this artifact
 	 * @return artifact type id
 	 */
 	public int getArtifactTypeID() {
@@ -165,7 +175,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
 	/**
-	 * get the artifact type name for this artifact
+	 * Get the artifact type name for this artifact
 	 * @return artifact type name
 	 */
 	public String getArtifactTypeName() {
@@ -173,7 +183,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
 	/**
-	 * get the artifact display name for this artifact
+	 * Get the artifact display name for this artifact
 	 * @return artifact display name
 	 */
 	public String getDisplayName() {
@@ -181,22 +191,22 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
 	/**
-	 * add an attribute to this artifact
+	 * Add an attribute to this artifact
 	 * @param attr the attribute to add
-	 * @throws TskException
+	 * @throws TskException exception thrown if a critical error occurs within tsk core and attribute was not added
 	 */
-	public void addAttribute(BlackboardAttribute attr) throws TskException {
+	public void addAttribute(BlackboardAttribute attr) throws TskCoreException {
 		attr.setArtifactID(artifactID);
 		attr.setCase(Case);
 		Case.addBlackboardAttribute(attr);
 	}
 
 	/**
-	 * add a collection of attributes to this artifact in a single transaction
+	 * Add a collection of attributes to this artifact in a single transaction (faster than individually)
 	 * @param attributes List of attributes to add
-	 * @throws TskException
+	 * @throws TskException exception thrown if a critical error occurs within tsk core and attributes were not added
 	 */
-	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskException {
+	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskCoreException {
 		if (attributes.isEmpty()) {
 			return;
 		}
@@ -209,41 +219,52 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
 	/**
-	 * get all attributes associated with this artifact
+	 * Gets all attributes associated with this artifact
 	 * @return a list of attributes
-	 * @throws TskException
+	 * @throws TskException exception thrown if a critical error occurs within tsk core and attributes were not queried
 	 */
-	public ArrayList<BlackboardAttribute> getAttributes() throws TskException {
+	public ArrayList<BlackboardAttribute> getAttributes() throws TskCoreException {
 		return Case.getMatchingAttributes("WHERE artifact_id = " + artifactID);
 	}
 
+	/**
+	 * A method to accept a visitor SleuthkitItemVisitor, and execute an algorithm on this object
+	 * @param v the visitor to accept
+	 * @return object of generic type T to return
+	 */
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
+	/**
+	 * Gets the SleuthkitCase handle associated with this object
+	 * @return the case handle
+	 */
 	public SleuthkitCase getSleuthkitCase() {
 		return Case;
 	}
 
-    /**
-     * Compare this artifact with the given object
-	 * Ensure that the artifacts have the same ID
-     * @param obj
-     * @return Whether this object is equal to the given one
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final BlackboardArtifact other = (BlackboardArtifact) obj;
-        if (this.artifactID != other.artifactID) {
-            return false;
-        }
-        return true;
-    }
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final BlackboardArtifact other = (BlackboardArtifact) obj;
+		if (this.artifactID != other.artifactID) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 41 * hash + (int) (this.artifactID ^ (this.artifactID >>> 32));
+		return hash;
+	}
 }

@@ -8,10 +8,12 @@
 ** 14900 Conference Center Drive
 ** Chantilly, VA 20151
 **
+**
 ** Copyright (c) 2009-2011 Brian Carrier.  All rights reserved.
 ** 
 ** Judson Powers [jpowers@atc-nycorp.com]
-** Copyright (c) 2008 ATC-NY.  All rights reserved.
+** Matt Stillerman [matt@atc-nycorp.com]
+** Copyright (c) 2008, 2012 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
 ** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
 ** 
@@ -72,6 +74,18 @@
 #ifndef _TSK_HFS_H
 #define _TSK_HFS_H
 
+/*
+ * Some compilers do not have the boolean type.
+ */
+
+#ifndef TRUE
+#define TRUE ((unsigned char)1)
+#endif
+
+#ifndef FALSE
+#define FALSE ((unsigned char)0)
+#endif
+
 
 /*
  * All structures created using technote 1150 from Apple.com
@@ -96,7 +110,13 @@
  */
 #define NSEC_BTWN_1904_1970	(uint32_t) 2082844800U
 
+/**
+ * These two constants are the "ID" of the data fork and resource fork as TSK attributes.  By the way,
+ * those attributes both have type TSK_FS_ATTR_TYPE_NTFS_DATA, which is a bit counter-intuitive.
+ */
 
+#define HFS_FS_ATTR_ID_DATA 0
+#define HFS_FS_ATTR_ID_RSRC 1
 
 /* predefined files */
 #define HFS_ROOT_PARENT_ID         1
@@ -123,12 +143,38 @@
 
 #define HFS_HARDLINK_FILE_TYPE 0x686C6E6B       /* hlnk */
 #define HFS_HARDLINK_FILE_CREATOR 0x6866732B    /* hfs+ */
+#define HFS_LINKDIR_FILE_TYPE 0x66647270        /* fdrp */
+#define HFS_LINKDIR_FILE_CREATOR 0x4D414353     /* MACS */
+
+#define UTF16_NULL 0x0000
+#define UTF16_NULL_REPLACE 0x005e
+
+// This is the standard Unicode replacement character in UTF16
+//#define UTF16_NULL_REPLACE 0xfffd
+
+#define UTF16_SLASH 0x002f
+#define UTF16_COLON 0x003a
+#define UTF16_LEAST_PRINTABLE 0x0020
+#define UTF8_NULL_REPLACE "^"
+
+// This is the standard Unicode replacement character in UTF8
+//#define UTF8_NULL_REPLACE "\xef\xbf\xbd"
+
 
 #define HFS_CATALOGNAME "$CatalogFile"
 #define HFS_EXTENTSNAME "$ExtentsFile"
 #define HFS_ALLOCATIONNAME "$BitMapFile"
 #define HFS_STARTUPNAME "$BootFile"
 #define HFS_ATTRIBUTESNAME "$AttributesFile"
+
+/**
+ * B-Tree Node Types
+ */
+
+#define HFS_ATTR_NODE_LEAF     -1
+#define HFS_ATTR_NODE_HEADER   1
+#define HFS_ATTR_NODE_INDEX     0
+#define HFS_ATTR_NODE_MAP      2
 
 /*
  * HFS structures
@@ -262,6 +308,15 @@ typedef struct {
 #define HFS_VH_FI_ID2   7       /* OS X Volume ID part 2 */
 
 
+/**
+ *   Flags to control hfs_UTF16toUTF8() 
+ */
+
+// If this flag is set, the function will replace fwd slash with colon, as
+// required in HFS+ filenames.
+#define HFS_U16U8_FLAG_REPLACE_SLASH 0x00000001
+#define HFS_U16U8_FLAG_REPLACE_CONTROL  0x00000002
+
 /*
 ** HFS+/HFSX Super Block
 */
@@ -393,7 +448,7 @@ typedef struct {
     uint8_t res2[64];           /* reserved */
 } hfs_btree_header_record;
 
-/* key for category records */
+/* key for catalog records */
 typedef struct {
     uint8_t key_len[2];         // length of key minus 2
     uint8_t parent_cnid[4];
@@ -418,6 +473,66 @@ typedef struct {
     uint8_t childNode[4];
 } hfs_btree_index_record;
 
+/***************** ATTRIBUTES FILE ******************************/
+
+typedef struct {
+    uint8_t key_len[2];
+    uint8_t pad[2];
+    uint8_t file_id[4];
+    uint8_t start_block[4];
+    uint8_t attr_name_len[2];
+    uint8_t attr_name[254];
+} hfs_btree_key_attr;
+
+
+
+typedef struct {
+    uint8_t record_type[4];     // HFS_ATTRIBUTE_RECORD_INLINE_DATA
+    uint8_t reserved[8];
+    uint8_t attr_size[4];
+    uint8_t attr_data[2];       /* variable length data */
+} hfs_attr_data;
+
+
+
+/* Each leaf record in the Attributes file has one of these types.  However,
+ * only "INLINE_DATA" is ever used by Apple.  We check the value of the flag,
+ * but count it as an error if either of the other two values is found.
+ */
+#define HFS_ATTR_RECORD_INLINE_DATA 0x10
+#define HFS_ATTR_RECORD_FORK_DATA 0x20
+#define HFS_ATTR_RECORD_EXTENTS 0x30
+
+// Maximum UTF8 size of an attribute name = 127 * 3 + 1; // 382
+#define MAX_ATTR_NAME_LENGTH 382
+
+/*
+ * If a file is compressed, then it will have an extended attribute
+ * with name com.apple.decmpfs.  The value of that attribute is a data
+ * structure, arranged as shown in the following struct, possibly followed
+ * by some actual compressed data.
+ *
+ * If compression_type = 3, then data follows this compression header, in-line.
+ * If the first byte of that data is 0xF, then the data is not really compressed, so
+ * the following bytes are the data.  Otherwise, the data following the compression
+ * header is zlib-compressed.
+ *
+ * If the compression_type = 4, then compressed data is stored in the file's resource
+ * fork, in a resource of type CMPF.  There will be a single resource in the fork, and
+ * it will have this type.  The beginning of the resource is a table of offsets for
+ * successive compression units within the resource.
+ */
+
+typedef struct {
+    /* this structure represents the xattr on disk; the fields below are little-endian */
+    uint8_t compression_magic[4];
+    uint8_t compression_type[4];
+    uint8_t uncompressed_size[8];
+    unsigned char attr_bytes[0];        /* the bytes of the attribute after the header, if any. */
+} DECMPFS_DISK_HEADER;
+
+
+#define COMPRESSION_UNIT_SIZE 65536U
 
 
 /********* CATALOG Record structures *********/
@@ -534,6 +649,31 @@ typedef struct {
     hfs_btree_header_record extents_header;
 
     TSK_OFF_T hfs_wrapper_offset;       /* byte offset of this FS within an HFS wrapper */
+
+    /* Creation times needed for hard link recognition */
+    time_t root_crtime;  // creation time of the root directory, cnid = 2
+    time_t meta_crtime;   // creation time of the dir with path /^^^^HFS+ Private Data       (those are nulls)
+    time_t metadir_crtime; // creation time of dir with path /.HFS+ Private Directory Data^  (that's a carriage return)
+    unsigned char has_root_crtime;  // Boolean -- are the crtime fields set?
+    unsigned char has_meta_crtime;
+    unsigned char has_meta_dir_crtime;
+
+    TSK_INUM_T meta_inum;
+    TSK_INUM_T meta_dir_inum;
+
+    // We cache the two metadata directory structures here, to speed up hard link resolution
+    TSK_FS_DIR * meta_dir;
+    TSK_FS_DIR * dir_meta_dir;
+
+    // We need a lock to protect the two metadata directory caches (if this is multi-threaded)
+    // and will also use this to protect the rest of the HFS_INFO struct.
+    tsk_lock_t metadata_dir_cache_lock;
+
+    // These special files are optional.
+    unsigned char has_extents_file;  // and also the Bad Blocks file
+    unsigned char has_startup_file;
+    unsigned char has_attributes_file;
+
 } HFS_INFO;
 
 typedef struct {
@@ -542,6 +682,49 @@ typedef struct {
     TSK_INUM_T inum;            /* cnid */
     hfs_thread thread;          /* thread record */
 } HFS_ENTRY;
+
+
+/******************  Resource File Structures *****************/
+
+typedef struct {
+    uint8_t dataOffset[4];
+    uint8_t mapOffset[4];
+    uint8_t dataLength[4];
+    uint8_t mapLength[4];
+} hfs_resource_fork_header;
+
+typedef struct {
+    uint8_t length[4];
+    uint8_t data[2];            // Variable length
+} hfs_resource;
+
+typedef struct {
+    uint8_t reserved1[16];      // copy of resource fork header
+    uint8_t reserved2[4];       //handle to next resource map
+    uint8_t reserved3[2];       // file reference number
+    uint8_t fork_attributes[2]; //??
+    uint8_t typeListOffset[2];  // Actually, points to a 2-byte count of types (minus 1)
+    uint8_t nameListOffset[2];  // could be the end of the fork or zero, if there is no name list.
+} hfs_resource_fork_map_header;
+
+typedef struct {
+    unsigned char type[4];
+    uint8_t count[2];           // number of resources of this type, minus 1
+    uint8_t offset[2];          // offset from beginning of type list to reference list for this type.
+} hfs_resource_type_list_item;
+
+typedef struct {
+    uint8_t typeCount[2];       // number of types minus one
+    hfs_resource_type_list_item type[]; // Variable length
+} hfs_resource_type_list;
+
+typedef struct {
+    uint8_t resID[2];
+    uint8_t resNameOffset[2];   //SIGNED offset from beginning of name list, or -1
+    uint8_t resAttributes[1];   // ??
+    uint8_t resDataOffset[3];   // from beginning of resource data to data for this resource
+    uint8_t reserved[4];        // handle to resource
+} hfs_resource_refListItem;
 
 /************** JOURNAL ******************/
 
@@ -554,12 +737,20 @@ typedef struct {
     uint8_t res[128];
 } hfs_journ_sb;
 
+
+
+
 /*
  * Prototypes
  */
 extern uint8_t hfs_checked_read_random(TSK_FS_INFO *, char *, size_t,
     TSK_OFF_T);
-extern uint8_t hfs_uni2ascii(TSK_FS_INFO *, uint8_t *, int, char *, int);
+
+//extern uint8_t hfs_uni2ascii(TSK_FS_INFO *, uint8_t *, int, char *, int);
+//   replaced by:
+extern uint8_t hfs_UTF16toUTF8(TSK_FS_INFO *, uint8_t *, int, char *, int,
+    uint32_t);
+
 extern int hfs_unicode_compare(HFS_INFO *, const hfs_uni_str *,
     const hfs_uni_str *);
 extern uint16_t hfs_get_idxkeylen(HFS_INFO * hfs, uint16_t keylen,
@@ -576,6 +767,11 @@ extern uint8_t hfs_jblk_walk(TSK_FS_INFO *, TSK_DADDR_T, TSK_DADDR_T, int,
 extern uint8_t hfs_jentry_walk(TSK_FS_INFO *, int, TSK_FS_JENTRY_WALK_CB,
     void *);
 
+extern TSK_INUM_T hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * entry, unsigned char * is_error);
+extern uint8_t hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
+		unsigned char follow_hard_link);
+extern void error_returned(char *errstr, ...);
+extern void error_detected(uint32_t errnum, char *errstr, ...);
 
 typedef uint8_t(*TSK_HFS_BTREE_CB) (HFS_INFO *, int8_t level_type,
     const void *targ_key, const hfs_btree_key_cat * cur_key,

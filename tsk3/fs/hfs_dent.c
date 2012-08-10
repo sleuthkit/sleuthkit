@@ -11,7 +11,8 @@
 ** Copyright (c) 2009-2011 Brian Carrier.  All rights reserved.
 **
 ** Judson Powers [jpowers@atc-nycorp.com]
-** Copyright (c) 2008 ATC-NY.  All rights reserved.
+** Matt Stillerman [matt@atc-nycorp.com]
+** Copyright (c) 2008, 2012 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
 ** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
 **
@@ -72,11 +73,6 @@
 #include "tsk_fs_i.h"
 #include "tsk_hfs.h"
 
-#define UTF16_NULL 0x0000
-#define UTF16_NULL_REPLACE 0x005e
-#define UTF16_SLASH 0x002f
-#define UTF16_COLON 0x003a
-
 /* convert HFS+'s UTF16 to UTF8
  * replaces null characters with another character (0xfffd)
  * replaces slashes (permitted by HFS+ but causes problems with TSK)
@@ -84,10 +80,25 @@
  * note that at least one directory on HFS+ volumes begins with
  *   four nulls, so we do need to handle nulls; also, Apple chooses
  *   to encode nulls as UTF8 \xC0\x80, which is not a valid UTF8 sequence
- * returns 0 on success, 1 on failure; sets up to error string 1 */
+ *
+ *   @param fs  the file system
+ *   @param uni  the UTF16 string as a sequence of bytes
+ *   @param ulen  then length of the UTF16 string in characters
+ *   @param asc   a buffer to hold the UTF8 result
+ *   @param alen  the length of that buffer
+ *   @param flags  control some aspects of the conversion
+ *   @return 0 on success, 1 on failure; sets up to error string 1
+ *
+ *   HFS_U16U8_FLAG_REPLACE_SLASH  if this flag is set, then slashes will be replaced
+ *   by colons.  Otherwise, they will not be replaced.
+ *
+ *   HFS_U16U8_FLAG_REPLACE_CONTROL if this flag is set, then all control characters
+ *   will be replaced by the UTF16_NULL_REPLACE character. N.B., always replaces
+ *   null characters regardless of this flag.
+ */
 uint8_t
-hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
-    int alen)
+hfs_UTF16toUTF8(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
+    int alen, uint32_t flags)
 {
     UTF8 *ptr8;
     uint8_t *uniclean;
@@ -102,17 +113,28 @@ hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
         return 1;
 
     memcpy(uniclean, uni, ulen * 2);
+
     for (i = 0; i < ulen; ++i) {
         uint16_t uc = tsk_getu16(fs->endian, uniclean + i * 2);
+
+
         int changed = 0;
         if (uc == UTF16_NULL) {
             uc = UTF16_NULL_REPLACE;
             changed = 1;
         }
-        else if (uc == UTF16_SLASH) {
+        else if ((flags & HFS_U16U8_FLAG_REPLACE_SLASH)
+            && uc == UTF16_SLASH) {
             uc = UTF16_COLON;
             changed = 1;
         }
+
+        else if ((flags & HFS_U16U8_FLAG_REPLACE_CONTROL)
+            && uc < UTF16_LEAST_PRINTABLE) {
+            uc = (uint16_t) UTF16_NULL_REPLACE;
+            changed = 1;
+        }
+
         if (changed)
             *((uint16_t *) (uniclean + i * 2)) =
                 tsk_getu16(fs->endian, (uint8_t *) & uc);
@@ -120,6 +142,7 @@ hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
 
     // convert to UTF-8
     memset(asc, 0, alen);
+
     ptr8 = (UTF8 *) asc;
     ptr16 = (UTF16 *) uniclean;
     r = tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &ptr16,
@@ -130,7 +153,7 @@ hfs_uni2ascii(TSK_FS_INFO * fs, uint8_t * uni, int ulen, char *asc,
     if (r != TSKconversionOK) {
         tsk_error_set_errno(TSK_ERR_FS_UNICODE);
         tsk_error_set_errstr
-            ("hfs_uni2ascii: unicode conversion failed (%d)", (int) r);
+            ("hfs_UTF16toUTF8: unicode conversion failed (%d)", (int) r);
         return 1;
     }
 
@@ -190,10 +213,12 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
     if (level_type == HFS_BT_NODE_TYPE_IDX) {
         if (tsk_getu32(hfs->fs_info.endian,
-                cur_key->parent_cnid) < *cnid_p)
+                cur_key->parent_cnid) < *cnid_p) {
             return HFS_BTREE_CB_IDX_LT;
-        else
+        }
+        else {
             return HFS_BTREE_CB_IDX_EQGT;
+        }
     }
     else {
         uint8_t *rec_buf = (uint8_t *) cur_key;
@@ -201,12 +226,13 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
         size_t rec_off2;
 
         if (tsk_getu32(hfs->fs_info.endian,
-                cur_key->parent_cnid) < *cnid_p)
+                cur_key->parent_cnid) < *cnid_p) {
             return HFS_BTREE_CB_LEAF_GO;
+        }
         else if (tsk_getu32(hfs->fs_info.endian,
-                cur_key->parent_cnid) > *cnid_p)
+                cur_key->parent_cnid) > *cnid_p) {
             return HFS_BTREE_CB_LEAF_STOP;
-
+        }
         rec_off2 = 2 + tsk_getu16(hfs->fs_info.endian, cur_key->key_len);
         // @@@ NEED TO REPLACE THIS SOMEHOW, but need to figure out the max length
         /*
@@ -250,9 +276,10 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 
 
-            if (hfs_uni2ascii(fs, (uint8_t *) cur_key->name.unicode,
+            if (hfs_UTF16toUTF8(fs, (uint8_t *) cur_key->name.unicode,
                     tsk_getu16(hfs->fs_info.endian, cur_key->name.length),
-                    info->fs_name->name, HFS_MAXNAMLEN + 1)) {
+                    info->fs_name->name, HFS_MAXNAMLEN + 1,
+                    HFS_U16U8_FLAG_REPLACE_SLASH)) {
                 return HFS_BTREE_CB_ERR;
             }
         }
@@ -260,15 +287,45 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
         /* This is a normal file in the folder */
         else if (rec_type == HFS_FILE_RECORD) {
             hfs_file *file = (hfs_file *) & rec_buf[rec_off2];
-            info->fs_name->meta_addr =
-                tsk_getu32(hfs->fs_info.endian, file->std.cnid);
-            info->fs_name->type =
-                hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
-                    file->std.perm.mode));
+            // This could be a hard link.  We need to test this CNID, and follow it if necessary.
+            unsigned char is_err;
+            TSK_INUM_T file_cnid = tsk_getu32(hfs->fs_info.endian, file->std.cnid);
+            TSK_INUM_T target_cnid =
+            		hfs_follow_hard_link(hfs, file, &is_err);
+            if(is_err > 1) {
+            	error_returned("hfs_dir_open_meta_cb: trying to follow a possible hard link in the directory");
+            	return HFS_BTREE_CB_ERR;
+            }
+            if(target_cnid != file_cnid) {
+				HFS_ENTRY entry;
+				uint8_t lkup;  // lookup result
+
+            	// This is a hard link.  We need to fill in the name->type and name->meta_addr from the target
+            	info->fs_name->meta_addr = target_cnid;
+            	// get the Catalog entry for the target CNID
+            	
+            	lkup = hfs_cat_file_lookup(hfs, target_cnid, &entry,
+            			FALSE);
+            	if(lkup != 0) {
+            		error_returned("hfs_dir_open_meta_cb: retrieving the catalog entry for the target of a hard link");
+            		return HFS_BTREE_CB_ERR;
+            	}
+            	info->fs_name->type =
+            			hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
+            					entry.cat.std.perm.mode));
+            } else {
+            	// This is NOT a hard link.
+            	info->fs_name->meta_addr =
+            			tsk_getu32(hfs->fs_info.endian, file->std.cnid);
+            	info->fs_name->type =
+            			hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
+            					file->std.perm.mode));
+            }
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-            if (hfs_uni2ascii(fs, (uint8_t *) cur_key->name.unicode,
+            if (hfs_UTF16toUTF8(fs, (uint8_t *) cur_key->name.unicode,
                     tsk_getu16(hfs->fs_info.endian, cur_key->name.length),
-                    info->fs_name->name, HFS_MAXNAMLEN + 1)) {
+                    info->fs_name->name, HFS_MAXNAMLEN + 1,
+                    HFS_U16U8_FLAG_REPLACE_SLASH)) {
                 return HFS_BTREE_CB_ERR;
             }
         }
@@ -310,6 +367,7 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
     TSK_FS_DIR *fs_dir;
     TSK_FS_NAME *fs_name;
     HFS_DIR_OPEN_META_INFO info;
+
 
     tsk_error_reset();
 
@@ -367,6 +425,8 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         for (i = 0; i < 6; i++) {
             switch (i) {
             case 0:
+            	if(!hfs->has_extents_file)
+            		continue;
                 strncpy(fs_name->name, HFS_EXTENTS_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_EXTENTS_FILE_ID;
@@ -377,6 +437,9 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                 fs_name->meta_addr = HFS_CATALOG_FILE_ID;
                 break;
             case 2:
+            	// Note: the Extents file and the BadBlocks file are really the same.
+            	if(!hfs->has_extents_file)
+            		continue;
                 strncpy(fs_name->name, HFS_BAD_BLOCK_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_BAD_BLOCK_FILE_ID;
@@ -387,11 +450,15 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                 fs_name->meta_addr = HFS_ALLOCATION_FILE_ID;
                 break;
             case 4:
+            	if(!hfs->has_startup_file)
+            		continue;
                 strncpy(fs_name->name, HFS_STARTUP_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_STARTUP_FILE_ID;
                 break;
             case 5:
+            	if(!hfs->has_attributes_file)
+            		continue;
                 strncpy(fs_name->name, HFS_ATTRIBUTES_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_ATTRIBUTES_FILE_ID;

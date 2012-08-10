@@ -48,8 +48,10 @@ This MUST be given, unless the '\-l' list flag is given.
 List information to STDOUT (no files are ever written).  This is useful
 for Incident Response, with the use of 'netcat'.  This cannot be used
 if '\-d' is used.
-.IP images
-The file names of the image(s) to analyze.  
+.IP "image [images]"
+The disk or partition image to read, whose format is given with '\-i'.
+Multiple image file names can be given if the image is split into multiple segments.
+If only one image file is given, and its name is the first in a sequence (e.g., as indicated by ending in '.001'), subsequent image segments will be included automatically.
 
 .PP
 The options are as follows:

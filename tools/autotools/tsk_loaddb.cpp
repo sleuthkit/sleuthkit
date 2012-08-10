@@ -160,16 +160,22 @@ main(int argc, char **argv1)
     TskAutoDb *autoDb = tskCase->initAddImage();
     autoDb->createBlockMap(blkMapFlag);
     autoDb->hashFiles(calcHash);
+    autoDb->setAddUnallocSpace(true);
 
     if (autoDb->startAddImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
-        tsk_error_print(stderr);
-        exit(1);
+        std::vector<TskAuto::error_record> errors = autoDb->getErrorList();
+        for (size_t i = 0; i < errors.size(); i++) {
+            fprintf(stderr, "Error: %s\n", TskAuto::errorRecordToString(errors[i]).c_str());
+        } 
     }
 
     if (autoDb->commitAddImage() == -1) {
         tsk_error_print(stderr);
         exit(1);
     }
+
+    autoDb->closeImage();
+    delete tskCase;
     
     exit(0);
 }

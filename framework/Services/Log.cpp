@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -13,10 +13,12 @@
 #include <share.h>
 #include "string.h"
 #include "Log.h"
+#include "Utilities/TskUtilities.h"
 #include "sys/stat.h"
 
 // @@@ imports for directory creation and deletion
 #include "windows.h"
+
 
 Log::Log()
 : m_logFile(NULL)
@@ -88,11 +90,30 @@ Log::~Log()
     close();
 }
 
-/**
- * Generate a log message with a given level.
- * @param a_channel Level of log to make
- * @param a_msg Message to record.
- */
+
+void Log::logf(Channel a_channel, char const *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    char buf[2048];
+#ifdef TSK_WIN32
+    vsnprintf_s(buf, 2048, _TRUNCATE, format, args);
+#else
+    buf[2047] = '\0';
+    vsnprintf(buf, 2047, format, args);
+#endif
+    std::string msg(buf);
+    log(a_channel, buf);
+    va_end(args);
+}
+
+void Log::log(Channel a_channel, const std::string &a_msg)
+{
+    std::wstring msg_w = TskUtilities::toUTF16(a_msg);
+    log(a_channel, msg_w);
+}
+
 void Log::log(Channel a_channel, const std::wstring &a_msg)
 {
     wchar_t level[10];

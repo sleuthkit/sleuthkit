@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -56,6 +56,7 @@ TskPipelineManager::~TskPipelineManager()
 }
 
 /**
+ * Creates a pipeline object by loading the config file. 
  * Looks for pipeline config file in either the system properties or with the
  * name TskPipelineManager::DEFAULT_PIPELINE_CONFIG in the CONFIG_DIR (as defined
  * in the sytem properties).  
@@ -65,26 +66,20 @@ TskPipelineManager::~TskPipelineManager()
 TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType)
 {
     // Get location of Pipeline configuration file.
-    std::wstring pipelineConfig = TSK_SYS_PROP_GET(TskSystemProperties::PIPELINE_CONFIG);
-    std::string utf8PipelineConfig;
-
-    Poco::UnicodeConverter::toUTF8(pipelineConfig, utf8PipelineConfig);
+    std::string pipelineConfig = GetSystemProperty(TskSystemProperties::PIPELINE_CONFIG_FILE);
 
     // If we haven't been provided with the name of a config file, use the default
-    if (utf8PipelineConfig.empty())
-        utf8PipelineConfig = TskPipelineManager::DEFAULT_PIPELINE_CONFIG;
+    if (pipelineConfig.empty())
+        pipelineConfig = TskPipelineManager::DEFAULT_PIPELINE_CONFIG;
 
-    Poco::Path configFile(utf8PipelineConfig);
+    Poco::Path configFile(pipelineConfig);
 
     // If the path is not absolute then we look for the pipeline
     // config file in the "config" folder.
     if (!configFile.isAbsolute())
     {
-        std::wstring configDir = TSK_SYS_PROP_GET(TskSystemProperties::CONFIG_DIR);
-        std::string utf8ConfigDir;
-        Poco::UnicodeConverter::toUTF8(configDir, utf8ConfigDir);
-
-        Poco::Path confDir(utf8ConfigDir);
+        std::string configDir = GetSystemProperty(TskSystemProperties::CONFIG_DIR);
+        Poco::Path confDir(configDir);
         confDir.append(configFile);
         configFile = confDir;
     }
@@ -98,6 +93,11 @@ TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType
 
         LOGERROR(errorMsg.str());
         throw TskException("Error opening pipeline config file.");
+    }
+    else {
+        std::wstringstream msg;
+        msg << L"TskPipelineManager::createPipeline -- using config file: " << configFile.toString().c_str();
+        LOGINFO(msg.str());
     }
 
     try
@@ -136,6 +136,16 @@ TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType
 
             if (pElem && pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE) == pipelineType)
             {
+                // quick sanity check to verify that there is only one pipeline in the config file for this type
+                for (unsigned long i2 = i+1; i2 < pipelines->length(); i2++) {
+                    Poco::XML::Node * pNode2 = pipelines->item(i2);
+                    Poco::XML::Element* pElem2 = dynamic_cast<Poco::XML::Element*>(pNode2);
+
+                    if (pElem2 && pElem2->getAttribute(TskPipelineManager::PIPELINE_TYPE) == pipelineType) {
+                        LOGERROR(L"TskPipelineManager::createPipeline: Multiple pipelines of the same type exist");
+                        throw TskException ("Error creating pipeline");
+                    }
+                }
                 // We found the right pipeline so initialize it.
                 Poco::XML::DOMWriter writer;
                 std::ostringstream pipelineXml;

@@ -3,7 +3,7 @@
  *  The Sleuth Kit
  *
  *  Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- *  Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ *  Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  *  reserved.
  *
  *  This software is distributed under the Common Public License 1.0
@@ -18,6 +18,7 @@
 
 #include "TskUtilities.h"
 #include "Services/TskServices.h"
+#include <tsk3/base/tsk_base_i.h>
 
 #include "Poco/UnicodeConverter.h"
 #include "Poco/Net/DNS.h"
@@ -78,4 +79,11 @@ bool TskUtilities::getHostIP(const std::string& host, std::string & host_ip)
         LOGERROR(msg.str());
         return false;
     }
+}
+
+
+void
+TskUtilities::cleanUTF8(char *buf)
+{
+    tsk_cleanupUTF8(buf, '^'); 
 }

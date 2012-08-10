@@ -92,7 +92,7 @@ public class ReprDataModel {
 		readContent(c);
 		try {
 			reprChildren(c.getChildren());
-		} catch (TskException ex) {
+		} catch (TskCoreException ex) {
 			throw new RuntimeException(ex);
 		}
 		tail();
@@ -100,19 +100,19 @@ public class ReprDataModel {
 
 	private void readContent(Content c) {
 		long size = c.getSize();
-		byte[] readBuffer;
+		byte[] readBuffer = new byte[READ_BUFFER_SIZE];
 		try {
 			MessageDigest md5 = MessageDigest.getInstance("MD5");
 
 			for (long i = 0; i < size; i = i + READ_BUFFER_SIZE) {
-				readBuffer = c.read(i, Math.min(size - i, READ_BUFFER_SIZE));
+				int read = c.read(readBuffer, i, Math.min(size - i, READ_BUFFER_SIZE));
 				md5.update(readBuffer);
 			}
 			String hash = toHex(md5.digest());
 
 			repr("read", "md5=" + hash);
 
-		} catch (TskException ex) {
+		} catch (TskCoreException ex) {
 			repr("read", ex);
 		} catch (NoSuchAlgorithmException ex) {
 			throw new RuntimeException(ex);
@@ -149,7 +149,6 @@ public class ReprDataModel {
 		repr("getDirTypeAsString", fsc.getDirTypeAsString());
 		repr("getDir_flags", fsc.getDir_flags());
 		repr("getDir_type", fsc.getDir_type());
-		repr("getDirtype", fsc.getDirtype());
 		repr("getGid", fsc.getGid());
 		repr("getMetaFlagsAsString", fsc.getMetaFlagsAsString());
 		repr("getMetaTypeAsString", fsc.getMetaTypeAsString());
@@ -164,6 +163,14 @@ public class ReprDataModel {
 		repr("getParentPath", fsc.getParentPath());
 		repr("getSize", fsc.getSize());
 		repr("getUid", fsc.getUid());
+	}
+	
+	private void reprLayoutFile(LayoutFile lf) {
+		repr("getSize", lf.getSize());
+		repr("getId", lf.getId());
+		repr("getName", lf.getName());
+		repr("getNumPartsu", (long)lf.getNumParts());
+		
 	}
 
 	private void reprFileSystem(FileSystem fs) {
@@ -206,7 +213,7 @@ public class ReprDataModel {
 		repr("getSsize", i.getSsize());
 		repr("getType", i.getType());
 		try {
-			int typeID = i.db.addArtifactType("Test_Artifact", "Test Artifact");
+			int typeID = i.getSleuthkitCase().addArtifactType("Test_Artifact", "Test Artifact");
 			BlackboardArtifact art1;
 			BlackboardArtifact art2;
 			BlackboardArtifact art3;
@@ -223,7 +230,7 @@ public class ReprDataModel {
 			bytearray3[0] = 5;
 			bytearray3[1] = 6;
 			
-			int attrTypeID = i.db.addAttrType("testattr", "Test Attribute");
+			int attrTypeID = i.getSleuthkitCase().addAttrType("testattr", "Test Attribute");
 			
 			art1.addAttribute(new BlackboardAttribute(attrTypeID, "regressionTest", "first_call", (int) 23));
 			art1.addAttribute(new BlackboardAttribute(attrTypeID, "regressionTest", "second_call", (long) 5));
@@ -232,7 +239,7 @@ public class ReprDataModel {
 			art1.addAttribute(new BlackboardAttribute(attrTypeID, "regressionTest", "fifth_call", bytearray1));
 			art2.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME.getTypeID(), "regressionTest", "sixth_call", (int) 23));
 			art2.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_FLAG.getTypeID(), "regressionTest", "seventh_call", (long) 5));
-			art2.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO.getTypeID(), "regressionTest", "eighth_call", (double) 7.412));
+			art2.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_GEO_ALTITUDE.getTypeID(), "regressionTest", "eighth_call", (double) 7.412));
 			art2.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD.getTypeID(), "regressionTest", "nineth_call", "test"));
 			art2.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_SET.getTypeID(), "regressionTest", "tenth_call", bytearray2));
 			art3.addAttribute(new BlackboardAttribute(1, "regressionTest", "eleventh_call", (int) 29));
@@ -250,8 +257,8 @@ public class ReprDataModel {
 				for(BlackboardAttribute attr : art.getAttributes()){
 					repr("AttributeGetArtifactID", attr.getArtifactID());
 					repr("AttributeGetAttributeTypeID", new Integer(attr.getAttributeTypeID()).toString());
-					repr("AttributeGetAttributeTypeName", i.db.getAttrTypeString(attr.getAttributeTypeID()));
-					repr("AttributeGetDisplayName", i.db.getAttrTypeDisplayName(attr.getAttributeTypeID()));
+					repr("AttributeGetAttributeTypeName", i.getSleuthkitCase().getAttrTypeString(attr.getAttributeTypeID()));
+					repr("AttributeGetDisplayName", i.getSleuthkitCase().getAttrTypeDisplayName(attr.getAttributeTypeID()));
 					repr("AttributeGetContext", attr.getContext());
 					repr("AttributeGetSource", attr.getModuleName());
 					BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE val_type = attr.getValueType();
@@ -276,7 +283,7 @@ public class ReprDataModel {
 				}
 			}
 			
-		} catch (TskException ex) {
+		} catch (TskCoreException ex) {
 			throw new RuntimeException(ex);
 		}
 	}
@@ -348,6 +355,14 @@ public class ReprDataModel {
 	}
 
 	private class ReprVisitor implements ContentVisitor<Void> {
+
+		@Override
+		public Void visit(LayoutFile u) {
+			reprLayoutFile(u);
+			return null;
+		}
+		
+		
 
 		@Override
 		public Void visit(Directory d) {

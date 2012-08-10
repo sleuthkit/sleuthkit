@@ -178,7 +178,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "fatfs_dent_parse_buf: Parsing sector %" PRIuDADDR
-                "\n", addrs[sidx]);
+                " for dir %"PRIuINUM"\n", addrs[sidx], a_fs_dir->addr);
 
         if ((sectalloc = fatfs_is_sectalloc(fatfs, addrs[sidx])) == -1) {
             if (tsk_verbose) {

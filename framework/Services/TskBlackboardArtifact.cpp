@@ -2,7 +2,7 @@
 * The Sleuth Kit
 *
 * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
-* Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+* Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
 * reserved.
 *
 * This software is distributed under the Common Public License 1.0
@@ -28,8 +28,8 @@ TskBlackboardArtifact::~TskBlackboardArtifact(){
 }
 
 /**
-* Get the artifact type id
-* @returns artifact type id
+* Get the artifact id
+* @returns artifact id
 */
 uint64_t TskBlackboardArtifact::getArtifactID()const{
     return m_artifactID;
@@ -70,6 +70,7 @@ string TskBlackboardArtifact::getDisplayName()const{
 /**
 * Add an attribute to this artifact
 * @param attr attribute to be added
+* @throws error if the given attribute has a bad type
 */
 void TskBlackboardArtifact::addAttribute(TskBlackboardAttribute& attr){
     attr.setArtifactID(m_artifactID);

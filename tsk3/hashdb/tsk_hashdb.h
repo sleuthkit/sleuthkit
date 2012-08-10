@@ -92,6 +92,8 @@ extern "C" {
     /// List of supported data base types
 #define TSK_HDB_DBTYPE_SUPPORT_STR		"nsrl-md5, nsrl-sha1, md5sum, encase, hk"
 
+#define TSK_HDB_NAME_MAXLEN 512 //< Max length for database name
+
 
     typedef struct TSK_HDB_INFO TSK_HDB_INFO;
 
@@ -106,7 +108,9 @@ extern "C" {
     */
     struct TSK_HDB_INFO {
 
-        TSK_TCHAR *db_fname;    ///< Name of the database
+        char db_name[TSK_HDB_NAME_MAXLEN];          ///< Name of the database
+
+        TSK_TCHAR *db_fname;    ///< Name of the database file
 
         TSK_TCHAR *uns_fname;   ///< Name of unsorted index file
 

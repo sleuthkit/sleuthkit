@@ -7,7 +7,8 @@
 
 #include <libtsk.h>
 #include <tsk_config.h>
-#include <string>
+#include <cstring>
+
 #ifdef HAVE_PTHREAD
 #ifdef __APPLE__
 #include <mach/semaphore.h>
@@ -20,6 +21,7 @@ extern "C" mach_port_t mach_task_self(void);
 #define SEM_TYPE sem_t
 #endif
 #endif
+
 #include "errors_test.h"
 
 // Registers the fixture into the 'registry'

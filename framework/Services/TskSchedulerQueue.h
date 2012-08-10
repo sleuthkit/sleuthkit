@@ -21,15 +21,9 @@
  */
 class TSK_FRAMEWORK_API TskSchedulerQueue : public Scheduler {
 public:
-    typedef struct {
-        Scheduler::TaskType task;   ///< type of task to perform
-        uint64_t id;    ///< ID of object to run task on
-    } task_struct;
-
-    /* Returns 1 on error */
-    int scheduleTask(int task, const void * args);
     int schedule(Scheduler::TaskType task, uint64_t startId, uint64_t endId);
-    TskSchedulerQueue::task_struct *next();
+    task_struct *nextTask();
+
 private:
     std::queue <task_struct *> m_queue;  
 };

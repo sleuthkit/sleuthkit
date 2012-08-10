@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2011 Basis Technology Corporation. All Rights
+ * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
  * reserved.
  *
  * This software is distributed under the Common Public License 1.0
@@ -27,30 +27,46 @@ TskFile::~TskFile(void)
 {
 }
 
-/**
- * 
- */
+
 void TskFile::initialize()
 {
     TskImgDB * imgDB = &TskServices::Instance().getImgDB();
+    // getDB will throw exception if ImgDB has not been setup
 
-    // XXX We never check the return value...
-    if (imgDB != NULL)
-        imgDB->getFileRecord(m_id, m_fileRecord);
+    if (imgDB != NULL) {
+        if (imgDB->getFileRecord(m_id, m_fileRecord)) {
+            throw TskException("TskFile::initialize: Error looking up file: " + m_id);
+        }
+    }
+}
+
+void TskFile::save()
+{
+    if (m_id == 0)
+    {
+        LOGERROR(L"TskFile::save - Attempt to save file with file id 0.");
+        throw TskException("Attempt to save file with file id 0.");
+    }
+
+    // If the file already exists we have nothing to do.
+    if (exists())
+        return;
+
+    // Make sure the file is open before saving.
+    open();
+
+    TskServices::Instance().getFileManager().saveFile(this);
 }
 
 /**
  * What is this files id?
  */
-uint64_t TskFile::id() const
+uint64_t TskFile::getId() const
 {
     return m_id;
 }
 
-/**
- * What is this files type id?
- */
-int TskFile::typeId() const
+TskImgDB::FILE_TYPES TskFile::getTypeId() const
 {
     return m_fileRecord.typeId;
 }
@@ -58,7 +74,7 @@ int TskFile::typeId() const
 /**
  * What is this files name?
  */
-std::string TskFile::name() const
+std::string TskFile::getName() const
 {
     return m_fileRecord.name;
 }
@@ -66,15 +82,19 @@ std::string TskFile::name() const
 /**
  * What is this files extension?
  */
-std::string TskFile::extension() const
+std::string TskFile::getExtension() const
 {
-    return m_fileRecord.name.substr(m_fileRecord.name.find_last_of(".") + 1);
+    size_t pos = m_fileRecord.name.find_last_of(".");
+    if (pos == std::string::npos)
+        return std::string("");
+    else
+        return m_fileRecord.name.substr(pos + 1);
 }
 
 /**
  * What is this files parent file id?
  */
-uint64_t TskFile::parentFileId() const
+uint64_t TskFile::getParentFileId() const
 {
     return m_fileRecord.parentFileId;
 }
@@ -82,14 +102,14 @@ uint64_t TskFile::parentFileId() const
 /**
  * What is this files directory type?
  */
-int TskFile::dirType() const
+TSK_FS_NAME_TYPE_ENUM TskFile::getDirType() const
 {
     return m_fileRecord.dirType;
 }
 /**
  * What is this files metadata type?
  */
-int TskFile::metaType() const
+TSK_FS_META_TYPE_ENUM TskFile::getMetaType() const
 {
     return m_fileRecord.metaType;
 }
@@ -97,7 +117,7 @@ int TskFile::metaType() const
 /**
  * What are this files directory flags?
  */
-int TskFile::dirFlags() const
+TSK_FS_NAME_FLAG_ENUM TskFile::getDirFlags() const
 {
     return m_fileRecord.dirFlags;
 }
@@ -105,7 +125,7 @@ int TskFile::dirFlags() const
 /**
  * What are this files metadata flags?
  */
-int TskFile::metaFlags() const
+TSK_FS_META_FLAG_ENUM TskFile::getMetaFlags() const
 {
     return m_fileRecord.metaFlags;
 }
@@ -113,7 +133,7 @@ int TskFile::metaFlags() const
 /**
  * What is this files size?
  */
-uint64_t TskFile::size() const
+TSK_OFF_T TskFile::getSize() const
 {
     return m_fileRecord.size;
 }
@@ -121,7 +141,7 @@ uint64_t TskFile::size() const
 /**
  * What is this files change time?
  */
-int TskFile::ctime() const
+time_t TskFile::getCtime() const
 {
     return m_fileRecord.ctime;
 }
@@ -129,7 +149,7 @@ int TskFile::ctime() const
 /**
  * What is this files creation time?
  */
-int TskFile::crtime() const
+time_t TskFile::getCrtime() const
 {
     return m_fileRecord.crtime;
 }
@@ -137,7 +157,7 @@ int TskFile::crtime() const
 /**
  * What is this files access time?
  */
-int TskFile::atime() const
+time_t TskFile::getAtime() const
 {
     return m_fileRecord.atime;
 }
@@ -145,7 +165,7 @@ int TskFile::atime() const
 /**
  * What is this files modify time?
  */
-int TskFile::mtime() const
+time_t TskFile::getMtime() const
 {
     return m_fileRecord.mtime;
 }
@@ -153,7 +173,7 @@ int TskFile::mtime() const
 /**
  * What is this files mode?
  */
-int TskFile::mode() const
+TSK_FS_META_MODE_ENUM TskFile::getMode() const
 {
     return m_fileRecord.mode;
 }
@@ -161,7 +181,7 @@ int TskFile::mode() const
 /**
  * What is this files user id?
  */
-int TskFile::uid() const
+TSK_UID_T TskFile::getUid() const
 {
     return m_fileRecord.uid;
 }
@@ -169,7 +189,7 @@ int TskFile::uid() const
 /**
  * What is this files group id?
  */
-int TskFile::gid() const
+TSK_GID_T TskFile::getGid() const
 {
     return m_fileRecord.gid;
 }
@@ -177,7 +197,7 @@ int TskFile::gid() const
 /**
  * What is this files status?
  */
-int TskFile::status() const
+TskImgDB::FILE_STATUS TskFile::getStatus() const
 {
     return m_fileRecord.status;
 }
@@ -185,12 +205,38 @@ int TskFile::status() const
 /*
  * What is this files full path
  */
-std::string TskFile::fullPath() const
+std::string TskFile::getFullPath() const
 {
     return m_fileRecord.fullPath;
 }
 
-// Get the file hash
+std::string TskFile::getUniquePath() const
+{
+    std::stringstream path;
+    
+    if (m_fileRecord.typeId == TskImgDB::IMGDB_FILES_TYPE_CARVED)
+    {
+        path << "/carved/" << m_fileRecord.fullPath;
+    }
+    else
+    {
+        uint64_t fileSystemSectorOffset = 0;
+        uint64_t unusedUint = 0;
+        int unusedInt = 0;
+        if (m_fileRecord.typeId == TskImgDB::IMGDB_FILES_TYPE_DERIVED)
+        {
+            TskServices::Instance().getImgDB().getFileUniqueIdentifiers(m_fileRecord.parentFileId, fileSystemSectorOffset, unusedUint, unusedInt, unusedInt);
+        }
+        else
+        {
+            TskServices::Instance().getImgDB().getFileUniqueIdentifiers(m_fileRecord.fileId, fileSystemSectorOffset, unusedUint, unusedInt, unusedInt);
+        }
+        path << "/FsOffset-" << fileSystemSectorOffset << "/" << m_fileRecord.fullPath;
+    }
+
+    return path.str();
+}
+
 std::string TskFile::getHash(TskImgDB::HASH_TYPE hashType) const
 {
     switch (hashType) {
@@ -232,17 +278,22 @@ void TskFile::setHash(TskImgDB::HASH_TYPE hashType, const std::string hash)
     }
 }
 
-/// Set the file status
+TskImgDB::KNOWN_STATUS TskFile::getKnownStatus() const
+{
+    return TskServices::Instance().getImgDB().getKnownStatus(getId());
+}
+
 void TskFile::setStatus(TskImgDB::FILE_STATUS status)
 {
     m_fileRecord.status = status;
-    TskServices::Instance().getImgDB().updateFileStatus(id(), status);
+    TskServices::Instance().getImgDB().updateFileStatus(getId(), status);
 }
 
 /**
  * Create a new artifact with the given type id
  * @param artifactTypeID type id
  * @returns the new artifact
+ * @throws error if the artifact type does not exist
  */
 TskBlackboardArtifact TskFile::createArtifact(int artifactTypeID){
     return TskServices::Instance().getBlackboard().createArtifact(m_id, artifactTypeID);
@@ -252,6 +303,7 @@ TskBlackboardArtifact TskFile::createArtifact(int artifactTypeID){
  * Create a new artifact with the given type
  * @param type artifact type
  * @returns the new artifact
+ * @throws error if the artifact type does not exist
  */
 TskBlackboardArtifact TskFile::createArtifact(TSK_ARTIFACT_TYPE type){
     return TskServices::Instance().getBlackboard().createArtifact(m_id, type);
@@ -261,6 +313,7 @@ TskBlackboardArtifact TskFile::createArtifact(TSK_ARTIFACT_TYPE type){
  * Create a new artifact with the given type name
  * @param artifactTypeName artifact type name
  * @returns the new artifact
+ * @throws error if the artifact type does not exist
  */
 TskBlackboardArtifact TskFile::createArtifact(string artifactTypeName){
     return TskServices::Instance().getBlackboard().createArtifact(m_id, artifactTypeName);
@@ -269,7 +322,7 @@ TskBlackboardArtifact TskFile::createArtifact(string artifactTypeName){
 /**
  * Get all artifacts associated with this file with the given type name
  * @param artifactTypeName type name
- * @returns all matching artifacts
+ * @returns all matching artifacts will return an empty vector if there are no matches
  */
 vector<TskBlackboardArtifact> TskFile::getArtifacts(string artifactTypeName){
     return TskServices::Instance().getBlackboard().getArtifacts(m_id, artifactTypeName);
@@ -278,7 +331,7 @@ vector<TskBlackboardArtifact> TskFile::getArtifacts(string artifactTypeName){
 /**
  * Get all artifacts associated with this file with the given type id
  * @param artifactTypeID type id
- * @returns all matching artifacts
+ * @returns all matching artifacts will return an empty vector if there are no matches
  */
 vector<TskBlackboardArtifact> TskFile::getArtifacts(int artifactTypeID){
     return TskServices::Instance().getBlackboard().getArtifacts(m_id, artifactTypeID);
@@ -287,7 +340,7 @@ vector<TskBlackboardArtifact> TskFile::getArtifacts(int artifactTypeID){
 /**
  * Get all artifacts associated with this file with the given type
  * @param type artifact type
- * @returns all matching artifacts
+ * @returns all matching artifacts will return an empty vector if there are no matches
  */
 vector<TskBlackboardArtifact> TskFile::getArtifacts(TSK_ARTIFACT_TYPE type){
     return TskServices::Instance().getBlackboard().getArtifacts(m_id, type);
@@ -306,7 +359,7 @@ vector<TskBlackboardArtifact> TskFile::getAllArtifacts(){
 /**
  * Get all artifacts associated with this file with the given type name
  * @param attributeTypeName type name
- * @returns all matching artifacts
+ * @returns all matching attributes will return an empty vector if there are no matches
  */
 vector<TskBlackboardAttribute> TskFile::getAttributes(string attributeTypeName){
     stringstream str;
@@ -317,7 +370,7 @@ vector<TskBlackboardAttribute> TskFile::getAttributes(string attributeTypeName){
 /**
  * Get all artifacts associated with this file with the given type id
  * @param attributeTypeID type id
- * @returns all matching artifacts
+ * @returns all matching attributes will return an empty vector if there are no matches
  */
 vector<TskBlackboardAttribute> TskFile::getAttributes(int attributeTypeID){
     stringstream str;
@@ -328,7 +381,7 @@ vector<TskBlackboardAttribute> TskFile::getAttributes(int attributeTypeID){
 /**
  * Get all artifacts associated with this file with the given type
  * @param type artifact type
- * @returns all matching artifacts
+ * @returns all matching attributes will return an empty vector if there are no matches
  */
 vector<TskBlackboardAttribute> TskFile::getAttributes(TSK_ATTRIBUTE_TYPE type){
     stringstream str;
@@ -348,16 +401,16 @@ vector<TskBlackboardAttribute> TskFile::getAllAttributes(){
 
 /**
  * Get the general info artifact for this file
- * @returns all matching artifacts
+ * @returns the general info artifact or creates it if it has not already been made
  */
 TskBlackboardArtifact TskFile::getGenInfo(){
     TskBlackboard& blackboard = TskServices::Instance().getBlackboard();
 
     vector<TskBlackboardArtifact> artifacts;
-    artifacts = getArtifacts(TSK_ART_GEN_INFO);
+    artifacts = getArtifacts(TSK_GEN_INFO);
 
     if(artifacts.size() == 0)
-        return createArtifact(TSK_ART_GEN_INFO);
+        return createArtifact(TSK_GEN_INFO);
     else
         return artifacts[0];
 }

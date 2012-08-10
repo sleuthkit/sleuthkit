@@ -1197,8 +1197,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
         if (fs_attr->nrd.compsize <= 0) {
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
             tsk_error_set_errstr
-                ("ntfs_attrwalk_special: Compressed attribute has compsize of 0 (%"PRIuINUM")", 
-				fs_attr->fs_file->meta->addr);
+                ("ntfs_attrwalk_special: Compressed attribute has compsize of 0 (%"
+                PRIuINUM ")", fs_attr->fs_file->meta->addr);
             return 1;
         }
 
@@ -1229,17 +1229,20 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (fs_attr_run->addr != 0) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                     else
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
-                        ("ntfs_attr_walk_special: Filler Entry exists in fs_attr_run %" PRIuDADDR
-						"@%" PRIuDADDR " - type: %" PRIu32 "  id: %d Meta: %"PRIuINUM " Status: %s",
+                        ("ntfs_attr_walk_special: Filler Entry exists in fs_attr_run %"
+                        PRIuDADDR "@%" PRIuDADDR " - type: %" PRIu32
+                        "  id: %d Meta: %" PRIuINUM " Status: %s",
                         fs_attr_run->len, fs_attr_run->addr, fs_attr->type,
-                        fs_attr->id, fs_attr->fs_file->meta->addr, 
-						(fs_attr->fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)?"Allocated":"Deleted");
+                        fs_attr->id, fs_attr->fs_file->meta->addr,
+                        (fs_attr->fs_file->meta->
+                            flags & TSK_FS_META_FLAG_ALLOC) ? "Allocated" :
+                        "Deleted");
                     free(comp_unit);
                     ntfs_uncompress_done(&comp);
                     return 1;
@@ -1258,16 +1261,18 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (addr > fs->last_block) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                     else
                         tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
                     tsk_error_set_errstr
-						("ntfs_attr_walk_special: Invalid address in run (too large): %" PRIuDADDR
-						" Meta: %"PRIuINUM" Status: %s", 
-						addr, fs_attr->fs_file->meta->addr,
-						(fs_attr->fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)?"Allocated":"Deleted");
+                        ("ntfs_attr_walk_special: Invalid address in run (too large): %"
+                        PRIuDADDR " Meta: %" PRIuINUM " Status: %s", addr,
+                        fs_attr->fs_file->meta->addr,
+                        (fs_attr->fs_file->meta->
+                            flags & TSK_FS_META_FLAG_ALLOC) ? "Allocated" :
+                        "Deleted");
 
                     free(comp_unit);
                     ntfs_uncompress_done(&comp);
@@ -1286,10 +1291,13 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                     // decompress the unit
                     if (ntfs_proc_compunit(ntfs, &comp, comp_unit,
                             comp_unit_idx)) {
-								tsk_error_set_errstr2("%" PRIuINUM " - type: %" PRIu32 "  id: %d Status: %s",
-							fs_attr->fs_file->meta->addr, fs_attr->type,
-							fs_attr->id,
-							(fs_attr->fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)?"Allocated":"Deleted");
+                        tsk_error_set_errstr2("%" PRIuINUM " - type: %"
+                            PRIu32 "  id: %d Status: %s",
+                            fs_attr->fs_file->meta->addr, fs_attr->type,
+                            fs_attr->id,
+                            (fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_ALLOC) ?
+                            "Allocated" : "Deleted");
                         free(comp_unit);
                         ntfs_uncompress_done(&comp);
                         return 1;
@@ -1305,8 +1313,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             TSK_FS_BLOCK_FLAG_COMP;
                         retval = is_clustalloc(ntfs, comp_unit[i]);
                         if (retval == -1) {
-                            if (fs_attr->fs_file->
-                                meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                            if (fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_UNALLOC)
                                 tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -1329,10 +1337,14 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
                             tsk_error_set_errstr
                                 ("ntfs_attrwalk_special: Trying to read past end of uncompressed buffer: %"
-								PRIuSIZE " %" PRIuSIZE " Meta: %"PRIuINUM" Status: %s",
+                                PRIuSIZE " %" PRIuSIZE " Meta: %" PRIuINUM
+                                " Status: %s",
                                 i * fs->block_size + read_len,
-                                comp.uncomp_idx, fs_attr->fs_file->meta->addr,
-								(fs_attr->fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)?"Allocated":"Deleted");
+                                comp.uncomp_idx,
+                                fs_attr->fs_file->meta->addr,
+                                (fs_attr->fs_file->meta->
+                                    flags & TSK_FS_META_FLAG_ALLOC) ?
+                                "Allocated" : "Deleted");
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
                             return 1;
@@ -1434,8 +1446,9 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         if (a_offset >= a_fs_attr->size) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ_OFF);
-			tsk_error_set_errstr("ntfs_file_read_special - %" PRIuOFF " Meta: %"PRIuINUM,
-                a_offset, a_fs_attr->fs_file->meta->addr);
+            tsk_error_set_errstr("ntfs_file_read_special - %" PRIuOFF
+                " Meta: %" PRIuINUM, a_offset,
+                a_fs_attr->fs_file->meta->addr);
             return -1;
         }
 
@@ -1518,10 +1531,13 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                     // decompress the unit
                     if (ntfs_proc_compunit(ntfs, &comp, comp_unit,
                             comp_unit_idx)) {
-								tsk_error_set_errstr2("%" PRIuINUM " - type: %" PRIu32 "  id: %d  Status: %s",
-							a_fs_attr->fs_file->meta->addr, a_fs_attr->type,
-							a_fs_attr->id,
-							(a_fs_attr->fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)?"Allocated":"Deleted");
+                        tsk_error_set_errstr2("%" PRIuINUM " - type: %"
+                            PRIu32 "  id: %d  Status: %s",
+                            a_fs_attr->fs_file->meta->addr,
+                            a_fs_attr->type, a_fs_attr->id,
+                            (a_fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_ALLOC) ?
+                            "Allocated" : "Deleted");
                         free(comp_unit);
                         ntfs_uncompress_done(&comp);
                         return -1;
@@ -2385,8 +2401,9 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
              * unallocated.  If so, then the list entry could
              * have been reallocated, so we will just ignore it
              */
-            if (((tsk_getu16(fs->endian, mft->flags) & NTFS_MFT_INUSE) == 0) ||
-                (fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)) {
+            if (((tsk_getu16(fs->endian,
+                            mft->flags) & NTFS_MFT_INUSE) == 0)
+                || (fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)) {
                 continue;
             }
             else {
@@ -3042,7 +3059,7 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     uint32_t sii_sechash = 0;
     uint32_t sds_sechash = 0;
     uint64_t sds_file_off = 0;
-    uint32_t sds_ent_size = 0;
+    //uint32_t sds_ent_size = 0;
     uint64_t sii_sds_file_off = 0;
     uint32_t sii_sds_ent_size = 0;
 
@@ -3064,8 +3081,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     // versions of NTFS.
     for (i = 0; i < ntfs->sii_data.used; i++) {
         if (tsk_getu32(fs->endian,
-                ((ntfs_attr_sii *) (ntfs->sii_data.
-                        buffer))[i].key_sec_id) == secid) {
+                ((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i].
+                key_sec_id) == secid) {
             sii = &((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i];
             break;
         }
@@ -3106,7 +3123,7 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     sds_secid = tsk_getu32(fs->endian, sds->sec_id);
     sds_sechash = tsk_getu32(fs->endian, sds->hash_sec_desc);
     sds_file_off = tsk_getu64(fs->endian, sds->file_off);
-    sds_ent_size = tsk_getu32(fs->endian, sds->ent_size);
+    //sds_ent_size = tsk_getu32(fs->endian, sds->ent_size);
 
     // Sanity check to make sure the $SII entry points to
     // the correct $SDS entry.
@@ -3357,6 +3374,13 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     // Allocate space for the entire $SII stream.
     sii_buffer.size = (size_t) roundup(fs_attr_sii->size, fs->block_size);
     sii_buffer.used = 0;
+
+    // arbitrary check because we had problems before with alloc too much memory
+    if (sii_buffer.size > 64000000) {
+        if (tsk_verbose) 
+            tsk_fprintf(stderr, "ntfs_load_secure: sii_buffer.size is too large: %z\n", sii_buffer.size);
+        return 0;
+    }
     if ((sii_buffer.buffer = tsk_malloc(sii_buffer.size)) == NULL) {
         return 1;
     }
@@ -3374,6 +3398,12 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     // descriptors. We should be able to use the $SII offset to index
     // into the $SDS stream.
     sds_buffer.size = (size_t) roundup(fs_attr->size, fs->block_size);
+    // arbitrary check because we had problems before with alloc too much memory
+    if (sds_buffer.size > 64000000) {
+        if (tsk_verbose) 
+            tsk_fprintf(stderr, "ntfs_load_secure: sds_buffer.size is too large: %z\n", sds_buffer.size);
+        return 0;
+    }
     sds_buffer.used = 0;
     if ((sds_buffer.buffer = tsk_malloc(sds_buffer.size)) == NULL) {
         free(sii_buffer.buffer);
@@ -4040,7 +4070,7 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
     const TSK_FS_ATTR *fs_attr;
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     ntfs_mft *mft;
-    char timeBuf[32];
+    char timeBuf[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -4153,10 +4183,15 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
 
         if (sec_skew != 0) {
             tsk_fprintf(hFile, "\nAdjusted times:\n");
-            fs_file->meta->mtime -= sec_skew;
-            fs_file->meta->atime -= sec_skew;
-            fs_file->meta->ctime -= sec_skew;
-            fs_file->meta->crtime -= sec_skew;
+            if (fs_file->meta->mtime)
+                fs_file->meta->mtime -= sec_skew;
+            if (fs_file->meta->atime)
+                fs_file->meta->atime -= sec_skew;
+            if (fs_file->meta->ctime)
+                fs_file->meta->ctime -= sec_skew;
+            if (fs_file->meta->crtime)
+                fs_file->meta->crtime -= sec_skew;
+            
             tsk_fprintf(hFile, "Created:\t%s\n",
                 tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
             tsk_fprintf(hFile, "File Modified:\t%s\n",
@@ -4165,10 +4200,16 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                 tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
             tsk_fprintf(hFile, "Accessed:\t%s\n",
                 tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
-            fs_file->meta->mtime += sec_skew;
-            fs_file->meta->atime += sec_skew;
-            fs_file->meta->ctime += sec_skew;
-            fs_file->meta->crtime += sec_skew;
+
+            if (fs_file->meta->mtime == 0)
+                fs_file->meta->mtime += sec_skew;
+            if (fs_file->meta->atime == 0)
+                fs_file->meta->atime += sec_skew;
+            if (fs_file->meta->ctime == 0)
+                fs_file->meta->ctime += sec_skew;
+            if (fs_file->meta->crtime == 0)
+                fs_file->meta->crtime += sec_skew;
+            
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
 
@@ -4664,7 +4705,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
-            ("Not a NTFS file system (invalid sector size)");
+            ("Not a NTFS file system (invalid sector size %d))", ntfs->ssize_b);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid sector size: %d\n",
                 ntfs->ssize_b);
@@ -4684,7 +4725,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
-            ("Not a NTFS file system (invalid cluster size)");
+            ("Not a NTFS file system (invalid cluster size %d)", ntfs->fs->csize);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid cluster size: %d\n",
                 ntfs->fs->csize);
@@ -4756,9 +4797,9 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
-            ("Not a NTFS file system (invalid idx record size)");
+            ("Not a NTFS file system (invalid idx record size %d)", ntfs->idx_rsize_b);
         if (tsk_verbose)
-            fprintf(stderr, "ntfs_open: invalid idx record size\n");
+            fprintf(stderr, "ntfs_open: invalid idx record size %d\n", ntfs->idx_rsize_b);
         return NULL;
     }
 
@@ -4826,6 +4867,10 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->tag = 0;
         free(ntfs->fs);
         free(ntfs);
+        if (tsk_verbose)
+            fprintf(stderr,
+                "ntfs_open: Error opening $MFT (%s)\n",
+                tsk_error_get());
         return NULL;
     }
 
@@ -4844,7 +4889,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_errstr2_concat(" - Data Attribute not found in $MFT");
         if (tsk_verbose)
             fprintf(stderr,
-                "ntfs_open: Data attribute not found in $MFT\n");
+                "ntfs_open: Data attribute not found in $MFT (%s)\n",
+                tsk_error_get());
         return NULL;
     }
 
@@ -4868,7 +4914,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs);
         if (tsk_verbose)
             fprintf(stderr,
-                "ntfs_open: Error loading file system version\n");
+                "ntfs_open: Error loading file system version ((%s)\n",
+                tsk_error_get());
         return NULL;
     }
 
@@ -4879,7 +4926,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs->fs);
         free(ntfs);
         if (tsk_verbose)
-            fprintf(stderr, "ntfs_open: Error loading block bitmap\n");
+            fprintf(stderr, "ntfs_open: Error loading block bitmap (%s)\n",
+                    tsk_error_get());
         return NULL;
     }
 
@@ -4891,7 +4939,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs->fs);
         free(ntfs);
         if (tsk_verbose)
-            fprintf(stderr, "ntfs_open: Error loading Secure Info\n");
+            fprintf(stderr, "ntfs_open: Error loading Secure Info (%s)\n",
+                    tsk_error_get());
         return NULL;
     }
 #endif

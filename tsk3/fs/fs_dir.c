@@ -17,6 +17,7 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
+
 /** \internal
 * Allocate a FS_DIR structure to load names into.
 *
@@ -490,7 +491,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     a_dinfo->list_inum_named = NULL;
                     a_dinfo->save_inum_named = 0;
                 }
-
                 return TSK_WALK_STOP;
             }
             else if (retval == TSK_WALK_ERROR) {
@@ -573,7 +573,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     save_bak = a_dinfo->save_inum_named;
                     a_dinfo->save_inum_named = 0;
                 }
-
                 retval = tsk_fs_dir_walk_lcl(a_fs,
                     a_dinfo, fs_file->name->meta_addr, a_flags,
                     a_action, a_ptr);
@@ -606,6 +605,10 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 a_dinfo->depth--;
                 if (depth_added)
                     *a_dinfo->didx[a_dinfo->depth] = '\0';
+            }
+            else {
+                if (tsk_verbose)
+                    fprintf(stderr, "tsk_fs_dir_walk_lcl: Loop detected with address %"PRIuINUM, fs_file->name->meta_addr); 
             }
         }
 
@@ -817,9 +820,14 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
     tsk_take_lock(&a_fs->list_inum_named_lock);
     if (a_fs->list_inum_named != NULL) {
         tsk_release_lock(&a_fs->list_inum_named_lock);
+        if (tsk_verbose)
+            fprintf(stderr, "tsk_fs_dir_load_inum_named: List already populated.  Skipping walk.\n");
         return TSK_OK;
     }
     tsk_release_lock(&a_fs->list_inum_named_lock);
+
+    if (tsk_verbose)
+        fprintf(stderr, "tsk_fs_dir_load_inum_named: Performing dir walk to find named files\n");
 
     /* Do a dir_walk.  There is internal caching code that will populate
      * the structure.  The callback is really a dummy call.  This could
@@ -861,6 +869,17 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
 
     // add this entry to the orphan list
     if (a_fs_file->meta) {
+
+        /* check if we have already added it as an orphan (in a subdirectory)
+         * Not entirely sure how possible this is, but it was added while
+         * debugging an infinite loop problem. */
+        if (tsk_list_find(data->orphan_subdir_list, a_fs_file->meta->addr)) {
+            if (tsk_verbose)
+                fprintf(stderr, "load_orphan_dir_walk_cb: Detected loop with address %"PRIuINUM,
+                    a_fs_file->meta->addr);
+            return TSK_WALK_STOP;
+        }
+
         tsk_list_add(&data->orphan_subdir_list, a_fs_file->meta->addr);
 
         /* FAT file systems spend a lot of time hunting for parent
@@ -928,12 +947,15 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
     /* Go into directories to mark their contents as "seen" */
     if (a_fs_file->meta->type == TSK_FS_META_TYPE_DIR) {
 
+        if (tsk_verbose)
+            fprintf(stderr, "find_orphan_meta_walk_cb: Going into directory %"PRIuINUM" to mark contents as seen\n", a_fs_file->meta->addr);
+
         if (tsk_fs_dir_walk(fs, a_fs_file->meta->addr,
                 TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE
                 | TSK_FS_DIR_WALK_FLAG_NOORPHAN, load_orphan_dir_walk_cb,
                 data)) {
             tsk_error_errstr2_concat
-                (" - tsk_fs_dir_load_inum_named: identifying inodes allocated by file names");
+                (" - find_orphan_meta_walk_cb: identifying inodes allocated by file names");
             return TSK_ERR;
         }
     }
@@ -994,6 +1016,9 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
         return TSK_OK;
     }
 
+    if (tsk_verbose)
+        fprintf(stderr, "tsk_fs_dir_find_orphans: Searching for orphan files\n");
+
     memset(&data, 0, sizeof(FIND_ORPHAN_DATA));
 
     /* We first need to determine which of the unallocated meta structures
@@ -1016,6 +1041,9 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
         return TSK_ERR;
     }
 
+    if (tsk_verbose)
+        fprintf(stderr, "tsk_fs_dir_find_orphans: Performing inode_walk to find unnamed metadata structures\n");
+
     if (tsk_fs_meta_walk(a_fs, a_fs->first_inum, a_fs->last_inum,
             TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_USED,
             find_orphan_meta_walk_cb, &data)) {
@@ -1026,6 +1054,10 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
 
     tsk_fs_name_free(data.fs_name);
     data.fs_name = NULL;
+
+
+    if (tsk_verbose)
+        fprintf(stderr, "tsk_fs_dir_find_orphans: De-duping orphan files and directories\n");
 
     /* do some cleanup on the final list. This cleanup will compare the
      * entries in the root orphan directory with files that can be accessed

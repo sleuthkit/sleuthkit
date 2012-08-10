@@ -24,6 +24,8 @@ Regardless of the method that you use to start the processing, the TskAuto::proc
 
 Inside of your TskAuto::processFile() method, you can read the contents of the file using either tsk_fs_file_read() or tsk_fs_file_walk(). If you want to see each attribute in a file, then you should call processAttributes() and implement the processAttribute() method, which will be called for each attribute. 
 
+Error handling will be described in more detail later, but it is worth pointing out in this section that the processFile() method should set error codes and call TskAuto::registerError() when it encounters errors so that consistent error reporting is performed. 
+
 \section auto_filter Filtering Results
 
 With the methods defined above, TskAuto::processFile() will get called for all files and directories in an image.  This maybe more files than you want though.  There are thtree methods that will alert you when TskAuto is about to process a new volume or file system and will allow you to not process the volume or file system. 
@@ -35,6 +37,15 @@ You can implement the TskAuto::filterVol() method to learn about each volume bef
 You can implement the TskAuto::filterFs() method to learn about each file system before it is processed.  The return value of this method can cause TskAuto to skip the file system or stop processing the disk image entirely. 
 
 There are also a series of protected methods in TskAuto that will help you to skip files that may not be relevant to you.  For example, TskAuto::isNtfsSystemFiles() will tell you if a file is one of the NTFS file system files (such as $MFT) that you may want to skip. You can use this method in TskAuto::processFile() to skip the big NTFS files.  Refer to the protected methods in TskAuto for others that are defined for this purpose (they all begin with "is"). 
+
+
+\section auto_errors Error Handling and Recursion 
+
+The goal of TskAuto is to get through the disk image and process as many files as possible.  Therefore, it will continue even if an error is encountered.  
+
+The public methods will return a value if any error occured.  As an error occured, it was registered with TskAuto and recorded in a list. To determine how many and which errors occured, use the TskAuto::getErrorList() method.   
+
+If you encounter error scenarios while implementing TskAuto::processFile() or TskAuto::processAttribute(), then you should also send the errors to TskAuto::registerError() so that they are all recorded in a central location. 
 
 
 \section auto_examples Examples

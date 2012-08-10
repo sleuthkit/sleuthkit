@@ -55,7 +55,8 @@ Display orphan inodes (unallocated with no file name)
 for \fB-LZ\fR
 (see the \fBfine controls\fR section below).
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types.
+Identify the type of image file, such as raw. 
+Use '\-i list' to list the supported types.
 If not given, autodetection methods are used.
 .IP "-o imgoffset"
 The sector offset where the file system starts in the image.  
@@ -66,7 +67,9 @@ Turn on verbose mode, output to stderr.
 .IP \fB-V\fR
 Display Version.
 .IP "image [images]"
-One (or more if split) disk or partition images whose format is given with '\-i'.
+The disk or partition image to read, whose format is given with '\-i'.
+Multiple image file names can be given if the image is split into multiple segments.
+If only one image file is given, and its name is the first in a sequence (e.g., as indicated by ending in '.001'), subsequent image segments will be included automatically.
 .IP "\fIstart-stop\fR"
 Examine the specified inode number or number range. 
 .PP

@@ -4,6 +4,11 @@
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
+** Matt Stillerman [matt@atc-nycorp.com]
+** Copyright (c) 2012 ATC-NY.  All rights reserved.
+** This file contains data developed with support from the National
+** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
+**
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
 ** 
@@ -204,6 +209,7 @@ extern "C" {
 
     /**
     * These are based on the NTFS type values. 
+     * Added types for HFS+.
     */
     typedef enum {
         TSK_FS_ATTR_TYPE_DEFAULT = 0x01,        // 1
@@ -225,7 +231,14 @@ extern "C" {
         TSK_FS_ATTR_TYPE_NTFS_EA = 0xE0,        // 224
         TSK_FS_ATTR_TYPE_NTFS_PROP = 0xF0,      //  (NT)
         TSK_FS_ATTR_TYPE_NTFS_LOG = 0x100,      //  (2K)
-        TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001    //  Indirect blocks for UFS and ExtX file systems
+        TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001,   //  Indirect blocks for UFS and ExtX file systems
+
+        // Types for HFS+ File Attributes
+        TSK_FS_ATTR_TYPE_HFS_DEFAULT = 0x01,    // 1    Data fork of fs special files and misc
+        TSK_FS_ATTR_TYPE_HFS_DATA = 0x1100,     // 4352 Data fork of regular files
+        TSK_FS_ATTR_TYPE_HFS_RSRC = 0x1101,     // 4353 Resource fork of regular files
+        TSK_FS_ATTR_TYPE_HFS_EXT_ATTR = 0x1102, // 4354 Extended Attributes, except compression records
+        TSK_FS_ATTR_TYPE_HFS_COMP_REC = 0x1103, // 4355 Compression records
     } TSK_FS_ATTR_TYPE_ENUM;
 
 #define TSK_FS_ATTR_ID_DEFAULT  0       ///< Default Data ID used if file system does not assign one.
@@ -665,6 +678,8 @@ extern "C" {
         a_fs_file, int a_idx);
     extern const TSK_FS_ATTR *tsk_fs_file_attr_get_type(TSK_FS_FILE *
         a_fs_file, TSK_FS_ATTR_TYPE_ENUM, uint16_t, uint8_t);
+    extern const TSK_FS_ATTR *tsk_fs_file_attr_get_id(TSK_FS_FILE *
+        a_fs_file, uint16_t);
 
     extern uint8_t tsk_fs_file_walk(TSK_FS_FILE * a_fs_file,
         TSK_FS_FILE_WALK_FLAG_ENUM a_flags, TSK_FS_FILE_WALK_CB a_action,
@@ -1403,9 +1418,7 @@ class TskFsAttribute {
                     return new TskFsAttrRun(run);
                 i++;
                 run = run->next;
-            }
-        }
-        return NULL;
+        }} return NULL;
     };
 
     /**
@@ -1419,9 +1432,7 @@ class TskFsAttribute {
             while (run != NULL) {
                 size++;
                 run = run->next;
-            }
-        }
-        return size;
+        }} return size;
     }
 
     /**
@@ -1640,7 +1651,7 @@ class TskFsInfo {
     }
 
     /**
-        * Read arbitrary data from inside of the file system. 
+    * Read arbitrary data from inside of the file system. 
     * See tsk_fs_block_free() for details
     * @param a_off The byte offset to start reading from (relative to start of file system)
     * @param a_buf The buffer to store the block in.
@@ -1655,7 +1666,7 @@ class TskFsInfo {
     };
 
     /**
-        * Read a file system block.
+    * Read a file system block.
     * See tsk_fs_read_block() for details
     * @param a_addr The starting block file system address. 
     * @param a_buf The char * buffer to store the block data in.
@@ -1670,7 +1681,7 @@ class TskFsInfo {
     };
 
     /**
-        * Walk a range of metadata structures and call a callback for each
+    * Walk a range of metadata structures and call a callback for each
     * structure that matches the flags supplied.   For example, it can
     * call the callback on only allocated or unallocated entries. 
     * See tsk_fs_meta_walk() for details
@@ -1823,7 +1834,7 @@ class TskFsInfo {
     * @param a_str String to parse.
     * @returns ID of string (or unsupported if the name is unknown)
     */
-    static const TSK_FS_TYPE_ENUM typeToId(const TSK_TCHAR * a_str) {
+    static TSK_FS_TYPE_ENUM typeToId(const TSK_TCHAR * a_str) {
         return tsk_fs_type_toid(a_str);
     };
 
@@ -2090,8 +2101,7 @@ class TskFsInfo {
             return m_fsInfo->img_info;
         else
             return NULL;
-    }
-};                              //TskFsInfo
+}};                             //TskFsInfo
 
 
 
@@ -2285,8 +2295,7 @@ class TskFsMeta {
             while (nameList != NULL) {
                 nameList = nameList->next;
                 numOfList += 1;
-            }
-            m_nameListLen = numOfList;
+            } m_nameListLen = numOfList;
         }
         else {
             m_nameList = NULL;
@@ -2555,9 +2564,7 @@ class TskFsMeta {
             while (name != NULL) {
                 size++;
                 name = name->next;
-            }
-        }
-        return size;
+        }} return size;
     };
 
     /**
@@ -2574,9 +2581,7 @@ class TskFsMeta {
                     return new TskFsMetaName(name);
                 i++;
                 name = name->next;
-            }
-        }
-        return NULL;
+        }} return NULL;
     };
 
   private:

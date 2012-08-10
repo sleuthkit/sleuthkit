@@ -15,9 +15,48 @@
 
 #include "tsk_hashdb_i.h"
 
-#define STR_EMPTY ""
 
-
+/**
+ * Set db_name using information from this database type
+ *
+ * @param hdb_info the hash database object
+ */
+void
+idxonly_name(TSK_HDB_INFO * hdb_info)
+{
+    FILE * hFile;
+    char buf[TSK_HDB_NAME_MAXLEN];
+    char *bufptr = buf;
+    size_t i = 0;
+    memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
+    if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Failed to get name from index (index does not exist); using file name instead");
+        tsk_hdb_name_from_path(hdb_info);
+        return;
+    }
+    hFile = hdb_info->hIdx;
+    fseeko(hFile, 0, 0);
+    if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+        NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+        strncmp(buf,
+                TSK_HDB_IDX_HEAD_NAME_STR,
+                strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Failed to read name from index; using file name instead");
+        tsk_hdb_name_from_path(hdb_info);
+        return;
+    }
+    bufptr = strchr(buf, '|');
+    bufptr++;
+    while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
+    {
+        hdb_info->db_name[i] = bufptr[i];
+        i++;
+    }
+}
 
 
 /**

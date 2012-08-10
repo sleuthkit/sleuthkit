@@ -17,7 +17,9 @@ tables and disk labels.
 
 .SH ARGUMENTS
 .IP "-t mmtype"
-Specify the media management type.  Use '\-t list' to list the supported types. If not given, autodetection methods are used.
+Specify the media management type.
+Use '\-t list' to list the supported types.
+If not given, autodetection methods are used.
 .IP "-o offset"
 Specify the offset into the image where the volume containing the
 partition system starts.  The relative offset of the partition system
@@ -25,7 +27,9 @@ will be added to this value.
 .IP "-b dev_sector_size"
 The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
 .IP "-i imgtype"
-Identify the type of image file, such as raw or split.  If not given, autodetection methods are used.
+Identify the type of image file, such as raw.
+Use '\-i list' to list the supported types.
+If not given, autodetection methods are used.
 .IP -B
 Include a column with the partition sizes in bytes
 .IP -r
@@ -43,7 +47,9 @@ Show metadata volumes
 .IP -M
 Hide metadata volumes
 .IP "image [images]"
-One (or more if split) disk images whose format is given with '\-i'.
+The disk or partition image to read, whose format is given with '\-i'.
+Multiple image file names can be given if the image is split into multiple segments.
+If only one image file is given, and its name is the first in a sequence (e.g., as indicated by ending in '.001'), subsequent image segments will be included automatically.
 
 .PP
 \'mmls\' is similar to 'fdisk \-lu' in Linux with a few differences.

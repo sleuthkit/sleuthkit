@@ -90,6 +90,17 @@ nsrl_test(FILE * hFile)
 }
 
 /**
+ * Set db_name using information from this database type
+ *
+ * @param hdb_info the hash database object
+ */
+void
+nsrl_name(TSK_HDB_INFO * hdb_info)
+{
+    tsk_hdb_name_from_path(hdb_info);
+}
+
+/**
  * Perform a basic check on a string to see if it starts with quotes
  * and contains a possible SHA-1 value
  *
