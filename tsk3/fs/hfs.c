@@ -1288,10 +1288,11 @@ hfs_open_meta_dir(HFS_INFO * hfs, unsigned char is_directory) {
 static TSK_INUM_T
 hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum, unsigned char is_directory) {
         char fBuff[30];
-        memset(fBuff, 0, 30);
         TSK_FS_DIR * mdir;
         size_t indx;
         TSK_FS_INFO * fs = (TSK_FS_INFO *) hfs;
+
+        memset(fBuff, 0, 30);
 
         if (is_directory) {
 
@@ -4953,11 +4954,12 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 char *hfs_get_inode_name(TSK_FS_INFO * fs, TSK_INUM_T inum) {
     HFS_INFO *hfs = (HFS_INFO *) fs;
     HFS_ENTRY entry;
+    char *fn = NULL;
 	
     if (hfs_cat_file_lookup(hfs, inum, &entry, FALSE))
         return NULL;
 
-	char *fn = malloc( HFS_MAXNAMLEN + 1 );
+	fn = malloc( HFS_MAXNAMLEN + 1 );
 	if ( fn == NULL )
 		return NULL;
 	

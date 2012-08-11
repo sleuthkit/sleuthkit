@@ -194,7 +194,7 @@ dos2unixtime(uint16_t date, uint16_t time, uint8_t timetens)
     if (ret < 0) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "dos2unixtime: Error running mktime(): %d:%d:%d %d/%d/%d",
+                "dos2unixtime: Error running mktime() on: %d:%d:%d %d/%d/%d\n",
                 ((time & FATFS_HOUR_MASK) >> FATFS_HOUR_SHIFT),
                 ((time & FATFS_MIN_MASK) >> FATFS_MIN_SHIFT),
                 ((time & FATFS_SEC_MASK) >> FATFS_SEC_SHIFT) * 2,
@@ -1190,10 +1190,6 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
      * because it doesn't help and can introduce infinite loop situations
      * inode_walk was called by the function that determines which inodes
      * are orphans. */
-    if (tsk_verbose)
-        tsk_fprintf(stderr,
-            "fatfs_inode_walk: Walking directories to collect sector info\n");
-
     if ((sect_alloc =
             (uint8_t *) tsk_malloc((size_t) ((fs->block_count +
                         7) / 8))) == NULL) {
@@ -1201,6 +1197,10 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         return 1;
     }
     if ((a_flags & TSK_FS_META_FLAG_ORPHAN) == 0) {
+
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "fatfs_inode_walk: Walking directories to collect sector info\n");
 
         // Do a file_walk on the root directory to get its layout
         if (fatfs_make_root(fatfs, fs_file->meta)) {
@@ -1669,10 +1669,10 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     }
 
 
-    if (tsk_verbose)
-        tsk_fprintf(stderr,
-            "fatfs_inode_lookup: reading sector %" PRIuDADDR
-            " for inode %" PRIuINUM "\n", sect, inum);
+    //if (tsk_verbose)
+    //    tsk_fprintf(stderr,
+    //        "fatfs_inode_lookup: reading sector %" PRIuDADDR
+    //        " for inode %" PRIuINUM "\n", sect, inum);
 
     if (fatfs_dinode_load(fs, &dep, inum)) {
         return 1;

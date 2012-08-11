@@ -13,7 +13,7 @@
 map<int, TskArtifactNames> initializeArtifactTypeMap(){
     map<int, TskArtifactNames> retval;
     retval.insert(pair<int, TskArtifactNames>(TSK_GEN_INFO, TskArtifactNames("TSK_GEN_INFO", "General Info")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_BOOKMARK, TskArtifactNames("TSK_WEB_BOOKMARK", "Date Time")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_BOOKMARK, TskArtifactNames("TSK_WEB_BOOKMARK", "Web Bookmark")));
     retval.insert(pair<int, TskArtifactNames>(TSK_WEB_COOKIE, TskArtifactNames("TSK_WEB_COOKIE", "Web Cookie")));
     retval.insert(pair<int, TskArtifactNames>(TSK_WEB_HISTORY, TskArtifactNames("TSK_WEB_HISTORY", "History")));
     retval.insert(pair<int, TskArtifactNames>(TSK_WEB_DOWNLOAD, TskArtifactNames("TSK_WEB_DOWNLOAD", "Download")));
@@ -26,6 +26,7 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_INTERESTING_FILE_HIT, TskArtifactNames("TSK_INTERESTING_FILE_HIT", "Interesting File")));
     retval.insert(pair<int, TskArtifactNames>(TSK_EMAIL_MSG, TskArtifactNames("TSK_EMAIL_MSG", "E-Mail Message")));
     retval.insert(pair<int, TskArtifactNames>(TSK_EXTRACTED_TEXT, TskArtifactNames("TSK_EXTRACTED_TEXT", "Extracted Text")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_SEARCH_QUERY, TskArtifactNames("TSK_WEB_SEARCH_QUERY", "Web Search Engine Query")));
 
     return retval;
 }
@@ -51,7 +52,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_DEVICE_MAKE, TskAttributeNames("TSK_DEVICE_MAKE", "Device Make")));
     retval.insert(pair<int, TskAttributeNames>(TSK_DEVICE_ID, TskAttributeNames("TSK_DEVICE_ID", "Device ID")));
     retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL, TskAttributeNames("TSK_EMAIL", "Email")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_HASH_HD5, TskAttributeNames("TSK_HASH_HD5", "MD5 Hash")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_HASH_MD5, TskAttributeNames("TSK_HASH_MD5", "MD5 Hash")));
     retval.insert(pair<int, TskAttributeNames>(TSK_HASH_SHA1, TskAttributeNames("TSK_HASH_SHA1", "SHA1 Hash")));
     retval.insert(pair<int, TskAttributeNames>(TSK_HASH_SHA2_256, TskAttributeNames("TSK_HASH_SHA2_256", "SHA2-256 Hash")));
     retval.insert(pair<int, TskAttributeNames>(TSK_HASH_SHA2_512, TskAttributeNames("TSK_HASH_SHA2_512", "SHA2-512 Hash")));

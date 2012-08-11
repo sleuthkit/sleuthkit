@@ -3374,6 +3374,13 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     // Allocate space for the entire $SII stream.
     sii_buffer.size = (size_t) roundup(fs_attr_sii->size, fs->block_size);
     sii_buffer.used = 0;
+
+    // arbitrary check because we had problems before with alloc too much memory
+    if (sii_buffer.size > 64000000) {
+        if (tsk_verbose) 
+            tsk_fprintf(stderr, "ntfs_load_secure: sii_buffer.size is too large: %z\n", sii_buffer.size);
+        return 0;
+    }
     if ((sii_buffer.buffer = tsk_malloc(sii_buffer.size)) == NULL) {
         return 1;
     }
@@ -3391,6 +3398,12 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     // descriptors. We should be able to use the $SII offset to index
     // into the $SDS stream.
     sds_buffer.size = (size_t) roundup(fs_attr->size, fs->block_size);
+    // arbitrary check because we had problems before with alloc too much memory
+    if (sds_buffer.size > 64000000) {
+        if (tsk_verbose) 
+            tsk_fprintf(stderr, "ntfs_load_secure: sds_buffer.size is too large: %z\n", sds_buffer.size);
+        return 0;
+    }
     sds_buffer.used = 0;
     if ((sds_buffer.buffer = tsk_malloc(sds_buffer.size)) == NULL) {
         free(sii_buffer.buffer);
@@ -4854,6 +4867,10 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->tag = 0;
         free(ntfs->fs);
         free(ntfs);
+        if (tsk_verbose)
+            fprintf(stderr,
+                "ntfs_open: Error opening $MFT (%s)\n",
+                tsk_error_get());
         return NULL;
     }
 
@@ -4872,7 +4889,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_errstr2_concat(" - Data Attribute not found in $MFT");
         if (tsk_verbose)
             fprintf(stderr,
-                "ntfs_open: Data attribute not found in $MFT\n");
+                "ntfs_open: Data attribute not found in $MFT (%s)\n",
+                tsk_error_get());
         return NULL;
     }
 
@@ -4896,7 +4914,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs);
         if (tsk_verbose)
             fprintf(stderr,
-                "ntfs_open: Error loading file system version\n");
+                "ntfs_open: Error loading file system version ((%s)\n",
+                tsk_error_get());
         return NULL;
     }
 
@@ -4907,7 +4926,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs->fs);
         free(ntfs);
         if (tsk_verbose)
-            fprintf(stderr, "ntfs_open: Error loading block bitmap\n");
+            fprintf(stderr, "ntfs_open: Error loading block bitmap (%s)\n",
+                    tsk_error_get());
         return NULL;
     }
 
@@ -4919,7 +4939,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         free(ntfs->fs);
         free(ntfs);
         if (tsk_verbose)
-            fprintf(stderr, "ntfs_open: Error loading Secure Info\n");
+            fprintf(stderr, "ntfs_open: Error loading Secure Info (%s)\n",
+                    tsk_error_get());
         return NULL;
     }
 #endif

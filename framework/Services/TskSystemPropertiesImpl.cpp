@@ -32,7 +32,13 @@ void TskSystemPropertiesImpl::initialize(const std::wstring &configFile)
 
 void TskSystemPropertiesImpl::initialize(const std::string &configfile) 
 {
-    m_abstractConfig = new Poco::Util::XMLConfiguration(configfile);
+    try {
+        m_abstractConfig = new Poco::Util::XMLConfiguration(configfile);
+    }
+    catch (Poco::FileNotFoundException& )
+    {
+        throw TskException("Configuration file not found : " + configfile);
+    }
 }
 
 void TskSystemPropertiesImpl::initialize()
