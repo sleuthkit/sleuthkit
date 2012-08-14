@@ -5,7 +5,7 @@
 
                Brian Carrier [carrier@sleuthkit.org]
 
-                     Last Updated: Sept 2010
+                     Last Updated: July 2012
 
 
 ======================================================================
@@ -46,7 +46,8 @@ CURRENT LIMITATIONS
 
 The tools do not currently support globbing, which means that you 
 cannot use 'fls img.*' on a split image.  Windows does not automatically
- expand the '*' to all file names. 
+expand the '*' to all file names.  However, most split images can now
+be used in The Sleuth Kit by simply specifying the first segment's path.
 
 These programs can be run on a live system, if you use the 
 \\.\PhysicalDrive0 syntax.  Note though, that you may get errors or the
