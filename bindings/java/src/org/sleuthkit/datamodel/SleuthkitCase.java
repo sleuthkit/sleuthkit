@@ -2219,5 +2219,39 @@ public class SleuthkitCase {
         }
 		return false;
 	}
+	
+	/**
+	 * Query all the files and counts how many have an MD5 hash.
+	 * @return the number of files with an MD5 hash
+	 */
+	public int countFilesMd5Hashed() {
+		ResultSet rs = null;
+		Statement s = null;
+		int count = 0;
+        dbReadLock();
+        try {
+			s = con.createStatement();
+            rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files "
+                    + "WHERE type = '" + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + "' "
+                    + "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getDirType() + "' "
+                    + "AND md5 IS NOT NULL "
+					+ "AND size > '0'");
+            rs.next();
+            count = rs.getInt(1);
+        } catch (SQLException ex) {
+            Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Failed to query for all the files.", ex);
+        } finally {
+            if(rs != null) {
+                try {
+                    rs.close();
+					s.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Failed to close the result set.", ex);
+                }
+            }
+            dbReadUnlock();
+        }
+		return count;
+	}
 
 }
