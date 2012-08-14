@@ -176,6 +176,7 @@ class TskDbSqlite {
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t & objId);
 
+    int addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId);
     int addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
     int addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
@@ -199,7 +200,8 @@ class TskDbSqlite {
     uint8_t getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo);
     uint8_t getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos);
     uint8_t getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo);
-    int64_t getParentImageId (const int64_t objId);
+    uint8_t getParentImageId (const int64_t objId, int64_t & imageId);
+    uint8_t getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo);
 
 
   private:

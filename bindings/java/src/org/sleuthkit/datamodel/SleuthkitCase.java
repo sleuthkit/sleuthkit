@@ -1531,14 +1531,30 @@ public class SleuthkitCase {
         public Void visit(LayoutFile lf) {
             try {
                 ObjectInfo parentInfo = getParentInfo(lf);
-				Content parent;
+				Content parent = null;
 				if (parentInfo.type == ObjectType.IMG) {
 					parent = getImageById(parentInfo.id);
 				} else if (parentInfo.type == ObjectType.VOL) {
 					parent = getVolumeById(parentInfo.id, null);
 				} else if (parentInfo.type == ObjectType.FS) {
 					parent = getFileSystemByIdHelper(parentInfo.id, null);
-				} else {
+				} 
+				else if (parentInfo.type == ObjectType.ABSTRACTFILE) {
+					//directory parent allowed to group LayoutFiles together
+					AbstractFile af = getAbstractFileById(parentInfo.id);
+					if (af.getType() == TSK_DB_FILES_TYPE_ENUM.FS) {
+						FsContent fsC = (FsContent)af;
+						if (fsC.isDir()) {
+							parent = fsC;
+						}
+					}
+					
+					//if parent still unset, throw
+					if (parent == null) {
+						throw new IllegalStateException("Parent has wrong type to be FileSystemParent: " + parentInfo.type + ".  It is FS type, but not a directory.");
+					}
+				}
+				else {
 					throw new IllegalStateException("Parent has wrong type to be FileSystemParent: " + parentInfo.type);
 				}
 				lf.setParent(parent);

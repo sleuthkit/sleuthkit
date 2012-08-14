@@ -90,6 +90,7 @@ class TskAutoDb:public TskAuto {
     int64_t m_curVolId;
     int64_t m_curFsId;
     int64_t m_curFileId;
+    int64_t m_curUnallocDirId;
     string m_curImgTZone;
     bool m_blkMapFlag;
     bool m_fileHashFlag;
@@ -134,6 +135,7 @@ class TskAutoDb:public TskAuto {
     int8_t addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
     uint8_t addUnallocFsSpaceToDb(size_t & numFs);
     uint8_t addUnallocVsSpaceToDb(size_t & numVsP);
+    uint8_t addUnallocImageSpaceToDb();
     uint8_t addUnallocSpaceToDb();
 
 };
