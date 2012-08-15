@@ -41,8 +41,6 @@ const std::string TskPipelineManager::FILE_ANALYSIS_PIPELINE = "FileAnalysis";
 const std::string TskPipelineManager::REPORTING_PIPELINE = "Report";
 const std::string TskPipelineManager::PIPELINE_ELEMENT = "PIPELINE";
 const std::string TskPipelineManager::PIPELINE_TYPE = "type";
-const std::string TskPipelineManager::DEFAULT_PIPELINE_CONFIG = "pipeline_config.xml";
-
 
 TskPipelineManager::TskPipelineManager()
 {
@@ -56,47 +54,26 @@ TskPipelineManager::~TskPipelineManager()
 }
 
 /**
- * Creates a pipeline object by loading the config file. 
- * Looks for pipeline config file in either the system properties or with the
- * name TskPipelineManager::DEFAULT_PIPELINE_CONFIG in the CONFIG_DIR (as defined
- * in the sytem properties).  
+ * Creates a pipeline object by reading the pipeline config file specified as
+ * a system property. 
  * @returns Pointer to TskPipeline.  Do not free this. It will be freed by the
- * TskPipelineManager deconstructor. 
+ * TskPipelineManager destructor. 
  */
 TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType)
 {
-    // Get location of Pipeline configuration file.
-    std::string pipelineConfig = GetSystemProperty(TskSystemProperties::PIPELINE_CONFIG_FILE);
-
-    // If we haven't been provided with the name of a config file, use the default
-    if (pipelineConfig.empty())
-        pipelineConfig = TskPipelineManager::DEFAULT_PIPELINE_CONFIG;
-
-    Poco::Path configFile(pipelineConfig);
-
-    // If the path is not absolute then we look for the pipeline
-    // config file in the "config" folder.
-    if (!configFile.isAbsolute())
-    {
-        std::string configDir = GetSystemProperty(TskSystemProperties::CONFIG_DIR);
-        Poco::Path confDir(configDir);
-        confDir.append(configFile);
-        configFile = confDir;
-    }
-
-    std::ifstream in(configFile.toString().c_str());
+    std::string pipelineConfigFilePath = GetSystemProperty(TskSystemProperties::PIPELINE_CONFIG_FILE);
+    std::ifstream in(pipelineConfigFilePath.c_str());
     if (!in)
     {
-        std::wstringstream errorMsg;
-        errorMsg << L"TskPipelineManager::createPipeline - Error opening config file: "
-            << configFile.toString().c_str() << std::endl;
-
+        std::stringstream errorMsg;
+        errorMsg << "TskPipelineManager::createPipeline : error opening config file '" << pipelineConfigFilePath << "' to create " << pipelineType << " pipeline";
         LOGERROR(errorMsg.str());
         throw TskException("Error opening pipeline config file.");
     }
-    else {
-        std::wstringstream msg;
-        msg << L"TskPipelineManager::createPipeline -- using config file: " << configFile.toString().c_str();
+    else 
+    {
+        std::stringstream msg;
+        msg << "TskPipelineManager::createPipeline : using config file '" << pipelineConfigFilePath << "' to create " << pipelineType << " pipeline";
         LOGINFO(msg.str());
     }
 

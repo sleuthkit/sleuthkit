@@ -80,7 +80,7 @@ private:
      * system property or a default value.
      * @return Throws TskException on error.
      */
-    void setUpForCarvePrep(std::string &outputFolderPath, std::string &outputFileName, uint64_t &maxOutputFileSize) const;
+    void setUpForCarvePrep(std::string &outputFolderPath, std::string &outputFileName, size_t &maxOutputFileSize) const;
 
     /** 
      * Writes sector runs to one or more unallocated sectors image files. The 
@@ -98,7 +98,7 @@ private:
      * files.
      * @return Throws TskException on error.
      */
-    void createUnallocSectorsImgFiles(const std::string &outputFolderPath, const std::string &outputFileName, uint64_t maxOutputFileSize, SectorRuns &sectorRuns, bool scheduleCarving) const;
+    void createUnallocSectorsImgFiles(const std::string &outputFolderPath, const std::string &outputFileName, size_t maxOutputFileSize, SectorRuns &sectorRuns, bool scheduleCarving) const;
 
     /** 
      * Creates a folder. If the specified folder already exists, deletes it
