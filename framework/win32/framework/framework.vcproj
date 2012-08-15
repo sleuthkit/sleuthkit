@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libewf.lib libtsk.lib ws2_32.lib"
+				AdditionalDependencies="libewf.lib libtsk.lib ws2_32.lib zlib.lib"
 				AdditionalLibraryDirectories="&quot;$(POCO_HOME)\lib&quot;;&quot;$(ProjectDir)\..\..\..\win32\Debug&quot;;&quot;$(LIBEWF_HOME)\msvscpp\Release&quot;"
 				GenerateDebugInformation="true"
 				ImportLibrary="$(OutDir)\$(ProjectName).lib"
@@ -86,7 +86,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy &quot;$(POCO_HOME)\bin\PocoFoundationd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoNetd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoUtild.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoXMLd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\libewf.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;IF EXIST &quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot; (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;) ELSE (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\zlib\zlib1.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;)&#x0D;&#x0A;del &quot;$(OutDir)\framework_config.xml&quot;&#x0D;&#x0A;xcopy &quot;$(ProjectDir)..\..\SampleConfig\framework_config_win32dev.xml&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;ren &quot;$(OutDir)\framework_config_win32dev.xml&quot; framework_config.xml&#x0D;&#x0A;"
+				CommandLine="xcopy &quot;$(POCO_HOME)\bin\PocoFoundationd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoNetd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoUtild.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoXMLd.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\libewf.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;del &quot;$(OutDir)\framework_config.xml&quot;&#x0D;&#x0A;xcopy &quot;$(ProjectDir)..\..\SampleConfig\framework_config_win32dev.xml&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;ren &quot;$(OutDir)\framework_config_win32dev.xml&quot; framework_config.xml&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -135,7 +135,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libewf.lib libtsk.lib ws2_32.lib"
+				AdditionalDependencies="libewf.lib libtsk.lib ws2_32.lib zlib.lib"
 				AdditionalLibraryDirectories="&quot;$(POCO_HOME)\lib&quot;;&quot;$(ProjectDir)\..\..\..\win32\Release&quot;;&quot;$(LIBEWF_HOME)\msvscpp\Release&quot;"
 				ImportLibrary="$(OutDir)\$(ProjectName).lib"
 			/>
@@ -159,7 +159,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy &quot;$(POCO_HOME)\bin\PocoFoundation.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoNet.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoUtil.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoXML.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\libewf.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;IF EXIST &quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot; (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;) ELSE (&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\zlib\zlib1.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;)&#x0D;&#x0A;del &quot;$(OutDir)\framework_config.xml&quot;&#x0D;&#x0A;xcopy &quot;$(ProjectDir)..\..\SampleConfig\framework_config_win32dev.xml&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;ren &quot;$(OutDir)\framework_config_win32dev.xml&quot; framework_config.xml&#x0D;&#x0A;"
+				CommandLine="xcopy &quot;$(POCO_HOME)\bin\PocoFoundation.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoNet.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoUtil.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(POCO_HOME)\bin\PocoXML.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\libewf.dll&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;xcopy &quot;$(LIBEWF_HOME)\msvscpp\Release\zlib.dll&quot; &quot;$(OutDir)&quot; /R /Y&#x0D;&#x0A;del &quot;$(OutDir)\framework_config.xml&quot;&#x0D;&#x0A;xcopy &quot;$(ProjectDir)..\..\SampleConfig\framework_config_win32dev.xml&quot; &quot;$(outDir)&quot; /R /Y&#x0D;&#x0A;ren &quot;$(OutDir)\framework_config_win32dev.xml&quot; framework_config.xml&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
