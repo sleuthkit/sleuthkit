@@ -110,7 +110,7 @@ public class LayoutFile extends AbstractFile{
 
 	@Override
     public int read(byte[] buf, long offset, long len) throws TskCoreException {
-        int offsetInThisLayoutContent = 0; // current offset in this LayoutContent
+        long offsetInThisLayoutContent = 0; // current offset in this LayoutContent
         int bytesRead = 0; // Bytes read so far
         Iterator<TskFileRange> it = getRanges().iterator();
         while(it.hasNext()) {
