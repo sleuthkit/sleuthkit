@@ -24,10 +24,6 @@
  * not subject to copyright.
  */
 
-#ifndef PACKAGE_NAME
-#include "config.h"
-#endif
-
 #include "unicode_escape.h"
 
 #include <stdio.h>
@@ -43,7 +39,6 @@
 
 #define IS_IN_RANGE(c, f, l)    (((c) >= (f)) && ((c) <= (l)))
 
-#include "utf8.h"
 
 std::string hexesc(unsigned char ch)
 {
@@ -203,6 +198,9 @@ std::string validateOrEscapeUTF8(std::string input)
 }
 
 #ifdef STANDALONE
+
+/* Only needed for testing */
+#include "utf8.h"
 
 int main(int argc,char **argv)
 {
