@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..\&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;;&quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.7&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..\&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;;&quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;_DEBUG;_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -106,7 +106,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..\&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;;&quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.7&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..\&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;;&quot;$(LIBEWF_HOME)\msvscpp\zlib-1.2.6&quot;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
