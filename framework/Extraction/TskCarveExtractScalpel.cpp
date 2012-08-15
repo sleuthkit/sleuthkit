@@ -18,7 +18,6 @@
 #include "TskCarveExtractScalpel.h"
 
 // TSK Framework includes
-#include "Extraction/TskCarveParams.h"
 #include "Services/TskServices.h"
 #include "Services/TskImgDB.h"
 #include "Utilities/TskUtilities.h"
@@ -46,7 +45,6 @@
 namespace
 {
     const std::string SCALPEL_EXE_FILE_NAME = "scalpel.exe";
-    const std::string SCALPEL_DEFAULT_CONFIG_FILE_NAME = "scalpel.conf";
     const std::string CARVED_FILES_FOLDER = "CarvedFiles";
     const std::string SCALPEL_RESULTS_FILE_NAME = "audit.txt";
     const std::string STD_OUT_DUMP_FILE_NAME = "stdout.txt";
@@ -62,29 +60,17 @@ int TskCarveExtractScalpel::processFile(int unallocImgId)
 
         // Get the input folder path. The file to carve resides in a subdirectory of the carve prep output folder. The name of the subdirectory is the unallocated image file id.
         std::string carvePrepOutputPath = GetSystemProperty("CARVE_DIR");
-        if (carvePrepOutputPath.empty())
-        {
-            carvePrepOutputPath = ExpandSystemPropertyMacros(DEFAULT_CARVE_DIR);
-        }
-
         if (!Poco::File(carvePrepOutputPath).exists())
         {
             std::stringstream msg;
             msg << "TskCarveExtractScalpel::processFile : specified carve prep output folder '" << carvePrepOutputPath << "' does not exist";
             throw TskException(msg.str());
         }
-
         std::stringstream inputFolderPathBuilder; 
         inputFolderPathBuilder << carvePrepOutputPath << Poco::Path::separator() << unallocImgId;
     
-        // Get the input file name. All of the files to carve have the same name.
+        // Get the input file name and construct the input file path. All of the files to carve have the same name.
         std::string carvePrepOutputFileName = GetSystemProperty("UNALLOC_SECTORS_IMG_FILE_NAME");
-        if (carvePrepOutputFileName.empty())
-        {
-            carvePrepOutputFileName = ExpandSystemPropertyMacros(DEFAULT_UNALLOC_SECTORS_IMG_FILE_NAME);
-        }
-
-        // Construct the input file path.
         std::stringstream unallocImgFilePathBuilder;
         unallocImgFilePathBuilder << inputFolderPathBuilder.str() <<  Poco::Path::separator() << carvePrepOutputFileName;
         Poco::File unallocImgFile(unallocImgFilePathBuilder.str());
@@ -160,7 +146,6 @@ void TskCarveExtractScalpel::carveFile(const std::string &unallocImgPath, const 
         std::stringstream pathBuilder;
         pathBuilder << scalpelDirPath << Poco::Path::separator() << SCALPEL_EXE_FILE_NAME;
         std::string scalpelExePath = pathBuilder.str();
-
         if (!Poco::File(scalpelExePath).exists())
         {
             std::stringstream msg;
@@ -170,14 +155,6 @@ void TskCarveExtractScalpel::carveFile(const std::string &unallocImgPath, const 
 
         // Get the path to the Scalpel config file.
         std::string scalpelConfigFilePath = GetSystemProperty("SCALPEL_CONFIG_FILE");
-        if (scalpelConfigFilePath.empty())
-        {
-            pathBuilder.str("");
-            pathBuilder.clear();
-            pathBuilder << scalpelDirPath << Poco::Path::separator() << SCALPEL_DEFAULT_CONFIG_FILE_NAME;
-            scalpelConfigFilePath = pathBuilder.str();
-        }
-
         if (!Poco::File(scalpelConfigFilePath).exists())
         {
             std::stringstream msg;

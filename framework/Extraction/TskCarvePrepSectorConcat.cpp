@@ -17,7 +17,6 @@
 #include "TskCarvePrepSectorConcat.h" 
 
 // TSK Framework includes
-#include "Extraction/TskCarveParams.h"
 #include "Services/TskImgDB.h"
 #include "Services/TskServices.h"
 #include "Services/Log.h"
@@ -36,8 +35,8 @@
 
 namespace
 {
-    const uint64_t SECTOR_SIZE = 512;
-    const uint64_t DEFAULT_SECTORS_PER_READ = 32; 
+    const size_t SECTOR_SIZE = 512;
+    const size_t DEFAULT_SECTORS_PER_READ = 32; 
 }
 
 int TskCarvePrepSectorConcat::processSectors(bool scheduleCarving)
@@ -46,7 +45,7 @@ int TskCarvePrepSectorConcat::processSectors(bool scheduleCarving)
     {
         std::string outputFolderPath;
         std::string outputFileName;
-        uint64_t maxOutputFileSize;
+        size_t maxOutputFileSize;
         setUpForCarvePrep(outputFolderPath, outputFileName, maxOutputFileSize);
         
         std::auto_ptr<SectorRuns> sectorRuns(TskServices::Instance().getImgDB().getFreeSectors());
@@ -74,7 +73,7 @@ void TskCarvePrepSectorConcat::processFiles(const std::string &fileName, bool sc
 
     std::string outputFolderPath;
     std::string outputFileName;
-    uint64_t maxOutputFileSize;
+    size_t maxOutputFileSize;
     setUpForCarvePrep(outputFolderPath, outputFileName, maxOutputFileSize);
 
     // Get the file ids for any files with the the specified file name.
@@ -114,42 +113,20 @@ void TskCarvePrepSectorConcat::onUnallocSectorsImgFileCreated(int unallocSectors
     }
 }
 
-void TskCarvePrepSectorConcat::setUpForCarvePrep(std::string &outputFolderPath, std::string &outputFileName, uint64_t &maxOutputFileSize) const
+void TskCarvePrepSectorConcat::setUpForCarvePrep(std::string &outputFolderPath, std::string &outputFileName, size_t &maxOutputFileSize) const
 {
     try
     {
-        // Get the output folder path.
-        outputFolderPath = GetSystemProperty("CARVE_DIR");
-        if (outputFolderPath.empty())
-        {
-            outputFolderPath = ExpandSystemPropertyMacros(DEFAULT_CARVE_DIR);
-        }
-
-        // Get the output file name.
-        outputFileName = GetSystemProperty("UNALLOC_SECTORS_IMG_FILE_NAME");
-        if (outputFileName.empty())
-        {
-            outputFileName = ExpandSystemPropertyMacros(DEFAULT_UNALLOC_SECTORS_IMG_FILE_NAME);
-        }
-
-        // Get the maximum size for each output file.
-        // @@@ TODO: Replace strtoul() call with a strtoull() call when a newer version of C++ is available.
-        std::string maxOutputFileSizeStr = GetSystemProperty("MAX_UNALLOC_SECTORS_IMG_FILE_SIZE");
-        if (!maxOutputFileSizeStr.empty())
-        {
-            maxOutputFileSize = strtoul(maxOutputFileSizeStr.c_str(), NULL, 10);
-        }
-        else
-        {
-            maxOutputFileSize = strtoul(DEFAULT_MAX_UNALLOC_SECTORS_IMG_FILE_SIZE.c_str(), NULL, 10);
-        }
-
         // Create the output folder. Since multiple calls to processSectors() and/or processFiles() are possible, check to see if the folder already exists.
+        outputFolderPath = GetSystemProperty("CARVE_DIR");
         Poco::File folder(outputFolderPath);
         if (!folder.exists())
         {
             folder.createDirectory();
         }
+
+        outputFileName = GetSystemProperty("UNALLOC_SECTORS_IMG_FILE_NAME");
+        maxOutputFileSize = strtoul(GetSystemProperty("MAX_UNALLOC_SECTORS_IMG_FILE_SIZE").c_str(), NULL, 10);
     }
     catch (Poco::Exception &ex) 
     {
@@ -159,14 +136,14 @@ void TskCarvePrepSectorConcat::setUpForCarvePrep(std::string &outputFolderPath, 
     }
 }
 
-void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &outputFolderPath, const std::string &outputFileName, uint64_t maxOutputFileSize, SectorRuns &sectorRuns, bool scheduleCarving) const
+void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &outputFolderPath, const std::string &outputFileName, size_t maxOutputFileSize, SectorRuns &sectorRuns, bool scheduleCarving) const
 {
     char *sectorBuffer = NULL;
     try
     {
         // Create a buffer for data from sector runs. If not breaking output files only on volume boundaries (i.e., max output file size is zero), 
         // be sure sectors to read is less than or equal to max output file size.
-        uint64_t sectorsPerRead = DEFAULT_SECTORS_PER_READ;
+        size_t sectorsPerRead = DEFAULT_SECTORS_PER_READ;
         if ((maxOutputFileSize > 0) && (sectorsPerRead * SECTOR_SIZE > maxOutputFileSize))
         {
             sectorsPerRead = maxOutputFileSize / SECTOR_SIZE;

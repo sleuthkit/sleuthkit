@@ -87,27 +87,6 @@ usage(const char *program)
     exit(1);
 }
 
-// get the current directory
-// @@@ TODO: This should move into a framework utility
-static std::wstring getProgDir()
-{
-    wchar_t progPath[256];
-    wchar_t fullPath[256];
-    
-    GetModuleFileNameW(NULL, fullPath, 256);
-    for (int i = wcslen(fullPath)-1; i > 0; i--) {
-        if (i > 256)
-            break;
-
-        if (fullPath[i] == '\\') {
-            wcsncpy_s(progPath, fullPath, i+1);
-            progPath[i+1] = '\0';
-            break;
-        }
-    }
-    return std::wstring(progPath);
-}
-
 int main(int argc, char **argv1)
 {
     TSK_TCHAR **argv;
@@ -199,8 +178,6 @@ int main(int argc, char **argv1)
         return 1;
     }
 
-    SetSystemPropertyW(TskSystemProperties::PROG_DIR, getProgDir()); 
-
     if (outDirPath == _TSK_T("")) {
         outDirPath.assign(imagePath);
         outDirPath.append(_TSK_T("_tsk_out"));
@@ -216,9 +193,10 @@ int main(int argc, char **argv1)
         return 1;
     }
 
-    std::wstring logDir = outDirPath;
-    logDir.append(L"\\Logs");
+    // @@@ Not UNIX-friendly
+    SetSystemPropertyW(TskSystemProperties::OUT_DIR, outDirPath);
 
+    std::wstring logDir = GetSystemPropertyW(TskSystemProperties::LOG_DIR);
     if (makeDir(logDir.c_str())) {
         return 1;
     }
@@ -243,10 +221,6 @@ int main(int argc, char **argv1)
 
     log->open(logDir.c_str());
     TskServices::Instance().setLog(*log);
-
-
-    // @@@ Not UNIX-friendly
-    SetSystemPropertyW(TskSystemProperties::OUT_DIR, outDirPath);
 
     // Create and register our SQLite ImgDB class   
     std::auto_ptr<TskImgDB> pImgDB(NULL);
