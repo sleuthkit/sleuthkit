@@ -604,7 +604,7 @@ int
 
 
     char
-     foo[1024];
+     foo[4096];
     int
      mtime = 0;
     int
@@ -739,7 +739,7 @@ int
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
         return 1;
 
-    snprintf(foo, 1024,
+    snprintf(foo, 4096,
         "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
         "%lld,%lld,"
@@ -879,7 +879,7 @@ int
     const uint64_t size, int64_t & objId)
 {
     char
-     sql_stat[1024];
+     sql_stat[4096];
 
     // clean up special characters in name before we insert
     size_t len = strlen(fileName);
@@ -911,7 +911,7 @@ int
         fsObjIdS << "NULL";
     else fsObjIdS << fsObjId;
 
-    snprintf(sql_stat, 1024,
+    snprintf(sql_stat, 4096,
         "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
         "1,%s,%lld,"

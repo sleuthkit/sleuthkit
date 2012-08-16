@@ -689,7 +689,7 @@ int TskImgDBSqlite::getFileRecord(const uint64_t fileId, TskFileRecord& fileReco
  */
 int TskImgDBSqlite::addFsFileInfo(int fsId, TSK_FS_FILE const * fs_file, char const * name, int type, int idx, uint64_t & fileId, char const * path)
 {
-    char stmt[1024];
+    char stmt[4096];
     char * errmsg;
     wchar_t infoMessage[MAX_BUFF_LENGTH];
 
@@ -771,7 +771,7 @@ int TskImgDBSqlite::addFsFileInfo(int fsId, TSK_FS_FILE const * fs_file, char co
 
     // insert into the files table
     // MAY-118 status=READY_FOR_ANALYSIS
-    sqlite3_snprintf(1024, stmt,
+    sqlite3_snprintf(4096, stmt,
         "INSERT INTO files (file_id, type_id, status, name, par_file_id, dir_type, meta_type, "
         "dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, full_path) VALUES (NULL, %d, %d,"
         "'%q',%llu,%d,%d,%d,%d,%" PRIuOFF",%d,%d,%d,%d,%d,%d,%d,'%q')", 
@@ -793,7 +793,7 @@ int TskImgDBSqlite::addFsFileInfo(int fsId, TSK_FS_FILE const * fs_file, char co
     fileId = sqlite3_last_insert_rowid(m_db);
 
     // insert into the fs_files table
-    _snprintf_s(stmt, 1024, _TRUNCATE, 
+    _snprintf_s(stmt, 4096, _TRUNCATE, 
         "INSERT INTO fs_files (file_id, fs_id, fs_file_id, attr_type, attr_id) VALUES (%llu,%d,%"
         PRIuINUM ",%d,%d)", fileId, fsId, fs_file->name->meta_addr, type, idx);
 
