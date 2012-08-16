@@ -54,7 +54,7 @@ public:
     /**
      * Initialize using a configuration file.
      *
-     * @param configFile Path to the XML file to be used to initialize the
+     * @param configfile Path to the XML file to be used to initialize the
      * system properties.
      */
     void initialize(const std::wstring &configfile);
@@ -62,7 +62,7 @@ public:
     /**
      * Initialize using a configuration file.
      *
-     * @param configFile Path to the XML file to be used to initialize the
+     * @param configfile Path to the XML file to be used to initialize the
      * system properties.
      */
     void initialize(const std::string &configfile);

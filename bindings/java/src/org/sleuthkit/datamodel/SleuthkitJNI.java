@@ -151,7 +151,6 @@ public class SleuthkitJNI {
 
 		/**
 		 * Add the known bad database
-		 * @param name The name of the database
 		 * @param path The path to the database
 		 * @return a handle for that database
 		 */
