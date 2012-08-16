@@ -229,11 +229,12 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
                     volumeID = sectorRuns.getVolID();
                 }
 
-                // Read another chunk of sectors from this run.
+                // Read another chunk of sectors from this run. 
                 int sectorsRead = sectorRuns.getData(sectorRunOffset, static_cast<int>(sectorsToRead), sectorBuffer);
                 if (sectorsRead == -1)
                 {
-                    throw TskException("TskCarvePrepSectorConca::createUnallocSectorsImgFiles : error reading sector contents from sector run");
+                    LOGERROR("TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : error reading sector contents from sector run");
+                    break;
                 }
 
                 // Write the chunk of sectors to the output file.
