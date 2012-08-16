@@ -95,6 +95,13 @@ public interface SleuthkitItemVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(LayoutFile lf);
+	
+	/**
+	 * Act on (visit) a LayoutDirectory content object
+	 * @param ld layout dir to visit / act on
+	 * @return result of the visit
+	 */
+    T visit(LayoutDirectory ld);
 
 	
 	/**

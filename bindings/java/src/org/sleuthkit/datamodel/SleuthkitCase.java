@@ -1047,7 +1047,13 @@ public class SleuthkitCase {
 					}
 					result.accept(setParent);
 					children.add(result);
-				} else {
+				}
+				else if(type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
+					FsContent virtDir = rsHelper.directory(rs, null);
+					virtDir.accept(setParent);
+					children.add(virtDir);
+				}
+				else {
 					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"), TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getLong("type")));
 					lf.setParent(parent);
 					children.add(lf);
@@ -1526,6 +1532,40 @@ public class SleuthkitCase {
             visitFsContent(d);
             return null;
         }
+		
+		@Override
+        public Void visit(LayoutDirectory ld) {
+			try {
+				ObjectInfo parentInfo = getParentInfo(ld);
+				
+				if (parentInfo.type == ObjectType.ABSTRACTFILE) {
+					//directory parent allowed to group LayoutFiles together
+					AbstractFile af = getAbstractFileById(parentInfo.id);
+					final TSK_DB_FILES_TYPE_ENUM type = af.getType();
+					if (
+						type.equals(TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)
+						//parent is LayoutDirectory
+						||
+						type.equals(TSK_DB_FILES_TYPE_ENUM.FS)
+						//parent is root Directory
+							) {
+						ld.setParent(af);
+						af.accept(this);
+					}
+					else {
+						throw new IllegalStateException("AbstractFile parent has wrong type to be LayoutDirectory parent: " + parentInfo.type + ". Expected AbstractFile (Directory or LayoutDirectory).");
+					}
+				}
+				else {
+					throw new IllegalStateException("Parent has wrong type to be LayoutDirectory parent: " + parentInfo.type + ". Expected AbstractFile (Directory or LayoutDirectory).");
+				}
+				
+				return null;
+			
+			} catch (TskCoreException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
         
         @Override
         public Void visit(LayoutFile lf) {
@@ -1542,20 +1582,17 @@ public class SleuthkitCase {
 				else if (parentInfo.type == ObjectType.ABSTRACTFILE) {
 					//directory parent allowed to group LayoutFiles together
 					AbstractFile af = getAbstractFileById(parentInfo.id);
-					if (af.getType() == TSK_DB_FILES_TYPE_ENUM.FS) {
-						FsContent fsC = (FsContent)af;
-						if (fsC.isDir()) {
-							parent = fsC;
-						}
+					if (af.getType() == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
+						//parent is LayoutDirectory
+						parent = af;
 					}
 					
-					//if parent still unset, throw
-					if (parent == null) {
-						throw new IllegalStateException("Parent has wrong type to be FileSystemParent: " + parentInfo.type + ".  It is FS type, but not a directory.");
+					else {
+						throw new IllegalStateException("Parent has wrong type to be LayoutFile parent: " + parentInfo.type + ".  It is FS type, but not a directory.");
 					}
 				}
 				else {
-					throw new IllegalStateException("Parent has wrong type to be FileSystemParent: " + parentInfo.type);
+					throw new IllegalStateException("Parent has wrong type to be LayoutFile parent: " + parentInfo.type);
 				}
 				lf.setParent(parent);
                 parent.accept(this);
@@ -1665,6 +1702,11 @@ public class SleuthkitCase {
         
         @Override
         public Collection<FileSystem> visit(LayoutFile lf) {
+            return Collections.<FileSystem>emptyList();
+        }
+		
+		@Override
+        public Collection<FileSystem> visit(LayoutDirectory ld) {
             return Collections.<FileSystem>emptyList();
         }
 
@@ -1807,6 +1849,20 @@ public class SleuthkitCase {
 		}
 		return ret;
     }
+	
+	 /**
+     * Returns a list of direct children for a given layout directory
+	 * @param ldir layout directory to get the list of direct children for
+	 * @return list of direct children (layout files or layout directories) for a given layout directory
+	 * @throws TskCoreException thrown if a critical error occurred within tsk core 
+     */
+    List<AbstractFile> getLayoutDirectoryChildren(LayoutDirectory ldir) throws TskCoreException {
+        List<AbstractFile> ret = new ArrayList<AbstractFile>();
+		for(TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
+			ret.addAll(this.getAbstractFileChildren(ldir, type));
+		}
+		return ret;
+    }
 
     /**
      * Returns a map of image object IDs to a list of fully qualified file paths for that image
@@ -1891,7 +1947,8 @@ public class SleuthkitCase {
         dbReadLock();
 		try {
 			while (rs.next()) {
-				if (rs.getLong("type") == TSK_DB_FILES_TYPE_ENUM.FS.getFileType() ) {
+				final long type = rs.getLong("type");
+				if (type == TSK_DB_FILES_TYPE_ENUM.FS.getFileType() ) {
 					FsContent result;
 					if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
 						result = rsHelper.directory(rs, null);
@@ -1900,8 +1957,17 @@ public class SleuthkitCase {
 					}
 					result.accept(setParent);
 					results.add(result);
-				} else {
-					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"), TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getLong("type")));
+				}
+				else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
+					final LayoutDirectory virtDir = new LayoutDirectory(this, rs.getLong("obj_id"), 
+							rs.getString("name"));
+					virtDir.accept(setParent);
+					results.add(virtDir);
+				}
+				else {
+					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"), 
+							rs.getString("name"), 
+							TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(type));
 					lf.accept(setParent);
 					results.add(lf);
 				}
@@ -1924,9 +1990,13 @@ public class SleuthkitCase {
 		List<FsContent> results = new ArrayList<FsContent>();
 		List<AbstractFile> temp = resultSetToAbstractFiles(rs);
 		for(AbstractFile f : temp) {
-			if(f.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)) {
+			final TSK_DB_FILES_TYPE_ENUM type = f.getType();
+			if(type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS))
+			{
 				results.add((FsContent)f);
 			}
+			
+			
 		}
 		return results;
 	}

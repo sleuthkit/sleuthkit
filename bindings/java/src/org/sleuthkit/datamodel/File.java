@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collections;
 import java.util.List;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 
 /**
@@ -45,12 +46,6 @@ public class File extends FsContent{
 
 
     @Override
-    public boolean isFile(){
-        return true;
-    }
-
-
-    @Override
     public <T> T accept(SleuthkitItemVisitor<T> v) {
         return v.visit(this);
     }
@@ -67,4 +62,21 @@ public class File extends FsContent{
     public List<Content> getChildren() throws TskCoreException {
         return Collections.<Content>emptyList();
     }
+	
+	@Override
+	public boolean isVirtual() {
+		return (! type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)
+				|| dir_type == TSK_FS_NAME_TYPE_ENUM.VIRT.getDirType()
+				);
+	}
+	
+	@Override
+	public boolean isDir(){
+        return false;
+    }
+	
+	@Override
+	public boolean isFile() {
+		return true;
+	}
 }

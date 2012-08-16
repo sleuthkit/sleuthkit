@@ -84,12 +84,21 @@ public class LayoutFile extends AbstractFile{
 	public List<Content> getChildren() throws TskCoreException {
 		return Collections.<Content>emptyList();
 	}
-	
 
 	@Override
     public long getSize() {
         return calcSize();
     }
+	
+	@Override
+	public boolean isDir(){
+        return false;
+    }
+	
+	@Override
+	public boolean isFile() {
+		return true;
+	}
     
 	/**
 	 * Calculate the size from all ranges / blocks
@@ -189,4 +198,8 @@ public class LayoutFile extends AbstractFile{
 		return getParent().getImage();
 	}
 	
+	@Override
+	public boolean isVirtual() {
+		return true;
+	}
 }
