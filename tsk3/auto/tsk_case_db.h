@@ -53,7 +53,7 @@ class TskAutoDb:public TskAuto {
      * Calculate hash values of files and add them to database.
      * Default is false.  Will be set to true if a Hash DB is configured.
      *
-     * @args flag True to calculate hash values and look them up.
+     * @param flag True to calculate hash values and look them up.
      */
     virtual void hashFiles(bool flag);
 
