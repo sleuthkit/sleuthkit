@@ -56,7 +56,8 @@ typedef enum {
     TSK_DB_FILES_TYPE_DERIVED,  ///< File derived from a parent file (i.e. from ZIP)
     TSK_DB_FILES_TYPE_LOCAL,    ///< Local file that was added (not from a disk image)
     TSK_DB_FILES_TYPE_UNALLOC_BLOCKS,   ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout. 
-    TSK_DB_FILES_TYPE_UNUSED_BLOCKS ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
+    TSK_DB_FILES_TYPE_UNUSED_BLOCKS, ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
+    TSK_DB_FILES_TYPE_VIRTUAL_DIR, ///< Virtual directory (not on fs) with no meta-data entry that can be used to group files of types other than TSK_DB_FILES_TYPE_FS. Its parent is either another TSK_DB_FILES_TYPE_FS or a root directory or type TSK_DB_FILES_TYPE_FS.
 } TSK_DB_FILES_TYPE_ENUM;
 
 
@@ -176,6 +177,7 @@ class TskDbSqlite {
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t & objId);
 
+    int addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId);
     int addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId);
     int addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);

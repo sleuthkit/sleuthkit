@@ -806,6 +806,8 @@ uint8_t TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
         allFsProcessRet |= addFsInfoUnalloc(*it);
     }
 
+    //TODO set parent_path for newly created virt dir/file hierarchy for consistency
+
     return allFsProcessRet;
 }
 

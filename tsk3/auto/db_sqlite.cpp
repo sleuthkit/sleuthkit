@@ -1032,23 +1032,18 @@ typedef struct _checkFileLayoutRangeOverlap{
 } checkFileLayoutRangeOverlap;
 
 /**
-* Internal helper method to add a "fake" dir, a parent dir of files representing unalloc space within fs.
-* The dir has is associated with its root dir parent for the fs.
-* @param fsObjId (in) fs id to find root dir for and create $Unalloc dir for
-* @param objId (out) object id of the $Unalloc dir created
+* Add virtual dir of type TSK_DB_FILES_TYPE_VIRTUAL_DIR
+* that can be a parent of other non-fs virtual files or directories, to organize them
+* @param fsObjId (in) file system object id to associate with the virtual directory.
+* @param parentDirId (in) parent dir object id of the new directory: either another virtual directory or root fs directory
+* @param name name (int) of the new virtual directory
+* @param objId (out) object id of the created virtual directory object
 * @returns TSK_ERR on error or TSK_OK on success
 */
-int TskDbSqlite::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) {
+int TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) {
     char sql_stat[1024];
-    const char * unallocDirName = "$Unalloc";
 
-    //get root dir
-    TSK_DB_OBJECT rootDirObjInfo;
-    if (getFsRootDirObjectInfo(fsObjId, rootDirObjInfo) ) {
-        return TSK_ERR;
-    }
-
-    if (addObject(TSK_DB_OBJECT_TYPE_FILE, rootDirObjInfo.objId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentDirId, objId))
         return TSK_ERR;
 
      snprintf(sql_stat, 1024,
@@ -1056,7 +1051,7 @@ int TskDbSqlite::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & o
         "attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, "
         "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
         "VALUES ("
-        "0, 0,"
+        "NULL, NULL,"
         "NULL,"
         "%lld,"
         "%lld,"
@@ -1065,19 +1060,39 @@ int TskDbSqlite::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & o
         "NULL,"
         "%d,%d,%d,%d,"
         "0,"
-        "0,0,0,0,0,0,0,0,'/')",
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
         fsObjId,
         objId,
-        TSK_DB_FILES_TYPE_FS,
-        unallocDirName,
+        TSK_DB_FILES_TYPE_VIRTUAL_DIR,
+        name,
         TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,
-        TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC);
+        TSK_FS_NAME_FLAG_ALLOC, (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED));
 
-    if (attempt_exec(sql_stat, "Error adding data to tsk_files table: %s\n")) {
+        if (attempt_exec(sql_stat, "Error adding data to tsk_files table: %s\n")) {
+            return TSK_ERR;
+        }
+    
+        return TSK_OK;
+}
+
+/**
+* Internal helper method to add a virtual root dir, a parent dir of files representing unalloc space within fs.
+* The dir has is associated with its root dir parent for the fs.
+* @param fsObjId (in) fs id to find root dir for and create $Unalloc dir for
+* @param objId (out) object id of the $Unalloc dir created
+* @returns TSK_ERR on error or TSK_OK on success
+*/
+int TskDbSqlite::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) {
+    
+    const char * const unallocDirName = "$Unalloc";
+
+    //get root dir
+    TSK_DB_OBJECT rootDirObjInfo;
+    if (getFsRootDirObjectInfo(fsObjId, rootDirObjInfo) ) {
         return TSK_ERR;
     }
-    return TSK_OK;
 
+    return addVirtualDir(fsObjId, rootDirObjInfo.objId, unallocDirName, objId);
 }
 
 /**
