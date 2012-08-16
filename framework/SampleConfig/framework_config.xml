@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- General version of the framework config.  Contains all possible settings -->
-<!-- ***Developers, when editing this file please update framework_config_bindist.xml and framework_config_win32dev.xml also*** -->
+<!-- For more information please consult the TskSystemProperties::PredefinedProperty member enumeration documentation at http://www.sleuthkit.org/sleuthkit/docs/framework-docs/classTskSystemProperties.html -->
 <TSK_FRAMEWORK_CONFIG>
-  <!-- Documentation of the following system properties is available at @@@ TODO: insert URL -->
   <!-- <PROG_DIR>path</PROG_DIR> -->
   <!-- <CONFIG_DIR>path</CONFIG_DIR> -->
   <!-- <MODULE_DIR>path</MODULE_DIR> -->
