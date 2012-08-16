@@ -254,12 +254,12 @@ void TskSystemProperties::expandMacros(const std::string &inputStr, std::string 
         return;
     }
 
-    Poco::StringTokenizer tokenizer(inputStr, "#");
+    Poco::StringTokenizer tokenizer(inputStr, "#", Poco::StringTokenizer::TOK_IGNORE_EMPTY);
     for (Poco::StringTokenizer::Iterator token = tokenizer.begin(); token != tokenizer.end(); ++token)
     {
         if (predefPropTokens.count(*token) != 0)
         {
-            expandMacros(getProperty(*token), outputStr, depth + 1);
+            expandMacros(get(*token), outputStr, depth + 1);
         }
         else
         {
