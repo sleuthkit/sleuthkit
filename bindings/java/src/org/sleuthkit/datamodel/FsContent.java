@@ -33,7 +33,7 @@ public abstract class FsContent extends AbstractFile {
 	/*
 	 * database fields
 	 */
-	protected long fs_obj_id, meta_addr, attr_type, attr_id, meta_type, dir_type, dir_flags,
+	protected final long fs_obj_id, meta_addr, attr_type, attr_id, meta_type, dir_type, dir_flags,
 			meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known;
 	/*
 	 * path of parent directory
@@ -132,31 +132,8 @@ public abstract class FsContent extends AbstractFile {
 	 * Getters to retrieve meta-data attributes values
 	 * -------------------------------------------------------------------------
 	 */
-	/**
-	 * Is this object a file
-	 *
-	 * @return false unless overridden by a subclass (specifically the file
-	 * subclass)
-	 */
-	public boolean isFile() {
-		return false;
-	}
 
-	/**
-	 * Is this object a directory
-	 *
-	 * @return false unless overridden by a subclass (specifically the directory
-	 * subclass)
-	 */
-	public boolean isDir() {
-		return false;
-	}
 
-	/**
-	 * Is this the root of its parent filesystem?
-	 *
-	 * @return true if this is the root inode
-	 */
 	public boolean isRoot() {
 		return parentFileSystem.getRoot_inum() == this.getMeta_addr();
 	}

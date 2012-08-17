@@ -51,11 +51,11 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG", "Installed Programs"), ///< installed programs
 		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT", "Keyword Hits"), ///< keyword search hits
 		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", "Hashset Hits"), ///< hashset hits
-		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Device Attached"), ///< attached devices
-		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", "Interesting File"), ///< an interesting/notable file hit
-		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", "E-Mail Message"), ///< email message
+		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Devices Attached"), ///< attached devices
+		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", "Interesting Files"), ///< an interesting/notable file hit
+		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", "E-Mail Messages"), ///< email message
 		TSK_EXTRACTED_TEXT(14, "TSK_EXTRACTED_TEXT", "Extracted Text"), ///< text extracted from file
-		TSK_WEB_SEARCH_QUERY(15, "TSK_WEB_SEARCH_QUERY", "Web Search Engine Query"); ///< web search engine query extracted from web history
+		TSK_WEB_SEARCH_QUERY(15, "TSK_WEB_SEARCH_QUERY", "Web Search Engine Queries"); ///< web search engine query extracted from web history
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
 		private int typeID;

@@ -27,7 +27,7 @@ import java.util.List;
  */
 public abstract class AbstractFile extends AbstractContent {
     
-    private TskData.TSK_DB_FILES_TYPE_ENUM type;
+    protected final TskData.TSK_DB_FILES_TYPE_ENUM type;
     
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in tsk_files table)
@@ -59,5 +59,26 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @throws TskCoreException exception thrown if critical error occurred within tsk core
 	 */
     public abstract List<TskFileRange> getRanges() throws TskCoreException;
+	
+	
+	/**
+	 * is this a virtual file or directory
+	 * @return true if it's virtual, false otherwise
+	 */
+	public abstract boolean isVirtual();
+	
+	/**
+	 * Is this object a file
+	 *
+	 * @return true if a file, false otherwise
+	 */
+	public abstract boolean isFile();
+
+	/**
+	 * Is this object a directory
+	 *
+	 * @return true if directory, false otherwise
+	 */
+	public abstract boolean isDir();
     
 }
