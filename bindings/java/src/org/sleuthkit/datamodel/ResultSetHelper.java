@@ -141,7 +141,7 @@ class ResultSetHelper {
 	/**
 	 * Create a Directory object from the result set containing query results on tsk_files table
 	 * @param rs the result set
-	 * @param fs the parent file suste,
+	 * @param fs the parent file system,
 	 * @return a newly created Directory object
 	 * @throws SQLException thrown if SQL error occurred
 	 */
