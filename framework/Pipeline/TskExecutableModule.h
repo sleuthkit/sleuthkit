@@ -27,6 +27,7 @@ public:
     virtual ~TskExecutableModule();
 
     virtual Status run(TskFile* fileToAnalyze);
+    virtual Status report();
 
     /// Set the path of the executable to run.
     virtual void setPath(const std::string& location);
@@ -38,6 +39,7 @@ public:
 
 private:
     std::string m_output;
+    Status execute(TskFile* fileToAnalyze);
 
 };
 

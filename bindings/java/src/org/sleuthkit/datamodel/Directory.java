@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 
 /**
  * Representation of Directory object, stored in tsk_files table.
@@ -41,11 +42,6 @@ public class Directory extends FsContent{
     }
 
 
-    @Override
-	public boolean isDir(){
-        return true;
-    }
-
 
     @Override
     public <T> T accept(SleuthkitItemVisitor<T> v) {
@@ -63,5 +59,25 @@ public class Directory extends FsContent{
     public List<Content> getChildren() throws TskCoreException {
 		return new ArrayList<Content>(getSleuthkitCase().getDirectoryChildren(this));
     }
+
+	@Override
+	public boolean isVirtual() {
+		return type.equals(TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR);
+	}
+	
+
+	@Override
+	public boolean isDir(){
+        return true;
+    }
+	
+	@Override
+	public boolean isFile() {
+		return false;
+	}
+
+
+	
+	
 
 }

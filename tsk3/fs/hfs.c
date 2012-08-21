@@ -6373,7 +6373,6 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
  *
  * @param errnum  The desired error code
  * @param errstr  The format string for the error message
- * @param args    The argument list for the format string
  */
 void
 error_detected(uint32_t errnum, char *errstr, ...)
@@ -6414,7 +6413,6 @@ error_detected(uint32_t errnum, char *errstr, ...)
  * default code so that it is not zero.
  *
  * @param errstr  The format string for the error message
- * @param args    The argument list for the format string
  */
 void
 error_returned(char *errstr, ...)

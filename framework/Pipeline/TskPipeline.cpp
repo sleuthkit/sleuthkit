@@ -13,10 +13,7 @@
  * Contains the implementation for the TskPipeline class.
  */
 
-// System includes
-#include <sstream>
-
-// Framework includes
+// TSK Framework includes
 #include "TskPipeline.h"
 #include "TskExecutableModule.h"
 #include "TskPluginModule.h"
@@ -32,6 +29,10 @@
 #include "Poco/DOM/Nodelist.h"
 #include "Poco/DOM/Document.h"
 #include "Poco/UnicodeConverter.h"
+
+// C/C++ library includes
+#include <sstream>
+#include <assert.h>
 
 const std::string TskPipeline::MODULE_ELEMENT = "MODULE";
 const std::string TskPipeline::MODULE_TYPE_ATTR = "type";
@@ -53,22 +54,12 @@ TskPipeline::~TskPipeline()
         delete *it;
 }
 
-/**
- * Validate a Pipeline based on the given XML configuration string. 
- * @param pipelineConfig String of config file for the specific type of pipeline. 
- * @throws TskException in case of error.
- */
 void TskPipeline::validate(const std::string & pipelineConfig)
 {
     m_loadDll = false;
     initialize(pipelineConfig);
 }
 
-/**
- * Parses the XML config file.  Modules are loaded if m_loadDll is set to true. 
- * @param pipelineConfig String of a config file for the specific type of pipeline.
- * @throws TskException in case of error.
- */
 void TskPipeline::initialize(const std::string & pipelineConfig)
 {
     if (pipelineConfig.empty())
@@ -146,34 +137,38 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
             int order = Poco::NumberParser::parse(pElem->getAttribute(TskPipeline::MODULE_ORDER_ATTR));
             
 
-            if (m_loadDll) {
+            if (m_loadDll) 
+            {
                 TskImgDB& imgDB = TskServices::Instance().getImgDB();
 
                 // Insert into Modules table
                 int moduleId = 0;
-                if (imgDB.addModule(pModule->getName(), pModule->getDescription(), moduleId)) {
+                if (imgDB.addModule(pModule->getName(), pModule->getDescription(), moduleId)) 
+                {
                     std::stringstream errorMsg;
                     errorMsg << "TskPipeline::initialize - Failed to insert into Modules table. "  
                              << " module name=" << pModule->getName() ;
                     throw TskException(errorMsg.str());
-                } else {
+                } 
+                else 
+                {
                     pModule->setModuleId(moduleId);
+                    m_moduleNames.insert(std::make_pair(moduleId, pModule->getName()));
+                    m_moduleExecTimes.insert(std::make_pair(moduleId, Poco::Timespan()));
                 }
+                bool duplicate = false;
+                for (std::vector<TskModule*>::iterator it = m_modules.begin(); it != m_modules.end(); it++) {
+                    if ((*it)->getModuleId() == pModule->getModuleId()) {
+                        duplicate = true;
+                        std::stringstream msg;
+                        msg << "TskPipeline::initialize - " << pModule->getName() << " is a duplicate module. " <<
+                            "The duplicate will not be added to the pipeline";
+                        throw TskException(msg.str());
+                    }
+                }
+                if (!duplicate)
+                    m_modules.push_back(pModule);
             }
-            bool duplicate = false;
-            for (std::vector<TskModule*>::iterator it = m_modules.begin(); it != m_modules.end(); it++)
-                if((*it)->getModuleId() == pModule->getModuleId()){
-                    duplicate = true;
-                    std::wstringstream msg;
-                    std::wstring utf16name;
-                    Poco::UnicodeConverter::toUTF16(pModule->getName(), utf16name);
-
-                    msg << L"TskPipeline::initialize - " << utf16name << L" is a duplicate module. " <<
-                        L"the duplicate will not be added to the pipeline";
-                    LOGERROR(msg.str());
-                }
-            if(!duplicate)
-                m_modules.push_back(pModule);
         }
     }
     // rethrow this, otherwise it is caught by std::exception and we lose the detail.
@@ -188,11 +183,6 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
     }
 }
 
-/**
- * Creates a module of the type specified in the XML element.
- * @param pElem element type from XML file. 
- * @returns NULL on error 
- */
 TskModule * TskPipeline::createModule(Poco::XML::Element *pElem)
 {
     if (!pElem)
@@ -267,10 +257,19 @@ TskModule * TskPipeline::createModule(Poco::XML::Element *pElem)
 
 }
 
-/**
- * Determine whether a particular file should be processed.
- * @returns true if file should be excluded, false otherwise
- */
+void TskPipeline::logModuleExecutionTimes() const
+{
+    for (std::map<int, Poco::Timespan>::const_iterator it = m_moduleExecTimes.begin(); it != m_moduleExecTimes.end(); ++it)
+    {
+        assert(m_moduleNames.find(it->first) != m_moduleNames.end());
+        std::stringstream msg;
+        msg << "TskPipeline::logModuleExecutionTimes : "  << m_moduleNames.find(it->first)->second << " total execution time was "
+        << it->second.days() << ":" << it->second.hours() << ":" << it->second.minutes() << ":" << it->second.seconds() << ":" << it->second.milliseconds()
+        << " (days:hrs:mins:secs:ms)";
+        LOGINFO(msg.str());
+    }
+}
+
 bool TskPipeline::excludeFile(const TskFile* file)
 {
     if (file == NULL)
@@ -284,4 +283,19 @@ bool TskPipeline::excludeFile(const TskFile* file)
         return true;
 
     return false;
+}
+
+void TskPipeline::updateModuleExecutionTime(int moduleId, const Poco::Timespan::TimeDiff &executionTime)
+{
+    std::map<int, Poco::Timespan>::iterator it = m_moduleExecTimes.find(moduleId);
+    if (it != m_moduleExecTimes.end())
+    {
+        it->second += executionTime;
+    }
+    else
+    {
+        std::stringstream msg;
+        msg << "TskPipeline::updateModuleExecutionTime : unknown moduleId " << moduleId;
+        LOGERROR(msg.str());
+    }
 }

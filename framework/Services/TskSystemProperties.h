@@ -16,7 +16,10 @@
 #ifndef _TSK_SYSTEMPROPERTIES_H
 #define _TSK_SYSTEMPROPERTIES_H
 
+// TSK Framework includes
 #include "framework_i.h"
+
+// C/C++ library includes
 #include <string>
 #include <map>
 #include <set>
@@ -43,37 +46,44 @@ class TSK_FRAMEWORK_API TskSystemProperties
 {
 public:
     /**
-     * The TSK Framework predefines a set of system properties. Some of these
-     * properties are considered to be required. 
+     * The TSK Framework predefines a set of system properties. Many of these
+     * properties have default values, while others are required to have values 
+     * supplied by either the executing program or the framework configuration
+     * file. TskSystemProperties::isConfigured() may be called to do a runtime
+     * query of whether or not all required system properties are set.
      */
     enum PredefinedProperty
     {
         /** 
-         * Directory where program using the framework is installed. 
+         * Program root directory. Defaults to the directory where the 
+         * executing program is installed. 
          */
         PROG_DIR,
 
         /** 
          * Directory where configuration files and data can be found. 
+         * Defaults to #PROG_DIR#/Config. 
          */
         CONFIG_DIR,
         
         /** 
-          * Directory where plug-in and executable modules can be found. 
+          * Directory where plug-in and executable modules can be found.
+          * Defaults to #PROG_DIR#/Modules.
           */
         MODULE_DIR,
 
         /** 
-         * Root output directory that all modules can write to. Should be a
-         * shared location if framework is being used in a distributed 
-         * environment. This is a REQUIRED property.
+         * Root output directory. It should be a shared location if the TSK
+         * Framework is being used in a distributed environment. It is a 
+         * required system property.
          */
         OUT_DIR,
-        
+
         /** 
-         * Path of the pipeline config file in use. 
-         */ 
-        PIPELINE_CONFIG_FILE,
+         * Directory where system logs are written. Defaults to 
+         * #OUT_DIR#/Logs. 
+         */
+        LOG_DIR,
 
         /** 
          * Hostname of database server (if one is being used). 
@@ -84,6 +94,56 @@ public:
          * Port of database server (if one is being used) 
          */
         DB_PORT,
+
+        /** 
+         * Directory where unallocated sectors image files are stored prior to
+         * carving. Defaults to #OUT_DIR#\Carving. 
+         */ 
+        CARVE_DIR,
+
+        /**
+         * File name to be given to all unallocated sectors image files.
+         * Default to unalloc.bin.
+         */
+        UNALLOC_SECTORS_IMG_FILE_NAME,
+
+        /**
+         * Maximum allowable size for unallocated sectors image files. Can be 
+         * Set to zero to have no maximum size and instead break files on 
+         * volume boundaries only. Defaults to zero.
+         */
+        MAX_UNALLOC_SECTORS_IMG_FILE_SIZE,
+
+        /**
+         * Whether or not unallocated sectors image files should be retained
+         * after carving is completed. Defaults to false.
+         */
+        CARVE_EXTRACT_KEEP_INPUT_FILES,
+
+        /**
+         * Whether or not carved files should be retained in the carving 
+         * directory after they are copied to file storage. Defaults to false.
+         */
+        CARVE_EXTRACT_KEEP_OUTPUT_FILES,
+
+        /**
+         * Directory where scalpel.exe is installed. Used by the TSK 
+         * Framework's implementation of the CarveExtract interface. 
+         */
+        SCALPEL_DIR,
+
+        /**
+         * Path to a Scalpel configuration file. Used by the TSK 
+         * Framework's implementation of the CarveExtract interface.
+         * Defaults to #SCALPEL_DIR#/scalpel.conf.
+         */
+        SCALPEL_CONFIG_FILE,
+
+        /** 
+         * Path to a pipeline configuration file. Defaults to 
+         * #CONFIG_DIR#/pipeline_config.xml. 
+         */ 
+        PIPELINE_CONFIG_FILE,
 
         /** 
           * ID of this session.  The intended use of this is in a distributed
@@ -98,7 +158,8 @@ public:
         CURRENT_TASK,
 
         /** 
-          * Used to assign a number in a sequence to some aspect of a task. 
+          * Can be used to assign a number in a sequence to a sub task of the
+          * current task. 
           */ 
         CURRENT_SEQUENCE_NUMBER,
 
@@ -118,18 +179,23 @@ public:
         START_TIME,
 
         /** 
-         * The current system time. 
+         * Current system time. Read only. 
          */
         CURRENT_TIME,
 
         /** 
          * A combination of elements that define a unique identifier for the
          * current task. For example, this property might be defined to be a
-         * string of the form <current task>_<hostname>_<pid>_<start time>. 
+         * string of the form CurrentTask_HostName_Pid_StartTime. 
          */
         UNIQUE_ID,
 
-        END_PROPS
+        /** 
+         * Image file path. Defaults to the image file path stored in the image database. 
+         */
+        IMAGE_FILE,
+
+		END_PROPS
     };
 
     /** 
@@ -284,48 +350,35 @@ private:
     void expandMacros(const std::string &inputStr, std::string &outputStr, std::size_t depth) const;
 
     /**
-     * Constant used to guarantee a recursion stop condition for the expandMacros 
-     * member function.
+     * Lookup data structure used to map name strings of predefined system 
+     * properties to elements of the PredefinedProperty enum.
      */
-    const static std::size_t MAX_RECURSION_DEPTH = 10;
-
-    /**
-     * Used to define a predefined system property.
-     */
-    struct PredefProp
-    {
-        PredefProp(PredefinedProperty propId, const std::string &macroToken, bool propRequired) : id(propId), token(macroToken), required(propRequired) {}
-        PredefinedProperty id;
-        std::string token;
-        bool required;
-    };
-
-    /**
-     * Array of PredefProp objects used to define the predefined system
-     * properties.
-     */
-    const static PredefProp predefinedProperties[]; 
+    mutable std::map<std::string, PredefinedProperty> predefProps;
 
     /**
      * Lookup data structure used to map elements of the 
-     * PredefinedProperty enum to name strings. Populated from the 
-     * predefinedProperties array.
+     * PredefinedProperty enum to name strings.
      */
-    std::vector<std::string> predefPropNames;
+    mutable std::map<PredefinedProperty, std::string> predefPropNames;
 
     /**
      * Lookup data structure used to determine whether or not a token in a 
      * string passed to the expandMacros function corresponds to a predefined 
-     * system property. Populated from the predefinedProperties array.
+     * system property.
      */
-    std::set<std::string> predefPropTokens;
+    mutable std::set<std::string> predefPropTokens;
 
     /**
      * Lookup data structure used to determine whether or not a predefined 
-     * system property is required. Populated from the predefinedProperties 
-     * array.
+     * system property is required.
      */
-    std::set<PredefinedProperty> requiredProps; 
+    mutable std::set<PredefinedProperty> requiredProps; 
+
+    /**
+     * Lookup data structure used to get the default values of predefined 
+     * system properties.
+     */
+    mutable std::map<PredefinedProperty, std::string> predefPropDefaults;
 };
 
 #endif
