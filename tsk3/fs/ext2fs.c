@@ -1943,7 +1943,9 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             tsk_fprintf(hFile, "Sparse Super, ");
         if (tsk_getu32(fs->endian, sb->s_feature_ro_compat) &
             EXT2FS_FEATURE_RO_COMPAT_LARGE_FILE)
-            tsk_fprintf(hFile, "Has Large Files, ");
+            tsk_fprintf(hFile, "Large File, ");
+        if(EXT2FS_HAS_RO_COMPAT_FEATURE(fs,sb,EXT2FS_FEATURE_RO_COMPAT_HUGE_FILE))
+            tsk_fprintf(hFile, "Huge File, ");
         if (tsk_getu32(fs->endian, sb->s_feature_ro_compat) &
             EXT2FS_FEATURE_RO_COMPAT_BTREE_DIR)
             tsk_fprintf(hFile, "Btree Dir, ");
