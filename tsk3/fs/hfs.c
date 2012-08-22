@@ -6126,6 +6126,9 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->last_block_act =
             (img_info->size - offset) / fs->block_size - 1;
 
+    // Initialize the lock
+    tsk_init_lock(&(hfs->metadata_dir_cache_lock));
+
     /*
      * Set function pointers
      */
@@ -6352,8 +6355,6 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     	hfs->has_attributes_file = TRUE;
     }
 
-    // Initialize the lock
-    tsk_init_lock(&(hfs->metadata_dir_cache_lock));
 
     return fs;
 }
