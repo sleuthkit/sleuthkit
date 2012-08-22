@@ -16,61 +16,26 @@
 #ifndef _TSK_CARVEEXTRACTSCALPEL_H
 #define _TSK_CARVEEXTRACTSCALPEL_H
 
+// TSK Framework includes
 #include "Extraction/CarveExtract.h"
+
+// Poco includes
+#include "Poco/Pipe.h"
+
+// C/C++ library includes
 #include <string>
 #include <vector>
-#include "Poco/Pipe.h"
 
 /**
  * The TskCarveExtractScalpel class implements the CarveExtract interface to 
- * carve unallocated sectors image files using Scalpel. Instances of the class
- * use the following system properties: SCALPEL_DIR, SCALPEL_CONFIG_FILE, 
- * CARVE_PREP_DIR, CARVE_PREP_FILE_NAME, CARVE_EXTRACT_KEEP_INPUT_FILES, and 
- * CARVE_EXTRACT_KEEP_OUTPUT_FILES.
+ * carve unallocated sectors image files using Scalpel.
  */
 class TSK_FRAMEWORK_API TskCarveExtractScalpel : public CarveExtract
 {
 public:
-    /**
-     * Default constructor.
-     */
-    TskCarveExtractScalpel() : configState(NOT_ATTEMPTED), deleteInputFiles(true), deleteOutputFiles(true) {}
-
     virtual int processFile(int unallocImgId);
 
 private:
-    /**
-     * Enumeration of the three possible states the TskCarveExtractScalpel can
-     * be in when processFile is called.
-     */
-    enum CONFIG_STATE
-    {
-        NOT_ATTEMPTED,
-        FAILED,
-        SUCCEEDED
-    };
-
-    /**
-     * Bundles information concerning a carved file produced by Scalpel.
-     */
-    struct CarvedFile
-    {
-        CarvedFile(int unallocImgId, const std::string &fileName, const std::string &offsetInBytes, const std::string &lengthInBytes);
-        int id;
-        std::string name;
-        unsigned long offset;
-        unsigned long length;
-    };
-
-    /**
-     * Configures the TskCarveExtractScalpel using system  properties and sets
-     * the state of the object to one of the states defined by the 
-     * TskCarveExtractScalpel::CONFIG_STATE enum.
-     *
-     * @return Throws TskException on error.
-     */
-    void configure();
-
     /**
      * Uses Scalpel to attempt carving an unallocated sectors image file.
      *
@@ -85,6 +50,18 @@ private:
      * @return Throws TskException on error.
      */
     void carveFile(const std::string &unallocImgPath, const std::string &outputFolderPath, const std::string &stdOutFilePath, const std::string &stdErrFilePath) const;
+
+    /**
+     * Bundles information concerning a carved file produced by Scalpel.
+     */
+    struct CarvedFile
+    {
+        CarvedFile(int unallocImgId, const std::string &fileName, const std::string &offsetInBytes, const std::string &lengthInBytes);
+        int id;
+        std::string name;
+        unsigned long offset;
+        unsigned long length;
+    };
 
     /**
      * Parses a Scalpel carving results file to determine what files, if any, 
@@ -110,71 +87,6 @@ private:
      * @return Throws TskException on error.
      */
     void processCarvedFiles(const std::string &outputFolderPath, const std::vector<CarvedFile> &carvedFiles) const;
-
-    /**
-     * The file name of the Scalpel executable.
-     */
-    static const std::string SCALPEL_EXE_FILE_NAME;
-
-    /**
-     * The file name of the default Scalpel configuration file.
-     */
-    static const std::string SCALPEL_DEFAULT_CONFIG_FILE_NAME;
-
-    /**
-     * The file name of the Scalpel results file.
-     */
-    static const std::string SCALPEL_RESULTS_FILE_NAME;
-
-    /**
-     * The file name used for the file that stores what Scalpel writes to 
-     * standard output.
-     */
-    static const std::string STD_OUT_DUMP_FILE_NAME;
-
-    /**
-     * The file name used for the file that stores what Scalpel writes to 
-     * standard error.
-     */
-    static const std::string STD_ERR_DUMP_FILE_NAME;
-
-    /**
-     * Tracks the state of the object when processFile is called.
-     */
-    CONFIG_STATE configState;
-
-    /**
-     * Stores the path to the Scalpel executable, constructed using the 
-     * SCALPEL_DIR system property.
-     */
-    std::string scalpelExePath;
-
-    /**
-     * Stores the SCALPEL_CONFIG_FILE system property.
-     */
-    std::string scalpelConfigFilePath;
-
-    /**
-     * Stores the CARVE_PREP_DIR system property.
-     */
-    std::string carvePrepOutputPath;
-
-    /**
-     * Stores the CARVE_PREP_FILE_NAME system property.
-     */
-    std::string carvePrepOutputFileName;
-
-    /**
-     * Stores the CARVE_EXTRACT_KEEP_INPUT_FILES system property as a boolean 
-     * flag.
-     */
-    bool deleteInputFiles;
-
-    /**
-     * Stores the CARVE_EXTRACT_KEEP_OUTPUT_FILES system property as a boolean 
-     * flag.
-     */
-    bool deleteOutputFiles;
 };
 
 #endif

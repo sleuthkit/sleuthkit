@@ -30,12 +30,6 @@
 class TSK_FRAMEWORK_API TskReportPipeline : public TskPipeline
 {
 public:
-    // Default constructor
-    TskReportPipeline();
-
-    // Destructor
-    ~TskReportPipeline();
-
     // Initialize a Pipeline based on the given XML configuration string.
     void initialize(const std::string& pipelineConfig);
 
@@ -50,7 +44,6 @@ public:
 
     // Create a module for the pipeline
     TskPluginModule * createPluginModule() { return (new TskReportPluginModule()); };
-
 };
 
 #endif

@@ -2140,11 +2140,14 @@ public class SleuthkitCase {
         }
         SleuthkitCase.dbWriteLock();
         try {
+			final long fileKnownValue = fileKnown.toLong();
             Statement s = con.createStatement();
             s.executeUpdate("UPDATE tsk_files "
-                    + "SET known='" + fileKnown.toLong() + "' "
+                    + "SET known='" + fileKnownValue + "' "
                     + "WHERE obj_id=" + id);
             s.close();
+			//update the object itself
+			fsContent.setKnown(fileKnownValue);
         } catch (SQLException ex) {
             throw new TskCoreException("Error setting Known status.", ex);
         } finally {
@@ -2169,6 +2172,8 @@ public class SleuthkitCase {
                     + "SET md5='" + md5Hash + "' "
                     + "WHERE obj_id=" + id);
             s.close();
+			//update the object itself
+			fsContent.setMd5Hash(md5Hash);
         } catch (SQLException ex) {
             throw new TskCoreException("Error setting MD5 hash.", ex);
         } finally {
