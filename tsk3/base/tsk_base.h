@@ -439,6 +439,7 @@ documentation and/or software.
 
 
 /* MD5 context. */
+#define TSK_MD5_DIGEST_LENGTH 16
     typedef struct {
         UINT4 state[4];         /* state (ABCD) */
         UINT4 count[2];         /* number of bits, modulo 2^64 (lsb first) */
@@ -454,7 +455,7 @@ documentation and/or software.
 /* sha.h */
 
 /* The structure for storing SHS info */
-
+#define TSK_SHA_DIGEST_LENGTH 32
     typedef struct {
         UINT4 digest[5];        /* Message digest */
         UINT4 countLo, countHi; /* 64-bit bit count */

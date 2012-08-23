@@ -171,13 +171,15 @@ if test "x$enable_fiwalk" == xyes; then
    ##
    ## Bloom support
    AC_TYPE_INT64_T
-   AC_CHECK_HEADERS([openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h])
+   AC_CHECK_HEADERS([err.h sys/mman.h sys/resource.h unistd.h])
+   #AC_CHECK_HEADERS([openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h])
    AC_CHECK_FUNCS([printf getrusage err errx warn warnx mmap])
    
    ################################################################
    ##
    ## utils.h/utils.c support:
-   AC_CHECK_HEADERS([err.h openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h])
+   AC_CHECK_HEADERS([err.h sys/mman.h sys/resource.h unistd.h])
+   #AC_CHECK_HEADERS([err.h openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h])
    AC_CHECK_FUNCS([ishexnumber unistd.h err errx warn warnx ishexnumber pread64 pread _lseeki64 ])
    
    ################################################################
@@ -203,7 +205,7 @@ if test "x$enable_fiwalk" == xyes; then
    #AC_HEADER_STDC				#Redundant
    AC_HEADER_DIRENT
    AC_CHECK_HEADERS([ctype.h err.h stdio.h strings.h string.h stdlib.h stdint.h sys/mman.h sys/types.h sys/time.h sys/resource.h sys/signal.h inttypes.h sys/resource.h sys/utsname.h])
-   AC_CHECK_HEADERS([openssl/evp.h openssl/hmac.h openssl/x509.h openssl/pem.h])
+   #AC_CHECK_HEADERS([openssl/evp.h openssl/hmac.h openssl/x509.h openssl/pem.h])
    AC_CHECK_HEADERS([CommonCrypto/CommonDigest.h])
    AC_CHECK_HEADERS([magic.h])
    AC_CHECK_MEMBERS([struct glob_t.gl_matchc],,,[[#include <glob.h>]])
@@ -224,9 +226,9 @@ if test "x$enable_fiwalk" == xyes; then
       AC_CHECK_LIB([z],[uncompress],,AC_MSG_WARN([zlib not installed; required for AFFLIB and libewf]))
       AC_CHECK_LIB([afflib],[af_open],,AC_MSG_WARN([AFFLIB not found]))
    fi
-   AC_CHECK_LIB([ssl],[ssl3_new])
-   AC_CHECK_LIB([system],[CC_MD2_Init])
-   AC_CHECK_LIB([crypto],[EVP_md5])
+   #AC_CHECK_LIB([ssl],[ssl3_new])
+   #AC_CHECK_LIB([system],[CC_MD2_Init])
+   #AC_CHECK_LIB([crypto],[EVP_md5])
    if test "x$with_libewf" != "xno"; then
       AC_CHECK_LIB([ewf],[libewf_get_version],,AC_MSG_WARN([libewf not found; no E01 support]))
    else

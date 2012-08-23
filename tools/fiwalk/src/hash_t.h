@@ -20,6 +20,7 @@
  */
 
 #include "tsk3/tsk_tools_i.h"
+#include "tsk3/base/sha2.h"
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
@@ -41,8 +42,8 @@
  #include <CommonCrypto/CommonDigest.h>
  #include <CommonCrypto/CommonHMAC.h>
 #else
- #include <openssl/hmac.h>
- #include <openssl/evp.h>
+// #include <openssl/hmac.h>
+// #include <openssl/evp.h>
 #endif
 
 #include <iostream>
@@ -77,13 +78,13 @@ public:
     uint8_t digest[SIZE];
 };
 
-#if defined(HAVE_EVP_SHA512) || defined(COMMON_DIGEST_FOR_OPENSSL)
+//#if defined(HAVE_EVP_SHA512) || defined(COMMON_DIGEST_FOR_OPENSSL)
 class sha512_ {
 public:
     static const size_t SIZE=64;
     uint8_t digest[SIZE];
 };
-#endif
+//#endif
 
 static int hexcharvals__[256];
 static int hexcharvals_init__ = 0;
@@ -170,27 +171,27 @@ public:
 typedef hash__<md5_> md5_t;
 typedef hash__<sha1_> sha1_t;
 typedef hash__<sha256_> sha256_t;
-#if defined(HAVE_EVP_SHA512) || defined(COMMON_DIGEST_FOR_OPENSSL)
+//#if defined(HAVE_EVP_SHA512) || defined(COMMON_DIGEST_FOR_OPENSSL)
 typedef hash__<sha512_> sha512_t;
-#endif
+//#endif
 
 template<typename T> 
 class hash_generator__:T { 			/* generates the hash */
     unsigned int ret;
-#ifndef COMMON_DIGEST_FOR_OPENSSL
-	const EVP_MD *md;
-    EVP_MD_CTX mdctx;	     /* the context for computing the value */
-#else
+//#ifndef COMMON_DIGEST_FOR_OPENSSL
+//	const EVP_MD *md;
+//    EVP_MD_CTX mdctx;	     /* the context for computing the value */
+//#else
 	void *mdctx;
 	unsigned char *md;
 //	int (*md_update) ();
 //	md_update = MD5_Update;
 //	md_update = &SHA_Update;
 	int (*md_init)(void *);
-	int (*md_update)(void *, const void *, CC_LONG);
+	int (*md_update)(void *, const void *, uint32_t);
 	int (*md_final)(unsigned char *, void *);
 //	 int (*md_final)();
-#endif
+//#endif
     bool initialized;	       /* has the context been initialized? */
     bool finalized;
     /* Static function to determine if something is zero */
@@ -204,49 +205,49 @@ public:
     int64_t hashed_bytes;
     hash_generator__():initialized(false),finalized(false),hashed_bytes(0){
 	switch(this->SIZE){
-#ifdef COMMON_DIGEST_FOR_OPENSSL
+//#ifdef COMMON_DIGEST_FOR_OPENSSL
 	case 16:
-		mdctx = malloc(sizeof(MD5_CTX));
-		memset(mdctx,0,sizeof(MD5_CTX));
-		md=(unsigned char *)malloc(MD5_DIGEST_LENGTH);
-		memset(md,0,MD5_DIGEST_LENGTH);
+		mdctx = malloc(sizeof(TSK_MD5_CTX));
+		memset(mdctx,0,sizeof(TSK_MD5_CTX));
+		md=(unsigned char *)malloc(TSK_MD5_DIGEST_LENGTH);
+		memset(md,0,TSK_MD5_DIGEST_LENGTH);
 //		int (*md_init)(MD5_CTX*) = &MD5_Init;
 //		(int (*)(MD5_CTX*))md_init  = MD5_Init;
-		md_init	 	= (int(*)(void *))&MD5_Init;
-		md_update	= (int (*)(void *, const void *, CC_LONG))&MD5_Update;
-		md_final	= (int (*)(unsigned char*, void *))&MD5_Final;
+		md_init	 	= (int(*)(void *))&TSK_MD5_Init;
+    	md_update	= (int (*)(void *, const void *, uint32_t))&TSK_MD5_Update;
+		md_final	= (int (*)(unsigned char*, void *))&TSK_MD5_Final;
 		break;
 	case 20: 
-		mdctx = malloc(sizeof(SHA_CTX));
-		memset(mdctx,0,sizeof(SHA_CTX));
-		md=(unsigned char *)malloc(SHA_DIGEST_LENGTH);
-		memset(md,0,SHA_DIGEST_LENGTH);
-		md_init		= (int(*)(void *))&SHA1_Init;
-		md_update	= (int (*)(void *, const void *, CC_LONG))(void (*)())&SHA1_Update;
-		md_final	= (int (*)(unsigned char*, void*))&SHA1_Final;
+		mdctx = malloc(sizeof(TSK_SHA_CTX));
+		memset(mdctx,0,sizeof(TSK_SHA_CTX));
+		md=(unsigned char *)malloc(TSK_SHA_DIGEST_LENGTH);
+		memset(md,0,TSK_SHA_DIGEST_LENGTH);
+		md_init		= (int(*)(void *))&TSK_SHA_Init;
+		md_update	= (int (*)(void *, const void *, uint32_t))(void (*)())&TSK_SHA_Update;
+		md_final	= (int (*)(unsigned char*, void*))&TSK_SHA_Final;
 		break;
 	case 32: 
 		mdctx = malloc(sizeof(SHA256_CTX));
 		md=(unsigned char *)malloc(SHA256_DIGEST_LENGTH);
 		md_init		= (int(*)(void *))&SHA256_Init;
-		md_update	= (int (*)(void *, const void *, CC_LONG))(void (*)())&SHA256_Update;
+		md_update	= (int (*)(void *, const void *, uint32_t))(void (*)())&SHA256_Update;
 		md_final	= (int (*)(unsigned char*, void*))&SHA256_Final;
 		break;
 	case 64:
 		mdctx = malloc(sizeof(SHA512_CTX));
 		md=(unsigned char *)malloc(SHA512_DIGEST_LENGTH);
 		md_init		= (int(*)(void *))&SHA512_Init;
-		md_update	= (int (*)(void *, const void *, CC_LONG))(void (*)())&SHA512_Update;
+		md_update	= (int (*)(void *, const void *, uint32_t))(void (*)())&SHA512_Update;
 		md_final	= (int (*)(unsigned char*, void*))&SHA512_Final;
 		break;
-#else
-	case 16: md = EVP_md5();break;
-	case 20: md = EVP_sha1();break;
-	case 32: md = EVP_sha256();break;
-#ifdef HAVE_EVP_SHA512
-	case 64: md = EVP_sha512();break;
-#endif
-#endif
+//#else
+//	case 16: md = EVP_md5();break;
+//	case 20: md = EVP_sha1();break;
+//	case 32: md = EVP_sha256();break;
+//#ifdef HAVE_EVP_SHA512
+//	case 64: md = EVP_sha512();break;
+//#endif
+//#endif
 	default:
 	    assert(0);
 #ifdef __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__
@@ -259,12 +260,12 @@ public:
     }
     void init(){
 	if(initialized==false){
-#ifdef COMMON_DIGEST_FOR_OPENSSL
+//#ifdef COMMON_DIGEST_FOR_OPENSSL
 		md_init(mdctx);
-#else
-	    EVP_MD_CTX_init(&mdctx);
-	    EVP_DigestInit_ex(&mdctx, md, NULL);
-#endif
+//#else
+//	    EVP_MD_CTX_init(&mdctx);
+//	    EVP_DigestInit_ex(&mdctx, md, NULL);
+//#endif
 	    initialized = true;
 	    finalized = false;
 	    hashed_bytes = 0;
@@ -276,21 +277,21 @@ public:
 	    std::cerr << "hashgen_t::update called after finalized\n";
 	    exit(1);
 	}
-#ifndef COMMON_DIGEST_FOR_OPENSSL
-	EVP_DigestUpdate(&mdctx,buf,bufsize);
-#else
+//#ifndef COMMON_DIGEST_FOR_OPENSSL
+//	EVP_DigestUpdate(&mdctx,buf,bufsize);
+//#else
 	md_update(mdctx, buf, bufsize);
-#endif
+//#endif
 	hashed_bytes += bufsize;
     }
     void release(){			/* free allocated memory */
 	if(initialized){
-#ifdef COMMON_DIGEST_FOR_OPENSSL
+//#ifdef COMMON_DIGEST_FOR_OPENSSL
 		free(md);
 		free(mdctx);
-#else
-	    EVP_MD_CTX_cleanup(&mdctx);
-#endif
+//#else
+//	    EVP_MD_CTX_cleanup(&mdctx);
+//#endif
 	    initialized = false;
 	    hashed_bytes = 0;
 	}
@@ -305,12 +306,12 @@ public:
 	  init();			/* do it now! */
 	}
 	hash__<T> val;
-#ifdef COMMON_DIGEST_FOR_OPENSSL
+//#ifdef COMMON_DIGEST_FOR_OPENSSL
 	md_final(val.digest, mdctx);
-#else
-	unsigned int len = sizeof(val.digest);
-	EVP_DigestFinal(&mdctx,val.digest,&len);
-#endif
+//#else
+//	unsigned int len = sizeof(val.digest);
+//	EVP_DigestFinal(&mdctx,val.digest,&len);
+//#endif
 	finalized = true;
 	return val;
     }
@@ -372,8 +373,8 @@ typedef hash_generator__<md5_> md5_generator;
 typedef hash_generator__<sha1_> sha1_generator;
 typedef hash_generator__<sha256_> sha256_generator;
 
-#ifdef HAVE_EVP_SHA512
+//#ifdef HAVE_EVP_SHA512
 typedef hash_generator__<sha512_> sha512_generator;
-#endif
+//#endif
 
 #endif
