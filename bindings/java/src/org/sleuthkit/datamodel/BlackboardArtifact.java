@@ -18,8 +18,9 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 
 /**
  * Represents an artifact as stored in the Blackboard. Artifacts are a collection
@@ -55,7 +56,11 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", "Interesting Files"), ///< an interesting/notable file hit
 		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", "E-Mail Messages"), ///< email message
 		TSK_EXTRACTED_TEXT(14, "TSK_EXTRACTED_TEXT", "Extracted Text"), ///< text extracted from file
-		TSK_WEB_SEARCH_QUERY(15, "TSK_WEB_SEARCH_QUERY", "Web Search Engine Queries"); ///< web search engine query extracted from web history
+		TSK_WEB_SEARCH_QUERY(15, "TSK_WEB_SEARCH_QUERY", "Web Search Engine Queries"), ///< web search engine query extracted from web history
+		TSK_BOOKMARK_FILE(16, "TSK_BOOKMARK_FILE", "File Bookmarks"), ///< bookmarked files
+		TSK_BOOKMARK_ARTIFACT(17, "TSK_BOOKMARK_ARTIFACT", "Result Bookmarks"), ///< bookmarked results/artifacts
+		
+		;
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
 		private int typeID;
@@ -223,8 +228,29 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @return a list of attributes
 	 * @throws TskException exception thrown if a critical error occurs within tsk core and attributes were not queried
 	 */
-	public ArrayList<BlackboardAttribute> getAttributes() throws TskCoreException {
+	public List<BlackboardAttribute> getAttributes() throws TskCoreException {
 		return Case.getMatchingAttributes("WHERE artifact_id = " + artifactID);
+	}
+	
+	/**
+	 * Links another existing blackboard artifact (a child) to this artifact.
+	 * Linkage is made using TSK_PARENT_ARTIFACT attribute.
+	 * @param child an existing blackboard artifact (child) to link to this artifact (parent).
+	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core and child artifact could not be linked
+	 */
+	public void addChildArtifact(BlackboardArtifact child) throws TskCoreException {
+		BlackboardAttribute attrLink = new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PARENT_ARTIFACT.getTypeID(),
+				"", "", this.artifactID);
+		child.addAttribute(attrLink);
+	}
+	
+	/**
+	 * Get children artifacts linked to this parent artifact
+	 * @return list of children artifacts or an empty list
+	  * @throws TskCoreException exception thrown if a critical error occurs within tsk core and child artifact could not be queried
+	 */
+	public List<BlackboardArtifact> getChildrenArtifacts() throws TskCoreException {
+		return Case.getBlackboardArtifacts(ATTRIBUTE_TYPE.TSK_PARENT_ARTIFACT, this.artifactID);
 	}
 
 	/**
@@ -267,4 +293,11 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		hash = 41 * hash + (int) (this.artifactID ^ (this.artifactID >>> 32));
 		return hash;
 	}
+
+	@Override
+	public String toString() {
+		return "BlackboardArtifact{" + "artifactID=" + artifactID + ", objID=" + objID + ", artifactTypeID=" + artifactTypeID + ", artifactTypeName=" + artifactTypeName + ", displayName=" + displayName + ", Case=" + Case + '}';
+	}
+	
+	
 }

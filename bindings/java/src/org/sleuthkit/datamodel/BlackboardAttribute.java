@@ -158,7 +158,12 @@ public class BlackboardAttribute {
 		TSK_GEO_VPRECISION(60, "TSK_GEO_VPRECISION", "Vertical Precision"),
 		TSK_GEO_MAPDATUM(61, "TSK_GEO_MAPDATUM", "Map Datum"),
 		TSK_FILE_TYPE_SIG(62, "TSK_FILE_TYPE_SIG", "File Type (signature)"),
-		TSK_FILE_TYPE_EXT(63, "TSK_FILE_TYPE_EXT", "File Type (extension)");
+		TSK_FILE_TYPE_EXT(63, "TSK_FILE_TYPE_EXT", "File Type (extension)"),
+		TSK_PARENT_ARTIFACT(64, "TSK_PARENT_ARTIFACT", "Associated result"),
+		TSK_CATEGORY(65, "TSK_CATEGORY", "Category"),
+		TSK_DESCRIPTION(66, "TSK_DESCRIPTION", "Description"),
+		;
+		
 		
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		
@@ -332,6 +337,35 @@ public class BlackboardAttribute {
 		this.valueBytes = new byte[0];
 
 	}
+
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 97 * hash + (int) (this.artifactID ^ (this.artifactID >>> 32));
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final BlackboardAttribute other = (BlackboardAttribute) obj;
+		if (this.artifactID != other.artifactID) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "BlackboardAttribute{" + "artifactID=" + artifactID + ", attributeTypeID=" + attributeTypeID + ", moduleName=" + moduleName + ", context=" + context + ", valueType=" + valueType + ", valueInt=" + valueInt + ", valueLong=" + valueLong + ", valueDouble=" + valueDouble + ", valueString=" + valueString + ", valueBytes=" + valueBytes + ", Case=" + Case + '}';
+	}
+	
+	
 
 	/**
 	 * Create a blackboard attribute that stores a byte array (creates an attribute that can be
