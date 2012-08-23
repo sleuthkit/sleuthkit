@@ -1256,85 +1256,60 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
     return 0;
 }
 
-static TSK_FS_DIR *
-hfs_open_meta_dir(HFS_INFO * hfs, unsigned char is_directory) {
-	int8_t result;
-	TSK_FS_DIR * result2;
-	TSK_FS_INFO * fs = (TSK_FS_INFO *) hfs;
-	TSK_INUM_T meta_cnid;
-
-	if(!is_directory)
-		result = tsk_fs_path2inum(fs, "/" UTF8_NULL_REPLACE  UTF8_NULL_REPLACE
-				UTF8_NULL_REPLACE UTF8_NULL_REPLACE
-				"HFS+ Private Data", &meta_cnid, NULL);
-	else {
-		char fNameBuf[50];
-		memset(fNameBuf, 0, 50);
-		snprintf(fNameBuf, 50, "/.HFS+ Private Directory Data%c" , (char) 0xD);
-		result = tsk_fs_path2inum(fs, fNameBuf, &meta_cnid, NULL);
-	}
-	if(result != 0) {
-		error_returned("hfs_open_meta_dir: could not resolve path to metadata directory");
-		return NULL;
-	}
-
-	result2 = tsk_fs_dir_open_meta(fs, meta_cnid);
-	if(result2 == NULL)
-		error_returned("hfs_open_meta_dir: could not open the metadata directory");
-
-	return result2;
-}
 
 static TSK_INUM_T
 hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum, unsigned char is_directory) {
-        char fBuff[30];
-        TSK_FS_DIR * mdir;
-        size_t indx;
-        TSK_FS_INFO * fs = (TSK_FS_INFO *) hfs;
+    char fBuff[30];
+    TSK_FS_DIR * mdir;
+    size_t indx;
+    TSK_FS_INFO * fs = (TSK_FS_INFO *) hfs;
 
-        memset(fBuff, 0, 30);
+    memset(fBuff, 0, 30);
 
-        if (is_directory) {
+    if (is_directory) {
 
-                tsk_take_lock(&(hfs->metadata_dir_cache_lock));
-                if(hfs->dir_meta_dir == NULL) {
-                        hfs->dir_meta_dir = hfs_open_meta_dir(hfs, TRUE);
-                }
-                tsk_release_lock(&(hfs->metadata_dir_cache_lock));
+        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
+        if (hfs->dir_meta_dir == NULL) {
+            hfs->dir_meta_dir = tsk_fs_dir_open_meta(fs, hfs->meta_dir_inum);
+        }
+        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
 
-                if (hfs->dir_meta_dir == NULL) {
-                        error_returned("hfs_lookup_hard_link: could not open the dir metadata directory");
-                        return 0;
-                } else {
-                        mdir = hfs->dir_meta_dir;
-                }
-                snprintf(fBuff, 30, "dir_%" PRIuINUM, linknum);
+        if (hfs->dir_meta_dir == NULL) {
+            error_returned("hfs_lookup_hard_link: could not open the dir metadata directory");
+            return 0;
         } else {
-
-                tsk_take_lock(&(hfs->metadata_dir_cache_lock));
-                if(hfs->meta_dir == NULL) {
-                        hfs->meta_dir = hfs_open_meta_dir(hfs, FALSE);
-                }
-                tsk_release_lock(&(hfs->metadata_dir_cache_lock));
-
-                if (hfs->meta_dir == NULL) {
-                        error_returned("hfs_lookup_hard_link: could not open file metadata directory");
-                        return 0;
-                } else {
-                        mdir = hfs->meta_dir;
-                }
-                snprintf(fBuff, 30, "iNode%" PRIuINUM, linknum);
+            mdir = hfs->dir_meta_dir;
         }
-        for (indx = 0; indx < tsk_fs_dir_getsize(mdir); indx++) {
+        snprintf(fBuff, 30, "dir_%" PRIuINUM, linknum);
 
-                if ((mdir->names != NULL)  && mdir->names[indx].name &&
-                                (fs->name_cmp(fs, mdir->names[indx].name, fBuff) == 0)) {
-                        // OK this is the one
-                        return mdir->names[indx].meta_addr;
-                }
+    } else {
+
+        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
+        if (hfs->meta_dir == NULL) {
+            hfs->meta_dir = tsk_fs_dir_open_meta(fs, hfs->meta_inum);
         }
-        // OK, we did not find that linknum
-        return 0;
+        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
+
+        if (hfs->meta_dir == NULL) {
+            error_returned("hfs_lookup_hard_link: could not open file metadata directory");
+            return 0;
+        } else {
+            mdir = hfs->meta_dir;
+        }
+        snprintf(fBuff, 30, "iNode%" PRIuINUM, linknum);
+    }
+    
+    for (indx = 0; indx < tsk_fs_dir_getsize(mdir); indx++) {
+
+        if ((mdir->names != NULL)  && mdir->names[indx].name &&
+            (fs->name_cmp(fs, mdir->names[indx].name, fBuff) == 0)) {
+            // OK this is the one
+            return mdir->names[indx].meta_addr;
+        }
+    }
+    
+    // OK, we did not find that linknum
+    return 0;
 }
 
 /*
@@ -1368,14 +1343,14 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 
 	*is_error = 0;  // default, not an error
 
-	if(cat == NULL) {
+	if (cat == NULL) {
 		error_detected(TSK_ERR_FS_ARG, "hfs_follow_hard_link: Pointer to Catalog entry (2nd arg) is null");
 		return 0;
 	}
 
 	cnid = tsk_getu32(fs->endian, cat->std.cnid);
 
-	if(cnid < HFS_FIRST_USER_CNID) {
+	if (cnid < HFS_FIRST_USER_CNID) {
 		// Can't be a hard link.  And, cannot look up in Catalog file either!
 		return cnid;
 	}
@@ -1387,142 +1362,111 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 	file_creator = tsk_getu32(fs->endian, cat->std.u_info.file_cr);
 
 	// Only proceed with the rest of this if the flags etc are right
-	if(file_type == HFS_HARDLINK_FILE_TYPE && file_creator == HFS_HARDLINK_FILE_CREATOR) {
+	if (file_type == HFS_HARDLINK_FILE_TYPE && file_creator == HFS_HARDLINK_FILE_CREATOR) {
 
+        // see if we have the HFS+ Private Data dir for file links;
+        // if not, it can't be a hard link.  (We could warn the user, but
+        // we also rely on this when finding the HFS+ Private Data dir in
+        // the first place and we don't want a warning on every hfs_open.)
+        if ( hfs->meta_inum == 0 )
+            return cnid;
+        
 		// For this to work, we need the FS creation times.  Is at least one of these set?
-		if( ! hfs->has_root_crtime && ! hfs->has_meta_dir_crtime && ! hfs->has_meta_crtime) {
+		if( (! hfs->has_root_crtime) && (! hfs->has_meta_dir_crtime) && (! hfs->has_meta_crtime) ) {
 			uint32_t linkNum = tsk_getu32(fs->endian, cat->std.perm.special.inum);
 			*is_error = 1;
-			tsk_fprintf(stderr, "WARNING: hfs_follow_hard_link: File system creation times are not set. "
-					"Cannot test inode for hard link. File type and creator indicate that this"
-					" is a hard link (file), with LINK ID = %" PRIu32 "\n", linkNum);
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "WARNING: hfs_follow_hard_link: File system creation times are not set. "
+                            "Cannot test inode for hard link. File type and creator indicate that this"
+                            " is a hard link (file), with LINK ID = %" PRIu32 "\n", linkNum);
 			return cnid;
 		}
 
-		if( (!hfs->has_root_crtime) || (! hfs->has_meta_crtime)) {
-			tsk_fprintf(stderr,
-					"WARNING: hfs_follow_hard_link: Either the root folder or the"
-					" file metadata folder is not accessible.  Testing this potential hard link"
-					" may be impaired.\n");
+		if ( (! hfs->has_root_crtime) || (! hfs->has_meta_crtime) ) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                            "WARNING: hfs_follow_hard_link: Either the root folder or the"
+                            " file metadata folder is not accessible.  Testing this potential hard link"
+                            " may be impaired.\n");
 		}
 
 		// Now we need to check the creation time against the three FS creation times
-		if((hfs->has_meta_crtime && crtime == hfs->meta_crtime) ||
-				(hfs->has_meta_dir_crtime && crtime == hfs->metadir_crtime) ||
-				(hfs->has_root_crtime && crtime == hfs->root_crtime)) {
+		if ((hfs->has_meta_crtime && (crtime == hfs->meta_crtime)) ||
+				(hfs->has_meta_dir_crtime && (crtime == hfs->metadir_crtime)) ||
+				(hfs->has_root_crtime && (crtime == hfs->root_crtime)) ) {
 			// OK, this is a hard link to a file.
 			uint32_t linkNum = tsk_getu32(fs->endian, cat->std.perm.special.inum);
-//			char fNameBuf[50];
-//			int8_t result;
-			TSK_INUM_T target_cnid;   //  This is the real CNID of the file.
 
-//			memset(fNameBuf, 0, 50);
-//			snprintf(fNameBuf, 50, "/" UTF8_NULL_REPLACE  UTF8_NULL_REPLACE UTF8_NULL_REPLACE UTF8_NULL_REPLACE
-//					"HFS+ Private Data/iNode%" PRIu32, linkNum);
-//
-//
-//			result = tsk_fs_path2inum(fs, fNameBuf, &target_cnid, NULL);
+			TSK_INUM_T target_cnid;   //  This is the real CNID of the file.
 
 			target_cnid = hfs_lookup_hard_link(hfs, linkNum, FALSE);
 			
-			if(target_cnid != 0) {
+			if (target_cnid != 0) {
 				// Succeeded in finding that target_cnid in the Catalog file
 				return target_cnid;
 			} else {
 				// This should be a hard link, BUT...
 				// Did not find the target_cnid in the Catalog file.
-				error_returned("hfs_follow_hard_link: got an error looking up the target of the link");
-				*is_error = -1;
+				error_returned("hfs_follow_hard_link: got an error looking up the target of a file link");
+				*is_error = 2;
 				return 0;
-
-//				if(result == -1) {
-//					error_returned("hfs_follow_hard_link: error in looking up the path %s to the link target"
-//							" file in the Catalog", fNameBuf);
-//					*is_error = 2;
-//				} else {
-//					error_detected(TSK_ERR_FS_CORRUPT,
-//							"hfs_follow_hard_link: error, target of hard link, with path %s"
-//							" does not exist in the filesystem", fNameBuf);
-//					*is_error = 3;
-//				}
-//				return 0;  // because of error
 			}
 		}
 
 	} else if (file_type == HFS_LINKDIR_FILE_TYPE && file_creator == HFS_LINKDIR_FILE_CREATOR) {
 
+        // see if we have the HFS+ Private Directory Data dir for links;
+        // if not, it can't be a hard link.  (We could warn the user, but
+        // we also rely on this when finding the HFS+ Private Directory Data dir in
+        // the first place and we don't want a warning on every hfs_open.)
+        if ( hfs->meta_dir_inum == 0 )
+            return cnid;
+
 		// For this to work, we need the FS creation times.  Is at least one of these set?
-		if( ! hfs->has_root_crtime && ! hfs->has_meta_dir_crtime && ! hfs->has_meta_crtime) {
+		if ( (! hfs->has_root_crtime) && (! hfs->has_meta_dir_crtime) && (! hfs->has_meta_crtime) ) {
 			uint32_t linkNum = tsk_getu32(fs->endian, cat->std.perm.special.inum);
 			*is_error = 1;
 
-			tsk_fprintf(stderr, "WARNING: hfs_follow_hard_link: File system creation times are not set. "
-					"Cannot test inode for hard link. File type and creator indicate that this"
-					" is a hard link (directory), with LINK ID = %" PRIu32 "\n", linkNum);
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "WARNING: hfs_follow_hard_link: File system creation times are not set. "
+                            "Cannot test inode for hard link. File type and creator indicate that this"
+                            " is a hard link (directory), with LINK ID = %" PRIu32 "\n", linkNum);
 			return cnid;
 		}
 
-		if( (!hfs->has_root_crtime) || (! hfs->has_meta_crtime) || (! hfs->has_meta_dir_crtime)) {
-			tsk_fprintf(stderr,
-					"WARNING: hfs_follow_hard_link: Either the root folder or the"
-					" file metadata folder or the directory metatdata folder is"
-					" not accessible.  Testing this potential hard linked folder "
-					"may be impaired.\n");
+		if ( (! hfs->has_root_crtime) || (! hfs->has_meta_crtime) || (! hfs->has_meta_dir_crtime)) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                            "WARNING: hfs_follow_hard_link: Either the root folder or the"
+                            " file metadata folder or the directory metatdata folder is"
+                            " not accessible.  Testing this potential hard linked folder "
+                            "may be impaired.\n");
 		}
 
-
 		// Now we need to check the creation time against the three FS creation times
-		if((hfs->has_meta_crtime && crtime == hfs->meta_crtime) ||
-				(hfs->has_meta_dir_crtime && crtime == hfs->metadir_crtime) ||
-				(hfs->has_root_crtime && crtime == hfs->root_crtime)) {
+		if ((hfs->has_meta_crtime && (crtime == hfs->meta_crtime)) ||
+				(hfs->has_meta_dir_crtime && (crtime == hfs->metadir_crtime)) ||
+				(hfs->has_root_crtime && (crtime == hfs->root_crtime)) ) {
 			// OK, this is a hard link to a directory.
 			uint32_t linkNum = tsk_getu32(fs->endian, cat->std.perm.special.inum);
-			//char fNameBuf[50];
+
 			TSK_INUM_T target_cnid;   //  This is the real CNID of the file.
-			//int8_t result;
 			
 			target_cnid = hfs_lookup_hard_link(hfs, linkNum, TRUE);
 
-			if(target_cnid != 0) {
+			if (target_cnid != 0) {
 				// Succeeded in finding that target_cnid in the Catalog file
 				return target_cnid;
 			} else {
 				// This should be a hard link, BUT...
 				// Did not find the target_cnid in the Catalog file.
-				error_returned("hfs_follow_hard_link: got an error looking up the target of the link");
-				*is_error = -1;
+				error_returned("hfs_follow_hard_link: got an error looking up the target of a dir link");
+				*is_error = 2;
 				return 0;
-
-//			memset(fNameBuf, 0, 50);
-//			snprintf(fNameBuf, 50, "/.HFS+ Private Directory Data%c/dir_%" PRIu32, (char) 0xD, linkNum);
-//
-//			result = tsk_fs_path2inum(fs, fNameBuf, &target_cnid, NULL);
-//
-//			if(result == 0) {
-//				// Succeeded in finding that target_cnid in the Catalog file
-//				return target_cnid;
-//			} else {
-//				// This should be a hard link to a directory, BUT...
-//				// Did not find the target_cnid in the Catalog file.
-//				printf("  error\n");
-//				snprintf(fNameBuf, 50, "/.HFS+ Private Directory Data<CR>/dir_%" PRIu32, linkNum);
-//				if(result == -1) {
-//					error_returned("hfs_follow_hard_link: error in looking up"
-//							" the path %s "
-//							"to the link target directory in the Catalog",
-//							fNameBuf);
-//					*is_error = 2;
-//				} else {
-//					error_detected(TSK_ERR_FS_CORRUPT,
-//							"hfs_follow_hard_link: error, target directory of hard link, with path %s"
-//							" does not exist in the filesystem",
-//							fNameBuf);
-//					*is_error = 3;
-//				}
-//				return 0;  // because of error
 			}
 		}
 	}
+    
 	// It cannot be a hard link (file or directory)
 	return cnid;
 }
@@ -1893,8 +1837,9 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     result =
         hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
     if (result != 0) {
-        tsk_fprintf(stderr,
-            "WARNING: Extended attributes failed to load for the Catalog file.\n");
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "WARNING: Extended attributes failed to load for the Catalog file.\n");
         tsk_error_reset();
     }
 
@@ -2041,8 +1986,9 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     result =
         hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
     if (result != 0) {
-        tsk_fprintf(stderr,
-            "WARNING: Extended attributes failed to load for the Allocation file.\n");
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "WARNING: Extended attributes failed to load for the Allocation file.\n");
         tsk_error_reset();
     }
 
@@ -2121,8 +2067,9 @@ hfs_make_startfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
    result =
         hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
     if (result != 0) {
-        tsk_fprintf(stderr,
-            "WARNING: Extended attributes failed to load for the Start file.\n");
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "WARNING: Extended attributes failed to load for the Start file.\n");
         tsk_error_reset();
     }
 
@@ -2270,8 +2217,9 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
     result =
         hfs_load_extended_attrs(fs_file, &dummy1, &dummy2, &dummy3);
     if (result != 0) {
-        tsk_fprintf(stderr,
-            "WARNING: Extended attributes failed to load for the BadBlocks file.\n");
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "WARNING: Extended attributes failed to load for the BadBlocks file.\n");
         tsk_error_reset();
     }
 
@@ -2313,10 +2261,12 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
     // Just a sanity check.  The inum (or cnid) occurs in two places in the
     // entry data structure.
     iStd = tsk_getu32(fs->endian, a_entry->file.std.cnid);
-    if(iStd != a_hfs_entry->inum)
-    	tsk_fprintf(stderr,
-    			"WARNING: hfs_dinode_copy:  HFS_ENTRY with conflicting values for inum (or cnid).\n");
-
+    if (iStd != a_hfs_entry->inum) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "WARNING: hfs_dinode_copy:  HFS_ENTRY with conflicting values for inum (or cnid).\n");
+    }
+    
     if (a_fs_meta == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("hfs_dinode_copy: a_fs_meta is NULL");
@@ -2342,8 +2292,6 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
     if (a_fs_meta->attr) {
         tsk_fs_attrlist_markunused(a_fs_meta->attr);
     }
-
-    //tsk_fprintf(stderr, "after markunused\n");
 
 
     /* 
@@ -2372,12 +2320,11 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
         memcpy(&fork[1], &(a_entry->file.resource), sizeof(hfs_fork));
     }
     else {
-        tsk_fprintf(stderr,
-            "hfs_dinode_copy error: catalog entry is neither file nor folder\n");
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "hfs_dinode_copy error: catalog entry is neither file nor folder\n");
         return 1;
     }
-
-    //tsk_fprintf(stderr, "after the type-specific stuff\n");
 
     /*
      * Copy the standard stuff.  
@@ -2424,31 +2371,47 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
     if (std->perm.o_flags & HFS_PERM_OFLAG_COMPRESSED)
         a_fs_meta->flags |= TSK_FS_META_FLAG_COMP;
 
-    //tsk_fprintf(stderr, "after the standard stuff\n");
-
-    /* TODO @@@ could fill in name2 with this entry's name and parent inode
-       from Catalog entry */
-
-    /* If a sym link, copy the destination to a_fs_meta->link */
-    /*
-       if (fs_file->meta->type == TSK_FS_META_TYPE_LNK) {
-       @@@ Need to do this.  We need to read the file content,
-       but we don't really have enough context (i.e. FS_FILE)
-       to simply use the existing load and read functions. 
-       Probably need to make a dummy TSK_FS_FILE. 
-       }
-     */
-
     // We copy this inum (or cnid) here, because this file *might* have been a hard link.  In
     // that case, we want to make sure that a_fs_file points consistently to the target of the
     // link.
-
+    
     if(a_fs_file->name != NULL) {
-    	//tsk_fprintf(stderr, "name is NOT null, copying the inum\n");
     	a_fs_file->name->meta_addr = a_fs_meta->addr;
     }
+    
+    /* TODO @@@ could fill in name2 with this entry's name and parent inode
+       from Catalog entry */
 
-    //tsk_fprintf(stderr, "Returning\n");
+    /* set the link string (if the file is a link)
+     * The size check is a sanity check so that we don't try to allocate
+     * a huge amount of memory for a bad inode value
+     */
+    if ( (a_fs_meta->type == TSK_FS_META_TYPE_LNK) &&
+         (a_fs_meta->size >= 0) &&
+         (a_fs_meta->size < HFS_MAXPATHLEN) ) {
+
+        ssize_t bytes_read;
+
+        a_fs_meta->link = tsk_malloc((size_t) a_fs_meta->size + 1);
+        if (a_fs_meta->link == NULL)
+            return 1;
+
+        bytes_read = tsk_fs_file_read( a_fs_file, (TSK_OFF_T) 0,
+                                       a_fs_meta->link, a_fs_meta->size,
+                                       TSK_FS_FILE_READ_FLAG_NONE );
+        a_fs_meta->link[a_fs_meta->size] = '\0';
+        
+        if ( bytes_read != a_fs_meta->size ) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr, "hfs_dinode_copy: failed to read contents of symbolic link; "
+                            "expected %u bytes but tsk_fs_file_read() returned %u\n",
+                            a_fs_meta->size, bytes_read);
+            free(a_fs_meta->link);
+            a_fs_meta->link = NULL;
+            return 1;
+        }        
+    }
+
     return 0;
 }
 
@@ -3269,8 +3232,6 @@ open_attr_file(TSK_FS_INFO * fs, ATTR_FILE_T * attr_file)
 
     hfs_btree_header_record *hrec;
 
-    //fprintf(stderr, "open_attr_file: BEGIN\n");
-
     // clean up any error messages that are lying around
     tsk_error_reset();
 
@@ -3331,7 +3292,6 @@ open_attr_file(TSK_FS_INFO * fs, ATTR_FILE_T * attr_file)
     attr_file->nodeSize = tsk_getu16(attr_file->endian, hrec->nodesize);
     attr_file->rootNode = tsk_getu32(attr_file->endian, hrec->rootNode);
     attr_file->maxKeyLen = tsk_getu16(attr_file->endian, hrec->maxKeyLen);
-    //fprintf(stderr, "The root node in decimal: %d\n", attr_file->rootNode);
 
     return 0;
 }
@@ -3389,22 +3349,21 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     unsigned char *isCompressed, unsigned char *compDataInRSRC,
     uint64_t * uncompressedSize)
 {
-	TSK_FS_INFO *fs = fs_file->fs_info;
-	uint64_t fileID;
-	ATTR_FILE_T attrFile;
-	int cnt;                    // count of chars read from file.
-	uint8_t *nodeData;
-	TSK_ENDIAN_ENUM endian;
+    TSK_FS_INFO *fs = fs_file->fs_info;
+    uint64_t fileID;
+    ATTR_FILE_T attrFile;
+    int cnt;                    // count of chars read from file.
+    uint8_t *nodeData;
+    TSK_ENDIAN_ENUM endian;
     hfs_btree_node *nodeDescriptor;  // The node descriptor
     uint32_t nodeID;            // The number or ID of the Attributes file node to read.
     hfs_btree_key_attr *keyB;   // ptr to the key of the Attr file record.
-	unsigned char done; // Flag to indicate that we are done looping over leaf nodes
-	uint16_t attribute_counter = 2;   // The ID of the next attribute to be loaded.
-	HFS_INFO * hfs;
+    unsigned char done; // Flag to indicate that we are done looping over leaf nodes
+    uint16_t attribute_counter = 2;   // The ID of the next attribute to be loaded.
+    HFS_INFO * hfs;
 
 
-
-	tsk_error_reset();
+    tsk_error_reset();
 
     // The CNID (or inode number) of the file
     //  Note that in TSK such numbers are 64 bits, but in HFS+ they are only 32 bits.
@@ -3430,14 +3389,11 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
 
     // Open the Attributes File
-
     if (open_attr_file(fs, &attrFile)) {
         error_returned
             ("hfs_load_extended_attrs: could not open Attributes file");
         return 1;
     }
-
-   
 
     // Is the Attributes file empty?
     if (attrFile.rootNode == 0) {
@@ -3772,11 +3728,12 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                             tsk_fprintf(stderr,
                                 "hfs_load_extended_attrs: Compressed data is inline in the attribute, will load this as the default DATA attribute.\n");
 
-                        if (attributeLength <= 16)
-                            tsk_fprintf(stderr,
-                                "hfs_load_extended_attrs: WARNING, Compression Record of type 3 is not followed by"
-                                " compressed data. No data will be loaded into the DATA attribute.\n");
-                        else {
+                        if (attributeLength <= 16) {
+                            if (tsk_verbose)
+                                tsk_fprintf(stderr,
+                                            "hfs_load_extended_attrs: WARNING, Compression Record of type 3 is not followed by"
+                                            " compressed data. No data will be loaded into the DATA attribute.\n");
+                        } else {
                             // There is data following the compression record, as there should be.
                             if ((fs_attr_unc =
                                     tsk_fs_attrlist_getnew(fs_file->meta->
@@ -3884,7 +3841,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                     tsk_fprintf(stderr,
                                         "hfs_load_extended_attrs: ZLIB not available, so loading an empty default DATA attribute.\n");
 
-                                
                                 if (tsk_fs_attr_set_str(fs_file,
                                         fs_attr_unc, "DATA",
                                         TSK_FS_ATTR_TYPE_HFS_DATA,
@@ -4372,8 +4328,6 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
     // We do these first, so that we can detect the mode of compression, if
     // any.  We need to know that mode in order to handle the forks.
 
-    
-
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "hfs_load_attrs: loading the HFS+ extended attributes\n");
@@ -4392,20 +4346,23 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
     // This is the flag indicating compression, from the Catalog File record.
     compression_flag = (fs_file->meta->flags & TSK_FS_META_FLAG_COMP) != 0;
 
-    if (compression_flag && !isCompressed)
-        tsk_fprintf(stderr, "hfs_load_attrs: WARNING, HFS marks this as a"
-            " compressed file, but no compression record was found.\n");
-    if (isCompressed && !compression_flag)
-        tsk_fprintf(stderr,
-            "hfs_load_attrs: WARNING, this file has a compression"
-            " record, but the HFS compression flag is not set.\n");
+    if (compression_flag && !isCompressed) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "hfs_load_attrs: WARNING, HFS marks this as a"
+                        " compressed file, but no compression record was found.\n");
+    }
+    if (isCompressed && !compression_flag) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "hfs_load_attrs: WARNING, this file has a compression"
+                        " record, but the HFS compression flag is not set.\n");
+    }
 
     /************* FORKS (both) ************************************/
 
     // Process the data and resource forks.  We only do this if the
     // fork data structures are non-null, so test that:
     if (fs_file->meta->content_ptr != NULL) {
-
 
         /**************  DATA FORK STUFF ***************************/
 
@@ -4644,10 +4601,12 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
 
     }                           // END the fork data structures are non-NULL
 
-    if (isCompressed && compDataInRSRCFork && !resource_fork_has_contents)
-        tsk_fprintf(stderr,
-            "hfs_load_attrs: WARNING, compression record claims that compressed data"
-            " is in the Resource Fork, but that fork is empty or non-existent.\n");
+    if (isCompressed && compDataInRSRCFork && !resource_fork_has_contents) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "hfs_load_attrs: WARNING, compression record claims that compressed data"
+                        " is in the Resource Fork, but that fork is empty or non-existent.\n");
+    }
 
     // Finish up.
     fs_file->meta->attr_state = TSK_FS_META_ATTR_STUDIED;
@@ -4831,6 +4790,7 @@ hfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start_blk,
     return 0;
 }
 
+
 uint8_t
 hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T end_inum, TSK_FS_META_FLAG_ENUM flags,
@@ -4847,28 +4807,19 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     /*
      * Sanity checks.
      */
-    if (start_inum < fs->first_inum) {
-        tsk_fprintf(stderr,
-            "Starting inode number is too small (%" PRIuINUM ")",
-            start_inum);
+    if (start_inum < fs->first_inum || start_inum > fs->last_inum) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr("inode_walk: Start inode: %" PRIuINUM "",
+                             start_inum);
         return 1;
     }
-    if (start_inum > fs->last_inum) {
-        tsk_fprintf(stderr,
-            "Starting inode number is too large (%" PRIuINUM ")",
-            start_inum);
-        return 1;
-    }
-
-    if (end_inum < fs->first_inum) {
-        tsk_fprintf(stderr,
-            "Ending inode number is too small (%" PRIuINUM ")", end_inum);
-        return 1;
-    }
-
-    if (end_inum > fs->last_inum) {
-        tsk_fprintf(stderr,
-            "Ending inode number is too large (%" PRIuINUM ")", end_inum);
+    else if (end_inum < fs->first_inum || end_inum > fs->last_inum
+             || end_inum < start_inum) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
+        tsk_error_set_errstr("inode_walk: End inode: %" PRIuINUM "",
+                             end_inum);
         return 1;
     }
 
@@ -5461,6 +5412,9 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fprintf(hFile, "Mode:\t%s\n", hfs_mode);
     tsk_fprintf(hFile, "Size:\t%" PRIuOFF "\n", fs_file->meta->size);
 
+    if (fs_file->meta->link)
+        tsk_fprintf(hFile, "Symbolic link to:\t%s\n", fs_file->meta->link);
+    
     tsk_fprintf(hFile, "uid / gid: %" PRIuUID " / %" PRIuGID "\n",
         fs_file->meta->uid, fs_file->meta->gid);
 
@@ -5717,10 +5671,8 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     }
 
-    // Just force the loading of all attributes.
+    // Force the loading of all attributes.
     (void) tsk_fs_file_attr_get(fs_file);
-
-    
 
     /* Print all of the attributes */
     tsk_fprintf(hFile, "\nAttributes: \n");
@@ -5896,35 +5848,6 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     // This is OK to call with NULL
     free_res_descriptor(rd);
 
-    if(fs_file->meta->type == TSK_FS_META_TYPE_LNK) {
-    	// This is a symbolic link.  So, print out the link target
-    	//char path_buf[fs_file->meta->size + 1] ;
-		char * path_buf = (char *) tsk_malloc((size_t) fs_file->meta->size + 1);
-		if(path_buf == NULL) {
-			tsk_fprintf(hFile, "WARNING, could not allocate space for the symbolic link target\n");
-			tsk_error_reset();
-		} else {
-			ssize_t bytes_read;
-			memset(&path_buf[0], 0, (size_t)fs_file->meta->size + 1);
-			bytes_read = tsk_fs_file_read(fs_file, (TSK_OFF_T) 0,
-				path_buf, (size_t)(fs_file->meta->size + 1),
-				TSK_FS_FILE_READ_FLAG_NONE);
-			if(bytes_read == -1) {
-				error_returned("hfs_istat: reading the path of the symbolic link");
-				tsk_fs_file_close(fs_file);
-				return 1;
-			} else if(bytes_read != fs_file->meta->size) {
-				error_detected(TSK_ERR_FS_CORRUPT,
-					"hfs_istat: Reading the path of the symbolic link, expected %u bytes, but found %u bytes",
-					fs_file->meta->size, bytes_read);
-				tsk_fs_file_close(fs_file);
-				return 1;
-			}
-			tsk_fprintf(hFile, "\nThis is a symbolic link, with target:\n   %s\n", path_buf);
-		}
-
-    }
-
     tsk_fs_file_close(fs_file);
     return 0;
 }
@@ -6003,7 +5926,6 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 	TSK_FS_FILE * file;  // The root directory, or the metadata directories
 	TSK_INUM_T inum;  // The inum (or CNID) of the metadata directories
 	int8_t result;  // of tsk_fs_path2inum()
-	char dirname[31];  // will hold the name of the "directory" metadata directory
 
     tsk_error_reset();
 
@@ -6087,7 +6009,10 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             uint16_t startBlock = tsk_getu16(fs->endian,
                 wrapper_sb->drEmbedExtent_startBlock);
 
-            // @@@ VERIFY THE USE OF 512 here instead of something else....
+            // calculate the offset; 512 here is intentional.
+            // TN1150 says "The drAlBlSt field contains the offset, in
+            // 512-byte blocks, of the wrapper's allocation block 0 relative
+            // to the start of the volume"
             TSK_OFF_T hfsplus_offset =
                 (drAlBlSt * (TSK_OFF_T) 512) +
                 (drAlBlkSiz * (TSK_OFF_T) startBlock);
@@ -6139,6 +6064,9 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->block_count)
         fs->last_block_act =
             (img_info->size - offset) / fs->block_size - 1;
+
+    // Initialize the lock
+    tsk_init_lock(&(hfs->metadata_dir_cache_lock));
 
     /*
      * Set function pointers
@@ -6219,16 +6147,18 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         else if (hfs->catalog_header.compType == HFS_BT_HEAD_COMP_INSENS)
             hfs->is_case_sensitive = 0;
         else {
-            tsk_fprintf(stderr,
-                "hfs_open: invalid value (0x%02" PRIx8
-                ") for key compare type\n", hfs->catalog_header.compType);
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                            "hfs_open: invalid value (0x%02" PRIx8
+                            ") for key compare type; using case-insensitive\n", hfs->catalog_header.compType);
             hfs->is_case_sensitive = 0;
         }
     }
     else {
-        tsk_fprintf(stderr,
-            "hfs_open: unknown HFS+/HFSX version (%" PRIu16 "\n",
-            tsk_getu16(fs->endian, hfs->fs->version));
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "hfs_open: unknown HFS+/HFSX version (%" PRIu16 "\n",
+                        tsk_getu16(fs->endian, hfs->fs->version));
         hfs->is_case_sensitive = 0;
     }
 
@@ -6251,16 +6181,21 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     /* Creation Times */
 
     // First, the root
-    file =
-            tsk_fs_file_open_meta(fs, NULL, 2);
-    if(file != NULL) {
+    file = tsk_fs_file_open_meta(fs, NULL, 2);
+    if (file != NULL) {
     	hfs->root_crtime = file->meta->crtime;
     	hfs->has_root_crtime = TRUE;
     } else {
     	hfs->has_root_crtime = FALSE;
     }
 
-    // Now the metadata directory
+    // disable hard link traversal while finding the hard
+    // link directories themselves (to prevent problems if
+    // there are hard links in the root directory)
+    hfs->meta_inum = 0;
+    hfs->meta_dir_inum = 0;
+
+    // Now the (file) metadata directory
     
     // The metadata directory is a sub-directory of the root.  Its name begins with four nulls, followed
     // by "HFS+ Private Data".  The file system parsing code replaces nulls in filenames with UTF8_NULL_REPLACE.
@@ -6268,61 +6203,53 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     // NOTE: There is a standard Unicode replacement which is 0xfffd in UTF16 and 0xEF 0xBF 0xBD in UTF8.
     // Systems that require the standard definition can redefine UTF8_NULL_REPLACE and UTF16_NULL_REPLACE
     // in tsk_hfs.h
+    hfs->has_meta_crtime = FALSE;
     result = tsk_fs_path2inum(fs, "/" UTF8_NULL_REPLACE UTF8_NULL_REPLACE UTF8_NULL_REPLACE UTF8_NULL_REPLACE
     		"HFS+ Private Data", &inum, NULL);
-    if(result == 0) {
+    if (result == 0) {
     	file = tsk_fs_file_open_meta(fs, NULL, inum);
-    	if(file != NULL) {
+    	if (file != NULL) {
     		hfs->meta_crtime = file->meta->crtime;
     		hfs->has_meta_crtime = TRUE;
     		hfs->meta_inum = inum;
-    	} else {
-    		hfs->has_meta_crtime = FALSE;
-    	}
-    } else {
-    	hfs->has_meta_crtime = FALSE;
+        }
     }
 
-    // Now, the directory metadata directory!
+    // Now, the directory metadata directory
     
-    memset(dirname, 0, 31);
-
     // The "directory" metadata directory, where hardlinked directories actually live, is a subdirectory
     // of the root.  The beginning of the name of this directory is ".HFS+ Private Directory Data" which
     // is followed by a carriage return (ASCII 13).
-    strncpy(dirname, "/.HFS+ Private Directory Data", 29);
-    dirname[29] = (char) 13;
-
-    result = tsk_fs_path2inum(fs, dirname, &inum, NULL);
-    if(result == 0) {
+    hfs->has_meta_dir_crtime = FALSE;
+    result = tsk_fs_path2inum(fs, "/.HFS+ Private Directory Data\r", &inum, NULL);
+    if (result == 0) {
     	file = tsk_fs_file_open_meta(fs, NULL, inum);
-    	if(file != NULL) {
+    	if (file != NULL) {
     		hfs->metadir_crtime = file->meta->crtime;
     		hfs->has_meta_dir_crtime = TRUE;
     		hfs->meta_dir_inum = inum;
-    	} else {
-    		hfs->has_meta_dir_crtime = FALSE;
     	}
-    } else {
-    	hfs->has_meta_dir_crtime = FALSE;
     }
 
-    if(hfs->has_root_crtime && hfs->has_meta_crtime && hfs->has_meta_dir_crtime) {
-    	if(tsk_verbose)
+    if (hfs->has_root_crtime && hfs->has_meta_crtime && hfs->has_meta_dir_crtime) {
+    	if (tsk_verbose)
     		tsk_fprintf(stderr, "hfs_open: Creation times for key folders have been read and cached.\n");
     }
-    if(! hfs->has_root_crtime) {
-    	tsk_fprintf(stderr, "hfs_open: Warning: Could not open the root directory.  Hard link detection and some other functions will be impaired\n");
-    } else if(tsk_verbose) {
+    if (! hfs->has_root_crtime) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "hfs_open: Warning: Could not open the root directory.  "
+                        "Hard link detection and some other functions will be impaired\n");
+    } else if (tsk_verbose) {
     	tsk_fprintf(stderr, "hfs_open: The root directory is accessible.\n");
     }
 
-    if(tsk_verbose) {
-    	if(hfs->has_meta_crtime)
+    if (tsk_verbose) {
+    	if (hfs->has_meta_crtime)
     		tsk_fprintf(stderr, "hfs_open: \"/^^^^HFS+ Private Data\" metadata folder is accessible.\n");
     	else
     		tsk_fprintf(stderr, "hfs_open: Optional \"^^^^HFS+ Private Data\" metadata folder is not accessible, or does not exist.\n");
-    	if(hfs->has_meta_dir_crtime)
+    	if (hfs->has_meta_dir_crtime)
     		tsk_fprintf(stderr, "hfs_open: \"/HFS+ Private Directory Data^\" metadata folder is accessible.\n");
     	else
     		tsk_fprintf(stderr, "hfs_open: Optional \"/HFS+ Private Directory Data^\" metadata folder is not accessible, or does not exist.\n");
@@ -6332,39 +6259,35 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     hfs->meta_dir = NULL;
     hfs->dir_meta_dir = NULL;
 
-
-    if(tsk_getu32(fs->endian, hfs->fs->start_file.extents[0].blk_cnt) == 0) {
-    	if(tsk_verbose)
+    if (tsk_getu32(fs->endian, hfs->fs->start_file.extents[0].blk_cnt) == 0) {
+    	if (tsk_verbose)
     		tsk_fprintf(stderr, "hfs_open: Optional Startup File is not present.\n");
     	hfs->has_startup_file = FALSE;
-    }  else {
-    	if(tsk_verbose)
+    } else {
+    	if (tsk_verbose)
     		tsk_fprintf(stderr, "hfs_open: Startup File is present.\n");
     	hfs->has_startup_file = TRUE;
     }
 
-    if(tsk_getu32(fs->endian, hfs->fs->ext_file.extents[0].blk_cnt) == 0) {
-    	if(tsk_verbose)
+    if (tsk_getu32(fs->endian, hfs->fs->ext_file.extents[0].blk_cnt) == 0) {
+    	if (tsk_verbose)
     		tsk_fprintf(stderr, "hfs_open: Optional Extents File (and Badblocks File) is not present.\n");
     	hfs->has_extents_file = FALSE;
     }  else {
-    	if(tsk_verbose)
+    	if (tsk_verbose)
     		tsk_fprintf(stderr, "hfs_open: Extents File (and BadBlocks File) is present.\n");
     	hfs->has_extents_file = TRUE;
     }
 
-    if(tsk_getu32(fs->endian, hfs->fs->attr_file.extents[0].blk_cnt) == 0) {
-    	if(tsk_verbose)
+    if (tsk_getu32(fs->endian, hfs->fs->attr_file.extents[0].blk_cnt) == 0) {
+    	if (tsk_verbose)
     		tsk_fprintf(stderr, "hfs_open: Optional Attributes File is not present.\n");
     	hfs->has_attributes_file = FALSE;
     }  else {
-    	if(tsk_verbose)
+    	if (tsk_verbose)
     		tsk_fprintf(stderr, "hfs_open: Attributes File is present.\n");
     	hfs->has_attributes_file = TRUE;
     }
-
-    // Initialize the lock
-    tsk_init_lock(&(hfs->metadata_dir_cache_lock));
 
     return fs;
 }
