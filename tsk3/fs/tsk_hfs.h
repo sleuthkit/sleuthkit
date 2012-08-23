@@ -96,10 +96,10 @@
  * Constants
  */
 
-#define HFS_FILE_CONTENT_LEN 160        // size of two hfs_fork data structures
-
+#define HFS_FILE_CONTENT_LEN 160        /* size of two hfs_fork data structures */
 
 #define HFS_MAXNAMLEN		765     /* maximum HFS+ name length in bytes, when encoded in UTF8, not including terminating null */
+#define HFS_MAXPATHLEN 1024  /* HFS+ can have paths longer than this, but Apple's implementation limits certain items to this value (e.g., symlink targets) */
 
 
 /*
