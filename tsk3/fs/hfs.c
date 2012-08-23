@@ -1256,85 +1256,60 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
     return 0;
 }
 
-static TSK_FS_DIR *
-hfs_open_meta_dir(HFS_INFO * hfs, unsigned char is_directory) {
-	int8_t result;
-	TSK_FS_DIR * result2;
-	TSK_FS_INFO * fs = (TSK_FS_INFO *) hfs;
-	TSK_INUM_T meta_cnid;
-
-	if(!is_directory)
-		result = tsk_fs_path2inum(fs, "/" UTF8_NULL_REPLACE  UTF8_NULL_REPLACE
-				UTF8_NULL_REPLACE UTF8_NULL_REPLACE
-				"HFS+ Private Data", &meta_cnid, NULL);
-	else {
-		char fNameBuf[50];
-		memset(fNameBuf, 0, 50);
-		snprintf(fNameBuf, 50, "/.HFS+ Private Directory Data%c" , (char) 0xD);
-		result = tsk_fs_path2inum(fs, fNameBuf, &meta_cnid, NULL);
-	}
-	if(result != 0) {
-		error_returned("hfs_open_meta_dir: could not resolve path to metadata directory");
-		return NULL;
-	}
-
-	result2 = tsk_fs_dir_open_meta(fs, meta_cnid);
-	if(result2 == NULL)
-		error_returned("hfs_open_meta_dir: could not open the metadata directory");
-
-	return result2;
-}
 
 static TSK_INUM_T
 hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum, unsigned char is_directory) {
-        char fBuff[30];
-        TSK_FS_DIR * mdir;
-        size_t indx;
-        TSK_FS_INFO * fs = (TSK_FS_INFO *) hfs;
+    char fBuff[30];
+    TSK_FS_DIR * mdir;
+    size_t indx;
+    TSK_FS_INFO * fs = (TSK_FS_INFO *) hfs;
 
-        memset(fBuff, 0, 30);
+    memset(fBuff, 0, 30);
 
-        if (is_directory) {
+    if (is_directory) {
 
-                tsk_take_lock(&(hfs->metadata_dir_cache_lock));
-                if(hfs->dir_meta_dir == NULL) {
-                        hfs->dir_meta_dir = hfs_open_meta_dir(hfs, TRUE);
-                }
-                tsk_release_lock(&(hfs->metadata_dir_cache_lock));
+        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
+        if (hfs->dir_meta_dir == NULL) {
+            hfs->dir_meta_dir = tsk_fs_dir_open_meta(fs, hfs->meta_dir_inum);
+        }
+        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
 
-                if (hfs->dir_meta_dir == NULL) {
-                        error_returned("hfs_lookup_hard_link: could not open the dir metadata directory");
-                        return 0;
-                } else {
-                        mdir = hfs->dir_meta_dir;
-                }
-                snprintf(fBuff, 30, "dir_%" PRIuINUM, linknum);
+        if (hfs->dir_meta_dir == NULL) {
+            error_returned("hfs_lookup_hard_link: could not open the dir metadata directory");
+            return 0;
         } else {
-
-                tsk_take_lock(&(hfs->metadata_dir_cache_lock));
-                if(hfs->meta_dir == NULL) {
-                        hfs->meta_dir = hfs_open_meta_dir(hfs, FALSE);
-                }
-                tsk_release_lock(&(hfs->metadata_dir_cache_lock));
-
-                if (hfs->meta_dir == NULL) {
-                        error_returned("hfs_lookup_hard_link: could not open file metadata directory");
-                        return 0;
-                } else {
-                        mdir = hfs->meta_dir;
-                }
-                snprintf(fBuff, 30, "iNode%" PRIuINUM, linknum);
+            mdir = hfs->dir_meta_dir;
         }
-        for (indx = 0; indx < tsk_fs_dir_getsize(mdir); indx++) {
+        snprintf(fBuff, 30, "dir_%" PRIuINUM, linknum);
 
-                if ((mdir->names != NULL)  && mdir->names[indx].name &&
-                                (fs->name_cmp(fs, mdir->names[indx].name, fBuff) == 0)) {
-                        // OK this is the one
-                        return mdir->names[indx].meta_addr;
-                }
+    } else {
+
+        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
+        if (hfs->meta_dir == NULL) {
+            hfs->meta_dir = tsk_fs_dir_open_meta(fs, hfs->meta_inum);
         }
-        // OK, we did not find that linknum
-        return 0;
+        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
+
+        if (hfs->meta_dir == NULL) {
+            error_returned("hfs_lookup_hard_link: could not open file metadata directory");
+            return 0;
+        } else {
+            mdir = hfs->meta_dir;
+        }
+        snprintf(fBuff, 30, "iNode%" PRIuINUM, linknum);
+    }
+    
+    for (indx = 0; indx < tsk_fs_dir_getsize(mdir); indx++) {
+
+        if ((mdir->names != NULL)  && mdir->names[indx].name &&
+            (fs->name_cmp(fs, mdir->names[indx].name, fBuff) == 0)) {
+            // OK this is the one
+            return mdir->names[indx].meta_addr;
+        }
+    }
+    
+    // OK, we did not find that linknum
+    return 0;
 }
 
 /*
@@ -1368,14 +1343,14 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 
 	*is_error = 0;  // default, not an error
 
-	if(cat == NULL) {
+	if (cat == NULL) {
 		error_detected(TSK_ERR_FS_ARG, "hfs_follow_hard_link: Pointer to Catalog entry (2nd arg) is null");
 		return 0;
 	}
 
 	cnid = tsk_getu32(fs->endian, cat->std.cnid);
 
-	if(cnid < HFS_FIRST_USER_CNID) {
+	if (cnid < HFS_FIRST_USER_CNID) {
 		// Can't be a hard link.  And, cannot look up in Catalog file either!
 		return cnid;
 	}
@@ -1387,10 +1362,17 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 	file_creator = tsk_getu32(fs->endian, cat->std.u_info.file_cr);
 
 	// Only proceed with the rest of this if the flags etc are right
-	if(file_type == HFS_HARDLINK_FILE_TYPE && file_creator == HFS_HARDLINK_FILE_CREATOR) {
+	if (file_type == HFS_HARDLINK_FILE_TYPE && file_creator == HFS_HARDLINK_FILE_CREATOR) {
 
+        // see if we have the HFS+ Private Data dir for file links;
+        // if not, it can't be a hard link.  (We could warn the user, but
+        // we also rely on this when finding the HFS+ Private Data dir in
+        // the first place and we don't want a warning on every hfs_open.)
+        if ( hfs->meta_inum == 0 )
+            return cnid;
+        
 		// For this to work, we need the FS creation times.  Is at least one of these set?
-		if( ! hfs->has_root_crtime && ! hfs->has_meta_dir_crtime && ! hfs->has_meta_crtime) {
+		if( (! hfs->has_root_crtime) && (! hfs->has_meta_dir_crtime) && (! hfs->has_meta_crtime) ) {
 			uint32_t linkNum = tsk_getu32(fs->endian, cat->std.perm.special.inum);
 			*is_error = 1;
             if (tsk_verbose)
@@ -1400,7 +1382,7 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 			return cnid;
 		}
 
-		if( (!hfs->has_root_crtime) || (! hfs->has_meta_crtime)) {
+		if ( (! hfs->has_root_crtime) || (! hfs->has_meta_crtime) ) {
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                             "WARNING: hfs_follow_hard_link: Either the root folder or the"
@@ -1409,52 +1391,39 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 		}
 
 		// Now we need to check the creation time against the three FS creation times
-		if((hfs->has_meta_crtime && crtime == hfs->meta_crtime) ||
-				(hfs->has_meta_dir_crtime && crtime == hfs->metadir_crtime) ||
-				(hfs->has_root_crtime && crtime == hfs->root_crtime)) {
+		if ((hfs->has_meta_crtime && (crtime == hfs->meta_crtime)) ||
+				(hfs->has_meta_dir_crtime && (crtime == hfs->metadir_crtime)) ||
+				(hfs->has_root_crtime && (crtime == hfs->root_crtime)) ) {
 			// OK, this is a hard link to a file.
 			uint32_t linkNum = tsk_getu32(fs->endian, cat->std.perm.special.inum);
-//			char fNameBuf[50];
-//			int8_t result;
-			TSK_INUM_T target_cnid;   //  This is the real CNID of the file.
 
-//			memset(fNameBuf, 0, 50);
-//			snprintf(fNameBuf, 50, "/" UTF8_NULL_REPLACE  UTF8_NULL_REPLACE UTF8_NULL_REPLACE UTF8_NULL_REPLACE
-//					"HFS+ Private Data/iNode%" PRIu32, linkNum);
-//
-//
-//			result = tsk_fs_path2inum(fs, fNameBuf, &target_cnid, NULL);
+			TSK_INUM_T target_cnid;   //  This is the real CNID of the file.
 
 			target_cnid = hfs_lookup_hard_link(hfs, linkNum, FALSE);
 			
-			if(target_cnid != 0) {
+			if (target_cnid != 0) {
 				// Succeeded in finding that target_cnid in the Catalog file
 				return target_cnid;
 			} else {
 				// This should be a hard link, BUT...
 				// Did not find the target_cnid in the Catalog file.
-				error_returned("hfs_follow_hard_link: got an error looking up the target of the link");
-				*is_error = -1;
+				error_returned("hfs_follow_hard_link: got an error looking up the target of a file link");
+				*is_error = 2;
 				return 0;
-
-//				if(result == -1) {
-//					error_returned("hfs_follow_hard_link: error in looking up the path %s to the link target"
-//							" file in the Catalog", fNameBuf);
-//					*is_error = 2;
-//				} else {
-//					error_detected(TSK_ERR_FS_CORRUPT,
-//							"hfs_follow_hard_link: error, target of hard link, with path %s"
-//							" does not exist in the filesystem", fNameBuf);
-//					*is_error = 3;
-//				}
-//				return 0;  // because of error
 			}
 		}
 
 	} else if (file_type == HFS_LINKDIR_FILE_TYPE && file_creator == HFS_LINKDIR_FILE_CREATOR) {
 
+        // see if we have the HFS+ Private Directory Data dir for links;
+        // if not, it can't be a hard link.  (We could warn the user, but
+        // we also rely on this when finding the HFS+ Private Directory Data dir in
+        // the first place and we don't want a warning on every hfs_open.)
+        if ( hfs->meta_dir_inum == 0 )
+            return cnid;
+
 		// For this to work, we need the FS creation times.  Is at least one of these set?
-		if( ! hfs->has_root_crtime && ! hfs->has_meta_dir_crtime && ! hfs->has_meta_crtime) {
+		if ( (! hfs->has_root_crtime) && (! hfs->has_meta_dir_crtime) && (! hfs->has_meta_crtime) ) {
 			uint32_t linkNum = tsk_getu32(fs->endian, cat->std.perm.special.inum);
 			*is_error = 1;
 
@@ -1465,7 +1434,7 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
 			return cnid;
 		}
 
-		if( (!hfs->has_root_crtime) || (! hfs->has_meta_crtime) || (! hfs->has_meta_dir_crtime)) {
+		if ( (! hfs->has_root_crtime) || (! hfs->has_meta_crtime) || (! hfs->has_meta_dir_crtime)) {
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                             "WARNING: hfs_follow_hard_link: Either the root folder or the"
@@ -1474,59 +1443,30 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat, unsigned char * is_error) {
                             "may be impaired.\n");
 		}
 
-
 		// Now we need to check the creation time against the three FS creation times
-		if((hfs->has_meta_crtime && crtime == hfs->meta_crtime) ||
-				(hfs->has_meta_dir_crtime && crtime == hfs->metadir_crtime) ||
-				(hfs->has_root_crtime && crtime == hfs->root_crtime)) {
+		if ((hfs->has_meta_crtime && (crtime == hfs->meta_crtime)) ||
+				(hfs->has_meta_dir_crtime && (crtime == hfs->metadir_crtime)) ||
+				(hfs->has_root_crtime && (crtime == hfs->root_crtime)) ) {
 			// OK, this is a hard link to a directory.
 			uint32_t linkNum = tsk_getu32(fs->endian, cat->std.perm.special.inum);
-			//char fNameBuf[50];
+
 			TSK_INUM_T target_cnid;   //  This is the real CNID of the file.
-			//int8_t result;
 			
 			target_cnid = hfs_lookup_hard_link(hfs, linkNum, TRUE);
 
-			if(target_cnid != 0) {
+			if (target_cnid != 0) {
 				// Succeeded in finding that target_cnid in the Catalog file
 				return target_cnid;
 			} else {
 				// This should be a hard link, BUT...
 				// Did not find the target_cnid in the Catalog file.
-				error_returned("hfs_follow_hard_link: got an error looking up the target of the link");
-				*is_error = -1;
+				error_returned("hfs_follow_hard_link: got an error looking up the target of a dir link");
+				*is_error = 2;
 				return 0;
-
-//			memset(fNameBuf, 0, 50);
-//			snprintf(fNameBuf, 50, "/.HFS+ Private Directory Data%c/dir_%" PRIu32, (char) 0xD, linkNum);
-//
-//			result = tsk_fs_path2inum(fs, fNameBuf, &target_cnid, NULL);
-//
-//			if(result == 0) {
-//				// Succeeded in finding that target_cnid in the Catalog file
-//				return target_cnid;
-//			} else {
-//				// This should be a hard link to a directory, BUT...
-//				// Did not find the target_cnid in the Catalog file.
-//				printf("  error\n");
-//				snprintf(fNameBuf, 50, "/.HFS+ Private Directory Data<CR>/dir_%" PRIu32, linkNum);
-//				if(result == -1) {
-//					error_returned("hfs_follow_hard_link: error in looking up"
-//							" the path %s "
-//							"to the link target directory in the Catalog",
-//							fNameBuf);
-//					*is_error = 2;
-//				} else {
-//					error_detected(TSK_ERR_FS_CORRUPT,
-//							"hfs_follow_hard_link: error, target directory of hard link, with path %s"
-//							" does not exist in the filesystem",
-//							fNameBuf);
-//					*is_error = 3;
-//				}
-//				return 0;  // because of error
 			}
 		}
 	}
+    
 	// It cannot be a hard link (file or directory)
 	return cnid;
 }
@@ -5986,7 +5926,6 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 	TSK_FS_FILE * file;  // The root directory, or the metadata directories
 	TSK_INUM_T inum;  // The inum (or CNID) of the metadata directories
 	int8_t result;  // of tsk_fs_path2inum()
-	char dirname[31];  // will hold the name of the "directory" metadata directory
 
     tsk_error_reset();
 
@@ -6250,7 +6189,13 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     	hfs->has_root_crtime = FALSE;
     }
 
-    // Now the metadata directory
+    // disable hard link traversal while finding the hard
+    // link directories themselves (to prevent problems if
+    // there are hard links in the root directory)
+    hfs->meta_inum = 0;
+    hfs->meta_dir_inum = 0;
+
+    // Now the (file) metadata directory
     
     // The metadata directory is a sub-directory of the root.  Its name begins with four nulls, followed
     // by "HFS+ Private Data".  The file system parsing code replaces nulls in filenames with UTF8_NULL_REPLACE.
@@ -6258,6 +6203,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     // NOTE: There is a standard Unicode replacement which is 0xfffd in UTF16 and 0xEF 0xBF 0xBD in UTF8.
     // Systems that require the standard definition can redefine UTF8_NULL_REPLACE and UTF16_NULL_REPLACE
     // in tsk_hfs.h
+    hfs->has_meta_crtime = FALSE;
     result = tsk_fs_path2inum(fs, "/" UTF8_NULL_REPLACE UTF8_NULL_REPLACE UTF8_NULL_REPLACE UTF8_NULL_REPLACE
     		"HFS+ Private Data", &inum, NULL);
     if (result == 0) {
@@ -6266,35 +6212,23 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     		hfs->meta_crtime = file->meta->crtime;
     		hfs->has_meta_crtime = TRUE;
     		hfs->meta_inum = inum;
-    	} else {
-    		hfs->has_meta_crtime = FALSE;
-    	}
-    } else {
-    	hfs->has_meta_crtime = FALSE;
+        }
     }
 
-    // Now, the directory metadata directory!
+    // Now, the directory metadata directory
     
-    memset(dirname, 0, 31);
-
     // The "directory" metadata directory, where hardlinked directories actually live, is a subdirectory
     // of the root.  The beginning of the name of this directory is ".HFS+ Private Directory Data" which
     // is followed by a carriage return (ASCII 13).
-    strncpy(dirname, "/.HFS+ Private Directory Data", 29);
-    dirname[29] = (char) 13;
-
-    result = tsk_fs_path2inum(fs, dirname, &inum, NULL);
+    hfs->has_meta_dir_crtime = FALSE;
+    result = tsk_fs_path2inum(fs, "/.HFS+ Private Directory Data\r", &inum, NULL);
     if (result == 0) {
     	file = tsk_fs_file_open_meta(fs, NULL, inum);
     	if (file != NULL) {
     		hfs->metadir_crtime = file->meta->crtime;
     		hfs->has_meta_dir_crtime = TRUE;
     		hfs->meta_dir_inum = inum;
-    	} else {
-    		hfs->has_meta_dir_crtime = FALSE;
     	}
-    } else {
-    	hfs->has_meta_dir_crtime = FALSE;
     }
 
     if (hfs->has_root_crtime && hfs->has_meta_crtime && hfs->has_meta_dir_crtime) {
@@ -6311,11 +6245,11 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     }
 
     if (tsk_verbose) {
-    	if(hfs->has_meta_crtime)
+    	if (hfs->has_meta_crtime)
     		tsk_fprintf(stderr, "hfs_open: \"/^^^^HFS+ Private Data\" metadata folder is accessible.\n");
     	else
     		tsk_fprintf(stderr, "hfs_open: Optional \"^^^^HFS+ Private Data\" metadata folder is not accessible, or does not exist.\n");
-    	if(hfs->has_meta_dir_crtime)
+    	if (hfs->has_meta_dir_crtime)
     		tsk_fprintf(stderr, "hfs_open: \"/HFS+ Private Directory Data^\" metadata folder is accessible.\n");
     	else
     		tsk_fprintf(stderr, "hfs_open: Optional \"/HFS+ Private Directory Data^\" metadata folder is not accessible, or does not exist.\n");
@@ -6329,7 +6263,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     	if (tsk_verbose)
     		tsk_fprintf(stderr, "hfs_open: Optional Startup File is not present.\n");
     	hfs->has_startup_file = FALSE;
-    }  else {
+    } else {
     	if (tsk_verbose)
     		tsk_fprintf(stderr, "hfs_open: Startup File is present.\n");
     	hfs->has_startup_file = TRUE;
@@ -6354,7 +6288,6 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     		tsk_fprintf(stderr, "hfs_open: Attributes File is present.\n");
     	hfs->has_attributes_file = TRUE;
     }
-
 
     return fs;
 }
