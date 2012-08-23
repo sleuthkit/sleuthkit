@@ -63,7 +63,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FileTypeSigModule", "..\..\
 		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ExifExtractModule", "..\..\TskModules\ExifExtractionModule\win32\ExifExtractModule.vcproj", "{A4B7B046-EA19-4179-9712-8A7B085443D8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LibExifModule", "..\..\TskModules\c_LibExifModule\win32\LibExifModule.vcproj", "{A4B7B046-EA19-4179-9712-8A7B085443D8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
