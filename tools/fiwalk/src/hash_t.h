@@ -37,14 +37,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1070
- #define COMMON_DIGEST_FOR_OPENSSL
- #include <CommonCrypto/CommonDigest.h>
- #include <CommonCrypto/CommonHMAC.h>
-#else
+//#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1070
+// #define COMMON_DIGEST_FOR_OPENSSL
+// #include <CommonCrypto/CommonDigest.h>
+// #include <CommonCrypto/CommonHMAC.h>
+//#else
 // #include <openssl/hmac.h>
 // #include <openssl/evp.h>
-#endif
+//#endif
 
 #include <iostream>
 
@@ -250,9 +250,9 @@ public:
 //#endif
 	default:
 	    assert(0);
-#ifdef __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__
-	fprintf(stderr,"MacOSX version %d\n. Openssl evp fuctions are deprecated.\n Using CommonCrypto.",__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__);
-#endif
+//#ifdef __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__
+//	fprintf(stderr,"MacOSX version %d\n. Openssl evp fuctions are deprecated.\n Using CommonCrypto.",__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__);
+//#endif
 	}
     }
     ~hash_generator__(){

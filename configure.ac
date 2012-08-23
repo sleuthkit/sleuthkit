@@ -206,7 +206,7 @@ if test "x$enable_fiwalk" == xyes; then
    AC_HEADER_DIRENT
    AC_CHECK_HEADERS([ctype.h err.h stdio.h strings.h string.h stdlib.h stdint.h sys/mman.h sys/types.h sys/time.h sys/resource.h sys/signal.h inttypes.h sys/resource.h sys/utsname.h])
    #AC_CHECK_HEADERS([openssl/evp.h openssl/hmac.h openssl/x509.h openssl/pem.h])
-   AC_CHECK_HEADERS([CommonCrypto/CommonDigest.h])
+   #AC_CHECK_HEADERS([CommonCrypto/CommonDigest.h])
    AC_CHECK_HEADERS([magic.h])
    AC_CHECK_MEMBERS([struct glob_t.gl_matchc],,,[[#include <glob.h>]])
    AC_CHECK_MEMBERS([struct dirent.d_name],,,[[#include <dirent.h>]])
