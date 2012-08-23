@@ -61,6 +61,8 @@ typedef enum TSK_ARTIFACT_TYPE {
         TSK_EMAIL_MSG = 13, ///< An e-mail message that was extracted from a file.
         TSK_EXTRACTED_TEXT = 14, ///< Text that was extracted from a file.
         TSK_WEB_SEARCH_QUERY = 15, ///< Web search engine query extracted from web history.
+        TSK_BOOKMARK_FILE = 16, ///< File bookmark.
+        TSK_BOOKMARK_ARTIFACT = 17, ///< Result bookmark.
     /* SEE ABOVE:
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackboard.cpp
@@ -141,6 +143,9 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_GEO_MAPDATUM = 61, ///< String of map datum used for coordinates if not WGS84.
     TSK_FILE_TYPE_SIG = 62, ///< String of file type based on signature detection in file content.
     TSK_FILE_TYPE_EXT = 63, ///< String of file type based on file name extension.
+    TSK_PARENT_ARTIFACT = 64, ///< Parent artifact (associated result).
+    TSK_CATEGORY = 65, ///< Category string.
+    TSK_DESCRIPTION = 66, ///< Description string.
 
     /* SEE ABOVE: 
      * - KEEP JAVA CODE IN SYNC 
