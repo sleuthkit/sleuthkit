@@ -239,6 +239,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core and child artifact could not be linked
 	 */
 	public void addChildArtifact(BlackboardArtifact child) throws TskCoreException {
+		if (this.equals(child)) {
+			throw new TskCoreException("Child and parent artifacts cannot be the same: id" + this.artifactID);
+		}
 		BlackboardAttribute attrLink = new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PARENT_ARTIFACT.getTypeID(),
 				"", "", this.artifactID);
 		child.addAttribute(attrLink);
