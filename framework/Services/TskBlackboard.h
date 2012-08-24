@@ -146,6 +146,7 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_PARENT_ARTIFACT = 64, ///< Parent artifact (associated result).
     TSK_CATEGORY = 65, ///< Category string.
     TSK_DESCRIPTION = 66, ///< Description string.
+    TSK_URL_DECODED = 67, ///< Decoded URL.
 
     /* SEE ABOVE: 
      * - KEEP JAVA CODE IN SYNC 

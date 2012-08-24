@@ -162,6 +162,7 @@ public class BlackboardAttribute {
 		TSK_PARENT_ARTIFACT(64, "TSK_PARENT_ARTIFACT", "Associated result"),
 		TSK_CATEGORY(65, "TSK_CATEGORY", "Category"),
 		TSK_DESCRIPTION(66, "TSK_DESCRIPTION", "Description"),
+		TSK_URL_DECODED(67, "TSK_URL_DECODED", "Decoded URL"),
 		;
 		
 		
