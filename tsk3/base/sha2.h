@@ -34,7 +34,7 @@
 
 #ifndef __SHA2_H__
 #define __SHA2_H__
-
+#include "tsk3/base/tsk_os.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -92,7 +92,7 @@ typedef unsigned long long u_int64_t;	/* 8-bytes (64-bits) */
  *
  *   cc -DSHA2_USE_INTTYPES_H ...
  */
-#ifdef SHA2_USE_INTTYPES_H
+#if defined(SHA2_USE_INTTYPES_H) || defined(_MSC_VER)
 
 typedef struct _SHA256_CTX {
 	uint32_t	state[8];
@@ -125,7 +125,7 @@ typedef SHA512_CTX SHA384_CTX;
 
 /*** SHA-256/384/512 Function Prototypes ******************************/
 #ifndef NOPROTO
-#ifdef SHA2_USE_INTTYPES_H
+#if defined(SHA2_USE_INTTYPES_H) || defined(_MSC_VER)
 
 void SHA256_Init(SHA256_CTX *);
 void SHA256_Update(SHA256_CTX*, const uint8_t*, size_t);
