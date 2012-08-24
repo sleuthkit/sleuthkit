@@ -207,6 +207,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="winmm.lib"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="msvcrtd.lib"
 				GenerateDebugInformation="true"
