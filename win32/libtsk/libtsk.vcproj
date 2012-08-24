@@ -541,6 +541,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\tsk3\base\sha2.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\tsk3\base\sha2.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\tsk3\base\tsk_base.h"
 				>
 			</File>
