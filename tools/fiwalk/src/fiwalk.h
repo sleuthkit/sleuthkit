@@ -55,6 +55,7 @@
 #ifdef _MSC_VER
 #include <winsock.h>
 #include <time.h>
+#define _CRT_SECURE_NO_WARNINGS
 #else
 #include <sys/time.h>
 #endif

@@ -67,6 +67,7 @@
 #if _MSC_VER
 #include <stdlib.h>
 #include <malloc.h>
+#define _CRT_SECURE_NO_WARNINGS
 #else
 #ifdef STDC_HEADERS
 #include <stdlib.h>

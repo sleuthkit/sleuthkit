@@ -19,12 +19,15 @@
 
 /* config.h must be first */
 #include "tsk3/tsk_tools_i.h"
-//#include "config.h"
 #include "fiwalk.h"
 #include "arff.h"
 #include "plugin.h"
 #include "unicode_escape.h"
 #include "tsk3/fs/tsk_fatfs.h"
+
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #ifdef HAVE_ERR_H
 #include "err.h"
