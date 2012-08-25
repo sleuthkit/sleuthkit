@@ -529,6 +529,14 @@
 			Name="base"
 			>
 			<File
+				RelativePath="..\..\tsk3\base\hmac_sha1.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\tsk3\base\hmac_sha1.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\tsk3\base\hmac_sha2.c"
 				>
 			</File>

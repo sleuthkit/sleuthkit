@@ -22,6 +22,7 @@
 #include "tsk3/tsk_tools_i.h"
 #include "tsk3/base/sha2.h"
 #include "tsk3/base/hmac_sha2.h"
+#include "tsk3/base/hmac_sha1.h"
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
