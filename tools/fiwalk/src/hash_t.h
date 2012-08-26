@@ -39,15 +39,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-//#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ >= 1070
-// #define COMMON_DIGEST_FOR_OPENSSL
-// #include <CommonCrypto/CommonDigest.h>
-// #include <CommonCrypto/CommonHMAC.h>
-//#else
-// #include <openssl/hmac.h>
-// #include <openssl/evp.h>
-//#endif
-
 #include <iostream>
 
 #ifdef HAVE_SYS_MMAN_H
@@ -80,13 +71,12 @@ public:
     uint8_t digest[SIZE];
 };
 
-//#if defined(HAVE_EVP_SHA512) || defined(COMMON_DIGEST_FOR_OPENSSL)
+
 class sha512_ {
 public:
     static const size_t SIZE=64;
     uint8_t digest[SIZE];
 };
-//#endif
 
 static int hexcharvals__[256];
 static int hexcharvals_init__ = 0;
@@ -173,27 +163,16 @@ public:
 typedef hash__<md5_> md5_t;
 typedef hash__<sha1_> sha1_t;
 typedef hash__<sha256_> sha256_t;
-//#if defined(HAVE_EVP_SHA512) || defined(COMMON_DIGEST_FOR_OPENSSL)
 typedef hash__<sha512_> sha512_t;
-//#endif
 
 template<typename T> 
 class hash_generator__:T { 			/* generates the hash */
     unsigned int ret;
-//#ifndef COMMON_DIGEST_FOR_OPENSSL
-//	const EVP_MD *md;
-//    EVP_MD_CTX mdctx;	     /* the context for computing the value */
-//#else
 	void *mdctx;
 	unsigned char *md;
-//	int (*md_update) ();
-//	md_update = MD5_Update;
-//	md_update = &SHA_Update;
 	int (*md_init)(void *);
 	int (*md_update)(void *, const void *, uint32_t);
 	int (*md_final)(unsigned char *, void *);
-//	 int (*md_final)();
-//#endif
     bool initialized;	       /* has the context been initialized? */
     bool finalized;
     /* Static function to determine if something is zero */
@@ -207,14 +186,11 @@ public:
     int64_t hashed_bytes;
     hash_generator__():initialized(false),finalized(false),hashed_bytes(0){
 	switch(this->SIZE){
-//#ifdef COMMON_DIGEST_FOR_OPENSSL
 	case 16:
 		mdctx = malloc(sizeof(TSK_MD5_CTX));
 		memset(mdctx,0,sizeof(TSK_MD5_CTX));
 		md=(unsigned char *)malloc(TSK_MD5_DIGEST_LENGTH);
 		memset(md,0,TSK_MD5_DIGEST_LENGTH);
-//		int (*md_init)(MD5_CTX*) = &MD5_Init;
-//		(int (*)(MD5_CTX*))md_init  = MD5_Init;
 		md_init	 	= (int(*)(void *))&TSK_MD5_Init;
     	md_update	= (int (*)(void *, const void *, uint32_t))&TSK_MD5_Update;
 		md_final	= (int (*)(unsigned char*, void *))&TSK_MD5_Final;
@@ -242,19 +218,8 @@ public:
 		md_update	= (int (*)(void *, const void *, uint32_t))(void (*)())&SHA512_Update;
 		md_final	= (int (*)(unsigned char*, void*))&SHA512_Final;
 		break;
-//#else
-//	case 16: md = EVP_md5();break;
-//	case 20: md = EVP_sha1();break;
-//	case 32: md = EVP_sha256();break;
-//#ifdef HAVE_EVP_SHA512
-//	case 64: md = EVP_sha512();break;
-//#endif
-//#endif
 	default:
 	    assert(0);
-//#ifdef __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__
-//	fprintf(stderr,"MacOSX version %d\n. Openssl evp fuctions are deprecated.\n Using CommonCrypto.",__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__);
-//#endif
 	}
     }
     ~hash_generator__(){
@@ -262,12 +227,7 @@ public:
     }
     void init(){
 	if(initialized==false){
-//#ifdef COMMON_DIGEST_FOR_OPENSSL
 		md_init(mdctx);
-//#else
-//	    EVP_MD_CTX_init(&mdctx);
-//	    EVP_DigestInit_ex(&mdctx, md, NULL);
-//#endif
 	    initialized = true;
 	    finalized = false;
 	    hashed_bytes = 0;
@@ -279,21 +239,13 @@ public:
 	    std::cerr << "hashgen_t::update called after finalized\n";
 	    exit(1);
 	}
-//#ifndef COMMON_DIGEST_FOR_OPENSSL
-//	EVP_DigestUpdate(&mdctx,buf,bufsize);
-//#else
 	md_update(mdctx, buf, bufsize);
-//#endif
 	hashed_bytes += bufsize;
     }
     void release(){			/* free allocated memory */
 	if(initialized){
-//#ifdef COMMON_DIGEST_FOR_OPENSSL
 		free(md);
 		free(mdctx);
-//#else
-//	    EVP_MD_CTX_cleanup(&mdctx);
-//#endif
 	    initialized = false;
 	    hashed_bytes = 0;
 	}
@@ -308,12 +260,7 @@ public:
 	  init();			/* do it now! */
 	}
 	hash__<T> val;
-//#ifdef COMMON_DIGEST_FOR_OPENSSL
 	md_final(val.digest, mdctx);
-//#else
-//	unsigned int len = sizeof(val.digest);
-//	EVP_DigestFinal(&mdctx,val.digest,&len);
-//#endif
 	finalized = true;
 	return val;
     }
@@ -374,9 +321,6 @@ public:
 typedef hash_generator__<md5_> md5_generator;
 typedef hash_generator__<sha1_> sha1_generator;
 typedef hash_generator__<sha256_> sha256_generator;
-
-//#ifdef HAVE_EVP_SHA512
 typedef hash_generator__<sha512_> sha512_generator;
-//#endif
 
 #endif
