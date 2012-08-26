@@ -103,7 +103,7 @@ int64_t  current_partition_start=0;	// in bytes
 string  plugin_filename;
 
 #ifndef FIWALK_VERSION
-#define FIWALK_VERSION "0.6.18"
+#define FIWALK_VERSION "0.6.19"
 #endif
 
 void print_version()
