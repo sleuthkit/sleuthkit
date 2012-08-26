@@ -33,6 +33,7 @@ framework/win32/framework/*.suo
 *.la
 *.lo
 *.o
+*.exe
 
 #  No backup files
 *~
