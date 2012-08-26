@@ -2,7 +2,8 @@ AM_CFLAGS = -I../.. -Wall
 AM_CXXFLAGS = -I../.. -Wall 
 
 noinst_LTLIBRARIES = libtskbase.la
-libtskbase_la_SOURCES = md5c.c mymalloc.c sha1c.c sha2.c sha2.h\
+libtskbase_la_SOURCES = md5c.c mymalloc.c sha1c.c \
+    sha2.c sha2.h hmac_sha2.c hmac_sha2.h hmac_sha1.c hmac_sha1.h\
     tsk_endian.c tsk_error.c tsk_list.c tsk_parse.c tsk_printf.c \
     tsk_unicode.c tsk_version.c tsk_stack.c XGetopt.c tsk_base_i.h \
     tsk_lock.c tsk_error_win32.cpp
