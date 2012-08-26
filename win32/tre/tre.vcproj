@@ -49,7 +49,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../win32,../lib"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\tre&quot;;&quot;$(SolutionDir)\..\tools\fiwalk\src\tre-0.8.0\lib&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;TRE_EXPORTS;TRE_DEBUG;HAVE_CONFIG_H"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -147,7 +147,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="../win32,../lib"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)\tre&quot;;&quot;$(SolutionDir)\..\tools\fiwalk\src\tre-0.8.0\lib&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;TRE_EXPORTS;HAVE_CONFIG_H"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -211,7 +211,7 @@
 		<Configuration
 			Name="Debug_NoLibs|Win32"
 			OutputDirectory="..\Debug_NoLibs"
-			IntermediateDirectory="$(ConfigurationName)"
+			IntermediateDirectory=".\Debug_NoLibs"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"

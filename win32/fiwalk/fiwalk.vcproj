@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;;&quot;$(SolutionDir)\..\tools\fiwalk\src\tre-0.8.0\lib&quot;;&quot;$(SolutionDir)\tre&quot;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;WIN32"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -116,8 +116,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(SolutionDir)\tre&quot;;&quot;$(SolutionDir)\..\tools\fiwalk\src\tre-0.8.0\lib&quot;;&quot;$(LIBEWF_HOME)\include&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;WIN32"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
@@ -136,6 +136,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libeay32MD.lib ssleay32MD.lib msvcrt.lib winmm.lib libewf.lib"
 				AdditionalLibraryDirectories="$(LIBEWF_HOME)\msvscpp\release"
+				IgnoreDefaultLibraryNames="msvcrtd.lib"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -271,6 +272,14 @@
 			<File
 				RelativePath="..\..\tools\fiwalk\src\hexbuf.c"
 				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						RuntimeLibrary="2"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\tools\fiwalk\src\myglob.cpp"
