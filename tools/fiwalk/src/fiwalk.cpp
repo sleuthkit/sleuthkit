@@ -48,9 +48,7 @@
 #include <direct.h>
 #include <crtdefs.h>
 #include <windows.h>
-  #ifndef _CRT_SECURE_NO_WARNINGS
-  #define _CRT_SECURE_NO_WARNINGS 1
-  #endif
+#define _CRT_SECURE_NO_WARNINGS
 //#define mkdir _mkdir
 #endif
 

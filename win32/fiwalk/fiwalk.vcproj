@@ -188,7 +188,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(SolutionDir)\..\tools\fiwalk\src\tre-0.8.0\lib&quot;;&quot;$(SolutionDir)\..\tools\fiwalk\src\tre-0.8.0\win32&quot;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE 1;_CRT_NONSTDC_NO_DEPRECATE 1;_CRT_SECURE_NO_WARNINGS 1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"

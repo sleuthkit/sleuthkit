@@ -23,7 +23,7 @@
 #include <errno.h>
 
 #ifdef _MSC_VER
-#include "regex-0.12/regex.h"  //use regex in src tree
+#include "regex.h" //use regex in src tree
 #include <mmsystem.h> //Provides timeGetTime
 #else
 #include <regex.h>
