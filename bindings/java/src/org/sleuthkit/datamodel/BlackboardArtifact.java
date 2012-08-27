@@ -57,8 +57,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", "E-Mail Messages"), ///< email message
 		TSK_EXTRACTED_TEXT(14, "TSK_EXTRACTED_TEXT", "Extracted Text"), ///< text extracted from file
 		TSK_WEB_SEARCH_QUERY(15, "TSK_WEB_SEARCH_QUERY", "Web Search Engine Queries"), ///< web search engine query extracted from web history
-		TSK_BOOKMARK_FILE(16, "TSK_BOOKMARK_FILE", "File Bookmarks"), ///< bookmarked files
-		TSK_BOOKMARK_ARTIFACT(17, "TSK_BOOKMARK_ARTIFACT", "Result Bookmarks"), ///< bookmarked results/artifacts
+		TSK_TAG_FILE(16, "TSK_TAG_FILE", "File Tags"), ///< tagged files
+		TSK_TAG_ARTIFACT(17, "TSK_TAG_ARTIFACT", "Result Tags"), ///< tagged results/artifacts
 		
 		;
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
@@ -232,29 +232,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		return Case.getMatchingAttributes("WHERE artifact_id = " + artifactID);
 	}
 	
-	/**
-	 * Links another existing blackboard artifact (a child) to this artifact.
-	 * Linkage is made using TSK_PARENT_ARTIFACT attribute.
-	 * @param child an existing blackboard artifact (child) to link to this artifact (parent).
-	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core and child artifact could not be linked
-	 */
-	public void addChildArtifact(BlackboardArtifact child) throws TskCoreException {
-		if (this.equals(child)) {
-			throw new TskCoreException("Child and parent artifacts cannot be the same: id" + this.artifactID);
-		}
-		BlackboardAttribute attrLink = new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_PARENT_ARTIFACT.getTypeID(),
-				"", "", this.artifactID);
-		child.addAttribute(attrLink);
-	}
-	
-	/**
-	 * Get children artifacts linked to this parent artifact
-	 * @return list of children artifacts or an empty list
-	  * @throws TskCoreException exception thrown if a critical error occurs within tsk core and child artifact could not be queried
-	 */
-	public List<BlackboardArtifact> getChildrenArtifacts() throws TskCoreException {
-		return Case.getBlackboardArtifacts(ATTRIBUTE_TYPE.TSK_PARENT_ARTIFACT, this.artifactID);
-	}
 
 	/**
 	 * A method to accept a visitor SleuthkitItemVisitor, and execute an algorithm on this object
