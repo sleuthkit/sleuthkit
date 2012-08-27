@@ -296,11 +296,225 @@ public class SleuthkitCase {
         }
 
     }
+	
+	/**
+	 * Helper to iterate over blackboard artifacts result set containing all columns
+	 * and return a list of artifacts in the set.  Must be enclosed in dbReadLock.
+	 * Result set and statement must be freed by the caller.
+	 * @param rs existing, active result set (not closed by this method)
+	 * @return a list of blackboard artifacts in the result set
+	 * @throws SQLException if result set could not be iterated upon
+	 */
+	private List<BlackboardArtifact> getArtifactsHelper(ResultSet rs) throws SQLException {
+		ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+		
+		while (rs.next()) {
+				final int artifactTypeID = rs.getInt(3);
+				final ARTIFACT_TYPE artType = ARTIFACT_TYPE.fromID(artifactTypeID);
+                artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
+                        artifactTypeID, artType.getLabel(), artType.getDisplayName()));
+            }
+		
+		return artifacts;
+	}
+	
+	/**
+	 * Get all blackboard artifacts that have an attribute of the given type and String value
+	 * @param attrType attribute of this attribute type to look for in the artifacts
+	 * @param value value of the attribute of the attrType type to look for
+	 * @return a list of blackboard artifacts with such an attribute
+	 * @throws TskCoreException exception thrown if a critical error occurred within tsk core and artifacts could not be queried
+	 */
+	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value) throws TskCoreException {
+        dbReadLock();
+        try {
+            Statement s = con.createStatement();
+            ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
+					+ "FROM blackboard_artifacts, blackboard_attributes "
+					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
+					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() 
+					+ " AND blackboard_attributes.value_text IS '" + value + "'"
+					);
+
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+            
+            rs.close();
+            s.close();
+            return artifacts;
+        } catch (SQLException ex) {
+            throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
+        } finally {
+            dbReadUnlock();
+        }
+	}
+	
+	/**
+	 * Get all blackboard artifacts that have an attribute of the given type and String value
+	 * @param attrType attribute of this attribute type to look for in the artifacts
+	 * @param subString value substring of the string attribute of the attrType type to look for
+	 * @param startsWith if true, the artifact attribute string should start with the substring, if false, it should just contain it
+	 * @return a list of blackboard artifacts with such an attribute
+	 * @throws TskCoreException exception thrown if a critical error occurred within tsk core and artifacts could not be queried
+	 */
+	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String subString, boolean startsWith) throws TskCoreException {
+		
+		subString = "%" + subString;
+		if (startsWith == false) {
+			subString = subString + "%";
+		}
+			
+        dbReadLock();
+        try {
+            Statement s = con.createStatement();
+            ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
+					+ "FROM blackboard_artifacts, blackboard_attributes "
+					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
+					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() 
+					+ " AND blackboard_attributes.value_text LIKE '" + subString + "'"
+					);
+
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+            
+            rs.close();
+            s.close();
+            return artifacts;
+        } catch (SQLException ex) {
+            throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
+        } finally {
+            dbReadUnlock();
+        }
+	}
+	
+	/**
+	 * Get all blackboard artifacts that have an attribute of the given type and integer value
+	 * @param attrType attribute of this attribute type to look for in the artifacts
+	 * @param value value of the attribute of the attrType type to look for
+	 * @return a list of blackboard artifacts with such an attribute
+	 * @throws TskCoreException exception thrown if a critical error occurred within tsk core and artifacts could not be queried
+	 */
+	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, int value) throws TskCoreException {
+		dbReadLock();
+        try {
+            Statement s = con.createStatement();
+            ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
+					+ "FROM blackboard_artifacts, blackboard_attributes "
+					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
+					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() 
+					+ " AND blackboard_attributes.value_int32 IS " + value
+					);
+
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+            
+            rs.close();
+            s.close();
+            return artifacts;
+        } catch (SQLException ex) {
+            throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
+        } finally {
+            dbReadUnlock();
+        }
+	}
+	
+	/**
+	 * Get all blackboard artifacts that have an attribute of the given type and long value
+	 * @param attrType attribute of this attribute type to look for in the artifacts
+	 * @param value value of the attribute of the attrType type to look for
+	 * @return a list of blackboard artifacts with such an attribute
+	 * @throws TskCoreException exception thrown if a critical error occurred within tsk core and artifacts could not be queried
+	 */
+	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, long value) throws TskCoreException {
+		dbReadLock();
+        try {
+            Statement s = con.createStatement();
+            ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
+					+ "FROM blackboard_artifacts, blackboard_attributes "
+					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
+					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() 
+					+ " AND blackboard_attributes.value_int64 IS " + value
+					);
+
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+            
+            rs.close();
+            s.close();
+            return artifacts;
+        } catch (SQLException ex) {
+            throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
+        } finally {
+            dbReadUnlock();
+        }
+	}
+	
+	/**
+	 * Get all blackboard artifacts that have an attribute of the given type and double value
+	 * @param attrType attribute of this attribute type to look for in the artifacts
+	 * @param value value of the attribute of the attrType type to look for
+	 * @return a list of blackboard artifacts with such an attribute
+	 * @throws TskCoreException exception thrown if a critical error occurred within tsk core and artifacts could not be queried
+	 */
+	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, double value) throws TskCoreException {
+		dbReadLock();
+        try {
+            Statement s = con.createStatement();
+            ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
+					+ "FROM blackboard_artifacts, blackboard_attributes "
+					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
+					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() 
+					+ " AND blackboard_attributes.value_double IS " + value
+					);
+
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+            
+            rs.close();
+            s.close();
+            return artifacts;
+        } catch (SQLException ex) {
+            throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
+        } finally {
+            dbReadUnlock();
+        }
+	}
+	
+	/**
+	 * Get all blackboard artifacts that have an attribute of the given type and byte value
+	 * @param attrType attribute of this attribute type to look for in the artifacts
+	 * @param value value of the attribute of the attrType type to look for
+	 * @return a list of blackboard artifacts with such an attribute
+	 * @throws TskCoreException exception thrown if a critical error occurred within tsk core and artifacts could not be queried
+	 */
+	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, byte value) throws TskCoreException {
+		dbReadLock();
+        try {
+            Statement s = con.createStatement();
+            ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
+					+ "FROM blackboard_artifacts, blackboard_attributes "
+					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
+					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() 
+					+ " AND blackboard_attributes.value_byte IS " + value
+					);
+
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+            
+            rs.close();
+            s.close();
+            return artifacts;
+        } catch (SQLException ex) {
+            throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
+        } finally {
+            dbReadUnlock();
+        }
+	}
 
     /**
      * Get all blackboard artifact types
      * @return list of blackboard artifact types
-	 * @throws TskCoreException exception thrown if a critical error occurs within tsk core
+	 * @throws TskCoreException exception thrown if a critical error occurred within tsk core
      */
     public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypes() throws TskCoreException {
         dbReadLock();
