@@ -196,9 +196,9 @@ public:
         CURRENT_TIME,
 
         /** 
-         * A combination of elements that define a unique identifier. For
-         * example, this property might be defined to be a string of the
-         * form <current task>_<hostname>_<pid>_<start time>. 
+         * A combination of elements that define a unique identifier for the
+         * current task. For example, this property might be defined to be a
+         * string of the form CurrentTask_HostName_Pid_StartTime. 
          */
         UNIQUE_ID,
 

@@ -58,12 +58,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FileTypeSigModule", "..\..\
 		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
 	EndProjectSection
 EndProject
+<<<<<<< HEAD
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CalcFileSizeModule", "..\CalcFileSize\CalcFileSize.vcproj", "{FA3FF845-E341-4BE3-A17F-8042C99A374F}"
+=======
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LibExifModule", "..\..\TskModules\c_LibExifModule\win32\LibExifModule.vcproj", "{A4B7B046-EA19-4179-9712-8A7B085443D8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
 	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CalcFileSizeModule", "..\CalcFileSize\CalcFileSize.vcproj", "{FA3FF845-E341-4BE3-A17F-8042C99A374F}"
+>>>>>>> f5ee69ea8d6ff192aeef9916664e073dba8a5722
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -119,14 +121,17 @@ Global
 		{18EC105E-A0F9-43D2-B66E-287828E61E7D}.Debug|Win32.Build.0 = Debug|Win32
 		{18EC105E-A0F9-43D2-B66E-287828E61E7D}.Release|Win32.ActiveCfg = Release|Win32
 		{18EC105E-A0F9-43D2-B66E-287828E61E7D}.Release|Win32.Build.0 = Release|Win32
-		{A4B7B046-EA19-4179-9712-8A7B085443D8}.Debug|Win32.ActiveCfg = Debug|Win32
-		{A4B7B046-EA19-4179-9712-8A7B085443D8}.Debug|Win32.Build.0 = Debug|Win32
-		{A4B7B046-EA19-4179-9712-8A7B085443D8}.Release|Win32.ActiveCfg = Release|Win32
-		{A4B7B046-EA19-4179-9712-8A7B085443D8}.Release|Win32.Build.0 = Release|Win32
+<<<<<<< HEAD
 		{FA3FF845-E341-4BE3-A17F-8042C99A374F}.Debug|Win32.ActiveCfg = Debug|Win32
 		{FA3FF845-E341-4BE3-A17F-8042C99A374F}.Debug|Win32.Build.0 = Debug|Win32
 		{FA3FF845-E341-4BE3-A17F-8042C99A374F}.Release|Win32.ActiveCfg = Release|Win32
 		{FA3FF845-E341-4BE3-A17F-8042C99A374F}.Release|Win32.Build.0 = Release|Win32
+=======
+		{A4B7B046-EA19-4179-9712-8A7B085443D8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A4B7B046-EA19-4179-9712-8A7B085443D8}.Debug|Win32.Build.0 = Debug|Win32
+		{A4B7B046-EA19-4179-9712-8A7B085443D8}.Release|Win32.ActiveCfg = Release|Win32
+		{A4B7B046-EA19-4179-9712-8A7B085443D8}.Release|Win32.Build.0 = Release|Win32
+>>>>>>> f5ee69ea8d6ff192aeef9916664e073dba8a5722
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

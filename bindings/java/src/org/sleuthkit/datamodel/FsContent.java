@@ -30,23 +30,28 @@ import org.sleuthkit.datamodel.TskData.FileKnown;
  */
 public abstract class FsContent extends AbstractFile {
 
-	/*
-	 * database fields
-	 */
-	protected long fs_obj_id, meta_addr, attr_type, attr_id, meta_type, dir_type, dir_flags,
-			meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known;
+	///read only database tsk_files fields
+	protected final long fs_obj_id, meta_addr, attr_type, attr_id, meta_type, dir_type, dir_flags,
+			meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode;
+
 	/*
 	 * path of parent directory
 	 */
-	protected String parent_path;
-	/*
-	 * Unique path containing image and volume
+	protected final String parent_path;
+	///read-write database tsk_files fields
+	/**
+	 * known status in database
 	 */
-	protected String unique_path;
+	protected long known;
 	/*
 	 * md5 hash
 	 */
 	protected String md5Hash;
+	///other members
+	/*
+	 * Unique path containing image and volume
+	 */
+	protected String unique_path;
 	/**
 	 * parent file system
 	 */
@@ -82,7 +87,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param parent_path
 	 * @param md5Hash
 	 */
-	public FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
+	FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
 			long attr_type, long attr_id, long meta_type, long dir_type, long dir_flags,
 			long meta_flags, long size, long ctime, long crtime, long atime, long mtime, long uid, long gid, long mode, long known,
 			String parent_path, String md5Hash) {
@@ -117,6 +122,28 @@ public abstract class FsContent extends AbstractFile {
 		parentFileSystem = parent;
 	}
 
+	/**
+	 * Sets md5 hash string
+	 * Note: database or other FsContent objects are not updated.
+	 * Currently only SleuthkiCase calls it to update the object while updating tsk_files entry
+	 * 
+	 * @param md5Hash 
+	 */
+	void setMd5Hash(String md5Hash) {
+		this.md5Hash = md5Hash;
+	}
+
+	/**
+	 * Sets known status
+	 * Note: database or other FsContent objects are not updated.
+	 * Currently only SleuthkiCase calls it to update the object while updating tsk_files entry
+	 * 
+	 * @param known 
+	 */
+	void setKnown(long known) {
+		this.known = known;
+	}
+
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		synchronized (this) {
@@ -131,31 +158,6 @@ public abstract class FsContent extends AbstractFile {
 	 * -------------------------------------------------------------------------
 	 * Getters to retrieve meta-data attributes values
 	 * -------------------------------------------------------------------------
-	 */
-	/**
-	 * Is this object a file
-	 *
-	 * @return false unless overridden by a subclass (specifically the file
-	 * subclass)
-	 */
-	public boolean isFile() {
-		return false;
-	}
-
-	/**
-	 * Is this object a directory
-	 *
-	 * @return false unless overridden by a subclass (specifically the directory
-	 * subclass)
-	 */
-	public boolean isDir() {
-		return false;
-	}
-
-	/**
-	 * Is this the root of its parent filesystem?
-	 *
-	 * @return true if this is the root inode
 	 */
 	public boolean isRoot() {
 		return parentFileSystem.getRoot_inum() == this.getMeta_addr();

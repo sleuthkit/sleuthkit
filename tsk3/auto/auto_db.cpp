@@ -676,7 +676,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
             vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
             ranges.push_back(tempRange);
             int64_t fileObjId = 0;
-            unallocBlockWlkTrack->tskAutoDb.m_db->addUnallocBlockFile(unallocBlockWlkTrack->fsObjId, 
+            unallocBlockWlkTrack->tskAutoDb.m_db->addUnallocBlockFile(unallocBlockWlkTrack->tskAutoDb.m_curUnallocDirId, 
                 unallocBlockWlkTrack->fsObjId, tempRange.byteLen, ranges, fileObjId);
             //advance range start to a new range
             unallocBlockWlkTrack->curRangeStart = a_block->addr;
@@ -703,6 +703,13 @@ int8_t TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
         tsk_error_set_errstr2("TskAutoDb::addFsInfoUnalloc: error opening fs at offset %"PRIuOFF, dbFsInfo.imgOffset);
+        registerError();
+        return TSK_ERR;
+    }
+
+    //create a "fake" dir to hold the unalloc files for the fs
+    if (m_db->addUnallocFsBlockFilesParent(dbFsInfo.objId, m_curUnallocDirId) ) {
+        tsk_error_set_errstr2("addFsInfoUnalloc: error creating dir for unallocated space");
         registerError();
         return TSK_ERR;
     }
@@ -737,7 +744,7 @@ int8_t TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
     ranges.push_back(tempRange);
     int64_t fileObjId = 0;
-    m_db->addUnallocBlockFile(dbFsInfo.objId, dbFsInfo.objId, tempRange.byteLen, ranges, fileObjId);
+    m_db->addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, tempRange.byteLen, ranges, fileObjId);
     
     //cleanup 
     tsk_fs_close(fsInfo);
@@ -762,23 +769,12 @@ uint8_t TskAutoDb::addUnallocSpaceToDb() {
     //handle case when no fs and no vs partitions
     uint8_t retImgFile = TSK_OK;
     if (numVsP == 0 && numFs == 0) {
-        const TSK_OFF_T imgSize = getImageSize();
-        if (imgSize == -1) {
-            tsk_error_set_errstr("addUnallocSpaceToDb: error getting current image size, can't create unalloc block file for the image.");
-            registerError();
-            retImgFile = TSK_ERR;
-        }
-
-        TSK_DB_FILE_LAYOUT_RANGE tempRange(0, imgSize, 0);
-        //add unalloc block file for the entire image
-        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
-        ranges.push_back(tempRange);
-        int64_t fileObjId = 0;
-        retImgFile = m_db->addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId);
+        retImgFile = addUnallocImageSpaceToDb();
     }
     
     return retFsSpace || retVsSpace || retImgFile;
 }
+
 
 /**
 * Process each file system in the database and add its unallocated sectors to virtual files. 
@@ -809,6 +805,8 @@ uint8_t TskAutoDb::addUnallocFsSpaceToDb(size_t & numFs) {
         }
         allFsProcessRet |= addFsInfoUnalloc(*it);
     }
+
+    //TODO set parent_path for newly created virt dir/file hierarchy for consistency
 
     return allFsProcessRet;
 }
@@ -874,4 +872,30 @@ uint8_t TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
     }
 
     return TSK_OK;
+}
+
+
+/**
+* Adds unalloc space for the image if there is no volumes and no file systems.
+*
+* @returns TSK_OK on success, TSK_ERR on error
+*/
+uint8_t TskAutoDb::addUnallocImageSpaceToDb() {
+    uint8_t retImgFile = TSK_OK;
+
+    const TSK_OFF_T imgSize = getImageSize();
+    if (imgSize == -1) {
+        tsk_error_set_errstr("addUnallocImageSpaceToDb: error getting current image size, can't create unalloc block file for the image.");
+        registerError();
+        retImgFile = TSK_ERR;
+    }
+    else {
+        TSK_DB_FILE_LAYOUT_RANGE tempRange(0, imgSize, 0);
+        //add unalloc block file for the entire image
+        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
+        ranges.push_back(tempRange);
+        int64_t fileObjId = 0;
+        retImgFile = m_db->addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId);
+    }
+    return retImgFile;
 }

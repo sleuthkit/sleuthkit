@@ -93,7 +93,7 @@ public:
     /**
      * Generate a log message with a given level (printf-style arguments).
      * @param a_channel Level of log to make
-     * @param a_msg Message to record.
+     * @param format Message to record.
      */
     virtual void logf(Channel a_channel, char const *format, ...);
 

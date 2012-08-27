@@ -61,6 +61,7 @@ typedef enum TSK_ARTIFACT_TYPE {
         TSK_EMAIL_MSG = 13, ///< An e-mail message that was extracted from a file.
         TSK_EXTRACTED_TEXT = 14, ///< Text that was extracted from a file.
         TSK_WEB_SEARCH_QUERY = 15, ///< Web search engine query extracted from web history.
+        TSK_METADATA_EXIF = 16, ///< EXIF Metadata
     /* SEE ABOVE:
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackboard.cpp

@@ -869,6 +869,16 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
 
     // add this entry to the orphan list
     if (a_fs_file->meta) {
+        /* Stop if we hit an allocated entry.  We shouldn't get these, but did
+         * have some trouble images that went into allocated clusters on
+         * a FAT file system. */
+        if (a_fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC) {
+            if (tsk_verbose) {
+                tsk_fprintf(stderr, "load_orphan_dir_walk_cb: Skipping an allocated file (ID: %"PRIuINUM")\n",
+                        a_fs_file->meta->addr);
+            }
+            return TSK_WALK_STOP;
+        }
 
         /* check if we have already added it as an orphan (in a subdirectory)
          * Not entirely sure how possible this is, but it was added while

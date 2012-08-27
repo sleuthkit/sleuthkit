@@ -228,7 +228,7 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
                 tsk_fprintf(stderr,
                     "raw_read: found in image %d relative offset: %"
                     PRIuOFF " len: %" PRIuOFF "\n", i, rel_offset,
-                    read_len);
+                    (TSK_OFF_T) read_len);
             }
 
             cnt = raw_read_segment(raw_info, i, buf, read_len, rel_offset);
