@@ -6,6 +6,8 @@
   <!-- <CONFIG_DIR>path</CONFIG_DIR> -->
   <!-- <MODULE_DIR>path</MODULE_DIR> -->
   <!-- <OUT_DIR>path</OUT_DIR> -->
+  <!-- <SYSTEM_OUT_DIR>path</SYSTEM_OUT_DIR> -->
+  <!-- <MODULE_OUT_DIR>path</MODULE_OUT_DIR> -->
   <!-- <LOG_DIR>path</LOG_DIR> -->
   <!-- <DB_HOST>host</DB_HOST> -->
   <!-- <DB_PORT>port</DB_PORT> -->

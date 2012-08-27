@@ -16,10 +16,9 @@
 #ifndef _TSK_FILEANALYSISPIPELINE_H
 #define _TSK_FILEANALYSISPIPELINE_H
 
+
 // TSK Framework includes
-#include "TskModule.h"
 #include "TskPipeline.h"
-#include "TskPluginModule.h"
 #include "TskFileAnalysisPluginModule.h"
 
 // C/C++ library includes
@@ -31,17 +30,23 @@
 class TSK_FRAMEWORK_API TskFileAnalysisPipeline : public TskPipeline
 {
 public:
-    void initialize(const std::string& pipelineConfig);
+    // Doxygen comment in base class.
     virtual void run(const uint64_t fileId);
+
+    // Doxygen comment in base class.
     virtual void run(TskFile* file);
 
-    // Run through all the modules in the Pipeline for Reporting.
-    virtual void run() {}; // NOP
-
-    TskPluginModule * createPluginModule() 
+    // Doxygen comment in base class.
+    virtual void run() 
     { 
-        return (new TskFileAnalysisPluginModule()); 
-    };
+        throw TskException("TskFileAnalysisPipeline::run : not implemented"); 
+    }
+
+    // Doxygen comment in base class.
+    TskPluginModule *createPluginModule() 
+    { 
+        return (new TskFileAnalysisPluginModule());
+    }
 };
 
 #endif

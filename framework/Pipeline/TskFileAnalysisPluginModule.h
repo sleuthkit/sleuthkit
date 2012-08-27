@@ -11,9 +11,8 @@
 #ifndef _TSK_FILEANALYSISPLUGINMODULE_H
 #define _TSK_FILEANALYSISPLUGINMODULE_H
 
+// TSK Framework includes
 #include "TskPluginModule.h"
-
-#include "Poco/SharedLibrary.h"
 
 /**
  * Supports the loading of custom dynamic libraries to perform
@@ -22,22 +21,11 @@
 class TSK_FRAMEWORK_API TskFileAnalysisPluginModule: public TskPluginModule
 {
 public:
-    // Default Constructor
-    TskFileAnalysisPluginModule();
+    // Doxygen comment in base class.
+    virtual Status run(TskFile *fileToAnalyze);
 
-    // Destructor
-    virtual ~TskFileAnalysisPluginModule();
-
-    virtual Status run(TskFile* fileToAnalyze);
-
-    /// Sets the path of the library to load and verifies
-    /// that it implements the required interface.
-    //virtual void setPath(const std::string& location);
-
-    // Check the require interface for a plugin module. Throw exception if required interface is misssing.
+    // Doxygen comment in base class.
     virtual void checkInterface();
-
-private:
 };
 
 #endif

@@ -36,8 +36,10 @@ namespace
     const std::string DEFAULT_PROG_DIR = Poco::Path::current();
     const std::string DEFAULT_CONFIG_DIR = std::string("#PROG_DIR#") + Poco::Path::separator() + std::string("Config");
     const std::string DEFAULT_MODULE_DIR = std::string("#PROG_DIR#") + Poco::Path::separator() + std::string("Modules");
-    const std::string DEFAULT_LOG_DIR = std::string("#OUT_DIR#") + Poco::Path::separator() + std::string("Logs");
-    const std::string DEFAULT_CARVE_DIR = std::string("#OUT_DIR#") + Poco::Path::separator() + std::string("Carving");
+    const std::string DEFAULT_SYSTEM_OUT_DIR = std::string("#OUT_DIR#") + Poco::Path::separator() + std::string("SystemOutput");
+    const std::string DEFAULT_MODULE_OUT_DIR = std::string("#OUT_DIR#") + Poco::Path::separator() + std::string("ModuleOutput");
+    const std::string DEFAULT_LOG_DIR = std::string("#SYSTEM_OUT_DIR#") + Poco::Path::separator() + std::string("Logs");
+    const std::string DEFAULT_CARVE_DIR = std::string("#SYSTEM_OUT_DIR#") + Poco::Path::separator() + std::string("Carving");
     const std::string DEFAULT_UNALLOC_SECTORS_IMG_FILE_NAME = "unalloc.bin";
     const std::string DEFAULT_MAX_UNALLOC_SECTORS_IMG_FILE_SIZE = "0";
     const std::string DEFAULT_CARVE_EXTRACT_KEEP_INPUT_FILES = "false";
@@ -61,6 +63,8 @@ namespace
         PredefProp(TskSystemProperties::CONFIG_DIR, "CONFIG_DIR", false, DEFAULT_CONFIG_DIR),
         PredefProp(TskSystemProperties::MODULE_DIR, "MODULE_DIR", false, DEFAULT_MODULE_DIR),
         PredefProp(TskSystemProperties::OUT_DIR, "OUT_DIR", true, ""),
+        PredefProp(TskSystemProperties::SYSTEM_OUT_DIR, "SYSTEM_OUT_DIR", false, DEFAULT_SYSTEM_OUT_DIR),
+        PredefProp(TskSystemProperties::MODULE_OUT_DIR, "MODULE_OUT_DIR", false, DEFAULT_MODULE_OUT_DIR),
         PredefProp(TskSystemProperties::LOG_DIR, "LOG_DIR", false, DEFAULT_LOG_DIR),
         PredefProp(TskSystemProperties::DB_HOST, "DB_HOST", false, ""),
         PredefProp(TskSystemProperties::DB_PORT, "DB_PORT", false, ""),

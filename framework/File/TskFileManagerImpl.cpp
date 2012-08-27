@@ -33,7 +33,7 @@ TskFileManagerImpl * TskFileManagerImpl::m_pInstance = NULL;
 
 const int TskFileManagerImpl::FILES_PER_DIR = 1000;
 const int TskFileManagerImpl::FILE_BUFFER_SIZE = 8192;
-const std::string TskFileManagerImpl::FILES_DIRECTORY = "files";
+const std::string TskFileManagerImpl::FILES_DIRECTORY = "Files";
 
 TskFileManagerImpl& TskFileManagerImpl::instance()
 {
@@ -54,7 +54,7 @@ void TskFileManagerImpl::initialize()
 {
     try
     {
-        std::string storagePath = GetSystemProperty(TskSystemProperties::OUT_DIR);
+        std::string storagePath = GetSystemProperty(TskSystemProperties::SYSTEM_OUT_DIR);
         m_storageDir = new Poco::File(storagePath + Poco::Path::separator() + FILES_DIRECTORY);
 
         // Create the directory if it does not exist.

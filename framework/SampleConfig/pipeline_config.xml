@@ -16,7 +16,7 @@
 
       <MODULE order="2" type="plugin" location="InterestingFilesModule.dll" arguments="#MODULE_DIR#\\InterestingFilesModule\\interesting_files.xml"/>
 
-      <MODULE order="3" type="plugin" location="SaveInterestingFilesModule.dll" arguments="#OUT_DIR#\\InterestingFiles\\"/>
+      <MODULE order="3" type="plugin" location="SaveInterestingFilesModule.dll"/>
 
       <MODULE order="4" type="plugin" location="SummaryReportModule.dll"/>
 
