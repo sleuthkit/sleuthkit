@@ -27,6 +27,8 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_EMAIL_MSG, TskArtifactNames("TSK_EMAIL_MSG", "E-Mail Message")));
     retval.insert(pair<int, TskArtifactNames>(TSK_EXTRACTED_TEXT, TskArtifactNames("TSK_EXTRACTED_TEXT", "Extracted Text")));
     retval.insert(pair<int, TskArtifactNames>(TSK_WEB_SEARCH_QUERY, TskArtifactNames("TSK_WEB_SEARCH_QUERY", "Web Search Engine Query")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_TAG_FILE, TskArtifactNames("TSK_TAG_FILE", "File Tag")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_TAG_ARTIFACT, TskArtifactNames("TSK_TAG_ARTIFACT", "Result Tag")));
 
     return retval;
 }
@@ -93,6 +95,10 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_GEO_MAPDATUM, TskAttributeNames("TSK_GEO_MAPDATUM", "Map Datum")));
     retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_SIG, TskAttributeNames("TSK_FILE_TYPE_SIG", "File Type (by signature)")));
     retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_EXT, TskAttributeNames("TSK_FILE_TYPE_EXT", "File Type (by extension)")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_TAGGED_ARTIFACT, TskAttributeNames("TSK_TAGGED_ARTIFACT", "Tagged Result")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_TAG_NAME, TskAttributeNames("TSK_TAG_NAME", "Tag Name")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_DESCRIPTION, TskAttributeNames("TSK_DESCRIPTION", "Description")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_URL_DECODED, TskAttributeNames("TSK_URL_DECODED", "Decoded URL")));
 
     return retval;
 }
