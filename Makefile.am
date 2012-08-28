@@ -8,6 +8,7 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     packages/sleuthkit.spec \
     win32/BUILDING.txt \
     win32/*/*.vcproj \
+    win32/tre/* \
     win32/tsk-win.sln \
     win32/docs/* \
     bindings/java/README.txt \
