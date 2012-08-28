@@ -6,7 +6,7 @@ The Visual Studio Solution file has three build targets: Debug, Debug_NoLibs, an
 
 The steps below outline the process required to compile the Debug and Release targets.
 
-1) Download libewf-20120304 or later from:
+1) Download libewf-20120304 from:
     http://sourceforge.net/projects/libewf/
 
 2) Open archive file and follow the README instructions in libewf to build libewf_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libewf_dll.  Later steps also depend on the zlib dll being built inside of libewf. 
