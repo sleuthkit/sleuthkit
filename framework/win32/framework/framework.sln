@@ -64,6 +64,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LibExifModule", "..\..\TskM
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CalcFileSizeModule", "..\CalcFileSize\CalcFileSize.vcproj", "{FA3FF845-E341-4BE3-A17F-8042C99A374F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F791B16A-1489-4526-9FFF-CB481CEC5414} = {F791B16A-1489-4526-9FFF-CB481CEC5414}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
