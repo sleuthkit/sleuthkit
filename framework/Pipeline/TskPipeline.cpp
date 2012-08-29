@@ -50,8 +50,13 @@ TskPipeline::TskPipeline() : m_hasExeModule(false), m_loadDll(true)
 TskPipeline::~TskPipeline()
 {
     // Delete modules
-    for (std::vector<TskModule*>::iterator it = m_modules.begin(); it != m_modules.end(); it++)
-        delete *it;
+    if(m_modules.end() != m_modules.begin()){
+        std::vector<TskModule*>::iterator it = m_modules.end();
+        do{
+            it--;
+            delete *it;
+        }while(it != m_modules.begin());
+    }
 }
 
 void TskPipeline::validate(const std::string & pipelineConfig)
@@ -168,6 +173,9 @@ void TskPipeline::initialize(const std::string & pipelineConfig)
                 }
                 if (!duplicate)
                     m_modules.push_back(pModule);
+            }
+            else{
+                pModule->~TskModule();
             }
         }
     }
