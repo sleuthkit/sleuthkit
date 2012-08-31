@@ -20,6 +20,9 @@ New Features:
   are found. 
 - mactime displays times as 0 if the time is not set (isntead of 1970)
 - Changed behavior of 'mactime -y' to use ISO8601 format. 
+- Updated HFS+ code from ATC-NY. 
+- FAT orphan file improvements to reduce false positives. 
+- TskAuto better reports errors. 
 
 Bug Fixes:
 - Relaxed checking when conflict exists between DOS and GPT partitions.
