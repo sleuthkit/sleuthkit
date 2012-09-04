@@ -29,8 +29,11 @@
 
 #include "tsk_fs_i.h"
 #include "tsk_ext2fs.h"
+#include "tsk3/base/crc.h"
 #include <stddef.h>
 //#define Ext4_DBG 1
+//#define EXT4_CHECKSUMS 1
+
 
 #ifdef Ext4_DBG
 static uint8_t debug_print_buf(unsigned char *buf, int len)
@@ -226,6 +229,7 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     return 0;
 }
 
+#ifdef EXT4_CHECKSUMS
 /**
  * ext4_group_desc_csum - Calculates the checksum of a group descriptor
  * Ported from linux/fs/ext4/super.c
@@ -236,7 +240,6 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
  */
 
 //Temporarily removing CRC16 code until non-GPL version implemented
-
 //static uint16_t
 //ext4_group_desc_csum(ext2fs_sb *ext4_sb, uint32_t block_group,
 //			    struct ext4fs_gd *gdp)
@@ -261,6 +264,41 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
 //
 //	return crc;
 //}
+
+static cm_t CRC16_CTX;
+
+static uint16_t
+ext4_group_desc_csum(ext2fs_sb *ext4_sb, uint32_t block_group,
+			    struct ext4fs_gd *gdp)
+{
+CRC16_CTX.cm_width  = 16;
+CRC16_CTX.cm_poly   = 0x8005L;
+CRC16_CTX.cm_init   = 0xFFFFL;
+CRC16_CTX.cm_refin  = TRUE;
+CRC16_CTX.cm_refot  = TRUE;
+CRC16_CTX.cm_xorot  = 0x0000L;
+    cm_ini(&CRC16_CTX);
+	if (*ext4_sb->s_feature_ro_compat & EXT2FS_FEATURE_RO_COMPAT_GDT_CSUM)
+	{
+		int offset = offsetof(struct ext4fs_gd, bg_checksum);
+		uint32_t le_group = tsk_getu32(TSK_LIT_ENDIAN, &block_group);
+		crc16(&CRC16_CTX, ext4_sb->s_uuid, sizeof(ext4_sb->s_uuid));
+		crc16(&CRC16_CTX, (uint8_t *)&le_group, sizeof(le_group));
+		crc16(&CRC16_CTX, (uint8_t *)gdp, offset);
+		offset += sizeof(gdp->bg_checksum); /* skip checksum */
+		/* for checksum of struct ext4_group_desc do the rest...*/
+		if ((*ext4_sb->s_feature_incompat &
+		     EXT2FS_FEATURE_INCOMPAT_64BIT) &&
+		    offset < *ext4_sb->s_desc_size)
+       {
+			crc16(&CRC16_CTX, (uint8_t *)gdp + offset, *ext4_sb->s_desc_size - offset);
+       }
+	}
+
+    return cm_crc(&CRC16_CTX);
+}
+#endif
+
 
 /* ext2fs_print_map - print a bitmap */
 
@@ -2346,8 +2384,10 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         if(fs->ftype == TSK_FS_TYPE_EXT4){
 			tsk_fprintf(hFile, "  Stored Checksum: 0x%04" PRIX16 "\n", 
 				tsk_getu16(fs->endian,ext2fs->ext4_grp_buf->bg_checksum));
+#ifdef EXT4_CHECKSUMS
 //Need Non-GPL CRC16
-//            tsk_fprintf(hFile, "  Calculated Checksum: 0x%04" PRIX16 "\n",ext4_group_desc_csum(ext2fs->fs, i, ext2fs->ext4_grp_buf));
+            tsk_fprintf(hFile, "  Calculated Checksum: 0x%04" PRIX16 "\n",ext4_group_desc_csum(ext2fs->fs, i, ext2fs->ext4_grp_buf));
+#endif
         }
 
         tsk_release_lock(&ext2fs->lock);
