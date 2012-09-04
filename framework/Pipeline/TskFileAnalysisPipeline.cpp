@@ -13,24 +13,17 @@
  * Contains the implementation for the TskFileAnalysisPipeline class.
  */
 
-// System includes
-#include <sstream>
-
-// Framework includes
+// TSK Framework includes
 #include "TskFileAnalysisPipeline.h"
 #include "File/TskFileManagerImpl.h"
 #include "Services/TskServices.h"
 
 // Poco includes
 #include "Poco/AutoPtr.h"
+#include "Poco/Stopwatch.h"
 
-TskFileAnalysisPipeline::TskFileAnalysisPipeline()
-{
-}
-
-TskFileAnalysisPipeline::~TskFileAnalysisPipeline()
-{
-}
+// C/C++ library includes
+#include <sstream>
 
 void TskFileAnalysisPipeline::run(const uint64_t fileId)
 {
@@ -94,6 +87,7 @@ void TskFileAnalysisPipeline::run(TskFile* file)
 
         bool bModuleFailed = false;
 
+        Poco::Stopwatch stopWatch;
         for (int i = 0; i < m_modules.size(); i++)
         {
             // we have no way of knowing if the file was closed by a module,
@@ -103,7 +97,11 @@ void TskFileAnalysisPipeline::run(TskFile* file)
             // Reset the file offset to the beginning of the file.
             file->seek(0);
 
+            stopWatch.restart();
             TskModule::Status status = m_modules[i]->run(file);
+            stopWatch.stop();
+            
+            updateModuleExecutionTime(m_modules[i]->getModuleId(), stopWatch.elapsed());
 
             imgDB.setModuleStatus(file->getId(), m_modules[i]->getModuleId(), (int)status);
 

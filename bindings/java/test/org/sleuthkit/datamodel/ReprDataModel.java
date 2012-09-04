@@ -172,6 +172,12 @@ public class ReprDataModel {
 		repr("getNumPartsu", (long)lf.getNumParts());
 		
 	}
+	
+	private void reprLayoutDirectory(LayoutDirectory ld) {
+		repr("getSize", ld.getSize());
+		repr("getId", ld.getId());
+		repr("getName", ld.getName());
+	}
 
 	private void reprFileSystem(FileSystem fs) {
 		repr("getBlock_count", fs.getBlock_count());
@@ -359,6 +365,12 @@ public class ReprDataModel {
 		@Override
 		public Void visit(LayoutFile u) {
 			reprLayoutFile(u);
+			return null;
+		}
+		
+		@Override
+		public Void visit(LayoutDirectory u) {
+			reprLayoutDirectory(u);
 			return null;
 		}
 		
