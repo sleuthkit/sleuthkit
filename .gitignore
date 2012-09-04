@@ -1,6 +1,12 @@
 # NetBeans user-specific settings
 /bindings/java/nbproject/private/
 
+config/config.guess
+config/config.sub
+config/depcomp
+config/missing
+
+
 # Bindings dependecies and build folders
 /bindings/java/lib/
 /bindings/java/build/
