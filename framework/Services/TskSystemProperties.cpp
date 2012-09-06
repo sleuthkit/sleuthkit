@@ -30,6 +30,7 @@
 
 // C/C++ library includes
 #include <sstream>
+#include <assert.h>
 
 namespace
 {
