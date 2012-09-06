@@ -520,7 +520,7 @@ void sha512_transf(SHA512_CTX *ctx, const unsigned char *message,
     }
 }
 
-void sha512(const unsigned char *message, unsigned int len,
+void SHA512(const unsigned char *message, unsigned int len,
             unsigned char *digest)
 {
     SHA512_CTX ctx;
