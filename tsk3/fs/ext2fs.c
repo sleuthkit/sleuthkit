@@ -1719,30 +1719,33 @@ ext4_fsstat_datablock_helper(TSK_FS_INFO *fs, FILE *hFile, unsigned int i, TSK_D
     /*If this is the 1st bg in a flex bg then it contains the bitmaps and inode tables */
     //if(ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i))
     //{
-    if(i%gpfbg == 0)
+    if (i%gpfbg == 0)
     {
-        if(curr_flex_bg == (num_flex_bg-1))
+        if (curr_flex_bg == (num_flex_bg-1))
         {
-        int left_over = num_flex_bg % gpfbg;
+        int num_groups = fs->last_block / tsk_getu32(fs->endian,sb->s_blocks_per_group);
+        if (num_groups % tsk_getu32(fs->endian,sb->s_blocks_per_group))
+            num_groups++;
+        int left_over = (num_groups % gpfbg);
             if(EXT2FS_HAS_INCOMPAT_FEATURE(fs, sb, EXT2FS_FEATURE_INCOMPAT_64BIT) && gd_size >= 64)
             {
 //DEBUG                printf("DEBUG processing 64bit file system with 64 bit group descriptors");
                 tsk_fprintf(hFile, "    Uninit Data Bitmaps: ");
                 tsk_fprintf(hFile, "%" PRIu64 " - %" PRIu64 "\n",
                             ext4_getu64(fs->endian, ext4_gd->bg_block_bitmap_hi, ext2fs->ext4_grp_buf->bg_block_bitmap_lo)
-                            + (left_over - 1),
+                            + (left_over),
                             ext4_getu64(fs->endian, ext4_gd->bg_block_bitmap_hi, ext2fs->ext4_grp_buf->bg_block_bitmap_lo)
                             + gpfbg -1 );
                 tsk_fprintf(hFile, "    Uninit Inode Bitmaps: ");
                 tsk_fprintf(hFile, "%" PRIu64 " - %" PRIu64 "\n",
                             ext4_getu64(fs->endian, ext4_gd->bg_inode_bitmap_hi, ext2fs->ext4_grp_buf->bg_inode_bitmap_lo)
-                            + (left_over - 1),
+                            + (left_over),
                             ext4_getu64(fs->endian, ext4_gd->bg_inode_bitmap_hi,ext2fs->ext4_grp_buf->bg_inode_bitmap_lo)
                             + gpfbg - 1 );
                 tsk_fprintf(hFile, "    Uninit Inode Table: ");
                 tsk_fprintf(hFile, "%" PRIu64 " - %" PRIu64 "\n",
                             ext4_getu64(fs->endian, ext4_gd->bg_inode_table_hi,ext2fs->ext4_grp_buf->bg_inode_table_lo)
-                            +((left_over -1) * ibpg),
+                            +((left_over) * ibpg),
                             ext4_getu64(fs->endian, ext4_gd->bg_inode_table_hi, ext2fs->ext4_grp_buf->bg_inode_table_lo)
                             +(gpfbg * ibpg) - 1);
             }
