@@ -1686,6 +1686,7 @@ ext4_fsstat_datablock_helper(TSK_FS_INFO *fs, FILE *hFile, unsigned int i, TSK_D
     uint64_t last_block;
     ext4fs_gd *ext4_gd = ext2fs->ext4_grp_buf;
 	uint64_t db_offset = 0;
+	unsigned int num_groups = 0, left_over = 0;
 
 #ifdef Ext4_DBG    
     printf("\nDEBUG 64bit:%d, gd_size %d, combined %d\n",
@@ -1723,10 +1724,10 @@ ext4_fsstat_datablock_helper(TSK_FS_INFO *fs, FILE *hFile, unsigned int i, TSK_D
     {
         if (curr_flex_bg == (num_flex_bg-1))
         {
-        int num_groups = fs->last_block / tsk_getu32(fs->endian,sb->s_blocks_per_group);
+        num_groups = fs->last_block / tsk_getu32(fs->endian,sb->s_blocks_per_group);
         if (num_groups % tsk_getu32(fs->endian,sb->s_blocks_per_group))
             num_groups++;
-        int left_over = (num_groups % gpfbg);
+        left_over = (num_groups % gpfbg);
             if(EXT2FS_HAS_INCOMPAT_FEATURE(fs, sb, EXT2FS_FEATURE_INCOMPAT_64BIT) && gd_size >= 64)
             {
 //DEBUG                printf("DEBUG processing 64bit file system with 64 bit group descriptors");
