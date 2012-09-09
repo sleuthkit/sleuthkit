@@ -164,7 +164,7 @@ ulong cm_tab P_((p_cm_t p_cm,int index));
 
 /* End of the header file idempotence #ifndef */
 
-short crc16(p_cm_t crc_context, unsigned char const *buff, unsigned int size);
+void crc16(p_cm_t crc_context, unsigned char const *buff, unsigned int size);
 
 #endif
 

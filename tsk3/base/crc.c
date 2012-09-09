@@ -43,8 +43,10 @@ Status  : Copyright (C) Ross Williams, 1993. However, permission is
 
 #include "crc.h"
 #include <stdio.h>
-#include <stdint.h>
 
+#ifndef _MSC_VER
+#include <stdint.h>
+#endif
 /******************************************************************************/
 
 /* The following definitions make the code more readable. */
@@ -187,7 +189,7 @@ void generate_crc_table(short *crctab[], p_cm_t p_cm){
 /*                             End of crcmodel.c                              */
 /******************************************************************************/
 
-short crc16(p_cm_t crc_context, unsigned char const *buff, unsigned int size)
+void crc16(p_cm_t crc_context, unsigned char const *buff, unsigned int size)
 {
     while(size > 0)
     {

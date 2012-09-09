@@ -59,7 +59,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32MD.lib ssleay32MD.lib msvcrt.lib winmm.lib libewf.lib"
+				AdditionalDependencies="msvcrt.lib winmm.lib libewf.lib"
 				AdditionalLibraryDirectories="$(LIBEWF_HOME)\msvscpp\release"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="msvcrtd.lib"
@@ -134,7 +134,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32MD.lib ssleay32MD.lib msvcrt.lib winmm.lib libewf.lib"
+				AdditionalDependencies="msvcrt.lib winmm.lib libewf.lib"
 				AdditionalLibraryDirectories="$(LIBEWF_HOME)\msvscpp\release"
 				IgnoreDefaultLibraryNames="msvcrtd.lib"
 				GenerateDebugInformation="true"
