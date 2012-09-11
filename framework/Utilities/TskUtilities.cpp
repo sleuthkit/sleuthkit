@@ -120,3 +120,19 @@ std::string TskUtilities::getProgDir()
 
     return TskUtilities::toUTF8(std::wstring(progPath));
 }
+
+/** Strip matching leading and trailing double quotes from the input str.
+ * If there is no matching quotes, the input str is returned.
+ * @returns String without matching leading and trailing double quote.
+ */
+std::string TskUtilities::stripQuotes(const std::string& str)
+{
+    if (str.length() == 0)
+        return str;
+    std::string outStr;
+    if (str[0] == '"' && str[str.length()-1] == '"') {
+        outStr = str.substr(1, str.length()-2);
+    } else
+        outStr = str;
+    return outStr;
+}
