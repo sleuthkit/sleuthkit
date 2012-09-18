@@ -113,7 +113,7 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_HASHSET_NAME = 30,///< String of the name or file name of the hashset -- Deprecated in favor of TSK_SET_NAME
     TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path
     TSK_REFERRER = 32,///< String of referrer URL
-    TSK_LAST_ACCESSED = 33,///<last time access, review this instead of DATETIME
+    TSK_DATETIME_ACCESSED = 33,///<datetime last time accessed
     TSK_IP_ADDRESS = 34,///<String of IP Address
     TSK_PHONE_NUMBER = 35,///<String of phone number
     TSK_PATH_ID = 36,///< Object ID from database that a TSK_PATH attribute corresponds to.  Set to -1 if path is for a file that is not in database (i.e. deleted). 
@@ -148,6 +148,8 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_TAG_NAME = 65, ///< The tag name.  Can contain slashes "/" to represent tag hierarchy.
     TSK_DESCRIPTION = 66, ///< Description string.
     TSK_URL_DECODED = 67, ///< Decoded URL.
+    TSK_DATETIME_CREATED = 68,///<datetime created
+    TSK_DATETIME_MODIFIED = 69,///<datetime modified
 
     /* SEE ABOVE: 
      * - KEEP JAVA CODE IN SYNC 
