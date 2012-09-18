@@ -105,6 +105,7 @@ public:
 
     virtual int addModule(const std::string& name, const std::string& description, int & moduleId);
     virtual int setModuleStatus(uint64_t file_id, int module_id, int status);
+	virtual int getModuleInfo(std::vector<TskModuleInfo> & moduleInfoList) const;
     virtual int getModuleErrors(std::vector<TskModuleStatus> & moduleStatusList) const;
     virtual std::string getFileName(uint64_t file_id) const;
 
