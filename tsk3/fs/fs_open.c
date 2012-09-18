@@ -237,6 +237,8 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             return rawfs_open(a_img_info, a_offset);
         else if (TSK_FS_TYPE_ISSWAP(a_ftype))
             return swapfs_open(a_img_info, a_offset);
+        else if (TSK_FS_TYPE_ISYAFFS2(a_ftype))
+            return yaffs2_open(a_img_info, a_offset, a_ftype, 0);
         else {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_UNSUPTYPE);

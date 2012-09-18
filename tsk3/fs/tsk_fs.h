@@ -748,6 +748,8 @@ extern "C" {
         TSK_FS_TYPE_ISO9660_DETECT = 0x00000800,        ///< ISO9660 auto detection
         TSK_FS_TYPE_HFS = 0x00001000,   ///< HFS file system
         TSK_FS_TYPE_HFS_DETECT = 0x00001000,    ///< HFS auto detection
+        TSK_FS_TYPE_YAFFS2 = 0x00002000,  ///< YAFFS2 file system
+        TSK_FS_TYPE_YAFFS2_DETECT = 0x00002000,   ///< YAFFS2 auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     typedef enum TSK_FS_TYPE_ENUM TSK_FS_TYPE_ENUM;
@@ -800,6 +802,13 @@ extern "C" {
     * is for a swap "file system". */
 #define TSK_FS_TYPE_ISSWAP(ftype) \
     (((ftype) & TSK_FS_TYPE_SWAP_DETECT)?1:0)
+
+    /**
+    * \ingroup fslib
+    * Macro that takes a file system type and returns 1 if the type
+    * is for a YAFFS2 file system. */
+#define TSK_FS_TYPE_ISYAFFS2(ftype) \
+    (((ftype) & TSK_FS_TYPE_YAFFS2_DETECT)?1:0)
 
     /**
     * \ingroup fslib
