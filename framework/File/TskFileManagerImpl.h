@@ -51,7 +51,10 @@ public:
     virtual void copyFile(TskFile* fileToSave, const std::wstring& filePath);
     virtual void copyFile(const uint64_t fileId, const std::wstring& filePath);
 
-    // Save the contents of the input stream to a file with the given fileId
+	// Copy the contents of a directory to the specified path.
+	virtual void copyDirectory(TskFile* directoryToCopy, const std::wstring& destinationPath, const bool bRecurse = false);
+
+	// Save the contents of the input stream to a file with the given fileId
     virtual void addFile(const uint64_t fileId, std::istream& istr);
 
     virtual void addFile(const uint64_t fileId, std::wstring& filePath);
