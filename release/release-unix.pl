@@ -13,9 +13,10 @@ use File::Copy;
 
 # global variables
 my $VER;
-my $TSK_RELDIR;
-my $RELDIR;
+my $TSK_RELNAME; # sleuthkit-${VER}
+my $RELDIR;     # full path release folder
 my $GITDIR;
+my $CLONEDIR;   # where a fresh copy of the repo was cloned to.
 my $TARBALL;
 my $BRANCH;
 
@@ -73,6 +74,25 @@ sub prompt_user {
 #####################################################
 # release functions
 
+
+# Creates clean clone repo and goes into it.
+sub clone_repo() {
+    del_clone();
+
+    system ("git clone git\@github.com:sleuthkit/sleuthkit.git ${CLONEDIR}");
+    chdir "${CLONEDIR}" or die "Error changing into $CLONEDIR";
+    system ("git submodule init");
+    system ("git submodule update");
+}
+
+# Deletes the clone directory -- if it exists
+sub del_clone() {
+    if (-d "$CLONEDIR") {
+        system ("rm -rf ${CLONEDIR}");
+    }
+}
+
+
 # Get rid of the extra files in current source directory
 sub clean_src() {
     print "Cleaning source code\n";
@@ -83,8 +103,8 @@ sub clean_src() {
 # are checked in.  dies if any are modified.
 sub verify_precheckin {
 
-    system ("git pull");
-    system ("git submodule update");
+    #system ("git pull");
+    #    system ("git submodule update");
 
     print "Verifying everything is checked in\n";
     exec_pipe(*OUT, "git status -s | grep \"^ M\"");
@@ -104,15 +124,16 @@ sub verify_precheckin {
     exec_pipe(*OUT, "git status -sb | grep \"^##\" | grep \"ahead \"");
     my $foo = read_pipe_line(*OUT);
     if ($foo ne "") {
+            print "$foo";
         print "Files not pushed to remote\n";
-# @@@ die "stopping";
+# @@@        die "stopping";
     }
     close(OUT);
 }
 
 # Create a tag 
 sub tag_dir {
-    system ("git tag ${TSK_RELDIR}");
+    system ("git tag ${TSK_RELNAME}");
     system ("git push --tags") unless ($TESTING);
 }
 
@@ -382,7 +403,7 @@ sub update_libver {
 
 
 # Update the autotools / autobuild files in current source directory
-sub update_build() {
+sub bootstrap() {
     print "Updating local makefiles with version info\n";
 
     unlink ("./configure");
@@ -400,25 +421,26 @@ sub update_build() {
 sub make_tar {
     unlink $TARBALL if (-e $TARBALL);
     system ("make dist > /dev/null");
-    die "Missing $TARBALL" unless (-e $TARBALL);
+    die "Missing $TARBALL after make dist" unless (-e $TARBALL);
 }
 
 # Verify that the tar ball contains all of the
 # expected files
+# Starts and ends in the clone dir
 sub verify_tar {
     copy ("${TARBALL}", "/tmp/${TARBALL}") or die "error renaming sleuthkit tar ball";
 
     chdir ("/tmp/") or die "Error changing directory to /tmp";
 
     # remove existing directory
-    system ("rm -rf ${TSK_RELDIR}") if (-d "${TSK_RELDIR}");
+    system ("rm -rf ${TSK_RELNAME}") if (-d "${TSK_RELNAME}");
 
     # open new one
     system ("tar xfz ${TARBALL}");
-    die "Missing dist dir in release" unless (-d "${TSK_RELDIR}");
+    die "Missing dist dir in release" unless (-d "${TSK_RELNAME}");
 
     exec_pipe(*OUT, 
-    "diff -r ${GITDIR} ${TSK_RELDIR} | grep -v \.git | grep -v Makefile | grep -v \.deps | grep -v gdb_history | grep -v bootstrap | grep -v libtool | grep -v DS_Store | grep -v config.h | grep -v build-html | grep -v autom4te.cache | grep -v config.log | grep -v config.status | grep -v stamp-h1 | grep -v xcode | grep -v win32\/doc | grep -v \"\\.\\#\"");
+    "diff -r ${CLONEDIR} ${TSK_RELNAME} | grep -v \.git | grep -v Makefile | grep -v \.deps | grep -v gdb_history | grep -v bootstrap | grep -v libtool | grep -v DS_Store | grep -v config.h | grep -v build-html | grep -v autom4te.cache | grep -v config.log | grep -v config.status | grep -v stamp-h1 | grep -v xcode | grep -v win32\/doc | grep -v release | grep -v \"\\.\\#\"");
 
     my $a = "y";
     my $foo = read_pipe_line(*OUT);
@@ -438,7 +460,7 @@ sub verify_tar {
 
     print "Compiling package to ensure that it all works\n";
     # Compile to see if it all works
-    chdir ("${TSK_RELDIR}") or die "error changing into $TSK_RELDIR";
+    chdir ("${TSK_RELNAME}") or die "error changing into $TSK_RELNAME";
 
     die "Missing configure in tar file" unless (-e "./configure");
 
@@ -458,13 +480,18 @@ sub verify_tar {
 
     # We're done.  Clean up
     chdir "..";
-    system ("rm -rf ${TSK_RELDIR}");
+    system ("rm -rf ${TSK_RELNAME}");
     system ("rm ${TARBALL}");
 
-    chdir "${GITDIR}" or die "Error changing dirs back to ${GITDIR}";
+    chdir "${CLONEDIR}" or die "Error changing dirs back to ${RELDIR}";
 
     # stop if asked to
     die ("Stopping") if $a eq "n";
+}
+
+sub copy_tar() {
+    copy ("${TARBALL}", "$RELDIR") or die "error moving sleuthkit tar ball to release folder";
+    print "File saved as ${TARBALL} (in release folder)\n";
 }
 
 
@@ -475,7 +502,7 @@ sub verify_tar {
 if (scalar (@ARGV) != 1) {
     print stderr "Missing release version argument (i.e.  3.0.1)\n";
     print stderr "\tversion: Version of release\n";
-    print stderr "Makes a release of the current branch\n";
+    print stderr "Makes a release of the master branch\n";
     exit;
 }
 
@@ -484,12 +511,12 @@ unless ($VER =~ /^\d+\.\d+\.\d+(b\d+)?$/) {
     die "Invalid version number: $VER (1.2.3 or 1.2.3b1 expected)";
 }
 
-$TSK_RELDIR = "sleuthkit-${VER}";
-$TARBALL = "${TSK_RELDIR}.tar.gz";
-
+$TSK_RELNAME = "sleuthkit-${VER}";
+$TARBALL = "${TSK_RELNAME}.tar.gz";
 $RELDIR = `pwd`;
 chomp ($RELDIR);
 $GITDIR = "$RELDIR/..";
+$CLONEDIR = "$RELDIR/clone";
 
 
 # Get the current branch name
@@ -506,20 +533,24 @@ else {
 close(OUT);
 
 # Verify the tag doesn't already exist
-exec_pipe(*OUT, "git tag | grep \"${TSK_RELDIR}\"");
+exec_pipe(*OUT, "git tag | grep \"${TSK_RELNAME}\"");
 my $foo = read_pipe_line(*OUT);
 if ($foo ne "") {
-    print "Tag ${TSK_RELDIR} already exists\n";
-    print "Remove with 'git tag -d ${TSK_RELDIR}'\n";
+    print "Tag ${TSK_RELNAME} already exists\n";
+    print "Remove with 'git tag -d ${TSK_RELNAME}'\n";
     die "stopping";
 }
 close(OUT);
 
-chdir ".." or die "Error changing directories to root";
 
 # All of these die of they need to abort
-clean_src();
+# clean_src();
+
+chdir ".." or die "Error changing directories to root";
 verify_precheckin();
+chdir "$RELDIR" or die "error changing back into release";
+
+clone_repo();
 
 # Update the version info in that tag
 update_configver();
@@ -527,7 +558,7 @@ update_configver();
 update_hver();
 update_libver();
 update_pkgver();
-update_build();
+bootstrap();
 
 checkin_vers();
 
@@ -536,5 +567,6 @@ tag_dir();
 
 make_tar();
 verify_tar();
+copy_tar();
 
-print "File saved as ${TARBALL} (in root folder)\n";
+del_clone();

@@ -820,25 +820,58 @@ uint8_t TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
 
     vector<TSK_DB_VS_PART_INFO> vsPartInfos;
 
-    uint8_t ret = m_db->getVsPartInfos(m_curImgId, vsPartInfos);
-    if (ret) {
+    uint8_t retVsPartInfos = m_db->getVsPartInfos(m_curImgId, vsPartInfos);
+    if (retVsPartInfos) {
         tsk_error_set_errstr2("addUnallocVsSpaceToDb: error getting vs part infos from db");
         registerError();
-        return ret;
+        return retVsPartInfos;
     }
-
     numVsP = vsPartInfos.size();
 
-    for (vector<TSK_DB_VS_PART_INFO>::iterator it = vsPartInfos.begin();
-        it != vsPartInfos.end(); ++it) {
+    //get fs infos to see if this vspart has fs
+    vector<TSK_DB_FS_INFO> fsInfos;
+    uint16_t retFsInfos = m_db->getFsInfos(m_curImgId, fsInfos);
+    if (retFsInfos) {
+        tsk_error_set_errstr2("addUnallocVsSpaceToDb: error getting fs infos from db");
+        registerError();
+        return TSK_ERR;
+    }
+
+    for (vector<TSK_DB_VS_PART_INFO>::const_iterator it = vsPartInfos.begin();
+            it != vsPartInfos.end(); ++it) {
         if(m_stopAllProcessing) {
             break;
         }
-        TSK_DB_VS_PART_INFO &vsPart = *it;
+        const TSK_DB_VS_PART_INFO &vsPart = *it;
 
-        //interested in unalloc and meta
-        if ( (vsPart.flags & (TSK_VS_PART_FLAG_UNALLOC | TSK_VS_PART_FLAG_META)) == 0)
-            continue;
+        //interested in unalloc, meta, or alloc and no fs
+        if ( (vsPart.flags & (TSK_VS_PART_FLAG_UNALLOC | TSK_VS_PART_FLAG_META)) == 0 ) {
+            //check if vspart has no fs
+            bool hasFs = false;
+            for (vector<TSK_DB_FS_INFO>::const_iterator itFs = fsInfos.begin();
+               itFs != fsInfos.end(); ++itFs) {
+               const TSK_DB_FS_INFO & fsInfo = *itFs;
+
+               TSK_DB_OBJECT fsObjInfo;
+               if (m_db->getObjectInfo(fsInfo.objId, fsObjInfo) ) {
+                   stringstream errss;
+                   errss << "addUnallocVsSpaceToDb: error getting object info for fs from db, objId: " << fsInfo.objId;
+                   tsk_error_set_errstr2("%s", errss.str().c_str());
+                   registerError();
+                   return TSK_ERR;
+               }
+
+               if (fsObjInfo.parObjId == vsPart.objId) {
+                   hasFs = true;
+                   break;
+               }
+            }
+        
+            if (hasFs == true) {
+                //skip processing this vspart
+                continue;
+            }
+        } //end checking vspart flags
 
         //get sector size and image offset from parent vs info
 

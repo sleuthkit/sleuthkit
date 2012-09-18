@@ -45,12 +45,12 @@ and passwd or group files.
 .IP -V
 Display version to STDOUT. 
 .IP -m
-The month is given as a number instead of name.
+The month is given as a number instead of name (does not work with -y).
 .IP -y
-The date range is given with the year first.  
+The date is displayed in ISO8601 format.
 .IP "-z TIME_ZONE"
 The timezone from where the data was collected.  The name of this argument
-is system dependent (examples include EST5EDT, GMT+1).  
+is system dependent (examples include EST5EDT, GMT+1).  Does not work with -y.
 .IP DATE_RANGE
 The range of dates to make the time line for.  The standard format is
 yyyy-mm-dd for a starting date and no ending date. For an ending date,
