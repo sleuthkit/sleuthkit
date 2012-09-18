@@ -66,7 +66,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_HASHSET_NAME, TskAttributeNames("TSK_HASHSET_NAME", "Hashset Name")));
     retval.insert(pair<int, TskAttributeNames>(TSK_INTERESTING_FILE, TskAttributeNames("TSK_INTERESTING_FILE", "Interesting File")));
     retval.insert(pair<int, TskAttributeNames>(TSK_REFERRER, TskAttributeNames("TSK_REFERRER", "Referrer URL")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_LAST_ACCESSED, TskAttributeNames("TSK_LAST_ACCESSED", "Last Time Accessed")));  // @@@ Review this instead of using DATETIME
+    retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_ACCESSED, TskAttributeNames("TSK_DATETIME_ACCESSED", "Date Accessed"))); 
     retval.insert(pair<int, TskAttributeNames>(TSK_IP_ADDRESS, TskAttributeNames("TSK_IP_ADDRESS", "IP Address")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER, TskAttributeNames("TSK_PHONE_NUMBER", "Phone Number")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PATH_ID, TskAttributeNames("TSK_PATH_ID", "Id of Path")));
@@ -100,6 +100,8 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_TAG_NAME, TskAttributeNames("TSK_TAG_NAME", "Tag Name")));
     retval.insert(pair<int, TskAttributeNames>(TSK_DESCRIPTION, TskAttributeNames("TSK_DESCRIPTION", "Description")));
     retval.insert(pair<int, TskAttributeNames>(TSK_URL_DECODED, TskAttributeNames("TSK_URL_DECODED", "Decoded URL")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_CREATED, TskAttributeNames("TSK_DATETIME_CREATED", "Date Created")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_MODIFIED, TskAttributeNames("TSK_DATETIME_MODIFIED", "Date Modified")));
 
     return retval;
 }
