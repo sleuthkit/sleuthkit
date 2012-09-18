@@ -2537,6 +2537,40 @@ int TskImgDBSqlite::setModuleStatus(uint64_t file_id, int module_id, int status)
  * @param moduleStatusList A list of TskModuleStatus (output)
  * @returns 0 on success, -1 on error.
 */
+int TskImgDBSqlite::getModuleInfo(std::vector<TskModuleInfo> & moduleInfoList) const
+{
+    int rc = -1;
+
+    if (!m_db)
+        return rc;
+
+    stringstream stmt;
+    stmt << "SELECT module_id, name, description FROM modules ORDER BY module_id";
+
+    sqlite3_stmt * statement;
+    if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) {
+        TskModuleInfo moduleInfo;
+        while (sqlite3_step(statement) == SQLITE_ROW) {
+            moduleInfo.module_id = (uint64_t)sqlite3_column_int64(statement, 0);
+            moduleInfo.module_name = (char *)sqlite3_column_text(statement, 1);
+            moduleInfo.module_description = (char *)sqlite3_column_int(statement, 2);
+            moduleInfoList.push_back(moduleInfo);
+        }
+        sqlite3_finalize(statement);
+        rc = 0;
+    } else {
+        wchar_t infoMessage[MAX_BUFF_LENGTH];
+        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::getModuleInfo - Error querying modules table: %S", sqlite3_errmsg(m_db));
+        LOGERROR(infoMessage);
+    }
+    return rc;
+}
+
+/**
+ * Get a list of TskModuleStatus.
+ * @param moduleStatusList A list of TskModuleStatus (output)
+ * @returns 0 on success, -1 on error.
+*/
 int TskImgDBSqlite::getModuleErrors(std::vector<TskModuleStatus> & moduleStatusList) const
 {
     int rc = -1;
