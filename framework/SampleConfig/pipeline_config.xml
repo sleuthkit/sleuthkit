@@ -8,6 +8,7 @@
       <MODULE order="3" type="plugin" location="FileTypeSigModule.dll"/>
       <MODULE order="4" type="plugin" location="EntropyModule.dll"/>
       <MODULE order="5" type="plugin" location="ZipExtractionModule.dll"/>
+      <MODULE order="6" type="plugin" location="LibExifModule.dll"/>
     </PIPELINE>
 
     <PIPELINE type="Report">
