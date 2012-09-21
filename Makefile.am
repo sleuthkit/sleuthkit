@@ -12,8 +12,8 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     win32/docs/* \
     bindings/java/README.txt \
     bindings/java/*.xml \
-    bindings/java/javadoc/* \
-    bindings/java/nbproject/* \
+    bindings/java/doxygen/* \
+    bindings/java/nbproject/project.xml \
     bindings/java/src/org/sleuthkit/datamodel/*.java \
     bindings/java/src/org/sleuthkit/datamodel/*.html \
     bindings/java/src/*.html \

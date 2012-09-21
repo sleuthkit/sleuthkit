@@ -128,7 +128,7 @@ public class BlackboardAttribute {
 		TSK_HASHSET_NAME(30, "TSK_HASHSET_NAME", "Hashset Name"), // @@@ Deprecated
 		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", "Interesting File"),
 		TSK_REFERRER(32, "TSK_REFERRER", "Referrer URL"),
-		TSK_LAST_ACCESSED(33, "TSK_LAST_ACCESSED", "Last Time Accessed"), // @@@ Review this instead of using DATETIME
+		TSK_DATETIME_ACCESSED(33, "TSK_DATETIME_ACCESSED", "Date Accessed"),
 		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", "IP Address"),
 		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", "Phone Number"),
 		TSK_PATH_ID(36, "TSK_PATH_ID", "Path ID"),
@@ -163,6 +163,8 @@ public class BlackboardAttribute {
 		TSK_TAG_NAME(65, "TSK_TAG_NAME", "Tag Name"),
 		TSK_DESCRIPTION(66, "TSK_DESCRIPTION", "Description"),
 		TSK_URL_DECODED(67, "TSK_URL_DECODED", "Decoded URL"),
+		TSK_DATETIME_CREATED(68, "TSK_DATETIME_CREATED", "Date Created"),
+		TSK_DATETIME_MODIFIED(69, "TSK_DATETIME_MODIFIED", "Date Modified"),
 		;
 		
 		

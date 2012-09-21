@@ -9,7 +9,7 @@
 #
 # The Sleuth Kit
 # Brian Carrier [carrier <at> sleuthkit [dot] org]
-# Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+# Copyright (c) 2003-2012 Brian Carrier.  All rights reserved
 #
 # TASK
 # Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -61,15 +61,15 @@ sub usage {
     print <<EOF;
 mactime [-b body_file] [-p password_file] [-g group_file] [-i day|hour idx_file] [-d] [-h] [-V] [-y] [-z TIME_ZONE] [DATE]
 		-b: Specifies the body file location, else STDIN is used
-		-d: Output timeline and index file in comma delimited format
+		-d: Output in comma delimited format
 		-h: Display a header with session information
 		-i [day | hour] file: Specifies the index file with a summary of results
+		-y: Dates are displayed in ISO 8601 format
+		-m: Dates have month as number instead of word (does not work with -y)
+		-z: Specify the timezone the data came from (in the local system format) (does not work with -y)
 		-g: Specifies the group file location, else GIDs are used
 		-p: Specifies the password file location, else UIDs are used
 		-V: Prints the version to STDOUT
-		-y: Dates have year first (yyyy/mm/dd) instead of (mm/dd/yyyy)
-		-m: Dates have month as number instead of word (can be used with -y)
-		-z: Specify the timezone the data came from (in the local system format)
 		[DATE]: starting date (yyyy-mm-dd) or range (yyyy-mm-dd..yyyy-mm-dd)
 EOF
     exit(1);
@@ -89,7 +89,7 @@ my $INDEX_HOUR = 2;
 my $INDEX_TYPE = $INDEX_DAY;    # Saved to type of index
 my $COMMA      = 0;             # Comma delimited output
 
-my $year_first = 0;
+my $iso8601 = 0;
 my $month_num  = 0;
 my $header     = 0;
 
@@ -207,7 +207,7 @@ while ((scalar(@ARGV) > 0) && (($_ = $ARGV[0]) =~ /^-(.)(.*)/)) {
         $month_num = 1;
     }
     elsif (/^-y$/) {
-        $year_first = 1;
+        $iso8601 = 1;
     }
     elsif (/^-z$/) {
         shift(@ARGV);
@@ -540,8 +540,15 @@ sub print_tl {
             next;
         }
 
-        my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
-          localtime($time);
+        my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst);
+        if ($iso8601) {
+            ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
+              gmtime($time);
+        }
+        else {
+            ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) =
+              localtime($time);
+        }
 
         # the month here is 0-11, not 1-12, like what we want
         $mon++;
@@ -564,17 +571,13 @@ sub print_tl {
         #  How do we print the date?
         #
         my $date_string;
-        if ($year_first) {
+        if ($iso8601) {
             if ($time == 0) {
-                $date_string = "0000 Xxx 00 Xxx 00:00:00";
-            }
-            elsif ($month_num) {
-                $date_string =
-                  "$yeart $mon $mday $digit_to_day{$wday} $hour:$min:$sec";
+                $date_string = "0000-00-00T00:00:00Z";
             }
             else {
                 $date_string =
-"$yeart $digit_to_month{$mon} $mday $digit_to_day{$wday} $hour:$min:$sec";
+"$yeart-$mon-${mday}T$hour:$min:${sec}Z";
             }
         }
         else {
@@ -707,7 +710,7 @@ sub print_tl {
           if $debug;
 
         if ($COMMA == 0) {
-            printf("%24s %8s %3s %s %-8s %-8s %-8s %s\n",
+            printf("%s %8s %3s %s %-8s %-8s %-8s %s\n",
                 $date_string, $size, $mactime, $ls, $uids, $groups, $inode,
                 $file);
         }
