@@ -148,6 +148,7 @@ ren "$(OutDir)framework_config_win32dev.xml" framework_config.xml
     <ClInclude Include="..\..\framework_i.h" />
     <ClInclude Include="..\..\Services\Log.h" />
     <ClInclude Include="..\..\Services\Scheduler.h" />
+    <ClInclude Include="..\..\TskVersionInfo.h" />
     <ClInclude Include="..\..\Utilities\SectorRuns.h" />
     <ClInclude Include="..\..\Extraction\TskAutoImpl.h" />
     <ClInclude Include="..\..\Services\TskBlackboard.h" />
