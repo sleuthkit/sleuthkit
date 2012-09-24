@@ -36,14 +36,25 @@
  * you want.  Note that the framework itself is NOT public domain.
  */
 
+// TSK Framework includes
+#include "TskModuleDev.h"
+
+// Poco includes
+//#include "Poco/Exception.h"
+
+// C/C++ library includes
+#include <string>
 #include <sstream>
 #include <math.h>
 
-// Framework includes
-#include "TskModuleDev.h"
-
-// We process the file 8k at a time
-static const uint32_t FILE_BUFFER_SIZE = 8193;
+// Functions and variables other than the module API functions are enclosed in
+// an anonymous namespace to give them file scope instead of global scope. This
+// replaces the older practice of declaring file scope functions and variables
+// using the "static" keyword.
+namespace
+{
+	const uint32_t FILE_BUFFER_SIZE = 8193;
+}
 
 extern "C" 
 {
@@ -74,7 +85,7 @@ extern "C"
      */
     TSK_MODULE_EXPORT const char *version()
     {
-        return "0.0.0";
+        return "1.0.0";
     }
 
     /**
@@ -86,9 +97,50 @@ extern "C"
      * @param args a string of initialization arguments.
      * @return TskModule::OK if initialization succeeded, otherwise TskModule::FAIL.
      */
-    TskModule::Status TSK_MODULE_EXPORT initialize(const char* arguments)
-    {    
-        return TskModule::OK;
+    TskModule::Status TSK_MODULE_EXPORT initialize(const char *arguments)
+    {
+		// The TSK Framework convention is to prefix error messages with the
+		// name of the module/class and function that emitted the message. 
+        const std::string MSG_PREFIX = "CalcFileSize::initialize : ";
+
+		// Well-behaved modules should catch and log all possible exceptions
+		// and return an appropriate TskModule::Status to the TSK Framework. 
+		TskModule::Status status = TskModule::OK;
+        try
+        {
+			// If this module required initialization, the initialization code would
+			// go here.
+        }
+        catch (TskException &ex)
+        {
+            status = TskModule::FAIL;
+            std::ostringstream msg;
+            msg << MSG_PREFIX << "TskException: " << ex.message();
+            LOGERROR(msg.str());
+        }
+		// Uncomment this catch block and the #include of "Poco/Exception.h" if using
+		// Poco.
+        //catch (Poco::Exception &ex)
+        //{
+        //    status = TskModule::FAIL;
+        //    std::ostringstream msg;
+        //    msg << MSG_PREFIX << "Poco::Exception: " << ex.displayText();
+        //    LOGERROR(msg.str());
+        //}
+        catch (std::exception &ex)
+        {
+            status = TskModule::FAIL;
+            std::ostringstream msg;
+            msg << MSG_PREFIX << "std::exception: " << ex.what();
+            LOGERROR(msg.str());
+        }
+        catch (...)
+        {
+            status = TskModule::FAIL;
+            LOGERROR(MSG_PREFIX + "unrecognized exception");
+        }
+
+        return status;
     }
  
     /**
@@ -102,50 +154,70 @@ extern "C"
      * @param pFile A pointer to a file to be processed.
      * @returns TskModule::OK on success, TskModule::FAIL on error, or TskModule::STOP.
      */
-    TskModule::Status TSK_MODULE_EXPORT run(TskFile * pFile)
+    TskModule::Status TSK_MODULE_EXPORT run(TskFile *pFile)
     {
-        if (pFile == NULL)
-        {
-            LOGERROR(L"CalcFileSizeModule module passed NULL file pointer.");
-            return TskModule::FAIL;
-        }
+		// The TSK Framework convention is to prefix error messages with the
+		// name of the module/class and function that emitted the message. 
+        const std::string MSG_PREFIX = "CalcFileSize::run : ";
 
+		// Well-behaved modules should catch and log all possible exceptions
+		// and return an appropriate TskModule::Status to the TSK Framework. 
+		TskModule::Status status = TskModule::OK;
         try
         {
+			// Error checking code for the module throws TskException objects.
+			if (pFile == NULL)
+			{
+				throw TskException("TskFile file pointer argument is NULL");
+			}
+
+            // Read file content into buffer.
             long totalBytes = 0;
             char buffer[FILE_BUFFER_SIZE];
             int bytesRead = 0;
-
-            // Read file content into buffer.
             do
             {
                 memset(buffer, 0, FILE_BUFFER_SIZE);
                 bytesRead = pFile->read(buffer, FILE_BUFFER_SIZE);
                 totalBytes += bytesRead;
-            } while (bytesRead > 0);
+            } 
+			while (bytesRead > 0);
 
             // Post the file size to the blackboard
             TskBlackboardArtifact genInfo = pFile->getGenInfo();
-
             TskBlackboardAttribute attr((int) TSK_VALUE, "CalcFileSizeModule", "ByteCount", totalBytes);
             genInfo.addAttribute(attr);
         }
-        catch (TskException& tskEx)
+        catch (TskException &ex)
         {
-            std::wstringstream msg;
-            msg << L"CalcFileSizeModule - Caught framework exception: " << tskEx.what();
+            status = TskModule::FAIL;
+            std::ostringstream msg;
+            msg << MSG_PREFIX << "TskException: " << ex.message();
             LOGERROR(msg.str());
-            return TskModule::FAIL;
         }
-        catch (std::exception& ex)
+		// Uncomment this catch block and the #include of "Poco/Exception.h" if using
+		// Poco.
+        //catch (Poco::Exception &ex)
+        //{
+        //    status = TskModule::FAIL;
+        //    std::ostringstream msg;
+        //    msg << MSG_PREFIX << "Poco::Exception: " << ex.displayText();
+        //    LOGERROR(msg.str());
+        //}
+        catch (std::exception &ex)
         {
-            std::wstringstream msg;
-            msg << L"CalcFileSizeModule - Caught exception: " << ex.what();
+            status = TskModule::FAIL;
+            std::ostringstream msg;
+            msg << MSG_PREFIX << "std::exception: " << ex.what();
             LOGERROR(msg.str());
-            return TskModule::FAIL;
+        }
+        catch (...)
+        {
+            status = TskModule::FAIL;
+            LOGERROR(MSG_PREFIX + "unrecognized exception");
         }
 
-        return TskModule::OK;
+        return status;
     }
 
     /**
@@ -156,6 +228,47 @@ extern "C"
      */
     TskModule::Status TSK_MODULE_EXPORT finalize()
     {
-        return TskModule::OK;
+		// The TSK Framework convention is to prefix error messages with the
+		// name of the module/class and function that emitted the message. 
+        const std::string MSG_PREFIX = "CalcFileSize::finalize : ";
+
+		// Well-behaved modules should catch and log all possible exceptions
+		// and return an appropriate TskModule::Status to the TSK Framework. 
+		TskModule::Status status = TskModule::OK;
+        try
+        {
+			// If this module required finalization, the finalization code would
+			// go here.
+        }
+        catch (TskException &ex)
+        {
+            status = TskModule::FAIL;
+            std::ostringstream msg;
+            msg << MSG_PREFIX << "TskException: " << ex.message();
+            LOGERROR(msg.str());
+        }
+		// Uncomment this catch block and the #include of "Poco/Exception.h" if using
+		// Poco.
+        //catch (Poco::Exception &ex)
+        //{
+        //    status = TskModule::FAIL;
+        //    std::ostringstream msg;
+        //    msg << MSG_PREFIX << "Poco::Exception: " << ex.displayText();
+        //    LOGERROR(msg.str());
+        //}
+        catch (std::exception &ex)
+        {
+            status = TskModule::FAIL;
+            std::ostringstream msg;
+            msg << MSG_PREFIX << "std::exception: " << ex.what();
+            LOGERROR(msg.str());
+        }
+        catch (...)
+        {
+            status = TskModule::FAIL;
+            LOGERROR(MSG_PREFIX + "unrecognized exception");
+        }
+
+        return status;
     }
 }
