@@ -2553,7 +2553,7 @@ int TskImgDBSqlite::getModuleInfo(std::vector<TskModuleInfo> & moduleInfoList) c
         while (sqlite3_step(statement) == SQLITE_ROW) {
             moduleInfo.module_id = (uint64_t)sqlite3_column_int64(statement, 0);
             moduleInfo.module_name = (char *)sqlite3_column_text(statement, 1);
-            moduleInfo.module_description = (char *)sqlite3_column_int(statement, 2);
+            moduleInfo.module_description = (char *)sqlite3_column_text(statement, 2);
             moduleInfoList.push_back(moduleInfo);
         }
         sqlite3_finalize(statement);
