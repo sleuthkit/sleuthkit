@@ -32,6 +32,38 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 #include "tsk_fs.h"
 
 /*
+ * Implementation Notes:
+ *    - As inode, we use object id and a version number derived from the 
+ *      number of unique sequence ids for the object still left in the
+ *      file system.
+ *
+ *    - The version numbers start at 1 and increase as they get closer to
+ *      the the latest version.  Version number 0 is a special version
+ *      that is equivalent to the latest version (without having to know
+ *      the latest version number.)
+ *
+ *    - Since inodes are composed using the object id in the least 
+ *      significant bits and the version up higher, requesting the
+ *      inode that matches the object id you are looking for will
+ *      retreive the latest version of this object.
+ *
+ *    - Files always exist in the latest version of their parent directory 
+ *      only.
+ *
+ *    - Filenames are not unique even with attached version numbers, since
+ *      version numbers are namespaced by inode.
+ *
+ *    - The cache stores a lot of info via the structure.  As this is
+ *      used for investigations, we assume these decisions will be updated
+ *      to expose the most useful view of this log based file system.  TSK
+ *      doesn't seem have a real way to expose a versioned view of a log
+ *      based file system like this.  Shoehorning it into the framework
+ *      ends up dropping some information.  I looked at using resource 
+ *      streams as versions, but the abstraction breaks quickly.
+ *
+ */
+
+/*
  * Cache
  *
  *
@@ -450,6 +482,42 @@ yaffscache_objects_dump(FILE *fp, YAFFSFS_INFO *yfs)
 
     for(obj = yfs->cache_objects; obj != NULL; obj = obj->yco_next)
         yaffscache_object_dump(fp, obj);
+}
+
+static void
+yaffscache_objects_stats(YAFFSFS_INFO *yfs, 
+        unsigned int *obj_count,
+        uint32_t *obj_first, uint32_t *obj_last,
+        uint32_t *version_count,
+        uint32_t *version_first, uint32_t *version_last)
+{
+    YaffsCacheObject *obj;
+    YaffsCacheVersion *ver;
+
+    /* deleted and unlinked special objects don't have headers */
+    *obj_count = 2;
+    *obj_first = 0xffffffff;
+    *obj_last = 0;
+
+    *version_count = 0;
+    *version_first = 0xffffffff;
+    *version_last = 0;
+
+    for(obj = yfs->cache_objects; obj != NULL; obj = obj->yco_next) {
+        *obj_count += 1;
+        if (obj->yco_obj_id < *obj_first)
+            *obj_first = obj->yco_obj_id;
+        if (obj->yco_obj_id > *obj_last)
+            *obj_last = obj->yco_obj_id;
+
+        for(ver = obj->yco_latest; ver != NULL; ver = ver->ycv_prior) {
+            *version_count += 1;
+            if (ver->ycv_seq_number < *version_first)
+                *version_first = ver->ycv_seq_number;
+            if (ver->ycv_seq_number > *version_last)
+                *version_last = ver->ycv_seq_number;
+        }
+    }
 }
 
 static void
@@ -1313,10 +1381,37 @@ yaffsfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
 static uint8_t
 yaffsfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 {
+    YAFFSFS_INFO *yfs = (YAFFSFS_INFO *) fs;
+    time_t tmptime;
+    char timeBuf[128];
+
+    // clean up any error messages that are lying around
     tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr("fsstat not implemented yet for YAFFS");
-    return 1;
+
+    tsk_fprintf(hFile, "FILE SYSTEM INFORMATION\n");
+    tsk_fprintf(hFile, "--------------------------------------------\n");
+
+    tsk_fprintf(hFile, "File System Type: YAFFS2\n");
+    tsk_fprintf(hFile, "Page Size: %u\n", yfs->page_size);
+    tsk_fprintf(hFile, "Spare Size: %u\n", yfs->spare_size);
+
+    tsk_fprintf(hFile, "\nMETADATA INFORMATION\n");
+    tsk_fprintf(hFile, "--------------------------------------------\n");
+
+    unsigned int obj_count, version_count;
+    uint32_t obj_first, obj_last, version_first, version_last;
+    yaffscache_objects_stats(yfs, 
+            &obj_count, &obj_first, &obj_last,
+            &version_count, &version_first, &version_last);
+
+    tsk_fprintf(hFile, "Number of Allocated Objects: %u\n", obj_count);
+    tsk_fprintf(hFile, "Object Id Range: %" PRIu32 " - %" PRIu32 "\n",
+        obj_first, obj_last);
+    tsk_fprintf(hFile, "Number of Total Object Versions: %u\n", version_count);
+    tsk_fprintf(hFile, "Object Version Range: %" PRIu32 " - %" PRIu32 "\n",
+        version_first, version_last);
+
+    return 0;
 }
 
 /************************* istat *******************************/
@@ -1891,11 +1986,6 @@ yaffs2_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     }
     free(first_header);
 
-    /* DMB: TODO: Move this note to the top and start documenting all the ways this cuts corners/cheats. */
-    /* Implementation Notes:
-     *     - We use object_id's (within the OOB) as inodes
-     */
-
     fs->duname = "Chunk";
 
     /*
@@ -1958,6 +2048,19 @@ yaffs2_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fprintf(stderr, "yaffsfs_open: done building cache!\n");
 	//yaffscache_objects_dump(yaffsfs, stderr);
     }
+
+    TSK_FS_DIR *test_dir = tsk_fs_dir_open_meta(fs, fs->root_inum);
+    if (test_dir == NULL) {
+	yaffsfs_close(fs);
+
+	tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+        tsk_error_set_errstr("not a YAFFS file system (no root directory)");
+        if (tsk_verbose)
+            fprintf(stderr, "yaffsfs_open: invalid file system\n");
+        return NULL;
+    }
+    tsk_fs_dir_close(test_dir);
 
     return fs;
 }
