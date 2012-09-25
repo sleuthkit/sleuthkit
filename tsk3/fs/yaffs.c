@@ -14,7 +14,7 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 
 /**
  *\file yaffs.c
- * Contains the internal TSK yaffs file system functions.
+ * Contains the internal TSK YAFFS2 file system functions.
  */
 
 /* TCT
@@ -30,6 +30,12 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 #include "tsk_fs_i.h"
 #include "tsk_yaffs.h"
 #include "tsk_fs.h"
+
+/*
+ * Cache
+ *
+ *
+ */
 
 static TSK_RETVAL_ENUM
 yaffscache_obj_id_and_version_to_inode(uint32_t obj_id, uint32_t version_num, TSK_INUM_T *inode) {
@@ -54,7 +60,7 @@ yaffscache_inode_to_obj_id_and_version(TSK_INUM_T inode, uint32_t *obj_id, uint3
 }
 
 /*
- * NOTE: Should do it like yaffs2.git does -- sort by (seq_num, offset/block)
+ * Order it like yaffs2.git does -- sort by (seq_num, offset/block)
  */
 static int
 yaffscache_chunk_compare(YaffsCacheChunk *curr, uint32_t addee_obj_id, TSK_OFF_T addee_offset, uint32_t addee_seq_number)
@@ -464,21 +470,283 @@ yaffscache_chunks_free(YAFFSFS_INFO *yfs)
 
 
 
+/*
+ * Parsing and helper functions
+ *
+ *
+ */
+
+/**
+ * yaffsfs_read_header( ... )
+ *
+ */
+static uint8_t 
+yaffsfs_read_header( YAFFSFS_INFO *yfs, YaffsHeader ** header, TSK_OFF_T offset)
+{
+  unsigned char * hdr;
+  ssize_t cnt;
+  YaffsHeader * head;
+  TSK_FS_INFO *fs = &(yfs->fs_info);
+
+  if ((hdr = (unsigned char*) tsk_malloc( yfs->page_size )) == NULL)
+    {
+      return 1;
+    }
+
+  cnt = tsk_img_read(fs->img_info, offset, (char *) hdr,
+        yfs->page_size);
+  if ( cnt == -1 || cnt < yfs->page_size )
+    {
+      free(hdr);
+      return 1;
+    }
+
+  if ((head = (YaffsHeader*) tsk_malloc( sizeof(YaffsHeader) )) == NULL)
+    {
+      free(hdr);
+      return 1;
+    }
+
+  memcpy( &head->obj_type, hdr, 4);
+  memcpy( &head->parent_id, &hdr[4], 4);
+  memcpy( head->name, (char*) &hdr[0xA], YAFFS_HEADER_NAME_LENGTH );
+  memcpy( &head->file_mode, &hdr[0x10C], 4 );
+  memcpy( &head->user_id, &hdr[0x110], 4 );
+  memcpy( &head->group_id, &hdr[0x114], 4 );
+  memcpy( &head->atime, &hdr[0x118], 4 );
+  memcpy( &head->mtime, &hdr[0x11C], 4 );
+  memcpy( &head->ctime, &hdr[0x120], 4 );
+  memcpy( &head->file_size, &hdr[0x124], 4 );
+  memcpy( &head->equivalent_id, &hdr[0x128], 4 );
+  memcpy( head->alias, (char*) &hdr[0x12C], YAFFS_HEADER_ALIAS_LENGTH );
+
+  //memcpy( &head->rdev_mode, &hdr[0x1CC], 4 );
+  //memcpy( &head->win_ctime, &hdr[0x1D0], 8 );
+  //memcpy( &head->win_atime, &hdr[0x1D8], 8 );
+  //memcpy( &head->win_mtime, &hdr[0x1E0], 8 );
+  //memcpy( &head->inband_obj_id, &hdr[0x1E8], 4 );
+  //memcpy( &head->inband_is_shrink, &hdr[0x1EC], 4 );
+
+  // NOTE: This isn't in Android 3.3 kernel but is in YAFFS2 git
+  //memcpy( &head->file_size_high, &hdr[0x1F0], 4 );
+
+  free( hdr );
+
+  *header = head;
+  return 0;
+}
+
+/**
+ * Read and parse the YAFFS2 tags in the NAND spare bytes.
+ *
+ * @param info is a YAFFS fs handle
+ * @param spare YaffsSpare object to be populated
+ * @param offset, offset to read from
+ *
+ * @returns 0 on success and 1 on error
+ */
+static uint8_t 
+yaffsfs_read_spare( YAFFSFS_INFO *yfs, YaffsSpare ** spare, TSK_OFF_T offset )
+{
+  unsigned char * spr;
+  ssize_t cnt;
+  YaffsSpare * sp;
+  TSK_FS_INFO *fs = &(yfs->fs_info);
+
+  if ((spr = (unsigned char*) tsk_malloc( yfs->spare_size )) == NULL)
+    {
+      return 1;
+    }
+
+  if (yfs->spare_size < 46)
+    {
+      tsk_error_reset();
+      tsk_error_set_errno(TSK_ERR_FS_ARG);
+      tsk_error_set_errstr("yaffsfs_read_spare: spare size is too small");
+      free(spr);
+      return 1;
+    }
+
+  cnt = tsk_img_read(fs->img_info, offset, (char*) spr, yfs->spare_size);
+  if ( cnt == -1 || cnt < yfs->spare_size )
+    {
+      // couldn't read sufficient bytes...
+      if ( spare )
+        {
+          free(spr);
+	  *spare = NULL;
+        }
+      return 1;
+    }
+
+  if ((sp = (YaffsSpare*) tsk_malloc ( sizeof(YaffsSpare) )) == NULL)
+    {
+      return 1;
+    }
+
+  memset(sp, 0, sizeof(YaffsSpare));
+
+  /*
+   * Complete read of the YAFFS2 spare
+   */
+
+  /*
+   * NOTE: The layout of the tags in the spare was determined by looking at
+   *       nanddump images and the YAFFS2 sourcecode.  It doesn't match
+   *       older documentation, but appears to be correct for the dumps
+   *       that we have obtained.  Is this going to change often? Am I
+   *       just missing something?  I can't figure out what the first
+   *       30 bytes are used for. The layout, at least, matches what I see 
+   *       in the YAFFS2 and Android git repositories.
+   */
+
+  uint32_t seq_number;
+  uint32_t object_id;
+  uint32_t chunk_id;
+  uint32_t n_bytes;
+
+  memcpy(&seq_number, &spr[30], 4);
+  memcpy(&object_id, &spr[34], 4);
+  memcpy(&chunk_id, &spr[38], 4);
+  memcpy(&n_bytes, &spr[42], 4);
+
+  if ((YAFFS_SPARE_FLAGS_IS_HEADER & chunk_id) != 0)
+    {
+      sp->seq_number = seq_number;
+      sp->object_id = object_id & ~YAFFS_SPARE_OBJECT_TYPE_MASK;
+      sp->chunk_id = 0;
+      sp->n_bytes = n_bytes;
+      sp->extra_parent_id = chunk_id & YAFFS_SPARE_PARENT_ID_MASK;
+      sp->extra_object_type =
+        (object_id & YAFFS_SPARE_OBJECT_TYPE_MASK)
+          >> YAFFS_SPARE_OBJECT_TYPE_SHIFT;
+    }
+    else
+    {
+      sp->seq_number = seq_number;
+      sp->object_id = object_id;
+      sp->chunk_id = chunk_id;
+      sp->n_bytes = n_bytes;
+    }
+
+  free(spr);
+  *spare = sp;
+
+  return 0;
+}
+
+static uint8_t 
+yaffsfs_is_spare_valid(YAFFSFS_INFO *yfs, YaffsSpare *spare)
+{
+  if (spare == NULL)
+    {
+      return 1;
+    }
+
+  if ((spare->object_id > YAFFS_MAX_OBJECT_ID) ||
+      (spare->seq_number < YAFFS_LOWEST_SEQUENCE_NUMBER) ||
+      (spare->seq_number > YAFFS_HIGHEST_SEQUENCE_NUMBER))
+    {
+      return 1;
+    }
+
+  return 0;
+}
+
+static uint8_t 
+yaffsfs_read_chunk( YAFFSFS_INFO * yfs,
+        YaffsHeader **header, YaffsSpare **spare, TSK_OFF_T offset)
+{
+  TSK_OFF_T header_offset = offset;
+  TSK_OFF_T spare_offset = offset + yfs->page_size; 
+
+  if (header == NULL || spare == NULL)
+    {
+      return 1;
+    }
+
+  if (yaffsfs_read_header(yfs, header, header_offset) != 0)
+    {
+      return 1;
+    }
+
+  if (yaffsfs_read_spare(yfs, spare, spare_offset) != 0)
+    {
+      free(*header);
+      *header = NULL;
+      return 1;
+    }
+
+  return 0;
+}
+
+/**
+ */
+static uint8_t 
+yaffsfs_cache_fs( YAFFSFS_INFO * yfs )
+{
+  uint8_t status = TSK_OK;
+  size_t offset = 0;
+
+  if (yfs->cache_objects)
+    return 0;
+
+  uint32_t nentries = 0;
+
+  YaffsSpare * spare = NULL;
+  offset = 0;
+  while ( 1 )
+    {
+      //if (tsk_verbose)
+      //  fprintf(stderr, "yaffsfs_cache_fs: reading @ offset 0x%08lx\n", offset);
+
+      status = yaffsfs_read_spare( yfs, &spare, offset + yfs->page_size);
+      if (status != TSK_OK)
+        {
+          break;
+        }
+
+      if (yaffsfs_is_spare_valid(yfs, spare) == TSK_OK)
+        {
+          //if (tsk_verbose)
+          //  fprintf(stderr, "yaffsfs_cache_fs: valid spare\n");
+
+          yaffscache_chunk_add(yfs,
+              offset, 
+              spare->seq_number, 
+              spare->object_id, 
+              spare->chunk_id, 
+              spare->extra_parent_id);
+
+          //if (tsk_verbose)
+          //  fprintf(stderr, "yaffsfs_cache_fs: %08x %08x %08x\n", spare->object_id, spare->chunk_id, spare->seq_number);
+        }
+
+      free(spare);
+      spare = NULL;
+
+      ++nentries;
+      offset += yfs->page_size + yfs->spare_size;
+    }
+
+  if (tsk_verbose)
+    fprintf(stderr, "yaffsfs_cache_fs: read %d entries\n",nentries);
+
+  if (tsk_verbose)
+    fprintf(stderr, "yaffsfs_cache_fs: started processing chunks for version cache...\n");
+  yaffscache_versions_compute(yfs);
+  if (tsk_verbose)
+    fprintf(stderr, "yaffsfs_cache_fs: done version cache!\n");
+
+  return TSK_OK;
+}
 
 
-
-
-
-
-static uint8_t yaffsfs_cache_fs( YAFFSFS_INFO * yfs );
-static uint8_t yaffsfs_read_header( YAFFSFS_INFO *yfs, YaffsHeader ** header, TSK_OFF_T offset);
-static uint8_t yaffsfs_read_spare( YAFFSFS_INFO *yfs, YaffsSpare ** spare, TSK_OFF_T offset);
-static uint8_t yaffsfs_is_spare_valid(YAFFSFS_INFO *yfs, YaffsSpare *spare);
-static uint8_t yaffsfs_read_chunk( YAFFSFS_INFO * yfs,
-        YaffsHeader **header, YaffsSpare **spare, TSK_OFF_T offset);
-
-
-
+/*
+ * TSK integration
+ *
+ *
+ */
 
 static uint8_t
 yaffs_make_directory(   YAFFSFS_INFO * yaffsfs, TSK_FS_FILE * a_fs_file, 
@@ -1084,7 +1352,6 @@ print_addr_act(YAFFSFS_INFO * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     return TSK_WALK_CONT;
 }
 
-
 /**
  * Print details on a specific file to a file handle.
  *
@@ -1181,9 +1448,7 @@ yaffsfs_istat(TSK_FS_INFO *fs, FILE * hFile, TSK_INUM_T inum,
     return 0;
 }
 
-
 /* yaffsfs_close - close an yaffsfs file system */
-
 static void
 yaffsfs_close(TSK_FS_INFO *fs)
 {
@@ -1199,7 +1464,6 @@ yaffsfs_close(TSK_FS_INFO *fs)
 
     tsk_fs_free(fs);
 }
-
 
 typedef struct _dir_open_cb_args {
   YAFFSFS_INFO *yfs;
@@ -1581,271 +1845,6 @@ yaffsfs_jopen(TSK_FS_INFO *info, TSK_INUM_T inum)
 }
 
 /**
- * yaffsfs_read_header( ... )
- *
- */
-static uint8_t 
-yaffsfs_read_header( YAFFSFS_INFO *yfs, YaffsHeader ** header, TSK_OFF_T offset)
-{
-  unsigned char * hdr;
-  ssize_t cnt;
-  YaffsHeader * head;
-  TSK_FS_INFO *fs = &(yfs->fs_info);
-
-  if ((hdr = (unsigned char*) tsk_malloc( yfs->page_size )) == NULL)
-    {
-      return 1;
-    }
-
-  cnt = tsk_img_read(fs->img_info, offset, (char *) hdr,
-        yfs->page_size);
-  if ( cnt == -1 || cnt < yfs->page_size )
-    {
-      free(hdr);
-      return 1;
-    }
-
-  if ((head = (YaffsHeader*) tsk_malloc( sizeof(YaffsHeader) )) == NULL)
-    {
-      free(hdr);
-      return 1;
-    }
-
-  memcpy( &head->obj_type, hdr, 4);
-  memcpy( &head->parent_id, &hdr[4], 4);
-  memcpy( head->name, (char*) &hdr[0xA], YAFFS_HEADER_NAME_LENGTH );
-  memcpy( &head->file_mode, &hdr[0x10C], 4 );
-  memcpy( &head->user_id, &hdr[0x110], 4 );
-  memcpy( &head->group_id, &hdr[0x114], 4 );
-  memcpy( &head->atime, &hdr[0x118], 4 );
-  memcpy( &head->mtime, &hdr[0x11C], 4 );
-  memcpy( &head->ctime, &hdr[0x120], 4 );
-  memcpy( &head->file_size, &hdr[0x124], 4 );
-  memcpy( &head->equivalent_id, &hdr[0x128], 4 );
-  memcpy( head->alias, (char*) &hdr[0x12C], YAFFS_HEADER_ALIAS_LENGTH );
-
-  //memcpy( &head->rdev_mode, &hdr[0x1CC], 4 );
-  //memcpy( &head->win_ctime, &hdr[0x1D0], 8 );
-  //memcpy( &head->win_atime, &hdr[0x1D8], 8 );
-  //memcpy( &head->win_mtime, &hdr[0x1E0], 8 );
-  //memcpy( &head->inband_obj_id, &hdr[0x1E8], 4 );
-  //memcpy( &head->inband_is_shrink, &hdr[0x1EC], 4 );
-
-  // NOTE: This isn't in Android 3.3 kernel but is in YAFFS2 git
-  //memcpy( &head->file_size_high, &hdr[0x1F0], 4 );
-
-  free( hdr );
-
-  *header = head;
-  return 0;
-}
-
-/**
- * Read and parse the YAFFS2 tags in the NAND spare bytes.
- *
- * @param info is a YAFFS fs handle
- * @param spare YaffsSpare object to be populated
- * @param offset, offset to read from
- *
- * @returns 0 on success and 1 on error
- */
-static uint8_t 
-yaffsfs_read_spare( YAFFSFS_INFO *yfs, YaffsSpare ** spare, TSK_OFF_T offset )
-{
-  unsigned char * spr;
-  ssize_t cnt;
-  YaffsSpare * sp;
-  TSK_FS_INFO *fs = &(yfs->fs_info);
-
-  if ((spr = (unsigned char*) tsk_malloc( yfs->spare_size )) == NULL)
-    {
-      return 1;
-    }
-
-  if (yfs->spare_size < 46)
-    {
-      tsk_error_reset();
-      tsk_error_set_errno(TSK_ERR_FS_ARG);
-      tsk_error_set_errstr("yaffsfs_read_spare: spare size is too small");
-      free(spr);
-      return 1;
-    }
-
-  cnt = tsk_img_read(fs->img_info, offset, (char*) spr, yfs->spare_size);
-  if ( cnt == -1 || cnt < yfs->spare_size )
-    {
-      // couldn't read sufficient bytes...
-      if ( spare )
-        {
-          free(spr);
-	  *spare = NULL;
-        }
-      return 1;
-    }
-
-  if ((sp = (YaffsSpare*) tsk_malloc ( sizeof(YaffsSpare) )) == NULL)
-    {
-      return 1;
-    }
-
-  memset(sp, 0, sizeof(YaffsSpare));
-
-  /*
-   * Complete read of the YAFFS2 spare
-   */
-
-  /*
-   * NOTE: The layout of the tags in the spare was determined by looking at
-   *       nanddump images and the YAFFS2 sourcecode.  It doesn't match
-   *       older documentation, but appears to be correct for the dumps
-   *       that we have obtained.  Is this going to change often? Am I
-   *       just missing something?  I can't figure out what the first
-   *       30 bytes are used for. The layout, at least, matches what I see 
-   *       in the YAFFS2 and Android git repositories.
-   */
-
-  uint32_t seq_number;
-  uint32_t object_id;
-  uint32_t chunk_id;
-  uint32_t n_bytes;
-
-  memcpy(&seq_number, &spr[30], 4);
-  memcpy(&object_id, &spr[34], 4);
-  memcpy(&chunk_id, &spr[38], 4);
-  memcpy(&n_bytes, &spr[42], 4);
-
-  if ((YAFFS_SPARE_FLAGS_IS_HEADER & chunk_id) != 0)
-    {
-      sp->seq_number = seq_number;
-      sp->object_id = object_id & ~YAFFS_SPARE_OBJECT_TYPE_MASK;
-      sp->chunk_id = 0;
-      sp->n_bytes = n_bytes;
-      sp->extra_parent_id = chunk_id & YAFFS_SPARE_PARENT_ID_MASK;
-      sp->extra_object_type =
-        (object_id & YAFFS_SPARE_OBJECT_TYPE_MASK)
-          >> YAFFS_SPARE_OBJECT_TYPE_SHIFT;
-    }
-    else
-    {
-      sp->seq_number = seq_number;
-      sp->object_id = object_id;
-      sp->chunk_id = chunk_id;
-      sp->n_bytes = n_bytes;
-    }
-
-  free(spr);
-  *spare = sp;
-
-  return 0;
-}
-
-static uint8_t 
-yaffsfs_is_spare_valid(YAFFSFS_INFO *yfs, YaffsSpare *spare)
-{
-  if (spare == NULL)
-    {
-      return 1;
-    }
-
-  if ((spare->object_id > YAFFS_MAX_OBJECT_ID) ||
-      (spare->seq_number < YAFFS_LOWEST_SEQUENCE_NUMBER) ||
-      (spare->seq_number > YAFFS_HIGHEST_SEQUENCE_NUMBER))
-    {
-      return 1;
-    }
-
-  return 0;
-}
-
-static uint8_t 
-yaffsfs_read_chunk( YAFFSFS_INFO * yfs,
-        YaffsHeader **header, YaffsSpare **spare, TSK_OFF_T offset)
-{
-  TSK_OFF_T header_offset = offset;
-  TSK_OFF_T spare_offset = offset + yfs->page_size; 
-
-  if (header == NULL || spare == NULL)
-    {
-      return 1;
-    }
-
-  if (yaffsfs_read_header(yfs, header, header_offset) != 0)
-    {
-      return 1;
-    }
-
-  if (yaffsfs_read_spare(yfs, spare, spare_offset) != 0)
-    {
-      free(*header);
-      *header = NULL;
-      return 1;
-    }
-
-  return 0;
-}
-
-/**
- */
-static uint8_t 
-yaffsfs_cache_fs( YAFFSFS_INFO * yfs )
-{
-  uint8_t status = TSK_OK;
-  size_t offset = 0;
-
-  if (yfs->cache_objects)
-    return 0;
-
-  uint32_t nentries = 0;
-
-  YaffsSpare * spare = NULL;
-  offset = 0;
-  while ( 1 )
-    {
-      //if (tsk_verbose)
-      //  fprintf(stderr, "yaffsfs_cache_fs: reading @ offset 0x%08lx\n", offset);
-
-      status = yaffsfs_read_spare( yfs, &spare, offset + yfs->page_size);
-      if (status != TSK_OK)
-        {
-          break;
-        }
-
-      if (yaffsfs_is_spare_valid(yfs, spare) == TSK_OK)
-        {
-          //if (tsk_verbose)
-          //  fprintf(stderr, "yaffsfs_cache_fs: valid spare\n");
-
-          yaffscache_chunk_add(yfs,
-              offset, 
-              spare->seq_number, 
-              spare->object_id, 
-              spare->chunk_id, 
-              spare->extra_parent_id);
-
-          //if (tsk_verbose)
-          //  fprintf(stderr, "yaffsfs_cache_fs: %08x %08x %08x\n", spare->object_id, spare->chunk_id, spare->seq_number);
-        }
-
-      free(spare);
-      spare = NULL;
-
-      ++nentries;
-      offset += yfs->page_size + yfs->spare_size;
-    }
-
-  if (tsk_verbose)
-    fprintf(stderr, "yaffsfs_cache_fs: read %d entries\n",nentries);
-
-  if (tsk_verbose)
-    fprintf(stderr, "yaffsfs_cache_fs: started processing chunks for version cache...\n");
-  yaffscache_versions_compute(yfs);
-  if (tsk_verbose)
-    fprintf(stderr, "yaffsfs_cache_fs: done version cache!\n");
-
-  return TSK_OK;
-}
-
-/**
  * \internal
  * Open part of a disk image as a Yaffs/2 file system.
  *
@@ -1957,20 +1956,24 @@ yaffs2_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fs->jopen = yaffsfs_jopen;
 
     /* Initialize the caches */
-    //tsk_init_lock(&yaffsfs->lock);
     if (tsk_verbose)
         fprintf(stderr, "yaffsfs_open: building cache...\n");
 
     /* Build cache */
+    /* NOTE: The only modifications to the cache happen here, during at 
+     *       the open. Should be fine with no lock, even if access to the
+     *       cache is shared among threads.
+     */
+    //tsk_init_lock(&yaffsfs->lock);
     yaffsfs->cache_objects = NULL;
     yaffsfs->cache_chunks_head = NULL;
     yaffsfs->cache_chunks_tail = NULL;
     yaffsfs_cache_fs(yaffsfs);
 
-    if (tsk_verbose)
+    if (tsk_verbose) {
         fprintf(stderr, "yaffsfs_open: done building cache!\n");
-
-    //yaffscache_objects_dump(yaffsfs, stderr);
+	//yaffscache_objects_dump(yaffsfs, stderr);
+    }
 
     return fs;
 }
