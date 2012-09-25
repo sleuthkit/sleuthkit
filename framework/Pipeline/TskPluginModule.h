@@ -51,6 +51,10 @@ public:
     virtual void checkInterface() = 0;
 
 protected:
+    static const std::string GET_COMPILER_SYMBOL;
+    static const std::string GET_COMPILER_VERSION_SYMBOL;
+    static const std::string GET_FRAMEWORK_VERSION_SYMBOL;
+    static const std::string GET_BUILD_TYPE_SYMBOL;
     static const std::string NAME_SYMBOL;
     static const std::string DESCRIPTION_SYMBOL;
     static const std::string VERSION_SYMBOL;
@@ -84,6 +88,14 @@ protected:
     void *getSymbol(const std::string symbol);
 
 private:
+    /**
+     * Checks whether or not the module library was compiled with the same
+     * framework library version (major and minor version number components), 
+     * compiler, compiler version, and build target as the disk image 
+     * processing system that is loading the module.
+     */
+   void validateLibraryVersionInfo();
+
     Poco::SharedLibrary m_sharedLibrary;
 };
 

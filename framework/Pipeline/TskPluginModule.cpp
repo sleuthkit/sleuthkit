@@ -20,14 +20,20 @@
 #include "Services/TskServices.h"
 #include "Utilities/TskException.h"
 #include "File/TskFileManagerImpl.h"
+#include "TskVersionInfo.h"
 
 // Poco includes
 #include "Poco/String.h"
 #include "Poco/Path.h"
 
-// C/C++ library includes
+// C/C++ library includes5
 #include <sstream>
+#include <string>
 
+const std::string TskPluginModule::GET_COMPILER_SYMBOL = "getCompiler";
+const std::string TskPluginModule::GET_COMPILER_VERSION_SYMBOL = "getCompilerVersion";
+const std::string TskPluginModule::GET_FRAMEWORK_VERSION_SYMBOL = "getFrameWorkVersion";
+const std::string TskPluginModule::GET_BUILD_TYPE_SYMBOL = "getBuildType";
 const std::string TskPluginModule::NAME_SYMBOL = "name";
 const std::string TskPluginModule::DESCRIPTION_SYMBOL = "description";
 const std::string TskPluginModule::VERSION_SYMBOL = "version";
@@ -64,6 +70,9 @@ void TskPluginModule::setPath(const std::string& location)
 
         if (m_sharedLibrary.isLoaded())
         {
+           validateLibraryVersionInfo();
+
+           // TODO: Eliminate code duplication that follows.
            typedef const char* (*MetaDataFunc)();
            MetaDataFunc metaDataFunc = NULL;
 
@@ -179,4 +188,34 @@ void *TskPluginModule::getSymbol(const std::string symbol)
 bool TskPluginModule::hasSymbol(const std::string symbol) 
 {
     return (m_sharedLibrary.hasSymbol(symbol));
+}
+
+void TskPluginModule::validateLibraryVersionInfo()
+{
+   if (!hasSymbol(GET_FRAMEWORK_VERSION_SYMBOL) || !hasSymbol(GET_COMPILER_SYMBOL) || !hasSymbol(GET_COMPILER_VERSION_SYMBOL) || !hasSymbol(GET_BUILD_TYPE_SYMBOL))
+   {
+      throw TskException("version info interface not implemented");
+   }
+
+   int frameworkVersion = TskVersionInfo::getFrameworkVersion();
+   int moduleFrameworkVersion = static_cast<int(*)()>(m_sharedLibrary.getSymbol(TskPluginModule::GET_FRAMEWORK_VERSION_SYMBOL))();
+   if (((frameworkVersion >> 16) & 0xFFFF)  != (( moduleFrameworkVersion >> 16) & 0xFFFF))
+   {
+      throw TskException("TskPluginModule::validateLibraryVersionInfo : framework version mismatch");
+   }
+
+   if (TskVersionInfo::getCompiler() != static_cast<TskVersionInfo::Compiler(*)()>(m_sharedLibrary.getSymbol(TskPluginModule::GET_COMPILER_SYMBOL))())
+   {
+      throw TskException("TskPluginModule::validateLibraryVersionInfo : compiler mismatch");
+   }
+
+   if (TskVersionInfo::getCompilerVersion() != static_cast<int(*)()>(m_sharedLibrary.getSymbol(TskPluginModule::GET_COMPILER_VERSION_SYMBOL))())
+   {
+      throw TskException("TskPluginModule::validateLibraryVersionInfo : compiler version mismatch");
+   }
+
+   if (TskVersionInfo::getBuildType() != static_cast<int(*)()>(m_sharedLibrary.getSymbol(TskPluginModule::GET_BUILD_TYPE_SYMBOL))())
+   {
+      throw TskException("TskPluginModule::validateLibraryVersionInfo : build target mismatch");
+   }
 }
