@@ -22,7 +22,9 @@ framework/win32/*/*.user
 
 # IntelliSense data
 /win32/*.ncb
+/win32/*.sdf
 framework/win32/framework/*.ncb
+framework/win32/framework/*.sdf
 
 # Visual Studio user options
 /win32/tsk-win.suo
