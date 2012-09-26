@@ -226,5 +226,8 @@
     <ClInclude Include="..\..\Utilities\UnallocRun.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\TskVersionInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
