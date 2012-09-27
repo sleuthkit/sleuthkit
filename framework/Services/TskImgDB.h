@@ -13,7 +13,7 @@
 #ifndef _TSK_IMGDB_H
 #define _TSK_IMGDB_H
 
-#define IMGDB_SCHEMA_VERSION "1.0"
+#define IMGDB_SCHEMA_VERSION "1.5"
 
 #include <string> // to get std::wstring
 #include <list>
