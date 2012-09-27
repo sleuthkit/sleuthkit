@@ -73,7 +73,7 @@ This function will be called for each file that is sent through the file analysi
 <pre>TskModule::Status TSK_MODULE_EXPORT run(TskFile *pFile);</pre>
 
 The <tt>run</tt> function is passed a pointer to a TskFile object that can be used to access both the metadata and the content associated with the file to analyze, as explained in \ref mod_stuff_file. 
-The TskFile object addressed by the pointer is managed by the framework and therefore a module must not delete it.  
+Note that the framework calls the <tt>open</tt> member function on the TskFile object for the module and the object addressed by the pointer is managed by the framework and therefore a module must not delete it.  
 
 The <tt>run</tt> function should return either TskModule::OK, TskModule::FAIL, or TskModule::STOP.  
 TskModule::OK should be returned if the module successfully analyzed the file or if it decided that it did not need to analyze the file.  
@@ -171,7 +171,17 @@ In particular, the TskImgDB::getFileIds() and TskImgDB::getFileCount() methods a
 </pre>
 Notice that the condition is simply a SQL "WHERE" clause. 
 The "dir_type = TSK_FS_NAME_TYPE_REG" part of the condition limits the query to files rather than directories.
-Please refer to the schema described at http://wiki.sleuthkit.org/index.php?title=SQLite_Database_v2_Schema for details on the tables and columns that can be queried. 
+
+The condition can be any SQL clause that can be appended to a SQL SELECT statement. 
+The next code snippet specifies a condition that includes a JOIN and an ORDER BY clause:
+
+<pre>
+    std::ostringstream condition;
+    condition << " JOIN file_hashes ON files.file_id = file_hashes.file_id WHERE file_hashes.known = " << TskImgDB::IMGDB_FILES_KNOWN_BAD << " ORDER BY files.file_id";
+    std::vector<uint64_t> fileIds = TskServices::Instance().getImgDB().getFileIds(condition.str());
+</pre>
+
+Please refer to \ref img_db_schema_v1_5_page for details on the tables and columns that can be queried. 
 
 Once you have a file id, you can get the corresponding TskFile object from the TskFileManager service using the TskFileManager::getFile() method. 
 
