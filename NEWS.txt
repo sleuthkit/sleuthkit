@@ -23,6 +23,7 @@ New Features:
 - Updated HFS+ code from ATC-NY. 
 - FAT orphan file improvements to reduce false positives. 
 - TskAuto better reports errors. 
+- Upgrade build projects from Visual Studio 2008 to 2010.
 
 Bug Fixes:
 - Relaxed checking when conflict exists between DOS and GPT partitions.
