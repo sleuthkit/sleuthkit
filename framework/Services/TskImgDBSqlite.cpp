@@ -1910,6 +1910,8 @@ std::vector<uint64_t> TskImgDBSqlite::getFileIdsWorker(std::string tableName, co
 /**
  * Get the list of file ids that match the given criteria.
  * The given string will be appended to "select files.file_id from files".
+ * See \ref img_db_schema_v1_5_page for tables and columns to include in 
+ * the selection criteria.
  *
  * @param condition Must be a valid SQL string defining the selection criteria.
  * @returns The collection of file ids matching the selection criteria. Throws
