@@ -16,7 +16,7 @@ if __name__ == "__main__":
         srcFileContents = srcFile.read()
         
     with open(os.path.join(args[1], args[2] + '.dox'), 'w') as doxFile:
-        doxFile.write('/*! \page ' + args[2] + ' ' + args[3] + '\n\n')
+        doxFile.write('/*! \\page ' + args[2] + '_page ' + args[3] + '\n\n\\code{.xml}\n\n')
         doxFile.write(srcFileContents)
-        doxFile.write('\n\n*/')
+        doxFile.write('\n\n\\endcode\n\n*/')
 
