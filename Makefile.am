@@ -1,12 +1,11 @@
-ACLOCAL_AMFLAGS = -I m4
-
-# Files that we want to include in the dist
+# File that we want to include in the dist
 EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     licenses/GNU-COPYING licenses/IBM-LICENSE licenses/cpl1.0.txt \
     m4/*.m4 \
     docs/README.txt \
     packages/sleuthkit.spec \
     win32/BUILDING.txt \
+    win32/NOTES.txt \
     win32/*/*.vcproj \
     win32/tsk-win.sln \
     win32/docs/* \
