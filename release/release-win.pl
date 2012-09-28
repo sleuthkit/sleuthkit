@@ -106,6 +106,7 @@ sub update_code {
 
 
 	if ($no_tag == 0) {
+		`git submodule update`;
 		# Make sure we have no changes in the current tree
 		exec_pipe(*OUT, "git status -s | grep \"^ M\"");
 		my $foo = read_pipe_line(*OUT);

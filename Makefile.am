@@ -28,7 +28,6 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     framework/Pipeline/*.cpp \
     framework/Pipeline/*.h \
     framework/SampleConfig/*.xml \
-    framework/SampleModules/* \
     framework/Services/*.cpp \
     framework/Services/*.h \
     framework/TskModules/* \
@@ -39,7 +38,8 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     framework/tsk_analyzeimg/*.cpp \
     framework/tsk_validatepipeline/*.cpp \
     framework/win32/*/*.vcproj \
-    framework/win32/*/*.sln
+    framework/win32/*/*.sln \
+    framework/win32/Makefile
 
 CLEANFILES = tsk3/tsk_incs.h
 
