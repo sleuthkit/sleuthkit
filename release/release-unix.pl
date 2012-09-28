@@ -104,7 +104,7 @@ sub clean_src() {
 sub verify_precheckin {
 
     #system ("git pull");
-    #    system ("git submodule update");
+    system ("git submodule update");
 
     print "Verifying everything is checked in\n";
     exec_pipe(*OUT, "git status -s | grep \"^ M\"");
