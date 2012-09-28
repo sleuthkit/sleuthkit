@@ -109,7 +109,7 @@ public:
 
         /** 
          * Directory where unallocated sectors image files are stored prior to
-         * carving. Defaults to #SYSTEM_OUT_DIR#\Carving. 
+         * carving. Defaults to #SYSTEM_OUT_DIR#\\Carving. 
          */ 
         CARVE_DIR,
 

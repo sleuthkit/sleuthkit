@@ -63,7 +63,7 @@ When configuring a pipeline module pay particular attention to the following det
 - Redirected output on executable modules will be appended to the specified output file. 
 
 - Attempting to write output to a shared file may result in file access errors when multiple framework sessions (in a distributed environment) attempt to write data to the same file. 
-You can avoid this by using the #UNIQUE_ID" macro to construct the file name (see \ref pipe_config_macro for more on config file macros).
+You can avoid this by using the TskSystemProperties::UNIQUE_ID macro to construct the file name (see \ref pipe_config_macro for more on config file macros).
 
 - You must escape the following characters if you wish to include them in the command line:
 

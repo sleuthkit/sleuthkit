@@ -2536,7 +2536,7 @@ int TskImgDBSqlite::setModuleStatus(uint64_t file_id, int module_id, int status)
 
 /**
  * Get a list of TskModuleStatus.
- * @param moduleStatusList A list of TskModuleStatus (output)
+ * @param moduleInfoList A list of TskModuleStatus (output)
  * @returns 0 on success, -1 on error.
 */
 int TskImgDBSqlite::getModuleInfo(std::vector<TskModuleInfo> & moduleInfoList) const
