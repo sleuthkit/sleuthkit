@@ -15,8 +15,14 @@ if __name__ == "__main__":
     with open(args[0], 'r') as srcFile:
         srcFileContents = srcFile.read()
         
+    (fileName, fileExt) = os.path.splitext(args[0])
+        
     with open(os.path.join(args[1], args[2] + '.dox'), 'w') as doxFile:
-        doxFile.write('/*! \\page ' + args[2] + '_page ' + args[3] + '\n\n\\code{.xml}\n\n')
+        doxFile.write('/*! \\page ' + args[2] + '_page ' + args[3] + '\n\n')
+        if fileExt is None:
+            doxFile.write('\\code\n\n')
+        else:
+            doxFile.write('\\code{' + fileExt + '}\n\n')
         doxFile.write(srcFileContents)
         doxFile.write('\n\n\\endcode\n\n*/')
 
