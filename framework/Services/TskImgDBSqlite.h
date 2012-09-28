@@ -12,8 +12,6 @@
 #ifndef _TSK_IMGDBSQLITE_H
 #define _TSK_IMGDBSQLITE_H
 
-#define IMGDB_SCHEMA_VERSION "1.0"
-
 // System includes
 #include <string> // to get std::wstring
 #include <list>
