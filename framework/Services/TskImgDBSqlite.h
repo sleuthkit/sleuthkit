@@ -12,8 +12,6 @@
 #ifndef _TSK_IMGDBSQLITE_H
 #define _TSK_IMGDBSQLITE_H
 
-#define IMGDB_SCHEMA_VERSION "1.0"
-
 // System includes
 #include <string> // to get std::wstring
 #include <list>
@@ -105,6 +103,7 @@ public:
 
     virtual int addModule(const std::string& name, const std::string& description, int & moduleId);
     virtual int setModuleStatus(uint64_t file_id, int module_id, int status);
+	virtual int getModuleInfo(std::vector<TskModuleInfo> & moduleInfoList) const;
     virtual int getModuleErrors(std::vector<TskModuleStatus> & moduleStatusList) const;
     virtual std::string getFileName(uint64_t file_id) const;
 

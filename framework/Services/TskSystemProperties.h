@@ -80,8 +80,20 @@ public:
         OUT_DIR,
 
         /** 
+         * The output directory for the executing program. Defaults to 
+         * #OUT_DIR#/SystemOutput.
+         */
+        SYSTEM_OUT_DIR,
+
+        /** 
+         * The output directory for plug-in and executable modules. Defaults to 
+         * #OUT_DIR#/ModuleOutput.
+         */
+        MODULE_OUT_DIR,
+
+        /** 
          * Directory where system logs are written. Defaults to 
-         * #OUT_DIR#/Logs. 
+         * #SYSTEM_OUT_DIR#/Logs. 
          */
         LOG_DIR,
 
@@ -97,7 +109,7 @@ public:
 
         /** 
          * Directory where unallocated sectors image files are stored prior to
-         * carving. Defaults to #OUT_DIR#\Carving. 
+         * carving. Defaults to #SYSTEM_OUT_DIR#\Carving. 
          */ 
         CARVE_DIR,
 

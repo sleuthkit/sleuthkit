@@ -39,6 +39,7 @@
 
 const std::string TskPipelineManager::FILE_ANALYSIS_PIPELINE = "FileAnalysis";
 const std::string TskPipelineManager::REPORTING_PIPELINE = "Report";
+const std::string TskPipelineManager::POST_PROCESSING_PIPELINE = "PostProcessing";
 const std::string TskPipelineManager::PIPELINE_ELEMENT = "PIPELINE";
 const std::string TskPipelineManager::PIPELINE_TYPE = "type";
 
@@ -99,7 +100,7 @@ TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType
         TskPipeline * pipeline;
         if (pipelineType == FILE_ANALYSIS_PIPELINE)
             pipeline = new TskFileAnalysisPipeline();
-        else if (pipelineType == REPORTING_PIPELINE)
+        else if (pipelineType == REPORTING_PIPELINE || pipelineType == POST_PROCESSING_PIPELINE)
             pipeline = new TskReportPipeline();
         else
             throw TskException("Unsupported pipeline type.");
@@ -111,26 +112,37 @@ TskPipeline * TskPipelineManager::createPipeline(const std::string &pipelineType
             Poco::XML::Node * pNode = pipelines->item(i);
             Poco::XML::Element* pElem = dynamic_cast<Poco::XML::Element*>(pNode);
 
-            if (pElem && pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE) == pipelineType)
+            if (pElem)
             {
-                // quick sanity check to verify that there is only one pipeline in the config file for this type
-                for (unsigned long i2 = i+1; i2 < pipelines->length(); i2++) {
-                    Poco::XML::Node * pNode2 = pipelines->item(i2);
-                    Poco::XML::Element* pElem2 = dynamic_cast<Poco::XML::Element*>(pNode2);
+                std::string xmlPipelineType = pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE);
 
-                    if (pElem2 && pElem2->getAttribute(TskPipelineManager::PIPELINE_TYPE) == pipelineType) {
-                        LOGERROR(L"TskPipelineManager::createPipeline: Multiple pipelines of the same type exist");
-                        throw TskException ("Error creating pipeline");
+                // The following conditions are required because we want to be able to use 
+                // "PostProcessing" and "Report" to be used interchangeably (at least for the moment).
+                // Note that the sanity check below will not catch the case where there are both
+                // "PostProcessing" and "Report" pipelines in the configuration file.
+                if ((xmlPipelineType == pipelineType) ||
+                    (pipelineType == REPORTING_PIPELINE && xmlPipelineType == POST_PROCESSING_PIPELINE) ||
+                    (pipelineType == POST_PROCESSING_PIPELINE && xmlPipelineType == REPORTING_PIPELINE))
+                {
+                    // quick sanity check to verify that there is only one pipeline in the config file for this type
+                    for (unsigned long i2 = i+1; i2 < pipelines->length(); i2++) {
+                        Poco::XML::Node * pNode2 = pipelines->item(i2);
+                        Poco::XML::Element* pElem2 = dynamic_cast<Poco::XML::Element*>(pNode2);
+
+                        if (pElem2 && pElem2->getAttribute(TskPipelineManager::PIPELINE_TYPE) == pipelineType) {
+                            LOGERROR(L"TskPipelineManager::createPipeline: Multiple pipelines of the same type exist");
+                            throw TskException ("Error creating pipeline");
+                        }
                     }
+                    // We found the right pipeline so initialize it.
+                    Poco::XML::DOMWriter writer;
+                    std::ostringstream pipelineXml;
+                    writer.writeNode(pipelineXml, pNode);
+
+                    pipeline->initialize(pipelineXml.str());
+
+                    return pipeline;
                 }
-                // We found the right pipeline so initialize it.
-                Poco::XML::DOMWriter writer;
-                std::ostringstream pipelineXml;
-                writer.writeNode(pipelineXml, pNode);
-
-                pipeline->initialize(pipelineXml.str());
-
-                return pipeline;
             }
         }
     }

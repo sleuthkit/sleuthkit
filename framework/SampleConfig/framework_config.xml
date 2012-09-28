@@ -3,9 +3,11 @@
 <!-- For more information please consult the TskSystemProperties::PredefinedProperty member enumeration documentation at http://www.sleuthkit.org/sleuthkit/docs/framework-docs/classTskSystemProperties.html -->
 <TSK_FRAMEWORK_CONFIG>
   <!-- <PROG_DIR>path</PROG_DIR> -->
-  <!-- <CONFIG_DIR>path</CONFIG_DIR> -->
-  <!-- <MODULE_DIR>path</MODULE_DIR> -->
+  <!-- <CONFIG_DIR>absolute path or #PROG_DIR#\... </CONFIG_DIR> -->
+  <!-- <MODULE_DIR>absolute path or #PROG_DIR#\... </MODULE_DIR> -->
   <!-- <OUT_DIR>path</OUT_DIR> -->
+  <!-- <SYSTEM_OUT_DIR>path</SYSTEM_OUT_DIR> -->
+  <!-- <MODULE_OUT_DIR>path</MODULE_OUT_DIR> -->
   <!-- <LOG_DIR>path</LOG_DIR> -->
   <!-- <DB_HOST>host</DB_HOST> -->
   <!-- <DB_PORT>port</DB_PORT> -->

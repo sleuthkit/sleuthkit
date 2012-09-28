@@ -189,15 +189,27 @@ int main(int argc, char **argv1)
         return 1;
     }
 
-    if (makeDir(outDirPath.c_str())) {
-        return 1;
-    }
-
     // @@@ Not UNIX-friendly
     SetSystemPropertyW(TskSystemProperties::OUT_DIR, outDirPath);
 
+    if (makeDir(outDirPath.c_str())) 
+    {
+        return 1;
+    }
+
+    if (makeDir(GetSystemPropertyW(TskSystemProperties::SYSTEM_OUT_DIR).c_str()))
+    {
+        return 1;
+    }
+
+    if (makeDir(GetSystemPropertyW(TskSystemProperties::MODULE_OUT_DIR).c_str()))
+    {
+        return 1;
+    }
+
     std::wstring logDir = GetSystemPropertyW(TskSystemProperties::LOG_DIR);
-    if (makeDir(logDir.c_str())) {
+    if (makeDir(logDir.c_str())) 
+    {
         return 1;
     }
 
@@ -277,7 +289,7 @@ int main(int argc, char **argv1)
 
     TskPipeline *reportPipeline;
     try {
-        reportPipeline = pipelineMgr.createPipeline(TskPipelineManager::REPORTING_PIPELINE);
+        reportPipeline = pipelineMgr.createPipeline(TskPipelineManager::POST_PROCESSING_PIPELINE);
     }
     catch (TskException &e ) {
         std::wstringstream msg;

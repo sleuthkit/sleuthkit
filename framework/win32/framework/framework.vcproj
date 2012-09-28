@@ -303,14 +303,6 @@
 				RelativePath="..\..\Utilities\UnallocRun.cpp"
 				>
 			</File>
-			<Filter
-				Name="Source Files"
-				>
-				<File
-					RelativePath="..\..\TskModules\c_SummaryReportModule\SummaryReportModule.cpp"
-					>
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"

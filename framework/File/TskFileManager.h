@@ -83,6 +83,33 @@ public:
     }
 
     /**
+     * Copy the contents of a directory to the given fully qualifed file path. 
+     * Directories along the path will be created if they do not exist.
+     * If the destination directory exists it will be replaced.
+	 * Defaults to a non-recursive copy.
+     * @param directoryToCopy The TskFile object representing the directory to copy.
+     * @param destinationPath The path to save directory contents to, including the directory name.
+	 * @param bRecurse Whether to recursively copy directory contents.
+     * @throws various exceptions on errors
+     */
+    virtual void copyDirectory(TskFile* directoryToCopy, const std::wstring& destinationPath, const bool bRecurse = false) = 0;
+
+    /**
+     * Copy the contents of a directory to the given fully qualifed file path. 
+     * Directories along the path will be created if they do not exist.
+     * If the destination directory exists it will be replaced.
+	 * Defaults to a non-recursive copy.
+     * @param directoryIdToCopy The id representing the directory to copy.
+     * @param destinationPath The path to save directory contents to, including the directory name. 
+	 * @param bRecurse Whether to recursively copy directory contents.
+     * @throws various exceptions on errors
+     */
+    virtual void copyDirectory(uint64_t directoryIdToCopy, const std::wstring& destinationPath, const bool bRecurse = false)
+    {
+        copyDirectory(getFile(directoryIdToCopy), destinationPath, bRecurse);
+    }
+
+    /**
      * Add a file to the system using the given file id and input stream.
      * This method saves a local copy of the content contained in the input stream.
      * @param fileId ID of the new file.
