@@ -44,7 +44,7 @@ makeDir(const TSK_TCHAR *dir)
         return 1;
     }
 #else
-
+#error Unsupported OS
 #endif
     return 0;
 }
@@ -150,6 +150,12 @@ int main(int argc, char **argv1)
     }
 
     TSK_TCHAR *imagePath = argv[OPTIND];
+	if (TSTAT(imagePath, &stat_buf) != 0) {
+        std::wstringstream msg;
+        msg << L"Image file not found: " << imagePath;
+        LOGERROR(msg.str());
+        return 1;
+    }
 
     // Load the framework config if they specified it
     try
