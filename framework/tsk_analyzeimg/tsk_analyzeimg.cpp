@@ -289,7 +289,7 @@ int main(int argc, char **argv1)
 
     TskPipeline *reportPipeline;
     try {
-        reportPipeline = pipelineMgr.createPipeline(TskPipelineManager::REPORTING_PIPELINE);
+        reportPipeline = pipelineMgr.createPipeline(TskPipelineManager::POST_PROCESSING_PIPELINE);
     }
     catch (TskException &e ) {
         std::wstringstream msg;
