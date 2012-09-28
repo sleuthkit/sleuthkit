@@ -12,13 +12,22 @@ document assumes that you have already compiled and built the core
 Sleuth Kit library (libtsk).
 
 Note that the framework currently only works on the Microsoft Windows
-platform. Visual Studio 2008 solution and project files are included
-with the code.
+platform. Visual Studio 2010 solution, project files and a Makefile
+are included with the code.
 
 Development environment setup consists of the following steps:
-1) Download and build the POCO library
-2) Build the Sleuth Kit framework library
 
+1) Download poco-1.4.1p1 from:
+    http://sourceforge.net/projects/poco/files/sources/poco-1.4.1/
+2) Extract POCO sources and set an environment variable called POCO_HOME
+   that refers to the directory to which you extracted the POCO source.
+3) Ensure that the LIBEWF_HOME environment variable is set. Refer to the
+   Sleuth Kit BUILDING.txt file for details on setting LIBEWF_HOME.
+4) Run 'nmake' in the framework\win32 directory.
+
+
+If the above simple build process does not work the following sections
+provide a more detailed description.
 
 POCO
 
@@ -29,9 +38,15 @@ basic internal tasks.  Testing has been performed with version
 
 Download the Basic Edition from http://pocoproject.org/download.
 
-Once downloaded you will need to build the Foundation, XML, Net and
-Util libraries. POCO comes with separate Microsoft Visual Studio
-solution files for each of these libraries. Choose either the
+Once downloaded, create an environment variable called POCO_HOME
+that refers to the directory where you extracted the POCO source.
+This environment variable is used by the Sleuth Kit framework to
+locate POCO.
+
+Once downloaded you will need to build the Foundation, XML, Net, Zip and
+Util libraries. You can use the Microsoft Visual Studio
+solution files that come with POCO to build each of these libraries. 
+Choose either the
 "debug_shared" or "release_shared" configuration depending on whether
 you want a debug or a release build.
 

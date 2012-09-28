@@ -3,9 +3,9 @@ RM	= rm -f
 MORE	= cat
 MSBUILD	= msbuild.exe
 
-TSK_SOLN = "$(TSK_HOME)\win32\tsk-win.sln"
+TSK_SOLN = "..\..\win32\tsk-win.sln"
 EWF_SOLN = "$(LIBEWF_HOME)\msvscpp\libewf.sln"
-FRMWK_SOLN = "$(TSK_HOME)\framework\win32\framework\framework.sln"
+FRMWK_SOLN = "..\..\framework\win32\framework\framework.sln"
 POCO_SOLN = "$(POCO_HOME)\Foundation\Foundation_vs100.sln"
 POCO_UTIL_SOLN = "$(POCO_HOME)\Util\Util_vs100.sln"
 POCO_XML_SOLN = "$(POCO_HOME)\XML\XML_vs100.sln"
@@ -49,31 +49,9 @@ all_deps: poco libewf
 
 framework: all_deps
 	$(MSBUILD)  $(TSK_SOLN) /target:libtsk $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:libtskframework $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:tsk_analyzeimg $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:tsk_validatepipeline $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:HashCalcModule $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:TskHashLookupModule $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:SaveInterestingFilesModule $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:ZipExtractionModule $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:InterestingFilesModule $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:EntropyModule $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:RegRipperModule $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:FileTypeSigModule $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:LibExifModule $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
+	$(MSBUILD)  $(FRMWK_SOLN) $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
 	$(MSBUILD)  $(TSK_SOLN) /target:libtsk $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:libtskframework $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:tsk_analyzeimg $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:tsk_validatepipeline $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:HashCalcModule $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:TskHashLookupModule $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:SaveInterestingFilesModule $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:ZipExtractionModule $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:InterestingFilesModule $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:EntropyModule $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:RegRipperModule $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:FileTypeSigModule $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) /target:LibExifModule $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
+	$(MSBUILD)  $(FRMWK_SOLN) $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
 
 clean:
     $(RM) $(BUILDLOG)

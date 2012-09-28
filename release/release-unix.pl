@@ -104,7 +104,7 @@ sub clean_src() {
 sub verify_precheckin {
 
     #system ("git pull");
-    #    system ("git submodule update");
+    system ("git submodule update");
 
     print "Verifying everything is checked in\n";
     exec_pipe(*OUT, "git status -s | grep \"^ M\"");
@@ -116,7 +116,7 @@ sub verify_precheckin {
             print "$foo";
             $foo = read_pipe_line(*OUT);
         }
-# @@@die "stopping";
+        die "stopping";
     }
     close(OUT);
 
@@ -126,7 +126,7 @@ sub verify_precheckin {
     if ($foo ne "") {
             print "$foo";
         print "Files not pushed to remote\n";
-# @@@        die "stopping";
+        die "stopping";
     }
     close(OUT);
 }
@@ -232,40 +232,6 @@ sub update_hver {
 
     unlink ("tsk3/base/tsk_base.h") or die "Error deleting tsk3/base/tsk_base.h";
     rename ("tsk3/base/tsk_base2.h", "tsk3/base/tsk_base.h") or die "Error renaming tmp tsk3/base/tsk_base.h file";
-}
-
-# update the version in libaux vs files in current source directory
-sub update_vsver {
-
-    print "Updating the version in libauxtools\n";
-    
-    my $IFILE = "win32/libauxtools/libauxtools.vcproj";
-    my $OFILE = "win32/libauxtools/libauxtools.vcproj2";
-
-    open (CONF_IN, "<${IFILE}") or 
-        die "Cannot open $IFILE";
-    open (CONF_OUT, ">${OFILE}") or 
-        die "Cannot open $OFILE";
-
-    my $found = 0;
-    while (<CONF_IN>) {
-        if (/^(\s+PreprocessorDefinitions.*?PACKAGE_VERSION=\\&quot;).*(\\&quot;.*?)$/) {
-            print CONF_OUT "$1${VER}$2\n";
-            $found++;
-        }
-        else {
-            print CONF_OUT $_;
-        }
-    }
-    close (CONF_IN);
-    close (CONF_OUT);
-
-    if ($found != 3) {
-        die "Error: Found $found (instead of 3) occurances of PACKAGE_VERSION in libauxtools visual studio files";
-    }
-
-    unlink ($IFILE) or die "Error deleting $IFILE";
-    rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
 }
 
 # update the version in the package files in current source directory
@@ -544,17 +510,18 @@ close(OUT);
 
 
 # All of these die of they need to abort
+# We no longer do this because we make a clean clone. 
 # clean_src();
 
 chdir ".." or die "Error changing directories to root";
 verify_precheckin();
 chdir "$RELDIR" or die "error changing back into release";
 
+# Make a new clone of the repo
 clone_repo();
 
 # Update the version info in that tag
 update_configver();
-# update_vsver();
 update_hver();
 update_libver();
 update_pkgver();
