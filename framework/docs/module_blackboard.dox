@@ -112,7 +112,7 @@ The artifacts are added to the underlying database as soon as it is created and 
 \section bb_query  Querying the Blackboard
 There are a variety of get methods in TskFile that allow you to get artifacts and attributes for a given file (TskFile.getArtifacts() for example).  There are also methods in TskBlackboard that allow you to get artifacts and attributes across all files (TskBlackboard.getArtifacts for example).
 
-TODO: ADD MORE HERE.
+<!--TODO: ADD MORE HERE.-->
 
 
 */

@@ -1,7 +1,10 @@
 /*! \mainpage The Sleuth Kit (TSK) Framework User's Guide and API Reference
 
   <h3>Overview</h3>
-  The framework in TSK makes it easier to build automated, end-to-end digital forensics applications.  It's plug-in pipelines allow you to incorporate a variety of analysis techniques.  The framework was designed to be used in a distributed environment so that jobs could be scheduled among a cluster of computers, but it can also be used in a simple desktop environment. The tsk_analyzeimg program is an example of a desktop program that uses the framework. 
+  The framework in TSK makes it easier to build automated, end-to-end digital forensics applications.  
+  It's plug-in pipelines allow you to incorporate a variety of analysis techniques.  
+  The framework was designed to be used in a distributed environment so that jobs could be scheduled among a cluster of computers, but it can also be used in a simple desktop environment. 
+  The tsk_analyzeimg program provided with the Sleuth Kit is an example of a desktop program that uses the framework. 
 
   If you need only volume and file system-level support, then the original Sleuth Kit library may be all you need.  If you want an end-to-end solution though, then the framework will help solve your problems. 
 
@@ -25,7 +28,7 @@ The following pages are relevant when developing modules to be used in the frame
 
 
 <h3>Developers Guide to Using the Framework</h3>
-The following pages are relevant when integrating the framework into an existing application. 
+The following pages are relevant when integrating the framework into a new or existing application. 
   - \subpage fw_setup_page 
   - \subpage fw_extract_page
   - \subpage fw_pipeline_page

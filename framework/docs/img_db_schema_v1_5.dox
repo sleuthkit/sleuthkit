@@ -5,7 +5,7 @@
 \subsection db_info_table db_info
 Contains metadata about the software that produced the image database.
 - <i>name</i> - Name of the software, e.g., DBSchema, Sleuth Kit, etc. (TEXT)
-- <i>version</i> - Version of the software, e.g., 1.5, 4.0.0b1, etc. (TEXT)
+- <i>version</i> - Version of the software, e.g., 1.5, 4.0.0, etc. (TEXT)
 
 \subsection modules_table modules
 Contains one row for each module used to produce the image database.
