@@ -8,7 +8,7 @@ Modules can communicate with each other, so the MD5 hash could be passed from th
 
 Pipelines are configured using an XML file, which is described later.
 
-\section pipe_types File Analysis vs. Post-processing Pipelines
+\section pipe_types File Analysis vs. Post-Processing Pipelines
 
 The framework currently supports two types of pipelines: file analysis pipelines and post-processing pipelines.  
 Each type of pipeline is used in a different context.  
@@ -25,7 +25,7 @@ Second, a post-processing module is a more efficient mechanism for analyzing a s
 For example, if you need a Windows registry analysis module, it would be better to develop it as a post-processing module that simply locates the handful of registry hive files in an image and analyzes them.  
 If the registry analysis module was instead developed as a file analysis module, it would be run for every file in the image and most of the time it would decide to ignore the file because it wasn't a registry hive. 
 
-\section pipe_modtypes Plug-in vs. Executable Modules
+\section pipe_modtypes Plug-In vs. Executable Modules
 There are two major types of modules that can exist in either type of pipeline. One is a dynamic linked library (DLL) or plug-in module and the other is an executable (EXE) module.  
 
 Plug-in modules are programmed specifically for inclusion into the framework.  These modules can access all of the framework resources.  What's required to create one of these modules is described in \ref mod_devpage.
