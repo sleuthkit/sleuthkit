@@ -5,15 +5,15 @@ A pipeline in the TSK framework is simply a set of modules that are run in a spe
 
 A pipeline is configured in an XML file, which is described later.
 
-\section pipe_types File Analysis versus Reporting Pipelines
+\section pipe_types File Analysis versus Post-Processing Pipelines
 
 The framework currently supports two types of pipelines.  Each is used in a different context and this section will outline the intended uses of each.  
 
-The first type of pipeline is a file analysis pipeline and it is intended to be run on every file that is found in a disk image.  The second type of pipeline is called a reporting pipeline (or post-processing pipeline) and it is intended to be run after all of the individual files are analyzed. 
+The first type of pipeline is a file analysis pipeline and it is intended to be run on every file that is found in a disk image.  The second type of pipeline is called a post-processing pipeline and it is intended to be run after all of the individual files are analyzed. 
 
-A file analysis pipeline allows you to perform a task on every file in the system.  Each module  in the pipeline is passed a reference to a file object through which it can access both the metadata and content of the file.  The module can also access the analysis results of previously run modules using the \ref bb_overview.  Examples of file analysis modules include hash calculation, hash lookup, archive file extraction, and text extraction.
+A file analysis pipeline allows you to perform a task on every file in the system.  Each module  in the pipeline is passed a reference to a file object through which it can access both the metadata and content of the file.  The module can also access the analysis results of previously run modules using the \ref mod_bbpage.  Examples of file analysis modules include hash calculation, hash lookup, archive file extraction, and text extraction.
 
-A reporting pipeline allows you to perform a task after all of the file analysis modules have been run and all files have been analyzed.  There are two main uses for these modules.  One is that they can compile the results from the individual file analysis modules into a single report (hence the name).  The other use, is that it is a more efficient method for analyzing a small subset of files in the system.  For example, if you have a Windows registry analysis module, it would be more efficient to run that as a reporting module and it will simply locate the few hive files and analyze them.  If the registry analysis module were a file analysis module, it would be run on every file in the system and 99% of the time it would decide to ignore the file because it wasn't a registry hive. 
+A post-processing pipeline allows you to perform a task after all of the file analysis modules have been run and all files have been analyzed.  There are two main uses for these modules.  One is that they can compile the results from the individual file analysis modules into a single report (hence the name).  The other use, is that it is a more efficient method for analyzing a small subset of files in the system.  For example, if you have a Windows registry analysis module, it would be more efficient to run that as a post-processing module and it will simply locate the few hive files and analyze them.  If the registry analysis module were a file analysis module, it would be run on every file in the system and 99% of the time it would decide to ignore the file because it wasn't a registry hive. 
 
 \section pipe_modtypes Dynamic Library versus Executable Modules
 There are two major types of modules that can exist in either type of pipeline. One is a dynamic library module and the other is an executable module.  
@@ -25,10 +25,10 @@ Executable modules are simply command line tools that the pipeline runs.  If the
 \section pipe_config Pipeline Configuration
 
 \subsection pipe_config_file Configuration File
-Both file analysis and reporting pipelines are configured through an XML file.  A single XML file can store both a file analysis and a reporting pipeline.  The following is an example of a pipeline configuration file:
+Both file analysis and post-processing pipelines are configured through an XML file.  A single XML file can store both a file analysis and a post-processing pipeline.  The following is an example of a pipeline configuration file:
 
 <pre>&lt;?xml version="1.0" encoding="utf-8"?&gt;&lt;PIPELINE_CONFIG&gt;    &lt;PIPELINE type="FileAnalysis"&gt;        &lt;MODULE order="1" type="plugin" location="CalcFileSizeModule.dll"/&gt;    &lt;/PIPELINE&gt;
-    &lt;PIPELINE type="Report"&gt;        &lt;MODULE order="1" type="plugin" location="SummaryReport.dll" arguments="@OUT\Summary.htm"/&gt;    &lt;/PIPELINE&gt;&lt;/PIPELINE_CONFIG&gt;
+    &lt;PIPELINE type="PostProcessing"&gt;        &lt;MODULE order="1" type="plugin" location="SummaryReport.dll" arguments="@OUT\Summary.htm"/&gt;    &lt;/PIPELINE&gt;&lt;/PIPELINE_CONFIG&gt;
 </pre>
 
 
