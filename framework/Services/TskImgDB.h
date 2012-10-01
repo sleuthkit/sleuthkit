@@ -108,6 +108,7 @@ struct TskFileRecord;
 class TSK_FRAMEWORK_API TskImgDB
 {
 public:
+    /// File type classifications used by the framework
     enum FILE_TYPES
     {
         IMGDB_FILES_TYPE_FS = 0,
@@ -116,6 +117,7 @@ public:
         IMGDB_FILES_TYPE_UNUSED
     };
 
+    /// File analysis statuses used by the framework
     enum FILE_STATUS
     {
         IMGDB_FILES_STATUS_CREATED = 0,
@@ -156,6 +158,7 @@ public:
         BB_VALUE_TYPE_DOUBLE    ///< double floating point
     };
 
+    /// Unallocated sectors file statuses used by the framework
     enum UNALLOC_IMG_STATUS
     {
         IMGDB_UNALLOC_IMG_STATUS_CREATED = 0,

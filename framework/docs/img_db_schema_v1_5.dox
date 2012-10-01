@@ -5,7 +5,7 @@
 \subsection db_info_table db_info
 Contains metadata about the software that produced the image database.
 - <i>name</i> - Name of the software, e.g., DBSchema, Sleuth Kit, etc. (TEXT)
-- <i>version</i> - Version of the software, e.g., 1.5, 4.0.0b1, etc. (TEXT)
+- <i>version</i> - Version of the software, e.g., 1.5, 4.0.0, etc. (TEXT)
 
 \subsection modules_table modules
 Contains one row for each module used to produce the image database.
@@ -91,7 +91,7 @@ The hash values may be NULL if not computed.
 \subsection fs_files_table fs_files
 Contains one row for each file discovered during file system analysis.
 - <i>file_id</i> - Id assigned to the file (INTEGER - foreign key, \ref files_table)
-- <i>fs_id</i> - Id of the file system that contained the file (INTEGER - foreign key, \ref fs_info table)
+- <i>fs_id</i> - Id of the file system that contained the file (INTEGER - foreign key, \ref fs_info_table)
 - <i>fs_file_id</i> - Id assigned to the file by the file system, e.g., an inode number (INTEGER)
 - <i>attr_id</i> - The MFT attribute id of files in NTFS file systems (INTEGER)
 - <i>attr_type</i> - The MFT attribute type of files in NTFS file systems (INTEGER - \ref TSK_FS_ATTR_TYPE_ENUM)
@@ -121,7 +121,7 @@ Contains one row for each unallocated sectors file created in preparation for ca
 \subsection carved_files_table carved_files
 Contains one row for each file carved from unallocated space.
 - <i>file_id</i> - Id assigned to the file (INTEGER - foreign key, \ref files_table)
-- <i>vol_id</i> - Volume/partition where the carved file resided (INTEGER - foreign key, \ref vol_info table)
+- <i>vol_id</i> - Volume/partition where the carved file resided (INTEGER - foreign key, \ref vol_info_table)
 
 \subsection carved_sectors_table carved_sectors
 Contains one row for each contiguous run of blocks (sectors) of unallocated space used to create carved files.
@@ -149,7 +149,7 @@ Contains one row for each file derived from another file, e.g., files extracted 
 Contains one row for each artifact found in the set of images analyzed to produce the database.
 - <i>artifact_id</i> - Id assigned to the artifact (INTEGER)
 - <i>obj_id</i> - Id assigned to the file associated with the artifact (INTEGER - foreign key, \ref files_table)
-- <i>artifact_type_id</i> - Id assigned to the type of artifact (INTEGER - foreign key, \ref blackboard_attribute_types table)
+- <i>artifact_type_id</i> - Id assigned to the type of artifact (INTEGER - foreign key, \ref blackboard_attribute_types_table)
 
 \subsection blackboard_attributes_table blackboard_attributes
 Stores the values of the name-value pairs that are the attributes associated with an artifact. 

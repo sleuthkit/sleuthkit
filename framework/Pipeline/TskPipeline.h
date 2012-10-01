@@ -42,6 +42,7 @@
 class TSK_FRAMEWORK_API TskPipeline
 {
 public:
+    // DEVELOPERS: Changes to any of these elements and attributes require an update to $(TSK_HOME)\framework\docs\pipeline.dox 
     static const std::string MODULE_ELEMENT; ///< module element in XML config file
     static const std::string MODULE_TYPE_ATTR;  ///< attribute for module type in XML config file
     static const std::string MODULE_ORDER_ATTR; ///< attribute for module order in XML config file
