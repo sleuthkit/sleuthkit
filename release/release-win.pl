@@ -202,8 +202,10 @@ sub package_core {
 	`cp win32/release/*.lib \"${rdir}/lib\"`;
 
 	# basic cleanup
-	`rm \"${rdir}/bin/callback*sample.exe\"`;
-	`rm \"${rdir}/bin/posix*sample.exe\"`;
+	`rm \"${rdir}/bin/callback-sample.exe\"`;
+	`rm \"${rdir}/bin/callback-cpp-sample.exe\"`;
+	`rm \"${rdir}/bin/posix-sample.exe\"`;
+	`rm \"${rdir}/bin/posix-cpp-sample.exe\"`;
 
 
 	# mactime
