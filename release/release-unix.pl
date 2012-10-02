@@ -499,7 +499,7 @@ else {
 close(OUT);
 
 # Verify the tag doesn't already exist
-exec_pipe(*OUT, "git tag | grep \"${TSK_RELNAME}\"");
+exec_pipe(*OUT, "git tag | grep \"${TSK_RELNAME}\$\"");
 my $foo = read_pipe_line(*OUT);
 if ($foo ne "") {
     print "Tag ${TSK_RELNAME} already exists\n";
