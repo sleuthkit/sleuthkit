@@ -2397,7 +2397,7 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
             return 1;
 
         bytes_read = tsk_fs_file_read( a_fs_file, (TSK_OFF_T) 0,
-                                       a_fs_meta->link, a_fs_meta->size,
+                                       a_fs_meta->link, (size_t)a_fs_meta->size,
                                        TSK_FS_FILE_READ_FLAG_NONE );
         a_fs_meta->link[a_fs_meta->size] = '\0';
         
