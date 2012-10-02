@@ -189,6 +189,12 @@ class TskAuto {
     * @return volume description string of the lastly processed volume
     */
     std::string getCurVsPartDescr() const;
+
+    /**
+     * get volume flags of the lastly processed volume.
+     * @return flags for lastly processed volume.
+     */
+    TSK_VS_PART_FLAG_ENUM getCurVsPartFlag() const;
     
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
@@ -207,7 +213,9 @@ class TskAuto {
     TSK_RETVAL_ENUM findFilesInFsInt(TSK_FS_INFO *, TSK_INUM_T inum);
 
     std::string m_curVsPartDescr; ///< description string of the current volume being processed
-    void setCurVsPartDescr(const std::string & curVsPartDescr);
+    TSK_VS_PART_FLAG_ENUM m_curVsPartFlag; ///< Flag of the current volume being processed
+
+    void setCurVsPart(const TSK_VS_PART_INFO *);
 
 
   protected:
