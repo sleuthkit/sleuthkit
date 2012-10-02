@@ -1567,18 +1567,18 @@ ext2fs_make_acl_str(char *str, int len, uint16_t perm)
     }
     if (perm & EXT2_PACL_PERM_WRITE) {
         if (i) {
-            snprintf(&str[i], len-i-1, ", ");
+            snprintf(&str[i], len - i - 1, ", ");
             i += 2;
         }
-        snprintf(&str[i], len-i-1, "Write");
+        snprintf(&str[i], len - i - 1, "Write");
         i += 5;
     }
     if (perm & EXT2_PACL_PERM_EXEC) {
         if (i) {
-            snprintf(&str[i], len-i-1, ", ");
+            snprintf(&str[i], len - i - 1, ", ");
             i += 2;
         }
-        snprintf(&str[i], len-i-1, "Execute");
+        snprintf(&str[i], len - i - 1, "Execute");
         i += 7;
     }
 }

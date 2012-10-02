@@ -318,8 +318,7 @@ tsk_fs_file_attr_get_type(TSK_FS_FILE * a_fs_file,
 * @returns NULL on error
 */
 const TSK_FS_ATTR *
-tsk_fs_file_attr_get_id(TSK_FS_FILE * a_fs_file,
-    uint16_t a_id)
+tsk_fs_file_attr_get_id(TSK_FS_FILE * a_fs_file, uint16_t a_id)
 {
     int i, size;
     if (tsk_fs_file_attr_check(a_fs_file, "tsk_fs_file_attr_get_type"))
@@ -327,7 +326,8 @@ tsk_fs_file_attr_get_id(TSK_FS_FILE * a_fs_file,
 
     size = tsk_fs_file_attr_getsize(a_fs_file);
     for (i = 0; i < size; i++) {
-        const TSK_FS_ATTR *fs_attr = tsk_fs_file_attr_get_idx(a_fs_file, i);
+        const TSK_FS_ATTR *fs_attr =
+            tsk_fs_file_attr_get_idx(a_fs_file, i);
         if (fs_attr == NULL)
             return NULL;
 

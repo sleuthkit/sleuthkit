@@ -107,7 +107,7 @@ TSK_ERROR_INFO *
 tsk_error_get_info()
 {
     return (TSK_ERROR_INFO *)
-    tsk_error_win32_get_per_thread_(sizeof(TSK_ERROR_INFO));
+        tsk_error_win32_get_per_thread_(sizeof(TSK_ERROR_INFO));
 }
 
 #else
@@ -422,5 +422,3 @@ tsk_error_reset()
     info->errstr2[0] = 0;
     info->errstr_print[0] = 0;
 }
-
-

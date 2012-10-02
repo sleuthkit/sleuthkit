@@ -181,7 +181,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "fatfs_dent_parse_buf: Parsing sector %" PRIuDADDR
-                " for dir %"PRIuINUM"\n", addrs[sidx], a_fs_dir->addr);
+                " for dir %" PRIuINUM "\n", addrs[sidx], a_fs_dir->addr);
 
         if ((sectalloc = fatfs_is_sectalloc(fatfs, addrs[sidx])) == -1) {
             if (tsk_verbose) {
@@ -200,8 +200,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
             entrySeenCount++;
             /* is it a valid dentry? */
-            if (0 == fatfs_isdentry(fatfs, dep, 
-                        ((isCorruptDir == 0) && (sectalloc)) ? 1 : 0)) {
+            if (0 == fatfs_isdentry(fatfs, dep,
+                    ((isCorruptDir == 0) && (sectalloc)) ? 1 : 0)) {
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "fatfs_dent_parse_buf: Entry %u is invalid\n",
@@ -312,8 +312,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
                     /* Convert the UTF16 to UTF8 */
                     UTF16 *name16 =
-                        (UTF16 *) ((uintptr_t) & lfninfo.name[lfninfo.
-                            start + 1]);
+                        (UTF16 *) ((uintptr_t) & lfninfo.
+                        name[lfninfo.start + 1]);
                     UTF8 *name8 = (UTF8 *) fs_name->name;
 
                     retVal =

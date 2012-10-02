@@ -861,18 +861,18 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de, uint8_t a_basic)
 
             // verify we do not have too many flags set
             /*
-            // This is a useless check because FATFS_ATTR_NORMAL is 0x00
-            // keeping it here for future reference.
-            if (de->attrib & FATFS_ATTR_NORMAL) {
-                if ((de->attrib & FATFS_ATTR_VOLUME) ||
-                    (de->attrib & FATFS_ATTR_DIRECTORY)) {
-                    if (tsk_verbose)
-                        fprintf(stderr,
-                            "fatfs_isdentry: Normal and Vol/Dir\n");
-                    return 0;
-                }
-            }
-            */
+               // This is a useless check because FATFS_ATTR_NORMAL is 0x00
+               // keeping it here for future reference.
+               if (de->attrib & FATFS_ATTR_NORMAL) {
+               if ((de->attrib & FATFS_ATTR_VOLUME) ||
+               (de->attrib & FATFS_ATTR_DIRECTORY)) {
+               if (tsk_verbose)
+               fprintf(stderr,
+               "fatfs_isdentry: Normal and Vol/Dir\n");
+               return 0;
+               }
+               }
+             */
 
             if (de->attrib & FATFS_ATTR_VOLUME) {
                 if ((de->attrib & FATFS_ATTR_DIRECTORY) ||
@@ -906,8 +906,9 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de, uint8_t a_basic)
             }
             else if ((tsk_getu16(fs->endian, de->cdate) != 0) &&
                 ((FATFS_ISDATE(tsk_getu16(fs->endian, de->cdate)) == 0) ||
-                (dos2unixtime(tsk_getu16(fs->endian, de->cdate),
-                tsk_getu16(fs->endian, de->ctime), de->ctimeten) == 0))) {
+                    (dos2unixtime(tsk_getu16(fs->endian, de->cdate),
+                            tsk_getu16(fs->endian, de->ctime),
+                            de->ctimeten) == 0))) {
                 if (tsk_verbose)
                     fprintf(stderr, "fatfs_isdentry: cdate\n");
                 return 0;
@@ -919,16 +920,16 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de, uint8_t a_basic)
             }
             else if ((tsk_getu16(fs->endian, de->adate) != 0) &&
                 ((FATFS_ISDATE(tsk_getu16(fs->endian, de->adate)) == 0) ||
-                (dos2unixtime(tsk_getu16(fs->endian, de->adate),
-                0, 0) == 0))) {
+                    (dos2unixtime(tsk_getu16(fs->endian, de->adate),
+                            0, 0) == 0))) {
                 if (tsk_verbose)
                     fprintf(stderr, "fatfs_isdentry: adate\n");
                 return 0;
             }
             else if ((tsk_getu16(fs->endian, de->wdate) != 0) &&
                 ((FATFS_ISDATE(tsk_getu16(fs->endian, de->wdate)) == 0) ||
-                (dos2unixtime(tsk_getu16(fs->endian, de->wdate),
-                tsk_getu16(fs->endian, de->wtime), 0) == 0))) {
+                    (dos2unixtime(tsk_getu16(fs->endian, de->wdate),
+                            tsk_getu16(fs->endian, de->wtime), 0) == 0))) {
                 if (tsk_verbose)
                     fprintf(stderr, "fatfs_isdentry: wdate\n");
                 return 0;
@@ -2062,7 +2063,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr
                     ("fatfs_make_data_run: Invalid sector address in FAT (too large): %"
-                    PRIuDADDR" (plus %d sectors)", sbase, fatfs->csize);
+                    PRIuDADDR " (plus %d sectors)", sbase, fatfs->csize);
                 return 1;
             }
 

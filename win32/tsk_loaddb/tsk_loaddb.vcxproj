@@ -63,6 +63,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -80,6 +81,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>

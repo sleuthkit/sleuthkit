@@ -162,7 +162,7 @@ tsk_img_open(int num_img,
             tsk_error_reset();
         }
 #endif
-        
+
         // if any of the non-raw formats were detected, then use it.
         if (img_set != NULL)
             return img_set;
@@ -173,8 +173,8 @@ tsk_img_open(int num_img,
         }
         else if (tsk_error_get_errno() != 0) {
             return NULL;
-        }        
-        
+        }
+
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
         return NULL;
@@ -186,33 +186,33 @@ tsk_img_open(int num_img,
 
     switch (type) {
     case TSK_IMG_TYPE_RAW:
-            img_info = raw_open(num_img, images, a_ssize);
-            break;
+        img_info = raw_open(num_img, images, a_ssize);
+        break;
 
 #if HAVE_LIBAFFLIB
-        case TSK_IMG_TYPE_AFF_AFF:
-        case TSK_IMG_TYPE_AFF_AFD:
-        case TSK_IMG_TYPE_AFF_AFM:
-        case TSK_IMG_TYPE_AFF_ANY:
-            img_info = aff_open(images, a_ssize);
-            break;
+    case TSK_IMG_TYPE_AFF_AFF:
+    case TSK_IMG_TYPE_AFF_AFD:
+    case TSK_IMG_TYPE_AFF_AFM:
+    case TSK_IMG_TYPE_AFF_ANY:
+        img_info = aff_open(images, a_ssize);
+        break;
 #endif
 
 #if HAVE_LIBEWF
-        case TSK_IMG_TYPE_EWF_EWF:
-            img_info = ewf_open(num_img, images, a_ssize);
-            break;
+    case TSK_IMG_TYPE_EWF_EWF:
+        img_info = ewf_open(num_img, images, a_ssize);
+        break;
 #endif
 
-        default:
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
-            tsk_error_set_errstr("%d", type);
-            return NULL;
-        }
-
-        return img_info;
+    default:
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_UNSUPTYPE);
+        tsk_error_set_errstr("%d", type);
+        return NULL;
     }
+
+    return img_info;
+}
 
 
 /**
@@ -228,11 +228,13 @@ tsk_img_open(int num_img,
  *
  * @return Pointer to TSK_IMG_INFO or NULL on error
  */
-    TSK_IMG_INFO *tsk_img_open_utf8_sing(const char *a_image,
-        TSK_IMG_TYPE_ENUM type, unsigned int a_ssize) {
-        const char *const a = a_image;
-        return tsk_img_open_utf8(1, &a, type, a_ssize);
-    }
+TSK_IMG_INFO *
+tsk_img_open_utf8_sing(const char *a_image,
+    TSK_IMG_TYPE_ENUM type, unsigned int a_ssize)
+{
+    const char *const a = a_image;
+    return tsk_img_open_utf8(1, &a, type, a_ssize);
+}
 
 
 /**
@@ -249,71 +251,73 @@ tsk_img_open(int num_img,
  *
  * @return Pointer to TSK_IMG_INFO or NULL on error
  */
-    TSK_IMG_INFO *tsk_img_open_utf8(int num_img,
-        const char *const images[], TSK_IMG_TYPE_ENUM type,
-        unsigned int a_ssize) {
+TSK_IMG_INFO *
+tsk_img_open_utf8(int num_img,
+    const char *const images[], TSK_IMG_TYPE_ENUM type,
+    unsigned int a_ssize)
+{
 #ifdef TSK_WIN32
-        {
-            /* Note that there is an assumption in this code that wchar_t is 2-bytes.
-             * this is a correct assumption for Windows, but not for all systems... */
+    {
+        /* Note that there is an assumption in this code that wchar_t is 2-bytes.
+         * this is a correct assumption for Windows, but not for all systems... */
 
-            TSK_IMG_INFO *retval = NULL;
-            wchar_t **images16;
-            int i;
+        TSK_IMG_INFO *retval = NULL;
+        wchar_t **images16;
+        int i;
 
-            // allocate a buffer to store the UTF-16 version of the images.
-            if ((images16 =
-                    (wchar_t **) tsk_malloc(sizeof(wchar_t *) *
-                        num_img)) == NULL) {
-                return NULL;
-            }
-
-            for (i = 0; i < num_img; i++) {
-                size_t ilen;
-                UTF16 *utf16;
-                UTF8 *utf8;
-                TSKConversionResult retval2;
-
-                // we allocate the buffer with the same number of chars as the UTF-8 length
-                ilen = strlen(images[i]);
-                if ((images16[i] =
-                        (wchar_t *) tsk_malloc((ilen +
-                                1) * sizeof(wchar_t))) == NULL) {
-                    goto tsk_utf8_cleanup;
-                }
-
-                utf8 = (UTF8 *) images[i];
-                utf16 = (UTF16 *) images16[i];
-
-                retval2 =
-                    tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
-                    &utf16, &utf16[ilen], TSKlenientConversion);
-                if (retval2 != TSKconversionOK) {
-                    tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
-                    tsk_error_set_errstr
-                        ("tsk_img_open_utf8: Error converting image %s %d",
-                        images[i], retval2);
-                    goto tsk_utf8_cleanup;
-                }
-                *utf16 = '\0';
-            }
-
-            retval = tsk_img_open(num_img, images16, type, a_ssize);
-
-            // free up the memory
-          tsk_utf8_cleanup:
-            for (i = 0; i < num_img; i++) {
-                if (images16[i])
-                    free(images16[i]);
-            }
-            free(images16);
-
-            return retval;
+        // allocate a buffer to store the UTF-16 version of the images.
+        if ((images16 =
+                (wchar_t **) tsk_malloc(sizeof(wchar_t *) *
+                    num_img)) == NULL) {
+            return NULL;
         }
-#else
-        return tsk_img_open(num_img, images, type, a_ssize);
-#endif
+
+        for (i = 0; i < num_img; i++) {
+            size_t ilen;
+            UTF16 *utf16;
+            UTF8 *utf8;
+            TSKConversionResult retval2;
+
+            // we allocate the buffer with the same number of chars as the UTF-8 length
+            ilen = strlen(images[i]);
+            if ((images16[i] =
+                    (wchar_t *) tsk_malloc((ilen +
+                            1) * sizeof(wchar_t))) == NULL) {
+                goto tsk_utf8_cleanup;
+            }
+
+            utf8 = (UTF8 *) images[i];
+            utf16 = (UTF16 *) images16[i];
+
+            retval2 =
+                tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[ilen],
+                &utf16, &utf16[ilen], TSKlenientConversion);
+            if (retval2 != TSKconversionOK) {
+                tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+                tsk_error_set_errstr
+                    ("tsk_img_open_utf8: Error converting image %s %d",
+                    images[i], retval2);
+                goto tsk_utf8_cleanup;
+            }
+            *utf16 = '\0';
+        }
+
+        retval = tsk_img_open(num_img, images16, type, a_ssize);
+
+        // free up the memory
+      tsk_utf8_cleanup:
+        for (i = 0; i < num_img; i++) {
+            if (images16[i])
+                free(images16[i]);
+        }
+        free(images16);
+
+        return retval;
     }
+#else
+    return tsk_img_open(num_img, images, type, a_ssize);
+#endif
+}
 
 
 #if 0
@@ -322,80 +326,80 @@ tsk_img_open(int num_img,
  * UTF-32 to UTF-8 support as well.  If the goal is to provide a standard UTF-16
  * interface, we should use another type besiddes wchar_t.
  */
-    TSK_IMG_INFO *tsk_img_open_utf16(int num_img,
-        wchar_t * const images[], TSK_IMG_TYPE_ENUM type) {
+TSK_IMG_INFO *
+tsk_img_open_utf16(int num_img,
+    wchar_t * const images[], TSK_IMG_TYPE_ENUM type)
+{
 #if TSK_WIN32
-        return tsk_img_open(num_img, images, type);
+    return tsk_img_open(num_img, images, type);
 #else
-        {
-            TSK_IMG_INFO *retval;
-            int i;
-            char **images8;
-            TSK_ENDIAN_ENUM endian;
-            uint16_t tmp1;
+    {
+        TSK_IMG_INFO *retval;
+        int i;
+        char **images8;
+        TSK_ENDIAN_ENUM endian;
+        uint16_t tmp1;
 
-            /* The unicode conversio routines are primarily to convert Unicode
-             * in file and volume system images, which means they could be in
-             * an endian ordering different from the local one.  We need to figure
-             * out our local ordering so we can give it the right flag */
-            tmp1 = 1;
-            if (tsk_guess_end_u16(&endian, (uint8_t *) & tmp1, 1)) {
-                // @@@@
-                return NULL;
-            }
-
-
-            // convert UTF16 to UTF8
-            if ((images8 =
-                    (char **) tsk_malloc(sizeof(char *) * num_img)) ==
-                NULL) {
-                return NULL;
-            }
-
-            for (i = 0; i < num_img; i++) {
-                size_t ilen;
-                UTF16 *utf16;
-                UTF8 *utf8;
-                TSKConversionResult retval2;
-
-
-                // we allocate the buffer to be four times the utf-16 length.
-                ilen = wcslen(images[i]);
-                ilen <<= 2;
-
-                if ((images8[i] = (char *) tsk_malloc(ilen)) == NULL) {
-                    return NULL;
-                }
-
-                utf16 = (UTF16 *) images[i];
-                utf8 = (UTF8 *) images8[i];
-
-                retval2 =
-                    tsk_UTF16toUTF8_lclorder((const UTF16 **) &utf16,
-                    &utf16[wcslen(images[i]) + 1], &utf8,
-                    &utf8[ilen + 1], TSKlenientConversion);
-                if (retval2 != TSKconversionOK) {
-                    tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
-                    tsk_error_set_errstr
-                        ("tsk_img_open_utf16: Error converting image %d %d",
-                        i, retval2);
-                    return NULL;
-                }
-                *utf8 = '\0';
-            }
-
-            retval =
-                tsk_img_open(num_img, (const TSK_TCHAR **) images8, type);
-
-            for (i = 0; i < num_img; i++) {
-                free(images8[i]);
-            }
-            free(images8);
-
-            return retval;
+        /* The unicode conversio routines are primarily to convert Unicode
+         * in file and volume system images, which means they could be in
+         * an endian ordering different from the local one.  We need to figure
+         * out our local ordering so we can give it the right flag */
+        tmp1 = 1;
+        if (tsk_guess_end_u16(&endian, (uint8_t *) & tmp1, 1)) {
+            // @@@@
+            return NULL;
         }
-#endif
+
+
+        // convert UTF16 to UTF8
+        if ((images8 =
+                (char **) tsk_malloc(sizeof(char *) * num_img)) == NULL) {
+            return NULL;
+        }
+
+        for (i = 0; i < num_img; i++) {
+            size_t ilen;
+            UTF16 *utf16;
+            UTF8 *utf8;
+            TSKConversionResult retval2;
+
+
+            // we allocate the buffer to be four times the utf-16 length.
+            ilen = wcslen(images[i]);
+            ilen <<= 2;
+
+            if ((images8[i] = (char *) tsk_malloc(ilen)) == NULL) {
+                return NULL;
+            }
+
+            utf16 = (UTF16 *) images[i];
+            utf8 = (UTF8 *) images8[i];
+
+            retval2 =
+                tsk_UTF16toUTF8_lclorder((const UTF16 **) &utf16,
+                &utf16[wcslen(images[i]) + 1], &utf8,
+                &utf8[ilen + 1], TSKlenientConversion);
+            if (retval2 != TSKconversionOK) {
+                tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+                tsk_error_set_errstr
+                    ("tsk_img_open_utf16: Error converting image %d %d",
+                    i, retval2);
+                return NULL;
+            }
+            *utf8 = '\0';
+        }
+
+        retval = tsk_img_open(num_img, (const TSK_TCHAR **) images8, type);
+
+        for (i = 0; i < num_img; i++) {
+            free(images8[i]);
+        }
+        free(images8);
+
+        return retval;
     }
+#endif
+}
 #endif
 
 
@@ -406,10 +410,11 @@ tsk_img_open(int num_img,
  * Closes an open disk image.
  * @param a_img_info Pointer to the open disk image structure.
  */
-    void
-     tsk_img_close(TSK_IMG_INFO * a_img_info) {
-        if (a_img_info == NULL) {
-            return;
-        }
-        a_img_info->close(a_img_info);
+void
+tsk_img_close(TSK_IMG_INFO * a_img_info)
+{
+    if (a_img_info == NULL) {
+        return;
     }
+    a_img_info->close(a_img_info);
+}

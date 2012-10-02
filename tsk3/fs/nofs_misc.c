@@ -57,8 +57,8 @@ tsk_fs_nofs_make_data_run(TSK_FS_FILE * a_fs_file)
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
     tsk_error_set_errstr("Illegal analysis method for %s data ",
-        (a_fs_file->fs_info) ? tsk_fs_type_toname(a_fs_file->
-            fs_info->ftype) : "");
+        (a_fs_file->fs_info) ? tsk_fs_type_toname(a_fs_file->fs_info->
+            ftype) : "");
     return 1;
 }
 

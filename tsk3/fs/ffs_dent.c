@@ -327,8 +327,8 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         retval_tmp =
             ffs_dent_parse_block(ffs, fs_dir,
-            (fs_dir->fs_file->meta->
-                flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
+            (fs_dir->fs_file->
+                meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
             dirbuf + cidx * FFS_DIRBLKSIZ, len);
 
         if (retval_tmp == TSK_ERR) {

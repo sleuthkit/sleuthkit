@@ -1206,14 +1206,14 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     if (sec_skew != 0) {
         tsk_fprintf(hFile, "\nAdjusted Directory Entry Times:\n");
-        
+
         if (fs_meta->mtime)
             fs_meta->mtime -= sec_skew;
         if (fs_meta->atime)
             fs_meta->atime -= sec_skew;
         if (fs_meta->crtime)
             fs_meta->crtime -= sec_skew;
-        
+
         tsk_fprintf(hFile, "Written:\t%s\n",
             tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
         tsk_fprintf(hFile, "Accessed:\t%s\n",

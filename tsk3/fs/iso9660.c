@@ -497,8 +497,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         (const UTF16 **) &name16,
                         (UTF16 *) & buf[b_offs + sizeof(iso9660_dentry) +
                             dentry->fi_len], &name8,
-                        (UTF8 *) ((uintptr_t) & in_node->inode.
-                            fn[ISO9660_MAXNAMLEN_STD]),
+                        (UTF8 *) ((uintptr_t) & in_node->
+                            inode.fn[ISO9660_MAXNAMLEN_STD]),
                         TSKlenientConversion);
                     if (retVal != TSKconversionOK) {
                         if (tsk_verbose)
@@ -2048,7 +2048,7 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             fs_file->meta->atime -= sec_skew;
         if (fs_file->meta->crtime)
             fs_file->meta->crtime -= sec_skew;
-        
+
         tsk_fprintf(hFile, "Written:\t%s\n",
             tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
         tsk_fprintf(hFile, "Accessed:\t%s\n",
@@ -2062,7 +2062,7 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             fs_file->meta->atime += sec_skew;
         if (fs_file->meta->crtime == 0)
             fs_file->meta->crtime += sec_skew;
-        
+
 
         tsk_fprintf(hFile, "\nOriginal File Times:\n");
     }
