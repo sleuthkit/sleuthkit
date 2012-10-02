@@ -33,5 +33,8 @@ The following pages are relevant when integrating the framework into a new or ex
   - \subpage fw_extract_page
   - \subpage fw_pipeline_page
   - \subpage fw_example_page
-
+  
+This developer's guide to using the framework is self contained, but you can also refer to the source code for tsk_analyzeimg, which is included in the framework.  
+It is a basic program that uses the framework to analyze a disk image, including using the framework's pipeline infrastructure to run a file analysis pipeline and a post-processing pipeline. 
+  
 */
