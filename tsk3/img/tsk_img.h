@@ -56,8 +56,8 @@ extern "C" {
         TSK_IMG_TYPE_DETECT = 0x0000,   ///< Use autodetection methods
 
         TSK_IMG_TYPE_RAW = 0x0001,      ///< Raw disk image (single or split)
-        TSK_IMG_TYPE_RAW_SING = TSK_IMG_TYPE_RAW, ///< Raw single (backward compatibility) depreciated
-        TSK_IMG_TYPE_RAW_SPLIT = TSK_IMG_TYPE_RAW, ///< Raw single (backward compatibility) depreciated
+        TSK_IMG_TYPE_RAW_SING = TSK_IMG_TYPE_RAW,       ///< Raw single (backward compatibility) depreciated
+        TSK_IMG_TYPE_RAW_SPLIT = TSK_IMG_TYPE_RAW,      ///< Raw single (backward compatibility) depreciated
 
         TSK_IMG_TYPE_AFF_AFF = 0x0004,  ///< AFF AFF Format
         TSK_IMG_TYPE_AFF_AFD = 0x0008,  ///< AFD AFF Format
@@ -79,7 +79,7 @@ extern "C" {
      * Created when a disk image has been opened and stores general information and handles.
      */
     struct TSK_IMG_INFO {
-        uint32_t tag;       ///< Set to TSK_IMG_INFO_TAG when struct is alloc
+        uint32_t tag;           ///< Set to TSK_IMG_INFO_TAG when struct is alloc
         TSK_IMG_TYPE_ENUM itype;        ///< Type of disk image format
         TSK_OFF_T size;         ///< Total size of image in bytes
         unsigned int sector_size;       ///< sector size of device in bytes (typically 512)
