@@ -33,7 +33,7 @@ What's required to create one of these modules is described in \ref mod_devpage.
 
 Executable modules are simply command line tools that a pipeline runs - if a tool can be run from the command line, then it can be run from within the pipeline.  
 The pipeline configuration file allows you to specify a string of command line options and arguments to pass through to the executable. The command line arguments can be made into variables resolved at runtime using configuration file macros. 
-However, executable modules do not have access to the database, blackboard, and other services that the framework provides.  
+However, executable modules do not have access to the image database, blackboard, and other services that the framework provides.  
 This means that if you want the results from an executable module to be available to other modules, you'll still need to make a companion plug-in module to parse the results and add them to the blackboard.
 
 \section pipe_config Pipeline Configuration
@@ -43,16 +43,16 @@ Both file analysis and post-processing pipelines are configured using an XML fil
 A single XML file can store the configuration of both a file analysis and a post-processing pipeline.  
 Take a look at \ref sample_pipeline_config_file_page to see an example of a pipeline configuration file.
 
-Note that each module entry in the pipeline is represented by a MODULE element in the configuration file.  Each MODULE element can have the following XML attributes:
+Note that each module to be included in a pipeline is represented by a <tt>MODULE</tt> element in the configuration file.  <tt>MODULE</tt> elements can have the following attributes:
 
 <table>
 <tr><th>Attribute</th><th>Description</th></tr>
 
 <tr><td>order</td><td>The position of the module within the pipeline. </td></tr>
 <tr><td>type</td><td>Either "executable" or "plugin".</td></tr>
-<tr><td>location</td><td>The path of the executable to be run by an executable module or the DLL to be loaded for a plug-in module. This can either be a fully qualified or relative path. If the path is relative, the framework will look for the file in the system path or the location specified as TskSystemProperties::MODULE_DIR in the TskSystemProperties service.</td></tr>
-<tr><td>arguments</td><td>The arguments to pass to the module.  See \ref pipe_config_macro.</td></tr> 
-<tr><td>output</td><td>The path to a file where output from the module should be written. This attribute applies only to executable modules.  See \ref pipe_config_macro.</td></tr>
+<tr><td>location</td><td>The path of the executable to be run by an executable module or the dynamic library to be loaded for a plug-in module. This can either be a fully qualified or relative path. If the path is relative, the framework will look for the library file in the current working directory and the locations specified as TskSystemProperties::MODULE_DIR and TskSystemProperties::PROG_DIR in the TskSystemProperties service.</td></tr>
+<tr><td>arguments</td><td>The arguments to pass to the module.  See \ref pipe_config_macro to learn how arguments can incorporate information not available until runtime.</td></tr> 
+<tr><td>output</td><td>The path to a file to contain anything the module writes to <tt>stdout</tt>. This attribute applies only to executable modules.  See \ref pipe_config_macro to learn how output file paths can incorporate information not available until runtime.</td></tr>
 
 </table>
 
@@ -61,9 +61,8 @@ When configuring a pipeline module pay particular attention to the following det
 - Module ordering does not need to be sequential (i.e., there can be gaps), but you cannot have two modules with the same order value.
 
 - Redirected output on executable modules will be appended to the specified output file. 
-
-- Attempting to write output to a shared file may result in file access errors when multiple framework sessions (in a distributed environment) attempt to write data to the same file. 
-You can avoid this by using the TskSystemProperties::UNIQUE_ID macro to construct the file name (see \ref pipe_config_macro for more on config file macros).
+Attempting to write output to a shared file may result in file access errors when multiple pipelines (in a multithreaded or distributed environment) attempt to write data to the same file. 
+You can avoid this by using the TskSystemProperties::UNIQUE_ID macro to construct the output file name for an executable module (see \ref pipe_config_macro for more on config file macros).
 
 - You must escape the following characters if you wish to include them in the command line:
 
@@ -72,21 +71,24 @@ You can avoid this by using the TskSystemProperties::UNIQUE_ID macro to construc
 </table>
 
 
-\subsection validate_pipe_config_file Validating Pipeline Configuration Files
-The tsk_validatepipeline.exe tool, which comes with the framework, can be used to verify that the pipeline configuration file is correct and that all modules can be found.
-
 \subsection pipe_config_macro Configuration File Macros
 
-The "arguments" and "output" attributes of a MODULE element in a pipeline configuration file allow for the substitution of run-time values into the associated strings. 
+The <tt>arguments</tt> and <tt>output</tt> attributes of a <tt>MODULE</tt> element in a pipeline configuration file allow for the substitution of runtime values into the associated strings. 
 This is possible because there is a set of config file macros that the framework expands when it reads in a pipeline configuration file.   
 
 There are a number of system property macros. 
 To substitute a system property in a string, surround the system property name with '#' marks.  
 Refer to the TskSystemProperties::PredefinedProperty list for the set of official system properties.  
-For example, use "#SYSTEM_OUT_DIR#/file1.txt" to refer to a file named "file1.txt" in the system output directory. 
+For example, use <tt>#SYSTEM_OUT_DIR#/file1.txt</tt> to refer to a file named <tt>file1.txt</tt> in the system output directory. 
 
-File analysis modules can also employ a macro that expands to the path of the file currently being analyzed. 
-Because many files can be analyzed at the same time in a distributed disk image analysis system, the current file is not stored in SystemProperties, but the framework knows how to expand TskModule::CURRENT_FILE_MACRO appropriately.
+File analysis modules can also employ a macro that expands to the path of the file the module is currently analyzing. 
+Because many files can be analyzed at the same time in a multithreaded or distributed disk image analysis system, the current file is not stored as a system property, but the framework still knows how to expand TskModule::CURRENT_FILE_MACRO appropriately.
 Note that although this macro is not strictly necessary for plug-in modules because they have access to file metadata through the TskFile objects passed to them by the pipeline, executable modules can only obtain the path to the current file using this macro. 
+
+
+\subsection validate_pipe_config_file Validating Pipeline Configuration Files
+
+The tsk_validatepipeline tool, which comes with the framework, can be used to verify that a pipeline configuration file is well-formed and all modules specified in the file can be found.
+
 
 */

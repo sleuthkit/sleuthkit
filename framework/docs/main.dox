@@ -14,7 +14,7 @@ This document is for:
   - Developers who want to make modules for the framework.
   - Developers who want to integrate the framework into a larger system.
 
-<h3>Overview</h3>
+<h3>Framework Overview</h3>
 The following pages contain an overview of the framework.  Both users and developers should be familiar with this content. 
   - \subpage basics_page
   - \subpage pipeline_config_page
@@ -35,7 +35,7 @@ The following pages are relevant when integrating the framework into a new or ex
   - \subpage fw_pipeline_page
   - \subpage fw_example_page
   
-This developer's guide to using the framework is self-contained, but you can also refer to the source code for tsk_analyzeimg, which is included in the framework.  
-It is a basic program that analyzes a disk image using the framework's pipeline infrastructure to run a file analysis pipeline and a post-processing pipeline. 
+You can also refer to the source code for tsk_analyzeimg, which is included in the framework.  
+It is a simple program that analyzes a disk image using the framework's pipeline infrastructure to run a file analysis pipeline and a post-processing pipeline.   
   
 */
