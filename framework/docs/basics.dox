@@ -2,7 +2,7 @@
 
   <h3>Basic Concepts</h3>
   <ul>
-    <li><b>Central Database:</b> All data is stored in a central database, which can be as simple as a local SQLite file or as complex as a database managed by a database server.  The details are hidden from the modules because the TskImgDB class is used to store and retrieve data from the central database.</li>
+    <li><b>Image Database:</b> All data is stored in an image database, which can be as simple as a local SQLite file or as complex as a database managed by a relational database management system (RDBMS) on a database server.  The details are hidden from the modules because the TskImgDB interface is used to store and retrieve data from the central database.</li>
 
     <li><b>Services:</b> There are core services that the framework provides to the programs that incorporate the framework and to the modules that fit into the framework.  See \ref mod_stuff_services for more details.</li>
 
