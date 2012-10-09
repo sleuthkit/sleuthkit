@@ -444,14 +444,32 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN,
             "HP Volume Expansion (SpeedStor Variant) (0xa4)");
         break;
+    case 0xa5:
+        snprintf(str, DESC_LEN, "BSD/386, 386BSD, NetBSD, FreeBSD (0xa5)");
+        break;
+    case 0xa6:
+        snprintf(str, DESC_LEN, "OpenBSD (0xa6)");
+        break;
+    case 0xa7:
+        snprintf(str, DESC_LEN, "NeXTStep (0xa7)");
+        break;
+    case 0xa8:
+        snprintf(str, DESC_LEN, "Mac OS-X (0xa8)");
+        break;
+    case 0xa9:
+        snprintf(str, DESC_LEN, "NetBSD (0xa9)");
+        break;
     case 0xaa:
         snprintf(str, DESC_LEN, "Olivetti Fat 12 1.44MB Service (0xaa)");
+        break;
+    case 0xab:
+        snprintf(str, DESC_LEN, "Mac OS-X Boot Partition (0xab)");
         break;
     case 0xae:
         snprintf(str, DESC_LEN, "ShagOS Filesystem (0xae)");
         break;
     case 0xaf:
-        snprintf(str, DESC_LEN, "ShagOS swap (0xaf)");
+        snprintf(str, DESC_LEN, "Mac OS X HFS (0xaf)");
         break;
     case 0xb0:
         snprintf(str, DESC_LEN, "BootStar Dummy (0xb0)");
