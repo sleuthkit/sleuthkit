@@ -3,9 +3,9 @@ RM	= rm -f
 MORE	= cat
 MSBUILD	= msbuild.exe
 
-TSK_SOLN = "..\..\win32\tsk-win.sln"
+TSK_SOLN = "$(TSK_HOME)\win32\tsk-win.sln"
 EWF_SOLN = "$(LIBEWF_HOME)\msvscpp\libewf.sln"
-FRMWK_SOLN = "..\..\framework\win32\framework\framework.sln"
+FRMWK_SOLN = "$(TSK_HOME)\framework\win32\framework\framework.sln"
 POCO_SOLN = "$(POCO_HOME)\Foundation\Foundation_vs100.sln"
 POCO_UTIL_SOLN = "$(POCO_HOME)\Util\Util_vs100.sln"
 POCO_XML_SOLN = "$(POCO_HOME)\XML\XML_vs100.sln"
