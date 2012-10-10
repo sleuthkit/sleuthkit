@@ -4,7 +4,7 @@
   The framework in TSK makes it easier to build automated, end-to-end digital forensics applications.  
   If you need only volume and file system-level support, then the original Sleuth Kit library may be all you need.  
   If you want a more comprehensive disk image analysis solution, the framework will help. 
-  It's plug-in pipelines allow you to incorporate a variety of analysis techniques in your application.
+  It's plug-in pipelines allow you to incorporate a variety of analysis techniques into your application.
   
   The framework was designed to be used in a distributed environment so that jobs could be scheduled among a cluster of computers, but it can also be used to create desktop applications. 
   The tsk_analyzeimg program provided with the Sleuth Kit is an example of a simple desktop program that uses the framework. 
@@ -35,7 +35,7 @@ The following pages are relevant when integrating the framework into a new or ex
   - \subpage fw_pipeline_page
   - \subpage fw_example_page
   
-You can also refer to the source code for tsk_analyzeimg, which is included in the framework.  
-It is a simple program that analyzes a disk image using the framework's pipeline infrastructure to run a file analysis pipeline and a post-processing pipeline.   
+Application developers may also wish to examine the source code for tsk_analyzeimg, which is included with the framework.  
+It is a single-threaded command line program that analyzes a disk image using the framework's pipeline infrastructure to run a file analysis pipeline and a post-processing pipeline.   
   
 */

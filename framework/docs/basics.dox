@@ -6,14 +6,14 @@
 
     <li><b>Pipelines and Plug-In Modules:</b> The framework supplies a pipeline infrastructure that modules can be dropped into.  The framework comes with basic modules, but it is expected that other developers will provide additional modules as the framework evolves.  See \ref pipeline_config_page and \ref mod_devpage to learn how to build pipelines and modules.</li>
    
-    <li><b>Blackboard:</b> The framework uses a blackboard to allow modules to communicate. Modules can post results to the blackboard and other modules can query the blackboard for previous findings. See \ref mod_bbpage for more details. </li>
+    <li><b>Blackboard:</b> The framework uses a blackboard to allow modules to communicate. Modules can post results to the blackboard and query the blackboard for previous findings. See \ref mod_bbpage for more details. </li>
 
-    <li><b>Services:</b> The framework provides core services such as logging and file management to the programs that incorporate the framework and to the modules these programs use.  See \ref mod_stuff_services for more details.</li>
+    <li><b>Services:</b> The framework provides core services such as logging and file management.  See \ref mod_stuff_services for more details.</li>
 
     <li><b>Three Phase Analysis Process:</b> The framework has been designed with the idea that there are three major phases in the disk image analysis process:
     <ul>
-      <li>File Extraction, in which files are identified based on file system data, carving, and other types of data recovery.</li>
-      <li>File Analysis, in which each file is analyzed.</li>
+      <li>File Extraction, in which files are identified using file system data, carving, and other types of data recovery.</li>
+      <li>File Analysis, in which each file is analyzed individually.</li>
       <li>Post-Processing, in which the the results of the individual file analyses are combined with additional analysis of the image.</li>
     </ul>
     These phases are illustrated by this diagram: <br />
