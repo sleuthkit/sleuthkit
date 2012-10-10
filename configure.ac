@@ -79,6 +79,8 @@ AX_PTHREAD( [
             CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
             LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
             CC="$PTHREAD_CC"],[])
+AC_CHECK_FUNCS(posix_memalign, [AC_DEFINE(HAVE_POSIX_MEMALIGN, 1, [Define to 1 if you have the posix_memalign() function.])])
+
 # Not all compilers include /usr/local in the include and link path
 if test -d /usr/local/include; then
     CFLAGS="$CFLAGS -I/usr/local/include"

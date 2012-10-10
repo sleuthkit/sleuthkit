@@ -742,9 +742,45 @@ tsk_img_malloc(size_t a_len)
     TSK_IMG_INFO *imgInfo;
     if ((imgInfo = (TSK_IMG_INFO *) tsk_malloc(a_len)) == NULL)
         return NULL;
+
+    imgInfo->tag = TSK_IMG_INFO_TAG;
+
+	long cachesz = TSK_IMG_INFO_CACHE_NUM * TSK_IMG_INFO_CACHE_LEN;
+	
+#ifdef TSK_WIN32
+	imgInfo->cache = VirtualAlloc(NULL, cachesz,
+		MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else // ! TSK_WIN32
+
+#ifdef HAVE_POSIX_MEMALIGN
+
+#ifdef _SC_PAGESIZE
+	long pagesz = sysconf(_SC_PAGESIZE);
+#else
+#ifdef _SC_PAGE_SIZE
+	long pagesz = sysconf(_SC_PAGE_SIZE);
+#else
+	long pagesz = TSK_IMG_INFO_CACHE_LEN;
+#endif
+#endif // PAGESIZE
+
+	int retval;
+	if ((retval = posix_memalign(&imgInfo->cache, pagesz, cachesz)) != 0) {
+		imgInfo->cache = NULL;
+	}
+	
+#else // ! POSIX_MEMALIGN
+	imgInfo->cache = malloc(cachesz);
+#endif // POSIX_MEMALIGN
+#endif // TSK_WIN32
+	
+	if (imgInfo->cache == NULL) {
+		tsk_fprintf(stderr, "tsk_img_malloc: unable to allocate cache\n");
+		return NULL;
+	}
+
     //init lock
     tsk_init_lock(&(imgInfo->cache_lock));
-    imgInfo->tag = TSK_IMG_INFO_TAG;
 
     return (void *) imgInfo;
 }
@@ -761,6 +797,15 @@ tsk_img_free(void *a_ptr)
     //deinit lock
     tsk_deinit_lock(&(imgInfo->cache_lock));
     imgInfo->tag = 0;
+    
+    // free cache
+#ifdef TSK_WIN32
+	VirtualFree(imgInfo->cache,
+		TSK_IMG_INFO_CACHE_NUM * TSK_IMG_INFO_CACHE_LEN,
+		MEM_DECOMMIT | MEM_RELEASE);
+#else
+    free(imgInfo->cache);
+#endif
 
     free(imgInfo);
 }

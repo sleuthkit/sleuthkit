@@ -69,11 +69,17 @@ extern "C" {
         TSK_IMG_TYPE_UNSUPP = 0xffff,   ///< Unsupported disk image type
     } TSK_IMG_TYPE_ENUM;
 
-#define TSK_IMG_INFO_CACHE_NUM  4
-#define TSK_IMG_INFO_CACHE_LEN  65536
+#define TSK_IMG_INFO_CACHE_NUM   32
+#define TSK_IMG_INFO_CACHE_LEN   32768
 
     typedef struct TSK_IMG_INFO TSK_IMG_INFO;
 #define TSK_IMG_INFO_TAG 0x39204231
+
+    struct TSK_IMG_INFO_CACHE_ENTRY {
+        int page; ///< offset into cache is page * TSK_IMG_INFO_CACHE_LEN
+        TSK_OFF_T offset; ///< offset in image from which cached data was obtained
+        size_t length; ///< amount of data in cached page; required to be less than TSK_IMG_INFO_CACHE_LEN
+    };
 
     /**
      * Created when a disk image has been opened and stores general information and handles.
@@ -85,12 +91,11 @@ extern "C" {
         unsigned int sector_size;       ///< sector size of device in bytes (typically 512)
 
         tsk_lock_t cache_lock;  ///< Lock for cache and associated values
-        char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache (r/w shared - lock) 
-        TSK_OFF_T cache_off[TSK_IMG_INFO_CACHE_NUM];    ///< starting byte offset of corresponding cache entry (r/w shared - lock) 
-        int cache_age[TSK_IMG_INFO_CACHE_NUM];  ///< "Age" of corresponding cache entry, higher means more recently used (r/w shared - lock) 
-        size_t cache_len[TSK_IMG_INFO_CACHE_NUM];       ///< Length of cache entry used (0 if never used) (r/w shared - lock) 
+        struct TSK_IMG_INFO_CACHE_ENTRY cache_info[TSK_IMG_INFO_CACHE_NUM];  ///< read cache (r/w shared - lock)
+		int cache_used;  ///< number of entries used in the cache entry array (r/w shared - lock)
+		char * cache;
 
-         ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read()
+        ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len);     ///< \internal External progs should call tsk_img_read()
         void (*close) (TSK_IMG_INFO *); ///< \internal Progs should call tsk_img_close()
         void (*imgstat) (TSK_IMG_INFO *, FILE *);       ///< Pointer to file type specific function
     };
