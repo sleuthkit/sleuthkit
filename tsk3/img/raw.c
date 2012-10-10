@@ -73,18 +73,40 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         }
 
 #ifdef TSK_WIN32
-        if ((cimg->fd = CreateFile(raw_info->images[idx], FILE_READ_DATA,
-                    FILE_SHARE_READ, NULL, OPEN_EXISTING, 0,
-                    NULL)) == INVALID_HANDLE_VALUE) {
+        cimg->fd = CreateFile(raw_info->images[idx], FILE_READ_DATA,
+                              FILE_SHARE_READ, NULL, OPEN_EXISTING, 0,
+                              NULL);
+        if ( cimg->fd == INVALID_HANDLE_VALUE ) {
+            /* if it is a Windows device, try again with SHARE_WRITE */
+            if ((raw_info->images[idx][0] == _TSK_T('\\'))
+                && (raw_info->images[idx][1] == _TSK_T('\\'))
+                && (raw_info->images[idx][2] == _TSK_T('.'))
+                && (raw_info->images[idx][3] == _TSK_T('\\'))) {
+
+                if ( tsk_verbose ) {
+                    tsk_fprintf(stderr,
+                            "raw_read_segment: trying Windows device with FILE_SHARE_WRITE mode\n");
+                }
+
+                cimg->fd = CreateFile(raw_info->images[idx], FILE_READ_DATA,
+                                      FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                                      OPEN_EXISTING, 0, NULL);
+            }
+        }
+        
+        if ( cimg->fd == INVALID_HANDLE_VALUE ) {
+            cimg->fd = 0; /* so we don't close it next time */
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                "\" - %d", raw_info->images[idx], (int) GetLastError());
+                                "\" - %d", raw_info->images[idx], (int) GetLastError());
             return -1;
         }
+
 #else
         if ((cimg->fd =
                 open(raw_info->images[idx], O_RDONLY | O_BINARY)) < 0) {
+            cimg->fd = 0; /* so we don't close it next time */
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
@@ -100,6 +122,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         }
     }
     else {
+        /* image already open */
         cimg = &raw_info->cache[raw_info->cptr[idx]];
     }
 
@@ -413,7 +436,7 @@ get_size(const TSK_TCHAR * a_file, uint8_t is_winobj)
             if (is_winobj) {
                 if (tsk_verbose) {
                     tsk_fprintf(stderr,
-                        "raw_open: trying Windows device with share_write mode\n");
+                        "raw_open: trying Windows device with FILE_SHARE_WRITE mode\n");
                 }
 
                 fd = CreateFile(a_file, FILE_READ_DATA,
