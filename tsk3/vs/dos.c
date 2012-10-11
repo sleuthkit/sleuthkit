@@ -42,9 +42,15 @@ dos_get_desc(uint8_t ptype)
     case 0x01:
         snprintf(str, DESC_LEN, "DOS FAT12 (0x01)");
         break;
+    case 0x02:
+        snprintf(str, DESC_LEN, "XENIX root (0x02)");
+        break;
+    case 0x03:
+        snprintf(str, DESC_LEN, "XENIX /usr (0x03)");
+        break;
     case 0x04:
     case 0x06:
-        snprintf(str, DESC_LEN, "DOS FAT16 (0x%.2X)", ptype);
+        snprintf(str, DESC_LEN, "DOS FAT16 (0x%.2x)", ptype);
         break;
     case 0x05:
         snprintf(str, DESC_LEN, "DOS Extended (0x05)");
@@ -58,151 +64,6 @@ dos_get_desc(uint8_t ptype)
     case 0x09:
         snprintf(str, DESC_LEN, "AIX Data (0x09)");
         break;
-    case 0x0b:
-    case 0x0c:
-        snprintf(str, DESC_LEN, "Win95 FAT32 (0x%.2X)", ptype);
-        break;
-    case 0x0e:
-        snprintf(str, DESC_LEN, "Win95 FAT16 (0x0E)");
-        break;
-    case 0x0f:
-        snprintf(str, DESC_LEN, "Win95 Extended (0x0F)");
-        break;
-    case 0x11:
-        snprintf(str, DESC_LEN, "DOS FAT12 Hidden (0x11)");
-        break;
-    case 0x12:
-        snprintf(str, DESC_LEN, "Hibernation (0x12)");
-        break;
-    case 0x14:
-    case 0x16:
-        snprintf(str, DESC_LEN, "DOS FAT16 Hidden (0x%.2X)", ptype);
-        break;
-    case 0x1b:
-    case 0x1c:
-        snprintf(str, DESC_LEN, "Win95 FAT32 Hidden (0x%.2X)", ptype);
-        break;
-    case 0x1e:
-        snprintf(str, DESC_LEN, "Win95 FAT16 Hidden (0x1E)");
-        break;
-    case 0x42:
-        snprintf(str, DESC_LEN, "Win LVM / Secure FS (0x42)");
-        break;
-    case 0x44:
-        snprintf(str, DESC_LEN, "GoBack (0x44)");
-        break;
-    case 0x50:
-    case 0x51:
-    case 0x53:
-    case 0x54:
-        snprintf(str, DESC_LEN, "OnTrack Disk Manager (0x%.2X)", ptype);
-        break;
-    case 0x55:
-        snprintf(str, DESC_LEN, "EZ-Drive (0x55)");
-        break;
-        return "EZ-Drive";
-    case 0x57:
-        snprintf(str, DESC_LEN, "DrivePro (0x57)");
-        break;
-    case 0x61:
-        snprintf(str, DESC_LEN, "SpeedStor (0x61)");
-        break;
-    case 0x63:
-        snprintf(str, DESC_LEN, "UNIX System V (0x63)");
-        break;
-    case 0x64:
-    case 0x65:
-    case 0x66:
-    case 0x67:
-    case 0x68:
-    case 0x69:
-        snprintf(str, DESC_LEN, "Novell Netware (0x%.2X)", ptype);
-        break;
-    case 0x82:
-        snprintf(str, DESC_LEN, "Linux Swap / Solaris x86 (0x82)");
-        break;
-    case 0x83:
-        snprintf(str, DESC_LEN, "Linux (0x83)");
-        break;
-    case 0x84:
-        snprintf(str, DESC_LEN, "Hibernation (0x84)");
-        break;
-    case 0x85:
-        snprintf(str, DESC_LEN, "Linux Extended (0x85)");
-        break;
-    case 0x86:
-        snprintf(str, DESC_LEN, "NTFS Volume Set (0x86)");
-        break;
-    case 0x8e:
-        snprintf(str, DESC_LEN, "Linux Logical Volume Manager (0x8e)");
-        break;
-    case 0x93:
-        snprintf(str, DESC_LEN, "Linux Hidden (0x93)");
-        break;
-    case 0x9f:
-        snprintf(str, DESC_LEN, "BSD/OS (0x9F)");
-        break;
-    case 0xa0:
-    case 0xa1:
-        snprintf(str, DESC_LEN, "Hibernation (0x%.2X)", ptype);
-        break;
-    case 0xa5:
-        snprintf(str, DESC_LEN, "FreeBSD (0xA5)");
-        break;
-    case 0xa6:
-        snprintf(str, DESC_LEN, "OpenBSD (0xA6)");
-        break;
-    case 0xa7:
-        snprintf(str, DESC_LEN, "NextSTEP (0xA7)");
-        break;
-    case 0xa8:
-        snprintf(str, DESC_LEN, "Mac OS X (0xA8)");
-        break;
-    case 0xa9:
-        snprintf(str, DESC_LEN, "NetBSD (0xA9)");
-        break;
-    case 0xab:
-        snprintf(str, DESC_LEN, "Mac OS X (0xAB)");
-        break;
-    case 0xb7:
-        snprintf(str, DESC_LEN, "BSDI (0xB7)");
-        break;
-    case 0xb8:
-        snprintf(str, DESC_LEN, "BSDI Swap (0xB8)");
-        break;
-    case 0xbe:
-        snprintf(str, DESC_LEN, "Solaris 8 Boot (0xBE)");
-        break;
-    case 0xc2:
-        snprintf(str, DESC_LEN, "Hidden Linux (0xC2)");
-        break;
-    case 0xc3:
-        snprintf(str, DESC_LEN, "Hidden Linux Swap (0xC3)");
-        break;
-    case 0xc6:
-    case 0xc7:
-        snprintf(str, DESC_LEN,
-            "Corrupted Windows NT Volume / Stripe Set (0x%.2X)", ptype);
-        break;
-    case 0xee:
-        snprintf(str, DESC_LEN, "GPT Safety Partition (0xEE)");
-        break;
-    case 0xfb:
-        snprintf(str, DESC_LEN, "VMWare File System (0xFB)");
-        break;
-    case 0xfc:
-        snprintf(str, DESC_LEN, "VMWare Swap (0xFC)");
-        break;
-        return "VMware Swap";
-    case 0xfd:
-        snprintf(str, DESC_LEN, "Linux RAID (0xFD)");
-        break;
-    case 0x02:
-        snprintf(str, DESC_LEN, "XENIX root (0x02)");
-        break;
-    case 0x03:
-        snprintf(str, DESC_LEN, "XENIX /usr (0x03)");
-        break;
     case 0x0a:
         snprintf(str, DESC_LEN, "OS/2 Boot Manager (0x0a)");
         break;
@@ -214,8 +75,28 @@ dos_get_desc(uint8_t ptype)
            snprintf(str, DESC_LEN, "OPUS (0x0a)");
            break;
          */
+    case 0x0b:
+    case 0x0c:
+        snprintf(str, DESC_LEN, "Win95 FAT32 (0x%.2x)", ptype);
+        break;
+    case 0x0e:
+        snprintf(str, DESC_LEN, "Win95 FAT16 (0x0e)");
+        break;
+    case 0x0f:
+        snprintf(str, DESC_LEN, "Win95 Extended (0x0f)");
+        break;
     case 0x10:
         snprintf(str, DESC_LEN, "OPUS (0x10)");
+        break;
+    case 0x11:
+        snprintf(str, DESC_LEN, "DOS FAT12 Hidden (0x11)");
+        break;
+    case 0x12:
+        snprintf(str, DESC_LEN, "Hibernation (0x12)");
+        break;
+    case 0x14:
+    case 0x16:
+        snprintf(str, DESC_LEN, "DOS FAT16 Hidden (0x%.2x)", ptype);
         break;
     case 0x17:
         snprintf(str, DESC_LEN, "Hidden IFS/HPFS (0x17)");
@@ -224,13 +105,20 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN, "AST SmartSleep (0x18)");
         break;
     case 0x19:
+    case 0x1b:
+    case 0x1c:
+        snprintf(str, DESC_LEN, "Win95 FAT32 Hidden (0x%.2x)", ptype);
+        break;
+    case 0x1e:
+        snprintf(str, DESC_LEN, "Win95 FAT16 Hidden (0x1e)");
+        break;
     case 0x20:
     case 0x22:
     case 0x7e:
     case 0x7f:
     case 0xed:
     case 0xf7:
-        snprintf(str, DESC_LEN, "Unused (0x%.2X)", ptype);
+        snprintf(str, DESC_LEN, "Unused (0x%.2x)", ptype);
         break;
     case 0x21:
     case 0x23:
@@ -243,7 +131,7 @@ dos_get_desc(uint8_t ptype)
     case 0x73:
     case 0x76:
     case 0xf3:
-        snprintf(str, DESC_LEN, "Reserved (0x%.2X)", ptype);
+        snprintf(str, DESC_LEN, "Reserved (0x%.2x)", ptype);
         break;
     case 0x24:
         snprintf(str, DESC_LEN, "NEC DOS 3.x (0x24)");
@@ -257,14 +145,14 @@ dos_get_desc(uint8_t ptype)
     case 0x38:
         snprintf(str, DESC_LEN, "THEOS v3.2 2gb (0x38)");
         break;
+    case 0x39:
+        snprintf(str, DESC_LEN, "THEOS v4 Spanned (0x39)");
+        break;
         /*
            case 0x39:
            snprintf(str, DESC_LEN, "Plan 9 (0x39)");
            break;
          */
-    case 0x39:
-        snprintf(str, DESC_LEN, "THEOS v4 Spanned (0x39)");
-        break;
     case 0x3a:
         snprintf(str, DESC_LEN, "THEOS v4 4gb (0x3a)");
         break;
@@ -292,9 +180,15 @@ dos_get_desc(uint8_t ptype)
            snprintf(str, DESC_LEN, "PPC PReP Boot (0x41)");
            break;
          */
+    case 0x42:
+        snprintf(str, DESC_LEN, "Win LVM / Secure FS (0x42)");
+        break;
     case 0x43:
         snprintf(str, DESC_LEN,
             "Linux Native (Sharing Disk with DR-DOS) (0x43)");
+        break;
+    case 0x44:
+        snprintf(str, DESC_LEN, "GoBack (0x44)");
         break;
     case 0x45:
         snprintf(str, DESC_LEN, "Boot-US Boot Manager (0x45)");
@@ -329,7 +223,7 @@ dos_get_desc(uint8_t ptype)
     case 0x4d:
     case 0x4e:
     case 0x4f:
-        snprintf(str, DESC_LEN, "QNX 4.x (0x%.2X)", ptype);
+        snprintf(str, DESC_LEN, "QNX 4.x (0x%.2x)", ptype);
         break;
         /*case 0x4f:
            snprintf(str, DESC_LEN, "Oberon (0x4f)");
@@ -337,21 +231,47 @@ dos_get_desc(uint8_t ptype)
         /*case 0x52:
            snprintf(str, DESC_LEN, "CP/M (0x52)");
            break; */
+    case 0x50:
+    case 0x51:
+    case 0x53:
+    case 0x54:
+        snprintf(str, DESC_LEN, "OnTrack Disk Manager (0x%.2x)", ptype);
+        break;
     case 0x52:
         snprintf(str, DESC_LEN, "Microport SysV/AT (0x52)");
         break;
+    case 0x55:
+        snprintf(str, DESC_LEN, "EZ-Drive (0x55)");
+        break;
+    case 0x56:
+        snprintf(str, DESC_LEN,
+            "AT&T MS-DOS 3.x Logically Sectored FAT (0x56)");
+        break;
         /*case 0x56:
-           snprintf(str, DESC_LEN, "Golden Bow VFeature Partitioned Volume. (0x56)");
+           snprintf(str, DESC_LEN, "Golden Bow VFeature Partitioned Volume (0x56)");
            break; */
         /*case 0x56:
            snprintf(str, DESC_LEN, "DM Converted to EZ-BIOS (0x56)");
            break; */
-    case 0x56:
-        snprintf(str, DESC_LEN,
-            "AT&T MS-DOS 3.x Logically Sectored FAT. (0x56)");
+    case 0x57:
+        snprintf(str, DESC_LEN, "DrivePro (0x57)");
         break;
     case 0x5c:
         snprintf(str, DESC_LEN, "Priam EDisk (0x5c)");
+        break;
+    case 0x61:
+        snprintf(str, DESC_LEN, "SpeedStor (0x61)");
+        break;
+    case 0x63:
+        snprintf(str, DESC_LEN, "UNIX System V (0x63)");
+        break;
+    case 0x64:
+    case 0x65:
+    case 0x66:
+    case 0x67:
+    case 0x68:
+    case 0x69:
+        snprintf(str, DESC_LEN, "Novell Netware (0x%.2x)", ptype);
         break;
     case 0x70:
         snprintf(str, DESC_LEN, "DiskSecure Multi-Boot (0x70)");
@@ -362,12 +282,12 @@ dos_get_desc(uint8_t ptype)
     case 0x75:
         snprintf(str, DESC_LEN, "IBM PC/IX (0x75)");
         break;
-        /*case 0x77:
-           snprintf(str, DESC_LEN, "M2FS/M2CS (0x77)");
-           break; */
     case 0x77:
         snprintf(str, DESC_LEN, "VNDI (0x77)");
         break;
+        /*case 0x77:
+           snprintf(str, DESC_LEN, "M2FS/M2CS (0x77)");
+           break; */
     case 0x78:
         snprintf(str, DESC_LEN, "XOSL FS (0x78)");
         break;
@@ -380,6 +300,21 @@ dos_get_desc(uint8_t ptype)
         /*case 0x81:
            snprintf(str, DESC_LEN, "Mitac Disk Manager (0x81)");
            break; */
+    case 0x82:
+        snprintf(str, DESC_LEN, "Linux Swap / Solaris x86 (0x82)");
+        break;
+    case 0x83:
+        snprintf(str, DESC_LEN, "Linux (0x83)");
+        break;
+    case 0x84:
+        snprintf(str, DESC_LEN, "Hibernation (0x84)");
+        break;
+    case 0x85:
+        snprintf(str, DESC_LEN, "Linux Extended (0x85)");
+        break;
+    case 0x86:
+        snprintf(str, DESC_LEN, "NTFS Volume Set (0x86)");
+        break;
     case 0x87:
         snprintf(str, DESC_LEN, "NTFS Volume Set (0x87)");
         break;
@@ -397,6 +332,9 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN,
             "Free FDISK Hidden Primary DOS FAT12 (0x8d)");
         break;
+    case 0x8e:
+        snprintf(str, DESC_LEN, "Linux Logical Volume Manager (0x8e)");
+        break;
     case 0x90:
         snprintf(str, DESC_LEN,
             "Free FDISK Hidden Primary DOS FAT16 (0x90)");
@@ -407,6 +345,9 @@ dos_get_desc(uint8_t ptype)
     case 0x92:
         snprintf(str, DESC_LEN,
             "Free FDISK Hidden Primary DOS Large FAT16 (0x92)");
+        break;
+    case 0x93:
+        snprintf(str, DESC_LEN, "Linux Hidden (0x93)");
         break;
     case 0x94:
         snprintf(str, DESC_LEN, "Amoeba Bad Block Table (0x94)");
@@ -436,6 +377,13 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN,
             "Free FDISK Hidden DOS Extended LBA (0x9b)");
         break;
+    case 0x9f:
+        snprintf(str, DESC_LEN, "BSD/OS (0x9f)");
+        break;
+    case 0xa0:
+    case 0xa1:
+        snprintf(str, DESC_LEN, "Hibernation (0x%.2x)", ptype);
+        break;
     case 0xa3:
         snprintf(str, DESC_LEN,
             "HP Volume Expansion (SpeedStor Variant) (0xa3)");
@@ -451,10 +399,10 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN, "OpenBSD (0xa6)");
         break;
     case 0xa7:
-        snprintf(str, DESC_LEN, "NeXTStep (0xa7)");
+        snprintf(str, DESC_LEN, "NeXTSTEP (0xa7)");
         break;
     case 0xa8:
-        snprintf(str, DESC_LEN, "Mac OS-X (0xa8)");
+        snprintf(str, DESC_LEN, "Mac OS X (0xa8)");
         break;
     case 0xa9:
         snprintf(str, DESC_LEN, "NetBSD (0xa9)");
@@ -463,7 +411,7 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN, "Olivetti Fat 12 1.44MB Service (0xaa)");
         break;
     case 0xab:
-        snprintf(str, DESC_LEN, "Mac OS-X Boot Partition (0xab)");
+        snprintf(str, DESC_LEN, "Mac OS X Boot Partition (0xab)");
         break;
     case 0xae:
         snprintf(str, DESC_LEN, "ShagOS Filesystem (0xae)");
@@ -486,15 +434,27 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN,
             "HP Volume Expansion (SpeedStor Variant) (0xb4)");
         break;
-        /*case 0xb6:
-           snprintf(str, DESC_LEN, "HP Volume Expansion (SpeedStor Variant) (0xb6)");
-           break; */
     case 0xb6:
         snprintf(str, DESC_LEN,
             "Corrupted Windows NT Mirror Set Master FAT16 (0xb6)");
         break;
+        /*case 0xb6:
+           snprintf(str, DESC_LEN, "HP Volume Expansion (SpeedStor Variant) (0xb6)");
+           break; */
+    case 0xb7:
+        snprintf(str, DESC_LEN, "BSDI (0xb7)");
+        break;
+    case 0xb8:
+        snprintf(str, DESC_LEN, "BSDI Swap (0xb8)");
+        break;
     case 0xbb:
         snprintf(str, DESC_LEN, "Boot Wizard Hidden (0xbb)");
+        break;
+    case 0xbe:
+        snprintf(str, DESC_LEN, "Solaris 8 Boot (0xbe)");
+        break;
+    case 0xc0:
+        snprintf(str, DESC_LEN, "DR-DOS Secured (0xc0)");
         break;
         /*case 0xc0:
            snprintf(str, DESC_LEN, "CTOS (0xc0)");
@@ -505,17 +465,25 @@ dos_get_desc(uint8_t ptype)
         /*case 0xc0:
            snprintf(str, DESC_LEN, "NTFT (0xc0)");
            break; */
-    case 0xc0:
-        snprintf(str, DESC_LEN, "DR-DOS Secured (0xc0)");
-        break;
     case 0xc1:
         snprintf(str, DESC_LEN, "DR-DOS Secured FAT12 (0xc1)");
+        break;
+    case 0xc2:
+        snprintf(str, DESC_LEN, "Hidden Linux (0xc2)");
+        break;
+    case 0xc3:
+        snprintf(str, DESC_LEN, "Hidden Linux Swap (0xc3)");
         break;
     case 0xc4:
         snprintf(str, DESC_LEN, "DR-DOS Secured FAT16 <32M (0xc4)");
         break;
     case 0xc5:
         snprintf(str, DESC_LEN, "DR-DOS Secured Extended (0xc5)");
+        break;
+    case 0xc6:
+    case 0xc7:
+        snprintf(str, DESC_LEN,
+            "Corrupted Windows NT Volume / Stripe Set (0x%.2x)", ptype);
         break;
     case 0xc8:
         snprintf(str, DESC_LEN, "Reserved for DR-DOS 8.0+ (0xc8)");
@@ -541,12 +509,12 @@ dos_get_desc(uint8_t ptype)
     case 0xcf:
         snprintf(str, DESC_LEN, "DR-DOS 7.04+ Secured EXT DOS LBA (0xcf)");
         break;
-        /*case 0xd0:
-           snprintf(str, DESC_LEN, "REAL/32 Secure Big (0xd0)");
-           break; */
     case 0xd0:
         snprintf(str, DESC_LEN, "Multiuser DOS Secured (0xd0)");
         break;
+        /*case 0xd0:
+           snprintf(str, DESC_LEN, "REAL/32 Secure Big (0xd0)");
+           break; */
     case 0xd1:
         snprintf(str, DESC_LEN, "Old Multiuser DOS Secured FAT12 (0xd1)");
         break;
@@ -615,6 +583,9 @@ dos_get_desc(uint8_t ptype)
     case 0xeb:
         snprintf(str, DESC_LEN, "BeOS BFS (0xeb)");
         break;
+    case 0xee:
+        snprintf(str, DESC_LEN, "GPT Safety Partition (0xee)");
+        break;
     case 0xef:
         snprintf(str, DESC_LEN, "EFI File System (0xef)");
         break;
@@ -645,6 +616,19 @@ dos_get_desc(uint8_t ptype)
     case 0xfa:
         snprintf(str, DESC_LEN, "Bochs (0xfa)");
         break;
+    case 0xfb:
+        snprintf(str, DESC_LEN, "VMWare File System (0xfb)");
+        break;
+    case 0xfc:
+        snprintf(str, DESC_LEN, "VMWare Swap (0xfc)");
+        break;
+    case 0xfd:
+        snprintf(str, DESC_LEN, "Linux RAID (0xfd)");
+        break;
+    case 0xfe:
+        snprintf(str, DESC_LEN,
+            "Windows NT Disk Administrator Hidden (0xfe)");
+        break;
         /*case 0xfe:
            snprintf(str, DESC_LEN, "SpeedStor >1024 cyl. (0xfe)");
            break; */
@@ -654,10 +638,6 @@ dos_get_desc(uint8_t ptype)
         /*case 0xfe:
            snprintf(str, DESC_LEN, "IBM PS/2 IML (0xfe)");
            break; */
-    case 0xfe:
-        snprintf(str, DESC_LEN,
-            "Windows NT Disk Administrator Hidden (0xfe)");
-        break;
         /*case 0xfe:
            snprintf(str, DESC_LEN, "Old Linux Logical Volume Manager (0xfe)");
            break; */
@@ -665,7 +645,7 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN, "Xenix Bad Block Table (0xff)");
         break;
     default:
-        snprintf(str, DESC_LEN, "Unknown Type (0x%.2X)", ptype);
+        snprintf(str, DESC_LEN, "Unknown Type (0x%.2x)", ptype);
         break;
     }
 
