@@ -217,9 +217,14 @@ TskModule * TskPipeline::createModule(Poco::XML::Element *pElem)
             pModule->setArguments(pElem->getAttribute(TskPipeline::MODULE_ARGS_ATTR));
             pModule->checkInterface();
 
-            // Initialize the module. Will throw an exception on failure.
+            // Initialize the module.
             if (m_loadDll)
-                pModule->initialize();
+            {
+                if (pModule->initialize() != TskModule::OK)
+                {
+                    return NULL;
+                }
+            }
 
             // The module was successfully created and initialized so we no longer
             // need the auto_ptr to manage it.
