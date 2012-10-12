@@ -231,31 +231,30 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
 #ifdef TSK_WIN32
     // convert wchar_t* image path to char* to conform to
     // the AFFLIB API
-    UTF16 *utf16 = (UTF16 *)images[0];
+    UTF16 *utf16 = (UTF16 *) images[0];
     size_t ilen = wcslen(utf16);
-    size_t olen = ilen*4 + 1;
+    size_t olen = ilen * 4 + 1;
     UTF8 *utf8 = (UTF8 *) tsk_malloc(olen);
 
     image = (char *) utf8;
-    if ( image == NULL )
+    if (image == NULL)
         return NULL;
     TSKConversionResult retval =
-    tsk_UTF16toUTF8_lclorder( (const UTF16 **) &utf16,
+        tsk_UTF16toUTF8_lclorder((const UTF16 **) &utf16,
         &utf16[ilen], &utf8,
-        &utf8[olen], TSKlenientConversion );
+        &utf8[olen], TSKlenientConversion);
     *utf8 = '\0';
     if (retval != TSKconversionOK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_UNICODE);
         tsk_error_set_errstr("aff_open file: %" PRIttocTSK
-            ": Error converting path to UTF-8 %d\n",
-            images[0], retval);
+            ": Error converting path to UTF-8 %d\n", images[0], retval);
         free(image);
         return NULL;
     }
     utf8 = (UTF8 *) image;
-    while ( *utf8 ) {
-        if ( *utf8 > 127 ) {
+    while (*utf8) {
+        if (*utf8 > 127) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_UNICODE);
             tsk_error_set_errstr("aff_open file: %" PRIttocTSK
@@ -267,10 +266,10 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
         utf8++;
     }
 #else
-    image = (char *) tsk_malloc( strlen(images[0])+1 );
-    if ( image == NULL )
+    image = (char *) tsk_malloc(strlen(images[0]) + 1);
+    if (image == NULL)
         return NULL;
-    strncpy(image, images[0], strlen(images[0])+1 );
+    strncpy(image, images[0], strlen(images[0]) + 1);
 #endif
 
     if ((aff_info =

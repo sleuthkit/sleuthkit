@@ -37,12 +37,17 @@ TskAuto::~TskAuto()
 }
 
 
-void TskAuto::setCurVsPartDescr(const std::string & curVsPartDescr) {
-    m_curVsPartDescr = curVsPartDescr;
+void TskAuto::setCurVsPart(const TSK_VS_PART_INFO *partInfo) {
+    m_curVsPartDescr = partInfo->desc;
+    m_curVsPartFlag = partInfo->flags;
 }
 
 std::string TskAuto::getCurVsPartDescr() const {
     return m_curVsPartDescr;
+}
+
+TSK_VS_PART_FLAG_ENUM TskAuto::getCurVsPartFlag() const {
+    return m_curVsPartFlag;
 }
 
 /**
@@ -228,7 +233,7 @@ TSK_WALK_RET_ENUM
     }
 
     //save the current volume description
-    tsk->setCurVsPartDescr(a_vs_part->desc);
+    tsk->setCurVsPart(a_vs_part);
 
     // see if the super class wants to continue with this.
     TSK_FILTER_ENUM retval1 = tsk->filterVol(a_vs_part);
@@ -337,10 +342,16 @@ TSK_RETVAL_ENUM
 
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        tsk_error_set_errstr2 ("Sector offset: %" PRIuOFF ", Partition Type: %s",
-            a_start/512, getCurVsPartDescr().c_str() );
-        registerError();
-        return TSK_ERR;
+        if (getCurVsPartFlag() & TSK_VS_PART_FLAG_ALLOC) {
+            tsk_error_set_errstr2 ("Sector offset: %" PRIuOFF ", Partition Type: %s",
+                a_start/512, getCurVsPartDescr().c_str() );
+            registerError();
+            return TSK_ERR;
+        }
+        else {
+            tsk_error_reset();
+            return TSK_OK;
+        }
     }
 
     TSK_RETVAL_ENUM retval = findFilesInFsInt(fs_info, fs_info->root_inum);
@@ -411,11 +422,17 @@ uint8_t
 
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        tsk_error_set_errstr2(
-            "Sector offset: %" PRIuOFF ", Partition Type: %s",
-            a_start / 512, getCurVsPartDescr().c_str());
-        registerError();
-        return 1;
+        if (getCurVsPartFlag() & TSK_VS_PART_FLAG_ALLOC) {
+            tsk_error_set_errstr2(
+                "Sector offset: %" PRIuOFF ", Partition Type: %s",
+                a_start / 512, getCurVsPartDescr().c_str());
+            registerError();
+            return 1;
+        }
+        else {
+            tsk_error_reset();
+            return 0;
+        }
     }
 
     findFilesInFsInt(fs_info, a_inum);

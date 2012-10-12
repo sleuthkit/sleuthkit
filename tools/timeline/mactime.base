@@ -234,7 +234,7 @@ while ((scalar(@ARGV) > 0) && (($_ = $ARGV[0]) =~ /^-(.)(.*)/)) {
             elsif ($_HAS_DATETIME_TIMEZONE) {
                 my $realtz = 0;
                 foreach ( get_timezone_list() ) {
-                    if ($tz =~ m/$_/i) {
+                    if ($tz =~ m/^$_$/i) {
                         $realtz = $_;
                         last;
                     }

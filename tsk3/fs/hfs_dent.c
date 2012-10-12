@@ -289,37 +289,41 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             hfs_file *file = (hfs_file *) & rec_buf[rec_off2];
             // This could be a hard link.  We need to test this CNID, and follow it if necessary.
             unsigned char is_err;
-            TSK_INUM_T file_cnid = tsk_getu32(hfs->fs_info.endian, file->std.cnid);
+            TSK_INUM_T file_cnid =
+                tsk_getu32(hfs->fs_info.endian, file->std.cnid);
             TSK_INUM_T target_cnid =
-            		hfs_follow_hard_link(hfs, file, &is_err);
-            if(is_err > 1) {
-            	error_returned("hfs_dir_open_meta_cb: trying to follow a possible hard link in the directory");
-            	return HFS_BTREE_CB_ERR;
+                hfs_follow_hard_link(hfs, file, &is_err);
+            if (is_err > 1) {
+                error_returned
+                    ("hfs_dir_open_meta_cb: trying to follow a possible hard link in the directory");
+                return HFS_BTREE_CB_ERR;
             }
-            if(target_cnid != file_cnid) {
-				HFS_ENTRY entry;
-				uint8_t lkup;  // lookup result
+            if (target_cnid != file_cnid) {
+                HFS_ENTRY entry;
+                uint8_t lkup;   // lookup result
 
-            	// This is a hard link.  We need to fill in the name->type and name->meta_addr from the target
-            	info->fs_name->meta_addr = target_cnid;
-            	// get the Catalog entry for the target CNID
-            	
-            	lkup = hfs_cat_file_lookup(hfs, target_cnid, &entry,
-            			FALSE);
-            	if(lkup != 0) {
-            		error_returned("hfs_dir_open_meta_cb: retrieving the catalog entry for the target of a hard link");
-            		return HFS_BTREE_CB_ERR;
-            	}
-            	info->fs_name->type =
-            			hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
-            					entry.cat.std.perm.mode));
-            } else {
-            	// This is NOT a hard link.
-            	info->fs_name->meta_addr =
-            			tsk_getu32(hfs->fs_info.endian, file->std.cnid);
-            	info->fs_name->type =
-            			hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
-            					file->std.perm.mode));
+                // This is a hard link.  We need to fill in the name->type and name->meta_addr from the target
+                info->fs_name->meta_addr = target_cnid;
+                // get the Catalog entry for the target CNID
+
+                lkup = hfs_cat_file_lookup(hfs, target_cnid, &entry,
+                    FALSE);
+                if (lkup != 0) {
+                    error_returned
+                        ("hfs_dir_open_meta_cb: retrieving the catalog entry for the target of a hard link");
+                    return HFS_BTREE_CB_ERR;
+                }
+                info->fs_name->type =
+                    hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
+                        entry.cat.std.perm.mode));
+            }
+            else {
+                // This is NOT a hard link.
+                info->fs_name->meta_addr =
+                    tsk_getu32(hfs->fs_info.endian, file->std.cnid);
+                info->fs_name->type =
+                    hfsmode2tsknametype(tsk_getu16(hfs->fs_info.endian,
+                        file->std.perm.mode));
             }
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
             if (hfs_UTF16toUTF8(fs, (uint8_t *) cur_key->name.unicode,
@@ -425,8 +429,8 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         for (i = 0; i < 6; i++) {
             switch (i) {
             case 0:
-            	if(!hfs->has_extents_file)
-            		continue;
+                if (!hfs->has_extents_file)
+                    continue;
                 strncpy(fs_name->name, HFS_EXTENTS_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_EXTENTS_FILE_ID;
@@ -437,9 +441,9 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                 fs_name->meta_addr = HFS_CATALOG_FILE_ID;
                 break;
             case 2:
-            	// Note: the Extents file and the BadBlocks file are really the same.
-            	if(!hfs->has_extents_file)
-            		continue;
+                // Note: the Extents file and the BadBlocks file are really the same.
+                if (!hfs->has_extents_file)
+                    continue;
                 strncpy(fs_name->name, HFS_BAD_BLOCK_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_BAD_BLOCK_FILE_ID;
@@ -450,15 +454,15 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
                 fs_name->meta_addr = HFS_ALLOCATION_FILE_ID;
                 break;
             case 4:
-            	if(!hfs->has_startup_file)
-            		continue;
+                if (!hfs->has_startup_file)
+                    continue;
                 strncpy(fs_name->name, HFS_STARTUP_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_STARTUP_FILE_ID;
                 break;
             case 5:
-            	if(!hfs->has_attributes_file)
-            		continue;
+                if (!hfs->has_attributes_file)
+                    continue;
                 strncpy(fs_name->name, HFS_ATTRIBUTES_FILE_NAME,
                     fs_name->name_size);
                 fs_name->meta_addr = HFS_ATTRIBUTES_FILE_ID;

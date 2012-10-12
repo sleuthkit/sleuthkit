@@ -2,7 +2,7 @@
 ** The Sleuth Kit 
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+** Copyright (c) 2003-2012 Brian Carrier.  All rights reserved
 **
 ** Matt Stillerman [matt@atc-nycorp.com]
 ** Copyright (c) 2012 ATC-NY.  All rights reserved.
@@ -294,6 +294,7 @@ extern "C" {
         struct {
             uint8_t *buf;       ///< Buffer for resident data
             size_t buf_size;    ///< Number of bytes allocated to buf
+            TSK_OFF_T offset;   ///< Starting offset in bytes relative to start of file system (NOT YET IMPLEMENTED)
         } rd;
 
         /* Special file (compressed, encrypted, etc.) */
@@ -1418,7 +1419,9 @@ class TskFsAttribute {
                     return new TskFsAttrRun(run);
                 i++;
                 run = run->next;
-        }} return NULL;
+            }
+        }
+        return NULL;
     };
 
     /**
@@ -1432,7 +1435,9 @@ class TskFsAttribute {
             while (run != NULL) {
                 size++;
                 run = run->next;
-        }} return size;
+            }
+        }
+        return size;
     }
 
     /**
@@ -2101,7 +2106,8 @@ class TskFsInfo {
             return m_fsInfo->img_info;
         else
             return NULL;
-}};                             //TskFsInfo
+    }
+};                              //TskFsInfo
 
 
 
@@ -2295,7 +2301,8 @@ class TskFsMeta {
             while (nameList != NULL) {
                 nameList = nameList->next;
                 numOfList += 1;
-            } m_nameListLen = numOfList;
+            }
+            m_nameListLen = numOfList;
         }
         else {
             m_nameList = NULL;
@@ -2564,7 +2571,9 @@ class TskFsMeta {
             while (name != NULL) {
                 size++;
                 name = name->next;
-        }} return size;
+            }
+        }
+        return size;
     };
 
     /**
@@ -2581,7 +2590,9 @@ class TskFsMeta {
                     return new TskFsMetaName(name);
                 i++;
                 name = name->next;
-        }} return NULL;
+            }
+        }
+        return NULL;
     };
 
   private:
