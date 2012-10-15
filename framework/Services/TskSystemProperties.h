@@ -62,13 +62,13 @@ public:
 
         /** 
          * Directory where configuration files and data can be found. 
-         * Defaults to #PROG_DIR#/Config. 
+         * Defaults to \#PROG_DIR#/Config. 
          */
         CONFIG_DIR,
         
         /** 
           * Directory where plug-in and executable modules can be found.
-          * Defaults to #PROG_DIR#/Modules.
+          * Defaults to \#PROG_DIR#/Modules.
           */
         MODULE_DIR,
 
@@ -81,19 +81,19 @@ public:
 
         /** 
          * The output directory for the executing program. Defaults to 
-         * #OUT_DIR#/SystemOutput.
+         * \#OUT_DIR#/SystemOutput.
          */
         SYSTEM_OUT_DIR,
 
         /** 
          * The output directory for plug-in and executable modules. Defaults to 
-         * #OUT_DIR#/ModuleOutput.
+         * \#OUT_DIR#/ModuleOutput.
          */
         MODULE_OUT_DIR,
 
         /** 
          * Directory where system logs are written. Defaults to 
-         * #SYSTEM_OUT_DIR#/Logs. 
+         * \#SYSTEM_OUT_DIR#/Logs. 
          */
         LOG_DIR,
 
@@ -109,7 +109,7 @@ public:
 
         /** 
          * Directory where unallocated sectors image files are stored prior to
-         * carving. Defaults to #SYSTEM_OUT_DIR#\\Carving. 
+         * carving. Defaults to \#SYSTEM_OUT_DIR#\\Carving. 
          */ 
         CARVE_DIR,
 
@@ -147,13 +147,13 @@ public:
         /**
          * Path to a Scalpel configuration file. Used by the TSK 
          * Framework's implementation of the CarveExtract interface.
-         * Defaults to #SCALPEL_DIR#/scalpel.conf.
+         * Defaults to \#SCALPEL_DIR#/scalpel.conf.
          */
         SCALPEL_CONFIG_FILE,
 
         /** 
          * Path to a pipeline configuration file. Defaults to 
-         * #CONFIG_DIR#/pipeline_config.xml. 
+         * \#CONFIG_DIR#/pipeline_config.xml. 
          */ 
         PIPELINE_CONFIG_FILE,
 
@@ -198,7 +198,7 @@ public:
         /** 
          * A combination of elements that define a unique identifier for the
          * current task. For example, this property might be defined to be a
-         * string of the form CurrentTask_HostName_Pid_StartTime. 
+         * string of the form CurrentTask_HostName_PID_StartTime. 
          */
         UNIQUE_ID,
 

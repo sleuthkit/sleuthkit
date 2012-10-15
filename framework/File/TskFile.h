@@ -18,6 +18,7 @@
 
 // System includes
 #include <string>
+#include <ios>
 
 // Framework includes
 #include "Services/TskImgDB.h"

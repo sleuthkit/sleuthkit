@@ -2,19 +2,19 @@
 
   <h3>Basic Concepts</h3>
   <ul>
-    <li><b>Central Database:</b> All data is stored in a central database, which can be as simple as a local SQLite file or as complex as a database managed by a database server.  The details are hidden from the modules because the TskImgDB class is used to store and retrieve data from the central database.</li>
+    <li><b>Image Database:</b> The framework stores data in an image database, which can be as simple as a local SQLite file or as complex as a database managed by a relational database management system (RDBMS) on a database server.  The details of storing and retrieving data from the image database are hidden by the framework's TskImgDB interface.</li>
 
-    <li><b>Services:</b> There are core services that the framework provides to the programs that incorporate the framework and to the modules that fit into the framework.  See \ref mod_stuff_services for more details.</li>
-
-    <li><b>Pipelines and Plug-In Modules:</b> The framework provides a pipeline infrastructure that modules can be dropped into.  The framework comes with basic modules, but it is expected that other developers will provide modules that can be used.  See \ref pipeline_config_page and \ref mod_devpage to learn how to build pipelines and modules.</li>
+    <li><b>Pipelines and Plug-In Modules:</b> The framework supplies a pipeline infrastructure that modules can be dropped into.  The framework comes with basic modules, but it is expected that other developers will provide additional modules as the framework evolves.  See \ref pipeline_config_page and \ref mod_devpage to learn how to build pipelines and modules.</li>
    
-    <li><b>Blackboard:</b> The framework uses a blackboard to allow modules to communicate. Modules can post results to the blackboard and other modules can query the blackboard for previous findings. See \ref mod_bbpage for more details. </li>
+    <li><b>Blackboard:</b> The framework uses a blackboard to allow modules to communicate. Modules can post results to the blackboard and query the blackboard for previous findings. See \ref mod_bbpage for more details. </li>
+
+    <li><b>Services:</b> The framework provides core services such as logging and file management.  See \ref mod_stuff_services for more details.</li>
 
     <li><b>Three Phase Analysis Process:</b> The framework has been designed with the idea that there are three major phases in the disk image analysis process:
     <ul>
-      <li>File Extraction, in which files are identified based on file system data, carving, and other types of data recovery.</li>
-      <li>File Analysis, in which each file is analyzed.  The framework supports plug-in modules to perform file analysis.</li>
-      <li>Post-Processing, in which the the results of the individual file analyses are combined with additional analysis of the image. The framework supports plug-in modules to perform post-processing.</li>
+      <li>File Extraction, in which files are identified using file system data, carving, and other types of data recovery.</li>
+      <li>File Analysis, in which each file is analyzed individually.</li>
+      <li>Post-Processing, in which the the results of the individual file analyses are combined with additional analysis of the image.</li>
     </ul>
     These phases are illustrated by this diagram: <br />
     \image html pipelines.png
