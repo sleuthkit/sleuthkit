@@ -272,7 +272,7 @@ extern "C" {
         TSK_FS_ATTR_TYPE_ENUM type;     ///< Type of attribute
         uint16_t id;            ///< Id of attribute
 
-        TSK_OFF_T size;         ///< Size in bytes of attribute (does not include skiplen for non-resident)
+        TSK_OFF_T size;         ///< Size in bytes of the attribute resident and non-resident content (does not include skiplen for non-resident attributes)
 
         /**
         * Data associated with a non-resident file / attribute. 

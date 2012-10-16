@@ -683,71 +683,34 @@ int TskImgDBSqlite::getFileRecord(const uint64_t fileId, TskFileRecord& fileReco
     return ret;
 }
 
-/**
- * Assign fileId on success.
- * @returns 0 on success or -1 on error.
- */
-int TskImgDBSqlite::addFsFileInfo(int fsId, TSK_FS_FILE const * fs_file, char const * name, int type, int idx, uint64_t & fileId, char const * path)
+int TskImgDBSqlite::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileSystemFile, const char *fileName, int fileSystemAttrType, int fileSystemAttrID, uint64_t &fileID, const char *filePath)
 {
-    char stmt[4096];
-    char * errmsg;
-    wchar_t infoMessage[MAX_BUFF_LENGTH];
+    const std::string msgPrefix = "TskImgDBSqlite::addFsFileInfo : ";
+    fileID = 0;
 
     if (!m_db)
+    {
         return -1;
-
-    fileId = 0;
-    int mtime = 0;
-    int crtime = 0;
-    int ctime = 0;
-    int atime = 0;
-    TSK_OFF_T size = 0;
-    int meta_type = 0;
-    int meta_flags = 0;
-    int meta_mode = 0;
-    int gid = 0;
-    int uid = 0;
-
-    //char * fullpath = (char *) malloc(sizeof(char *));
-    std::string fullpath;
-
-    fullpath.append(path);
-    fullpath.append(name);
-
-    /*strncpy(fullpath, path, strlen(path));
-    strncat(fullpath, name, strlen(name));
-    fullpath[strlen(path)+strlen(name)] = '\0';*/
-
-    if (fs_file->meta) {
-        mtime = (int)fs_file->meta->mtime;
-        atime = (int)fs_file->meta->atime;
-        ctime = (int)fs_file->meta->ctime;
-        crtime = (int)fs_file->meta->crtime;
-        size = fs_file->meta->size;
-        meta_type = fs_file->meta->type;
-        meta_flags = fs_file->meta->flags;
-        meta_mode = fs_file->meta->mode;
-        gid = fs_file->meta->gid;
-        uid = fs_file->meta->uid;
     }
 
-    // Replace all single quotes by double single quotes for 'name' to comply with SQLLite syntax. Also, remove all the control characters that might be present in the file name.
-    // Check whether the file name contains a single quote. If so replace it with a double single quote.
-    std::string fileNameAsString(name);
-    size_t found;
+    // Construct the full path of the file within the image.
+    std::string fullpath(filePath);
+    fullpath.append(fileName);
 
-    found = fileNameAsString.find("'");
+    // Replace all single quotes in the file name with double single quotes to comply with SQLLite syntax.
+    std::string fileNameAsString(fileName);
+    size_t found = fileNameAsString.find("'");
     if (found != std::string::npos) //Replace it and replace all its subsequent occurrences.
     {
         fileNameAsString.replace(found,1,"''");
 
-        while ((found=fileNameAsString.find("'",found+2)) != std::string::npos)// found+2 because we want to move past the newly inserted single quote.
+        while ((found=fileNameAsString.find("'", found+2)) != std::string::npos)// found+2 because we want to move past the newly inserted single quote.
         {
             fileNameAsString.replace(found,1,"''");
         }
     }
 
-    // Now remove all the control characters.
+    // Now remove all the control characters from the file name.
     for (int codePoint=1; codePoint < 32; codePoint++)
     {
         char codePointAsHex[10];
@@ -767,39 +730,74 @@ int TskImgDBSqlite::addFsFileInfo(int fsId, TSK_FS_FILE const * fs_file, char co
         }
     }
 
-    name = fileNameAsString.c_str();
+    fileName = fileNameAsString.c_str();
 
-    // insert into the files table
-    // MAY-118 status=READY_FOR_ANALYSIS
+    // Get the file size.
+    TSK_OFF_T size = 0; 
+    const TSK_FS_ATTR *fileSystemAttribute = tsk_fs_file_attr_get_id(const_cast<TSK_FS_FILE*>(fileSystemFile), fileSystemAttrID); 
+    if (fileSystemAttribute)
+    {
+        size = fileSystemAttribute->size;
+    }
+
+    // Get the file metadata, if it's available.
+    int mtime = 0;
+    int crtime = 0;
+    int ctime = 0;
+    int atime = 0;
+    int meta_type = 0;
+    int meta_flags = 0;
+    int meta_mode = 0;
+    int gid = 0;
+    int uid = 0;
+    if (fileSystemFile->meta) 
+    {
+        mtime = static_cast<int>(fileSystemFile->meta->mtime);
+        atime = static_cast<int>(fileSystemFile->meta->atime);
+        ctime = static_cast<int>(fileSystemFile->meta->ctime);
+        crtime = static_cast<int>(fileSystemFile->meta->crtime);
+        meta_type = fileSystemFile->meta->type;
+        meta_flags = fileSystemFile->meta->flags;
+        meta_mode = fileSystemFile->meta->mode;
+        gid = fileSystemFile->meta->gid;
+        uid = fileSystemFile->meta->uid;
+    }
+
+    // Insert into the files table.
+    char stmt[4096];
     sqlite3_snprintf(4096, stmt,
         "INSERT INTO files (file_id, type_id, status, name, par_file_id, dir_type, meta_type, "
         "dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, full_path) VALUES (NULL, %d, %d,"
         "'%q',%llu,%d,%d,%d,%d,%" PRIuOFF",%d,%d,%d,%d,%d,%d,%d,'%q')", 
-        IMGDB_FILES_TYPE_FS, IMGDB_FILES_STATUS_READY_FOR_ANALYSIS, name, 
-        getFileId(fsId, fs_file->name->par_addr), 
-        fs_file->name->type, meta_type,
-        fs_file->name->flags, meta_flags, size, crtime, ctime, atime,
+        IMGDB_FILES_TYPE_FS, IMGDB_FILES_STATUS_READY_FOR_ANALYSIS, fileName, 
+        getFileId(fileSystemID, fileSystemFile->name->par_addr), 
+        fileSystemFile->name->type, meta_type,
+        fileSystemFile->name->flags, meta_flags, size, crtime, ctime, atime,
         mtime, meta_mode, gid, uid, fullpath.c_str());
-
-    if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) {
-        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::addFsFileInfo - Error adding data to files table: %S", errmsg);
-        LOGERROR(infoMessage);
+    char *errmsg;
+    if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) 
+    {
+        std::ostringstream msg;
+        msg << msgPrefix << "Error adding data to files table: " << errmsg;
+        LOGERROR(msg.str());
 
         sqlite3_free(errmsg);
         return -1;
     }
 
-    // get the file_id from the last insert
-    fileId = sqlite3_last_insert_rowid(m_db);
+    // Get the file_id from the last insert.
+    fileID = sqlite3_last_insert_rowid(m_db);
 
-    // insert into the fs_files table
+    // Insert into the fs_files table.
     _snprintf_s(stmt, 4096, _TRUNCATE, 
         "INSERT INTO fs_files (file_id, fs_id, fs_file_id, attr_type, attr_id) VALUES (%llu,%d,%"
-        PRIuINUM ",%d,%d)", fileId, fsId, fs_file->name->meta_addr, type, idx);
+        PRIuINUM ",%d,%d)", fileID, fileSystemID, fileSystemFile->name->meta_addr, fileSystemAttrType, fileSystemAttrID);
 
-    if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) {
-        _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::addFsFileInfo - Error adding data to fs_files table: %S", errmsg);
-        LOGERROR(infoMessage);
+    if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) 
+    {
+        std::ostringstream msg;
+        msg << msgPrefix << "Error adding data to fs_files table: " << errmsg;
+        LOGERROR(msg.str());
 
         sqlite3_free(errmsg);
         return -1;

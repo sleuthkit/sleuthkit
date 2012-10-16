@@ -199,7 +199,20 @@ public:
     virtual int addImageName(char const * imgName) = 0;
     virtual int addVolumeInfo(const TSK_VS_PART_INFO * vs_part) = 0;
     virtual int addFsInfo(int volId, int fsId, const TSK_FS_INFO * fs_info) = 0;
-    virtual int addFsFileInfo(int fsId, const TSK_FS_FILE *fs_file, const char *name, int type, int idx, uint64_t & fileId, const char * path) = 0;
+
+    /**
+     * Add data for a file system file to the image database.
+     * @param fileSystemID File system ID of the file system the file belongs to
+     * @param fileSystemFile TSK_FS_FILE object for the file
+     * @param fileName File name
+     * @param fileSystemAttrType File system attribute type (see #TSK_FS_ATTR_TYPE_ENUM)
+     * @param fileSystemAttrID File system attribute ID, used to index attributes for files with multiple attributes 
+     * @param [out] fileId File ID assigned to the file by the image database
+     * @param filePath Path to the file in the image, file name omitted
+     * @returns 0 on success or -1 on error.
+     */
+    virtual int addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileSystemFile, const char *fileName, int fileSystemAttrType, int fileSystemAttrID, uint64_t &fileID, const char *filePath) = 0;
+
     virtual int addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t size, uint64_t *runStarts, uint64_t *runLengths, int numRuns, uint64_t & fileId) = 0;
     virtual int addDerivedFileInfo(const std::string& name, const uint64_t parentId, 
                                         const bool isDirectory, const uint64_t size, const std::string& details,
