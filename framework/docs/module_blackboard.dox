@@ -2,117 +2,106 @@
 
 \section bb_overview Overview
 
-The blackboard plays a critical role in allowing modules to communicate and pass data. In its most simple form, the blackboard is a table that contains name and value pairs. A module can post data to the blackboard so that later modules can see the results and it can query the blackboard to see what previous modules have posted.  It gets a little more complex because you can group together related name and value pairs into artifacts.  This section describes how to post and get results from the blackboard. 
+The blackboard plays a critical role in allowing modules to communicate. 
+A module can post data to the blackboard so that subsequent modules can see its results. 
+It can also query the blackboard to see what previous modules have posted. 
 
-The blackboard exists in both the C++ framework and the Java bindings.  This page is the overview for both languages. The C++ code will be linked to, but Java references will also be given. 
+Conceptually, the blackboard is borrowed from artificial intelligence applications in which knowledge sources (the modules) share information to collaboratively solve a problem (disk image analysis).
+In practice, the framework's blackboard is a collection of <em>artifacts</em>, each associated with a file, and each consisting of a collection of name-value pairs called <em>attributes</em>. 
+Examples of artifacts include web browser bookmarks (with URL and date attributes) and GPS track points (with geo-coordinates and date attributes).
+The analysis of any given file in an image may produce few artifacts and attributes or a wealth of artifacts and attributes, depending on the modules in use and the files themselves.
 
-In the C++ framework, you can get access to TskBlackboard from TskServices.  The the Java bindings, you can access the blackboard from SleuthkitCase or the Content object. 
+Note that the blackboard exists in both TSK Framework (C++) and the Java bindings for TSK Core. This page is the overview for both programming languages. 
+The C++ source code is linked here, but unless otherwise noted, the Java bindings provide similar or identical functionality.
 
-\section bb_artifacts Attributes and Artifacts
+\section bb_access Accessing the Blackboard
 
-A basic concept behind storing things on the blackboard is that a single piece of data is called an <em>attribute</em>.  Example attributes include a date, geo coordinate, URL, or name.  Attributes are a name and value pair. The name part defines the type of the attribute. 
+C++ modules access the blackboard by getting a reference to a TskBlackboard object from TskServices. 
 
-All attributes are part of an <em>artifact</em>.  Artifacts group together related attributes and have an associated type.  A file may have multiple artifacts on the blackboard and a later section will outline when you should create a new artifact to store new attributes and when attributes should be included in an existing artifact. 
-
-Some examples of artifacts include web browser bookmarks (with URL and DATE attributes) and GPS track points (with GEO and DATE attributes).
-
+Java modules can obtain blackboard access from either the <em><b>SleuthkitCase</b></em> object or the <em><b>Content</b></em> object. 
 
 \section bb_art_types Artifact Types
 
-All artifacts have a type.  The type defines the type of data being stored.  The framework defines several standard types of artifacts.  Each artifact type has a unique ID associated with it.  Each type also have a unique system name ("TSK_WEB_BOOKMARK" for example) and a display name that does not need to be unique ("Web Bookmark" for example).  If you create a new artifact, then you must supply the two names and the framework will return a unique ID. 
-
+Every artifact has a type, in addition to its collection of attributes.  
+Artifact type definitions consist of a unique type name and a display name that does not need to be unique, but should be human-readable. 
+The framework assigns a unique integer ID to each artifact type.  
 
 \subsection bb_art_types_std Standard Artifact Types
-This section describes the standard artifact types. 
-As more modules are written, more artifact type will also be defined. 
 
-Each file will typically have a TSK_GEN_INFO artifact that contains general information about the file. The attributes in this artifact all pertain to the same file, but they are not necessarily related to each other.  All attributes should be added to this artifact unless it needs its own artifact.  
+The framework predefines a number of artifact types that are generally important to digital forensics work.  
+For example, each file typically has a #TSK_GEN_INFO artifact that groups attributes that pertain to the file (e.g., file metadata), but are not necessarily related to each other in any other way. 
+ 
+Please refer to the #TSK_ARTIFACT_TYPE enum for a full listing of the standard artifact types.   
 
-Refer to the #TSK_ARTIFACT_TYPE enum for a full list of defined types and refer to its documentation and the wiki page (http://wiki.sleuthkit.org/index.php?title=Artifact_Examples) for full details on their use.  A short list of example artifacts include:
+\subsection bb_art_types_add Defining New Artifact Types
 
-Example artifact types include:
- - TSK_ARTIFACT_TYPE.TSK_ART_WEB_BOOKMARK
- - TSK_ARTIFACT_TYPE.TSK_ART_WEB_COOKIE
- - TSK_ARTIFACT_TYPE.TSK_WEB_HISTORY
-
-
-\subsection bb_art_types_add Creating Artifact Types
-
-If you need an artifact that does not exist in the framework, you can make one.  Simply call the TskBlackboard.addArtifactType() method.  It will return the artifact ID that you can then use to create an artifact.  To test if a type already exists, use one of the mapping methods in TskBlackboard.
+If you need to create artifacts of a type that does not already exist in the framework, you can define your own artifact type.  
+The framework comes with a TskDBBlackboard class that implements the TskBlackboard interface. 
+Simply call the TskBlackboard::addArtifactType() function, supplying the desired type name and display name.  
+The TskDBBlackboard version of this function will create the artifact type if it doesn't already exist, and will return the integer ID for the type. 
 
 
 \section bb_attr_types Attribute Types
 
-All attributes have a type.  The type defines the type of data being stored.  The framework defines several standard types of attributes.  Each attribute type has a unique ID associated with it.  Each type also have a unique system name ("TSK_URL" for example) and a display name that does not need to be unique ("URL" for example).  
+An attribute is a name-value pair, where the name indicates the type of the attribute. 
+Like artifact type definitions, attribute type definitions consist of a unique type name and a display name that does not need to be unique, but should be human-readable.
+The framework assigns a unique integer ID to each attribute type. 
+
+Attributes also have an optional context field that can be set to a string of your choosing. 
 
 \subsection bb_attr_types_std Standard Attribute Types
 
-There are types of attributes that are always important in digital forensics and the framework defines how those should be stored in the blackboard.  Refer to the #TSK_ATTRIBUTE_TYPE enum for the full list of defined types. Using these techniques will ensure that you can find the correct data from previous modules and that later modules can find your results. 
+The framework predefines standard attribute types that complement the standard artifact types, and are likewise generally important to digital forensics work.   
+For example, a module that computes the entropy of a file could record the result of its calculation by adding a standard #TSK_ENTROPY attribute to the #TSK_GEN_INFO artifact of the file.
 
-Example attributes that are defined include:
-<ul>
-  <li>TSK_ATTRIBUTE_TYPE.TSK_URL</li>
-  <li>TSK_ATTRIBUTE_TYPE.TSK_DATETIME</li>
-  <li>TSK_ATTRIBUTE_TYPE.TSK_USERNAME</li>
-</ul>
-
-The framework defines what value should be stored for each of these attribute types.  To store an MD5 hash of a given file, you would post to the file's blackboard a name value pair where the name is TSK_HASH_MD5 and the value is the MD5 hash value. 
-
-
-\subsection bb_attr_context Attribute Context
-
-Each attribute has a context field that can optionally be set. It provides context the name and value pair.  Each standard type provides suggestions about what the context should store, but it is not designed to be automatically interpreted by a program. 
-
-NOTE: Most attributes will not have this value set. 
-
-As an example, if you have a module that analyzes a Microsoft Word file, then it may pull out dates about when the document was last saved and printed. Both of these dates should be added to the blackboard so that they can be used by a later module that makes timelines of all activity.  Both of these would be added to the TSK_ART_GEN_INFO artifact.  To differentiate between them, the context for each TskBloackboard.TSK_DATETIME should be different.  One should be "Last Printed" and the other "Last Saved". 
+Please refer to the #TSK_ATTRIBUTE_TYPE enum for a full listing of the standard attribute types.   
 
 \subsection bb_attr_types_add Creating Attribute Types
 
-If you need an attribute that does not exist in the framework, you can make one.  Simply call the TskBlackboard.addAttributeType() method.  It will return the attribute ID that you can then use to create an attribute.  To test if a type already exists, use one of the mapping methods in TskBlackboard.
+You can create new attribute types using a similar mechanism to that used to create new artifact types.
+Call the TskBlackboard::addAttributeType() function, supplying the desired type name and display name.  
+The TskDBBlackboard version of this function will create the attribute type if it doesn't already exist and will return the integer ID for the type. 
 
-<!-- 
-  MAKE SURE THIS MOVES TO THE CODE WHERE THE ARTIFACT EXAMPLES ARE DEFINED
+\section bb_set Posting to the Blackboard
 
-\section bb_ex Artifact Examples
+To add an attribute to the #TSK_GEN_INFO artifact for a file, first create a TskBlackboardAttribute of the desired type using one of the TskBlackboardAttribute constructors, then call TskFile::addGenInfoAttribute() on the TskFile object that represents the file.  
 
-To go back to our previous GPS track log example, you would create attributes of type TSK_GEO and TSK_DATETIME for each track point in the log and group them into the same artifact.
+To post other types of attributes, you'll need to either create a new artifact for the file or add the attribute to an existing artifact. 
+To support the former, the TskFile and TskBlackboard interfaces define overloaded TskFile::createArtifact() / TskBlackboard::createArtifact() factory functions that return TskBlackboardArtifact objects, and the TskBlackboardArtifact class provides a TskBlackboardArtifact::addAttribute() member function.
+To support the latter, the TskFile and TskBlackboard interfaces includes overloaded TskFile::getArtifacts() / TskBlackboard::getArtifacts() functions that return a collection of TskBlackboardArtifact objects. 
+Iterate through the collection to find the desired artifact, then construct a TskBlackboardAttribute object and call TskBlackboardArtifact::addAttribute().
 
-If you had an EXIF analyzer module, then it may pull out many different types of metadata from the image.  A typical image may have a TSK_DATETIME attribute for the time the image was taken, a TSK_GEO attribute for the location that the image was taken, and  TSK_DEVICE_MAKE and TSK_DEVICE_MODEL attributes for the camera type.    These would all be grouped into a single artifact for a given JPEG file. 
+\subsection bb_attr_context Attribute Context?
 
-If you have a module that examines web history or other files and can find user names and passwords, then you would create an artifact with TSK_DOMAIN attribute for the site that the user name came from, an TSK_USERNAME attribute for the user name, and a TSK_PASSWORD attribute for the recovered password. 
+The context field is intended to be used sparingly, and the framework itself does not do anything with attribute context strings other than make them available for inspection. 
 
-If you have a module that analyzes certain document types (such as PDF or Word), then the module should post the text to TSK_TEXT.  It should also post any other metadata that was recovered, such as dates and user names. 
-
--->
-
-\section bb_artifact2 Multiple Artifacts Versus Multiple Attributes
-
-While the framework defines some common artifacts, you are free to make your own. This section outlines if you really should be making your own artifact though  and how many. 
-In some cases, it may not be clear if you should add multiple single-attribute artifacts to a file or add a single multiple-attribute artifact.  
-
-The general motivation for grouping attributes is that if someone queries the blackboard and finds a given attribute, then they can use the artifact grouping to find the other related attributes.  With that in mind, here are some guidelines:
-
- - Create as few artifacts as possible for a given file.  Add as many attributes as possible to TSK_ART_GEN_INFO. 
- - If a single file contains multiple instances of the same data type (i.e. log entries in a log file, bookmarks in a bookmark file, cookies in a cookie database), then each instance should be its own artifact so that you can differentiate them and all related attributes are clearly grouped (i.e. it is clear which date goes with which log entry).  
- - Within non-TSK_ART_GEN_INFO artifacts, attributes should be related to each other.  Adding an attribute to an artifact should provide more context to the existing attributes. 
+Consider, for example, a module that analyzes a Microsoft Word file, including determining when the document was last saved and when it was last printed. 
+Both of these dates could be posted to the blackboard for use by a later module that makes activity timelines.  
+One approach would be to make the dates TSK_DATETIME attributes of the #TSK_GEN_INFO artifact for the file, distinguishing the two attributes using "Last Printed" and "Last Saved" context values.
+On the other hand, a more robust approach would be to create new "LastPrinted" and "LastSaved" attribute types and post corresponding attributes to the #TSK_GEN_INFO artifact. 
+The latter approach would make it easier for the timeline module to retrieve the relevant attributes.    
 
 
-\section bb_set Adding Standard Attributes and Artifacts
+\subsection bb_artifact2 Multiple Artifacts Versus Multiple Attributes?
 
-Both the C++ and Java code have objects for both attributes and artifacts.  The TskBlackboardAttribute class has a variety of constructors to set the corresponding value type.  
+In some cases, it may not be clear if you should post multiple single-attribute artifacts for a file or post a single multiple-attribute artifact.  
+Here are some guidelines:
 
-To add the attribute to the general information artifact for a file, you can use the TskFile.addGenInfoAttribute() method.  
-
-To create a new artifact, use one of the TskFile.createArtifact() methods.  They will return an artifact and you can then add attributes to it using TskBlackboardArtifact.addAttribute().  
-
-The artifacts are added to the underlying database as soon as it is created and the attributes are added as soon as they are added to the artifact object.  
+ - Attributes that are essentially self-contained data items such as #TSK_DATETIME_CREATED and #TSK_DATETIME_MODIFIED should be added to a file's #TSK_GEN_INFO artifact. 
+ - If a single file is associated with multiple items of the same type (e.g., log entries in a log file, bookmarks in a bookmark file, cookies in a cookie database), then each instance should be posted as a separate artifact so that you can differentiate them and keep all related attributes clearly grouped (e.g., it is clear which date goes with which log entry).  
+ - All attributes in artifacts other than #TSK_GEN_INFO artifacts should be closely related to each other.  
 
 
-\section bb_query  Querying the Blackboard
-There are a variety of get methods in TskFile that allow you to get artifacts and attributes for a given file (TskFile.getArtifacts() for example).  There are also methods in TskBlackboard that allow you to get artifacts and attributes across all files (TskBlackboard.getArtifacts for example).
+ \section bb_query  Querying the Blackboard
 
-<!--TODO: ADD MORE HERE.-->
+ The TskFile interface defines a set of member functions that provide a convenient way to obtain the artifacts and attributes associated with the file a TskFile instance represents.
+ 
+ The TskBlackboard interface provides similar functions that take a file ID as one of their arguments, as well as more general purpose querying functions.
+ 
+ 
+\section bb_artifacts_and_attributes Artifact and Attributes Examples
+
+Please refer to (http://wiki.sleuthkit.org/index.php?title=Artifact_Examples).
 
 
 */

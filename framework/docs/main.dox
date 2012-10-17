@@ -2,18 +2,19 @@
 
   <h3>Overview</h3>
   The framework in TSK makes it easier to build automated, end-to-end digital forensics applications.  
-  It's plug-in pipelines allow you to incorporate a variety of analysis techniques.  
-  The framework was designed to be used in a distributed environment so that jobs could be scheduled among a cluster of computers, but it can also be used in a simple desktop environment. 
-  The tsk_analyzeimg program provided with the Sleuth Kit is an example of a desktop program that uses the framework. 
-
-  If you need only volume and file system-level support, then the original Sleuth Kit library may be all you need.  If you want an end-to-end solution though, then the framework will help solve your problems. 
+  If you need only volume and file system-level support, then the original Sleuth Kit library may be all you need.  
+  If you want a more comprehensive disk image analysis solution, the framework will help. 
+  It's plug-in pipelines allow you to incorporate a variety of analysis techniques into your application.
+  
+  The framework was designed to be used in a distributed environment so that jobs could be scheduled among a cluster of computers, but it can also be used to create desktop applications. 
+  The tsk_analyzeimg program provided with the Sleuth Kit is an example of a simple desktop program that uses the framework. 
 
 This document is for:
   - Users of tools that leverage the framework.
   - Developers who want to make modules for the framework.
   - Developers who want to integrate the framework into a larger system.
 
-<h3>Overview</h3>
+<h3>Framework Overview</h3>
 The following pages contain an overview of the framework.  Both users and developers should be familiar with this content. 
   - \subpage basics_page
   - \subpage pipeline_config_page
@@ -21,7 +22,7 @@ The following pages contain an overview of the framework.  Both users and develo
 
 
 <h3>Developers Guide to Building Modules</h3>
-The following pages are relevant when developing modules to be used in the framework.  To compile the framework, refer to the <tt>BUILDING.TXT</tt> file that comes with the source code.
+The following pages are relevant when developing modules to be used in the framework.
   - \subpage mod_devpage
   - \subpage mod_example_page
   - \subpage img_db_schema_v1_5_page
@@ -33,5 +34,8 @@ The following pages are relevant when integrating the framework into a new or ex
   - \subpage fw_extract_page
   - \subpage fw_pipeline_page
   - \subpage fw_example_page
-
+  
+Application developers may also wish to examine the source code for tsk_analyzeimg, which is included with the framework.  
+It is a single-threaded command line program that analyzes a disk image using the framework's pipeline infrastructure to run a file analysis pipeline and a post-processing pipeline.   
+  
 */

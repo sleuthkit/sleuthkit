@@ -23,7 +23,9 @@ Development environment setup consists of the following steps:
    that refers to the directory to which you extracted the POCO source.
 3) Ensure that the LIBEWF_HOME environment variable is set. Refer to the
    Sleuth Kit BUILDING.txt file for details on setting LIBEWF_HOME.
-4) Run 'nmake' in the framework\win32 directory.
+4) Ensure that the TSK_HOME environment variable is set and refers to the
+   directory to which you extracted the Sleuth Kit.
+5) Run 'nmake' in the framework\win32 directory.
 
 
 If the above simple build process does not work the following sections
