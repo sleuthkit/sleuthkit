@@ -91,7 +91,7 @@ public class SleuthkitJNI {
 			System.loadLibrary("libewf");
 		}
 		catch (UnsatisfiedLinkError e) {
-			// @@@ LOG??
+			System.out.println("Error loading zlib/libewf libraries, " + e.toString());
 		}
 		
 		/* We should rename the Windows dll, to remove the lib prefix.
