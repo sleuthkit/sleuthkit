@@ -319,6 +319,52 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Get count of blackboard artifacts of a given type
+	 *
+	 * @param artifactTypeID artifact type id (must exist in database)
+	 * @return count of artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	public long getBlackboardArtifactsTypeCount(int artifactTypeID) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			long count = 0;
+			s = con.createStatement();
+			rs = s.executeQuery("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = " + artifactTypeID);
+
+			if (rs.next()) {
+				count = rs.getLong(1);
+			} else {
+				throw new TskCoreException("Error getting count of artifacts by type. ");
+			}
+
+			return count;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting number of blackboard artifacts by type. " + ex.getMessage(), ex);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "", ex);
+				}
+			}
+			if (s != null) {
+				try {
+					s.close();
+				} catch (SQLException ex) {
+					Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+
+	}
+
+	/**
 	 * Helper to iterate over blackboard artifacts result set containing all
 	 * columns and return a list of artifacts in the set. Must be enclosed in
 	 * dbReadLock. Result set and statement must be freed by the caller.
@@ -2185,7 +2231,7 @@ public class SleuthkitCase {
 	 * Returns a list of direct children for a given Volume
 	 *
 	 * @param vol volume to get children of
-	 * @return list of Volume children 
+	 * @return list of Volume children
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
 	 */
@@ -2315,8 +2361,8 @@ public class SleuthkitCase {
 	 * Returns a list of direct children IDs for a given layout directory
 	 *
 	 * @param ldir layout directory to get the list of direct children for
-	 * @return list of direct children IDs (layout files or layout directories) for
-	 * a given layout directory
+	 * @return list of direct children IDs (layout files or layout directories)
+	 * for a given layout directory
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
 	 */
