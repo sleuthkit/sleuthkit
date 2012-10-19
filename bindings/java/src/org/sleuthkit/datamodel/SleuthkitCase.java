@@ -64,6 +64,8 @@ public class SleuthkitCase {
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
 	private static final Lock caseDbLock = rwLock.writeLock(); //use the same lock for reads and writes
+	//statements
+	private PreparedStatement getBlackboardAttributesSt;
 
 	/**
 	 * constructor (private) - client uses openCase() and newCase() instead
@@ -83,6 +85,24 @@ public class SleuthkitCase {
 		con = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
 		configureDB();
 		initBlackboardTypes();
+		initStatements();
+	}
+
+	private void initStatements() throws SQLException {
+		getBlackboardAttributesSt = con.prepareStatement(
+				"SELECT artifact_id, source, context, attribute_type_id, value_type, "
+				+ "value_byte, value_text, value_int32, value_int64, value_double "
+				+ "FROM blackboard_attributes WHERE artifact_id = ?");
+	}
+
+	private void closeStatements() {
+		try {
+			if (getBlackboardAttributesSt != null) {
+				getBlackboardAttributesSt.close();
+				getBlackboardAttributesSt = null;
+			}
+		} catch (SQLException e) {
+		}
 	}
 
 	private void configureDB() throws TskCoreException {
@@ -91,6 +111,8 @@ public class SleuthkitCase {
 			final Statement statement = con.createStatement();
 			//reduce i/o operations, we have no OS crash recovery anyway
 			statement.execute("PRAGMA synchronous = OFF;");
+			//allow to query while in transaction - no need read locks
+			statement.execute("PRAGMA read_uncommitted = True;");
 			statement.close();
 		} catch (SQLException e) {
 			throw new TskCoreException("Couldn't configure the database connection", e);
@@ -125,7 +147,7 @@ public class SleuthkitCase {
 	 * dbReadLock() was called
 	 */
 	static void dbReadLock() {
-		caseDbLock.lock();
+		//caseDbLock.lock();
 	}
 
 	/**
@@ -133,7 +155,7 @@ public class SleuthkitCase {
 	 * dbReadLock()
 	 */
 	static void dbReadUnlock() {
-		caseDbLock.unlock();
+		//caseDbLock.unlock();
 	}
 
 	/**
@@ -1195,6 +1217,39 @@ public class SleuthkitCase {
 			dbWriteUnlock();
 		}
 
+	}
+
+	public ArrayList<BlackboardAttribute> getBlackboardAttributes(final BlackboardArtifact artifact) throws TskCoreException {
+		final ArrayList<BlackboardAttribute> attributes = new ArrayList<BlackboardAttribute>();
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			getBlackboardAttributesSt.setLong(1, artifact.getArtifactID());
+			rs = getBlackboardAttributesSt.executeQuery();
+			while (rs.next()) {
+
+				final BlackboardAttribute attr = new BlackboardAttribute(
+						rs.getLong(1),
+						rs.getInt(4),
+						rs.getString(2),
+						rs.getString(3),
+						BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt(5)),
+						rs.getInt(8),
+						rs.getLong(9),
+						rs.getDouble(10),
+						rs.getString(7),
+						rs.getBytes(6), this);
+
+				attributes.add(attr);
+			}
+			rs.close();
+
+			return attributes;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attributes for artifact: " + artifact.getArtifactID(), ex);
+		} finally {
+			dbReadUnlock();
+		}
 	}
 
 	/**
@@ -2566,9 +2621,8 @@ public class SleuthkitCase {
 			if (con != null) {
 				con.close();
 				con = null;
-
-
 			}
+			closeStatements();
 
 		} catch (SQLException e) {
 			// connection close failed.
@@ -2595,6 +2649,7 @@ public class SleuthkitCase {
 
 
 			}
+
 		} catch (TskCoreException ex) {
 			Logger.getLogger(SleuthkitCase.class
 					.getName()).log(Level.WARNING,
