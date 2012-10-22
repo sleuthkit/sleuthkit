@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2012 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,8 +64,24 @@ public class SleuthkitCase {
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
 	private static final Lock caseDbLock = rwLock.writeLock(); //use the same lock for reads and writes
-	//statements
+	//prepared statements
 	private PreparedStatement getBlackboardAttributesSt;
+	private PreparedStatement getBlackboardArtifactSt;
+	private PreparedStatement getBlackboardArtifactsSt;
+	private PreparedStatement getBlackboardArtifactsTypeCountSt;
+	private PreparedStatement getArtifactsHelper1St;
+	private PreparedStatement getArtifactsHelper2St;
+	private PreparedStatement getAbstractFileChildren;
+	private PreparedStatement getAbstractFileChildrenIds;
+	private PreparedStatement addArtifactSt1;
+	private PreparedStatement addArtifactSt2;
+	private PreparedStatement getLastArtifactId;
+	private PreparedStatement addBlackboardAttributeStringSt;
+	private PreparedStatement addBlackboardAttributeByteSt;
+	private PreparedStatement addBlackboardAttributeIntegerSt;
+	private PreparedStatement addBlackboardAttributeLongSt;
+	private PreparedStatement addBlackboardAttributeDoubleSt;
+
 
 	/**
 	 * constructor (private) - client uses openCase() and newCase() instead
@@ -93,6 +109,78 @@ public class SleuthkitCase {
 				"SELECT artifact_id, source, context, attribute_type_id, value_type, "
 				+ "value_byte, value_text, value_int32, value_int64, value_double "
 				+ "FROM blackboard_attributes WHERE artifact_id = ?");
+		
+		getBlackboardArtifactSt = con.prepareStatement(
+				"SELECT obj_id, artifact_type_id FROM blackboard_artifacts WHERE artifact_id = ?");
+		
+		getBlackboardArtifactsSt = con.prepareStatement(
+				"SELECT artifact_id, obj_id FROM blackboard_artifacts "
+				+ "WHERE artifact_type_id = ?"
+				);
+		
+		getBlackboardArtifactsTypeCountSt = con.prepareStatement(
+				"SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"
+				);
+		
+		getArtifactsHelper1St = con.prepareStatement(
+				"SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"
+				);
+		
+		getArtifactsHelper2St = con.prepareStatement(
+				"SELECT artifact_id, obj_id FROM blackboard_artifacts WHERE artifact_type_id = ?"
+				);
+		
+		getAbstractFileChildren = con.prepareStatement(
+				"SELECT tsk_files.* "
+			+ "FROM tsk_objects JOIN tsk_files "
+			+ "ON tsk_objects.obj_id=tsk_files.obj_id "
+			+ "WHERE (tsk_objects.par_obj_id = ? "
+			+ "AND tsk_files.type = ? )"
+				);
+		
+		getAbstractFileChildrenIds = con.prepareStatement(
+				"SELECT tsk_files.obj_id "
+			+ "FROM tsk_objects JOIN tsk_files "
+			+ "ON tsk_objects.obj_id=tsk_files.obj_id "
+			+ "WHERE (tsk_objects.par_obj_id = ? "
+			+ "AND tsk_files.type = ? )"
+				);
+		
+		addArtifactSt1 = con.prepareStatement(
+				"INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) "
+				+ "VALUES (NULL, ?, ?)"
+				);
+	
+		
+		getLastArtifactId = con.prepareStatement(
+				"SELECT MAX(artifact_id) from blackboard_artifacts "
+				+ "WHERE obj_id = ? AND + artifact_type_id = ?"
+				);
+		
+		
+		addBlackboardAttributeStringSt = con.prepareStatement(
+			"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_text) "
+			+ "VALUES (?,?,?,?,?,?)");
+		
+		addBlackboardAttributeByteSt = con.prepareStatement(
+				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_byte) "
+				+ "VALUES (?,?,?,?,?,?)"
+				);
+		
+		addBlackboardAttributeIntegerSt = con.prepareStatement(
+				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int32) "
+				+ "VALUES (?,?,?,?,?,?)"
+				);
+		
+		addBlackboardAttributeLongSt = con.prepareStatement(
+				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int64) "
+				+ "VALUES (?,?,?,?,?,?)"
+				);
+		
+		addBlackboardAttributeDoubleSt = con.prepareStatement(
+				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) "
+				+ "VALUES (?,?,?,?,?,?)"
+				);
 	}
 
 	private void closeStatements() {
@@ -101,7 +189,76 @@ public class SleuthkitCase {
 				getBlackboardAttributesSt.close();
 				getBlackboardAttributesSt = null;
 			}
+			if (getBlackboardArtifactSt != null) {
+				getBlackboardArtifactSt.close();
+				getBlackboardArtifactSt = null;
+			}
+			if (getBlackboardArtifactsSt != null) {
+				getBlackboardArtifactsSt.close();
+				getBlackboardArtifactsSt = null;
+			}
+			if (getBlackboardArtifactsTypeCountSt != null) {
+				getBlackboardArtifactsTypeCountSt.close();
+				getBlackboardArtifactsTypeCountSt = null;
+			}
+			if (getArtifactsHelper1St != null) {
+				getArtifactsHelper1St.close();
+				getArtifactsHelper1St = null;
+			}
+			if (getArtifactsHelper2St != null) {
+				getArtifactsHelper2St.close();
+				getArtifactsHelper2St = null;
+			}
+			if (getAbstractFileChildren != null) {
+				getAbstractFileChildren.close();
+				getAbstractFileChildren = null;
+			}
+			if (getAbstractFileChildrenIds != null) {
+				getAbstractFileChildrenIds.close();
+				getAbstractFileChildrenIds = null;
+			}
+			if (addArtifactSt1 != null) {
+				addArtifactSt1.close();
+				addArtifactSt1 = null;
+			}
+			if (addArtifactSt2 != null) {
+				addArtifactSt2.close();
+				addArtifactSt2 = null;
+			}
+			if (getLastArtifactId != null) {
+				getLastArtifactId.close();
+				getLastArtifactId = null;
+			}
+			
+			if (addBlackboardAttributeStringSt != null) {
+				addBlackboardAttributeStringSt.close();
+				addBlackboardAttributeStringSt = null;
+			}
+			
+			if (addBlackboardAttributeByteSt != null) {
+				addBlackboardAttributeByteSt.close();
+				addBlackboardAttributeByteSt = null;
+			}
+			
+			if (addBlackboardAttributeIntegerSt != null) {
+				addBlackboardAttributeIntegerSt.close();
+				addBlackboardAttributeIntegerSt = null;
+			}
+			
+			if (addBlackboardAttributeLongSt != null) {
+				addBlackboardAttributeLongSt.close();
+				addBlackboardAttributeLongSt = null;
+			}
+			
+			if (addBlackboardAttributeDoubleSt != null) {
+				addBlackboardAttributeDoubleSt.close();
+				addBlackboardAttributeDoubleSt = null;
+			}
+			
 		} catch (SQLException e) {
+				Logger.getLogger(SleuthkitCase.class
+					.getName()).log(Level.WARNING,
+					"Error closing prepared statement", e);
 		}
 	}
 
@@ -322,15 +479,16 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT artifact_id, obj_id FROM blackboard_artifacts WHERE artifact_type_id = " + artifactTypeID);
+			
+			getBlackboardArtifactsSt.setInt(1, artifactTypeID);
+			
+			final ResultSet rs = getBlackboardArtifactsSt.executeQuery();
 
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
 						artifactTypeID, artifactTypeName, ARTIFACT_TYPE.fromID(artifactTypeID).getDisplayName()));
 			}
 			rs.close();
-			s.close();
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
@@ -353,9 +511,10 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		dbReadLock();
 		try {
-			long count = 0;
-			s = con.createStatement();
-			rs = s.executeQuery("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = " + artifactTypeID);
+			
+			long count = 0;			
+			getBlackboardArtifactsTypeCountSt.setInt(1, artifactTypeID);
+			rs = getBlackboardArtifactsTypeCountSt.executeQuery();
 
 			if (rs.next()) {
 				count = rs.getLong(1);
@@ -664,14 +823,16 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = " + obj_id + " AND artifact_type_id = " + artifactTypeID);
+
+			getArtifactsHelper1St.setLong(1, obj_id);		 
+			getArtifactsHelper1St.setInt(1, artifactTypeID);	
+			ResultSet rs = getArtifactsHelper1St.executeQuery();
 
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName, this.getArtifactTypeDisplayName(artifactTypeID)));
 			}
 			rs.close();
-			s.close();
+
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
@@ -693,14 +854,15 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT artifact_id, obj_id FROM blackboard_artifacts WHERE artifact_type_id = " + artifactTypeID);
+			
+			getArtifactsHelper2St.setLong(1, artifactTypeID);
+			ResultSet rs = getArtifactsHelper2St.executeQuery();
 
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), artifactTypeID, artifactTypeName, this.getArtifactTypeDisplayName(artifactTypeID)));
 			}
 			rs.close();
-			s.close();
+			
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
@@ -787,15 +949,11 @@ public class SleuthkitCase {
 	public BlackboardArtifact getBlackboardArtifact(long artifactID) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-
-			rs = s.executeQuery("SELECT obj_id, artifact_type_id FROM blackboard_artifacts WHERE artifact_id = " + artifactID);
+			getBlackboardArtifactSt.setLong(1, artifactID);
+			ResultSet rs = getBlackboardArtifactSt.executeQuery();
 			long obj_id = rs.getLong(1);
 			int artifact_type_id = rs.getInt(2);
-
 			rs.close();
-			s.close();
 			return new BlackboardArtifact(this, artifactID, obj_id, artifact_type_id, this.getArtifactTypeString(artifact_type_id), this.getArtifactTypeDisplayName(artifact_type_id));
 
 		} catch (SQLException ex) {
@@ -817,33 +975,38 @@ public class SleuthkitCase {
 	public void addBlackboardAttribute(BlackboardAttribute attr) throws TskCoreException {
 		dbWriteLock();
 		try {
-			Statement s = con.createStatement();
+			PreparedStatement ps = null;
 			switch (attr.getValueType()) {
 				case STRING:
-					s.executeUpdate("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_text) VALUES ("
-							+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", '" + escapeForBlackboard(attr.getValueString()) + "')");
+					addBlackboardAttributeStringSt.setString(6, escapeForBlackboard(attr.getValueString()));
+					ps = addBlackboardAttributeStringSt;
 					break;
 				case BYTE:
-					PreparedStatement ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_byte) VALUES ("
-							+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", ?)");
-					ps.setBytes(1, attr.getValueBytes());
-					ps.executeUpdate();
-					ps.close();
+					addBlackboardAttributeByteSt.setBytes(6, attr.getValueBytes());
+					ps = addBlackboardAttributeByteSt;
 					break;
 				case INTEGER:
-					s.executeUpdate("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int32) VALUES ("
-							+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueInt() + ")");
+					addBlackboardAttributeIntegerSt.setInt(6, attr.getValueInt());
+					ps = addBlackboardAttributeIntegerSt;
 					break;
 				case LONG:
-					s.executeUpdate("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int64) VALUES ("
-							+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueLong() + ")");
+					addBlackboardAttributeLongSt.setLong(6, attr.getValueLong());
+					ps = addBlackboardAttributeLongSt;
 					break;
 				case DOUBLE:
-					s.executeUpdate("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) VALUES ("
-							+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueDouble() + ")");
+					addBlackboardAttributeDoubleSt.setDouble(6, attr.getValueDouble());
+					ps = addBlackboardAttributeDoubleSt;
 					break;
-			}
-			s.close();
+			} // end switch
+			
+			//set common fields
+			ps.setLong(1, attr.getArtifactID());
+			ps.setString(2, attr.getModuleName());
+			ps.setString(3, attr.getContext());
+			ps.setInt(4, attr.getAttributeTypeID());
+			ps.setLong(5, attr.getValueType().getType());
+			ps.executeUpdate();
+			ps.clearParameters();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact.", ex);
 		} finally {
@@ -869,39 +1032,46 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error creating transaction, no attributes created.", ex);
 		}
 
-		for (BlackboardAttribute attr : attributes) {
+		for (final BlackboardAttribute attr : attributes) {
 			PreparedStatement ps = null;
 			try {
 				switch (attr.getValueType()) {
 					case STRING:
-						ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_text) VALUES ("
-								+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", '" + escapeForBlackboard(attr.getValueString()) + "')");
+						addBlackboardAttributeStringSt.setString(6, escapeForBlackboard(attr.getValueString()));
+						ps = addBlackboardAttributeStringSt;
 						break;
 					case BYTE:
-						ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_byte) VALUES ("
-								+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", ?)");
-						ps.setBytes(1, attr.getValueBytes());
+						addBlackboardAttributeByteSt.setBytes(6, attr.getValueBytes());
+						ps = addBlackboardAttributeByteSt;
 						break;
 					case INTEGER:
-						ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int32) VALUES ("
-								+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueInt() + ")");
+						addBlackboardAttributeIntegerSt.setInt(6, attr.getValueInt());
+						ps = addBlackboardAttributeIntegerSt;
 						break;
 					case LONG:
-						ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int64) VALUES ("
-								+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueLong() + ")");
+						addBlackboardAttributeLongSt.setLong(6, attr.getValueLong());
+						ps = addBlackboardAttributeLongSt;
 						break;
 					case DOUBLE:
-						ps = con.prepareStatement("INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) VALUES ("
-								+ attr.getArtifactID() + ", '" + attr.getModuleName() + "', '" + attr.getContext() + "', " + attr.getAttributeTypeID() + ", " + attr.getValueType().getType() + ", " + attr.getValueDouble() + ")");
+						addBlackboardAttributeDoubleSt.setDouble(6, attr.getValueDouble());
+						ps = addBlackboardAttributeDoubleSt;
 						break;
 				}
+
+				//set commmon fields and exec. update
+				ps.setLong(1, attr.getArtifactID());
+				ps.setString(2, attr.getModuleName());
+				ps.setString(3, attr.getContext());
+				ps.setInt(4, attr.getAttributeTypeID());
+				ps.setLong(5, attr.getValueType().getType());
 				ps.executeUpdate();
-				ps.close();
+				ps.clearParameters();
+				
 			} catch (SQLException ex) {
 				Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Error adding attribute: " + attr.toString(), ex);
 				//try to add more attributes 
 			}
-		}
+		} //end for every attribute
 
 		//commit transaction
 		try {
@@ -1336,18 +1506,26 @@ public class SleuthkitCase {
 	BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
 		dbWriteLock();
 		try {
-			Statement s = con.createStatement();
-
 			String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
 			String artifactDisplayName = this.getArtifactTypeDisplayName(artifactTypeID);
 
 			long artifactID = -1;
-			s.executeUpdate("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) VALUES (NULL, " + obj_id + ", " + artifactTypeID + ")");
-			ResultSet rs = s.executeQuery("SELECT max(artifact_id) from blackboard_artifacts WHERE obj_id = " + obj_id + " AND + artifact_type_id = " + artifactTypeID);
+			addArtifactSt1.setLong(1, obj_id);
+			addArtifactSt1.setInt(2, artifactTypeID);
+			addArtifactSt1.executeUpdate();
+			
+			getLastArtifactId.setLong(1, obj_id);
+			getLastArtifactId.setInt(2, artifactTypeID);
+			
+			final ResultSet rs = getLastArtifactId.executeQuery();
 			artifactID = rs.getLong(1);
 			rs.close();
-			s.close();
-			return new BlackboardArtifact(this, artifactID, obj_id, artifactTypeID, artifactTypeName, artifactDisplayName);
+			
+			addArtifactSt1.clearParameters();
+			getLastArtifactId.clearParameters();
+
+			return new BlackboardArtifact(this, artifactID, obj_id, artifactTypeID, 
+					artifactTypeName, artifactDisplayName);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
@@ -1367,22 +1545,28 @@ public class SleuthkitCase {
 	 */
 	BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
 		dbWriteLock();
-		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-			int type = artifactType.getTypeID();
+		try {	
+			final int type = artifactType.getTypeID();
 
 			long artifactID = -1;
-			s.executeUpdate("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) VALUES (NULL, " + obj_id + ", " + type + ")");
-			rs = s.executeQuery("SELECT artifact_id from blackboard_artifacts WHERE obj_id = " + obj_id + " AND + artifact_type_id = " + type);
-			while (rs.next()) {
-				if (rs.getLong(1) > artifactID) {
-					artifactID = rs.getLong(1);
-				}
+			addArtifactSt1.setLong(1, obj_id);
+			addArtifactSt1.setInt(2, type);
+			addArtifactSt1.executeUpdate();
+			
+			getLastArtifactId.setLong(1, obj_id);
+			getLastArtifactId.setInt(2, type);
+			final ResultSet rs = getLastArtifactId.executeQuery();
+			if (rs.next()) {
+				artifactID = rs.getLong(1);
 			}
+			
 			rs.close();
-			s.close();
-			return new BlackboardArtifact(this, artifactID, obj_id, type, artifactType.getLabel(), artifactType.getDisplayName());
+			
+			addArtifactSt1.clearParameters();
+			getLastArtifactId.clearParameters();
+			
+			return new BlackboardArtifact(this, artifactID, obj_id, type, 
+					artifactType.getLabel(), artifactType.getDisplayName());
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
@@ -1429,13 +1613,11 @@ public class SleuthkitCase {
 
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			String query = "select tsk_files.* ";
-			query += "from tsk_objects join tsk_files ";
-			query += "on tsk_objects.obj_id=tsk_files.obj_id ";
-			query += "where (tsk_objects.par_obj_id = " + parent.getId() + " ";
-			query += "and tsk_files.type = " + type.getFileType() + ")";
-			ResultSet rs = s.executeQuery(query);
+			
+			getAbstractFileChildren.setLong(1,  parent.getId());
+			getAbstractFileChildren.setLong(2,  type.getFileType());
+			
+			final ResultSet rs = getAbstractFileChildren.executeQuery();
 
 			while (rs.next()) {
 				if (type == TSK_DB_FILES_TYPE_ENUM.FS) {
@@ -1458,7 +1640,6 @@ public class SleuthkitCase {
 				}
 			}
 			rs.close();
-			s.close();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
 		} finally {
@@ -1469,22 +1650,19 @@ public class SleuthkitCase {
 
 	List<Long> getAbstractFileChildrenIds(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
 		final List<Long> children = new ArrayList<Long>();
-
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			String query = "select tsk_files.obj_id ";
-			query += "from tsk_objects join tsk_files ";
-			query += "on tsk_objects.obj_id=tsk_files.obj_id ";
-			query += "where (tsk_objects.par_obj_id = " + parent.getId() + " ";
-			query += "and tsk_files.type = " + type.getFileType() + ")";
-			ResultSet rs = s.executeQuery(query);
+			
+			getAbstractFileChildrenIds.setLong(1, parent.getId());
+			getAbstractFileChildrenIds.setLong(2, type.getFileType());
+			
+			ResultSet rs = getAbstractFileChildrenIds.executeQuery();
 
 			while (rs.next()) {
 				children.add(rs.getLong(1));
 			}
 			rs.close();
-			s.close();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
 		} finally {
