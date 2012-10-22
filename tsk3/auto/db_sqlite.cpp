@@ -193,6 +193,12 @@ int
         return 1;
     }
 
+	// allow to read while in transaction
+    if (attempt_exec("PRAGMA read_uncommitted = True;",
+            "Error setting PRAGMA read_uncommitted: %s\n")) {
+        return 1;
+    }
+
     if (attempt_exec
         ("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);",
             "Error creating tsk_db_info table: %s\n")) {
