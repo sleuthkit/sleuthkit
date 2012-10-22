@@ -50,7 +50,12 @@ public class LayoutDirectory extends AbstractFile {
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		return new ArrayList<Content>(getSleuthkitCase().getLayoutDirectoryChildren(this));
+		return getSleuthkitCase().getLayoutDirectoryChildren(this);
+	}
+	
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		return getSleuthkitCase().getLayoutDirectoryChildrenIds(this);
 	}
 
 	@Override

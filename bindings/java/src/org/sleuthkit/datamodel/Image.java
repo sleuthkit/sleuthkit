@@ -233,4 +233,9 @@ public class Image extends AbstractContent {
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getImageChildren(this);
 	}
+	
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		return getSleuthkitCase().getImageChildrenIds(this);
+	}
 }
