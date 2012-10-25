@@ -1731,13 +1731,6 @@ void TskImgDBSqlite::getCarvedFileInfo(const std::string& stmt, std::map<uint64_
     }
 }
 
-/**
- * Returns the file id and carved file name for a unique set of carved files.
- * Uniqueness is based on the value of a particular hash type. Where duplicate
- * hash values exist, the lowest file_id is chosen.
- * @param hashType The type of hash value to use when determining uniqueness
- * @return A map of file ids and the corresponding carved file name.
- */
 std::map<uint64_t, std::string> TskImgDBSqlite::getUniqueCarvedFiles(HASH_TYPE hashType) const
 {
     if (!m_db)
@@ -1816,7 +1809,138 @@ std::map<uint64_t, std::string> TskImgDBSqlite::getUniqueCarvedFiles(HASH_TYPE h
 
     getCarvedFileInfo(stmt.str(), results);
 
+    // Finally, add file info for all of the carved files for which there are no hashes of any sort.
+    // All of these files must be included because without hashes there is no way to determine uniqueness.
+    stmt.clear();
+    stmt.str("");
+    stmt << "SELECT c.file_id, f.name, 'cfile_' || c.vol_id || '_' || cs.sect_start || '_' || c.file_id "
+         << "FROM files f, carved_files c, carved_sectors cs "
+         << "WHERE c.file_id = cs.file_id AND cs.seq = 0 AND f.file_id = c.file_id AND c.file_id NOT IN "
+         << "(SELECT fh.file_id FROM file_hashes fh) ORDER BY c.file_id";
+    getCarvedFileInfo(stmt.str(), results);
+
     return results;
+}
+
+void TskImgDBSqlite::getCarvedFileInfo(const std::string &query, bool getHash, std::vector<TskCarvedFileInfo> &carvedFileInfos) const
+{
+    sqlite3_stmt *statement;
+    executeStatement(query, statement, "TskImgDBSqlite::getCarvedFileInfo");
+
+    TskCarvedFileInfo info;
+    while (sqlite3_step(statement) == SQLITE_ROW) 
+    {
+        info.fileID = static_cast<uint64_t>(sqlite3_column_int64(statement, 0));
+        std::string fileName = reinterpret_cast<const char*>(sqlite3_column_text(statement, 1)); // Reinterpret from unsigned Char*
+        info.cFileName = reinterpret_cast<const char*>(sqlite3_column_text(statement, 2)); // Reinterpret from unsigned Char*
+        if (getHash)
+        {
+            info.hash = reinterpret_cast<const char*>(sqlite3_column_text(statement, 3));
+        }
+
+        // Append the extension from the original file name to the constructed "cfile" name.
+        std::string::size_type pos = fileName.rfind('.');
+        if (pos != std::string::npos)
+        {
+            info.cFileName.append(fileName.substr(pos));
+        }
+
+        carvedFileInfos.push_back(info);
+    }
+
+    sqlite3_finalize(statement);
+}
+
+std::vector<TskCarvedFileInfo> TskImgDBSqlite::getUniqueCarvedFilesInfo(HASH_TYPE hashType) const
+{
+    const std::string msgPrefix = "TskImgDBSqlite::getUniqueCarvedFilesInfo : "; 
+
+    if (!m_db)
+    {
+        std::ostringstream msg;
+        msg << msgPrefix << "no database connection";
+        throw TskException(msg.str());
+    }
+
+    // Map the requested hash type to a file_hashes table column name.
+    string hash;
+    switch (hashType) 
+    {
+    case TskImgDB::MD5:
+        hash = "md5";
+        break;
+    case TskImgDB::SHA1:
+        hash = "sha1";
+        break;
+    case TskImgDB::SHA2_256:
+        hash = "sha2_256";
+        break;
+    case TskImgDB::SHA2_512:
+        hash = "sha2_512";
+        break;
+    default:
+        std::ostringstream msg;
+        msg << msgPrefix << "unsupported hash type :" << hashType;
+        throw TskException(msg.str());
+    }
+
+    std::vector<TskCarvedFileInfo> carvedFileInfos;
+
+    // Do a quick check to see if any hashes have been calculated.
+    std::ostringstream query;
+    query << "SELECT COUNT(*) FROM file_hashes;";
+    sqlite3_stmt *countStmt;
+    executeStatement(query.str(), countStmt, "TskImgDBSqlite::getUniqueCarvedFiles");
+    if (sqlite3_step(countStmt) == SQLITE_ROW && static_cast<uint64_t>(sqlite3_column_int64(countStmt, 0)) != 0) 
+    {
+        // At least one type of hash has been calculated (presumably for all files, but this is not guaranteed). 
+        // First, add file info for the set of unique files among the carved files for which the specified type of hash is available.
+        query.clear();
+        query.str("");
+        query << "SELECT c.file_id, f.name, 'cfile_' || c.vol_id || '_' || cs.sect_start || '_' || c.file_id, fh." << hash << " "
+              << "FROM files f, carved_files c, carved_sectors cs, file_hashes fh "
+              << "WHERE c.file_id = cs.file_id AND cs.seq = 0 AND f.file_id = c.file_id AND c.file_id = fh.file_id AND c.file_id IN "
+              << "(SELECT MIN(file_id) FROM file_hashes WHERE " << hash << " != '' GROUP BY " << hash << ") ORDER BY c.file_id";
+        getCarvedFileInfo(query.str(), true, carvedFileInfos);
+
+         // Next, add file info for all of the carved files for which the specified hash is not available.
+         // All of these files must be included because without the specified hash there is no acceptable way to determine uniqueness.
+        query.clear();
+        query.str("");
+        query << "SELECT c.file_id, f.name, 'cfile_' || c.vol_id || '_' || cs.sect_start || '_' || c.file_id "
+              << "FROM files f, carved_files c, carved_sectors cs "
+              << "WHERE c.file_id = cs.file_id AND cs.seq = 0 AND f.file_id = c.file_id AND c.file_id IN "
+              << "(SELECT file_id FROM file_hashes WHERE " << hash << " = '') ORDER BY c.file_id";
+        getCarvedFileInfo(query.str(), false, carvedFileInfos);
+
+        // Finally, add file info for all of the carved files for which there are no hashes of any sort.
+        // All of these files must be included because without hashes there is no way to determine uniqueness.
+        query.clear();
+        query.str("");
+        query << "SELECT c.file_id, f.name, 'cfile_' || c.vol_id || '_' || cs.sect_start || '_' || c.file_id "
+              << "FROM files f, carved_files c, carved_sectors cs "
+              << "WHERE c.file_id = cs.file_id AND cs.seq = 0 AND f.file_id = c.file_id AND c.file_id NOT IN "
+              << "(SELECT fh.file_id FROM file_hashes fh) ORDER BY c.file_id";
+        getCarvedFileInfo(query.str(), false, carvedFileInfos);
+    }
+    else
+    {
+        // No hashes have been calculated.
+        // Return carved file info all of the carved files because without hashes there is no way to determine uniqueness.
+        query.clear();
+        query.str("");
+        query << "SELECT c.file_id, f.name, 'cfile_' || c.vol_id || '_' || cs.sect_start || '_' || c.file_id "
+              << "FROM files f, carved_files c, carved_sectors cs "
+              << "WHERE c.file_id = cs.file_id AND cs.seq = 0 AND f.file_id = c.file_id ORDER BY c.file_id";
+        getCarvedFileInfo(query.str(), false, carvedFileInfos);
+
+        std::ostringstream msg;
+        msg << msgPrefix << "no hashes available, returning all carved files";
+        LOGWARN(msg.str());
+    }
+    sqlite3_finalize(countStmt);
+
+    return carvedFileInfos;
 }
 
 std::vector<uint64_t> TskImgDBSqlite::getCarvedFileIds() const
@@ -3578,4 +3702,15 @@ std::string TskImgDBSqlite::quote(const std::string str) const
 	std::string returnStr(item);
     sqlite3_free(item);
 	return returnStr;
+}
+
+void TskImgDBSqlite::executeStatement(const std::string &stmtToExecute, sqlite3_stmt *&statement, const std::string &caller) const
+{
+    if (sqlite3_prepare_v2(m_db, stmtToExecute.c_str(), -1, &statement, 0) != SQLITE_OK)
+    {
+        sqlite3_finalize(statement);
+        std::ostringstream msg;
+        msg << caller << " : error executing " << stmtToExecute << " : " << sqlite3_errmsg(m_db);
+        throw TskException(msg.str());
+    }
 }
