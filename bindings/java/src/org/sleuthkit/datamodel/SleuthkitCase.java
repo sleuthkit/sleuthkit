@@ -63,7 +63,8 @@ public class SleuthkitCase {
 	private int attributeIDcounter = 1001;
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
-	private static final Lock caseDbLock = rwLock.writeLock(); //use the same lock for reads and writes
+	private static final Lock caseDbWriteLock = rwLock.writeLock();
+	private static final Lock caseDbReadLock = rwLock.readLock();
 	//prepared statements
 	private PreparedStatement getBlackboardAttributesSt;
 	private PreparedStatement getBlackboardArtifactSt;
@@ -284,7 +285,7 @@ public class SleuthkitCase {
 	 */
 	public static void dbWriteLock() {
 		//Logger.getLogger("LOCK").log(Level.INFO, "Locking " + rwLock.toString());
-		caseDbLock.lock();
+		caseDbWriteLock.lock();
 	}
 
 	/**
@@ -293,7 +294,7 @@ public class SleuthkitCase {
 	 */
 	public static void dbWriteUnlock() {
 		//Logger.getLogger("LOCK").log(Level.INFO, "UNLocking " + rwLock.toString());
-		caseDbLock.unlock();
+		caseDbWriteLock.unlock();
 	}
 
 	/**
@@ -304,7 +305,7 @@ public class SleuthkitCase {
 	 * dbReadLock() was called
 	 */
 	static void dbReadLock() {
-		//caseDbLock.lock();
+		caseDbReadLock.lock();
 	}
 
 	/**
@@ -312,7 +313,7 @@ public class SleuthkitCase {
 	 * dbReadLock()
 	 */
 	static void dbReadUnlock() {
-		//caseDbLock.unlock();
+		caseDbReadLock.unlock();
 	}
 
 	/**
