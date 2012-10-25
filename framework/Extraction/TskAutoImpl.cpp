@@ -204,7 +204,7 @@ TSK_FILTER_ENUM TSKAutoImpl::filterFs(TSK_FS_INFO * a_fsInfo)
 TSK_RETVAL_ENUM TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
     const TSK_FS_ATTR * a_fsAttr, const char * a_path, uint64_t & fileId)
 {
-    int type = 0;
+    int type = TSK_FS_ATTR_TYPE_NOT_FOUND;
     int idx = 0;
     fileId = 0;
 

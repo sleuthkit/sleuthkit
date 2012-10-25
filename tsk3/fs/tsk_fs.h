@@ -212,6 +212,7 @@ extern "C" {
      * Added types for HFS+.
     */
     typedef enum {
+        TSK_FS_ATTR_TYPE_NOT_FOUND = 0x00,       // 0
         TSK_FS_ATTR_TYPE_DEFAULT = 0x01,        // 1
         TSK_FS_ATTR_TYPE_NTFS_SI = 0x10,        // 16
         TSK_FS_ATTR_TYPE_NTFS_ATTRLIST = 0x20,  // 32

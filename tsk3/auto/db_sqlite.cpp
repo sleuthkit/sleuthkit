@@ -625,7 +625,7 @@ int
     int
      uid = 0;
     int
-     type = 0;
+     type = TSK_FS_ATTR_TYPE_NOT_FOUND;
     int
      idx = 0;
 
