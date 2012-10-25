@@ -278,7 +278,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Lock to protect against concurrent write accesses to case database Should
+	 * Lock to protect against concurrent write accesses to case database and 
+	 * to block readers while database is in write transaction. Should
 	 * be utilized by all db code where underlying storage supports max. 1
 	 * concurrent writer MUST always call dbWriteUnLock() as early as possible,
 	 * in the same thread where dbWriteLock() was called
@@ -290,7 +291,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Release previously acquired write lock acquired in this thread using
-	 * dbWriteLock()
+	 * dbWriteLock(). Call in "finally" block to ensure the lock is always released.
 	 */
 	public static void dbWriteUnlock() {
 		//Logger.getLogger("LOCK").log(Level.INFO, "UNLocking " + rwLock.toString());
@@ -298,11 +299,10 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Lock to protect against read accesses to case database while it's being
-	 * written Should be utilized by all db code where underlying storage does
-	 * not support reads while in write transaction MUST always call
-	 * dbReadUnLock() as early as possible, in the same thread where
-	 * dbReadLock() was called
+	 * Lock to protect against read while it is in a write transaction state. Supports multiple 
+	 * concurrent readers if there is no writer.
+	 * MUST always call dbReadUnLock() as early as possible, in the same thread where
+	 * dbReadLock() was called.
 	 */
 	static void dbReadLock() {
 		caseDbReadLock.lock();
@@ -310,7 +310,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Release previously acquired read lock acquired in this thread using
-	 * dbReadLock()
+	 * dbReadLock(). Call in "finally" block to ensure the lock is always released.
 	 */
 	static void dbReadUnlock() {
 		caseDbReadLock.unlock();
