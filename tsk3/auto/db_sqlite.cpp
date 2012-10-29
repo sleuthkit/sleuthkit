@@ -193,6 +193,12 @@ int
         return 1;
     }
 
+	// allow to read while in transaction
+    if (attempt_exec("PRAGMA read_uncommitted = True;",
+            "Error setting PRAGMA read_uncommitted: %s\n")) {
+        return 1;
+    }
+
     if (attempt_exec
         ("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);",
             "Error creating tsk_db_info table: %s\n")) {
@@ -637,7 +643,6 @@ int
         atime = fs_file->meta->atime;
         ctime = fs_file->meta->ctime;
         crtime = fs_file->meta->crtime;
-        size = fs_file->meta->size;
         meta_type = fs_file->meta->type;
         meta_flags = fs_file->meta->flags;
         meta_mode = fs_file->meta->mode;
@@ -649,6 +654,7 @@ int
     if (fs_attr) {
         type = fs_attr->type;
         idx = fs_attr->id;
+        size = fs_attr->size;
         if (fs_attr->name) {
             if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
                 (strcmp(fs_attr->name, "$I30") != 0)) {

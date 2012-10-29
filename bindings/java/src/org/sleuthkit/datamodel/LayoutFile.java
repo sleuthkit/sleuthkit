@@ -84,6 +84,11 @@ public class LayoutFile extends AbstractFile{
 	public List<Content> getChildren() throws TskCoreException {
 		return Collections.<Content>emptyList();
 	}
+	
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		return Collections.<Long>emptyList();
+	}
 
 	@Override
     public long getSize() {

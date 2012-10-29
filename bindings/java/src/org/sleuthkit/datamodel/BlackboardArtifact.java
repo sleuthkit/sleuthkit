@@ -228,7 +228,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @throws TskException exception thrown if a critical error occurs within tsk core and attributes were not queried
 	 */
 	public List<BlackboardAttribute> getAttributes() throws TskCoreException {
-		return Case.getMatchingAttributes("WHERE artifact_id = " + artifactID);
+		//return Case.getMatchingAttributes("WHERE artifact_id = " + artifactID);
+		return Case.getBlackboardAttributes(this);
 	}
 	
 
