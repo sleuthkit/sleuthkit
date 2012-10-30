@@ -23,9 +23,11 @@
 
 #include "TskImgDBSqlite.h"
 #include "TskServices.h"
-#include "Poco/UnicodeConverter.h"
 #include "Utilities/TskException.h"
 #include "TskDBBlackboard.h"
+
+#include "Poco/UnicodeConverter.h"
+#include "Poco/NumberParser.h"
 
 #define IMGDB_CHUNK_SIZE 1024*1024*1 // what size chunks should the database use when growing and shrinking
 #define IMGDB_MAX_RETRY_COUNT 50    // how many times will we retry a SQL statement
@@ -3009,16 +3011,16 @@ int TskImgDBSqlite::addUnusedSector(uint64_t sectStart, uint64_t sectEnd, int vo
     char *ufilename = "ufile";
     std::stringstream stmt;
 
-#define MIN(a,b) ((a) > (b) ? (b) : (a))
-// 50 MB per unused sector
-#define MAX_UNUSED_SECTOR_SIZE (50*1000000/512)
+    std::string maxUnused = GetSystemProperty("MAX_UNUSED_FILE_SIZE_BYTES");
+    const uint64_t maxUnusedFileSizeBytes = maxUnused.empty() ? (50 * 1024 * 1024) : Poco::NumberParser::parse64(maxUnused);
 
+    uint64_t maxUnusedSectorSize = maxUnusedFileSizeBytes / 512;
     uint64_t sectorIndex = 0;
-    uint64_t sectorCount = (sectEnd - sectStart)/MAX_UNUSED_SECTOR_SIZE;
+    uint64_t sectorCount = (sectEnd - sectStart) / maxUnusedSectorSize;
 
     while (sectorIndex <= sectorCount) {
-        uint64_t thisSectStart = sectStart + (sectorIndex * MAX_UNUSED_SECTOR_SIZE);
-        uint64_t thisSectEnd = thisSectStart + MIN(MAX_UNUSED_SECTOR_SIZE, sectEnd - thisSectStart);
+        uint64_t thisSectStart = sectStart + (sectorIndex * maxUnusedSectorSize);
+        uint64_t thisSectEnd = thisSectStart + (std::min)(maxUnusedSectorSize, sectEnd - thisSectStart);
 
         stmt.str("");
         stmt << "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type,"
