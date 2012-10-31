@@ -106,11 +106,18 @@ extern "C" {
     typedef struct {
         CRITICAL_SECTION critical_section;
     } tsk_lock_t;
-#else
+
+    // non-windows
+#else 
+#ifdef HAVE_PTHREAD
 #include <pthread.h>
     typedef struct {
         pthread_mutex_t mutex;
     } tsk_lock_t;
+#else
+#error "TSK_MULTITHREAD_LIB defined, but pthread does not exist"
+#endif
+
 #endif
 
     // single threaded lib
