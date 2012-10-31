@@ -148,4 +148,43 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException;
+	
+	
+	
+	/**
+	 * Get count of all artifacts associated with this content that have the given type
+	 * name
+	 *
+	 * @param artifactTypeName name of the type to look up
+	 * @return count of blackboard artifacts matching the type
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	public long getArtifactsCount(String artifactTypeName) throws TskCoreException;
+
+	/**
+	 * Get count of all artifacts associated with this content that have the given type
+	 * id
+	 *
+	 * @param artifactTypeID type id to look up
+	 * @return count of blackboard artifacts matching the type
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	public long getArtifactsCount(int artifactTypeID) throws TskCoreException;
+
+	/**
+	 * Get count of all artifacts associated with this content that have the given type
+	 *
+	 * @param type type to look up
+	 * @return count of blackboard artifacts matching the type
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	public long getArtifactsCount(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
+
+	/**
+	 * Get count of all artifacts associated with this content
+	 *
+	 * @return count of all blackboard artifacts for this content
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	public long getAllArtifactsCount() throws TskCoreException;
 }
