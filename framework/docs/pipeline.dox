@@ -1,67 +1,92 @@
 /*! \page pipeline_config_page Pipeline and Module Basics
 
 \section pipe_overview Overview
-A pipeline in the TSK framework is simply a set of modules that are run in a specific order.  Modules will be covered in more detail in the next major section, but for now all we need to know is that a module does a specific type of analysis.  An example module could calculate the MD5 hash of a file and another module could lookup the hash value in a database to see if it is known.  Modules can communicate between each other and the MD5 hash would be passed from the first to the second. 
+A pipeline in the TSK framework is simply a set of modules that are run in a specific order.  
+Modules are covered in more detail in \ref mod_devpage, but for now all we need to know is that a module does a specific type of analysis.  
+For example, one module could calculate the MD5 hash of a file and another module could do a hash database lookup to see if it the file is a known file.  
 
-A pipeline is configured in an XML file, which is described later.
+Pipelines are configured using an XML file, which is described later.
 
-\section pipe_types File Analysis versus Reporting Pipelines
+\section pipe_types File Analysis vs. Post-Processing Pipelines
 
-The framework currently supports two types of pipelines.  Each is used in a different context and this section will outline the intended uses of each.  
+The framework currently supports two types of pipelines: file analysis pipelines and post-processing pipelines.  
+Each type of pipeline is used in a different context.  
 
-The first type of pipeline is a file analysis pipeline and it is intended to be run on every file that is found in a disk image.  The second type of pipeline is called a reporting pipeline (or post-processing pipeline) and it is intended to be run after all of the individual files are analyzed. 
+A file analysis pipeline allows you to perform tasks on every file in an image.  
+Each module in a file analysis pipeline is passed a reference to a file object that can be used to access both the metadata and content of the file.  
+The module can also access the analysis results of previously run modules using the blackboard (see \ref mod_bbpage for details).  
+Examples of file analysis modules include modules to do hash calculation, hash lookup, archive file extraction, and text extraction.
 
-A file analysis pipeline allows you to perform a task on every file in the system.  Each module  in the pipeline is passed a reference to a file object through which it can access both the metadata and content of the file.  The module can also access the analysis results of previously run modules using the \ref bb_overview.  Examples of file analysis modules include hash calculation, hash lookup, archive file extraction, and text extraction.
+A post-processing pipeline allows you to perform tasks after all of the file analysis modules have been run and all the files discovered in an image have been analyzed individually.  
+There are two main uses for this type of pipeline.  
+First, post-processing modules can compile the results from the file analysis modules into a single summary analysis, perhaps writing a report.  
+Second, a post-processing module is a more efficient mechanism for analyzing a small subset of files.  
+For example, if you need a Windows registry analysis module, it would be better to develop it as a post-processing module that simply locates the handful of registry hive files in an image and analyzes them, rather than as a file analysis module that would run for every file in the image, but would ignore most of them. 
 
-A reporting pipeline allows you to perform a task after all of the file analysis modules have been run and all files have been analyzed.  There are two main uses for these modules.  One is that they can compile the results from the individual file analysis modules into a single report (hence the name).  The other use, is that it is a more efficient method for analyzing a small subset of files in the system.  For example, if you have a Windows registry analysis module, it would be more efficient to run that as a reporting module and it will simply locate the few hive files and analyze them.  If the registry analysis module were a file analysis module, it would be run on every file in the system and 99% of the time it would decide to ignore the file because it wasn't a registry hive. 
+\section pipe_modtypes Plug-In vs. Executable Modules
+There are two types of modules that can exist in either type of pipeline. One is a dynamic library or plug-in module and the other is an executable program module.  
 
-\section pipe_modtypes Dynamic Library versus Executable Modules
-There are two major types of modules that can exist in either type of pipeline. One is a dynamic library module and the other is an executable module.  
+Plug-in modules are programmed specifically for inclusion into the framework.  
+These modules can access all of the framework resources.  
+What's required to create one of these modules is described in \ref mod_devpage.
 
-Dynamic library modules are programmed specifically for inclusion into the framework.  These modules can access all of the framework resources.  Creating one of these modules is described in \ref mod_devpage.
-
-Executable modules are simply command line tools that the pipeline runs.  If the tool can be run from the command line, then it can be run from within the pipeline.  The configuration file will allow you to pass in various arguments.  Executable modules do not have access to the database, blackboard, and other services that the framework provides.  That means that if you want the results from an executable module to be included back into the framework for later modules to see, you'll still need to make a dynamic link module to parse the results and add them to the blackboard.
+Executable modules are simply command line tools that a pipeline runs - if a tool can be run from the command line, then it can be run from within a pipeline.  
+The pipeline configuration file allows you to specify a string of command line options and arguments to pass through to the executable. The command line arguments can be made into variables resolved at runtime using configuration file macros. 
+However, executable modules do not have access to the image database, the blackboard, and other services that the framework provides.  
+This means that if you want the results from an executable module to be available to other modules, you'll still need to make a companion plug-in module to parse the results and add them to the blackboard. 
+Alternatively, you could write a plug-in module that spawns another process to run a command line tool and waits for the child process to complete.
 
 \section pipe_config Pipeline Configuration
 
-\subsection pipe_config_file Configuration File
-Both file analysis and reporting pipelines are configured through an XML file.  A single XML file can store both a file analysis and a reporting pipeline.  The following is an example of a pipeline configuration file:
+\subsection pipe_config_file Pipeline Configuration Files
+Both file analysis and post-processing pipelines are configured using an XML file.  
+A single XML file can store the configuration of both a file analysis and a post-processing pipeline.  
+Take a look at \ref sample_pipeline_config_file_page to see an example of a pipeline configuration file.
 
-<pre>&lt;?xml version="1.0" encoding="utf-8"?&gt;&lt;PIPELINE_CONFIG&gt;    &lt;PIPELINE type="FileAnalysis"&gt;        &lt;MODULE order="1" type="plugin" location="CalcFileSizeModule.dll"/&gt;    &lt;/PIPELINE&gt;
-    &lt;PIPELINE type="Report"&gt;        &lt;MODULE order="1" type="plugin" location="SummaryReport.dll" arguments="@OUT\Summary.htm"/&gt;    &lt;/PIPELINE&gt;&lt;/PIPELINE_CONFIG&gt;
-</pre>
-
-
-Each module in the pipeline is represented by a MODULE entry in the configuration file.  Each entry can have the following attributes:
+Note that each module to be included in a pipeline is represented by a <tt>MODULE</tt> element in the configuration file.  <tt>MODULE</tt> elements can have the following attributes:
 
 <table>
-<tr><th>Attribute</th><th>Description</th></tr>
+<tr><th>Attribute</th><th>Description</th><th>Required?</th></tr>
 
-<tr><td>order</td><td>The position of the module within the pipeline. </td></tr>
-<tr><td>type</td><td>Either "executable" or "plugin".</td></tr>
-<tr><td>location</td><td>The path to either the executable or dynamic library file to be run. This can either be a fully qualified or relative path. If relative, the framework will look for the file in the system path or the located specified in TskSystemProperties::MODULE_DIR in the TskSystemProperties service.</td></tr>
-<tr><td>arguments</td><td>The arguments to pass to the module.  These will be parsed by the module.  See the section below on using macro substitution to pass in file-specific details.</td></tr> 
-<tr><td>output</td><td>The path to a file where output from the module should be written. This attribute applies only to executable modules.   See the section below on using macro substation to pass in file-specific details. </td></tr>
+<tr><td>order</td><td>The position of the module within the pipeline.</td><td>Yes</td></tr>
+<tr><td>type</td><td>Either "executable" or "plugin".</td><td>Yes</td></tr>
+<tr><td>location</td><td>The path of the program to be run by an executable module or the dynamic library to be loaded for a plug-in module. This can either be a fully qualified path or a relative path. If the path is relative, the framework will look for the file in the current working directory, TskSystemProperties::MODULE_DIR, and TskSystemProperties::PROG_DIR.</td><td>Yes</td></tr>
+<tr><td>arguments</td><td>The arguments to pass to the module.  See \ref pipe_config_macros to learn how arguments can incorporate information not available until runtime.</td><td>No</td></tr> 
+<tr><td>output</td><td>The path to a file to contain anything the module writes to <tt>stdout</tt>. This attribute applies only to executable modules.  See \ref pipe_config_macros to learn how output file paths can incorporate information not available until runtime.</td><td>No</td></tr>
 
 </table>
 
+
 When configuring a pipeline module pay particular attention to the following details: 
-- Module ordering does not need to be sequential (i.t. there can be gaps), but you cannot have two modules with the same order value.
-- Redirected output on executable modules will be appended to the specified output file.  
-- Attempting to write output to a shared file may result in file access errors when multiple framework sessions (in a distributed environment) attempt to write data to the same file. You can avoid this by using the \@UNIQUE_ID macro. 
+- Module ordering does not need to be sequential (i.e., there can be gaps), but you cannot have two modules with the same order value.
+
+- Redirected output on executable modules will be appended to the specified output file. 
+Attempting to write output to a shared file may result in file access errors when multiple pipelines (in a multithreaded or distributed environment) attempt to write data to the same file. 
+You can avoid this by using the TskSystemProperties::UNIQUE_ID macro (if the property is set) to construct the output file name for an executable module (see \ref pipe_config_macros for more on configuration file macros).
+
 - You must escape the following characters if you wish to include them in the command line:
+
 
 <table><tr><th>Character</th><th>Escaped Character</th></tr><tr><td>&amp;</td><td>&amp;amp;</td></tr><tr><td>&quot;</td><td>&amp;quot;</td></tr><tr><td>&gt;</td><td>&amp;gt;</td></tr><tr><td>&lt;</td><td>&amp;lt;</td></tr><tr><td>&apos;</td><td>&amp;apos;</td></tr>
 </table>
-The Validate_Pipeline.exe tool, which comes with the framework, can be used to verify that the pipeline configuration file is correct and that all modules can be found.
 
 
-\subsection pipe_config_macro Macro Substitution
+\subsection pipe_config_macros Configuration File Macros
 
-The "arguments" and "output" attributes in the configuration file allow for the substitution of run-time values.  Any system property can be inserted and there are file-specific values that can be inserted.  
+The <tt>arguments</tt> and <tt>output</tt> attributes of a <tt>MODULE</tt> element in a pipeline configuration file allow for the substitution of runtime values into the associated strings. 
+This is possible because there is a set of configuration file macros that the framework expands when it reads in a pipeline configuration file.   
 
-To substitute a system property in a string, surround the system property name with '#' marks.  Refer to the TskSystemProperties::PredefinedProperty list for the set of official system properties.  For example, use "#OUT_DIR#/file1.txt" to refer to a file named "file1.txt" in the output directory. 
+There are a number of TskSystemProperties::PredefinedProperty macros. 
+To substitute the value of a TskSystemProperties::PredefinedProperty into an <tt>arguments</tt> or <tt>output</tt> string, surround the system property name with '#' marks.  
+For example, use <tt>#SYSTEM_OUT_DIR#/file1.txt</tt> to refer to a file named <tt>file1.txt</tt> in the system output directory. 
 
-You can also get the path to the currently analyzed file using the string defined in TskModule::CURRENT_FILE_MACRO.  Because many files can be analyzed at the same time, this is not defined in SystemProperties. 
+File analysis modules can also use the TskModule::CURRENT_FILE_MACRO macro. This macro expands to the path of the file the module is currently analyzing. 
+Note that although this macro is not strictly necessary for plug-in modules because they have access to file metadata through the TskFile objects passed to them by the pipeline, executable modules can only obtain the path to the current file using this macro. 
+
+
+\subsection validate_pipe_config_file Validating Pipeline Configuration Files
+
+The tsk_validatepipeline tool, which comes with the framework, can be used to verify that a pipeline configuration file is well-formed and all of the modules specified in the file can be found.
+
 
 */

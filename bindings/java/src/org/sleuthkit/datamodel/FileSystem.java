@@ -190,7 +190,12 @@ public class FileSystem extends AbstractContent {
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		return new ArrayList<Content>(getSleuthkitCase().getFileSystemChildren(this));
+		return getSleuthkitCase().getFileSystemChildren(this);
+	}
+	
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		return getSleuthkitCase().getFileSystemChildrenIds(this);
 	}
 
 

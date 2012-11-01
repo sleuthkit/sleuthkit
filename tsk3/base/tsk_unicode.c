@@ -171,7 +171,7 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
                     ch = ((ch - UNI_SUR_HIGH_START) << halfShift)
                         + (ch2 - UNI_SUR_LOW_START) + halfBase;
                 }
-                else if (flags == TSKstrictConversion) { /* it's an unpaired high surrogate */
+                else if (flags == TSKstrictConversion) {        /* it's an unpaired high surrogate */
                     result = TSKsourceIllegal;
                     break;
                 }
@@ -282,7 +282,7 @@ tsk_UTF16toUTF8_lclorder(const UTF16 ** sourceStart,
                     ch = ((ch - UNI_SUR_HIGH_START) << halfShift)
                         + (ch2 - UNI_SUR_LOW_START) + halfBase;
                 }
-                else if (flags == TSKstrictConversion) { /* it's an unpaired high surrogate */
+                else if (flags == TSKstrictConversion) {        /* it's an unpaired high surrogate */
                     result = TSKsourceIllegal;
                     break;
                 }
@@ -442,13 +442,13 @@ tsk_isLegalUTF8Sequence(const UTF8 * source, const UTF8 * sourceEnd)
  * @param replacement Character to insert into source as needed.
  */
 void
-tsk_cleanupUTF8(char * source, const char replacement)
+tsk_cleanupUTF8(char *source, const char replacement)
 {
     size_t total_len = strlen(source);
     size_t cur_idx = 0;
 
     while (cur_idx < total_len) {
-        int length = trailingBytesForUTF8[(UTF8)source[cur_idx]] + 1;
+        int length = trailingBytesForUTF8[(UTF8) source[cur_idx]] + 1;
         if (cur_idx + length > total_len) {
             while (cur_idx < total_len) {
                 source[cur_idx] = replacement;
@@ -456,7 +456,7 @@ tsk_cleanupUTF8(char * source, const char replacement)
             }
             break;
         }
-        if (isLegalUTF8((UTF8 *)&source[cur_idx], length) == false) {
+        if (isLegalUTF8((UTF8 *) & source[cur_idx], length) == false) {
             int i;
             for (i = 0; i < length; i++) {
                 source[cur_idx + i] = replacement;

@@ -4,7 +4,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.0.0b1)
+AC_INIT(sleuthkit, 4.0.0)
 m4_include([m4/ax_pthread.m4])
 # include the version from 1.12.1. This will work for 
 m4_include([m4/cppunit.m4])
@@ -222,7 +222,7 @@ AC_CONFIG_COMMANDS([tsk3/tsk_incs.h],
           fi
 
           if test x$ax_pthread_ok = xyes; then
-            echo "#define TSK_MULTITHREAD_LIB" >> tsk3/tsk_incs.h
+            echo "#define TSK_MULTITHREAD_LIB // set because we have pthreads" >> tsk3/tsk_incs.h
           fi
 
           echo "" >> tsk3/tsk_incs.h

@@ -44,7 +44,7 @@ makeDir(const TSK_TCHAR *dir)
         return 1;
     }
 #else
-
+#error Unsupported OS
 #endif
     return 0;
 }
@@ -150,6 +150,12 @@ int main(int argc, char **argv1)
     }
 
     TSK_TCHAR *imagePath = argv[OPTIND];
+	if (TSTAT(imagePath, &stat_buf) != 0) {
+        std::wstringstream msg;
+        msg << L"Image file not found: " << imagePath;
+        LOGERROR(msg.str());
+        return 1;
+    }
 
     // Load the framework config if they specified it
     try
@@ -189,15 +195,27 @@ int main(int argc, char **argv1)
         return 1;
     }
 
-    if (makeDir(outDirPath.c_str())) {
-        return 1;
-    }
-
     // @@@ Not UNIX-friendly
     SetSystemPropertyW(TskSystemProperties::OUT_DIR, outDirPath);
 
+    if (makeDir(outDirPath.c_str())) 
+    {
+        return 1;
+    }
+
+    if (makeDir(GetSystemPropertyW(TskSystemProperties::SYSTEM_OUT_DIR).c_str()))
+    {
+        return 1;
+    }
+
+    if (makeDir(GetSystemPropertyW(TskSystemProperties::MODULE_OUT_DIR).c_str()))
+    {
+        return 1;
+    }
+
     std::wstring logDir = GetSystemPropertyW(TskSystemProperties::LOG_DIR);
-    if (makeDir(logDir.c_str())) {
+    if (makeDir(logDir.c_str())) 
+    {
         return 1;
     }
 
@@ -277,7 +295,7 @@ int main(int argc, char **argv1)
 
     TskPipeline *reportPipeline;
     try {
-        reportPipeline = pipelineMgr.createPipeline(TskPipelineManager::REPORTING_PIPELINE);
+        reportPipeline = pipelineMgr.createPipeline(TskPipelineManager::POST_PROCESSING_PIPELINE);
     }
     catch (TskException &e ) {
         std::wstringstream msg;

@@ -26,7 +26,7 @@
 #include <afflib/afflib_i.h>
 #endif
 
-extern TSK_IMG_INFO *aff_open(const TSK_TCHAR *const images[],
+extern TSK_IMG_INFO *aff_open(const TSK_TCHAR * const images[],
     unsigned int a_ssize);
 
 /** \internal

@@ -11,8 +11,10 @@
 #ifndef _TSK_PLUGINMODULE_H
 #define _TSK_PLUGINMODULE_H
 
+// TSK Framework includes
 #include "TskModule.h"
 
+// Poco includes
 #include "Poco/SharedLibrary.h"
 
 /**
@@ -22,34 +24,37 @@
 class TSK_FRAMEWORK_API TskPluginModule: public TskModule
 {
 public:
-    // Default Constructor
-    TskPluginModule();
-
-    // Destructor
+    /** 
+     * Destructor that calls the finalize function of the module library and
+     * unloads the library.
+     */
     virtual ~TskPluginModule();
 
-    // Derived class must implement it's own run method
-    virtual Status run(TskFile* fileToAnalyze) = 0;
+    /**
+     * Loads the module library.
+     *
+     * @param location Either a relative or fully qualified path to the module 
+     * library.
+     */
+    virtual void setPath(const std::string &location);
 
-    /// Sets the path of the library to load
-    virtual void setPath(const std::string& location);
+    /**
+     * Calls the initialize function in the module library, if present.
+     */
+    TskModule::Status initialize();
 
-    // Initialize the module.
-    void initialize();
-
-    // Return true is the module is loaded.
-    bool isLoaded() const;
-
-    // Return a function entry with the given symbol in the module.
-    void * getSymbol(const std::string symbol);
-
-    // Return true is the module contains the function entry point.
-    virtual bool hasSymbol(const std::string symbol);
-
-    // Check the require interface for a plugin module. Throw exception if required interface is misssing.
+    /**
+     * Verifies that the required interface for a plugin module is defined by the module library. 
+     * 
+     * @return Throws TskException if the required interface is not defined.
+     */
     virtual void checkInterface() = 0;
 
 protected:
+    static const std::string GET_COMPILER_SYMBOL;
+    static const std::string GET_COMPILER_VERSION_SYMBOL;
+    static const std::string GET_FRAMEWORK_VERSION_SYMBOL;
+    static const std::string GET_BUILD_TYPE_SYMBOL;
     static const std::string NAME_SYMBOL;
     static const std::string DESCRIPTION_SYMBOL;
     static const std::string VERSION_SYMBOL;
@@ -58,7 +63,39 @@ protected:
     static const std::string INITIALIZE_SYMBOL;
     static const std::string FINALIZE_SYMBOL;
 
+    /** 
+     * Checks whether or not the module library is loaded.
+     *
+     * @returns True if the module library is loaded.
+     */ 
+    bool isLoaded() const;
+
+    /**
+     * Checks whether or not the module library defines a particular symbol.
+     *
+     * @param symbol The symbol.
+     * @returns True if the symbol is defined, false otherwise.
+     */
+    bool hasSymbol(const std::string symbol);
+
+    /** 
+     * Get a pointer to a function in the module library.
+     *
+     * @param symbol The symbol associated with the desired pointer.
+     * @returns A pointer to the module library function corresponding to symbol.
+     * Throws Poco::NotFoundException if symbol is not found.
+     */
+    void *getSymbol(const std::string symbol);
+
 private:
+    /**
+     * Checks whether or not the module library was compiled with the same
+     * framework library version (major and minor version number components), 
+     * compiler, compiler version, and build target as the disk image 
+     * processing system that is loading the module.
+     */
+   void validateLibraryVersionInfo();
+
     Poco::SharedLibrary m_sharedLibrary;
 };
 

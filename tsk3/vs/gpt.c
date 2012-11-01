@@ -125,8 +125,9 @@ gpt_load_table(TSK_VS_INFO * vs)
     snprintf(head_str, 16, "GPT Header");
     if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) 1,
             (TSK_DADDR_T) ((tsk_getu32(vs->endian,
-                        &head->head_size_b) + (vs->block_size-1)) / vs->block_size),
-            TSK_VS_PART_FLAG_META, head_str, -1, -1)) {
+                        &head->head_size_b) + (vs->block_size -
+                        1)) / vs->block_size), TSK_VS_PART_FLAG_META,
+            head_str, -1, -1)) {
         free(sect_buf);
         return 1;
     }
@@ -151,8 +152,9 @@ gpt_load_table(TSK_VS_INFO * vs)
     if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) tsk_getu64(vs->endian,
                 &head->tab_start_lba),
             (TSK_DADDR_T) ((ent_size * tsk_getu32(vs->endian,
-                        &head->tab_num_ent) + (vs->block_size-1)) / vs->block_size),
-            TSK_VS_PART_FLAG_META, tab_str, -1, -1)) {
+                        &head->tab_num_ent) + (vs->block_size -
+                        1)) / vs->block_size), TSK_VS_PART_FLAG_META,
+            tab_str, -1, -1)) {
         free(sect_buf);
         return 1;
     }

@@ -2,16 +2,18 @@
 
 # Release script for Windows Executables.  Note that this is run
 # after release-unix.pl, which will create the needed tag directories
-# and update the version variables accordingly.  This assumes that 
-# libewf has been compiled in LIBEWF_HOME
+# and update the version variables accordingly.  
+#
+# Assumes:
+#- LIBEWF_HOME environment variable is set and LIBEWF is compiled in there
+#- msbuild is in PATH (currently, this requires that I have c:\wndows\microsoft.NET\Framework\v4XXX in the path)
 #
 #
 # This requires Cygwin with:
 # - git 
 # - zip
 #
-# It has been used with Visual Studio 9.0 Express.  It may work with other
-# versions.
+# It will only work with Visual Studio 2010 express. 
 #
 
 use strict;
@@ -40,13 +42,14 @@ my $TAGNAME = $ARGV[0];
 my $VER = "";
 
 
-my $BUILD_LOC = `which vcbuild`;
-chomp $BUILD_LOC;
-die "Unsupported build system.  Verify redist location" 
-    unless ($BUILD_LOC =~ /Visual Studio 9\.0/);
+# VS 2008 code
+#my $BUILD_LOC = `which vcbuild`;
+#chomp $BUILD_LOC;
+#die "Unsupported build system.  Verify redist location" 
+#    unless ($BUILD_LOC =~ /Visual Studio 9\.0/);
 
-my $REDIST_LOC = $BUILD_LOC . "/../../redist/x86/Microsoft.VC90.CRT";
-die "Missing redist dir $REDIST_LOC" unless (-d "$REDIST_LOC");
+#my $REDIST_LOC = $BUILD_LOC . "/../../redist/x86/Microsoft.VC90.CRT";
+#die "Missing redist dir $REDIST_LOC" unless (-d "$REDIST_LOC");
 
 
 # Verify LIBEWF is built
@@ -103,6 +106,7 @@ sub update_code {
 
 
 	if ($no_tag == 0) {
+		`git submodule update`;
 		# Make sure we have no changes in the current tree
 		exec_pipe(*OUT, "git status -s | grep \"^ M\"");
 		my $foo = read_pipe_line(*OUT);
@@ -114,6 +118,7 @@ sub update_code {
 		# Make sure src dir is up to date
 		print "Updating source directory\n";
 		`git pull`;
+		`git submodule init`;
 		`git submodule update`;
 		`git submodule foreach git checkout master`;
 
@@ -158,8 +163,11 @@ sub build_core {
 	chdir "win32" or die "error changing directory into win32";
 	# Get rid of everything in the release dir (since we'll be doing * copy)
 	`rm -f release/*`;
-	`rm BuildErrors.txt`;
-	`vcbuild /errfile:BuildErrors.txt tsk-win.sln "Release|Win32"`; 
+	`rm -f BuildErrors.txt`;
+	# 2008 version
+	# `vcbuild /errfile:BuildErrors.txt tsk-win.sln "Release|Win32"`; 
+	# 2010 version
+	`msbuild.exe tsk-win.sln /p:Configuration=Release /clp:ErrorsOnly /nologo > BuildErrors.txt`;
 	die "Build errors -- check win32/BuildErrors.txt" if (-s "BuildErrors.txt");
 
 	# Do a basic check on some of the executables
@@ -195,7 +203,9 @@ sub package_core {
 
 	# basic cleanup
 	`rm \"${rdir}/bin/callback-sample.exe\"`;
+	`rm \"${rdir}/bin/callback-cpp-sample.exe\"`;
 	`rm \"${rdir}/bin/posix-sample.exe\"`;
+	`rm \"${rdir}/bin/posix-cpp-sample.exe\"`;
 
 
 	# mactime
@@ -215,9 +225,13 @@ sub package_core {
 	`unix2dos \"${rdir}/licenses/IBM-LICENSE\" 2> /dev/null`;
 
 	# MS Redist dlls and manifest
-	`cp \"${REDIST_LOC}\"/* \"${rdir}/bin\"`;
-	print "******* Using Updated Manifest File *******\n";
-	`cp \"${RELDIR}/Microsoft.VC90.CRT.manifest\" \"${rdir}/bin\"`;
+	# 2008 version 
+	#`cp \"${REDIST_LOC}\"/* \"${rdir}/bin\"`;
+	#print "******* Using Updated Manifest File *******\n";
+	#`cp \"${RELDIR}/Microsoft.VC90.CRT.manifest\" \"${rdir}/bin\"`;
+
+	# 2010 version
+	copy_runtime_2010("${rdir}/bin");
 
 	# Zip up the files - move there to make the path in the zip short
 	chdir ("$RELDIR") or die "Error changing directories to $RELDIR";
@@ -225,7 +239,7 @@ sub package_core {
 
 	die "ZIP file not created" unless (-e "${rfile}.zip");
 
-	print "File saved as ${rfile}.zip in release\n";
+	print "TSK core file saved as ${rfile}.zip in release\n";
 	chdir ("..") or die "Error changing to root dir";
 }
 
@@ -239,8 +253,11 @@ sub build_framework {
 	chdir "framework/win32/framework" or die "error changing directory into framework/win32";
 	# Get rid of everything in the release dir (since we'll be doing * copy)
 	`rm -rf release/*`;
-	`rm BuildErrors.txt`;
-	`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
+	`rm -f BuildErrors.txt`;
+	# 2008 version
+	#`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
+	# 2010 version
+	`msbuild.exe framework.sln /p:Configuration=Release /clp:ErrorsOnly /nologo > BuildErrors.txt`;
 	die "Build errors -- check framework/win32/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
 
 	# Do a basic check on some of the executables
@@ -260,6 +277,7 @@ sub package_framework {
 	# We already checked that it didn't exist
 	print "Creating file in ${rdir}\n";
 
+	# Make the directory structure
 	mkdir ("$rdir") or die "error making release directory: $rdir";
 	mkdir ("${rdir}/bin") or die "error making bin release directory: $rdir";
 	mkdir ("${rdir}/modules") or die "error making module release directory: $rdir";
@@ -268,6 +286,7 @@ sub package_framework {
 
 	chdir "framework" or die "error changing directory into framework";
 
+	# Copy the files
 	chdir "win32/framework/release" or die "Error changing directory into release / framework";
 
 	`cp *.exe \"${rdir}/bin\"`;
@@ -283,11 +302,19 @@ sub package_framework {
 		next unless ($f =~ /Module\.dll$/);
 		`cp \"$f\" \"${rdir}/modules\"`;
 		my $base = $1 if ($f =~ /^(.*)\.dll$/);
+		# copy the config dir if it has one
 		if (-d "$base") {
 			`cp -r \"$base\" \"${rdir}/modules\"`;
 		}
 	}
 	closedir(DIR);
+
+
+	# Special case libs
+	# libmagic
+	`cp libmagic-1.dll \"${rdir}/modules\"`;
+	`cp libgnurx-0.dll \"${rdir}/modules\"`;
+
 	chdir "../../..";
 
 
@@ -330,9 +357,14 @@ sub package_framework {
 	#`unix2dos \"${rdir}/licenses/LGPL-COPYING\"`;
 
 	# MS Redist dlls and manifest
-	`cp \"${REDIST_LOC}\"/* \"${rdir}/bin\"`;
-	print "******* Using Updated Manifest File *******\n";
-	`cp \"${RELDIR}/Microsoft.VC90.CRT.manifest\" \"${rdir}/bin\"`;
+
+	# 2008 version 
+	#`cp \"${REDIST_LOC}\"/* \"${rdir}/bin\"`;
+	#print "******* Using Updated Manifest File *******\n";
+	#`cp \"${RELDIR}/Microsoft.VC90.CRT.manifest\" \"${rdir}/bin\"`;
+
+	# 2010 version
+	copy_runtime_2010("${rdir}/bin");
 
 	# Zip up the files - move there to make the path in the zip short
 	chdir ("$RELDIR") or die "Error changing directories to $RELDIR";
@@ -342,6 +374,13 @@ sub package_framework {
 
 	print "File saved as ${rfile}.zip in release\n";
 	chdir "..";
+}
+
+# Assumes path in /cygwin/style
+sub copy_runtime_2010 { 
+    	my $dest = shift(@_);
+	`cp /cygdrive/c/windows/system32/msvcp100.dll \"$dest\"`;
+	`cp /cygdrive/c/windows/system32/msvcr100.dll \"$dest\"`;
 }
 
 chdir ("$TSKDIR") or die "Error changing to TSK dir $TSKDIR";

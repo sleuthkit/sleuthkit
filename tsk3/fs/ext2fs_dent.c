@@ -331,9 +331,9 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         retval_tmp =
             ext2fs_dent_parse_block(ext2fs, fs_dir,
-            (fs_dir->fs_file->meta->
-                flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, &list_seen,
-            dirptr, len);
+            (fs_dir->fs_file->
+                meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
+            &list_seen, dirptr, len);
 
         if (retval_tmp == TSK_ERR) {
             retval_final = TSK_ERR;

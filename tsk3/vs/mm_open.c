@@ -85,7 +85,8 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
                     for (tmp_set = vs_set->part_list; tmp_set;
                         tmp_set = tmp_set->next) {
                         if ((tmp_set->desc)
-                            && (strncmp(tmp_set->desc, "GPT Safety", 10) == 0)
+                            && (strncmp(tmp_set->desc, "GPT Safety",
+                                    10) == 0)
                             && (tmp_set->start <= 63)) {
 
                             if (tsk_verbose)

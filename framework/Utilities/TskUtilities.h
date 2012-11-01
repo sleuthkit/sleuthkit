@@ -33,6 +33,7 @@ public:
     static void cleanUTF8(char *buf);
     static bool getHostIP(const std::string& host, std::string& host_ip);
     static std::string getProgDir();
+    static std::string stripQuotes(const std::string& str);
 };
 
 #endif

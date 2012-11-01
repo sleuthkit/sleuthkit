@@ -28,12 +28,13 @@
 #include "Poco/Path.h"
 #include "Poco/FileStream.h"
 #include "Poco/StreamCopier.h"
+#include "Poco/NumberFormatter.h"
 
 TskFileManagerImpl * TskFileManagerImpl::m_pInstance = NULL;
 
 const int TskFileManagerImpl::FILES_PER_DIR = 1000;
 const int TskFileManagerImpl::FILE_BUFFER_SIZE = 8192;
-const std::string TskFileManagerImpl::FILES_DIRECTORY = "files";
+const std::string TskFileManagerImpl::FILES_DIRECTORY = "Files";
 
 TskFileManagerImpl& TskFileManagerImpl::instance()
 {
@@ -54,7 +55,7 @@ void TskFileManagerImpl::initialize()
 {
     try
     {
-        std::string storagePath = GetSystemProperty(TskSystemProperties::OUT_DIR);
+        std::string storagePath = GetSystemProperty(TskSystemProperties::SYSTEM_OUT_DIR);
         m_storageDir = new Poco::File(storagePath + Poco::Path::separator() + FILES_DIRECTORY);
 
         // Create the directory if it does not exist.
@@ -119,9 +120,13 @@ void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& fileP
     {
         if (fileToSave == NULL)
         {
-            LOGERROR(L"TskFileManagerImpl::saveFile - Passed NULL file pointer.");
-            throw TskNullPointerException();
+			throw TskException("TskFile pointer is NULL.");
         }
+
+		if (fileToSave->isDirectory())
+		{
+			throw TskException("Attempt to copy directory where file is expected.");
+		}
 
         Poco::Path destPath(TskUtilities::toUTF8(filePath));
 
@@ -184,37 +189,100 @@ void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& fileP
     }
     catch (TskFileException& tskEx)
     {
-        std::wstringstream errorMsg;
-        errorMsg << L"TskFileManagerImpl::saveFile - " << tskEx.message().c_str() << std::endl;
-        LOGERROR(errorMsg.str());
-
         // Rethrow the exception up to our caller
-        throw;
+        throw tskEx;
     }
     catch (Poco::PathNotFoundException& ex)
     {
-        std::wstringstream errorMsg;
-        errorMsg << L"TskFileManagerImpl::saveFile - Path not found : "
-            << ex.message().c_str() << std::endl;
-        LOGERROR(errorMsg.str());
-
-        throw TskFileException("Path not found : " + fileToSave->getPath());
+        throw TskException("Path not found : " + fileToSave->getPath());
     }
     catch (std::exception & ex)
     {
-        std::wstringstream errorMsg;
-        errorMsg << L"TskFileManagerImpl::saveFile - Exception : "
-            << ex.what() << std::endl;
-        LOGERROR(errorMsg.str());
-        throw;
+        throw ex;
     }
 }
 
+void TskFileManagerImpl::copyDirectory(TskFile* directoryToCopy, const std::wstring& destinationPath, const bool bRecurse)
+{
+	if (directoryToCopy == NULL)
+	{
+		throw TskException("Directory pointer is NULL.");
+	}
+
+	if (!directoryToCopy->isDirectory())
+	{
+		throw TskException("File object to copy is not a directory.");
+	}
+
+	try
+	{
+		Poco::File destDir(TskUtilities::toUTF8(destinationPath));
+
+        // If the destination directory exists it is replaced.
+        if (destDir.exists())
+        {
+            destDir.remove(true);
+        }
+
+        // Create directories that may be missing along the path.
+		destDir.createDirectories();
+
+        // If the source directory exists we simply copy it to the destination.
+        if (directoryToCopy->exists())
+        {
+            Poco::File sourceFile(directoryToCopy->getPath());
+            sourceFile.copyTo(destDir.path());
+        }
+        else
+        {
+			// Find all files contained in this directory.
+			std::stringstream condition;
+			condition << "WHERE par_file_id = " << directoryToCopy->getId();
+
+			std::vector<uint64_t> fileIds = TskServices::Instance().getImgDB().getFileIds(condition.str());
+
+			for (std::vector<uint64_t>::const_iterator it = fileIds.begin(); it != fileIds.end(); ++it)
+			{
+				TskFile * pFile = getFile(*it);
+
+				if (pFile == NULL)
+				{
+					throw TskException("Failed to create file object for file id " + Poco::NumberFormatter::format(*it));
+				}
+
+				if (pFile->isDirectory() && bRecurse)
+				{
+					Poco::Path subDirPath = Poco::Path::forDirectory(destDir.path());
+					subDirPath.pushDirectory(pFile->getName());
+					copyDirectory(pFile, TskUtilities::toUTF16(subDirPath.toString()), bRecurse);
+				}
+
+				if (!pFile->isDirectory())
+				{
+					Poco::Path filePath(destDir.path());
+					filePath.append(pFile->getName());
+					copyFile(pFile, TskUtilities::toUTF16(filePath.toString()));
+				}
+			}
+		}
+	}
+    catch (TskException& tskEx)
+    {
+        // Rethrow the exception up to our caller
+        throw tskEx;
+    }
+    catch (std::exception & ex)
+    {
+        throw ex;
+    }
+}
 
 void TskFileManagerImpl::saveFile(TskFile* fileToSave)
 {
     // Determine what the path should be based on TskFile.id()
-    // and call saveFile(fileToSave, path)
+    // and call copyFile(fileToSave, path)
+	// Note that all saveFile() methods ultimately resolve
+	// to a call to copyFile().
     copyFile(fileToSave, getPath(fileToSave->getId()));
 }
 

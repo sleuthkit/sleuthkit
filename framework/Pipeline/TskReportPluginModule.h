@@ -11,32 +11,24 @@
 #ifndef _TSK_REPORTPLUGINMODULE_H
 #define _TSK_REPORTPLUGINMODULE_H
 
+// TSK Framework includes
 #include "TskPluginModule.h"
 
-#include "Poco/SharedLibrary.h"
-
 /**
- * Supports the loading of custom dynamic libraries to perform
+ * Supports the use of custom dynamic libraries to perform
  * reporting and post-processing in a TskReportPipeline.
  */
 class TSK_FRAMEWORK_API TskReportPluginModule: public TskPluginModule
 {
 public:
-    // Default Constructor
-    TskReportPluginModule();
+    // Doxygen comment in base class.
+    virtual Status run(TskFile *fileToAnalyze) { return report(); };
 
-    // Destructor
-    virtual ~TskReportPluginModule();
-
-    // Report module ignore fileToAnalyze
-    virtual Status run(TskFile * fileToAnalyze) { return report(); };
-
+    // Doxygen comment in base class.
     virtual Status report();
 
-    // Check the require interface for a plugin module. Throw exception if required interface is misssing.
+    // Doxygen comment in base class.
     virtual void checkInterface();
-
-private:
 };
 
 #endif

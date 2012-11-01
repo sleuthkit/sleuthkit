@@ -13,8 +13,10 @@
  * Contains the implementation for the TskPipeline class.
  */
 
-// TSK Framework includes
+// Include the class definition first to ensure it does not depend on subsequent includes in this file.
 #include "TskPipeline.h"
+
+// TSK Framework includes
 #include "TskExecutableModule.h"
 #include "TskPluginModule.h"
 #include "File/TskFileManagerImpl.h"

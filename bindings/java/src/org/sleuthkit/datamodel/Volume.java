@@ -229,6 +229,11 @@ public class Volume extends AbstractContent {
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getVolumeChildren(this);
 	}
+	
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		return getSleuthkitCase().getVolumeChildrenIds(this);
+	}
 
 	@Override
 	public Image getImage() throws TskCoreException {

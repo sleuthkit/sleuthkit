@@ -989,8 +989,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* process the list of index entries */
             retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
-                (fs_dir->fs_file->
-                    meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
+                (fs_dir->fs_file->meta->
+                    flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
                 list_len, tsk_getu32(a_fs->endian,
                     idxelist->seqend_off) - tsk_getu32(a_fs->endian,
                     idxelist->begin_off));
@@ -1054,8 +1054,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* process the list of index entries */
             retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
-                (fs_dir->fs_file->
-                    meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
+                (fs_dir->fs_file->meta->
+                    flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, idxe,
                 list_len, tsk_getu32(a_fs->endian,
                     idxelist->seqend_off) - tsk_getu32(a_fs->endian,
                     idxelist->begin_off));

@@ -39,11 +39,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x04000001
+#define TSK_VERSION_NUM 0x040000ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.0.0b1"
+#define TSK_VERSION_STR "4.0.0"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -106,11 +106,19 @@ extern "C" {
     typedef struct {
         CRITICAL_SECTION critical_section;
     } tsk_lock_t;
-#else
+
+    // non-windows
+#else 
+/* Note that there is an assumption that TSK_MULTITHREADED_LIB was
+ * set only if we have ptheads. If we add a check for HAVE_PTHREAD 
+ * here, it causes problems when you try to include the library in 
+ * a tool because they do not have tsk_config.h included.
+ */
 #include <pthread.h>
     typedef struct {
         pthread_mutex_t mutex;
     } tsk_lock_t;
+
 #endif
 
     // single threaded lib

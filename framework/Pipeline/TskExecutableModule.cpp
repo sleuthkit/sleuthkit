@@ -22,6 +22,7 @@
 #include "Services/TskServices.h"
 #include "Utilities/TskException.h"
 #include "File/TskFileManagerImpl.h"
+#include "Utilities/TskUtilities.h"
 
 // Poco includes
 #include "Poco/String.h"
@@ -143,12 +144,13 @@ TskModule::Status TskExecutableModule::execute(TskFile * fileToAnalyze){
         if (!outFilePath.empty())
         {
             // Create directories that may be missing along the path.
-            Poco::Path outPath(outFilePath);
+            std::string outFilePathNoQuote(TskUtilities::stripQuotes(outFilePath));
+            Poco::Path outPath(outFilePathNoQuote);
             Poco::File outDir(outPath.parent());
             outDir.createDirectories();
 
             // Create the output file if it does not exist.
-            Poco::File outFile(outFilePath);
+            Poco::File outFile(outFilePathNoQuote);
 
             if (!outFile.exists())
             {

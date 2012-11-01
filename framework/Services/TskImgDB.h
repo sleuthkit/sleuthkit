@@ -13,7 +13,7 @@
 #ifndef _TSK_IMGDB_H
 #define _TSK_IMGDB_H
 
-#define IMGDB_SCHEMA_VERSION "1.0"
+#define IMGDB_SCHEMA_VERSION "1.5"
 
 #include <string> // to get std::wstring
 #include <list>
@@ -70,6 +70,7 @@ struct TskFileTypeRecord
 };
 
 struct TskModuleStatus;
+struct TskModuleInfo;
 struct TskBlackboardRecord;
 struct TskUnallocImgStatusRecord;
 
@@ -107,6 +108,7 @@ struct TskFileRecord;
 class TSK_FRAMEWORK_API TskImgDB
 {
 public:
+    /// File type classifications used by the framework
     enum FILE_TYPES
     {
         IMGDB_FILES_TYPE_FS = 0,
@@ -115,6 +117,7 @@ public:
         IMGDB_FILES_TYPE_UNUSED
     };
 
+    /// File analysis statuses used by the framework
     enum FILE_STATUS
     {
         IMGDB_FILES_STATUS_CREATED = 0,
@@ -155,6 +158,7 @@ public:
         BB_VALUE_TYPE_DOUBLE    ///< double floating point
     };
 
+    /// Unallocated sectors file statuses used by the framework
     enum UNALLOC_IMG_STATUS
     {
         IMGDB_UNALLOC_IMG_STATUS_CREATED = 0,
@@ -301,6 +305,7 @@ public:
 
     virtual int addModule(const std::string& name, const std::string& description, int & moduleId) = 0;
     virtual int setModuleStatus(uint64_t file_id, int module_id, int status) = 0;
+	virtual int getModuleInfo(std::vector<TskModuleInfo> & moduleInfoList) const = 0;
     virtual int getModuleErrors(std::vector<TskModuleStatus> & moduleStatusList) const = 0;
     virtual std::string getFileName(uint64_t file_id) const = 0;
 
@@ -389,6 +394,16 @@ struct TskModuleStatus
     uint64_t file_id;
     std::string module_name;
     int status;
+};
+
+/**
+ * Contains data about a module
+ */
+struct TskModuleInfo
+{
+	int module_id;
+    std::string module_name;
+    std::string module_description;
 };
 
 /**
