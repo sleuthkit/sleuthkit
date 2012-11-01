@@ -24,7 +24,7 @@
 
 #ifdef _MSC_VER
 #include "regex.h" //use regex in src tree
-#include <mmsystem.h> //Provides timeGetTime
+//#include <mmsystem.h> //Provides timeGetTime
 #else
 #include <regex.h>
 #endif
@@ -130,12 +130,13 @@ static string xml_qu("&quot;");
 
 #if _MSC_VER
 //Internal gettimeofday for windows builds
+//SLG - only has second resolution
 static int gettimeofday(struct timeval *tp, void* tzp){
-	DWORD t;
-	t=timeGetTime();
-	tp->tv_sec = t/1000;
-	tp->tv_usec = t%1000;
-	return 0;
+    //DWORD t;
+    //t=timeGetTime();
+    tp->tv_sec = time(0);
+    //tp->tv_usec = t%1000;
+    return 0;
 }
 #endif
 
