@@ -1,25 +1,12 @@
 /*
-** icat 
+** fcat 
 ** The Sleuth Kit 
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2012 Brian Carrier, Basis Technology.  All Rights reserved
 **
-** TASK
-** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
-** 
-** Copyright (c) 1997,1998,1999, International Business Machines          
-** Corporation and others. All Rights Reserved.
-
- * LICENSE
- *	This software is distributed under the IBM Public License.
- * AUTHOR(S)
- *	Wietse Venema
- *	IBM T.J. Watson Research
- *	P.O. Box 704
- *	Yorktown Heights, NY 10598, USA
- --*/
+** This software is distributed under the Common Public License 1.0
+**/
 
 #include "tsk3/tsk_tools_i.h"
 #include <locale.h>
@@ -33,12 +20,11 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-hrRsvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images] inum[-typ[-id]]\n"),
+        ("usage: %s [-hRsvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] file_path image [images]\n"),
         progname);
     tsk_fprintf(stderr, "\t-h: Do not display holes in sparse files\n");
-    tsk_fprintf(stderr, "\t-r: Recover deleted file\n");
     tsk_fprintf(stderr,
-        "\t-R: Recover deleted file and suppress recovery errors\n");
+        "\t-R: Suppress recovery errors\n");
     tsk_fprintf(stderr, "\t-s: Display slack space at end of file\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
@@ -67,14 +53,13 @@ main(int argc, char **argv1)
     TSK_INUM_T inum;
     int fw_flags = 0;
     int ch;
-    TSK_FS_ATTR_TYPE_ENUM type = TSK_FS_ATTR_TYPE_DEFAULT;
-    uint16_t id = 0;
-    uint8_t id_used = 0, type_used = 0;
     int retval;
     int suppress_recover_error = 0;
     TSK_TCHAR **argv;
     TSK_TCHAR *cp;
     unsigned int ssize = 0;
+    TSK_TCHAR *path = NULL;
+    size_t len;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -140,9 +125,6 @@ main(int argc, char **argv1)
                 exit(1);
             }
             break;
-        case _TSK_T('r'):
-            // this is no longer needed, so we silently ignore it. 
-            break;
         case _TSK_T('R'):
             suppress_recover_error = 1;
             break;
@@ -158,22 +140,23 @@ main(int argc, char **argv1)
         }
     }
 
-    /* We need at least two more argument */
+    /* We need at least two more arguments */
     if (OPTIND + 1 >= argc) {
-        tsk_fprintf(stderr, "Missing image name and/or address\n");
+        tsk_fprintf(stderr, "Missing image name and/or path\n");
         usage();
     }
 
-    /* Get the inode address */
-    if (tsk_fs_parse_inum(argv[argc - 1], &inum, &type, &type_used, &id,
-            &id_used)) {
-        TFPRINTF(stderr, _TSK_T("Invalid inode address: %s\n"),
-            argv[argc - 1]);
-        usage();
+
+    // copy in path
+    len = (TSTRLEN(argv[OPTIND]) + 1) * sizeof(TSK_TCHAR);
+    if ((path = (TSK_TCHAR *) tsk_malloc(len)) == NULL) {
+        tsk_fprintf(stderr, "error allocating memory\n");
+        exit(1);
     }
+    TSTRNCPY(path, argv[OPTIND], TSTRLEN(argv[OPTIND]) + 1);
 
     if ((img =
-            tsk_img_open(argc - OPTIND - 1, &argv[OPTIND],
+            tsk_img_open(argc - OPTIND - 1, &argv[OPTIND+1],
                 imgtype, ssize)) == NULL) {
         tsk_error_print(stderr);
         exit(1);
@@ -192,25 +175,26 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (inum > fs->last_inum) {
-        tsk_fprintf(stderr,
-            "Metadata address too large for image (%" PRIuINUM ")\n",
-            fs->last_inum);
-        fs->close(fs);
-        img->close(img);
-        exit(1);
-    }
-    if (inum < fs->first_inum) {
-        tsk_fprintf(stderr,
-            "Metadata address too small for image (%" PRIuINUM ")\n",
-            fs->first_inum);
-        fs->close(fs);
-        img->close(img);
-        exit(1);
-    }
 
+    if (-1 == (retval = tsk_fs_ifind_path(fs, path, &inum))) {
+        tsk_error_print(stderr);
+        fs->close(fs);
+        img->close(img);
+        free(path);
+        exit(1);
+    }
+    else if (retval == 1) {
+        tsk_fprintf(stderr, "File not found\n");
+        fs->close(fs);
+        img->close(img);
+        free(path);
+        exit(1);
+    }
+    free(path); 
+
+    // @@@ Cannot currently get ADS with this approach
     retval =
-        tsk_fs_icat(fs, inum, type, type_used, id, id_used,
+        tsk_fs_icat(fs, inum, TSK_FS_ATTR_TYPE_DEFAULT, 1, 0, 0,
         (TSK_FS_FILE_WALK_FLAG_ENUM) fw_flags);
     if (retval) {
         if ((suppress_recover_error == 1)
@@ -224,6 +208,7 @@ main(int argc, char **argv1)
             exit(1);
         }
     }
+
     fs->close(fs);
     img->close(img);
     exit(0);

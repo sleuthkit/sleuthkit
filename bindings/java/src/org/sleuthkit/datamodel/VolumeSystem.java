@@ -142,6 +142,11 @@ public class VolumeSystem extends AbstractContent {
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getVolumeSystemChildren(this);
 	}
+	
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		return getSleuthkitCase().getVolumeSystemChildrenIds(this);
+	}
 
 	@Override
 	public Image getImage() throws TskCoreException {

@@ -59,6 +59,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtsk_jni", "tsk_jni\tsk_j
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtsk", "libtsk\libtsk.vcxproj", "{76EFC06C-1F64-4478-ABE8-79832716B393}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fcat", "fcat\fcat.vcxproj", "{E4A40368-152D-4D54-9E2E-4B140212F98F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_NoLibs|Win32 = Debug_NoLibs|Win32
@@ -240,6 +242,12 @@ Global
 		{76EFC06C-1F64-4478-ABE8-79832716B393}.Debug|Win32.Build.0 = Debug|Win32
 		{76EFC06C-1F64-4478-ABE8-79832716B393}.Release|Win32.ActiveCfg = Release|Win32
 		{76EFC06C-1F64-4478-ABE8-79832716B393}.Release|Win32.Build.0 = Release|Win32
+		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Debug_NoLibs|Win32.ActiveCfg = Debug_NoLibs|Win32
+		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Debug_NoLibs|Win32.Build.0 = Debug_NoLibs|Win32
+		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Debug|Win32.Build.0 = Debug|Win32
+		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Release|Win32.ActiveCfg = Release|Win32
+		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
