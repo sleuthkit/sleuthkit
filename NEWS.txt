@@ -5,6 +5,7 @@ Numbers refer to SourceForge.net tracker IDs:
 New Features:
 - Can open raw Windows devices with write mode sharing.
 - More DOS partition types are displayed.
+- Added fcat tool that takes in file name and exports content (equivalent to using ifind and icat together).
 
 Bug Fixes:
 - Fixed mactime issue where it could choose the wrong timezone that did

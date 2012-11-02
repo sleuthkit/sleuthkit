@@ -105,6 +105,7 @@ tsk_release_lock(tsk_lock_t * lock)
 
 #endif
 
+    // single-threaded
 #else
 
 void

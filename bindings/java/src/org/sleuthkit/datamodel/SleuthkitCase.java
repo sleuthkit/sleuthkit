@@ -70,8 +70,10 @@ public class SleuthkitCase {
 	private PreparedStatement getBlackboardArtifactSt;
 	private PreparedStatement getBlackboardArtifactsSt;
 	private PreparedStatement getBlackboardArtifactsTypeCountSt;
+	private PreparedStatement getBlackboardArtifactsContentCountSt;
 	private PreparedStatement getArtifactsHelper1St;
 	private PreparedStatement getArtifactsHelper2St;
+	private PreparedStatement getArtifactsCountHelperSt;
 	private PreparedStatement getAbstractFileChildren;
 	private PreparedStatement getAbstractFileChildrenIds;
 	private PreparedStatement addArtifactSt1;
@@ -82,6 +84,8 @@ public class SleuthkitCase {
 	private PreparedStatement addBlackboardAttributeIntegerSt;
 	private PreparedStatement addBlackboardAttributeLongSt;
 	private PreparedStatement addBlackboardAttributeDoubleSt;
+	
+	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
 
 	/**
@@ -123,12 +127,20 @@ public class SleuthkitCase {
 				"SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"
 				);
 		
+		getBlackboardArtifactsContentCountSt = con.prepareStatement(
+				"SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ?"
+				);
+		
 		getArtifactsHelper1St = con.prepareStatement(
 				"SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"
 				);
 		
 		getArtifactsHelper2St = con.prepareStatement(
 				"SELECT artifact_id, obj_id FROM blackboard_artifacts WHERE artifact_type_id = ?"
+				);
+		
+		getArtifactsCountHelperSt = con.prepareStatement(
+				"SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"
 				);
 		
 		getAbstractFileChildren = con.prepareStatement(
@@ -202,6 +214,10 @@ public class SleuthkitCase {
 				getBlackboardArtifactsTypeCountSt.close();
 				getBlackboardArtifactsTypeCountSt = null;
 			}
+			if (getBlackboardArtifactsContentCountSt != null) {
+				getBlackboardArtifactsContentCountSt.close();
+				getBlackboardArtifactsContentCountSt = null;
+			}
 			if (getArtifactsHelper1St != null) {
 				getArtifactsHelper1St.close();
 				getArtifactsHelper1St = null;
@@ -210,6 +226,11 @@ public class SleuthkitCase {
 				getArtifactsHelper2St.close();
 				getArtifactsHelper2St = null;
 			}
+			if (getArtifactsCountHelperSt != null) {
+				getArtifactsCountHelperSt.close();
+				getArtifactsCountHelperSt = null;
+			}
+			
 			if (getAbstractFileChildren != null) {
 				getAbstractFileChildren.close();
 				getAbstractFileChildren = null;
@@ -257,8 +278,7 @@ public class SleuthkitCase {
 			}
 			
 		} catch (SQLException e) {
-				Logger.getLogger(SleuthkitCase.class
-					.getName()).log(Level.WARNING,
+				logger.log(Level.WARNING,
 					"Error closing prepared statement", e);
 		}
 	}
@@ -499,6 +519,46 @@ public class SleuthkitCase {
 
 	}
 
+			
+	/**
+	 * Get count of blackboard artifacts for a given content
+	 *
+	 * @param objId associated object
+	 * @return count of artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	public long getBlackboardArtifactsCount(long objId) throws TskCoreException {
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			long count = 0;			
+			getBlackboardArtifactsContentCountSt.setLong(1, objId);
+			rs = getBlackboardArtifactsContentCountSt.executeQuery();
+
+			if (rs.next()) {
+				count = rs.getLong(1);
+			} else {
+				throw new TskCoreException("Error getting count of artifacts by content. ");
+			}
+
+			return count;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting number of blackboard artifacts by content. " + ex.getMessage(), ex);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Could not close the result set, ", ex);
+				}
+			}
+		
+			dbReadUnlock();
+		}
+
+	}
+	
 	/**
 	 * Get count of blackboard artifacts of a given type
 	 *
@@ -508,11 +568,9 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public long getBlackboardArtifactsTypeCount(int artifactTypeID) throws TskCoreException {
-		Statement s = null;
 		ResultSet rs = null;
 		dbReadLock();
 		try {
-			
 			long count = 0;			
 			getBlackboardArtifactsTypeCountSt.setInt(1, artifactTypeID);
 			rs = getBlackboardArtifactsTypeCountSt.executeQuery();
@@ -531,16 +589,10 @@ public class SleuthkitCase {
 				try {
 					rs.close();
 				} catch (SQLException ex) {
-					Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "", ex);
+					logger.log(Level.WARNING, "Coud not close the result set, ", ex);
 				}
 			}
-			if (s != null) {
-				try {
-					s.close();
-				} catch (SQLException ex) {
-					Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "", ex);
-				}
-			}
+			
 			dbReadUnlock();
 		}
 
@@ -841,6 +893,49 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 	}
+	
+	/**
+	 * Helper method to get count of all artifacts matching the type id name and object
+	 * id
+	 *
+	 * @param artifactTypeID artifact type id
+	 * @param artifactTypeName artifact type name
+	 * @param obj_id associated object id
+	 * @return count of matching blackboard artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	private long getArtifactsCountHelper(int artifactTypeID, long obj_id) throws TskCoreException {
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			long count = 0;
+
+			getArtifactsCountHelperSt.setLong(1, obj_id);		 
+			getArtifactsCountHelperSt.setInt(1, artifactTypeID);	
+			rs = getArtifactsCountHelperSt.executeQuery();
+
+			if (rs.next()) {
+				count = rs.getLong(1);
+			}
+			else {
+				throw new TskCoreException("Error getting blackboard artifact count, no rows returned");
+			}
+			
+			return count;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting blackboard artifact count, " + ex.getMessage(), ex);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Could not close the result set. ", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+	}
 
 	/**
 	 * helper method to get all artifacts matching the type id name
@@ -912,6 +1007,46 @@ public class SleuthkitCase {
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
 		return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel(), obj_id);
+	}
+	
+	/**
+	 * Get count of all blackboard artifacts of a given type for the given object id
+	 *
+	 * @param artifactTypeName artifact type name
+	 * @param obj_id object id
+	 * @return count of blackboard artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	public long getBlackboardArtifactsCount(String artifactTypeName, long obj_id) throws TskCoreException {
+		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
+		return getArtifactsCountHelper(artifactTypeID, obj_id);
+	}
+
+	/**
+	 * Get count of all blackboard artifacts of a given type for the given object id
+	 *
+	 * @param artifactTypeID artifact type id (must exist in database)
+	 * @param obj_id object id
+	 * @return count of blackboard artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	public long getBlackboardArtifactsCount(int artifactTypeID, long obj_id) throws TskCoreException {
+		return getArtifactsCountHelper(artifactTypeID, obj_id);
+	}
+
+	/**
+	 * Get count of all blackboard artifacts of a given type for the given object id
+	 *
+	 * @param artifactType artifact type enum
+	 * @param obj_id object id
+	 * @return count of blackboard artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	public long getBlackboardArtifactsCount(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
+		return getArtifactsCountHelper(artifactType.getTypeID(), obj_id);
 	}
 
 	/**
@@ -1069,7 +1204,7 @@ public class SleuthkitCase {
 				ps.clearParameters();
 				
 			} catch (SQLException ex) {
-				Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Error adding attribute: " + attr.toString(), ex);
+				logger.log(Level.WARNING, "Error adding attribute: " + attr.toString(), ex);
 				//try to add more attributes 
 			}
 		} //end for every attribute
@@ -2805,8 +2940,7 @@ public class SleuthkitCase {
 
 		} catch (SQLException e) {
 			// connection close failed.
-			Logger.getLogger(SleuthkitCase.class
-					.getName()).log(Level.WARNING,
+			logger.log(Level.WARNING,
 					"Error closing connection.", e);
 		} finally {
 			SleuthkitCase.dbWriteUnlock();
@@ -2830,8 +2964,7 @@ public class SleuthkitCase {
 			}
 
 		} catch (TskCoreException ex) {
-			Logger.getLogger(SleuthkitCase.class
-					.getName()).log(Level.WARNING,
+			logger.log(Level.WARNING,
 					"Error freeing case handle.", ex);
 		} finally {
 			SleuthkitCase.dbWriteUnlock();
@@ -2871,8 +3004,7 @@ public class SleuthkitCase {
 
 				}
 			} catch (IOException e) {
-				Logger.getLogger(SleuthkitCase.class
-						.getName()).log(Level.WARNING, "Could not close streams after db copy", e);
+				logger.log(Level.WARNING, "Could not close streams after db copy", e);
 			}
 			SleuthkitCase.dbReadUnlock();
 		}
@@ -3026,8 +3158,7 @@ public class SleuthkitCase {
 
 
 		} catch (SQLException ex) {
-			Logger.getLogger(SleuthkitCase.class
-					.getName()).log(Level.WARNING, "Error querying database.", ex);
+			logger.log(Level.WARNING, "Error querying database.", ex);
 		} finally {
 			if (rs != null) {
 				try {
@@ -3036,8 +3167,7 @@ public class SleuthkitCase {
 
 
 				} catch (SQLException ex) {
-					Logger.getLogger(SleuthkitCase.class
-							.getName()).log(Level.WARNING, "Unable to close ResultSet and Statement.", ex);
+					logger.log(Level.WARNING, "Unable to close ResultSet and Statement.", ex);
 				}
 			}
 			dbReadUnlock();
@@ -3070,8 +3200,7 @@ public class SleuthkitCase {
 
 			}
 		} catch (SQLException ex) {
-			Logger.getLogger(SleuthkitCase.class
-					.getName()).log(Level.WARNING, "Failed to query for all the files.", ex);
+			logger.log(Level.WARNING, "Failed to query for all the files.", ex);
 		} finally {
 			if (rs != null) {
 				try {
@@ -3080,8 +3209,7 @@ public class SleuthkitCase {
 
 
 				} catch (SQLException ex) {
-					Logger.getLogger(SleuthkitCase.class
-							.getName()).log(Level.WARNING, "Failed to close the result set.", ex);
+					logger.log(Level.WARNING, "Failed to close the result set.", ex);
 				}
 			}
 			dbReadUnlock();
@@ -3111,8 +3239,7 @@ public class SleuthkitCase {
 
 
 		} catch (SQLException ex) {
-			Logger.getLogger(SleuthkitCase.class
-					.getName()).log(Level.WARNING, "Failed to query for all the files.", ex);
+			logger.log(Level.WARNING, "Failed to query for all the files.", ex);
 		} finally {
 			if (rs != null) {
 				try {
@@ -3121,8 +3248,7 @@ public class SleuthkitCase {
 
 
 				} catch (SQLException ex) {
-					Logger.getLogger(SleuthkitCase.class
-							.getName()).log(Level.WARNING, "Failed to close the result set.", ex);
+					logger.log(Level.WARNING, "Failed to close the result set.", ex);
 				}
 			}
 			dbReadUnlock();

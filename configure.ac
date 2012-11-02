@@ -222,7 +222,7 @@ AC_CONFIG_COMMANDS([tsk3/tsk_incs.h],
           fi
 
           if test x$ax_pthread_ok = xyes; then
-            echo "#define TSK_MULTITHREAD_LIB" >> tsk3/tsk_incs.h
+            echo "#define TSK_MULTITHREAD_LIB // set because we have pthreads" >> tsk3/tsk_incs.h
           fi
 
           echo "" >> tsk3/tsk_incs.h
