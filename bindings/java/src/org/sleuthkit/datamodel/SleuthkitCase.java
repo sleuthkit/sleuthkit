@@ -63,8 +63,9 @@ public class SleuthkitCase {
 	private int attributeIDcounter = 1001;
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
-	private static final Lock caseDbWriteLock = rwLock.writeLock();
-	private static final Lock caseDbReadLock = rwLock.readLock();
+	private static final Lock caseDbLock = rwLock.writeLock(); //using exclusing lock for all db ops for now
+	//private static final Lock caseDbWriteLock = rwLock.writeLock();
+	//private static final Lock caseDbReadLock = rwLock.readLock();
 	//prepared statements
 	private PreparedStatement getBlackboardAttributesSt;
 	private PreparedStatement getBlackboardArtifactSt;
@@ -306,7 +307,7 @@ public class SleuthkitCase {
 	 */
 	public static void dbWriteLock() {
 		//Logger.getLogger("LOCK").log(Level.INFO, "Locking " + rwLock.toString());
-		caseDbWriteLock.lock();
+		caseDbLock.lock();
 	}
 
 	/**
@@ -315,7 +316,7 @@ public class SleuthkitCase {
 	 */
 	public static void dbWriteUnlock() {
 		//Logger.getLogger("LOCK").log(Level.INFO, "UNLocking " + rwLock.toString());
-		caseDbWriteLock.unlock();
+		caseDbLock.unlock();
 	}
 
 	/**
@@ -325,7 +326,7 @@ public class SleuthkitCase {
 	 * dbReadLock() was called.
 	 */
 	static void dbReadLock() {
-		caseDbReadLock.lock();
+		caseDbLock.lock();
 	}
 
 	/**
@@ -333,7 +334,7 @@ public class SleuthkitCase {
 	 * dbReadLock(). Call in "finally" block to ensure the lock is always released.
 	 */
 	static void dbReadUnlock() {
-		caseDbReadLock.unlock();
+		caseDbLock.unlock();
 	}
 
 	/**
