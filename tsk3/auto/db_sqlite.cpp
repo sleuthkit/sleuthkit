@@ -199,6 +199,19 @@ int
         return 1;
     }
 
+    // set UTF8 encoding
+    if (attempt_exec("PRAGMA encoding = \"UTF-8\";",
+            "Error setting PRAGMA encoding UTF-8: %s\n")) {
+        return 1;
+    }
+
+    // set page size
+    if (attempt_exec("PRAGMA page_size = 4096;",
+            "Error setting PRAGMA page_size: %s\n")) {
+        return 1;
+    }
+
+
     if (attempt_exec
         ("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);",
             "Error creating tsk_db_info table: %s\n")) {
