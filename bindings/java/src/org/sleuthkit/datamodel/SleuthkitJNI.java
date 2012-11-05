@@ -65,7 +65,7 @@ public class SleuthkitJNI {
 	private static native long openVsNat(long imgHandle, long vsOffset) throws TskCoreException;
 	private static native long openVolNat(long vsHandle, long volId) throws TskCoreException;
 	private static native long openFsNat(long imgHandle, long fsId) throws TskCoreException;
-	private static native long openFileNat(long fsHandle, long fileId) throws TskCoreException;
+	private static native long openFileNat(long fsHandle, long fileId, int attrType, int attrId) throws TskCoreException;
  
 	//read functions
 	private static native int readImgNat(long imgHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
@@ -383,11 +383,13 @@ public class SleuthkitJNI {
 	 * 
 	 * @param fsHandle fsHandle pointer in the sleuthkit
 	 * @param fileId id of the file
+	 * @param attrType file attribute type to open
+	 * @param attrId file attribute id to open
 	 * @return pointer to a file structure in the sleuthkit
 	 * @throws TskCoreException exception thrown if critical error occurs within TSK  
 	 */
-	public static long openFile(long fsHandle, long fileId) throws TskCoreException{
-		return openFileNat(fsHandle, fileId);
+	public static long openFile(long fsHandle, long fileId, int attrType, int attrId) throws TskCoreException{
+		return openFileNat(fsHandle, fileId, attrType, attrId);
 	}
 
 	//do reads
