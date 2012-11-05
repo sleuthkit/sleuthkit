@@ -199,6 +199,17 @@ int
         return 1;
     }
 
+    // set UTF8 encoding
+    if (attempt_exec("PRAGMA encoding = \"UTF-8\";",
+            "Error setting PRAGMA encoding UTF-8: %s\n")) {
+        return 1;
+    }
+
+    // set page size
+    if (attempt_exec("PRAGMA page_size = 4096;",
+            "Error setting PRAGMA page_size: %s\n")) {
+        return 1;
+    }
 
     // increase the DB by 1MB at a time. 
     int chunkSize = 1024 * 1024;
