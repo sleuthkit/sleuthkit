@@ -199,6 +199,16 @@ int
         return 1;
     }
 
+
+    // increase the DB by 1MB at a time. 
+    int chunkSize = 1024 * 1024;
+    if (sqlite3_file_control(m_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunkSize) != SQLITE_OK) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskDbSqlite::initialze: error setting chunk size %s", sqlite3_errmsg(m_db));
+        return 1;
+    }
+
     if (attempt_exec
         ("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);",
             "Error creating tsk_db_info table: %s\n")) {

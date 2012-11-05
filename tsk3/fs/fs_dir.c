@@ -202,7 +202,7 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
     if (fs_name_dest == NULL) {
         // make sure we got the room
         if (a_fs_dir->names_used >= a_fs_dir->names_alloc) {
-            if (tsk_fs_dir_realloc(a_fs_dir, a_fs_dir->names_used + 256))
+            if (tsk_fs_dir_realloc(a_fs_dir, a_fs_dir->names_used + 512))
                 return 1;
         }
 
