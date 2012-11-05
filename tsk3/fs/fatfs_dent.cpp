@@ -26,7 +26,7 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
-#include <unordered_map>
+#include <map>
 
 /*
 * DESIGN NOTES
@@ -85,12 +85,12 @@ static TSK_WALK_RET_ENUM
 *
 * Assumes that you already have the lock
 */
-static std::unordered_map<TSK_INUM_T, TSK_INUM_T> * getParentMap(FATFS_INFO *fatfs) {
+static std::map<TSK_INUM_T, TSK_INUM_T> * getParentMap(FATFS_INFO *fatfs) {
     // allocate it if it hasn't already been 
     if (fatfs->inum2par == NULL) {
-        fatfs->inum2par = new std::unordered_map<TSK_INUM_T, TSK_INUM_T>;
+        fatfs->inum2par = new std::map<TSK_INUM_T, TSK_INUM_T>;
     }
-    return (std::unordered_map<TSK_INUM_T, TSK_INUM_T> *)fatfs->inum2par;
+    return (std::map<TSK_INUM_T, TSK_INUM_T> *)fatfs->inum2par;
 }
 
 /**
@@ -106,7 +106,7 @@ uint8_t
     TSK_INUM_T dir_inum)
 {
     tsk_take_lock(&fatfs->dir_lock);
-    std::unordered_map<TSK_INUM_T, TSK_INUM_T> *tmpMap = getParentMap(fatfs);
+    std::map<TSK_INUM_T, TSK_INUM_T> *tmpMap = getParentMap(fatfs);
     (*tmpMap)[dir_inum] = par_inum;
     tsk_release_lock(&fatfs->dir_lock);
 
@@ -126,7 +126,7 @@ static uint8_t
 {
     uint8_t retval = 1;
     tsk_take_lock(&fatfs->dir_lock);
-    std::unordered_map<TSK_INUM_T, TSK_INUM_T> *tmpMap = getParentMap(fatfs);
+    std::map<TSK_INUM_T, TSK_INUM_T> *tmpMap = getParentMap(fatfs);
     if (tmpMap->count( dir_inum) > 0) {
         *par_inum = (*tmpMap)[dir_inum];
         retval = 0;
@@ -141,7 +141,7 @@ static uint8_t
 void fatfs_dir_buf_free(FATFS_INFO *fatfs) {
     tsk_take_lock(&fatfs->dir_lock);
     if (fatfs->inum2par != NULL) {
-        std::unordered_map<TSK_INUM_T, TSK_INUM_T> *tmpMap = getParentMap(fatfs);
+        std::map<TSK_INUM_T, TSK_INUM_T> *tmpMap = getParentMap(fatfs);
         delete tmpMap;
         fatfs->inum2par = NULL;
     }
