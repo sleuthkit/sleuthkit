@@ -1311,3 +1311,37 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getIndexSizeNat
     tsk_hdb_close(temp);
     return -1;
 }
+
+
+/*
+ * Query and get size of the device (such as physical disk, or image) pointed by the path
+ * Might require elevated priviletes to work (otherwise will error)
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param devPathJ the device path
+ * @return size of device, set throw jni exception on error
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSizeNat
+  (JNIEnv * env, jclass obj, jstring devPathJ) {
+     
+      jlong devSize = 0;
+      const char* devPath = env->GetStringUTFChars(devPathJ, 0);
+
+      // open the image to get the size
+      TSK_IMG_INFO * img_info =
+        tsk_img_open_utf8_sing(devPath, TSK_IMG_TYPE_DETECT, 0);
+      if (img_info == NULL) {
+        setThrowTskCoreError(env, tsk_error_get());
+        env->ReleaseStringUTFChars(devPathJ , devPath); 
+        return -1;
+      }
+
+      TSK_OFF_T imgSize = img_info->size;
+      devSize = imgSize;
+
+      //cleanup
+      tsk_img_close(img_info);
+      env->ReleaseStringUTFChars(devPathJ , devPath); 
+
+      return devSize;
+}

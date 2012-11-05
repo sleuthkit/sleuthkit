@@ -273,6 +273,14 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupInd
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
   (JNIEnv *, jclass, jstring);
 
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    findDeviceSizeNat
+ * Signature: (Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSizeNat
+  (JNIEnv *, jclass, jstring);
+
 #ifdef __cplusplus
 }
 #endif

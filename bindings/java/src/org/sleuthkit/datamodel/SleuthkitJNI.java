@@ -83,6 +83,9 @@ public class SleuthkitJNI {
 	//hash-lookup database functions
 	private static native void createLookupIndexNat(String dbPath) throws TskCoreException;
 	private static native boolean lookupIndexExistsNat(String dbPath) throws TskCoreException;
+	
+	//util functions
+	private static native long findDeviceSizeNat(String devicePath) throws TskCoreException;
 
 	//Linked library loading
 	static {
@@ -606,5 +609,15 @@ public class SleuthkitJNI {
 			result = result + second;
 		}
 		return result;
+	}
+	
+	/**
+	 * Get size of a device (physical, logical device, image) pointed to by devPath
+	 * @param devPath device path pointing to the device
+	 * @return size of the device in bytes
+	 * @throws TskCoreException exception thrown if the device size could not be queried
+	 */
+	public static long findDeviceSize(String devPath) throws TskCoreException {
+		return findDeviceSizeNat(devPath);
 	}
 }
