@@ -1310,16 +1310,14 @@ static void
 fatfs_close(TSK_FS_INFO * fs)
 {
     FATFS_INFO *fatfs = (FATFS_INFO *) fs;
+ 
+    fatfs_dir_buf_free(fatfs);
+
     fs->tag = 0;
-
-    if (fatfs->dir_buf)
-        free(fatfs->dir_buf);
-    if (fatfs->par_buf)
-        free(fatfs->par_buf);
-
     free(fatfs->sb);
     tsk_deinit_lock(&fatfs->cache_lock);
     tsk_deinit_lock(&fatfs->dir_lock);
+	
     tsk_fs_free(fs);
 }
 
@@ -1834,6 +1832,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     // initialize the caches
     tsk_init_lock(&fatfs->cache_lock);
     tsk_init_lock(&fatfs->dir_lock);
+    fatfs->inum2par = NULL;
 
     return (fs);
 }

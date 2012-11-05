@@ -547,10 +547,10 @@ int
  * @param objId object id of this directory from the objects table
  */
 void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId) {
-    map<TSK_INUM_T,int64_t>::iterator it = m_parentDirIdCache[fsObjId].find(meta_addr);
-    if (it == m_parentDirIdCache[fsObjId].end() )
-        //store only if does not exist
-        m_parentDirIdCache[fsObjId][meta_addr] = objId;
+	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
+	//store only if does not exist
+	if (tmpMap.count(meta_addr) == 0)
+		tmpMap[meta_addr] = objId;
 }
 
 /**
@@ -560,17 +560,11 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_ad
  * @returns parent obj id ( > 0), -1 on error
  */
 int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & fsObjId) {
-    int64_t parObjId = -1;
-
-    //get from cache by parent meta addr, if available
-    map<TSK_INUM_T,int64_t>::iterator it = m_parentDirIdCache[fsObjId].find(fs_file->name->par_addr);
-    if (it != m_parentDirIdCache[fsObjId].end() ) {
-        parObjId = it->second;
-    }
-    
-    if (parObjId > 0)
-        //return cached
-        return parObjId;
+	//get from cache by parent meta addr, if available
+	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
+	if (tmpMap.count(fs_file->name->par_addr) > 0) {
+		return tmpMap[fs_file->name->par_addr];
+	}
 
     // Find the parent file id in the database using the parent metadata address
     if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1, fs_file->name->par_addr),
@@ -585,7 +579,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & f
         return -1;
     }
 
-    parObjId = sqlite3_column_int64(m_selectFilePreparedStmt, 0);
+    int64_t parObjId = sqlite3_column_int64(m_selectFilePreparedStmt, 0);
 
     if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
         "Error resetting 'select file id by meta_addr' statement: %s\n")) {
