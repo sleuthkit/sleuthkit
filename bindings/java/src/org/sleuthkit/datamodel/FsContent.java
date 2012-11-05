@@ -31,7 +31,8 @@ import org.sleuthkit.datamodel.TskData.FileKnown;
 public abstract class FsContent extends AbstractFile {
 
 	///read only database tsk_files fields
-	protected final long fs_obj_id, meta_addr, attr_type, attr_id, meta_type, dir_type, dir_flags,
+	protected final int attr_type, attr_id;
+	protected final long fs_obj_id, meta_addr, meta_type, dir_type, dir_flags,
 			meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode;
 
 	/*
@@ -88,7 +89,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param md5Hash
 	 */
 	FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
-			long attr_type, long attr_id, long meta_type, long dir_type, long dir_flags,
+			int attr_type, int attr_id, long meta_type, long dir_type, long dir_flags,
 			long meta_flags, long size, long ctime, long crtime, long atime, long mtime, long uid, long gid, long mode, long known,
 			String parent_path, String md5Hash) {
 		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS);
@@ -148,7 +149,8 @@ public abstract class FsContent extends AbstractFile {
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		synchronized (this) {
 			if (fileHandle == 0) {
-				fileHandle = SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), meta_addr);
+				fileHandle = 
+						SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), meta_addr, attr_type, attr_id);
 			}
 		}
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
@@ -192,7 +194,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return attribute type
 	 */
-	public long getAttr_type() {
+	public int getAttr_type() {
 		return attr_type;
 	}
 
@@ -201,7 +203,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return attribute id
 	 */
-	public long getAttr_id() {
+	public int getAttr_id() {
 		return attr_id;
 	}
 

@@ -31,8 +31,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public class File extends FsContent {
 
 	//constructor used for getfile from tskDb
-	protected File(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr, long attr_type,
-			long attr_id, String name, long dir_type, long meta_type,
+	protected File(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr, int attr_type,
+			int attr_id, String name, long dir_type, long meta_type,
 			long dir_flags, long meta_flags, long size, long ctime, long crtime,
 			long atime, long mtime, long mode, long uid, long gid, long known,
 			String parent_path, String md5Hash) {
