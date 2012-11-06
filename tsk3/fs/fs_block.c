@@ -57,6 +57,14 @@ tsk_fs_block_free(TSK_FS_BLOCK * a_fs_block)
 }
 
 
+
+TSK_FS_BLOCK *
+tsk_fs_block_get(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
+    TSK_DADDR_T a_addr)
+{
+    return tsk_fs_block_get_flag(a_fs, a_fs_block, a_addr, a_fs->block_getflags(a_fs, a_addr));
+}
+
 /**
  * \ingroup fslib
  * Get the contents and flags of a specific file system block. Note that if the block contains
@@ -70,8 +78,8 @@ tsk_fs_block_free(TSK_FS_BLOCK * a_fs_block)
  * be the same structure). 
  */
 TSK_FS_BLOCK *
-tsk_fs_block_get(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
-    TSK_DADDR_T a_addr)
+tsk_fs_block_get_flag(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
+    TSK_DADDR_T a_addr, TSK_FS_BLOCK_FLAG_ENUM a_flags)
 {
     TSK_OFF_T offs;
     ssize_t cnt;
@@ -112,15 +120,17 @@ tsk_fs_block_get(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
 
     a_fs_block->fs_info = a_fs;
     a_fs_block->addr = a_addr;
-    a_fs_block->flags = a_fs->block_getflags(a_fs, a_addr);
+    a_fs_block->flags = a_flags;
     a_fs_block->flags |= TSK_FS_BLOCK_FLAG_RAW;
     offs = (TSK_OFF_T) a_addr *a_fs->block_size;
 
-    cnt =
-        tsk_img_read(a_fs->img_info, a_fs->offset + offs, a_fs_block->buf,
-        len);
-    if (cnt != len) {
-        return NULL;
+    if ((a_fs_block->flags & TSK_FS_BLOCK_FLAG_AONLY) == 0) {
+        cnt =
+            tsk_img_read(a_fs->img_info, a_fs->offset + offs, a_fs_block->buf,
+            len);
+        if (cnt != len) {
+            return NULL;
+        }
     }
     return a_fs_block;
 }
@@ -156,7 +166,8 @@ tsk_fs_block_set(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
         return 1;
     }
     a_fs_block->fs_info = a_fs;
-    memcpy(a_fs_block->buf, a_buf, a_fs->block_size);
+    if ((a_flags & TSK_FS_BLOCK_FLAG_AONLY) == 0) 
+        memcpy(a_fs_block->buf, a_buf, a_fs->block_size);
     a_fs_block->addr = a_addr;
     a_fs_block->flags = a_flags;
     return 0;

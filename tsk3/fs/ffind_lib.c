@@ -25,11 +25,8 @@
  * line tool.
  */
 #include "tsk_fs_i.h"
+#include "tsk_ntfs.h"  // NTFS has an optimized version of this function 
 
-/* NTFS has an optimized version of this function */
-extern uint8_t
-ntfs_find_file(TSK_FS_INFO *, TSK_INUM_T, uint32_t, uint8_t,
-    uint16_t, uint8_t, int, TSK_FS_DIR_WALK_CB, void *ptr);
 
 
 /** \internal 

@@ -74,7 +74,8 @@ extern "C" {
         TSK_FS_BLOCK_FLAG_RAW = 0x0020, ///< The data has been read raw from the disk (and not COMP or SPARSE)
         TSK_FS_BLOCK_FLAG_SPARSE = 0x0040,      ///< The data passed in the file_walk calback was stored as sparse (all zeros) (and not RAW or COMP)
         TSK_FS_BLOCK_FLAG_COMP = 0x0080,        ///< The data passed in the file_walk callback was stored in a compressed form (and not RAW or SPARSE)
-        TSK_FS_BLOCK_FLAG_RES = 0x0100  ///< The data passed in the file_walk callback is from an NTFS resident file
+        TSK_FS_BLOCK_FLAG_RES = 0x0100,  ///< The data passed in the file_walk callback is from an NTFS resident file
+        TSK_FS_BLOCK_FLAG_AONLY = 0x0200    /// < The buffer in TSK_FS_BLOCK has no content (it could be non-empty, but should be ignored), but the flags and such are accurate
     };
     typedef enum TSK_FS_BLOCK_FLAG_ENUM TSK_FS_BLOCK_FLAG_ENUM;
 
@@ -88,6 +89,7 @@ extern "C" {
         TSK_FS_BLOCK_WALK_FLAG_UNALLOC = 0x02,  ///< Unallocated blocks
         TSK_FS_BLOCK_WALK_FLAG_CONT = 0x04,     ///< Blocks that could store file content
         TSK_FS_BLOCK_WALK_FLAG_META = 0x08,     ///< Blocks that could store file system metadata
+        TSK_FS_BLOCK_WALK_FLAG_AONLY = 0x10      ///< Do not include content in callback only address and allocation status
     };
     typedef enum TSK_FS_BLOCK_WALK_FLAG_ENUM TSK_FS_BLOCK_WALK_FLAG_ENUM;
 
@@ -120,6 +122,9 @@ extern "C" {
     extern void tsk_fs_block_free(TSK_FS_BLOCK * a_fs_block);
     extern TSK_FS_BLOCK *tsk_fs_block_get(TSK_FS_INFO * fs,
         TSK_FS_BLOCK * fs_block, TSK_DADDR_T addr);
+    extern TSK_FS_BLOCK *tsk_fs_block_get_flag(TSK_FS_INFO * a_fs, 
+        TSK_FS_BLOCK * a_fs_block, TSK_DADDR_T a_addr, 
+        TSK_FS_BLOCK_FLAG_ENUM a_flags);
     extern uint8_t tsk_fs_block_walk(TSK_FS_INFO * a_fs,
         TSK_DADDR_T a_start_blk, TSK_DADDR_T a_end_blk,
         TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags, TSK_FS_BLOCK_WALK_CB a_action,
