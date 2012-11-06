@@ -29,8 +29,9 @@ import java.util.*;
  */
 public class FileSystem extends AbstractContent {
 
-	long img_offset, fs_type, block_size, block_count, root_inum,
+	private long img_offset, block_size, block_count, root_inum,
 			first_inum, last_inum;
+	private TskData.TSK_FS_TYPE_ENUM fs_type;
 	private Content parent;
 	private long filesystemHandle = 0;
 
@@ -48,7 +49,7 @@ public class FileSystem extends AbstractContent {
 	 * @param last_inum the last inum
 	 */
 	protected FileSystem(SleuthkitCase db, long obj_id, String name, long img_offset,
-			long fs_type, long block_size, long block_count, long root_inum,
+			TskData.TSK_FS_TYPE_ENUM fs_type, long block_size, long block_count, long root_inum,
 			long first_inum, long last_inum) {
 		super(db, obj_id, name);
 		this.img_offset = img_offset;
@@ -117,9 +118,9 @@ public class FileSystem extends AbstractContent {
 	/**
 	 * Get the file system type
 	 * 
-	 * @return enum number from sleuthkit database
+	 * @return enum value of fs type
 	 */
-	public long getFs_type() {
+	public TskData.TSK_FS_TYPE_ENUM getFs_type() {
 		return fs_type;
 	}
 

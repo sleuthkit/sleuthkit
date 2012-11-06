@@ -95,8 +95,9 @@ class ResultSetHelper {
 	 */
 	FileSystem fileSystem(ResultSet rs, Content parent) throws SQLException {
 
+		TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type"));
 		FileSystem fs = new FileSystem(db, rs.getLong("obj_id"), "File System", rs.getLong("img_offset"),
-				rs.getLong("fs_type"), rs.getLong("block_size"), rs.getLong("block_count"),
+				fsType, rs.getLong("block_size"), rs.getLong("block_count"),
 				rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum"));
 		fs.setParent(parent);
 		return fs;

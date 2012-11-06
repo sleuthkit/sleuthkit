@@ -257,6 +257,63 @@ public class TskData {
 			return mode;
 		}
 	};
+	
+	/**
+	 * File system type enum
+	 */
+	 public enum TSK_FS_TYPE_ENUM {
+        TSK_FS_TYPE_DETECT(0x00000000),        ///< Use autodetection methods
+        TSK_FS_TYPE_NTFS (0x00000001),  ///< NTFS file system
+        TSK_FS_TYPE_NTFS_DETECT (0x00000001),   ///< NTFS auto detection
+        TSK_FS_TYPE_FAT12 (0x00000002), ///< FAT12 file system
+        TSK_FS_TYPE_FAT16 (0x00000004), ///< FAT16 file system
+        TSK_FS_TYPE_FAT32 (0x00000008), ///< FAT32 file system
+        TSK_FS_TYPE_FAT_DETECT (0x0000000e),    ///< FAT auto detection
+        TSK_FS_TYPE_FFS1 (0x00000010),  ///< UFS1 (FreeBSD, OpenBSD, BSDI ...)
+        TSK_FS_TYPE_FFS1B (0x00000020), ///< UFS1b (Solaris - has no type)
+        TSK_FS_TYPE_FFS2 (0x00000040),  ///< UFS2 - FreeBSD, NetBSD 
+        TSK_FS_TYPE_FFS_DETECT (0x00000070),    ///< UFS auto detection
+        TSK_FS_TYPE_EXT2 (0x00000080),  ///< Ext2 file system
+        TSK_FS_TYPE_EXT3 (0x00000100),  ///< Ext3 file system
+        TSK_FS_TYPE_EXT_DETECT (0x00000180),    ///< ExtX auto detection
+        TSK_FS_TYPE_SWAP (0x00000200),  ///< SWAP file system
+        TSK_FS_TYPE_SWAP_DETECT (0x00000200),   ///< SWAP auto detection
+        TSK_FS_TYPE_RAW (0x00000400),   ///< RAW file system
+        TSK_FS_TYPE_RAW_DETECT (0x00000400),    ///< RAW auto detection
+        TSK_FS_TYPE_ISO9660 (0x00000800),       ///< ISO9660 file system
+        TSK_FS_TYPE_ISO9660_DETECT (0x00000800),        ///< ISO9660 auto detection
+        TSK_FS_TYPE_HFS (0x00001000),   ///< HFS file system
+        TSK_FS_TYPE_HFS_DETECT (0x00001000),    ///< HFS auto detection
+        TSK_FS_TYPE_UNSUPP (0xffffffff);        ///< Unsupported file system
+		
+		private int value;
+		private TSK_FS_TYPE_ENUM(int value) {
+			this.value = value;
+		}
+		
+		/**
+		 * get the value for the enum type
+		 * @return int value for the enum type
+		 */
+		public int getValue() {
+			return value;
+		}
+		
+		/**
+		 * Convert fs type int value to the enum type - get the first matching enum type
+		 * @param fsTypeValue int value to convert
+		 * @return the enum type - first enum type matching the fsTypeValue
+		 */
+		public static TSK_FS_TYPE_ENUM valueOf(int fsTypeValue) {
+			for(TSK_FS_TYPE_ENUM type : TSK_FS_TYPE_ENUM.values()) {
+				if(type.value == fsTypeValue) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_FS_TYPE_ENUM of value: " + fsTypeValue);
+		}
+		
+    };
 
 	/**
 	 * Image type
@@ -344,7 +401,7 @@ public class TskData {
 		
 		
 		/**
-		 * Convert object type long value to the enum type
+		 * Convert object type short value to the enum type
 		 * @param objectType long value to convert
 		 * @return the enum type
 		 */

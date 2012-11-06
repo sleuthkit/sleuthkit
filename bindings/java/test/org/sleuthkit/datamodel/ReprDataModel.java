@@ -194,7 +194,7 @@ public class ReprDataModel {
 		 * 
 		 */
 		repr("getFirst_inum", fs.getFirst_inum());
-		repr("getFs_type", fs.getFs_type());
+		repr("getFs_type", fs.getFs_type().getValue());
 		repr("getImg_offset", fs.getImg_offset());
 		repr("getLast_inum", fs.getLast_inum());
 		repr("getRoot_inum", fs.getRoot_inum());
