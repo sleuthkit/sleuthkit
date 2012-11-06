@@ -31,8 +31,8 @@ import org.sleuthkit.datamodel.TskData.FileKnown;
 public abstract class FsContent extends AbstractFile {
 
 	///read only database tsk_files fields
-	protected final long fs_obj_id, meta_addr, size;
-	protected final int ctime, crtime, atime, mtime, uid, gid;
+	protected final long fs_obj_id, meta_addr, size, ctime, crtime, atime, mtime;
+	protected final int uid, gid;
 	protected final short attr_type, attr_id, meta_type, dir_type, mode;
 	protected final byte dir_flags, meta_flags;
 	
@@ -91,7 +91,7 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
 			short attr_type, short attr_id, short meta_type, short dir_type, byte dir_flags,
-			byte meta_flags, long size, int ctime, int crtime, int atime, int mtime, int uid, int gid, short mode, byte known,
+			byte meta_flags, long size, long ctime, long crtime, long atime, long mtime, int uid, int gid, short mode, byte known,
 			String parent_path, String md5Hash) {
 		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS);
 		this.fs_obj_id = fs_obj_id;
@@ -304,7 +304,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return change time
 	 */
-	public int getCtime() {
+	public long getCtime() {
 		return ctime;
 	}
 
@@ -322,7 +322,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return creation time
 	 */
-	public int getCrtime() {
+	public long getCrtime() {
 		return crtime;
 	}
 
@@ -340,7 +340,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return access time
 	 */
-	public int getAtime() {
+	public long getAtime() {
 		return atime;
 	}
 
@@ -358,7 +358,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return modified time
 	 */
-	public int getMtime() {
+	public long getMtime() {
 		return mtime;
 	}
 

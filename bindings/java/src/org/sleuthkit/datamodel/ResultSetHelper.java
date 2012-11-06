@@ -113,7 +113,7 @@ class ResultSetHelper {
 		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), rs.getLong("meta_addr"), rs.getShort("attr_type"),
 				rs.getShort("attr_id"), rs.getString("name"), rs.getShort("dir_type"),
 				rs.getShort("meta_type"), rs.getByte("dir_flags"), rs.getByte("meta_flags"), rs.getLong("size"),
-				rs.getInt("ctime"), rs.getInt("crtime"), rs.getInt("atime"), rs.getInt("mtime"),
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
 				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), rs.getByte("known"), rs.getString("parent_path"), rs.getString("md5"));
 		f.setFileSystem(fs);
 		return f;
@@ -131,7 +131,7 @@ class ResultSetHelper {
 		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), rs.getLong("meta_addr"), rs.getShort("attr_type"),
 				rs.getShort("attr_id"), name, rs.getShort("dir_type"),
 				rs.getShort("meta_type"), rs.getByte("dir_flags"), rs.getByte("meta_flags"), rs.getLong("size"),
-				rs.getInt("ctime"), rs.getInt("crtime"), rs.getInt("atime"), rs.getInt("mtime"),
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
 				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), rs.getByte("known"), rs.getString("parent_path"), rs.getString("md5"));
 		dir.setFileSystem(fs);
 		return dir;

@@ -33,7 +33,7 @@ public class Directory extends FsContent {
 	protected Directory(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr,
 			short attr_type, short attr_id, String name, short dir_type,
 			short meta_type, byte dir_flags, byte meta_flags, long size,
-			int ctime, int crtime, int atime, int mtime, short mode,
+			long ctime, long crtime, long atime, long mtime, short mode,
 			int uid, int gid, byte known, String parent_path, String md5Hash) {
 		super(db, obj_id, name, fs_obj_id, meta_addr,
 				attr_type, attr_id, meta_type, dir_type, dir_flags,
