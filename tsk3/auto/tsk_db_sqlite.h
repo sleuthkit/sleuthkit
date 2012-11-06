@@ -237,7 +237,7 @@ class TskDbSqlite {
     TSK_TCHAR m_dbFilePath[1024];
     char m_dbFilePathUtf8[1024];
     bool m_blkMapFlag;
-    bool m_utf8;
+    bool m_utf8; //encoding used for the database file name, not the actual database
     sqlite3_stmt *m_selectFilePreparedStmt;
     map<int64_t, map<TSK_INUM_T,int64_t> > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to its object ID in the database
 };

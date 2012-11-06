@@ -327,6 +327,13 @@ public class ReprDataModel {
 		append(l.toString());
 		nl();
 	}
+	
+	private void repr(String method, Integer l) {
+		indent();
+		name(method);
+		append(l.toString());
+		nl();
+	}
 
 	private void repr(String method, String[] sArray) {
 		indent();
