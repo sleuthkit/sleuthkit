@@ -1,4 +1,3 @@
-
 <project xmlns:ivy="antlib:org.apache.ivy.ant" name="DataModel" default="dist" basedir=".">
 	<description>
         Sleuthkit Java DataModel 
@@ -35,7 +34,6 @@
 		<mkdir dir="${test-standards}"/>
 	</target>
   
-  
 	<property name="ivy.install.version" value="2.1.0-rc2" />
 	<condition property="ivy.home" value="${env.IVY_HOME}">
 		<isset property="env.IVY_HOME" />
@@ -44,29 +42,36 @@
 	<property name="ivy.jar.dir" value="${ivy.home}/lib" />
 	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
 
-	<target name="download-ivy" unless="offline">
-		<mkdir dir="${ivy.jar.dir}"/>
-      <!-- download Ivy from web site so that it can be used even without any special installation -->
-		<get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" 
-             dest="${ivy.jar.file}" usetimestamp="true"/>
-	</target>
 
-	<target name="init-ivy" depends="download-ivy">
-      <!-- try to load ivy here from ivy home, in case the user has not already dropped
-              it into ant's lib dir (note that the latter copy will always take precedence).
-              We will not fail as long as local lib dir exists (it may be empty) and
-              ivy is in at least one of ant's lib dir or the local lib dir. -->
-		<path id="ivy.lib.path">
-			<fileset dir="${ivy.jar.dir}" includes="*.jar"/>
-		</path>
-		<taskdef resource="org/apache/ivy/ant/antlib.xml"
-                 uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+	<target name="download-ivy" unless="offline">
+        <available file="${ivy.jar.file}" property="ivy.available"/>
+        <antcall target="-download-ivy" />
+    </target>
+
+    <target name="-download-ivy" unless="ivy.available">
+        <mkdir dir="${ivy.jar.dir}"/>
+        <get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
+         dest="${ivy.jar.file}" usetimestamp="true"/>
+    </target>
+
+	<target name="init-ivy" depends="download-ivy" unless="ivy.lib.path">
+        <path id="ivy.lib.path">
+            <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
+        </path>
+        <taskdef resource="org/apache/ivy/ant/antlib.xml"
+             uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+    </target>
+
+	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy">
+        <ivy:settings file="ivysettings.xml" />
+        <ivy:resolve/>
+        <ivy:retrieve sync="true"
+pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	</target>
   
-  
-	<target name="compile-test" depends="compile,init-ivy"
+	<target name="compile-test" depends="compile"
         description="compile the tests" >
-		<ivy:retrieve />
+		<antcall target="retrieve-deps" />
 		<javac debug="on" srcdir="${test}" destdir="${build}">
 			<classpath refid="libraries"/>
 		</javac>
@@ -104,7 +109,7 @@
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
 	<!-- Fetch dependencies too -->
-		<ivy:retrieve />
+		<antcall target="retrieve-deps" />
 	</target>
   
 	<target name="jni" depends="compile" description="make the jni.h file">
