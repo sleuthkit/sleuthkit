@@ -557,7 +557,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core 
 	 */
 	public static TskData.FileKnown nsrlHashLookup(String hash) throws TskCoreException{
-		return TskData.FileKnown.valueOf(nsrlDbLookup(hash));
+		return TskData.FileKnown.valueOf((byte)nsrlDbLookup(hash));
 	}
 	
 	/**
@@ -568,7 +568,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core 
 	 */
 	public static TskData.FileKnown knownBadHashLookup(String hash, int dbHandle) throws TskCoreException{
-		return TskData.FileKnown.valueOf(knownBadDbLookup(hash, dbHandle));
+		return TskData.FileKnown.valueOf((byte)knownBadDbLookup(hash, dbHandle));
 	}
 	
 	/**

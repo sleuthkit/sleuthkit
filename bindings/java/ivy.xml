@@ -3,8 +3,9 @@
     <dependencies>
 		<dependency org="junit" name="junit" rev="4.8.2"/>
 		<dependency org="com.googlecode.java-diff-utils" name="diffutils" rev="1.2.1"/>
-		<dependency org="org.xerial" name="sqlite-jdbc" rev="3.7.2" >
+		<dependency org="org.xerial" name="sqlite-jdbc" rev="3.7.8-SNAPSHOT" >
 			<artifact name="sqlite-jdbc" type="jar" />
 		</dependency>
     </dependencies>
 </ivy-module>
+
