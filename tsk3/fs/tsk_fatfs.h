@@ -343,13 +343,9 @@ extern "C" {
         uint16_t numroot;       /* number of 32-byte dentries in root dir */
         uint32_t mask;          /* the mask to use for the sectors */
 
-        /* dir_lock protects dir_buf, par_buf, dir_buf_size, dir_buf_next */
-        tsk_lock_t dir_lock;
-        TSK_INUM_T *dir_buf;    // array that holds inode address of directories r/w shared - lock
-        TSK_INUM_T *par_buf;    // array that holds parent directory address of corresponding dir_buf entry r/w shared - lock
-        size_t dir_buf_size;    // number of entries in both dif_buf and par_buf r/w shared - lock
-        size_t dir_buf_next;    // index to the next place to store an address in dir_buf and par_buf r/w shared - lock
-    } FATFS_INFO;
+        tsk_lock_t dir_lock;    //< Lock that protects inum2par.
+        void *inum2par;         //< Maps subfolder metadata address to parent folder metadata addresses.
+	} FATFS_INFO;
 
 
     extern int8_t fatfs_is_sectalloc(FATFS_INFO *, TSK_DADDR_T);
@@ -380,6 +376,7 @@ extern "C" {
     extern uint8_t fatfs_dir_buf_add(FATFS_INFO * fatfs,
         TSK_INUM_T par_inum, TSK_INUM_T dir_inum);
     extern void fatfs_cleanup_ascii(char *);
+    extern void fatfs_dir_buf_free(FATFS_INFO *fatfs);
 
 
 #ifdef __cplusplus

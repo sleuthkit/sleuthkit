@@ -19,34 +19,36 @@
 */
 
 /**
- * \file fatfs_dent.c
- * Contains the internal TSK FAT file name processing code.
- */
+* \file fatfs_dent.c
+* Contains the internal TSK FAT file name processing code.
+*/
 
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
+#include <map>
+
 /*
- * DESIGN NOTES
- *
- * the basic goal of this code is to parse directory entry structures for
- * file names.  The main function is fatfs_parse_buf, which parses
- * a buffer and stores the entries in FS_DIR.  That structure is then
- * used by dir_get() or dir_walk() to provide the data back to the user.
- *
- * One of the odd aspects of this code is that the 'inode' values are
- * the 'slot-address'.  Refer to the document on how FAT was implemented
- * for more details. This means that we need to search for the actual
- * 'inode' address for the '.' and '..' entries though!  The search
- * for '..' is quite painful if this code is called from a random
- * location.  It does save what the parent is though, so the search
- * only has to be done once per session.
- */
+* DESIGN NOTES
+*
+* the basic goal of this code is to parse directory entry structures for
+* file names.  The main function is fatfs_parse_buf, which parses
+* a buffer and stores the entries in FS_DIR.  That structure is then
+* used by dir_get() or dir_walk() to provide the data back to the user.
+*
+* One of the odd aspects of this code is that the 'inode' values are
+* the 'slot-address'.  Refer to the document on how FAT was implemented
+* for more details. This means that we need to search for the actual
+* 'inode' address for the '.' and '..' entries though!  The search
+* for '..' is quite painful if this code is called from a random
+* location.  It does save what the parent is though, so the search
+* only has to be done once per session.
+*/
 
 
 
 /* Special data structure allocated for each directory to hold the long
- * file name entries until all entries have been found */
+* file name entries until all entries have been found */
 typedef struct {
     uint8_t name[FATFS_MAXNAMLEN_UTF8]; /* buffer for lfn - in reverse order */
     uint16_t start;             /* current start of name */
@@ -57,13 +59,13 @@ typedef struct {
 
 
 /*
- * name_walk callback used when finding the parent directory.  It
- * forces the walking process to stop when we hit a target directory.
- * A list of directory to parent directory mappings is built up during
- * the walk and this function is used to stop that building process.
- */
+* name_walk callback used when finding the parent directory.  It
+* forces the walking process to stop when we hit a target directory.
+* A list of directory to parent directory mappings is built up during
+* the walk and this function is used to stop that building process.
+*/
 static TSK_WALK_RET_ENUM
-find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
+    find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
 {
     TSK_INUM_T par_inum = *(TSK_INUM_T *) ptr;
 
@@ -77,68 +79,97 @@ find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
     return TSK_WALK_CONT;
 }
 
+/** \internal
+* Casts the void * to a map.  This obfuscation is done so that the rest of the library
+* can remain as C and only this code needs to be C++.
+*
+* Assumes that you already have the lock
+*/
+static std::map<TSK_INUM_T, TSK_INUM_T> * getParentMap(FATFS_INFO *fatfs) {
+    // allocate it if it hasn't already been 
+    if (fatfs->inum2par == NULL) {
+        fatfs->inum2par = new std::map<TSK_INUM_T, TSK_INUM_T>;
+    }
+    return (std::map<TSK_INUM_T, TSK_INUM_T> *)fatfs->inum2par;
+}
 
+/**
+* Adds an entry to the parent directory map.  Used to make further processing
+* faster.
+* @param fatfs File system
+* @param par_inum Parent folder meta data address.
+* @param dir_inum Sub-folder meta data address.
+* @param returns 0
+*/
 uint8_t
-fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum,
+    fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum,
     TSK_INUM_T dir_inum)
 {
-    size_t q;
-
     tsk_take_lock(&fatfs->dir_lock);
-    for (q = 0; q < fatfs->dir_buf_next; q++) {
-        if (fatfs->dir_buf[q] == dir_inum) {
-            tsk_release_lock(&fatfs->dir_lock);
-            return 0;
-        }
-    }
-
-
-    // make sure we have room
-    if (fatfs->dir_buf_next == fatfs->dir_buf_size) {
-        fatfs->dir_buf_size += 256;
-        if ((fatfs->dir_buf =
-                (TSK_INUM_T *) tsk_realloc(fatfs->dir_buf,
-                    fatfs->dir_buf_size * sizeof(TSK_INUM_T))) == NULL) {
-            tsk_release_lock(&fatfs->dir_lock);
-            return 1;
-        }
-        if ((fatfs->par_buf =
-                (TSK_INUM_T *) tsk_realloc(fatfs->par_buf,
-                    fatfs->dir_buf_size * sizeof(TSK_INUM_T))) == NULL) {
-            tsk_release_lock(&fatfs->dir_lock);
-            return 1;
-        }
-    }
-
-    //add them
-    fatfs->dir_buf[fatfs->dir_buf_next] = dir_inum;
-    fatfs->par_buf[fatfs->dir_buf_next] = par_inum;
-    fatfs->dir_buf_next++;
+    std::map<TSK_INUM_T, TSK_INUM_T> *tmpMap = getParentMap(fatfs);
+    (*tmpMap)[dir_inum] = par_inum;
     tsk_release_lock(&fatfs->dir_lock);
+
     return 0;
 }
 
+/**
+* Looks up the parent meta address for a child from the cached list.
+* @param fatfs File system
+* @param dir_inum Inode of sub-directory to look up
+* @param par_inum [out] Result of lookup
+* @returns 0 if found and 1 if not. 
+*/
+static uint8_t
+    fatfs_dir_buf_get(FATFS_INFO * fatfs, TSK_INUM_T dir_inum,
+    TSK_INUM_T *par_inum)
+{
+    uint8_t retval = 1;
+    tsk_take_lock(&fatfs->dir_lock);
+    std::map<TSK_INUM_T, TSK_INUM_T> *tmpMap = getParentMap(fatfs);
+    if (tmpMap->count( dir_inum) > 0) {
+        *par_inum = (*tmpMap)[dir_inum];
+        retval = 0;
+    }
+    tsk_release_lock(&fatfs->dir_lock);
+
+    return retval;
+}
+
+/**
+* Frees the memory associated with the parent map
+*/
+void fatfs_dir_buf_free(FATFS_INFO *fatfs) {
+    tsk_take_lock(&fatfs->dir_lock);
+    if (fatfs->inum2par != NULL) {
+        std::map<TSK_INUM_T, TSK_INUM_T> *tmpMap = getParentMap(fatfs);
+        delete tmpMap;
+        fatfs->inum2par = NULL;
+    }
+    tsk_release_lock(&fatfs->dir_lock);
+}
+
 /*
- * Process the contents of a directory and add them to FS_DIR.
- *
- * @param fatfs File system information structure
- * @param a_fs_dir Structure to store the files in.
- * @param list_seen List of directory inodes that have been seen thus far in
- * directory walking (can be a pointer to a NULL pointer on first call).
- * @param buf Buffer that contains the directory contents.
- * @param len Length of buffer in bytes (must be a multiple of sector size)
- * @param addrs Array where each element is the original address of the
- * corresponding block in buf (size of array is number of blocks in directory).
- *
- * @return -1 on error, 0 on success, and 1 to stop
- */
+* Process the contents of a directory and add them to FS_DIR.
+*
+* @param fatfs File system information structure
+* @param a_fs_dir Structure to store the files in.
+* @param list_seen List of directory inodes that have been seen thus far in
+* directory walking (can be a pointer to a NULL pointer on first call).
+* @param buf Buffer that contains the directory contents.
+* @param len Length of buffer in bytes (must be a multiple of sector size)
+* @param addrs Array where each element is the original address of the
+* corresponding block in buf (size of array is number of blocks in directory).
+*
+* @return -1 on error, 0 on success, and 1 to stop
+*/
 static TSK_RETVAL_ENUM
-fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
+    fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
     TSK_OFF_T len, TSK_DADDR_T * addrs)
 {
     unsigned int idx, sidx;
     int a, b;
-    TSK_INUM_T inode, ibase;
+    TSK_INUM_T ibase;
     fatfs_dentry *dep;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
     int sectalloc;
@@ -180,8 +211,8 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "fatfs_dent_parse_buf: Parsing sector %" PRIuDADDR
-                " for dir %" PRIuINUM "\n", addrs[sidx], a_fs_dir->addr);
+            "fatfs_dent_parse_buf: Parsing sector %" PRIuDADDR
+            " for dir %" PRIuINUM "\n", addrs[sidx], a_fs_dir->addr);
 
         if ((sectalloc = fatfs_is_sectalloc(fatfs, addrs[sidx])) == -1) {
             if (tsk_verbose) {
@@ -197,26 +228,27 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
         /* cycle through the directory entries */
         for (idx = 0; idx < fatfs->dentry_cnt_se; idx++, dep++) {
             fatfs_dentry *dir;
+            TSK_INUM_T inode;
 
             entrySeenCount++;
             /* is it a valid dentry? */
             if (0 == fatfs_isdentry(fatfs, dep,
-                    ((isCorruptDir == 0) && (sectalloc)) ? 1 : 0)) {
-                if (tsk_verbose)
-                    tsk_fprintf(stderr,
+                ((isCorruptDir == 0) && (sectalloc)) ? 1 : 0)) {
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
                         "fatfs_dent_parse_buf: Entry %u is invalid\n",
                         idx);
-                entryInvalidCount++;
-                /* If we have seen four entries and all of them are corrupt,
-                 * then test every remaining entry in this folder -- 
-                 * even if the sector is allocated. The scenario is one
-                 * where we are processing a cluster that is allocated
-                 * to a file and we happen to get some data that matches
-                 * every now and then. */
-                if ((entrySeenCount == 4) && (entryInvalidCount == 4)) {
-                    isCorruptDir = 1;
-                }
-                continue;
+                    entryInvalidCount++;
+                    /* If we have seen four entries and all of them are corrupt,
+                    * then test every remaining entry in this folder -- 
+                    * even if the sector is allocated. The scenario is one
+                    * where we are processing a cluster that is allocated
+                    * to a file and we happen to get some data that matches
+                    * every now and then. */
+                    if ((entrySeenCount == 4) && (entryInvalidCount == 4)) {
+                        isCorruptDir = 1;
+                    }
+                    continue;
             }
 
             /* Copy the directory entry into the TSK_FS_NAME structure */
@@ -225,24 +257,24 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
             inode = ibase + idx;
 
             /* Take care of the name
-             * Copy a long name to a buffer and take action if it
-             * is a small name */
+            * Copy a long name to a buffer and take action if it
+            * is a small name */
             if ((dir->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
                 fatfs_dentry_lfn *dirl = (fatfs_dentry_lfn *) dir;
 
                 /* Store the name in dinfo until we get the 8.3 name
-                 * Use the checksum to identify a new sequence
-                 * */
+                * Use the checksum to identify a new sequence
+                * */
                 if (((dirl->seq & FATFS_LFN_SEQ_FIRST)
-                        && (dirl->seq != FATFS_SLOT_DELETED))
+                    && (dirl->seq != FATFS_SLOT_DELETED))
                     || (dirl->chksum != lfninfo.chk)) {
-                    // @@@ Do a partial output here
+                        // @@@ Do a partial output here
 
 
-                    /* Reset the values */
-                    lfninfo.seq = dirl->seq & FATFS_LFN_SEQ_MASK;
-                    lfninfo.chk = dirl->chksum;
-                    lfninfo.start = FATFS_MAXNAMLEN_UTF8 - 1;
+                        /* Reset the values */
+                        lfninfo.seq = dirl->seq & FATFS_LFN_SEQ_MASK;
+                        lfninfo.chk = dirl->chksum;
+                        lfninfo.start = FATFS_MAXNAMLEN_UTF8 - 1;
 
                 }
                 else if (dirl->seq != lfninfo.seq - 1) {
@@ -268,35 +300,35 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                 continue;
             }
             /* Special case for volume label: name does not have an
-             * extension and we add a note at the end that it is a label */
+            * extension and we add a note at the end that it is a label */
             else if ((dir->attrib & FATFS_ATTR_VOLUME) ==
                 FATFS_ATTR_VOLUME) {
-                a = 0;
+                    a = 0;
 
-                for (b = 0; b < 8; b++) {
-                    if ((dir->name[b] >= 0x20) && (dir->name[b] != 0xff)) {
-                        fs_name->name[a++] = dir->name[b];
+                    for (b = 0; b < 8; b++) {
+                        if ((dir->name[b] >= 0x20) && (dir->name[b] != 0xff)) {
+                            fs_name->name[a++] = dir->name[b];
+                        }
+                        else {
+                            fs_name->name[a++] = '^';
+                        }
                     }
-                    else {
-                        fs_name->name[a++] = '^';
+                    for (b = 0; b < 3; b++) {
+                        if ((dir->ext[b] >= 0x20) && (dir->ext[b] != 0xff)) {
+                            fs_name->name[a++] = dir->ext[b];
+                        }
+                        else {
+                            fs_name->name[a++] = '^';
+                        }
                     }
-                }
-                for (b = 0; b < 3; b++) {
-                    if ((dir->ext[b] >= 0x20) && (dir->ext[b] != 0xff)) {
-                        fs_name->name[a++] = dir->ext[b];
-                    }
-                    else {
-                        fs_name->name[a++] = '^';
-                    }
-                }
 
-                fs_name->name[a] = '\0';
-                /* Append a string to show it is a label */
-                if (a + 22 < FATFS_MAXNAMLEN_UTF8) {
-                    char *volstr = " (Volume Label Entry)";
-                    strncat(fs_name->name, volstr,
-                        FATFS_MAXNAMLEN_UTF8 - a);
-                }
+                    fs_name->name[a] = '\0';
+                    /* Append a string to show it is a label */
+                    if (a + 22 < FATFS_MAXNAMLEN_UTF8) {
+                        const char *volstr = " (Volume Label Entry)";
+                        strncat(fs_name->name, volstr,
+                            FATFS_MAXNAMLEN_UTF8 - a);
+                    }
             }
 
             /* A short (8.3) entry */
@@ -304,7 +336,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                 char *name_ptr; // The dest location for the short name
 
                 /* if we have a lfn, copy it into fs_name->name
-                 * and put the short name in fs_name->shrt_name */
+                * and put the short name in fs_name->shrt_name */
                 if (lfninfo.start != FATFS_MAXNAMLEN_UTF8 - 1) {
                     int retVal;
 
@@ -322,7 +354,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                         (UTF16 *) & lfninfo.name[FATFS_MAXNAMLEN_UTF8],
                         &name8,
                         (UTF8 *) ((uintptr_t) name8 +
-                            FATFS_MAXNAMLEN_UTF8), TSKlenientConversion);
+                        FATFS_MAXNAMLEN_UTF8), TSKlenientConversion);
 
                     if (retVal != TSKconversionOK) {
                         tsk_error_reset();
@@ -344,7 +376,7 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     name_ptr = fs_name->shrt_name;      // put 8.3 into shrt_name
                 }
                 /* We don't have a LFN, so put the short name in
-                 * fs_name->name */
+                * fs_name->name */
                 else {
                     fs_name->shrt_name[0] = '\0';
                     name_ptr = fs_name->name;   // put 8.3 into normal location
@@ -352,37 +384,37 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
 
                 /* copy in the short name into the place specified above.
-                 * Skip spaces and put in the . */
+                * Skip spaces and put in the . */
                 a = 0;
                 for (b = 0; b < 8; b++) {
                     if ((dir->name[b] != 0) && (dir->name[b] != 0xff) &&
                         (dir->name[b] != 0x20)) {
 
-                        if ((b == 0)
-                            && (dir->name[0] == FATFS_SLOT_DELETED)) {
-                            name_ptr[a++] = '_';
-                        }
-                        else if ((dir->lowercase & FATFS_CASE_LOWER_BASE)
-                            && (dir->name[b] >= 'A')
-                            && (dir->name[b] <= 'Z')) {
-                            name_ptr[a++] = dir->name[b] + 32;
-                        }
-                        else {
-                            name_ptr[a++] = dir->name[b];
-                        }
+                            if ((b == 0)
+                                && (dir->name[0] == FATFS_SLOT_DELETED)) {
+                                    name_ptr[a++] = '_';
+                            }
+                            else if ((dir->lowercase & FATFS_CASE_LOWER_BASE)
+                                && (dir->name[b] >= 'A')
+                                && (dir->name[b] <= 'Z')) {
+                                    name_ptr[a++] = dir->name[b] + 32;
+                            }
+                            else {
+                                name_ptr[a++] = dir->name[b];
+                            }
                     }
                 }
 
                 for (b = 0; b < 3; b++) {
                     if ((dir->ext[b] != 0) && (dir->ext[b] != 0xff) &&
                         (dir->ext[b] != 0x20)) {
-                        if (b == 0)
-                            name_ptr[a++] = '.';
-                        if ((dir->lowercase & FATFS_CASE_LOWER_EXT) &&
-                            (dir->ext[b] >= 'A') && (dir->ext[b] <= 'Z'))
-                            name_ptr[a++] = dir->ext[b] + 32;
-                        else
-                            name_ptr[a++] = dir->ext[b];
+                            if (b == 0)
+                                name_ptr[a++] = '.';
+                            if ((dir->lowercase & FATFS_CASE_LOWER_EXT) &&
+                                (dir->ext[b] >= 'A') && (dir->ext[b] <= 'Z'))
+                                name_ptr[a++] = dir->ext[b] + 32;
+                            else
+                                name_ptr[a++] = dir->ext[b];
                     }
                 }
                 name_ptr[a] = '\0';
@@ -398,103 +430,87 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
             else
                 fs_name->type = TSK_FS_NAME_TYPE_REG;
 
-            /* Get inode */
+            /* set the inode */
             fs_name->meta_addr = inode;
+            inode = 0;  // so that we don't use it anymore -- use only fs_name->meta_addr
 
             /* Handle the . and .. entries specially
-             * The current inode 'address' they have is for the current
-             * slot in the cluster, but it needs to refer to the original
-             * slot
-             */
+            * The current inode 'address' they have is for the current
+            * slot in the cluster, but it needs to refer to the original
+            * slot
+            */
             if (TSK_FS_ISDOT(fs_name->name)) {
                 if (fs_name->name[1] == '\0') {
-                    inode = fs_name->meta_addr =
+                    fs_name->meta_addr =
                         a_fs_dir->fs_file->meta->addr;
                 }
                 /* for the parent directory, look up in the list that
-                 * is maintained in fafs_info */
+                * is maintained in fafs_info */
                 else if (fs_name->name[1] == '.') {
-                    size_t q;
                     uint8_t dir_found = 0;
 
-                    tsk_take_lock(&fatfs->dir_lock);
-                    for (q = 0; q < fatfs->dir_buf_next; q++) {
-                        if (fatfs->dir_buf[q] ==
-                            a_fs_dir->fs_file->meta->addr) {
-                            inode = fs_name->meta_addr = fatfs->par_buf[q];
-                            dir_found = 1;
-                            break;
-                        }
+                    if (fatfs_dir_buf_get(fatfs, a_fs_dir->fs_file->meta->addr, &(fs_name->meta_addr)) == 0)  {
+                        dir_found = 1;
                     }
-                    tsk_release_lock(&fatfs->dir_lock);
 
                     if ((dir_found == 0)
                         && (addrs[0] == fatfs->firstdatasect)) {
-                        /* if we are currently in the root directory, we aren't going to find
-                         * a parent.  This shouldn't happen, but could result in an infinite loop. */
-                        inode = fs_name->meta_addr = 0;
-                        dir_found = 1;
+                            /* if we are currently in the root directory, we aren't going to find
+                            * a parent.  This shouldn't happen, but could result in an infinite loop. */
+                            fs_name->meta_addr = 0;
+                            dir_found = 1;
                     }
                     if (dir_found == 0) {
                         if (tsk_verbose)
                             fprintf(stderr,
-                                "fatfs_dent_parse_buf: Walking directory to find parent\n");
+                            "fatfs_dent_parse_buf: Walking directory to find parent\n");
 
                         /* The parent directory is not in the list.  We are going to walk
-                         * the directory until we hit this directory. This process will
-                         * populate the buffer table and we will then rescan it */
+                        * the directory until we hit this directory. This process will
+                        * populate the buffer table and we will then rescan it */
                         if (tsk_fs_dir_walk(fs, fs->root_inum,
-                                TSK_FS_DIR_WALK_FLAG_ALLOC |
-                                TSK_FS_DIR_WALK_FLAG_UNALLOC |
-                                TSK_FS_DIR_WALK_FLAG_RECURSE,
-                                find_parent_act,
-                                (void *) &a_fs_dir->fs_file->meta->addr)) {
-                            return 0;
+                            (TSK_FS_DIR_WALK_FLAG_ENUM)(TSK_FS_DIR_WALK_FLAG_ALLOC |
+                            TSK_FS_DIR_WALK_FLAG_UNALLOC |
+                            TSK_FS_DIR_WALK_FLAG_RECURSE),
+                            find_parent_act,
+                            (void *) &a_fs_dir->fs_file->meta->addr)) {
+                                return TSK_OK;
                         }
 
                         if (tsk_verbose)
                             fprintf(stderr,
-                                "fatfs_dent_parse_buf: Finished walking directory to find parent\n");
+                            "fatfs_dent_parse_buf: Finished walking directory to find parent\n");
 
-                        tsk_take_lock(&fatfs->dir_lock);
-                        for (q = 0; q < fatfs->dir_buf_next; q++) {
-                            if (fatfs->dir_buf[q] ==
-                                a_fs_dir->fs_file->meta->addr) {
-                                inode = fs_name->meta_addr =
-                                    fatfs->par_buf[q];
-                                dir_found = 1;
-                                break;
-                            }
+                        if (fatfs_dir_buf_get(fatfs, a_fs_dir->fs_file->meta->addr, &(fs_name->meta_addr)) == 0) {
+                            dir_found = 1;
                         }
-                        tsk_release_lock(&fatfs->dir_lock);
 
                         // if we did not find it, then it was probably
                         // from the orphan directory...
                         if (dir_found == 0)
-                            inode = fs_name->meta_addr =
-                                TSK_FS_ORPHANDIR_INUM(fs);
+                            fs_name->meta_addr = TSK_FS_ORPHANDIR_INUM(fs);
                     }
                 }
             }
             else {
                 /* Save the (non-. or ..) directory to parent directory info to local
-                 * structures so that we can later fill into the inode
-                 * info for '..' entries */
+                * structures so that we can later fill into the inode
+                * info for '..' entries */
                 if (fs_name->type == TSK_FS_NAME_TYPE_DIR) {
                     if (fatfs_dir_buf_add(fatfs,
-                            a_fs_dir->fs_file->meta->addr, inode))
+                        a_fs_dir->fs_file->meta->addr, fs_name->meta_addr))
                         return TSK_ERR;
                 }
             }
 
 
             /* The allocation status of an entry is based on the allocation
-             * status of the sector it is in and the flag.  Deleted directories
-             * do not always clear the flags of each entry
-             */
+            * status of the sector it is in and the flag.  Deleted directories
+            * do not always clear the flags of each entry
+            */
             if (sectalloc == 1) {
                 fs_name->flags = (dep->name[0] == FATFS_SLOT_DELETED) ?
-                    TSK_FS_NAME_FLAG_UNALLOC : TSK_FS_NAME_FLAG_ALLOC;
+TSK_FS_NAME_FLAG_UNALLOC : TSK_FS_NAME_FLAG_ALLOC;
             }
             else {
                 fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
@@ -511,10 +527,10 @@ fatfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
 
 /**************************************************************************
- *
- * dent_walk
- *
- *************************************************************************/
+*
+* dent_walk
+*
+*************************************************************************/
 
 /* values used to copy the directory contents into a buffer */
 
@@ -540,11 +556,11 @@ typedef struct {
 
 
 /**
- * file walk callback that is used to load directory contents
- * into a buffer
- */
+* file walk callback that is used to load directory contents
+* into a buffer
+*/
 static TSK_WALK_RET_ENUM
-fatfs_dent_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
+    fatfs_dent_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
 {
     FATFS_LOAD_DIR *load = (FATFS_LOAD_DIR *) ptr;
@@ -558,8 +574,8 @@ fatfs_dent_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     load->dirleft -= len;
 
     /* fill in the stack of addresses of sectors
-     *
-     * if we are at the last entry, then realloc more */
+    *
+    * if we are at the last entry, then realloc more */
     if (load->addridx == load->addrsize) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -594,7 +610,7 @@ fatfs_dent_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 */
 
 TSK_RETVAL_ENUM
-fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
+    fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     TSK_INUM_T a_addr)
 {
     TSK_OFF_T size, len;
@@ -602,7 +618,7 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     char *dirbuf;
     TSK_DADDR_T *addrbuf;
     FATFS_LOAD_DIR load;
-    int retval;
+    TSK_RETVAL_ENUM retval;
 
     TSK_FS_DIR *fs_dir;
 
@@ -627,8 +643,8 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     }
     else {
         if ((*a_fs_dir = fs_dir =
-                tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
-            return TSK_ERR;
+            tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
+                return TSK_ERR;
         }
     }
 
@@ -651,26 +667,26 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "fatfs_dir_open_meta: Processing directory %" PRIuINUM "\n",
-            a_addr);
+        "fatfs_dir_open_meta: Processing directory %" PRIuINUM "\n",
+        a_addr);
 
     if (size == 0) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "fatfs_dir_open_meta: directory has 0 size\n");
+            "fatfs_dir_open_meta: directory has 0 size\n");
         return TSK_OK;
     }
 
     /* Make a copy of the directory contents using file_walk */
-    if ((dirbuf = tsk_malloc((size_t) len)) == NULL) {
+    if ((dirbuf = (char *)tsk_malloc((size_t) len)) == NULL) {
         return TSK_ERR;
     }
     load.curdirptr = dirbuf;
     load.dirleft = (size_t) size;
 
     /* We are going to save the address of each sector in the directory
-     * in a stack - they are needed to determine the inode address.
-     */
+    * in a stack - they are needed to determine the inode address.
+    */
     load.addrsize = (size_t) (len / fatfs->ssize);
     addrbuf =
         (TSK_DADDR_T *) tsk_malloc(load.addrsize * sizeof(TSK_DADDR_T));
@@ -685,12 +701,12 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     /* save the directory contents into dirbuf */
     if (tsk_fs_file_walk(fs_dir->fs_file,
-            TSK_FS_FILE_WALK_FLAG_SLACK,
-            fatfs_dent_action, (void *) &load)) {
-        tsk_error_errstr2_concat("- fatfs_dir_open_meta");
-        free(dirbuf);
-        free(addrbuf);
-        return TSK_COR;
+        TSK_FS_FILE_WALK_FLAG_SLACK,
+        fatfs_dent_action, (void *) &load)) {
+            tsk_error_errstr2_concat("- fatfs_dir_open_meta");
+            free(dirbuf);
+            free(addrbuf);
+            return TSK_COR;
     }
 
     /* We did not copy the entire directory, which occurs if an error occured */
@@ -709,8 +725,8 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     if (tsk_verbose)
         fprintf(stderr,
-            "fatfs_dir_open_meta: Parsing directory %" PRIuINUM "\n",
-            a_addr);
+        "fatfs_dir_open_meta: Parsing directory %" PRIuINUM "\n",
+        a_addr);
 
     retval = fatfs_dent_parse_buf(fatfs, fs_dir, dirbuf, len, addrbuf);
 
@@ -769,7 +785,7 @@ fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 }
 
 int
-fatfs_name_cmp(TSK_FS_INFO * a_fs_info, const char *s1, const char *s2)
+    fatfs_name_cmp(TSK_FS_INFO * a_fs_info, const char *s1, const char *s2)
 {
     return strcasecmp(s1, s2);
 }
