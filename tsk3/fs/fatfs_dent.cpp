@@ -132,6 +132,7 @@ static uint8_t
         retval = 0;
     }
     tsk_release_lock(&fatfs->dir_lock);
+
     return retval;
 }
 
@@ -168,7 +169,7 @@ static TSK_RETVAL_ENUM
 {
     unsigned int idx, sidx;
     int a, b;
-    TSK_INUM_T inode, ibase;
+    TSK_INUM_T ibase;
     fatfs_dentry *dep;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
     int sectalloc;
@@ -227,6 +228,7 @@ static TSK_RETVAL_ENUM
         /* cycle through the directory entries */
         for (idx = 0; idx < fatfs->dentry_cnt_se; idx++, dep++) {
             fatfs_dentry *dir;
+            TSK_INUM_T inode;
 
             entrySeenCount++;
             /* is it a valid dentry? */
@@ -323,7 +325,7 @@ static TSK_RETVAL_ENUM
                     fs_name->name[a] = '\0';
                     /* Append a string to show it is a label */
                     if (a + 22 < FATFS_MAXNAMLEN_UTF8) {
-                        char *volstr = " (Volume Label Entry)";
+                        const char *volstr = " (Volume Label Entry)";
                         strncat(fs_name->name, volstr,
                             FATFS_MAXNAMLEN_UTF8 - a);
                     }
@@ -428,8 +430,9 @@ static TSK_RETVAL_ENUM
             else
                 fs_name->type = TSK_FS_NAME_TYPE_REG;
 
-            /* Get inode */
+            /* set the inode */
             fs_name->meta_addr = inode;
+            inode = 0;  // so that we don't use it anymore -- use only fs_name->meta_addr
 
             /* Handle the . and .. entries specially
             * The current inode 'address' they have is for the current
@@ -438,7 +441,7 @@ static TSK_RETVAL_ENUM
             */
             if (TSK_FS_ISDOT(fs_name->name)) {
                 if (fs_name->name[1] == '\0') {
-                    inode = fs_name->meta_addr =
+                    fs_name->meta_addr =
                         a_fs_dir->fs_file->meta->addr;
                 }
                 /* for the parent directory, look up in the list that
@@ -446,14 +449,15 @@ static TSK_RETVAL_ENUM
                 else if (fs_name->name[1] == '.') {
                     uint8_t dir_found = 0;
 
-                    if (fatfs_dir_buf_get(fatfs, a_fs_dir->fs_file->meta->addr, &inode) == 0) 
+                    if (fatfs_dir_buf_get(fatfs, a_fs_dir->fs_file->meta->addr, &(fs_name->meta_addr)) == 0)  {
                         dir_found = 1;
+                    }
 
                     if ((dir_found == 0)
                         && (addrs[0] == fatfs->firstdatasect)) {
                             /* if we are currently in the root directory, we aren't going to find
                             * a parent.  This shouldn't happen, but could result in an infinite loop. */
-                            inode = fs_name->meta_addr = 0;
+                            fs_name->meta_addr = 0;
                             dir_found = 1;
                     }
                     if (dir_found == 0) {
@@ -477,14 +481,14 @@ static TSK_RETVAL_ENUM
                             fprintf(stderr,
                             "fatfs_dent_parse_buf: Finished walking directory to find parent\n");
 
-                        if (fatfs_dir_buf_get(fatfs, a_fs_dir->fs_file->meta->addr, &inode) == 0) 
+                        if (fatfs_dir_buf_get(fatfs, a_fs_dir->fs_file->meta->addr, &(fs_name->meta_addr)) == 0) {
                             dir_found = 1;
+                        }
 
                         // if we did not find it, then it was probably
                         // from the orphan directory...
                         if (dir_found == 0)
-                            inode = fs_name->meta_addr =
-                            TSK_FS_ORPHANDIR_INUM(fs);
+                            fs_name->meta_addr = TSK_FS_ORPHANDIR_INUM(fs);
                     }
                 }
             }
@@ -494,7 +498,7 @@ static TSK_RETVAL_ENUM
                 * info for '..' entries */
                 if (fs_name->type == TSK_FS_NAME_TYPE_DIR) {
                     if (fatfs_dir_buf_add(fatfs,
-                        a_fs_dir->fs_file->meta->addr, inode))
+                        a_fs_dir->fs_file->meta->addr, fs_name->meta_addr))
                         return TSK_ERR;
                 }
             }
