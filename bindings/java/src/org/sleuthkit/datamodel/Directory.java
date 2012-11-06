@@ -32,7 +32,7 @@ public class Directory extends FsContent {
 	//constructor used for getdir from tskDb
 	protected Directory(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr,
 			short attr_type, short attr_id, String name, short dir_type,
-			short meta_type, byte dir_flags, byte meta_flags, long size,
+			short meta_type, short dir_flags, short meta_flags, long size,
 			long ctime, long crtime, long atime, long mtime, short mode,
 			int uid, int gid, byte known, String parent_path, String md5Hash) {
 		super(db, obj_id, name, fs_obj_id, meta_addr,

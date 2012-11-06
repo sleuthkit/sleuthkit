@@ -124,17 +124,17 @@ public class TskData {
 		TSK_FS_NAME_FLAG_ALLOC(1),      ///< Name is in an allocated state
 		TSK_FS_NAME_FLAG_UNALLOC(2);    ///< Name is in an unallocated state
 
-		private byte dir_flag;
+		private short dir_flag;
 
 		private TSK_FS_NAME_FLAG_ENUM(int flag){
-			dir_flag = (byte)flag;
+			dir_flag = (short)flag;
 		}
 
 		/**
-		 * Get byte value of the flag
+		 * Get short value of the flag
 		 * @return the long flag value
 		 */
-		public byte getDirFlag(){
+		public short getDirFlag(){
 			return dir_flag;
 		}
 	}
@@ -152,19 +152,19 @@ public class TskData {
 		COMP(16, "Compressed"),      ///< The file contents are compressed.
 		ORPHAN(32, "Orphan");    ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
 
-		private byte meta_flag;
+		private short meta_flag;
 		private String label;
 
 		private TSK_FS_META_FLAG_ENUM(int flag, String label){
-			this.meta_flag = (byte)flag;
+			this.meta_flag = (short)flag;
 			this.label = label;
 		}
 
 		/**
-		 * Get meta flags byte value
+		 * Get meta flags short value
 		 * @return the long value of meta flags
 		 */
-		public byte getMetaFlag(){
+		public short getMetaFlag(){
 			return meta_flag;
 		}
 		
@@ -183,7 +183,7 @@ public class TskData {
 		 * @param metaFlag
 		 * @return matching TSK_FS_META_FLAG_ENUM elements
 		 */
-		public static Set<TSK_FS_META_FLAG_ENUM> getFlags(byte metaFlag) {
+		public static Set<TSK_FS_META_FLAG_ENUM> getFlags(short metaFlag) {
 			Set<TSK_FS_META_FLAG_ENUM> matchedFlags = EnumSet.noneOf(TSK_FS_META_FLAG_ENUM.class);
 			
 			for (TSK_FS_META_FLAG_ENUM v : TSK_FS_META_FLAG_ENUM.values()) {

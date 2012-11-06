@@ -34,7 +34,7 @@ public abstract class FsContent extends AbstractFile {
 	protected final long fs_obj_id, meta_addr, size, ctime, crtime, atime, mtime;
 	protected final int uid, gid;
 	protected final short attr_type, attr_id, meta_type, dir_type, mode;
-	protected final byte dir_flags, meta_flags;
+	protected final short dir_flags, meta_flags;
 	
 	/*
 	 * path of parent directory
@@ -90,8 +90,8 @@ public abstract class FsContent extends AbstractFile {
 	 * @param md5Hash
 	 */
 	FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
-			short attr_type, short attr_id, short meta_type, short dir_type, byte dir_flags,
-			byte meta_flags, long size, long ctime, long crtime, long atime, long mtime, int uid, int gid, short mode, byte known,
+			short attr_type, short attr_id, short meta_type, short dir_type, short dir_flags,
+			short meta_flags, long size, long ctime, long crtime, long atime, long mtime, int uid, int gid, short mode, byte known,
 			String parent_path, String md5Hash) {
 		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS);
 		this.fs_obj_id = fs_obj_id;
@@ -249,7 +249,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return directory flags
 	 */
-	public byte getDir_flags() {
+	public short getDir_flags() {
 		return dir_flags;
 	}
 
@@ -276,7 +276,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return meta data flags
 	 */
-	public byte getMeta_flags() {
+	public short getMeta_flags() {
 		return meta_flags;
 	}
 
@@ -622,7 +622,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param dirFlag to convert
 	 * @return dir flags string representation
 	 */
-	public static String dirFlagToValue(byte dirFlag) {
+	public static String dirFlagToValue(short dirFlag) {
 
 		String result = "";
 
@@ -640,9 +640,9 @@ public abstract class FsContent extends AbstractFile {
 	 * @param dirFlag to convert
 	 * @return dir flag id
 	 */
-	public static byte valueToDirFlag(String dirFlag) {
+	public static short valueToDirFlag(String dirFlag) {
 
-		byte result = 0;
+		short result = 0;
 
 		for (TskData.TSK_FS_NAME_FLAG_ENUM flag : TskData.TSK_FS_NAME_FLAG_ENUM.values()) {
 			if (flag.toString().equals(dirFlag)) {
@@ -658,12 +658,12 @@ public abstract class FsContent extends AbstractFile {
 	 * @param dirFlag dir flags id to convert
 	 * @return formatted user-readable string representation of dir flag
 	 */
-	public static String dirFlagToString(byte dirFlag) {
+	public static String dirFlagToString(short dirFlag) {
 
 		String result = "";
 
-		long allocFlag = TskData.TSK_FS_NAME_FLAG_ENUM.TSK_FS_NAME_FLAG_ALLOC.getDirFlag();
-		long unallocFlag = TskData.TSK_FS_NAME_FLAG_ENUM.TSK_FS_NAME_FLAG_UNALLOC.getDirFlag();
+		short allocFlag = TskData.TSK_FS_NAME_FLAG_ENUM.TSK_FS_NAME_FLAG_ALLOC.getDirFlag();
+		short unallocFlag = TskData.TSK_FS_NAME_FLAG_ENUM.TSK_FS_NAME_FLAG_UNALLOC.getDirFlag();
 
 		if ((dirFlag & allocFlag) == allocFlag) {
 			result = "Allocated";
@@ -682,7 +682,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param metaFlag to convert
 	 * @return string representation
 	 */
-	public static String metaFlagToValue(byte metaFlag) {
+	public static String metaFlagToValue(short metaFlag) {
 
 		String result = "";
 
@@ -695,14 +695,14 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	/**
-	 * Convert string representation of meta flags to long
+	 * Convert string representation of meta flags to short
 	 *
 	 * @param metaFlag string to convert
-	 * @return long meta flag representation
+	 * @return short meta flag representation
 	 */
-	public static byte valueToMetaFlag(String metaFlag) {
+	public static short valueToMetaFlag(String metaFlag) {
 
-		byte result = 0;
+		short result = 0;
 
 		for (TskData.TSK_FS_META_FLAG_ENUM flag : TskData.TSK_FS_META_FLAG_ENUM.values()) {
 			if (flag.toString().equals(metaFlag)) {
@@ -718,12 +718,12 @@ public abstract class FsContent extends AbstractFile {
 	 * @param metaFlag to convert
 	 * @return string formatted meta flag representation
 	 */
-	public static String metaFlagToString(byte metaFlag) {
+	public static String metaFlagToString(short metaFlag) {
 
 		String result = "";
 
-		byte allocFlag = TskData.TSK_FS_META_FLAG_ENUM.ALLOC.getMetaFlag();
-		byte unallocFlag = TskData.TSK_FS_META_FLAG_ENUM.UNALLOC.getMetaFlag();
+		short allocFlag = TskData.TSK_FS_META_FLAG_ENUM.ALLOC.getMetaFlag();
+		short unallocFlag = TskData.TSK_FS_META_FLAG_ENUM.UNALLOC.getMetaFlag();
 
 		// some variables that might be needed in the future
 		//long usedFlag = TskData.TSK_FS_META_FLAG_ENUM.USED.getMetaFlag();
