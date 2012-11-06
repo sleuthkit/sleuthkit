@@ -3585,7 +3585,10 @@ ntfs_block_walk(TSK_FS_INFO * fs,
             && (!(a_flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC)))
             continue;
 
-        if (tsk_fs_block_get(fs, fs_block, addr) == NULL) {
+        if (a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
+            myflags |= TSK_FS_BLOCK_FLAG_AONLY;
+
+        if (tsk_fs_block_get_flag(fs, fs_block, addr, (TSK_FS_BLOCK_FLAG_ENUM)myflags) == NULL) {
             tsk_error_set_errstr2
                 ("ntfs_block_walk: Error reading block at %" PRIuDADDR,
                 addr);
