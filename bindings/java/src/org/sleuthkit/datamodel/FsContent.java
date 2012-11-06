@@ -31,10 +31,11 @@ import org.sleuthkit.datamodel.TskData.FileKnown;
 public abstract class FsContent extends AbstractFile {
 
 	///read only database tsk_files fields
-	protected final int attr_type, attr_id;
-	protected final long fs_obj_id, meta_addr, meta_type, dir_type, dir_flags,
-			meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode;
-
+	protected final long fs_obj_id, meta_addr, size;
+	protected final int ctime, crtime, atime, mtime, uid, gid;
+	protected final short attr_type, attr_id, meta_type, dir_type, mode;
+	protected final byte dir_flags, meta_flags;
+	
 	/*
 	 * path of parent directory
 	 */
@@ -43,7 +44,7 @@ public abstract class FsContent extends AbstractFile {
 	/**
 	 * known status in database
 	 */
-	protected long known;
+	protected byte known;
 	/*
 	 * md5 hash
 	 */
@@ -89,8 +90,8 @@ public abstract class FsContent extends AbstractFile {
 	 * @param md5Hash
 	 */
 	FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
-			int attr_type, int attr_id, long meta_type, long dir_type, long dir_flags,
-			long meta_flags, long size, long ctime, long crtime, long atime, long mtime, long uid, long gid, long mode, long known,
+			short attr_type, short attr_id, short meta_type, short dir_type, byte dir_flags,
+			byte meta_flags, long size, int ctime, int crtime, int atime, int mtime, int uid, int gid, short mode, byte known,
 			String parent_path, String md5Hash) {
 		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS);
 		this.fs_obj_id = fs_obj_id;
@@ -141,7 +142,7 @@ public abstract class FsContent extends AbstractFile {
 	 * 
 	 * @param known 
 	 */
-	void setKnown(long known) {
+	void setKnown(byte known) {
 		this.known = known;
 	}
 
@@ -194,7 +195,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return attribute type
 	 */
-	public int getAttr_type() {
+	public short getAttr_type() {
 		return attr_type;
 	}
 
@@ -203,7 +204,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return attribute id
 	 */
-	public int getAttr_id() {
+	public short getAttr_id() {
 		return attr_id;
 	}
 
@@ -212,7 +213,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return meta data type
 	 */
-	public long getMeta_type() {
+	public short getMeta_type() {
 		return meta_type;
 	}
 
@@ -230,7 +231,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return directory type id
 	 */
-	public long getDir_type() {
+	public short getDir_type() {
 		return dir_type;
 	}
 
@@ -248,7 +249,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return directory flags
 	 */
-	public long getDir_flags() {
+	public byte getDir_flags() {
 		return dir_flags;
 	}
 
@@ -275,7 +276,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return meta data flags
 	 */
-	public long getMeta_flags() {
+	public byte getMeta_flags() {
 		return meta_flags;
 	}
 
@@ -303,7 +304,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return change time
 	 */
-	public long getCtime() {
+	public int getCtime() {
 		return ctime;
 	}
 
@@ -321,7 +322,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return creation time
 	 */
-	public long getCrtime() {
+	public int getCrtime() {
 		return crtime;
 	}
 
@@ -339,7 +340,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return access time
 	 */
-	public long getAtime() {
+	public int getAtime() {
 		return atime;
 	}
 
@@ -357,7 +358,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return modified time
 	 */
-	public long getMtime() {
+	public int getMtime() {
 		return mtime;
 	}
 
@@ -375,7 +376,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return user id
 	 */
-	public long getUid() {
+	public int getUid() {
 		return uid;
 	}
 
@@ -384,7 +385,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return group id
 	 */
-	public long getGid() {
+	public int getGid() {
 		return gid;
 	}
 
@@ -393,7 +394,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return mode
 	 */
-	public long getMode() {
+	public short getMode() {
 		return mode;
 	}
 
@@ -527,7 +528,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param dirType to convert
 	 * @return dir type value string representation
 	 */
-	public static String dirTypeToValue(long dirType) {
+	public static String dirTypeToValue(short dirType) {
 
 		String result = "";
 
@@ -545,9 +546,9 @@ public abstract class FsContent extends AbstractFile {
 	 * @param dirType value string to convert
 	 * @return directory type id
 	 */
-	public static long valueToDirType(String dirType) {
+	public static short valueToDirType(String dirType) {
 
-		long result = 0;
+		short result = 0;
 
 		for (TskData.TSK_FS_NAME_TYPE_ENUM type : TskData.TSK_FS_NAME_TYPE_ENUM.values()) {
 			if (type.toString().equals(dirType)) {
@@ -563,7 +564,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param dirType dir type id to convert
 	 * @return dir type label string
 	 */
-	public static String dirTypeToString(long dirType) {
+	public static String dirTypeToString(short dirType) {
 		return TskData.TSK_FS_NAME_TYPE_ENUM.fromType(dirType).getLabel();
 	}
 
@@ -574,7 +575,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param metaType to convert
 	 * @return string value representation of meta type
 	 */
-	public static String metaTypeToValue(long metaType) {
+	public static String metaTypeToValue(short metaType) {
 
 		String result = "";
 
@@ -592,9 +593,9 @@ public abstract class FsContent extends AbstractFile {
 	 * @param metaType to convert
 	 * @return meta type id
 	 */
-	public static long valueToMetaType(String metaType) {
+	public static short valueToMetaType(String metaType) {
 
-		long result = 0;
+		short result = 0;
 
 		for (TskData.TSK_FS_META_TYPE_ENUM type : TskData.TSK_FS_META_TYPE_ENUM.values()) {
 			if (type.toString().equals(metaType)) {
@@ -610,8 +611,8 @@ public abstract class FsContent extends AbstractFile {
 	 * @param metaType to convert
 	 * @return string representation of the meta type
 	 */
-	public static String metaTypeToString(long metaType) {
-		return TskData.tsk_fs_meta_type_str[(int) metaType];
+	public static String metaTypeToString(short metaType) {
+		return TskData.tsk_fs_meta_type_str[metaType];
 	}
 
 // ----- Methods for Directory Flags conversion / mapping -----
@@ -621,7 +622,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param dirFlag to convert
 	 * @return dir flags string representation
 	 */
-	public static String dirFlagToValue(long dirFlag) {
+	public static String dirFlagToValue(byte dirFlag) {
 
 		String result = "";
 
@@ -639,9 +640,9 @@ public abstract class FsContent extends AbstractFile {
 	 * @param dirFlag to convert
 	 * @return dir flag id
 	 */
-	public static long valueToDirFlag(String dirFlag) {
+	public static byte valueToDirFlag(String dirFlag) {
 
-		long result = 0;
+		byte result = 0;
 
 		for (TskData.TSK_FS_NAME_FLAG_ENUM flag : TskData.TSK_FS_NAME_FLAG_ENUM.values()) {
 			if (flag.toString().equals(dirFlag)) {
@@ -657,7 +658,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param dirFlag dir flags id to convert
 	 * @return formatted user-readable string representation of dir flag
 	 */
-	public static String dirFlagToString(long dirFlag) {
+	public static String dirFlagToString(byte dirFlag) {
 
 		String result = "";
 
@@ -681,7 +682,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param metaFlag to convert
 	 * @return string representation
 	 */
-	public static String metaFlagToValue(long metaFlag) {
+	public static String metaFlagToValue(byte metaFlag) {
 
 		String result = "";
 
@@ -699,9 +700,9 @@ public abstract class FsContent extends AbstractFile {
 	 * @param metaFlag string to convert
 	 * @return long meta flag representation
 	 */
-	public static long valueToMetaFlag(String metaFlag) {
+	public static byte valueToMetaFlag(String metaFlag) {
 
-		long result = 0;
+		byte result = 0;
 
 		for (TskData.TSK_FS_META_FLAG_ENUM flag : TskData.TSK_FS_META_FLAG_ENUM.values()) {
 			if (flag.toString().equals(metaFlag)) {
@@ -717,18 +718,18 @@ public abstract class FsContent extends AbstractFile {
 	 * @param metaFlag to convert
 	 * @return string formatted meta flag representation
 	 */
-	public static String metaFlagToString(long metaFlag) {
+	public static String metaFlagToString(byte metaFlag) {
 
 		String result = "";
 
-		long allocFlag = TskData.TSK_FS_META_FLAG_ENUM.ALLOC.getMetaFlag();
-		long unallocFlag = TskData.TSK_FS_META_FLAG_ENUM.UNALLOC.getMetaFlag();
+		byte allocFlag = TskData.TSK_FS_META_FLAG_ENUM.ALLOC.getMetaFlag();
+		byte unallocFlag = TskData.TSK_FS_META_FLAG_ENUM.UNALLOC.getMetaFlag();
 
 		// some variables that might be needed in the future
-		long usedFlag = TskData.TSK_FS_META_FLAG_ENUM.USED.getMetaFlag();
-		long unusedFlag = TskData.TSK_FS_META_FLAG_ENUM.UNUSED.getMetaFlag();
-		long compFlag = TskData.TSK_FS_META_FLAG_ENUM.COMP.getMetaFlag();
-		long orphanFlag = TskData.TSK_FS_META_FLAG_ENUM.ORPHAN.getMetaFlag();
+		//long usedFlag = TskData.TSK_FS_META_FLAG_ENUM.USED.getMetaFlag();
+		//long unusedFlag = TskData.TSK_FS_META_FLAG_ENUM.UNUSED.getMetaFlag();
+		//long compFlag = TskData.TSK_FS_META_FLAG_ENUM.COMP.getMetaFlag();
+		//long orphanFlag = TskData.TSK_FS_META_FLAG_ENUM.ORPHAN.getMetaFlag();
 
 		if ((metaFlag & allocFlag) == allocFlag) {
 			result = TskData.TSK_FS_META_FLAG_ENUM.ALLOC.getLabel();
@@ -748,30 +749,30 @@ public abstract class FsContent extends AbstractFile {
 	 * @param metaType meta type attribute of the file/dir
 	 * @return converted, formatted user-displayable string
 	 */
-	public static String modeToString(long mode, long metaType) {
+	public static String modeToString(short mode, short metaType) {
 
 		String result = "";
 
-		long metaTypeMax = TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_STR_MAX.getMetaType();
+		int metaTypeMax = TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_STR_MAX.getMetaType() & 0xff;
 
-		long isuid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISUID.getMode();
-		long isgid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISGID.getMode();
-		long isvtx = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISVTX.getMode();
+		short isuid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISUID.getMode();
+		short isgid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISGID.getMode();
+		short isvtx = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISVTX.getMode();
 
-		long irusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IRUSR.getMode();
-		long iwusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWUSR.getMode();
-		long ixusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXUSR.getMode();
+		short irusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IRUSR.getMode();
+		short iwusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWUSR.getMode();
+		short ixusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXUSR.getMode();
 
-		long irgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IRGRP.getMode();
-		long iwgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWGRP.getMode();
-		long ixgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXGRP.getMode();
+		short irgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IRGRP.getMode();
+		short iwgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWGRP.getMode();
+		short ixgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXGRP.getMode();
 
-		long iroth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IROTH.getMode();
-		long iwoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWOTH.getMode();
-		long ixoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXOTH.getMode();
+		short iroth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IROTH.getMode();
+		short iwoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWOTH.getMode();
+		short ixoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXOTH.getMode();
 
 		// first character = the Meta Type
-		if (metaType < metaTypeMax) {
+		if ( (((int)metaType) & 0xff) < metaTypeMax) {
 			result += FsContent.metaTypeToString(metaType);
 		} else {
 			result += "-";
