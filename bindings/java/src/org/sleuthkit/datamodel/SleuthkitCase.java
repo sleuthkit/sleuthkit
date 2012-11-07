@@ -450,7 +450,7 @@ public class SleuthkitCase {
 					+ "where par_obj_id is NULL");
 
 			while (rs.next()) {
-				infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getLong("type"))));
+				infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type"))));
 			}
 			rs.close();
 			s.close();
@@ -1758,7 +1758,7 @@ public class SleuthkitCase {
 					virtDir.accept(setParent);
 					children.add(virtDir);
 				} else {
-					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"), TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getLong("type")));
+					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"), TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")));
 					lf.setParent(parent);
 					children.add(lf);
 				}
@@ -1830,7 +1830,7 @@ public class SleuthkitCase {
 			Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
 
 			while (rs.next()) {
-				infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getLong("type"))));
+				infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type"))));
 			}
 			rs.close();
 			s.close();
@@ -1862,7 +1862,7 @@ public class SleuthkitCase {
 			ObjectInfo info;
 
 			if (rs.next()) {
-				info = new ObjectInfo(rs.getLong(1), ObjectType.valueOf(rs.getLong(2)));
+				info = new ObjectInfo(rs.getLong(1), ObjectType.valueOf(rs.getShort(2)));
 				rs.close();
 				s.close();
 				return info;
@@ -1898,7 +1898,7 @@ public class SleuthkitCase {
 			ObjectInfo info;
 
 			if (rs.next()) {
-				info = new ObjectInfo(rs.getLong(1), ObjectType.valueOf(rs.getLong(2)));
+				info = new ObjectInfo(rs.getLong(1), ObjectType.valueOf(rs.getShort(2)));
 				rs.close();
 				s.close();
 				return info;
@@ -1965,7 +1965,7 @@ public class SleuthkitCase {
 			VolumeSystem vs;
 			Image img;
 			Content ret = null;
-			final TskData.ObjectType type = TskData.ObjectType.valueOf(contentRs.getLong("type"));
+			final TskData.ObjectType type = TskData.ObjectType.valueOf(contentRs.getShort("type"));
 			switch (type) {
 				case IMG:
 					ret = getImageById(id);
@@ -2893,7 +2893,7 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			while (rs.next()) {
-				final long type = rs.getLong("type");
+				final short type = rs.getShort("type");
 				if (type == TSK_DB_FILES_TYPE_ENUM.FS.getFileType()) {
 					FsContent result;
 					if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
@@ -3091,7 +3091,7 @@ public class SleuthkitCase {
 		}
 		SleuthkitCase.dbWriteLock();
 		try {
-			final long fileKnownValue = fileKnown.toLong();
+			final byte fileKnownValue = fileKnown.getFileKnownValue();
 			Statement s = con.createStatement();
 			s.executeUpdate("UPDATE tsk_files "
 					+ "SET known='" + fileKnownValue + "' "
@@ -3168,13 +3168,13 @@ public class SleuthkitCase {
 	 */
 	public int countFsContentType(TskData.TSK_FS_META_TYPE_ENUM contentType) throws TskCoreException {
 		int count = 0;
-		Long contentLong = contentType.getMetaType();
+		Short contentShort = contentType.getMetaType();
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("select count(*) from tsk_files where meta_type = '" + contentLong.toString() + "'");
+			ResultSet rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files WHERE meta_type = '" + contentShort.toString() + "'");
 			while (rs.next()) {
-				count = rs.getInt("count(*)");
+				count = rs.getInt(1);
 			}
 			rs.close();
 			s.close();
