@@ -72,9 +72,6 @@
     <ClCompile Include="..\..\tsk3\fs\fatfs.c">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk3\fs\fatfs_dent.c">
-      <Filter>fs</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tsk3\fs\fatfs_meta.c">
       <Filter>fs</Filter>
     </ClCompile>
@@ -154,12 +151,6 @@
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk3\fs\nofs_misc.c">
-      <Filter>fs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk3\fs\ntfs.c">
-      <Filter>fs</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk3\fs\ntfs_dent.c">
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk3\fs\rawfs.c">
@@ -269,6 +260,15 @@
     </ClCompile>
     <ClCompile Include="..\..\tsk3\img\raw.c">
       <Filter>img</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk3\fs\fatfs_dent.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk3\fs\ntfs.c">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk3\fs\ntfs_dent.cpp">
+      <Filter>fs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

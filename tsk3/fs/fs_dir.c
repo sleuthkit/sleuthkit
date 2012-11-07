@@ -153,49 +153,56 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
     TSK_FS_NAME *fs_name_dest = NULL;
     size_t i;
 
-    // see if we already have it in the buffer / queue
-    for (i = 0; i < a_fs_dir->names_used; i++) {
-        if ((a_fs_name->meta_addr == a_fs_dir->names[i].meta_addr) &&
-            (strcmp(a_fs_name->name, a_fs_dir->names[i].name) == 0)) {
+    /* see if we already have it in the buffer / queue
+     * We skip this check for FAT because it will always fail because two entries
+     * never have the same meta address. */
+    // @@@ We could do something more effecient here too with orphan files because we do not 
+    // need to check the contents of that directory either and this takes a lot of time on those
+    // large images.
+	if (TSK_FS_TYPE_ISFAT(a_fs_dir->fs_info->ftype) == 0) {
+		for (i = 0; i < a_fs_dir->names_used; i++) {
+			if ((a_fs_name->meta_addr == a_fs_dir->names[i].meta_addr) &&
+				(strcmp(a_fs_name->name, a_fs_dir->names[i].name) == 0)) {
 
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "tsk_fs_dir_add: removing duplicate entry: %s (%"
-                    PRIuINUM ")\n", a_fs_name->name, a_fs_name->meta_addr);
+				if (tsk_verbose)
+					tsk_fprintf(stderr,
+						"tsk_fs_dir_add: removing duplicate entry: %s (%"
+						PRIuINUM ")\n", a_fs_name->name, a_fs_name->meta_addr);
 
-            /* We do not check type because then we cannot detect NTFS orphan file
-             * duplicates that are added as "-/r" while a similar entry exists as "r/r"
-             (a_fs_name->type == a_fs_dir->names[i].type)) { */
+				/* We do not check type because then we cannot detect NTFS orphan file
+				 * duplicates that are added as "-/r" while a similar entry exists as "r/r"
+				 (a_fs_name->type == a_fs_dir->names[i].type)) { */
 
-            // if the one in the list is unalloc and we have an alloc, replace it
-            if ((a_fs_dir->names[i].flags & TSK_FS_NAME_FLAG_UNALLOC) &&
-                (a_fs_name->flags & TSK_FS_NAME_FLAG_ALLOC)) {
-                fs_name_dest = &a_fs_dir->names[i];
+				// if the one in the list is unalloc and we have an alloc, replace it
+				if ((a_fs_dir->names[i].flags & TSK_FS_NAME_FLAG_UNALLOC) &&
+					(a_fs_name->flags & TSK_FS_NAME_FLAG_ALLOC)) {
+					fs_name_dest = &a_fs_dir->names[i];
 
-                // free the memory - not the most effecient, but prevents
-                // duplicate code.
-                if (fs_name_dest->name) {
-                    free(fs_name_dest->name);
-                    fs_name_dest->name = NULL;
-                    fs_name_dest->name_size = 0;
-                }
-                if (fs_name_dest->shrt_name) {
-                    free(fs_name_dest->shrt_name);
-                    fs_name_dest->shrt_name = NULL;
-                    fs_name_dest->shrt_name_size = 0;
-                }
-                break;
-            }
-            else {
-                return 0;
-            }
-        }
-    }
+					// free the memory - not the most effecient, but prevents
+					// duplicate code.
+					if (fs_name_dest->name) {
+						free(fs_name_dest->name);
+						fs_name_dest->name = NULL;
+						fs_name_dest->name_size = 0;
+					}
+					if (fs_name_dest->shrt_name) {
+						free(fs_name_dest->shrt_name);
+						fs_name_dest->shrt_name = NULL;
+						fs_name_dest->shrt_name_size = 0;
+					}
+					break;
+				}
+				else {
+					return 0;
+				}
+			}
+		}
+	}
 
     if (fs_name_dest == NULL) {
         // make sure we got the room
         if (a_fs_dir->names_used >= a_fs_dir->names_alloc) {
-            if (tsk_fs_dir_realloc(a_fs_dir, a_fs_dir->names_used + 256))
+            if (tsk_fs_dir_realloc(a_fs_dir, a_fs_dir->names_used + 512))
                 return 1;
         }
 

@@ -194,7 +194,7 @@ public class ReprDataModel {
 		 * 
 		 */
 		repr("getFirst_inum", fs.getFirst_inum());
-		repr("getFs_type", fs.getFs_type());
+		repr("getFs_type", fs.getFs_type().getValue());
 		repr("getImg_offset", fs.getImg_offset());
 		repr("getLast_inum", fs.getLast_inum());
 		repr("getRoot_inum", fs.getRoot_inum());
@@ -322,6 +322,27 @@ public class ReprDataModel {
 	}
 
 	private void repr(String method, Long l) {
+		indent();
+		name(method);
+		append(l.toString());
+		nl();
+	}
+	
+	private void repr(String method, Integer l) {
+		indent();
+		name(method);
+		append(l.toString());
+		nl();
+	}
+	
+	private void repr(String method, Short l) {
+		indent();
+		name(method);
+		append(l.toString());
+		nl();
+	}
+	
+	private void repr(String method, Byte l) {
 		indent();
 		name(method);
 		append(l.toString());

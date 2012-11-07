@@ -30,8 +30,12 @@ using std::for_each;
 TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb)
 {
     m_db = a_db;
-    m_curFsId = 0;
+    m_curImgId = 0;
     m_curVsId = 0;
+    m_curVolId = 0;
+    m_curFsId = 0;
+    m_curFileId = 0;
+    m_curUnallocDirId = 0;
     m_blkMapFlag = false;
     m_vsFound = false;
     m_volFound = false;
@@ -519,6 +523,9 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         retval = insertFileData(fs_file, NULL, path, NULL, TSK_DB_FILES_KNOWN_UNKNOWN);
     else
         retval = processAttributes(fs_file, path);
+    
+    // reset the file id
+    m_curFileId = 0;
 
     if (retval == TSK_STOP)
         return TSK_STOP;
@@ -588,6 +595,11 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
             // ignore sparse blocks
             if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
                 continue;
+
+            
+            // NOTE that we could be adding runs here that were not assigned
+            // to a file from the previous section.  In which case, m_curFileId
+            // will probably be set to 0.
 
             // @@@ We probaly want to keep on going here
             if (m_db->addFileLayoutRange(m_curFileId,
@@ -717,7 +729,7 @@ int8_t TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     //walk unalloc blocks on the fs and process them
     //initialize the unalloc block walk tracking 
     UNALLOC_BLOCK_WLK_TRACK unallocBlockWlkTrack(*this, *fsInfo, dbFsInfo.objId);
-    uint8_t block_walk_ret = tsk_fs_block_walk(fsInfo, fsInfo->first_block, fsInfo->last_block, TSK_FS_BLOCK_WALK_FLAG_UNALLOC, 
+    uint8_t block_walk_ret = tsk_fs_block_walk(fsInfo, fsInfo->first_block, fsInfo->last_block, (TSK_FS_BLOCK_WALK_FLAG_ENUM)(TSK_FS_BLOCK_WALK_FLAG_UNALLOC | TSK_FS_BLOCK_WALK_FLAG_AONLY), 
         fsWalkUnallocBlocksCb, &unallocBlockWlkTrack);
 
     if (block_walk_ret == 1) {

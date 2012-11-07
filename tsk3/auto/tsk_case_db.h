@@ -85,11 +85,11 @@ class TskAutoDb:public TskAuto {
 
   private:
     TskDbSqlite * m_db;
-    int64_t m_curImgId;
-    int64_t m_curVsId;
-    int64_t m_curVolId;
-    int64_t m_curFsId;
-    int64_t m_curFileId;
+    int64_t m_curImgId;     ///< Object ID of image currently being processed
+    int64_t m_curVsId;      ///< Object ID of volume system currently being processed
+    int64_t m_curVolId;     ///< Object ID of volume currently being processed
+    int64_t m_curFsId;      ///< Object ID of file system currently being processed
+    int64_t m_curFileId;    ///< Object ID of file currently being processed
     int64_t m_curUnallocDirId;
     string m_curImgTZone;
     bool m_blkMapFlag;

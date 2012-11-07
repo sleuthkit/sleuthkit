@@ -9,7 +9,7 @@ libtskfs_la_SOURCES  = tsk_fs_i.h fs_inode.c fs_io.c fs_block.c fs_open.c \
     fs_parse.c fs_file.c \
     unix_misc.c nofs_misc.c \
     ffs.c ffs_dent.c ext2fs.c ext2fs_dent.c ext2fs_journal.c \
-    fatfs.c fatfs_meta.c fatfs_dent.c ntfs.c ntfs_dent.c swapfs.c rawfs.c \
+    fatfs.c fatfs_meta.c fatfs_dent.cpp ntfs.c ntfs_dent.cpp swapfs.c rawfs.c \
     iso9660.c iso9660_dent.c \
     hfs.c hfs_dent.c hfs_journal.c hfs_unicompare.c \
     dcalc_lib.c dcat_lib.c dls_lib.c dstat_lib.c ffind_lib.c \

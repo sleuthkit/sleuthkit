@@ -95,8 +95,9 @@ class ResultSetHelper {
 	 */
 	FileSystem fileSystem(ResultSet rs, Content parent) throws SQLException {
 
+		TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type"));
 		FileSystem fs = new FileSystem(db, rs.getLong("obj_id"), "File System", rs.getLong("img_offset"),
-				rs.getLong("fs_type"), rs.getLong("block_size"), rs.getLong("block_count"),
+				fsType, rs.getLong("block_size"), rs.getLong("block_count"),
 				rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum"));
 		fs.setParent(parent);
 		return fs;
@@ -110,11 +111,11 @@ class ResultSetHelper {
 	 * @throws SQLException 
 	 */
 	File file(ResultSet rs, FileSystem fs) throws SQLException {
-		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), rs.getLong("meta_addr"), rs.getLong("attr_type"),
-				rs.getLong("attr_id"), rs.getString("name"), rs.getLong("dir_type"),
-				rs.getLong("meta_type"), rs.getLong("dir_flags"), rs.getLong("meta_flags"), rs.getLong("size"),
+		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), rs.getLong("meta_addr"), rs.getShort("attr_type"),
+				rs.getShort("attr_id"), rs.getString("name"), rs.getShort("dir_type"),
+				rs.getShort("meta_type"), rs.getShort("dir_flags"), rs.getShort("meta_flags"), rs.getLong("size"),
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getLong("mode"), rs.getLong("uid"), rs.getLong("gid"), rs.getLong("known"), rs.getString("parent_path"), rs.getString("md5"));
+				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), rs.getByte("known"), rs.getString("parent_path"), rs.getString("md5"));
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -128,11 +129,11 @@ class ResultSetHelper {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs, String name) throws SQLException {
-		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), rs.getLong("meta_addr"), rs.getLong("attr_type"),
-				rs.getLong("attr_id"), name, rs.getLong("dir_type"),
-				rs.getLong("meta_type"), rs.getLong("dir_flags"), rs.getLong("meta_flags"), rs.getLong("size"),
+		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), rs.getLong("meta_addr"), rs.getShort("attr_type"),
+				rs.getShort("attr_id"), name, rs.getShort("dir_type"),
+				rs.getShort("meta_type"), rs.getShort("dir_flags"), rs.getShort("meta_flags"), rs.getLong("size"),
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getLong("mode"), rs.getLong("uid"), rs.getLong("gid"), rs.getLong("known"), rs.getString("parent_path"), rs.getString("md5"));
+				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), rs.getByte("known"), rs.getString("parent_path"), rs.getString("md5"));
 		dir.setFileSystem(fs);
 		return dir;
 	}
