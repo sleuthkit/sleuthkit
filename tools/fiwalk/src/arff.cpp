@@ -18,13 +18,7 @@
  */
 
 #include "tsk3/tsk_tools_i.h"
-#include "arff.h"
-
-
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-
+#include "fiwalk.h"
 #include <sys/types.h>
 
 #ifdef _MSC_VER
@@ -34,38 +28,16 @@
 #include <sys/time.h>
 #endif
 
-
 #ifdef _MSC_VER
-	#include "regex.h"  //use regex in src tree
+  #include "regex.h"  //use regex in src tree
 #else
-	extern "C" {
-	#include <regex.h>
-	}
+  extern "C" {
+    #include <regex.h>
+  }
 #endif
 
-#include <ctype.h>
-#include <fcntl.h>
+#include "arff.h"
 
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif
-
-#ifdef HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
-#endif
-
-#ifdef HAVE_INTTYPES_H
-#ifndef __STDC_FORMAT_MACROS
-#define __STDC_FORMAT_MACROS
-#endif
-#include <inttypes.h>
-#endif
-
-#include <algorithm>
-#include <cstdlib>
-#include <vector>
-#include <string>
-#include <assert.h>
 using namespace std;
 
 #define REGEX_MATCH 0

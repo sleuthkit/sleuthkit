@@ -1,26 +1,22 @@
-bin_PROGRAMS = fiwalk test_arff 
+bin_PROGRAMS = fiwalk 
 
 AM_CFLAGS = -Wall
 AM_CPPFLAGS = -I../../.. -Wall
 LDADD = ../../../tsk3/libtsk3.la
 
-TESTS = test_arff test_fiwalk.sh
-
-EXTRA_DIST = README_PLUGINS.txt ficonfig.txt test_fiwalk.sh tre-0.8.0 \
+EXTRA_DIST = README_PLUGINS.txt ficonfig.txt tre-0.8.0 \
     config-simple.txt word-count-plugin.sh \
     lua_utf8.c
 
 fiwalk_SOURCES = fiwalk.cpp  fiwalk_tsk.cpp fiwalk.h \
 	content.cpp content.h \
-	arff.cpp arff.h \
+	arff.cpp arff.h outfile.h \
 	plugin.cpp plugin.h \
 	myglob.cpp myglob.h\
 	utils.c utils.h \
 	dfxml.cpp dfxml.h \
-	hash_t.h \
-    hexbuf.c hexbuf.h \
+	hash_t.h hexbuf.c hexbuf.h \
 	unicode_escape.cpp unicode_escape.h \
-	outfile.h base64.h base64.cpp outfile.cpp 
+	base64.h base64.cpp 
 
-test_arff_SOURCES = arff.cpp arff.h test_arff.cpp
 

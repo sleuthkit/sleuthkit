@@ -404,13 +404,6 @@ void xml::tagout(const string &tag,const string &attribute)
 #define __MINGW_ATTRIB_NONNULL(x) 
 #endif
 
-//#if defined(HAVE_VASPRINTF) && defined(__MINGW_H)
-///* prototype missing under mingw */
-//extern "C" {
-//    int vasprintf(char **ret,const char *fmt,va_list ap);
-//}
-//#endif    
-	
 extern "C" {
     /**
      * We do not have vasprintf.

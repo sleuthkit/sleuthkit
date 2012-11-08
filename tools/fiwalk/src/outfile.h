@@ -30,7 +30,7 @@ class outfile {
     string outfile_name;			// final output file
     FILE *tempfile;				// temporary file
 public:
-    outfile(const string &filename);
+    outfile(const string &filename){};
     virtual ~outfile(){};
     virtual bool needs_tempfile(){return false;}
     virtual void add_comment(const string &comment) = 0;
