@@ -42,3 +42,6 @@ Makefile
 #javadoc generated
 /bindings/java/javadoc
 
+*~
+.in
+.am

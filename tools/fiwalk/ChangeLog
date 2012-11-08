@@ -1,0 +1,469 @@
+2012-05-02  Simson Garfinkel  <simsong@ncr.nps.edu>
+
+	* src/unicode_escape.cpp (validateOrEscapeUTF8): corrected escaping for 4-byte unicodes
+
+2012-04-12  Simson Garfinkel  <simsong@ncr.nps.edu>
+
+	* src/unicode_escape.cpp (validateOrEscapeUTF8): UTF-8 isn't valid if it begins 0xc0; who knew?
+
+	* src/Makefile.am (fiwalk_SOURCES): removed bloomset.h
+
+2011-11-01  Simson Garfinkel  <slgarfin@submit-0.local>
+
+	* xml.cpp (printf): added #ifdef GNUC_HAS_DIAGNOSTIC_PRAGMA to allow compiling with older GCC
+	
+
+2011-10-10  Simson Garfinkel  <simsong@Alphonse-Mucha.local>
+
+	* python/ireport.py: renamed from istats and changed to work with dfxml
+
+	* python/Makefile.am (EXTRA_DIST): Changed istats to ireport.
+
+2011-08-01  Simson Garfinkel  <simsong@Alphonse-Mucha.local>
+
+	* python/dfxml.py (fileobjects_iter): replaced iteritems() with items() to allow for migration to Python 3.
+	Replaced unicode() with "" for migration to Python 3.
+
+2011-07-17  Simson Garfinkel  <simsong@mncrnpsedu.local>
+
+	* configure.ac: upgraded fiwalk to version 0.6.15
+	
+	* src/fiwalk_tsk.cpp (file_act): now combines 512-byte segments from compressed files.
+
+2011-07-16  Simson Garfinkel  <simsong@imac3.local>
+
+	* python/fiwalk.py (fileobjects_using_sax): fixed fileobjects_using_sax
+
+2011-07-14  Simson Garfinkel  <simsong@it153020.ern.nps.edu>
+
+	* dfxml.py (fileobject_reader.__init__): no longer errors on hashdigests not located in fileobjects
+
+2011-05-24  Simson Garfinkel  <simsong@91.sub-75-197-5.myvzw.com>
+
+
+	* configure.ac: rewrote test to handle obsolete version of AFFLIB in MacPorts.
+
+2011-05-11  Simson Garfinkel  <simsong@Alphonse-Mucha.local>
+
+	* configure.ac: upgraded fiwalk to version 0.6.12
+
+2011-05-09  Simson Garfinkel  <simsong@75.sub-75-208-78.myvzw.com>
+
+	* xml.cpp (mkstemp): changed mkstemp linkage so it's a C program.
+
+2011-05-08  Simson Garfinkel  <simsong@Alphonse-Mucha.local>
+
+	* python/dfxml.py (volumeobjects_sax): byterun class renamed byte_run to match new DFXML spec.
+
+2011-04-30  Simson Garfinkel  <simsong@imac3.home>
+
+	* src/xml.h: added time.h. Fixed DFXML to output compile date in ISO8601 time.
+
+	* src/fiwalk.cpp (file_infot): time format changed to ISO 8601 for XML output.
+
+	* src/content.cpp (content::write_record): all <run> tags changed to <byte_run>
+
+	* src/xml.h (class xml): version 1.0 added to creator
+
+	* src/fiwalk.cpp: namespace changed to http://www.forensicswiki.org/wiki/Category:Digital_Forensics_XML
+	dfxml version changed to 1.0
+
+2011-04-13  Simson Garfinkel  <simsong@Magneto.local>
+
+	* xml.cpp: changed #ifdef WIN to appropriate #ifdefs
+
+	* xml.h (class xml): changed #ifdef WIN to appropriate #ifdefs
+
+2011-04-06  Simson Garfinkel  <simsong@imac3.home>
+
+	* configure.ac: incremented version number to 0.6.11.
+
+	* hash_t.h final(): if final() is called before initialized, init! 
+
+
+2011-03-24  Simson Garfinkel  <simsong@imac3.home>
+
+	* src/test_fiwalk.sh (IMG): updated test so that it returns 0 if $IMG is not on the system, rather than failing.
+
+2011-03-20  Simson Garfinkel  <simsong@imac3.home>
+
+	* configure.ac: added -Wall and -D_FORTIFY_SOURCE=2 
+	increase version number to 0.6.9
+
+2011-03-20  User User  <user@ubuntu>
+
+	* configure.ac: changed search for -lcrypto from MD5_Update to EVP_md5
+
+	* src/fiwalk.h: significantly rearranged the #include files so that all of the /usr/include/*.h files are included, then the /usr/include/sys/*.h, then the C++ files. This seems to handle some strange errors we were getting.
+
+	* configure.ac: removed -lewf -lz push into LIBS. It doesn't give you luck if the libewf library is not present.
+
+	* src/content.cpp: removed __PRI64_PREFIX define for Weird Linux Bug
+
+	* src/unicode_escape.cpp: added #include <stdint.h>
+
+2011-03-17  Simson Garfinkel  <simsong@55.sub-75-192-52.myvzw.com>
+
+	* src/unicode_escape.cpp (UTF8BufferToUTF32Buffer): changed unsigned long * to uint32_t *
+	(validateOrEscapeUTF8): changed unsigned long to uint32_t
+
+	* src/lua_utf8.c (sarn_utf8_code_func): replaced unsigned long int with uint32_t
+
+2011-03-16  Simson Garfinkel  <simsong@imac3.home>
+
+	* src/fiwalk.cpp: -s option removed because it causes problems on big disks.
+
+2011-03-15  Simson Garfinkel  <simsong@imac3.home>
+
+	* src/content.cpp: removed my_evp_md(const char *str)
+	(content::open_savefile): unable to open save file is no longer a fatal error.
+
+2011-03-14  Simson Garfinkel  <simsong@imac3.home>
+
+	* configure.ac: increased version number to 0.6.7
+
+	* python/idifference.py: relevant_filenames removed.
+	(DiskState.print_fi2.prtime): extensively rewrote for improved performance. Removed numerous typos. Now makes ZIP or TAR files.
+
+2011-03-14  Simson Garfinkel  <simsong@Silver.local>
+
+	* python/dfxml.py (fileobject_reader._end_element): modified to allow either <fiwalk> or <dfxml> by ignoring tag type in _end_element()
+
+2011-01-29  User User  <user@ubuntu>
+
+	* xml.h: added HAVE_SYS_RESOURCE_H
+
+2011-02-23  Simson Garfinkel  <simsong@imac3.home>
+
+	* configure.ac: increased version number to 0.6.6
+
+	* src/fiwalk.cpp: added -GXX option to suppress hash calculation on files larger than XX GB.
+
+2011-02-22  Simson Garfinkel  <simsong@m-ern-nps-edu.local>
+
+	* src/test_fiwalk.sh: now validates XML
+
+	* src/fiwalk.cpp: added option -Gnn to specify a maximum gigabyte size of files larger than which won't be processed for content. Default filesize is 2GB.
+	* src/fiwalk.cpp: now calls x->open() before reading the config file.
+
+	* src/fiwalk.h: removed opt_multithreaded.
+
+2011-02-18  Simson Garfinkel  <simsong@imac3.local>
+
+	* src/content.cpp: removed evp_md5 stuff
+
+2011-02-17  Simson Garfinkel  <simsong@imac3.home>
+
+	* src/fiwalk.cpp: libmagic is now disabled by default
+	outer tag changed from <fiwalk> to <dfxml>
+
+2011-02-13  Simson Garfinkel  <simsong@imac3.home>
+
+	* configure.ac: increased version number to 0.6.5
+
+	* python/Makefile.am (EXTRA_DIST): added dfxml_tool.py
+
+2011-02-07  Simson Garfinkel  <simsong@imac3.local>
+
+	* configure.ac: increased version number to 0.6.4
+
+	* src/content.cpp (content::add_bytes): no longer calls exit() if lseek() or write() fails.
+
+2011-01-04  Simson Garfinkel  <slgarfin@submit-0.local>
+
+	* configure.ac: version number updated to 0.6.3
+
+	* src/content.cpp (need_file_walk): removed bloomsets
+
+	* src/content.h: changed threaded_hash.h to sha1_t.h (the threaded hash experiment was a failure.)
+
+	* src/fiwalk.h: moved include of tsk3/libtsk.h to before our inclusion of inttypes.h because SleuthKit does a hard set on the format macros.
+
+	* xml.h: changed xmlout with long from xmlout to xmloutl because without the l it caused overloading errors on some systems.
+
+2011-01-01  Simson Garfinkel  <simsong@imac3.home>
+
+	* xml.h (class xml): added a whole bunch more options for xmlout.
+
+2010-11-27  Simson Garfinkel  <simsong@imac3.home>
+
+	* python/fiwalk.py (byterun.has_sector): updated has_sector() for runs that do not have locations on disk
+
+	* src/Makefile.am (fiwalk_SOURCES): removed err.cpp and err.h
+
+2010-10-27  simsong  <simsong@domexnpsedu.local>
+
+	* src/fiwalk.cpp: no longer tries to open EWF files
+
+2010-06-06  Simson L. Garfinkel  <simsong@imac2.local>
+
+	* python/iblkfind.py: cleaned up python
+
+2010-06-05  Simson L. Garfinkel  <simsong@imac2.local>
+
+	* configure.ac: increased version number to 0.6.1
+	
+	* src/unicode_escape.cpp (validateOrEscapeUTF8): added this module to escape invalid unicode in filenames.
+
+2010-06-04  simsong  <simsong@domex.nps.edu>
+
+	* python/fiwalk.py (fileobjects_using_dom): modified so that if flags=ALLOC_ONLY neither fileobjects_using_sax() nor fileobjects_using_dom() will return unallocated files
+
+2010-05-26  simsong  <simsong@domex.nps.edu>
+
+	* src/fiwalk_tsk.cpp (process_tsk_file): removed printing of NTFS attribute pointer
+
+2010-03-21  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* configure.ac: upped version to 0.5.13
+
+	* python/fiwalk.py (extentdb.sectors_not_in_db.process): removed some extraneous print statements.
+
+	* plugins/docx_extractor.py (process): updated to use python built-in zipfile implementation.
+
+	* configure.ac: Fixed to properly see iff e the struct TSK_IMG_INFO.sector_size element is present.
+
+2010-01-25  simsong  <simsong@domex.nps.edu>
+
+	* src/fiwalk.cpp (main): retries process_image_file if sector_size is not 512
+
+	* src/fiwalk_tsk.cpp (process_file): checks with sector_size of 512 if sector_size open with non 512 bytes fails
+
+2009-12-29  simsong  <simsong@domex.nps.edu>
+
+	* src/fiwalk.cpp (process_tsk_file): updated for tsk_fs_meta_make_ls
+	(main): fixed xml generation so that all non-data segments smaller than 64K end up in XML
+
+2009-12-31  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+2009-12-27  Simson Garfinkel  <simsong@52.sub-75-211-193.myvzw.com>
+
+	* src/fiwalk.cpp (main): added flag -I to ignore NTFS system files. Now includes them by default.
+
+2009-12-18  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* src/fiwalk.cpp (main): you can now specify -X0 to write the XML file to where the AFF or ISO file is automatically
+	(main): added -Z option (zap)
+
+2009-12-17  simsong  <simsong@domex.nps.edu>
+
+	* configure.ac: bumped version to 0.5.12
+
+2009-12-09  Simson Garfinkel  <simsong@t>
+
+	* src/plugin.cpp (plugin_process): plugin.cpp now changes non-alphanum characters to underbars
+
+	* src/xml.cpp (xml::xmlescape): added xml_slash
+
+2009-12-08  Simson Garfinkel  <simsong@108.56.242.10.in-addr.arpa>
+
+	* src/fiwalk.cpp (main): changed imagefile to image_filename
+
+2009-12-05  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* python/fiwalk.py (fileobject_reader): fiwalk_xml_reader renamed fiwalk_fileobject_reader
+
+2009-11-26  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* src/fiwalk.cpp (proc_fs): only put the errors in the XML if the partitions are good.
+
+2009-11-25  Simson Garfinkel  <simsong@254.2.242.10.in-addr.arpa>
+
+	* configure.ac: version 0.5.11
+
+	* src/content.cpp: added newline to md5 output in text mode
+	
+	* src/content.cpp: cosmetic change on runz -> runs.
+
+2009-11-25  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* configure.ac: upped verion to 0.5.10
+
+	* plugins/Makefile.am (EXTRA_DIST): added odf_extractor.py
+
+2009-11-24  Simson L. Garfinkel  <simsong@Silver-SSD.local>
+
+	* configure.ac: version 0.5.9
+
+	* plugins/Makefile.am (EXTRA_DIST): added docx_diff.py, docx_extractor.py, and docx_grep.py
+
+2009-11-23  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* src/fiwalk.cpp (file_info): revised for new hashdigest tag
+
+	* python/fiwalk.py (fiwalk_xml_reader._end_element): revised for new hash standard in XML
+
+2009-11-22  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* configure.ac: updated version to 0.5.7
+
+	* python/fiwalk.py (byterun.has_sector): fixed runs to handle new prettyprinted XML code (other fixes probably are requied.)
+
+	* python/iblkfind.py (process): added
+
+2009-11-20  Simson L. Garfinkel  <simsong@Silver-SSD.local>
+
+	* src/content.cpp (open_filename_with_suffix): numbers errors introduced during last plugin rewrite. 
+
+	* src/xml.h (class xml): replaced tagset with set<string>
+
+2009-11-19  Simson L. Garfinkel  <simsong@Silver-SSD.local>
+
+	* src/fiwalk.cpp (file_act): xml more closey follows standard; indentation is prety.
+
+2009-11-11  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* Version number bumped to 0.6.0
+
+	* Python stuff moved to "python" subdirectory. Lots of goodies added. 
+
+2009-11-08  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* src/fiwalk.cpp: diabled multi-threading
+
+	* configure.ac: updated version number to 0.5.7
+
+	* src/content.h (class content): no longer repeatedly calls
+	EVP_get_digestbyname(str); that is now just cached.
+
+	* src/threaded_hash.h: found memory leak
+	
+	* src/content.h (class content): add_bytes now takes a file_offset, because processed files may have holes.
+
+	* src/bloomset.h (class bloomset_element): added destructor for ~bloomset_element().
+
+	* src/Makefile.am (fiwalk_SOURCES): moved code from bloomset.cpp to bloomset.h
+
+2009-11-05  Simson Garfinkel  <simsong@m.ern.nps.edu>
+
+	* src/content.cpp: moved strcasestr to content.cpp, as it is the only place it is used; made it static.
+
+2009-11-01  Simson L. Garfinkel  <simsong@imac2.local>
+
+	* configure.ac: updated release to 0.5.6
+	
+	* Changed HAVE_AFFLIB to HAVE_LIBAFFLIB (wonder why it was previously working.)	
+	
+	* configure.ac: added ${prefix} to list of directories checked. Autoconf should do that, too
+	
+
+2009-10-22  Simson Garfinkel  <simsong@142.sub-75-226-173.myvzw.com>
+
+	* configure.ac: updated release to 0.5.4
+
+2009-10-18  Simson Garfinkel  <simsong@Silver-Surver.local>
+
+	* src/threaded_hash.h (class threaded_hash): now passes in EVP_MD *, rather than a function that returns the MD
+
+2009-10-02  Simson L. Garfinkel  <simsong@imac2.local>
+
+	* configure.ac: added err() and stdint #ifdefs
+
+2009-07-14  Simson Garfinkel  <simsong@Silver-Surfer-2.local>
+
+	* configure.ac: increase version number to 0.5.3
+
+	* removed userguess (should be in post-processing)
+
+2009-05-20  Simson Garfinkel  <simsong@252.sub-70-212-173.myvzw.com>
+
+	* src/fiwalk.cpp (process_tsk_file): no longer processes zero-length files for plugin; deletes zero-length files that are saved.
+
+2009-05-19  Simson Garfinkel  <simsong@m.ern.nps.edu>
+
+	* configure.ac: updated version number to 0.5.2
+
+	* src/fiwalk.cpp (process_tsk_file): -m option now produces body file output
+
+2009-05-12  Simson Garfinkel  <simsong@m.ern.nps.edu>
+
+	* src/fiwalk.cpp (main): -m for MD5 changed to -M.  -m now produces mactimes output.
+
+2009-03-07  Simson Garfinkel  <simsong@t>
+
+	* src/fiwalk.cpp: added af_display_as_hex to take care of problem where some verson of AFFLIB don't have these defined.
+
+2009-01-20  Simson L. Garfinkel  <simsong@domex.nps.edu>
+
+	* src/content.cpp (content::open_tempfile): fixed bug where number of characters added to tempfile was not being properly calculated.
+
+2008-12-12  Simson L. Garfinkel  <simsong@domex.nps.edu>
+
+	* src/xml.cpp (xml::xmlescape): LT and Gt were swapped. Woops.
+
+2008-12-29  Simson Garfinkel  <simsong@m.ern.nps.edu>
+
+	* src/content.cpp (content::write_record): fixed handling of sparse files
+
+2008-12-27  Simson Garfinkel  <simsong@imac2.local>
+
+	* Makefile.am (AM_CXXFLAGS): changed from CPPFLAGS to CXXFlags
+
+	* src/fiwalk.cpp (process_tsk_file): errors now printed to stderr, and only if opt_debug enabled.
+
+2008-12-24  Simson Garfinkel  <simsong@imac2.local>
+
+	* src/content.cpp (content::open_savefile): added error checking for invalid save path
+
+2008-12-27  Simson L. Garfinkel  <simsong@t.eecs.harvard.edu>
+
+	* src/content.cpp (filemagic): removed COMPRESS|MAGIC_CONTINUE flags from magic_open(). Fixed Fixed static code to magic_open().
+
+2008-12-24  Simson L. Garfinkel  <simsong@t.eecs.harvard.edu>
+
+	* src/content.cpp (write_record): fixed compile errors with 64-bit formatting
+
+2008-12-23  Simson Garfinkel  <simsong@imac2.local>
+
+	* src/fiwalk.cpp (usage): made calculation of MD5 and SHA1 the default.
+
+2008-11-26  Simson Garfinkel  <simsong@imac2.local>
+
+	* src/fiwalk.cpp (file_act): added -g flag which gets the byte locations of the fragments without getting the actual bytes.
+
+2008-11-20  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* src/xml.cpp (xml::close): added capability to generate XML directly to stdout without the DTD using the -x option.
+
+2008-11-19  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* src/content.cpp (content::write_record): XML output for runs is now a proper run structure.
+
+2008-10-13  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* XML: changed "byte runs" tag to "byte_runs" because "byte runs" is not conformant.
+
+2008-10-10  Simson Garfinkel  <simsong@Silver-Surfer>
+
+	* configure.ac: increased version to 0.1.8
+
+2008-10-10  Simson Garfinkel  <simsong@Silver-Surfer.local>
+
+	* src/content.cpp (content::filemagic): created from content_info. Now automatically calls libmagic if libmagic is avaialble; otherwise optionally calls the magic function if libmagic is not available. 
+
+2008-09-24  Simson Garfinkel  <simsong@m.ern.nps.edu>
+
+	* src/fiwalk.cpp: added built-in definition of strcasestr for systems that don't have it.
+
+2008-09-20  Simson Garfinkel  <simsong@imac2.local>
+
+	* Makefile.am: added -Wall to top-level Makefile.am
+
+	* src/threaded_hash.h (class threaded_hash): updated for -Wall (added to Makefile.am)
+
+	* src/fiwalk.cpp: updated for #include <tsk3>
+
+2008-07-28  Simson Garfinkel  <simsong@host188-61.wifi.conference.usenix.org>
+
+2008-07-15  Simson Garfinkel  <simsong@imac2.local>
+
+	* src/fiwalk.cpp (main): fixed bug where stdout was not being set for walk files if -A, -T and -X were not specified.
+
+2008-06-30  Simson L. Garfinkel  <simsong@domex.nps.edu>
+
+	* src/fiwalk.cpp (do_vol): changed TSK error to TSK_Error so that XML won't be invalid.
+
+2008-03-18  Simson L. Garfinkel  <simsong@domex.local>
+
+	* src/fiwalk.cpp (inode_act): removed hexbuf.h; changed to nsrl_hexbuf.h
+
