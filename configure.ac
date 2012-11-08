@@ -38,7 +38,7 @@ AC_HEADER_STDC
 #AC_HEADER_MAJOR
 #AC_HEADER_SYS_WAIT
 #AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/param.h sys/time.h unistd.h utime.h wchar.h wctype.h])
-AC_CHECK_HEADERS([inttypes.h unistd.h sys/param.h])
+AC_CHECK_HEADERS([err.h inttypes.h unistd.h sys/param.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -73,6 +73,7 @@ AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_UTIME_NULL
 AC_FUNC_VPRINTF
 #AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
+AC_CHECK_FUNCS([ishexnumber err errx warn warnx])
 AX_PTHREAD( [
             AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
             CLIBS="$PTHREAD_LIBS $LIBS"

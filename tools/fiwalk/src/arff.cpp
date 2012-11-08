@@ -16,9 +16,9 @@
  * NPS government employees and is therefore in the public domain and
  * not subject to copyright.
  */
-#include "arff.h"
 
 #include "tsk3/tsk_tools_i.h"
+#include "arff.h"
 
 
 #include <string.h>

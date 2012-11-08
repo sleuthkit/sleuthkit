@@ -40,6 +40,8 @@
  * IF IBM IS APPRISED OF THE POSSIBILITY OF SUCH DAMAGES.
  */
 
+#include "tsk3/tsk_tools_i.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 

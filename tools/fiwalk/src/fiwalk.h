@@ -20,7 +20,6 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -74,8 +73,6 @@
 #include <cstdlib>
 #include <vector>
 #include <string>
-
-//#include <tsk3/libtsk.h>
 
 #ifdef AFFLIB_OBSOLETE
 #undef HAVE_LIBAFFLIB

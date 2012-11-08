@@ -19,7 +19,6 @@
  */
 
 #include "tsk3/tsk_tools_i.h"
-//#include "config.h"
 
 #define __DARWIN_64_BIT_INO_T 1		
 

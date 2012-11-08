@@ -23,7 +23,7 @@
 #include <string>
 #include <map>
 #include <stdio.h>
-#include "tsk3/tsk_tools_i.h"
+
 using namespace std;
 
 class outfile {
