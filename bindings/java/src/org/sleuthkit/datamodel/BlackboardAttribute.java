@@ -165,6 +165,8 @@ public class BlackboardAttribute {
 		TSK_URL_DECODED(67, "TSK_URL_DECODED", "Decoded URL"),
 		TSK_DATETIME_CREATED(68, "TSK_DATETIME_CREATED", "Date Created"),
 		TSK_DATETIME_MODIFIED(69, "TSK_DATETIME_MODIFIED", "Date Modified"),
+		TSK_PROCESSOR_ARCHITECTURE(70, "TSK_PROCESSOR_ARCHITECTURE", "Processor Architecture"),
+		TSK_VERSION(71, "TSK_VERSION", "Version"),
 		;
 		
 		
