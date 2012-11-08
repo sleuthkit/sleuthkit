@@ -48,9 +48,7 @@
 #include <direct.h>
 #include <crtdefs.h>
 #include <windows.h>
-  #ifndef _CRT_SECURE_NO_WARNINGS
-  #define _CRT_SECURE_NO_WARNINGS 1
-  #endif
+#define _CRT_SECURE_NO_WARNINGS
 //#define mkdir _mkdir
 #endif
 
@@ -74,6 +72,7 @@ bool opt_no_data  = false;		// don't get the data
 bool opt_allocated_only = false;
 bool opt_body_file = false;
 bool opt_ignore_ntfs_system_files = false;
+bool opt_parent_tracking = false;
 
 const char *config_file = 0;
 int  file_count_max = 0;
@@ -104,7 +103,7 @@ int64_t  current_partition_start=0;	// in bytes
 string  plugin_filename;
 
 #ifndef FIWALK_VERSION
-#define FIWALK_VERSION "0.6.15"
+#define FIWALK_VERSION "0.6.19"
 #endif
 
 void print_version()
@@ -585,6 +584,7 @@ int main(int argc, char * const *argv1)
 #else
 	const char *filename = argv[0];
 #endif
+    opt_parent_tracking = true;
 
     if(!filename){
 	errx(1,"must provide filename");

@@ -1,3 +1,13 @@
+2012-05-02  Simson Garfinkel  <simsong@ncr.nps.edu>
+
+	* src/unicode_escape.cpp (validateOrEscapeUTF8): corrected escaping for 4-byte unicodes
+
+2012-04-12  Simson Garfinkel  <simsong@ncr.nps.edu>
+
+	* src/unicode_escape.cpp (validateOrEscapeUTF8): UTF-8 isn't valid if it begins 0xc0; who knew?
+
+	* src/Makefile.am (fiwalk_SOURCES): removed bloomset.h
+
 2011-11-01  Simson Garfinkel  <slgarfin@submit-0.local>
 
 	* xml.cpp (printf): added #ifdef GNUC_HAS_DIAGNOSTIC_PRAGMA to allow compiling with older GCC

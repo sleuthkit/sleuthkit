@@ -140,6 +140,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
     TSK_DADDR_T i;
     int b_desc_seen = 0;
     ext2fs_journ_sb * journ_sb = NULL;
+	ext4fs_journ_commit_head *commit_head;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -358,7 +359,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
                     || (big_tsk_getu32(head->entry_seq) <
                         jinfo->start_seq)) ? "Unallocated " : "Allocated ",
                 big_tsk_getu32(head->entry_seq));
-            ext4fs_journ_commit_head *commit_head=head;
+           commit_head=head;
             //tsk_printf("commit seq %" PRIu32 "\n", big_tsk_getu32(commit_head->c_header.entry_seq));
             if(big_tsk_getu32(journ_sb->feature_compat) & JBD2_FEATURE_COMPAT_CHECKSUM)
             {

@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;;&quot;$(SolutionDir)\..\tools\fiwalk\src\tre-0.8.0\lib&quot;;&quot;$(SolutionDir)\tre&quot;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;WIN32"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -59,7 +59,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32MD.lib ssleay32MD.lib msvcrt.lib winmm.lib libewf.lib"
+				AdditionalDependencies="msvcrt.lib winmm.lib libewf.lib"
 				AdditionalLibraryDirectories="$(LIBEWF_HOME)\msvscpp\release"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="msvcrtd.lib"
@@ -116,8 +116,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\include&quot;"
-				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(SolutionDir)\tre&quot;;&quot;$(SolutionDir)\..\tools\fiwalk\src\tre-0.8.0\lib&quot;;&quot;$(LIBEWF_HOME)\include&quot;;&quot;$(LIBEWF_HOME)\common&quot;;&quot;$(LIBEWF_HOME)\msvscpp\release&quot;"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;WIN32"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
@@ -134,8 +134,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32MD.lib ssleay32MD.lib msvcrt.lib winmm.lib libewf.lib"
+				AdditionalDependencies="msvcrt.lib winmm.lib libewf.lib"
 				AdditionalLibraryDirectories="$(LIBEWF_HOME)\msvscpp\release"
+				IgnoreDefaultLibraryNames="msvcrtd.lib"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -188,7 +189,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\..&quot;;&quot;$(SolutionDir)\..\tools\fiwalk\src\tre-0.8.0\lib&quot;;&quot;$(SolutionDir)\tre&quot;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE 1;_CRT_NONSTDC_NO_DEPRECATE 1;_CRT_SECURE_NO_WARNINGS 1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -207,7 +208,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libeay32MD.lib ssleay32MD.lib msvcrt.lib winmm.lib"
+				AdditionalDependencies="winmm.lib"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="msvcrtd.lib"
 				GenerateDebugInformation="true"
@@ -253,11 +254,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\tools\fiwalk\src\bloom.c"
+				RelativePath="..\..\tools\fiwalk\src\content.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\tools\fiwalk\src\content.cpp"
+				RelativePath="..\..\tools\fiwalk\src\dfxml.cpp"
 				>
 			</File>
 			<File
@@ -271,6 +272,14 @@
 			<File
 				RelativePath="..\..\tools\fiwalk\src\hexbuf.c"
 				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						RuntimeLibrary="2"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\tools\fiwalk\src\myglob.cpp"
@@ -292,10 +301,6 @@
 				RelativePath="..\..\tools\fiwalk\src\utils.c"
 				>
 			</File>
-			<File
-				RelativePath="..\..\tools\fiwalk\src\xml.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -315,15 +320,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\tools\fiwalk\src\bloom.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tools\fiwalk\src\bloomset.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\tools\fiwalk\src\content.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\tools\fiwalk\src\dfxml.h"
 				>
 			</File>
 			<File
@@ -356,10 +357,6 @@
 			</File>
 			<File
 				RelativePath="..\..\tools\fiwalk\src\utils.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tools\fiwalk\src\xml.h"
 				>
 			</File>
 		</Filter>

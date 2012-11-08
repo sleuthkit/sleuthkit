@@ -1,0 +1,23 @@
+LIBRARY "tre.dll"
+
+EXPORTS
+	tre_regaexec @1
+	tre_reganexec @2
+	tre_regcomp @3
+	tre_regerror @4
+	tre_regexec @5
+	tre_regfree @6
+	tre_regncomp @7
+	tre_regnexec @8
+	tre_regawexec @9
+	tre_regawnexec @10
+	tre_regwcomp @11
+	tre_regwexec @12
+	tre_regwncomp @13
+	tre_regwnexec @14
+        tre_regaparams_default @15
+	tre_version @16
+	tre_config @17
+        tre_have_backrefs @18
+        tre_have_approx @19
+        tre_reguexec @20

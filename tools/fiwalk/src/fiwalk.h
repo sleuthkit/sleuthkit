@@ -1,4 +1,4 @@
-/** 
+/**
  * fiwalk.h
  *
  * The software provided here is released by the Naval Postgraduate
@@ -55,6 +55,7 @@
 #ifdef _MSC_VER
 #include <winsock.h>
 #include <time.h>
+#define _CRT_SECURE_NO_WARNINGS
 #else
 #include <sys/time.h>
 #endif
@@ -102,7 +103,7 @@
 
 #include "hash_t.h"
 #include "utils.h"
-#include "xml.h"
+#include "dfxml.h"
 #include "base64.h"
 #include "content.h"
 
@@ -132,6 +133,7 @@ extern int  file_count;
 extern int  next_id;
 extern int opt_M;
 extern int opt_k;
+extern bool opt_parent_tracking;
 
 
 void comment(const char *format,...);

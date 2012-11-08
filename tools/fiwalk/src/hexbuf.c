@@ -7,6 +7,10 @@
 #include "hexbuf.h"
 #include <stdio.h>
 
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 const char *hexbuf(char *dst,int dst_len,const unsigned char *bin,int bytes,int flag)
 {
     int charcount = 0;

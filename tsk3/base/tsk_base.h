@@ -439,6 +439,7 @@ documentation and/or software.
 
 
 /* MD5 context. */
+#define TSK_MD5_DIGEST_LENGTH 16
     typedef struct {
         UINT4 state[4];         /* state (ABCD) */
         UINT4 count[2];         /* number of bits, modulo 2^64 (lsb first) */
@@ -454,7 +455,7 @@ documentation and/or software.
 /* sha.h */
 
 /* The structure for storing SHS info */
-
+#define TSK_SHA_DIGEST_LENGTH 32
     typedef struct {
         UINT4 digest[5];        /* Message digest */
         UINT4 countLo, countHi; /* 64-bit bit count */
@@ -469,28 +470,6 @@ documentation and/or software.
     void TSK_SHA_Final(BYTE * output, TSK_SHA_CTX *);
 //@}
 
-/* crc16.h */
-
-/*
- *	crc16.h - CRC-16 routine
- *
- * Implements the standard CRC-16:
- *   Width 16
- *   Poly  0x8005 (x^16 + x^15 + x^2 + 1)
- *   Init  0
- *
- * Copyright (c) 2005 Ben Gardner <bgardner@wabtec.com>
- *
- * This source code is licensed under the GNU General Public License,
- * Version 2. See the file COPYING for more details.
- */
-
-   extern uint16_t const crc16_table[256];
-   extern uint16_t crc16(uint16_t crc, const uint8_t *buffer, size_t len);
-   static inline uint16_t crc16_byte(uint16_t crc, const uint8_t data)
-   {
-      return (crc >> 8) ^ crc16_table[(crc ^ data) & 0xff];
-   }
 
 #ifdef __cplusplus
 }

@@ -164,20 +164,22 @@ AM_CONDITIONAL([BUILD_FIWALK], [test x$enable_fiwalk = xyes])
 if test "x$enable_fiwalk" == xyes; then
    ## These will be removed after complete integration
    ## At that point fiwalk will just be part of TSK not a separate package
-   AC_DEFINE([FIWALK_VERSION], ["0.6.15"], [version of fiwalk subpackage])
+   AC_DEFINE([FIWALK_VERSION], ["0.6.19"], [version of fiwalk subpackage])
    AC_DEFINE([FIWALK_PACKAGE], ["FIWALK"], [name of fiwalk subpackage])
 
    ################################################################
    ##
    ## Bloom support
    AC_TYPE_INT64_T
-   AC_CHECK_HEADERS([openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h])
+   AC_CHECK_HEADERS([err.h sys/mman.h sys/resource.h unistd.h])
+   #AC_CHECK_HEADERS([openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h])
    AC_CHECK_FUNCS([printf getrusage err errx warn warnx mmap])
    
    ################################################################
    ##
    ## utils.h/utils.c support:
-   AC_CHECK_HEADERS([err.h openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h])
+   AC_CHECK_HEADERS([err.h sys/mman.h sys/resource.h unistd.h])
+   #AC_CHECK_HEADERS([err.h openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h])
    AC_CHECK_FUNCS([ishexnumber unistd.h err errx warn warnx ishexnumber pread64 pread _lseeki64 ])
    
    ################################################################
@@ -203,8 +205,8 @@ if test "x$enable_fiwalk" == xyes; then
    #AC_HEADER_STDC				#Redundant
    AC_HEADER_DIRENT
    AC_CHECK_HEADERS([ctype.h err.h stdio.h strings.h string.h stdlib.h stdint.h sys/mman.h sys/types.h sys/time.h sys/resource.h sys/signal.h inttypes.h sys/resource.h sys/utsname.h])
-   AC_CHECK_HEADERS([openssl/evp.h openssl/hmac.h openssl/x509.h openssl/pem.h])
-   AC_CHECK_HEADERS([CommonCrypto/CommonDigest.h])
+   #AC_CHECK_HEADERS([openssl/evp.h openssl/hmac.h openssl/x509.h openssl/pem.h])
+   #AC_CHECK_HEADERS([CommonCrypto/CommonDigest.h])
    AC_CHECK_HEADERS([magic.h])
    AC_CHECK_MEMBERS([struct glob_t.gl_matchc],,,[[#include <glob.h>]])
    AC_CHECK_MEMBERS([struct dirent.d_name],,,[[#include <dirent.h>]])
@@ -224,9 +226,9 @@ if test "x$enable_fiwalk" == xyes; then
       AC_CHECK_LIB([z],[uncompress],,AC_MSG_WARN([zlib not installed; required for AFFLIB and libewf]))
       AC_CHECK_LIB([afflib],[af_open],,AC_MSG_WARN([AFFLIB not found]))
    fi
-   AC_CHECK_LIB([ssl],[ssl3_new])
-   AC_CHECK_LIB([system],[CC_MD2_Init])
-   AC_CHECK_LIB([crypto],[EVP_md5])
+   #AC_CHECK_LIB([ssl],[ssl3_new])
+   #AC_CHECK_LIB([system],[CC_MD2_Init])
+   #AC_CHECK_LIB([crypto],[EVP_md5])
    if test "x$with_libewf" != "xno"; then
       AC_CHECK_LIB([ewf],[libewf_get_version],,AC_MSG_WARN([libewf not found; no E01 support]))
    else
@@ -347,7 +349,6 @@ AC_CONFIG_FILES([Makefile
                  tools/timeline/Makefile
                  tools/fiwalk/Makefile
 		 tools/fiwalk/src/Makefile
-		 tools/fiwalk/python/Makefile
 		 tools/fiwalk/plugins/Makefile
                  tests/Makefile
                  samples/Makefile
