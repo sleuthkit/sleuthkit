@@ -1,0 +1,55 @@
+.TH FCAT 1 
+.SH NAME
+icat \- Output the contents of a file based on its name.
+.SH SYNOPSIS
+.B fcat [-hRsvV] [-f
+.I fstype
+.B ] [-i
+.I imgtype
+.B ] [-o 
+.I imgoffset
+.B ] [-b dev_sector_size] 
+.I path_of_file image [images] 
+.SH DESCRIPTION
+.B fcat
+opens the named 
+.I image(s)
+and copies the file at the path
+.I path_of_file
+to standard output.
+
+.SH ARGUMENTS
+.IP "-f fstype"
+Specifies the file system type.  
+Use '\-f list' to list the supported file system types.
+If not given, autodetection methods are used.
+.IP -h
+Skip over holes in sparse files, so that absolute address information
+is lost. This option saves space when copying sparse files.
+.IP -R
+Supress errors if a deleted file is being recovered.
+.IP -s
+Include the slack space in the output.
+.IP "-i imgtype"
+Identify the type of image file, such as raw.
+Use '\-i list' to list the supported types.
+If not given, autodetection methods are used.
+.IP "-o imgoffset"
+The sector offset where the file system starts in the image.  
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
+.IP -v
+Enable verbose mode, output to stderr.
+.IP -V
+Display version
+.IP "image [images]"
+The disk or partition image to read, whose format is given with '\-i'.
+Multiple image file names can be given if the image is split into multiple segments.
+If only one image file is given, and its name is the first in a sequence (e.g., as indicated by ending in '.001'), subsequent image segments will be included automatically.
+.IP path_of_file
+Path of file to extract the contents of.  Surround the path in quotes if there is a space in a file or directory name.  Use forward slashes.
+
+.SH LICENSE
+This software is distributed under the Common Public License.
+
+Send documentation updates to <doc-updates at sleuthkit dot org>

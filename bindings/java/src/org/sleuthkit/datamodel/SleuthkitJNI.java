@@ -65,7 +65,7 @@ public class SleuthkitJNI {
 	private static native long openVsNat(long imgHandle, long vsOffset) throws TskCoreException;
 	private static native long openVolNat(long vsHandle, long volId) throws TskCoreException;
 	private static native long openFsNat(long imgHandle, long fsId) throws TskCoreException;
-	private static native long openFileNat(long fsHandle, long fileId) throws TskCoreException;
+	private static native long openFileNat(long fsHandle, long fileId, int attrType, int attrId) throws TskCoreException;
  
 	//read functions
 	private static native int readImgNat(long imgHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
@@ -83,6 +83,9 @@ public class SleuthkitJNI {
 	//hash-lookup database functions
 	private static native void createLookupIndexNat(String dbPath) throws TskCoreException;
 	private static native boolean lookupIndexExistsNat(String dbPath) throws TskCoreException;
+	
+	//util functions
+	private static native long findDeviceSizeNat(String devicePath) throws TskCoreException;
 
 	//Linked library loading
 	static {
@@ -91,7 +94,7 @@ public class SleuthkitJNI {
 			System.loadLibrary("libewf");
 		}
 		catch (UnsatisfiedLinkError e) {
-			// @@@ LOG??
+			System.out.println("Error loading zlib/libewf libraries, " + e.toString());
 		}
 		
 		/* We should rename the Windows dll, to remove the lib prefix.
@@ -151,7 +154,6 @@ public class SleuthkitJNI {
 
 		/**
 		 * Add the known bad database
-		 * @param name The name of the database
 		 * @param path The path to the database
 		 * @return a handle for that database
 		 */
@@ -384,11 +386,13 @@ public class SleuthkitJNI {
 	 * 
 	 * @param fsHandle fsHandle pointer in the sleuthkit
 	 * @param fileId id of the file
+	 * @param attrType file attribute type to open
+	 * @param attrId file attribute id to open
 	 * @return pointer to a file structure in the sleuthkit
 	 * @throws TskCoreException exception thrown if critical error occurs within TSK  
 	 */
-	public static long openFile(long fsHandle, long fileId) throws TskCoreException{
-		return openFileNat(fsHandle, fileId);
+	public static long openFile(long fsHandle, long fileId, int attrType, int attrId) throws TskCoreException{
+		return openFileNat(fsHandle, fileId, attrType, attrId);
 	}
 
 	//do reads
@@ -553,7 +557,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core 
 	 */
 	public static TskData.FileKnown nsrlHashLookup(String hash) throws TskCoreException{
-		return TskData.FileKnown.valueOf(nsrlDbLookup(hash));
+		return TskData.FileKnown.valueOf((byte)nsrlDbLookup(hash));
 	}
 	
 	/**
@@ -564,7 +568,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core 
 	 */
 	public static TskData.FileKnown knownBadHashLookup(String hash, int dbHandle) throws TskCoreException{
-		return TskData.FileKnown.valueOf(knownBadDbLookup(hash, dbHandle));
+		return TskData.FileKnown.valueOf((byte)knownBadDbLookup(hash, dbHandle));
 	}
 	
 	/**
@@ -605,5 +609,15 @@ public class SleuthkitJNI {
 			result = result + second;
 		}
 		return result;
+	}
+	
+	/**
+	 * Get size of a device (physical, logical device, image) pointed to by devPath
+	 * @param devPath device path pointing to the device
+	 * @return size of the device in bytes
+	 * @throws TskCoreException exception thrown if the device size could not be queried
+	 */
+	public static long findDeviceSize(String devPath) throws TskCoreException {
+		return findDeviceSizeNat(devPath);
 	}
 }

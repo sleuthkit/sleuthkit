@@ -39,11 +39,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x04000001
+#define TSK_VERSION_NUM 0x040000ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.0.0b1"
+#define TSK_VERSION_STR "4.0.0"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -106,11 +106,19 @@ extern "C" {
     typedef struct {
         CRITICAL_SECTION critical_section;
     } tsk_lock_t;
-#else
+
+    // non-windows
+#else 
+/* Note that there is an assumption that TSK_MULTITHREADED_LIB was
+ * set only if we have ptheads. If we add a check for HAVE_PTHREAD 
+ * here, it causes problems when you try to include the library in 
+ * a tool because they do not have tsk_config.h included.
+ */
 #include <pthread.h>
     typedef struct {
         pthread_mutex_t mutex;
     } tsk_lock_t;
+
 #endif
 
     // single threaded lib
@@ -286,10 +294,6 @@ extern "C" {
     //TODO: make this per-thread?
     extern int tsk_verbose;     ///< Set to 1 to have verbose debug messages printed to stderr
 
-    /** \name Error Handling */
-//@{
-
-
 
 #define TSK_ERR_AUX	0x01000000
 #define TSK_ERR_IMG	0x02000000
@@ -300,6 +304,7 @@ extern "C" {
 #define TSK_ERR_MASK	0x00ffffff
 
 #define TSK_ERR_AUX_MALLOC	(TSK_ERR_AUX | 0)
+#define TSK_ERR_AUX_GENERIC (TSK_ERR_AUX | 2)
 #define TSK_ERR_AUX_MAX		2
 
 #define TSK_ERR_IMG_NOFILE	(TSK_ERR_IMG | 0)

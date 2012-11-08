@@ -14,16 +14,25 @@
  * Contains common utility methods.
  */
 
-#include <sstream>
-
+// TSK and TSK Framework includes
 #include "TskUtilities.h"
 #include "Services/TskServices.h"
 #include <tsk3/base/tsk_base_i.h>
 
+// Poco Includes
 #include "Poco/UnicodeConverter.h"
 #include "Poco/Net/DNS.h"
 #include "Poco/Net/HostEntry.h"
 #include "Poco/Net/NetException.h"
+
+// C/C++ library includes
+#include <sstream>
+
+#if defined _WIN32 || defined _WIN64
+#include <Windows.h>
+#else
+#error "Only Windows is currently supported"
+#endif
 
 /**
  * Convert a given UTF16 string to UTF8
@@ -47,6 +56,11 @@ std::wstring TskUtilities::toUTF16(const std::string &utf8Str)
     std::wstring utf16Str;
     Poco::UnicodeConverter::toUTF16(utf8Str, utf16Str);
     return utf16Str;
+}
+
+void TskUtilities::cleanUTF8(char *buf)
+{
+    tsk_cleanupUTF8(buf, '^'); 
 }
 
 /**
@@ -81,9 +95,44 @@ bool TskUtilities::getHostIP(const std::string& host, std::string & host_ip)
     }
 }
 
-
-void
-TskUtilities::cleanUTF8(char *buf)
+/** Get the path of the directory where the currently executing program is 
+ * installed.  
+ *
+ * @returns The path of the program directory.
+ */
+std::string TskUtilities::getProgDir()
 {
-    tsk_cleanupUTF8(buf, '^'); 
+    wchar_t progPath[256];
+    wchar_t fullPath[256];
+    HINSTANCE hInstance = GetModuleHandleW(NULL);
+
+    GetModuleFileNameW(hInstance, fullPath, 256);
+    for (int i = wcslen(fullPath)-1; i > 0; i--) {
+        if (i > 256)
+            break;
+
+        if (fullPath[i] == '\\') {
+            wcsncpy_s(progPath, fullPath, i+1);
+            progPath[i+1] = '\0';
+            break;
+        }
+    }
+
+    return TskUtilities::toUTF8(std::wstring(progPath));
+}
+
+/** Strip matching leading and trailing double quotes from the input str.
+ * If there is no matching quotes, the input str is returned.
+ * @returns String without matching leading and trailing double quote.
+ */
+std::string TskUtilities::stripQuotes(const std::string& str)
+{
+    if (str.length() == 0)
+        return str;
+    std::string outStr;
+    if (str[0] == '"' && str[str.length()-1] == '"') {
+        outStr = str.substr(1, str.length()-2);
+    } else
+        outStr = str;
+    return outStr;
 }

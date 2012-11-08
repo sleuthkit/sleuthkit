@@ -193,6 +193,33 @@ int
         return 1;
     }
 
+	// allow to read while in transaction
+    if (attempt_exec("PRAGMA read_uncommitted = True;",
+            "Error setting PRAGMA read_uncommitted: %s\n")) {
+        return 1;
+    }
+
+    // set UTF8 encoding
+    if (attempt_exec("PRAGMA encoding = \"UTF-8\";",
+            "Error setting PRAGMA encoding UTF-8: %s\n")) {
+        return 1;
+    }
+
+    // set page size
+    if (attempt_exec("PRAGMA page_size = 4096;",
+            "Error setting PRAGMA page_size: %s\n")) {
+        return 1;
+    }
+
+    // increase the DB by 1MB at a time. 
+    int chunkSize = 1024 * 1024;
+    if (sqlite3_file_control(m_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunkSize) != SQLITE_OK) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskDbSqlite::initialze: error setting chunk size %s", sqlite3_errmsg(m_db));
+        return 1;
+    }
+
     if (attempt_exec
         ("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);",
             "Error creating tsk_db_info table: %s\n")) {
@@ -541,10 +568,10 @@ int
  * @param objId object id of this directory from the objects table
  */
 void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId) {
-    map<TSK_INUM_T,int64_t>::iterator it = m_parentDirIdCache[fsObjId].find(meta_addr);
-    if (it == m_parentDirIdCache[fsObjId].end() )
-        //store only if does not exist
-        m_parentDirIdCache[fsObjId][meta_addr] = objId;
+	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
+	//store only if does not exist
+	if (tmpMap.count(meta_addr) == 0)
+		tmpMap[meta_addr] = objId;
 }
 
 /**
@@ -554,17 +581,11 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_ad
  * @returns parent obj id ( > 0), -1 on error
  */
 int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & fsObjId) {
-    int64_t parObjId = -1;
-
-    //get from cache by parent meta addr, if available
-    map<TSK_INUM_T,int64_t>::iterator it = m_parentDirIdCache[fsObjId].find(fs_file->name->par_addr);
-    if (it != m_parentDirIdCache[fsObjId].end() ) {
-        parObjId = it->second;
-    }
-    
-    if (parObjId > 0)
-        //return cached
-        return parObjId;
+	//get from cache by parent meta addr, if available
+	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
+	if (tmpMap.count(fs_file->name->par_addr) > 0) {
+		return tmpMap[fs_file->name->par_addr];
+	}
 
     // Find the parent file id in the database using the parent metadata address
     if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1, fs_file->name->par_addr),
@@ -579,7 +600,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & f
         return -1;
     }
 
-    parObjId = sqlite3_column_int64(m_selectFilePreparedStmt, 0);
+    int64_t parObjId = sqlite3_column_int64(m_selectFilePreparedStmt, 0);
 
     if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
         "Error resetting 'select file id by meta_addr' statement: %s\n")) {
@@ -604,7 +625,7 @@ int
 
 
     char
-     foo[1024];
+     foo[4096];
     int
      mtime = 0;
     int
@@ -625,7 +646,7 @@ int
     int
      uid = 0;
     int
-     type = 0;
+     type = TSK_FS_ATTR_TYPE_NOT_FOUND;
     int
      idx = 0;
 
@@ -637,7 +658,6 @@ int
         atime = fs_file->meta->atime;
         ctime = fs_file->meta->ctime;
         crtime = fs_file->meta->crtime;
-        size = fs_file->meta->size;
         meta_type = fs_file->meta->type;
         meta_flags = fs_file->meta->flags;
         meta_mode = fs_file->meta->mode;
@@ -649,6 +669,7 @@ int
     if (fs_attr) {
         type = fs_attr->type;
         idx = fs_attr->id;
+        size = fs_attr->size;
         if (fs_attr->name) {
             if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
                 (strcmp(fs_attr->name, "$I30") != 0)) {
@@ -739,7 +760,7 @@ int
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
         return 1;
 
-    snprintf(foo, 1024,
+    snprintf(foo, 4096,
         "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
         "%lld,%lld,"
@@ -879,7 +900,7 @@ int
     const uint64_t size, int64_t & objId)
 {
     char
-     sql_stat[1024];
+     sql_stat[4096];
 
     // clean up special characters in name before we insert
     size_t len = strlen(fileName);
@@ -911,7 +932,7 @@ int
         fsObjIdS << "NULL";
     else fsObjIdS << fsObjId;
 
-    snprintf(sql_stat, 1024,
+    snprintf(sql_stat, 4096,
         "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
         "1,%s,%lld,"
@@ -925,7 +946,7 @@ int
         dbFileType,
         name,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
-        TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_NAME_FLAG_UNALLOC, size);
+        TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size);
 
     if (attempt_exec(sql_stat, "Error adding data to tsk_files table: %s\n")) {
         free(name);
@@ -1030,6 +1051,70 @@ typedef struct _checkFileLayoutRangeOverlap{
     }
    
 } checkFileLayoutRangeOverlap;
+
+/**
+* Add virtual dir of type TSK_DB_FILES_TYPE_VIRTUAL_DIR
+* that can be a parent of other non-fs virtual files or directories, to organize them
+* @param fsObjId (in) file system object id to associate with the virtual directory.
+* @param parentDirId (in) parent dir object id of the new directory: either another virtual directory or root fs directory
+* @param name name (int) of the new virtual directory
+* @param objId (out) object id of the created virtual directory object
+* @returns TSK_ERR on error or TSK_OK on success
+*/
+int TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) {
+    char sql_stat[1024];
+
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentDirId, objId))
+        return TSK_ERR;
+
+     snprintf(sql_stat, 1024,
+        "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, type, attr_type, "
+        "attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, "
+        "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
+        "VALUES ("
+        "NULL, NULL,"
+        "NULL,"
+        "%lld,"
+        "%lld,"
+        "%d,"
+        "NULL,NULL,'%s',"
+        "NULL,"
+        "%d,%d,%d,%d,"
+        "0,"
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
+        fsObjId,
+        objId,
+        TSK_DB_FILES_TYPE_VIRTUAL_DIR,
+        name,
+        TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,
+        TSK_FS_NAME_FLAG_ALLOC, (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED));
+
+        if (attempt_exec(sql_stat, "Error adding data to tsk_files table: %s\n")) {
+            return TSK_ERR;
+        }
+    
+        return TSK_OK;
+}
+
+/**
+* Internal helper method to add a virtual root dir, a parent dir of files representing unalloc space within fs.
+* The dir has is associated with its root dir parent for the fs.
+* @param fsObjId (in) fs id to find root dir for and create $Unalloc dir for
+* @param objId (out) object id of the $Unalloc dir created
+* @returns TSK_ERR on error or TSK_OK on success
+*/
+int TskDbSqlite::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) {
+    
+    const char * const unallocDirName = "$Unalloc";
+
+    //get root dir
+    TSK_DB_OBJECT rootDirObjInfo;
+    if (getFsRootDirObjectInfo(fsObjId, rootDirObjInfo) ) {
+        return TSK_ERR;
+    }
+
+    return addVirtualDir(fsObjId, rootDirObjInfo.objId, unallocDirName, objId);
+}
 
 /**
 * Internal helper method to add unalloc, unused and carved files with layout ranges to db
@@ -1191,8 +1276,11 @@ uint8_t TskDbSqlite::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos)
     TSK_DB_FS_INFO rowData;
     while (sqlite3_step(fsInfosStatement) == SQLITE_ROW) {
         int64_t fsObjId = sqlite3_column_int64(fsInfosStatement, 0);
-        if (imgId != getParentImageId(fsObjId) ) {
-            //ensure fs is (sub)child of the image requested, if not, skip it
+
+        //ensure fs is (sub)child of the image requested, if not, skip it
+        int64_t curImgId = 0;
+        getParentImageId(fsObjId, curImgId);
+        if (imgId != curImgId) {
             continue;
         }
 
@@ -1236,7 +1324,11 @@ uint8_t TskDbSqlite::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos)
     TSK_DB_VS_INFO rowData;
     while (sqlite3_step(vsInfosStatement) == SQLITE_ROW) {
         int64_t vsObjId = sqlite3_column_int64(vsInfosStatement, 0);
-        if (imgId != getParentImageId(vsObjId) ) {
+
+        int64_t curImgId = 0;
+        getParentImageId(vsObjId, curImgId);
+
+        if (imgId != curImgId ) {
             //ensure vs is (sub)child of the image requested, if not, skip it
             continue;
         }
@@ -1277,7 +1369,11 @@ uint8_t TskDbSqlite::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> &
     TSK_DB_VS_PART_INFO rowData;
     while (sqlite3_step(vsPartInfosStatement) == SQLITE_ROW) {
         int64_t vsPartObjId = sqlite3_column_int64(vsPartInfosStatement, 0);
-        if (imgId != getParentImageId(vsPartObjId)) {
+        
+        int64_t curImgId = 0;
+        getParentImageId(vsPartObjId, curImgId);
+
+        if (imgId != curImgId) {
             //ensure vs is (sub)child of the image requested, if not, skip it
             continue;
         }
@@ -1378,19 +1474,20 @@ uint8_t TskDbSqlite::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
 
 /**
 * Query tsk_objects to find the root image id for the object
-* @param objId object id to query
-* @returns the root parent image id of the object, or 0 on error
+* @param objId (in) object id to query
+* @param imageId (out) root parent image id returned
+* @returns TSK_ERR on error (or if not found), TSK_OK on success
 */
-int64_t TskDbSqlite::getParentImageId (const int64_t objId) {
-    int64_t imageId = 0;
-
+uint8_t TskDbSqlite::getParentImageId (const int64_t objId, int64_t & imageId) {
     TSK_DB_OBJECT objectInfo;
+    uint8_t ret = TSK_ERR;
 
     int64_t queryObjectId = objId;
     while (getObjectInfo(queryObjectId, objectInfo) == TSK_OK) {
         if (objectInfo.parObjId == 0) {
             //found root image
             imageId = objectInfo.objId;
+            ret = TSK_OK;
             break;
         }
         else {
@@ -1399,8 +1496,46 @@ int64_t TskDbSqlite::getParentImageId (const int64_t objId) {
         }
     }
 
-    return imageId;
+    return ret;
 
+}
+
+
+/**
+* Query tsk_objects and tsk_files given file system id and return the root directory object
+* @param fsObjId (int) file system id to query root dir object for
+* @param objInfo (out) TSK_DB_OBJECT root dir entry representation to return
+* @returns TSK_ERR on error (or if not found), TSK_OK on success
+*/
+uint8_t TskDbSqlite::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) {
+    sqlite3_stmt * rootDirInfoStatement = NULL;
+    if (prepare_stmt("SELECT tsk_objects.obj_id,tsk_objects.par_obj_id,tsk_objects.type "
+        "FROM tsk_objects,tsk_files WHERE tsk_objects.par_obj_id IS ? "
+        "AND tsk_files.obj_id = tsk_objects.obj_id AND tsk_files.name = ''", 
+        &rootDirInfoStatement) ) {
+        return TSK_ERR;
+    }
+
+    if (attempt(sqlite3_bind_int64(rootDirInfoStatement, 1, fsObjId),
+        "Error binding objId to statment: %s (result code %d)\n")
+        || attempt(sqlite3_step(rootDirInfoStatement), SQLITE_ROW,
+        "Error selecting object by objid: %s (result code %d)\n")) {
+            sqlite3_finalize(rootDirInfoStatement);
+            return TSK_ERR;
+    }
+
+    rootDirObjInfo.objId = sqlite3_column_int64(rootDirInfoStatement, 0);
+    rootDirObjInfo.parObjId = sqlite3_column_int64(rootDirInfoStatement, 1);
+    rootDirObjInfo.type = (TSK_DB_OBJECT_TYPE_ENUM)sqlite3_column_int(rootDirInfoStatement, 2);
+    
+
+    //cleanup
+    if (rootDirInfoStatement != NULL) {
+        sqlite3_finalize(rootDirInfoStatement);
+        rootDirInfoStatement = NULL;
+    }
+
+    return TSK_OK;
 }
 
 

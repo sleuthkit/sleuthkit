@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 
 /**
  * Implements some general methods from the Content interface 
@@ -113,4 +114,26 @@ public abstract class AbstractContent implements Content {
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException{
 		return db.getMatchingArtifacts("WHERE obj_id = " + obj_id);
 	}
+
+	@Override
+	public long getArtifactsCount(String artifactTypeName) throws TskCoreException {
+		return db.getBlackboardArtifactsCount(artifactTypeName, obj_id);
+	}
+
+	@Override
+	public long getArtifactsCount(int artifactTypeID) throws TskCoreException {
+		return db.getBlackboardArtifactsCount(artifactTypeID, obj_id);
+	}
+
+	@Override
+	public long getArtifactsCount(ARTIFACT_TYPE type) throws TskCoreException {
+		return db.getBlackboardArtifactsCount(type, obj_id);
+	}
+
+	@Override
+	public long getAllArtifactsCount() throws TskCoreException {
+		return db.getBlackboardArtifactsCount(obj_id);
+	}
+	
+	
 }

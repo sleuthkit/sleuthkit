@@ -27,10 +27,10 @@ class TSK_FRAMEWORK_API TskPipelineManager
 {
 public:
     static const std::string FILE_ANALYSIS_PIPELINE;  ///< String to use when creating a file analysis pipeline type
-    static const std::string REPORTING_PIPELINE;  ///< String to use when creating a reporting pipeline type
+    static const std::string REPORTING_PIPELINE;  ///< Deprecated: String to use when creating a post processing pipeline type
+    static const std::string POST_PROCESSING_PIPELINE; ///< String to use when creating a post processing pipeline type
     static const std::string PIPELINE_ELEMENT; ///< Element in pipeline config XML file.
     static const std::string PIPELINE_TYPE; ///< Attribute in PIPELINE_ELEMENT for pipeline type in config XML file
-    static const std::string DEFAULT_PIPELINE_CONFIG; ///< Name of default pipeline config file
 
     TskPipelineManager();
     ~TskPipelineManager();

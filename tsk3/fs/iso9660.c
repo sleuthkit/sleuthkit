@@ -1819,7 +1819,7 @@ make_unix_perm(TSK_FS_INFO * fs, iso9660_dentry * dd,
     return perm;
 }
 
-# if 0
+#if 0
 static void
 iso9660_print_rockridge(FILE * hFile, rockridge_ext * rr)
 {
@@ -2048,7 +2048,7 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             fs_file->meta->atime -= sec_skew;
         if (fs_file->meta->crtime)
             fs_file->meta->crtime -= sec_skew;
-        
+
         tsk_fprintf(hFile, "Written:\t%s\n",
             tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
         tsk_fprintf(hFile, "Accessed:\t%s\n",
@@ -2062,7 +2062,7 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             fs_file->meta->atime += sec_skew;
         if (fs_file->meta->crtime == 0)
             fs_file->meta->crtime += sec_skew;
-        
+
 
         tsk_fprintf(hFile, "\nOriginal File Times:\n");
     }

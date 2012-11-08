@@ -46,7 +46,7 @@ tsk_printf_conv(WCHAR * wbuf, int wlen, const char *msg, va_list * args)
     if (NULL == (cbuf = (char *) tsk_malloc(clen))) {
         return 1;
     }
-    memset(cbuf, 0, clen);
+    
 #ifdef _MSC_VER
     vsnprintf_s(cbuf, clen - 1, _TRUNCATE, msg, *args);
 #else

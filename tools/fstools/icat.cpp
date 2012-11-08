@@ -33,7 +33,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-hHsvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images] inum[-typ[-id]]\n"),
+        ("usage: %s [-hrRsvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] image [images] inum[-typ[-id]]\n"),
         progname);
     tsk_fprintf(stderr, "\t-h: Do not display holes in sparse files\n");
     tsk_fprintf(stderr, "\t-r: Recover deleted file\n");

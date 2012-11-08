@@ -30,8 +30,10 @@ class TSK_FRAMEWORK_API TskUtilities
 public:
     static std::string toUTF8(const std::wstring& utf16Str);
     static std::wstring toUTF16(const std::string& utf8Str);
-    static void cleanUTF8(char *);
+    static void cleanUTF8(char *buf);
     static bool getHostIP(const std::string& host, std::string& host_ip);
+    static std::string getProgDir();
+    static std::string stripQuotes(const std::string& str);
 };
 
 #endif

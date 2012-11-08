@@ -1,29 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Used in binary distribution of framework  - Contains only the settings that are relevant for it -->
-<!--***Developers, when editing this file please update framework_config.xml and framework_config_win32dev.xml also***-->
+<!-- For more information please consult the TskSystemProperties::PredefinedProperty member enumeration documentation at http://www.sleuthkit.org/sleuthkit/docs/framework-docs/classTskSystemProperties.html -->
 <TSK_FRAMEWORK_CONFIG>
-  <!-- Directory where configuration files and data can be found -->
-  <CONFIG_DIR>.\</CONFIG_DIR>
-  <!-- Directory where plug-in and executable modules can be found -->
-  <MODULE_DIR>..\modules\</MODULE_DIR>  
-  <!-- Directory where program using the framework is installed -->
-  <!-- <PROG_DIR>X</PROG_DIR> -->
-  <!-- Location of pipeline configuration file -->
-  <PIPELINE_CONFIG_FILE>pipeline_config.xml</PIPELINE_CONFIG_FILE>
-
-  <!-- Directory where unallocated sectors image files will be stored pending carving; the default value is #OUT_DIR#\Carving -->
-  <!-- <CARVE_PREP_DIR>X</CARVE_PREP_DIR> -->
-  <!-- File name to be given to all unallocated sectors image files; the default value is unalloc.bin -->
-  <!-- <CARVE_PREP_FILE_NAME>X</CARVE_PREP_FILE_NAME> -->
-  <!-- Maximum allowable size for unallocated sectors image files; the default value is 1000000000 bytes -->
-  <!-- <CARVE_PREP_MAX_FILE_SIZE>X</CARVE_PREP_MAX_FILE_SIZE> -->
-  <!-- If true, unallocated sectors image files are not deleted after carving; the default value is false -->
-  <!-- <CARVE_EXTRACT_KEEP_INPUT_FILES>true</CARVE_EXTRACT_KEEP_INPUT_FILES> -->
-  <!-- If true, carved files are not deleted from the carving output directory after they are copied to file storage; the default value is false -->
-  <!-- <CARVE_EXTRACT_KEEP_OUTPUT_FILES>true</CARVE_EXTRACT_KEEP_OUTPUT_FILES> -->
-
-  <!-- Directory where Scalpel is installed -->
-  <!-- <SCALPEL_DIR>X</SCALPEL_DIR> -->
-  <!-- Scalpel configuration file; the default value is scalpel.conf in SCALPEL_DIR --> 
-  <!-- <SCALPEL_CONFIG_FILE>X</SCALPEL_CONFIG_FILE> -->  
+  <CONFIG_DIR>#PROG_DIR#</CONFIG_DIR>
+  <MODULE_DIR>#PROG_DIR#\..\modules\</MODULE_DIR>  
+  <!-- <SCALPEL_DIR>path</SCALPEL_DIR> -->
 </TSK_FRAMEWORK_CONFIG>

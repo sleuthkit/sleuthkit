@@ -56,7 +56,7 @@ public class Image extends AbstractContent {
 	 * Get the handle to the sleuthkit image info object
 	 * @return the object pointer
 	 */
-	public long getImageHandle() throws TskCoreException {
+	public synchronized long getImageHandle() throws TskCoreException {
 		if (imageHandle == 0) {
 			imageHandle = SleuthkitJNI.openImage(paths);
 		}
@@ -232,5 +232,10 @@ public class Image extends AbstractContent {
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getImageChildren(this);
+	}
+	
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		return getSleuthkitCase().getImageChildrenIds(this);
 	}
 }

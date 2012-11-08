@@ -172,6 +172,12 @@ public class ReprDataModel {
 		repr("getNumPartsu", (long)lf.getNumParts());
 		
 	}
+	
+	private void reprLayoutDirectory(LayoutDirectory ld) {
+		repr("getSize", ld.getSize());
+		repr("getId", ld.getId());
+		repr("getName", ld.getName());
+	}
 
 	private void reprFileSystem(FileSystem fs) {
 		repr("getBlock_count", fs.getBlock_count());
@@ -188,7 +194,7 @@ public class ReprDataModel {
 		 * 
 		 */
 		repr("getFirst_inum", fs.getFirst_inum());
-		repr("getFs_type", fs.getFs_type());
+		repr("getFs_type", fs.getFs_type().getValue());
 		repr("getImg_offset", fs.getImg_offset());
 		repr("getLast_inum", fs.getLast_inum());
 		repr("getRoot_inum", fs.getRoot_inum());
@@ -321,6 +327,27 @@ public class ReprDataModel {
 		append(l.toString());
 		nl();
 	}
+	
+	private void repr(String method, Integer l) {
+		indent();
+		name(method);
+		append(l.toString());
+		nl();
+	}
+	
+	private void repr(String method, Short l) {
+		indent();
+		name(method);
+		append(l.toString());
+		nl();
+	}
+	
+	private void repr(String method, Byte l) {
+		indent();
+		name(method);
+		append(l.toString());
+		nl();
+	}
 
 	private void repr(String method, String[] sArray) {
 		indent();
@@ -359,6 +386,12 @@ public class ReprDataModel {
 		@Override
 		public Void visit(LayoutFile u) {
 			reprLayoutFile(u);
+			return null;
+		}
+		
+		@Override
+		public Void visit(LayoutDirectory u) {
+			reprLayoutDirectory(u);
 			return null;
 		}
 		

@@ -18,6 +18,7 @@
 
 // System includes
 #include <string>
+#include <ios>
 
 // Framework includes
 #include "Services/TskImgDB.h"
@@ -216,7 +217,7 @@ public:
      * @param buf Buffer into which file content will be placed.
      * Must be at least "count" bytes in size.
      * @param count The number of bytes to read from the file.
-     * @return The number of bytes read or 0 for end of file.
+     * @return The number of bytes read or -1 on error.
      */
     virtual ssize_t read(char * buf, const size_t count) = 0;
 

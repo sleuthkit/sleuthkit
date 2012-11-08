@@ -194,7 +194,7 @@ dos2unixtime(uint16_t date, uint16_t time, uint8_t timetens)
     if (ret < 0) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
-                "dos2unixtime: Error running mktime(): %d:%d:%d %d/%d/%d",
+                "dos2unixtime: Error running mktime() on: %d:%d:%d %d/%d/%d\n",
                 ((time & FATFS_HOUR_MASK) >> FATFS_HOUR_SHIFT),
                 ((time & FATFS_MIN_MASK) >> FATFS_MIN_SHIFT),
                 ((time & FATFS_SEC_MASK) >> FATFS_SEC_SHIFT) * 2,
@@ -860,15 +860,20 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de, uint8_t a_basic)
             }
 
             // verify we do not have too many flags set
-            if (de->attrib & FATFS_ATTR_NORMAL) {
-                if ((de->attrib & FATFS_ATTR_VOLUME) ||
-                    (de->attrib & FATFS_ATTR_DIRECTORY)) {
-                    if (tsk_verbose)
-                        fprintf(stderr,
-                            "fatfs_isdentry: Normal and Vol/Dir\n");
-                    return 0;
-                }
-            }
+            /*
+               // This is a useless check because FATFS_ATTR_NORMAL is 0x00
+               // keeping it here for future reference.
+               if (de->attrib & FATFS_ATTR_NORMAL) {
+               if ((de->attrib & FATFS_ATTR_VOLUME) ||
+               (de->attrib & FATFS_ATTR_DIRECTORY)) {
+               if (tsk_verbose)
+               fprintf(stderr,
+               "fatfs_isdentry: Normal and Vol/Dir\n");
+               return 0;
+               }
+               }
+             */
+
             if (de->attrib & FATFS_ATTR_VOLUME) {
                 if ((de->attrib & FATFS_ATTR_DIRECTORY) ||
                     (de->attrib & FATFS_ATTR_READONLY) ||
@@ -883,6 +888,9 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de, uint8_t a_basic)
 
             /* The ctime, cdate, and adate fields are optional and 
              * therefore 0 is a valid value
+             * We have had scenarios where ISDATE and ISTIME return true,
+             * but the unix2dos fail during the conversion.  This has been
+             * useful to detect corrupt entries, so we do both. 
              */
             if ((tsk_getu16(fs->endian, de->ctime) != 0) &&
                 (FATFS_ISTIME(tsk_getu16(fs->endian, de->ctime)) == 0)) {
@@ -897,7 +905,10 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de, uint8_t a_basic)
                 return 0;
             }
             else if ((tsk_getu16(fs->endian, de->cdate) != 0) &&
-                (FATFS_ISDATE(tsk_getu16(fs->endian, de->cdate)) == 0)) {
+                ((FATFS_ISDATE(tsk_getu16(fs->endian, de->cdate)) == 0) ||
+                    (dos2unixtime(tsk_getu16(fs->endian, de->cdate),
+                            tsk_getu16(fs->endian, de->ctime),
+                            de->ctimeten) == 0))) {
                 if (tsk_verbose)
                     fprintf(stderr, "fatfs_isdentry: cdate\n");
                 return 0;
@@ -908,13 +919,17 @@ fatfs_isdentry(FATFS_INFO * fatfs, fatfs_dentry * de, uint8_t a_basic)
                 return 0;
             }
             else if ((tsk_getu16(fs->endian, de->adate) != 0) &&
-                (FATFS_ISDATE(tsk_getu16(fs->endian, de->adate)) == 0)) {
+                ((FATFS_ISDATE(tsk_getu16(fs->endian, de->adate)) == 0) ||
+                    (dos2unixtime(tsk_getu16(fs->endian, de->adate),
+                            0, 0) == 0))) {
                 if (tsk_verbose)
                     fprintf(stderr, "fatfs_isdentry: adate\n");
                 return 0;
             }
             else if ((tsk_getu16(fs->endian, de->wdate) != 0) &&
-                (FATFS_ISDATE(tsk_getu16(fs->endian, de->wdate)) == 0)) {
+                ((FATFS_ISDATE(tsk_getu16(fs->endian, de->wdate)) == 0) ||
+                    (dos2unixtime(tsk_getu16(fs->endian, de->wdate),
+                            tsk_getu16(fs->endian, de->wtime), 0) == 0))) {
                 if (tsk_verbose)
                     fprintf(stderr, "fatfs_isdentry: wdate\n");
                 return 0;
@@ -1190,10 +1205,6 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
      * because it doesn't help and can introduce infinite loop situations
      * inode_walk was called by the function that determines which inodes
      * are orphans. */
-    if (tsk_verbose)
-        tsk_fprintf(stderr,
-            "fatfs_inode_walk: Walking directories to collect sector info\n");
-
     if ((sect_alloc =
             (uint8_t *) tsk_malloc((size_t) ((fs->block_count +
                         7) / 8))) == NULL) {
@@ -1201,6 +1212,10 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         return 1;
     }
     if ((a_flags & TSK_FS_META_FLAG_ORPHAN) == 0) {
+
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "fatfs_inode_walk: Walking directories to collect sector info\n");
 
         // Do a file_walk on the root directory to get its layout
         if (fatfs_make_root(fatfs, fs_file->meta)) {
@@ -1283,6 +1298,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         int clustalloc;         // 1 if current sector / cluster is allocated
         size_t sect_proc;       // number of sectors read for this loop
         size_t sidx;            // sector index for loop
+        uint8_t basicTest;      // 1 if only a basic dentry test is needed
 
         /* This occurs for the root directory of TSK_FS_TYPE_FAT12/16
          *
@@ -1374,6 +1390,12 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 return 1;
             }
         }
+
+        /* do an in-depth test if we are in an unallocted cluster
+         * or if we are not in a known directory. */
+        basicTest = 1;
+        if ((isset(sect_alloc, sect) == 0) || (clustalloc == 0))
+            basicTest = 0;
 
         // cycle through the sectors read
         for (sidx = 0; sidx < sect_proc; sidx++) {
@@ -1471,7 +1493,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 }
 
                 /* Do a final sanity check */
-                if (0 == fatfs_isdentry(fatfs, dep, isInDir))
+                if (0 == fatfs_isdentry(fatfs, dep, basicTest))
                     continue;
 
                 if ((retval2 =
@@ -1669,10 +1691,10 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     }
 
 
-    if (tsk_verbose)
-        tsk_fprintf(stderr,
-            "fatfs_inode_lookup: reading sector %" PRIuDADDR
-            " for inode %" PRIuINUM "\n", sect, inum);
+    //if (tsk_verbose)
+    //    tsk_fprintf(stderr,
+    //        "fatfs_inode_lookup: reading sector %" PRIuDADDR
+    //        " for inode %" PRIuINUM "\n", sect, inum);
 
     if (fatfs_dinode_load(fs, &dep, inum)) {
         return 1;
@@ -1680,7 +1702,11 @@ fatfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 
 
     //dep = (fatfs_dentry *) & dino_buf[off];
-    if (fatfs_isdentry(fatfs, &dep, 1)) {
+    /* We use only the sector allocation status for the basic/adv test.
+     * Other places use information about if the sector is part of a folder
+     * or not, but we don't have that...  so we could let some corrupt things
+     * pass in here that get caught else where. */
+    if (fatfs_isdentry(fatfs, &dep, fatfs_is_sectalloc(fatfs, sect))) {
         if ((retval =
                 fatfs_dinode_copy(fatfs, a_fs_file->meta, &dep, sect,
                     inum)) != TSK_OK) {
@@ -2037,7 +2063,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr
                     ("fatfs_make_data_run: Invalid sector address in FAT (too large): %"
-                    PRIuDADDR" (plus %d sectors)", sbase, fatfs->csize);
+                    PRIuDADDR " (plus %d sectors)", sbase, fatfs->csize);
                 return 1;
             }
 

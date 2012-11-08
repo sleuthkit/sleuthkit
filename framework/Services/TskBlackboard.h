@@ -61,6 +61,9 @@ typedef enum TSK_ARTIFACT_TYPE {
         TSK_EMAIL_MSG = 13, ///< An e-mail message that was extracted from a file.
         TSK_EXTRACTED_TEXT = 14, ///< Text that was extracted from a file.
         TSK_WEB_SEARCH_QUERY = 15, ///< Web search engine query extracted from web history.
+        TSK_METADATA_EXIF = 16, ///< EXIF Metadata
+        TSK_TAG_FILE = 17, ///< File tags.
+        TSK_TAG_ARTIFACT = 18, ///< Result tags.
     /* SEE ABOVE:
      * - KEEP JAVA CODE IN SYNC 
      * - UPDATE map in TskBlackboard.cpp
@@ -99,7 +102,7 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_DEVICE_MAKE = 19,///< String of make of a device that was connected (or somehow related to) the data being analyzed
     TSK_DEVICE_ID = 20,///< String of ID/serial number of a device that was connected (or somehow related to) the data being analyzed
     TSK_EMAIL = 21,///< String of e-mail address in the form of user@host.com (note that there are also more specific TSK_EMAIL_TO and TSK_EMAIL_FROM attributes if you know the use of the address)
-    TSK_HASH_HD5 = 22,///< STRING: MD5 hash
+    TSK_HASH_MD5 = 22,///< STRING: MD5 hash
     TSK_HASH_SHA1 = 23,///< STRING: SHA1 hash
     TSK_HASH_SHA2_256 = 24,///< STRING: SHA2 256 bit hash
     TSK_HASH_SHA2_512 = 25,///< STRING: SHA2 512 bit hash
@@ -110,7 +113,7 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_HASHSET_NAME = 30,///< String of the name or file name of the hashset -- Deprecated in favor of TSK_SET_NAME
     TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path
     TSK_REFERRER = 32,///< String of referrer URL
-    TSK_LAST_ACCESSED = 33,///<last time access, review this instead of DATETIME
+    TSK_DATETIME_ACCESSED = 33,///<datetime last time accessed
     TSK_IP_ADDRESS = 34,///<String of IP Address
     TSK_PHONE_NUMBER = 35,///<String of phone number
     TSK_PATH_ID = 36,///< Object ID from database that a TSK_PATH attribute corresponds to.  Set to -1 if path is for a file that is not in database (i.e. deleted). 
@@ -141,6 +144,12 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_GEO_MAPDATUM = 61, ///< String of map datum used for coordinates if not WGS84.
     TSK_FILE_TYPE_SIG = 62, ///< String of file type based on signature detection in file content.
     TSK_FILE_TYPE_EXT = 63, ///< String of file type based on file name extension.
+    TSK_TAGGED_ARTIFACT = 64, ///< Tagged artifact (associated result).
+    TSK_TAG_NAME = 65, ///< The tag name.  Can contain slashes "/" to represent tag hierarchy.
+    TSK_DESCRIPTION = 66, ///< Description string.
+    TSK_URL_DECODED = 67, ///< Decoded URL.
+    TSK_DATETIME_CREATED = 68,///<datetime created
+    TSK_DATETIME_MODIFIED = 69,///<datetime modified
 
     /* SEE ABOVE: 
      * - KEEP JAVA CODE IN SYNC 

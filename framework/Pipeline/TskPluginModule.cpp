@@ -13,19 +13,27 @@
  * Contains the implementation for the TskPluginModule class.
  */
 
-// System includes
-#include <sstream>
+// Include the class definition first to ensure it does not depend on subsequent includes in this file.
+#include "TskPluginModule.h"
 
 // Framework includes
-#include "TskPluginModule.h"
 #include "Services/TskServices.h"
 #include "Utilities/TskException.h"
 #include "File/TskFileManagerImpl.h"
+#include "TskVersionInfo.h"
 
 // Poco includes
 #include "Poco/String.h"
 #include "Poco/Path.h"
 
+// C/C++ library includes5
+#include <sstream>
+#include <string>
+
+const std::string TskPluginModule::GET_COMPILER_SYMBOL = "getCompiler";
+const std::string TskPluginModule::GET_COMPILER_VERSION_SYMBOL = "getCompilerVersion";
+const std::string TskPluginModule::GET_FRAMEWORK_VERSION_SYMBOL = "getFrameWorkVersion";
+const std::string TskPluginModule::GET_BUILD_TYPE_SYMBOL = "getBuildType";
 const std::string TskPluginModule::NAME_SYMBOL = "name";
 const std::string TskPluginModule::DESCRIPTION_SYMBOL = "description";
 const std::string TskPluginModule::VERSION_SYMBOL = "version";
@@ -34,29 +42,14 @@ const std::string TskPluginModule::REPORT_SYMBOL = "report";
 const std::string TskPluginModule::INITIALIZE_SYMBOL = "initialize";
 const std::string TskPluginModule::FINALIZE_SYMBOL = "finalize";
 
-typedef const char* (*MetaDataFunc)();
-typedef TskModule::Status (*InitializeFunc)(const char* args);
-typedef TskModule::Status (*FinalizeFunc)();
-typedef TskModule::Status (*RunFunc)(TskFile*);
-typedef TskModule::Status (*ReportFunc)();
-
-/**
- * Constructor
- */
-TskPluginModule::TskPluginModule()
-{
-}
-
-/**
- * Destructor
- */
 TskPluginModule::~TskPluginModule()
 {
     if (m_sharedLibrary.isLoaded())
     {
-        // Call finalize function if defined
+        // Call finalize function if defined.
         if (m_sharedLibrary.hasSymbol(TskPluginModule::FINALIZE_SYMBOL))
         {
+            typedef TskModule::Status (*FinalizeFunc)();
             FinalizeFunc fin = (FinalizeFunc)m_sharedLibrary.getSymbol(TskPluginModule::FINALIZE_SYMBOL);
             fin();
         }
@@ -65,10 +58,6 @@ TskPluginModule::~TskPluginModule()
     }
 }
 
-/**
- * Load the module using path specified by location.
- * @param location Either a relative or fully qualified path to the dynamic library.
- */
 void TskPluginModule::setPath(const std::string& location)
 {
     try
@@ -81,7 +70,11 @@ void TskPluginModule::setPath(const std::string& location)
 
         if (m_sharedLibrary.isLoaded())
         {
-            MetaDataFunc metaDataFunc = NULL;
+           validateLibraryVersionInfo();
+
+           // TODO: Eliminate code duplication that follows.
+           typedef const char* (*MetaDataFunc)();
+           MetaDataFunc metaDataFunc = NULL;
 
             if (m_sharedLibrary.hasSymbol(TskPluginModule::NAME_SYMBOL))
             {
@@ -129,33 +122,57 @@ void TskPluginModule::setPath(const std::string& location)
     {
         // Log a message and throw a framework exception.
         std::wstringstream msg;
-        msg << L"TskPluginModule::setPath - " << ex.what() << std::endl;
+        msg << L"TskPluginModule::setPath - " << ex.what();
         LOGERROR(msg.str());
 
         throw TskException("Failed to set path: " + m_modulePath);
     }
 }
 
-/**
- * Runs the modules initialization function if it has one.
- * A non zero return code from the initialization function indicates
- * module initialization failure.
- */
-void TskPluginModule::initialize()
+TskModule::Status TskPluginModule::initialize()
 {
-    // Perform initialization if module implements the initialize function.
+    const std::string MSG_PREFIX = "TskPluginModule::initialize : ";
+    TskModule::Status status = TskModule::FAIL;
     if (m_sharedLibrary.hasSymbol(TskPluginModule::INITIALIZE_SYMBOL))
     {
-        InitializeFunc init = (InitializeFunc) m_sharedLibrary.getSymbol(TskPluginModule::INITIALIZE_SYMBOL);
-        std::string arguments = expandArgumentMacros(m_arguments, 0);
-
-        if (init(arguments.c_str()) != TskModule::OK)
+        try
         {
-            LOGERROR(L"TskPluginModule::Initialize - Module initialization failed.");
-
-            throw TskException("Module initialization failed.");
+            std::string arguments = expandArgumentMacros(m_arguments, 0);
+            typedef TskModule::Status (*InitializeFunc)(const char* args);
+            InitializeFunc init = (InitializeFunc) m_sharedLibrary.getSymbol(TskPluginModule::INITIALIZE_SYMBOL);
+            status = init(arguments.c_str());        
+        }
+        catch (TskException &ex) 
+        {
+            std::stringstream msg;
+            msg << MSG_PREFIX << "TskException initializing " << getName() << ": " << ex.message();
+            LOGERROR(msg.str());
+            status = TskModule::FAIL;
+        }
+        catch (Poco::Exception &ex) 
+        {
+            std::stringstream msg;
+            msg << MSG_PREFIX <<  "Poco::Exception initializing "  << getName() << ": " << ex.displayText();
+            LOGERROR(msg.str());
+            status = TskModule::FAIL;
+        }
+        catch (std::exception &ex) 
+        {
+            std::stringstream msg;
+            msg << MSG_PREFIX <<  "std::exception initializing "  << getName() << ": " << ex.what();
+            LOGERROR(msg.str());
+            status = TskModule::FAIL;
+        }
+        catch (...)
+        {
+            std::stringstream msg;
+            msg << MSG_PREFIX << "unrecognized exception initializing "  << getName();
+            LOGERROR(msg.str());
+            status = TskModule::FAIL;
         }
     }
+
+    return status;
 }
 
 bool TskPluginModule::isLoaded() const
@@ -163,12 +180,42 @@ bool TskPluginModule::isLoaded() const
     return (m_sharedLibrary.isLoaded());
 }
 
-void * TskPluginModule::getSymbol(const std::string symbol)
+void *TskPluginModule::getSymbol(const std::string symbol)
 {
-    return (void *)m_sharedLibrary.getSymbol(symbol);
+    return (void*)m_sharedLibrary.getSymbol(symbol);
 }
 
 bool TskPluginModule::hasSymbol(const std::string symbol) 
 {
     return (m_sharedLibrary.hasSymbol(symbol));
+}
+
+void TskPluginModule::validateLibraryVersionInfo()
+{
+   if (!hasSymbol(GET_FRAMEWORK_VERSION_SYMBOL) || !hasSymbol(GET_COMPILER_SYMBOL) || !hasSymbol(GET_COMPILER_VERSION_SYMBOL) || !hasSymbol(GET_BUILD_TYPE_SYMBOL))
+   {
+      throw TskException("version info interface not implemented");
+   }
+
+   int frameworkVersion = TskVersionInfo::getFrameworkVersion();
+   int moduleFrameworkVersion = static_cast<int(*)()>(m_sharedLibrary.getSymbol(TskPluginModule::GET_FRAMEWORK_VERSION_SYMBOL))();
+   if (((frameworkVersion >> 16) & 0xFFFF)  != (( moduleFrameworkVersion >> 16) & 0xFFFF))
+   {
+      throw TskException("TskPluginModule::validateLibraryVersionInfo : framework version mismatch");
+   }
+
+   if (TskVersionInfo::getCompiler() != static_cast<TskVersionInfo::Compiler(*)()>(m_sharedLibrary.getSymbol(TskPluginModule::GET_COMPILER_SYMBOL))())
+   {
+      throw TskException("TskPluginModule::validateLibraryVersionInfo : compiler mismatch");
+   }
+
+   if (TskVersionInfo::getCompilerVersion() != static_cast<int(*)()>(m_sharedLibrary.getSymbol(TskPluginModule::GET_COMPILER_VERSION_SYMBOL))())
+   {
+      throw TskException("TskPluginModule::validateLibraryVersionInfo : compiler version mismatch");
+   }
+
+   if (TskVersionInfo::getBuildType() != static_cast<int(*)()>(m_sharedLibrary.getSymbol(TskPluginModule::GET_BUILD_TYPE_SYMBOL))())
+   {
+      throw TskException("TskPluginModule::validateLibraryVersionInfo : build target mismatch");
+   }
 }

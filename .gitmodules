@@ -25,3 +25,6 @@
 [submodule "framework/TskModules/c_FileTypeSigModule"]
 	path = framework/TskModules/c_FileTypeSigModule
 	url = git://github.com/sleuthkit/c_FileTypeSigModule.git
+[submodule "framework/TskModules/c_LibExifModule"]
+	path = framework/TskModules/c_LibExifModule
+	url = git://github.com/sleuthkit/c_LibExifModule.git

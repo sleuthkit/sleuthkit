@@ -603,14 +603,7 @@ extern "C" {
 #endif
 
 
-    typedef struct NTFS_PAR_MAP NTFS_PAR_MAP;
-    struct NTFS_PAR_MAP {
-        TSK_INUM_T par_addr;    // parent dir address this structure is for
-        NTFS_PAR_MAP *next;     // pointer to next structure in list
-        int alloc_cnt;          // number of allocated INUM_T structures in addr
-        int used_cnt;           // number of used entries in addr
-        TSK_INUM_T *addrs;      // array for address of unallocated files in this dir
-    };
+
 
 
 /************************************************************************
@@ -641,7 +634,7 @@ extern "C" {
 
         /* orphan_map_lock protects orphan_map */
         tsk_lock_t orphan_map_lock;
-        NTFS_PAR_MAP *orphan_map;       // map that lists par directory to its orphans. (r/w shared - lock) 
+        void *orphan_map;       // map that lists par directory to its orphans. (r/w shared - lock) 
 
 #if TSK_USE_SID
         /* sid_lock protects sii_data, sds_data */
@@ -663,6 +656,11 @@ extern "C" {
     extern void ntfs_orphan_map_free(NTFS_INFO * a_ntfs);
 
     extern int ntfs_name_cmp(TSK_FS_INFO *, const char *, const char *);
+
+    extern uint8_t ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
+        uint8_t type_used, uint16_t id_toid, uint8_t id_used,
+        TSK_FS_DIR_WALK_FLAG_ENUM dir_walk_flags, TSK_FS_DIR_WALK_CB action,
+        void *ptr);
 
 #ifdef __cplusplus
 }

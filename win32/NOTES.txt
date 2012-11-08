@@ -1,0 +1,10 @@
+This document contains some notes about how the projects are configured, since they are getting more complex with the post-build events.
+
+ZLIB:
+- ZLIB is needed by libewf and the hfs code. 
+- The ZLIB that is used by libewf is also used by the hfs code.
+- The current version of libewf (201203...) compiles zlib and the lib and dll are in the libewf release/debug folder
+- libtsk copies the zlib and libewf dlls to the TSK folders.
+- The individual tools use the libewf folder to find the .lib file.
+
+

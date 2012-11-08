@@ -22,6 +22,7 @@
 #include "Services/TskServices.h"
 #include "Utilities/TskException.h"
 #include "File/TskFileManagerImpl.h"
+#include "Utilities/TskUtilities.h"
 
 // Poco includes
 #include "Poco/String.h"
@@ -53,97 +54,22 @@ TskExecutableModule::~TskExecutableModule()
  */
 TskModule::Status TskExecutableModule::run(TskFile* fileToAnalyze)
 {
-    try
+
+    if (fileToAnalyze == NULL)
     {
-        if (fileToAnalyze == NULL)
-        {
-            LOGERROR(L"TskExecutableModule::run - Passed NULL file pointer.");
-            throw TskNullPointerException();
-        }
-
-        // Perform macro expansion on command line args.
-        std::string arguments = expandArgumentMacros(m_arguments, fileToAnalyze);
-
-        // Split the arguments into a vector of strings.
-        Poco::StringTokenizer tokenizer(arguments, " ");
-
-        std::vector<std::string> vectorArgs(tokenizer.begin(), tokenizer.end());
-
-        // Perform macro expansion on our output location
-        std::string outFilePath = expandArgumentMacros(m_output, fileToAnalyze);
-
-        // If an output file has been specified we need to ensure that anything
-        // written to stdout gets put in the file. This is accomplished by passing
-        // a pipe to Poco::Process::launch and reading its contents once the process
-        // has terminated.
-        if (!outFilePath.empty())
-        {
-            // Create directories that may be missing along the path.
-            Poco::Path outPath(outFilePath);
-            Poco::File outDir(outPath.parent());
-            outDir.createDirectories();
-
-            // Create the output file if it does not exist.
-            Poco::File outFile(outFilePath);
-
-            if (!outFile.exists())
-            {
-                outFile.createFile();
-            }
-
-            // Create process redirecting its output to a Pipe.
-            Poco::Pipe outPipe;
-
-            Poco::ProcessHandle handle = Poco::Process::launch(m_modulePath, vectorArgs, NULL, &outPipe, NULL);
-            
-            // Copy output from Pipe to the output file.
-            Poco::PipeInputStream istr(outPipe);
-            Poco::FileOutputStream ostr(outFile.path(), std::ios::out|std::ios::app);
-
-            while (istr)
-            {
-                Poco::StreamCopier::copyStream(istr, ostr);
-            }
-
-            // The process should be finished. Check its exit code.
-            int exitCode = Poco::Process::wait(handle);
-
-            if (exitCode != 0)
-            {
-                // If a module fails we log a warning message and continue.
-                std::wstringstream msg;
-                msg << L"TskExecutableModule::run - Module (" << m_modulePath.c_str()
-                    << L") failed with exit code: " << exitCode << std::endl;
-                LOGWARN(msg.str());
-            }
-        }
-        else
-        {
-            // No output file was specified.
-            Poco::ProcessHandle handle = Poco::Process::launch(m_modulePath, vectorArgs);
-
-            // Wait for the process to complete
-            int exitCode = Poco::Process::wait(handle);
-
-            if (exitCode != 0)
-            {
-                // If a module fails we log a warning message and continue.
-                std::wstringstream msg;
-                msg << L"TskExecutableModule::run - Module (" << m_modulePath.c_str()
-                    << L") failed with exit code: " << exitCode << std::endl;
-                LOGWARN(msg.str());
-            }
-        }
-    }
-    catch (Poco::Exception& ex)
-    {
-        std::wstringstream errorMsg;
-        errorMsg << L"TskExecutableModule::run - Error: " << ex.displayText().c_str() << std::endl;
-        LOGERROR(errorMsg.str());
+        LOGERROR(L"TskExecutableModule::run - Passed NULL file pointer.");
         throw TskException("Module execution failed.");
     }
 
-    return TskModule::OK;
+    return execute(fileToAnalyze);
+}
+
+/**
+ * Run the module in the reporting pipeline.
+ */
+TskModule::Status TskExecutableModule::report()
+{
+    return execute(NULL);
 }
 
 /**
@@ -197,3 +123,91 @@ std::string TskExecutableModule::getOutput() const
     return m_output;
 }
 
+TskModule::Status TskExecutableModule::execute(TskFile * fileToAnalyze){
+    try
+    {
+        // Perform macro expansion on command line args.
+        std::string arguments = expandArgumentMacros(m_arguments, fileToAnalyze);
+
+        // Split the arguments into a vector of strings.
+        Poco::StringTokenizer tokenizer(arguments, " ");
+
+        std::vector<std::string> vectorArgs(tokenizer.begin(), tokenizer.end());
+
+        // Perform macro expansion on our output location
+        std::string outFilePath = expandArgumentMacros(m_output, fileToAnalyze);
+
+        // If an output file has been specified we need to ensure that anything
+        // written to stdout gets put in the file. This is accomplished by passing
+        // a pipe to Poco::Process::launch and reading its contents once the process
+        // has terminated.
+        if (!outFilePath.empty())
+        {
+            // Create directories that may be missing along the path.
+            std::string outFilePathNoQuote(TskUtilities::stripQuotes(outFilePath));
+            Poco::Path outPath(outFilePathNoQuote);
+            Poco::File outDir(outPath.parent());
+            outDir.createDirectories();
+
+            // Create the output file if it does not exist.
+            Poco::File outFile(outFilePathNoQuote);
+
+            if (!outFile.exists())
+            {
+                outFile.createFile();
+            }
+
+            // Create process redirecting its output to a Pipe.
+            Poco::Pipe outPipe;
+
+            Poco::ProcessHandle handle = Poco::Process::launch(m_modulePath, vectorArgs, NULL, &outPipe, NULL);
+            
+            // Copy output from Pipe to the output file.
+            Poco::PipeInputStream istr(outPipe);
+            Poco::FileOutputStream ostr(outFile.path(), std::ios::out|std::ios::app);
+
+            while (istr)
+            {
+                Poco::StreamCopier::copyStream(istr, ostr);
+            }
+
+            // The process should be finished. Check its exit code.
+            int exitCode = Poco::Process::wait(handle);
+
+            if (exitCode != 0)
+            {
+                // If a module fails we log a warning message and continue.
+                std::wstringstream msg;
+                msg << L"TskExecutableModule::execute - Module (" << m_modulePath.c_str()
+                    << L") failed with exit code: " << exitCode << std::endl;
+                LOGWARN(msg.str());
+            }
+        }
+        else
+        {
+            // No output file was specified.
+            Poco::ProcessHandle handle = Poco::Process::launch(m_modulePath, vectorArgs);
+
+            // Wait for the process to complete
+            int exitCode = Poco::Process::wait(handle);
+
+            if (exitCode != 0)
+            {
+                // If a module fails we log a warning message and continue.
+                std::wstringstream msg;
+                msg << L"TskExecutableModule::execute - Module (" << m_modulePath.c_str()
+                    << L") failed with exit code: " << exitCode << std::endl;
+                LOGWARN(msg.str());
+            }
+        }
+    }
+    catch (Poco::Exception& ex)
+    {
+        std::wstringstream errorMsg;
+        errorMsg << L"TskExecutableModule::execute - Error: " << ex.displayText().c_str() << std::endl;
+        LOGERROR(errorMsg.str());
+        throw TskException("Module execution failed.");
+    }
+
+    return TskModule::OK;
+}

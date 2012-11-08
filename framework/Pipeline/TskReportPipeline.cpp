@@ -13,31 +13,34 @@
  * Contains the implementation for the TskReportPipeline class.
  */
 
-// System includes
-#include <sstream>
-
-// Framework includes
+// Include the class definition first to ensure it does not depend on subsequent includes in this file.
 #include "TskReportPipeline.h"
+
+// TSK Framework includes
 #include "Services/TskServices.h"
 
-TskReportPipeline::TskReportPipeline()
-{
-}
+// Poco includes
+#include "Poco/Stopwatch.h"
 
-TskReportPipeline::~TskReportPipeline()
-{
-}
+// C/C++ library includes
+#include <sstream>
 
 void TskReportPipeline::run()
 {
+    Poco::Stopwatch stopWatch;
     for (int i = 0; i < m_modules.size(); i++)
     {
+        stopWatch.restart();
         TskModule::Status status = m_modules[i]->report();
+        stopWatch.stop();
+        updateModuleExecutionTime(m_modules[i]->getModuleId(), stopWatch.elapsed());
 
         TskServices::Instance().getImgDB().setModuleStatus(0, m_modules[i]->getModuleId(), (int)status);
 
-        // Stop reporting when a module tells us to.
+        // The reporting pipeline continues to run on module failure. Only shutdown the pipeline if a module signals STOP.
         if (status == TskModule::STOP)
+        {
             break;
+        }
     }
 }

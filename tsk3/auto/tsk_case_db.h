@@ -53,7 +53,7 @@ class TskAutoDb:public TskAuto {
      * Calculate hash values of files and add them to database.
      * Default is false.  Will be set to true if a Hash DB is configured.
      *
-     * @args flag True to calculate hash values and look them up.
+     * @param flag True to calculate hash values and look them up.
      */
     virtual void hashFiles(bool flag);
 
@@ -85,11 +85,12 @@ class TskAutoDb:public TskAuto {
 
   private:
     TskDbSqlite * m_db;
-    int64_t m_curImgId;
-    int64_t m_curVsId;
-    int64_t m_curVolId;
-    int64_t m_curFsId;
-    int64_t m_curFileId;
+    int64_t m_curImgId;     ///< Object ID of image currently being processed
+    int64_t m_curVsId;      ///< Object ID of volume system currently being processed
+    int64_t m_curVolId;     ///< Object ID of volume currently being processed
+    int64_t m_curFsId;      ///< Object ID of file system currently being processed
+    int64_t m_curFileId;    ///< Object ID of file currently being processed
+    int64_t m_curUnallocDirId;
     string m_curImgTZone;
     bool m_blkMapFlag;
     bool m_fileHashFlag;
@@ -134,6 +135,7 @@ class TskAutoDb:public TskAuto {
     int8_t addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
     uint8_t addUnallocFsSpaceToDb(size_t & numFs);
     uint8_t addUnallocVsSpaceToDb(size_t & numVsP);
+    uint8_t addUnallocImageSpaceToDb();
     uint8_t addUnallocSpaceToDb();
 
 };

@@ -54,7 +54,7 @@ static IMG_TYPES img_open_table[] = {
  * @return ID of image type
  */
 TSK_IMG_TYPE_ENUM
-tsk_img_type_toid_utf8(const char * str)
+tsk_img_type_toid_utf8(const char *str)
 {
     IMG_TYPES *sp;
 

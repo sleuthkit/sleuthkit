@@ -17,6 +17,7 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
+
 /** \internal
 * Allocate a FS_DIR structure to load names into.
 *
@@ -152,49 +153,56 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
     TSK_FS_NAME *fs_name_dest = NULL;
     size_t i;
 
-    // see if we already have it in the buffer / queue
-    for (i = 0; i < a_fs_dir->names_used; i++) {
-        if ((a_fs_name->meta_addr == a_fs_dir->names[i].meta_addr) &&
-            (strcmp(a_fs_name->name, a_fs_dir->names[i].name) == 0)) {
+    /* see if we already have it in the buffer / queue
+     * We skip this check for FAT because it will always fail because two entries
+     * never have the same meta address. */
+    // @@@ We could do something more effecient here too with orphan files because we do not 
+    // need to check the contents of that directory either and this takes a lot of time on those
+    // large images.
+	if (TSK_FS_TYPE_ISFAT(a_fs_dir->fs_info->ftype) == 0) {
+		for (i = 0; i < a_fs_dir->names_used; i++) {
+			if ((a_fs_name->meta_addr == a_fs_dir->names[i].meta_addr) &&
+				(strcmp(a_fs_name->name, a_fs_dir->names[i].name) == 0)) {
 
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "tsk_fs_dir_add: removing duplicate entry: %s (%"
-                    PRIuINUM ")\n", a_fs_name->name, a_fs_name->meta_addr);
+				if (tsk_verbose)
+					tsk_fprintf(stderr,
+						"tsk_fs_dir_add: removing duplicate entry: %s (%"
+						PRIuINUM ")\n", a_fs_name->name, a_fs_name->meta_addr);
 
-            /* We do not check type because then we cannot detect NTFS orphan file
-             * duplicates that are added as "-/r" while a similar entry exists as "r/r"
-             (a_fs_name->type == a_fs_dir->names[i].type)) { */
+				/* We do not check type because then we cannot detect NTFS orphan file
+				 * duplicates that are added as "-/r" while a similar entry exists as "r/r"
+				 (a_fs_name->type == a_fs_dir->names[i].type)) { */
 
-            // if the one in the list is unalloc and we have an alloc, replace it
-            if ((a_fs_dir->names[i].flags & TSK_FS_NAME_FLAG_UNALLOC) &&
-                (a_fs_name->flags & TSK_FS_NAME_FLAG_ALLOC)) {
-                fs_name_dest = &a_fs_dir->names[i];
+				// if the one in the list is unalloc and we have an alloc, replace it
+				if ((a_fs_dir->names[i].flags & TSK_FS_NAME_FLAG_UNALLOC) &&
+					(a_fs_name->flags & TSK_FS_NAME_FLAG_ALLOC)) {
+					fs_name_dest = &a_fs_dir->names[i];
 
-                // free the memory - not the most effecient, but prevents
-                // duplicate code.
-                if (fs_name_dest->name) {
-                    free(fs_name_dest->name);
-                    fs_name_dest->name = NULL;
-                    fs_name_dest->name_size = 0;
-                }
-                if (fs_name_dest->shrt_name) {
-                    free(fs_name_dest->shrt_name);
-                    fs_name_dest->shrt_name = NULL;
-                    fs_name_dest->shrt_name_size = 0;
-                }
-                break;
-            }
-            else {
-                return 0;
-            }
-        }
-    }
+					// free the memory - not the most effecient, but prevents
+					// duplicate code.
+					if (fs_name_dest->name) {
+						free(fs_name_dest->name);
+						fs_name_dest->name = NULL;
+						fs_name_dest->name_size = 0;
+					}
+					if (fs_name_dest->shrt_name) {
+						free(fs_name_dest->shrt_name);
+						fs_name_dest->shrt_name = NULL;
+						fs_name_dest->shrt_name_size = 0;
+					}
+					break;
+				}
+				else {
+					return 0;
+				}
+			}
+		}
+	}
 
     if (fs_name_dest == NULL) {
         // make sure we got the room
         if (a_fs_dir->names_used >= a_fs_dir->names_alloc) {
-            if (tsk_fs_dir_realloc(a_fs_dir, a_fs_dir->names_used + 256))
+            if (tsk_fs_dir_realloc(a_fs_dir, a_fs_dir->names_used + 512))
                 return 1;
         }
 
@@ -489,7 +497,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     a_dinfo->list_inum_named = NULL;
                     a_dinfo->save_inum_named = 0;
                 }
-
                 return TSK_WALK_STOP;
             }
             else if (retval == TSK_WALK_ERROR) {
@@ -572,7 +579,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     save_bak = a_dinfo->save_inum_named;
                     a_dinfo->save_inum_named = 0;
                 }
-
                 retval = tsk_fs_dir_walk_lcl(a_fs,
                     a_dinfo, fs_file->name->meta_addr, a_flags,
                     a_action, a_ptr);
@@ -608,7 +614,9 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
             }
             else {
                 if (tsk_verbose)
-                    fprintf(stderr, "tsk_fs_dir_walk_lcl: Loop detected with address %"PRIuINUM, fs_file->name->meta_addr); 
+                    fprintf(stderr,
+                        "tsk_fs_dir_walk_lcl: Loop detected with address %"
+                        PRIuINUM, fs_file->name->meta_addr);
             }
         }
 
@@ -820,12 +828,16 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
     tsk_take_lock(&a_fs->list_inum_named_lock);
     if (a_fs->list_inum_named != NULL) {
         tsk_release_lock(&a_fs->list_inum_named_lock);
+        if (tsk_verbose)
+            fprintf(stderr,
+                "tsk_fs_dir_load_inum_named: List already populated.  Skipping walk.\n");
         return TSK_OK;
     }
     tsk_release_lock(&a_fs->list_inum_named_lock);
 
     if (tsk_verbose)
-        fprintf(stderr, "tsk_fs_dir_load_inum_named: Performing dir walk to find named files\n");
+        fprintf(stderr,
+            "tsk_fs_dir_load_inum_named: Performing dir walk to find named files\n");
 
     /* Do a dir_walk.  There is internal caching code that will populate
      * the structure.  The callback is really a dummy call.  This could
@@ -867,14 +879,26 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
 
     // add this entry to the orphan list
     if (a_fs_file->meta) {
+        /* Stop if we hit an allocated entry.  We shouldn't get these, but did
+         * have some trouble images that went into allocated clusters on
+         * a FAT file system. */
+        if (a_fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC) {
+            if (tsk_verbose) {
+                tsk_fprintf(stderr,
+                    "load_orphan_dir_walk_cb: Skipping an allocated file (ID: %"
+                    PRIuINUM ")\n", a_fs_file->meta->addr);
+            }
+            return TSK_WALK_STOP;
+        }
 
         /* check if we have already added it as an orphan (in a subdirectory)
          * Not entirely sure how possible this is, but it was added while
          * debugging an infinite loop problem. */
         if (tsk_list_find(data->orphan_subdir_list, a_fs_file->meta->addr)) {
             if (tsk_verbose)
-                fprintf(stderr, "load_orphan_dir_walk_cb: Detected loop with address %"PRIuINUM,
-                    a_fs_file->meta->addr);
+                fprintf(stderr,
+                    "load_orphan_dir_walk_cb: Detected loop with address %"
+                    PRIuINUM, a_fs_file->meta->addr);
             return TSK_WALK_STOP;
         }
 
@@ -946,7 +970,9 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
     if (a_fs_file->meta->type == TSK_FS_META_TYPE_DIR) {
 
         if (tsk_verbose)
-            fprintf(stderr, "find_orphan_meta_walk_cb: Going into directory %"PRIuINUM" to mark contents as seen\n", a_fs_file->meta->addr);
+            fprintf(stderr,
+                "find_orphan_meta_walk_cb: Going into directory %" PRIuINUM
+                " to mark contents as seen\n", a_fs_file->meta->addr);
 
         if (tsk_fs_dir_walk(fs, a_fs_file->meta->addr,
                 TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE
@@ -1015,7 +1041,8 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
     }
 
     if (tsk_verbose)
-        fprintf(stderr, "tsk_fs_dir_find_orphans: Searching for orphan files\n");
+        fprintf(stderr,
+            "tsk_fs_dir_find_orphans: Searching for orphan files\n");
 
     memset(&data, 0, sizeof(FIND_ORPHAN_DATA));
 
@@ -1040,7 +1067,8 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
     }
 
     if (tsk_verbose)
-        fprintf(stderr, "tsk_fs_dir_find_orphans: Performing inode_walk to find unnamed metadata structures\n");
+        fprintf(stderr,
+            "tsk_fs_dir_find_orphans: Performing inode_walk to find unnamed metadata structures\n");
 
     if (tsk_fs_meta_walk(a_fs, a_fs->first_inum, a_fs->last_inum,
             TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_USED,
@@ -1055,7 +1083,8 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
 
 
     if (tsk_verbose)
-        fprintf(stderr, "tsk_fs_dir_find_orphans: De-duping orphan files and directories\n");
+        fprintf(stderr,
+            "tsk_fs_dir_find_orphans: De-duping orphan files and directories\n");
 
     /* do some cleanup on the final list. This cleanup will compare the
      * entries in the root orphan directory with files that can be accessed

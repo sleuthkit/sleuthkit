@@ -16,10 +16,13 @@
 #ifndef _TSK_REPORTPIPELINE_H
 #define _TSK_REPORTPIPELINE_H
 
-#include <string>
+// TSK Framework includes
 #include "TskPipeline.h"
-#include "TskPluginModule.h"
 #include "TskReportPluginModule.h"
+#include "Utilities/TskException.h"
+
+// C/C++ library includes
+#include <string>
 
 /**
  * Controls a series of reporting modules that are run
@@ -30,27 +33,26 @@
 class TSK_FRAMEWORK_API TskReportPipeline : public TskPipeline
 {
 public:
-    // Default constructor
-    TskReportPipeline();
+    // Doxygen comment in base class.
+    virtual void run(const uint64_t fileId) 
+    { 
+        throw TskException("TskReportPipeline::run : not implemented"); 
+    }
 
-    // Destructor
-    ~TskReportPipeline();
+    // Doxygen comment in base class.
+    virtual void run(TskFile *file) 
+    { 
+        throw TskException("TskReportPipeline::run : not implemented"); 
+    }
 
-    // Initialize a Pipeline based on the given XML configuration string.
-    void initialize(const std::string& pipelineConfig);
-
-    // Run through all the modules in the Pipeline for the given file id.
-    virtual void run(const uint64_t fileId) {}; // NOP
-
-    // Run through all the modules in the Pipeline for the given File object
-    virtual void run(TskFile* file) {}; // NOP
-
-    // Run through all the modules in the Pipeline for Reporting.
+    // Doxygen comment in base class.
     virtual void run();
 
-    // Create a module for the pipeline
-    TskPluginModule * createPluginModule() { return (new TskReportPluginModule()); };
-
+    // Doxygen comment in base class.
+    virtual TskPluginModule *createPluginModule() 
+    { 
+        return (new TskReportPluginModule());
+    }
 };
 
 #endif

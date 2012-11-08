@@ -13,24 +13,19 @@
  * Contains the implementation for the TskFileAnalysisPipeline class.
  */
 
-// System includes
-#include <sstream>
-
-// Framework includes
+// Include the class definition first to ensure it does not depend on subsequent includes in this file.
 #include "TskFileAnalysisPipeline.h"
+
+// TSK Framework includes
 #include "File/TskFileManagerImpl.h"
 #include "Services/TskServices.h"
 
 // Poco includes
 #include "Poco/AutoPtr.h"
+#include "Poco/Stopwatch.h"
 
-TskFileAnalysisPipeline::TskFileAnalysisPipeline()
-{
-}
-
-TskFileAnalysisPipeline::~TskFileAnalysisPipeline()
-{
-}
+// C/C++ library includes
+#include <sstream>
 
 void TskFileAnalysisPipeline::run(const uint64_t fileId)
 {
@@ -48,12 +43,14 @@ void TskFileAnalysisPipeline::run(const uint64_t fileId)
 
 void TskFileAnalysisPipeline::run(TskFile* file)
 {
+    const std::string MSG_PREFIX = "TskFileAnalysisPipeline::run : ";
+
     if (m_modules.size() == 0)
         return;
 
     if (file == NULL)
     {
-        LOGERROR(L"TskFileAnalysisPipeline::run - Passed NULL file pointer.");
+        LOGERROR(MSG_PREFIX + "passed NULL file pointer");
         throw TskNullPointerException();
     }
 
@@ -66,15 +63,16 @@ void TskFileAnalysisPipeline::run(TskFile* file)
         if (excludeFile(file))
         {
             std::stringstream msg;
-            msg << "TskFileAnalysisPipeline::run: Skipping file (excluded) "  << file->getName() << "(" << file->getId() << ")";
+            msg << MSG_PREFIX << "skipping file (excluded) "  << file->getName() << "(" << file->getId() << ")";
             LOGINFO(msg.str());
             file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_SKIPPED);
             return;
         }
 
-        if (file->getStatus() != TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS) {
+        if (file->getStatus() != TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS) 
+        {
             std::stringstream msg;
-            msg << "TskFileAnalysisPipeline::run: Skipping file (not ready) " << file->getName() << "(" << file->getId() << ")";
+            msg << MSG_PREFIX << "skipping file (not ready) " << file->getName() << "(" << file->getId() << ")";
             LOGINFO(msg.str());
             return;
         }
@@ -82,7 +80,7 @@ void TskFileAnalysisPipeline::run(TskFile* file)
         // Update status to indicate analysis is in progress.
         file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_IN_PROGRESS);
         std::stringstream msg;
-        msg << "TskFileAnalysisPipeline::run: Analyzing " << file->getName() << "(" << file->getId() << ")";
+        msg << MSG_PREFIX <<  "analyzing " << file->getName() << "(" << file->getId() << ")";
         LOGINFO(msg.str());
 
         // If there is an Executable module in the pipeline we must
@@ -94,6 +92,7 @@ void TskFileAnalysisPipeline::run(TskFile* file)
 
         bool bModuleFailed = false;
 
+        Poco::Stopwatch stopWatch;
         for (int i = 0; i < m_modules.size(); i++)
         {
             // we have no way of knowing if the file was closed by a module,
@@ -103,8 +102,11 @@ void TskFileAnalysisPipeline::run(TskFile* file)
             // Reset the file offset to the beginning of the file.
             file->seek(0);
 
+            stopWatch.restart();
             TskModule::Status status = m_modules[i]->run(file);
-
+            stopWatch.stop();            
+            updateModuleExecutionTime(m_modules[i]->getModuleId(), stopWatch.elapsed());
+            
             imgDB.setModuleStatus(file->getId(), m_modules[i]->getModuleId(), (int)status);
 
             // If any module encounters a failure while processing a file
@@ -124,23 +126,28 @@ void TskFileAnalysisPipeline::run(TskFile* file)
         if (file->getTypeId() != TskImgDB::IMGDB_FILES_TYPE_CARVED &&
             file->getTypeId() != TskImgDB::IMGDB_FILES_TYPE_DERIVED &&
             file->exists())
-        {
+        { 
             TskFileManagerImpl::instance().deleteFile(file);
         }
 
         // We allow modules to set status on the file so we only update it
         // if the modules haven't.
         if (file->getStatus() == TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_IN_PROGRESS)
+        {
             if (bModuleFailed)
+            {
                 file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_FAILED);
+            }
             else
+            {
                 file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_COMPLETE);
+            }
+        }
     }
     catch (std::exception& ex)
     {
-        std::wstringstream msg;
-        msg << L"TskFileAnalysisPipeline::run - Error while processing file id (" << file->getId()
-            << L") : " << ex.what();
+        std::stringstream msg;
+        msg << MSG_PREFIX << "error while processing file id (" << file->getId() << ") : " << ex.what();
         LOGERROR(msg.str());
         imgDB.updateFileStatus(file->getId(), TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_FAILED);
 

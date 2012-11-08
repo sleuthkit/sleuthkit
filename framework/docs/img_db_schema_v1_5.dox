@@ -1,0 +1,181 @@
+/*! \page img_db_schema_v1_5_page SQLite Image Database Schema v1.5
+
+\section general_information_tables Analysis Process Metadata Tables
+
+\subsection db_info_table db_info
+Contains metadata about the software that produced the image database.
+- <i>name</i> - Name of the software, e.g., DBSchema, Sleuth Kit, etc. (TEXT)
+- <i>version</i> - Version of the software, e.g., 1.5, 4.0.0, etc. (TEXT)
+
+\subsection modules_table modules
+Contains one row for each module used to produce the image database.
+- <i>module_id</i> - Id assigned to the module (INTEGER) 
+- <i>name</i> - Name of the module (TEXT)
+- <i>description</i> - Description of the module (TEXT)
+
+\subsection module_status_table module_status
+Contains one row for each status code returned by the modules in the file analysis pipeline.
+- <i>module_id</i> - Id assigned to the module (INTEGER - foreign key, \ref modules_table) 
+- <i>file_id</i> - Id assigned to the file the module analyzed (INTEGER - foreign key, \ref files_table)
+- <i>status</i> - Status reported by the module on completion of its analysis of the file (INTEGER -  \ref TskModule::Status) 
+
+\section image_tables Image Tables
+
+\subsection image_info_table image_info 
+Contains one row for each image in the set of images analyzed to produce the image database.  
+There will be more than one row in this table for split images. 
+- <i>type</i> - Disk image file type (INTEGER - \ref TSK_IMG_TYPE_ENUM)
+- <i>ssize</i> - Block (sector) size of imaged device in bytes (INTEGER)
+
+\subsection image_names_table img_names
+Contains one row for each image in the set of images analyzed to produce the image database.  
+There will be more than one row in this table for split images. 
+- <i>name</i> - Image file path (TEXT)
+- <i>seq</i> - Sequence number, counting up from one, of the image within the image set (INTEGER) 
+
+\section volume_tables Volume / Partition Tables 
+
+\subsection vol_info_table vol_info
+Contains one row for every volume/partition in the set of images analyzed to produce the database.
+- <i>vol_id</i> - Id assigned to the volume / partition (INTEGER)
+- <i>sect_start</i> - Block (sector) offset of the start of the volume / partition in the image (INTEGER)
+- <i>sect_len</i> - Number of blocks (sectors) in the volume / partition (INTEGER)
+- <i>description</i> - Description of the volume/partition (TEXT)
+- <i>flags</i> - Flags for the the volume/partition (INTEGER - \ref TSK_VS_PART_FLAG_ENUM)
+
+\section file_system_tables File System Tables
+
+\subsection fs_info_table fs_info
+Contains one row for for every file system in the set of images analyzed to produce the database. 
+- <i>fs_id</i> - Id assigned to the file system (INTEGER)
+- <i>img_byte_offset</i> - Byte offset of the start of the file system within the image (INTEGER)
+- <i>vol_id</i> - Id of the volume/partition where the file system resides (INTEGER - foreign key, \ref vol_info_table)
+- <i>fs_type</i> - File system type (INTEGER - \ref TSK_FS_TYPE_ENUM)
+- <i>block_size</i> - Block size in bytes (INTEGER)
+- <i>block_count</i> - Number of blocks (INTEGER)
+- <i>root_inum</i> - Metadata address of root directory (INTEGER)
+- <i>first_inum</i> - First valid metadata address (INTEGER)
+- <i>last_inum</i> - Last valid metadata address (INTEGER)
+
+\subsection files_table files
+Contains one row for for every file found in the set of images analyzed to produce the database.  
+- <i>file_id</i> - Id assigned to the file (INTEGER)
+- <i>par_file_id</i> - Parent file of the file, e.g., a directory for a regular file, an archive file for a derived file (INTEGER - foreign key, \ref files_table)
+- <i>name</i> - File name (TEXT)
+- <i>full_path</i> - Path of the file in the image (TEXT)
+- <i>size</i> - Size in bytes (INTEGER)
+- <i>type_id</i> - File classification by image analysis system, e.g., file system file, carved file, etc. (INTEGER - \ref TSK_DB_FILES_TYPE_ENUM)
+- <i>dir_type</i> - File type as specified in the directory metadata structure, e.g., directory, regular file, etc. (INTEGER - \ref TSK_FS_NAME_TYPE_ENUM)
+- <i>meta_type</i> - File meta-type, e.g., directory, regular file, etc. (INTEGER - \ref TSK_FS_META_TYPE_ENUM)
+- <i>dir_flags</i> -  Allocation status (INTEGER - \ref TSK_FS_NAME_FLAG_ENUM)
+- <i>meta_flags</i> - File metadata structure flags (INTEGER - \ref TSK_FS_META_FLAG_ENUM)
+- <i>ctime</i> - Last file / metadata status change time as seconds since Jan 1, 1970 UTC (INTEGER)
+- <i>crtime</i> - Create time (INTEGER)
+- <i>atime</i> - Access time (INTEGER)
+- <i>mtime</i> - Modification time (INTEGER)
+- <i>mode</i> - Unix-style file permissions (INTEGER - \ref TSK_FS_META_MODE_ENUM)
+- <i>uid</i> - Owner id (INTEGER)
+- <i>gid</i> - Group id (INTEGER)
+- <i>status</i> - Analysis status (INTEGER - \ref TskImgDB::FILE_STATUS)
+
+\subsection file_hashes_table file_hashes
+Contains one row of file content hash values for every file found in the set of images analyzed to produce the database.
+The hash values may be NULL if not computed.
+- <i>file_id</i> - Id assigned to the file (INTEGER - foreign key, \ref files_table)
+- <i>md5</i> - MD5 hash (TEXT)
+- <i>sha1</i> - SHA-1 hash (TEXT)
+- <i>sha2_256</i> - SHA-256 hash (TEXT)
+- <i>sha2_512</i> - SHA-512 hash (TEXT)
+- <i>known</i> - Known status as determined by hash database lookups (INTEGER - \ref TskImgDB::KNOWN_STATUS)
+
+\subsection fs_files_table fs_files
+Contains one row for each file discovered during file system analysis.
+- <i>file_id</i> - Id assigned to the file (INTEGER - foreign key, \ref files_table)
+- <i>fs_id</i> - Id of the file system that contained the file (INTEGER - foreign key, \ref fs_info_table)
+- <i>fs_file_id</i> - Id assigned to the file by the file system, e.g., an inode number (INTEGER)
+- <i>attr_id</i> - The MFT attribute id of files in NTFS file systems (INTEGER)
+- <i>attr_type</i> - The MFT attribute type of files in NTFS file systems (INTEGER - \ref TSK_FS_ATTR_TYPE_ENUM)
+
+\subsection fs_blocks_table fs_blocks
+Contains one row for each contiguous run of blocks in a file system file.
+- <i>file_id</i> - Id assigned to the file (INTEGER - foreign key, \ref files_table)
+- <i>fs_id</i> - Id assigned to the file system that contains the file (INTEGER - foreign key, \ref fs_info_table)
+- <i>seq</i> - Sequence number, counting up from one, of the run within the set of runs (INTEGER)
+- <i>blk_start</i> - Logical block offset of the beginning of the run (INTEGER)
+- <i>blk_len</i> - Number of blocks in the run (INTEGER)
+
+\subsection alloc_unalloc_map_table alloc_unalloc_map
+Contains one row for each contiguous run of unallocated blocks (sectors) in a volume / partition.
+These runs are used to create unallocated sectors files in preparation for carving.
+- <i>unalloc_img_id</i> - Id assigned to the unallocated sectors file that contains the run (INTEGER)
+- <i>vol_id</i> - Id of the volume / partition that contains the run (INTEGER - foreign key, \ref vol_info_table)
+- <i>unalloc_img_sect_start</i> - Sector offset of the beginning of the run in the unallocated sectors image file (INTEGER)
+- <i>orig_img_sect_start</i> - Sector offset of the beginning of the run in the image (INTEGER)
+- <i>sect_len</i> - Length of the run in sectors (INTEGER)
+
+\subsection unalloc_img_status_table unalloc_img_status
+Contains one row for each unallocated sectors file created in preparation for carving.
+- <i>unalloc_img_id</i> - Id assigned to the file (INTEGER) 
+- <i>status</i> - Analysis status (INTEGER - \ref TskImgDB::UNALLOC_IMG_STATUS) 
+
+\subsection carved_files_table carved_files
+Contains one row for each file carved from unallocated space.
+- <i>file_id</i> - Id assigned to the file (INTEGER - foreign key, \ref files_table)
+- <i>vol_id</i> - Volume/partition where the carved file resided (INTEGER - foreign key, \ref vol_info_table)
+
+\subsection carved_sectors_table carved_sectors
+Contains one row for each contiguous run of blocks (sectors) of unallocated space used to create carved files.
+- <i>file_id</i> - Id assigned to the carved file that contains the run (INTEGER - foreign key, \ref files_table)
+- <i>seq</i> - Sequence number, counting up from one, of the run within the set of runs in the carved file (INTEGER)
+- <i>sect_start</i> - Sector offset of the run in the image (INTEGER)
+- <i>sect_len</i> - Length of the run in sectors (INTEGER)
+
+\subsection unused_sectors_table unused_sectors
+Contains one row for each contiguous run of blocks (sectors) of unallocated space left over after carving.
+These runs are used to create unused sectors files to pass through the file analysis pipeline.
+- <i>file_id</i> - Id assigned to the unused sectors file that contains the run (INTEGER - foreign key, \ref files_table)
+- <i>vol_id</i> - Id of the volume / partition that contains the run (INTEGER - foreign key, \ref vol_info_table)
+- <i>sect_start</i> - Sector offset of the run in the image (INTEGER)
+- <i>sect_len</i> - Length of the run in sectors (INTEGER)
+
+\subsection derived_files_table derived_files
+Contains one row for each file derived from another file, e.g., files extracted from archive files.
+- <i>file_id</i> - Id assigned to the file (INTEGER - foreign key, \ref files_table)
+- <i>derivation_details</i> - Unused (TEXT)
+
+\section blackboard_tables Blackboard Tables
+
+\subsection blackboard_artifacts_table blackboard_artifacts
+Contains one row for each artifact found in the set of images analyzed to produce the database.
+- <i>artifact_id</i> - Id assigned to the artifact (INTEGER)
+- <i>obj_id</i> - Id assigned to the file associated with the artifact (INTEGER - foreign key, \ref files_table)
+- <i>artifact_type_id</i> - Id assigned to the type of artifact (INTEGER - foreign key, \ref blackboard_attribute_types_table)
+
+\subsection blackboard_attributes_table blackboard_attributes
+Stores the values of the name-value pairs that are the attributes associated with an artifact. 
+Only one of the value columns should be populated.
+- <i>artifact_id</i> - Id assigned to the artifact (INTEGER)
+- <i>source</i> - Source string, should be the name of the module that discovered the artifact (TEXT)
+- <i>context</i> - Additional context information (TEXT)
+- <i>attribute_type_id</i> - Id for the type of attribute (INTEGER - foreign key, \ref blackboard_attribute_types_table)
+- <i>value_type</i> - The type of the value, serves as discriminant for the union of the value columns ( INTEGER - \ref TskImgDB::VALUE_TYPE)
+- <i>value_byte</i> - A blob of binary data (BLOB)
+- <i>value_text</i> - A string of text (TEXT)
+- <i>value_int32</i> - An 32-bit integer (INTEGER - 0 by default default)
+- <i>value_int64</i> - A 64-bit integer (INTEGER - 0 by default default)
+- <i>value_double</i> - A double (NUMERIC - 0 by default default)
+- <i>obj_id</i> - Id assigned to the file associated with the attribute (INTEGER - foreign key, \ref files_table)
+
+\subsection blackboard_artifact_types_table blackboard_artifact_types
+Artifact types.
+- <i>artifact_type_id</i> - Id assigned to the type (INTEGER)
+- <i>type_name</i> - A unique string identifier for the type (TEXT)
+- <i>display_name</i> - A human-readable display name for the type (TEXT)
+
+\subsection blackboard_attribute_types_table blackboard_attribute_types
+Artifact attribute types.
+- <i>attribute_type_id</i> - Id assigned to the type (INTEGER)
+- <i>type_name</i> - A unique string identifier for the type (TEXT)
+- <i>display_name</i> - A human-readable display name for the type (TEXT)
+
+*/

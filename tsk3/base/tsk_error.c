@@ -8,6 +8,7 @@
  */
 
 #include "tsk_base_i.h"
+#include "tsk_base.h"
 
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
@@ -27,7 +28,7 @@ int tsk_verbose = 0;
 /* Error messages */
 static const char *tsk_err_aux_str[TSK_ERR_IMG_MAX] = {
     "Insufficient memory",
-    ""
+    "TSK Error"
 };
 
 /* imagetools specific error strings */
@@ -104,18 +105,18 @@ static const char *tsk_err_auto_str[TSK_ERR_AUTO_MAX] = {
 };
 
 
-#ifdef TSK_WIN32
+#ifdef TSK_MULTITHREAD_LIB
 
+#ifdef TSK_WIN32
 TSK_ERROR_INFO *
 tsk_error_get_info()
 {
     return (TSK_ERROR_INFO *)
-    tsk_error_win32_get_per_thread_(sizeof(TSK_ERROR_INFO));
+        tsk_error_win32_get_per_thread_(sizeof(TSK_ERROR_INFO));
 }
 
+    // non-windows
 #else
-#ifdef HAVE_PTHREAD
-
 static pthread_key_t pt_tls_key;
 static pthread_once_t pt_tls_key_once = PTHREAD_ONCE_INIT;
 
@@ -148,10 +149,11 @@ tsk_error_get_info()
     }
     return ptr;
 }
+#endif
 
+// single-threaded
 #else
 
-/* No pthreads */
 static TSK_ERROR_INFO error_info = { 0, {0}, {0} };
 
 TSK_ERROR_INFO *
@@ -160,7 +162,6 @@ tsk_error_get_info()
     return &error_info;
 }
 
-#endif
 #endif
 
 /**

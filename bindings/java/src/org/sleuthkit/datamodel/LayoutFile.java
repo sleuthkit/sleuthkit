@@ -85,11 +85,25 @@ public class LayoutFile extends AbstractFile{
 		return Collections.<Content>emptyList();
 	}
 	
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		return Collections.<Long>emptyList();
+	}
 
 	@Override
     public long getSize() {
         return calcSize();
     }
+	
+	@Override
+	public boolean isDir(){
+        return false;
+    }
+	
+	@Override
+	public boolean isFile() {
+		return true;
+	}
     
 	/**
 	 * Calculate the size from all ranges / blocks
@@ -110,7 +124,7 @@ public class LayoutFile extends AbstractFile{
 
 	@Override
     public int read(byte[] buf, long offset, long len) throws TskCoreException {
-        int offsetInThisLayoutContent = 0; // current offset in this LayoutContent
+        long offsetInThisLayoutContent = 0; // current offset in this LayoutContent
         int bytesRead = 0; // Bytes read so far
         Iterator<TskFileRange> it = getRanges().iterator();
         while(it.hasNext()) {
@@ -189,4 +203,8 @@ public class LayoutFile extends AbstractFile{
 		return getParent().getImage();
 	}
 	
+	@Override
+	public boolean isVirtual() {
+		return true;
+	}
 }

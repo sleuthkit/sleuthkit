@@ -8,15 +8,16 @@
       <MODULE order="3" type="plugin" location="FileTypeSigModule.dll"/>
       <MODULE order="4" type="plugin" location="EntropyModule.dll"/>
       <MODULE order="5" type="plugin" location="ZipExtractionModule.dll"/>
+      <MODULE order="6" type="plugin" location="LibExifModule.dll"/>
     </PIPELINE>
 
-    <PIPELINE type="Report">
+    <PIPELINE type="PostProcessing">
       <!--This pipeline configuration assumes that the RegRipper executable is named rip.exe and is present in the program directory-->
-      <!--<MODULE order="1" type="plugin" location="RegRipperModule.dll" arguments="-e #PROG_DIR#\\RegRipper\\rip.exe; -o #OUT_DIR#\\RegRipper\\"/>-->
+      <!--<MODULE order="1" type="plugin" location="RegRipperModule.dll" arguments="-e #PROG_DIR#\\RegRipper\\rip.exe; -o #MODULE_OUT_DIR#\\RegRipper\\"/>-->
 
       <MODULE order="2" type="plugin" location="InterestingFilesModule.dll" arguments="#MODULE_DIR#\\InterestingFilesModule\\interesting_files.xml"/>
 
-      <MODULE order="3" type="plugin" location="SaveInterestingFilesModule.dll" arguments="#OUT_DIR#\\InterestingFiles\\"/>
+      <MODULE order="3" type="plugin" location="SaveInterestingFilesModule.dll"/>
 
       <MODULE order="4" type="plugin" location="SummaryReportModule.dll"/>
 

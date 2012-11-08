@@ -13,72 +13,88 @@
  * Contains the implementation for the TskReportPluginModule class.
  */
 
-// System includes
-#include <sstream>
-
-// Framework includes
+// Include the class definition first to ensure it does not depend on subsequent includes in this file.
 #include "TskReportPluginModule.h"
+
+// TSK Framework includes
 #include "Services/TskServices.h"
 #include "Utilities/TskException.h"
-#include "File/TskFileManagerImpl.h"
 
-// Poco includes
-#include "Poco/String.h"
-#include "Poco/Path.h"
-
-typedef TskModule::Status (*ReportFunc)();
-
-/**
- * Constructor
- */
-TskReportPluginModule::TskReportPluginModule()
-{
-}
-
-/**
- * Destructor
- */
-TskReportPluginModule::~TskReportPluginModule()
-{
-}
+// C/C++ includes
+#include <sstream>
 
 TskModule::Status TskReportPluginModule::report()
 {
-    if (!isLoaded())
-    {
-        std::wstringstream msg;
-        msg << L"TskReportPluginModule::runWorker - Module not loaded: "
-            << getPath().c_str();
-        LOGERROR(msg.str());
-        throw TskException("Module not loaded.");
-    }
-
+    const std::string MSG_PREFIX = "TskReportPluginModule::report : ";
+    TskModule::Status status = TskModule::OK;
     try
     {
+        if (!isLoaded())
+        {
+            std::stringstream msg;
+            msg << MSG_PREFIX << "'" << getPath() << "' is not loaded";
+            throw TskException(msg.str());
+        }
+
+        if (!hasSymbol(TskPluginModule::REPORT_SYMBOL)) 
+        {
+            std::stringstream msg;
+            msg << MSG_PREFIX << "'" << getPath() << "' does not define the '" << TskPluginModule::REPORT_SYMBOL << "' symbol";
+            throw TskException(msg.str());
+        }
+
+        typedef TskModule::Status (*ReportFunc)();
         ReportFunc report = (ReportFunc)getSymbol(TskPluginModule::REPORT_SYMBOL);
-        return report();
+        status = report();
     }
-    catch (Poco::Exception& ex)
+    catch (TskException &ex) 
     {
-        std::wstringstream errorMsg;
-        errorMsg << L"TskReportPluginModule::run - Error: " << ex.displayText().c_str() << std::endl;
-        LOGERROR(errorMsg.str());
-        throw TskException("Module execution failed.");
+        std::stringstream msg;
+        msg << MSG_PREFIX << "TskException executing report function of " << getName() << ": " << ex.message();
+        LOGERROR(msg.str());
+        status = TskModule::FAIL;
     }
+    catch (Poco::Exception &ex) 
+    {
+        std::stringstream msg;
+        msg << MSG_PREFIX <<  "Poco::Exception executing report function of "  << getName() << ": " << ex.displayText();
+        LOGERROR(msg.str());
+        status = TskModule::FAIL;
+    }
+    catch (std::exception &ex) 
+    {
+        std::stringstream msg;
+        msg << MSG_PREFIX <<  "std::exception executing report function of "  << getName() << ": " << ex.what();
+        LOGERROR(msg.str());
+        status = TskModule::FAIL;
+    }
+    catch (...)
+    {
+        std::stringstream msg;
+        msg << MSG_PREFIX << "unrecognized exception executing report function of "  << getName();
+        LOGERROR(msg.str());
+        status = TskModule::FAIL;
+    }
+
+    return status;
 }
 
-// Throw exception if the module does not have REPORT_SYMBOL
 void TskReportPluginModule::checkInterface()
 {
+    const std::string MSG_PREFIX = "TskReportPluginModule::checkInterface : ";
+
     if (!isLoaded())
-        throw TskException("Module is not loaded");
-
-    if (!hasSymbol(TskPluginModule::REPORT_SYMBOL)) {
-        std::wstringstream msg;
-        msg << L"TskReportPluginModule::checkInterface - Module does not contain the \""
-            << TskPluginModule::REPORT_SYMBOL.c_str() << L"\" symbol : " << getPath().c_str();
+    {
+        std::stringstream msg;
+        msg << MSG_PREFIX << getPath() << " is not loaded";
         LOGERROR(msg.str());
+        throw TskException(msg.str());
+    }
 
-        throw TskException("Module missing required symbol.");
+    if (!hasSymbol(TskPluginModule::REPORT_SYMBOL)) 
+    {
+        std::stringstream msg;
+        msg << MSG_PREFIX << getPath() << " does not define the required '" << TskPluginModule::REPORT_SYMBOL << "' symbol";
+        throw TskException(msg.str());
     }
 }

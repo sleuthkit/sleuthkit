@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2012 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -128,7 +128,7 @@ public class BlackboardAttribute {
 		TSK_HASHSET_NAME(30, "TSK_HASHSET_NAME", "Hashset Name"), // @@@ Deprecated
 		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", "Interesting File"),
 		TSK_REFERRER(32, "TSK_REFERRER", "Referrer URL"),
-		TSK_LAST_ACCESSED(33, "TSK_LAST_ACCESSED", "Last Time Accessed"), // @@@ Review this instead of using DATETIME
+		TSK_DATETIME_ACCESSED(33, "TSK_DATETIME_ACCESSED", "Date Accessed"),
 		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", "IP Address"),
 		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", "Phone Number"),
 		TSK_PATH_ID(36, "TSK_PATH_ID", "Path ID"),
@@ -158,7 +158,15 @@ public class BlackboardAttribute {
 		TSK_GEO_VPRECISION(60, "TSK_GEO_VPRECISION", "Vertical Precision"),
 		TSK_GEO_MAPDATUM(61, "TSK_GEO_MAPDATUM", "Map Datum"),
 		TSK_FILE_TYPE_SIG(62, "TSK_FILE_TYPE_SIG", "File Type (signature)"),
-		TSK_FILE_TYPE_EXT(63, "TSK_FILE_TYPE_EXT", "File Type (extension)");
+		TSK_FILE_TYPE_EXT(63, "TSK_FILE_TYPE_EXT", "File Type (extension)"),
+		TSK_TAGGED_ARTIFACT(64, "TSK_TAGGED_ARTIFACT", "Tagged Result"),
+		TSK_TAG_NAME(65, "TSK_TAG_NAME", "Tag Name"),
+		TSK_DESCRIPTION(66, "TSK_DESCRIPTION", "Description"),
+		TSK_URL_DECODED(67, "TSK_URL_DECODED", "Decoded URL"),
+		TSK_DATETIME_CREATED(68, "TSK_DATETIME_CREATED", "Date Created"),
+		TSK_DATETIME_MODIFIED(69, "TSK_DATETIME_MODIFIED", "Date Modified"),
+		;
+		
 		
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		
@@ -241,6 +249,26 @@ public class BlackboardAttribute {
 		this.valueBytes = valueBytes;
 		this.Case = Case;
 	}
+	
+	/**
+	 * Create a blackboard attribute that stores an int (creates an attribute that can be
+	 * added to an artifact)
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueInt the value
+	 */
+	public BlackboardAttribute(int attributeTypeID, String moduleName, int valueInt) {
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = moduleName;
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
+		this.valueInt = valueInt;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
 
 	/**
 	 * Create a blackboard attribute that stores an int (creates an attribute that can be
@@ -249,19 +277,35 @@ public class BlackboardAttribute {
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param context extra information about the attribute
 	 * @param valueInt the value
+	 * @Deprecated context parameter will be deprecated - in lieu of specific blackboard attributes
+	 * use the alternative constructor without context
 	 */
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			int valueInt) {
+		this(attributeTypeID, moduleName, valueInt);
+		this.context = context;
+	}
+	
+	/**
+	 * Create a blackboard attribute that stores a long (creates an attribute that can be
+	 * added to an artifact)
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueLong the value
+	 */
+	public BlackboardAttribute(int attributeTypeID, String moduleName,
+			long valueLong) {
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = moduleName;
-		this.context = context;
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
-		this.valueInt = valueInt;
-		this.valueLong = 0;
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG;
+		this.valueInt = 0;
+		this.valueLong = valueLong;
 		this.valueDouble = 0;
 		this.valueString = "";
 		this.valueBytes = new byte[0];
+		this.context = "";
+
 	}
 
 	/**
@@ -271,20 +315,13 @@ public class BlackboardAttribute {
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param context extra information about the attribute
 	 * @param valueLong the value
+	 * @Deprecated context parameter will be deprecated - in lieu of specific blackboard attributes
+	 * use the alternative constructor without context
 	 */
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			long valueLong) {
-		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
-		this.moduleName = moduleName;
+		this(attributeTypeID, moduleName, valueLong);
 		this.context = context;
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG;
-		this.valueInt = 0;
-		this.valueLong = valueLong;
-		this.valueDouble = 0;
-		this.valueString = "";
-		this.valueBytes = new byte[0];
-
 	}
 
 	/**
@@ -295,19 +332,34 @@ public class BlackboardAttribute {
 	 * @param context extra information about the attribute
 	 * @param valueDouble the value
 	 */
-	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
+	public BlackboardAttribute(int attributeTypeID, String moduleName, 
 			double valueDouble) {
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = moduleName;
-		this.context = context;
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE;
 		this.valueInt = 0;
 		this.valueLong = 0;
 		this.valueDouble = valueDouble;
 		this.valueString = "";
 		this.valueBytes = new byte[0];
-
+		this.context = "";
+	}
+	
+	/**
+	 * Create a blackboard attribute that stores a double (creates an attribute that can be
+	 * added to an artifact)
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param context extra information about the attribute
+	 * @param valueDouble the value
+	 * @Deprecated context parameter will be deprecated - in lieu of specific blackboard attributes
+	 * use the alternative constructor without context
+	 */
+	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
+			double valueDouble) {
+		this(attributeTypeID, moduleName, valueDouble);
+		this.context = context;
 	}
 
 	/**
@@ -315,23 +367,65 @@ public class BlackboardAttribute {
 	 * added to an artifact)
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
-	 * @param context extra information about the attribute
 	 * @param valueString the value
 	 */
-	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
-			String valueString) {
+	public BlackboardAttribute(int attributeTypeID, String moduleName, String valueString) {
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = moduleName;
-		this.context = context;
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING;
 		this.valueInt = 0;
 		this.valueLong = 0;
 		this.valueDouble = 0;
 		this.valueString = valueString;
 		this.valueBytes = new byte[0];
-
+		this.context = "";
 	}
+	
+	/**
+	 * Create a blackboard attribute that stores a string (creates an attribute that can be
+	 * added to an artifact)
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param context extra information about the attribute
+	 * @param valueString the value
+	 * @Deprecated context parameter will be deprecated - in lieu of specific blackboard attributes
+	 * use the alternative constructor without context
+	 */
+	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
+			String valueString) {
+		this(attributeTypeID, moduleName, valueString);
+		this.context = context;
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 97 * hash + (int) (this.artifactID ^ (this.artifactID >>> 32));
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final BlackboardAttribute other = (BlackboardAttribute) obj;
+		if (this.artifactID != other.artifactID) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "BlackboardAttribute{" + "artifactID=" + artifactID + ", attributeTypeID=" + attributeTypeID + ", moduleName=" + moduleName + ", context=" + context + ", valueType=" + valueType + ", valueInt=" + valueInt + ", valueLong=" + valueLong + ", valueDouble=" + valueDouble + ", valueString=" + valueString + ", valueBytes=" + valueBytes + ", Case=" + Case + '}';
+	}
+	
+	
 
 	/**
 	 * Create a blackboard attribute that stores a byte array (creates an attribute that can be

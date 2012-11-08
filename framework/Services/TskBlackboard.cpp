@@ -13,7 +13,7 @@
 map<int, TskArtifactNames> initializeArtifactTypeMap(){
     map<int, TskArtifactNames> retval;
     retval.insert(pair<int, TskArtifactNames>(TSK_GEN_INFO, TskArtifactNames("TSK_GEN_INFO", "General Info")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_BOOKMARK, TskArtifactNames("TSK_WEB_BOOKMARK", "Date Time")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_WEB_BOOKMARK, TskArtifactNames("TSK_WEB_BOOKMARK", "Web Bookmark")));
     retval.insert(pair<int, TskArtifactNames>(TSK_WEB_COOKIE, TskArtifactNames("TSK_WEB_COOKIE", "Web Cookie")));
     retval.insert(pair<int, TskArtifactNames>(TSK_WEB_HISTORY, TskArtifactNames("TSK_WEB_HISTORY", "History")));
     retval.insert(pair<int, TskArtifactNames>(TSK_WEB_DOWNLOAD, TskArtifactNames("TSK_WEB_DOWNLOAD", "Download")));
@@ -27,6 +27,9 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_EMAIL_MSG, TskArtifactNames("TSK_EMAIL_MSG", "E-Mail Message")));
     retval.insert(pair<int, TskArtifactNames>(TSK_EXTRACTED_TEXT, TskArtifactNames("TSK_EXTRACTED_TEXT", "Extracted Text")));
     retval.insert(pair<int, TskArtifactNames>(TSK_WEB_SEARCH_QUERY, TskArtifactNames("TSK_WEB_SEARCH_QUERY", "Web Search Engine Query")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_METADATA_EXIF, TskArtifactNames("TSK_METADATA_EXIF", "EXIF Metadata")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_TAG_FILE, TskArtifactNames("TSK_TAG_FILE", "File Tag")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_TAG_ARTIFACT, TskArtifactNames("TSK_TAG_ARTIFACT", "Result Tag")));
 
     return retval;
 }
@@ -52,7 +55,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_DEVICE_MAKE, TskAttributeNames("TSK_DEVICE_MAKE", "Device Make")));
     retval.insert(pair<int, TskAttributeNames>(TSK_DEVICE_ID, TskAttributeNames("TSK_DEVICE_ID", "Device ID")));
     retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL, TskAttributeNames("TSK_EMAIL", "Email")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_HASH_HD5, TskAttributeNames("TSK_HASH_HD5", "MD5 Hash")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_HASH_MD5, TskAttributeNames("TSK_HASH_MD5", "MD5 Hash")));
     retval.insert(pair<int, TskAttributeNames>(TSK_HASH_SHA1, TskAttributeNames("TSK_HASH_SHA1", "SHA1 Hash")));
     retval.insert(pair<int, TskAttributeNames>(TSK_HASH_SHA2_256, TskAttributeNames("TSK_HASH_SHA2_256", "SHA2-256 Hash")));
     retval.insert(pair<int, TskAttributeNames>(TSK_HASH_SHA2_512, TskAttributeNames("TSK_HASH_SHA2_512", "SHA2-512 Hash")));
@@ -63,7 +66,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_HASHSET_NAME, TskAttributeNames("TSK_HASHSET_NAME", "Hashset Name")));
     retval.insert(pair<int, TskAttributeNames>(TSK_INTERESTING_FILE, TskAttributeNames("TSK_INTERESTING_FILE", "Interesting File")));
     retval.insert(pair<int, TskAttributeNames>(TSK_REFERRER, TskAttributeNames("TSK_REFERRER", "Referrer URL")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_LAST_ACCESSED, TskAttributeNames("TSK_LAST_ACCESSED", "Last Time Accessed")));  // @@@ Review this instead of using DATETIME
+    retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_ACCESSED, TskAttributeNames("TSK_DATETIME_ACCESSED", "Date Accessed"))); 
     retval.insert(pair<int, TskAttributeNames>(TSK_IP_ADDRESS, TskAttributeNames("TSK_IP_ADDRESS", "IP Address")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER, TskAttributeNames("TSK_PHONE_NUMBER", "Phone Number")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PATH_ID, TskAttributeNames("TSK_PATH_ID", "Id of Path")));
@@ -93,6 +96,12 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_GEO_MAPDATUM, TskAttributeNames("TSK_GEO_MAPDATUM", "Map Datum")));
     retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_SIG, TskAttributeNames("TSK_FILE_TYPE_SIG", "File Type (by signature)")));
     retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_EXT, TskAttributeNames("TSK_FILE_TYPE_EXT", "File Type (by extension)")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_TAGGED_ARTIFACT, TskAttributeNames("TSK_TAGGED_ARTIFACT", "Tagged Result")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_TAG_NAME, TskAttributeNames("TSK_TAG_NAME", "Tag Name")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_DESCRIPTION, TskAttributeNames("TSK_DESCRIPTION", "Description")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_URL_DECODED, TskAttributeNames("TSK_URL_DECODED", "Decoded URL")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_CREATED, TskAttributeNames("TSK_DATETIME_CREATED", "Date Created")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_MODIFIED, TskAttributeNames("TSK_DATETIME_MODIFIED", "Date Modified")));
 
     return retval;
 }

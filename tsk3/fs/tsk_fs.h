@@ -2,7 +2,12 @@
 ** The Sleuth Kit 
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+** Copyright (c) 2003-2012 Brian Carrier.  All rights reserved
+**
+** Matt Stillerman [matt@atc-nycorp.com]
+** Copyright (c) 2012 ATC-NY.  All rights reserved.
+** This file contains data developed with support from the National
+** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
 **
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
@@ -69,7 +74,8 @@ extern "C" {
         TSK_FS_BLOCK_FLAG_RAW = 0x0020, ///< The data has been read raw from the disk (and not COMP or SPARSE)
         TSK_FS_BLOCK_FLAG_SPARSE = 0x0040,      ///< The data passed in the file_walk calback was stored as sparse (all zeros) (and not RAW or COMP)
         TSK_FS_BLOCK_FLAG_COMP = 0x0080,        ///< The data passed in the file_walk callback was stored in a compressed form (and not RAW or SPARSE)
-        TSK_FS_BLOCK_FLAG_RES = 0x0100  ///< The data passed in the file_walk callback is from an NTFS resident file
+        TSK_FS_BLOCK_FLAG_RES = 0x0100,  ///< The data passed in the file_walk callback is from an NTFS resident file
+        TSK_FS_BLOCK_FLAG_AONLY = 0x0200    /// < The buffer in TSK_FS_BLOCK has no content (it could be non-empty, but should be ignored), but the flags and such are accurate
     };
     typedef enum TSK_FS_BLOCK_FLAG_ENUM TSK_FS_BLOCK_FLAG_ENUM;
 
@@ -83,6 +89,7 @@ extern "C" {
         TSK_FS_BLOCK_WALK_FLAG_UNALLOC = 0x02,  ///< Unallocated blocks
         TSK_FS_BLOCK_WALK_FLAG_CONT = 0x04,     ///< Blocks that could store file content
         TSK_FS_BLOCK_WALK_FLAG_META = 0x08,     ///< Blocks that could store file system metadata
+        TSK_FS_BLOCK_WALK_FLAG_AONLY = 0x10      ///< Do not include content in callback only address and allocation status
     };
     typedef enum TSK_FS_BLOCK_WALK_FLAG_ENUM TSK_FS_BLOCK_WALK_FLAG_ENUM;
 
@@ -115,6 +122,9 @@ extern "C" {
     extern void tsk_fs_block_free(TSK_FS_BLOCK * a_fs_block);
     extern TSK_FS_BLOCK *tsk_fs_block_get(TSK_FS_INFO * fs,
         TSK_FS_BLOCK * fs_block, TSK_DADDR_T addr);
+    extern TSK_FS_BLOCK *tsk_fs_block_get_flag(TSK_FS_INFO * a_fs, 
+        TSK_FS_BLOCK * a_fs_block, TSK_DADDR_T a_addr, 
+        TSK_FS_BLOCK_FLAG_ENUM a_flags);
     extern uint8_t tsk_fs_block_walk(TSK_FS_INFO * a_fs,
         TSK_DADDR_T a_start_blk, TSK_DADDR_T a_end_blk,
         TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags, TSK_FS_BLOCK_WALK_CB a_action,
@@ -204,8 +214,10 @@ extern "C" {
 
     /**
     * These are based on the NTFS type values. 
+     * Added types for HFS+.
     */
     typedef enum {
+        TSK_FS_ATTR_TYPE_NOT_FOUND = 0x00,       // 0
         TSK_FS_ATTR_TYPE_DEFAULT = 0x01,        // 1
         TSK_FS_ATTR_TYPE_NTFS_SI = 0x10,        // 16
         TSK_FS_ATTR_TYPE_NTFS_ATTRLIST = 0x20,  // 32
@@ -226,7 +238,14 @@ extern "C" {
         TSK_FS_ATTR_TYPE_NTFS_PROP = 0xF0,      //  (NT)
         TSK_FS_ATTR_TYPE_NTFS_LOG = 0x100,      //  (2K)
         TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001,   //  Indirect blocks for UFS and ExtX file systems
-        TSK_FS_ATTR_TYPE_UNIX_EXTENT = 0x1002   //  Extents for Ext4 file system
+        TSK_FS_ATTR_TYPE_UNIX_EXTENT = 0x1002,   //  Extents for Ext4 file system
+
+        // Types for HFS+ File Attributes
+        TSK_FS_ATTR_TYPE_HFS_DEFAULT = 0x01,    // 1    Data fork of fs special files and misc
+        TSK_FS_ATTR_TYPE_HFS_DATA = 0x1100,     // 4352 Data fork of regular files
+        TSK_FS_ATTR_TYPE_HFS_RSRC = 0x1101,     // 4353 Resource fork of regular files
+        TSK_FS_ATTR_TYPE_HFS_EXT_ATTR = 0x1102, // 4354 Extended Attributes, except compression records
+        TSK_FS_ATTR_TYPE_HFS_COMP_REC = 0x1103, // 4355 Compression records
     } TSK_FS_ATTR_TYPE_ENUM;
 
 #define TSK_FS_ATTR_ID_DEFAULT  0       ///< Default Data ID used if file system does not assign one.
@@ -260,7 +279,7 @@ extern "C" {
         TSK_FS_ATTR_TYPE_ENUM type;     ///< Type of attribute
         uint16_t id;            ///< Id of attribute
 
-        TSK_OFF_T size;         ///< Size in bytes of attribute (does not include skiplen for non-resident)
+        TSK_OFF_T size;         ///< Size in bytes of the attribute resident and non-resident content (does not include skiplen for non-resident attributes)
 
         /**
         * Data associated with a non-resident file / attribute. 
@@ -282,6 +301,7 @@ extern "C" {
         struct {
             uint8_t *buf;       ///< Buffer for resident data
             size_t buf_size;    ///< Number of bytes allocated to buf
+            TSK_OFF_T offset;   ///< Starting offset in bytes relative to start of file system (NOT YET IMPLEMENTED)
         } rd;
 
         /* Special file (compressed, encrypted, etc.) */
@@ -733,7 +753,7 @@ extern "C" {
         TSK_FS_TYPE_FFS_DETECT = 0x00000070,    ///< UFS auto detection
         TSK_FS_TYPE_EXT2 = 0x00000080,  ///< Ext2 file system
         TSK_FS_TYPE_EXT3 = 0x00000100,  ///< Ext3 file system
-        TSK_FS_TYPE_EXT_DETECT = 0x00002180,    ///< ExtX auto detection
+        TSK_FS_TYPE_EXT_DETECT = 0x00000180,    ///< ExtX auto detection
         TSK_FS_TYPE_SWAP = 0x00000200,  ///< SWAP file system
         TSK_FS_TYPE_SWAP_DETECT = 0x00000200,   ///< SWAP auto detection
         TSK_FS_TYPE_RAW = 0x00000400,   ///< RAW file system
@@ -742,7 +762,7 @@ extern "C" {
         TSK_FS_TYPE_ISO9660_DETECT = 0x00000800,        ///< ISO9660 auto detection
         TSK_FS_TYPE_HFS = 0x00001000,   ///< HFS file system
         TSK_FS_TYPE_HFS_DETECT = 0x00001000,    ///< HFS auto detection
-	TSK_FS_TYPE_EXT4 = 0x00002000,  ///< Ext3 file system
+	TSK_FS_TYPE_EXT4 = 0x00002000,  ///< Ext4 file system
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     typedef enum TSK_FS_TYPE_ENUM TSK_FS_TYPE_ENUM;
@@ -808,8 +828,8 @@ extern "C" {
     * Flags for the FS_INFO structure 
     */
     enum TSK_FS_INFO_FLAG_ENUM {
-        TSK_FS_INFO_FLAG_NONE        = 0x00,   ///< No Flags
-        TSK_FS_INFO_FLAG_HAVE_SEQ    = 0x01,   ///< File system has sequence numbers in the inode addresses.
+        TSK_FS_INFO_FLAG_NONE = 0x00,   ///< No Flags
+        TSK_FS_INFO_FLAG_HAVE_SEQ = 0x01,   ///< File system has sequence numbers in the inode addresses.
         TSK_FS_INFO_FLAG_HAVE_SUBSEC = 0x02    ///< File system has subsecond time fields 
     };
     typedef enum TSK_FS_INFO_FLAG_ENUM TSK_FS_INFO_FLAG_ENUM;
@@ -844,7 +864,7 @@ extern "C" {
         TSK_DADDR_T last_block_act;     ///< Address of last block -- adjusted so that it is equal to the last block in the image or volume (if image is not complete)
         unsigned int block_size;        ///< Size of each block (in bytes)
         unsigned int dev_bsize; ///< Size of device block (typically always 512)
-		unsigned int inode_size;		///< Size of each inode (in bytes)
+        unsigned int inode_size;	///< Size of each inode (in bytes)
 
         /* The following are used for really RAW images that contain data
            before and after the actual user sector. For example, a raw cd
