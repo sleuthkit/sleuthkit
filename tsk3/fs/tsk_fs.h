@@ -217,6 +217,7 @@ extern "C" {
      * Added types for HFS+.
     */
     typedef enum {
+        TSK_FS_ATTR_TYPE_NOT_FOUND = 0x00,       // 0
         TSK_FS_ATTR_TYPE_DEFAULT = 0x01,        // 1
         TSK_FS_ATTR_TYPE_NTFS_SI = 0x10,        // 16
         TSK_FS_ATTR_TYPE_NTFS_ATTRLIST = 0x20,  // 32
@@ -277,7 +278,7 @@ extern "C" {
         TSK_FS_ATTR_TYPE_ENUM type;     ///< Type of attribute
         uint16_t id;            ///< Id of attribute
 
-        TSK_OFF_T size;         ///< Size in bytes of attribute (does not include skiplen for non-resident)
+        TSK_OFF_T size;         ///< Size in bytes of the attribute resident and non-resident content (does not include skiplen for non-resident attributes)
 
         /**
         * Data associated with a non-resident file / attribute. 

@@ -6,6 +6,7 @@ New Features:
 - Can open raw Windows devices with write mode sharing.
 - More DOS partition types are displayed.
 - Added fcat tool that takes in file name and exports content (equivalent to using ifind and icat together).
+- Added new API to TskImgDB that returns hash value associated with carved files.
 - performance improvements with FAT code (maps and dir_add)
 - performance improvements with NTFS code (maps)
 - added AONLY flag to block_walk
@@ -13,6 +14,7 @@ New Features:
 Bug Fixes:
 - Fixed mactime issue where it could choose the wrong timezone that did
   not follow daylight savings times. 
+- Fixed file size of alternate data streams in framework.
 
 
 

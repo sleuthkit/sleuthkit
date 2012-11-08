@@ -14,17 +14,20 @@
 /win32/Release/
 /win32/*/Release/
 /win32/*/*.user
+win32/ipch
 framework/win32/Debug/
 framework/win32/Release/
 framework/win32/*/Debug/
 framework/win32/*/Release/
 framework/win32/*/*.user
+framework/win32/BuildLog.txt
+framework/win32/*/ipch
 
 # IntelliSense data
 /win32/*.ncb
 /win32/*.sdf
 framework/win32/framework/*.ncb
-framework/win32/framework/*.sdf
+framework/win32/framework/*sdf
 
 # Visual Studio user options
 /win32/tsk-win.suo

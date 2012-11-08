@@ -132,7 +132,7 @@ void TskPluginModule::setPath(const std::string& location)
 TskModule::Status TskPluginModule::initialize()
 {
     const std::string MSG_PREFIX = "TskPluginModule::initialize : ";
-    TskModule::Status status = TskModule::OK;
+    TskModule::Status status = TskModule::FAIL;
     if (m_sharedLibrary.hasSymbol(TskPluginModule::INITIALIZE_SYMBOL))
     {
         try

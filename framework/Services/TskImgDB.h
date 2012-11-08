@@ -62,6 +62,30 @@ struct TskFsInfoRecord
     TSK_INUM_T last_inum;
 };
 
+/**
+ * Contains data derived from joining carved file records from multiple tables in the image database.
+ */
+struct TskCarvedFileInfo
+{
+    /**
+     * The unique ID of the carved file.
+     */
+    uint64_t fileID;
+
+    /**
+     * A hash of the carved file. The type of the hash is a parameter to the function
+     * that returns objects of this type and is not included in the struct to reduce object size,
+     * since this struct is used to satisfy potentially high-volume data requests.
+     * The hash member may be an empty string if the requested hash is unavailable.
+     */
+    std::string hash;
+
+    /**
+     * A "cfile" name for the carved file of the form: cfile_<vol_id>_<start_sector>_<file_id>.<ext>.
+     */
+    std::string cFileName;
+};
+
 struct TskFileTypeRecord
 {
     std::string suffix; // file extension, normalized to lowercase. If no extension, it is an empty string.
@@ -199,7 +223,20 @@ public:
     virtual int addImageName(char const * imgName) = 0;
     virtual int addVolumeInfo(const TSK_VS_PART_INFO * vs_part) = 0;
     virtual int addFsInfo(int volId, int fsId, const TSK_FS_INFO * fs_info) = 0;
-    virtual int addFsFileInfo(int fsId, const TSK_FS_FILE *fs_file, const char *name, int type, int idx, uint64_t & fileId, const char * path) = 0;
+
+    /**
+     * Add data for a file system file to the image database.
+     * @param fileSystemID File system ID of the file system the file belongs to
+     * @param fileSystemFile TSK_FS_FILE object for the file
+     * @param fileName File name
+     * @param fileSystemAttrType File system attribute type (see #TSK_FS_ATTR_TYPE_ENUM)
+     * @param fileSystemAttrID File system attribute ID, used to index attributes for files with multiple attributes 
+     * @param [out] fileId File ID assigned to the file by the image database
+     * @param filePath Path to the file in the image, file name omitted
+     * @returns 0 on success or -1 on error.
+     */
+    virtual int addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileSystemFile, const char *fileName, int fileSystemAttrType, int fileSystemAttrID, uint64_t &fileID, const char *filePath) = 0;
+
     virtual int addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t size, uint64_t *runStarts, uint64_t *runLengths, int numRuns, uint64_t & fileId) = 0;
     virtual int addDerivedFileInfo(const std::string& name, const uint64_t parentId, 
                                         const bool isDirectory, const uint64_t size, const std::string& details,
@@ -294,7 +331,28 @@ public:
     // Get the number of files that match the given condition
     virtual int getFileCount(std::string& condition) const = 0;
 
+    /**
+     * Returns the file ids and carved file names for a unique set of carved files.
+     * Uniqueness is based on the value of a particular hash type. Where duplicate
+     * hash values exist, the lowest file_id is chosen.
+     * NOTE: This function is deprecated and will be removed in the next major release,
+     * use the getUniqueCarvedFilesInfo() member function instead.
+     *
+     * @param hashType The type of hash value to use when determining uniqueness.
+     * @return A map of file ids to the corresponding carved file name.
+     */
     virtual std::map<uint64_t, std::string> getUniqueCarvedFiles(HASH_TYPE hashType) const = 0;
+
+    /**
+     * Returns the file ids, content hashes and, carved file names for a unique set of carved files.
+     * Uniqueness is based on the value of a particular hash type. Where duplicate
+     * hash values exist, the lowest file_id is chosen.
+     *
+     * @param hashType The type of hash value to use when determining uniqueness.
+     * @return A map of file ids to the corresponding carved file name. Throws TskException.
+     */
+    virtual std::vector<TskCarvedFileInfo> getUniqueCarvedFilesInfo(HASH_TYPE hashType) const = 0;
+
     virtual std::vector<uint64_t> getCarvedFileIds() const = 0;
 
     virtual std::vector<uint64_t> getUniqueFileIds(HASH_TYPE hashType) const = 0;
