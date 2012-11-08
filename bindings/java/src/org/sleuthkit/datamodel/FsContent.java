@@ -50,10 +50,7 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	protected String md5Hash;
 	///other members
-	/*
-	 * Unique path containing image and volume
-	 */
-	protected String unique_path;
+
 	/**
 	 * parent file system
 	 */
@@ -426,15 +423,7 @@ public abstract class FsContent extends AbstractFile {
 		return this.parent_path;
 	}
 
-	/**
-	 * Get the absolute unique across all files in the case parent path string
-	 * of this FsContent The path contains image and volume-system partition
-	 * After first call, every subsequent call returns the cached string
-	 *
-	 * @return unique absolute file path (cached after first call)
-	 * @throws TskCoreException thrown when critical error occurred in Tsk Core
-	 * and unique absolute path could not be queried
-	 */
+	@Override
 	public String getUniquePath() throws TskCoreException {
 		if (unique_path != null) {
 			return unique_path;
