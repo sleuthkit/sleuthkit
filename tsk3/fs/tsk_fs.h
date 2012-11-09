@@ -753,7 +753,7 @@ extern "C" {
         TSK_FS_TYPE_FFS_DETECT = 0x00000070,    ///< UFS auto detection
         TSK_FS_TYPE_EXT2 = 0x00000080,  ///< Ext2 file system
         TSK_FS_TYPE_EXT3 = 0x00000100,  ///< Ext3 file system
-        TSK_FS_TYPE_EXT_DETECT = 0x00000180,    ///< ExtX auto detection
+        TSK_FS_TYPE_EXT_DETECT = 0x00002180,    ///< ExtX auto detection
         TSK_FS_TYPE_SWAP = 0x00000200,  ///< SWAP file system
         TSK_FS_TYPE_SWAP_DETECT = 0x00000200,   ///< SWAP auto detection
         TSK_FS_TYPE_RAW = 0x00000400,   ///< RAW file system
