@@ -22,18 +22,6 @@
 #include "dfxml.h"
 #include <errno.h>
 
-#ifdef _MSC_VER
-#include "regex.h" //use regex in src tree
-//#include <mmsystem.h> //Provides timeGetTime
-#else
-#include <regex.h>
-#endif
-
-#ifdef HAVE_PTHREAD_H
-#define MUTEX_LOCK(M)   pthread_mutex_lock(M)
-#define MUTEX_UNLOCK(M) pthread_mutex_unlock(M)
-#endif
-
 using namespace std;
 
 #include <iostream>
@@ -41,7 +29,7 @@ using namespace std;
 #include <string.h>
 #include <stdlib.h>
 #ifndef _MSC_VER
-#include <sys/param.h>
+  #include <sys/param.h>
 #endif
 #include <assert.h>
 #include <fcntl.h>
@@ -53,23 +41,23 @@ static const char *xml_header = "<?xml version='1.0' encoding='UTF-8'?>\n";
 // list archive
 // @http://www.mail-archive.com/pan-devel@nongnu.org/msg00294.html
 #ifndef _S_IREAD
-#define _S_IREAD 256
+  #define _S_IREAD 256
 #endif
 
 #ifndef _S_IWRITE
-#define _S_IWRITE 128
+  #define _S_IWRITE 128
 #endif
 
 #ifndef O_BINARY
-#define O_BINARY 0
+  #define O_BINARY 0
 #endif
 
 #ifndef _O_SHORT_LIVED
-#define _O_SHORT_LIVED 0
+  #define _O_SHORT_LIVED 0
 #endif
 
 #ifdef _MSC_VER
-#include <fcntl.h>
+  #include <fcntl.h>
 int mkstemp(char *tmpl)
 {
    int ret=-1;
@@ -87,40 +75,6 @@ int mkstemp(char *tmpl)
 #ifndef _O_SHORT_LIVED
 #define _O_SHORT_LIVED 0
 #endif
-
-static const char *cstr(const string &str){
-    return str.c_str();
-}
-
-
-/** A local class for regex matching with a single pattern */
-class Regex {
-public:
-    regex_t reg;
-    Regex(const char *pat):reg(){
-	memset(&reg,0,sizeof(reg));
-	if(regcomp(&reg,pat,REG_EXTENDED)){
-	    cerr << "dfxml.cpp: invalid regex pattern" << pat << "\n";
-	    exit(1);
-	}
-    }
-    ~Regex(){
-	regfree(&reg);
-    }
-    string search(const string &line){
-	regmatch_t ary[2];
-	memset(ary,0,sizeof(ary));
-	if(regexec(&reg,cstr(line),2,ary,0)==0){
-	    return string(cstr(line)+ary[1].rm_so,ary[1].rm_eo-ary[1].rm_so);
-	}
-	else {
-	    return string();
-	}
-    }
-};
-
-
-
 
 static string xml_lt("&lt;");
 static string xml_gt("&gt;");
@@ -180,33 +134,19 @@ string xml::xmlstrip(const string &xml)
 
 /****************************************************************/
 
-#ifdef HAVE_PTHREAD
-xml::xml():M(),outf(),out(&cout),tags(),tag_stack(),tempfilename(),tempfile_template("/tmp/xml_XXXXXXXX"),
-	   t0(),make_dtd(false),outfilename()
-#else
 xml::xml():outf(),out(&cout),tags(),tag_stack(),tempfilename(),tempfile_template("/tmp/xml_XXXXXXXX"),
 	   t0(),make_dtd(false),outfilename()
-#endif
 {
-#ifdef HAVE_PTHREAD
-    pthread_mutex_init(&M,NULL);
-#endif
     gettimeofday(&t0,0);
     *out << xml_header;
 }
 
 /* This should be rewritten so that the temp file is done on close, not on open */
 xml::xml(const std::string &outfilename_,bool makeDTD):
-#ifdef HAVE_PTHREAD
-    M(),
-#endif
     outf(outfilename_.c_str(),ios_base::out),
     out(),tags(),tag_stack(),tempfilename(),tempfile_template(outfilename_+"_tmp_XXXXXXXX"),
     t0(),make_dtd(false),outfilename(outfilename_)
 {
-#ifdef HAVE_PTHREAD
-    pthread_mutex_init(&M,NULL);
-#endif
     gettimeofday(&t0,0);
     if(!outf.is_open()){
 	perror(outfilename_.c_str());
@@ -216,75 +156,7 @@ xml::xml(const std::string &outfilename_,bool makeDTD):
     *out << xml_header;
 }
 
-/**
- * opening an existing DFXML file...
- * Scan through and see if we can process.
- * We can only process XML in which tags are on lines by themselves or else both open and close are on the same line.
- */
-xml::xml(const std::string &outfilename_,class existing &e):
-#ifdef HAVE_PTHREAD
-    M(),
-#endif
-    outf(), out(),tags(),tag_stack(),tempfilename(),tempfile_template(),
-    t0(),make_dtd(false),outfilename(outfilename_)
-{
-#ifdef HAVE_PTHREAD
-    pthread_mutex_init(&M,NULL);
-#endif
-    gettimeofday(&t0,0);
 
-    outf.open(outfilename.c_str(),ios_base::in|ios_base::out);
-    if(!outf.is_open()){
-    	cerr << outfilename << strerror(errno) << ": Cannot open\n";
-	exit(1);
-    }
-    out = &outf;
-    // Scan all of the lines, looking for elements in tagmap
-    Regex tag_beg("<([^/> ]+)");
-    Regex tag_end("</([^> ]+)");
-    Regex tag_val(">([^<]*)<");
-
-    // compute the regular expression to get the attribute
-    string areg("=((\'[^\']+\')|(\"[^\"]+\"))");
-    if(e.attrib) areg = *(e.attrib) + areg;
-
-    Regex tag_attrib(areg.c_str());
-
-    std::string line;
-    int linenumber = 0;
-    while(getline(outf,line)){
-	linenumber++;
-	string begs = tag_beg.search(line);
-	string ends = tag_end.search(line);
-
-	if(ends.size()==0 && line.find("/>")!=string::npos) ends=begs; // handle <value foo='bar'/>
-
-	if(begs.size()>0 && ends.size()==0){
-	    tag_stack.push(begs);
-	}
-
-	if(begs.size()==0 && ends.size()>0){
-	    string popped = tag_stack.top();
-	    tag_stack.pop();
-	    if(ends != popped){
-		cerr << "xml is inconsistent at line " << linenumber << ".\n" 
-		     << "expected: " << popped << "\n"
-		     << "saw:      " << ends << "\n";
-		exit(1);
-	    }
-	}
-
-	if(e.tagmap && begs.size()>0 && begs==ends && e.tagmap->find(begs)!=e.tagmap->end()){
-	    (*e.tagmap)[begs] = tag_val.search(line);
-	}
-
-	if(e.tagid && e.tagid_set && (*e.tagid)==begs){
-	    string a = tag_attrib.search(line);
-	    if(a.size()>0) a = a.substr(1,a.size()-2);
-	    (*e.tagid_set).insert(a);
-	}
-    }
-}
 
 
 
@@ -299,57 +171,7 @@ void xml::set_tempfile_template(const std::string &temp)
 
 void xml::close()
 {
-#ifdef HAVE_PTHREAD_H
-    MUTEX_LOCK(&M);
-#endif
     outf.close();
-#if 0
-    if(make_dtd){
-	/* If we are making the DTD, then we should close the file,
-	 * scan the output file for the tags, write to a temp file, and then
-	 * close the temp file and have it overwrite the outfile.
-	 */
-
-    if(make_dtd){
-	char tfn[1024];
-	memset(tfn,0,sizeof(tfn));
-	strcpy(tfn,tempfile_template.c_str());
-	int fd = mkstemp(tfn);
-	tempfilename = tfn;  
-	outf.open(tfn,ios_base::out);
-	::close(fd);
-    }
-
-
-	std::ifstream in(cstr(tempfilename));
-	if(!in.is_open()){
-	    cerr << tempfilename << strerror(errno) << ":Cannot re-open for input\n";
-	    exit(1);
-	}
-	outf.open(cstr(outfilename),ios_base::out);
-	if(!outf.is_open()){
-	    cerr << outfilename << " " << strerror(errno)
-		 << ": Cannot open for output; will not delete " << tempfilename << "\n";
-	    exit(1);
-	}
-	// copy over first line --- the XML header
-	std::string line;
-	getline(in,line);
-	outf << line;
-
-	write_dtd();			// write the DTD
-	while(!in.eof()){
-	    getline(in,line);
-	    outf << line << endl;
-	}
-	in.close();
-	unlink(cstr(tempfilename));
-	outf.close();
-    }
-#endif
-#ifdef HAVE_PTHREAD_H
-    MUTEX_UNLOCK(&M);
-#endif
 }
 
 void xml::write_dtd()
@@ -586,22 +408,13 @@ void xml::add_rusage()
  ****************************************************************/
 void xml::xmlcomment(const string &comment_)
 {
-#ifdef HAVE_PTHREAD_H
-    MUTEX_LOCK(&M);
-#endif
     *out << "<!-- " << comment_ << " -->\n";
     out->flush();
-#ifdef HAVE_PTHREAD_H
-    MUTEX_UNLOCK(&M);
-#endif
 }
 
 
 void xml::xmlprintf(const std::string &tag,const std::string &attribute, const char *fmt,...)
 {
-#ifdef HAVE_PTHREAD_H
-    MUTEX_LOCK(&M);  
-#endif
     spaces();
     tagout(tag,attribute);
     va_list ap;
@@ -621,16 +434,10 @@ void xml::xmlprintf(const std::string &tag,const std::string &attribute, const c
     tagout("/"+tag,"");
     *out << '\n';
     out->flush();
-#ifdef HAVE_PTHREAD_H
-    MUTEX_UNLOCK(&M);
-#endif
 }
 
 void xml::xmlout(const string &tag,const string &value,const string &attribute,bool escape_value)
 {
-#ifdef HAVE_PTHREAD_H
-    MUTEX_LOCK(&M);
-#endif
     spaces();
     if(value.size()==0){
 	tagout(tag,attribute+"/");
@@ -642,9 +449,6 @@ void xml::xmlout(const string &tag,const string &value,const string &attribute,b
     }
     *out << "\n";
     out->flush();
-#ifdef HAVE_PTHREAD_H
-    MUTEX_UNLOCK(&M);
-#endif
 }
 
 #ifdef HAVE_LIBEWF

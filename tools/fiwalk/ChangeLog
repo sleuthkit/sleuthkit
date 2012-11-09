@@ -1,3 +1,9 @@
+2012-11-09  Simson Garfinkel  <simsong@Mucha.local>
+
+	* src/dfxml.cpp: removed code to deal with existing DFXML files; fiwalk doesn't need restarting dfxml generation
+
+	* COPYING: removed TRE code.
+
 2012-05-02  Simson Garfinkel  <simsong@ncr.nps.edu>
 
 	* src/unicode_escape.cpp (validateOrEscapeUTF8): corrected escaping for 4-byte unicodes

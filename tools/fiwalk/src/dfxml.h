@@ -7,11 +7,11 @@
 #define _XML_H_
 
 #ifndef __STDC_FORMAT_MACROS
-#define __STDC_FORMAT_MACROS
+  #define __STDC_FORMAT_MACROS
 #endif
 
 #ifdef HAVE_PTHREAD_H
-#include <pthread.h>
+  #include <pthread.h>
 #endif
 #include <stdio.h>
 #include <fstream>
@@ -19,14 +19,13 @@
 #include <sys/types.h>
 
 #ifdef _MSC_VER
-#include <winsock.h>
-#include <time.h>
-#include <windows.h>
+  #include <winsock.h>
+  #include <time.h>
+  #include <windows.h>
 #else
-#include <sys/time.h>
-#include <inttypes.h>
-#endif
-
+  #include <sys/time.h>
+  #include <inttypes.h>
+  #endif
 
 /* c++ */
 #include <string>
@@ -35,46 +34,43 @@
 #include <map>
 
 #ifdef HAVE_SYS_CDEFS_H
-#include <sys/cdefs.h>
+  #include <sys/cdefs.h>
 #endif
 
 #ifdef HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
+  #include <sys/resource.h>
 #endif
 
 #ifdef HAVE_PWD_H
-#include <pwd.h>
+  #include <pwd.h>
 #endif
 
 #ifdef HAVE_LIBEWF
-#if defined(_MSC_VER)
-#include <config_msc.h>
-#endif
-
-#include <libewf.h>
+  #if defined(_MSC_VER)
+    #include <config_msc.h>
+  #endif
+  #include <libewf.h>
 #endif
 
 #ifdef HAVE_SYS_UTSNAME_H
-#include <sys/utsname.h>
+  #include <sys/utsname.h>
 #endif
 
 #ifdef HAVE_LIBAFFLIB
-#include <afflib/afflib.h>
+  #include <afflib/afflib.h>
 #endif
 
 #ifndef __BEGIN_DECLS
-#if defined(__cplusplus)
-#define __BEGIN_DECLS   extern "C" {
-#define __END_DECLS     }
-#else
-#define __BEGIN_DECLS
-#define __END_DECLS
-#endif
+  #if defined(__cplusplus)
+    #define __BEGIN_DECLS   extern "C" {
+    #define __END_DECLS     }
+  #else
+    #define __BEGIN_DECLS
+    #define __END_DECLS
+  #endif
 #endif
 
-//#ifdef HAVE_LIBTSK3
 #include "tsk3/libtsk.h"
-//#endif
 
 #ifdef __cplusplus
 class xml {
@@ -108,7 +104,6 @@ private:
     struct timeval t0;
     bool  make_dtd;
     std::string outfilename;
- //   std::stack<TSK_INUM_T> parent_stack;
     void  write_doctype(std::fstream &out);
     void  write_dtd();
     void  verify_tag(std::string tag);
@@ -126,32 +121,14 @@ public:
 	return command_line;
     }
 
-    class existing {
-    public:;
-	std::map<std::string,std::string> *tagmap;
-	std::string *tagid;
-	const std::string *attrib;
-	std::set<std::string> *tagid_set;
-    };
-
     xml();					 // defaults to stdout
     xml(const std::string &outfilename,bool makeDTD); // write to a file, optionally making a DTD
-    xml(const std::string &outfilename,class existing &e); // open an existing file, for appending
     virtual ~xml(){};
     void set_tempfile_template(const std::string &temp);
 
     static std::string xmlescape(const std::string &xml);
     static std::string xmlstrip(const std::string &xml);
 
-
-    /**
-     * opens an existing XML file and jumps to the end.
-     * @param tagmap  - any keys that are tags capture the values.
-     * @param tagid   - if a tagid is provided, fill tagid_set with all of the tags seen.
-     */
-    typedef std::map<std::string,std::string> tagmap_t;
-    typedef std::set<std::string> tagid_set_t;
-    void open_existing(tagmap_t *tagmap,std::string *tagid,const std::string *attrib,tagid_set_t *tagid_set);
     void close();			// writes the output to the file
 
     void tagout( const std::string &tag,const std::string &attribute);
@@ -210,3 +187,4 @@ public:
 #endif
 
 #endif
+

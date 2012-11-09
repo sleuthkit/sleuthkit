@@ -8,7 +8,7 @@
 #define MYGLOB_H
 
 #ifdef _MSC_VER
-#include "regex.h"  //use regex in src tree
+/* TK: A class that uses Microsoft's regex class */
 #else
 extern "C" {
 #include <regex.h>
