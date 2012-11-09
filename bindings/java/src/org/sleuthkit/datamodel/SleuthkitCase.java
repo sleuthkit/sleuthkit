@@ -848,6 +848,33 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Get all blackboard attribute types
+	 *
+	 * @return list of blackboard attribute types
+	 * @throws TskCoreException exception thrown if a critical error occurred
+	 * within tsk core
+	 */
+	public ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE> getBlackboardAttributeTypes() throws TskCoreException {
+		dbReadLock();
+		try {
+			ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE> attribute_types = new ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE>();
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("SELECT type_name FROM blackboard_attribute_types");
+
+			while (rs.next()) {
+				attribute_types.add(BlackboardAttribute.ATTRIBUTE_TYPE.fromLabel(rs.getString(1)));
+			}
+			rs.close();
+			s.close();
+			return attribute_types;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attribute types. " + ex.getMessage(), ex);
+		} finally {
+			dbReadUnlock();
+		}
+	}
+
+	/**
 	 * Helper method to get all artifacts matching the type id name and object
 	 * id
 	 *
