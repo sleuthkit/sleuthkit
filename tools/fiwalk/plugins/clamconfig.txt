@@ -1,5 +1,5 @@
 #
-# Configuration file for fiwalk
+# Configuration file for fiwalk to run ClamAV on all executables
 #
 
 

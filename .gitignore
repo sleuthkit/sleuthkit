@@ -38,6 +38,7 @@ framework/win32/framework/*.suo
 *.o
 *.lo
 *.la
+*.jar
 Makefile
 .deps
 .libs
