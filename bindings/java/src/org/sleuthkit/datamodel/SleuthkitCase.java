@@ -848,7 +848,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get all blackboard attribute types
+	 * Get all blackboard attribute types 
+	 * 
+	 * Gets both static (in enum) and dynamic attributes types (created by modules at runtime)
 	 *
 	 * @return list of blackboard attribute types
 	 * @throws TskCoreException exception thrown if a critical error occurred
@@ -872,6 +874,55 @@ public class SleuthkitCase {
 		} finally {
 			dbReadUnlock();
 		}
+	}
+
+	/**
+	 * Get count of blackboard attribute types 
+	 * 
+	 * Counts both static (in enum) and
+	 * dynamic attributes types (created by modules at runtime)
+	 *
+	 * @return count of attribute types
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	public int getBlackboardAttributeTypesCount() throws TskCoreException {
+		ResultSet rs = null;
+		Statement s = null;
+		dbReadLock();
+		try {
+			int count = 0;
+			s = con.createStatement();
+			rs = s.executeQuery("SELECT COUNT(*) FROM blackboard_attribute_types");
+
+			if (rs.next()) {
+				count = rs.getInt(1);
+			} else {
+				throw new TskCoreException("Error getting count of attribute types. ");
+			}
+
+			return count;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting number of blackboard artifacts by type. " + ex.getMessage(), ex);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Coud not close the result set, ", ex);
+				}
+			}
+			if (s != null) {
+				try {
+					s.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Coud not close the statement, ", ex);
+				}
+			}
+
+			dbReadUnlock();
+		}
+
 	}
 
 	/**
