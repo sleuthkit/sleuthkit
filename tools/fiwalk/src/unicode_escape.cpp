@@ -27,6 +27,10 @@
 #include "tsk3/tsk_tools_i.h"
 #include "unicode_escape.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 #include <stdio.h>
 #include <iostream>
 

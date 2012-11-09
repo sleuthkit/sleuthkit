@@ -45,10 +45,10 @@
 #include "utils.h"
 
 #ifdef _MSC_VER
+#pragma warning(disable : 4996)
 #include <direct.h>
 #include <crtdefs.h>
 #include <windows.h>
-#define _CRT_SECURE_NO_WARNINGS
 //#define mkdir _mkdir
 #endif
 

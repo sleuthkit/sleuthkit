@@ -33,6 +33,10 @@
 #include <sys/stat.h>
 #include <string.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 #ifndef HAVE_ERR
 #include <stdarg.h>
 void err(int eval,const char *fmt,...)
@@ -82,6 +86,7 @@ void warnx(const char *fmt,...)
 #endif
 
 #ifdef _MSC_VER
+#pragma warning(disable : 4996)
 #define inline
 #include <io.h>
 #include <stdio.h>

@@ -29,7 +29,7 @@
  * not subject to copyright.
  */
 #ifdef _MSC_VER
-#define _CRT_SECURE_NO_WARNINGS
+#pragma warning(disable : 4996)
 #endif
 
 #include "outfile.h"

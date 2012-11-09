@@ -23,6 +23,7 @@
 #include <errno.h>
 
 #ifdef _MSC_VER
+#pragma warning(disable : 4996)
 #include "regex.h" //use regex in src tree
 //#include <mmsystem.h> //Provides timeGetTime
 #else
