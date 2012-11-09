@@ -270,6 +270,12 @@
     <ClCompile Include="..\..\tsk3\fs\ntfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk3\base\crc.c">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk3\base\sha2.c">
+      <Filter>base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk3\vs\tsk_bsd.h">
@@ -361,6 +367,12 @@
     </ClInclude>
     <ClInclude Include="..\..\tsk3\img\tsk_img_i.h">
       <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk3\base\crc.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk3\base\sha2.h">
+      <Filter>base</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
