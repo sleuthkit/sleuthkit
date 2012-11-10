@@ -102,17 +102,8 @@ int64_t  current_partition_start=0;	// in bytes
 /* Individual 'state' variables */
 string  plugin_filename;
 
-#ifndef FIWALK_PACKAGE
-#define FIWALK_PACKAGE "FIWALK"
-#endif
-
-#ifndef FIWALK_VERSION
-#define FIWALK_VERSION "0.6.19"
-#endif
-
 void print_version()
 {
-    printf("FIWalk Version:    %s\n",FIWALK_VERSION);
     printf("SleuthKit Version: %s\n",tsk_version_get_str());
 #ifdef HAVE_LIBAFFLIB
     printf("AFFLIB Version:    %s\n",af_version());
@@ -693,7 +684,7 @@ int main(int argc, char * const *argv1)
 	x->pop();
 	    
 	/* Output carver information per photorec standard */
-	x->add_DFXML_creator(FIWALK_PACKAGE,FIWALK_VERSION,command_line);
+	x->add_DFXML_creator("fiwalk",tsk_version_get_str(),command_line);
     }
 
     /* Can't use comment until after here... */
@@ -707,7 +698,7 @@ int main(int argc, char * const *argv1)
     partition_info("image_filename",filename);
 
     if(!x){
-	partition_info("fiwalk_version",FIWALK_VERSION);
+	partition_info("fiwalk_version",tsk_version_get_str());
 	partition_info("start_time",mytime());
 	partition_info("tsk_version",tsk_version_get_str());
     }
