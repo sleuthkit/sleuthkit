@@ -599,7 +599,12 @@ sub print_tl {
         # above.  We need to fill the empty space with blanks, though.
         #
         if ($old_date_string eq $date_string) {
-            $date_string = " ";
+            if ($iso8601) {
+                $date_string = "                    ";
+            }
+            else {
+                $date_string = "                        ";
+            }
             $prev_cnt++
               if ($INDEX ne "");
         }
