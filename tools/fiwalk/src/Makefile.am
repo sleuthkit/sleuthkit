@@ -12,7 +12,6 @@ fiwalk_SOURCES = fiwalk.cpp  fiwalk_tsk.cpp fiwalk.h \
 	content.cpp content.h \
 	arff.cpp arff.h outfile.h \
 	plugin.cpp plugin.h \
-	myglob.cpp myglob.h\
 	utils.c utils.h \
 	dfxml.cpp dfxml.h \
 	hash_t.h hexbuf.c hexbuf.h \

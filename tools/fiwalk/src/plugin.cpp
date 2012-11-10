@@ -50,10 +50,50 @@
 #include "plugin.h"
 #include "arff.h"
 
-#include "myglob.h"
+#ifdef _MSC_VER
+/* TK: A class that uses Microsoft's regex class */
+#else
+extern "C" {
+#include <regex.h>
+}
+#endif
 
+class myglob {
+public:
+    regex_t reg;
 
-using namespace std;
+    myglob(const std::string &pattern){
+	/* Build the regular expression from the pattern */
+	string re;				// the regular expression
+	
+	re.push_back('^');			// beginning of string
+	for(string::const_iterator it = pattern.begin(); it!=pattern.end(); it++){
+	    switch(*it){
+	    case '?': re.push_back('.'); break;
+	    case '.': re.append("[.]");  break;
+	    case '(': re.append("\\(");  break;
+	    case ')': re.append("\\)");  break;
+	    case '*': re.append(".*");   break;
+	    default:  re.push_back(*it); break;
+	    }
+	}
+	re.push_back('$');
+	if(regcomp(&reg,re.c_str(),REG_EXTENDED|REG_ICASE)){
+	    std::cerr << "invalid regular expression: " << re << "\n";
+	    exit(1);
+	}
+    };
+    bool match(const std::string &fname){
+	regmatch_t pmatch[10];
+	memset(pmatch,0,sizeof(pmatch));
+	int res = regexec(&reg,fname.c_str(),10,pmatch,0);
+	return (res==0);
+    };
+    ~myglob(){
+	regfree(&reg);
+    };
+};
+
 
 /** describes each plugin */
 class plugins {
