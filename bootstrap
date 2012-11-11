@@ -1,5 +1,5 @@
 #!/bin/sh
-aclocal \
+aclocal && autoheader  \
     && (libtoolize || glibtoolize) \
     && automake --foreign --add-missing \
     && autoconf
