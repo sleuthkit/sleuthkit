@@ -451,7 +451,7 @@ static int convert(TSK_TCHAR *OPTARG, char **_opt_arg)
 			return ret_val;
 		}
 		*_opt_arg=opt_arg;
-		printf("opt_arg: %s\n",opt_arg);
+//		printf("opt_arg: %s\n",opt_arg);
 		return 0;
 }
 #endif
