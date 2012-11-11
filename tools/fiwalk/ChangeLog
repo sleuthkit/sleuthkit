@@ -1,3 +1,7 @@
+2012-11-10  Simson Garfinkel  <simsong@ubuntu>
+
+	* src/fiwalk.cpp (main): removed packaging of AFF metadata into XML file.
+
 2012-11-09  Simson Garfinkel  <simsong@Mucha.local>
 
 	* src/dfxml.cpp: removed code to deal with existing DFXML files; fiwalk doesn't need restarting dfxml generation
