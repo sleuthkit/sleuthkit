@@ -1250,7 +1250,7 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
                 cache_len_f = frags;
                 cache_addr = addr;
             }
-            cache_offset = (addr - cache_addr) * fs->block_size;
+            cache_offset = (size_t)((addr - cache_addr) * fs->block_size);
         }
 
         if (a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
