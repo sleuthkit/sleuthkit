@@ -4826,8 +4826,10 @@ hfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start_blk,
             && (!(flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC)))
             continue;
 
+        if (flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
+            myflags |= TSK_FS_BLOCK_FLAG_AONLY;
 
-        if (tsk_fs_block_get(fs, fs_block, addr) == NULL) {
+        if (tsk_fs_block_get_flag(fs, fs_block, addr, (TSK_FS_BLOCK_FLAG_ENUM)myflags) == NULL) {
             tsk_fs_block_free(fs_block);
             return 1;
         }

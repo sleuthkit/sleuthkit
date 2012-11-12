@@ -175,7 +175,7 @@ ext2fs_bmap_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
             ext2fs->grp_buf->bg_inode_table) + INODE_TABLE_SIZE(ext2fs);
 
         tsk_fprintf(stderr,
-            "ext2_block_walk: loading group %" PRI_EXT2GRP
+            "ext2_bmap_load: loading group %" PRI_EXT2GRP
             " dbase %" PRIuDADDR " bmap +%" PRIuDADDR
             " imap +%" PRIuDADDR " inos +%" PRIuDADDR "..%"
             PRIuDADDR "\n", grp_num, dbase,
@@ -1093,8 +1093,11 @@ ext2fs_block_walk(TSK_FS_INFO * a_fs, TSK_DADDR_T a_start_blk,
         else if ((myflags & TSK_FS_BLOCK_FLAG_UNALLOC)
             && (!(a_flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC)))
             continue;
+        
+        if (a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
+            myflags |= TSK_FS_BLOCK_FLAG_AONLY;
 
-        if (tsk_fs_block_get(a_fs, fs_block, addr) == NULL) {
+        if (tsk_fs_block_get_flag(a_fs, fs_block, addr, myflags) == NULL) {
             tsk_error_set_errstr2("ext2fs_block_walk: block %" PRIuDADDR,
                 addr);
             tsk_fs_block_free(fs_block);

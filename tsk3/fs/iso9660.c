@@ -1389,7 +1389,10 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
             && (!(flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC)))
             continue;
 
-        if (tsk_fs_block_get(fs, fs_block, addr) == NULL) {
+        if (flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
+            myflags |= TSK_FS_BLOCK_FLAG_AONLY;
+        
+        if (tsk_fs_block_get_flag(fs, fs_block, addr, myflags) == NULL) {
             tsk_error_set_errstr2("iso_block_walk");
             tsk_fs_block_free(fs_block);
             return 1;
