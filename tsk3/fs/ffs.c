@@ -1199,6 +1199,7 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     /* Cycle through the fragment range requested */
     for (addr = a_start_blk; addr <= a_end_blk; addr++) {
         int retval;
+        size_t cache_offset = 0;
         int myflags = ffs_block_getflags(fs, addr);
 
         if ((tsk_verbose) && (myflags & TSK_FS_BLOCK_FLAG_META)
@@ -1221,38 +1222,44 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
             continue;
 
 
-        /* we read in block-sized chunks and cache the result for later
-         * calls.  See if this fragment is in our cache */
-        if ((cache_len_f == 0) || (addr >= cache_addr + cache_len_f)) {
-            ssize_t cnt;
-            int frags;
+        if ((a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY) == 0) {
+            /* we read in block-sized chunks and cache the result for later
+             * calls.  See if this fragment is in our cache */
+            if ((cache_len_f == 0) || (addr >= cache_addr + cache_len_f)) {
+                ssize_t cnt;
+                int frags;
 
-            /* Ideally, we want to read in block sized chunks, verify we can do that */
-            frags = (a_end_blk > addr + ffs->ffsbsize_f - 1 ?
-                ffs->ffsbsize_f : (int) (a_end_blk + 1 - addr));
+                /* Ideally, we want to read in block sized chunks, verify we can do that */
+                frags = (a_end_blk > addr + ffs->ffsbsize_f - 1 ?
+                    ffs->ffsbsize_f : (int) (a_end_blk + 1 - addr));
 
-            cnt =
-                tsk_fs_read_block(fs, addr, cache_blk_buf,
-                fs->block_size * frags);
-            if (cnt != fs->block_size * frags) {
-                if (cnt >= 0) {
-                    tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_FS_READ);
+                cnt =
+                    tsk_fs_read_block(fs, addr, cache_blk_buf,
+                    fs->block_size * frags);
+                if (cnt != fs->block_size * frags) {
+                    if (cnt >= 0) {
+                        tsk_error_reset();
+                        tsk_error_set_errno(TSK_ERR_FS_READ);
+                    }
+                    tsk_error_set_errstr2("ffs_block_walk: Block %" PRIuDADDR,
+                        addr);
+                    tsk_fs_block_free(fs_block);
+                    free(cache_blk_buf);
+                    return 1;
                 }
-                tsk_error_set_errstr2("ffs_block_walk: Block %" PRIuDADDR,
-                    addr);
-                tsk_fs_block_free(fs_block);
-                free(cache_blk_buf);
-                return 1;
+                cache_len_f = frags;
+                cache_addr = addr;
             }
-            cache_len_f = frags;
-            cache_addr = addr;
+            cache_offset = (size_t)((addr - cache_addr) * fs->block_size);
         }
+
+        if (a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
+            myflags |= TSK_FS_BLOCK_FLAG_AONLY;
 
         // call the callback
         tsk_fs_block_set(fs, fs_block, addr,
             myflags | TSK_FS_BLOCK_FLAG_RAW,
-            &cache_blk_buf[(addr - cache_addr) * fs->block_size]);
+            &cache_blk_buf[cache_offset]);
         retval = action(fs_block, ptr);
         if (retval == TSK_WALK_STOP) {
             break;

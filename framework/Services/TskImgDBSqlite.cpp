@@ -2603,7 +2603,7 @@ int TskImgDBSqlite::addModule(const std::string& name, const std::string& descri
                 name.c_str(), description.c_str());
             if (sqlite3_exec(m_db, insertStmt, NULL, NULL, &errmsg) == SQLITE_OK) 
             {
-                moduleId = sqlite3_last_insert_rowid(m_db);
+                moduleId = (int)sqlite3_last_insert_rowid(m_db);
             } 
             else 
             {
@@ -2677,7 +2677,7 @@ int TskImgDBSqlite::getModuleInfo(std::vector<TskModuleInfo> & moduleInfoList) c
     if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) {
         TskModuleInfo moduleInfo;
         while (sqlite3_step(statement) == SQLITE_ROW) {
-            moduleInfo.module_id = (uint64_t)sqlite3_column_int64(statement, 0);
+            moduleInfo.module_id = (int)sqlite3_column_int64(statement, 0);
             moduleInfo.module_name = (char *)sqlite3_column_text(statement, 1);
             moduleInfo.module_description = (char *)sqlite3_column_text(statement, 2);
             moduleInfoList.push_back(moduleInfo);
@@ -2812,7 +2812,7 @@ int TskImgDBSqlite::addUnallocImg(int & unallocImgId)
     stmt << "INSERT INTO unalloc_img_status (unalloc_img_id, status) VALUES (NULL, " << TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CREATED << ")";
     char * errmsg;
     if (sqlite3_exec(m_db, stmt.str().c_str(), NULL, NULL, &errmsg) == SQLITE_OK) {
-        unallocImgId = sqlite3_last_insert_rowid(m_db);
+        unallocImgId = (int)sqlite3_last_insert_rowid(m_db);
         rc = 0;
     } else {
         wchar_t infoMessage[MAX_BUFF_LENGTH];

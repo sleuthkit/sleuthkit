@@ -10,11 +10,13 @@ New Features:
 - performance improvements with FAT code (maps and dir_add)
 - performance improvements with NTFS code (maps)
 - added AONLY flag to block_walk
+- Updated blkls and blkcalc to use AONLY flag -- MUCH faster. 
 
 Bug Fixes:
 - Fixed mactime issue where it could choose the wrong timezone that did
   not follow daylight savings times. 
 - Fixed file size of alternate data streams in framework.
+- Incorporated memory leak fixes and raw device fixes from ADF Solutions.
 
 
 

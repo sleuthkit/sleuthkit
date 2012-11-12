@@ -79,8 +79,8 @@ main(int argc, char **argv1)
     TSK_DADDR_T bstart = 0, blast = 0;
     int ch;
     int flags =
-        TSK_FS_BLOCK_FLAG_UNALLOC |
-        TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_CONT;
+        TSK_FS_BLOCK_WALK_FLAG_UNALLOC |
+        TSK_FS_BLOCK_WALK_FLAG_META | TSK_FS_BLOCK_WALK_FLAG_CONT;
 
     char lclflags = TSK_FS_BLKLS_CAT, set_bounds = 1;
     TSK_TCHAR **argv;
@@ -108,12 +108,12 @@ main(int argc, char **argv1)
                 argv[OPTIND]);
             usage();
         case _TSK_T('a'):
-            flags |= TSK_FS_BLOCK_FLAG_ALLOC;
-            flags &= ~TSK_FS_BLOCK_FLAG_UNALLOC;
+            flags |= TSK_FS_BLOCK_WALK_FLAG_ALLOC;
+            flags &= ~TSK_FS_BLOCK_WALK_FLAG_UNALLOC;
             break;
         case _TSK_T('A'):
-            flags |= TSK_FS_BLOCK_FLAG_UNALLOC;
-            flags &= ~TSK_FS_BLOCK_FLAG_ALLOC;
+            flags |= TSK_FS_BLOCK_WALK_FLAG_UNALLOC;
+            flags &= ~TSK_FS_BLOCK_WALK_FLAG_ALLOC;
             break;
         case _TSK_T('b'):
             ssize = (unsigned int) TSTRTOUL(OPTARG, &cp, 0);
@@ -126,7 +126,7 @@ main(int argc, char **argv1)
             }
             break;
         case _TSK_T('e'):
-            flags |= (TSK_FS_BLOCK_FLAG_ALLOC | TSK_FS_BLOCK_FLAG_UNALLOC);
+            flags |= (TSK_FS_BLOCK_WALK_FLAG_ALLOC | TSK_FS_BLOCK_WALK_FLAG_UNALLOC);
             break;
         case _TSK_T('f'):
             if (TSTRCMP(OPTARG, _TSK_T("list")) == 0) {
@@ -320,7 +320,7 @@ main(int argc, char **argv1)
     }
 
     if (tsk_fs_blkls(fs, (TSK_FS_BLKLS_FLAG_ENUM) lclflags, bstart, blast,
-            (TSK_FS_BLOCK_FLAG_ENUM) flags)) {
+            (TSK_FS_BLOCK_WALK_FLAG_ENUM)flags)) {
         tsk_error_print(stderr);
         fs->close(fs);
         img->close(img);

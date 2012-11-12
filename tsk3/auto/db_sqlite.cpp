@@ -626,13 +626,13 @@ int
 
     char
      foo[4096];
-    int
+    time_t
      mtime = 0;
-    int
+    time_t
      crtime = 0;
-    int
+    time_t
      ctime = 0;
-    int
+    time_t
      atime = 0;
     TSK_OFF_T size = 0;
     int
