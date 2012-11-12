@@ -36,6 +36,7 @@ extern "C" {
     typedef struct {
         TSK_IMG_INFO img_info;
         int num_img;
+        uint8_t is_winobj;
 
         // the following are protected by cache_lock in IMG_INFO
         TSK_TCHAR **images;

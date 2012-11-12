@@ -5957,9 +5957,15 @@ hfs_close(TSK_FS_INFO * fs)
         tsk_fs_dir_close(hfs->meta_dir);
         hfs->meta_dir = NULL;
     }
+
     if (hfs->dir_meta_dir) {
         tsk_fs_dir_close(hfs->dir_meta_dir);
         hfs->dir_meta_dir = NULL;
+    }
+
+    if (hfs->extents_file) {
+        tsk_fs_file_close(hfs->extents_file);
+        hfs->extents_file = NULL;
     }
 
     tsk_release_lock(&(hfs->metadata_dir_cache_lock));
