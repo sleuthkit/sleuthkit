@@ -152,8 +152,8 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         //For physical drive when the buffer is larger than remaining data,
         // WinAPI ReadFile call returns -1
         //in this case buffer of exact length must be passed to ReadFile
-        if ((raw_info->is_winobj) && (offset + len > raw_info->img_info.size ))
-            len = (size_t)(raw_info->img_info.size - offset);
+        if ((raw_info->is_winobj) && (rel_offset + len > raw_info->img_info.size ))
+            len = (size_t)(raw_info->img_info.size - rel_offset);
 
         if (FALSE == ReadFile(cimg->fd, buf, (DWORD) len, &nread, NULL)) {
             tsk_error_reset();
@@ -521,7 +521,7 @@ get_size(const TSK_TCHAR * a_file, uint8_t a_is_winobj)
                 }
             }
             else {
-                img_info->size = partition.PartitionLength.QuadPart;
+                size = partition.PartitionLength.QuadPart;
             }
         }
 
