@@ -149,8 +149,8 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_TAG_NAME = 65, ///< The tag name.  Can contain slashes "/" to represent tag hierarchy.
     TSK_DESCRIPTION = 66, ///< Description string.
     TSK_URL_DECODED = 67, ///< Decoded URL.
-    TSK_DATETIME_CREATED = 68,///<datetime created
-    TSK_DATETIME_MODIFIED = 69,///<datetime modified
+    TSK_DATETIME_CREATED = 68,///< Time in Unix epoch that something was created
+    TSK_DATETIME_MODIFIED = 69,///< Time in Unix epoch that something was modified
     TSK_PROCESSOR_ARCHITECTURE = 70,///< String of processor architecture.  Naming convention from http://en.wikipedia.org/wiki/Comparison_of_CPU_architectures.  So far, we've used x86, x86-64, and IA64.
     TSK_VERSION = 71,///< String for a software version 
 
