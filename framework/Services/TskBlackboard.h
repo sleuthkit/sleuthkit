@@ -151,7 +151,7 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_URL_DECODED = 67, ///< Decoded URL.
     TSK_DATETIME_CREATED = 68,///<datetime created
     TSK_DATETIME_MODIFIED = 69,///<datetime modified
-    TSK_PROCESSOR_ARCHITECTURE = 70,///< String containing the processor architecture. Can simply be 32/64 (still using string) or full string eg. x86, x64, amd64, etc.
+    TSK_PROCESSOR_ARCHITECTURE = 70,///< String of processor architecture.  Naming convention from http://en.wikipedia.org/wiki/Comparison_of_CPU_architectures.  So far, we've used x86, x86-64, and IA64.
     TSK_VERSION = 71,///< String for a software version 
 
     /* SEE ABOVE: 
