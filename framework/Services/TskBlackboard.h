@@ -1,19 +1,19 @@
 /*
- * The Sleuth Kit
- *
- * Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
- * reserved.
- *
- * This software is distributed under the Common Public License 1.0
- */
+* The Sleuth Kit
+*
+* Contact: Brian Carrier [carrier <at> sleuthkit [dot] org]
+* Copyright (c) 2010-2012 Basis Technology Corporation. All Rights
+* reserved.
+*
+* This software is distributed under the Common Public License 1.0
+*/
 
 /**
- * \file TskBlackboard.h
- * Interface for class that will implement the black board.  The black board
- * is used to store data from analysis modules.  The data is available to
- * later modules in the pipeline and in the final reporting phase.
- */
+* \file TskBlackboard.h
+* Interface for class that will implement the black board.  The black board
+* is used to store data from analysis modules.  The data is available to
+* later modules in the pipeline and in the final reporting phase.
+*/
 
 #ifndef _TSK_BLACKBOARD_H
 #define _TSK_BLACKBOARD_H
@@ -29,60 +29,60 @@
 using namespace std;
 
 /**
- * Built in artifact types.
- * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
- * for details on which attributes should be used for each artifact.
- */
+* Built in artifact types.
+* Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
+* for details on which attributes should be used for each artifact.
+*/
 
 /* Note that the below comments are the only documentation 
- * for the standard types.  Please ensure that all types are
- * documented. 
- * 
- * The numbers are explicitly added to make it easier to verify
- * that the Java and C++ code is in sync.
- *
- * It is very important that this list be kept up to date and 
- * in sync with the Java code.  Do not add anything here unless
- * you also add it there.  
- * See bindings/java/src/org/sleuthkit/datamodel/BlackboardArtifact.java */
+* for the standard types.  Please ensure that all types are
+* documented. 
+* 
+* The numbers are explicitly added to make it easier to verify
+* that the Java and C++ code is in sync.
+*
+* It is very important that this list be kept up to date and 
+* in sync with the Java code.  Do not add anything here unless
+* you also add it there.  
+* See bindings/java/src/org/sleuthkit/datamodel/BlackboardArtifact.java */
 typedef enum TSK_ARTIFACT_TYPE {
-		TSK_GEN_INFO = 1,///< The general info artifact, if information doesn't need its own artifact it should go here
-		TSK_WEB_BOOKMARK = 2,///< A web bookmark. 
-		TSK_WEB_COOKIE = 3,///< A web cookie. 
-		TSK_WEB_HISTORY = 4,///< A web history enrty. 
-		TSK_WEB_DOWNLOAD = 5,///< A web download. 
-		TSK_RECENT_OBJECT = 6,///< A recently used object (MRU, recent document, etc.).
-		TSK_TRACKPOINT = 7,///< A trackpoint from a GPS log.
-		TSK_INSTALLED_PROG = 8,///< An installed program. 
-		TSK_KEYWORD_HIT = 9,///< A keyword hit. 
-        TSK_HASHSET_HIT = 10, ///< A hit within a known bad / notable hashset / hash database. 
-        TSK_DEVICE_ATTACHED = 11, ///< An event for a device being attached to the host computer
-        TSK_INTERESTING_FILE_HIT = 12, ///< A file that was flagged because it matched some search criteria for being interesting (i.e. because of its name, extension, etc.)
-        TSK_EMAIL_MSG = 13, ///< An e-mail message that was extracted from a file.
-        TSK_EXTRACTED_TEXT = 14, ///< Text that was extracted from a file.
-        TSK_WEB_SEARCH_QUERY = 15, ///< Web search engine query extracted from web history.
-        TSK_METADATA_EXIF = 16, ///< EXIF Metadata
-        TSK_TAG_FILE = 17, ///< File tags.
-        TSK_TAG_ARTIFACT = 18, ///< Result tags.
-        TSK_OS_INFO = 19, ///< Information pertaining to an operating system.
+    TSK_GEN_INFO = 1,///< The general info artifact, if information doesn't need its own artifact it should go here
+    TSK_WEB_BOOKMARK = 2,///< A web bookmark. 
+    TSK_WEB_COOKIE = 3,///< A web cookie. 
+    TSK_WEB_HISTORY = 4,///< A web history enrty. 
+    TSK_WEB_DOWNLOAD = 5,///< A web download. 
+    TSK_RECENT_OBJECT = 6,///< A recently used object (MRU, recent document, etc.).
+    TSK_TRACKPOINT = 7,///< A trackpoint from a GPS log.
+    TSK_INSTALLED_PROG = 8,///< An installed program. 
+    TSK_KEYWORD_HIT = 9,///< A keyword hit. 
+    TSK_HASHSET_HIT = 10, ///< A hit within a known bad / notable hashset / hash database. 
+    TSK_DEVICE_ATTACHED = 11, ///< An event for a device being attached to the host computer
+    TSK_INTERESTING_FILE_HIT = 12, ///< A file that was flagged because it matched some search criteria for being interesting (i.e. because of its name, extension, etc.)
+    TSK_EMAIL_MSG = 13, ///< An e-mail message that was extracted from a file.
+    TSK_EXTRACTED_TEXT = 14, ///< Text that was extracted from a file.
+    TSK_WEB_SEARCH_QUERY = 15, ///< Web search engine query extracted from web history.
+    TSK_METADATA_EXIF = 16, ///< EXIF Metadata
+    TSK_TAG_FILE = 17, ///< File tags.
+    TSK_TAG_ARTIFACT = 18, ///< Result tags.
+    TSK_OS_INFO = 19, ///< Information pertaining to an operating system.
     /* SEE ABOVE:
-     * - KEEP JAVA CODE IN SYNC 
-     * - UPDATE map in TskBlackboard.cpp
-     * - Update Wiki to reflect the attributes that should be part of the artifact. 
-     */
+    * - KEEP JAVA CODE IN SYNC 
+    * - UPDATE map in TskBlackboard.cpp
+    * - Update Wiki to reflect the attributes that should be part of the artifact. 
+    */
 };
 
 /**
- * Built in attribute types 
- */
+* Built in attribute types 
+*/
 /* The numbers are explicitly added to make it easier to verify
- * that the Java and C++ code is in sync.
- *
- * It is very important that this list be kept up to date and 
- * in sync with the Java code.  Do not add anything here unless
- * you also add it there.  
- * See bindings/java/src/org/sleuthkit/datamodel/BlackboardAttribute.java 
- */
+* that the Java and C++ code is in sync.
+*
+* It is very important that this list be kept up to date and 
+* in sync with the Java code.  Do not add anything here unless
+* you also add it there.  
+* See bindings/java/src/org/sleuthkit/datamodel/BlackboardAttribute.java 
+*/
 typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_URL = 1,///< String of a URL, should start with http:// or ftp:// etc.  You should also make a TskBlackoard::TSK_DOMAIN entry for the base domain name. 
     TSK_DATETIME = 2,///< INT32: GMT based Unix time, defines number of secords elapsed since UTC Jan 1, 1970.
@@ -155,13 +155,13 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_VERSION = 71,///< String for a software version 
 
     /* SEE ABOVE: 
-     * - KEEP JAVA CODE IN SYNC 
-     * - UPDATE map in TskBlackBoard.cpp too */
+    * - KEEP JAVA CODE IN SYNC 
+    * - UPDATE map in TskBlackBoard.cpp too */
 };
 
 /**
- * Class used to store the pair of type and display names of attributes.
- */
+* Class used to store the pair of type and display names of attributes.
+*/
 class TskAttributeNames{
 public:
     string typeName;
@@ -172,8 +172,8 @@ public:
 };
 
 /**
- * Class used to store the pair of type and display names of artifacts.
- */
+* Class used to store the pair of type and display names of artifacts.
+*/
 class TskArtifactNames{
 public:
     string typeName;
@@ -184,198 +184,198 @@ public:
 };
 
 /**
- * An interface for setting and retrieving name/value pairs to the blackboard.
- * The blackboard is used to store data for use by later modules in the pipeline.
- * Can be registered with and retrieved from TskServices.
- */
+* An interface for setting and retrieving name/value pairs to the blackboard.
+* The blackboard is used to store data for use by later modules in the pipeline.
+* Can be registered with and retrieved from TskServices.
+*/
 class TSK_FRAMEWORK_API TskBlackboard
 {
 public:
-    
+
     /**
-     * Get the artifact with the given id
-     * @param artifactID id
-     * @returns the artifact throws an error if no artifact matches that id.
-     */
+    * Get the artifact with the given id
+    * @param artifactID id
+    * @returns the artifact throws an error if no artifact matches that id.
+    */
     virtual TskBlackboardArtifact getBlackboardArtifact(const long artifactID) = 0;
 
     /**
-     * Get all artifacts that match the given condition
-     * @param condition condition (implementation specific) to use for matching
-     * @returns vector of matching artifacts can return an empty vector if there are no matches
-     * @throws error if a bad condition string is supplied
-     */
+    * Get all artifacts that match the given condition
+    * @param condition condition (implementation specific) to use for matching
+    * @returns vector of matching artifacts can return an empty vector if there are no matches
+    * @throws error if a bad condition string is supplied
+    */
     virtual vector<TskBlackboardArtifact> getMatchingArtifacts(const string& condition)const = 0;
     /**
-     * Get all artifacts with the given type name and file id
-     * @param file_id associated file id
-     * @param artifactTypeName type name
-     * @returns vector of matching artifacts can return an empty vector if there are no matches
-     */
+    * Get all artifacts with the given type name and file id
+    * @param file_id associated file id
+    * @param artifactTypeName type name
+    * @returns vector of matching artifacts can return an empty vector if there are no matches
+    */
     virtual vector<TskBlackboardArtifact> getArtifacts(const uint64_t file_id, const string& artifactTypeName)const = 0;
     /**
-     * Get all artifacts with the given type id and file id
-     * @param file_id associated file id
-     * @param artifactTypeID type id
-     * @returns vector of matching artifacts can return an empty vector if there are no matches
-     */
+    * Get all artifacts with the given type id and file id
+    * @param file_id associated file id
+    * @param artifactTypeID type id
+    * @returns vector of matching artifacts can return an empty vector if there are no matches
+    */
     virtual vector<TskBlackboardArtifact> getArtifacts(const uint64_t file_id, int artifactTypeID)const = 0;
     /**
-     * Get all artifacts with the given type and file id
-     * @param file_id associated file id
-     * @param artifactType name
-     * @returns vector of matching artifacts can return an empty vector if there are no matches
-     */
+    * Get all artifacts with the given type and file id
+    * @param file_id associated file id
+    * @param artifactType name
+    * @returns vector of matching artifacts can return an empty vector if there are no matches
+    */
     virtual vector<TskBlackboardArtifact> getArtifacts(const uint64_t file_id, TSK_ARTIFACT_TYPE artifactType)const = 0;
     /**
-     * Get all artifacts with the given type
-     * @param artifactType type
-     * @returns vector of matching artifacts can return an empty vector if there are no matches
-     */
+    * Get all artifacts with the given type
+    * @param artifactType type
+    * @returns vector of matching artifacts can return an empty vector if there are no matches
+    */
     virtual vector<TskBlackboardArtifact> getArtifacts(const TSK_ARTIFACT_TYPE artifactType)const = 0;
 
     /**
-     * Get all attributes that match the given condition 
-     * @param condition (implementation specific) to use for matching
-     * @returns vector of matching attributes can return an empty vector if there are no matches
-     * @throws error if a bad condition string is supplied
-     */
+    * Get all attributes that match the given condition 
+    * @param condition (implementation specific) to use for matching
+    * @returns vector of matching attributes can return an empty vector if there are no matches
+    * @throws error if a bad condition string is supplied
+    */
     virtual vector<TskBlackboardAttribute> getMatchingAttributes(const string& condition)const = 0;   
 
     /**
-     * Get all attributes with the given type name and file id
-     * @param file_id associated file id
-     * @param attributeTypeName type name
-     * @returns vector of matching attributes can return an empty vector if there are no matches
-     */
+    * Get all attributes with the given type name and file id
+    * @param file_id associated file id
+    * @param attributeTypeName type name
+    * @returns vector of matching attributes can return an empty vector if there are no matches
+    */
     virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, const string& attributeTypeName)const = 0;
 
     /**
-     * Get all attributes with the given type and file id
-     * @param file_id associated file id
-     * @param attributeTypeID Type of attribute to return
-     * @returns vector of matching attributes can return an empty vector if there are no matches
-     */
+    * Get all attributes with the given type and file id
+    * @param file_id associated file id
+    * @param attributeTypeID Type of attribute to return
+    * @returns vector of matching attributes can return an empty vector if there are no matches
+    */
     virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, int attributeTypeID)const = 0;
 
     /** Get all attributes with the given type and file id
-     * @param file_id associated file id
-     * @param attributeType name
-     * @returns vector of matching attributes can return an empty vector if there are no matches
-     */
+    * @param file_id associated file id
+    * @param attributeType name
+    * @returns vector of matching attributes can return an empty vector if there are no matches
+    */
     virtual vector<TskBlackboardAttribute> getAttributes(const uint64_t file_id, TSK_ATTRIBUTE_TYPE attributeType)const = 0;
     /**
-     * Get all attributes with the given type
-     * @param attributeType type
-     * @returns vector of matching attributes can return an empty vector if there are no matches
-     */
+    * Get all attributes with the given type
+    * @param attributeType type
+    * @returns vector of matching attributes can return an empty vector if there are no matches
+    */
     virtual vector<TskBlackboardAttribute> getAttributes(const TSK_ATTRIBUTE_TYPE attributeType)const = 0;
-    
+
 
     /**
-     * Create a new blackboard artifact with the given type id and file id
-     * @param artifactTypeID artifact type id 
-     * @param file_id associated file id 
-     * @returns the new artifact
-     * @throws error if the artifact type does not exist
-     */
+    * Create a new blackboard artifact with the given type id and file id
+    * @param artifactTypeID artifact type id 
+    * @param file_id associated file id 
+    * @returns the new artifact
+    * @throws error if the artifact type does not exist
+    */
     virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const int artifactTypeID) = 0;
 
     /**
-     * Create a new blackboard artifact with the given type and file id
-     * @param file_id associated file id
-     * @param artifactType artifact type 
-     * @returns the new artifact
-     * @throws error if the artifact type does not exist
-     */
+    * Create a new blackboard artifact with the given type and file id
+    * @param file_id associated file id
+    * @param artifactType artifact type 
+    * @returns the new artifact
+    * @throws error if the artifact type does not exist
+    */
     virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const TSK_ARTIFACT_TYPE artifactType) = 0;
 
     /**
-     * Add a new artifact type with the given name and file id
-     * @param file_id associated file id
-     * @param artifactTypeName System name of artifact type 
-     * @returns the new artifact
-     * @throws error if the artifact type does not exist
-     */
+    * Add a new artifact type with the given name and file id
+    * @param file_id associated file id
+    * @param artifactTypeName System name of artifact type 
+    * @returns the new artifact
+    * @throws error if the artifact type does not exist
+    */
     virtual TskBlackboardArtifact createArtifact(const uint64_t file_id, const string& artifactTypeName) = 0;
 
     /**
-     * Add a new attribute to the general info artifact for the given file
-     * @param file_id file id for the file to add the attribute to
-     * @param attr and attribute populated with values. this attribute will have
-     * its artifact_id and obj_id set by this method.
-     * @throws error if no file with the given id exists or if a bad attribute is passed in.
-     */
+    * Add a new attribute to the general info artifact for the given file
+    * @param file_id file id for the file to add the attribute to
+    * @param attr and attribute populated with values. this attribute will have
+    * its artifact_id and obj_id set by this method.
+    * @throws error if no file with the given id exists or if a bad attribute is passed in.
+    */
     virtual void createGenInfoAttribute(const uint64_t file_id, TskBlackboardAttribute& attr) = 0;
 
     /**
-     * Search the entire blackboard for all attribute types associated with any
-     * artifact of the given type.
-     * @param artifactTypeId artifact type to search
-     * @returns a vector of attribute ids can return an empty vector if no types are found
-     */
+    * Search the entire blackboard for all attribute types associated with any
+    * artifact of the given type.
+    * @param artifactTypeId artifact type to search
+    * @returns a vector of attribute ids can return an empty vector if no types are found
+    */
     virtual vector<int> findAttributeTypes(int artifactTypeId) = 0;
 
     /**
-     * Convert attribute type id to display name
-     * @param attributeTypeID attribute type id
-     * @returns display name
-     * @throws error if no type exists for that id
-     */
+    * Convert attribute type id to display name
+    * @param attributeTypeID attribute type id
+    * @returns display name
+    * @throws error if no type exists for that id
+    */
     static string attrTypeIDToTypeDisplayName(const int attributeTypeID);
     /**
-     * Convert attribute type name to id
-     * @param attributeTypeString attribute type name
-     * @returns attribute type id
-     * @throws error if no type exists with that name
-     */
+    * Convert attribute type name to id
+    * @param attributeTypeString attribute type name
+    * @returns attribute type id
+    * @throws error if no type exists with that name
+    */
     static int attrTypeNameToTypeID(const string& attributeTypeString);
     /**
-     * Convert attribute type id to name
-     * @param attributeTypeID id
-     * @returns attribute type name
-     * @throws error if no type exists with that name
-     */
+    * Convert attribute type id to name
+    * @param attributeTypeID id
+    * @returns attribute type name
+    * @throws error if no type exists with that name
+    */
     static string attrTypeIDToTypeName(const int attributeTypeID);
 
     /**
-     * Add a new attribute type with the given name and display name
-     * @param attributeTypeName name for the new attribute type. should be unique
-     * @param displayName name to display for this type. need not be unique
-     * @returns the new attribute type id generated for the type.
-     * @throws error if a type with that name already exists
-     */
+    * Add a new attribute type with the given name and display name
+    * @param attributeTypeName name for the new attribute type. should be unique
+    * @param displayName name to display for this type. need not be unique
+    * @returns the new attribute type id generated for the type.
+    * @throws error if a type with that name already exists
+    */
     static int addAttributeType(const string& attributeTypeName, const string& displayName);
 
     /**
-     * Convert artifact type id to display name
-     * @param artifactTypeID artifact type id
-     * @returns display name
-     * @throws error if no type exists with that id
-     */
+    * Convert artifact type id to display name
+    * @param artifactTypeID artifact type id
+    * @returns display name
+    * @throws error if no type exists with that id
+    */
     static string artTypeIDToDisplayName(const int artifactTypeID);
     /**
-     * Convert artifact type name to id
-     * @param artifactTypeString artifact type name
-     * @returns artifact type id
-     * @throws error if no type exists with that name
-     */
+    * Convert artifact type name to id
+    * @param artifactTypeString artifact type name
+    * @returns artifact type id
+    * @throws error if no type exists with that name
+    */
     static int artTypeNameToTypeID(const string& artifactTypeString);
     /**
-     * Convert artifact type id to name
-     * @param artifactTypeID id
-     * @returns artifact type name
-     * @throws error if no type exists with that id
-     */
+    * Convert artifact type id to name
+    * @param artifactTypeID id
+    * @returns artifact type name
+    * @throws error if no type exists with that id
+    */
     static string artTypeIDToTypeName(const int artifactTypeID);
 
     /**
-     * Add a new artifact type with the given name and display name
-     * @param artifactTypeName name for the new attribute type. should be unique
-     * @param displayName name to display for this type. need not be unique
-     * @returns the new artifact type id generated for the type.
-     * @throws error if a type with that name already exists
-     */
+    * Add a new artifact type with the given name and display name
+    * @param artifactTypeName name for the new attribute type. should be unique
+    * @param displayName name to display for this type. need not be unique
+    * @returns the new artifact type id generated for the type.
+    * @throws error if a type with that name already exists
+    */
     static int addArtifactType(const string& artifactTypeName, const string& displayName);
 
     friend class TskBlackboardArtifact;
@@ -393,7 +393,7 @@ protected:
 
     /// Destructor
     virtual ~TskBlackboard() {};
-    
+
 private:
 
 };
