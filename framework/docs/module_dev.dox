@@ -121,6 +121,50 @@ Including the TskModuleDev.h framework header file in at least one of the source
     TSK_MODULE_EXPORT TskVersionInfo::BuildType getBuildType();
 </pre>
 
+\subsection mod_setup_others Other Functions
+
+More complex modules will likely put functions and variables other than 
+the module API functions in separate source files and/or may define various
+C++ classes to perform the work of the module. However, it is also possible to simply enclose   
+such functions and variables in an anonymous namespace to give them file scope 
+instead of global scope. This replaces the older practice 
+of declaring file scope functions and variables using the "static" keyword. An 
+anonymous namespace is a more flexible construct, since it is possible to define 
+types within it. For example:
+
+<pre>
+namespace
+{
+    struct Stats
+    {
+        long byteCounts[256];
+        long totalBytes = 0;
+    };
+	
+    const char *MODULE_NAME = "Entropy";
+    const char *MODULE_DESCRIPTION = "Performs an entropy calculation for the contents of a given file";
+    const char *MODULE_VERSION = "1.0.0";
+
+    double calculateEntropy(TskFile *pFile)
+    {
+        // CODE HERE
+    }
+}
+</pre>
+
+Linux/OS-X module developers should make sure module functions
+other than the module API functions are uniquely named or bound at module link time. Placing these
+functions in an anonymous namespace to give them static-linkage is one way to 
+accomplish this. 
+
+CAVEAT: Static data can be incompatible with multithreading, since each
+thread will get its own copy of the data.
+
+
+\subsection mod_stuff_caveat Linux/Os-X Modules and the Module API
+The module identification, initialization, execution, clean up, and version info functions are intended to be called by TSK Framework only. 
+Linux/OS-X modules <i>must not</i> call these functions within the module unless appropriate compiler/linker options are used to bind all library-internal symbols at link time. 
+
 
 \section mod_stuff Doing Stuff in a Module
 Now that you know how to structure your module, we'll examine how your module can interact with the framework to do its job. 
