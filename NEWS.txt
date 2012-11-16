@@ -1,6 +1,12 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.0.2 --------------
+
+
+Bug Fixes:
+- Fixed fcat to work on NTFS files (still doesn't support ADS though). 
+
 ---------------- VERSION 4.0.1 --------------
 New Features:
 - Can open raw Windows devices with write mode sharing.
