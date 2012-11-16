@@ -981,7 +981,7 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
                 data)) {
             tsk_error_errstr2_concat
                 (" - find_orphan_meta_walk_cb: identifying inodes allocated by file names");
-            return TSK_ERR;
+            return TSK_WALK_ERROR;
         }
     }
 
