@@ -145,6 +145,10 @@ public abstract class FsContent extends AbstractFile {
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+		if (offset == 0 && size == 0) {
+			//special case for 0-size file
+			return 0;
+		}
 		synchronized (this) {
 			if (fileHandle == 0) {
 				fileHandle = 
