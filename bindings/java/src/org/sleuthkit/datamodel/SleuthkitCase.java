@@ -43,6 +43,7 @@ import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
+import org.sqlite.SQLiteJDBCLoader;
 
 /**
  * Represents the case database and abstracts out the most commonly used
@@ -277,6 +278,11 @@ public class SleuthkitCase {
 			//allow to query while in transaction - no need read locks
 			statement.execute("PRAGMA read_uncommitted = True;");
 			statement.close();
+			
+			logger.log(Level.INFO, String.format("sqlite-jdbc version %s loaded in %s mode", 
+					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode() 
+					? "native" : "pure-java"));
+			
 		} catch (SQLException e) {
 			throw new TskCoreException("Couldn't configure the database connection", e);
 		}
