@@ -88,8 +88,8 @@ public abstract class AbstractFile extends AbstractContent {
 	public abstract boolean isDir();
 	
 	/**
-	 * Get the absolute unique across all files in the case parent path string
-	 * of this FsContent The path contains image and volume-system partition
+	 * Get the absolute unique path across all files in the case parent path string
+	 * of this FsContent. The path contains image and volume-system partition
 	 * After first call, every subsequent call returns the cached string
 	 *
 	 * @return unique absolute file path (cached after first call)
@@ -109,7 +109,7 @@ public abstract class AbstractFile extends AbstractContent {
 		while (tok.hasMoreTokens()) {
 			imageName = tok.nextToken();
 		}
-		sb.append("/").append(imageName).append("/");
+		sb.append("/img_").append(imageName).append("/");
 		sb.append(getName());
 
 		unique_path = sb.toString();

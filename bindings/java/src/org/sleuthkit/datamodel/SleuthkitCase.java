@@ -85,6 +85,9 @@ public class SleuthkitCase {
 	private PreparedStatement addBlackboardAttributeIntegerSt;
 	private PreparedStatement addBlackboardAttributeLongSt;
 	private PreparedStatement addBlackboardAttributeDoubleSt;
+	private PreparedStatement getFileSt;
+	private PreparedStatement getFileWithParentSt;
+	private PreparedStatement getFileWithParentFsContentSt;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
 	/**
@@ -179,6 +182,12 @@ public class SleuthkitCase {
 		addBlackboardAttributeDoubleSt = con.prepareStatement(
 				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) "
 				+ "VALUES (?,?,?,?,?,?)");
+		
+		getFileSt = con.prepareStatement("select * from tsk_files where name LIKE ? and name NOT LIKE '%journal%'");
+		
+		getFileWithParentSt = con.prepareStatement("select * from tsk_files where name LIKE ? and name NOT LIKE '%journal%' and parent_path LIKE ?");
+		
+		getFileWithParentFsContentSt = con.prepareStatement("select * from tsk_files where name LIKE ? and name NOT LIKE '%journal%' and parent_path LIKE ?");
 	}
 
 	private void closeStatements() {
@@ -260,6 +269,21 @@ public class SleuthkitCase {
 			if (addBlackboardAttributeDoubleSt != null) {
 				addBlackboardAttributeDoubleSt.close();
 				addBlackboardAttributeDoubleSt = null;
+			}
+			
+			if (getFileSt != null) {
+				getFileSt.close();
+				getFileSt = null;
+			}
+			
+			if (getFileWithParentSt != null) {
+				getFileWithParentSt.close();
+				getFileWithParentSt = null;
+			}
+			
+			if (getFileWithParentFsContentSt != null) {
+				getFileWithParentFsContentSt.close();
+				getFileWithParentFsContentSt = null;
 			}
 
 		} catch (SQLException e) {
@@ -2151,6 +2175,112 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 		throw new TskCoreException("No file found for id " + id);
+	}
+	
+	/**
+	 * @param fileName the name of the file or directory to match
+	 * @return a list of FsContent for files/directories whose name matches the
+	 * given fileName
+	 */
+	public List<FsContent> findFiles(String fileName) throws TskCoreException {
+		dbReadLock();
+
+		// set the file name in the PS
+		ResultSet rs = null;
+		List<FsContent> fsContents = new ArrayList<FsContent>();
+		try {
+			getFileSt.setString(1, fileName);
+
+			// get the result set
+			rs = getFileSt.executeQuery();
+
+			// convert to FsConents
+			fsContents = resultSetToFsContents(rs);
+			
+			// close the ResultSet
+			rs.close();
+		} catch (Exception e) {
+			throw new TskCoreException(e.getMessage());
+		} finally {
+			dbReadUnlock();
+		}
+
+		return fsContents;
+	}
+	
+	/**
+	 * @param fileName the name of the file or directory to match
+	 * @param dirName the name of a parent directory of fileName
+	 * @return a list of FsContent for files/directories whose name matches
+	 * fileName and whose parent directory contains dirName.
+	 */
+	public List<FsContent> findFiles(String fileName, String dirName) throws TskCoreException {
+		dbReadLock();
+
+		ResultSet rs = null;
+		List<FsContent> fsContents = new ArrayList<FsContent>();
+		try {
+			getFileWithParentSt.setString(1, fileName);
+
+			// set the parent directory name
+			getFileWithParentSt.setString(2, "%" + dirName + "%");
+
+			// get the result set
+			rs = getFileWithParentSt.executeQuery();
+
+			// convert to FsConents
+			fsContents = resultSetToFsContents(rs);
+			
+			// close the ResultSet
+			rs.close();
+		} catch (Exception e) {
+			throw new TskCoreException(e.getMessage());
+		} finally {
+			dbReadUnlock();
+		}
+
+		return fsContents;
+	}
+	
+	/**
+	 * @param fileName the name of the file or directory to match
+	 * @param parentFsContent 
+	 * @return a list of FsContent for files/directories whose name matches
+	 * fileName and that were inside a directory described by parentFsContent.
+	 */
+	public List<FsContent> findFiles(String fileName, FsContent parentFsContent) throws TskCoreException {
+		return findFiles(fileName, parentFsContent.getName());
+	}
+	
+	/**
+	 * @param filePath The full path to the file(s) of interest. This can
+	 * optionally include the image and volume names.
+	 * @return a list of FsContent that have the given file path.
+	 */
+	public List<FsContent> openFiles(String filePath) throws TskCoreException {
+		
+		// split the path into parts
+		String[] pathSegments = filePath.split("/\\");
+		
+		// see if filePath had an image and/or volume name
+		int index = 0;
+		if (pathSegments[0].startsWith("img_")) {
+			++index;
+		}
+		if (pathSegments[1].startsWith("vol_")) {
+			++index;
+		}
+		
+		// assemble the parent path (skipping over the image and volume name, if
+		// they exist
+		StringBuffer strbuf = new StringBuffer();
+		for (; index < pathSegments.length - 1; ++index) {
+			strbuf.append("/").append(pathSegments[index]);
+		}
+		String parentPath = strbuf.toString();
+		String fileName = pathSegments[pathSegments.length - 1];
+		
+		return findFiles(fileName, parentPath);
 	}
 
 	/**
