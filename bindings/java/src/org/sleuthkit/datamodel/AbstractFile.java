@@ -116,5 +116,28 @@ public abstract class AbstractFile extends AbstractContent {
 		return unique_path;
 	}
 
+	public static String createNonUniquePath(String uniquePath) {
+		
+		// split the path into parts
+		String[] pathSegments = uniquePath.split("/\\");
+		
+		// see if uniquePath had an image and/or volume name
+		int index = 0;
+		if (pathSegments[0].startsWith("img_")) {
+			++index;
+		}
+		if (pathSegments[1].startsWith("vol_")) {
+			++index;
+		}
+		
+		// Assemble the non-unique path (skipping over the image and volume
+		// name, if they exist).
+		StringBuilder strbuf = new StringBuilder();
+		for (; index < pathSegments.length; ++index) {
+			strbuf.append("/").append(pathSegments[index]);
+		}
+		
+		return strbuf.toString();
+	}
     
 }

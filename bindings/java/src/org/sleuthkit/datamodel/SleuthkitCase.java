@@ -2259,26 +2259,21 @@ public class SleuthkitCase {
 	 */
 	public List<FsContent> openFiles(String filePath) throws TskCoreException {
 		
-		// split the path into parts
-		String[] pathSegments = filePath.split("/\\");
+		// get the non-unique path (strip of image and volume path segments, if
+		// the exist.
+		String path = AbstractFile.createNonUniquePath(filePath);
 		
-		// see if filePath had an image and/or volume name
-		int index = 0;
-		if (pathSegments[0].startsWith("img_")) {
-			++index;
-		}
-		if (pathSegments[1].startsWith("vol_")) {
-			++index;
+		// split the file name from the parent path
+		int lastSlash = path.lastIndexOf("/");
+		
+		// if the last slash is at the end, strip it off
+		if (lastSlash == path.length()) {
+			path = path.substring(0, lastSlash - 1);
+			lastSlash = path.lastIndexOf("/");
 		}
 		
-		// assemble the parent path (skipping over the image and volume name, if
-		// they exist
-		StringBuffer strbuf = new StringBuffer();
-		for (; index < pathSegments.length - 1; ++index) {
-			strbuf.append("/").append(pathSegments[index]);
-		}
-		String parentPath = strbuf.toString();
-		String fileName = pathSegments[pathSegments.length - 1];
+		String parentPath = path.substring(0, lastSlash);
+		String fileName = path.substring(lastSlash);
 		
 		return findFiles(fileName, parentPath);
 	}
