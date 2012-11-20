@@ -62,18 +62,8 @@ public class Directory extends FsContent {
 	 * @return a list of AbstractFiles that are the children of this Directory.
 	 * Only returns children of type TskData.TSK_DB_FILES_TYPE_ENUM.FS.
 	 */
-	public List<AbstractFile> listFiles() {
-		
-		// first, get all children of type FS (may have to add more types)
-		List<AbstractFile> files = new ArrayList<AbstractFile>();
-		try {
-			files.addAll(getSleuthkitCase().getAbstractFileChildren(this, TskData.TSK_DB_FILES_TYPE_ENUM.FS));
-		} catch (TskCoreException ex) {
-			Logger.getLogger(Directory.class.getName()).log(Level.SEVERE, "Exception while calling SleuthkitCase.getAbstractFileChildren().", ex);
-			return new ArrayList<AbstractFile>();
-		}
-
-		return files;
+	public List<AbstractFile> listFiles() throws TskCoreException {
+		return getSleuthkitCase().getAbstractFileChildren(this, TskData.TSK_DB_FILES_TYPE_ENUM.FS);
 	}
 
 	@Override
