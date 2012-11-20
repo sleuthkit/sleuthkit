@@ -116,6 +116,12 @@ public abstract class AbstractFile extends AbstractContent {
 		return unique_path;
 	}
 
+	/**
+	 * @param uniquePath the unique path to an AbstractFile (or subclass)
+	 * usually obtained by a call to AbstractFile.getUniquePath.
+	 * @return the path to to an AbstractFile (or subclass) with the image and
+	 * volume path segments removed.
+	 */
 	public static String createNonUniquePath(String uniquePath) {
 		
 		// split the path into parts
