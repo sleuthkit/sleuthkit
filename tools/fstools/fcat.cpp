@@ -194,7 +194,7 @@ main(int argc, char **argv1)
 
     // @@@ Cannot currently get ADS with this approach
     retval =
-        tsk_fs_icat(fs, inum, TSK_FS_ATTR_TYPE_DEFAULT, 1, 0, 0,
+        tsk_fs_icat(fs, inum, (TSK_FS_ATTR_TYPE_ENUM)0, 0, 0, 0,
         (TSK_FS_FILE_WALK_FLAG_ENUM) fw_flags);
     if (retval) {
         if ((suppress_recover_error == 1)

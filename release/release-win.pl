@@ -24,8 +24,8 @@ print "TESTING MODE (no commits)\n" if ($TESTING);
 
 
 unless (@ARGV == 1) {
-	print stderr "Missing arguments: tag_version\n";
-	print stderr "    for example: release-win.pl sleuthkit-3.1.0\n";
+	print stderr "Missing arguments: version\n";
+	print stderr "    for example: release-win.pl 3.1.0\n";
 	print stderr "    or to use current working code: release-win.pl no-tag\n";
 	die "stopping";
 
@@ -39,6 +39,9 @@ my $SVNDIR = "$RELDIR/../";
 my $TSKDIR = "${SVNDIR}";
 
 my $TAGNAME = $ARGV[0];
+unless ($TAGNAME eq "no-tag") {
+	$TAGNAME = "sleuthkit-${TAGNAME}";
+}
 my $VER = "";
 
 
@@ -123,7 +126,7 @@ sub update_code {
 		`git submodule foreach git checkout master`;
 
 		# Verify the tag exists
-		exec_pipe(*OUT, "git tag | grep \"${TAGNAME}\"");
+		exec_pipe(*OUT, "git tag | grep \"^${TAGNAME}\"");
 		my $foo = read_pipe_line(*OUT);
 		if ($foo eq "") {
 		    print "Tag ${TAGNAME} doesn't exist\n";
@@ -148,7 +151,7 @@ sub update_code {
 	print "Version found in configure.ac: $VER\n";
 
 	if ($no_tag == 0) {
-		die "tag name and configure.ac have different versions ($TAGNAME vs $VER)" 
+		die "tag name and configure.ac have different versions ($TAGNAME vs sleuthkit-$VER)" 
 			if ("sleuthkit-".$VER != $TAGNAME);
 	}
 
