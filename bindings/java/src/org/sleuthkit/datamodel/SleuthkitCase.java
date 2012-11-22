@@ -1020,7 +1020,7 @@ public class SleuthkitCase {
 		try {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 
-			getArtifactsHelper2St.setLong(1, artifactTypeID);
+			getArtifactsHelper2St.setInt(1, artifactTypeID);
 			ResultSet rs = getArtifactsHelper2St.executeQuery();
 
 			while (rs.next()) {
@@ -1823,14 +1823,14 @@ public class SleuthkitCase {
 		try {
 
 			getAbstractFileChildren.setLong(1, parent.getId());
-			getAbstractFileChildren.setLong(2, type.getFileType());
+			getAbstractFileChildren.setShort(2, type.getFileType());
 
 			final ResultSet rs = getAbstractFileChildren.executeQuery();
 
 			while (rs.next()) {
 				if (type == TSK_DB_FILES_TYPE_ENUM.FS) {
 					FsContent result;
-					if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
 						result = rsHelper.directory(rs, null);
 					} else {
 						result = rsHelper.file(rs, null);
@@ -1863,7 +1863,7 @@ public class SleuthkitCase {
 		try {
 
 			getAbstractFileChildrenIds.setLong(1, parent.getId());
-			getAbstractFileChildrenIds.setLong(2, type.getFileType());
+			getAbstractFileChildrenIds.setShort(2, type.getFileType());
 
 			ResultSet rs = getAbstractFileChildrenIds.executeQuery();
 
@@ -2384,7 +2384,7 @@ public class SleuthkitCase {
 			ResultSet rs = s.executeQuery("select * from tsk_files "
 					+ "where obj_id = " + id);
 
-			if (rs.next() && rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+			if (rs.next() && rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
 				temp = rsHelper.directory(rs, parentFs);
 			} else {
 				rs.close();
@@ -2980,7 +2980,7 @@ public class SleuthkitCase {
 				final short type = rs.getShort("type");
 				if (type == TSK_DB_FILES_TYPE_ENUM.FS.getFileType()) {
 					FsContent result;
-					if (rs.getLong("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
 						result = rsHelper.directory(rs, null);
 					} else {
 						result = rsHelper.file(rs, null);
