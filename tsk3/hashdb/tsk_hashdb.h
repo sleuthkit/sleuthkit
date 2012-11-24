@@ -278,13 +278,13 @@ public:
     
     /**
     * get type of hash used in index
-    * @return type of hash used in index, or TSK_HDB_:HTYPE_INVALID_ID
+    * @return type of hash used in index, or TSK_HDB_HTYPE_INVALID_ID
     *    on error.
     */
     TSK_HDB_HTYPE_ENUM getHashType() const {
         if (m_hdbInfo != NULL)
             return m_hdbInfo->hash_type;
-	return TSK_HDB_HTYPE_INVALID_ID;
+        return TSK_HDB_HTYPE_INVALID_ID;
     };
     
     /**
@@ -305,7 +305,7 @@ public:
     TSK_HDB_DBTYPE_ENUM getDbType() const {
         if (m_hdbInfo != NULL)
             return m_hdbInfo->db_type;
-	return TSK_HDB_DBTYPE_INVALID_ID;
+        return TSK_HDB_DBTYPE_INVALID_ID;
     };
 };
 #endif
