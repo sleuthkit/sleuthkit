@@ -1200,6 +1200,21 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getVersionNat(JNIEnv * env,
 }
 
 /*
+ * Get the current directory being analyzed during AddImage
+ * @return current directory being processed
+ *
+ */
+JNIEXPORT jstring JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_getCurDirNat
+    (JNIEnv * env,jclass obj, jlong dbHandle)
+{
+    TskAutoDb *tskAuto = ((TskAutoDb *) dbHandle);
+    const string curDir = tskAuto->getCurDir();
+    jstring jdir = (*env).NewStringUTF(curDir.c_str());
+    return jdir;
+}
+
+/*
  * Enable verbose logging and redirect stderr to the given log file.
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
