@@ -37,7 +37,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_curFileId = 0;
     m_curUnallocDirId = 0;
     m_curDirId = 0;
-    m_curDirStr = "";
+    m_curDirPath = "";
     m_blkMapFlag = false;
     m_vsFound = false;
     m_volFound = false;
@@ -521,7 +521,7 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     int64_t cur = fs_file->name->par_addr;
     if(m_curDirId != cur){
         m_curDirId = cur;
-        m_curDirStr = path;
+        m_curDirPath = path;
     }
 
     /* process the attributes.  The case of having 0 attributes can occur
@@ -960,5 +960,5 @@ uint8_t TskAutoDb::addUnallocImageSpaceToDb() {
 * @returns current directory being analyzed
 */
 void TskAutoDb::getCurDir(string & buf){
-    buf = TskAutoDb::m_curDirStr;
+    buf = TskAutoDb::m_curDirPath;
 }

@@ -182,7 +182,8 @@ public class SleuthkitJNI {
 		/**
 		 * Encapsulates a multi-step process to add a disk image.
 		 * Adding a disk image takes a while and this object
-		 * has objects to manage that process.
+		 * has objects to manage that process. Methods within this
+		 * class are intended to be threadsafe.
 		 */
 		public class AddImageProcess {
 			private String timezone;
@@ -236,7 +237,7 @@ public class SleuthkitJNI {
 			/**
 			 * Rollback a process that has already been run(), reverting the
 			 * database.  This releases the C++ object and no additional 
-			 * operations can be performed. 
+			 * operations can be performed. This method is threadsafe.
 			 * 
 			 * @throws TskCoreException exception thrown if critical error occurs within TSK
 			 */
@@ -255,6 +256,8 @@ public class SleuthkitJNI {
 			 * transaction and committing the new image data to the database.
 			 * @return The id of the image that was added. This releases the 
 			 * C++ object and no additional operations can be performed. 
+			 * This method is threadsafe.
+			 * 
 			 * @throws TskCoreException exception thrown if critical error occurs within TSK 
 			 */
 			public synchronized long commit() throws TskCoreException {
@@ -269,11 +272,12 @@ public class SleuthkitJNI {
 			}
 			
 			/**
-			 * Gets the directory currently being processed by TSK.
+			 * Gets the directory currently being processed by TSK. 
+			 * This method is threadsafe.
 			 * @return the currently processing directory
 			 */
 			public synchronized String currentDirectory(){
-				return autoDbPointer == 0 ? "" : getCurDirNat(autoDbPointer);
+				return autoDbPointer == 0 ? "NO_INFO" : getCurDirNat(autoDbPointer);
 			}
 		}
 	}
