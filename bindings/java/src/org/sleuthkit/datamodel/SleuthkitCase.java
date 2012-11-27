@@ -87,7 +87,6 @@ public class SleuthkitCase {
 	private PreparedStatement addBlackboardAttributeDoubleSt;
 	private PreparedStatement getFileSt;
 	private PreparedStatement getFileWithParentSt;
-	private PreparedStatement getFileWithParentFsContentSt;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
 	/**
@@ -183,11 +182,9 @@ public class SleuthkitCase {
 				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) "
 				+ "VALUES (?,?,?,?,?,?)");
 		
-		getFileSt = con.prepareStatement("select * from tsk_files where name LIKE ? and name NOT LIKE '%journal%'");
+		getFileSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? and LOWER(name) NOT LIKE '%journal%'");
 		
-		getFileWithParentSt = con.prepareStatement("select * from tsk_files where name LIKE ? and name NOT LIKE '%journal%' and parent_path LIKE ?");
-		
-		getFileWithParentFsContentSt = con.prepareStatement("select * from tsk_files where name LIKE ? and name NOT LIKE '%journal%' and parent_path LIKE ?");
+		getFileWithParentSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND LOWER(parent_path) LIKE ?");
 	}
 
 	private void closeStatements() {
@@ -281,11 +278,6 @@ public class SleuthkitCase {
 				getFileWithParentSt = null;
 			}
 			
-			if (getFileWithParentFsContentSt != null) {
-				getFileWithParentFsContentSt.close();
-				getFileWithParentFsContentSt = null;
-			}
-
 		} catch (SQLException e) {
 			logger.log(Level.WARNING,
 					"Error closing prepared statement", e);
@@ -2178,7 +2170,8 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * @param fileName the name of the file or directory to match
+	 * @param fileName the name of the file or directory to match (case
+	 * insensitive)
 	 * @return a list of FsContent for files/directories whose name matches the
 	 * given fileName
 	 */
@@ -2189,7 +2182,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		List<FsContent> fsContents = new ArrayList<FsContent>();
 		try {
-			getFileSt.setString(1, fileName);
+			getFileSt.setString(1, fileName.toLowerCase());
 
 			// get the result set
 			rs = getFileSt.executeQuery();
@@ -2209,8 +2202,10 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * @param fileName the name of the file or directory to match
-	 * @param dirName the name of a parent directory of fileName
+	 * @param fileName the name of the file or directory to match (case
+	 * insensitive)
+	 * @param dirName the name of a parent directory of fileName (case
+	 * insensitive)
 	 * @return a list of FsContent for files/directories whose name matches
 	 * fileName and whose parent directory contains dirName.
 	 */
@@ -2220,10 +2215,10 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		List<FsContent> fsContents = new ArrayList<FsContent>();
 		try {
-			getFileWithParentSt.setString(1, fileName);
+			getFileWithParentSt.setString(1, fileName.toLowerCase());
 
 			// set the parent directory name
-			getFileWithParentSt.setString(2, "%" + dirName + "%");
+			getFileWithParentSt.setString(2, "%" + dirName.toLowerCase() + "%");
 
 			// get the result set
 			rs = getFileWithParentSt.executeQuery();
@@ -2243,7 +2238,8 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * @param fileName the name of the file or directory to match
+	 * @param fileName the name of the file or directory to match (case
+	 * insensitive)
 	 * @param parentFsContent 
 	 * @return a list of FsContent for files/directories whose name matches
 	 * fileName and that were inside a directory described by parentFsContent.
@@ -2254,14 +2250,15 @@ public class SleuthkitCase {
 	
 	/**
 	 * @param filePath The full path to the file(s) of interest. This can
-	 * optionally include the image and volume names.
+	 * optionally include the image and volume names. Treated in a case-
+	 * insensitive manner.
 	 * @return a list of FsContent that have the given file path.
 	 */
 	public List<FsContent> openFiles(String filePath) throws TskCoreException {
 		
 		// get the non-unique path (strip of image and volume path segments, if
 		// the exist.
-		String path = AbstractFile.createNonUniquePath(filePath);
+		String path = AbstractFile.createNonUniquePath(filePath).toLowerCase();
 		
 		// split the file name from the parent path
 		int lastSlash = path.lastIndexOf("/");
