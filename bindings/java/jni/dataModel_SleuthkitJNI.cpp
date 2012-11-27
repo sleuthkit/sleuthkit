@@ -1209,7 +1209,8 @@ JNIEXPORT jstring JNICALL
     (JNIEnv * env,jclass obj, jlong dbHandle)
 {
     TskAutoDb *tskAuto = ((TskAutoDb *) dbHandle);
-    const string curDir = tskAuto->getCurDir();
+    string curDir;
+    tskAuto->getCurDir(curDir);
     jstring jdir = (*env).NewStringUTF(curDir.c_str());
     return jdir;
 }
