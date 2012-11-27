@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -144,6 +145,25 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 		
 		return strbuf.toString();
+	}
+	
+	/**
+	 * @return a list of AbstractFiles that are the children of this Directory.
+	 * Only returns children of type TskData.TSK_DB_FILES_TYPE_ENUM.FS.
+	 */
+	public List<AbstractFile> listFiles() throws TskCoreException {
+		// first, get all children
+		List<Content> children = getChildren();
+		
+		// only keep those that are of type AbstractFile
+		List<AbstractFile> files = new ArrayList<AbstractFile>();
+		for (Content child : children) {
+			if (child instanceof AbstractFile) {
+				AbstractFile afChild = (AbstractFile)child;
+				files.add(afChild);
+			}
+		}
+		return files;
 	}
     
 }
