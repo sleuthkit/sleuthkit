@@ -27,14 +27,6 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLog
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    getCurDirNat
- * Signature: (J)Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getCurDirNat
-    (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    newCaseDbNat
  * Signature: (Ljava/lang/String;)J
  */
@@ -288,6 +280,14 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndex
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSizeNat
   (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getCurDirNat
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getCurDirNat
+  (JNIEnv *, jclass, jlong);
 
 #ifdef __cplusplus
 }
