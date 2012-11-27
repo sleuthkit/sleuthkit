@@ -2249,6 +2249,25 @@ public class SleuthkitCase {
 	}
 	
 	/**
+	 * @param sqlWhereClause a SQL where clause appropriate for the desired
+	 * files (do not begin the WHERE clause with the word WHERE!)
+	 * @return a list of FsContent each of which satisfy the given WHERE clause
+	 * @throws TskCoreException 
+	 */
+	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
+		Statement statement;
+		dbReadLock();
+		try {
+			statement = con.createStatement();
+			return resultSetToFsContents(statement.executeQuery("SELECT * FROM tsk_files WHERE " + sqlWhereClause));
+		} catch (SQLException e) {
+			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
+		} finally {
+			dbReadUnlock();
+		}
+	}
+	
+	/**
 	 * @param filePath The full path to the file(s) of interest. This can
 	 * optionally include the image and volume names. Treated in a case-
 	 * insensitive manner.
