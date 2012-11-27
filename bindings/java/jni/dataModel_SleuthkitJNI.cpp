@@ -1069,15 +1069,26 @@ JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
     jclass obj, jlong a_file_handle, jbyteArray jbuf, jlong offset, jlong len)
 {
-    char *buf = (char *) tsk_malloc((size_t) len);
-    if (buf == NULL) {
-        setThrowTskCoreError(env);
-        return -1;
+	//use fixed size stack-allocated buffer if possible
+    const size_t FIXED_BUF_SIZE = 16 * 1024;
+    char fixed_buf [FIXED_BUF_SIZE];
+
+    char * buf = fixed_buf;
+    bool dynBuf = false;
+    if (len > FIXED_BUF_SIZE) {
+        dynBuf = true;
+        buf = (char *) tsk_malloc((size_t) len);
+        if (buf == NULL) {
+            setThrowTskCoreError(env);
+            return -1;
+        }
     }
 
     const TSK_JNI_FILEHANDLE *file_handle = castFsFile(env, a_file_handle);
     if (file_handle == 0) {
-        free(buf);
+        if (dynBuf) {
+            free(buf);
+        }
         //exception already set
         return -1;
     }
@@ -1088,7 +1099,9 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
     ssize_t bytesread = tsk_fs_attr_read(tsk_fs_attr,  (TSK_OFF_T) offset, buf, (size_t) len,
         TSK_FS_FILE_READ_FLAG_NONE);
     if (bytesread == -1) {
-        free(buf);
+        if (dynBuf) {
+            free(buf);
+        }
         setThrowTskCoreError(env, tsk_error_get());
         return -1;
     }
@@ -1101,7 +1114,9 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
 		copybytes = jbuflen;
 
     ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
-    free(buf);
+    if (dynBuf) {
+        free(buf);
+    }
     if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
