@@ -853,7 +853,7 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
  * @param len Length of bytes in buf
  * @returns number of bytes copied or -1 on error
  */
-static ssize_t
+inline static ssize_t
 copyBufToByteArray(JNIEnv * env, jbyteArray jbuf, const char *buf, ssize_t len)
 {
     env->SetByteArrayRegion(jbuf, 0, len, (jbyte*)buf);
