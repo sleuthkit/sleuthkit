@@ -99,7 +99,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_FILE_TYPE_EXT, TskAttributeNames("TSK_FILE_TYPE_EXT", "File Type (by extension)")));
     retval.insert(pair<int, TskAttributeNames>(TSK_TAGGED_ARTIFACT, TskAttributeNames("TSK_TAGGED_ARTIFACT", "Tagged Result")));
     retval.insert(pair<int, TskAttributeNames>(TSK_TAG_NAME, TskAttributeNames("TSK_TAG_NAME", "Tag Name")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_DESCRIPTION, TskAttributeNames("TSK_DESCRIPTION", "Description")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_COMMENT, TskAttributeNames("TSK_COMMENT", "Comment")));
     retval.insert(pair<int, TskAttributeNames>(TSK_URL_DECODED, TskAttributeNames("TSK_URL_DECODED", "Decoded URL")));
     retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_CREATED, TskAttributeNames("TSK_DATETIME_CREATED", "Date Created")));
     retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_MODIFIED, TskAttributeNames("TSK_DATETIME_MODIFIED", "Date Modified")));
