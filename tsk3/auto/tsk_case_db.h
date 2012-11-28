@@ -48,7 +48,7 @@ class TskAutoDb:public TskAuto {
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
         const char *path);
     virtual void createBlockMap(bool flag);
-    virtual void getCurDir(string & buf);
+    const std::string& getCurDir();
 
     /**
      * Calculate hash values of files and add them to database.

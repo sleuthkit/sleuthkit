@@ -1201,7 +1201,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_getVersionNat(JNIEnv * env,
 
 /*
  * Get the current directory being analyzed during AddImage
- * @return current directory being processed
+ * @return the path of the current directory
  *
  */
 JNIEXPORT jstring JNICALL
@@ -1209,8 +1209,7 @@ JNIEXPORT jstring JNICALL
     (JNIEnv * env,jclass obj, jlong dbHandle)
 {
     TskAutoDb *tskAuto = ((TskAutoDb *) dbHandle);
-    string curDir;
-    tskAuto->getCurDir(curDir);
+    const std::string & curDir = tskAuto->getCurDir();
     jstring jdir = (*env).NewStringUTF(curDir.c_str());
     return jdir;
 }
