@@ -739,21 +739,15 @@ int
     }
 
 
-    char
-     md5Text[1024] = "NULL";
+    char md5Text[48] = "NULL";
 
     // if md5 hashes are being used
     if (md5 != NULL) {
-        char
-            md5TextBuff[16 * 2 + 1];
-        memset(md5TextBuff, 0, 16*2+1);
-
         // copy the hash as hexidecimal into the buffer
         for (int i = 0; i < 16; i++) {
-            sprintf(&(md5TextBuff[i * 2]), "%x%x", (md5[i] >> 4) & 0xf,
+            sprintf(&(md5Text[i * 2]), "%x%x", (md5[i] >> 4) & 0xf,
                 md5[i] & 0xf);
         }
-        snprintf(md5Text, 1024, "'%s'", md5TextBuff);
     }
 
 

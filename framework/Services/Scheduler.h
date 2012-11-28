@@ -53,6 +53,15 @@ public:
     };
 
     /**
+     * Schedule a new task for a specific ID.
+     * @param task Task to schedule
+     * @returns 1 on error 
+     */
+    int schedule(Scheduler::task_struct &task) {
+        return schedule(task.task, task.id, task.id);
+    };
+
+    /**
      * Get the next task to process from the scheduler.  Note that different
      * scheduling systems have a pull versus push architecture. This method is for 
      * pulling designs and may return NULL in push designs (i.e. if the scheduler is
