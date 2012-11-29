@@ -2546,12 +2546,12 @@ class TskFsMeta {
 
     /**
           * get sequence number for file (NTFS only, is incremented when entry is reallocated) 
-     * @return sequence number for file
+     * @return sequence number for file, or 0xFFFF on error.
      */
     uint32_t getSeq() const {
         if (m_fsMeta != NULL)
             return m_fsMeta->seq;
-        //zli: should we throw err msg
+	return 0xFFFF;
     };
 
     /**

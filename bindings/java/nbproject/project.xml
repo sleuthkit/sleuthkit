@@ -114,7 +114,7 @@
         <java-data xmlns="http://www.netbeans.org/ns/freeform-project-java/3">
             <compilation-unit>
                 <package-root>src</package-root>
-                <classpath mode="compile">lib;lib/diffutils-1.2.1.jar</classpath>
+                <classpath mode="compile">lib;lib/diffutils-1.2.1.jar;lib/sqlite-jdbc-3.7.8-SNAPSHOT.jar;lib/junit-4.8.2.jar</classpath>
                 <built-to>build</built-to>
                 <source-level>1.6</source-level>
             </compilation-unit>

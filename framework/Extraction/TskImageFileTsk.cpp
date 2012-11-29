@@ -226,7 +226,7 @@ int TskImageFileTsk::extractFiles()
     }
 
     // TskAutoImpl will log errors as they occur
-    tskAutoImpl.findFilesInImg();
+    tskAutoImpl.extractFiles();
 
     // It's possible that this is an image with no volumes or file systems.
     // Scan the image for file systems starting at sector 0.
@@ -330,18 +330,14 @@ int TskImageFileTsk::readFile(const int handle,
     }
 
     // fsAttr can be NULL if the file has no attributes.
-    if (openFile->fsAttr == NULL || byte_offset >= openFile->fsAttr->size)
+    if (openFile->fsAttr == NULL || (TSK_OFF_T)byte_offset >= openFile->fsAttr->size)
     {
         // If the offset is larger than the attribute size then there is nothing left to read.
         return 0;
     }
 
-    int bytesRead = tsk_fs_file_read_type(openFile->fsFile,
-                                          static_cast<TSK_FS_ATTR_TYPE_ENUM>(openFile->fsAttr->type),
-                                          openFile->fsAttr->id,
-                                          byte_offset, buffer, 
+    int bytesRead = tsk_fs_attr_read(openFile->fsAttr, byte_offset, buffer, 
                                           byte_len, TSK_FS_FILE_READ_FLAG_NONE);
-
     if (bytesRead == -1)
     {
         std::wstringstream errorMsg;

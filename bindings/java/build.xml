@@ -71,7 +71,6 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
   
 	<target name="compile-test" depends="compile"
         description="compile the tests" >
-		<antcall target="retrieve-deps" />
 		<javac debug="on" srcdir="${test}" destdir="${build}">
 			<classpath refid="libraries"/>
 		</javac>
@@ -96,7 +95,7 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		</junit>
 	</target>
  
-	<target name="compile" depends="init"
+	<target name="compile" depends="init, retrieve-deps"
         description="compile the source" >
     <!-- Compile the java code from ${src} into ${build} -->
 		<javac debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" includeantruntime="false">
@@ -108,8 +107,6 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
         description="generate the distribution" >
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
-	<!-- Fetch dependencies too -->
-		<antcall target="retrieve-deps" />
 	</target>
   
 	<target name="jni" depends="compile" description="make the jni.h file">

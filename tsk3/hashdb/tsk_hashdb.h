@@ -40,6 +40,7 @@ extern "C" {
     * Hash algorithm types
     */
     enum TSK_HDB_HTYPE_ENUM {
+        TSK_HDB_HTYPE_INVALID_ID = 0,   ///< Invalid algorithm signals error.
         TSK_HDB_HTYPE_MD5_ID = 1,       ///< MD5 Algorithm
         TSK_HDB_HTYPE_SHA1_ID = 2,      ///< SHA1 Algorithm
     };
@@ -73,6 +74,7 @@ extern "C" {
     * Hash Database types
     */
     enum TSK_HDB_DBTYPE_ENUM {
+        TSK_HDB_DBTYPE_INVALID_ID = 0,  ///< Invalid type signals error.
         TSK_HDB_DBTYPE_NSRL_ID = 1,     ///< NIST NSRL format
         TSK_HDB_DBTYPE_MD5SUM_ID = 2,   ///< md5sum format
         TSK_HDB_DBTYPE_HK_ID = 3,       ///< hashkeeper format
@@ -276,11 +278,13 @@ public:
     
     /**
     * get type of hash used in index
-    * @return type of hash used in index
+    * @return type of hash used in index, or TSK_HDB_HTYPE_INVALID_ID
+    *    on error.
     */
     TSK_HDB_HTYPE_ENUM getHashType() const {
         if (m_hdbInfo != NULL)
             return m_hdbInfo->hash_type;
+        return TSK_HDB_HTYPE_INVALID_ID;
     };
     
     /**
@@ -296,11 +300,12 @@ public:
     
     /**
     * get type of database
-    * @return type of database
+    * @return type of database, or TSK_HDB_DBTYPE_INVALID_ID on error.
     */
     TSK_HDB_DBTYPE_ENUM getDbType() const {
         if (m_hdbInfo != NULL)
             return m_hdbInfo->db_type;
+        return TSK_HDB_DBTYPE_INVALID_ID;
     };
 };
 #endif

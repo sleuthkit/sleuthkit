@@ -34,11 +34,77 @@ import java.util.List;
 public class LayoutDirectory extends AbstractFile {
 
 	private Content parent;
+	
+	//TODO move up to AbstractFile class
+	private long size;
+	//TODO use enums for types and flags
+	private short meta_type, dir_type, dir_flags, meta_flags;
+	private String parent_path;
 
-	protected LayoutDirectory(SleuthkitCase db, long obj_id, String name) {
+	protected LayoutDirectory(SleuthkitCase db, long obj_id, String name, long size, 
+			short meta_type, short dir_type, short dir_flags,
+			short meta_flags, String parent_path) {
 		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR);
+		
+		this.meta_type = meta_type;
+		this.dir_type = dir_type;
+		this.dir_flags = dir_flags;
+		this.meta_flags = meta_flags;
+		this.parent_path = parent_path;
 	}
 
+	public short getMeta_type() {
+		return meta_type;
+	}
+
+	public short getDir_type() {
+		return dir_type;
+	}
+
+	public short getDir_flags() {
+		return dir_flags;
+	}
+
+	public short getMeta_flags() {
+		return meta_flags;
+	}
+
+	public String getParent_path() {
+		return parent_path;
+	}
+
+	/**
+	 * Get the directory flags as String
+	 *
+	 * @return directory flags as String
+	 */
+	public String getDirFlagsAsString() {
+		return FsContent.dirFlagToString(dir_flags);
+	}
+	
+	/**
+	 * Get the meta data flags as String
+	 *
+	 * @return meta data flags as String
+	 */
+	public String getMetaFlagsAsString() {
+		return FsContent.metaFlagToString(meta_flags);
+	}
+	
+	
+	public String getMetaTypeAsString() {
+		return TskData.tsk_fs_meta_type_str[meta_type];
+	}
+	
+
+
+	public String getDirTypeAsString() {
+		return TskData.TSK_FS_NAME_TYPE_ENUM.fromType(dir_type).getLabel();
+	}
+	
+
+	
+	
 	/**
 	 * Set the parent class, will be called by the parent
 	 *
@@ -81,6 +147,11 @@ public class LayoutDirectory extends AbstractFile {
 
 	@Override
 	public boolean isFile() {
+		return false;
+	}
+	
+	@Override
+	public boolean isRoot() {
 		return false;
 	}
 

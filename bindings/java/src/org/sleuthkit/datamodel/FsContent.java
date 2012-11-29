@@ -27,6 +27,8 @@ import org.sleuthkit.datamodel.TskData.FileKnown;
  * Generalized class that stores metadata that are common to both File and
  * Directory objects stored in tsk_files table Caches internal tsk file handle
  * and reuses it for reads
+ * 
+ * TODO move common getters to AbstractFile class
  */
 public abstract class FsContent extends AbstractFile {
 
@@ -145,6 +147,10 @@ public abstract class FsContent extends AbstractFile {
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+		if (offset == 0 && size == 0) {
+			//special case for 0-size file
+			return 0;
+		}
 		synchronized (this) {
 			if (fileHandle == 0) {
 				fileHandle = 
@@ -154,14 +160,19 @@ public abstract class FsContent extends AbstractFile {
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 	}
 
+	
+	@Override
+	public boolean isRoot() {
+		return parentFileSystem.getRoot_inum() == this.getMeta_addr();
+	}
+		
 	/*
 	 * -------------------------------------------------------------------------
 	 * Getters to retrieve meta-data attributes values
 	 * -------------------------------------------------------------------------
 	 */
-	public boolean isRoot() {
-		return parentFileSystem.getRoot_inum() == this.getMeta_addr();
-	}
+	
+
 
 	/**
 	 * Gets parent directory
@@ -169,7 +180,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @return the parent Directory
 	 * @throws TskCoreException exception thrown if error occurred in tsk core
 	 */
-	public Directory getParentDirectory() throws TskCoreException {
+	public AbstractFile getParentDirectory() throws TskCoreException {
 		return getSleuthkitCase().getParentDirectory(this);
 	}
 
