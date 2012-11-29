@@ -182,9 +182,9 @@ public class SleuthkitCase {
 				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) "
 				+ "VALUES (?,?,?,?,?,?)");
 		
-		getFileSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? and LOWER(name) NOT LIKE '%journal%'");
+		getFileSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? and LOWER(name) NOT LIKE '%journal%' AND fs_obj_id = ?");
 		
-		getFileWithParentSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND LOWER(parent_path) LIKE ?");
+		getFileWithParentSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND LOWER(parent_path) LIKE ? AND fs_obj_id = ?");
 	}
 
 	private void closeStatements() {
@@ -2170,28 +2170,31 @@ public class SleuthkitCase {
 	}
 	
 	/**
+	 * @param image the image to search for the given file name
 	 * @param fileName the name of the file or directory to match (case
 	 * insensitive)
 	 * @return a list of FsContent for files/directories whose name matches the
 	 * given fileName
 	 */
-	public List<FsContent> findFiles(String fileName) throws TskCoreException {
+	public List<FsContent> findFiles(Image image, String fileName) throws TskCoreException {
 		dbReadLock();
 
 		// set the file name in the PS
-		ResultSet rs = null;
 		List<FsContent> fsContents = new ArrayList<FsContent>();
 		try {
-			getFileSt.setString(1, fileName.toLowerCase());
+			for (FileSystem fileSystem : getFileSystems(image)) {
+				getFileSt.setString(1, fileName.toLowerCase());
+				getFileSt.setLong(2, fileSystem.getId());
 
-			// get the result set
-			rs = getFileSt.executeQuery();
+				// get the result set
+				ResultSet rs = getFileSt.executeQuery();
 
-			// convert to FsConents
-			fsContents = resultSetToFsContents(rs);
-			
-			// close the ResultSet
-			rs.close();
+				// convert to FsConents
+				fsContents.addAll(resultSetToFsContents(rs));
+
+				// close the ResultSet
+				rs.close();
+			}
 		} catch (Exception e) {
 			throw new TskCoreException(e.getMessage());
 		} finally {
@@ -2202,6 +2205,7 @@ public class SleuthkitCase {
 	}
 	
 	/**
+	 * @param image the image to search for the given file name
 	 * @param fileName the name of the file or directory to match (case
 	 * insensitive)
 	 * @param dirName the name of a parent directory of fileName (case
@@ -2209,25 +2213,30 @@ public class SleuthkitCase {
 	 * @return a list of FsContent for files/directories whose name matches
 	 * fileName and whose parent directory contains dirName.
 	 */
-	public List<FsContent> findFiles(String fileName, String dirName) throws TskCoreException {
+	public List<FsContent> findFiles(Image image, String fileName, String dirName) throws TskCoreException {
 		dbReadLock();
 
 		ResultSet rs = null;
 		List<FsContent> fsContents = new ArrayList<FsContent>();
 		try {
-			getFileWithParentSt.setString(1, fileName.toLowerCase());
+			for (FileSystem fileSystem : getFileSystems(image)) {
+				getFileWithParentSt.setString(1, fileName.toLowerCase());
 
-			// set the parent directory name
-			getFileWithParentSt.setString(2, "%" + dirName.toLowerCase() + "%");
+				// set the parent directory name
+				getFileWithParentSt.setString(2, "%" + dirName.toLowerCase() + "%");
 
-			// get the result set
-			rs = getFileWithParentSt.executeQuery();
+				// set the image ID
+				getFileWithParentSt.setLong(3, fileSystem.getId());
 
-			// convert to FsConents
-			fsContents = resultSetToFsContents(rs);
-			
-			// close the ResultSet
-			rs.close();
+				// get the result set
+				rs = getFileWithParentSt.executeQuery();
+
+				// convert to FsConents
+				fsContents.addAll(resultSetToFsContents(rs));
+
+				// close the ResultSet
+				rs.close();
+			}
 		} catch (Exception e) {
 			throw new TskCoreException(e.getMessage());
 		} finally {
@@ -2238,14 +2247,15 @@ public class SleuthkitCase {
 	}
 	
 	/**
+	 * @param image the image to search for the given file name
 	 * @param fileName the name of the file or directory to match (case
 	 * insensitive)
 	 * @param parentFsContent 
 	 * @return a list of FsContent for files/directories whose name matches
 	 * fileName and that were inside a directory described by parentFsContent.
 	 */
-	public List<FsContent> findFiles(String fileName, FsContent parentFsContent) throws TskCoreException {
-		return findFiles(fileName, parentFsContent.getName());
+	public List<FsContent> findFiles(Image image, String fileName, FsContent parentFsContent) throws TskCoreException {
+		return findFiles(image, fileName, parentFsContent.getName());
 	}
 	
 	/**
@@ -2268,12 +2278,13 @@ public class SleuthkitCase {
 	}
 	
 	/**
+	 * @param image the image to search for the given file name
 	 * @param filePath The full path to the file(s) of interest. This can
 	 * optionally include the image and volume names. Treated in a case-
 	 * insensitive manner.
 	 * @return a list of FsContent that have the given file path.
 	 */
-	public List<FsContent> openFiles(String filePath) throws TskCoreException {
+	public List<FsContent> openFiles(Image image, String filePath) throws TskCoreException {
 		
 		// get the non-unique path (strip of image and volume path segments, if
 		// the exist.
@@ -2291,7 +2302,7 @@ public class SleuthkitCase {
 		String parentPath = path.substring(0, lastSlash);
 		String fileName = path.substring(lastSlash);
 		
-		return findFiles(fileName, parentPath);
+		return findFiles(image, fileName, parentPath);
 	}
 
 	/**
