@@ -88,6 +88,13 @@ public abstract class AbstractFile extends AbstractContent {
 	public abstract boolean isDir();
 	
 	/**
+	 * Is this a root of a file system
+	 *
+	 * @return true if root of a file system, false otherwise
+	 */
+	public abstract boolean isRoot();
+	
+	/**
 	 * Get the absolute unique across all files in the case parent path string
 	 * of this FsContent The path contains image and volume-system partition
 	 * After first call, every subsequent call returns the cached string

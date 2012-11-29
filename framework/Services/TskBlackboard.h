@@ -147,7 +147,7 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_FILE_TYPE_EXT = 63, ///< String of file type based on file name extension.
     TSK_TAGGED_ARTIFACT = 64, ///< Tagged artifact (associated result).
     TSK_TAG_NAME = 65, ///< The tag name.  Can contain slashes "/" to represent tag hierarchy.
-    TSK_DESCRIPTION = 66, ///< Description string.
+    TSK_COMMENT = 66, ///< Comment string.
     TSK_URL_DECODED = 67, ///< Decoded URL.
     TSK_DATETIME_CREATED = 68,///< Time in Unix epoch that something was created
     TSK_DATETIME_MODIFIED = 69,///< Time in Unix epoch that something was modified
