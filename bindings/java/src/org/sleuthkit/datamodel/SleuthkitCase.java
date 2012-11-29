@@ -278,11 +278,11 @@ public class SleuthkitCase {
 			//allow to query while in transaction - no need read locks
 			statement.execute("PRAGMA read_uncommitted = True;");
 			statement.close();
-			
-			logger.log(Level.INFO, String.format("sqlite-jdbc version %s loaded in %s mode", 
-					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode() 
+
+			logger.log(Level.INFO, String.format("sqlite-jdbc version %s loaded in %s mode",
+					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode()
 					? "native" : "pure-java"));
-			
+
 		} catch (SQLException e) {
 			throw new TskCoreException("Couldn't configure the database connection", e);
 		}
@@ -854,9 +854,10 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get all blackboard attribute types 
-	 * 
-	 * Gets both static (in enum) and dynamic attributes types (created by modules at runtime)
+	 * Get all blackboard attribute types
+	 *
+	 * Gets both static (in enum) and dynamic attributes types (created by
+	 * modules at runtime)
 	 *
 	 * @return list of blackboard attribute types
 	 * @throws TskCoreException exception thrown if a critical error occurred
@@ -883,10 +884,10 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get count of blackboard attribute types 
-	 * 
-	 * Counts both static (in enum) and
-	 * dynamic attributes types (created by modules at runtime)
+	 * Get count of blackboard attribute types
+	 *
+	 * Counts both static (in enum) and dynamic attributes types (created by
+	 * modules at runtime)
 	 *
 	 * @return count of attribute types
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -1838,7 +1839,10 @@ public class SleuthkitCase {
 					result.accept(setParent);
 					children.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
-					FsContent virtDir = rsHelper.directory(rs, null);
+					LayoutDirectory virtDir =  new LayoutDirectory(this, rs.getLong("obj_id"),
+							rs.getString("name"), rs.getLong("size"), 
+							rs.getShort("meta_type"), rs.getShort("dir_type"), rs.getShort("dir_flags"), 
+							rs.getShort("meta_flags"), rs.getString("parent_path"));
 					virtDir.accept(setParent);
 					children.add(virtDir);
 				} else {
@@ -2012,7 +2016,7 @@ public class SleuthkitCase {
 		} else {
 			ObjectInfo parentInfo = getParentInfo(fsc);
 
-			Directory parent;
+			Directory parent = null;
 
 			if (parentInfo.type == ObjectType.ABSTRACTFILE) {
 				parent = getDirectoryById(parentInfo.id, fsc.getFileSystem());
@@ -2143,12 +2147,14 @@ public class SleuthkitCase {
 		try {
 			Statement s = con.createStatement();
 
-			ResultSet rs = s.executeQuery("select * from tsk_files where obj_id = " + id);
+			ResultSet rs = s.executeQuery("SELECT * FROM tsk_files WHERE obj_id = " + id + " LIMIT 1");
 			List<AbstractFile> results;
 			if ((results = resultSetToAbstractFiles(rs)).size() > 0) {
+				rs.close();
 				s.close();
 				return results.get(0);
 			} else {
+				rs.close();
 				s.close();
 			}
 		} catch (SQLException ex) {
@@ -2379,13 +2385,23 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
-			Directory temp;
+			Directory temp = null;
 
-			ResultSet rs = s.executeQuery("select * from tsk_files "
-					+ "where obj_id = " + id);
+			ResultSet rs = s.executeQuery("SELECT * FROM tsk_files "
+					+ "WHERE obj_id = " + id);
 
-			if (rs.next() && rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
-				temp = rsHelper.directory(rs, parentFs);
+			if (rs.next()) {
+				final short type = rs.getShort("type");
+				if (type == TSK_DB_FILES_TYPE_ENUM.FS.getFileType()) {
+					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+						temp = rsHelper.directory(rs, parentFs);
+					}
+				}
+				else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
+					rs.close();
+					s.close();
+					throw new TskCoreException("Expecting an FS-type directory, got virtual, id: " + id);
+				}
 			} else {
 				rs.close();
 				s.close();
@@ -2989,7 +3005,9 @@ public class SleuthkitCase {
 					results.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
 					final LayoutDirectory virtDir = new LayoutDirectory(this, rs.getLong("obj_id"),
-							rs.getString("name"));
+							rs.getString("name"), rs.getLong("size"), 
+							rs.getShort("meta_type"), rs.getShort("dir_type"), rs.getShort("dir_flags"), 
+							rs.getShort("meta_flags"), rs.getString("parent_path"));
 					virtDir.accept(setParent);
 					results.add(virtDir);
 				} else {

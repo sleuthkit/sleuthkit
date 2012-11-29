@@ -207,4 +207,9 @@ public class LayoutFile extends AbstractFile{
 	public boolean isVirtual() {
 		return true;
 	}
+	
+	@Override
+	public boolean isRoot() {
+		return false;
+	}
 }
