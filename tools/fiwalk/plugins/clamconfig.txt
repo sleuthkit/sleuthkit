@@ -1,0 +1,17 @@
+#
+# Configuration file for fiwalk to run ClamAV on all executables
+#
+
+
+#*.jpeg	dgi	java -classpath ../plugins/plugins.jar jpeg_extract
+#*.jpeg	jvm	../plugins/jpeg_extract.jar jpeg_extract
+#*.swf	dgi	./ficlam.sh
+#*.js	dgi	./ficlam.sh
+#*.php	dgi	./ficlam.sh
+
+## Can put any number of wildcards here to capture as many or as little formats as desired.  *.* captures all.
+*.*	dgi	./ficlam.sh
+#*.exe	dgi	./ficlam.sh
+#*.dll	dgi	./ficlam.sh
+#*.pdf	dgi	./ficlam.sh
+#*.html	dgi	./ficlam.sh

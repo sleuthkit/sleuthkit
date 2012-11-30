@@ -41,6 +41,7 @@ TskCaseDb::~TskCaseDb()
         tsk_hdb_close(m_knownBadDb);
         m_knownBadDb = NULL;
     }
+    m_tag = 0;
 }
 
 /**

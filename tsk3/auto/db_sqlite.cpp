@@ -589,11 +589,11 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & f
 
     // Find the parent file id in the database using the parent metadata address
     if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1, fs_file->name->par_addr),
-                "Error binding meta_addr to statment: %s (result code %d)\n")
+                "TskDbSqlite::findParObjId: Error binding meta_addr to statment: %s (result code %d)\n")
         || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
-            "Error binding fs_obj_id to statment: %s (result code %d)\n")
+            "TskDbSqlite::findParObjId: Error binding fs_obj_id to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
-            "Error selecting file id by meta_addr: %s (result code %d)\n"))
+            "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n"))
     {
         // Statement may be used again, even after error
         sqlite3_reset(m_selectFilePreparedStmt);
@@ -603,7 +603,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & f
     int64_t parObjId = sqlite3_column_int64(m_selectFilePreparedStmt, 0);
 
     if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
-        "Error resetting 'select file id by meta_addr' statement: %s\n")) {
+        "TskDbSqlite::findParObjId: Error resetting 'select file id by meta_addr' statement: %s\n")) {
             return -1;
     }
 
@@ -773,7 +773,7 @@ int
         size, crtime, ctime, atime, mtime, meta_mode, gid, uid, md5Text, known,
         escaped_path);
 
-    if (attempt_exec(foo, "Error adding data to tsk_files table: %s\n")) {
+    if (attempt_exec(foo, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
         free(name);
         return 1;
     }
@@ -942,7 +942,7 @@ int
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
         TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size);
 
-    if (attempt_exec(sql_stat, "Error adding data to tsk_files table: %s\n")) {
+    if (attempt_exec(sql_stat, "TskDbSqlite::addLayoutFileInfo: Error adding data to tsk_files table: %s\n")) {
         free(name);
         return 1;
     }
@@ -1410,9 +1410,9 @@ uint8_t TskDbSqlite::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
     }
 
     if (attempt(sqlite3_bind_int64(objectsStatement, 1, objId),
-        "Error binding objId to statment: %s (result code %d)\n")
+        "TskDbSqlite::getObjectInfo: Error binding objId to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(objectsStatement), SQLITE_ROW,
-        "Error selecting object by objid: %s (result code %d)\n")) {
+        "TskDbSqlite::getObjectInfo: Error selecting object by objid: %s (result code %d)\n")) {
             sqlite3_finalize(objectsStatement);
             return TSK_ERR;
     }
@@ -1444,9 +1444,9 @@ uint8_t TskDbSqlite::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
     }
 
     if (attempt(sqlite3_bind_int64(vsInfoStatement, 1, objId),
-        "Error binding objId to statment: %s (result code %d)\n")
+        "TskDbSqlite::getVsInfo: Error binding objId to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(vsInfoStatement), SQLITE_ROW,
-        "Error selecting object by objid: %s (result code %d)\n")) {
+        "TskDbSqlite::getVsInfo: Error selecting object by objid: %s (result code %d)\n")) {
             sqlite3_finalize(vsInfoStatement);
             return TSK_ERR;
     }
@@ -1511,9 +1511,9 @@ uint8_t TskDbSqlite::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT
     }
 
     if (attempt(sqlite3_bind_int64(rootDirInfoStatement, 1, fsObjId),
-        "Error binding objId to statment: %s (result code %d)\n")
+        "TskDbSqlite::getFsRootDirObjectInfo: Error binding objId to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(rootDirInfoStatement), SQLITE_ROW,
-        "Error selecting object by objid: %s (result code %d)\n")) {
+        "TskDbSqlite::getFsRootDirObjectInfo: Error selecting object by objid: %s (result code %d)\n")) {
             sqlite3_finalize(rootDirInfoStatement);
             return TSK_ERR;
     }

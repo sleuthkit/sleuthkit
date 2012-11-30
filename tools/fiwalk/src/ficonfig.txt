@@ -1,0 +1,22 @@
+#
+# Configuration file for fiwalk
+#
+
+
+#*.jpeg	dgi	java -classpath ../plugins/plugins.jar jpeg_extract
+#*.jpeg	jvm	../plugins/jpeg_extract.jar jpeg_extract
+
+*.jpeg	dgi	../plugins/jpeg_extract
+*.jpg	dgi	../plugins/jpeg_extract
+*.pdf	dgi	java -classpath ../plugins/plugins.jar Libextract_plugin
+*.gif	dgi	java -classpath ../plugins/plugins.jar Libextract_plugin
+*.mp3	dgi	java -classpath ../plugins/plugins.jar Libextract_plugin
+*.doc	dgi	java -classpath ../plugins/plugins.jar word_extract
+*.xls	dgi	java -classpath ../plugins/plugins.jar word_extract
+*.ppt	dgi	java -classpath ../plugins/plugins.jar word_extract
+*.docx	dgi	python ../plugins/docx_extractor.py
+*.xlsx	dgi	python ../plugins/docx_extractor.py
+*.pptx	dgi	python ../plugins/docx_extractor.py
+*.odt	dgi	python ../plugins/odf_extractor.py
+*.ods	dgi	python ../plugins/odf_extractor.py
+*.odp	dgi	python ../plugins/odf_extractor.py
