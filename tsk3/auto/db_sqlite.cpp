@@ -589,11 +589,11 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & f
 
     // Find the parent file id in the database using the parent metadata address
     if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1, fs_file->name->par_addr),
-                "Error binding meta_addr to statment: %s (result code %d)\n")
+                "TskDbSqlite::findParObjId: Error binding meta_addr to statment: %s (result code %d)\n")
         || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
-            "Error binding fs_obj_id to statment: %s (result code %d)\n")
+            "TskDbSqlite::findParObjId: Error binding fs_obj_id to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
-            "Error selecting file id by meta_addr: %s (result code %d)\n"))
+            "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n"))
     {
         // Statement may be used again, even after error
         sqlite3_reset(m_selectFilePreparedStmt);

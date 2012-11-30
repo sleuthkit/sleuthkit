@@ -237,7 +237,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 
     // We won't hit the root directory on the walk, so open it now 
     if ((file_root = tsk_fs_file_open(fs_info, NULL, "/")) != NULL) {
-        processAttributes(file_root, "");
+        processFile(file_root, "");
     }
 
     // make sure that flags are set to get all files -- we need this to
