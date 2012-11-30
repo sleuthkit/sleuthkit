@@ -1,0 +1,1 @@
+*	dgi	./word-count-plugin.sh
