@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -95,8 +96,8 @@ public abstract class AbstractFile extends AbstractContent {
 	public abstract boolean isRoot();
 	
 	/**
-	 * Get the absolute unique across all files in the case parent path string
-	 * of this FsContent The path contains image and volume-system partition
+	 * Get the absolute unique path across all files in the case parent path string
+	 * of this FsContent. The path contains image and volume-system partition
 	 * After first call, every subsequent call returns the cached string
 	 *
 	 * @return unique absolute file path (cached after first call)
@@ -116,12 +117,60 @@ public abstract class AbstractFile extends AbstractContent {
 		while (tok.hasMoreTokens()) {
 			imageName = tok.nextToken();
 		}
-		sb.append("/").append(imageName).append("/");
+		sb.append("/img_").append(imageName).append("/");
 		sb.append(getName());
 
 		unique_path = sb.toString();
 		return unique_path;
 	}
 
+	/**
+	 * @param uniquePath the unique path to an AbstractFile (or subclass)
+	 * usually obtained by a call to AbstractFile.getUniquePath.
+	 * @return the path to to an AbstractFile (or subclass) with the image and
+	 * volume path segments removed.
+	 */
+	public static String createNonUniquePath(String uniquePath) {
+		
+		// split the path into parts
+		String[] pathSegments = uniquePath.split("/\\");
+		
+		// see if uniquePath had an image and/or volume name
+		int index = 0;
+		if (pathSegments[0].startsWith("img_")) {
+			++index;
+		}
+		if (pathSegments[1].startsWith("vol_")) {
+			++index;
+		}
+		
+		// Assemble the non-unique path (skipping over the image and volume
+		// name, if they exist).
+		StringBuilder strbuf = new StringBuilder();
+		for (; index < pathSegments.length; ++index) {
+			strbuf.append("/").append(pathSegments[index]);
+		}
+		
+		return strbuf.toString();
+	}
+	
+	/**
+	 * @return a list of AbstractFiles that are the children of this Directory.
+	 * Only returns children of type TskData.TSK_DB_FILES_TYPE_ENUM.FS.
+	 */
+	public List<AbstractFile> listFiles() throws TskCoreException {
+		// first, get all children
+		List<Content> children = getChildren();
+		
+		// only keep those that are of type AbstractFile
+		List<AbstractFile> files = new ArrayList<AbstractFile>();
+		for (Content child : children) {
+			if (child instanceof AbstractFile) {
+				AbstractFile afChild = (AbstractFile)child;
+				files.add(afChild);
+			}
+		}
+		return files;
+	}
     
 }

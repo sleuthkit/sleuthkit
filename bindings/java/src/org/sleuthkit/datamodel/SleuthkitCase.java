@@ -86,6 +86,8 @@ public class SleuthkitCase {
 	private PreparedStatement addBlackboardAttributeIntegerSt;
 	private PreparedStatement addBlackboardAttributeLongSt;
 	private PreparedStatement addBlackboardAttributeDoubleSt;
+	private PreparedStatement getFileSt;
+	private PreparedStatement getFileWithParentSt;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
 	/**
@@ -180,6 +182,10 @@ public class SleuthkitCase {
 		addBlackboardAttributeDoubleSt = con.prepareStatement(
 				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) "
 				+ "VALUES (?,?,?,?,?,?)");
+		
+		getFileSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? and LOWER(name) NOT LIKE '%journal%' AND fs_obj_id = ?");
+		
+		getFileWithParentSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND LOWER(parent_path) LIKE ? AND fs_obj_id = ?");
 	}
 
 	private void closeStatements() {
@@ -262,7 +268,17 @@ public class SleuthkitCase {
 				addBlackboardAttributeDoubleSt.close();
 				addBlackboardAttributeDoubleSt = null;
 			}
-
+			
+			if (getFileSt != null) {
+				getFileSt.close();
+				getFileSt = null;
+			}
+			
+			if (getFileWithParentSt != null) {
+				getFileWithParentSt.close();
+				getFileWithParentSt = null;
+			}
+			
 		} catch (SQLException e) {
 			logger.log(Level.WARNING,
 					"Error closing prepared statement", e);
@@ -2163,6 +2179,142 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 		throw new TskCoreException("No file found for id " + id);
+	}
+	
+	/**
+	 * @param image the image to search for the given file name
+	 * @param fileName the name of the file or directory to match (case
+	 * insensitive)
+	 * @return a list of FsContent for files/directories whose name matches the
+	 * given fileName
+	 */
+	public List<FsContent> findFiles(Image image, String fileName) throws TskCoreException {
+		dbReadLock();
+
+		// set the file name in the PS
+		List<FsContent> fsContents = new ArrayList<FsContent>();
+		try {
+			for (FileSystem fileSystem : getFileSystems(image)) {
+				getFileSt.setString(1, fileName.toLowerCase());
+				getFileSt.setLong(2, fileSystem.getId());
+
+				// get the result set
+				ResultSet rs = getFileSt.executeQuery();
+
+				// convert to FsConents
+				fsContents.addAll(resultSetToFsContents(rs));
+
+				// close the ResultSet
+				rs.close();
+			}
+		} catch (Exception e) {
+			throw new TskCoreException(e.getMessage());
+		} finally {
+			dbReadUnlock();
+		}
+
+		return fsContents;
+	}
+	
+	/**
+	 * @param image the image to search for the given file name
+	 * @param fileName the name of the file or directory to match (case
+	 * insensitive)
+	 * @param dirName the name of a parent directory of fileName (case
+	 * insensitive)
+	 * @return a list of FsContent for files/directories whose name matches
+	 * fileName and whose parent directory contains dirName.
+	 */
+	public List<FsContent> findFiles(Image image, String fileName, String dirName) throws TskCoreException {
+		dbReadLock();
+
+		ResultSet rs = null;
+		List<FsContent> fsContents = new ArrayList<FsContent>();
+		try {
+			for (FileSystem fileSystem : getFileSystems(image)) {
+				getFileWithParentSt.setString(1, fileName.toLowerCase());
+
+				// set the parent directory name
+				getFileWithParentSt.setString(2, "%" + dirName.toLowerCase() + "%");
+
+				// set the image ID
+				getFileWithParentSt.setLong(3, fileSystem.getId());
+
+				// get the result set
+				rs = getFileWithParentSt.executeQuery();
+
+				// convert to FsConents
+				fsContents.addAll(resultSetToFsContents(rs));
+
+				// close the ResultSet
+				rs.close();
+			}
+		} catch (Exception e) {
+			throw new TskCoreException(e.getMessage());
+		} finally {
+			dbReadUnlock();
+		}
+
+		return fsContents;
+	}
+	
+	/**
+	 * @param image the image to search for the given file name
+	 * @param fileName the name of the file or directory to match (case
+	 * insensitive)
+	 * @param parentFsContent 
+	 * @return a list of FsContent for files/directories whose name matches
+	 * fileName and that were inside a directory described by parentFsContent.
+	 */
+	public List<FsContent> findFiles(Image image, String fileName, FsContent parentFsContent) throws TskCoreException {
+		return findFiles(image, fileName, parentFsContent.getName());
+	}
+	
+	/**
+	 * @param sqlWhereClause a SQL where clause appropriate for the desired
+	 * files (do not begin the WHERE clause with the word WHERE!)
+	 * @return a list of FsContent each of which satisfy the given WHERE clause
+	 * @throws TskCoreException 
+	 */
+	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
+		Statement statement;
+		dbReadLock();
+		try {
+			statement = con.createStatement();
+			return resultSetToFsContents(statement.executeQuery("SELECT * FROM tsk_files WHERE " + sqlWhereClause));
+		} catch (SQLException e) {
+			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
+		} finally {
+			dbReadUnlock();
+		}
+	}
+	
+	/**
+	 * @param image the image to search for the given file name
+	 * @param filePath The full path to the file(s) of interest. This can
+	 * optionally include the image and volume names. Treated in a case-
+	 * insensitive manner.
+	 * @return a list of FsContent that have the given file path.
+	 */
+	public List<FsContent> openFiles(Image image, String filePath) throws TskCoreException {
+		
+		// get the non-unique path (strip of image and volume path segments, if
+		// the exist.
+		String path = AbstractFile.createNonUniquePath(filePath).toLowerCase();
+		
+		// split the file name from the parent path
+		int lastSlash = path.lastIndexOf("/");
+		
+		// if the last slash is at the end, strip it off
+		if (lastSlash == path.length()) {
+			path = path.substring(0, lastSlash - 1);
+			lastSlash = path.lastIndexOf("/");
+		}
+		
+		String parentPath = path.substring(0, lastSlash);
+		String fileName = path.substring(lastSlash);
+		
+		return findFiles(image, fileName, parentPath);
 	}
 
 	/**
