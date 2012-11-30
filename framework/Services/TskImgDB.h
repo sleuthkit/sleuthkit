@@ -220,7 +220,14 @@ public:
 
     virtual int addToolInfo(const char* name, const char* version) = 0;
     virtual int addImageInfo(int type, int sectorSize) = 0;
-    virtual int addImageName(char const * imgName) = 0;
+
+    /**
+     * Add the path to the image to the image database
+     *
+     * @param imgPath The image path.
+     */    
+    virtual int addImageName(char const * imgPath) = 0;
+    
     virtual int addVolumeInfo(const TSK_VS_PART_INFO * vs_part) = 0;
     virtual int addFsInfo(int volId, int fsId, const TSK_FS_INFO * fs_info) = 0;
 
@@ -274,7 +281,21 @@ public:
      */
     virtual int getFileRecord(const uint64_t fileId, TskFileRecord& fileRecord) const = 0;
     virtual SectorRuns * getFileSectors(uint64_t fileId) const = 0;
+
+    /**
+     * Gets the base name of the image, i.e., the file name of the first image path stored in the database.
+     *
+     * @return The name of the image, possibly the empty string if no image paths have been stored.
+     */    
+    virtual std::string getImageBaseName() const = 0;
+
+    /**
+     * Gets a list of image paths.
+     *
+     * @returns A vector of image paths as std::wstrings. There may be multiple paths for a split image or the list may be empty if no image paths have been stored.
+     */
     virtual std::vector<std::wstring> getImageNames() const = 0;
+
     virtual int getFileUniqueIdentifiers(uint64_t a_fileId, uint64_t &a_fsOffset, uint64_t &a_fsFileId, int &a_attrType, int &a_attrId) const = 0;
     virtual int getNumVolumes() const = 0;
     virtual int getImageInfo(int & type, int & sectorSize) const = 0;
