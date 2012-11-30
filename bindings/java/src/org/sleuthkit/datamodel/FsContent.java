@@ -448,12 +448,12 @@ public abstract class FsContent extends AbstractFile {
 		while (tok.hasMoreTokens()) {
 			imageName = tok.nextToken();
 		}
-		sb.append("/").append(imageName);
+		sb.append("/img_").append(imageName);
 		if (parentFileSystem != null) {
 			Content vol = parentFileSystem.getParent();
 			if (vol != null
 					&& !vol.equals(image)) {
-				sb.append("/");
+				sb.append("/vol_");
 				sb.append(vol.getName());
 			}
 		}
