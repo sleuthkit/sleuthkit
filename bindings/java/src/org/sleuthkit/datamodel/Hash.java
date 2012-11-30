@@ -32,8 +32,8 @@ import java.io.InputStream;
  */
 public class Hash {
 
-    private final static int BUFFER_SIZE = 8192;
-	private final static byte[] buffer = new byte[BUFFER_SIZE];
+    private final static int BUFFER_SIZE = 16 * 1024;
+	private final byte[] buffer = new byte[BUFFER_SIZE];
 
     /**
      * Generate the md5 hash for the given FsContent
@@ -42,7 +42,7 @@ public class Hash {
      * @param fsContent     FsContent object whose md5 hash we want to calculate
      * @return              md5 of the given FsContent object
      */
-    public static String calculateMd5(FsContent fsContent) throws IOException{
+    public String calculateMd5(FsContent fsContent) throws IOException{
         String hashText = "";
         InputStream in = new ReadContentInputStream(fsContent);
         Logger logger = Logger.getLogger(Hash.class.getName());
