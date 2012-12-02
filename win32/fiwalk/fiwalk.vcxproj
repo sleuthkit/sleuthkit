@@ -162,10 +162,6 @@
       <Project>{76efc06c-1f64-4478-abe8-79832716b393}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\tre\tre.vcxproj">
-      <Project>{72455c60-e6fa-461c-b39f-11d7875734ac}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

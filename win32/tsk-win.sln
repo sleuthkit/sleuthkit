@@ -61,10 +61,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtsk", "libtsk\libtsk.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fcat", "fcat\fcat.vcxproj", "{E4A40368-152D-4D54-9E2E-4B140212F98F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fiwalk", "fiwalk\fiwalk.vcxproj", "{2885850F-0ED0-4C9C-99E7-44F67FDD8A3B}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tre", "tre\tre.vcxproj", "{72455C60-E6FA-461C-B39F-11D7875734AC}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_NoLibs|Win32 = Debug_NoLibs|Win32
@@ -252,18 +248,6 @@ Global
 		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Debug|Win32.Build.0 = Debug|Win32
 		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Release|Win32.ActiveCfg = Release|Win32
 		{E4A40368-152D-4D54-9E2E-4B140212F98F}.Release|Win32.Build.0 = Release|Win32
-		{2885850F-0ED0-4C9C-99E7-44F67FDD8A3B}.Debug_NoLibs|Win32.ActiveCfg = Debug_NoLibs|Win32
-		{2885850F-0ED0-4C9C-99E7-44F67FDD8A3B}.Debug_NoLibs|Win32.Build.0 = Debug_NoLibs|Win32
-		{2885850F-0ED0-4C9C-99E7-44F67FDD8A3B}.Debug|Win32.ActiveCfg = Debug|Win32
-		{2885850F-0ED0-4C9C-99E7-44F67FDD8A3B}.Debug|Win32.Build.0 = Debug|Win32
-		{2885850F-0ED0-4C9C-99E7-44F67FDD8A3B}.Release|Win32.ActiveCfg = Release|Win32
-		{2885850F-0ED0-4C9C-99E7-44F67FDD8A3B}.Release|Win32.Build.0 = Release|Win32
-		{72455C60-E6FA-461C-B39F-11D7875734AC}.Debug_NoLibs|Win32.ActiveCfg = Debug_NoLibs|Win32
-		{72455C60-E6FA-461C-B39F-11D7875734AC}.Debug_NoLibs|Win32.Build.0 = Debug_NoLibs|Win32
-		{72455C60-E6FA-461C-B39F-11D7875734AC}.Debug|Win32.ActiveCfg = Debug|Win32
-		{72455C60-E6FA-461C-B39F-11D7875734AC}.Debug|Win32.Build.0 = Debug|Win32
-		{72455C60-E6FA-461C-B39F-11D7875734AC}.Release|Win32.ActiveCfg = Release|Win32
-		{72455C60-E6FA-461C-B39F-11D7875734AC}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
