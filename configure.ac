@@ -389,9 +389,6 @@ AC_CONFIG_FILES([Makefile
                  tools/autotools/Makefile
                  tools/sorter/Makefile
                  tools/timeline/Makefile
-                 tools/fiwalk/Makefile
-		 tools/fiwalk/src/Makefile
-		 tools/fiwalk/plugins/Makefile
                  tests/Makefile
                  samples/Makefile
                  man/Makefile
