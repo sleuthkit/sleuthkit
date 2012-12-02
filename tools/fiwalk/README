@@ -1,0 +1,85 @@
+Goals of this program:
+
+* Batch analysis of a disk image
+* Find and extract files of a given file type.
+* Generate metadata for input into other programs.
+
+
+* Workbench for James - metadata extractor
+* Input data for Daniel - datamining info.
+
+Things that our plug-in architecture needs to do:
+- run the metadata extractor in another process (in case it crashes)
+- query each extractor to fid out what kinds of fields it can produce.
+- get the fields from the extractor (how? XML?)
+- no need to recompile
+- works with java, perl, python, & C plug-ins
+- High-speed interconnect for plug-ins in C
+- compatability with what was being done for scrave?
+
+Things that would be nice:
+- not creating lots of files.
+
+
+Configuration file:
+
+   <glob>     <channel>  <args>	      
+
+A <glob> is anything that has a "*" or a "?" in it. If the recovered filename matches
+the glob, then the channel is run with the args.
+
+Example channels;
+
+	dgi - Domex Gateway Interface. Object provided on stdin. Args provided as environment variables.
+	                               Return is each property on a line in name:value format
+        so   - Shared Object. Code is loaded into memory and run.
+	jvm  - Java.  A Java VM is strated up. Data is passed using jni/shared memory/tcp
+
+   *.jpeg     dgi	/path/to/dgi/exec	#	Domex Gateway Interface
+
+/***Dependencies***/
+
+-openssl (Linux, Windows) or CommonCrypto (on more recent OSX)
+   
+
+/***LICENCES****/
+
+***Fiwalk***
+
+Public Domain Software 
+Simson L. Garfinkel
+Naval Postgraduate School
+
+The software provided here is released by the Naval Postgraduate
+School, an agency of the U.S. Department of Navy.  The software bears
+no warranty, either expressed or implied. NPS does not assume legal
+liability nor responsibility for a User's use of the software or the
+results of such use.
+
+Please note that within the United States, copyright protection, under
+Section 105 of the United States Code, Title 17, is not available for
+any work of the United States Government and/or for any works created
+by United States Government employees. 
+
+***REGEX***
+
+Extended regular expression matching and search library,
+version 0.12.
+(Implements POSIX draft P10003.2/D11.2, except for
+internationalization features.)
+
+Copyright (C) 1993 Free Software Foundation, Inc.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. 

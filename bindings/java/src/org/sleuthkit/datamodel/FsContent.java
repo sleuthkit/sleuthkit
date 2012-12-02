@@ -27,6 +27,8 @@ import org.sleuthkit.datamodel.TskData.FileKnown;
  * Generalized class that stores metadata that are common to both File and
  * Directory objects stored in tsk_files table Caches internal tsk file handle
  * and reuses it for reads
+ * 
+ * TODO move common getters to AbstractFile class
  */
 public abstract class FsContent extends AbstractFile {
 
@@ -50,10 +52,7 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	protected String md5Hash;
 	///other members
-	/*
-	 * Unique path containing image and volume
-	 */
-	protected String unique_path;
+
 	/**
 	 * parent file system
 	 */
@@ -148,6 +147,10 @@ public abstract class FsContent extends AbstractFile {
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+		if (offset == 0 && size == 0) {
+			//special case for 0-size file
+			return 0;
+		}
 		synchronized (this) {
 			if (fileHandle == 0) {
 				fileHandle = 
@@ -157,14 +160,19 @@ public abstract class FsContent extends AbstractFile {
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 	}
 
+	
+	@Override
+	public boolean isRoot() {
+		return parentFileSystem.getRoot_inum() == this.getMeta_addr();
+	}
+		
 	/*
 	 * -------------------------------------------------------------------------
 	 * Getters to retrieve meta-data attributes values
 	 * -------------------------------------------------------------------------
 	 */
-	public boolean isRoot() {
-		return parentFileSystem.getRoot_inum() == this.getMeta_addr();
-	}
+	
+
 
 	/**
 	 * Gets parent directory
@@ -172,7 +180,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @return the parent Directory
 	 * @throws TskCoreException exception thrown if error occurred in tsk core
 	 */
-	public Directory getParentDirectory() throws TskCoreException {
+	public AbstractFile getParentDirectory() throws TskCoreException {
 		return getSleuthkitCase().getParentDirectory(this);
 	}
 
@@ -426,15 +434,7 @@ public abstract class FsContent extends AbstractFile {
 		return this.parent_path;
 	}
 
-	/**
-	 * Get the absolute unique across all files in the case parent path string
-	 * of this FsContent The path contains image and volume-system partition
-	 * After first call, every subsequent call returns the cached string
-	 *
-	 * @return unique absolute file path (cached after first call)
-	 * @throws TskCoreException thrown when critical error occurred in Tsk Core
-	 * and unique absolute path could not be queried
-	 */
+	@Override
 	public String getUniquePath() throws TskCoreException {
 		if (unique_path != null) {
 			return unique_path;
@@ -448,12 +448,12 @@ public abstract class FsContent extends AbstractFile {
 		while (tok.hasMoreTokens()) {
 			imageName = tok.nextToken();
 		}
-		sb.append("/").append(imageName);
+		sb.append("/img_").append(imageName);
 		if (parentFileSystem != null) {
 			Content vol = parentFileSystem.getParent();
 			if (vol != null
 					&& !vol.equals(image)) {
-				sb.append("/");
+				sb.append("/vol_");
 				sb.append(vol.getName());
 			}
 		}

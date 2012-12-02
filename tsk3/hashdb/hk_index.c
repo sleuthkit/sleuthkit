@@ -31,55 +31,47 @@ hk_test(FILE * hFile)
     char *ptr;
 
     fseek(hFile, 0, SEEK_SET);
+
+    // read in header line
     if (NULL == fgets(buf, TSK_HDB_MAXLEN, hFile))
         return 0;
 
-    if (strlen(buf) < TSK_HDB_HTYPE_MD5_LEN)
+    if (strlen(buf) < 150) 
         return 0;
 
     ptr = buf;
+    
+    // "file_id","hashset_id","file_name","directory","hash","file_size","date_modified","time_modified","time_zone","comments","date_accessed","time_accessed"
+    
+    if (strncmp(ptr, "\"file_id\"", strlen("\"file_id\"")) != 0)
+        return 0;
 
     /* Cycle through the line looking at the fields in between the commas */
     while (NULL != (ptr = strchr(ptr, ','))) {
         cnt++;
 
-        // run some tets on the MD5 field
-        if (cnt == 4) {
-
-            /* Do a length check and more sanity checks */
-            if ((strlen(ptr) < 2 + TSK_HDB_HTYPE_MD5_LEN)
-                || (ptr[1] != '"')
-                || (ptr[2 + TSK_HDB_HTYPE_MD5_LEN] != '"')) {
+        if (cnt == 1) {
+            if (strncmp(ptr, ",\"hashset_id\"", strlen(",\"hashset_id\"")) != 0)
                 return 0;
-            }
-
-            if ((isxdigit((int) ptr[2]) == 0)
-                || (isxdigit((int) ptr[2 + TSK_HDB_HTYPE_MD5_LEN - 1]) ==
-                    0)) {
-                return 0;
-            }
-
-            /* Final sanity check */
-            if (NULL != strchr(ptr, ',')) {
-                return 0;
-            }
-
-            return 1;
         }
-
-        /* If the next field is in quotes then we need to skip to the
-         * next quote and ignore any ',' in there
-         */
-        if (ptr[1] == '"') {
-            if (NULL == (ptr = strchr(&ptr[2], '"'))) {
+        else if (cnt == 2) {
+            if (strncmp(ptr, ",\"file_name\"", strlen(",\"file_name\"")) != 0)
                 return 0;
-            }
+        }
+        else if (cnt == 3) {
+            if (strncmp(ptr, ",\"directory\"", strlen(",\"directory\"")) != 0)
+                return 0;
+        }
+        else if (cnt == 4) {
+            if (strncmp(ptr, ",\"hash\"", strlen(",\"hash\"")) != 0)
+                return 0;
         }
         else {
-            ptr++;
+            break;
         }
+        ptr++;
     }
-    return 0;
+    return 1;
 }
 
 /**
@@ -278,7 +270,6 @@ hk_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         tsk_error_set_errstr2( "hk_makeindex");
         return 1;
     }
-    fseek(hdb_info->hDb, 0, SEEK_SET);
 
     /* Status */
     if (tsk_verbose)
@@ -293,6 +284,12 @@ hk_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb);
          offset += (TSK_OFF_T) len, i++) {
 
+        // skip the header line
+        if (i == 0) {
+            ig_cnt++;
+            continue;
+        }
+        
         len = strlen(buf);
 
         /* Parse each line to get the MD5 value */

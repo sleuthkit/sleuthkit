@@ -200,15 +200,16 @@ tsk_fs_blkcalc(TSK_FS_INFO * fs, TSK_FS_BLKCALC_FLAG_ENUM a_lclflags,
 
     if (a_lclflags == TSK_FS_BLKCALC_BLKLS) {
         if (tsk_fs_block_walk(fs, fs->first_block, fs->last_block,
-                (TSK_FS_BLOCK_FLAG_UNALLOC |
-                    TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_CONT),
+                (TSK_FS_BLOCK_WALK_FLAG_UNALLOC | TSK_FS_BLOCK_WALK_FLAG_META |
+                 TSK_FS_BLOCK_WALK_FLAG_CONT | TSK_FS_BLOCK_WALK_FLAG_AONLY),
                 count_blkls_act, &data))
             return -1;
     }
     else if (a_lclflags == TSK_FS_BLKCALC_DD) {
         if (tsk_fs_block_walk(fs, fs->first_block, fs->last_block,
-                (TSK_FS_BLOCK_FLAG_ALLOC | TSK_FS_BLOCK_FLAG_UNALLOC |
-                    TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_CONT),
+                (TSK_FS_BLOCK_WALK_FLAG_ALLOC | TSK_FS_BLOCK_WALK_FLAG_UNALLOC |
+                TSK_FS_BLOCK_WALK_FLAG_META | TSK_FS_BLOCK_WALK_FLAG_CONT |
+                TSK_FS_BLOCK_WALK_FLAG_AONLY),
                 count_dd_act, &data))
             return -1;
     }

@@ -121,6 +121,16 @@ int TskImgDBSqlite::initialize()
 
     char * stmt;
 
+    sqlite3_stmt *statement;
+
+    // set page size -- 4k is much faster on Windows than the default
+    executeStatement("PRAGMA page_size = 4096;", statement, "TskImgDBSqlite::initialize");
+    sqlite3_finalize(statement);
+
+    // we don't have a mechanism to recover from a crash anyway
+    executeStatement("PRAGMA synchronous = 0;", statement, "TskImgDBSqlite::initialize");
+    sqlite3_finalize(statement);
+
     // ----- DB_INFO
     stmt = "CREATE TABLE db_info (name TEXT PRIMARY KEY, version TEXT)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) {
@@ -189,7 +199,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- FS_FILES
-    stmt = "CREATE TABLE fs_files (file_id INTEGER NOT NULL, fs_id INTEGER, "
+    stmt = "CREATE TABLE fs_files (file_id INTEGER UNIQUE NOT NULL, fs_id INTEGER, "
         "fs_file_id INTEGER, attr_type INTEGER, attr_id INTEGER)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
@@ -213,7 +223,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- CARVED_FILES
-    stmt = "CREATE TABLE carved_files (file_id INTEGER, vol_id INTEGER)";
+    stmt = "CREATE TABLE carved_files (file_id INTEGER UNIQUE, vol_id INTEGER)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
         _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating carved_files table: %S", errmsg);
@@ -236,7 +246,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- DERIVED_FILES
-    stmt = "CREATE TABLE derived_files (file_id INTEGER PRIMARY KEY, derivation_details TEXT)";
+    stmt = "CREATE TABLE derived_files (file_id INTEGER UNIQUE , derivation_details TEXT)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
         _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating derived_files table: %S", errmsg);
@@ -247,7 +257,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- ALLOC_UNALLOC_MAP
-    stmt = "CREATE TABLE alloc_unalloc_map (vol_id, unalloc_img_id INTEGER, "
+    stmt = "CREATE TABLE alloc_unalloc_map (vol_id INTEGER, unalloc_img_id INTEGER, "
         "unalloc_img_sect_start INTEGER, sect_len INTEGER, orig_img_sect_start INTEGER)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
@@ -772,7 +782,7 @@ int TskImgDBSqlite::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileSyste
         "dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, full_path) VALUES (NULL, %d, %d,"
         "'%q',%llu,%d,%d,%d,%d,%" PRIuOFF",%d,%d,%d,%d,%d,%d,%d,'%q')", 
         IMGDB_FILES_TYPE_FS, IMGDB_FILES_STATUS_READY_FOR_ANALYSIS, fileName, 
-        getFileId(fileSystemID, fileSystemFile->name->par_addr), 
+        findParObjId(fileSystemID, fileSystemFile->name->par_addr), 
         fileSystemFile->name->type, meta_type,
         fileSystemFile->name->flags, meta_flags, size, crtime, ctime, atime,
         mtime, meta_mode, gid, uid, fullpath.c_str());
@@ -803,6 +813,11 @@ int TskImgDBSqlite::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileSyste
 
         sqlite3_free(errmsg);
         return -1;
+    }
+
+    //if dir, update parent id cache
+    if (meta_type == TSK_FS_META_TYPE_DIR) {
+        storeParObjId(fileSystemID, fileSystemFile->name->meta_addr, fileID);
     }
 
     return 0;
@@ -2603,7 +2618,7 @@ int TskImgDBSqlite::addModule(const std::string& name, const std::string& descri
                 name.c_str(), description.c_str());
             if (sqlite3_exec(m_db, insertStmt, NULL, NULL, &errmsg) == SQLITE_OK) 
             {
-                moduleId = sqlite3_last_insert_rowid(m_db);
+                moduleId = (int)sqlite3_last_insert_rowid(m_db);
             } 
             else 
             {
@@ -2677,7 +2692,7 @@ int TskImgDBSqlite::getModuleInfo(std::vector<TskModuleInfo> & moduleInfoList) c
     if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) {
         TskModuleInfo moduleInfo;
         while (sqlite3_step(statement) == SQLITE_ROW) {
-            moduleInfo.module_id = (uint64_t)sqlite3_column_int64(statement, 0);
+            moduleInfo.module_id = (int)sqlite3_column_int64(statement, 0);
             moduleInfo.module_name = (char *)sqlite3_column_text(statement, 1);
             moduleInfo.module_description = (char *)sqlite3_column_text(statement, 2);
             moduleInfoList.push_back(moduleInfo);
@@ -2812,7 +2827,7 @@ int TskImgDBSqlite::addUnallocImg(int & unallocImgId)
     stmt << "INSERT INTO unalloc_img_status (unalloc_img_id, status) VALUES (NULL, " << TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CREATED << ")";
     char * errmsg;
     if (sqlite3_exec(m_db, stmt.str().c_str(), NULL, NULL, &errmsg) == SQLITE_OK) {
-        unallocImgId = sqlite3_last_insert_rowid(m_db);
+        unallocImgId = (int)sqlite3_last_insert_rowid(m_db);
         rc = 0;
     } else {
         wchar_t infoMessage[MAX_BUFF_LENGTH];
@@ -3715,4 +3730,35 @@ void TskImgDBSqlite::executeStatement(const std::string &stmtToExecute, sqlite3_
         msg << caller << " : error executing " << stmtToExecute << " : " << sqlite3_errmsg(m_db);
         throw TskException(msg.str());
     }
+}
+
+
+
+/**
+ * Store meta_addr to object id mapping of the directory in a local cache map
+ * @param fsObjId fs id of this directory
+ * @param meta_addr meta_addr of this directory
+ * @param objId object id of this directory from the objects table
+ */
+void TskImgDBSqlite::storeParObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId) {
+	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
+	//store only if does not exist
+	if (tmpMap.count(meta_addr) == 0)
+		tmpMap[meta_addr] = objId;
+}
+
+/**
+ * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
+ * @param fs_file file to find parent obj id for
+ * @param fsObjId fs id of this file
+ * @returns parent obj id ( > 0), -1 on error
+ */
+int64_t TskImgDBSqlite::findParObjId(const int64_t & fsObjId, TSK_INUM_T meta_addr) {
+    //get from cache by parent meta addr, if available
+    map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
+    if (tmpMap.count(meta_addr) > 0) {
+        return tmpMap[meta_addr];
+    }
+
+    return getFileId(fsObjId, meta_addr);
 }

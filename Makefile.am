@@ -43,6 +43,8 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
 
 CLEANFILES = tsk3/tsk_incs.h
 
+ACLOCAL_AMFLAGS = -I m4
+
 # directories to compile
 if CPPUNIT
   UNIT_TESTS=unit_tests

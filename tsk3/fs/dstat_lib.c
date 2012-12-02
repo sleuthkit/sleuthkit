@@ -62,8 +62,11 @@ blkstat_act(const TSK_FS_BLOCK * fs_block, void *ptr)
 
 
 uint8_t
-tsk_fs_blkstat(TSK_FS_INFO * fs, TSK_DADDR_T addr,
-    TSK_FS_BLOCK_FLAG_ENUM flags)
+tsk_fs_blkstat(TSK_FS_INFO * fs, TSK_DADDR_T addr)
 {
+    int flags = 
+        (TSK_FS_BLOCK_WALK_FLAG_UNALLOC | TSK_FS_BLOCK_WALK_FLAG_ALLOC |
+         TSK_FS_BLOCK_WALK_FLAG_META | TSK_FS_BLOCK_WALK_FLAG_CONT |
+         TSK_FS_BLOCK_WALK_FLAG_AONLY);
     return tsk_fs_block_walk(fs, addr, addr, flags, blkstat_act, NULL);
 }

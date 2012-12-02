@@ -36,6 +36,8 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_curFsId = 0;
     m_curFileId = 0;
     m_curUnallocDirId = 0;
+    m_curDirId = 0;
+    m_curDirPath = "";
     m_blkMapFlag = false;
     m_vsFound = false;
     m_volFound = false;
@@ -235,7 +237,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 
     // We won't hit the root directory on the walk, so open it now 
     if ((file_root = tsk_fs_file_open(fs_info, NULL, "/")) != NULL) {
-        processAttributes(file_root, "");
+        processFile(file_root, "");
     }
 
     // make sure that flags are set to get all files -- we need this to
@@ -426,7 +428,7 @@ void
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::stopAddImage: Stop request received\n");
-
+    
     m_stopped = true;
     setStopProcessing();
     // flag is checked every time processFile() is called
@@ -509,10 +511,17 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
 
     // Check if the process has been canceled
-    if (m_stopped) {
+     if (m_stopped) {
         if (tsk_verbose)
             tsk_fprintf(stderr, "TskAutoDb::processFile: Stop request detected\n");
         return TSK_STOP;
+    }
+
+     // If not processing the same directroy as last time function was called, update the directory
+    int64_t cur = fs_file->name->par_addr;
+    if(m_curDirId != cur){
+        m_curDirId = cur;
+        m_curDirPath = path;
     }
 
     /* process the attributes.  The case of having 0 attributes can occur
@@ -943,4 +952,13 @@ uint8_t TskAutoDb::addUnallocImageSpaceToDb() {
         retImgFile = m_db->addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId);
     }
     return retImgFile;
+}
+
+/**
+* Returns the directory currently being analyzed by processFile()
+*
+* @returns reference to currently analyzed directory
+*/
+const std::string TskAutoDb::getCurDir(){
+    return TskAutoDb::m_curDirPath;
 }

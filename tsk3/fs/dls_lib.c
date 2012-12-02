@@ -212,7 +212,7 @@ slack_inode_act(TSK_FS_FILE * fs_file, void *ptr)
 uint8_t
 tsk_fs_blkls(TSK_FS_INFO * fs, TSK_FS_BLKLS_FLAG_ENUM a_blklsflags,
     TSK_DADDR_T bstart, TSK_DADDR_T blast,
-    TSK_FS_BLOCK_FLAG_ENUM a_block_flags)
+    TSK_FS_BLOCK_WALK_FLAG_ENUM a_block_flags)
 {
     BLKLS_DATA data;
 
@@ -226,6 +226,7 @@ tsk_fs_blkls(TSK_FS_INFO * fs, TSK_FS_BLKLS_FLAG_ENUM a_blklsflags,
         if (print_list_head(fs))
             return 1;
 
+        a_block_flags |= TSK_FS_BLOCK_WALK_FLAG_AONLY;
         if (tsk_fs_block_walk(fs, bstart, blast, a_block_flags, print_list,
                 &data))
             return 1;

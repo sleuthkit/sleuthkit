@@ -998,10 +998,9 @@ extern "C" {
     typedef enum TSK_FS_BLKLS_FLAG_ENUM TSK_FS_BLKLS_FLAG_ENUM;
     extern uint8_t tsk_fs_blkls(TSK_FS_INFO * fs,
         TSK_FS_BLKLS_FLAG_ENUM lclflags, TSK_DADDR_T bstart,
-        TSK_DADDR_T bend, TSK_FS_BLOCK_FLAG_ENUM flags);
+        TSK_DADDR_T bend, TSK_FS_BLOCK_WALK_FLAG_ENUM flags);
 
-    extern uint8_t tsk_fs_blkstat(TSK_FS_INFO * fs, TSK_DADDR_T addr,
-        TSK_FS_BLOCK_FLAG_ENUM flags);
+    extern uint8_t tsk_fs_blkstat(TSK_FS_INFO * fs, TSK_DADDR_T addr);
 
     enum TSK_FS_FFIND_FLAG_ENUM {
         TSK_FS_FFIND_ALL = 0x01,
@@ -2557,12 +2556,12 @@ class TskFsMeta {
 
     /**
           * get sequence number for file (NTFS only, is incremented when entry is reallocated) 
-     * @return sequence number for file
+     * @return sequence number for file, or 0xFFFF on error.
      */
     uint32_t getSeq() const {
         if (m_fsMeta != NULL)
             return m_fsMeta->seq;
-        //zli: should we throw err msg
+	return 0xFFFF;
     };
 
     /**

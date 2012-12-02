@@ -1158,7 +1158,7 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
      */
     if ((fs_file_par->meta->type != TSK_FS_META_TYPE_DIR)
         || (fs_file_par->meta->seq != fs_name_list->par_seq)) {
-        char *str = TSK_FS_ORPHAN_STR;
+        const char *str = TSK_FS_ORPHAN_STR;
         len = strlen(str);
 
         /* @@@ There should be a sanity check here to verify that the

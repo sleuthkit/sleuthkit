@@ -91,7 +91,12 @@ typedef __int64 int64_t;
 
 // define the typical unix types
 typedef int mode_t;
+// ifdef added from Joachim because it can cause conflicts
+// if python.h is included
+#if !defined( HAVE_SSIZE_T )
+#define HAVE_SSIZE_T
 typedef int ssize_t;
+#endif
 
 // remap some of the POSIX functions
 #define snprintf   _snprintf

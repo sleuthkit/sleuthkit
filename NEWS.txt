@@ -1,6 +1,15 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.0.2 --------------
+New Features:
+- Numerous performance improvements to framework.
+- Added fiwalk tool from Simson.  Not supported in Visual Studio yet.
+
+Bug Fixes:
+- Fixed fcat to work on NTFS files (still doesn't support ADS though). 
+- Fixed HFS+ support in tsk_loaddb / SQLite -- root directory was not added.
+
 ---------------- VERSION 4.0.1 --------------
 New Features:
 - Can open raw Windows devices with write mode sharing.
@@ -10,11 +19,13 @@ New Features:
 - performance improvements with FAT code (maps and dir_add)
 - performance improvements with NTFS code (maps)
 - added AONLY flag to block_walk
+- Updated blkls and blkcalc to use AONLY flag -- MUCH faster. 
 
 Bug Fixes:
 - Fixed mactime issue where it could choose the wrong timezone that did
   not follow daylight savings times. 
 - Fixed file size of alternate data streams in framework.
+- Incorporated memory leak fixes and raw device fixes from ADF Solutions.
 
 
 
