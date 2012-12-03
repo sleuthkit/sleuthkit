@@ -40,6 +40,7 @@ AC_HEADER_STDC
 #AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/param.h sys/time.h unistd.h utime.h wchar.h wctype.h])
 AC_CHECK_HEADERS([err.h inttypes.h unistd.h stdint.h sys/param.h])
 
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
 AC_C_CONST
@@ -184,6 +185,142 @@ AS_IF([test "x$with_libewf" != "xno"],
       [AC_CHECK_LIB([ewf], [libewf_open])]
     )]
 )
+
+# Check if we should build fiwalk.
+AC_ARG_ENABLE(fiwalk,
+    [AS_HELP_STRING([--disable-fiwalk],[Disable fiwalk build])],
+    #if --diable-fiwalk
+#   [echo option provided:fiwalk" | "$fiwalk" | "$enable_fiwalk]
+    [],
+    #Default to fiwalk build enabled
+#    [echo "option not provided: "fiwalk" | "$fiwalk" | "$enable_fiwalk]
+    [enable_fiwalk=yes]
+#    [echo fiwalk $fiwalk $enable_fiwalk]
+    )
+
+AS_IF([test "x$enable_fiwalk" = "xyes"], [AC_DEFINE([BUILD_FIWALK],[1],[Define if fiwalk will be built])],
+    [test "x$enable_fiwalk" = "xno"], [AC_DEFINE([BUILD_FIWALK],[0],[Define if fiwalk will not be built])],
+    [AC_MSG_FAILURE([unsupported fiwalk build option: ${enable_fiwalk}])]
+)
+
+AM_CONDITIONAL([BUILD_FIWALK], [test x$enable_fiwalk = xyes])
+if test "x$enable_fiwalk" == xyes; then
+   ## These will be removed after complete integration
+   ## At that point fiwalk will just be part of TSK not a separate package
+   AC_DEFINE([FIWALK_VERSION], ["0.6.19"], [version of fiwalk subpackage])
+   AC_DEFINE([FIWALK_PACKAGE], ["FIWALK"], [name of fiwalk subpackage])
+
+   ################################################################
+   ##
+   ## Bloom support
+   AC_TYPE_INT64_T
+   AC_CHECK_HEADERS([err.h sys/mman.h sys/resource.h unistd.h])
+   #AC_CHECK_HEADERS([openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h])
+   AC_CHECK_FUNCS([printf getrusage err errx warn warnx mmap])
+   
+   ################################################################
+   ##
+   ## utils.h/utils.c support:
+   AC_CHECK_HEADERS([err.h sys/mman.h sys/resource.h unistd.h])
+   #AC_CHECK_HEADERS([err.h openssl/hmac.h openssl/pem.h err.h sys/mman.h sys/resource.h unistd.h])
+   AC_CHECK_FUNCS([ishexnumber unistd.h err errx warn warnx ishexnumber pread64 pread _lseeki64 ])
+   
+   ################################################################
+   ##
+   ## xml.cpp support
+   AC_CHECK_FUNCS([vasprintf])
+   
+   ################################################################
+   
+   ################################################################
+   ### pthread support 
+   ###
+   AC_CHECK_HEADERS([pthread.h])
+   #m4_include([ax_pthread.m4])			#Redundant
+   #AX_PTHREAD()				#Redundant
+   #LIBS="$PTHREAD_LIBS $LIBS"			#Redundant
+   #CFLAGS="$CFLAGS $PTHREAD_CFLAGS"		#Redundant
+   #CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"	#Redundant
+   #CC="$PTHREAD_CC"				#Redundant
+   ################################################################
+   
+   # Specific headers that I plan to use
+   #AC_HEADER_STDC				#Redundant
+   AC_HEADER_DIRENT
+   AC_CHECK_HEADERS([ctype.h err.h stdio.h strings.h string.h stdlib.h stdint.h sys/mman.h sys/types.h sys/time.h sys/resource.h sys/signal.h inttypes.h sys/resource.h sys/utsname.h])
+   #AC_CHECK_HEADERS([openssl/evp.h openssl/hmac.h openssl/x509.h openssl/pem.h])
+   #AC_CHECK_HEADERS([CommonCrypto/CommonDigest.h])
+   AC_CHECK_HEADERS([magic.h])
+   AC_CHECK_MEMBERS([struct glob_t.gl_matchc],,,[[#include <glob.h>]])
+   AC_CHECK_MEMBERS([struct dirent.d_name],,,[[#include <dirent.h>]])
+   AC_CHECK_MEMBERS([struct dirent.d_namlen],,,[[#include <dirent.h>]])
+   
+   # Specific functions that we want to know about
+   AC_CHECK_FUNCS([printf getrusage strcasestr err ishexnumber])
+   
+   AC_CHECK_LIB([regex],[regcomp])		    # see if we need -lregex
+   
+   
+   # Special features that can be enabled or disabled
+   AC_ARG_ENABLE(opt,
+   	       AC_HELP_STRING([--enable-opt],
+   	       [Drop -O C flags]))
+   if test "x$with_afflib" != "xno"; then
+      AC_CHECK_LIB([z],[uncompress],,AC_MSG_WARN([zlib not installed; required for AFFLIB and libewf]))
+      AC_CHECK_LIB([afflib],[af_open],,AC_MSG_WARN([AFFLIB not found]))
+   fi
+   #AC_CHECK_LIB([ssl],[ssl3_new])
+   #AC_CHECK_LIB([system],[CC_MD2_Init])
+   #AC_CHECK_LIB([crypto],[EVP_md5])
+   if test "x$with_libewf" != "xno"; then
+      AC_CHECK_LIB([ewf],[libewf_get_version],,AC_MSG_WARN([libewf not found; no E01 support]))
+   else
+      AC_MSG_WARN([libewf support disabled: no E01 support])
+   fi
+   AC_CHECK_LIB([magic],[magic_open])
+   AC_DEFINE_UNQUOTED([UNAMES],"`(uname -s)`",[Host operating system])
+   
+   if test "x$with_afflib" != "xno"; then
+      # Check to see if we have the modern AFFLIB
+      AC_MSG_NOTICE([Checking for modern AFFLIB])
+      AC_TRY_COMPILE([
+      #include <afflib/afflib.h>
+      #include <afflib/afflib_i.h>
+      int	af_get_seg(AFFILE *af,const char *name,uint32_t *arg,
+      		   unsigned char *data,size_t *datalen);
+      ],
+                     [AFFILE *af=0;const char *segname="";uint32_t arg;u_char *data = 0;size_t datalen=0;
+      	       af_get_seg(af,segname,&arg,data,&datalen);],
+      	       [AC_MSG_NOTICE([AFFLIB is not obsolete])
+       	        afflib_obsolete=no],
+      	       [AC_MSG_NOTICE([AFFLIB is obsolete; disabling AFFLIB support.])
+                      afflib_obsolete=yes])
+      
+      if test $afflib_obsolete = yes ; then
+         AC_DEFINE(AFFLIB_OBSOLETE, 1,[AFFLIB rejects uint32_t])
+      else
+         AC_CHECK_FUNCS([af_display_as_quad af_display_as_hex])
+      fi   
+   fi
+   
+   
+   ################################################################
+   ## Sleuthkit support
+   ## Notice that SleuthKit now requires C++ due to autotools
+   ## This needs to come last, because once we -ltsk3, everything needs
+   ## to be C++ includes
+   ##
+   AC_LANG_PUSH([C++])
+   #  AC_CHECK_LIB([tsk3],[tsk_fs_open_img],,AC_MSG_ERROR([Requires TSK 3.2.1 or above library]))
+   #  AC_CHECK_HEADER([tsk3/libtsk.h],,AC_MSG_ERROR([Requires TSK 3.2.1 or above include files]))
+     AC_CHECK_MEMBER([struct TSK_IMG_INFO.sector_size],
+     AC_DEFINE([HAVE_TSK_IMG_INFO_SECTOR_SIZE], 
+     	[1 /* Released in TSK 3.0.1 */], [Description]),
+   	[],
+   	[[#include "tsk3/libtsk.h"]])
+     AC_CHECK_FUNCS([tsk_fs_meta_make_ls])
+   AC_LANG_POP([C++])
+fi
 
 # sqlite requires pthread libraries - this was copied from its configure.ac
 # AC_SEARCH_LIBS(pthread_create, pthread)

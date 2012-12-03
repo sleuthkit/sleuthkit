@@ -108,6 +108,8 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tsk3\base\crc.c" />
+    <ClCompile Include="..\..\tsk3\base\sha2.c" />
     <ClCompile Include="..\..\tsk3\vs\bsd.c" />
     <ClCompile Include="..\..\tsk3\vs\dos.c" />
     <ClCompile Include="..\..\tsk3\vs\gpt.c" />
@@ -193,6 +195,8 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     <ClCompile Include="..\..\tsk3\img\raw.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\tsk3\base\crc.h" />
+    <ClInclude Include="..\..\tsk3\base\sha2.h" />
     <ClInclude Include="..\..\tsk3\vs\tsk_bsd.h" />
     <ClInclude Include="..\..\tsk3\vs\tsk_dos.h" />
     <ClInclude Include="..\..\tsk3\vs\tsk_gpt.h" />

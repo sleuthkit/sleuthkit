@@ -10,6 +10,10 @@
 #include "tsk_base_i.h"
 #include "tsk_base.h"
 
+#ifdef HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
 /**
  * \file tsk_error.c
  * Contains the error handling code and variables.

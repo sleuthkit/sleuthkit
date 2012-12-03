@@ -238,6 +238,7 @@ extern "C" {
         TSK_FS_ATTR_TYPE_NTFS_PROP = 0xF0,      //  (NT)
         TSK_FS_ATTR_TYPE_NTFS_LOG = 0x100,      //  (2K)
         TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001,   //  Indirect blocks for UFS and ExtX file systems
+        TSK_FS_ATTR_TYPE_UNIX_EXTENT = 0x1002,   //  Extents for Ext4 file system
 
         // Types for HFS+ File Attributes
         TSK_FS_ATTR_TYPE_HFS_DEFAULT = 0x01,    // 1    Data fork of fs special files and misc
@@ -419,7 +420,12 @@ extern "C" {
     };
     typedef enum TSK_FS_META_MODE_ENUM TSK_FS_META_MODE_ENUM;
 
-
+    typedef enum TSK_FS_META_CONTENT_TYPE_ENUM {
+        TSK_FS_META_CONTENT_TYPE_UNIX_INDIRECT = 0x0,
+        TSK_FS_META_CONTENT_TYPE_UNIX_EXTENT = 0x1
+    } TSK_FS_META_CONTENT_TYPE_ENUM;
+    
+    
 #define TSK_FS_META_TAG 0x13524635
     /** 
     * TSK data structure to store general file and directory metadata. 
@@ -468,6 +474,7 @@ extern "C" {
 
         void *content_ptr;      ///< Pointer to file system specific data that is used to store references to file content
         size_t content_len;     ///< size of content  buffer
+        TSK_FS_META_CONTENT_TYPE_ENUM content_type;
 
         uint32_t seq;           ///< Sequence number for file (NTFS only, is incremented when entry is reallocated) 
 
@@ -746,7 +753,7 @@ extern "C" {
         TSK_FS_TYPE_FFS_DETECT = 0x00000070,    ///< UFS auto detection
         TSK_FS_TYPE_EXT2 = 0x00000080,  ///< Ext2 file system
         TSK_FS_TYPE_EXT3 = 0x00000100,  ///< Ext3 file system
-        TSK_FS_TYPE_EXT_DETECT = 0x00000180,    ///< ExtX auto detection
+        TSK_FS_TYPE_EXT_DETECT = 0x00002180,    ///< ExtX auto detection
         TSK_FS_TYPE_SWAP = 0x00000200,  ///< SWAP file system
         TSK_FS_TYPE_SWAP_DETECT = 0x00000200,   ///< SWAP auto detection
         TSK_FS_TYPE_RAW = 0x00000400,   ///< RAW file system
@@ -755,6 +762,7 @@ extern "C" {
         TSK_FS_TYPE_ISO9660_DETECT = 0x00000800,        ///< ISO9660 auto detection
         TSK_FS_TYPE_HFS = 0x00001000,   ///< HFS file system
         TSK_FS_TYPE_HFS_DETECT = 0x00001000,    ///< HFS auto detection
+	TSK_FS_TYPE_EXT4 = 0x00002000,  ///< Ext4 file system
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     typedef enum TSK_FS_TYPE_ENUM TSK_FS_TYPE_ENUM;
@@ -821,7 +829,8 @@ extern "C" {
     */
     enum TSK_FS_INFO_FLAG_ENUM {
         TSK_FS_INFO_FLAG_NONE = 0x00,   ///< No Flags
-        TSK_FS_INFO_FLAG_HAVE_SEQ = 0x01        ///< File system has sequence numbers in the inode addresses.
+        TSK_FS_INFO_FLAG_HAVE_SEQ = 0x01,   ///< File system has sequence numbers in the inode addresses.
+        TSK_FS_INFO_FLAG_HAVE_SUBSEC = 0x02    ///< File system has subsecond time fields 
     };
     typedef enum TSK_FS_INFO_FLAG_ENUM TSK_FS_INFO_FLAG_ENUM;
 
@@ -855,6 +864,7 @@ extern "C" {
         TSK_DADDR_T last_block_act;     ///< Address of last block -- adjusted so that it is equal to the last block in the image or volume (if image is not complete)
         unsigned int block_size;        ///< Size of each block (in bytes)
         unsigned int dev_bsize; ///< Size of device block (typically always 512)
+        unsigned int inode_size;	///< Size of each inode (in bytes)
 
         /* The following are used for really RAW images that contain data
            before and after the actual user sector. For example, a raw cd

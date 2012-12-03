@@ -529,6 +529,14 @@
 			Name="base"
 			>
 			<File
+				RelativePath="..\..\tsk3\base\crc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\tsk3\base\crc.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\tsk3\base\md5c.c"
 				>
 			</File>
@@ -538,6 +546,14 @@
 			</File>
 			<File
 				RelativePath="..\..\tsk3\base\sha1c.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\tsk3\base\sha2.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\tsk3\base\sha2.h"
 				>
 			</File>
 			<File

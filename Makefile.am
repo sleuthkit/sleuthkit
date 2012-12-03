@@ -7,6 +7,7 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     win32/BUILDING.txt \
     win32/NOTES.txt \
     win32/*/*.vcproj \
+    win32/tre/* \
     win32/tsk-win.sln \
     win32/docs/* \
     bindings/java/README.txt \
@@ -55,6 +56,7 @@ SUBDIRS = tsk3 tools tests samples man $(UNIT_TESTS) $(JNI)
 
 nobase_include_HEADERS = tsk3/libtsk.h tsk3/tsk_incs.h \
     tsk3/base/tsk_base.h tsk3/base/tsk_os.h \
+    tsk3/base/sha2.h \
     tsk3/img/tsk_img.h tsk3/vs/tsk_vs.h \
     tsk3/vs/tsk_bsd.h tsk3/vs/tsk_dos.h tsk3/vs/tsk_gpt.h \
     tsk3/vs/tsk_mac.h tsk3/vs/tsk_sun.h \

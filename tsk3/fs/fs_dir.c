@@ -483,7 +483,6 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
 
         // call the action if we have the right flags.
         if ((fs_file->name->flags & a_flags) == fs_file->name->flags) {
-
             retval = a_action(fs_file, a_dinfo->dirs, a_ptr);
             if (retval == TSK_WALK_STOP) {
                 tsk_fs_dir_close(fs_dir);

@@ -475,6 +475,7 @@ documentation and/or software.
     void TSK_SHA_Final(BYTE * output, TSK_SHA_CTX *);
 //@}
 
+
 #ifdef __cplusplus
 }
 #endif
