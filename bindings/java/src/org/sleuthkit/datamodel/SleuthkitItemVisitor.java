@@ -101,7 +101,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * @param ld layout dir to visit / act on
 	 * @return result of the visit
 	 */
-    T visit(LayoutDirectory ld);
+    T visit(VirtualDirectory ld);
 
 	
 	/**
