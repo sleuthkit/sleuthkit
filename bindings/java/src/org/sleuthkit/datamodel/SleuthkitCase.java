@@ -3099,6 +3099,34 @@ public class SleuthkitCase {
 
 		return imgPaths;
 	}
+	
+	/**
+	 * @return a collection of Images associated with this instance of
+	 * SleuthkitCase
+	 * @throws TskCoreException 
+	 */
+	public List<Image> getImages() throws TskCoreException {
+		dbReadLock();
+		Collection<Long> imageIDs = new ArrayList<Long>();
+		try {
+			ResultSet rs = con.createStatement().executeQuery("select * from tsk_image_info");
+			while (rs.next()) {
+				imageIDs.add(rs.getLong("obj_id"));
+			}
+			rs.close();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error retrieving images.", ex);
+		} finally {
+			dbReadUnlock();
+		}
+		
+		List<Image> images = new ArrayList<Image>();
+		for (long id : imageIDs) {
+			images.add(getImageById(id));
+		}
+		
+		return images;
+	}
 
 	/**
 	 * Set the file paths for the image given by obj_id

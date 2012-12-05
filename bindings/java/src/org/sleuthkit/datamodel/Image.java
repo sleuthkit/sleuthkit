@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -115,6 +117,57 @@ public class Image extends AbstractContent {
 	 */
 	public String[] getPaths() {
 		return paths;
+	}
+	
+	/**
+	 * @return a list of VolumeSystem associated with this Image.
+	 * @throws TskCoreException 
+	 */
+	public List<VolumeSystem> getVolumeSystems() throws TskCoreException {
+		
+		List<Content> children = getChildren();
+		List<VolumeSystem> vs = new ArrayList<VolumeSystem>();
+		for (Content child : children) {
+			if (child instanceof VolumeSystem) {
+				vs.add((VolumeSystem)child);
+			}
+		}
+		
+		return vs;
+	}
+	
+	/**
+	 * @return a list of Volume associated with this Image.
+	 * @throws TskCoreException 
+	 */
+	public List<Volume> getVolumes() throws TskCoreException {
+		
+		List<Content> children = getChildren();
+		List<Volume> volumes = new ArrayList<Volume>();
+		for (Content child : children) {
+			if (child instanceof Volume) {
+				volumes.add((Volume)child);
+			}
+		}
+		
+		return volumes;
+	}
+	
+	/**
+	 * @return a list of FileSystem that are direct descendents of this Image.
+	 * @throws TskCoreException 
+	 */
+	public List<FileSystem> getFileSystems() throws TskCoreException {
+		
+		List<Content> children = getChildren();
+		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
+		for (Content child : children) {
+			if (child instanceof FileSystem) {
+				fileSystems.add((FileSystem)child);
+			}
+		}
+		
+		return fileSystems;
 	}
 
 	/**

@@ -18,7 +18,13 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
  * Represents a file system object stored in tsk_fs_info table
@@ -104,6 +110,26 @@ public class FileSystem extends AbstractContent {
 			filesystemHandle = SleuthkitJNI.openFs(getImage().getImageHandle(), img_offset);
 		}
 		return this.filesystemHandle;
+	}
+	
+	public Directory getRootDirectory() throws TskCoreException {
+		
+		String directDirectoryDescendents = "SELECT tsk_files.*"
+				+ " FROM tsk_objects JOIN tsk_files"
+				+ " ON tsk_objects.obj_id = tsk_files.obj_id"
+				+ " WHERE (tsk_objects.par_obj_id = " + getId()
+				+ " AND tsk_files.type = " + TSK_DB_FILES_TYPE_ENUM.FS.getFileType()
+				+ " AND tsk_files.dir_type = " + TSK_FS_NAME_TYPE_ENUM.DIR.getDirType() + ")";
+		
+		Directory dir = null;
+		try {
+			ResultSet rs = getSleuthkitCase().runQuery(directDirectoryDescendents);
+			dir = new ResultSetHelper(getSleuthkitCase()).directory(rs, this);
+		} catch (SQLException ex) {
+			throw new TskCoreException("There was a problem while trying to obtain this file system's root directory: ", ex);
+		}
+
+		return dir;
 	}
 
 	/**
