@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -151,5 +152,19 @@ public class VolumeSystem extends AbstractContent {
 	@Override
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
+	}
+	
+	/**
+	 * @return a list of Volumes that are direct children of this VolumeSystem
+	 * @throws TskCoreException 
+	 */
+	public List<Volume> getVolumes() throws TskCoreException {
+		List<Volume> volumes = new ArrayList<Volume>();
+		for (Content child : getChildren()) {
+			if (child instanceof Volume) {
+				volumes.add((Volume)child);
+			}
+		}
+		return volumes;
 	}
 }

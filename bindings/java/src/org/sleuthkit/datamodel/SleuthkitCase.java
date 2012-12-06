@@ -1855,7 +1855,7 @@ public class SleuthkitCase {
 					result.accept(setParent);
 					children.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
-					LayoutDirectory virtDir =  new LayoutDirectory(this, rs.getLong("obj_id"),
+					VirtualDirectory virtDir =  new VirtualDirectory(this, rs.getLong("obj_id"),
 							rs.getString("name"), rs.getLong("size"), 
 							rs.getShort("meta_type"), rs.getShort("dir_type"), rs.getShort("dir_flags"), 
 							rs.getShort("meta_flags"), rs.getString("parent_path"));
@@ -2582,7 +2582,7 @@ public class SleuthkitCase {
 
 		private void visitFsContent(FsContent fc) {
 			try {
-				long fileSystemId = fc.fs_obj_id;
+				long fileSystemId = fc.fsObjId;
 				FileSystem parent = fileSystemCache.get(fileSystemId);
 				if (parent == null) {
 					parent = getFileSystemByIdHelper(fileSystemId, null);
@@ -2602,7 +2602,7 @@ public class SleuthkitCase {
 		}
 
 		@Override
-		public Void visit(LayoutDirectory ld) {
+		public Void visit(VirtualDirectory ld) {
 			try {
 				ObjectInfo parentInfo = getParentInfo(ld);
 
@@ -2765,7 +2765,7 @@ public class SleuthkitCase {
 		}
 
 		@Override
-		public Collection<FileSystem> visit(LayoutDirectory ld) {
+		public Collection<FileSystem> visit(VirtualDirectory ld) {
 			return Collections.<FileSystem>emptyList();
 		}
 
@@ -3033,7 +3033,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
 	 */
-	List<Content> getLayoutDirectoryChildren(LayoutDirectory ldir) throws TskCoreException {
+	List<Content> getLayoutDirectoryChildren(VirtualDirectory ldir) throws TskCoreException {
 		List<Content> ret = new ArrayList<Content>();
 		for (TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
 			ret.addAll(getAbstractFileChildren(ldir, type));
@@ -3050,7 +3050,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
 	 */
-	List<Long> getLayoutDirectoryChildrenIds(LayoutDirectory ldir) throws TskCoreException {
+	List<Long> getLayoutDirectoryChildrenIds(VirtualDirectory ldir) throws TskCoreException {
 		List<Long> ret = new ArrayList<Long>();
 		for (TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
 			ret.addAll(getAbstractFileChildrenIds(ldir, type));
@@ -3098,6 +3098,34 @@ public class SleuthkitCase {
 
 
 		return imgPaths;
+	}
+	
+	/**
+	 * @return a collection of Images associated with this instance of
+	 * SleuthkitCase
+	 * @throws TskCoreException 
+	 */
+	public List<Image> getImages() throws TskCoreException {
+		dbReadLock();
+		Collection<Long> imageIDs = new ArrayList<Long>();
+		try {
+			ResultSet rs = con.createStatement().executeQuery("select * from tsk_image_info");
+			while (rs.next()) {
+				imageIDs.add(rs.getLong("obj_id"));
+			}
+			rs.close();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error retrieving images.", ex);
+		} finally {
+			dbReadUnlock();
+		}
+		
+		List<Image> images = new ArrayList<Image>();
+		for (long id : imageIDs) {
+			images.add(getImageById(id));
+		}
+		
+		return images;
 	}
 
 	/**
@@ -3156,7 +3184,7 @@ public class SleuthkitCase {
 					result.accept(setParent);
 					results.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
-					final LayoutDirectory virtDir = new LayoutDirectory(this, rs.getLong("obj_id"),
+					final VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
 							rs.getString("name"), rs.getLong("size"), 
 							rs.getShort("meta_type"), rs.getShort("dir_type"), rs.getShort("dir_flags"), 
 							rs.getShort("meta_flags"), rs.getString("parent_path"));

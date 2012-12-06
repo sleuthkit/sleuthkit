@@ -33,15 +33,15 @@ import org.sleuthkit.datamodel.TskData.FileKnown;
 public abstract class FsContent extends AbstractFile {
 
 	///read only database tsk_files fields
-	protected final long fs_obj_id, meta_addr, size, ctime, crtime, atime, mtime;
+	protected final long fsObjId, metaAddr, size, ctime, crtime, atime, mtime;
 	protected final int uid, gid;
-	protected final short attr_type, attr_id, meta_type, dir_type, mode;
-	protected final short dir_flags, meta_flags;
+	protected final short attrType, attrId, metaType, dirType, mode;
+	protected final short dirFlags, metaFlags;
 	
 	/*
 	 * path of parent directory
 	 */
-	protected final String parent_path;
+	protected final String parentPath;
 	///read-write database tsk_files fields
 	/**
 	 * known status in database
@@ -93,14 +93,14 @@ public abstract class FsContent extends AbstractFile {
 			short meta_flags, long size, long ctime, long crtime, long atime, long mtime, int uid, int gid, short mode, byte known,
 			String parent_path, String md5Hash) {
 		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS);
-		this.fs_obj_id = fs_obj_id;
-		this.meta_addr = meta_addr;
-		this.attr_type = attr_type;
-		this.attr_id = attr_id;
-		this.meta_type = meta_type;
-		this.dir_type = dir_type;
-		this.dir_flags = dir_flags;
-		this.meta_flags = meta_flags;
+		this.fsObjId = fs_obj_id;
+		this.metaAddr = meta_addr;
+		this.attrType = attr_type;
+		this.attrId = attr_id;
+		this.metaType = meta_type;
+		this.dirType = dir_type;
+		this.dirFlags = dir_flags;
+		this.metaFlags = meta_flags;
 		this.size = size;
 		this.ctime = ctime;
 		this.crtime = crtime;
@@ -110,7 +110,7 @@ public abstract class FsContent extends AbstractFile {
 		this.gid = gid;
 		this.mode = mode;
 		this.known = known;
-		this.parent_path = parent_path;
+		this.parentPath = parent_path;
 		this.md5Hash = md5Hash;
 	}
 
@@ -154,7 +154,7 @@ public abstract class FsContent extends AbstractFile {
 		synchronized (this) {
 			if (fileHandle == 0) {
 				fileHandle = 
-						SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), meta_addr, attr_type, attr_id);
+						SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), metaAddr, attrType, attrId);
 			}
 		}
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
@@ -163,7 +163,7 @@ public abstract class FsContent extends AbstractFile {
 	
 	@Override
 	public boolean isRoot() {
-		return parentFileSystem.getRoot_inum() == this.getMeta_addr();
+		return parentFileSystem.getRoot_inum() == this.getMetaAddr();
 	}
 		
 	/*
@@ -203,8 +203,8 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return attribute type
 	 */
-	public short getAttr_type() {
-		return attr_type;
+	public short getAttrType() {
+		return attrType;
 	}
 
 	/**
@@ -212,8 +212,8 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return attribute id
 	 */
-	public short getAttr_id() {
-		return attr_id;
+	public short getAttrId() {
+		return attrId;
 	}
 
 	/**
@@ -221,8 +221,8 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return meta data type
 	 */
-	public short getMeta_type() {
-		return meta_type;
+	public short getMetaType() {
+		return metaType;
 	}
 
 	/**
@@ -231,7 +231,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @return meta data type as String
 	 */
 	public String getMetaTypeAsString() {
-		return FsContent.metaTypeToString(meta_type);
+		return FsContent.metaTypeToString(metaType);
 	}
 
 	/**
@@ -239,8 +239,8 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return directory type id
 	 */
-	public short getDir_type() {
-		return dir_type;
+	public short getDirType() {
+		return dirType;
 	}
 
 	/**
@@ -249,7 +249,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @return directory type as String
 	 */
 	public String getDirTypeAsString() {
-		return FsContent.dirTypeToString(dir_type);
+		return FsContent.dirTypeToString(dirType);
 	}
 
 	/**
@@ -257,8 +257,8 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return directory flags
 	 */
-	public short getDir_flags() {
-		return dir_flags;
+	public short getDirFlags() {
+		return dirFlags;
 	}
 
 	/**
@@ -267,7 +267,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @return directory flags as String
 	 */
 	public String getDirFlagsAsString() {
-		return FsContent.dirFlagToString(dir_flags);
+		return FsContent.dirFlagToString(dirFlags);
 	}
 
 	/**
@@ -275,8 +275,8 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return Address of the meta data structure
 	 */
-	public long getMeta_addr() {
-		return meta_addr;
+	public long getMetaAddr() {
+		return metaAddr;
 	}
 
 	/**
@@ -284,8 +284,8 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return meta data flags
 	 */
-	public short getMeta_flags() {
-		return meta_flags;
+	public short getMetaFlags() {
+		return metaFlags;
 	}
 
 	/**
@@ -294,7 +294,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @return meta data flags as String
 	 */
 	public String getMetaFlagsAsString() {
-		return FsContent.metaFlagToString(meta_flags);
+		return FsContent.metaFlagToString(metaFlags);
 	}
 
 	@Override
@@ -412,7 +412,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @return mode as String
 	 */
 	public String getModeAsString() {
-		return FsContent.modeToString(mode, meta_type);
+		return FsContent.modeToString(mode, metaType);
 	}
 
 	/**
@@ -431,13 +431,13 @@ public abstract class FsContent extends AbstractFile {
 	 * @return the parent path string
 	 */
 	public String getParentPath() {
-		return this.parent_path;
+		return this.parentPath;
 	}
 
 	@Override
 	public String getUniquePath() throws TskCoreException {
-		if (unique_path != null) {
-			return unique_path;
+		if (uniquePath != null) {
+			return uniquePath;
 		}
 
 		StringBuilder sb = new StringBuilder();
@@ -461,8 +461,8 @@ public abstract class FsContent extends AbstractFile {
 		sb.append(getParentPath());
 		sb.append(getName());
 
-		unique_path = sb.toString();
-		return unique_path;
+		uniquePath = sb.toString();
+		return uniquePath;
 	}
 
 	/**
