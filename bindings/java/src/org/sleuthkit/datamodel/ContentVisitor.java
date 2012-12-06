@@ -93,7 +93,7 @@ public interface ContentVisitor<T> {
 	 * @param ld layout dir to visit / act on
 	 * @return result of the visit
 	 */
-	T visit(LayoutDirectory ld);
+	T visit(VirtualDirectory ld);
 
 	/**
 	 * The default content visitor - quickest method for implementing a custom
@@ -145,7 +145,7 @@ public interface ContentVisitor<T> {
 		}
 
 		@Override
-		public T visit(LayoutDirectory ld) {
+		public T visit(VirtualDirectory ld) {
 			return defaultVisit(ld);
 		}
 	}

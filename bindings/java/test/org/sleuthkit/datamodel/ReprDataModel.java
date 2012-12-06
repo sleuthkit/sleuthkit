@@ -139,22 +139,22 @@ public class ReprDataModel {
 	private void reprFsContent(FsContent fsc) {
 		repr("getAtime", fsc.getAtime());
 		repr("getAtimeAsDate", fsc.getAtimeAsDate());
-		repr("getAttr_id", fsc.getAttr_id());
-		repr("getAttr_type", fsc.getAttr_type());
+		repr("getAttr_id", fsc.getAttrId());
+		repr("getAttr_type", fsc.getAttrType());
 		repr("getCrtime", fsc.getCrtime());
 		repr("getCrtimeAsDate", fsc.getCrtimeAsDate());
 		repr("getCtime", fsc.getCtime());
 		repr("getCtimeAsDate", fsc.getCtimeAsDate());
 		repr("getDirFlagsAsString", fsc.getDirFlagsAsString());
 		repr("getDirTypeAsString", fsc.getDirTypeAsString());
-		repr("getDir_flags", fsc.getDir_flags());
-		repr("getDir_type", fsc.getDir_type());
+		repr("getDir_flags", fsc.getDirFlags());
+		repr("getDir_type", fsc.getDirType());
 		repr("getGid", fsc.getGid());
 		repr("getMetaFlagsAsString", fsc.getMetaFlagsAsString());
 		repr("getMetaTypeAsString", fsc.getMetaTypeAsString());
-		repr("getMeta_addr", fsc.getMeta_addr());
-		repr("getMeta_flags", fsc.getMeta_flags());
-		repr("getMeta_type", fsc.getMeta_type());
+		repr("getMeta_addr", fsc.getMetaAddr());
+		repr("getMeta_flags", fsc.getMetaFlags());
+		repr("getMeta_type", fsc.getMetaType());
 		repr("getMode", fsc.getMode());
 		repr("getModeAsString", fsc.getModeAsString());
 		repr("getMtime", fsc.getMtime());
@@ -173,7 +173,7 @@ public class ReprDataModel {
 		
 	}
 	
-	private void reprLayoutDirectory(LayoutDirectory ld) {
+	private void reprLayoutDirectory(VirtualDirectory ld) {
 		repr("getSize", ld.getSize());
 		repr("getId", ld.getId());
 		repr("getName", ld.getName());
@@ -194,9 +194,9 @@ public class ReprDataModel {
 		 * 
 		 */
 		repr("getFirst_inum", fs.getFirst_inum());
-		repr("getFs_type", fs.getFs_type().getValue());
-		repr("getImg_offset", fs.getImg_offset());
-		repr("getLast_inum", fs.getLast_inum());
+		repr("getFs_type", fs.getFsType().getValue());
+		repr("getImg_offset", fs.getImageOffset());
+		repr("getLast_inum", fs.getLastInum());
 		repr("getRoot_inum", fs.getRoot_inum());
 		repr("getSize", fs.getSize());
 	}
@@ -390,7 +390,7 @@ public class ReprDataModel {
 		}
 		
 		@Override
-		public Void visit(LayoutDirectory u) {
+		public Void visit(VirtualDirectory u) {
 			reprLayoutDirectory(u);
 			return null;
 		}

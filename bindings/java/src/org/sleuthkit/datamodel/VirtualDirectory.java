@@ -31,7 +31,7 @@ import java.util.List;
  * attributes to LayoutFiles and they also have children like real Directories.
  *
  */
-public class LayoutDirectory extends AbstractFile {
+public class VirtualDirectory extends AbstractFile {
 
 	private Content parent;
 	
@@ -41,7 +41,7 @@ public class LayoutDirectory extends AbstractFile {
 	private short meta_type, dir_type, dir_flags, meta_flags;
 	private String parent_path;
 
-	protected LayoutDirectory(SleuthkitCase db, long obj_id, String name, long size, 
+	protected VirtualDirectory(SleuthkitCase db, long obj_id, String name, long size, 
 			short meta_type, short dir_type, short dir_flags,
 			short meta_flags, String parent_path) {
 		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR);

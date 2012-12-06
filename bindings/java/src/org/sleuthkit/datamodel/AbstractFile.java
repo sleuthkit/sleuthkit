@@ -34,7 +34,7 @@ public abstract class AbstractFile extends AbstractContent {
 	/*
 	 * Unique path containing image and volume
 	 */
-	protected String unique_path;
+	protected String uniquePath;
     
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in tsk_files table)
@@ -105,8 +105,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 * and unique absolute path could not be queried
 	 */
 	public String getUniquePath() throws TskCoreException {
-		if (unique_path != null) {
-			return unique_path;
+		if (uniquePath != null) {
+			return uniquePath;
 		}
 
 		StringBuilder sb = new StringBuilder();
@@ -120,8 +120,8 @@ public abstract class AbstractFile extends AbstractContent {
 		sb.append("/img_").append(imageName).append("/");
 		sb.append(getName());
 
-		unique_path = sb.toString();
-		return unique_path;
+		uniquePath = sb.toString();
+		return uniquePath;
 	}
 
 	/**

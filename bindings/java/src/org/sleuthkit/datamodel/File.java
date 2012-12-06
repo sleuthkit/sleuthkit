@@ -65,7 +65,7 @@ public class File extends FsContent {
 	@Override
 	public boolean isVirtual() {
 		return (!type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)
-				|| dir_type == TSK_FS_NAME_TYPE_ENUM.VIRT.getDirType());
+				|| dirType == TSK_FS_NAME_TYPE_ENUM.VIRT.getDirType());
 	}
 
 	@Override
