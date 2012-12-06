@@ -18,9 +18,12 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Represents a disk image file, stored in tsk_image_info.
@@ -154,10 +157,60 @@ public class Image extends AbstractContent {
 	}
 	
 	/**
-	 * @return a list of FileSystem that are direct descendents of this Image.
+	 * @return a list of FileSystems in this Image. This includes FileSystems
+	 * that are both children of this Image as well as children of Volumes in
+	 * this image.
 	 * @throws TskCoreException 
 	 */
 	public List<FileSystem> getFileSystems() throws TskCoreException {
+		
+		// create a query to get all file system objects
+		String allFsObjects = "SELECT * FROM tsk_fs_info";
+		
+		// perform the query and create a list of FileSystem objects
+		List<FileSystem> allFileSystems = new ArrayList<FileSystem>();
+		try {
+			ResultSet rs = getSleuthkitCase().runQuery(allFsObjects);
+			while (rs.next()) {
+				allFileSystems.add(new ResultSetHelper(getSleuthkitCase()).fileSystem(rs, null));
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("There was a problem while trying to obtain this image's file systems.", ex);
+		}
+		
+		// for each file system, find the image to which it belongs by iteratively
+		// climbing the tsk_ojbects hierarchy only taking those file systems
+		// that belong to this image.
+		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
+		for (FileSystem fs : allFileSystems) {
+			Long imageID = null;
+			Long currentObjID = fs.getId();
+			while (imageID == null) {
+				try {
+					ResultSet rs = getSleuthkitCase().runQuery("SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID);
+					currentObjID = rs.getLong("par_obj_id");
+					if (rs.getInt("type") == TskData.ObjectType.IMG.getObjectType()) {
+						imageID = rs.getLong("obj_id");
+					}
+				} catch (SQLException ex) {
+					throw new TskCoreException("There was a problem while trying to obtain this image's file systems.", ex);
+				}
+			}
+			
+			// see if imageID is this image's ID
+			if (imageID == getId()) {
+				fileSystems.add(fs);
+			}
+		}
+		
+		return fileSystems;
+	}
+	
+	/**
+	 * @return a list of FileSystem that are direct descendents of this Image.
+	 * @throws TskCoreException 
+	 */
+	public List<FileSystem> getDirectFileSystems() throws TskCoreException {
 		
 		List<Content> children = getChildren();
 		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
