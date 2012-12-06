@@ -1162,6 +1162,41 @@ public class SleuthkitCase {
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType) throws TskCoreException {
 		return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel());
 	}
+	
+	/**
+	 * Get all blackboard artifacts of a given type with an attribute of a
+	 * given type and String value.
+	 * 
+	 * @param artifactType artifact type enum
+	 * @param attrType attribute type enum
+	 * @param value String value of attribute
+	 * @return list of blackboard artifacts
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	public List<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value) throws TskCoreException {
+		dbReadLock();
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
+					+ "FROM blackboard_artifacts, blackboard_attributes "
+					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
+					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID()
+					+ " AND blackboard_artifacts.artifact_type_id = " + artifactType.getTypeID()
+					+ " AND blackboard_attributes.value_text IS '" + value + "'");
+
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+
+			rs.close();
+			s.close();
+			return artifacts;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting blackboard artifacts by artifact type and attribute. " + ex.getMessage(), ex);
+		} finally {
+			dbReadUnlock();
+		}
+	}
 
 	/**
 	 * Get the blackboard artifact with the given artifact id
