@@ -55,7 +55,7 @@ my $VER = "";
 # Verify LIBEWF is built
 die "LIBEWF missing" unless (-d "$ENV{'LIBEWF_HOME'}");
 die "libewf dll missing" 
-	unless (-e "$ENV{'LIBEWF_HOME'}/msvscpp/release/libewf.dll" ); 
+	unless (-e "$ENV{'LIBEWF_HOME'}/msvscpp/Release/libewf.dll" ); 
 
 
 #######################
@@ -162,8 +162,11 @@ sub build_core {
 	print "Building TSK source\n";
 	chdir "win32" or die "error changing directory into win32";
 	# Get rid of everything in the release dir (since we'll be doing * copy)
-	`rm -f release/*`;
+	`rm -rf Release`;
 	`rm -f BuildErrors.txt`;
+
+	die "Release folder not deleted" if (-x "Release/fls.exe");
+
 	# 2008 version
 	# `vcbuild /errfile:BuildErrors.txt tsk-win.sln "Release|Win32"`; 
 	# 2010 version
@@ -171,9 +174,9 @@ sub build_core {
 	die "Build errors -- check win32/BuildErrors.txt" if (-s "BuildErrors.txt");
 
 	# Do a basic check on some of the executables
-	die "mmls missing" unless (-x "release/mmls.exe");
-	die "fls missing" unless (-x "release/fls.exe");
-	die "hfind missing" unless (-x "release/hfind.exe");
+	die "mmls missing" unless (-x "Release/mmls.exe");
+	die "fls missing" unless (-x "Release/fls.exe");
+	die "hfind missing" unless (-x "Release/hfind.exe");
 	chdir "..";
 }
 
@@ -197,9 +200,9 @@ sub package_core {
 	mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdir";
 
 
-	`cp win32/release/*.exe \"${rdir}/bin\"`;
-	`cp win32/release/*.dll \"${rdir}/bin\"`;
-	`cp win32/release/*.lib \"${rdir}/lib\"`;
+	`cp win32/Release/*.exe \"${rdir}/bin\"`;
+	`cp win32/Release/*.dll \"${rdir}/bin\"`;
+	`cp win32/Release/*.lib \"${rdir}/lib\"`;
 
 	# basic cleanup
 	`rm \"${rdir}/bin/callback-sample.exe\"`;
@@ -252,7 +255,7 @@ sub build_framework {
 
 	chdir "framework/win32/framework" or die "error changing directory into framework/win32";
 	# Get rid of everything in the release dir (since we'll be doing * copy)
-	`rm -rf release/*`;
+	`rm -rf Release`;
 	`rm -f BuildErrors.txt`;
 	# 2008 version
 	#`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
@@ -287,7 +290,7 @@ sub package_framework {
 	chdir "framework" or die "error changing directory into framework";
 
 	# Copy the files
-	chdir "win32/framework/release" or die "Error changing directory into release / framework";
+	chdir "win32/framework/Release" or die "Error changing directory into release / framework";
 
 	`cp *.exe \"${rdir}/bin\"`;
 	`cp libtsk*.dll \"${rdir}/bin\"`;
