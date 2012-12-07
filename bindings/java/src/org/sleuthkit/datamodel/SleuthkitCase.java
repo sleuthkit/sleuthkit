@@ -2779,7 +2779,7 @@ public class SleuthkitCase {
 	 * top-down FileSystem visitor, traverses Content (any parent of FileSystem)
 	 * and returns all FileSystem children of that parent
 	 */
-	private static class GetFileSystemsVisitor implements
+	private class GetFileSystemsVisitor implements
 			ContentVisitor<Collection<FileSystem>> {
 
 		@Override
@@ -2813,7 +2813,54 @@ public class SleuthkitCase {
 
 		@Override
 		public Collection<FileSystem> visit(Image image) {
-			return getAllFromChildren(image);
+			Logger logger = Logger.getLogger(GetFileSystemsVisitor.class.getName());
+			
+			// create a query to get all file system objects
+			String allFsObjects = "SELECT * FROM tsk_fs_info";
+
+			// perform the query and create a list of FileSystem objects
+			List<FileSystem> allFileSystems = new ArrayList<FileSystem>();
+			try {
+				ResultSet rs = runQuery(allFsObjects);
+				while (rs.next()) {
+					allFileSystems.add(new ResultSetHelper(SleuthkitCase.this).fileSystem(rs, null));
+				}
+			} catch (SQLException ex) {
+				logger.severe("There was a problem while trying to obtain this image's file systems." + ex);
+			}
+
+			// for each file system, find the image to which it belongs by iteratively
+			// climbing the tsk_ojbects hierarchy only taking those file systems
+			// that belong to this image.
+			List<FileSystem> fileSystems = new ArrayList<FileSystem>();
+			for (FileSystem fs : allFileSystems) {
+				Long imageID = null;
+				Long currentObjID = fs.getId();
+				while (imageID == null) {
+					try {
+						ResultSet rs = runQuery("SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID);
+						currentObjID = rs.getLong("par_obj_id");
+						if (rs.getInt("type") == TskData.ObjectType.IMG.getObjectType()) {
+							imageID = rs.getLong("obj_id");
+						}
+					} catch (SQLException ex) {
+						logger.severe("There was a problem while trying to obtain this image's file systems." + ex);
+					}
+				}
+
+				// see if imageID is this image's ID
+				if (imageID == image.getId()) {
+					fileSystems.add(fs);
+				}
+			}
+
+			// use SetParentVisitor to set the parent of each FileSystem
+			SetParentVisitor setParent = new SetParentVisitor();
+			for (FileSystem fs : fileSystems) {
+				setParent.visit(fs);
+			}
+
+			return fileSystems;
 		}
 
 		@Override
