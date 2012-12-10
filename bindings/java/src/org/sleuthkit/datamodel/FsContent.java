@@ -246,13 +246,8 @@ public abstract class FsContent extends AbstractFile {
 		return dirType;
 	}
 
-	/**
-	 * Get the directory flags
-	 *
-	 * @return directory flags
-	 */
-	public TSK_FS_NAME_FLAG_ENUM getDirFlag() {
-		return dirFlag;
+	public boolean isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM flag) {
+		return dirFlag == flag;
 	}
 
 	/**
