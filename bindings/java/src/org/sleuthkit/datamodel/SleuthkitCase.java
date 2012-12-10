@@ -43,6 +43,8 @@ import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 import org.sqlite.SQLiteJDBCLoader;
 
 /**
@@ -1882,7 +1884,7 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				if (type == TSK_DB_FILES_TYPE_ENUM.FS) {
 					FsContent result;
-					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
 						result = rsHelper.directory(rs, null);
 					} else {
 						result = rsHelper.file(rs, null);
@@ -1892,7 +1894,7 @@ public class SleuthkitCase {
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
 					VirtualDirectory virtDir =  new VirtualDirectory(this, rs.getLong("obj_id"),
 							rs.getString("name"), rs.getLong("size"), 
-							rs.getShort("meta_type"), rs.getShort("dir_type"), rs.getShort("dir_flags"), 
+							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
 							rs.getShort("meta_flags"), rs.getString("parent_path"));
 					virtDir.accept(setParent);
 					children.add(virtDir);
@@ -2580,7 +2582,7 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				final short type = rs.getShort("type");
 				if (type == TSK_DB_FILES_TYPE_ENUM.FS.getFileType()) {
-					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
 						temp = rsHelper.directory(rs, parentFs);
 					}
 				}
@@ -3258,7 +3260,7 @@ public class SleuthkitCase {
 				final short type = rs.getShort("type");
 				if (type == TSK_DB_FILES_TYPE_ENUM.FS.getFileType()) {
 					FsContent result;
-					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getMetaType()) {
+					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
 						result = rsHelper.directory(rs, null);
 					} else {
 						result = rsHelper.file(rs, null);
@@ -3268,7 +3270,7 @@ public class SleuthkitCase {
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
 					final VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
 							rs.getString("name"), rs.getLong("size"), 
-							rs.getShort("meta_type"), rs.getShort("dir_type"), rs.getShort("dir_flags"), 
+							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
 							rs.getShort("meta_flags"), rs.getString("parent_path"));
 					virtDir.accept(setParent);
 					results.add(virtDir);
@@ -3455,14 +3457,13 @@ public class SleuthkitCase {
 		}
 		SleuthkitCase.dbWriteLock();
 		try {
-			final byte fileKnownValue = fileKnown.getFileKnownValue();
 			Statement s = con.createStatement();
 			s.executeUpdate("UPDATE tsk_files "
-					+ "SET known='" + fileKnownValue + "' "
+					+ "SET known='" + fileKnown.getFileKnownValue() + "' "
 					+ "WHERE obj_id=" + id);
 			s.close();
 			//update the object itself
-			fsContent.setKnown(fileKnownValue);
+			fsContent.setKnown(fileKnown);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting Known status.", ex);
 		} finally {
@@ -3532,7 +3533,7 @@ public class SleuthkitCase {
 	 */
 	public int countFsContentType(TskData.TSK_FS_META_TYPE_ENUM contentType) throws TskCoreException {
 		int count = 0;
-		Short contentShort = contentType.getMetaType();
+		Short contentShort = contentType.getValue();
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
@@ -3578,7 +3579,7 @@ public class SleuthkitCase {
 			s = con.createStatement();
 			rs = s.executeQuery("SELECT * FROM tsk_files "
 					+ "WHERE type = '" + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + "' "
-					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getDirType() + "' "
+					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + "' "
 					+ "AND md5 = '" + md5Hash + "' "
 					+ "AND size > '0'");
 			return resultSetToFsContents(rs);
@@ -3616,7 +3617,7 @@ public class SleuthkitCase {
 			s = con.createStatement();
 			rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files "
 					+ "WHERE type = '" + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + "' "
-					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getDirType() + "' "
+					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + "' "
 					+ "AND md5 IS NULL "
 					+ "AND size > '0'");
 			rs.next();
@@ -3658,7 +3659,7 @@ public class SleuthkitCase {
 			s = con.createStatement();
 			rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files "
 					+ "WHERE type = '" + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + "' "
-					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getDirType() + "' "
+					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + "' "
 					+ "AND md5 IS NOT NULL "
 					+ "AND size > '0'");
 			rs.next();
