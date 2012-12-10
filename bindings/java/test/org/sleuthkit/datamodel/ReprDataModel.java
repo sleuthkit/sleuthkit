@@ -25,6 +25,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
 
 /**
  * ReprDataModel writes a String representation (containing the results of all
@@ -145,18 +146,18 @@ public class ReprDataModel {
 		repr("getCrtimeAsDate", fsc.getCrtimeAsDate());
 		repr("getCtime", fsc.getCtime());
 		repr("getCtimeAsDate", fsc.getCtimeAsDate());
-		repr("getDirFlagsAsString", fsc.getDirFlagsAsString());
-		repr("getDirTypeAsString", fsc.getDirTypeAsString());
-		repr("getDir_flags", fsc.getDirFlags());
-		repr("getDir_type", fsc.getDirType());
+		repr("getDirFlagsAsString", fsc.getDirFlag().toString());
+		repr("getDirTypeAsString", fsc.getDirType().getLabel());
+		repr("getDir_flags", fsc.getDirFlag().getValue());
+		repr("getDir_type", fsc.getDirType().getValue());
 		repr("getGid", fsc.getGid());
 		repr("getMetaFlagsAsString", fsc.getMetaFlagsAsString());
 		repr("getMetaTypeAsString", fsc.getMetaTypeAsString());
 		repr("getMeta_addr", fsc.getMetaAddr());
-		repr("getMeta_flags", fsc.getMetaFlags());
+		repr("getMeta_flags", fsc.getMetaFlagsInt());
 		repr("getMeta_type", fsc.getMetaType());
-		repr("getMode", fsc.getMode());
-		repr("getModeAsString", fsc.getModeAsString());
+		repr("getMode", fsc.getModesInt());
+		repr("getModeAsString", TSK_FS_META_MODE_ENUM.toString(fsc.getModesInt()));
 		repr("getMtime", fsc.getMtime());
 		repr("getMtimeAsDate", fsc.getMtimeAsDate());
 		repr("getName", fsc.getName());
