@@ -25,6 +25,7 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 
 /**
  * Interfaces with the Sleuthkit TSK c/c++ libraries
@@ -408,8 +409,8 @@ public class SleuthkitJNI {
 	 * @return pointer to a file structure in the sleuthkit
 	 * @throws TskCoreException exception thrown if critical error occurs within TSK  
 	 */
-	public static long openFile(long fsHandle, long fileId, int attrType, int attrId) throws TskCoreException{
-		return openFileNat(fsHandle, fileId, attrType, attrId);
+	public static long openFile(long fsHandle, long fileId, TSK_FS_ATTR_TYPE_ENUM attrType, int attrId) throws TskCoreException{
+		return openFileNat(fsHandle, fileId, attrType.getValue(), attrId);
 	}
 
 	//do reads

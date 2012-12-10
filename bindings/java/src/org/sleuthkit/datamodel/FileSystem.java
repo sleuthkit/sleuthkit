@@ -119,7 +119,7 @@ public class FileSystem extends AbstractContent {
 				+ " ON tsk_objects.obj_id = tsk_files.obj_id"
 				+ " WHERE (tsk_objects.par_obj_id = " + getId()
 				+ " AND tsk_files.type = " + TSK_DB_FILES_TYPE_ENUM.FS.getFileType()
-				+ " AND tsk_files.dir_type = " + TSK_FS_NAME_TYPE_ENUM.DIR.getDirType() + ")";
+				+ " AND tsk_files.dir_type = " + TSK_FS_NAME_TYPE_ENUM.DIR.getValue() + ")";
 		
 		Directory dir = null;
 		try {

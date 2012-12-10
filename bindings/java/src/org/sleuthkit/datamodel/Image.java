@@ -18,8 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -175,47 +173,9 @@ public class Image extends AbstractContent {
 	 * @throws TskCoreException 
 	 */
 	public List<FileSystem> getFileSystems() throws TskCoreException {
-		
-		// create a query to get all file system objects
-		String allFsObjects = "SELECT * FROM tsk_fs_info";
-		
-		// perform the query and create a list of FileSystem objects
-		List<FileSystem> allFileSystems = new ArrayList<FileSystem>();
-		try {
-			ResultSet rs = getSleuthkitCase().runQuery(allFsObjects);
-			while (rs.next()) {
-				allFileSystems.add(new ResultSetHelper(getSleuthkitCase()).fileSystem(rs, null));
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("There was a problem while trying to obtain this image's file systems.", ex);
-		}
-		
-		// for each file system, find the image to which it belongs by iteratively
-		// climbing the tsk_ojbects hierarchy only taking those file systems
-		// that belong to this image.
-		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
-		for (FileSystem fs : allFileSystems) {
-			Long imageID = null;
-			Long currentObjID = fs.getId();
-			while (imageID == null) {
-				try {
-					ResultSet rs = getSleuthkitCase().runQuery("SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID);
-					currentObjID = rs.getLong("par_obj_id");
-					if (rs.getInt("type") == TskData.ObjectType.IMG.getObjectType()) {
-						imageID = rs.getLong("obj_id");
-					}
-				} catch (SQLException ex) {
-					throw new TskCoreException("There was a problem while trying to obtain this image's file systems.", ex);
-				}
-			}
-			
-			// see if imageID is this image's ID
-			if (imageID == getId()) {
-				fileSystems.add(fs);
-			}
-		}
-		
-		return fileSystems;
+		List<FileSystem> fs = new ArrayList<FileSystem>();
+		fs.addAll(getSleuthkitCase().getFileSystems(this));
+		return fs;
 	}
 	
 	/**
@@ -224,6 +184,7 @@ public class Image extends AbstractContent {
 	 */
 	public List<FileSystem> getDirectFileSystems() throws TskCoreException {
 		
+		// find all children that are FileSystems
 		List<Content> children = getChildren();
 		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
 		for (Content child : children) {

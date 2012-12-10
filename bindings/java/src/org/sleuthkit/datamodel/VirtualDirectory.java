@@ -18,9 +18,13 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
  * Layout directory object representation of a virtual layout directory stored
@@ -38,73 +42,44 @@ public class VirtualDirectory extends AbstractFile {
 	//TODO move up to AbstractFile class
 	private long size;
 	//TODO use enums for types and flags
-	private short meta_type, dir_type, dir_flags, meta_flags;
+	private TSK_FS_NAME_TYPE_ENUM dirType;
+	private Set<TSK_FS_META_FLAG_ENUM> metaFlags;
+	private TSK_FS_META_TYPE_ENUM metaType;
+	private TSK_FS_NAME_FLAG_ENUM dirFlags;
 	private String parent_path;
 
 	protected VirtualDirectory(SleuthkitCase db, long obj_id, String name, long size, 
-			short meta_type, short dir_type, short dir_flags,
-			short meta_flags, String parent_path) {
+			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_TYPE_ENUM dir_type, TSK_FS_NAME_FLAG_ENUM dirFlags,
+			short metaFlags, String parent_path) {
 		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR);
-		
-		this.meta_type = meta_type;
-		this.dir_type = dir_type;
-		this.dir_flags = dir_flags;
-		this.meta_flags = meta_flags;
+
+		this.metaType = metaType;
+		this.dirType = dir_type;
+		this.dirFlags = dirFlags;
+		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(metaFlags);
 		this.parent_path = parent_path;
 	}
 
-	public short getMeta_type() {
-		return meta_type;
+	public TSK_FS_META_TYPE_ENUM getMetaType() {
+		return metaType;
 	}
 
-	public short getDir_type() {
-		return dir_type;
+	public TSK_FS_NAME_TYPE_ENUM getDirType() {
+		return dirType;
 	}
 
-	public short getDir_flags() {
-		return dir_flags;
+	public TSK_FS_NAME_FLAG_ENUM getDirFlags() {
+		return dirFlags;
 	}
 
-	public short getMeta_flags() {
-		return meta_flags;
+	public short getMetaFlags() {
+		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
 	}
 
 	public String getParent_path() {
 		return parent_path;
 	}
 
-	/**
-	 * Get the directory flags as String
-	 *
-	 * @return directory flags as String
-	 */
-	public String getDirFlagsAsString() {
-		return FsContent.dirFlagToString(dir_flags);
-	}
-	
-	/**
-	 * Get the meta data flags as String
-	 *
-	 * @return meta data flags as String
-	 */
-	public String getMetaFlagsAsString() {
-		return FsContent.metaFlagToString(meta_flags);
-	}
-	
-	
-	public String getMetaTypeAsString() {
-		return TskData.tsk_fs_meta_type_str[meta_type];
-	}
-	
-
-
-	public String getDirTypeAsString() {
-		return TskData.TSK_FS_NAME_TYPE_ENUM.fromType(dir_type).getLabel();
-	}
-	
-
-	
-	
 	/**
 	 * Set the parent class, will be called by the parent
 	 *
@@ -133,7 +108,6 @@ public class VirtualDirectory extends AbstractFile {
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		throw new UnsupportedOperationException("Reading LayoutDirectory is not supported.");
 	}
-		
 
 	@Override
 	public long getSize() {
