@@ -144,6 +144,7 @@ private:
     wchar_t m_progPath[256];
     wchar_t m_dbFilePath[256];
     sqlite3 * m_db;
+    map<int64_t, map<TSK_INUM_T,int64_t> > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to its parent's ID in the database
 
     int dropTables();
 
@@ -155,6 +156,9 @@ private:
     virtual vector<TskBlackboardArtifact> getArtifactsHelper(uint64_t file_id, int artifactTypeID, string artifactTypeName);
     void getCarvedFileInfo(const std::string& stmt, std::map<uint64_t, std::string>& results) const;
     
+    void storeParObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId);
+    int64_t findParObjId(const int64_t & fsObjId, TSK_INUM_T meta_addr);
+
     /**
      * A helper function for getUniqueCarvedFilesInfo() that executes a very specific SQL SELECT statement 
      * assembled by the caller.

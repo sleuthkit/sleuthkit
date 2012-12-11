@@ -1,0 +1,28 @@
+* Make sure the plugin exists 
+* Make sure the plugin is executable
+* option for not doing file walking
+* use iconv_open() to make sure that the UTF8 is valid.
+
+
+Here is the current XML output:
+ * add a newline after the push
+ * if the value is empty, just have the /> notation
+
+<carver software="fiwalk" version="0.5.6" arch="Darwin"><library name="tsk" version="3.0.1"></library>
+
+
+Give me XML like this:
+<carver software="Photorec" version="6.9-WIP" arch="Linux">
+   <library name="ext2fs" version="1.39" />
+   <library name="ntfs" version="10:0:0" />
+   <library name="ewf" version="20070512" />
+   <library name="jpeg" />
+</carver>
+<user uid="0" />
+<image name="/dev/sda" size="128849018880" sectorsize="512">
+   <source partitiontype="intel" partition="1" start="32256" size="128848986624" />
+</image>
+
+
+Remove this:
+      <libmagic>ERROR: zlib: invalid stored block lengthsempty (gzip compressed data, reserved method, ASCII, has CRC, was &quot;ýNüVþF&amp;D^&amp;T`óRP&quot;)</libmagic>

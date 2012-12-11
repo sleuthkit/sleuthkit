@@ -39,11 +39,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x040000ff
+#define TSK_VERSION_NUM 0x040001ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.0.0"
+#define TSK_VERSION_STR "4.0.1"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -444,6 +444,7 @@ documentation and/or software.
 
 
 /* MD5 context. */
+#define TSK_MD5_DIGEST_LENGTH 16
     typedef struct {
         UINT4 state[4];         /* state (ABCD) */
         UINT4 count[2];         /* number of bits, modulo 2^64 (lsb first) */
@@ -459,7 +460,7 @@ documentation and/or software.
 /* sha.h */
 
 /* The structure for storing SHS info */
-
+#define TSK_SHA_DIGEST_LENGTH 32
     typedef struct {
         UINT4 digest[5];        /* Message digest */
         UINT4 countLo, countHi; /* 64-bit bit count */

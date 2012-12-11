@@ -18,9 +18,13 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
  * Layout directory object representation of a virtual layout directory stored
@@ -31,12 +35,49 @@ import java.util.List;
  * attributes to LayoutFiles and they also have children like real Directories.
  *
  */
-public class LayoutDirectory extends AbstractFile {
+public class VirtualDirectory extends AbstractFile {
 
 	private Content parent;
+	
+	//TODO move up to AbstractFile class
+	private long size;
+	//TODO use enums for types and flags
+	private TSK_FS_NAME_TYPE_ENUM dirType;
+	private Set<TSK_FS_META_FLAG_ENUM> metaFlags;
+	private TSK_FS_META_TYPE_ENUM metaType;
+	private TSK_FS_NAME_FLAG_ENUM dirFlags;
+	private String parent_path;
 
-	protected LayoutDirectory(SleuthkitCase db, long obj_id, String name) {
+	protected VirtualDirectory(SleuthkitCase db, long obj_id, String name, long size, 
+			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_TYPE_ENUM dir_type, TSK_FS_NAME_FLAG_ENUM dirFlags,
+			short metaFlags, String parent_path) {
 		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR);
+
+		this.metaType = metaType;
+		this.dirType = dir_type;
+		this.dirFlags = dirFlags;
+		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(metaFlags);
+		this.parent_path = parent_path;
+	}
+
+	public TSK_FS_META_TYPE_ENUM getMetaType() {
+		return metaType;
+	}
+
+	public TSK_FS_NAME_TYPE_ENUM getDirType() {
+		return dirType;
+	}
+
+	public TSK_FS_NAME_FLAG_ENUM getDirFlags() {
+		return dirFlags;
+	}
+
+	public short getMetaFlags() {
+		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
+	}
+
+	public String getParent_path() {
+		return parent_path;
 	}
 
 	/**
@@ -67,7 +108,6 @@ public class LayoutDirectory extends AbstractFile {
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		throw new UnsupportedOperationException("Reading LayoutDirectory is not supported.");
 	}
-		
 
 	@Override
 	public long getSize() {
@@ -81,6 +121,11 @@ public class LayoutDirectory extends AbstractFile {
 
 	@Override
 	public boolean isFile() {
+		return false;
+	}
+	
+	@Override
+	public boolean isRoot() {
 		return false;
 	}
 

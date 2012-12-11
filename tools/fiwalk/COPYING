@@ -1,0 +1,29 @@
+Except as noted below, fiwalk source code is public domain.
+
+================================================================
+Public Domain Software 
+Simson L. Garfinkel
+Naval Postgraduate School
+
+The software provided here is released by the Naval Postgraduate
+School, an agency of the U.S. Department of Navy.  The software bears
+no warranty, either expressed or implied. NPS does not assume legal
+liability nor responsibility for a User's use of the software or the
+results of such use.
+
+Please note that within the United States, copyright protection, under
+Section 105 of the United States Code, Title 17, is not available for
+any work of the United States Government and/or for any works created
+by United States Government employees. 
+
+================================================================
+The exceptions are as noted below:
+
+1. The base64.cpp and base64.h implementation is Copyright by the
+Internet Software Consortium, with portions Copyright 1995 by
+IBM. Both are licensed under a liberal copyright that allows inclusion
+in any program so long as the copyright notice is not removed.
+
+src/base64.h - Copyright (C) 1996-1999 by Internet Software Consortium
+src/base64.cpp - Copyright (C) 1996-1999 by Internet Software Consortium
+

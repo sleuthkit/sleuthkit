@@ -25,6 +25,7 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 
 /**
  * Interfaces with the Sleuthkit TSK c/c++ libraries
@@ -60,6 +61,7 @@ public class SleuthkitJNI {
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 	private static native void revertAddImgNat(long process) throws TskCoreException;
 	private static native long commitAddImgNat(long process) throws TskCoreException;
+	
 	//open functions
 	private static native long openImgNat(String[] imgPath, int splits) throws TskCoreException;
 	private static native long openVsNat(long imgHandle, long vsOffset) throws TskCoreException;
@@ -86,6 +88,7 @@ public class SleuthkitJNI {
 	
 	//util functions
 	private static native long findDeviceSizeNat(String devicePath) throws TskCoreException;
+	private static native String getCurDirNat(long process);
 
 	//Linked library loading
 	static {
@@ -176,17 +179,19 @@ public class SleuthkitJNI {
 			return new AddImageProcess(timezone, processUnallocSpace, noFatFsOrphans);
 		}
 		
+		
 		/**
 		 * Encapsulates a multi-step process to add a disk image.
 		 * Adding a disk image takes a while and this object
-		 * has objects to manage that process.
+		 * has objects to manage that process. Methods within this
+		 * class are intended to be threadsafe.
 		 */
 		public class AddImageProcess {
-			String timezone;
-			boolean processUnallocSpace;
-			boolean noFatFsOrphans;
-			long autoDbPointer;
-			
+			private String timezone;
+			private boolean processUnallocSpace;
+			private boolean noFatFsOrphans;
+			private volatile long autoDbPointer;
+		
 			private AddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) {
 				this.timezone = timezone;
 				this.processUnallocSpace = processUnallocSpace;
@@ -206,7 +211,9 @@ public class SleuthkitJNI {
 					throw new TskCoreException("AddImgProcess:run: AutoDB pointer is already set");
 				}
 				
+				synchronized (this) {
 				autoDbPointer = initAddImgNat(caseDbPointer, longToShort(timezone), processUnallocSpace, noFatFsOrphans);
+				}
 				if (autoDbPointer == 0) {
 					//additional check in case initAddImgNat didn't throw exception
 					throw new TskCoreException("AddImgProcess::run: AutoDB pointer is NULL after initAddImgNat");
@@ -231,11 +238,11 @@ public class SleuthkitJNI {
 			/**
 			 * Rollback a process that has already been run(), reverting the
 			 * database.  This releases the C++ object and no additional 
-			 * operations can be performed. 
+			 * operations can be performed. This method is threadsafe.
 			 * 
 			 * @throws TskCoreException exception thrown if critical error occurs within TSK
 			 */
-			public void revert() throws TskCoreException {
+			public synchronized void revert() throws TskCoreException {
 				if (autoDbPointer == 0) {
 					throw new TskCoreException("AddImgProcess::revert: AutoDB pointer is NULL");
 				}
@@ -250,9 +257,11 @@ public class SleuthkitJNI {
 			 * transaction and committing the new image data to the database.
 			 * @return The id of the image that was added. This releases the 
 			 * C++ object and no additional operations can be performed. 
+			 * This method is threadsafe.
+			 * 
 			 * @throws TskCoreException exception thrown if critical error occurs within TSK 
 			 */
-			public long commit() throws TskCoreException {
+			public synchronized long commit() throws TskCoreException {
 				if (autoDbPointer == 0) {
 					throw new TskCoreException("AddImgProcess::commit: AutoDB pointer is NULL");
 				}
@@ -261,6 +270,15 @@ public class SleuthkitJNI {
 				// the native code deleted the object
 				autoDbPointer = 0;
 				return id;
+			}
+			
+			/**
+			 * Gets the directory currently being processed by TSK. 
+			 * This method is threadsafe.
+			 * @return the currently processing directory
+			 */
+			public synchronized String currentDirectory(){
+				return autoDbPointer == 0 ? "NO_INFO" : getCurDirNat(autoDbPointer);
 			}
 		}
 	}
@@ -391,8 +409,8 @@ public class SleuthkitJNI {
 	 * @return pointer to a file structure in the sleuthkit
 	 * @throws TskCoreException exception thrown if critical error occurs within TSK  
 	 */
-	public static long openFile(long fsHandle, long fileId, int attrType, int attrId) throws TskCoreException{
-		return openFileNat(fsHandle, fileId, attrType, attrId);
+	public static long openFile(long fsHandle, long fileId, TSK_FS_ATTR_TYPE_ENUM attrType, int attrId) throws TskCoreException{
+		return openFileNat(fsHandle, fileId, attrType.getValue(), attrId);
 	}
 
 	//do reads

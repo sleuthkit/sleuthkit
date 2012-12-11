@@ -18,12 +18,17 @@
 // Include the other TSK header files
 #include "tsk3/libtsk.h"
 #include "Services/TskImgDB.h"
+#include "Services/Scheduler.h"
 #include <map>
 #include <string>
+#include <queue>
 
 /** 
  * Implements TskAuto and is used to analyze the data in a disk image
- * and populate TskImgDB with the results.
+ * and populate TskImgDB with the results.  Call extractFiles() after
+ * image has been opened.
+ * Will queue up files and submit them after m_numOfFilesToQueue files
+ * are added to the queue.
  */
 class TSK_FRAMEWORK_API TSKAutoImpl:public TskAuto {
 public:
@@ -37,7 +42,7 @@ public:
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
     virtual uint8_t handleError();
-
+    uint8_t extractFiles();
     uint8_t scanImgForFs(const uint64_t sect_start, const uint64_t sect_count = 1024);
 
 private:
@@ -47,6 +52,8 @@ private:
     bool m_vsSeen;
     uint64_t m_numFilesSeen;
     time_t m_lastUpdateMsg;
+    std::queue<Scheduler::task_struct> m_filesToSchedule;   ///< Scheduler tasks to submit once transaction is commited
+    static const int m_numOfFilesToQueue = 1000;    ///< max number of files to queue up in a transaction before commiting
 
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path, uint64_t & fileId);
@@ -55,6 +62,7 @@ private:
         const TSK_FS_ATTR * fs_attr, const char *path);
     void createDummyVolume(const TSK_DADDR_T sect_start, const TSK_DADDR_T sect_len, 
                            char * desc, TSK_VS_PART_FLAG_ENUM flags);
+    void commitAndSchedule();
 };
 
 #endif

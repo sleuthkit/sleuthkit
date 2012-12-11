@@ -25,6 +25,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
 
 /**
  * ReprDataModel writes a String representation (containing the results of all
@@ -139,24 +140,24 @@ public class ReprDataModel {
 	private void reprFsContent(FsContent fsc) {
 		repr("getAtime", fsc.getAtime());
 		repr("getAtimeAsDate", fsc.getAtimeAsDate());
-		repr("getAttr_id", fsc.getAttr_id());
-		repr("getAttr_type", fsc.getAttr_type());
+		repr("getAttr_id", fsc.getAttrId());
+		repr("getAttr_type", fsc.getAttrType());
 		repr("getCrtime", fsc.getCrtime());
 		repr("getCrtimeAsDate", fsc.getCrtimeAsDate());
 		repr("getCtime", fsc.getCtime());
 		repr("getCtimeAsDate", fsc.getCtimeAsDate());
-		repr("getDirFlagsAsString", fsc.getDirFlagsAsString());
-		repr("getDirTypeAsString", fsc.getDirTypeAsString());
-		repr("getDir_flags", fsc.getDir_flags());
-		repr("getDir_type", fsc.getDir_type());
+		repr("getDirFlagsAsString", fsc.getDirFlag().toString());
+		repr("getDirTypeAsString", fsc.getDirType().getLabel());
+		repr("getDir_flags", fsc.getDirFlag().getValue());
+		repr("getDir_type", fsc.getDirType().getValue());
 		repr("getGid", fsc.getGid());
 		repr("getMetaFlagsAsString", fsc.getMetaFlagsAsString());
 		repr("getMetaTypeAsString", fsc.getMetaTypeAsString());
-		repr("getMeta_addr", fsc.getMeta_addr());
-		repr("getMeta_flags", fsc.getMeta_flags());
-		repr("getMeta_type", fsc.getMeta_type());
-		repr("getMode", fsc.getMode());
-		repr("getModeAsString", fsc.getModeAsString());
+		repr("getMeta_addr", fsc.getMetaAddr());
+		repr("getMeta_flags", fsc.getMetaFlagsInt());
+		repr("getMeta_type", fsc.getMetaType());
+		repr("getMode", fsc.getModesInt());
+		repr("getModeAsString", TSK_FS_META_MODE_ENUM.toString(fsc.getModesInt()));
 		repr("getMtime", fsc.getMtime());
 		repr("getMtimeAsDate", fsc.getMtimeAsDate());
 		repr("getName", fsc.getName());
@@ -173,7 +174,7 @@ public class ReprDataModel {
 		
 	}
 	
-	private void reprLayoutDirectory(LayoutDirectory ld) {
+	private void reprLayoutDirectory(VirtualDirectory ld) {
 		repr("getSize", ld.getSize());
 		repr("getId", ld.getId());
 		repr("getName", ld.getName());
@@ -194,9 +195,9 @@ public class ReprDataModel {
 		 * 
 		 */
 		repr("getFirst_inum", fs.getFirst_inum());
-		repr("getFs_type", fs.getFs_type().getValue());
-		repr("getImg_offset", fs.getImg_offset());
-		repr("getLast_inum", fs.getLast_inum());
+		repr("getFs_type", fs.getFsType().getValue());
+		repr("getImg_offset", fs.getImageOffset());
+		repr("getLast_inum", fs.getLastInum());
 		repr("getRoot_inum", fs.getRoot_inum());
 		repr("getSize", fs.getSize());
 	}
@@ -390,7 +391,7 @@ public class ReprDataModel {
 		}
 		
 		@Override
-		public Void visit(LayoutDirectory u) {
+		public Void visit(VirtualDirectory u) {
 			reprLayoutDirectory(u);
 			return null;
 		}

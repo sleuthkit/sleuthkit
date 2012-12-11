@@ -1,6 +1,15 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.0.2 --------------
+New Features:
+- Numerous performance improvements to framework.
+- Added fiwalk tool from Simson.  Not supported in Visual Studio yet.
+
+Bug Fixes:
+- Fixed fcat to work on NTFS files (still doesn't support ADS though). 
+- Fixed HFS+ support in tsk_loaddb / SQLite -- root directory was not added.
+
 ---------------- VERSION 4.0.1 --------------
 New Features:
 - Can open raw Windows devices with write mode sharing.

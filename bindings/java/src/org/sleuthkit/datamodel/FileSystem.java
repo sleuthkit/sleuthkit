@@ -18,7 +18,13 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
  * Represents a file system object stored in tsk_fs_info table
@@ -29,9 +35,9 @@ import java.util.*;
  */
 public class FileSystem extends AbstractContent {
 
-	private long img_offset, block_size, block_count, root_inum,
-			first_inum, last_inum;
-	private TskData.TSK_FS_TYPE_ENUM fs_type;
+	private long imgOffset, blockSize, blockCount, rootInum,
+			firstInum, lastInum;
+	private TskData.TSK_FS_TYPE_ENUM fsType;
 	private Content parent;
 	private long filesystemHandle = 0;
 
@@ -52,13 +58,13 @@ public class FileSystem extends AbstractContent {
 			TskData.TSK_FS_TYPE_ENUM fs_type, long block_size, long block_count, long root_inum,
 			long first_inum, long last_inum) {
 		super(db, obj_id, name);
-		this.img_offset = img_offset;
-		this.fs_type = fs_type;
-		this.block_size = block_size;
-		this.block_count = block_count;
-		this.root_inum = root_inum;
-		this.first_inum = first_inum;
-		this.last_inum = last_inum;
+		this.imgOffset = img_offset;
+		this.fsType = fs_type;
+		this.blockSize = block_size;
+		this.blockCount = block_count;
+		this.rootInum = root_inum;
+		this.firstInum = first_inum;
+		this.lastInum = last_inum;
 	}
 
 	/**
@@ -90,7 +96,7 @@ public class FileSystem extends AbstractContent {
 	@Override
 	public long getSize() {
 		// size of the file system
-		return block_size * block_count;
+		return blockSize * blockCount;
 	}
 
 	/**
@@ -101,9 +107,29 @@ public class FileSystem extends AbstractContent {
 	 */
 	synchronized long getFileSystemHandle() throws TskCoreException {
 		if (filesystemHandle == 0) {
-			filesystemHandle = SleuthkitJNI.openFs(getImage().getImageHandle(), img_offset);
+			filesystemHandle = SleuthkitJNI.openFs(getImage().getImageHandle(), imgOffset);
 		}
 		return this.filesystemHandle;
+	}
+	
+	public Directory getRootDirectory() throws TskCoreException {
+		
+		String directDirectoryDescendents = "SELECT tsk_files.*"
+				+ " FROM tsk_objects JOIN tsk_files"
+				+ " ON tsk_objects.obj_id = tsk_files.obj_id"
+				+ " WHERE (tsk_objects.par_obj_id = " + getId()
+				+ " AND tsk_files.type = " + TSK_DB_FILES_TYPE_ENUM.FS.getFileType()
+				+ " AND tsk_files.dir_type = " + TSK_FS_NAME_TYPE_ENUM.DIR.getValue() + ")";
+		
+		Directory dir = null;
+		try {
+			ResultSet rs = getSleuthkitCase().runQuery(directDirectoryDescendents);
+			dir = new ResultSetHelper(getSleuthkitCase()).directory(rs, this);
+		} catch (SQLException ex) {
+			throw new TskCoreException("There was a problem while trying to obtain this file system's root directory: ", ex);
+		}
+
+		return dir;
 	}
 
 	/**
@@ -111,8 +137,8 @@ public class FileSystem extends AbstractContent {
 	 * 
 	 * @return offset
 	 */
-	public long getImg_offset() {
-		return img_offset;
+	public long getImageOffset() {
+		return imgOffset;
 	}
 
 	/**
@@ -120,8 +146,8 @@ public class FileSystem extends AbstractContent {
 	 * 
 	 * @return enum value of fs type
 	 */
-	public TskData.TSK_FS_TYPE_ENUM getFs_type() {
-		return fs_type;
+	public TskData.TSK_FS_TYPE_ENUM getFsType() {
+		return fsType;
 	}
 
 	/**
@@ -130,7 +156,7 @@ public class FileSystem extends AbstractContent {
 	 * @return block size
 	 */
 	public long getBlock_size() {
-		return block_size;
+		return blockSize;
 	}
 
 	/**
@@ -139,7 +165,7 @@ public class FileSystem extends AbstractContent {
 	 * @return block count
 	 */
 	public long getBlock_count() {
-		return block_count;
+		return blockCount;
 	}
 
 	/**
@@ -148,7 +174,7 @@ public class FileSystem extends AbstractContent {
 	 * @return Root metadata address of the file system
 	 */
 	public long getRoot_inum() {
-		return root_inum;
+		return rootInum;
 	}
 
 	/**
@@ -157,15 +183,15 @@ public class FileSystem extends AbstractContent {
 	 * @return first inum
 	 */
 	public long getFirst_inum() {
-		return first_inum;
+		return firstInum;
 	}
 
 	/**
 	 * Get the last inum
 	 * @return last inum
 	 */
-	public long getLast_inum() {
-		return last_inum;
+	public long getLastInum() {
+		return lastInum;
 	}
 
 

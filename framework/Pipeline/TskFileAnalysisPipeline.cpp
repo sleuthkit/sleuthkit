@@ -83,6 +83,8 @@ void TskFileAnalysisPipeline::run(TskFile* file)
         msg << MSG_PREFIX <<  "analyzing " << file->getName() << "(" << file->getId() << ")";
         LOGINFO(msg.str());
 
+        imgDB.begin();
+
         // If there is an Executable module in the pipeline we must
         // ensure that the file exists on disk.
         if (m_hasExeModule && !file->exists())
@@ -143,6 +145,7 @@ void TskFileAnalysisPipeline::run(TskFile* file)
                 file->setStatus(TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_COMPLETE);
             }
         }
+        imgDB.commit();
     }
     catch (std::exception& ex)
     {
@@ -150,7 +153,7 @@ void TskFileAnalysisPipeline::run(TskFile* file)
         msg << MSG_PREFIX << "error while processing file id (" << file->getId() << ") : " << ex.what();
         LOGERROR(msg.str());
         imgDB.updateFileStatus(file->getId(), TskImgDB::IMGDB_FILES_STATUS_ANALYSIS_FAILED);
-
+        imgDB.commit();
         // Rethrow the exception
         throw;
     }

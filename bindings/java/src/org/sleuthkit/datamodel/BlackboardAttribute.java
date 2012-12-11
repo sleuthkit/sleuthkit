@@ -161,7 +161,7 @@ public class BlackboardAttribute {
 		TSK_FILE_TYPE_EXT(63, "TSK_FILE_TYPE_EXT", "File Type (extension)"),
 		TSK_TAGGED_ARTIFACT(64, "TSK_TAGGED_ARTIFACT", "Tagged Result"),
 		TSK_TAG_NAME(65, "TSK_TAG_NAME", "Tag Name"),
-		TSK_DESCRIPTION(66, "TSK_DESCRIPTION", "Description"),
+		TSK_COMMENT(66, "TSK_COMMENT", "Comment"),
 		TSK_URL_DECODED(67, "TSK_URL_DECODED", "Decoded URL"),
 		TSK_DATETIME_CREATED(68, "TSK_DATETIME_CREATED", "Date Created"),
 		TSK_DATETIME_MODIFIED(69, "TSK_DATETIME_MODIFIED", "Date Modified"),
