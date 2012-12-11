@@ -246,6 +246,10 @@ public abstract class FsContent extends AbstractFile {
 		return dirType;
 	}
 
+	/**
+	 * @param flag the TSK_FS_NAME_FLAG_ENUM to check
+	 * @return true if the given flag is set in this FsContent object.
+	 */
 	public boolean isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM flag) {
 		return dirFlag == flag;
 	}
@@ -258,20 +262,19 @@ public abstract class FsContent extends AbstractFile {
 	public long getMetaAddr() {
 		return metaAddr;
 	}
-
-	/**
-	 * Get the meta data flags
-	 *
-	 * @return meta data flags
-	 */
-	public short getMetaFlagsInt() {
-		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
-	}
 	
+	/**
+	 * @return the set of TSK_FS_META_FLAG_ENUM currently set for this FsContent
+	 * object.
+	 */
 	public Set<TSK_FS_META_FLAG_ENUM> getMetaFlags() {
 		return Collections.unmodifiableSet(metaFlags);
 	}
-	
+
+	/**
+	 * @param metaFlag the TSK_FS_META_FLAG_ENUM to check
+	 * @return true if the given meta flag is set in this FsContent object.
+	 */
 	public boolean isMetaFlagSet(TSK_FS_META_FLAG_ENUM metaFlag) {
 		return metaFlags.contains(metaFlag);
 	}
@@ -376,17 +379,16 @@ public abstract class FsContent extends AbstractFile {
 		return gid;
 	}
 	
-	public Set<TSK_FS_META_MODE_ENUM> getModes() {
-		return modes;
-	}
-
 	/**
-	 * Get the mode
-	 *
-	 * @return mode
+	 * @return the set of TSK_FS_META_MODE_ENUM currently set for this FsContent
+	 * object.
 	 */
-	public short getModesInt() {
-		return TSK_FS_META_MODE_ENUM.toInt(modes);
+	public Set<TSK_FS_META_MODE_ENUM> getModes() {
+		return Collections.unmodifiableSet(modes);
+	}
+	
+	public boolean isModeSet(TSK_FS_META_MODE_ENUM mode) {
+		return modes.contains(mode);
 	}
 
 	/**
