@@ -439,7 +439,9 @@ static TSK_RETVAL_ENUM
             * slot in the cluster, but it needs to refer to the original
             * slot
             */
-            if (TSK_FS_ISDOT(fs_name->name)) {
+            if (TSK_FS_ISDOT(fs_name->name)
+                    && (fs_name->type == TSK_FS_NAME_TYPE_DIR)
+                    && idx < 2) {
                 if (fs_name->name[1] == '\0') {
                     fs_name->meta_addr =
                         a_fs_dir->fs_file->meta->addr;
