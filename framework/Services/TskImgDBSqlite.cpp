@@ -201,7 +201,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- FS_FILES
-    stmt = "CREATE TABLE fs_files (file_id INTEGER UNIQUE NOT NULL, fs_id INTEGER, "
+    stmt = "CREATE TABLE fs_files (file_id INTEGER PRIMARY KEY, fs_id INTEGER, "
         "fs_file_id INTEGER, attr_type INTEGER, attr_id INTEGER)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
@@ -225,7 +225,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- CARVED_FILES
-    stmt = "CREATE TABLE carved_files (file_id INTEGER UNIQUE, vol_id INTEGER)";
+    stmt = "CREATE TABLE carved_files (file_id INTEGER PRIMARY KEY, vol_id INTEGER)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
         _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating carved_files table: %S", errmsg);
@@ -248,7 +248,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- DERIVED_FILES
-    stmt = "CREATE TABLE derived_files (file_id INTEGER UNIQUE , derivation_details TEXT)";
+    stmt = "CREATE TABLE derived_files (file_id INTEGER PRIMARY KEY, derivation_details TEXT)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
         _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating derived_files table: %S", errmsg);
