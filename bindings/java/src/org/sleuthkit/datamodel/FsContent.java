@@ -236,6 +236,10 @@ public abstract class FsContent extends AbstractFile {
 	public TSK_FS_META_TYPE_ENUM getMetaType() {
 		return metaType;
 	}
+	
+	public String getMetaTypeAsString() {
+		return metaType.toString();
+	}
 
 	/**
 	 * Get the directory type id
@@ -245,14 +249,25 @@ public abstract class FsContent extends AbstractFile {
 	public TSK_FS_NAME_TYPE_ENUM getDirType() {
 		return dirType;
 	}
+	
+	public String getDirTypeAsString() {
+		return dirType.toString();
+	}
 
 	/**
-	 * Get the directory flags
-	 *
-	 * @return directory flags
+	 * @param flag the TSK_FS_NAME_FLAG_ENUM to check
+	 * @return true if the given flag is set in this FsContent object.
 	 */
-	public TSK_FS_NAME_FLAG_ENUM getDirFlag() {
-		return dirFlag;
+	public boolean isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM flag) {
+		return dirFlag == flag;
+	}
+	
+	/**
+	 * @return a string representation of the directory name flag
+	 * (type TSK_FS_NAME_FLAG_ENUM)
+	 */
+	public String getDirFlagAsString() {
+		return dirFlag.toString();
 	}
 
 	/**
@@ -263,20 +278,24 @@ public abstract class FsContent extends AbstractFile {
 	public long getMetaAddr() {
 		return metaAddr;
 	}
+	
+	/**
+	 * @return a string representation of the meta flags
+	 */
+	public String getMetaFlagsAsString() {
+		String str = "";
+		if (metaFlags.contains(TSK_FS_META_FLAG_ENUM.ALLOC)) {
+			str = TSK_FS_META_FLAG_ENUM.ALLOC.toString();
+		} else if (metaFlags.contains(TSK_FS_META_FLAG_ENUM.ALLOC)) {
+			str = TSK_FS_META_FLAG_ENUM.UNALLOC.toString();
+		}
+		return str;
+	}
 
 	/**
-	 * Get the meta data flags
-	 *
-	 * @return meta data flags
+	 * @param metaFlag the TSK_FS_META_FLAG_ENUM to check
+	 * @return true if the given meta flag is set in this FsContent object.
 	 */
-	public short getMetaFlagsInt() {
-		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
-	}
-	
-	public Set<TSK_FS_META_FLAG_ENUM> getMetaFlags() {
-		return Collections.unmodifiableSet(metaFlags);
-	}
-	
 	public boolean isMetaFlagSet(TSK_FS_META_FLAG_ENUM metaFlag) {
 		return metaFlags.contains(metaFlag);
 	}
@@ -381,17 +400,127 @@ public abstract class FsContent extends AbstractFile {
 		return gid;
 	}
 	
-	public Set<TSK_FS_META_MODE_ENUM> getModes() {
-		return modes;
-	}
-
 	/**
-	 * Get the mode
+	 * Convert mode and meta type to a user-displayable string
 	 *
-	 * @return mode
+	 * @param mode mode attribute of the file/dir
+	 * @param metaType meta type attribute of the file/dir
+	 * @return converted, formatted user-displayable string
 	 */
-	public short getModesInt() {
-		return TSK_FS_META_MODE_ENUM.toInt(modes);
+	public String getModesAsString() {
+		int mode = TSK_FS_META_MODE_ENUM.toInt(modes);
+		String result = "";
+
+		short isuid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISUID.getMode();
+		short isgid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISGID.getMode();
+		short isvtx = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISVTX.getMode();
+
+		short irusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IRUSR.getMode();
+		short iwusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWUSR.getMode();
+		short ixusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXUSR.getMode();
+
+		short irgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IRGRP.getMode();
+		short iwgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWGRP.getMode();
+		short ixgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXGRP.getMode();
+
+		short iroth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IROTH.getMode();
+		short iwoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWOTH.getMode();
+		short ixoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXOTH.getMode();
+
+		// first character = the Meta Type
+		result += metaType.toString();
+
+		// second and third characters = user permissions
+		if ((mode & irusr) == irusr) {
+			result += "r";
+		} else {
+			result += "-";
+		}
+		if ((mode & iwusr) == iwusr) {
+			result += "w";
+		} else {
+			result += "-";
+		}
+
+		// fourth character = set uid
+		if ((mode & isuid) == isuid) {
+			if ((mode & ixusr) == ixusr) {
+				result += "s";
+			} else {
+				result += "S";
+			}
+		} else {
+			if ((mode & ixusr) == ixusr) {
+				result += "x";
+			} else {
+				result += "-";
+			}
+		}
+
+		// fifth and sixth characters = group permissions
+		if ((mode & irgrp) == irgrp) {
+			result += "r";
+		} else {
+			result += "-";
+		}
+		if ((mode & iwgrp) == iwgrp) {
+			result += "w";
+		} else {
+			result += "-";
+		}
+
+		// seventh character = set gid
+		if ((mode & isgid) == isgid) {
+			if ((mode & ixgrp) == ixgrp) {
+				result += "s";
+			} else {
+				result += "S";
+			}
+		} else {
+			if ((mode & ixgrp) == ixgrp) {
+				result += "x";
+			} else {
+				result += "-";
+			}
+		}
+
+		// eighth and ninth character = other permissions
+		if ((mode & iroth) == iroth) {
+			result += "r";
+		} else {
+			result += "-";
+		}
+		if ((mode & iwoth) == iwoth) {
+			result += "w";
+		} else {
+			result += "-";
+		}
+
+		// tenth character = sticky bit
+		if ((mode & isvtx) == isvtx) {
+			if ((mode & ixoth) == ixoth) {
+				result += "t";
+			} else {
+				result += "T";
+			}
+		} else {
+			if ((mode & ixoth) == ixoth) {
+				result += "x";
+			} else {
+				result += "-";
+			}
+		}
+
+		// check the result
+		if (result.length() != 10) {
+			// throw error here
+			result = "ERROR";
+		}
+		return result;
+	}
+	
+	public boolean isModeSet(TSK_FS_META_MODE_ENUM mode) {
+		return modes.contains(mode);
 	}
 
 	/**
