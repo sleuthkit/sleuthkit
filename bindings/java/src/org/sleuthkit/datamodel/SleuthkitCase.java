@@ -184,9 +184,9 @@ public class SleuthkitCase {
 		addBlackboardAttributeDoubleSt = con.prepareStatement(
 				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) "
 				+ "VALUES (?,?,?,?,?,?)");
-		
+
 		getFileSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? and LOWER(name) NOT LIKE '%journal%' AND fs_obj_id = ?");
-		
+
 		getFileWithParentSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND LOWER(parent_path) LIKE ? AND fs_obj_id = ?");
 	}
 
@@ -270,17 +270,17 @@ public class SleuthkitCase {
 				addBlackboardAttributeDoubleSt.close();
 				addBlackboardAttributeDoubleSt = null;
 			}
-			
+
 			if (getFileSt != null) {
 				getFileSt.close();
 				getFileSt = null;
 			}
-			
+
 			if (getFileWithParentSt != null) {
 				getFileWithParentSt.close();
 				getFileWithParentSt = null;
 			}
-			
+
 		} catch (SQLException e) {
 			logger.log(Level.WARNING,
 					"Error closing prepared statement", e);
@@ -1164,11 +1164,11 @@ public class SleuthkitCase {
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType) throws TskCoreException {
 		return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel());
 	}
-	
+
 	/**
-	 * Get all blackboard artifacts of a given type with an attribute of a
-	 * given type and String value.
-	 * 
+	 * Get all blackboard artifacts of a given type with an attribute of a given
+	 * type and String value.
+	 *
 	 * @param artifactType artifact type enum
 	 * @param attrType attribute type enum
 	 * @param value String value of attribute
@@ -1892,9 +1892,9 @@ public class SleuthkitCase {
 					result.accept(setParent);
 					children.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
-					VirtualDirectory virtDir =  new VirtualDirectory(this, rs.getLong("obj_id"),
-							rs.getString("name"), rs.getLong("size"), 
-							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
+					VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
+							rs.getString("name"), rs.getLong("size"),
+							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
 							rs.getShort("meta_flags"), rs.getString("parent_path"));
 					virtDir.accept(setParent);
 					children.add(virtDir);
@@ -2217,7 +2217,7 @@ public class SleuthkitCase {
 		}
 		throw new TskCoreException("No file found for id " + id);
 	}
-	
+
 	/**
 	 * @param image the image to search for the given file name
 	 * @param fileName the name of the file or directory to match (case
@@ -2252,7 +2252,7 @@ public class SleuthkitCase {
 
 		return fsContents;
 	}
-	
+
 	/**
 	 * @param image the image to search for the given file name
 	 * @param fileName the name of the file or directory to match (case
@@ -2294,24 +2294,24 @@ public class SleuthkitCase {
 
 		return fsContents;
 	}
-	
+
 	/**
 	 * @param image the image to search for the given file name
 	 * @param fileName the name of the file or directory to match (case
 	 * insensitive)
-	 * @param parentFsContent 
+	 * @param parentFsContent
 	 * @return a list of FsContent for files/directories whose name matches
 	 * fileName and that were inside a directory described by parentFsContent.
 	 */
 	public List<FsContent> findFiles(Image image, String fileName, FsContent parentFsContent) throws TskCoreException {
 		return findFiles(image, fileName, parentFsContent.getName());
 	}
-	
+
 	/**
 	 * @param sqlWhereClause a SQL where clause appropriate for the desired
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of FsContent each of which satisfy the given WHERE clause
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
 		Statement statement;
@@ -2325,7 +2325,7 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 	}
-	
+
 	/**
 	 * @param image the image to search for the given file name
 	 * @param filePath The full path to the file(s) of interest. This can
@@ -2334,23 +2334,23 @@ public class SleuthkitCase {
 	 * @return a list of FsContent that have the given file path.
 	 */
 	public List<FsContent> openFiles(Image image, String filePath) throws TskCoreException {
-		
+
 		// get the non-unique path (strip of image and volume path segments, if
 		// the exist.
 		String path = AbstractFile.createNonUniquePath(filePath).toLowerCase();
-		
+
 		// split the file name from the parent path
 		int lastSlash = path.lastIndexOf("/");
-		
+
 		// if the last slash is at the end, strip it off
 		if (lastSlash == path.length()) {
 			path = path.substring(0, lastSlash - 1);
 			lastSlash = path.lastIndexOf("/");
 		}
-		
+
 		String parentPath = path.substring(0, lastSlash);
 		String fileName = path.substring(lastSlash);
-		
+
 		return findFiles(image, fileName, parentPath);
 	}
 
@@ -2585,8 +2585,7 @@ public class SleuthkitCase {
 					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
 						temp = rsHelper.directory(rs, parentFs);
 					}
-				}
-				else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
 					rs.close();
 					s.close();
 					throw new TskCoreException("Expecting an FS-type directory, got virtual, id: " + id);
@@ -2816,19 +2815,40 @@ public class SleuthkitCase {
 		@Override
 		public Collection<FileSystem> visit(Image image) {
 			Logger logger = Logger.getLogger(GetFileSystemsVisitor.class.getName());
-			
+
 			// create a query to get all file system objects
 			String allFsObjects = "SELECT * FROM tsk_fs_info";
 
 			// perform the query and create a list of FileSystem objects
 			List<FileSystem> allFileSystems = new ArrayList<FileSystem>();
+
+			dbReadLock();
+			Statement statement = null;
+			ResultSet rs = null;
 			try {
-				ResultSet rs = runQuery(allFsObjects);
+				statement = con.createStatement();
+				rs = statement.executeQuery(allFsObjects);
 				while (rs.next()) {
 					allFileSystems.add(new ResultSetHelper(SleuthkitCase.this).fileSystem(rs, null));
 				}
 			} catch (SQLException ex) {
-				logger.severe("There was a problem while trying to obtain this image's file systems." + ex);
+				logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems.", ex);
+			} finally {
+				if (rs != null) {
+					try {
+						rs.close();
+					} catch (SQLException ex) {
+						logger.log(Level.SEVERE, "Cannot close result set after query of all fs objects", ex);
+					}
+				}
+				if (statement != null) {
+					try {
+						statement.close();
+					} catch (SQLException ex) {
+						logger.log(Level.SEVERE, "Cannot close statement after query of all fs objects", ex);
+					}
+				}
+				dbReadUnlock();
 			}
 
 			// for each file system, find the image to which it belongs by iteratively
@@ -2839,14 +2859,32 @@ public class SleuthkitCase {
 				Long imageID = null;
 				Long currentObjID = fs.getId();
 				while (imageID == null) {
+					dbReadLock();
 					try {
-						ResultSet rs = runQuery("SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID);
+						statement = con.createStatement();
+						rs = statement.executeQuery("SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID);
 						currentObjID = rs.getLong("par_obj_id");
 						if (rs.getInt("type") == TskData.ObjectType.IMG.getObjectType()) {
 							imageID = rs.getLong("obj_id");
 						}
 					} catch (SQLException ex) {
-						logger.severe("There was a problem while trying to obtain this image's file systems." + ex);
+						logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems.", ex);
+					} finally {
+						if (rs != null) {
+							try {
+								rs.close();
+							} catch (SQLException ex) {
+								logger.log(Level.SEVERE, "Cannot close result set after query of all fs objects for fs", ex);
+							}
+						}
+						if (statement != null) {
+							try {
+								statement.close();
+							} catch (SQLException ex) {
+								logger.log(Level.SEVERE, "Cannot close statement after query of all fs objects for fs", ex);
+							}
+						}
+						dbReadUnlock();
 					}
 				}
 
@@ -3183,11 +3221,11 @@ public class SleuthkitCase {
 
 		return imgPaths;
 	}
-	
+
 	/**
 	 * @return a collection of Images associated with this instance of
 	 * SleuthkitCase
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public List<Image> getImages() throws TskCoreException {
 		dbReadLock();
@@ -3203,12 +3241,12 @@ public class SleuthkitCase {
 		} finally {
 			dbReadUnlock();
 		}
-		
+
 		List<Image> images = new ArrayList<Image>();
 		for (long id : imageIDs) {
 			images.add(getImageById(id));
 		}
-		
+
 		return images;
 	}
 
@@ -3269,8 +3307,8 @@ public class SleuthkitCase {
 					results.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
 					final VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
-							rs.getString("name"), rs.getLong("size"), 
-							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
+							rs.getString("name"), rs.getLong("size"),
+							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
 							rs.getShort("meta_flags"), rs.getString("parent_path"));
 					virtDir.accept(setParent);
 					results.add(virtDir);
@@ -3321,6 +3359,7 @@ public class SleuthkitCase {
 	 * closeRunQuery(resultSet) as soon as possible, when done with retrieving
 	 * data from the resultSet
 	 * @throws SQLException if error occurred during the query
+	 * @deprecated use specific datamodel methods that encapsulate SQL layer
 	 */
 	public ResultSet runQuery(String query) throws SQLException {
 		Statement statement;
@@ -3341,6 +3380,7 @@ public class SleuthkitCase {
 	 *
 	 * @param resultSet with its Statement to close
 	 * @throws SQLException of closing the query results failed
+	 * @deprecated use specific datamodel methods that encapsulate SQL layer
 	 */
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
 		final Statement statement = resultSet.getStatement();
