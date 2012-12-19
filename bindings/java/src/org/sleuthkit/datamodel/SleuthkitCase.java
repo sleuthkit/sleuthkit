@@ -2801,7 +2801,9 @@ public class SleuthkitCase {
 		try {
 			s = con.createStatement();
 			rs = s.executeQuery(directDirectoryDescendents);
-			dir = rsHelper.directory(rs, fs);
+			if (rs.next()) {
+				dir = rsHelper.directory(rs, fs);
+			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("There was a problem while trying to obtain this file system's root directory: ", ex);
 		} finally {
