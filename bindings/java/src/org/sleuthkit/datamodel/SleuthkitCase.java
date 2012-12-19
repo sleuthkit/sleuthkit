@@ -2773,158 +2773,92 @@ public class SleuthkitCase {
 	 * @return Collection of FileSystems in the image
 	 */
 	public Collection<FileSystem> getFileSystems(Image image) {
-		return new GetFileSystemsVisitor().visit(image);
-	}
 
-	/**
-	 * top-down FileSystem visitor, traverses Content (any parent of FileSystem)
-	 * and returns all FileSystem children of that parent
-	 */
-	private class GetFileSystemsVisitor implements
-			ContentVisitor<Collection<FileSystem>> {
+		// create a query to get all file system objects
+		String allFsObjects = "SELECT * FROM tsk_fs_info";
 
-		@Override
-		public Collection<FileSystem> visit(Directory directory) {
-			//should never get here
-			return Collections.<FileSystem>emptyList();
-		}
+		// perform the query and create a list of FileSystem objects
+		List<FileSystem> allFileSystems = new ArrayList<FileSystem>();
 
-		@Override
-		public Collection<FileSystem> visit(File file) {
-			//should never get here
-			return Collections.<FileSystem>emptyList();
-		}
-
-		@Override
-		public Collection<FileSystem> visit(LayoutFile lf) {
-			return Collections.<FileSystem>emptyList();
-		}
-
-		@Override
-		public Collection<FileSystem> visit(VirtualDirectory ld) {
-			return Collections.<FileSystem>emptyList();
-		}
-
-		@Override
-		public Collection<FileSystem> visit(FileSystem fs) {
-			Collection<FileSystem> col = new ArrayList<FileSystem>();
-			col.add(fs);
-			return col;
-		}
-
-		@Override
-		public Collection<FileSystem> visit(Image image) {
-			Logger logger = Logger.getLogger(GetFileSystemsVisitor.class.getName());
-
-			// create a query to get all file system objects
-			String allFsObjects = "SELECT * FROM tsk_fs_info";
-
-			// perform the query and create a list of FileSystem objects
-			List<FileSystem> allFileSystems = new ArrayList<FileSystem>();
-
-			dbReadLock();
-			Statement statement = null;
-			ResultSet rs = null;
-			try {
-				statement = con.createStatement();
-				rs = statement.executeQuery(allFsObjects);
-				while (rs.next()) {
-					allFileSystems.add(new ResultSetHelper(SleuthkitCase.this).fileSystem(rs, null));
+		dbReadLock();
+		Statement statement = null;
+		ResultSet rs = null;
+		try {
+			statement = con.createStatement();
+			rs = statement.executeQuery(allFsObjects);
+			while (rs.next()) {
+				allFileSystems.add(rsHelper.fileSystem(rs, null));
+			}
+		} catch (SQLException ex) {
+			logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems.", ex);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Cannot close result set after query of all fs objects", ex);
 				}
-			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems.", ex);
-			} finally {
-				if (rs != null) {
-					try {
-						rs.close();
-					} catch (SQLException ex) {
-						logger.log(Level.SEVERE, "Cannot close result set after query of all fs objects", ex);
+			}
+			if (statement != null) {
+				try {
+					statement.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Cannot close statement after query of all fs objects", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+
+		// for each file system, find the image to which it belongs by iteratively
+		// climbing the tsk_ojbects hierarchy only taking those file systems
+		// that belong to this image.
+		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
+		for (FileSystem fs : allFileSystems) {
+			Long imageID = null;
+			Long currentObjID = fs.getId();
+			while (imageID == null) {
+				dbReadLock();
+				try {
+					statement = con.createStatement();
+					rs = statement.executeQuery("SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID);
+					currentObjID = rs.getLong("par_obj_id");
+					if (rs.getInt("type") == TskData.ObjectType.IMG.getObjectType()) {
+						imageID = rs.getLong("obj_id");
 					}
-				}
-				if (statement != null) {
-					try {
-						statement.close();
-					} catch (SQLException ex) {
-						logger.log(Level.SEVERE, "Cannot close statement after query of all fs objects", ex);
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems.", ex);
+				} finally {
+					if (rs != null) {
+						try {
+							rs.close();
+						} catch (SQLException ex) {
+							logger.log(Level.SEVERE, "Cannot close result set after query of all fs objects for fs", ex);
+						}
 					}
-				}
-				dbReadUnlock();
-			}
-
-			// for each file system, find the image to which it belongs by iteratively
-			// climbing the tsk_ojbects hierarchy only taking those file systems
-			// that belong to this image.
-			List<FileSystem> fileSystems = new ArrayList<FileSystem>();
-			for (FileSystem fs : allFileSystems) {
-				Long imageID = null;
-				Long currentObjID = fs.getId();
-				while (imageID == null) {
-					dbReadLock();
-					try {
-						statement = con.createStatement();
-						rs = statement.executeQuery("SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID);
-						currentObjID = rs.getLong("par_obj_id");
-						if (rs.getInt("type") == TskData.ObjectType.IMG.getObjectType()) {
-							imageID = rs.getLong("obj_id");
+					if (statement != null) {
+						try {
+							statement.close();
+						} catch (SQLException ex) {
+							logger.log(Level.SEVERE, "Cannot close statement after query of all fs objects for fs", ex);
 						}
-					} catch (SQLException ex) {
-						logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems.", ex);
-					} finally {
-						if (rs != null) {
-							try {
-								rs.close();
-							} catch (SQLException ex) {
-								logger.log(Level.SEVERE, "Cannot close result set after query of all fs objects for fs", ex);
-							}
-						}
-						if (statement != null) {
-							try {
-								statement.close();
-							} catch (SQLException ex) {
-								logger.log(Level.SEVERE, "Cannot close statement after query of all fs objects for fs", ex);
-							}
-						}
-						dbReadUnlock();
 					}
-				}
-
-				// see if imageID is this image's ID
-				if (imageID == image.getId()) {
-					fileSystems.add(fs);
+					dbReadUnlock();
 				}
 			}
 
-			// use SetParentVisitor to set the parent of each FileSystem
-			SetParentVisitor setParent = new SetParentVisitor();
-			for (FileSystem fs : fileSystems) {
-				setParent.visit(fs);
+			// see if imageID is this image's ID
+			if (imageID == image.getId()) {
+				fileSystems.add(fs);
 			}
-
-			return fileSystems;
 		}
 
-		@Override
-		public Collection<FileSystem> visit(Volume volume) {
-			return getAllFromChildren(volume);
+		// use SetParentVisitor to set the parent of each FileSystem
+		SetParentVisitor setParent = new SetParentVisitor();
+		for (FileSystem fs : fileSystems) {
+			setParent.visit(fs);
 		}
 
-		@Override
-		public Collection<FileSystem> visit(VolumeSystem vs) {
-			return getAllFromChildren(vs);
-		}
-
-		private Collection<FileSystem> getAllFromChildren(Content parent) {
-			Collection<FileSystem> all = new ArrayList<FileSystem>();
-
-			try {
-				for (Content child : parent.getChildren()) {
-					all.addAll(child.accept(this));
-				}
-			} catch (TskCoreException ex) {
-			}
-
-			return all;
-		}
+		return fileSystems;
 	}
 
 	/**
