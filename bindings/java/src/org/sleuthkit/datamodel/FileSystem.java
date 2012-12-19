@@ -114,22 +114,7 @@ public class FileSystem extends AbstractContent {
 	
 	public Directory getRootDirectory() throws TskCoreException {
 		
-		String directDirectoryDescendents = "SELECT tsk_files.*"
-				+ " FROM tsk_objects JOIN tsk_files"
-				+ " ON tsk_objects.obj_id = tsk_files.obj_id"
-				+ " WHERE (tsk_objects.par_obj_id = " + getId()
-				+ " AND tsk_files.type = " + TSK_DB_FILES_TYPE_ENUM.FS.getFileType()
-				+ " AND tsk_files.dir_type = " + TSK_FS_NAME_TYPE_ENUM.DIR.getValue() + ")";
-		
-		Directory dir = null;
-		try {
-			ResultSet rs = getSleuthkitCase().runQuery(directDirectoryDescendents);
-			dir = new ResultSetHelper(getSleuthkitCase()).directory(rs, this);
-		} catch (SQLException ex) {
-			throw new TskCoreException("There was a problem while trying to obtain this file system's root directory: ", ex);
-		}
-
-		return dir;
+		return getSleuthkitCase().getRootDirectory(this);
 	}
 
 	/**
