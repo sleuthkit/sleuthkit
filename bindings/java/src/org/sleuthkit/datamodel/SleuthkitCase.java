@@ -2777,6 +2777,55 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Get root directory of a file system
+	 *
+	 * @param fs file system to get root dir of
+	 * @return root directory of file system
+	 * @throws TskCoreException
+	 */
+	public Directory getRootDirectory(FileSystem fs) throws TskCoreException {
+
+		final String directDirectoryDescendents = "SELECT tsk_files.*"
+				+ " FROM tsk_objects JOIN tsk_files"
+				+ " ON tsk_objects.obj_id = tsk_files.obj_id"
+				+ " WHERE (tsk_objects.par_obj_id = " + fs.getId()
+				+ " AND tsk_files.type = " + TSK_DB_FILES_TYPE_ENUM.FS.getFileType()
+				+ " AND tsk_files.dir_type = " + TSK_FS_NAME_TYPE_ENUM.DIR.getValue() + ")";
+
+		Directory dir = null;
+
+		ResultSet rs = null;
+		Statement s = null;
+		
+		dbReadLock();
+		try {
+			s = con.createStatement();
+			rs = s.executeQuery(directDirectoryDescendents);
+			dir = rsHelper.directory(rs, fs);
+		} catch (SQLException ex) {
+			throw new TskCoreException("There was a problem while trying to obtain this file system's root directory: ", ex);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set when getting root dir of fs", ex);
+				}
+			}
+			if (s != null) {
+				try {
+					s.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing statement when getting root dir of fs", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+
+		return dir;
+	}
+
+	/**
 	 * top-down FileSystem visitor, traverses Content (any parent of FileSystem)
 	 * and returns all FileSystem children of that parent
 	 */
@@ -3361,6 +3410,7 @@ public class SleuthkitCase {
 	 * @throws SQLException if error occurred during the query
 	 * @deprecated use specific datamodel methods that encapsulate SQL layer
 	 */
+	@Deprecated
 	public ResultSet runQuery(String query) throws SQLException {
 		Statement statement;
 		dbReadLock();
@@ -3382,6 +3432,7 @@ public class SleuthkitCase {
 	 * @throws SQLException of closing the query results failed
 	 * @deprecated use specific datamodel methods that encapsulate SQL layer
 	 */
+	@Deprecated
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
 		final Statement statement = resultSet.getStatement();
 		resultSet.close();
