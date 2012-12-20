@@ -177,24 +177,6 @@ public class Image extends AbstractContent {
 		fs.addAll(getSleuthkitCase().getFileSystems(this));
 		return fs;
 	}
-	
-	/**
-	 * @return a list of FileSystem that are direct descendents of this Image.
-	 * @throws TskCoreException 
-	 */
-	public List<FileSystem> getDirectFileSystems() throws TskCoreException {
-		
-		// find all children that are FileSystems
-		List<Content> children = getChildren();
-		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
-		for (Content child : children) {
-			if (child instanceof FileSystem) {
-				fileSystems.add((FileSystem)child);
-			}
-		}
-		
-		return fileSystems;
-	}
 
 	/**
 	 * Get the timezone set for the image
