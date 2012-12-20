@@ -3369,6 +3369,7 @@ public class SleuthkitCase {
 	 * @throws SQLException if error occurred during the query
 	 * @deprecated use specific datamodel methods that encapsulate SQL layer
 	 */
+	@Deprecated
 	public ResultSet runQuery(String query) throws SQLException {
 		Statement statement;
 		dbReadLock();
@@ -3390,6 +3391,7 @@ public class SleuthkitCase {
 	 * @throws SQLException of closing the query results failed
 	 * @deprecated use specific datamodel methods that encapsulate SQL layer
 	 */
+	@Deprecated
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
 		final Statement statement = resultSet.getStatement();
 		resultSet.close();
