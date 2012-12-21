@@ -548,19 +548,19 @@ public abstract class FsContent extends AbstractFile {
 			return uniquePath;
 		}
 
-		StringBuilder sb = new StringBuilder();
-		//prepend image and volume to file path
-		Image image = this.getImage();
-		StringTokenizer tok = new StringTokenizer(image.getName(), "/\\");
-		String imageName = null;
-		while (tok.hasMoreTokens()) {
-			imageName = tok.nextToken();
+		String imagePath = getImage().getName();
+		String[] imagePathSegments = imagePath.split("/\\\\");
+		if (imagePathSegments.length == 0) {
+			throw new TskCoreException("Malformed image path retrieved from image: " + getImage());
 		}
+		String imageName = imagePathSegments[imagePathSegments.length - 1];
+
+		//prepend image and volume to file path
+		StringBuilder sb = new StringBuilder();
 		sb.append("/img_").append(imageName);
 		if (parentFileSystem != null) {
 			Content vol = parentFileSystem.getParent();
-			if (vol != null
-					&& !vol.equals(image)) {
+			if (vol != null && !vol.equals(getImage())) {
 				sb.append("/vol_");
 				sb.append(vol.getName());
 			}
