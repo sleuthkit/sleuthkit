@@ -100,7 +100,7 @@ public class ReadContentInputStream extends InputStream {
 					return lenRead;
 				}
 			} catch (TskCoreException ex) {
-				logger.log(Level.WARNING, ("Error streaming content: "
+				logger.log(Level.WARNING, ("Error reading content into stream: "
 						+ content.getId()) + ": " + content.getName() 
 						+ ", at offset " + position + ", length to read: " + lenToRead, ex );
 				throw new IOException(ex);
