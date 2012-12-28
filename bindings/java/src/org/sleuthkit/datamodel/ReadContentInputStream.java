@@ -20,6 +20,8 @@ package org.sleuthkit.datamodel;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * InputStream to read bytes from a Content object's data
@@ -29,6 +31,7 @@ public class ReadContentInputStream extends InputStream {
 	private long position;
 	private long length;
 	private Content content;
+	private static final Logger logger = Logger.getLogger(ReadContentInputStream.class.getName());
 
 	public ReadContentInputStream(Content content) {
 		this.content = content;
@@ -97,6 +100,9 @@ public class ReadContentInputStream extends InputStream {
 					return lenRead;
 				}
 			} catch (TskCoreException ex) {
+				logger.log(Level.WARNING, ("Error reading content into stream: "
+						+ content.getId()) + ": " + content.getName() 
+						+ ", at offset " + position + ", length to read: " + lenToRead, ex );
 				throw new IOException(ex);
 			}
 		} else {

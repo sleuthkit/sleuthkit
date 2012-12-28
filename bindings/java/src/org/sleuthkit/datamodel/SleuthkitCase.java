@@ -90,6 +90,7 @@ public class SleuthkitCase {
 	private PreparedStatement addBlackboardAttributeDoubleSt;
 	private PreparedStatement getFileSt;
 	private PreparedStatement getFileWithParentSt;
+	private PreparedStatement updateMd5St;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
 	/**
@@ -188,6 +189,8 @@ public class SleuthkitCase {
 		getFileSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? and LOWER(name) NOT LIKE '%journal%' AND fs_obj_id = ?");
 
 		getFileWithParentSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND LOWER(parent_path) LIKE ? AND fs_obj_id = ?");
+		
+		updateMd5St = con.prepareStatement("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?");
 	}
 
 	private void closeStatements() {
@@ -279,6 +282,11 @@ public class SleuthkitCase {
 			if (getFileWithParentSt != null) {
 				getFileWithParentSt.close();
 				getFileWithParentSt = null;
+			}
+			
+			if (updateMd5St != null) {
+				updateMd5St.close();
+				updateMd5St = null;
 			}
 
 		} catch (SQLException e) {
@@ -3460,11 +3468,9 @@ public class SleuthkitCase {
 		long id = fsContent.getId();
 		SleuthkitCase.dbWriteLock();
 		try {
-			Statement s = con.createStatement();
-			s.executeUpdate("UPDATE tsk_files "
-					+ "SET md5='" + md5Hash + "' "
-					+ "WHERE obj_id=" + id);
-			s.close();
+			updateMd5St.setString(1, md5Hash);
+			updateMd5St.setLong(2, id);
+			updateMd5St.executeUpdate();
 			//update the object itself
 			fsContent.setMd5Hash(md5Hash);
 		} catch (SQLException ex) {
