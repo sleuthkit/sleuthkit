@@ -1773,7 +1773,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
-	BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
+	public BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
 		dbWriteLock();
 		try {
 			String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
@@ -1813,7 +1813,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
-	BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
+	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
 		dbWriteLock();
 		try {
 			final int type = artifactType.getTypeID();
