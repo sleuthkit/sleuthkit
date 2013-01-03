@@ -3335,8 +3335,13 @@ public class SleuthkitCase {
 	}
 
 	@Override
-	public void finalize() {
-		close();
+	public void finalize() throws Throwable{
+		try {
+			close();
+		}
+		finally {
+			super.finalize();
+		}
 	}
 
 	/**
