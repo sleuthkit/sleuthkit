@@ -31,6 +31,8 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_TAG_FILE, TskArtifactNames("TSK_TAG_FILE", "File Tag")));
     retval.insert(pair<int, TskArtifactNames>(TSK_TAG_ARTIFACT, TskArtifactNames("TSK_TAG_ARTIFACT", "Result Tag")));
     retval.insert(pair<int, TskArtifactNames>(TSK_OS_INFO, TskArtifactNames("TSK_OS_INFO", "Operating System Information")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_OS_ACCOUNT, TskArtifactNames("TSK_OS_ACCOUNT", "Operating System User Account")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_SERVICE_ACCOUNT, TskArtifactNames("TSK_SERVICE_ACCOUNT", "Network Service User Account")));
 
     return retval;
 }
@@ -48,7 +50,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_KEYWORD_REGEXP, TskAttributeNames("TSK_KEYWORD_REGEXP", "Keyword Regular Expression")));
     retval.insert(pair<int, TskAttributeNames>(TSK_KEYWORD_PREVIEW, TskAttributeNames("TSK_KEYWORD_PREVIEW", "Keyword Preview")));
     retval.insert(pair<int, TskAttributeNames>(TSK_KEYWORD_SET, TskAttributeNames("TSK_KEYWORD_SET", "Keyword Set")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_USERNAME, TskAttributeNames("TSK_USERNAME", "Username")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_USER_NAME, TskAttributeNames("TSK_USER_NAME", "Username")));
     retval.insert(pair<int, TskAttributeNames>(TSK_DOMAIN, TskAttributeNames("TSK_DOMAIN", "Domain")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PASSWORD, TskAttributeNames("TSK_PASSWORD", "Password")));
     retval.insert(pair<int, TskAttributeNames>(TSK_NAME_PERSON, TskAttributeNames("TSK_NAME_PERSON", "Person Name")));
@@ -105,6 +107,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_MODIFIED, TskAttributeNames("TSK_DATETIME_MODIFIED", "Date Modified")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PROCESSOR_ARCHITECTURE, TskAttributeNames("TSK_PROCESSOR_ARCHITECTURE", "Processor Architecture")));
     retval.insert(pair<int, TskAttributeNames>(TSK_VERSION, TskAttributeNames("TSK_VERSION", "Version")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_USER_ID, TskAttributeNames("TSK_USER_ID", "User ID")));
 
     return retval;
 }
