@@ -26,7 +26,7 @@ import java.util.List;
  */
 public class VolumeSystem extends AbstractContent {
 
-	private long volumeSystemHandle = 0;
+	private volatile long volumeSystemHandle = 0;
 	private long type, imgOffset, blockSize;
 
 	/**
@@ -104,9 +104,15 @@ public class VolumeSystem extends AbstractContent {
 	}
 
 	@Override
-	public void finalize() {
-		if (volumeSystemHandle != 0) {
-			SleuthkitJNI.closeVs(volumeSystemHandle);
+	public void finalize() throws Throwable {
+		try {
+			if (volumeSystemHandle != 0) {
+				SleuthkitJNI.closeVs(volumeSystemHandle);
+				volumeSystemHandle = 0;
+			}
+		}
+		finally {
+			super.finalize();
 		}
 	}
 

@@ -35,7 +35,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
  * Generalized class that stores metadata that are common to both File and
  * Directory objects stored in tsk_files table Caches internal tsk file handle
  * and reuses it for reads
- * 
+ *
  * TODO move common getters to AbstractFile class
  */
 public abstract class FsContent extends AbstractFile {
@@ -52,7 +52,6 @@ public abstract class FsContent extends AbstractFile {
 	protected final Set<TSK_FS_META_MODE_ENUM> modes;
 	protected final TSK_FS_NAME_TYPE_ENUM dirType;
 	protected final TSK_FS_NAME_FLAG_ENUM dirFlag;
-	
 	/*
 	 * path of parent directory
 	 */
@@ -67,7 +66,6 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	protected String md5Hash;
 	///other members
-
 	/**
 	 * parent file system
 	 */
@@ -75,7 +73,7 @@ public abstract class FsContent extends AbstractFile {
 	/**
 	 * file Handle
 	 */
-	protected long fileHandle = 0;
+	protected volatile long fileHandle = 0;
 
 	/**
 	 * Constructor to create FsContent object instance from database
@@ -140,22 +138,22 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	/**
-	 * Sets md5 hash string
-	 * Note: database or other FsContent objects are not updated.
-	 * Currently only SleuthkiCase calls it to update the object while updating tsk_files entry
-	 * 
-	 * @param md5Hash 
+	 * Sets md5 hash string Note: database or other FsContent objects are not
+	 * updated. Currently only SleuthkiCase calls it to update the object while
+	 * updating tsk_files entry
+	 *
+	 * @param md5Hash
 	 */
 	void setMd5Hash(String md5Hash) {
 		this.md5Hash = md5Hash;
 	}
 
 	/**
-	 * Sets known status
-	 * Note: database or other FsContent objects are not updated.
-	 * Currently only SleuthkiCase calls it to update the object while updating tsk_files entry
-	 * 
-	 * @param known 
+	 * Sets known status Note: database or other FsContent objects are not
+	 * updated. Currently only SleuthkiCase calls it to update the object while
+	 * updating tsk_files entry
+	 *
+	 * @param known
 	 */
 	void setKnown(FileKnown known) {
 		this.known = known;
@@ -169,8 +167,7 @@ public abstract class FsContent extends AbstractFile {
 		}
 		synchronized (this) {
 			if (fileHandle == 0) {
-				fileHandle = 
-						SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
+				fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
 			}
 		}
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
@@ -186,15 +183,12 @@ public abstract class FsContent extends AbstractFile {
 		}
 		return parentFileSystem.getRoot_inum() == this.getMetaAddr();
 	}
-		
+
 	/*
 	 * -------------------------------------------------------------------------
 	 * Getters to retrieve meta-data attributes values
 	 * -------------------------------------------------------------------------
 	 */
-	
-
-
 	/**
 	 * Gets parent directory
 	 *
@@ -243,7 +237,7 @@ public abstract class FsContent extends AbstractFile {
 	public TSK_FS_META_TYPE_ENUM getMetaType() {
 		return metaType;
 	}
-	
+
 	public String getMetaTypeAsString() {
 		return metaType.toString();
 	}
@@ -256,7 +250,7 @@ public abstract class FsContent extends AbstractFile {
 	public TSK_FS_NAME_TYPE_ENUM getDirType() {
 		return dirType;
 	}
-	
+
 	public String getDirTypeAsString() {
 		return dirType.toString();
 	}
@@ -268,10 +262,10 @@ public abstract class FsContent extends AbstractFile {
 	public boolean isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM flag) {
 		return dirFlag == flag;
 	}
-	
+
 	/**
-	 * @return a string representation of the directory name flag
-	 * (type TSK_FS_NAME_FLAG_ENUM)
+	 * @return a string representation of the directory name flag (type
+	 * TSK_FS_NAME_FLAG_ENUM)
 	 */
 	public String getDirFlagAsString() {
 		return dirFlag.toString();
@@ -285,7 +279,7 @@ public abstract class FsContent extends AbstractFile {
 	public long getMetaAddr() {
 		return metaAddr;
 	}
-	
+
 	/**
 	 * @return a string representation of the meta flags
 	 */
@@ -406,7 +400,7 @@ public abstract class FsContent extends AbstractFile {
 	public int getGid() {
 		return gid;
 	}
-	
+
 	/**
 	 * Convert mode and meta type to a user-displayable string
 	 *
@@ -525,7 +519,7 @@ public abstract class FsContent extends AbstractFile {
 		}
 		return result;
 	}
-	
+
 	public boolean isModeSet(TSK_FS_META_MODE_ENUM mode) {
 		return modes.contains(mode);
 	}
@@ -591,9 +585,14 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	@Override
-	public void finalize() {
-		if (fileHandle != 0) {
-			SleuthkitJNI.closeFile(fileHandle);
+	public void finalize() throws Throwable {
+		try {
+			if (fileHandle != 0) {
+				SleuthkitJNI.closeFile(fileHandle);
+				fileHandle = 0;
+			}
+		} finally {
+			super.finalize();
 		}
 	}
 

@@ -80,6 +80,7 @@ public class SleuthkitCase {
 	private PreparedStatement getArtifactsCountHelperSt;
 	private PreparedStatement getAbstractFileChildren;
 	private PreparedStatement getAbstractFileChildrenIds;
+	private PreparedStatement getAbstractFileById;
 	private PreparedStatement addArtifactSt1;
 	private PreparedStatement addArtifactSt2;
 	private PreparedStatement getLastArtifactId;
@@ -155,6 +156,8 @@ public class SleuthkitCase {
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id "
 				+ "WHERE (tsk_objects.par_obj_id = ? "
 				+ "AND tsk_files.type = ? )");
+		
+		getAbstractFileById = con.prepareStatement("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1");
 
 		addArtifactSt1 = con.prepareStatement(
 				"INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) "
@@ -235,6 +238,10 @@ public class SleuthkitCase {
 			if (getAbstractFileChildrenIds != null) {
 				getAbstractFileChildrenIds.close();
 				getAbstractFileChildrenIds = null;
+			}
+			if (getAbstractFileById != null) {
+				getAbstractFileById.close();
+				getAbstractFileById = null;
 			}
 			if (addArtifactSt1 != null) {
 				addArtifactSt1.close();
@@ -1773,7 +1780,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
-	BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
+	public BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
 		dbWriteLock();
 		try {
 			String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
@@ -1813,7 +1820,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
-	BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
+	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
 		dbWriteLock();
 		try {
 			final int type = artifactType.getTypeID();
@@ -2152,31 +2159,36 @@ public class SleuthkitCase {
 	 * Get abstract file object from tsk_files table by its id
 	 *
 	 * @param id id of the file object in tsk_files table
-	 * @return AbstractFile object populated
+	 * @return AbstractFile object populated, or null if not found.
 	 * @throws TskCoreException thrown if critical error occurred within tsk
-	 * core
+	 * core and file could not be queried
 	 */
 	public AbstractFile getAbstractFileById(long id) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-
-			ResultSet rs = s.executeQuery("SELECT * FROM tsk_files WHERE obj_id = " + id + " LIMIT 1");
+			getAbstractFileById.setLong(1, id);
+			rs = getAbstractFileById.executeQuery();
+			
 			List<AbstractFile> results;
 			if ((results = resultSetToAbstractFiles(rs)).size() > 0) {
-				rs.close();
-				s.close();
 				return results.get(0);
 			} else {
-				rs.close();
-				s.close();
+				return null;
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting FsContent by ID.", ex);
 		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after getting file by id.", ex);
+				}
+			}
 			dbReadUnlock();
 		}
-		throw new TskCoreException("No file found for id " + id);
+		
 	}
 
 	/**
@@ -3154,8 +3166,13 @@ public class SleuthkitCase {
 	}
 
 	@Override
-	public void finalize() {
-		close();
+	public void finalize() throws Throwable{
+		try {
+			close();
+		}
+		finally {
+			super.finalize();
+		}
 	}
 
 	/**

@@ -32,7 +32,8 @@ public class FileSystem extends AbstractContent {
 	private long imgOffset, blockSize, blockCount, rootInum,
 			firstInum, lastInum;
 	private TskData.TSK_FS_TYPE_ENUM fsType;
-	private long filesystemHandle = 0;
+	private Content parent;
+	private volatile long filesystemHandle = 0;
 
 	/**
 	 * Constructor most inputs are from the database
@@ -161,9 +162,15 @@ public class FileSystem extends AbstractContent {
 	}
 
 	@Override
-	public void finalize() {
-		if (filesystemHandle != 0) {
-			SleuthkitJNI.closeFs(filesystemHandle);
+	public void finalize() throws Throwable {
+		try {
+			if (filesystemHandle != 0) {
+				SleuthkitJNI.closeFs(filesystemHandle);
+				filesystemHandle = 0;
+			}
+		}
+		finally {
+			super.finalize();
 		}
 	}
 
