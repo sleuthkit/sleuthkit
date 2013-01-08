@@ -40,21 +40,10 @@ public class LayoutFile extends AbstractFile{
 	//layout ranges associated with this file
 	private List<TskFileRange> ranges;
 	
-    private Content parent;
-	
 	protected LayoutFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type) {
 		super(db, obj_id, name, type);
 	}
-	
-	/**
-     * Set the parent class, will be called by the parent
-	 * 
-     * @param p parent
-     */
-    protected void setParent(Content p){
-        parent = p;
-    }
-	
+
 	/**
 	 * Get number of file layout ranges associated with this layout file
 	 * @return number of file layout ranges objects associated
@@ -69,8 +58,6 @@ public class LayoutFile extends AbstractFile{
 		return size;
 	}
 
-	
-
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
 		if(ranges == null) {
@@ -78,7 +65,6 @@ public class LayoutFile extends AbstractFile{
         }
         return ranges;
 	}
-
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
@@ -193,9 +179,9 @@ public class LayoutFile extends AbstractFile{
 	 * Get parent content object (either filesystem, or volume)
 	 * @return the parent content object
 	 */
-	public Content getParent() {
-		return parent;
-	}
+//	public Content getParent() {
+//		return parent;
+//	}
 	
 
 	@Override

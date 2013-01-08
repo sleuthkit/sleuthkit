@@ -1878,7 +1878,6 @@ public class SleuthkitCase {
 	 */
 	List<AbstractFile> getAbstractFileChildren(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
 
-		SetParentVisitor setParent = new SetParentVisitor();
 		List<AbstractFile> children = new ArrayList<AbstractFile>();
 
 		dbReadLock();
@@ -1897,18 +1896,15 @@ public class SleuthkitCase {
 					} else {
 						result = rsHelper.file(rs, null);
 					}
-					result.accept(setParent);
 					children.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
 					VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
 							rs.getString("name"), rs.getLong("size"),
 							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
 							rs.getShort("meta_flags"), rs.getString("parent_path"));
-					virtDir.accept(setParent);
 					children.add(virtDir);
 				} else {
 					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"), TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")));
-					lf.setParent(parent);
 					children.add(lf);
 				}
 			}
@@ -1947,7 +1943,7 @@ public class SleuthkitCase {
 	/**
 	 * Stores a pair of object ID and its type
 	 */
-	private static class ObjectInfo {
+	static class ObjectInfo {
 
 		long id;
 		TskData.ObjectType type;
@@ -2110,74 +2106,31 @@ public class SleuthkitCase {
 				s.close();
 				return null;
 			}
-			ResultSet volumeSystemRs;
-			VolumeSystem vs;
-			Image img;
-			Content ret = null;
+
+			AbstractContent content = null;
+			long parentId = contentRs.getLong("par_obj_id");
 			final TskData.ObjectType type = TskData.ObjectType.valueOf(contentRs.getShort("type"));
 			switch (type) {
 				case IMG:
-					ret = getImageById(id);
+					content = getImageById(id);
 					break;
 				case VS:
-					img = getImageById(contentRs.getLong("par_obj_id"));
-					ret = getVolumeSystemById(id, img);
+					content = getVolumeSystemById(id, parentId);
 					break;
 				case VOL:
-					volumeSystemRs = s.executeQuery("SELECT * FROM tsk_objects WHERE obj_id = " + contentRs.getLong("par_obj_id"));
-					if (!volumeSystemRs.next()) {
-						volumeSystemRs.close();
-					} else {
-						img = getImageById(volumeSystemRs.getLong("par_obj_id"));
-						vs = getVolumeSystemById(contentRs.getLong("par_obj_id"), img);
-						volumeSystemRs.close();
-						ret = getVolumeById(id, vs);
-					}
+					content = getVolumeById(id, parentId);
 					break;
 				case FS:
-					long parentId = contentRs.getLong("par_obj_id");
-					if (parentId == 0) {
-						img = getImageById(id);
-						ret = getFileSystemById(id, img);
-					} else {
-						ResultSet volumeRs = s.executeQuery("SELECT * FROM tsk_objects WHERE obj_id = " + contentRs.getLong("par_obj_id"));
-						if (!volumeRs.next()) {
-							volumeRs.close();
-							break;
-						} else {
-							volumeSystemRs = s.executeQuery(("SELECT * from tsk_objects WHERE obj_id = " + volumeRs.getLong("par_obj_id")));
-							if (!volumeSystemRs.next()) {
-								volumeSystemRs.close();
-								volumeRs.close();
-								break;
-							} else {
-								ResultSet imageRs = s.executeQuery(("SELECT * FROM tsk_objects WHERE obj_id = " + volumeSystemRs.getLong("par_obj_id")));
-								if (!imageRs.next()) {
-									imageRs.close();
-									volumeSystemRs.close();
-									volumeRs.close();
-									break;
-								} else {
-									img = getImageById(imageRs.getLong("obj_id"));
-									vs = getVolumeSystemById(volumeSystemRs.getLong("obj_id"), img);
-									Volume v = getVolumeById(volumeRs.getLong("obj_id"), vs);
-									volumeRs.close();
-									volumeSystemRs.close();
-									imageRs.close();
-									ret = getFileSystemById(id, v);
-								}
-							}
-						}
-					}
+					content = getFileSystemById(id, parentId);
 					break;
 				case ABSTRACTFILE:
-					ret = getAbstractFileById(id);
+					content = getAbstractFileById(id);
 					break;
 				default:
-					ret = null;
+					content = null;
 					break;
 			}
-			return ret;
+			return content;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Content by ID.", ex);
 		} finally {
@@ -2471,6 +2424,18 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 	}
+	
+	/**
+	 * @param id ID of the desired VolumeSystem
+	 * @param parentId ID of the VolumeSystem's parent
+	 * @return the VolumeSystem with the given ID
+	 * @throws TskCoreException 
+	 */
+	VolumeSystem getVolumeSystemById(long id, long parentId) throws TskCoreException {
+		VolumeSystem vs = getVolumeSystemById(id, null);
+		vs.setParentId(parentId);
+		return vs;
+	}
 
 	/**
 	 * Get a file system by the object id
@@ -2483,6 +2448,19 @@ public class SleuthkitCase {
 	 */
 	FileSystem getFileSystemById(long id, Image parent) throws TskCoreException {
 		return getFileSystemByIdHelper(id, parent);
+	}
+	
+	/**
+	 * @param id ID of the desired FileSystem
+	 * @param parentId ID of the FileSystem's parent
+	 * @return the desired FileSystem
+	 * @throws TskCoreException 
+	 */
+	FileSystem getFileSystemById(long id, long parentId) throws TskCoreException {
+		Volume vol = null;
+		FileSystem fs = getFileSystemById(id, vol);
+		fs.setParentId(parentId);
+		return fs;
 	}
 
 	/**
@@ -2568,6 +2546,18 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 	}
+	
+	/**
+	 * @param id ID of the desired Volume
+	 * @param parentId ID of the Volume's parent
+	 * @return the desired Volume
+	 * @throws TskCoreException 
+	 */
+	Volume getVolumeById(long id, long parentId) throws TskCoreException {
+		Volume vol = getVolumeById(id, null);
+		vol.setParentId(parentId);
+		return vol;
+	}
 
 	/**
 	 * Get a directory by id
@@ -2610,167 +2600,6 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting Directory by ID.", ex);
 		} finally {
 			dbReadUnlock();
-		}
-	}
-
-	/**
-	 * Initializes the entire heritage of the visited Content.
-	 */
-	private class SetParentVisitor implements ContentVisitor<Void> {
-
-		SetParentVisitor() {
-		}
-		// make File/Directory visits (majority of cases) faster by caching
-		// fully initialized parent FileSystems
-		Map<Long, FileSystem> fileSystemCache = new HashMap<Long, FileSystem>();
-
-		private void visitFsContent(FsContent fc) {
-			try {
-				long fileSystemId = fc.fsObjId;
-				FileSystem parent = fileSystemCache.get(fileSystemId);
-				if (parent == null) {
-					parent = getFileSystemByIdHelper(fileSystemId, null);
-					parent.accept(this);
-					fileSystemCache.put(fileSystemId, parent);
-				}
-				fc.setFileSystem(parent);
-			} catch (TskCoreException ex) {
-				throw new RuntimeException(ex);
-			}
-		}
-
-		@Override
-		public Void visit(Directory d) {
-			visitFsContent(d);
-			return null;
-		}
-
-		@Override
-		public Void visit(VirtualDirectory ld) {
-			try {
-				ObjectInfo parentInfo = getParentInfo(ld);
-
-				if (parentInfo.type == ObjectType.ABSTRACTFILE) {
-					//directory parent allowed to group LayoutFiles together
-					AbstractFile af = getAbstractFileById(parentInfo.id);
-					final TSK_DB_FILES_TYPE_ENUM type = af.getType();
-					if (type.equals(TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)
-							//parent is LayoutDirectory
-							|| type.equals(TSK_DB_FILES_TYPE_ENUM.FS) //parent is root Directory
-							) {
-						ld.setParent(af);
-						af.accept(this);
-					} else {
-						throw new IllegalStateException("AbstractFile parent has wrong type to be LayoutDirectory parent: " + parentInfo.type + ". Expected AbstractFile (Directory or LayoutDirectory).");
-					}
-				} else {
-					throw new IllegalStateException("Parent has wrong type to be LayoutDirectory parent: " + parentInfo.type + ". Expected AbstractFile (Directory or LayoutDirectory).");
-				}
-
-				return null;
-
-			} catch (TskCoreException ex) {
-				throw new RuntimeException(ex);
-			}
-		}
-
-		@Override
-		public Void visit(LayoutFile lf) {
-			try {
-				ObjectInfo parentInfo = getParentInfo(lf);
-				Content parent = null;
-				if (parentInfo.type == ObjectType.IMG) {
-					parent = getImageById(parentInfo.id);
-				} else if (parentInfo.type == ObjectType.VOL) {
-					parent = getVolumeById(parentInfo.id, null);
-				} else if (parentInfo.type == ObjectType.FS) {
-					parent = getFileSystemByIdHelper(parentInfo.id, null);
-				} else if (parentInfo.type == ObjectType.ABSTRACTFILE) {
-					//directory parent allowed to group LayoutFiles together
-					AbstractFile af = getAbstractFileById(parentInfo.id);
-					if (af.getType() == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
-						//parent is LayoutDirectory
-						parent = af;
-					} else {
-						throw new IllegalStateException("Parent has wrong type to be LayoutFile parent: " + parentInfo.type + ".  It is FS type, but not a directory.");
-					}
-				} else {
-					throw new IllegalStateException("Parent has wrong type to be LayoutFile parent: " + parentInfo.type);
-				}
-				lf.setParent(parent);
-				parent.accept(this);
-			} catch (TskCoreException ex) {
-				throw new RuntimeException(ex);
-			}
-			return null;
-		}
-
-		@Override
-		public Void visit(File f) {
-			visitFsContent(f);
-			return null;
-		}
-
-		@Override
-		public Void visit(FileSystem fs) {
-			try {
-				ObjectInfo parentInfo = getParentInfo(fs);
-				Content parent;
-				if (parentInfo.type == ObjectType.IMG) {
-					parent = getImageById(parentInfo.id);
-				} else if (parentInfo.type == ObjectType.VOL) {
-					parent = getVolumeById(parentInfo.id, null);
-				} else {
-					throw new IllegalStateException("Parent has wrong type to be FileSystemParent: " + parentInfo.type);
-				}
-				fs.setParent(parent);
-				parent.accept(this);
-			} catch (TskCoreException ex) {
-				throw new RuntimeException(ex);
-			}
-			return null;
-		}
-
-		@Override
-		public Void visit(Image i) {
-			// images are currently parentless
-			return null;
-		}
-
-		@Override
-		public Void visit(Volume v) {
-			try {
-				ObjectInfo parentInfo = getParentInfo(v);
-				VolumeSystem parent;
-				if (parentInfo.type == ObjectType.VS) {
-					parent = getVolumeSystemById(parentInfo.id, null);
-				} else {
-					throw new IllegalStateException("Parent has wrong type to be VolumeSystem: " + parentInfo.type);
-				}
-				v.setParent(parent);
-				parent.accept(this);
-			} catch (TskCoreException ex) {
-				throw new RuntimeException(ex);
-			}
-			return null;
-		}
-
-		@Override
-		public Void visit(VolumeSystem vs) {
-			try {
-				ObjectInfo parentInfo = getParentInfo(vs);
-				Image parent;
-				if (parentInfo.type == ObjectType.IMG) {
-					parent = getImageById(parentInfo.id);
-				} else {
-					throw new IllegalStateException("Parent has wrong type to be Image: " + parentInfo.type);
-				}
-				vs.setParent(parent);
-				parent.accept(this);
-			} catch (TskCoreException ex) {
-				throw new RuntimeException(ex);
-			}
-			return null;
 		}
 	}
 
@@ -2858,12 +2687,6 @@ public class SleuthkitCase {
 			if (imageID == image.getId()) {
 				fileSystems.add(fs);
 			}
-		}
-
-		// use SetParentVisitor to set the parent of each FileSystem
-		SetParentVisitor setParent = new SetParentVisitor();
-		for (FileSystem fs : fileSystems) {
-			setParent.visit(fs);
 		}
 
 		return fileSystems;
@@ -3231,9 +3054,8 @@ public class SleuthkitCase {
 	 * @throws SQLException if the query fails
 	 */
 	public List<AbstractFile> resultSetToAbstractFiles(ResultSet rs) throws SQLException {
-		SetParentVisitor setParent = new SetParentVisitor();
-		ArrayList<AbstractFile> results = new ArrayList<AbstractFile>();
 
+		ArrayList<AbstractFile> results = new ArrayList<AbstractFile>();
 		dbReadLock();
 		try {
 			while (rs.next()) {
@@ -3245,20 +3067,17 @@ public class SleuthkitCase {
 					} else {
 						result = rsHelper.file(rs, null);
 					}
-					result.accept(setParent);
 					results.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
 					final VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
 							rs.getString("name"), rs.getLong("size"),
 							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
 							rs.getShort("meta_flags"), rs.getString("parent_path"));
-					virtDir.accept(setParent);
 					results.add(virtDir);
 				} else {
 					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
 							rs.getString("name"),
 							TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(type));
-					lf.accept(setParent);
 					results.add(lf);
 				}
 			}

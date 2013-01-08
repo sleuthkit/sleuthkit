@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
  * Implements some general methods from the Content interface 
@@ -30,11 +31,14 @@ public abstract class AbstractContent implements Content {
     private SleuthkitCase db;
     private long objId;
     private String name;
+	protected Content parent;
+	protected long parentId;
     
     protected AbstractContent(SleuthkitCase db, long obj_id, String name) {
         this.db = db;
         this.objId = obj_id;
         this.name = name;
+		this.parentId = -1;
     }
     
 
@@ -43,10 +47,37 @@ public abstract class AbstractContent implements Content {
         return this.name;
     }
 
+	@Override
+	public Content getParent() throws TskCoreException {
+		if (parent == null) {
+			ObjectInfo parentInfo = db.getParentInfo(this);
+			parent = db.getContentById(parentInfo.id);
+		}
+		return parent;
+	}
+	
+	void setParent(Content parent) {
+		this.parent = parent;
+	}
+	
+	void setParentId(long parentId) {
+		this.parentId = parentId;
+	}
+
     @Override
     public long getId() {
         return this.objId;
     }
+	
+	@Override
+	public Image getImage() throws TskCoreException {
+		Image image = null;
+		Content myParent = getParent();
+		if (myParent != null) {
+			image = myParent.getImage();
+		}
+		return image;
+	}
     
 	/**
 	 * Gets handle of SleuthkitCase to which this content belongs

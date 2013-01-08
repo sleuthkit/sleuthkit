@@ -82,6 +82,13 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public List<Content> getChildren() throws TskCoreException;
+	
+	/**
+	 * @return returns the parent of this Content object or null if there isn't
+	 * one as is the case for Image.
+	 * @throws TskCoreException 
+	 */
+	public Content getParent() throws TskCoreException;
 
 	/**
 	 * Gets the child content ids of this content.

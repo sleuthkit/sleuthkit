@@ -21,7 +21,8 @@ package org.sleuthkit.datamodel;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -68,7 +69,7 @@ public abstract class FsContent extends AbstractFile {
 	/**
 	 * parent file system
 	 */
-	protected FileSystem parentFileSystem;
+	private FileSystem parentFileSystem;
 	/**
 	 * file Handle
 	 */
@@ -131,7 +132,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @param parent parent file system object
 	 */
-	protected void setFileSystem(FileSystem parent) {
+	void setFileSystem(FileSystem parent) {
 		parentFileSystem = parent;
 	}
 
@@ -166,7 +167,7 @@ public abstract class FsContent extends AbstractFile {
 		synchronized (this) {
 			if (fileHandle == 0) {
 				fileHandle = 
-						SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), metaAddr, attrType, attrId);
+						SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
 			}
 		}
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
@@ -175,7 +176,7 @@ public abstract class FsContent extends AbstractFile {
 	
 	@Override
 	public boolean isRoot() {
-		return parentFileSystem.getRoot_inum() == this.getMetaAddr();
+		return getFileSystem().getRoot_inum() == this.getMetaAddr();
 	}
 		
 	/*
@@ -202,12 +203,23 @@ public abstract class FsContent extends AbstractFile {
 	 * @return the file system object of the parent
 	 */
 	public FileSystem getFileSystem() {
+		if (parentFileSystem == null) {
+			Content myParent = null;
+			try {
+				myParent = getParent();
+			} catch (TskCoreException ex) {
+				Logger.getLogger(FsContent.class.getName()).log(Level.SEVERE, null, ex);
+			}
+			while (!(myParent instanceof FileSystem)) {
+				try {
+					myParent = myParent.getParent();
+				} catch (TskCoreException ex) {
+					Logger.getLogger(FsContent.class.getName()).log(Level.SEVERE, null, ex);
+				}
+			}
+			parentFileSystem = (FileSystem) myParent;
+		}
 		return parentFileSystem;
-	}
-
-	@Override
-	public Image getImage() throws TskCoreException {
-		return this.getFileSystem().getImage();
 	}
 
 	/**
@@ -558,6 +570,7 @@ public abstract class FsContent extends AbstractFile {
 		//prepend image and volume to file path
 		StringBuilder sb = new StringBuilder();
 		sb.append("/img_").append(imageName);
+		FileSystem parentFileSystem = getFileSystem();
 		if (parentFileSystem != null) {
 			Content vol = parentFileSystem.getParent();
 			if (vol != null && !vol.equals(getImage())) {

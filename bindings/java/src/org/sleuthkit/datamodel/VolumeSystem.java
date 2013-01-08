@@ -28,7 +28,6 @@ public class VolumeSystem extends AbstractContent {
 
 	private long volumeSystemHandle = 0;
 	private long type, imgOffset, blockSize;
-	private Image parent;
 
 	/**
 	 * Constructor most inputs are from the database
@@ -47,15 +46,6 @@ public class VolumeSystem extends AbstractContent {
 		this.blockSize = blockSize;
 	}
 
-	/**
-	 * set the parent image called by parent on creation
-	 *
-	 * @param parent parent image
-	 */
-	protected void setParent(Image parent) {
-		this.parent = parent;
-	}
-
 	@Override
 	public int read(byte[] readBuffer, long offset, long len) throws TskCoreException {
 		synchronized (this) {
@@ -64,15 +54,6 @@ public class VolumeSystem extends AbstractContent {
 			}
 		}
 		return SleuthkitJNI.readVs(volumeSystemHandle, readBuffer, offset, len);
-	}
-
-	/**
-	 * get the parent image
-	 *
-	 * @return parent image
-	 */
-	public Image getParent() {
-		return parent;
 	}
 
 	@Override
