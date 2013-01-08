@@ -39,6 +39,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
  * TODO move common getters to AbstractFile class
  */
 public abstract class FsContent extends AbstractFile {
+	
+	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 
 	///read only database tsk_files fields
 	protected final long fsObjId, metaAddr, size, ctime, crtime, atime, mtime;
@@ -125,6 +127,7 @@ public abstract class FsContent extends AbstractFile {
 		this.known = known;
 		this.parentPath = parent_path;
 		this.md5Hash = md5Hash;
+		
 	}
 
 	/**
@@ -173,10 +176,15 @@ public abstract class FsContent extends AbstractFile {
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 	}
 
-	
 	@Override
 	public boolean isRoot() {
-		return getFileSystem().getRoot_inum() == this.getMetaAddr();
+		try {
+			getFileSystem();
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Exception while calling 'getFileSystem' on " + this, ex);
+			return false;
+		}
+		return parentFileSystem.getRoot_inum() == this.getMetaAddr();
 	}
 		
 	/*
@@ -202,22 +210,9 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return the file system object of the parent
 	 */
-	public FileSystem getFileSystem() {
+	public FileSystem getFileSystem() throws TskCoreException {
 		if (parentFileSystem == null) {
-			Content myParent = null;
-			try {
-				myParent = getParent();
-			} catch (TskCoreException ex) {
-				Logger.getLogger(FsContent.class.getName()).log(Level.SEVERE, null, ex);
-			}
-			while (!(myParent instanceof FileSystem)) {
-				try {
-					myParent = myParent.getParent();
-				} catch (TskCoreException ex) {
-					Logger.getLogger(FsContent.class.getName()).log(Level.SEVERE, null, ex);
-				}
-			}
-			parentFileSystem = (FileSystem) myParent;
+			parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, -1);
 		}
 		return parentFileSystem;
 	}
