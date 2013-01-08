@@ -50,7 +50,13 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public Content getParent() throws TskCoreException {
 		if (parent == null) {
-			ObjectInfo parentInfo = db.getParentInfo(this);
+			ObjectInfo parentInfo = null;
+			try {
+				parentInfo = db.getParentInfo(this);
+			} catch (TskCoreException ex) {
+				// there is not parent; not an error if we've got an Image
+				return null;
+			}
 			parent = db.getContentById(parentInfo.id);
 		}
 		return parent;
