@@ -33,7 +33,6 @@ public class Volume extends AbstractContent {
 	private long length; //in sectors
 	private long flags;
 	private String desc;
-	private VolumeSystem parentVs;
 	private long volumeHandle = 0;
 
 	/**
@@ -60,18 +59,14 @@ public class Volume extends AbstractContent {
 		}
 	}
 
-	/**
-	 * set the parent volume system. called by the parent on creation
-	 *
-	 * @param parent parent volume system
-	 */
-	protected void setParent(VolumeSystem parent) {
-		parentVs = parent;
-	}
-
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		synchronized (this) {
+			Content myParent = getParent();
+			if (!(myParent instanceof VolumeSystem)) {
+				throw new TskCoreException("This volume's parent should be a VolumeSystem, but it's not.");
+			}
+			VolumeSystem parentVs = (VolumeSystem)myParent;
 			// read from the volume
 			if (volumeHandle == 0) {
 				volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
@@ -84,15 +79,6 @@ public class Volume extends AbstractContent {
 	public long getSize() {
 		// size of the volume
 		return length;
-	}
-
-	/**
-	 * get the parent volume system
-	 *
-	 * @return parent volume system object
-	 */
-	public VolumeSystem getParent() {
-		return parentVs;
 	}
 
 	//methods get exact data from database. could be manipulated to get more

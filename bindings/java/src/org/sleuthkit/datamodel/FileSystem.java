@@ -18,13 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
-import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
+import java.util.List;
 
 /**
  * Represents a file system object stored in tsk_fs_info table
@@ -67,31 +61,10 @@ public class FileSystem extends AbstractContent {
 		this.lastInum = last_inum;
 	}
 
-	/**
-	 * Set the parent content object, will be called by the parent 
-	 * when populating the object from database.
-	 * 
-	 * @param p parent volume or image.
-	 * Should only be called by methods which ensure p is a volume or image
-	 */
-	protected void setParent(Content p) {
-		parent = p;
-	}
-
-
 	@Override
 	public synchronized int read(byte[] buf, long offset, long len) throws TskCoreException {
 		return SleuthkitJNI.readFs(getFileSystemHandle(), buf, offset, len);
 	}
-
-	/**
-	 * Get the parent volume or image Content object
-	 * @return parent content object (volume or image)
-	 */
-	public Content getParent() {
-		return parent;
-	}
-
 
 	@Override
 	public long getSize() {
@@ -188,7 +161,6 @@ public class FileSystem extends AbstractContent {
 		return lastInum;
 	}
 
-
 	@Override
 	public void finalize() throws Throwable {
 		try {
@@ -202,18 +174,15 @@ public class FileSystem extends AbstractContent {
 		}
 	}
 
-
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
-
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
-
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
@@ -224,7 +193,6 @@ public class FileSystem extends AbstractContent {
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getFileSystemChildrenIds(this);
 	}
-
 
 	@Override
 	public Image getImage() throws TskCoreException {
