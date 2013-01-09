@@ -206,9 +206,14 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	public FileSystem getFileSystem() throws TskCoreException {
 		if (parentFileSystem == null) {
-			parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, -1);
+			parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, AbstractContent.UNKNOWN_ID);
 		}
 		return parentFileSystem;
+	}
+	
+	@Override
+	public Image getImage() throws TskCoreException {
+		return getFileSystem().getImage();
 	}
 
 	/**

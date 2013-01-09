@@ -2134,8 +2134,7 @@ public class SleuthkitCase {
 					content = getAbstractFileById(id);
 					break;
 				default:
-					content = null;
-					break;
+					throw new TskCoreException("Could not obtain Content object with ID: " + id);
 			}
 			return content;
 		} catch (SQLException ex) {

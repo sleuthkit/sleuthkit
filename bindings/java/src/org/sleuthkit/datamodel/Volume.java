@@ -62,10 +62,11 @@ public class Volume extends AbstractContent {
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		synchronized (this) {
-			if (!(parent instanceof VolumeSystem)) {
+			Content myParent = getParent();
+			if (!(myParent instanceof VolumeSystem)) {
 				throw new TskCoreException("This volume's parent should be a VolumeSystem, but it's not.");
 			}
-			VolumeSystem parentVs = (VolumeSystem)parent;
+			VolumeSystem parentVs = (VolumeSystem)myParent;
 			// read from the volume
 			if (volumeHandle == 0) {
 				volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
