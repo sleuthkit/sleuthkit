@@ -20,6 +20,8 @@ package org.sleuthkit.datamodel;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * InputStream to read bytes from a Content object's data
@@ -29,6 +31,7 @@ public class ReadContentInputStream extends InputStream {
 	private long position;
 	private long length;
 	private Content content;
+	private static final Logger logger = Logger.getLogger(ReadContentInputStream.class.getName());
 
 	public ReadContentInputStream(Content content) {
 		this.content = content;
@@ -50,58 +53,61 @@ public class ReadContentInputStream extends InputStream {
 	@Override
 	public int read(byte[] b, int off, int len) throws IOException {
 
-		final int bLen = b.length;
-		// must return 0 for zero-length arrays
-		if (bLen == 0 || len == 0) {
+		final int buffLen = b.length;
+		//must return 0 for zero-length arrays
+		if (buffLen == 0 || len == 0) {
 			return 0;
 		}
 
-		// will get an error from TSK if we try to read an empty file
-		if (this.length == 0) {
+		//would get an error from TSK if we try to read an empty file
+		if (length == 0) {
 			return -1;
 		}
 
 		//check args more
-		if (off < 0 || off >= len || off >= bLen) {
+		if (off < 0 || off >= buffLen) {
 			return -1;
 		}
 
-		if (position < length) {
-			// data remains to be read
+		if (position >= length) {
+			//eof, no data remains to be read
+			return -1;
+		}
 
-			int lenToRead = Math.min(len - off, bLen - off);
-			lenToRead = (int) Math.min(length - position, lenToRead);
+		//read into the user buffer
+		int lenToRead = (int) Math.min(length - position, buffLen - off);
+		lenToRead = Math.min(lenToRead, len);
 
-			byte[] retBuf = null;
-			if (off == 0) {
-				//write directly to user buffer
-				retBuf = b;
-			} else {
-				//write to a temp buffer, then copy to user buffer
-				retBuf = new byte[lenToRead];
-			}
-			try {
-				final int lenRead = content.read(retBuf, position, lenToRead);
-
-				if (lenRead == 0 || lenRead == -1) {
-					//error or no more bytes to read, report EOF
-					return -1;
-				} else {
-					position += lenRead;
-
-					//if read into user-specified offset, copy back from temp buffer to user
-					if (off != 0) {
-						System.arraycopy(retBuf, 0, b, off, lenRead);
-					}
-
-					return lenRead;
-				}
-			} catch (TskCoreException ex) {
-				throw new IOException(ex);
-			}
+		byte[] retBuf = null;
+		if (off == 0) {
+			//write directly to user buffer
+			retBuf = b;
 		} else {
-			// at end of file
-			return -1;
+			//write to a temp buffer, then copy to user buffer
+			retBuf = new byte[lenToRead];
 		}
+		try {
+			final int lenRead = content.read(retBuf, position, lenToRead);
+
+			if (lenRead == 0 || lenRead == -1) {
+				//error or no more bytes to read, report EOF
+				return -1;
+			} else {
+				position += lenRead;
+
+				//if read into user-specified offset, copy back from temp buffer to user
+				if (off != 0) {
+					System.arraycopy(retBuf, 0, b, off, lenRead);
+				}
+
+				return lenRead;
+			}
+		} catch (TskCoreException ex) {
+			logger.log(Level.WARNING, ("Error reading content into stream: "
+					+ content.getId()) + ": " + content.getName()
+					+ ", at offset " + position + ", length to read: " + lenToRead, ex);
+			throw new IOException(ex);
+		}
+
 	}
 }

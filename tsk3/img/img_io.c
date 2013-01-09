@@ -45,7 +45,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     tsk_take_lock(&(a_img_info->cache_lock));
 
     // if they ask for more than the cache length, skip the cache
-    if (a_len > TSK_IMG_INFO_CACHE_LEN) {
+    if ((a_len + a_off % 512) > TSK_IMG_INFO_CACHE_LEN) {
         ssize_t nbytes = a_img_info->read(a_img_info, a_off, a_buf, a_len);
         tsk_release_lock(&(a_img_info->cache_lock));
         return nbytes;

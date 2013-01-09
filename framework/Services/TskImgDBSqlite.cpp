@@ -20,6 +20,7 @@
 #include <sstream>
 #include <iomanip>
 #include <map>
+#include <assert.h>
 
 #include "TskImgDBSqlite.h"
 #include "TskServices.h"
@@ -28,6 +29,7 @@
 
 #include "Poco/UnicodeConverter.h"
 #include "Poco/NumberParser.h"
+#include "Poco/Path.h"
 
 #define IMGDB_CHUNK_SIZE 1024*1024*1 // what size chunks should the database use when growing and shrinking
 #define IMGDB_MAX_RETRY_COUNT 50    // how many times will we retry a SQL statement
@@ -199,7 +201,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- FS_FILES
-    stmt = "CREATE TABLE fs_files (file_id INTEGER UNIQUE NOT NULL, fs_id INTEGER, "
+    stmt = "CREATE TABLE fs_files (file_id INTEGER PRIMARY KEY, fs_id INTEGER, "
         "fs_file_id INTEGER, attr_type INTEGER, attr_id INTEGER)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
@@ -223,7 +225,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- CARVED_FILES
-    stmt = "CREATE TABLE carved_files (file_id INTEGER UNIQUE, vol_id INTEGER)";
+    stmt = "CREATE TABLE carved_files (file_id INTEGER PRIMARY KEY, vol_id INTEGER)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
         _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating carved_files table: %S", errmsg);
@@ -246,7 +248,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- DERIVED_FILES
-    stmt = "CREATE TABLE derived_files (file_id INTEGER UNIQUE , derivation_details TEXT)";
+    stmt = "CREATE TABLE derived_files (file_id INTEGER PRIMARY KEY, derivation_details TEXT)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
         _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating derived_files table: %S", errmsg);
@@ -509,7 +511,7 @@ int TskImgDBSqlite::addImageInfo(int type, int size)
     return 0;
 }
 
-int TskImgDBSqlite::addImageName(char const * imgName)
+int TskImgDBSqlite::addImageName(char const *imgPath)
 {
     char *errmsg;
     char stmt[1024];
@@ -519,7 +521,7 @@ int TskImgDBSqlite::addImageName(char const * imgName)
 
     sqlite3_snprintf(1024, stmt,
         "INSERT INTO image_names (seq, name) VALUES (NULL, '%q')",
-        imgName);
+        imgPath);
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
         wchar_t infoMessage[MAX_BUFF_LENGTH];
@@ -1109,10 +1111,24 @@ SectorRuns * TskImgDBSqlite::getFreeSectors() const
     return sr;
 }
 
-/**
- * Returns the list of image names that were stored in the database.
- * @returns empty list on error
- */
+std::string TskImgDBSqlite::getImageBaseName() const
+{
+    // There may be multiple file paths if the image is a split image. Oreder by sequence number to extract the file name from the first path.
+    sqlite3_stmt *statement;
+    executeStatement("SELECT name FROM image_names ORDER BY seq;", statement, "TskImgDBSqlite::getImageBaseName");
+
+    int result = sqlite3_step(statement);
+    if (result == SQLITE_ROW) 
+    {
+        Poco::Path imagePath(reinterpret_cast<const char*>(sqlite3_column_text(statement, 0))); // Reinterpret from const unsigned char*
+        return imagePath.getFileName();
+    }
+    else
+    {
+        return "";
+    }
+}
+
 std::vector<std::wstring> TskImgDBSqlite::getImageNames() const
 {
     std::vector<std::wstring> imgList;
@@ -1137,11 +1153,6 @@ std::vector<std::wstring> TskImgDBSqlite::getImageNames() const
         }
 
         sqlite3_finalize(statement);
-    }
-
-    if (imgList.empty()) 
-    {
-        LOGERROR(L"No images found in TskImgDBSqlite");
     }
 
     return imgList;

@@ -42,11 +42,11 @@ public class TskData {
 		WHT(9, "w"),       ///< Whiteout (openbsd)
 		VIRT(10, "v");     ///< Special (TSK added "Virtual" files)
 
-		private short dir_type;
+		private short dirType;
 		String label;
 
 		private TSK_FS_NAME_TYPE_ENUM(int type, String label){
-			this.dir_type = (short)type;
+			this.dirType = (short)type;
 			this.label = label;
 		}
 
@@ -54,8 +54,8 @@ public class TskData {
 		 * Get dir type 
 		 * @return the dir type long value
 		 */
-		public short getDirType(){
-			return dir_type;
+		public short getValue(){
+			return dirType;
 		}
 		
 		/**
@@ -71,71 +71,103 @@ public class TskData {
 		 * @param dir_type enum type value to convert
 		 * @return converted long value
 		 */
-		static public TSK_FS_NAME_TYPE_ENUM fromType(short dir_type) {
+		static public TSK_FS_NAME_TYPE_ENUM valueOf(short dir_type) {
 			for (TSK_FS_NAME_TYPE_ENUM v : TSK_FS_NAME_TYPE_ENUM.values()) {
-				if (v.dir_type == dir_type) {
+				if (v.dirType == dir_type) {
 					return v;
 				}
 			}
 			throw new IllegalArgumentException("No TSK_FS_NAME_TYPE_ENUM matching type: " + dir_type);
 		}
 	}
-
-
 	
 	/**
 	 * Meta Type
 	 */
 	public enum TSK_FS_META_TYPE_ENUM {
-		TSK_FS_META_TYPE_UNDEF(0),
-		TSK_FS_META_TYPE_REG(1),        ///< Regular file
-		TSK_FS_META_TYPE_DIR(2),        ///< Directory file
-		TSK_FS_META_TYPE_FIFO(3),       ///< Named pipe (fifo)
-		TSK_FS_META_TYPE_CHR(4),        ///< Character device
-		TSK_FS_META_TYPE_BLK(5),        ///< Block device
-		TSK_FS_META_TYPE_LNK(6),        ///< Symbolic link
-		TSK_FS_META_TYPE_SHAD(7),       ///< SOLARIS ONLY
-		TSK_FS_META_TYPE_SOCK(8),       ///< UNIX domain socket
-		TSK_FS_META_TYPE_WHT(9),        ///< Whiteout
-		TSK_FS_META_TYPE_VIRT(10),      ///< "Virtual File" created by TSK for file system areas
-		TSK_FS_META_TYPE_STR_MAX(11);   ///< Number of file types in shortname array
+		TSK_FS_META_TYPE_UNDEF(0, "-"),
+		TSK_FS_META_TYPE_REG(1, "r"),        ///< Regular file
+		TSK_FS_META_TYPE_DIR(2, "d"),        ///< Directory file
+		TSK_FS_META_TYPE_FIFO(3, "p"),       ///< Named pipe (fifo)
+		TSK_FS_META_TYPE_CHR(4, "c"),        ///< Character device
+		TSK_FS_META_TYPE_BLK(5, "b"),        ///< Block device
+		TSK_FS_META_TYPE_LNK(6, "l"),        ///< Symbolic link
+		TSK_FS_META_TYPE_SHAD(7, "s"),       ///< SOLARIS ONLY
+		TSK_FS_META_TYPE_SOCK(8, "h"),       ///< UNIX domain socket
+		TSK_FS_META_TYPE_WHT(9, "w"),        ///< Whiteout
+		TSK_FS_META_TYPE_VIRT(10, "v");      ///< "Virtual File" created by TSK for file system areas
 
-		private short meta_type;
+		private short metaType;
+		private String metaTypeStr;
 
-		private TSK_FS_META_TYPE_ENUM(int type){
-			meta_type = (short)type;
+		private TSK_FS_META_TYPE_ENUM(int type, String metaTypeStr) {
+			this.metaType = (short)type;
+			this.metaTypeStr = metaTypeStr;
 		}
 
 		/**
 		 * Get meta type short value
 		 * @return the meta type long value
 		 */
-		public short getMetaType(){
-			return meta_type;
+		public short getValue(){
+			return metaType;
+		}
+		
+		@Override
+		public String toString() {
+			return metaTypeStr;
+		}
+		
+		public static TSK_FS_META_TYPE_ENUM ValueOf(short metaType) {
+			for (TSK_FS_META_TYPE_ENUM type : TSK_FS_META_TYPE_ENUM.values()) {
+				if (type.getValue() == metaType) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_FS_META_TYPE_ENUM of value: " + metaType);
 		}
 	}
-
-	public static String[] tsk_fs_meta_type_str = { "-", "r", "d", "p", "c", "b", "l", "s", "h", "w", "v"};
 
 	/**
 	 * FS Flags
 	 */
 	public enum TSK_FS_NAME_FLAG_ENUM {
-		TSK_FS_NAME_FLAG_ALLOC(1),      ///< Name is in an allocated state
-		TSK_FS_NAME_FLAG_UNALLOC(2);    ///< Name is in an unallocated state
+		ALLOC(1, "Allocated"),      ///< Name is in an allocated state
+		UNALLOC(2, "Unallocated");    ///< Name is in an unallocated state
 
-		private short dir_flag;
+		private short dirFlag;
+		private String dirFlagStr;
 
-		private TSK_FS_NAME_FLAG_ENUM(int flag){
-			dir_flag = (short)flag;
+		private TSK_FS_NAME_FLAG_ENUM(int flag, String dirFlagStr){
+			this.dirFlag = (short)flag;
+			this.dirFlagStr = dirFlagStr;
 		}
 
 		/**
 		 * Get short value of the flag
 		 * @return the long flag value
 		 */
-		public short getDirFlag(){
-			return dir_flag;
+		public short getValue(){
+			return dirFlag;
+		}
+		
+		@Override
+		public String toString() {
+			return dirFlagStr;
+		}
+		
+		/**
+		 * Convert dirFlag int value to the enum type
+		 * @param dirFlag int value to convert
+		 * @return the enum type corresponding to dirFlag
+		 */
+		public static TSK_FS_NAME_FLAG_ENUM valueOf(int dirFlag) {
+			for(TSK_FS_NAME_FLAG_ENUM flag : TSK_FS_NAME_FLAG_ENUM.values()) {
+				if(flag.dirFlag == dirFlag) {
+					return flag;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_FS_NAME_FLAG_ENUM of value: " + dirFlag);
 		}
 	}
 
@@ -146,11 +178,11 @@ public class TskData {
 	 */
 	public enum TSK_FS_META_FLAG_ENUM {
 		ALLOC(1, "Allocated"),      ///< Metadata structure is currently in an allocated state
-		UNALLOC(2, "Unallocated"),    ///< Metadata structure is currently in an unallocated state
-		USED(4, "Used"),       ///< Metadata structure has been allocated at least once
-		UNUSED(8, "Unused"),     ///< Metadata structure has never been allocated.
-		COMP(16, "Compressed"),      ///< The file contents are compressed.
-		ORPHAN(32, "Orphan");    ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
+		UNALLOC(2, "Unallocated"),  ///< Metadata structure is currently in an unallocated state
+		USED(4, "Used"),            ///< Metadata structure has been allocated at least once
+		UNUSED(8, "Unused"),        ///< Metadata structure has never been allocated.
+		COMP(16, "Compressed"),     ///< The file contents are compressed.
+		ORPHAN(32, "Orphan");       ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
 
 		private short meta_flag;
 		private String label;
@@ -164,7 +196,7 @@ public class TskData {
 		 * Get meta flags short value
 		 * @return the long value of meta flags
 		 */
-		public short getMetaFlag(){
+		public short getValue(){
 			return meta_flag;
 		}
 		
@@ -173,7 +205,8 @@ public class TskData {
 		 * Get string label of the metal flags
 		 * @return string meta flags label
 		 */
-		public String getLabel(){
+		@Override
+		public String toString(){
 			return label;
 		}
 		
@@ -183,20 +216,83 @@ public class TskData {
 		 * @param metaFlag
 		 * @return matching TSK_FS_META_FLAG_ENUM elements
 		 */
-		public static Set<TSK_FS_META_FLAG_ENUM> getFlags(short metaFlag) {
+		public static Set<TSK_FS_META_FLAG_ENUM> valuesOf(short metaFlags) {
 			Set<TSK_FS_META_FLAG_ENUM> matchedFlags = EnumSet.noneOf(TSK_FS_META_FLAG_ENUM.class);
 			
 			for (TSK_FS_META_FLAG_ENUM v : TSK_FS_META_FLAG_ENUM.values()) {
-				long flag = v.getMetaFlag();
+				long flag = v.getValue();
 
-				if((metaFlag & flag) == flag){
+				if((metaFlags & flag) == flag){
 					matchedFlags.add(v);
 				}
 			}
 		
 			return matchedFlags;
 		}
+		
+		public static short toInt(Set<TSK_FS_META_FLAG_ENUM> metaFlags) {
+			short val = 0;
+			for (TSK_FS_META_FLAG_ENUM flag : metaFlags) {
+				val |= flag.getValue();
+			}
+			return val;
+		}
+		
 	}
+	
+	/**
+    * These are based on the NTFS type values. 
+     * Added types for HFS+.
+    */
+    public enum TSK_FS_ATTR_TYPE_ENUM {
+        TSK_FS_ATTR_TYPE_NOT_FOUND(0x00),      // 0
+        TSK_FS_ATTR_TYPE_DEFAULT(0x01),        // 1
+        TSK_FS_ATTR_TYPE_NTFS_SI(0x10),        // 16
+        TSK_FS_ATTR_TYPE_NTFS_ATTRLIST(0x20),  // 32
+        TSK_FS_ATTR_TYPE_NTFS_FNAME(0x30),     // 48
+        TSK_FS_ATTR_TYPE_NTFS_VVER(0x40),      // 64 (NT)
+        TSK_FS_ATTR_TYPE_NTFS_OBJID(0x40),     // 64 (2K)
+        TSK_FS_ATTR_TYPE_NTFS_SEC(0x50),       // 80
+        TSK_FS_ATTR_TYPE_NTFS_VNAME(0x60),     // 96
+        TSK_FS_ATTR_TYPE_NTFS_VINFO(0x70),     // 112
+        TSK_FS_ATTR_TYPE_NTFS_DATA(0x80),      // 128
+        TSK_FS_ATTR_TYPE_NTFS_IDXROOT(0x90),   // 144
+        TSK_FS_ATTR_TYPE_NTFS_IDXALLOC(0xA0),  // 160
+        TSK_FS_ATTR_TYPE_NTFS_BITMAP(0xB0),    // 176
+        TSK_FS_ATTR_TYPE_NTFS_SYMLNK(0xC0),    // 192 (NT)
+        TSK_FS_ATTR_TYPE_NTFS_REPARSE(0xC0),   // 192 (2K)
+        TSK_FS_ATTR_TYPE_NTFS_EAINFO(0xD0),    // 208
+        TSK_FS_ATTR_TYPE_NTFS_EA(0xE0),        // 224
+        TSK_FS_ATTR_TYPE_NTFS_PROP(0xF0),      //  (NT)
+        TSK_FS_ATTR_TYPE_NTFS_LOG(0x100),      //  (2K)
+        TSK_FS_ATTR_TYPE_UNIX_INDIR(0x1001),   //  Indirect blocks for UFS and ExtX file systems
+
+        // Types for HFS+ File Attributes
+        TSK_FS_ATTR_TYPE_HFS_DEFAULT(0x01),    // 1    Data fork of fs special files and misc
+        TSK_FS_ATTR_TYPE_HFS_DATA(0x1100),     // 4352 Data fork of regular files
+        TSK_FS_ATTR_TYPE_HFS_RSRC(0x1101),     // 4353 Resource fork of regular files
+        TSK_FS_ATTR_TYPE_HFS_EXT_ATTR(0x1102), // 4354 Extended Attributes) except compression records
+        TSK_FS_ATTR_TYPE_HFS_COMP_REC(0x1103); // 4355 Compression records
+		
+		private int val;
+		
+		private TSK_FS_ATTR_TYPE_ENUM(int val) {
+			this.val = val;
+		}
+
+		public int getValue() {
+			return val;
+		}
+		
+		public static TSK_FS_ATTR_TYPE_ENUM valueOf(int val) {
+			for(TSK_FS_ATTR_TYPE_ENUM type : TSK_FS_ATTR_TYPE_ENUM.values()) {
+				if(type.val == val) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_FS_ATTR_TYPE_ENUM of value: " + val);
+		}
+    };
 
 	/**
 	 * Volume system flags
@@ -255,6 +351,37 @@ public class TskData {
 		 */
 		public short getMode(){
 			return mode;
+		}
+		
+		/**
+		 * Returns all the TSK_FS_META_MODE_ENUM enum elements that match the given modes
+		 * @param modes
+		 * @return matching TSK_FS_META_MODE_ENUM elements
+		 */
+		public static Set<TSK_FS_META_MODE_ENUM> valuesOf(short modes) {
+			Set<TSK_FS_META_MODE_ENUM> matchedFlags = EnumSet.noneOf(TSK_FS_META_MODE_ENUM.class);
+			
+			for (TSK_FS_META_MODE_ENUM v : TSK_FS_META_MODE_ENUM.values()) {
+				long flag = v.getMode();
+
+				if((modes & flag) == flag){
+					matchedFlags.add(v);
+				}
+			}
+		
+			return matchedFlags;
+		}
+		
+		/**
+		 * @param modes the set of modes to convert
+		 * @return the short int representing the given set of modes
+		 */
+		public static short toInt(Set<TSK_FS_META_MODE_ENUM> modes) {
+			short modesInt = 0;
+			for (TSK_FS_META_MODE_ENUM mode : modes) {
+				modesInt |= mode.getMode();
+			}
+			return modesInt;
 		}
 	};
 	
@@ -505,6 +632,4 @@ public class TskData {
 			return this.known;
 		}
 	}
-	
-
 }

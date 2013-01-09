@@ -20,6 +20,10 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collections;
 import java.util.List;
+import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
@@ -31,13 +35,13 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public class File extends FsContent {
 
 	//constructor used for getfile from tskDb
-	protected File(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr, short attr_type,
-			short attr_id, String name, short dir_type, short meta_type,
-			short dir_flags, short meta_flags, long size, long ctime, long crtime,
-			long atime, long mtime, short mode, int uid, int gid, byte known,
+	protected File(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr, TSK_FS_ATTR_TYPE_ENUM attrType,
+			short attr_id, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM meta_type,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags, long size, long ctime, long crtime,
+			long atime, long mtime, short mode, int uid, int gid, FileKnown known,
 			String parent_path, String md5Hash) {
 		super(db, obj_id, name, fs_obj_id, meta_addr,
-				attr_type, attr_id, meta_type, dir_type, dir_flags,
+				attrType, attr_id, meta_type, dirType, dirFlag,
 				meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known,
 				parent_path, md5Hash);
 	}
@@ -65,7 +69,7 @@ public class File extends FsContent {
 	@Override
 	public boolean isVirtual() {
 		return (!type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)
-				|| dirType == TSK_FS_NAME_TYPE_ENUM.VIRT.getDirType());
+				|| dirType == TSK_FS_NAME_TYPE_ENUM.VIRT);
 	}
 
 	@Override

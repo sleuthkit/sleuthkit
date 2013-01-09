@@ -18,8 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -79,9 +77,13 @@ public class Image extends AbstractContent {
 
 	@Override
 	public void finalize() throws Throwable {
-		super.finalize();
-		if (imageHandle != 0) {
-			SleuthkitJNI.closeImg(imageHandle);
+		try {
+			if (imageHandle != 0) {
+				SleuthkitJNI.closeImg(imageHandle);
+				imageHandle = 0;
+			}
+		} finally {
+			super.finalize();
 		}
 	}
 
@@ -133,106 +135,51 @@ public class Image extends AbstractContent {
 	public String[] getPaths() {
 		return paths;
 	}
-	
+
 	/**
 	 * @return a list of VolumeSystem associated with this Image.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public List<VolumeSystem> getVolumeSystems() throws TskCoreException {
-		
+
 		List<Content> children = getChildren();
 		List<VolumeSystem> vs = new ArrayList<VolumeSystem>();
 		for (Content child : children) {
 			if (child instanceof VolumeSystem) {
-				vs.add((VolumeSystem)child);
+				vs.add((VolumeSystem) child);
 			}
 		}
-		
+
 		return vs;
 	}
-	
+
 	/**
 	 * @return a list of Volume associated with this Image.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public List<Volume> getVolumes() throws TskCoreException {
-		
+
 		List<Content> children = getChildren();
 		List<Volume> volumes = new ArrayList<Volume>();
 		for (Content child : children) {
 			if (child instanceof Volume) {
-				volumes.add((Volume)child);
+				volumes.add((Volume) child);
 			}
 		}
-		
+
 		return volumes;
 	}
-	
+
 	/**
 	 * @return a list of FileSystems in this Image. This includes FileSystems
 	 * that are both children of this Image as well as children of Volumes in
 	 * this image.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public List<FileSystem> getFileSystems() throws TskCoreException {
-		
-		// create a query to get all file system objects
-		String allFsObjects = "SELECT * FROM tsk_fs_info";
-		
-		// perform the query and create a list of FileSystem objects
-		List<FileSystem> allFileSystems = new ArrayList<FileSystem>();
-		try {
-			ResultSet rs = getSleuthkitCase().runQuery(allFsObjects);
-			while (rs.next()) {
-				allFileSystems.add(new ResultSetHelper(getSleuthkitCase()).fileSystem(rs, null));
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("There was a problem while trying to obtain this image's file systems.", ex);
-		}
-		
-		// for each file system, find the image to which it belongs by iteratively
-		// climbing the tsk_ojbects hierarchy only taking those file systems
-		// that belong to this image.
-		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
-		for (FileSystem fs : allFileSystems) {
-			Long imageID = null;
-			Long currentObjID = fs.getId();
-			while (imageID == null) {
-				try {
-					ResultSet rs = getSleuthkitCase().runQuery("SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID);
-					currentObjID = rs.getLong("par_obj_id");
-					if (rs.getInt("type") == TskData.ObjectType.IMG.getObjectType()) {
-						imageID = rs.getLong("obj_id");
-					}
-				} catch (SQLException ex) {
-					throw new TskCoreException("There was a problem while trying to obtain this image's file systems.", ex);
-				}
-			}
-			
-			// see if imageID is this image's ID
-			if (imageID == getId()) {
-				fileSystems.add(fs);
-			}
-		}
-		
-		return fileSystems;
-	}
-	
-	/**
-	 * @return a list of FileSystem that are direct descendents of this Image.
-	 * @throws TskCoreException 
-	 */
-	public List<FileSystem> getDirectFileSystems() throws TskCoreException {
-		
-		List<Content> children = getChildren();
-		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
-		for (Content child : children) {
-			if (child instanceof FileSystem) {
-				fileSystems.add((FileSystem)child);
-			}
-		}
-		
-		return fileSystems;
+		List<FileSystem> fs = new ArrayList<FileSystem>();
+		fs.addAll(getSleuthkitCase().getFileSystems(this));
+		return fs;
 	}
 
 	/**

@@ -67,6 +67,7 @@ public:
     virtual uint64_t getFileId(int fsId, uint64_t fs_file_id) const;
     virtual int getFileRecord(const uint64_t fileId, TskFileRecord& fileRecord) const;
     virtual SectorRuns * getFileSectors(uint64_t fileId) const;
+    virtual std::string getImageBaseName() const;
     virtual std::vector<std::wstring> getImageNames() const;
     virtual int getFileUniqueIdentifiers(uint64_t a_fileId, uint64_t &a_fsOffset, uint64_t &a_fsFileId, int &a_attrType, int &a_attrId) const;
     virtual int getNumVolumes() const;
