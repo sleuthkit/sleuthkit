@@ -21,7 +21,8 @@ package org.sleuthkit.datamodel;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -38,6 +39,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
  * TODO move common getters to AbstractFile class
  */
 public abstract class FsContent extends AbstractFile {
+	
+	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 
 	///read only database tsk_files fields
 	protected final long fsObjId, metaAddr, size, ctime, crtime, atime, mtime;
@@ -66,7 +69,7 @@ public abstract class FsContent extends AbstractFile {
 	/**
 	 * parent file system
 	 */
-	protected FileSystem parentFileSystem;
+	private FileSystem parentFileSystem;
 	/**
 	 * file Handle
 	 */
@@ -122,6 +125,7 @@ public abstract class FsContent extends AbstractFile {
 		this.known = known;
 		this.parentPath = parent_path;
 		this.md5Hash = md5Hash;
+		
 	}
 
 	/**
@@ -129,7 +133,7 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @param parent parent file system object
 	 */
-	protected void setFileSystem(FileSystem parent) {
+	void setFileSystem(FileSystem parent) {
 		parentFileSystem = parent;
 	}
 
@@ -163,8 +167,7 @@ public abstract class FsContent extends AbstractFile {
 		}
 		synchronized (this) {
 			if (fileHandle == 0) {
-				fileHandle =
-						SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), metaAddr, attrType, attrId);
+				fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
 			}
 		}
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
@@ -172,6 +175,12 @@ public abstract class FsContent extends AbstractFile {
 
 	@Override
 	public boolean isRoot() {
+		try {
+			getFileSystem();
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Exception while calling 'getFileSystem' on " + this, ex);
+			return false;
+		}
 		return parentFileSystem.getRoot_inum() == this.getMetaAddr();
 	}
 
@@ -195,13 +204,16 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return the file system object of the parent
 	 */
-	public FileSystem getFileSystem() {
+	public FileSystem getFileSystem() throws TskCoreException {
+		if (parentFileSystem == null) {
+			parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, AbstractContent.UNKNOWN_ID);
+		}
 		return parentFileSystem;
 	}
-
+	
 	@Override
 	public Image getImage() throws TskCoreException {
-		return this.getFileSystem().getImage();
+		return getFileSystem().getImage();
 	}
 
 	/**
@@ -542,19 +554,20 @@ public abstract class FsContent extends AbstractFile {
 			return uniquePath;
 		}
 
-		StringBuilder sb = new StringBuilder();
-		//prepend image and volume to file path
-		Image image = this.getImage();
-		StringTokenizer tok = new StringTokenizer(image.getName(), "/\\");
-		String imageName = null;
-		while (tok.hasMoreTokens()) {
-			imageName = tok.nextToken();
+		String imagePath = getImage().getName();
+		String[] imagePathSegments = imagePath.split("/\\\\");
+		if (imagePathSegments.length == 0) {
+			throw new TskCoreException("Malformed image path retrieved from image: " + getImage());
 		}
+		String imageName = imagePathSegments[imagePathSegments.length - 1];
+
+		//prepend image and volume to file path
+		StringBuilder sb = new StringBuilder();
 		sb.append("/img_").append(imageName);
+		FileSystem parentFileSystem = getFileSystem();
 		if (parentFileSystem != null) {
 			Content vol = parentFileSystem.getParent();
-			if (vol != null
-					&& !vol.equals(image)) {
+			if (vol != null && !vol.equals(getImage())) {
 				sb.append("/vol_");
 				sb.append(vol.getName());
 			}

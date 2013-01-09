@@ -37,8 +37,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class VirtualDirectory extends AbstractFile {
 
-	private Content parent;
-	
 	//TODO move up to AbstractFile class
 	private long size;
 	//TODO use enums for types and flags
@@ -78,15 +76,6 @@ public class VirtualDirectory extends AbstractFile {
 
 	public String getParent_path() {
 		return parent_path;
-	}
-
-	/**
-	 * Set the parent class, will be called by the parent
-	 *
-	 * @param p parent
-	 */
-	protected void setParent(Content p) {
-		parent = p;
 	}
 
 	@Override
@@ -137,15 +126,6 @@ public class VirtualDirectory extends AbstractFile {
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
-	}
-
-	/**
-	 * Get parent content object (either filesystem, or volume)
-	 *
-	 * @return the parent content object
-	 */
-	public Content getParent() {
-		return parent;
 	}
 
 	@Override
