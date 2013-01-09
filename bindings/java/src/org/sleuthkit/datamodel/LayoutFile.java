@@ -174,15 +174,6 @@ public class LayoutFile extends AbstractFile{
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
-	
-	/**
-	 * Get parent content object (either filesystem, or volume)
-	 * @return the parent content object
-	 */
-//	public Content getParent() {
-//		return parent;
-//	}
-	
 
 	@Override
 	public Image getImage() throws TskCoreException{
