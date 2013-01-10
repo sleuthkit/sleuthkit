@@ -160,7 +160,7 @@ yaffscache_chunk_add(YAFFSFS_INFO *yfs, TSK_OFF_T offset, uint32_t seq_number,
     uint32_t obj_id, uint32_t chunk_id, uint32_t parent_id)
 {
     TSK_RETVAL_ENUM result;
-
+    YaffsCacheChunk *prev;
     YaffsCacheChunk *chunk;
     if ((chunk = tsk_malloc(sizeof(YaffsCacheChunk))) == NULL) {
         return TSK_ERR;
@@ -172,7 +172,6 @@ yaffscache_chunk_add(YAFFSFS_INFO *yfs, TSK_OFF_T offset, uint32_t seq_number,
     chunk->ycc_chunk_id = chunk_id;
     chunk->ycc_parent_id = parent_id;
 
-    YaffsCacheChunk *prev;
     result = yaffscache_chunk_find_insertion_point(yfs, obj_id, offset, seq_number, &prev);
     if (result == TSK_ERR) {
         return TSK_ERR;
@@ -272,6 +271,7 @@ yaffscache_object_add_version(YaffsCacheObject *obj, YaffsCacheChunk *chunk)
 {
     uint32_t ver_number;
     YaffsCacheChunk *header_chunk = NULL;
+    YaffsCacheVersion *version;
 
     if (chunk->ycc_chunk_id == 0)
         header_chunk = chunk;
@@ -287,10 +287,11 @@ yaffscache_object_add_version(YaffsCacheObject *obj, YaffsCacheChunk *chunk)
      */
     if (obj->yco_latest != NULL) {
         if (obj->yco_latest->ycv_header_chunk == NULL) {
+            YaffsCacheVersion *incomplete = obj->yco_latest;
             if (tsk_verbose)
                 tsk_fprintf(stderr, "yaffscache_object_add_version: "
                     "removed an incomplete first version (no header)\n");
-            YaffsCacheVersion *incomplete = obj->yco_latest;
+            
             obj->yco_latest = obj->yco_latest->ycv_prior;
             free(incomplete);
         }
@@ -308,7 +309,6 @@ yaffscache_object_add_version(YaffsCacheObject *obj, YaffsCacheChunk *chunk)
         ver_number = 1;
     }
 
-    YaffsCacheVersion *version;
     if ((version = (YaffsCacheVersion *) tsk_malloc(sizeof(YaffsCacheVersion))) == NULL) {
         return TSK_ERR;
     }
@@ -330,13 +330,13 @@ yaffscache_versions_insert_chunk(YAFFSFS_INFO *yfs, YaffsCacheChunk *chunk)
 {
     YaffsCacheObject *obj;
     TSK_RETVAL_ENUM result;
+    YaffsCacheVersion *version = obj->yco_latest;
 
     result = yaffscache_object_find_or_add(yfs, chunk->ycc_obj_id, &obj);
     if (result != TSK_OK) {
         return TSK_ERR;
     }
 
-    YaffsCacheVersion *version = obj->yco_latest;
     /* First chunk in this object? */
     if (version == NULL) {
         yaffscache_object_add_version(obj, chunk);
@@ -405,17 +405,19 @@ yaffscache_find_children(YAFFSFS_INFO *yfs, uint32_t parent_inode, yc_find_child
 
 static TSK_RETVAL_ENUM
 yaffscache_version_find_by_inode(YAFFSFS_INFO *yfs, TSK_INUM_T inode, YaffsCacheVersion **version, YaffsCacheObject **obj_ret) {
+    uint32_t obj_id, version_num;
+    YaffsCacheObject *obj;
+    YaffsCacheVersion *curr;
+
     if (version == NULL) {
         return TSK_ERR;
     }
 
-    uint32_t obj_id, version_num;
     if (yaffscache_inode_to_obj_id_and_version(inode, &obj_id, &version_num) != TSK_OK) {
         *version = NULL;
         return TSK_ERR;
     }
 
-    YaffsCacheObject *obj;
     if (yaffscache_object_find(yfs, obj_id, &obj) != TSK_OK) {
         *version = NULL;
        return TSK_ERR;
@@ -429,7 +431,6 @@ yaffscache_version_find_by_inode(YAFFSFS_INFO *yfs, TSK_INUM_T inode, YaffsCache
         return TSK_OK;
     }
 
-    YaffsCacheVersion *curr;
     for(curr = obj->yco_latest; curr != NULL; curr = curr->ycv_prior) {
         if (curr->ycv_version == version_num) {
             if (obj_ret != NULL) {
