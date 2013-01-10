@@ -249,7 +249,7 @@ int TskImageFileTsk::openFile(const uint64_t fileId)
     // Use ImgDb::getFileUniqueIdentifiers to get the four needed values.
     uint64_t fsByteOffset = 0;
     uint64_t fsFileId = 0;
-    int attrType = 0;
+    int attrType = TSK_FS_ATTR_TYPE_NOT_FOUND;
     int attrId = 0;
 
     if (m_db.getFileUniqueIdentifiers(fileId, fsByteOffset, fsFileId, attrType, attrId) != 0)
@@ -296,7 +296,7 @@ int TskImageFileTsk::openFile(const uint64_t fileId)
 
     // It is possible to have a file with no attributes. We only report an
     // error if we are expecting a valid attribute.
-    if (attrType != 0 && fsAttr == NULL)
+    if (attrType != TSK_FS_ATTR_TYPE_NOT_FOUND && fsAttr == NULL)
     {
         std::wstringstream msg;
         msg << L"TskImageFileTsk::openFile - Error getting attribute : " << tsk_error_get();
