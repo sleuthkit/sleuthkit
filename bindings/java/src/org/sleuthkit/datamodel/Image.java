@@ -127,6 +127,11 @@ public class Image extends AbstractContent {
 		return ssize;
 	}
 
+	@Override
+	public String getUniquePath() throws TskCoreException {
+		return "/img_" + getName();
+	}
+
 	/**
 	 * Get the image path
 	 *
