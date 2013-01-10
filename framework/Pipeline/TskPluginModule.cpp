@@ -25,8 +25,9 @@
 // Poco includes
 #include "Poco/String.h"
 #include "Poco/Path.h"
+#include "Poco/Environment.h"
 
-// C/C++ library includes5
+// C/C++ library includes
 #include <sstream>
 #include <string>
 
@@ -62,8 +63,33 @@ void TskPluginModule::setPath(const std::string& location)
 {
     try
     {
+        // Autogenerate filename extension if needed
+        Poco::Path tempPath = location;
+        if (tempPath.getExtension().empty())
+        {
+            std::string os = Poco::Environment::osName();
+            if (os.find("Linux") != std::string::npos)
+            {
+                tempPath.setExtension("so");
+            } 
+            else if (os.find("Darwin") != std::string::npos)
+            {
+                tempPath.setExtension("dylib");
+            } 
+            else if (os.find("Windows") != std::string::npos ||
+                     os.find("CYGWIN")  != std::string::npos ||
+                     os.find("MINGW")   != std::string::npos )
+            {
+                tempPath.setExtension("dll");
+            } 
+            else
+            {
+                throw TskException("TskPluginModule::setPath: OS unknown. Cannot resolve plugin extension.");
+            }
+        }
+
         // Call parent to search for location
-        TskModule::setPath(location);
+        TskModule::setPath(tempPath.toString());
 
         // Load the library.
         m_sharedLibrary.load(m_modulePath);
