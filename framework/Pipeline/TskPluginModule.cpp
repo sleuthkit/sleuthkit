@@ -63,8 +63,14 @@ void TskPluginModule::setPath(const std::string& location)
 {
     try
     {
+        if (location.empty()) 
+        {
+            throw TskException("TskPluginModule::setPath: location is empty or missing.");
+        }
+
         // Autogenerate filename extension if needed
         Poco::Path tempPath = location;
+
         if (tempPath.getExtension().empty())
         {
             std::string os = Poco::Environment::osName();
@@ -89,12 +95,6 @@ void TskPluginModule::setPath(const std::string& location)
         }
 
         // Search for location
-        //TskModule::setPath(tempPath.toString());
-        if (tempPath.toString().empty()) 
-        {
-            throw TskException("TskModule::setPath: location is empty or missing.");
-        }
-
         // Absolute (fully qualified) paths are not allowed.
         if (!tempPath.isAbsolute())
         {
@@ -108,14 +108,14 @@ void TskPluginModule::setPath(const std::string& location)
             if (found && moduleFile.exists())
             {
                 std::wstringstream msg;
-                msg << L"TskModule::setPath - Module found at: "
+                msg << L"TskPluginModule::setPath - Module found at: "
                     << tempPath.toString().c_str();
                 LOGINFO(msg.str());
             }
             else
             {
                 std::stringstream msg;
-                msg << "TskModule::setPath - Module not found: "
+                msg << "TskPluginModule::setPath - Module not found: "
                     << tempPath.toString().c_str();
                 throw TskException(msg.str());
             }
@@ -123,7 +123,7 @@ void TskPluginModule::setPath(const std::string& location)
         else
         {
             std::stringstream msg;
-            msg << "TskModule::setPath: location (" << tempPath.toString() << ") is not relative to MODULE_DIR.";
+            msg << "TskPluginModule::setPath: location (" << tempPath.toString() << ") is not relative to MODULE_DIR.";
             throw TskException(msg.str());
         }
 
