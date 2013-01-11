@@ -88,8 +88,46 @@ void TskPluginModule::setPath(const std::string& location)
             }
         }
 
-        // Call parent to search for location
-        TskModule::setPath(tempPath.toString());
+        // Search for location
+        //TskModule::setPath(tempPath.toString());
+        if (tempPath.toString().empty()) 
+        {
+            throw TskException("TskModule::setPath: location is empty or missing.");
+        }
+
+        // Absolute (fully qualified) paths are not allowed.
+        if (!tempPath.isAbsolute())
+        {
+            // See if we can find the executable in MODULE_DIR.
+            std::string pathsToSearch = GetSystemProperty(TskSystemProperties::MODULE_DIR);
+
+            bool found = Poco::Path::find(pathsToSearch, tempPath.toString(), tempPath);
+
+            // Confirm existence of file at found location.
+            Poco::File moduleFile(tempPath);
+            if (found && moduleFile.exists())
+            {
+                std::wstringstream msg;
+                msg << L"TskModule::setPath - Module found at: "
+                    << tempPath.toString().c_str();
+                LOGINFO(msg.str());
+            }
+            else
+            {
+                std::stringstream msg;
+                msg << "TskModule::setPath - Module not found: "
+                    << tempPath.toString().c_str();
+                throw TskException(msg.str());
+            }
+        }
+        else
+        {
+            std::stringstream msg;
+            msg << "TskModule::setPath: location (" << tempPath.toString() << ") is not relative to MODULE_DIR.";
+            throw TskException(msg.str());
+        }
+
+        m_modulePath = tempPath.toString();
 
         // Load the library.
         m_sharedLibrary.load(m_modulePath);
