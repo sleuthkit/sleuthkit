@@ -69,7 +69,7 @@ class ResultSetHelper {
 		long imgOffset = rs.getLong("img_offset");
 		long blockSize = rs.getLong("block_size");
 
-		VolumeSystem vs = new VolumeSystem(db, id, "Volume System", type, imgOffset, blockSize);
+		VolumeSystem vs = new VolumeSystem(db, id, "", type, imgOffset, blockSize);
 
 		vs.setParent(parent);
 		return vs;
@@ -101,7 +101,7 @@ class ResultSetHelper {
 	FileSystem fileSystem(ResultSet rs, Content parent) throws SQLException {
 
 		TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type"));
-		FileSystem fs = new FileSystem(db, rs.getLong("obj_id"), "File System", rs.getLong("img_offset"),
+		FileSystem fs = new FileSystem(db, rs.getLong("obj_id"), "", rs.getLong("img_offset"),
 				fsType, rs.getLong("block_size"), rs.getLong("block_count"),
 				rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum"));
 		fs.setParent(parent);

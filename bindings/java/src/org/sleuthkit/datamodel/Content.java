@@ -59,6 +59,13 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @return the name
 	 */
 	public String getName();
+	
+	/**
+	 * @return returns the full path to this Content object starting with a "/"
+	 * followed by the Image name and similarly for all other segments in the
+	 * hierarchy.
+	 */
+	public String getUniquePath() throws TskCoreException;
 
 	/**
 	 * Gets the content object id.
