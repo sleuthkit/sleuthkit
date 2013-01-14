@@ -29,32 +29,30 @@ import java.util.LinkedList;
 import java.util.List;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 
-/**
- *
- * @author pmartel
- */
 public class DiffUtil {
 
 	/**
 	 * Creates the Sleuth Kit database for an image, generates a string
-	 * representation of the resulting database to use as a standard for
+	 * representation of a top down depth first traversal of the resulting database to use as a standard for
 	 * comparison, and saves the the standard to a file.
 	 * @param standardPath The path to save the standard file to (will be
 	 * overwritten if it already exists)
 	 * @param tempDirPath An existing directory to create the test database in
 	 * @param imagePaths The path(s) to the image file(s)
 	 */
-	public static void createStandard(String standardPath, String tempDirPath, List<String> imagePaths) {
+	public static void createStandardTopDown(String standardPath, String tempDirPath, List<String> imagePaths) {
 		java.io.File standardFile = new java.io.File(standardPath);
 		try {
 			java.io.File firstImageFile = new java.io.File(imagePaths.get(0));
 			java.io.File tempDir = new java.io.File(tempDirPath);
-			String dbPath = tempDir.getPath() + java.io.File.separator + firstImageFile.getName() + ".db";
+			String dbPath = tempDir.getPath() + java.io.File.separator + firstImageFile.getName() + "_TD.db";
 			java.io.File dbFile = new java.io.File(dbPath);
 
 			standardFile.createNewFile();
 			FileWriter standardWriter = new FileWriter(standardFile);
-			ReprDataModel repr = new ReprDataModel(standardWriter);
+			int len=(int) (standardFile.toString().length()-4);
+			FileWriter testWriter = new FileWriter(standardFile.toString().substring(0,len)+"_leaves.txt");
+			ReprDataModel repr = new ReprDataModel(standardWriter,testWriter);
 
 			dbFile.delete();
 			
@@ -67,11 +65,50 @@ public class DiffUtil {
 			repr.start(sk.getRootObjects());
 			standardWriter.close();
 
-		} catch (Exception ex) {
+		}catch (TskDataException ex){			
+		}catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
-	}
+		}
+		/**
+		 * Creates the Sleuth Kit database for an image, generates a string
+		 * representation of a top down traversal of the resulting database to use as a standard for
+		 * comparison, and saves the the standard to a file.
+		 * @param standardPath The path to save the standard file to (will be
+		 * overwritten if it already exists)
+		 * @param tempDirPath An existing directory to create the test database in
+		 * @param imagePaths The path(s) to the image file(s)
+		 */
+		/*public static void createStandardTopDown(String standardPath, String tempDirPath, List<String> imagePaths) {
+		java.io.File standardFile = new java.io.File(standardPath);
+		try {
+			java.io.File firstImageFile = new java.io.File(imagePaths.get(0));
+			java.io.File tempDir = new java.io.File(tempDirPath);
+			String dbPath = tempDir.getPath() + java.io.File.separator + firstImageFile.getName() + "_TD.db";
+			java.io.File dbFile = new java.io.File(dbPath);
 
+			standardFile.createNewFile();
+			FileWriter standardWriter = new FileWriter(standardFile);
+			int len=(int) (standardFile.toString().length()-4);
+			FileWriter testWriter = new FileWriter(standardFile.toString().substring(0,len)+"_leaves.txt");
+			ReprDataModel repr = new ReprDataModel(standardWriter,testWriter);
+
+			dbFile.delete();
+			
+			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
+			
+			String timezone = "";
+			AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
+			process.run(imagePaths.toArray(new String[imagePaths.size()]));
+			process.commit();
+			repr.topDown(sk.getRootObjects());
+			standardWriter.close();
+
+		}catch (TskDataException ex){			
+		}catch (Exception ex) {
+			throw new RuntimeException(ex);
+		}
+	}*/
 	/**
 	 * Calls {@link #createStandard(String, String, String[]) createStandard}
 	 * with default arguments
@@ -82,8 +119,8 @@ public class DiffUtil {
 		List<List<String>> imagePaths = DiffTest.getImagePaths();
 		for(List<String> paths : imagePaths) {
 			String standardPath = DiffTest.standardPath(paths);
-			System.out.println("Creating standard for: " + paths.get(0));
-			createStandard(standardPath, tempDirPath, paths);
+			System.out.println("Creating standards for: " + paths.get(0));
+			createStandardTopDown(standardPath, tempDirPath, paths);
 		}
 	}
 

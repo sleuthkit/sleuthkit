@@ -34,7 +34,6 @@ import static org.junit.Assert.*;
 
 /**
  * Tests the DataModel by printing 
- * @author pmartel
  */
 @RunWith(Parameterized.class)
 public class DiffTest {
@@ -89,7 +88,9 @@ public class DiffTest {
 		return images;
 	}
 	/**
-	 * Get the sets of filenames for each test image
+	 * Get the sets of filenames for each test image, they should be located in 
+	 * a folder called "testimages" in either the TSK parent directory or the 
+	 * top level TSK directory
 	 * @return A Collection of one-element Object arrays, where that one element
 	 * is a List<String> containing the image file paths (the type is weird
 	 * because that's what JUnit wants for parameters).
@@ -124,11 +125,11 @@ public class DiffTest {
 			String testStandardPath = testStandard.getPath();
 			String oldStandardPath = standardPath(imagePaths);
 
-			DiffUtil.createStandard(testStandardPath, testFolder.getRoot().getPath(), imagePaths);
+			DiffUtil.createStandardTopDown(testStandardPath, testFolder.getRoot().getPath(), imagePaths);
 			String diff = DiffUtil.getDiff(oldStandardPath, testStandardPath);
 
 			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", "", diff);
-		} catch (IOException ex) {
+		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}
 	}

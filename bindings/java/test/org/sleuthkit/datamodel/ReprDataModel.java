@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.CharBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
@@ -37,7 +38,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
 public class ReprDataModel {
 
 	int indentLevel = 0;
-	Appendable result;
+	Appendable result, leaves;
 	ContentVisitor reprVisitor = new ReprVisitor();
 	static final int READ_BUFFER_SIZE = 8192;
 	static final String HASH_ALGORITHM = "MD5";
@@ -46,20 +47,73 @@ public class ReprDataModel {
 	 * 
 	 * @param result what to append the generated representation to.
 	 */
-	ReprDataModel(Appendable result) {
+	ReprDataModel(Appendable result,Appendable leaves) {
 		this.result = result;
+		this.leaves= leaves;
 	}
 
 	/**
-	 * Entry point to represent a Content object and it's children
+	 * Entry point to represent a Content object and it's children, sets up the 
+	 * sequential run method
 	 * @param c the root Content object
 	 */
 	public void start(List<Content> lc) {
+		List<Long> lp=new ArrayList<Long>();
+		sequentialRun(lc,lp);
+	}
+	
+	private void sequentialRun(List<Content> lc, List<Long> lp)
+	{
 		for(Content c : lc) {
-			reprContent(c);
+			title(c.getClass().getSimpleName());
+			c.accept(reprVisitor);
+			readContent(c);
+			lp.add(0,c.getId());
+			try {
+				if (c.getChildren().isEmpty())
+				{
+					appendLeaves(c.getName()+": "+lp.toString());
+				}
+				else
+				{
+					sequentialRun(c.getChildren(),lp);
+				}
+			} catch (TskCoreException ex) {
+				throw new RuntimeException(ex);
+			}
+			tail();
 		}
 	}
-
+	/**
+	 * Creates a top down representation of a database
+	 * @param c the root Content object
+	 */
+	public void topDown(List<Content> lc)
+	{
+		List<Content> nex=new ArrayList<Content>();
+		for(Content c: lc){
+			title(c.getClass().getSimpleName());
+			c.accept(reprVisitor);
+			readContent(c);
+			tail();
+			try {
+				if (c.getChildren().isEmpty())
+				{
+					appendLeaves(c.getName()+": "+c.getId());
+				}
+				else
+				{
+					nex.addAll(c.getChildren());
+				}
+			} catch (TskCoreException ex) {
+				throw new RuntimeException(ex);
+			}
+		}
+		indent();
+		indentLevel++;
+		if(!nex.isEmpty()){
+			topDown(nex);}
+	}
 	private void title(String title) {
 		indent();
 		append(title);
@@ -85,18 +139,6 @@ public class ReprDataModel {
 	private void name(String name) {
 		append(name);
 		append(": ");
-	}
-
-	private void reprContent(Content c) {
-		title(c.getClass().getSimpleName());
-		c.accept(reprVisitor);
-		readContent(c);
-		try {
-			reprChildren(c.getChildren());
-		} catch (TskCoreException ex) {
-			throw new RuntimeException(ex);
-		}
-		tail();
 	}
 
 	private void readContent(Content c) {
@@ -128,12 +170,6 @@ public class ReprDataModel {
 			hex.append(String.format("%02x", b & 0xFF));
 		}
 		return hex.toString();
-	}
-
-	private void reprChildren(List<? extends Content> lc) {
-		for (Content c : lc) {
-			reprContent(c);
-		}
 	}
 
 	// Files and Directories can be handled the same
@@ -377,7 +413,13 @@ public class ReprDataModel {
 			throw new RuntimeException(ex);
 		}
 	}
-
+	private void appendLeaves(CharSequence s) {
+		try {
+			leaves.append(s);
+		} catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
 	private class ReprVisitor implements ContentVisitor<Void> {
 
 		@Override

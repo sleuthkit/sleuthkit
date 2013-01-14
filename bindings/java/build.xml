@@ -91,7 +91,7 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 			<sysproperty key="java.library.path" value="${dlls}"/>
 			<classpath refid="libraries" />
 			<formatter type="plain" usefile="false" />
-			<test name="org.sleuthkit.datamodel.DiffTest" />
+			<test name="org.sleuthkit.datamodel.DatamodeltestSuite" />
 		</junit>
 	</target>
  
