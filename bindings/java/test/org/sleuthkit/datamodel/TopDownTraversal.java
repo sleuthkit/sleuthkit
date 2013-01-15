@@ -58,7 +58,7 @@ public class TopDownTraversal {
 	public void testDataModelDiff() {
 		try {
 			java.io.File testFolder=new java.io.File("Output");
-			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+"Test_Output_TD.txt");
+			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+"Test_Output_TD.txt");
 			String testStandardPath = testStandard.getPath();
 			String oldStandardPath = DiffUtil.standardPath(imagePaths,"_TD");
 			DiffUtil.createStandardTopDown(testStandardPath, testFolder.getAbsolutePath(), imagePaths);

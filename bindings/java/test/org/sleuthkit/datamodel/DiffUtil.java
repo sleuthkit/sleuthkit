@@ -65,7 +65,8 @@ public class DiffUtil {
 			process.commit();
 			repr.start(sk.getRootObjects());
 			standardWriter.close();
-
+			String[] cmd={"sort",standardFile.getAbsolutePath(),"/o",(tempDirPath+java.io.File.separator+firstImageFile.getName()+"_sorted.txt")};
+			Runtime.getRuntime().exec(cmd);
 		}catch (TskDataException ex){			
 		}catch (Exception ex) {
 			throw new RuntimeException(ex);
@@ -117,9 +118,9 @@ public class DiffUtil {
 	 */
 	public static void main(String[] args) {
 		String tempDirPath = System.getProperty("java.io.tmpdir");
-		List<List<String>> imagePaths = DiffTest.getImagePaths();
+		List<List<String>> imagePaths = getImagePaths();
 		for(List<String> paths : imagePaths) {
-			String standardPath = DiffTest.standardPath(paths);
+			String standardPath = standardPath(paths,"_TD");
 			System.out.println("Creating standards for: " + paths.get(0));
 			createStandardTopDown(standardPath, tempDirPath, paths);
 		}

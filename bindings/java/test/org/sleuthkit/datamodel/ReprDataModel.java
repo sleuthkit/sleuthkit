@@ -82,6 +82,7 @@ public class ReprDataModel {
 				throw new RuntimeException(ex);
 			}
 			tail();
+			lp.remove(0);
 		}
 	}
 	/**
