@@ -59,10 +59,10 @@ public class ReprDataModel {
 	 */
 	public void start(List<Content> lc) {
 		List<Long> lp=new ArrayList<Long>();
-		sequentialRun(lc,lp);
+		topDownDF(lc,lp);
 	}
 	
-	private void sequentialRun(List<Content> lc, List<Long> lp)
+	private void topDownDF(List<Content> lc, List<Long> lp)
 	{
 		for(Content c : lc) {
 			title(c.getClass().getSimpleName());
@@ -72,11 +72,11 @@ public class ReprDataModel {
 			try {
 				if (c.getChildren().isEmpty())
 				{
-					appendLeaves(c.getName()+": "+lp.toString());
+					append(lp.toString(), leaves);
 				}
 				else
 				{
-					sequentialRun(c.getChildren(),lp);
+					topDownDF(c.getChildren(),new ArrayList<Long>(lp));
 				}
 			} catch (TskCoreException ex) {
 				throw new RuntimeException(ex);
@@ -116,8 +116,8 @@ public class ReprDataModel {
 	}
 	private void title(String title) {
 		indent();
-		append(title);
-		append(" >");
+		append(title, result);
+		append(" >", result);
 		indentLevel++;
 		nl();
 	}
@@ -129,16 +129,16 @@ public class ReprDataModel {
 	private void indent() {
 		char[] indentation = new char[indentLevel];
 		Arrays.fill(indentation, '\t');
-		append(CharBuffer.wrap(indentation));
+		append(CharBuffer.wrap(indentation), result);
 	}
 
 	private void nl() {
-		append("\n");
+		append("\n", result);
 	}
 
 	private void name(String name) {
-		append(name);
-		append(": ");
+		append(name, result);
+		append(": ", result);
 	}
 
 	private void readContent(Content c) {
@@ -357,42 +357,42 @@ public class ReprDataModel {
 	private void repr(String method, Long l) {
 		indent();
 		name(method);
-		append(l.toString());
+		append(l.toString(), result);
 		nl();
 	}
 	
 	private void repr(String method, Integer l) {
 		indent();
 		name(method);
-		append(l.toString());
+		append(l.toString(), result);
 		nl();
 	}
 	
 	private void repr(String method, Short l) {
 		indent();
 		name(method);
-		append(l.toString());
+		append(l.toString(), result);
 		nl();
 	}
 	
 	private void repr(String method, Byte l) {
 		indent();
 		name(method);
-		append(l.toString());
+		append(l.toString(), result);
 		nl();
 	}
 
 	private void repr(String method, String[] sArray) {
 		indent();
 		name(method);
-		append(Arrays.toString(sArray));
+		append(Arrays.toString(sArray), result);
 		nl();
 	}
 
 	private void repr(String method, String s) {
 		indent();
 		name(method);
-		append(s);
+		append(s, result);
 		nl();
 	}
 
@@ -400,15 +400,15 @@ public class ReprDataModel {
 		indent();
 		name(method);
 		nl();
-		append(ex.toString());
+		append(ex.toString(), result);
 		nl();
 	}
 
-	private void append(CharSequence s) {
+	private void append(CharSequence s, Appendable f) {
 		try {
-			System.out.append(s);
-			System.out.flush();
-			result.append(s);
+			//System.out.append(s);
+			//System.out.flush();
+			f.append(s);
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}

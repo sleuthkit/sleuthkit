@@ -22,15 +22,17 @@ import difflib.Delta;
 import difflib.DiffUtils;
 import difflib.Patch;
 import java.io.BufferedReader;
+import java.io.FileFilter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 
 public class DiffUtil {
-
+	static final String TEST_IMAGE_DIR_NAME = "Input";
 	/**
 	 * Creates the Sleuth Kit database for an image, generates a string
 	 * representation of a top down depth first traversal of the resulting database to use as a standard for
@@ -47,13 +49,12 @@ public class DiffUtil {
 			java.io.File tempDir = new java.io.File(tempDirPath);
 			String dbPath = tempDir.getPath() + java.io.File.separator + firstImageFile.getName() + "_TD.db";
 			java.io.File dbFile = new java.io.File(dbPath);
-
 			standardFile.createNewFile();
+
 			FileWriter standardWriter = new FileWriter(standardFile);
 			int len=(int) (standardFile.toString().length()-4);
 			FileWriter testWriter = new FileWriter(standardFile.toString().substring(0,len)+"_leaves.txt");
 			ReprDataModel repr = new ReprDataModel(standardWriter,testWriter);
-
 			dbFile.delete();
 			
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
@@ -159,5 +160,51 @@ public class DiffUtil {
 		}
 
 		return diff.toString();
+	}
+	/*
+	 * Gets the paths to the test image files by looking for a test image
+	 * directory above the local SVN trunk/branch.
+	 * @return A list of lists of paths to image parts
+	 */
+	static List<List<String>> getImagePaths() {
+		FileFilter imageDirFilter = new FileFilter() {
+			@Override
+			public boolean accept(java.io.File f) {
+				return f.isDirectory() && f.getName().equalsIgnoreCase(TEST_IMAGE_DIR_NAME);
+			}
+		};
+		
+		
+		// needs to be absolute file because we're going to walk up its path
+		java.io.File dir = (new java.io.File(".")).getAbsoluteFile();
+		dir = dir.getParentFile();
+		
+		// image dir is either one level above trunk/ or in tags/
+		if (dir.listFiles(imageDirFilter).length == 1) {
+			// above trunk/
+			dir = dir.listFiles(imageDirFilter)[0];
+		} else {
+			// in tags/, go up one more level
+			dir = dir.getParentFile().listFiles(imageDirFilter)[0];
+		}
+		
+		List<String> images = new ArrayList<String>();
+		for (java.io.File imageSet : dir.listFiles()) {
+			images.add(imageSet.getAbsolutePath());
+		}
+		List<List<String>> ret=new ArrayList<List<String>>();
+		ret.add(images);
+		return ret;
+	}
+	
+	/**
+	 * Get the path for a standard corresponding to the given image path.
+	 * @param imagePaths path of the image to get a standard for
+	 * @return path to put/find the standard at
+	 */
+	static String standardPath(List<String> imagePaths, String type) {
+		java.io.File firstImage = new java.io.File(imagePaths.get(0));
+		String standardPath = "Gold" + java.io.File.separator + firstImage.getName().split("\\.")[0] + "_standard"+type+".txt";
+		return standardPath;
 	}
 }

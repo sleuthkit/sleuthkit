@@ -27,55 +27,13 @@ import static org.junit.Assert.*;
  */
 @RunWith(Parameterized.class)
 public class TopDownTraversal {
-	
-	static final String TEST_IMAGE_DIR_NAME = "testimages";
-	
+		
 
-	@Rule
-	public TemporaryFolder testFolder = new TemporaryFolder();
 	private List<String> imagePaths;
 
 	
 	public TopDownTraversal(List<String> imagePaths) {
 		this.imagePaths = imagePaths;
-	}
-	/**
-	 * Gets the paths to the test image files by looking for a test image
-	 * directory above the local SVN trunk/branch.
-	 * @return A list of lists of paths to image parts
-	 */
-	static List<List<String>> getImagePaths() {
-		FileFilter imageDirFilter = new FileFilter() {
-			@Override
-			public boolean accept(java.io.File f) {
-				return f.isDirectory() && f.getName().equalsIgnoreCase(TEST_IMAGE_DIR_NAME);
-			}
-		};
-		
-		
-		// needs to be absolute file because we're going to walk up its path
-		java.io.File dir = (new java.io.File(".")).getAbsoluteFile();
-		dir = dir.getParentFile().getParentFile().getParentFile().getParentFile();
-		
-		// image dir is either one level above trunk/ or in tags/
-		if (dir.listFiles(imageDirFilter).length == 1) {
-			// above trunk/
-			dir = dir.listFiles(imageDirFilter)[0];
-		} else {
-			// in tags/, go up one more level
-			dir = dir.getParentFile().listFiles(imageDirFilter)[0];
-		}
-		
-		List<List<String>> images = new ArrayList<List<String>>();
-		for (java.io.File imageSet : dir.listFiles()) {
-			List<String> absolutePaths = new ArrayList();
-			for (String filename : imageSet.list()) {
-				absolutePaths.add(imageSet.getAbsolutePath() + java.io.File.separator + filename);
-			}
-			
-			images.add(absolutePaths);
-		}
-		return images;
 	}
 	/**
 	 * Get the sets of filenames for each test image, they should be located in 
@@ -89,33 +47,21 @@ public class TopDownTraversal {
 	public static Collection<Object[]> testImageData() {
 		Collection<Object[]> data = new ArrayList<Object[]>();
 		
-		for (Object imagePaths : getImagePaths()) {
+		for (Object imagePaths : DiffUtil.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
 		}
 		return data;
-	}
-
-	/**
-	 * Get the path for a standard corresponding to the given image path.
-	 * @param imagePaths path of the image to get a standard for
-	 * @return path to put/find the standard at
-	 */
-	static String standardPath(List<String> imagePaths) {
-		java.io.File firstImage = new java.io.File(imagePaths.get(0));
-		String standardPath = "teststandards" + java.io.File.separator + firstImage.getName().split("\\.")[0] + "_standard_TD.txt";
-		return standardPath;
 	}
 
 	
 	@Test
 	public void testDataModelDiff() {
 		try {
-			java.io.File testStandard = testFolder.newFile("test_standard_TD.txt");
-
+			java.io.File testFolder=new java.io.File("Output");
+			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+"Test_Output_TD.txt");
 			String testStandardPath = testStandard.getPath();
-			String oldStandardPath = standardPath(imagePaths);
-
-			DiffUtil.createStandardTopDown(testStandardPath, testFolder.getRoot().getPath(), imagePaths);
+			String oldStandardPath = DiffUtil.standardPath(imagePaths,"_TD");
+			DiffUtil.createStandardTopDown(testStandardPath, testFolder.getAbsolutePath(), imagePaths);
 			String diff = DiffUtil.getDiff(oldStandardPath, testStandardPath);
 
 			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", "", diff);
