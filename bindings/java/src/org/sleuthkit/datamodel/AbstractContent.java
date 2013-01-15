@@ -72,7 +72,7 @@ public abstract class AbstractContent implements Content {
 	}
 
 	@Override
-	public Content getParent() throws TskCoreException {
+	public synchronized Content getParent() throws TskCoreException {
 		if (parent == null) {
 			ObjectInfo parentInfo = null;
 			try {
