@@ -552,7 +552,7 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	@Override
-	public String getUniquePath() throws TskCoreException {
+	public synchronized String getUniquePath() throws TskCoreException {
 		if (uniquePath == null) {
 			StringBuilder sb = new StringBuilder();
 			sb.append(getFileSystem().getUniquePath());

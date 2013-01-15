@@ -56,7 +56,7 @@ public abstract class AbstractContent implements Content {
 	 * interleaving forward slashes).
 	 */
 	@Override
-	public String getUniquePath() throws TskCoreException {
+	public synchronized String getUniquePath() throws TskCoreException {
 		if (uniquePath == null) {
 			uniquePath = "";
 			if (!name.isEmpty()) {
