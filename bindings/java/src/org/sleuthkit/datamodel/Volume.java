@@ -82,7 +82,7 @@ public class Volume extends AbstractContent {
 	}
 
 	@Override
-	public String getUniquePath() throws TskCoreException {
+	public synchronized String getUniquePath() throws TskCoreException {
 		String uniquePath = "";
 		String name = getName();
 		if (!name.isEmpty()) {
