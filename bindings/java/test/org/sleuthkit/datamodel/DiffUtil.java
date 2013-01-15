@@ -181,7 +181,7 @@ public class DiffUtil {
 		
 		// needs to be absolute file because we're going to walk up its path
 		java.io.File dir = (new java.io.File(".")).getAbsoluteFile();
-		dir = dir.getParentFile();
+		dir = dir.getParentFile().getParentFile().getParentFile().getParentFile();
 		
 		// image dir is either one level above trunk/ or in tags/
 		if (dir.listFiles(imageDirFilter).length == 1) {
