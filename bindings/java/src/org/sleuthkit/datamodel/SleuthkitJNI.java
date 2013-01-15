@@ -120,9 +120,14 @@ public class SleuthkitJNI {
 	static {
 		try {
 			System.loadLibrary("zlib");
+		} catch (UnsatisfiedLinkError e) {
+			System.out.println("SleuthkitJNI: error loading zlib library, " + e.toString());
+		}
+		
+		try {
 			System.loadLibrary("libewf");
 		} catch (UnsatisfiedLinkError e) {
-			System.out.println("Datamodel: error loading zlib/libewf libraries, " + e.toString());
+			System.out.println("SleuthkitJNI: error loading libewf library, " + e.toString());
 		}
 
 		/* We should rename the Windows dll, to remove the lib prefix.
@@ -134,7 +139,7 @@ public class SleuthkitJNI {
 			try {
 				System.loadLibrary("tsk_jni");
 			} catch (UnsatisfiedLinkError e2) {
-				System.out.println("Datamodel: Error loading tsk_jni library " + e2.toString());
+				System.out.println("SleuthkitJNI: Error loading tsk_jni library " + e2.toString());
 			}
 		}
 	}
