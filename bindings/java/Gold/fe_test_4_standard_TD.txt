@@ -1,0 +1,1086 @@
+Image >
+	getName: fe_test_4.img
+	getSize: 32901120
+	getSsize: 512
+	getType: 1
+	ArtifactGetArtifactID: 1
+	ArtifactGetArtifactTypeID: 1
+	ArtifactGetArtifactTypeName: TSK_GEN_INFO
+	ArtifactGetDisplayName: General Info
+	ArtifactGetObjectID: 1
+	AttributeGetArtifactID: 1
+	AttributeGetAttributeTypeID: 1001
+	AttributeGetAttributeTypeName: testattr
+	AttributeGetDisplayName: Test Attribute
+	AttributeGetContext: first_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Integer
+	AttributeGetValueInteger: 23
+	AttributeGetArtifactID: 1
+	AttributeGetAttributeTypeID: 1001
+	AttributeGetAttributeTypeName: testattr
+	AttributeGetDisplayName: Test Attribute
+	AttributeGetContext: second_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Long
+	AttributeGetValueLong: 5
+	AttributeGetArtifactID: 1
+	AttributeGetAttributeTypeID: 1001
+	AttributeGetAttributeTypeName: testattr
+	AttributeGetDisplayName: Test Attribute
+	AttributeGetContext: third_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Double
+	AttributeGetValueDouble: 7.412
+	AttributeGetArtifactID: 1
+	AttributeGetAttributeTypeID: 1001
+	AttributeGetAttributeTypeName: testattr
+	AttributeGetDisplayName: Test Attribute
+	AttributeGetContext: fourth_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: String
+	AttributeGetValueString: test
+	AttributeGetArtifactID: 1
+	AttributeGetAttributeTypeID: 1001
+	AttributeGetAttributeTypeName: testattr
+	AttributeGetDisplayName: Test Attribute
+	AttributeGetContext: fifth_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Byte
+	AttributeGetValueByte: [1, 2]
+	ArtifactGetArtifactID: 2
+	ArtifactGetArtifactTypeID: 1001
+	ArtifactGetArtifactTypeName: Test_Artifact
+	ArtifactGetDisplayName: Test Artifact
+	ArtifactGetObjectID: 1
+	AttributeGetArtifactID: 2
+	AttributeGetAttributeTypeID: 2
+	AttributeGetAttributeTypeName: TSK_DATETIME
+	AttributeGetDisplayName: Date/Time
+	AttributeGetContext: sixth_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Integer
+	AttributeGetValueInteger: 23
+	AttributeGetArtifactID: 2
+	AttributeGetAttributeTypeID: 7
+	AttributeGetAttributeTypeName: TSK_FLAG
+	AttributeGetDisplayName: Flag
+	AttributeGetContext: seventh_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Long
+	AttributeGetValueLong: 5
+	AttributeGetArtifactID: 2
+	AttributeGetAttributeTypeID: 57
+	AttributeGetAttributeTypeName: TSK_GEO_ALTITUDE
+	AttributeGetDisplayName: Altitude
+	AttributeGetContext: eighth_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Double
+	AttributeGetValueDouble: 7.412
+	AttributeGetArtifactID: 2
+	AttributeGetAttributeTypeID: 10
+	AttributeGetAttributeTypeName: TSK_KEYWORD
+	AttributeGetDisplayName: Keyword
+	AttributeGetContext: nineth_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: String
+	AttributeGetValueString: test
+	AttributeGetArtifactID: 2
+	AttributeGetAttributeTypeID: 13
+	AttributeGetAttributeTypeName: TSK_KEYWORD_SET
+	AttributeGetDisplayName: Keyword Set
+	AttributeGetContext: tenth_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Byte
+	AttributeGetValueByte: [3, 4]
+	ArtifactGetArtifactID: 3
+	ArtifactGetArtifactTypeID: 1
+	ArtifactGetArtifactTypeName: TSK_GEN_INFO
+	ArtifactGetDisplayName: General Info
+	ArtifactGetObjectID: 1
+	AttributeGetArtifactID: 3
+	AttributeGetAttributeTypeID: 1
+	AttributeGetAttributeTypeName: TSK_URL
+	AttributeGetDisplayName: URL
+	AttributeGetContext: eleventh_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Integer
+	AttributeGetValueInteger: 29
+	AttributeGetArtifactID: 3
+	AttributeGetAttributeTypeID: 1
+	AttributeGetAttributeTypeName: TSK_URL
+	AttributeGetDisplayName: URL
+	AttributeGetContext: twelfth_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Long
+	AttributeGetValueLong: 565413
+	AttributeGetArtifactID: 3
+	AttributeGetAttributeTypeID: 1
+	AttributeGetAttributeTypeName: TSK_URL
+	AttributeGetDisplayName: URL
+	AttributeGetContext: thirteenth_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Double
+	AttributeGetValueDouble: 1.987
+	AttributeGetArtifactID: 3
+	AttributeGetAttributeTypeID: 2
+	AttributeGetAttributeTypeName: TSK_DATETIME
+	AttributeGetDisplayName: Date/Time
+	AttributeGetContext: fourteenth_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: String
+	AttributeGetValueString: test2
+	AttributeGetArtifactID: 3
+	AttributeGetAttributeTypeID: 2
+	AttributeGetAttributeTypeName: TSK_DATETIME
+	AttributeGetDisplayName: Date/Time
+	AttributeGetContext: fifteenth_call
+	AttributeGetSource: regressionTest
+	AttributeGetValueType: Byte
+	AttributeGetValueByte: [5, 6]
+
+	VolumeSystem >
+		getBlockSize: 512
+		getOffset: 0
+		getSize: 0
+		getType: 1
+
+		Volume >
+			getAddr: 1
+			getDescription: Unallocated
+			getFlags: 2
+			getFlagsAsString: Unallocated
+			getLength: 63
+			getSize: 63
+			getStart: 0
+
+			LayoutFile >
+				getSize: 32256
+				getId: 51
+				getName: Unalloc_3_0_32256
+				getNumPartsu: 1
+
+		Volume >
+			getAddr: 2
+			getDescription: Win95 FAT32 (0x0b)
+			getFlags: 1
+			getFlagsAsString: Allocated
+			getLength: 32067
+			getSize: 32067
+			getStart: 63
+
+			FileSystem >
+				getBlock_count: 32066
+				getBlock_size: 512
+				getFirst_inum: 2
+				getFs_type: 2
+				getImg_offset: 32256
+				getLast_inum: 512662
+				getRoot_inum: 2
+				getSize: 16417792
+
+				Directory >
+					getAtime: 0
+					getAtimeAsDate: 0000-00-00 00:00:00
+					getAttr_id: 0
+					getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+					getCrtime: 0
+					getCrtimeAsDate: 0000-00-00 00:00:00
+					getCtime: 0
+					getCtimeAsDate: 0000-00-00 00:00:00
+					getDirFlagsAsString: Allocated
+					getDirType: 3
+					getDirTypeAsString: DIR
+					getGid: 0
+					getMetaFlagsAsString: Allocated
+					getMetaTypeAsString: d
+					getMetaAddr: 2
+					getMetaType: 2
+					getMtime: 0
+					getMtimeAsDate: 0000-00-00 00:00:00
+					getName: 
+					getParentPath: /
+					getSize: 16384
+					getUid: 0
+
+					Directory >
+						getAtime: 1286841600
+						getAtimeAsDate: 2010-10-11 20:00:00
+						getAttr_id: 0
+						getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+						getCrtime: 1286900624
+						getCrtimeAsDate: 2010-10-12 12:23:44
+						getCtime: 0
+						getCtimeAsDate: 0000-00-00 00:00:00
+						getDirFlagsAsString: Allocated
+						getDirType: 3
+						getDirTypeAsString: DIR
+						getGid: 0
+						getMetaFlagsAsString: Allocated
+						getMetaTypeAsString: d
+						getMetaAddr: 4
+						getMetaType: 2
+						getMtime: 1286900624
+						getMtimeAsDate: 2010-10-12 12:23:44
+						getName: dir 1
+						getParentPath: /
+						getSize: 4096
+						getUid: 0
+
+						Directory >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900624
+							getCrtimeAsDate: 2010-10-12 12:23:44
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 3
+							getDirTypeAsString: DIR
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: d
+							getMetaAddr: 4
+							getMetaType: 2
+							getMtime: 1286900624
+							getMtimeAsDate: 2010-10-12 12:23:44
+							getName: .
+							getParentPath: /dir 1/
+							getSize: 4096
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286881024
+							getCrtimeAsDate: 2010-10-12 06:57:04
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: r
+							getMetaAddr: 646
+							getMetaType: 1
+							getMtime: 1286881024
+							getMtimeAsDate: 2010-10-12 06:57:04
+							getName: maytag0.jpg
+							getParentPath: /dir 1/
+							getSize: 9023
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900616
+							getCrtimeAsDate: 2010-10-12 12:23:36
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: r
+							getMetaAddr: 648
+							getMetaType: 1
+							getMtime: 1286900616
+							getMtimeAsDate: 2010-10-12 12:23:36
+							getName: filler1
+							getParentPath: /dir 1/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900616
+							getCrtimeAsDate: 2010-10-12 12:23:36
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: r
+							getMetaAddr: 650
+							getMetaType: 1
+							getMtime: 1286900616
+							getMtimeAsDate: 2010-10-12 12:23:36
+							getName: filler2
+							getParentPath: /dir 1/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900616
+							getCrtimeAsDate: 2010-10-12 12:23:36
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: r
+							getMetaAddr: 652
+							getMetaType: 1
+							getMtime: 1286900616
+							getMtimeAsDate: 2010-10-12 12:23:36
+							getName: filler3
+							getParentPath: /dir 1/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900618
+							getCrtimeAsDate: 2010-10-12 12:23:38
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: r
+							getMetaAddr: 654
+							getMetaType: 1
+							getMtime: 1286900618
+							getMtimeAsDate: 2010-10-12 12:23:38
+							getName: filler4
+							getParentPath: /dir 1/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900618
+							getCrtimeAsDate: 2010-10-12 12:23:38
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: r
+							getMetaAddr: 656
+							getMetaType: 1
+							getMtime: 1286900618
+							getMtimeAsDate: 2010-10-12 12:23:38
+							getName: filler5
+							getParentPath: /dir 1/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900618
+							getCrtimeAsDate: 2010-10-12 12:23:38
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: r
+							getMetaAddr: 658
+							getMetaType: 1
+							getMtime: 1286900618
+							getMtimeAsDate: 2010-10-12 12:23:38
+							getName: filler6
+							getParentPath: /dir 1/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900620
+							getCrtimeAsDate: 2010-10-12 12:23:40
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: r
+							getMetaAddr: 660
+							getMetaType: 1
+							getMtime: 1286900620
+							getMtimeAsDate: 2010-10-12 12:23:40
+							getName: filler7
+							getParentPath: /dir 1/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900624
+							getCrtimeAsDate: 2010-10-12 12:23:44
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: r
+							getMetaAddr: 662
+							getMetaType: 1
+							getMtime: 1286900624
+							getMtimeAsDate: 2010-10-12 12:23:44
+							getName: filler8
+							getParentPath: /dir 1/
+							getSize: 0
+							getUid: 0
+
+					File >
+						getAtime: 0
+						getAtimeAsDate: 0000-00-00 00:00:00
+						getAttr_id: 0
+						getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+						getCrtime: 0
+						getCrtimeAsDate: 0000-00-00 00:00:00
+						getCtime: 0
+						getCtimeAsDate: 0000-00-00 00:00:00
+						getDirFlagsAsString: Allocated
+						getDirType: 10
+						getDirTypeAsString: VIRT
+						getGid: 0
+						getMetaFlagsAsString: Allocated
+						getMetaTypeAsString: v
+						getMetaAddr: 512659
+						getMetaType: 10
+						getMtime: 0
+						getMtimeAsDate: 0000-00-00 00:00:00
+						getName: $MBR
+						getParentPath: /
+						getSize: 512
+						getUid: 0
+
+					File >
+						getAtime: 0
+						getAtimeAsDate: 0000-00-00 00:00:00
+						getAttr_id: 0
+						getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+						getCrtime: 0
+						getCrtimeAsDate: 0000-00-00 00:00:00
+						getCtime: 0
+						getCtimeAsDate: 0000-00-00 00:00:00
+						getDirFlagsAsString: Allocated
+						getDirType: 10
+						getDirTypeAsString: VIRT
+						getGid: 0
+						getMetaFlagsAsString: Allocated
+						getMetaTypeAsString: v
+						getMetaAddr: 512660
+						getMetaType: 10
+						getMtime: 0
+						getMtimeAsDate: 0000-00-00 00:00:00
+						getName: $FAT1
+						getParentPath: /
+						getSize: 6144
+						getUid: 0
+
+					File >
+						getAtime: 0
+						getAtimeAsDate: 0000-00-00 00:00:00
+						getAttr_id: 0
+						getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+						getCrtime: 0
+						getCrtimeAsDate: 0000-00-00 00:00:00
+						getCtime: 0
+						getCtimeAsDate: 0000-00-00 00:00:00
+						getDirFlagsAsString: Allocated
+						getDirType: 10
+						getDirTypeAsString: VIRT
+						getGid: 0
+						getMetaFlagsAsString: Allocated
+						getMetaTypeAsString: v
+						getMetaAddr: 512661
+						getMetaType: 10
+						getMtime: 0
+						getMtimeAsDate: 0000-00-00 00:00:00
+						getName: $FAT2
+						getParentPath: /
+						getSize: 6144
+						getUid: 0
+
+					Directory >
+						getAtime: 0
+						getAtimeAsDate: 0000-00-00 00:00:00
+						getAttr_id: 0
+						getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+						getCrtime: 0
+						getCrtimeAsDate: 0000-00-00 00:00:00
+						getCtime: 0
+						getCtimeAsDate: 0000-00-00 00:00:00
+						getDirFlagsAsString: Allocated
+						getDirType: 3
+						getDirTypeAsString: DIR
+						getGid: 0
+						getMetaFlagsAsString: Allocated
+						getMetaTypeAsString: d
+						getMetaAddr: 512662
+						getMetaType: 2
+						getMtime: 0
+						getMtimeAsDate: 0000-00-00 00:00:00
+						getName: $OrphanFiles
+						getParentPath: /
+						getSize: 0
+						getUid: 0
+
+					VirtualDirectory >
+						getSize: 0
+						getId: 44
+						getName: $Unalloc
+
+						LayoutFile >
+							getSize: 4096
+							getId: 45
+							getName: Unalloc_44_61440_65536
+							getNumPartsu: 1
+
+						LayoutFile >
+							getSize: 16368128
+							getId: 46
+							getName: Unalloc_44_81920_16450048
+							getNumPartsu: 1
+
+				Directory >
+					getAtime: 0
+					getAtimeAsDate: 0000-00-00 00:00:00
+					getAttr_id: 0
+					getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+					getCrtime: 0
+					getCrtimeAsDate: 0000-00-00 00:00:00
+					getCtime: 0
+					getCtimeAsDate: 0000-00-00 00:00:00
+					getDirFlagsAsString: Allocated
+					getDirType: 3
+					getDirTypeAsString: DIR
+					getGid: 0
+					getMetaFlagsAsString: Allocated
+					getMetaTypeAsString: d
+					getMetaAddr: 2
+					getMetaType: 2
+					getMtime: 0
+					getMtimeAsDate: 0000-00-00 00:00:00
+					getName: ..
+					getParentPath: /dir 1/
+					getSize: 16384
+					getUid: 0
+
+		Volume >
+			getAddr: 3
+			getDescription: Linux (0x83)
+			getFlags: 1
+			getFlagsAsString: Allocated
+			getLength: 16065
+			getSize: 16065
+			getStart: 32130
+
+			LayoutFile >
+				getSize: 8225280
+				getId: 52
+				getName: Unalloc_23_16450560_24675840
+				getNumPartsu: 1
+
+		Volume >
+			getAddr: 4
+			getDescription: Win95 FAT32 (0x0b)
+			getFlags: 1
+			getFlagsAsString: Allocated
+			getLength: 16065
+			getSize: 16065
+			getStart: 48195
+
+			FileSystem >
+				getBlock_count: 16064
+				getBlock_size: 512
+				getFirst_inum: 2
+				getFs_type: 2
+				getImg_offset: 24675840
+				getLast_inum: 256630
+				getRoot_inum: 2
+				getSize: 8224768
+
+				Directory >
+					getAtime: 0
+					getAtimeAsDate: 0000-00-00 00:00:00
+					getAttr_id: 0
+					getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+					getCrtime: 0
+					getCrtimeAsDate: 0000-00-00 00:00:00
+					getCtime: 0
+					getCtimeAsDate: 0000-00-00 00:00:00
+					getDirFlagsAsString: Allocated
+					getDirType: 3
+					getDirTypeAsString: DIR
+					getGid: 0
+					getMetaFlagsAsString: Allocated
+					getMetaTypeAsString: d
+					getMetaAddr: 2
+					getMetaType: 2
+					getMtime: 0
+					getMtimeAsDate: 0000-00-00 00:00:00
+					getName: 
+					getParentPath: /
+					getSize: 16384
+					getUid: 0
+
+					Directory >
+						getAtime: 1286841600
+						getAtimeAsDate: 2010-10-11 20:00:00
+						getAttr_id: 0
+						getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+						getCrtime: 1286900562
+						getCrtimeAsDate: 2010-10-12 12:22:42
+						getCtime: 0
+						getCtimeAsDate: 0000-00-00 00:00:00
+						getDirFlagsAsString: Allocated
+						getDirType: 3
+						getDirTypeAsString: DIR
+						getGid: 0
+						getMetaFlagsAsString: Allocated
+						getMetaTypeAsString: d
+						getMetaAddr: 4
+						getMetaType: 2
+						getMtime: 1286900578
+						getMtimeAsDate: 2010-10-12 12:22:58
+						getName: dir 2
+						getParentPath: /
+						getSize: 2048
+						getUid: 0
+
+						Directory >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900562
+							getCrtimeAsDate: 2010-10-12 12:22:42
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 3
+							getDirTypeAsString: DIR
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: d
+							getMetaAddr: 4
+							getMetaType: 2
+							getMtime: 1286900578
+							getMtimeAsDate: 2010-10-12 12:22:58
+							getName: .
+							getParentPath: /dir 2/
+							getSize: 2048
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900556
+							getCrtimeAsDate: 2010-10-12 12:22:36
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Unallocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: 
+							getMetaTypeAsString: r
+							getMetaAddr: 582
+							getMetaType: 1
+							getMtime: 1286900556
+							getMtimeAsDate: 2010-10-12 12:22:36
+							getName: filler1
+							getParentPath: /dir 2/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900558
+							getCrtimeAsDate: 2010-10-12 12:22:38
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Unallocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: 
+							getMetaTypeAsString: r
+							getMetaAddr: 584
+							getMetaType: 1
+							getMtime: 1286900558
+							getMtimeAsDate: 2010-10-12 12:22:38
+							getName: filler2
+							getParentPath: /dir 2/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900558
+							getCrtimeAsDate: 2010-10-12 12:22:38
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Unallocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: 
+							getMetaTypeAsString: r
+							getMetaAddr: 586
+							getMetaType: 1
+							getMtime: 1286900558
+							getMtimeAsDate: 2010-10-12 12:22:38
+							getName: filler3
+							getParentPath: /dir 2/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900560
+							getCrtimeAsDate: 2010-10-12 12:22:40
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Unallocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: 
+							getMetaTypeAsString: r
+							getMetaAddr: 588
+							getMetaType: 1
+							getMtime: 1286900560
+							getMtimeAsDate: 2010-10-12 12:22:40
+							getName: filler4
+							getParentPath: /dir 2/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900560
+							getCrtimeAsDate: 2010-10-12 12:22:40
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Unallocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: 
+							getMetaTypeAsString: r
+							getMetaAddr: 590
+							getMetaType: 1
+							getMtime: 1286900560
+							getMtimeAsDate: 2010-10-12 12:22:40
+							getName: filler5
+							getParentPath: /dir 2/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900560
+							getCrtimeAsDate: 2010-10-12 12:22:40
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Unallocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: 
+							getMetaTypeAsString: r
+							getMetaAddr: 592
+							getMetaType: 1
+							getMtime: 1286900560
+							getMtimeAsDate: 2010-10-12 12:22:40
+							getName: filler6
+							getParentPath: /dir 2/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900562
+							getCrtimeAsDate: 2010-10-12 12:22:42
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Unallocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: 
+							getMetaTypeAsString: r
+							getMetaAddr: 594
+							getMetaType: 1
+							getMtime: 1286900562
+							getMtimeAsDate: 2010-10-12 12:22:42
+							getName: filler7
+							getParentPath: /dir 2/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286900562
+							getCrtimeAsDate: 2010-10-12 12:22:42
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Unallocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: 
+							getMetaTypeAsString: r
+							getMetaAddr: 596
+							getMetaType: 1
+							getMtime: 1286900562
+							getMtimeAsDate: 2010-10-12 12:22:42
+							getName: filler8
+							getParentPath: /dir 2/
+							getSize: 0
+							getUid: 0
+
+						File >
+							getAtime: 1286841600
+							getAtimeAsDate: 2010-10-11 20:00:00
+							getAttr_id: 0
+							getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+							getCrtime: 1286899842
+							getCrtimeAsDate: 2010-10-12 12:10:42
+							getCtime: 0
+							getCtimeAsDate: 0000-00-00 00:00:00
+							getDirFlagsAsString: Allocated
+							getDirType: 5
+							getDirTypeAsString: REG
+							getGid: 0
+							getMetaFlagsAsString: Allocated
+							getMetaTypeAsString: r
+							getMetaAddr: 599
+							getMetaType: 1
+							getMtime: 1286899842
+							getMtimeAsDate: 2010-10-12 12:10:42
+							getName: about_maytag.txt
+							getParentPath: /dir 2/
+							getSize: 5158
+							getUid: 0
+
+					File >
+						getAtime: 0
+						getAtimeAsDate: 0000-00-00 00:00:00
+						getAttr_id: 0
+						getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+						getCrtime: 0
+						getCrtimeAsDate: 0000-00-00 00:00:00
+						getCtime: 0
+						getCtimeAsDate: 0000-00-00 00:00:00
+						getDirFlagsAsString: Allocated
+						getDirType: 10
+						getDirTypeAsString: VIRT
+						getGid: 0
+						getMetaFlagsAsString: Allocated
+						getMetaTypeAsString: v
+						getMetaAddr: 256627
+						getMetaType: 10
+						getMtime: 0
+						getMtimeAsDate: 0000-00-00 00:00:00
+						getName: $MBR
+						getParentPath: /
+						getSize: 512
+						getUid: 0
+
+					File >
+						getAtime: 0
+						getAtimeAsDate: 0000-00-00 00:00:00
+						getAttr_id: 0
+						getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+						getCrtime: 0
+						getCrtimeAsDate: 0000-00-00 00:00:00
+						getCtime: 0
+						getCtimeAsDate: 0000-00-00 00:00:00
+						getDirFlagsAsString: Allocated
+						getDirType: 10
+						getDirTypeAsString: VIRT
+						getGid: 0
+						getMetaFlagsAsString: Allocated
+						getMetaTypeAsString: v
+						getMetaAddr: 256628
+						getMetaType: 10
+						getMtime: 0
+						getMtimeAsDate: 0000-00-00 00:00:00
+						getName: $FAT1
+						getParentPath: /
+						getSize: 6144
+						getUid: 0
+
+					File >
+						getAtime: 0
+						getAtimeAsDate: 0000-00-00 00:00:00
+						getAttr_id: 0
+						getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+						getCrtime: 0
+						getCrtimeAsDate: 0000-00-00 00:00:00
+						getCtime: 0
+						getCtimeAsDate: 0000-00-00 00:00:00
+						getDirFlagsAsString: Allocated
+						getDirType: 10
+						getDirTypeAsString: VIRT
+						getGid: 0
+						getMetaFlagsAsString: Allocated
+						getMetaTypeAsString: v
+						getMetaAddr: 256629
+						getMetaType: 10
+						getMtime: 0
+						getMtimeAsDate: 0000-00-00 00:00:00
+						getName: $FAT2
+						getParentPath: /
+						getSize: 6144
+						getUid: 0
+
+					Directory >
+						getAtime: 0
+						getAtimeAsDate: 0000-00-00 00:00:00
+						getAttr_id: 0
+						getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+						getCrtime: 0
+						getCrtimeAsDate: 0000-00-00 00:00:00
+						getCtime: 0
+						getCtimeAsDate: 0000-00-00 00:00:00
+						getDirFlagsAsString: Allocated
+						getDirType: 3
+						getDirTypeAsString: DIR
+						getGid: 0
+						getMetaFlagsAsString: Allocated
+						getMetaTypeAsString: d
+						getMetaAddr: 256630
+						getMetaType: 2
+						getMtime: 0
+						getMtimeAsDate: 0000-00-00 00:00:00
+						getName: $OrphanFiles
+						getParentPath: /
+						getSize: 0
+						getUid: 0
+
+					VirtualDirectory >
+						getSize: 0
+						getId: 47
+						getName: $Unalloc
+
+						LayoutFile >
+							getSize: 2048
+							getId: 48
+							getName: Unalloc_47_24705024_24707072
+							getNumPartsu: 1
+
+						LayoutFile >
+							getSize: 3807232
+							getId: 49
+							getName: Unalloc_47_24709120_28516352
+							getNumPartsu: 1
+
+						LayoutFile >
+							getSize: 4378112
+							getId: 50
+							getName: Unalloc_47_28522496_32900608
+							getNumPartsu: 1
+
+				Directory >
+					getAtime: 0
+					getAtimeAsDate: 0000-00-00 00:00:00
+					getAttr_id: 0
+					getAttr_type: TSK_FS_ATTR_TYPE_DEFAULT
+					getCrtime: 0
+					getCrtimeAsDate: 0000-00-00 00:00:00
+					getCtime: 0
+					getCtimeAsDate: 0000-00-00 00:00:00
+					getDirFlagsAsString: Allocated
+					getDirType: 3
+					getDirTypeAsString: DIR
+					getGid: 0
+					getMetaFlagsAsString: Allocated
+					getMetaTypeAsString: d
+					getMetaAddr: 2
+					getMetaType: 2
+					getMtime: 0
+					getMtimeAsDate: 0000-00-00 00:00:00
+					getName: ..
+					getParentPath: /dir 2/
+					getSize: 16384
+					getUid: 0
+
+		Volume >
+			getAddr: 5
+			getDescription: Unallocated
+			getFlags: 2
+			getFlagsAsString: Unallocated
+			getLength: 10485216
+			getSize: 10485216
+			getStart: 64260
+
+			LayoutFile >
+				getSize: 5368430592
+				getId: 53
+				getName: Unalloc_43_32901120_5401331712
+				getNumPartsu: 1
+

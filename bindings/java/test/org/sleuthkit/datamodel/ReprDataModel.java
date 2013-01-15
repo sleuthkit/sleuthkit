@@ -143,7 +143,7 @@ public class ReprDataModel {
 	}
 
 	private void readContent(Content c) {
-		long size = c.getSize();
+		/*long size = c.getSize();
 		byte[] readBuffer = new byte[READ_BUFFER_SIZE];
 		try {
 			MessageDigest md5 = MessageDigest.getInstance("MD5");
@@ -160,7 +160,7 @@ public class ReprDataModel {
 			repr("read", ex);
 		} catch (NoSuchAlgorithmException ex) {
 			throw new RuntimeException(ex);
-		}
+		}*/
 		nl();
 
 	}

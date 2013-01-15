@@ -61,13 +61,16 @@ public class DiffUtil {
 			
 			String timezone = "";
 			AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
+			try{
 			process.run(imagePaths.toArray(new String[imagePaths.size()]));
+			}catch (TskDataException ex){}
+
 			process.commit();
 			repr.start(sk.getRootObjects());
 			standardWriter.close();
-			String[] cmd={"sort",standardFile.getAbsolutePath(),"/o",(tempDirPath+java.io.File.separator+firstImageFile.getName()+"_sorted.txt")};
+			String sortedloc = standardFile.getAbsolutePath().substring(0,standardFile.getAbsolutePath().length()-4)+"_sorted.txt";
+			String[] cmd={"sort",standardFile.getAbsolutePath(),"/o",sortedloc};
 			Runtime.getRuntime().exec(cmd);
-		}catch (TskDataException ex){			
 		}catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
