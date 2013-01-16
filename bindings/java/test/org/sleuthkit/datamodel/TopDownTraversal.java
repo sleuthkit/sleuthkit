@@ -57,13 +57,14 @@ public class TopDownTraversal {
 	@Test
 	public void testDataModelDiff() {
 		try {
-			java.io.File testFolder=new java.io.File("Output");
-			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+"Test_Output_TD.txt");
+			String title = (new java.io.File(imagePaths.get(0))).getName();
+			java.io.File testFolder=new java.io.File("test"+java.io.File.separator+"Output"+java.io.File.separator+"Results");
+			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+title+"_TD_Results.txt");
 			String testStandardPath = testStandard.getPath();
-			String oldStandardPath = DiffUtil.standardPath(imagePaths,"_TD");
+			String oldStandardPath = DiffUtil.standardPath(imagePaths,"_TD_sorted");
 			DiffUtil.createStandardTopDown(testStandardPath, testFolder.getAbsolutePath(), imagePaths);
-			String diff = DiffUtil.getDiff(oldStandardPath, testStandardPath);
-
+			String sortedloc = testStandardPath.substring(0,testStandardPath.length()-4)+"_sorted.txt";
+			String diff = DiffUtil.getDiff(oldStandardPath, sortedloc, title);
 			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", "", diff);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");

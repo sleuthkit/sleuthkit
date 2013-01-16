@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 
 public class DiffUtil {
@@ -149,7 +151,7 @@ public class DiffUtil {
 	 * @param pathRevised The path to the revised (new) file
 	 * @return A representation of the diff
 	 */
-	public static String getDiff(String pathOriginal, String pathRevised) {
+	public static String getDiff(String pathOriginal, String pathRevised, String title) {
 		List<String> originalLines, revisedLines;
 		originalLines = fileToLines(pathOriginal);
 		revisedLines = fileToLines(pathRevised);
@@ -162,10 +164,22 @@ public class DiffUtil {
 			diff.append(delta.toString());
 			diff.append("\n");
 		}
-
+		if(!diff.toString().equals(""))
+		{
+			java.io.File outp = new java.io.File(title+"_Diff.txt");
+			try {
+				FileWriter out = new FileWriter(outp);
+				out.append(diff);
+				out.flush();
+				out.close();
+			} catch (IOException ex) {
+				Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, null, ex);
+			}
+			System.out.println(diff.toString());
+		}
 		return diff.toString();
 	}
-	/*
+	/**
 	 * Gets the paths to the test image files by looking for a test image
 	 * directory above the local SVN trunk/branch.
 	 * @return A list of lists of paths to image parts
@@ -180,8 +194,7 @@ public class DiffUtil {
 		
 		
 		// needs to be absolute file because we're going to walk up its path
-		java.io.File dir = (new java.io.File(".")).getAbsoluteFile();
-		dir = dir.getParentFile().getParentFile().getParentFile().getParentFile();
+		java.io.File dir = new java.io.File("test");
 		
 		// image dir is either one level above trunk/ or in tags/
 		if (dir.listFiles(imageDirFilter).length == 1) {
@@ -208,7 +221,7 @@ public class DiffUtil {
 	 */
 	static String standardPath(List<String> imagePaths, String type) {
 		java.io.File firstImage = new java.io.File(imagePaths.get(0));
-		String standardPath = "Gold" + java.io.File.separator + firstImage.getName().split("\\.")[0] + "_standard"+type+".txt";
+		String standardPath = "test"+java.io.File.separator+"output"+java.io.File.separator+"Gold" + java.io.File.separator + firstImage.getName().split("\\.")[0] + "_standard"+type+".txt";
 		return standardPath;
 	}
 }

@@ -5,6 +5,8 @@
 /bindings/java/lib/
 /bindings/java/build/
 /bindings/java/dist
+/bindings/java/test/Output
+/bindings/java/test/Input
 
 # Windows build folders
 /win32/Debug_NoLibs/
