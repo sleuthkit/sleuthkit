@@ -62,16 +62,17 @@ public class TopDownTraversal {
 			String title = (new java.io.File(imagePaths.get(0))).getName();
 			java.io.File testFolder=new java.io.File("test"+java.io.File.separator+"Output"+java.io.File.separator+"Results");
 			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "");
-			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+out+"_Results_TD.txt");
+			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+out+"_TD.txt");
 			String testStandardPath = testStandard.getPath();
 			String oldStandardPath = DiffUtil.standardPath(imagePaths,"_TD_sorted");
 			DiffUtil.createStandardTopDown(testStandardPath, testFolder.getAbsolutePath(), imagePaths);
-			String sortedname = testStandard.getName().replace(".txt", "_sorted.txt");
 			String sortedloc = testStandardPath.replace(".txt", "_sorted.txt");;
-			DiffUtil.addTempStore(sortedname);
 			long wait=System.currentTimeMillis();
 			while((System.currentTimeMillis()-wait)<3000){}
 			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, sortedloc),true);
+			String testExceptionsPath = testStandardPath.replace(".txt","_exceptions.txt");
+			String oldExceptionsPath = oldStandardPath.replace("_sorted.txt","_exceptions.txt");
+			assertEquals("Generated results ("+testExceptionsPath+") differ with gold standard ("+oldExceptionsPath+") .", DiffUtil.comparecontent(oldExceptionsPath, testExceptionsPath),true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}

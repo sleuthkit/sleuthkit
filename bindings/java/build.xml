@@ -16,7 +16,9 @@
 	<property name="dist"  location="dist"/>
 	<property name="lib" location="lib"/>
 	<property name="test" location="test"/>
-	<property name="test-standards" location="teststandards"/>
+	<property name="test-standards" location="test/Output/Gold"/>
+	<property name="test-results" location="test/Output/Results"/>
+	<property name="test-input" location="test/Input"/>
 	<property name="dlls" value="${env.LIBEWF_HOME}/msvscpp/zlib;${env.LIBEWF_HOME}/msvscpp/Release;../../win32/Release"/>
   
 	<path id="libraries">
@@ -32,6 +34,7 @@
 		<mkdir dir="${dist}"/>
 		<mkdir dir="${lib}"/>
 		<mkdir dir="${test-standards}"/>
+		<mkdir dir="${test-results}"/>
 	</target>
   
 	<property name="ivy.install.version" value="2.1.0-rc2" />
@@ -128,21 +131,11 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		<javadoc sourcepath="src" destdir="javadoc" overview="src/overview.html" />
 	</target>
 	<target name="Download-imgs" description="Get test images">
-		<property name="dependency.lib.dir" location="dependencies" />
+		<mkdir dir="${test-input}" />
 
-		<mkdir dir="${dependency.lib.dir}" />
-
-		<get dest="${dependency.lib.dir}">
-			<url url="http://server1/lib1.jar"/> 
-			<url url="http://server2/lib2.jar"/>
-		</get>
-
-		<fileset id="dependency.libs" dir="${dependency.lib.dir}">
-			<include name="*.jar" />
-		</fileset>
-
-		<path id="project.debug.classpath">
-			<fileset refid="dependency.libs" />
-		</path>
+		<copy file="\\basis\df\shared\general\xp-sp3-v4\xp-sp3-v4.001" todir="${test-input}"/> 
+		<copy file="\\basis\df\shared\general\xp-sp3-v4\xp-sp3-v4.002" todir="${test-input}"/> 
+		<copy file="\\basis\df\shared\general\xp-sp3-v4\xp-sp3-v4.003" todir="${test-input}"/> 
+		<copy file="\\basis\df\shared\general\fe_test_4.img" todir="${test-input}"/>
 	</target>
 </project>

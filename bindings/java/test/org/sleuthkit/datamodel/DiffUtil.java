@@ -56,7 +56,7 @@ public class DiffUtil {
 
 			FileWriter standardWriter = new FileWriter(standardFile);
 			int len=(int) (standardFile.toString().length()-4);
-			FileWriter testWriter = new FileWriter(standardFile.toString().substring(0,len)+"_leaves.txt");
+			FileWriter testWriter = new FileWriter(standardFile.toString().replace(".txt","_leaves.txt"));
 			ReprDataModel repr = new ReprDataModel(standardWriter,testWriter);
 			dbFile.delete();
 			
@@ -64,20 +64,29 @@ public class DiffUtil {
 			
 			String timezone = "";
 			AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
+			java.io.File exfile = new java.io.File(standardFile.toString().replace(".txt","_exceptions.txt"));
+			exfile.createNewFile();
 			try{
-			process.run(imagePaths.toArray(new String[imagePaths.size()]));
-			}catch (TskDataException ex){}
+				process.run(imagePaths.toArray(new String[imagePaths.size()]));
+			}catch (TskDataException ex){
+				FileWriter exwriter=new FileWriter(exfile);
+				exwriter.append(ex.toString());
+				exwriter.flush();
+			}
 
 			process.commit();
 			repr.start(sk.getRootObjects());
+			standardWriter.flush();
 			standardWriter.close();
+			testWriter.flush();
+			testWriter.close();
 			String sortedloc = standardFile.getAbsolutePath().substring(0,standardFile.getAbsolutePath().length()-4)+"_sorted.txt";
 			String[] cmd={"sort",standardFile.getAbsolutePath(),"/o",sortedloc};
 			Runtime.getRuntime().exec(cmd);
 		}catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
-		}
+	}
 		/**
 		 * Creates the Sleuth Kit database for an image, generates a string
 		 * representation of a top down traversal of the resulting database to use as a standard for
@@ -148,6 +157,8 @@ public class DiffUtil {
 
 	protected static boolean comparecontent(String filename, String filename1) {
 		try {
+			java.io.File fi1 = new java.io.File(filename);
+			java.io.File fi2 = new java.io.File(filename1);
 			FileReader f1 = new FileReader(new java.io.File(filename).getAbsolutePath());
 			FileReader f2 = new FileReader (new java.io.File(filename1).getAbsolutePath());
 			Scanner in = new Scanner(f1);
@@ -160,6 +171,7 @@ public class DiffUtil {
 					in1.close();
 					f1.close();
 					f2.close();
+					getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),filename.substring(filename.lastIndexOf(java.io.File.separator)+1));
 					return false;
 				}
 				if(!(in.nextLine().equals(in1.nextLine())))
@@ -168,9 +180,13 @@ public class DiffUtil {
 					in1.close();
 					f1.close();
 					f2.close();
+					getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),filename.substring(filename.lastIndexOf(java.io.File.separator)+1));
 					return false;
 				}
 			}
+			long wait=System.currentTimeMillis();
+			while((System.currentTimeMillis()-wait)<3000){}
+			emptyResults(fi2.getParent(), fi2.getName());
 			return ret;
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
@@ -186,7 +202,7 @@ public class DiffUtil {
 		List<String> originalLines, revisedLines;	
 		originalLines = fileToLines(pathOriginal);
 		revisedLines = fileToLines(pathRevised);
-		java.io.File outp = new java.io.File("test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"+java.io.File.separator+title+"_Diff.txt");
+		java.io.File outp = new java.io.File("test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"+java.io.File.separator+title.replace(".txt","")+"_Diff.txt");
 		// Compute diff. Get the Patch object. Patch is the container for computed deltas.
 		Patch patch = DiffUtils.diff(originalLines, revisedLines);
 		StringBuilder diff = new StringBuilder();
@@ -195,16 +211,13 @@ public class DiffUtil {
 			diff.append(delta.toString());
 			diff.append("\n");
 		}
-		if(!diff.toString().equals(""))
-		{
-			try {
-				FileWriter out = new FileWriter(outp);
-				out.append(diff);
-				out.flush();
-				out.close();
-			} catch (IOException ex) {
-				Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, null, ex);
-			}
+		try {
+			FileWriter out = new FileWriter(outp);
+			out.append(diff);
+			out.flush();
+			out.close();
+		} catch (IOException ex) {
+			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, null, ex);
 		}
 		return diff.toString();
 	}
@@ -271,15 +284,13 @@ public class DiffUtil {
 	 */
 	static String standardPath(List<String> imagePaths, String type) {
 		java.io.File firstImage = new java.io.File(imagePaths.get(0));
-		String standardPath = "test"+java.io.File.separator+"output"+java.io.File.separator+"Gold" + java.io.File.separator + firstImage.getName().split("\\.")[0] + "_Standard"+type+".txt";
+		String standardPath = "test"+java.io.File.separator+"output"+java.io.File.separator+"Gold" + java.io.File.separator + firstImage.getName().split("\\.")[0] +type+".txt";
 		return standardPath;
 	}
 	
 	public static void emptyResults(String path, String filename)
 	{
-		int len = path.length()-1;
-		path=path.substring(0,len);
-		final String filt = filename.replace("_Results","").replace("_TD", "").replace(".txt", "").replace("_sorted","");
+		final String filt = filename.replace("_TD", "").replace(".txt", "").replace("_sorted","");
 		FileFilter imageResFilter = new FileFilter() {
 			@Override
 			public boolean accept(java.io.File f) {
