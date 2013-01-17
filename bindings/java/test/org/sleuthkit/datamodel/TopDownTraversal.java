@@ -5,10 +5,12 @@
 package org.sleuthkit.datamodel;
 
 import java.io.FileFilter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Scanner;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,13 +61,17 @@ public class TopDownTraversal {
 		try {
 			String title = (new java.io.File(imagePaths.get(0))).getName();
 			java.io.File testFolder=new java.io.File("test"+java.io.File.separator+"Output"+java.io.File.separator+"Results");
-			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+title+"_TD_Results.txt");
+			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "");
+			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+out+"_Results_TD.txt");
 			String testStandardPath = testStandard.getPath();
 			String oldStandardPath = DiffUtil.standardPath(imagePaths,"_TD_sorted");
 			DiffUtil.createStandardTopDown(testStandardPath, testFolder.getAbsolutePath(), imagePaths);
-			String sortedloc = testStandardPath.substring(0,testStandardPath.length()-4)+"_sorted.txt";
-			String diff = DiffUtil.getDiff(oldStandardPath, sortedloc, title);
-			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", "", diff);
+			String sortedname = testStandard.getName().replace(".txt", "_sorted.txt");
+			String sortedloc = testStandardPath.replace(".txt", "_sorted.txt");;
+			DiffUtil.addTempStore(sortedname);
+			long wait=System.currentTimeMillis();
+			while((System.currentTimeMillis()-wait)<3000){}
+			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, sortedloc),true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}

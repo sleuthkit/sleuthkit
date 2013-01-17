@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
@@ -145,6 +146,36 @@ public class DiffUtil {
 		return lines;
 	}
 
+	protected static boolean comparecontent(String filename, String filename1) {
+		try {
+			FileReader f1 = new FileReader(new java.io.File(filename).getAbsolutePath());
+			FileReader f2 = new FileReader (new java.io.File(filename1).getAbsolutePath());
+			Scanner in = new Scanner(f1);
+			Scanner in1 = new Scanner(f2);
+			boolean ret=true;
+			while (in.hasNextLine()||in1.hasNextLine()) {
+				if(in.hasNextLine()^in1.hasNextLine())
+				{
+					in.close();
+					in1.close();
+					f1.close();
+					f2.close();
+					return false;
+				}
+				if(!(in.nextLine().equals(in1.nextLine())))
+				{
+					in.close();
+					in1.close();
+					f1.close();
+					f2.close();
+					return false;
+				}
+			}
+			return ret;
+		} catch (IOException ex) {
+			throw new RuntimeException(ex);
+		}
+	}
 	/**
 	 * Returns the diff between the two given files
 	 * @param pathOriginal The path to the original file
@@ -152,10 +183,10 @@ public class DiffUtil {
 	 * @return A representation of the diff
 	 */
 	public static String getDiff(String pathOriginal, String pathRevised, String title) {
-		List<String> originalLines, revisedLines;
+		List<String> originalLines, revisedLines;	
 		originalLines = fileToLines(pathOriginal);
 		revisedLines = fileToLines(pathRevised);
-
+		java.io.File outp = new java.io.File("test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"+java.io.File.separator+title+"_Diff.txt");
 		// Compute diff. Get the Patch object. Patch is the container for computed deltas.
 		Patch patch = DiffUtils.diff(originalLines, revisedLines);
 		StringBuilder diff = new StringBuilder();
@@ -166,7 +197,6 @@ public class DiffUtil {
 		}
 		if(!diff.toString().equals(""))
 		{
-			java.io.File outp = new java.io.File(title+"_Diff.txt");
 			try {
 				FileWriter out = new FileWriter(outp);
 				out.append(diff);
@@ -175,7 +205,6 @@ public class DiffUtil {
 			} catch (IOException ex) {
 				Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, null, ex);
 			}
-			System.out.println(diff.toString());
 		}
 		return diff.toString();
 	}
@@ -204,16 +233,37 @@ public class DiffUtil {
 			// in tags/, go up one more level
 			dir = dir.getParentFile().listFiles(imageDirFilter)[0];
 		}
-		
-		List<String> images = new ArrayList<String>();
-		for (java.io.File imageSet : dir.listFiles()) {
-			images.add(imageSet.getAbsolutePath());
+		FileFilter imageFilter = new FileFilter() {
+			@Override
+			public boolean accept(java.io.File f) {
+				return f.getName().endsWith(".001")||f.getName().endsWith(".img")||f.getName().endsWith(".dd")||f.getName().endsWith(".E01");
+			}
+		};
+		List<List<String>> images = new ArrayList<List<String>>();
+		for (java.io.File imageSet : dir.listFiles(imageFilter)) {
+			ArrayList<String> imgs = new ArrayList<String>();
+			imgs.add(imageSet.getAbsolutePath());
+			images.add(imgs);
 		}
-		List<List<String>> ret=new ArrayList<List<String>>();
-		ret.add(images);
-		return ret;
+		return images;
 	}
-	
+	public static void addTempStore(String title) throws IOException
+	{
+		java.io.File imageStore=new java.io.File("TempStore.txt");
+		Scanner inp = new Scanner(imageStore);
+		StringBuilder curr = new StringBuilder();
+		while(inp.hasNextLine())
+		{
+			curr.append(inp.nextLine());
+			curr.append("\n");
+		}
+		inp.close();
+		FileWriter outp = new FileWriter(imageStore);
+		outp.write(curr.toString());
+		outp.append(title);
+		outp.flush();
+		outp.close();
+	}
 	/**
 	 * Get the path for a standard corresponding to the given image path.
 	 * @param imagePaths path of the image to get a standard for
@@ -221,7 +271,25 @@ public class DiffUtil {
 	 */
 	static String standardPath(List<String> imagePaths, String type) {
 		java.io.File firstImage = new java.io.File(imagePaths.get(0));
-		String standardPath = "test"+java.io.File.separator+"output"+java.io.File.separator+"Gold" + java.io.File.separator + firstImage.getName().split("\\.")[0] + "_standard"+type+".txt";
+		String standardPath = "test"+java.io.File.separator+"output"+java.io.File.separator+"Gold" + java.io.File.separator + firstImage.getName().split("\\.")[0] + "_Standard"+type+".txt";
 		return standardPath;
+	}
+	
+	public static void emptyResults(String path, String filename)
+	{
+		int len = path.length()-1;
+		path=path.substring(0,len);
+		final String filt = filename.replace("_Results","").replace("_TD", "").replace(".txt", "").replace("_sorted","");
+		FileFilter imageResFilter = new FileFilter() {
+			@Override
+			public boolean accept(java.io.File f) {
+				return f.getName().contains(filt)&!f.getName().contains("leaves");
+			}
+		};
+		java.io.File pth = new java.io.File(path);
+		for(java.io.File del: pth.listFiles(imageResFilter))
+		{
+			del.deleteOnExit();
+		}
 	}
 }

@@ -100,7 +100,7 @@ public class ReprDataModel {
 			try {
 				if (c.getChildren().isEmpty())
 				{
-					appendLeaves(c.getName()+": "+c.getId());
+					append(c.getName()+": "+c.getId(),leaves);
 				}
 				else
 				{
@@ -410,13 +410,6 @@ public class ReprDataModel {
 			//System.out.append(s);
 			//System.out.flush();
 			f.append(s);
-		} catch (IOException ex) {
-			throw new RuntimeException(ex);
-		}
-	}
-	private void appendLeaves(CharSequence s) {
-		try {
-			leaves.append(s);
 		} catch (IOException ex) {
 			throw new RuntimeException(ex);
 		}
