@@ -71,7 +71,7 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
   
 	<target name="compile-test" depends="compile"
         description="compile the tests" >
-		<javac debug="on" srcdir="${test}" destdir="${build}">
+		<javac debug="on" srcdir="${test}" destdir="${build}" includeantruntime="false">
 			<classpath refid="libraries"/>
 		</javac>
 	</target>
@@ -127,5 +127,22 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		<mkdir dir="javadoc"/>
 		<javadoc sourcepath="src" destdir="javadoc" overview="src/overview.html" />
 	</target>
+	<target name="Download-imgs" description="Get test images">
+		<property name="dependency.lib.dir" location="dependencies" />
 
+		<mkdir dir="${dependency.lib.dir}" />
+
+		<get dest="${dependency.lib.dir}">
+			<url url="http://server1/lib1.jar"/> 
+			<url url="http://server2/lib2.jar"/>
+		</get>
+
+		<fileset id="dependency.libs" dir="${dependency.lib.dir}">
+			<include name="*.jar" />
+		</fileset>
+
+		<path id="project.debug.classpath">
+			<fileset refid="dependency.libs" />
+		</path>
+	</target>
 </project>
