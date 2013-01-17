@@ -22,6 +22,11 @@ public class DatamodeltestSuite {
 	public static void setUpClass() throws Exception{
 		java.io.File imageStore=new java.io.File("TempStore.txt");
 		imageStore.createNewFile();
+		java.io.File results = new java.io.File("test"+java.io.File.separator+"Output"+java.io.File.separator+"Results");
+		for(java.io.File del: results.listFiles())
+		{
+			del.delete();
+		}
 	}
 	@AfterClass
 	public static void tearDownClass() throws Exception {
