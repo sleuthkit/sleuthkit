@@ -110,4 +110,12 @@ public class ReadContentInputStream extends InputStream {
 		}
 
 	}
+	
+	@Override
+	public int available() throws IOException {
+		if (position > length) {
+			return 0;
+		}
+        return (int)(length - position);
+    }
 }
