@@ -56,6 +56,9 @@ public abstract class FsContent extends AbstractFile {
 	 * path of parent directory
 	 */
 	protected final String parentPath;
+	
+	private String uniquePath;
+
 	///read-write database tsk_files fields
 	/**
 	 * known status in database
@@ -549,34 +552,14 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	@Override
-	public String getUniquePath() throws TskCoreException {
-		if (uniquePath != null) {
-			return uniquePath;
+	public synchronized String getUniquePath() throws TskCoreException {
+		if (uniquePath == null) {
+			StringBuilder sb = new StringBuilder();
+			sb.append(getFileSystem().getUniquePath());
+			sb.append(getParentPath());
+			sb.append(getName());
+			uniquePath = sb.toString();
 		}
-
-		String imagePath = getImage().getName();
-		String[] imagePathSegments = imagePath.split("/\\\\");
-		if (imagePathSegments.length == 0) {
-			throw new TskCoreException("Malformed image path retrieved from image: " + getImage());
-		}
-		String imageName = imagePathSegments[imagePathSegments.length - 1];
-
-		//prepend image and volume to file path
-		StringBuilder sb = new StringBuilder();
-		sb.append("/img_").append(imageName);
-		FileSystem parentFileSystem = getFileSystem();
-		if (parentFileSystem != null) {
-			Content vol = parentFileSystem.getParent();
-			if (vol != null && !vol.equals(getImage())) {
-				sb.append("/vol_");
-				sb.append(vol.getName());
-			}
-		}
-
-		sb.append(getParentPath());
-		sb.append(getName());
-
-		uniquePath = sb.toString();
 		return uniquePath;
 	}
 

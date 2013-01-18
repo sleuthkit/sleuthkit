@@ -29,11 +29,14 @@ import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 public abstract class AbstractContent implements Content {
 
 	public final static long UNKNOWN_ID = -1;
+	
 	private SleuthkitCase db;
 	private long objId;
 	private String name;
 	private Content parent;
+	private String uniquePath;
 	protected long parentId;
+	
 
 	protected AbstractContent(SleuthkitCase db, long obj_id, String name) {
 		this.db = db;
@@ -47,8 +50,29 @@ public abstract class AbstractContent implements Content {
 		return this.name;
 	}
 
+	/*
+	 * This base implementation simply walks the hierarchy appending its own
+	 * name to the result of calling its parent's getUniquePath() method (with
+	 * interleaving forward slashes).
+	 */
 	@Override
-	public Content getParent() throws TskCoreException {
+	public synchronized String getUniquePath() throws TskCoreException {
+		if (uniquePath == null) {
+			uniquePath = "";
+			if (!name.isEmpty()) {
+				uniquePath = "/" + getName();
+			}
+
+			Content myParent = getParent();
+			if (myParent != null) {
+				uniquePath = myParent.getUniquePath() + uniquePath;
+			}
+		}
+		return uniquePath;
+	}
+
+	@Override
+	public synchronized Content getParent() throws TskCoreException {
 		if (parent == null) {
 			ObjectInfo parentInfo = null;
 			try {

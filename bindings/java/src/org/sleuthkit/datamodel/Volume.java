@@ -81,6 +81,21 @@ public class Volume extends AbstractContent {
 		return length;
 	}
 
+	@Override
+	public synchronized String getUniquePath() throws TskCoreException {
+		String uniquePath = "";
+		String name = getName();
+		if (!name.isEmpty()) {
+			uniquePath = "/vol_" + name;
+		}
+		
+		Content myParent = getParent();
+		if (myParent != null) {
+			uniquePath = myParent.getUniquePath() + uniquePath;
+		}
+		return uniquePath;
+	}
+
 	//methods get exact data from database. could be manipulated to get more
 	//meaningful data.
 	/**
