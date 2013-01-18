@@ -185,7 +185,7 @@ public class DiffUtil {
 				}
 			}
 			long wait=System.currentTimeMillis();
-			while((System.currentTimeMillis()-wait)<3000){}
+			while((System.currentTimeMillis()-wait)<500){}
 			emptyResults(fi2.getParent(), fi2.getName());
 			return ret;
 		} catch (IOException ex) {

@@ -72,7 +72,7 @@ public class ReprDataModel {
 			try {
 				if (c.getChildren().isEmpty())
 				{
-					append(lp.toString(), leaves);
+					append(lp.toString()+"\n", leaves);
 				}
 				else
 				{

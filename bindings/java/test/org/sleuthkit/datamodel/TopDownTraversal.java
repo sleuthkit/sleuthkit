@@ -69,10 +69,10 @@ public class TopDownTraversal {
 			String sortedloc = testStandardPath.replace(".txt", "_sorted.txt");;
 			long wait=System.currentTimeMillis();
 			while((System.currentTimeMillis()-wait)<3000){}
-			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, sortedloc),true);
 			String testExceptionsPath = testStandardPath.replace(".txt","_exceptions.txt");
 			String oldExceptionsPath = oldStandardPath.replace("_sorted.txt","_exceptions.txt");
 			assertEquals("Generated results ("+testExceptionsPath+") differ with gold standard ("+oldExceptionsPath+") .", DiffUtil.comparecontent(oldExceptionsPath, testExceptionsPath),true);
+			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, sortedloc),true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}
