@@ -33,6 +33,7 @@
 		<mkdir dir="${build}"/>
 		<mkdir dir="${dist}"/>
 		<mkdir dir="${lib}"/>
+		<mkdir dir="${test-input}"/>
 		<mkdir dir="${test-standards}"/>
 		<mkdir dir="${test-results}"/>
 	</target>
@@ -84,6 +85,8 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
 		<java classname="org.sleuthkit.datamodel.DiffUtil" classpathref="libraries"	fork="true" failonerror="true">
 			<sysproperty key="java.library.path" value="${dlls}"/>
+			<sysproperty key="gold" value="${test-standards}"/>
+			<sysproperty key="inpt" value="${test-input}"/>
 		</java>
 	</target>
   
@@ -92,6 +95,9 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
 		<junit fork="on" haltonfailure="yes" dir=".">
 			<sysproperty key="java.library.path" value="${dlls}"/>
+			<sysproperty key="rslt" value="${test-results}"/>
+			<sysproperty key="gold" value="${test-standards}"/>
+			<sysproperty key="inpt" value="${test-input}"/>
 			<classpath refid="libraries" />
 			<formatter type="plain" usefile="false" />
 			<test name="org.sleuthkit.datamodel.DatamodeltestSuite" />

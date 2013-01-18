@@ -60,7 +60,7 @@ public class TopDownTraversal {
 	public void testDataModelDiff() {
 		try {
 			String title = (new java.io.File(imagePaths.get(0))).getName();
-			java.io.File testFolder=new java.io.File("test"+java.io.File.separator+"Output"+java.io.File.separator+"Results");
+			java.io.File testFolder=new java.io.File(System.getProperty(DiffUtil.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
 			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "");
 			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+out+"_TD.txt");
 			String testStandardPath = testStandard.getPath();

@@ -35,7 +35,10 @@ import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 
 public class DiffUtil {
-	static final String TEST_IMAGE_DIR_NAME = "Input";
+	static final String TEST_IMAGE_DIR_NAME = "test" + java.io.File.separator + "Input";
+	static final String INPT = "inpt";
+	static final String GOLD = "gold";
+	static final String RSLT = "rslt";
 	/**
 	 * Creates the Sleuth Kit database for an image, generates a string
 	 * representation of a top down depth first traversal of the resulting database to use as a standard for
@@ -227,25 +230,10 @@ public class DiffUtil {
 	 * @return A list of lists of paths to image parts
 	 */
 	static List<List<String>> getImagePaths() {
-		FileFilter imageDirFilter = new FileFilter() {
-			@Override
-			public boolean accept(java.io.File f) {
-				return f.isDirectory() && f.getName().equalsIgnoreCase(TEST_IMAGE_DIR_NAME);
-			}
-		};
-		
 		
 		// needs to be absolute file because we're going to walk up its path
-		java.io.File dir = new java.io.File("test");
+		java.io.File dir = new java.io.File(System.getProperty(INPT,TEST_IMAGE_DIR_NAME));
 		
-		// image dir is either one level above trunk/ or in tags/
-		if (dir.listFiles(imageDirFilter).length == 1) {
-			// above trunk/
-			dir = dir.listFiles(imageDirFilter)[0];
-		} else {
-			// in tags/, go up one more level
-			dir = dir.getParentFile().listFiles(imageDirFilter)[0];
-		}
 		FileFilter imageFilter = new FileFilter() {
 			@Override
 			public boolean accept(java.io.File f) {
@@ -284,7 +272,7 @@ public class DiffUtil {
 	 */
 	static String standardPath(List<String> imagePaths, String type) {
 		java.io.File firstImage = new java.io.File(imagePaths.get(0));
-		String standardPath = "test"+java.io.File.separator+"output"+java.io.File.separator+"Gold" + java.io.File.separator + firstImage.getName().split("\\.")[0] +type+".txt";
+		String standardPath = System.getProperty(GOLD, ("test" + java.io.File.separator + "output" + java.io.File.separator + "Gold")) + java.io.File.separator + firstImage.getName().split("\\.")[0] +type+".txt";
 		return standardPath;
 	}
 	
