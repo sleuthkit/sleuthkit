@@ -19,7 +19,7 @@
  * For reasons that defy explaination (at the moment), this is required.
  */
 
-#include "tsk3/base/sha2.h"
+#include "sha2.h"
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
