@@ -22,6 +22,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 
 /**
  *
@@ -57,24 +58,35 @@ public class TopDownTraversal {
 
 	
 	@Test
-	public void testDataModelDiff() {
+	public void testTopDownDataModelDiff() {
 		try {
 			String title = (new java.io.File(imagePaths.get(0))).getName();
 			java.io.File testFolder=new java.io.File(System.getProperty(DiffUtil.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
-			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "");
+			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace("raw","");
 			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+out+"_TD.txt");
 			String testStandardPath = testStandard.getPath();
-			String oldStandardPath = DiffUtil.standardPath(imagePaths,"_TD_sorted");
+			String oldStandardPath = DiffUtil.standardPath(imagePaths,"_TD");
 			DiffUtil.createStandardTopDown(testStandardPath, testFolder.getAbsolutePath(), imagePaths);
-			String sortedloc = testStandardPath.replace(".txt", "_sorted.txt");;
-			long wait=System.currentTimeMillis();
-			while((System.currentTimeMillis()-wait)<3000){}
 			String testExceptionsPath = testStandardPath.replace(".txt","_exceptions.txt");
-			String oldExceptionsPath = oldStandardPath.replace("_sorted.txt","_exceptions.txt");
+			String oldExceptionsPath = oldStandardPath.replace(".txt","_exceptions.txt");
+			System.out.println(testExceptionsPath);
+			System.out.println(oldExceptionsPath);
 			assertEquals("Generated results ("+testExceptionsPath+") differ with gold standard ("+oldExceptionsPath+") .", DiffUtil.comparecontent(oldExceptionsPath, testExceptionsPath),true);
-			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, sortedloc),true);
+			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, testStandardPath),true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}
 	}
+	
+/*	@Ignore @Test
+	public void testBottomUpDiff() {
+		try{
+			String title = (new java.io.File(imagePaths.get(0))).getName();
+			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "");
+			out+=;
+		} catch (Exception ex)
+		{
+			fail("Failed to run BottomUp test");
+		}
+	}*/
 }

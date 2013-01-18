@@ -59,7 +59,7 @@ public class DiffUtil {
 
 			FileWriter standardWriter = new FileWriter(standardFile);
 			int len=(int) (standardFile.toString().length()-4);
-			FileWriter testWriter = new FileWriter(standardFile.toString().replace(".txt","_leaves.txt"));
+			FileWriter testWriter = new FileWriter(standardFile.toString().replace("_TD.txt","_leaves.txt"));
 			ReprDataModel repr = new ReprDataModel(standardWriter,testWriter);
 			dbFile.delete();
 			
@@ -87,6 +87,7 @@ public class DiffUtil {
 			String[] cmd={"sort",standardFile.getAbsolutePath(),"/o",sortedloc};
 			Runtime.getRuntime().exec(cmd);
 		}catch (Exception ex) {
+			System.err.println(ex.toString());
 			throw new RuntimeException(ex);
 		}
 	}
@@ -158,12 +159,12 @@ public class DiffUtil {
 		return lines;
 	}
 
-	protected static boolean comparecontent(String filename, String filename1) {
+	protected static boolean comparecontent(String original, String results) {
 		try {
-			java.io.File fi1 = new java.io.File(filename);
-			java.io.File fi2 = new java.io.File(filename1);
-			FileReader f1 = new FileReader(new java.io.File(filename).getAbsolutePath());
-			FileReader f2 = new FileReader (new java.io.File(filename1).getAbsolutePath());
+			java.io.File fi1 = new java.io.File(original);
+			java.io.File fi2 = new java.io.File(results);
+			FileReader f1 = new FileReader(new java.io.File(original).getAbsolutePath());
+			FileReader f2 = new FileReader (new java.io.File(results).getAbsolutePath());
 			Scanner in = new Scanner(f1);
 			Scanner in1 = new Scanner(f2);
 			boolean ret=true;
@@ -174,7 +175,7 @@ public class DiffUtil {
 					in1.close();
 					f1.close();
 					f2.close();
-					getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),filename.substring(filename.lastIndexOf(java.io.File.separator)+1));
+					getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),original.substring(original.lastIndexOf(java.io.File.separator)+1));
 					return false;
 				}
 				if(!(in.nextLine().equals(in1.nextLine())))
@@ -183,12 +184,10 @@ public class DiffUtil {
 					in1.close();
 					f1.close();
 					f2.close();
-					getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),filename.substring(filename.lastIndexOf(java.io.File.separator)+1));
+					getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),original.substring(original.lastIndexOf(java.io.File.separator)+1));
 					return false;
 				}
 			}
-			long wait=System.currentTimeMillis();
-			while((System.currentTimeMillis()-wait)<500){}
 			emptyResults(fi2.getParent(), fi2.getName());
 			return ret;
 		} catch (IOException ex) {
@@ -205,7 +204,7 @@ public class DiffUtil {
 		List<String> originalLines, revisedLines;	
 		originalLines = fileToLines(pathOriginal);
 		revisedLines = fileToLines(pathRevised);
-		java.io.File outp = new java.io.File("test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"+java.io.File.separator+title.replace(".txt","")+"_Diff.txt");
+		java.io.File outp = new java.io.File(System.getProperty(RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results") + java.io.File.separator + title.replace(".txt","")+"_Diff.txt");
 		// Compute diff. Get the Patch object. Patch is the container for computed deltas.
 		Patch patch = DiffUtils.diff(originalLines, revisedLines);
 		StringBuilder diff = new StringBuilder();
@@ -237,7 +236,7 @@ public class DiffUtil {
 		FileFilter imageFilter = new FileFilter() {
 			@Override
 			public boolean accept(java.io.File f) {
-				return f.getName().endsWith(".001")||f.getName().endsWith(".img")||f.getName().endsWith(".dd")||f.getName().endsWith(".E01");
+				return f.getName().endsWith(".001")||f.getName().endsWith(".img")||f.getName().endsWith(".dd")||f.getName().endsWith(".E01")||f.getName().endsWith(".raw");
 			}
 		};
 		List<List<String>> images = new ArrayList<List<String>>();
@@ -282,7 +281,7 @@ public class DiffUtil {
 		FileFilter imageResFilter = new FileFilter() {
 			@Override
 			public boolean accept(java.io.File f) {
-				return f.getName().contains(filt)&!f.getName().contains("leaves");
+				return f.getName().contains(filt)&!f.getName().contains("leaves")&!f.getName().contains("sorted");
 			}
 		};
 		java.io.File pth = new java.io.File(path);
