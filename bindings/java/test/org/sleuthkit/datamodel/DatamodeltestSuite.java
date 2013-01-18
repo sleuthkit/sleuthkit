@@ -4,23 +4,20 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.junit.BeforeClass;
 /**
  *
  * @author smoss
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class})
+@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.SequentialTest.class,org.sleuthkit.datamodel.CrossCompare.class})
 public class DatamodeltestSuite {
 	@BeforeClass
 	public static void setUpClass() throws Exception{
-		java.io.File results = new java.io.File("test"+java.io.File.separator+"Output"+java.io.File.separator+"Results");
+		java.io.File results = new java.io.File(System.getProperty(DiffUtil.RSLT,"test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
 		for(java.io.File del: results.listFiles())
 		{
 			del.delete();

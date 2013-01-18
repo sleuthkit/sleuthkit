@@ -58,7 +58,6 @@ public class DiffUtil {
 			standardFile.createNewFile();
 
 			FileWriter standardWriter = new FileWriter(standardFile);
-			int len=(int) (standardFile.toString().length()-4);
 			FileWriter testWriter = new FileWriter(standardFile.toString().replace("_TD.txt","_leaves.txt"));
 			ReprDataModel repr = new ReprDataModel(standardWriter,testWriter);
 			dbFile.delete();
@@ -76,16 +75,54 @@ public class DiffUtil {
 				exwriter.append(ex.toString());
 				exwriter.flush();
 			}
-
 			process.commit();
-			repr.start(sk.getRootObjects());
+			repr.startTD(sk.getRootObjects());
 			standardWriter.flush();
 			standardWriter.close();
 			testWriter.flush();
 			testWriter.close();
 			String sortedloc = standardFile.getAbsolutePath().substring(0,standardFile.getAbsolutePath().length()-4)+"_sorted.txt";
 			String[] cmd={"sort",standardFile.getAbsolutePath(),"/o",sortedloc};
-			Runtime.getRuntime().exec(cmd);
+			Runtime.getRuntime().exec(cmd).waitFor();
+		}catch (Exception ex) {
+			System.err.println(ex.toString());
+			throw new RuntimeException(ex);
+		}
+	}
+	public static void createStandardSequential(String standardPath, String tempDirPath, List<String> imagePaths) {
+		java.io.File standardFile = new java.io.File(standardPath);
+		try {
+			java.io.File firstImageFile = new java.io.File(imagePaths.get(0));
+			java.io.File tempDir = new java.io.File(tempDirPath);
+			String dbPath = tempDir.getPath() + java.io.File.separator + firstImageFile.getName() + "_Seq.db";
+			java.io.File dbFile = new java.io.File(dbPath);
+			standardFile.createNewFile();
+
+			FileWriter standardWriter = new FileWriter(standardFile);
+			ReprDataModel repr = new ReprDataModel(standardWriter);
+			dbFile.delete();
+			
+			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
+			
+			String timezone = "";
+			AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
+			java.io.File exfile = new java.io.File(standardFile.toString().replace(".txt","_exceptions.txt"));
+			exfile.createNewFile();
+			try{
+				process.run(imagePaths.toArray(new String[imagePaths.size()]));
+			}catch (TskDataException ex){
+				FileWriter exwriter=new FileWriter(exfile);
+				exwriter.append(ex.toString());
+				exwriter.flush();
+			}
+
+			process.commit();
+			repr.startSeq(sk);
+			standardWriter.flush();
+			standardWriter.close();
+			String sortedloc = standardFile.getAbsolutePath().substring(0,standardFile.getAbsolutePath().length()-4)+"_sorted.txt";
+			String[] cmd={"sort",standardFile.getAbsolutePath(),"/o",sortedloc};
+			Runtime.getRuntime().exec(cmd).waitFor();
 		}catch (Exception ex) {
 			System.err.println(ex.toString());
 			throw new RuntimeException(ex);
@@ -139,9 +176,11 @@ public class DiffUtil {
 		String tempDirPath = System.getProperty("java.io.tmpdir");
 		List<List<String>> imagePaths = getImagePaths();
 		for(List<String> paths : imagePaths) {
-			String standardPath = standardPath(paths,"_TD");
+			String standardPathTD = standardPath(paths,"_TD");
 			System.out.println("Creating standards for: " + paths.get(0));
-			createStandardTopDown(standardPath, tempDirPath, paths);
+			createStandardTopDown(standardPathTD, tempDirPath, paths);
+			String standardPathSeq = standardPath(paths,"_Seq");
+			createStandardSequential(standardPathSeq, tempDirPath, paths);
 		}
 	}
 
@@ -165,23 +204,27 @@ public class DiffUtil {
 			java.io.File fi2 = new java.io.File(results);
 			FileReader f1 = new FileReader(new java.io.File(original).getAbsolutePath());
 			FileReader f2 = new FileReader (new java.io.File(results).getAbsolutePath());
-			Scanner in = new Scanner(f1);
-			Scanner in1 = new Scanner(f2);
+			Scanner in1 = new Scanner(f1);
+			Scanner in2 = new Scanner(f2);
 			boolean ret=true;
-			while (in.hasNextLine()||in1.hasNextLine()) {
-				if(in.hasNextLine()^in1.hasNextLine())
+			while (in1.hasNextLine()||in2.hasNextLine()) {
+				if(in1.hasNextLine()^in2.hasNextLine())
 				{
-					in.close();
 					in1.close();
+					in2.close();
 					f1.close();
 					f2.close();
 					getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),original.substring(original.lastIndexOf(java.io.File.separator)+1));
 					return false;
 				}
-				if(!(in.nextLine().equals(in1.nextLine())))
+				String line1 = in1.nextLine();
+				String line2 = in2.nextLine();
+				if(!(line1.equals(line2)))
 				{
-					in.close();
+					System.out.println(line1);
+					System.out.println(line2);
 					in1.close();
+					in2.close();
 					f1.close();
 					f2.close();
 					getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),original.substring(original.lastIndexOf(java.io.File.separator)+1));
@@ -221,6 +264,7 @@ public class DiffUtil {
 		} catch (IOException ex) {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, null, ex);
 		}
+		System.out.println(diff.toString());
 		return diff.toString();
 	}
 	/**

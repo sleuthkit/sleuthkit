@@ -46,22 +46,34 @@ public class ReprDataModel {
 	/**
 	 * 
 	 * @param result what to append the generated representation to.
+	 * @param leaves what to append leaves to
 	 */
 	ReprDataModel(Appendable result,Appendable leaves) {
 		this.result = result;
 		this.leaves= leaves;
 	}
-
+	/**
+	 * 
+	 * @param result what to append the generated representation to.
+	 */
+	ReprDataModel(Appendable result) {
+		this.result = result;
+		this.leaves = null;
+	}
 	/**
 	 * Entry point to represent a Content object and it's children, sets up the 
-	 * sequential run method
+	 * topDownDF method
 	 * @param c the root Content object
 	 */
-	public void start(List<Content> lc) {
+	public void startTD(List<Content> lc) {
 		List<Long> lp=new ArrayList<Long>();
 		topDownDF(lc,lp);
 	}
-	
+	/**
+	 * Creates a top down representation of a database
+	 * @param lc a list of content to be read
+	 * @param lp that lc's list of parents in most recent first order
+	 */
 	private void topDownDF(List<Content> lc, List<Long> lp)
 	{
 		for(Content c : lc) {
@@ -83,6 +95,23 @@ public class ReprDataModel {
 			}
 			tail();
 			lp.remove(0);
+		}
+	}
+	/**
+	 * Creates a sequential representation of a database
+	 * @param lc a list of content to be read
+	 * @param lp that lc's list of parents in most recent first order
+	 */
+	public void startSeq(SleuthkitCase sk) throws TskCoreException
+	{
+		int x = 1;
+		Content c;
+		while ((c = sk.getContentById(x))!=null)
+		{
+			title(c.getClass().getSimpleName());
+			c.accept(reprVisitor);
+			readContent(c);
+			x++;
 		}
 	}
 	/**
@@ -111,7 +140,7 @@ public class ReprDataModel {
 			}
 		}
 		indent();
-		indentLevel++;
+		//indentLevel++;
 		if(!nex.isEmpty()){
 			topDown(nex);}
 	}
@@ -119,18 +148,18 @@ public class ReprDataModel {
 		indent();
 		append(title, result);
 		append(" >", result);
-		indentLevel++;
+		//indentLevel++;
 		nl();
 	}
 
 	private void tail() {
-		indentLevel--;
+		//indentLevel--;
 	}
 
 	private void indent() {
-		char[] indentation = new char[indentLevel];
+		/*char[] indentation = new char[indentLevel];
 		Arrays.fill(indentation, '\t');
-		append(CharBuffer.wrap(indentation), result);
+		append(CharBuffer.wrap(indentation), result);*/
 	}
 
 	private void nl() {
