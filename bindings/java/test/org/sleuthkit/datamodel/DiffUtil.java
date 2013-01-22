@@ -39,34 +39,37 @@ public class DiffUtil {
 	static final String INPT = "inpt";
 	static final String GOLD = "gold";
 	static final String RSLT = "rslt";
+	static final String SEQ = "_Seq";
+	static final String TD = "_TD";
+	static final String LVS = "_Leaves";
+	static final String EX ="_Exceptions";
 	/**
-	 * Creates the Sleuth Kit database for an image, generates a string
-	 * representation of a top down depth first traversal of the resulting database to use as a standard for
+	 * Creates the Sleuth Kit database for an image, then generates a string
+	 * representation of the given traversal type of the resulting database to use as a standard for
 	 * comparison, and saves the the standard to a file.
 	 * @param standardPath The path to save the standard file to (will be
 	 * overwritten if it already exists)
 	 * @param tempDirPath An existing directory to create the test database in
 	 * @param imagePaths The path(s) to the image file(s)
+	 * @param type The type of traversal to run.
 	 */
-	public static void createStandardTopDown(String standardPath, String tempDirPath, List<String> imagePaths) {
+	public static void createStandard(String standardPath, String tempDirPath, List<String> imagePaths, String type)
+	{
 		java.io.File standardFile = new java.io.File(standardPath);
 		try {
 			java.io.File firstImageFile = new java.io.File(imagePaths.get(0));
 			java.io.File tempDir = new java.io.File(tempDirPath);
-			String dbPath = tempDir.getPath() + java.io.File.separator + firstImageFile.getName() + "_TD.db";
+			String dbPath = tempDir.getPath() + java.io.File.separator + firstImageFile.getName() + type + ".db";
 			java.io.File dbFile = new java.io.File(dbPath);
 			standardFile.createNewFile();
-
 			FileWriter standardWriter = new FileWriter(standardFile);
-			FileWriter testWriter = new FileWriter(standardFile.toString().replace("_TD.txt","_leaves.txt"));
+			FileWriter testWriter = new FileWriter(standardFile.toString().replace(type,LVS));
 			ReprDataModel repr = new ReprDataModel(standardWriter,testWriter);
 			dbFile.delete();
-			
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
-			
 			String timezone = "";
 			AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
-			java.io.File exfile = new java.io.File(standardFile.toString().replace(".txt","_exceptions.txt"));
+			java.io.File exfile = new java.io.File(standardFile.toString().replace(".txt",EX+".txt"));
 			exfile.createNewFile();
 			try{
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
@@ -76,12 +79,19 @@ public class DiffUtil {
 				exwriter.flush();
 			}
 			process.commit();
-			repr.startTD(sk.getRootObjects());
+			if(type.equals(SEQ))
+			{
+				repr.startSeq(sk);
+			}
+			else
+			{
+				repr.startTD(sk.getRootObjects());
+			}
 			standardWriter.flush();
 			standardWriter.close();
 			testWriter.flush();
 			testWriter.close();
-			String sortedloc = standardFile.getAbsolutePath().substring(0,standardFile.getAbsolutePath().length()-4)+"_sorted.txt";
+			String sortedloc = standardFile.getAbsolutePath().replace(".txt", "_Sorted.txt");
 			String[] cmd={"sort",standardFile.getAbsolutePath(),"/o",sortedloc};
 			Runtime.getRuntime().exec(cmd).waitFor();
 		}catch (Exception ex) {
@@ -89,84 +99,6 @@ public class DiffUtil {
 			throw new RuntimeException(ex);
 		}
 	}
-	public static void createStandardSequential(String standardPath, String tempDirPath, List<String> imagePaths) {
-		java.io.File standardFile = new java.io.File(standardPath);
-		try {
-			java.io.File firstImageFile = new java.io.File(imagePaths.get(0));
-			java.io.File tempDir = new java.io.File(tempDirPath);
-			String dbPath = tempDir.getPath() + java.io.File.separator + firstImageFile.getName() + "_Seq.db";
-			java.io.File dbFile = new java.io.File(dbPath);
-			standardFile.createNewFile();
-
-			FileWriter standardWriter = new FileWriter(standardFile);
-			ReprDataModel repr = new ReprDataModel(standardWriter);
-			dbFile.delete();
-			
-			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
-			
-			String timezone = "";
-			AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
-			java.io.File exfile = new java.io.File(standardFile.toString().replace(".txt","_exceptions.txt"));
-			exfile.createNewFile();
-			try{
-				process.run(imagePaths.toArray(new String[imagePaths.size()]));
-			}catch (TskDataException ex){
-				FileWriter exwriter=new FileWriter(exfile);
-				exwriter.append(ex.toString());
-				exwriter.flush();
-			}
-
-			process.commit();
-			repr.startSeq(sk);
-			standardWriter.flush();
-			standardWriter.close();
-			String sortedloc = standardFile.getAbsolutePath().substring(0,standardFile.getAbsolutePath().length()-4)+"_sorted.txt";
-			String[] cmd={"sort",standardFile.getAbsolutePath(),"/o",sortedloc};
-			Runtime.getRuntime().exec(cmd).waitFor();
-		}catch (Exception ex) {
-			System.err.println(ex.toString());
-			throw new RuntimeException(ex);
-		}
-	}
-		/**
-		 * Creates the Sleuth Kit database for an image, generates a string
-		 * representation of a top down traversal of the resulting database to use as a standard for
-		 * comparison, and saves the the standard to a file.
-		 * @param standardPath The path to save the standard file to (will be
-		 * overwritten if it already exists)
-		 * @param tempDirPath An existing directory to create the test database in
-		 * @param imagePaths The path(s) to the image file(s)
-		 */
-		/*public static void createStandardTopDown(String standardPath, String tempDirPath, List<String> imagePaths) {
-		java.io.File standardFile = new java.io.File(standardPath);
-		try {
-			java.io.File firstImageFile = new java.io.File(imagePaths.get(0));
-			java.io.File tempDir = new java.io.File(tempDirPath);
-			String dbPath = tempDir.getPath() + java.io.File.separator + firstImageFile.getName() + "_TD.db";
-			java.io.File dbFile = new java.io.File(dbPath);
-
-			standardFile.createNewFile();
-			FileWriter standardWriter = new FileWriter(standardFile);
-			int len=(int) (standardFile.toString().length()-4);
-			FileWriter testWriter = new FileWriter(standardFile.toString().substring(0,len)+"_leaves.txt");
-			ReprDataModel repr = new ReprDataModel(standardWriter,testWriter);
-
-			dbFile.delete();
-			
-			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
-			
-			String timezone = "";
-			AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
-			process.run(imagePaths.toArray(new String[imagePaths.size()]));
-			process.commit();
-			repr.topDown(sk.getRootObjects());
-			standardWriter.close();
-
-		}catch (TskDataException ex){			
-		}catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
-	}*/
 	/**
 	 * Calls {@link #createStandard(String, String, String[]) createStandard}
 	 * with default arguments
@@ -176,11 +108,11 @@ public class DiffUtil {
 		String tempDirPath = System.getProperty("java.io.tmpdir");
 		List<List<String>> imagePaths = getImagePaths();
 		for(List<String> paths : imagePaths) {
-			String standardPathTD = standardPath(paths,"_TD");
+			String standardPathTD = standardPath(paths, TD);
 			System.out.println("Creating standards for: " + paths.get(0));
-			createStandardTopDown(standardPathTD, tempDirPath, paths);
-			String standardPathSeq = standardPath(paths,"_Seq");
-			createStandardSequential(standardPathSeq, tempDirPath, paths);
+			createStandard(standardPathTD, tempDirPath, paths, TD);
+			String standardPathSeq = standardPath(paths,SEQ);
+			createStandard(standardPathSeq, tempDirPath, paths, SEQ);
 		}
 	}
 
@@ -197,7 +129,11 @@ public class DiffUtil {
 		}
 		return lines;
 	}
-
+	/**
+	 * Compares the content of two files to determine if they are equal, if they are it removes the file from the results folder
+	 * @param original is the first file to be compared
+	 * @param results is the second file to be compared
+	 */
 	protected static boolean comparecontent(String original, String results) {
 		try {
 			java.io.File fi1 = new java.io.File(original);
@@ -318,14 +254,18 @@ public class DiffUtil {
 		String standardPath = System.getProperty(GOLD, ("test" + java.io.File.separator + "output" + java.io.File.separator + "Gold")) + java.io.File.separator + firstImage.getName().split("\\.")[0] +type+".txt";
 		return standardPath;
 	}
-	
+	/**
+	 * removes the files with the file name from the from the given path
+	 * @param path the path to the folder where files are to be deleted
+	 * @param filename the name of the files to be deleted
+	 */
 	public static void emptyResults(String path, String filename)
 	{
-		final String filt = filename.replace("_TD", "").replace(".txt", "").replace("_sorted","");
+		final String filt = filename.replace(TD, "").replace(".txt", "").replace(SEQ, "");
 		FileFilter imageResFilter = new FileFilter() {
 			@Override
 			public boolean accept(java.io.File f) {
-				return f.getName().contains(filt)&!f.getName().contains("leaves")&!f.getName().contains("sorted");
+				return f.getName().contains(filt)&!f.getName().contains(LVS)&!f.getName().contains("Sorted");
 			}
 		};
 		java.io.File pth = new java.io.File(path);
