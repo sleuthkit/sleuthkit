@@ -290,9 +290,10 @@ public class BlackboardAttribute {
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param context extra information about the attribute
 	 * @param valueInt the value
-	 * @Deprecated context parameter will be deprecated - in lieu of specific
+	 * @deprecated context parameter will be deprecated - in lieu of specific
 	 * blackboard attributes use the alternative constructor without context
 	 */
+	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			int valueInt) {
 		this(attributeTypeID, moduleName, valueInt);
@@ -330,9 +331,10 @@ public class BlackboardAttribute {
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param context extra information about the attribute
 	 * @param valueLong the value
-	 * @Deprecated context parameter will be deprecated - in lieu of specific
+	 * @deprecated context parameter will be deprecated - in lieu of specific
 	 * blackboard attributes use the alternative constructor without context
 	 */
+	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			long valueLong) {
 		this(attributeTypeID, moduleName, valueLong);
@@ -370,9 +372,10 @@ public class BlackboardAttribute {
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param context extra information about the attribute
 	 * @param valueDouble the value
-	 * @Deprecated context parameter will be deprecated - in lieu of specific
+	 * @deprecated context parameter will be deprecated - in lieu of specific
 	 * blackboard attributes use the alternative constructor without context
 	 */
+	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			double valueDouble) {
 		this(attributeTypeID, moduleName, valueDouble);
@@ -412,9 +415,10 @@ public class BlackboardAttribute {
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param context extra information about the attribute
 	 * @param valueString the value
-	 * @Deprecated context parameter will be deprecated - in lieu of specific
+	 * @deprecated context parameter will be deprecated - in lieu of specific
 	 * blackboard attributes use the alternative constructor without context
 	 */
+	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			String valueString) {
 		this(attributeTypeID, moduleName, valueString);
