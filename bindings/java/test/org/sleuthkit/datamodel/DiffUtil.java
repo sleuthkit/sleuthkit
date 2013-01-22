@@ -95,7 +95,12 @@ public class DiffUtil {
 			standardWriter.flush();
 			standardWriter.close();
 			String sortedloc = standardFile.getAbsolutePath().replace(".txt", "_Sorted.txt");
-			String[] cmd={"sort",standardFile.getAbsolutePath(),"/o",sortedloc};
+			String cygpath = null;
+			if(System.getProperty("os.name").contains("Windows"))
+			{
+				cygpath="C:\\Users\\" + System.getProperty("user.name")+ "\\Cygwin\\bin\\sort.exe";
+			}
+			String[] cmd={cygpath, standardFile.getAbsolutePath(), "-o", sortedloc};
 			Runtime.getRuntime().exec(cmd).waitFor();
 		}catch (Exception ex) {
 			System.err.println(ex.toString());
@@ -158,7 +163,7 @@ public class DiffUtil {
 				}
 				String line1 = in1.nextLine();
 				String line2 = in2.nextLine();
-				if(!(line1.equalsIgnoreCase(line2)))
+				if(!(line1.equals(line2)))
 				{
 					System.out.println(line1);
 					System.out.println(line2);
