@@ -219,7 +219,7 @@ public class DiffUtil {
 				}
 				String line1 = in1.nextLine();
 				String line2 = in2.nextLine();
-				if(!(line1.equals(line2)))
+				if(!(line1.equalsIgnoreCase(line2)))
 				{
 					System.out.println(line1);
 					System.out.println(line2);
