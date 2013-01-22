@@ -13,7 +13,7 @@ import org.junit.runners.Suite;
  * @author smoss
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.SequentialTest.class,org.sleuthkit.datamodel.CrossCompare.class})
+@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.BottomUpTest.class,org.sleuthkit.datamodel.SequentialTest.class,org.sleuthkit.datamodel.CrossCompare.class})
 public class DatamodeltestSuite {
 	@BeforeClass
 	public static void setUpClass() throws Exception{
