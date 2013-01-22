@@ -64,8 +64,7 @@ public class DiffUtil {
 			java.io.File dbFile = new java.io.File(dbPath);
 			standardFile.createNewFile();
 			FileWriter standardWriter = new FileWriter(standardFile);
-			FileWriter testWriter = new FileWriter(standardFile.toString().replace(type,LVS));
-			ReprDataModel repr = new ReprDataModel(standardWriter,testWriter);
+			ReprDataModel repr = new ReprDataModel(standardWriter);
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
@@ -87,12 +86,14 @@ public class DiffUtil {
 			}
 			else
 			{
+				FileWriter testWriter = new FileWriter(standardFile.toString().replace(type,LVS));
+				repr.setLeaves(testWriter);
 				repr.startTD(sk.getRootObjects());
+				testWriter.flush();
+				testWriter.close();
 			}
 			standardWriter.flush();
 			standardWriter.close();
-			testWriter.flush();
-			testWriter.close();
 			String sortedloc = standardFile.getAbsolutePath().replace(".txt", "_Sorted.txt");
 			String[] cmd={"sort",standardFile.getAbsolutePath(),"/o",sortedloc};
 			Runtime.getRuntime().exec(cmd).waitFor();
