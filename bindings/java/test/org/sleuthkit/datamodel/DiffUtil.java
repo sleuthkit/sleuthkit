@@ -42,7 +42,8 @@ public class DiffUtil {
 	static final String SEQ = "_Seq";
 	static final String TD = "_TD";
 	static final String LVS = "_Leaves";
-	static final String EX ="_Exceptions";
+	static final String EX = "_Exceptions";
+	static final String BU = "_BU";
 	/**
 	 * Creates the Sleuth Kit database for an image, then generates a string
 	 * representation of the given traversal type of the resulting database to use as a standard for
@@ -77,6 +78,7 @@ public class DiffUtil {
 				FileWriter exwriter=new FileWriter(exfile);
 				exwriter.append(ex.toString());
 				exwriter.flush();
+				exwriter.close();
 			}
 			process.commit();
 			if(type.equals(SEQ))

@@ -20,6 +20,8 @@ package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Represents a volume in a VolumeSystem, object stored in tsk_vs_parts table.
@@ -258,4 +260,16 @@ public class Volume extends AbstractContent {
 		
 		return fileSystems;
 	}
+	
+	@Override
+	public String toString()
+	{
+		try {
+			return "Volume [" + "addr " + addr + " " + "desc " + desc + " " + "flags " + flags + " " + "length " + length + " " + "start " + start + " " + "volumeHandle " + volumeHandle + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getParent " + getParent() + "]";
+		} catch (TskCoreException ex) {
+			Logger.getLogger(Volume.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		return null;
+	}
+	
 }

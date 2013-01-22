@@ -77,9 +77,8 @@ public class ReprDataModel {
 	private void topDownDF(List<Content> lc, List<Long> lp)
 	{
 		for(Content c : lc) {
-			title(c.getClass().getSimpleName());
-			c.accept(reprVisitor);
-			readContent(c);
+			append(c.toString(),result);
+			nl();
 			lp.add(0,c.getId());
 			try {
 				if (c.getChildren().isEmpty())
@@ -93,7 +92,6 @@ public class ReprDataModel {
 			} catch (TskCoreException ex) {
 				throw new RuntimeException(ex);
 			}
-			tail();
 			lp.remove(0);
 		}
 	}
@@ -108,9 +106,8 @@ public class ReprDataModel {
 		Content c;
 		while ((c = sk.getContentById(x))!=null)
 		{
-			title(c.getClass().getSimpleName());
-			c.accept(reprVisitor);
-			readContent(c);
+			append(c.toString(),result);
+			nl();
 			x++;
 		}
 	}

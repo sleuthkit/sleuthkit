@@ -48,7 +48,7 @@ public class SequentialTest {
 		try {
 			String title = (new java.io.File(imagePaths.get(0))).getName();
 			java.io.File testFolder=new java.io.File(System.getProperty(DiffUtil.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
-			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace("raw","");
+			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw","");
 			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+out+DiffUtil.SEQ+".txt");
 			String testStandardPath = testStandard.getPath();
 			String oldStandardPath = DiffUtil.standardPath(imagePaths, DiffUtil.SEQ);

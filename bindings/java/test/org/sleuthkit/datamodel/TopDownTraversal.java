@@ -57,11 +57,11 @@ public class TopDownTraversal {
 
 	
 	@Test
-	public void testTopDownDataModelDiff() {
+	public void testTopDownDiff() {
 		try {
 			String title = (new java.io.File(imagePaths.get(0))).getName();
 			java.io.File testFolder=new java.io.File(System.getProperty(DiffUtil.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
-			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace("raw", "");
+			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw", "");
 			java.io.File testStandard = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+out+DiffUtil.TD+".txt");
 			String testStandardPath = testStandard.getPath();
 			String oldStandardPath = DiffUtil.standardPath(imagePaths, DiffUtil.TD);
@@ -75,15 +75,42 @@ public class TopDownTraversal {
 		}
 	}
 	
-/*	@Ignore @Test
+	@Ignore @Test
 	public void testBottomUpDiff() {
 		try{
 			String title = (new java.io.File(imagePaths.get(0))).getName();
-			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "");
-			out+=;
+			java.io.File testFolder=new java.io.File(System.getProperty(DiffUtil.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
+			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw", "");
+			java.io.File standardFile = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+out+DiffUtil.TD+".txt");
+			String tempDirPath= testFolder.getAbsolutePath();
+			java.io.File tempDir = new java.io.File(tempDirPath);
+			String dbPath = tempDir.getPath() + java.io.File.separator + title + "_BU" + ".db";
+			java.io.File dbFile = new java.io.File(dbPath);
+			dbFile.delete();
+			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
+			String timezone = "";
+			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
+			java.io.File exfile = new java.io.File(standardFile.toString().replace(".txt",DiffUtil.EX+".txt"));
+			exfile.createNewFile();
+			try{
+				process.run(imagePaths.toArray(new String[imagePaths.size()]));
+			}catch (TskDataException ex){
+				FileWriter exwriter=new FileWriter(exfile);
+				exwriter.append(ex.toString());
+				exwriter.flush();
+				exwriter.close();
+			}
+			java.io.File lvs = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+title.replace(".txt", DiffUtil.LVS+".txt"));
+			Scanner climber = new Scanner(lvs);
+			Content c = sk.getRootObjects().get(0);
+			String split = ",[ ]";
+			while(climber.hasNextLine())
+			{
+				
+			}
 		} catch (Exception ex)
 		{
 			fail("Failed to run BottomUp test");
 		}
-	}*/
+	}
 }

@@ -195,4 +195,10 @@ public abstract class AbstractContent implements Content {
 	public long getAllArtifactsCount() throws TskCoreException {
 		return db.getBlackboardArtifactsCount(objId);
 	}
+	
+	@Override
+	public String toString()
+	{
+		return "AbstractContent [" + "name " + name + " " + "objId " + objId + " " + "parentId " + parentId + " " + "uniquePath " + uniquePath + "]";
+	}
 }

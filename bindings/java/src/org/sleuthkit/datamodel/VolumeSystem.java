@@ -20,6 +20,8 @@ package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Represents a volume system. Populated based on data in database.
@@ -153,5 +155,15 @@ public class VolumeSystem extends AbstractContent {
 			}
 		}
 		return volumes;
+	}
+	@Override
+	public String toString()
+	{
+		try {
+			return "VolumeSystem [" + "blockSize " + blockSize + " " + "imgOffset " + imgOffset + " " + "type " + type + " " + "volumeSystemHandle " + volumeSystemHandle + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getUniquePath " + getUniquePath() + "]";
+		} catch (TskCoreException ex) {
+			Logger.getLogger(VolumeSystem.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		return null;
 	}
 }

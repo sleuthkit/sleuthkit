@@ -20,6 +20,8 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -80,5 +82,15 @@ public class File extends FsContent {
 	@Override
 	public boolean isFile() {
 		return true;
+	}
+	@Override
+	public String toString()
+	{
+		try {
+			return "File [" + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isVirtual " + isVirtual() + " " + "getAtimeAsDate " + getAtimeAsDate() + " " + "getAttrId " + getAttrId() + " " + "getAttrType " + getAttrType() + " " + "getCrtimeAsDate " + getCrtimeAsDate() + " " + "getDirFlagAsString " + getDirFlagAsString() + " " + "getDirType " + getDirType() + " " + "getDirTypeAsString " + getDirTypeAsString() + " " + "getMetaFlagsAsString " + getMetaFlagsAsString() + " " + "getMetaType " + getMetaType() + " " + "getMetaTypeAsString " + getMetaTypeAsString() + " " + "getMtimeAsDate " + getMtimeAsDate() + " " + "getParentPath " + getParentPath() + " " + "getSize " + getSize() + " " + "getUid " + getUid() + " " + "getUniquePath " + getUniquePath() + " " + "getType " + getType() + " " + "getId " + getId() + " " + "getName " + getName() + "]";
+		} catch (TskCoreException ex) {
+			Logger.getLogger(File.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		return null;
 	}
 }

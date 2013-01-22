@@ -21,6 +21,8 @@ package org.sleuthkit.datamodel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Common fields methods for objects stored in tsk_files table
@@ -138,5 +140,14 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 		return files;
 	}
-    
+	@Override
+    public String toString()
+	{
+		try {
+			return "AbstractFile [" + "getType " + getType() + " " + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isRoot " + isRoot() + " " + "isVirtual " + isVirtual() + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getUniquePath " + getUniquePath() + " " + "getSize " + getSize() + "]";
+		} catch (TskCoreException ex) {
+			Logger.getLogger(AbstractFile.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		return null;
+	}
 }

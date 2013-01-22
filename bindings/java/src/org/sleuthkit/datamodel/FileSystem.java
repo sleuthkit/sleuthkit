@@ -19,6 +19,8 @@
 package org.sleuthkit.datamodel;
 
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Represents a file system object stored in tsk_fs_info table
@@ -197,5 +199,16 @@ public class FileSystem extends AbstractContent {
 	@Override
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
+	}
+	
+	@Override
+	public String toString()
+	{
+		try {
+			return "FileSystem [" + "blockCount " + blockCount + " " + "blockSize " + blockSize + " " + "filesystemHandle " + filesystemHandle + " " + "firstInum " + firstInum + " " + "fsType " + fsType + " " + "imgOffset " + imgOffset + " " + "lastInum " + lastInum + " " + "rootInum " + rootInum + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getUniquePath " + getUniquePath() + "]";
+		} catch (TskCoreException ex) {
+			Logger.getLogger(FileSystem.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		return null;
 	}
 }

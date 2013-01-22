@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Arrays;
 
 /**
  * Represents a disk image file, stored in tsk_image_info. Populated based on
@@ -302,5 +303,10 @@ public class Image extends AbstractContent {
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getImageChildrenIds(this);
+	}
+	@Override
+	public String toString()
+	{
+		return "Image [" + "imageHandle " + imageHandle + " " + "paths " + Arrays.toString(paths) + " " + "size " + size + " " + "ssize " + ssize + " " + "timezone " + timezone + " " + "type " + type + " " + "getId " + getId() + " " + "getName " + getName() + "]";
 	}
 }
