@@ -33,19 +33,43 @@
 /* When we list a directory, we need to also look at MFT entries and what
  * they list as their parents. We used to do this only for orphan files, but 
  * we were pointed to a case whereby allocated files were not in IDX_ALLOC, but were
- * shown in WIndows (when mounted).  They must have been found via the MFT entry, so 
- * we now load all parent to child relatinships into the map. 
+ * shown in Windows (when mounted).  They must have been found via the MFT entry, so 
+ * we now load all parent to child relationships into the map. 
  * 
  * One of these classes is created per parent folder */
 class NTFS_PAR_MAP  {
+private:
+        // maps sequence number to list of inums for the folder at that seq.
+        std::map <uint32_t, std::vector <TSK_INUM_T> > seq2addrs;
 public:
-        std::vector <TSK_INUM_T>addrs;
         /**
          * Add a child to this parent.
+         * @param seq Sequence of the parent that this child belonged to
          * @param inum Address of child in the folder.
          */
-        void add (TSK_INUM_T inum) {
-            addrs.push_back(inum);
+        void add (uint32_t seq, TSK_INUM_T inum) {
+            seq2addrs[seq].push_back(inum);
+        }
+
+        /**
+         * Test if there are any children for this directory at a given sequence.
+         * @param seq Sequence to test.
+         * @returns true if children exist
+         */
+        bool exists (uint32_t seq) {
+            if (seq2addrs.count(seq) > 0) 
+                return true;
+            else
+                return false;
+        }
+
+        /** 
+         * Get the children for this folder at a given sequence.  Use exists first. 
+         * @param seq Sequence number to retrieve children for.
+         * @returns list of INUMS for children.
+         */
+        std::vector <TSK_INUM_T> & get (uint32_t seq) {
+            return seq2addrs[seq];
         }
  };
 
@@ -78,11 +102,11 @@ static std::map<TSK_INUM_T, NTFS_PAR_MAP> * getParentMap(NTFS_INFO *ntfs) {
  * @returns 1 on error
  */
 static uint8_t
-ntfs_parent_map_add(NTFS_INFO * ntfs, TSK_INUM_T par, TSK_INUM_T child)
+ntfs_parent_map_add(NTFS_INFO * ntfs, TSK_FS_META_NAME_LIST *name_list, TSK_INUM_T child)
 {
     std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
-    NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[par];
-    tmpParMap.add(child);
+    NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[name_list->par_inode];
+    tmpParMap.add(name_list->par_seq, child);
     return 0;
 }
 
@@ -93,16 +117,19 @@ ntfs_parent_map_add(NTFS_INFO * ntfs, TSK_INUM_T par, TSK_INUM_T child)
  *
  * @param ntfs File system that has already been analyzed
  * @param par Parent inode to find child files for
+ * @seq seq Sequence of parent folder 
  * @returns true if parent has children.
  */
 static bool 
-ntfs_parent_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par) 
+ntfs_parent_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par, uint32_t seq) 
 {
     std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
-    if (tmpParentMap->count(par) > 0) 
-        return true;
-    else 
-        return false;
+    if (tmpParentMap->count(par) > 0) {
+        NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[par];
+        if (tmpParMap.exists(seq))
+            return true;
+    }
+    return false;
 }
 
 /** \internal
@@ -113,14 +140,15 @@ ntfs_parent_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par)
  *
  * @param ntfs File system that has already been analyzed
  * @param par Parent inode to find child files for
+ * @param seq Sequence of parent inode 
  * @returns address of children files in the parent directory
  */
 static std::vector <TSK_INUM_T> &
-ntfs_parent_map_get(NTFS_INFO * ntfs, TSK_INUM_T par)
+ntfs_parent_map_get(NTFS_INFO * ntfs, TSK_INUM_T par, uint32_t seq)
 {
     std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
     NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[par];
-    return tmpParMap.addrs;
+    return tmpParMap.get(seq);
 }
 
 
@@ -161,7 +189,7 @@ ntfs_parent_act(TSK_FS_FILE * fs_file, void *ptr)
     /* go through each file name structure */
     fs_name_list = fs_file->meta->name2;
     while (fs_name_list) {
-        if (ntfs_parent_map_add(ntfs, fs_name_list->par_inode,
+        if (ntfs_parent_map_add(ntfs, fs_name_list,
                 fs_file->meta->addr))
             return TSK_WALK_ERROR;
         fs_name_list = fs_name_list->next;
@@ -1040,11 +1068,11 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     }
 
     // see if there are any entries for this dir
-    if (ntfs_parent_map_exists(ntfs, a_addr)) {
+    if (ntfs_parent_map_exists(ntfs, a_addr, fs_dir->fs_file->meta->seq)) {
         TSK_FS_NAME *fs_name;
         TSK_FS_FILE *fs_file_orp = NULL;
 
-        std::vector <TSK_INUM_T> &childFiles = ntfs_parent_map_get(ntfs, a_addr);
+        std::vector <TSK_INUM_T> &childFiles = ntfs_parent_map_get(ntfs, a_addr, fs_dir->fs_file->meta->seq);
 
         if ((fs_name = tsk_fs_name_alloc(256, 0)) == NULL)
             return TSK_ERR;

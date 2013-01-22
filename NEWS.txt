@@ -10,6 +10,7 @@ Bug Fixes:
 - Fixed fcat to work on NTFS files (still doesn't support ADS though). 
 - Fixed HFS+ support in tsk_loaddb / SQLite -- root directory was not added.
 - NTFS code now looks at all MFT entries when listing directory contents. It used to only look at unallocated entries for orphan files. This fixes an image that had allocated files missing from the directory b-tree.
+- NTFS code uses sequence number when searching MFT entries for all files. 
 
 ---------------- VERSION 4.0.1 --------------
 New Features:
