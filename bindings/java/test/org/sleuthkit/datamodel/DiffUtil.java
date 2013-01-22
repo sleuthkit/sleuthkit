@@ -235,23 +235,6 @@ public class DiffUtil {
 		}
 		return images;
 	}
-	public static void addTempStore(String title) throws IOException
-	{
-		java.io.File imageStore=new java.io.File("TempStore.txt");
-		Scanner inp = new Scanner(imageStore);
-		StringBuilder curr = new StringBuilder();
-		while(inp.hasNextLine())
-		{
-			curr.append(inp.nextLine());
-			curr.append("\n");
-		}
-		inp.close();
-		FileWriter outp = new FileWriter(imageStore);
-		outp.write(curr.toString());
-		outp.append(title);
-		outp.flush();
-		outp.close();
-	}
 	/**
 	 * Get the path for a standard corresponding to the given image path.
 	 * @param imagePaths path of the image to get a standard for
