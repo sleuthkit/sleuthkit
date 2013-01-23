@@ -20,13 +20,10 @@
 package org.sleuthkit.datamodel;
 
 import java.io.IOException;
-import java.nio.CharBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
 
 /**
  * ReprDataModel writes a String representation (containing the results of all
