@@ -58,9 +58,11 @@ public class DiffUtil {
 	{
 		java.io.File standardFile = new java.io.File(standardPath);
 		try {
-			java.io.File firstImageFile = new java.io.File(imagePaths.get(0));
-			java.io.File tempDir = new java.io.File(tempDirPath);
-			String dbPath = tempDir.getPath() + java.io.File.separator + firstImageFile.getName() + type + ".db";
+			String firstImageFile = imagePaths.get(0);
+			firstImageFile = firstImageFile.substring(firstImageFile.lastIndexOf(java.io.File.separator)+1);
+			firstImageFile = firstImageFile.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw", "");
+			String dbPath = tempDirPath + java.io.File.separator + firstImageFile + type + ".db";
+			System.out.println(dbPath);
 			java.io.File dbFile = new java.io.File(dbPath);
 			standardFile.createNewFile();
 			FileWriter standardWriter = new FileWriter(standardFile);
@@ -74,10 +76,11 @@ public class DiffUtil {
 			try{
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
 			}catch (TskDataException ex){
-				FileWriter exwriter=new FileWriter(exfile);
-				exwriter.append(ex.toString());
-				exwriter.flush();
-				exwriter.close();
+				try (
+						FileWriter exwriter = new FileWriter(exfile)) {
+						exwriter.append(ex.toString());
+						exwriter.flush();
+				}
 			}
 			process.commit();
 			if(type.equals(SEQ))
@@ -86,16 +89,17 @@ public class DiffUtil {
 			}
 			else
 			{
-				FileWriter testWriter = new FileWriter(standardFile.toString().replace(type,LVS));
-				repr.setLeaves(testWriter);
-				repr.startTD(sk.getRootObjects());
-				testWriter.flush();
-				testWriter.close();
+				try (
+						FileWriter testWriter = new FileWriter(standardFile.toString().replace(type,LVS))) {
+						repr.setLeaves(testWriter);
+						repr.startTD(sk.getRootObjects());
+						testWriter.flush();
+				}
 			}
 			standardWriter.flush();
 			standardWriter.close();
 			String sortedloc = standardFile.getAbsolutePath().replace(".txt", "_Sorted.txt");
-			String cygpath = null;
+			String cygpath = "sort";
 			if(System.getProperty("os.name").contains("Windows"))
 			{
 				cygpath="C:\\Users\\" + System.getProperty("user.name")+ "\\Cygwin\\bin\\sort.exe";

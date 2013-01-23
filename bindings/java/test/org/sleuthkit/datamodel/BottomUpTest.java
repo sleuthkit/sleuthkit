@@ -48,39 +48,33 @@ public class BottomUpTest {
 	@Test
 	public void testBottomUpDiff() {
 		try{
-			String title = (new java.io.File(imagePaths.get(0))).getName();
-			java.io.File testFolder=new java.io.File(System.getProperty(DiffUtil.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
+			String title = imagePaths.get(0);
+			title = title.substring(title.lastIndexOf(java.io.File.separator)+1);
 			title = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw", "");
-			java.io.File standardFile = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+title+"_BU.txt");
-			String tempDirPath= testFolder.getAbsolutePath();
-			java.io.File tempDir = new java.io.File(tempDirPath);
-			String dbPath = tempDir.getPath() + java.io.File.separator + title + "_BU" + ".db";
-			java.io.File dbFile = new java.io.File(dbPath);
+			java.io.File dbFile=new java.io.File(System.getProperty(DiffUtil.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
+			title = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw", "");
+			String tempDirPath= dbFile.getAbsolutePath();
+			String dbPath = tempDirPath + java.io.File.separator + title + "_BU" + ".db";
+			System.out.println(dbPath);
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
 			title = title + ".txt";
 			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
-			java.io.File exfile = new java.io.File(standardFile.toString().replace(".txt",DiffUtil.EX+".txt"));
-			exfile.createNewFile();
 			try{
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
 			}catch (TskDataException ex){
-				FileWriter exwriter=new FileWriter(exfile);
-				exwriter.append(ex.toString());
-				exwriter.flush();
-				exwriter.close();
 			}
 			process.commit();
-			java.io.File lvs = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+title.replace(".txt", DiffUtil.LVS+".txt"));
+			java.io.File lvs = new java.io.File(dbFile.getAbsolutePath()+java.io.File.separator+title.replace(".txt", DiffUtil.LVS+".txt"));
+			System.out.println(lvs.toString());
 			Scanner climber = new Scanner(lvs);
-			Content c = null;
 			while(climber.hasNextLine())
 			{
 				String cliNL = climber.nextLine();
 				cliNL = cliNL.substring(1);
 				String[] ids = cliNL.split("[\\],]\\s?+");
-				c=sk.getContentById(Integer.parseInt(ids[0]));
+				Content c = sk.getContentById(Integer.parseInt(ids[0]));
 				for(int x = 0; x<ids.length; x++)
 				{
 					assertEquals("Got ID " + c.getId() + " should have gotten ID " + ids[x], ids[x].equals(((Long)c.getId()).toString()), true);
