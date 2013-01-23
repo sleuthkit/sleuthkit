@@ -26,6 +26,7 @@ import java.io.FileFilter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -62,7 +63,6 @@ public class DiffUtil {
 			firstImageFile = firstImageFile.substring(firstImageFile.lastIndexOf(java.io.File.separator)+1);
 			firstImageFile = firstImageFile.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw", "");
 			String dbPath = tempDirPath + java.io.File.separator + firstImageFile + type + ".db";
-			System.out.println(dbPath);
 			java.io.File dbFile = new java.io.File(dbPath);
 			standardFile.createNewFile();
 			FileWriter standardWriter = new FileWriter(standardFile);
@@ -104,7 +104,7 @@ public class DiffUtil {
 			{
 				cygpath="C:\\Users\\" + System.getProperty("user.name")+ "\\Cygwin\\bin\\sort.exe";
 			}
-			String[] cmd={cygpath, standardFile.getAbsolutePath(), "-o", sortedloc};
+			String[] cmd={cygpath ,standardFile.getAbsolutePath(), "-o", sortedloc};
 			Runtime.getRuntime().exec(cmd).waitFor();
 		}catch (Exception ex) {
 			System.err.println(ex.toString());
@@ -116,7 +116,7 @@ public class DiffUtil {
 	 * with default arguments
 	 * @param args Ignored 
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args){
 		String tempDirPath = System.getProperty("java.io.tmpdir");
 		List<List<String>> imagePaths = getImagePaths();
 		for(List<String> paths : imagePaths) {
@@ -125,6 +125,8 @@ public class DiffUtil {
 			createStandard(standardPathTD, tempDirPath, paths, TD);
 			String standardPathSeq = standardPath(paths,SEQ);
 			createStandard(standardPathSeq, tempDirPath, paths, SEQ);
+			String standardPathCPP = standardPath(paths,"_CPP");
+			getTSKData(standardPathCPP, paths);
 		}
 	}
 
@@ -267,6 +269,50 @@ public class DiffUtil {
 		for(java.io.File del: pth.listFiles(imageResFilter))
 		{
 			del.deleteOnExit();
+		}
+	}
+	
+	public static void getTSKData(String StandardPath, List<String> img)
+	{
+		String tsk_loc = null;
+		if(System.getProperty("os.name").contains("Windows"))
+		{
+			tsk_loc = "C:\\Users\\" + System.getProperty("user.name") + "\\Documents\\GitHub\\sleuthkit\\win32\\Release\\tsk_gettimes";
+		}
+		else
+		{
+			return;
+		}
+		String cmd=tsk_loc + " " + img.get(0);
+		try {
+			Process p=Runtime.getRuntime().exec(cmd);
+			//p.waitFor();
+			Scanner read = new Scanner(p.getInputStream());
+			Scanner error1 = new Scanner(p.getErrorStream());
+			FileWriter out = new FileWriter(StandardPath);
+			while(read.hasNextLine())
+			{
+				String line = read.nextLine();
+				String[] lineContents = line.split("\\|");
+				String[] nameget = lineContents[1].split("\\s\\(deleted\\)");
+				String name = nameget[0];
+				name = name.replace("/", "\\");
+				String size = lineContents[6];
+				String crea = lineContents[7];
+				String acc = lineContents[8];
+				String modif = lineContents[10];
+				if(!line.contains("|d/d"))
+				{
+					out.append("(FilePath): " + name + " (Size): " + size + " (Creation Time): " + crea + " (Accessed Time): " + acc + " (Modified Time): " + modif);
+					out.flush();
+					if(read.hasNextLine())
+					{
+						out.append("\n");
+					}
+				}
+			}
+		} catch (Exception ex) {
+			System.out.println(ex.toString());
 		}
 	}
 }

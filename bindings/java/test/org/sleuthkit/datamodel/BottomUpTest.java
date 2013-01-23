@@ -54,7 +54,6 @@ public class BottomUpTest {
 			title = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw", "");
 			String tempDirPath= dbFile.getAbsolutePath();
 			String dbPath = tempDirPath + java.io.File.separator + title + "_BU" + ".db";
-			System.out.println(dbPath);
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
@@ -66,7 +65,6 @@ public class BottomUpTest {
 			}
 			process.commit();
 			java.io.File lvs = new java.io.File(dbFile.getAbsolutePath()+java.io.File.separator+title.replace(".txt", DiffUtil.LVS+".txt"));
-			System.out.println(lvs.toString());
 			Scanner climber = new Scanner(lvs);
 			while(climber.hasNextLine())
 			{

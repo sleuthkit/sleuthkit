@@ -65,6 +65,10 @@ public class ReprDataModel {
 	{
 		for(Content c : lc) {
 			append(c.toString(),result);
+			if(c instanceof File)
+			{
+				readContent(c);
+			}
 			nl(result);
 			lp.add(0,c.getId());
 			try {
@@ -95,6 +99,10 @@ public class ReprDataModel {
 		while ((c = sk.getContentById(x))!=null)
 		{
 			append(c.toString(),result);
+			if(c instanceof File)
+			{
+				readContent(c);
+			}
 			nl(result);
 			x++;
 		}
@@ -103,7 +111,6 @@ public class ReprDataModel {
 	private void nl(Appendable inp) {
 		append("\n", inp);
 	}
-
 
 	private void readContent(Content c) {
 		long size = c.getSize();
@@ -124,8 +131,6 @@ public class ReprDataModel {
 		} catch (NoSuchAlgorithmException ex) {
 			throw new RuntimeException(ex);
 		}
-		nl(result);
-
 	}
 
 	private String toHex(byte[] bytes) {

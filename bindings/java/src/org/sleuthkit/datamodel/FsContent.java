@@ -621,6 +621,6 @@ public abstract class FsContent extends AbstractFile {
 	@Override
 	public String toString()
 	{
-		return "FsContent [" + "getAtimeAsDate " + getAtimeAsDate() + " " + "getCrtimeAsDate " + getCrtimeAsDate() + " " + "getMtimeAsDate " + getMtimeAsDate() + " " + "attrId " + attrId + " " + "dirFlag " + dirFlag + " " + "dirType " + dirType + " " + "fileHandle " + fileHandle + " " + "fsObjId " + fsObjId + " " + "gid " + gid + " " + "metaAddr " + metaAddr + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "modes " + modes + " " + "parentPath " + parentPath + " " + "size " + size + " " + "uid " + uid + " " + "uniquePath " + uniquePath + " " + "getType " + getType() + " " + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isVirtual " + isVirtual() + " " + "getId " + getId() + " " + "getName " + getName() + "]";
+		return "FsContent [" + "getAtimeAsDate " + getAtime() + " " + "getCrtimeAsDate " + getCrtime() + " " + "getMtimeAsDate " + getMtime() + " " + "attrId " + attrId + " " + "dirFlag " + dirFlag + " " + "dirType " + dirType + " " + "fileHandle " + fileHandle + " " + "fsObjId " + fsObjId + " " + "gid " + gid + " " + "metaAddr " + metaAddr + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "modes " + modes + " " + "parentPath " + parentPath + " " + "size " + size + " " + "uid " + uid + " " + "uniquePath " + uniquePath + " " + "getType " + getType() + " " + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isVirtual " + isVirtual() + " " + "getId " + getId() + " " + "getName " + getName() + "]";
 	}
 }

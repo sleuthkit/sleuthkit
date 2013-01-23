@@ -160,7 +160,7 @@ public class VolumeSystem extends AbstractContent {
 	public String toString()
 	{
 		try {
-			return "VolumeSystem [" + "blockSize " + blockSize + " " + "imgOffset " + imgOffset + " " + "type " + type + " " + "volumeSystemHandle " + volumeSystemHandle + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getUniquePath " + getUniquePath() + "]";
+			return "VolumeSystem [" + "blockSize " + blockSize + " " + "imgOffset " + imgOffset + " " + "type " + type + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getUniquePath " + getUniquePath() + "]";
 		} catch (TskCoreException ex) {
 			Logger.getLogger(VolumeSystem.class.getName()).log(Level.SEVERE, null, ex);
 		}
