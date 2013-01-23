@@ -71,10 +71,6 @@ protected:
     virtual void onUnallocSectorsImgFileCreated(int unallocSectorsImgId, bool scheduleCarving) const; 
 
 private:
-	/// System property used to enable or disable carving.
-	static const std::string CARVING_ENABLED;
-
-	bool m_CarvingEnabled;
 
     /**
      * Looks up carving parameters and creates the output folder

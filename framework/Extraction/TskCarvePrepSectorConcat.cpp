@@ -40,27 +40,14 @@ namespace
     const size_t DEFAULT_SECTORS_PER_READ = 32; 
 }
 
-const std::string TskCarvePrepSectorConcat::CARVING_ENABLED = "CARVING_ENABLED";
-
 TskCarvePrepSectorConcat::TskCarvePrepSectorConcat()
 {
-	if (Poco::icompare(GetSystemProperty(CARVING_ENABLED), "false") == 0)
-		m_CarvingEnabled = false;
-	else
-		m_CarvingEnabled = true;
-
 }
 
 int TskCarvePrepSectorConcat::processSectors(bool scheduleCarving)
 {
     try 
     {
-		if (!m_CarvingEnabled)
-		{
-			LOGINFO("TskCarvePrepSectorConcat::processSectors : Carving diabled. Will not process unallocated space.");
-			return 0;
-		}
-
         std::string outputFolderPath;
         std::string outputFileName;
         size_t maxOutputFileSize;
@@ -88,14 +75,6 @@ void TskCarvePrepSectorConcat::processFiles(const std::string &fileName, bool sc
     {
         throw TskException("TskCarvePrepSectorConcat::processFiles : empty file name argument");
     }
-
-	if (!m_CarvingEnabled)
-	{
-		std::stringstream msg;
-		msg << "TskCarvePrepSectorConcat::processFiles : Carving disabled. Will not process file : " << fileName;
-		LOGINFO(msg.str());
-		return;
-	}
 
 	std::string outputFolderPath;
     std::string outputFileName;
