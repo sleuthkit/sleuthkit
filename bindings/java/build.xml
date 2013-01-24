@@ -23,6 +23,7 @@
 	<property name="test-standards" location="test/output/gold"/>
 	<property name="test-results" location="test/output/results"/>
 	<property name="test-input" location="test/input"/>
+	<property name="test-types" location="test/org/sleuthkit/datamodel"/>
 	<property name="dlls" value="${env.LIBEWF_HOME}/msvscpp/zlib;${env.LIBEWF_HOME}/msvscpp/Release;../../win32/Release"/>
   
 	<path id="libraries">
@@ -91,6 +92,7 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 			<sysproperty key="java.library.path" value="${dlls}"/>
 			<sysproperty key="gold" value="${test-standards}"/>
 			<sysproperty key="inpt" value="${test-input}"/>
+			<sysproperty key="types" value="${test-types}"/>
 		</java>
 	</target>
   

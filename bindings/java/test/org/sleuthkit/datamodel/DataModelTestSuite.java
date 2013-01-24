@@ -22,12 +22,13 @@ import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -36,7 +37,7 @@ import org.junit.runners.Suite;
  * Runs all regression tests.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.BottomUpTest.class,org.sleuthkit.datamodel.SequentialTest.class,org.sleuthkit.datamodel.CrossCompare.class})
+@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.BottomUpTest.class,org.sleuthkit.datamodel.SequentialTraversal.class,org.sleuthkit.datamodel.CrossCompare.class})
 public class DataModelTestSuite {
 	static final String TEST_IMAGE_DIR_NAME = "test" + java.io.File.separator + "Input";
 	static final String INPT = "inpt";
@@ -46,7 +47,9 @@ public class DataModelTestSuite {
 	static final String TD = "_TD";
 	static final String LVS = "_Leaves";
 	static final String EX = "_Exceptions";
-	static final String BU = "_BU";
+	static final String TST = "types";
+	static final int READ_BUFFER_SIZE = 8192;
+	static final String HASH_ALGORITHM = "MD5";
 	@BeforeClass
 	public static void setUpClass() throws Exception{
 		java.io.File results = new java.io.File(System.getProperty(RSLT,"test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
@@ -65,16 +68,15 @@ public class DataModelTestSuite {
 	 * @param imagePaths The path(s) to the image file(s)
 	 * @param type The type of traversal to run.
 	 */
-	public static void createStandard(String standardPath, String tempDirPath, List<String> imagePaths, String type)
+	public static void createStandard(String standardPath, String tempDirPath, List<String> imagePaths, ImgTraverser type, String exFile)
 	{
 		java.io.File standardFile = new java.io.File(standardPath);
 		try {
 			String firstImageFile = getImgName(imagePaths.get(0));
-			String dbPath = buildPath(tempDirPath, firstImageFile, type, ".db");
+			String dbPath = buildPath(tempDirPath, firstImageFile, type.getClass().getSimpleName(), ".db");
 			java.io.File dbFile = new java.io.File(dbPath);
 			standardFile.createNewFile();
 			FileWriter standardWriter = new FileWriter(standardFile);
-			ReprDataModel repr = new ReprDataModel(standardWriter, standardFile.toString().replace(".txt",EX+".txt"));
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
@@ -87,19 +89,7 @@ public class DataModelTestSuite {
 				writeExceptions(standardFile.toString(), ex);
 			}
 			process.commit();
-			if(type.equals(SEQ))
-			{
-				repr.startSeq(sk);
-			}
-			else
-			{
-				try (
-						FileWriter testWriter = new FileWriter(standardFile.toString().replace(type,LVS))) {
-						repr.setLeaves(testWriter);
-						repr.startTD(sk.getRootObjects());
-						testWriter.flush();
-				}
-			}
+			type.traverse(sk, standardFile.getAbsolutePath(), exFile);
 			standardWriter.flush();
 			standardWriter.close();
 			String sortedloc = standardFile.getAbsolutePath().replace(".txt", "_Sorted.txt");
@@ -142,7 +132,7 @@ public class DataModelTestSuite {
 	 */
 	static String standardPath(List<String> imagePaths, String type) {
 		String firstImage = getImgName(imagePaths.get(0));
-		String standardPath = System.getProperty(GOLD, ("test" + java.io.File.separator + "output" + java.io.File.separator + "gold")) + java.io.File.separator + firstImage +type+".txt";
+		String standardPath = System.getProperty(GOLD, ("test" + java.io.File.separator + "output" + java.io.File.separator + "gold")) + java.io.File.separator + firstImage + "_" + type+".txt";
 		return standardPath;
 	}
 	/**
@@ -215,7 +205,7 @@ public class DataModelTestSuite {
 	}
 	public static String buildPath(String path, String name, String type, String Ext)
 	{
-		return path+java.io.File.separator+name+type+Ext;
+		return path+java.io.File.separator+name+"_"+type+Ext;
 	}
 	public static String getImgName(String img)
 	{
@@ -271,5 +261,35 @@ public class DataModelTestSuite {
 	public static String goldStandardPath()
 	{
 		return System.getProperty(GOLD, ("test" + java.io.File.separator + "output" + java.io.File.separator + "gold"));
+	}
+	public static void readContent(Content c, Appendable result, String exFile) {
+		long size = c.getSize();
+		byte[] readBuffer = new byte[READ_BUFFER_SIZE];
+		try {
+			MessageDigest md5 = MessageDigest.getInstance("MD5");
+
+			for (long i = 0; i < size; i = i + READ_BUFFER_SIZE) {
+				int read = c.read(readBuffer, i, Math.min(size - i, READ_BUFFER_SIZE));
+				md5.update(readBuffer);
+			}
+			String hash = toHex(md5.digest());
+
+			result.append("md5=" + hash);
+
+		} catch (IOException ex) {
+			writeExceptions(exFile, ex);
+		} catch (TskCoreException ex) {
+			writeExceptions(exFile, ex);
+		} catch (NoSuchAlgorithmException ex) {
+			writeExceptions(exFile, ex);
+		}
+	}
+
+	private static String toHex(byte[] bytes) {
+		StringBuilder hex = new StringBuilder();
+		for (byte b : bytes) {
+			hex.append(String.format("%02x", b & 0xFF));
+		}
+		return hex.toString();
 	}
 }

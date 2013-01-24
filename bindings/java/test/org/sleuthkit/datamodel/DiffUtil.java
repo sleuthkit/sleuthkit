@@ -46,11 +46,13 @@ public class DiffUtil {
 		}
 		List<List<String>> imagePaths = DataModelTestSuite.getImagePaths();
 		for(List<String> paths : imagePaths) {
-			String standardPathTD = DataModelTestSuite.standardPath(paths, DataModelTestSuite.TD);
+			String standardPathTD = DataModelTestSuite.standardPath(paths, TopDownTraversal.class.getSimpleName());
 			System.out.println("Creating standards for: " + paths.get(0));
-			DataModelTestSuite.createStandard(standardPathTD, tempDirPath, paths, DataModelTestSuite.TD);
-			String standardPathSeq = DataModelTestSuite.standardPath(paths,DataModelTestSuite.SEQ);
-			DataModelTestSuite.createStandard(standardPathSeq, tempDirPath, paths, DataModelTestSuite.SEQ);
+			String exFileTD = standardPathTD.replace(".txt",DataModelTestSuite.EX+".txt");
+			DataModelTestSuite.createStandard(standardPathTD, tempDirPath, paths, new TopDownTraversal(null), exFileTD);
+			String standardPathSeq = DataModelTestSuite.standardPath(paths,SequentialTraversal.class.getSimpleName());
+			String exFileSeq = standardPathSeq.replace(".txt",DataModelTestSuite.EX+".txt");
+			DataModelTestSuite.createStandard(standardPathSeq, tempDirPath, paths, new SequentialTraversal(null), exFileSeq);
 			String standardPathCPP = DataModelTestSuite.standardPath(paths,"_CPP");
 			DataModelTestSuite.getTSKData(standardPathCPP, paths);
 		}

@@ -33,7 +33,7 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class BottomUpTest {
-		
+	static final String BU = "_BU";
 
 	private List<String> imagePaths;
 
@@ -64,7 +64,7 @@ public class BottomUpTest {
 			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
 			java.io.File dbFile=new java.io.File(DataModelTestSuite.getRsltPath());
 			String tempDirPath= dbFile.getAbsolutePath();
-			String dbPath = DataModelTestSuite.buildPath(tempDirPath, title, "_BU", ".db");
+			String dbPath = DataModelTestSuite.buildPath(tempDirPath, title, BU, ".db");
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";

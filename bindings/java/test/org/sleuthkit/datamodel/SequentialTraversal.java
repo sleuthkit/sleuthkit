@@ -18,9 +18,13 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,13 +35,13 @@ import org.junit.runners.Parameterized;
  * Traverses an image by running through item Ids ascending.
  */
 @RunWith(Parameterized.class)
-public class SequentialTest {
+public class SequentialTraversal implements ImgTraverser{
 		
 
 	private List<String> imagePaths;
-
+	private String exFile;
 	
-	public SequentialTest(List<String> imagePaths) {
+	public SequentialTraversal(List<String> imagePaths) {
 		this.imagePaths = imagePaths;
 	}
 	/**
@@ -64,17 +68,47 @@ public class SequentialTest {
 			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
 			java.io.File testFolder=new java.io.File(DataModelTestSuite.getRsltPath());
 			title = DataModelTestSuite.stripExtension(title);
-			java.io.File testStandard = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, DataModelTestSuite.SEQ, ".txt"));
+			java.io.File testStandard = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, this.getClass().getSimpleName(), ".txt"));
 			String testStandardPath = testStandard.getPath();
-			String oldStandardPath = DataModelTestSuite.standardPath(imagePaths, DataModelTestSuite.SEQ);
-			DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, DataModelTestSuite.SEQ);
-			String testExceptionsPath = testStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
+			String oldStandardPath = DataModelTestSuite.standardPath(imagePaths, this.getClass().getSimpleName());
+			this.exFile = testStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
+			DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, this, exFile);
 			String oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
-			assertEquals("Generated results ("+testExceptionsPath+") differ with gold standard ("+oldExceptionsPath+") .", DiffUtil.comparecontent(oldExceptionsPath, testExceptionsPath),true);
+			assertEquals("Generated results ("+exFile+") differ with gold standard ("+oldExceptionsPath+") .", DiffUtil.comparecontent(oldExceptionsPath, exFile),true);
 			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, testStandardPath),true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}
 	}
-	
+		/**
+	 * Creates a sequential representation of a database
+	 * @param lc a list of content to be read
+	 * @param lp that lc's list of parents in most recent first order
+	 */
+	public void traverse(SleuthkitCase sk, String path, String exFile)
+	{
+		FileWriter reslt = null;
+		try {
+			reslt = new FileWriter(path);
+			int x = 1;
+			Content c;
+			try {
+				while ((c = sk.getContentById(x))!=null)
+				{
+					reslt.append(((AbstractContent)c).toString(false));
+					if(c instanceof File)
+					{
+						DataModelTestSuite.readContent(c, reslt, exFile);
+					}
+					reslt.append("\n");
+					x++;
+				}
+			} catch (TskCoreException ex) {
+				DataModelTestSuite.writeExceptions(exFile, ex);
+			}
+			reslt.flush();
+		} catch (IOException ex) {
+			DataModelTestSuite.writeExceptions(exFile, ex);
+		}
+	}
 }
