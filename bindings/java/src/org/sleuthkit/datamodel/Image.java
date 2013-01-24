@@ -19,10 +19,10 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Arrays;
 
 /**
  * Represents a disk image file, stored in tsk_image_info. Populated based on
@@ -305,8 +305,8 @@ public class Image extends AbstractContent {
 		return getSleuthkitCase().getImageChildrenIds(this);
 	}
 	@Override
-	public String toString()
+	public String toString(boolean preserveState)
 	{
-		return "Image [" + super.toString() + " " + "paths " + Arrays.toString(paths) + " " + "size " + size + " " + "ssize " + ssize + " " + "timezone " + timezone + " " + "type " + type + "]";
+		return "Image [" + super.toString(preserveState) + " " + "paths " + Arrays.toString(paths) + " " + "size " + size + " " + "ssize " + ssize + " " + "timezone " + timezone + " " + "type " + type + "]";
 	}
 }

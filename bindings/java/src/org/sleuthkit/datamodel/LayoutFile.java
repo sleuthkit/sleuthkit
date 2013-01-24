@@ -190,8 +190,8 @@ public class LayoutFile extends AbstractFile{
 		return false;
 	}
 	@Override
-	public String toString()
+	public String toString(boolean preserveState)
 	{
-		return "LayoutFile [" + super.toString() + "]";
+		return "LayoutFile [" + super.toString(preserveState) + "]";
 	}
 }

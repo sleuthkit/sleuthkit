@@ -68,16 +68,7 @@ public class ReprDataModel {
 	private void topDownDF(List<Content> lc, List<Long> lp)
 	{
 		for(Content c : lc) {
-			try {
-				Content d;
-				if( (d = c.getParent()) !=null )
-				{
-					((AbstractContent)c).setParentId(d.getId());
-				}
-			} catch (TskCoreException ex) {
-				DataModelTestSuite.writeExceptions(exFile, ex);
-			}
-			append(c.toString(),result);
+			append(((AbstractContent)c).toString(false),result);
 			if(c instanceof File)
 			{
 				readContent(c);
@@ -111,16 +102,7 @@ public class ReprDataModel {
 		Content c;
 		while ((c = sk.getContentById(x))!=null)
 		{
-			try {
-				Content d;
-				if( (d = c.getParent()) !=null )
-				{
-					((AbstractContent)c).setParentId(d.getId());
-				}
-			} catch (TskCoreException ex) {
-				DataModelTestSuite.writeExceptions(exFile, ex);
-			}
-			append(c.toString(),result);
+			append(((AbstractContent)c).toString(false),result);
 			if(c instanceof File)
 			{
 				readContent(c);

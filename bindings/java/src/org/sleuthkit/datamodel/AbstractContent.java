@@ -19,6 +19,8 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
@@ -197,8 +199,26 @@ public abstract class AbstractContent implements Content {
 	}
 	
 	@Override
-	public String toString()
+	final public String toString()
 	{
-		return "AbstractContent [" + "objId " + objId + " " + "name " + name + " " + "parentId " + parentId + " " + "uniquePath " + uniquePath + "]";
+		return toString(true);
+	}
+			
+			
+	public String toString(boolean preserveState)
+	{
+		if(preserveState)
+		{
+			return "AbstractContent [" + "objId " + objId + " " + "name " + name + " " + "parentId " + parentId + " " + "uniquePath " + uniquePath + "]";
+		}
+		else 
+		{
+			try {
+				return "AbstractContent [" + "objId " + objId + " " + "getParent " + ((AbstractContent)getParent()).toString(false) + " " + "getUniquePath " + getUniquePath() + " " + "name " + name + "]";
+			} catch (Exception ex) {
+				//Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, null, ex);
+				return "AbstractContent [" + "objId " + objId + " " + "name " + name + " " + "parentId " + parentId + " " + "uniquePath " + uniquePath + "]";
+			}
+		}
 	}
 }

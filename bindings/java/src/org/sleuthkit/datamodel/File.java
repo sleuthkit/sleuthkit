@@ -20,8 +20,6 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -84,8 +82,8 @@ public class File extends FsContent {
 		return true;
 	}
 	@Override
-	public String toString()
+	public String toString(boolean preserveState)
 	{
-		return "File [" + super.toString() + "]";
+		return "File [" + super.toString(preserveState) + "]";
 	}
 }

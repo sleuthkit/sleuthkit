@@ -19,8 +19,6 @@
 package org.sleuthkit.datamodel;
 
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
@@ -81,9 +79,10 @@ public class Directory extends FsContent {
 	public boolean isFile() {
 		return false;
 	}
+	
 	@Override
-	public String toString()
+	public String toString(boolean preserveState)
 	{
-		return "Directory [" + super.toString() + "]";
+		return "Directory [" + super.toString(preserveState) + "]";
 	}
 }

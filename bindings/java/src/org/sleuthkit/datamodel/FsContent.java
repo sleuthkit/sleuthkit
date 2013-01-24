@@ -619,8 +619,8 @@ public abstract class FsContent extends AbstractFile {
 		return epoch;
 	}
 	@Override
-	public String toString()
+	public String toString(boolean preserveState)
 	{
-		return "FsContent [" + super.toString() + " crtime " + crtime + " " + "mtime " + mtime + " " + "atime " + atime + " " + "attrId " + attrId + " " + "dirFlag " + dirFlag + " " + "dirType " + dirType + " "  + "fsObjId " + fsObjId + " " + "gid " + gid + " " + "metaAddr " + metaAddr + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "modes " + modes + " " + "parentPath " + parentPath + " " + "size " + size + " " + "uid " + uid + " " + "uniquePath " + uniquePath + "]";
+		return "FsContent [" + super.toString(preserveState) + " crtime " + crtime + " " + "mtime " + mtime + " " + "atime " + atime + " " + "attrId " + attrId + " " + "dirFlag " + dirFlag + " " + "dirType " + dirType + " "  + "fsObjId " + fsObjId + " " + "gid " + gid + " " + "metaAddr " + metaAddr + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "modes " + modes + " " + "parentPath " + parentPath + " " + "size " + size + " " + "uid " + uid + " " + "uniquePath " + uniquePath + "]";
 	}
 }

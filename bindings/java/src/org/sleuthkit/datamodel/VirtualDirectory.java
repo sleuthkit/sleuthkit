@@ -21,8 +21,6 @@ package org.sleuthkit.datamodel;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
@@ -140,8 +138,8 @@ public class VirtualDirectory extends AbstractFile {
 		return true;
 	}
 	@Override
-	public String toString()
+	public String toString(boolean preserveState)
 	{
-		return "VirtualDirectory [" + super.toString() + " dirFlags " + dirFlags + " " + "dirType " + dirType + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "parent_path " + parent_path + " " + "size " + size + "]";
+		return "VirtualDirectory [" + super.toString(preserveState) + " dirFlags " + dirFlags + " " + "dirType " + dirType + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "parent_path " + parent_path + " " + "size " + size + "]";
 	}		
 }
