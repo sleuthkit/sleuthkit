@@ -214,7 +214,7 @@ public abstract class AbstractContent implements Content {
 		else 
 		{
 			try {
-				return "AbstractContent [" + "objId " + objId + " " + "getParent " + ((AbstractContent)getParent()).toString(false) + " " + "getUniquePath " + getUniquePath() + " " + "name " + name + "]";
+				return "AbstractContent [" + "objId " + objId + " " + "getParent " + getParent().getId() + " " + "getUniquePath " + getUniquePath() + " " + "name " + name + "]";
 			} catch (Exception ex) {
 				//Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, null, ex);
 				return "AbstractContent [" + "objId " + objId + " " + "name " + name + " " + "parentId " + parentId + " " + "uniquePath " + uniquePath + "]";
