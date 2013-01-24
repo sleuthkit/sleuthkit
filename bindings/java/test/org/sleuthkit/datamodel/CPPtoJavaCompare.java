@@ -21,59 +21,64 @@ package org.sleuthkit.datamodel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Scanner;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
 /**
  *
- * Verifies that the current version of TSK produces the same output of previous versions by doing a TopDown Depth first traversal of the given images.
+ * @author smoss
  */
 @RunWith(Parameterized.class)
-public class TopDownTraversal {
+public class CPPtoJavaCompare {
 		
 
 	private List<String> imagePaths;
-
+	private String TD;
 	
-	public TopDownTraversal(List<String> imagePaths) {
+	public CPPtoJavaCompare(List<String> imagePaths, String TD) {
 		this.imagePaths = imagePaths;
+		this.TD = TD;
 	}
 	/**
-	 * Get the sets of filenames for each test image, they should be located in 
-	 * the folder specified by the build.xml
+	 * Get the sets of filenames for each test image
 	 * @return A Collection of one-element Object arrays, where that one element
 	 * is a List<String> containing the image file paths (the type is weird
 	 * because that's what JUnit wants for parameters).
 	 */
-	@Parameters
+	@Parameterized.Parameters
 	public static Collection<Object[]> testImageData() {
 		Collection<Object[]> data = new ArrayList<Object[]>();
 		
 		for (Object imagePaths : DiffUtil.getImagePaths()) {
-			data.add(new Object[]{imagePaths});
+			data.add(new Object[]{imagePaths, "_TD"});
 		}
 		return data;
 	}
 
 	
-	@Test
-	public void testTopDownDiff() {
+	//@Ignore@Test
+	public void CrossCompare() {
 		try {
-			String title = DiffUtil.getImgName(imagePaths.get(0));
-			java.io.File testFolder=new java.io.File(DiffUtil.getRsltPath());
-			java.io.File testStandard = new java.io.File(DiffUtil.buildPath(testFolder.getAbsolutePath(), title, DiffUtil.TD, ".txt"));
-			String testStandardPath = testStandard.getPath();
-			String oldStandardPath = DiffUtil.standardPath(imagePaths, DiffUtil.TD);
-			DiffUtil.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, DiffUtil.TD);
-			String testExceptionsPath = testStandardPath.replace(".txt", DiffUtil.EX+".txt");
-			String oldExceptionsPath = oldStandardPath.replace(".txt", DiffUtil.EX+".txt");
-			assertEquals("Generated results ("+testExceptionsPath+") differ with gold standard ("+oldExceptionsPath+") .", DiffUtil.comparecontent(oldExceptionsPath, testExceptionsPath),true);
-			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, testStandardPath),true);
+			String title = (new java.io.File(imagePaths.get(0))).getName();
+			java.io.File testFolder=new java.io.File(System.getProperty(DiffUtil.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
+			title = DiffUtil.stripExtension(title);
+			java.io.File testStandard1 = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+title+"_CPP.txt");
+			java.io.File testStandard2 = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+title+TD+".txt");
+			String testStandardPath1 = testStandard1.getPath();
+			String testStandardPath2 = testStandard2.getPath();
+			Scanner read1 = new Scanner(testStandard1);
+			DiffUtil.getTSKData(testStandardPath1, imagePaths);
+			Scanner read2 = new Scanner(testStandard2);
+			while(read1.hasNextLine()||read2.hasNextLine())
+			{
+				//assertEquals("CPP results (" + testStandardPath1 + ") differ from ("+testStandardPath2") .",,true);
+			}
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}
 	}
+	
 }

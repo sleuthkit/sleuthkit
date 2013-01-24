@@ -23,6 +23,7 @@ import difflib.DiffUtils;
 import difflib.Patch;
 import java.io.BufferedReader;
 import java.io.FileFilter;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -59,14 +60,12 @@ public class DiffUtil {
 	{
 		java.io.File standardFile = new java.io.File(standardPath);
 		try {
-			String firstImageFile = imagePaths.get(0);
-			firstImageFile = firstImageFile.substring(firstImageFile.lastIndexOf(java.io.File.separator)+1);
-			firstImageFile = firstImageFile.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw", "");
-			String dbPath = tempDirPath + java.io.File.separator + firstImageFile + type + ".db";
+			String firstImageFile = getImgName(imagePaths.get(0));
+			String dbPath = buildPath(tempDirPath, firstImageFile, type, ".db");
 			java.io.File dbFile = new java.io.File(dbPath);
 			standardFile.createNewFile();
 			FileWriter standardWriter = new FileWriter(standardFile);
-			ReprDataModel repr = new ReprDataModel(standardWriter);
+			ReprDataModel repr = new ReprDataModel(standardWriter, standardFile.toString().replace(".txt",EX+".txt"));
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
@@ -76,11 +75,7 @@ public class DiffUtil {
 			try{
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
 			}catch (TskDataException ex){
-				try (
-						FileWriter exwriter = new FileWriter(exfile)) {
-						exwriter.append(ex.toString());
-						exwriter.flush();
-				}
+				writeExceptions(standardFile.toString(), ex);
 			}
 			process.commit();
 			if(type.equals(SEQ))
@@ -99,15 +94,11 @@ public class DiffUtil {
 			standardWriter.flush();
 			standardWriter.close();
 			String sortedloc = standardFile.getAbsolutePath().replace(".txt", "_Sorted.txt");
-			String cygpath = "sort";
-			if(System.getProperty("os.name").contains("Windows"))
-			{
-				cygpath="C:\\Users\\" + System.getProperty("user.name")+ "\\Cygwin\\bin\\sort.exe";
-			}
+			String cygpath = getSortPath();
 			String[] cmd={cygpath ,standardFile.getAbsolutePath(), "-o", sortedloc};
 			Runtime.getRuntime().exec(cmd).waitFor();
 		}catch (Exception ex) {
-			System.err.println(ex.toString());
+			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't create Standard", ex);
 			throw new RuntimeException(ex);
 		}
 	}
@@ -139,6 +130,7 @@ public class DiffUtil {
 				lines.add(line);
 			}
 		} catch (IOException ex) {
+			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't read file", ex);
 			throw new RuntimeException(ex);
 		}
 		return lines;
@@ -152,27 +144,14 @@ public class DiffUtil {
 		try {
 			java.io.File fi1 = new java.io.File(original);
 			java.io.File fi2 = new java.io.File(results);
-			FileReader f1 = new FileReader(new java.io.File(original).getAbsolutePath());
+			FileReader f1 = new FileReader (new java.io.File(original).getAbsolutePath());
 			FileReader f2 = new FileReader (new java.io.File(results).getAbsolutePath());
 			Scanner in1 = new Scanner(f1);
 			Scanner in2 = new Scanner(f2);
 			boolean ret=true;
 			while (in1.hasNextLine()||in2.hasNextLine()) {
-				if(in1.hasNextLine()^in2.hasNextLine())
+				if((in1.hasNextLine()^in2.hasNextLine())||!(in1.nextLine().equals(in2.nextLine())))
 				{
-					in1.close();
-					in2.close();
-					f1.close();
-					f2.close();
-					getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),original.substring(original.lastIndexOf(java.io.File.separator)+1));
-					return false;
-				}
-				String line1 = in1.nextLine();
-				String line2 = in2.nextLine();
-				if(!(line1.equals(line2)))
-				{
-					System.out.println(line1);
-					System.out.println(line2);
 					in1.close();
 					in2.close();
 					f1.close();
@@ -184,7 +163,8 @@ public class DiffUtil {
 			emptyResults(fi2.getParent(), fi2.getName());
 			return ret;
 		} catch (IOException ex) {
-			throw new RuntimeException(ex);
+			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't compare content", ex);
+			return false;
 		}
 	}
 	/**
@@ -197,7 +177,7 @@ public class DiffUtil {
 		List<String> originalLines, revisedLines;	
 		originalLines = fileToLines(pathOriginal);
 		revisedLines = fileToLines(pathRevised);
-		java.io.File outp = new java.io.File(System.getProperty(RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results") + java.io.File.separator + title.replace(".txt","")+"_Diff.txt");
+		java.io.File outp = new java.io.File(getRsltPath() + java.io.File.separator + title.replace(".txt","_Diff.txt"));
 		// Compute diff. Get the Patch object. Patch is the container for computed deltas.
 		Patch patch = DiffUtils.diff(originalLines, revisedLines);
 		StringBuilder diff = new StringBuilder();
@@ -212,7 +192,7 @@ public class DiffUtil {
 			out.flush();
 			out.close();
 		} catch (IOException ex) {
-			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, null, ex);
+			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't write Diff to file", ex);
 		}
 		System.out.println(diff.toString());
 		return diff.toString();
@@ -247,8 +227,8 @@ public class DiffUtil {
 	 * @return path to put/find the standard at
 	 */
 	static String standardPath(List<String> imagePaths, String type) {
-		java.io.File firstImage = new java.io.File(imagePaths.get(0));
-		String standardPath = System.getProperty(GOLD, ("test" + java.io.File.separator + "output" + java.io.File.separator + "Gold")) + java.io.File.separator + firstImage.getName().split("\\.")[0] +type+".txt";
+		String firstImage = getImgName(imagePaths.get(0));
+		String standardPath = System.getProperty(GOLD, ("test" + java.io.File.separator + "output" + java.io.File.separator + "gold")) + java.io.File.separator + firstImage +type+".txt";
 		return standardPath;
 	}
 	/**
@@ -312,7 +292,66 @@ public class DiffUtil {
 				}
 			}
 		} catch (Exception ex) {
-			System.out.println(ex.toString());
+			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Failed to run CPP program", ex);
+		}
+	}
+	public static String stripExtension(String title)
+	{
+		return title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw","");
+	}
+	public static String buildPath(String path, String name, String type, String Ext)
+	{
+		return path+java.io.File.separator+name+type+Ext;
+	}
+	public static String getImgName(String img)
+	{
+		String[] imgSp = img.split("\\\\");
+		return stripExtension(imgSp[imgSp.length-1]);
+	}
+	public static String getRsltPath()
+	{
+		return System.getProperty(DiffUtil.RSLT, "test"+java.io.File.separator+"output"+java.io.File.separator+"results");
+	}
+	public static String getSortPath()
+	{
+		if(!System.getProperty("os.name").contains("Windows"))
+		{
+			return "sort";
+		}
+		else
+		{
+			return "C:\\Users\\" + System.getProperty("user.name")+ "\\Cygwin\\bin\\sort.exe";
+		}
+	}
+	public static void writeExceptions(String filename, Exception ex)
+	{
+		try {
+			filename = filename.replace(".txt",EX+".txt");
+			java.io.File exFile = new java.io.File(filename);
+			Scanner read = new Scanner(exFile);
+			List<String> con = new ArrayList<String>();
+			while(read.hasNextLine())
+			{
+				con.add(read.nextLine());
+			}
+			read.close();
+			FileWriter exWriter;
+			try {
+				exWriter = new FileWriter(exFile);
+				for(String out: con)
+				{
+					exWriter.append(out+"\n");
+				}
+				exWriter.append(ex.toString());
+				exWriter.flush();
+				exWriter.close();
+			}
+			catch (IOException ex1) {
+				Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't log Exception", ex1);
+			}
+		}
+		catch (FileNotFoundException ex1) {
+			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't log Exception", ex1);
 		}
 	}
 }

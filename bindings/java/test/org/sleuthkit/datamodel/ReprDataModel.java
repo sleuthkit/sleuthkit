@@ -24,6 +24,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * ReprDataModel writes a String representation (containing the results of all
@@ -36,6 +38,7 @@ public class ReprDataModel {
 
 	int indentLevel = 0;
 	Appendable result, leaves;
+	String exFile;
 	static final int READ_BUFFER_SIZE = 8192;
 	static final String HASH_ALGORITHM = "MD5";
 
@@ -43,9 +46,10 @@ public class ReprDataModel {
 	 * 
 	 * @param result what to append the generated representation to.
 	 */
-	ReprDataModel(Appendable result) {
+	ReprDataModel(Appendable result, String exFile) {
 		this.result = result;
-		this.leaves= null;
+		this.leaves = null;
+		this.exFile = exFile;
 	}
 	/**
 	 * Entry point to represent a Content object and it's children, sets up the 
@@ -64,6 +68,15 @@ public class ReprDataModel {
 	private void topDownDF(List<Content> lc, List<Long> lp)
 	{
 		for(Content c : lc) {
+			try {
+				Content d;
+				if( (d = c.getParent()) !=null )
+				{
+					((AbstractContent)c).setParentId(d.getId());
+				}
+			} catch (TskCoreException ex) {
+				DiffUtil.writeExceptions(exFile, ex);
+			}
 			append(c.toString(),result);
 			if(c instanceof File)
 			{
@@ -82,7 +95,7 @@ public class ReprDataModel {
 					topDownDF(c.getChildren(),new ArrayList<Long>(lp));
 				}
 			} catch (TskCoreException ex) {
-				throw new RuntimeException(ex);
+				DiffUtil.writeExceptions(exFile, ex);
 			}
 			lp.remove(0);
 		}
@@ -98,6 +111,15 @@ public class ReprDataModel {
 		Content c;
 		while ((c = sk.getContentById(x))!=null)
 		{
+			try {
+				Content d;
+				if( (d = c.getParent()) !=null )
+				{
+					((AbstractContent)c).setParentId(d.getId());
+				}
+			} catch (TskCoreException ex) {
+				DiffUtil.writeExceptions(exFile, ex);
+			}
 			append(c.toString(),result);
 			if(c instanceof File)
 			{
@@ -129,7 +151,7 @@ public class ReprDataModel {
 		} catch (TskCoreException ex) {
 			append(ex.toString(), result);
 		} catch (NoSuchAlgorithmException ex) {
-			throw new RuntimeException(ex);
+			DiffUtil.writeExceptions(exFile, ex);
 		}
 	}
 
@@ -147,7 +169,7 @@ public class ReprDataModel {
 			//System.out.flush();
 			f.append(s);
 		} catch (IOException ex) {
-			throw new RuntimeException(ex);
+			DiffUtil.writeExceptions(exFile, ex);
 		}
 	}
 	/**

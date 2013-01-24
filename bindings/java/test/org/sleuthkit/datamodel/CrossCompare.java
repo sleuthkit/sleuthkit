@@ -1,6 +1,20 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * Sleuth Kit Data Model
+ *
+ * Copyright 2011 Basis Technology Corp.
+ * Contact: carrier <at> sleuthkit <dot> org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package org.sleuthkit.datamodel;
 
@@ -14,7 +28,8 @@ import org.junit.runners.Parameterized;
 
 /**
  *
- * @author smoss
+ * Ensures that a sequential traversal of a given image produces the same result as a 
+ * Top Down depth first traversal.
  */
 @RunWith(Parameterized.class)
 public class CrossCompare {
@@ -29,7 +44,8 @@ public class CrossCompare {
 		this.TD = TD;
 	}
 	/**
-	 * Get the sets of filenames for each test image
+	 * Get the sets of filenames for each test image, they should be located in 
+	 * the folder specified by the build.xml
 	 * @return A Collection of one-element Object arrays, where that one element
 	 * is a List<String> containing the image file paths (the type is weird
 	 * because that's what JUnit wants for parameters).
@@ -48,11 +64,11 @@ public class CrossCompare {
 	@Test
 	public void CrossCompare() {
 		try {
-			String title = (new java.io.File(imagePaths.get(0))).getName();
-			java.io.File testFolder=new java.io.File(System.getProperty(DiffUtil.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
-			String out = title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw","");
-			java.io.File testStandard1 = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+out+Seq+"_sorted.txt");
-			java.io.File testStandard2 = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+out+TD+"_sorted.txt");
+			String title = DiffUtil.getImgName(imagePaths.get(0));
+			java.io.File testFolder=new java.io.File(DiffUtil.getRsltPath());
+			title = DiffUtil.stripExtension(title);
+			java.io.File testStandard1 = new java.io.File(DiffUtil.buildPath(testFolder.getAbsolutePath(), title, Seq, "_sorted.txt"));
+			java.io.File testStandard2 = new java.io.File(DiffUtil.buildPath(testFolder.getAbsolutePath(), title, TD, "_sorted.txt"));
 			String testStandardPath1 = testStandard1.getPath();
 			String testStandardPath2 = testStandard2.getPath();
 			assertEquals("Generated results ("+testStandardPath1+") differ with gold standard ("+testStandardPath2+") .", DiffUtil.comparecontent(testStandardPath1, testStandardPath2),true);

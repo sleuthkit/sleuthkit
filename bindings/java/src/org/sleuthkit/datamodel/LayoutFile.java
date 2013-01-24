@@ -192,11 +192,6 @@ public class LayoutFile extends AbstractFile{
 	@Override
 	public String toString()
 	{
-		try {
-			return "LayoutFile [" + "calcSize " + calcSize() + " " + "getNumParts " + getNumParts() + " " + "getSize " + getSize() + " " + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isRoot " + isRoot() + " " + "getType " + getType() + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getUniquePath " + getUniquePath() + "]";
-		} catch (TskCoreException ex) {
-			Logger.getLogger(LayoutFile.class.getName()).log(Level.SEVERE, null, ex);
-		}
-		return null;
+		return "LayoutFile [" + super.toString() + " calcSize " + calcSize() + " " + "getNumParts " + getNumParts() + "]";
 	}
 }

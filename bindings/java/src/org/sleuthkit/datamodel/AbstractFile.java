@@ -143,11 +143,6 @@ public abstract class AbstractFile extends AbstractContent {
 	@Override
     public String toString()
 	{
-		try {
-			return "AbstractFile [" + "getType " + getType() + " " + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isRoot " + isRoot() + " " + "isVirtual " + isVirtual() + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getUniquePath " + getUniquePath() + " " + "getSize " + getSize() + "]";
-		} catch (TskCoreException ex) {
-			Logger.getLogger(AbstractFile.class.getName()).log(Level.SEVERE, null, ex);
-		}
-		return null;
+		return "AbstractFile [" + super.toString() + "getType " + getType() + " " + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isRoot " + isRoot() + " " + "isVirtual " + isVirtual() + "]";
 	}
 }

@@ -24,12 +24,12 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
-import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
-import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
 
 /**
  * Generalized class that stores metadata that are common to both File and
@@ -621,6 +621,6 @@ public abstract class FsContent extends AbstractFile {
 	@Override
 	public String toString()
 	{
-		return "FsContent [" + "getAtimeAsDate " + getAtime() + " " + "getCrtimeAsDate " + getCrtime() + " " + "getMtimeAsDate " + getMtime() + " " + "attrId " + attrId + " " + "dirFlag " + dirFlag + " " + "dirType " + dirType + " " + "fileHandle " + fileHandle + " " + "fsObjId " + fsObjId + " " + "gid " + gid + " " + "metaAddr " + metaAddr + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "modes " + modes + " " + "parentPath " + parentPath + " " + "size " + size + " " + "uid " + uid + " " + "uniquePath " + uniquePath + " " + "getType " + getType() + " " + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isVirtual " + isVirtual() + " " + "getId " + getId() + " " + "getName " + getName() + "]";
+		return "FsContent [" + super.toString() + " crtime " + crtime + " " + "mtime " + mtime + " " + "atime " + atime + " " + "attrId " + attrId + " " + "dirFlag " + dirFlag + " " + "dirType " + dirType + " "  + "fsObjId " + fsObjId + " " + "gid " + gid + " " + "metaAddr " + metaAddr + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "modes " + modes + " " + "parentPath " + parentPath + " " + "size " + size + " " + "uid " + uid + " " + "uniquePath " + uniquePath + "]";
 	}
 }

@@ -142,11 +142,6 @@ public class VirtualDirectory extends AbstractFile {
 	@Override
 	public String toString()
 	{
-		try {
-			return "VirtualDirectory [" + "dirFlags " + dirFlags + " " + "dirType " + dirType + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "parent_path " + parent_path + " " + "size " + size + " " + "getType " + getType() + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getUniquePath " + getUniquePath() + "]";
-		} catch (TskCoreException ex) {
-			Logger.getLogger(VirtualDirectory.class.getName()).log(Level.SEVERE, null, ex);
-		}
-		return null;
-	}
+		return "VirtualDirectory [" + super.toString() + " dirFlags " + dirFlags + " " + "dirType " + dirType + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "parent_path " + parent_path + " " + "size " + size + "]";
+	}		
 }

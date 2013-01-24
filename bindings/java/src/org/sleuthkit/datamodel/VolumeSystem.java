@@ -159,11 +159,6 @@ public class VolumeSystem extends AbstractContent {
 	@Override
 	public String toString()
 	{
-		try {
-			return "VolumeSystem [" + "blockSize " + blockSize + " " + "imgOffset " + imgOffset + " " + "type " + type + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getUniquePath " + getUniquePath() + "]";
-		} catch (TskCoreException ex) {
-			Logger.getLogger(VolumeSystem.class.getName()).log(Level.SEVERE, null, ex);
-		}
-		return null;
+		return "VolumeSystem [" + super.toString() + "blockSize " + blockSize + " " + "imgOffset " + imgOffset + " " + "type " + type + "]";
 	}
 }

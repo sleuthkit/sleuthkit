@@ -264,12 +264,7 @@ public class Volume extends AbstractContent {
 	@Override
 	public String toString()
 	{
-		try {
-			return "Volume [" + "addr " + addr + " " + "desc " + desc + " " + "flags " + flags + " " + "length " + length + " " + "start " + start + " " + "volumeHandle " + volumeHandle + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getParent " + getParent() + "]";
-		} catch (TskCoreException ex) {
-			Logger.getLogger(Volume.class.getName()).log(Level.SEVERE, null, ex);
-		}
-		return null;
+		return "Volume [" + super.toString() + "addr " + addr + " " + "desc " + desc + " " + "flags " + flags + " " + "length " + length + " " + "start " + start + "]";
 	}
 	
 }

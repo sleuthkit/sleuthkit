@@ -84,11 +84,6 @@ public class Directory extends FsContent {
 	@Override
 	public String toString()
 	{
-		try {
-			return "Directory [" + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isVirtual " + isVirtual() + " " + "getAtimeAsDate " + getAtime() + " " + "getAttrId " + getAttrId() + " " + "getAttrType " + getAttrType() + " " + "getCrtimeAsDate " + getCrtime() + " " + "getDirFlagAsString " + getDirFlagAsString() + " " + "getDirType " + getDirType() + " " + "getDirTypeAsString " + getDirTypeAsString() + " " + "getGid " + getGid() + " " + "getMetaAddr " + getMetaAddr() + " " + "getMetaFlagsAsString " + getMetaFlagsAsString() + " " + "getMetaType " + getMetaType() + " " + "getMetaTypeAsString " + getMetaTypeAsString() + " " + "getModesAsString " + getModesAsString() + " " + "getMtimeAsDate " + getMtime() + " " + "getParentPath " + getParentPath() + " " + "getSize " + getSize() + " " + "getUid " + getUid() + " " + "getUniquePath " + getUniquePath() + " " + "isRoot " + isRoot() + " " + "getType " + getType() + " " + "getId " + getId() + "]";
-		} catch (TskCoreException ex) {
-			Logger.getLogger(Directory.class.getName()).log(Level.SEVERE, null, ex);
-		}
-		return null;
+		return "Directory [" + super.toString() + "]";
 	}
 }

@@ -204,11 +204,6 @@ public class FileSystem extends AbstractContent {
 	@Override
 	public String toString()
 	{
-		try {
-			return "FileSystem [" + "blockCount " + blockCount + " " + "blockSize " + blockSize + " " + "filesystemHandle " + filesystemHandle + " " + "firstInum " + firstInum + " " + "fsType " + fsType + " " + "imgOffset " + imgOffset + " " + "lastInum " + lastInum + " " + "rootInum " + rootInum + " " + "getId " + getId() + " " + "getName " + getName() + " " + "getUniquePath " + getUniquePath() + "]";
-		} catch (TskCoreException ex) {
-			Logger.getLogger(FileSystem.class.getName()).log(Level.SEVERE, null, ex);
-		}
-		return null;
+		return "FileSystem [" + super.toString() + " blockCount " + blockCount + " " + "blockSize " + blockSize + " " + "firstInum " + firstInum + " " + "fsType " + fsType + " " + "imgOffset " + imgOffset + " " + "lastInum " + lastInum + " " + "rootInum " + rootInum + " " + "]";
 	}
 }

@@ -86,11 +86,6 @@ public class File extends FsContent {
 	@Override
 	public String toString()
 	{
-		try {
-			return "File [" + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isVirtual " + isVirtual() + " " + "getAtimeAsDate " + getAtime() + " " + "getAttrId " + getAttrId() + " " + "getAttrType " + getAttrType() + " " + "getCrtimeAsDate " + getCrtime() + " " + "getDirFlagAsString " + getDirFlagAsString() + " " + "getDirType " + getDirType() + " " + "getDirTypeAsString " + getDirTypeAsString() + " " + "getMetaFlagsAsString " + getMetaFlagsAsString() + " " + "getMetaType " + getMetaType() + " " + "getMetaTypeAsString " + getMetaTypeAsString() + " " + "getMtimeAsDate " + getMtime() + " " + "getParentPath " + getParentPath() + " " + "getSize " + getSize() + " " + "getUid " + getUid() + " " + "getUniquePath " + getUniquePath() + " " + "getType " + getType() + " " + "getId " + getId() + " " + "getName " + getName() + "]";
-		} catch (TskCoreException ex) {
-			Logger.getLogger(File.class.getName()).log(Level.SEVERE, null, ex);
-		}
-		return null;
+		return "File [" + super.toString() + " isDir " + isDir() + " " + "isFile " + isFile() + " " + "isVirtual " + isVirtual() + " " + "getAttrId " + getAttrId() + " " + "getAttrType " + getAttrType() + " " + "getDirFlagAsString " + getDirFlagAsString() + " " + "getDirType " + getDirType() + " " + "getDirTypeAsString " + getDirTypeAsString() + " " + "getMetaFlagsAsString " + getMetaFlagsAsString() + " " + "getMetaType " + getMetaType() + " " + "getMetaTypeAsString " + getMetaTypeAsString() + "]";
 	}
 }

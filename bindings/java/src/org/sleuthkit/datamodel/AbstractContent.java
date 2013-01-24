@@ -199,6 +199,6 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public String toString()
 	{
-		return "AbstractContent [" + "name " + name + " " + "objId " + objId + " " + "parentId " + parentId + " " + "uniquePath " + uniquePath + "]";
+		return "AbstractContent [" + "objId " + objId + " " + "name " + name + " " + "parentId " + parentId + " " + "uniquePath " + uniquePath + "]";
 	}
 }
