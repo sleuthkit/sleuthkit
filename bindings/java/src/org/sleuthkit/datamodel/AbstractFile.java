@@ -143,6 +143,6 @@ public abstract class AbstractFile extends AbstractContent {
 	@Override
     public String toString()
 	{
-		return "AbstractFile [" + super.toString() + "getType " + getType() + " " + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isRoot " + isRoot() + " " + "isVirtual " + isVirtual() + "]";
+		return "AbstractFile [" + super.toString() + "type " + type + " " + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isRoot " + isRoot() + " " + "isVirtual " + isVirtual() + "]";
 	}
 }

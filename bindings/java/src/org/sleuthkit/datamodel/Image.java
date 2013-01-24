@@ -307,6 +307,6 @@ public class Image extends AbstractContent {
 	@Override
 	public String toString()
 	{
-		return "Image [" + super.toString() + " " + "paths " + Arrays.toString(paths) + " " + "size " + size + " " + "ssize " + ssize + " " + "timezone " + timezone + " " + "type " + type + " " + "getId " + getId() + " " + "getName " + getName() + "]";
+		return "Image [" + super.toString() + " " + "paths " + Arrays.toString(paths) + " " + "size " + size + " " + "ssize " + ssize + " " + "timezone " + timezone + " " + "type " + type + "]";
 	}
 }

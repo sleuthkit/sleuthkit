@@ -54,7 +54,7 @@ public class CrossCompare {
 	public static Collection<Object[]> testImageData() {
 		Collection<Object[]> data = new ArrayList<Object[]>();
 		
-		for (Object imagePaths : DiffUtil.getImagePaths()) {
+		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths, "_Seq", "_TD"});
 		}
 		return data;
@@ -64,11 +64,11 @@ public class CrossCompare {
 	@Test
 	public void CrossCompare() {
 		try {
-			String title = DiffUtil.getImgName(imagePaths.get(0));
-			java.io.File testFolder=new java.io.File(DiffUtil.getRsltPath());
-			title = DiffUtil.stripExtension(title);
-			java.io.File testStandard1 = new java.io.File(DiffUtil.buildPath(testFolder.getAbsolutePath(), title, Seq, "_sorted.txt"));
-			java.io.File testStandard2 = new java.io.File(DiffUtil.buildPath(testFolder.getAbsolutePath(), title, TD, "_sorted.txt"));
+			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
+			java.io.File testFolder=new java.io.File(DataModelTestSuite.getRsltPath());
+			title = DataModelTestSuite.stripExtension(title);
+			java.io.File testStandard1 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, Seq, "_sorted.txt"));
+			java.io.File testStandard2 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, TD, "_sorted.txt"));
 			String testStandardPath1 = testStandard1.getPath();
 			String testStandardPath2 = testStandard2.getPath();
 			assertEquals("Generated results ("+testStandardPath1+") differ with gold standard ("+testStandardPath2+") .", DiffUtil.comparecontent(testStandardPath1, testStandardPath2),true);

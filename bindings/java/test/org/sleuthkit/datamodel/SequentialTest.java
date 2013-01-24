@@ -51,7 +51,7 @@ public class SequentialTest {
 	public static Collection<Object[]> testImageData() {
 		Collection<Object[]> data = new ArrayList<Object[]>();
 		
-		for (Object imagePaths : DiffUtil.getImagePaths()) {
+		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
 		}
 		return data;
@@ -61,15 +61,15 @@ public class SequentialTest {
 	@Test
 	public void testSequentialDiff() {
 		try {
-			String title = DiffUtil.getImgName(imagePaths.get(0));
-			java.io.File testFolder=new java.io.File(DiffUtil.getRsltPath());
-			title = DiffUtil.stripExtension(title);
-			java.io.File testStandard = new java.io.File(DiffUtil.buildPath(testFolder.getAbsolutePath(), title, DiffUtil.SEQ, ".txt"));
+			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
+			java.io.File testFolder=new java.io.File(DataModelTestSuite.getRsltPath());
+			title = DataModelTestSuite.stripExtension(title);
+			java.io.File testStandard = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, DataModelTestSuite.SEQ, ".txt"));
 			String testStandardPath = testStandard.getPath();
-			String oldStandardPath = DiffUtil.standardPath(imagePaths, DiffUtil.SEQ);
-			DiffUtil.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, DiffUtil.SEQ);
-			String testExceptionsPath = testStandardPath.replace(".txt", DiffUtil.EX+".txt");
-			String oldExceptionsPath = oldStandardPath.replace(".txt", DiffUtil.EX+".txt");
+			String oldStandardPath = DataModelTestSuite.standardPath(imagePaths, DataModelTestSuite.SEQ);
+			DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, DataModelTestSuite.SEQ);
+			String testExceptionsPath = testStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
+			String oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
 			assertEquals("Generated results ("+testExceptionsPath+") differ with gold standard ("+oldExceptionsPath+") .", DiffUtil.comparecontent(oldExceptionsPath, testExceptionsPath),true);
 			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, testStandardPath),true);
 		} catch (Exception ex) {

@@ -52,7 +52,7 @@ public class CPPtoJavaCompare {
 	public static Collection<Object[]> testImageData() {
 		Collection<Object[]> data = new ArrayList<Object[]>();
 		
-		for (Object imagePaths : DiffUtil.getImagePaths()) {
+		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths, "_TD"});
 		}
 		return data;
@@ -63,14 +63,14 @@ public class CPPtoJavaCompare {
 	public void CrossCompare() {
 		try {
 			String title = (new java.io.File(imagePaths.get(0))).getName();
-			java.io.File testFolder=new java.io.File(System.getProperty(DiffUtil.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
-			title = DiffUtil.stripExtension(title);
+			java.io.File testFolder=new java.io.File(System.getProperty(DataModelTestSuite.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
+			title = DataModelTestSuite.stripExtension(title);
 			java.io.File testStandard1 = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+title+"_CPP.txt");
 			java.io.File testStandard2 = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+title+TD+".txt");
 			String testStandardPath1 = testStandard1.getPath();
 			String testStandardPath2 = testStandard2.getPath();
 			Scanner read1 = new Scanner(testStandard1);
-			DiffUtil.getTSKData(testStandardPath1, imagePaths);
+			DataModelTestSuite.getTSKData(testStandardPath1, imagePaths);
 			Scanner read2 = new Scanner(testStandard2);
 			while(read1.hasNextLine()||read2.hasNextLine())
 			{

@@ -192,6 +192,6 @@ public class LayoutFile extends AbstractFile{
 	@Override
 	public String toString()
 	{
-		return "LayoutFile [" + super.toString() + " calcSize " + calcSize() + " " + "getNumParts " + getNumParts() + "]";
+		return "LayoutFile [" + super.toString() + "]";
 	}
 }

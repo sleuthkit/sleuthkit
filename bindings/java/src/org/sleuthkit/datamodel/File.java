@@ -86,6 +86,6 @@ public class File extends FsContent {
 	@Override
 	public String toString()
 	{
-		return "File [" + super.toString() + " isDir " + isDir() + " " + "isFile " + isFile() + " " + "isVirtual " + isVirtual() + " " + "getAttrId " + getAttrId() + " " + "getAttrType " + getAttrType() + " " + "getDirFlagAsString " + getDirFlagAsString() + " " + "getDirType " + getDirType() + " " + "getDirTypeAsString " + getDirTypeAsString() + " " + "getMetaFlagsAsString " + getMetaFlagsAsString() + " " + "getMetaType " + getMetaType() + " " + "getMetaTypeAsString " + getMetaTypeAsString() + "]";
+		return "File [" + super.toString() + "]";
 	}
 }

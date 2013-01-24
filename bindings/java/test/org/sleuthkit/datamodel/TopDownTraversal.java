@@ -52,7 +52,7 @@ public class TopDownTraversal {
 	public static Collection<Object[]> testImageData() {
 		Collection<Object[]> data = new ArrayList<Object[]>();
 		
-		for (Object imagePaths : DiffUtil.getImagePaths()) {
+		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
 		}
 		return data;
@@ -62,14 +62,14 @@ public class TopDownTraversal {
 	@Test
 	public void testTopDownDiff() {
 		try {
-			String title = DiffUtil.getImgName(imagePaths.get(0));
-			java.io.File testFolder=new java.io.File(DiffUtil.getRsltPath());
-			java.io.File testStandard = new java.io.File(DiffUtil.buildPath(testFolder.getAbsolutePath(), title, DiffUtil.TD, ".txt"));
+			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
+			java.io.File testFolder=new java.io.File(DataModelTestSuite.getRsltPath());
+			java.io.File testStandard = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, DataModelTestSuite.TD, ".txt"));
 			String testStandardPath = testStandard.getPath();
-			String oldStandardPath = DiffUtil.standardPath(imagePaths, DiffUtil.TD);
-			DiffUtil.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, DiffUtil.TD);
-			String testExceptionsPath = testStandardPath.replace(".txt", DiffUtil.EX+".txt");
-			String oldExceptionsPath = oldStandardPath.replace(".txt", DiffUtil.EX+".txt");
+			String oldStandardPath = DataModelTestSuite.standardPath(imagePaths, DataModelTestSuite.TD);
+			DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, DataModelTestSuite.TD);
+			String testExceptionsPath = testStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
+			String oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
 			assertEquals("Generated results ("+testExceptionsPath+") differ with gold standard ("+oldExceptionsPath+") .", DiffUtil.comparecontent(oldExceptionsPath, testExceptionsPath),true);
 			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, testStandardPath),true);
 		} catch (Exception ex) {

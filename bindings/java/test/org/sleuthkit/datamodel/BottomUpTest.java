@@ -52,7 +52,7 @@ public class BottomUpTest {
 	public static Collection<Object[]> testImageData() {
 		Collection<Object[]> data = new ArrayList<Object[]>();
 		
-		for (Object imagePaths : DiffUtil.getImagePaths()) {
+		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
 		}
 		return data;
@@ -61,14 +61,14 @@ public class BottomUpTest {
 	@Test
 	public void testBottomUpDiff() {
 		try{
-			String title = DiffUtil.getImgName(imagePaths.get(0));
-			java.io.File dbFile=new java.io.File(DiffUtil.getRsltPath());
+			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
+			java.io.File dbFile=new java.io.File(DataModelTestSuite.getRsltPath());
 			String tempDirPath= dbFile.getAbsolutePath();
-			String dbPath = DiffUtil.buildPath(tempDirPath, title, "_BU", ".db");
+			String dbPath = DataModelTestSuite.buildPath(tempDirPath, title, "_BU", ".db");
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
-			title = title + DiffUtil.LVS+ ".txt";
+			title = title + DataModelTestSuite.LVS+ ".txt";
 			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
 			try{
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));

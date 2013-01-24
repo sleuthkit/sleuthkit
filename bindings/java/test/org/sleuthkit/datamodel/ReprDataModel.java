@@ -75,7 +75,7 @@ public class ReprDataModel {
 					((AbstractContent)c).setParentId(d.getId());
 				}
 			} catch (TskCoreException ex) {
-				DiffUtil.writeExceptions(exFile, ex);
+				DataModelTestSuite.writeExceptions(exFile, ex);
 			}
 			append(c.toString(),result);
 			if(c instanceof File)
@@ -95,7 +95,7 @@ public class ReprDataModel {
 					topDownDF(c.getChildren(),new ArrayList<Long>(lp));
 				}
 			} catch (TskCoreException ex) {
-				DiffUtil.writeExceptions(exFile, ex);
+				DataModelTestSuite.writeExceptions(exFile, ex);
 			}
 			lp.remove(0);
 		}
@@ -118,7 +118,7 @@ public class ReprDataModel {
 					((AbstractContent)c).setParentId(d.getId());
 				}
 			} catch (TskCoreException ex) {
-				DiffUtil.writeExceptions(exFile, ex);
+				DataModelTestSuite.writeExceptions(exFile, ex);
 			}
 			append(c.toString(),result);
 			if(c instanceof File)
@@ -151,7 +151,7 @@ public class ReprDataModel {
 		} catch (TskCoreException ex) {
 			append(ex.toString(), result);
 		} catch (NoSuchAlgorithmException ex) {
-			DiffUtil.writeExceptions(exFile, ex);
+			DataModelTestSuite.writeExceptions(exFile, ex);
 		}
 	}
 
@@ -169,7 +169,7 @@ public class ReprDataModel {
 			//System.out.flush();
 			f.append(s);
 		} catch (IOException ex) {
-			DiffUtil.writeExceptions(exFile, ex);
+			DataModelTestSuite.writeExceptions(exFile, ex);
 		}
 	}
 	/**
