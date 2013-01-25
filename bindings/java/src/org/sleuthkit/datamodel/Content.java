@@ -59,6 +59,13 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @return the name
 	 */
 	public String getName();
+	
+	/**
+	 * @return returns the full path to this Content object starting with a "/"
+	 * followed by the Image name and similarly for all other segments in the
+	 * hierarchy.
+	 */
+	public String getUniquePath() throws TskCoreException;
 
 	/**
 	 * Gets the content object id.
@@ -82,6 +89,13 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public List<Content> getChildren() throws TskCoreException;
+	
+	/**
+	 * @return returns the parent of this Content object or null if there isn't
+	 * one as is the case for Image.
+	 * @throws TskCoreException 
+	 */
+	public Content getParent() throws TskCoreException;
 
 	/**
 	 * Gets the child content ids of this content.
