@@ -260,9 +260,8 @@ public class Volume extends AbstractContent {
 	}
 	
 	@Override
-	public String toString(boolean preserveState)
-	{
-		return "Volume [" + super.toString(preserveState) + "addr " + addr + " " + "desc " + desc + " " + "flags " + flags + " " + "length " + length + " " + "start " + start + "]";
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "Volume [\t" + "addr " + addr + "\t" + "desc " + desc + "\t" + "flags " + flags + "\t" + "length " + length + "\t" + "start " + start + "]\t";
 	}
 	
 }

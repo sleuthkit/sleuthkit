@@ -67,7 +67,7 @@ public class DataModelTestSuite {
 	 * @param imagePaths The path(s) to the image file(s)
 	 * @param type The type of traversal to run.
 	 */
-	public static void createStandard(String standardPath, String tempDirPath, List<String> imagePaths, ImgTraverser type, String exFile)
+	public static void createStandard(String standardPath, String tempDirPath, List<String> imagePaths, Traverser type, String exFile)
 	{
 		java.io.File standardFile = new java.io.File(standardPath);
 		try {

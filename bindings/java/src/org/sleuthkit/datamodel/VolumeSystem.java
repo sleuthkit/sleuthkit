@@ -155,8 +155,7 @@ public class VolumeSystem extends AbstractContent {
 		return volumes;
 	}
 	@Override
-	public String toString(boolean preserveState)
-	{
-		return "VolumeSystem [" + super.toString(preserveState) + "blockSize " + blockSize + " " + "imgOffset " + imgOffset + " " + "type " + type + "]";
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "VolumeSystem [\t" + "blockSize " + blockSize + "\t" + "imgOffset " + imgOffset + "\t" + "type " + type + "]\t";
 	}
 }

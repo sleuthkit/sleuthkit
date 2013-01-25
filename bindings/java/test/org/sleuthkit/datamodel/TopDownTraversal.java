@@ -34,11 +34,7 @@ import org.junit.runners.Parameterized.Parameters;
  * Verifies that the current version of TSK produces the same output of previous versions by doing a TopDown Depth first traversal of the given images.
  */
 @RunWith(Parameterized.class)
-public class TopDownTraversal implements  ImgTraverser{
-		
-
-	private List<String> imagePaths;
-	private String exFile;
+public class TopDownTraversal extends ImgTraverser{
 
 	
 	public TopDownTraversal(List<String> imagePaths) {
@@ -65,16 +61,9 @@ public class TopDownTraversal implements  ImgTraverser{
 	@Test
 	public void testTopDownDiff() {
 		try {
-			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
-			java.io.File testFolder=new java.io.File(DataModelTestSuite.getRsltPath());
-			java.io.File testStandard = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, this.getClass().getSimpleName(), ".txt"));
-			String testStandardPath = testStandard.getPath();
-			this.exFile = testStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
-			String oldStandardPath = DataModelTestSuite.standardPath(imagePaths, this.getClass().getSimpleName());
-			DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, this, exFile);
-			String oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
-			assertEquals("Generated results ("+exFile+") differ with gold standard ("+oldExceptionsPath+") .", DiffUtil.comparecontent(oldExceptionsPath, exFile),true);
-			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, testStandardPath),true);
+			List<Boolean> test = basicTest();
+			assertEquals("Generated results ("+exFile+") differ with gold standard ("+oldExceptionsPath+") .", test.get(0),true);
+			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", test.get(1),true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}

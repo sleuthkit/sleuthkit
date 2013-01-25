@@ -199,25 +199,22 @@ public abstract class AbstractContent implements Content {
 	}
 	
 	@Override
-	final public String toString()
+	public String toString()
 	{
 		return toString(true);
 	}
 			
 			
-	public String toString(boolean preserveState)
-	{
-		if(preserveState)
-		{
-			return "AbstractContent [" + "objId " + objId + " " + "name " + name + " " + "parentId " + parentId + " " + "uniquePath " + uniquePath + "]";
+	public String toString(boolean preserveState){
+		if(preserveState){
+			return "AbstractContent [\t" + "objId " + String.format("%010d",objId) + "\t" + "name " + name + "\t" + "parentId " + parentId + "\t" + "uniquePath " + uniquePath + "]\t";
 		}
-		else 
-		{
+		else{
 			try {
-				return "AbstractContent [" + "objId " + objId + " " + "getParent " + getParent().getId() + " " + "getUniquePath " + getUniquePath() + " " + "name " + name + "]";
+				return "AbstractContent [\t" + "objId " + String.format("%010d",objId) + "\t" + "name " + name + "\t" + "getUniquePath " + getUniquePath() + "\t" + "getParent " + getParent().getId() + "]\t";
 			} catch (Exception ex) {
 				//Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, null, ex);
-				return "AbstractContent [" + "objId " + objId + " " + "name " + name + " " + "parentId " + parentId + " " + "uniquePath " + uniquePath + "]";
+				return "AbstractContent [\t" + "objId " + String.format("%010d",objId) + "\t" + "name " + name + "\t" + "uniquePath " + uniquePath + "\t" + "parentId " + parentId + "]\t";
 			}
 		}
 	}

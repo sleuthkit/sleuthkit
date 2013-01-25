@@ -619,8 +619,7 @@ public abstract class FsContent extends AbstractFile {
 		return epoch;
 	}
 	@Override
-	public String toString(boolean preserveState)
-	{
-		return "FsContent [" + super.toString(preserveState) + " crtime " + crtime + " " + "mtime " + mtime + " " + "atime " + atime + " " + "attrId " + attrId + " " + "dirFlag " + dirFlag + " " + "dirType " + dirType + " "  + "fsObjId " + fsObjId + " " + "gid " + gid + " " + "metaAddr " + metaAddr + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "modes " + modes + " " + "parentPath " + parentPath + " " + "size " + size + " " + "uid " + uid + " " + "uniquePath " + uniquePath + "]";
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "FsContent [\t" + "\tcrtime " + crtime + "\t" + "mtime " + mtime + "\t" + "atime " + atime + "\t" + "attrId " + attrId + "\t" + "dirFlag " + dirFlag + "\t" + "dirType " + dirType + "\t"  + "fsObjId " + fsObjId + "\t" + "gid " + gid + "\t" + "metaAddr " + metaAddr + "\t" + "metaFlags " + metaFlags + "\t" + "metaType " + metaType + "\t" + "modes " + modes + "\t" + "parentPath " + parentPath + "\t" + "size " + size + "\t" + "uid " + uid + "\t" + "uniquePath " + uniquePath + "]\t";
 	}
 }

@@ -138,8 +138,7 @@ public abstract class AbstractFile extends AbstractContent {
 		return files;
 	}
 	@Override
-    public String toString(boolean preserveState)
-	{
-		return "AbstractFile [" + super.toString(preserveState) + "type " + type + " " + "isDir " + isDir() + " " + "isFile " + isFile() + " " + "isRoot " + isRoot() + " " + "isVirtual " + isVirtual() + "]";
+    public String toString(boolean preserveState){
+		return super.toString(preserveState) + "AbstractFile [\t" + "type " + type + "\t" + "isDir " + isDir() + "\t" + "isFile " + isFile() + "\t" + "isRoot " + isRoot() + "\t" + "isVirtual\t" + isVirtual() + "]\t";
 	}
 }

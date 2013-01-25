@@ -33,11 +33,7 @@ import org.junit.runners.Parameterized;
  * Traverses an image by running through item Ids ascending.
  */
 @RunWith(Parameterized.class)
-public class SequentialTraversal implements ImgTraverser{
-		
-
-	private List<String> imagePaths;
-	private String exFile;
+public class SequentialTraversal extends ImgTraverser{
 	
 	public SequentialTraversal(List<String> imagePaths) {
 		this.imagePaths = imagePaths;
@@ -63,17 +59,9 @@ public class SequentialTraversal implements ImgTraverser{
 	@Test
 	public void testSequentialDiff() {
 		try {
-			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
-			java.io.File testFolder=new java.io.File(DataModelTestSuite.getRsltPath());
-			title = DataModelTestSuite.stripExtension(title);
-			java.io.File testStandard = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, this.getClass().getSimpleName(), ".txt"));
-			String testStandardPath = testStandard.getPath();
-			String oldStandardPath = DataModelTestSuite.standardPath(imagePaths, this.getClass().getSimpleName());
-			this.exFile = testStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
-			DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, this, exFile);
-			String oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
-			assertEquals("Generated results ("+exFile+") differ with gold standard ("+oldExceptionsPath+") .", DiffUtil.comparecontent(oldExceptionsPath, exFile),true);
-			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", DiffUtil.comparecontent(oldStandardPath, testStandardPath),true);
+			List<Boolean> test = basicTest();
+			assertEquals("Generated results ("+exFile+") differ with gold standard ("+oldExceptionsPath+") .", test.get(0),true);
+			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", test.get(1),true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}

@@ -138,8 +138,7 @@ public class VirtualDirectory extends AbstractFile {
 		return true;
 	}
 	@Override
-	public String toString(boolean preserveState)
-	{
-		return "VirtualDirectory [" + super.toString(preserveState) + " dirFlags " + dirFlags + " " + "dirType " + dirType + " " + "metaFlags " + metaFlags + " " + "metaType " + metaType + " " + "parent_path " + parent_path + " " + "size " + size + "]";
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "VirtualDirectory [\t" + "\tdirFlags " + dirFlags + "\t" + "dirType " + dirType + "\t" + "metaFlags " + metaFlags + "\t" + "metaType " + metaType + "\t" + "parent_path " + parent_path + "\t" + "size " + size + "]\t";
 	}		
 }

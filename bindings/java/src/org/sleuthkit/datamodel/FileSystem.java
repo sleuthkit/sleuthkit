@@ -200,8 +200,7 @@ public class FileSystem extends AbstractContent {
 	}
 	
 	@Override
-	public String toString(boolean preserveState)
-	{
-		return "FileSystem [" + super.toString(preserveState) + " blockCount " + blockCount + " " + "blockSize " + blockSize + " " + "firstInum " + firstInum + " " + "fsType " + fsType + " " + "imgOffset " + imgOffset + " " + "lastInum " + lastInum + " " + "rootInum " + rootInum + " " + "]";
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "FileSystem [\t" + " blockCount " + blockCount + "\t" + "blockSize " + blockSize + "\t" + "firstInum " + firstInum + "\t" + "fsType " + fsType + "\t" + "imgOffset " + imgOffset + "\t" + "lastInum " + lastInum + "\t" + "rootInum " + rootInum + "\t" + "]";
 	}
 }

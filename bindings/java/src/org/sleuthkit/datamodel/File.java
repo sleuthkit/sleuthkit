@@ -82,8 +82,7 @@ public class File extends FsContent {
 		return true;
 	}
 	@Override
-	public String toString(boolean preserveState)
-	{
-		return "File [" + super.toString(preserveState) + "]";
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "File [\t" + "]\t";
 	}
 }

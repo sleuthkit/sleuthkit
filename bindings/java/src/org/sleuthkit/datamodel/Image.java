@@ -305,8 +305,7 @@ public class Image extends AbstractContent {
 		return getSleuthkitCase().getImageChildrenIds(this);
 	}
 	@Override
-	public String toString(boolean preserveState)
-	{
-		return "Image [" + super.toString(preserveState) + " " + "paths " + Arrays.toString(paths) + " " + "size " + size + " " + "ssize " + ssize + " " + "timezone " + timezone + " " + "type " + type + "]";
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "Image [\t" + "\t" + "paths " + Arrays.toString(paths) + "\t" + "size " + size + "\t" + "ssize " + ssize + "\t" + "timezone " + timezone + "\t" + "type " + type + "]\t";
 	}
 }
