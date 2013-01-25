@@ -181,7 +181,9 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
     jboolean isCopy;
     char *str8 = (char *) env->GetStringUTFChars(strJ, &isCopy);
 
-    return TSNPRINTF(buffer, size, _TSK_T("%") PRIcTSK, str8);
+    int ret = TSNPRINTF(buffer, size, _TSK_T("%") PRIcTSK, str8);
+    env->ReleaseStringUTFChars(strJ, str8);
+    return ret;
 }
 
 
@@ -449,10 +451,16 @@ JNIEXPORT jlong JNICALL
         //exception already set
         return 0;
     }
-
+    
     char envstr[32];
-    snprintf(envstr, 32, "TZ=%s", env->GetStringUTFChars(timezone,
-            &isCopy));
+
+    const char * str8 = env->GetStringUTFChars(timezone,
+            &isCopy);
+    snprintf(envstr, 32, "TZ=%s", str8);
+
+    env->ReleaseStringUTFChars(timezone, str8);
+
+
     if (0 != putenv(envstr)) {
         stringstream ss;
         ss << "Error setting timezone environment, using: ";
@@ -516,22 +524,23 @@ JNIEXPORT void JNICALL
         return;
     }
     for (int i = 0; i < num_imgs; i++) {
+        jstring jsPath = (jstring) env->GetObjectArrayElement(paths,
+                i);
         imagepaths8[i] =
             (char *) env->
-            GetStringUTFChars((jstring) env->GetObjectArrayElement(paths,
-                i), &isCopy);
+            GetStringUTFChars(jsPath, &isCopy);
         if (imagepaths8[i] == NULL) {
             setThrowTskCoreError(env,
                 "runAddImgNat: Can't convert path strings.");
+            // @@@ should cleanup here paths that have been converted in imagepaths8[i]
             return;
         }
     }
     
-    const char * tzchar = env->
-            GetStringUTFChars(timezone, &isCopy);
-
-
+   const char * tzchar = env->
+       GetStringUTFChars(timezone, &isCopy);
     tskAuto->setTz(string(tzchar));
+    env->ReleaseStringUTFChars(timezone, tzchar);
 
     // process the image (parts)
     uint8_t ret = 0;
@@ -558,13 +567,15 @@ JNIEXPORT void JNICALL
 
     // cleanup
     for (int i = 0; i < num_imgs; i++) {
+        jstring jsPath = (jstring)
+            env->GetObjectArrayElement(paths, i);
         env->
-            ReleaseStringUTFChars((jstring)
-            env->GetObjectArrayElement(paths, i), imagepaths8[i]);
+            ReleaseStringUTFChars(jsPath, imagepaths8[i]);
+        env->DeleteLocalRef(jsPath);
     }
     free(imagepaths8);
 
-    env->ReleaseStringUTFChars(timezone, tzchar);
+    
 
     // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
     tskAuto->closeImage();
@@ -1304,9 +1315,11 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
     jboolean isCopy;
     char *str8 = (char *) env->GetStringUTFChars(logPath, &isCopy);
     if (freopen(str8, "a", stderr) == NULL) {
+        env->ReleaseStringUTFChars(logPath, str8);
         setThrowTskCoreError(env, "Couldn't open verbose log file for appending.");
         return;
     }
+    env->ReleaseStringUTFChars(logPath, str8);
     tsk_verbose++;
 }
 
