@@ -39,6 +39,7 @@ public class LayoutFile extends AbstractFile{
 	
 	//layout ranges associated with this file
 	private List<TskFileRange> ranges;
+	private long size = -1;
 	
 	protected LayoutFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type) {
 		super(db, obj_id, name, type);
@@ -77,8 +78,12 @@ public class LayoutFile extends AbstractFile{
 	}
 
 	@Override
-    public long getSize() {
-        return calcSize();
+    public synchronized long getSize() {
+		if (size == -1) {
+			//lazy load
+			size = calcSize();
+		}
+        return size;
     }
 	
 	@Override
