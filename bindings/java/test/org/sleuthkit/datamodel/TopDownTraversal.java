@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -86,7 +84,7 @@ public class TopDownTraversal implements  ImgTraverser{
 	 * topDownDF method
 	 * @param c the root Content object
 	 */
-	public void traverse(SleuthkitCase sk, String path, String exFile) {
+	public FileWriter traverse(SleuthkitCase sk, String path, String exFile) {
 		List<Content> lc=null;
 		try {
 			lc = sk.getRootObjects();
@@ -98,10 +96,11 @@ public class TopDownTraversal implements  ImgTraverser{
 			FileWriter reslt = new FileWriter(path);
 			FileWriter levs = new FileWriter(path.replace("_" + this.getClass().getSimpleName() + ".txt", DataModelTestSuite.LVS+".txt"));
 			topDownDF(lc,lp, exFile, reslt, levs);
-			reslt.flush();
 			levs.flush();
+			return reslt;
 		} catch (IOException ex) {
 			DataModelTestSuite.writeExceptions(exFile, ex);
+			return null;
 		}
 	}
 	/**

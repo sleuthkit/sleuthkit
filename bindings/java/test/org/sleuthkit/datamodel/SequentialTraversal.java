@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -85,7 +83,8 @@ public class SequentialTraversal implements ImgTraverser{
 	 * @param lc a list of content to be read
 	 * @param lp that lc's list of parents in most recent first order
 	 */
-	public void traverse(SleuthkitCase sk, String path, String exFile)
+	@Override
+	public FileWriter traverse(SleuthkitCase sk, String path, String exFile)
 	{
 		FileWriter reslt = null;
 		try {
@@ -106,9 +105,10 @@ public class SequentialTraversal implements ImgTraverser{
 			} catch (TskCoreException ex) {
 				DataModelTestSuite.writeExceptions(exFile, ex);
 			}
-			reslt.flush();
+			return reslt;
 		} catch (IOException ex) {
 			DataModelTestSuite.writeExceptions(exFile, ex);
+			return null;
 		}
 	}
 }

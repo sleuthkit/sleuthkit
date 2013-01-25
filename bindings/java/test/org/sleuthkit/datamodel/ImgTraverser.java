@@ -18,10 +18,12 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.FileWriter;
+
 /**
  * Is an interface for tests that traverse an image.
  * 
  */
 public interface ImgTraverser {
-	public void traverse(SleuthkitCase sk, String path, String exFile);
+	public FileWriter traverse(SleuthkitCase sk, String path, String exFile);
 }

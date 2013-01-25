@@ -19,7 +19,6 @@
 package org.sleuthkit.datamodel;
 
 import java.io.FileFilter;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -76,7 +75,6 @@ public class DataModelTestSuite {
 			String dbPath = buildPath(tempDirPath, firstImageFile, type.getClass().getSimpleName(), ".db");
 			java.io.File dbFile = new java.io.File(dbPath);
 			standardFile.createNewFile();
-			FileWriter standardWriter = new FileWriter(standardFile);
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
@@ -89,7 +87,7 @@ public class DataModelTestSuite {
 				writeExceptions(standardFile.toString(), ex);
 			}
 			process.commit();
-			type.traverse(sk, standardFile.getAbsolutePath(), exFile);
+			FileWriter standardWriter = type.traverse(sk, standardFile.getAbsolutePath() , exFile);
 			standardWriter.flush();
 			standardWriter.close();
 			String sortedloc = standardFile.getAbsolutePath().replace(".txt", "_Sorted.txt");
@@ -229,32 +227,15 @@ public class DataModelTestSuite {
 	}
 	public static void writeExceptions(String filename, Exception ex)
 	{
+		filename = filename.replace(".txt",EX+".txt");
+		FileWriter exWriter;
 		try {
-			filename = filename.replace(".txt",EX+".txt");
-			java.io.File exFile = new java.io.File(filename);
-			Scanner read = new Scanner(exFile);
-			List<String> con = new ArrayList<String>();
-			while(read.hasNextLine())
-			{
-				con.add(read.nextLine());
-			}
-			read.close();
-			FileWriter exWriter;
-			try {
-				exWriter = new FileWriter(exFile);
-				for(String out: con)
-				{
-					exWriter.append(out+"\n");
-				}
-				exWriter.append(ex.toString());
-				exWriter.flush();
-				exWriter.close();
-			}
-			catch (IOException ex1) {
-				Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't log Exception", ex1);
-			}
+			exWriter = new FileWriter(filename, true);
+			exWriter.append(ex.toString());
+			exWriter.flush();
+			exWriter.close();
 		}
-		catch (FileNotFoundException ex1) {
+		catch (IOException ex1) {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't log Exception", ex1);
 		}
 	}
