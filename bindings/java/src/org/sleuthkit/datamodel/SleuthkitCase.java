@@ -1883,9 +1883,9 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
-	List<AbstractFile> getAbstractFileChildren(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
+	List<Content> getAbstractFileChildren(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
 
-		List<AbstractFile> children = new ArrayList<AbstractFile>();
+		List<Content> children = new ArrayList<Content>();
 
 		dbReadLock();
 		try {

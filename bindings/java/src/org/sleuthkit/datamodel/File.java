@@ -58,12 +58,12 @@ public class File extends FsContent {
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		return Collections.<Content>emptyList();
+		return getSleuthkitCase().getAbstractFileChildren(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
 
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
-		return Collections.<Long>emptyList();
+		return getSleuthkitCase().getAbstractFileChildrenIds(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
 
 	@Override
