@@ -25,6 +25,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -44,16 +45,17 @@ public class DiffUtil {
 		{
 			del.delete();
 		}
+		List<Traverser> tests = DataModelTestSuite.getTests();
 		List<List<String>> imagePaths = DataModelTestSuite.getImagePaths();
 		for(List<String> paths : imagePaths) {
-			String standardPathTD = DataModelTestSuite.standardPath(paths, TopDownTraversal.class.getSimpleName());
-			System.out.println("Creating standards for: " + paths.get(0));
-			String exFileTD = standardPathTD.replace(".txt",DataModelTestSuite.EX+".txt");
-			DataModelTestSuite.createStandard(standardPathTD, tempDirPath, paths, new TopDownTraversal(null), exFileTD);
-			String standardPathSeq = DataModelTestSuite.standardPath(paths,SequentialTraversal.class.getSimpleName());
-			String exFileSeq = standardPathSeq.replace(".txt",DataModelTestSuite.EX+".txt");
-			DataModelTestSuite.createStandard(standardPathSeq, tempDirPath, paths, new SequentialTraversal(null), exFileSeq);
-			String standardPathCPP = DataModelTestSuite.standardPath(paths,"_CPP");
+			for(Traverser tstrn: tests)
+			{
+				String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
+				System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
+				String exFile = standardPath.replace(".txt",DataModelTestSuite.EX+".txt");
+				DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn, exFile);
+			}
+			String standardPathCPP = DataModelTestSuite.standardPath(paths,CPPtoJavaCompare.class.getSimpleName());
 			DataModelTestSuite.getTSKData(standardPathCPP, paths);
 		}
 	}
@@ -85,7 +87,6 @@ public class DiffUtil {
 			FileReader f2 = new FileReader (new java.io.File(results).getAbsolutePath());
 			Scanner in1 = new Scanner(f1);
 			Scanner in2 = new Scanner(f2);
-			boolean ret=true;
 			while (in1.hasNextLine()||in2.hasNextLine()) {
 				if((in1.hasNextLine()^in2.hasNextLine())||!(in1.nextLine().equals(in2.nextLine())))
 				{
@@ -97,8 +98,8 @@ public class DiffUtil {
 					return false;
 				}
 			}
-			DataModelTestSuite.emptyResults(fi2.getParent(), fi2.getName());
-			return ret;
+			//DataModelTestSuite.emptyResults(fi2.getParent(), fi2.getName());
+			return true;
 		} catch (IOException ex) {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't compare content", ex);
 			return false;

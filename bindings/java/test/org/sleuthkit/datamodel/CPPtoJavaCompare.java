@@ -18,10 +18,14 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,15 +36,10 @@ import org.junit.runners.Parameterized;
  * @author smoss
  */
 @RunWith(Parameterized.class)
-public class CPPtoJavaCompare {
-		
-
-	private List<String> imagePaths;
-	private String TD;
-	
-	public CPPtoJavaCompare(List<String> imagePaths, String TD) {
+public class CPPtoJavaCompare extends ImgTraverser {
+			
+	public CPPtoJavaCompare(List<String> imagePaths) {
 		this.imagePaths = imagePaths;
-		this.TD = TD;
 	}
 	/**
 	 * Get the sets of filenames for each test image
@@ -53,32 +52,52 @@ public class CPPtoJavaCompare {
 		Collection<Object[]> data = new ArrayList<Object[]>();
 		
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
-			data.add(new Object[]{imagePaths, "_TD"});
+			data.add(new Object[]{imagePaths});
 		}
 		return data;
 	}
 
 	
-	//@Ignore@Test
-	public void CrossCompare() {
+	@Test
+	public void CPPtoJavaCompare() {
 		try {
-			String title = (new java.io.File(imagePaths.get(0))).getName();
-			java.io.File testFolder=new java.io.File(System.getProperty(DataModelTestSuite.RSLT, "test"+java.io.File.separator+"Output"+java.io.File.separator+"Results"));
-			title = DataModelTestSuite.stripExtension(title);
-			java.io.File testStandard1 = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+title+"_CPP.txt");
-			java.io.File testStandard2 = new java.io.File(testFolder.getAbsolutePath()+java.io.File.separator+title+TD+".txt");
-			String testStandardPath1 = testStandard1.getPath();
-			String testStandardPath2 = testStandard2.getPath();
-			Scanner read1 = new Scanner(testStandard1);
-			DataModelTestSuite.getTSKData(testStandardPath1, imagePaths);
-			Scanner read2 = new Scanner(testStandard2);
-			while(read1.hasNextLine()||read2.hasNextLine())
-			{
-				//assertEquals("CPP results (" + testStandardPath1 + ") differ from ("+testStandardPath2") .",,true);
-			}
+			List<Boolean> test = basicTest();
+			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", test.get(1),true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}
 	}
-	
+	public FileWriter traverse(SleuthkitCase sk, String path, String exFile)
+	{
+		FileWriter reslt;
+		try {
+			reslt = new FileWriter(path);
+			try {
+				topDownDF(sk.getRootObjects(), reslt, exFile);
+					return reslt;
+			} catch (TskCoreException ex) {
+				Logger.getLogger(CPPtoJavaCompare.class.getName()).log(Level.SEVERE, null, ex);
+			}
+		} catch (IOException ex) {
+			Logger.getLogger(CPPtoJavaCompare.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		return null;
+	}
+	public void topDownDF(List<Content> lc, Appendable reslt, String exFile){
+		for(Content c : lc) {
+			try {
+				if(c instanceof File)
+				{
+					try {
+						reslt.append(DataModelTestSuite.getFileData((File) c));
+					} catch (IOException ex) {
+						Logger.getLogger(CPPtoJavaCompare.class.getName()).log(Level.SEVERE, null, ex);
+					}
+				}
+				topDownDF(c.getChildren(), reslt, exFile);
+			} catch (TskCoreException ex) {
+				DataModelTestSuite.writeExceptions(exFile, ex);
+			}
+		}
+	}
 }

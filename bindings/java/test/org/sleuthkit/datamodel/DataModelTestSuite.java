@@ -36,7 +36,7 @@ import org.junit.runners.Suite;
  * Runs all regression tests.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.BottomUpTest.class,org.sleuthkit.datamodel.SequentialTraversal.class,org.sleuthkit.datamodel.CrossCompare.class})
+@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.BottomUpTest.class,org.sleuthkit.datamodel.SequentialTraversal.class,org.sleuthkit.datamodel.CrossCompare.class,org.sleuthkit.datamodel.CPPtoJavaCompare.class})
 public class DataModelTestSuite {
 	static final String TEST_IMAGE_DIR_NAME = "test" + java.io.File.separator + "Input";
 	static final String INPT = "inpt";
@@ -56,6 +56,13 @@ public class DataModelTestSuite {
 		{
 			del.delete();
 		}
+	}
+	public static List<Traverser> getTests()
+	{
+		List<Traverser> ret = new ArrayList<Traverser>();
+		ret.add(new SequentialTraversal(null));
+		ret.add(new TopDownTraversal(null));
+		return ret;
 	}
 	/**
 	 * Creates the Sleuth Kit database for an image, then generates a string
@@ -168,23 +175,21 @@ public class DataModelTestSuite {
 		String cmd=tsk_loc + " " + img.get(0);
 		try {
 			Process p=Runtime.getRuntime().exec(cmd);
-			//p.waitFor();
 			Scanner read = new Scanner(p.getInputStream());
 			Scanner error1 = new Scanner(p.getErrorStream());
 			FileWriter out = new FileWriter(StandardPath);
 			while(read.hasNextLine())
 			{
 				String line = read.nextLine();
-				String[] lineContents = line.split("\\|");
-				String[] nameget = lineContents[1].split("\\s\\(deleted\\)");
-				String name = nameget[0];
-				name = name.replace("/", "\\");
-				String size = lineContents[6];
-				String crea = lineContents[7];
-				String acc = lineContents[8];
-				String modif = lineContents[10];
 				if(!line.contains("|d/d"))
 				{
+					String[] lineContents = line.split("\\|");
+					String[] nameget = lineContents[1].split("\\s\\(deleted\\)");
+					String name = nameget[0];
+					String size = lineContents[6];
+					String crea = lineContents[10];
+					String acc = lineContents[7];
+					String modif = lineContents[8];
 					out.append("(FilePath): " + name + " (Size): " + size + " (Creation Time): " + crea + " (Accessed Time): " + acc + " (Modified Time): " + modif);
 					out.flush();
 					if(read.hasNextLine())
@@ -272,5 +277,16 @@ public class DataModelTestSuite {
 			hex.append(String.format("%02x", b & 0xFF));
 		}
 		return hex.toString();
+	}
+	public static String getFileData(File fi) throws TskCoreException
+	{
+		String[] path = fi.getUniquePath().split("/", 3);
+		String[] pthget = path[2].split("_",2);
+		String name = "(FilePath): " + pthget[pthget.length-1];
+		String size = " (Size): " + fi.getSize();
+		String crea = " (Creation Time): " + fi.getCrtime();
+		String acc = " (Accessed Time): " + fi.getAtime();
+		String modif = " (Modified Time): " + fi.getMtime();
+		return name + size + crea + acc + modif + "\n";
 	}
 }
