@@ -71,7 +71,7 @@ public class CrossCompare {
 			java.io.File testStandard2 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, TD, "_sorted.txt"));
 			String testStandardPath1 = testStandard1.getPath();
 			String testStandardPath2 = testStandard2.getPath();
-			assertEquals("Generated results ("+testStandardPath1+") differ with gold standard ("+testStandardPath2+") .", DiffUtil.comparecontent(testStandardPath1, testStandardPath2),true);
+			assertEquals("Generated results ("+testStandardPath1+") differ with gold standard ("+testStandardPath2+") .", DataModelTestSuite.comparecontent(testStandardPath1, testStandardPath2),true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}

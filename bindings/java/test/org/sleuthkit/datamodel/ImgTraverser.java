@@ -29,8 +29,8 @@ public abstract class ImgTraverser implements Traverser
 		DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, this, exFile);
 		oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
 		List<Boolean> ret = new ArrayList<Boolean>(2);
-		ret.add(DiffUtil.comparecontent(oldExceptionsPath, exFile));
-		ret.add(DiffUtil.comparecontent(oldStandardPath, testStandardPath));
+		ret.add(DataModelTestSuite.comparecontent(oldExceptionsPath, exFile));
+		ret.add(DataModelTestSuite.comparecontent(oldStandardPath, testStandardPath));
 		return ret;
 	}
 }

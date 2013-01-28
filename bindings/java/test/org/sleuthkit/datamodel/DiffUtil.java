@@ -32,34 +32,14 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class DiffUtil {
-	/**
-	 * Calls {@link #createStandard(String, String, String[]) createStandard}
-	 * with default arguments
-	 * @param args Ignored 
-	 */
-	public static void main(String[] args){
-		String tempDirPath = System.getProperty("java.io.tmpdir");
-		java.io.File pth = new java.io.File(DataModelTestSuite.goldStandardPath());
-		for(java.io.File del: pth.listFiles())
-		{
-			del.delete();
-		}
-		List<Traverser> tests = DataModelTestSuite.getTests();
-		List<List<String>> imagePaths = DataModelTestSuite.getImagePaths();
-		for(List<String> paths : imagePaths) {
-			for(Traverser tstrn: tests)
-			{
-				String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
-				System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
-				String exFile = standardPath.replace(".txt",DataModelTestSuite.EX+".txt");
-				DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn, exFile);
-			}
-			String standardPathCPP = DataModelTestSuite.standardPath(paths,CPPtoJavaCompare.class.getSimpleName());
-			DataModelTestSuite.getTSKData(standardPathCPP, paths);
-		}
-	}
+public class DiffUtil implements Runnable{
 
+	static String pathOriginal, pathRevised, title;
+	public DiffUtil(String path1, String path2, String title){
+		pathOriginal = path1;
+		pathRevised = path2;
+		DiffUtil.title = title;
+	}
 	private static List<String> fileToLines(String filename) {
 		List<String> lines = new LinkedList<String>();
 		String line = "";
@@ -75,43 +55,12 @@ public class DiffUtil {
 		return lines;
 	}
 	/**
-	 * Compares the content of two files to determine if they are equal, if they are it removes the file from the results folder
-	 * @param original is the first file to be compared
-	 * @param results is the second file to be compared
-	 */
-	protected static boolean comparecontent(String original, String results) {
-		try {
-			java.io.File fi1 = new java.io.File(original);
-			java.io.File fi2 = new java.io.File(results);
-			FileReader f1 = new FileReader (new java.io.File(original).getAbsolutePath());
-			FileReader f2 = new FileReader (new java.io.File(results).getAbsolutePath());
-			Scanner in1 = new Scanner(f1);
-			Scanner in2 = new Scanner(f2);
-			while (in1.hasNextLine()||in2.hasNextLine()) {
-				if((in1.hasNextLine()^in2.hasNextLine())||!(in1.nextLine().equals(in2.nextLine())))
-				{
-					in1.close();
-					in2.close();
-					f1.close();
-					f2.close();
-					getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),original.substring(original.lastIndexOf(java.io.File.separator)+1));
-					return false;
-				}
-			}
-			//DataModelTestSuite.emptyResults(fi2.getParent(), fi2.getName());
-			return true;
-		} catch (IOException ex) {
-			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't compare content", ex);
-			return false;
-		}
-	}
-	/**
 	 * Returns the diff between the two given files
 	 * @param pathOriginal The path to the original file
 	 * @param pathRevised The path to the revised (new) file
 	 * @return A representation of the diff
 	 */
-	public static String getDiff(String pathOriginal, String pathRevised, String title) {
+	public String getDiff() {
 		List<String> originalLines, revisedLines;	
 		originalLines = fileToLines(pathOriginal);
 		revisedLines = fileToLines(pathRevised);
@@ -134,5 +83,10 @@ public class DiffUtil {
 		}
 		System.out.println(diff.toString());
 		return diff.toString();
+	}
+
+	@Override
+	public void run() {
+		getDiff();
 	}
 }

@@ -67,6 +67,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 			fail("Couldn't open gold standard file.");
 		}
 	}
+	@Override
 	public FileWriter traverse(SleuthkitCase sk, String path, String exFile)
 	{
 		FileWriter reslt;

@@ -88,7 +88,7 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	<target name="create-standards" depends="compile-test"
         description="create gold standards to run the datamodel tests against" >
 		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
-		<java classname="org.sleuthkit.datamodel.DiffUtil" classpathref="libraries"	fork="true" failonerror="true">
+		<java classname="org.sleuthkit.datamodel.DataModelTestSuite" classpathref="libraries"	fork="true" failonerror="true">
 			<sysproperty key="java.library.path" value="${dlls}"/>
 			<sysproperty key="gold" value="${test-standards}"/>
 			<sysproperty key="inpt" value="${test-input}"/>
