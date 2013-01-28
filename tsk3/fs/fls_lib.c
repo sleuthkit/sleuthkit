@@ -186,7 +186,7 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
         UTF16 *ptr16;
         int retval;
 
-        if (tpre != NULL) {
+        if ((tpre != NULL) && (TSTRLEN(tpre) > 0)) {
             clen = TSTRLEN(tpre) * 4;
             cpre = (char *) tsk_malloc(clen);
             if (cpre == NULL) {
