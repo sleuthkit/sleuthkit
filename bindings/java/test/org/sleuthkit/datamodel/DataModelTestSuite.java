@@ -187,6 +187,7 @@ public class DataModelTestSuite {
 					String[] lineContents = line.split("\\|");
 					String[] nameget = lineContents[1].split("\\s\\(deleted\\)");
 					String name = nameget[0];
+					name=name.replace("(null)", "");
 					String size = lineContents[6];
 					String crea = lineContents[10];
 					String acc = lineContents[7];
@@ -282,8 +283,14 @@ public class DataModelTestSuite {
 	public static String getFileData(File fi) throws TskCoreException
 	{
 		String[] path = fi.getUniquePath().split("/", 3);
-		String[] pthget = path[2].split("_",2);
-		String name = "(FilePath): " + pthget[pthget.length-1];
+		String name = null;
+		if(path[2].contains("vol_")){
+			String[] pthget = path[2].split("_",2);
+			name = "(FilePath): " + pthget[pthget.length-1];
+		}
+		else{
+			name = "(FilePath): " + path[2];
+		}
 		name = name.replaceAll("[^\\x20-\\x7e]", "");
 		String size = " (Size): " + fi.getSize();
 		String crea = " (Creation Time): " + fi.getCrtime();
