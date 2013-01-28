@@ -565,6 +565,10 @@ JNIEXPORT void JNICALL
         }
     }
 
+    // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
+    //close image first before freeing the image paths
+    tskAuto->closeImage();
+
     // cleanup
     for (int i = 0; i < num_imgs; i++) {
         jstring jsPath = (jstring)
@@ -574,11 +578,6 @@ JNIEXPORT void JNICALL
         env->DeleteLocalRef(jsPath);
     }
     free(imagepaths8);
-
-    
-
-    // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
-    tskAuto->closeImage();
 
     // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
