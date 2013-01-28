@@ -314,7 +314,8 @@ yaffscache_object_add_version(YaffsCacheObject *obj, YaffsCacheChunk *chunk)
     YaffsCacheChunk *header_chunk = NULL;
     YaffsCacheVersion *version;
 
-    if (chunk->ycc_chunk_id == 0)
+	// Going to try ignoring unlinked/deleted headers (objID 3 and 4)
+	if ((chunk->ycc_chunk_id == 0) && (chunk->ycc_parent_id != 3) && (chunk->ycc_parent_id != 4))
         header_chunk = chunk;
 
 
@@ -334,9 +335,6 @@ yaffscache_object_add_version(YaffsCacheObject *obj, YaffsCacheChunk *chunk)
     if (obj->yco_latest != NULL) {
         if (obj->yco_latest->ycv_header_chunk == NULL) {
             YaffsCacheVersion *incomplete = obj->yco_latest;
-
-			fprintf(stderr, "Incomplete object!\n");
-			exit(0);
 
             if (tsk_verbose)
                 tsk_fprintf(stderr, "yaffscache_object_add_version: "
@@ -1166,13 +1164,54 @@ yaffsfs_cache_fs(YAFFSFS_INFO * yfs)
         fprintf(stderr, "yaffsfs_cache_fs: done version cache!\n");
 	fflush(stderr);
 
+	// I think it's easiest to look for the orphan files now
+	uint32_t orphanParentID = yfs->fs_info.last_inum;
+	YaffsCacheObject * currObj = yfs->cache_objects;
+	YaffsCacheVersion * currVer;
+	while(currObj != NULL){
+		currVer = currObj->yco_latest;
+		while(currVer != NULL){
+
+			// Does the object listed as parent exist? Is a directory?
+			YaffsCacheObject * parentObj;
+			yaffscache_object_find(yfs, currVer->ycv_header_chunk->ycc_parent_id, &parentObj);
+
+			if(parentObj == NULL){
+				// Parent doesn't exist
+				currVer->ycv_header_chunk->ycc_parent_id = orphanParentID;
+			}
+			else{
+				if(parentObj->yco_latest->ycv_header_chunk == NULL){
+					// Shouldn't happen, but go ahead and call it an orphan file
+					currVer->ycv_header_chunk->ycc_parent_id = orphanParentID;
+				}
+				else{
+					// Have to read the block to get the type
+					YaffsHeader * header;
+					yaffsfs_read_header(yfs, &header, parentObj->yco_latest->ycv_header_chunk->ycc_offset);
+					if(header->obj_type != YAFFS_TYPE_DIRECTORY){
+						// Current version of the parent is not a directory
+						currVer->ycv_header_chunk->ycc_parent_id = orphanParentID;
+					}
+				}
+			}
+
+			currVer = currVer->ycv_prior;
+		}
+		currObj = currObj->yco_next;
+	}
+
+
     return TSK_OK;
 }
 
-
+// A version is current if:
+//   1. This version is pointed to by yco_latest
+//   2. This version didn't have a delete/unlinked header after the most recent copy of the normal header
 uint8_t yaffs_is_current_version(YAFFSFS_INFO * yfs, uint32_t inode){
 	YaffsCacheObject * obj;
 	YaffsCacheVersion * version;
+	YaffsCacheChunk * curr;
 
     TSK_RETVAL_ENUM result = yaffscache_version_find_by_inode(yfs, inode, &version, &obj);
     if (result != TSK_OK) {
@@ -1182,6 +1221,15 @@ uint8_t yaffs_is_current_version(YAFFSFS_INFO * yfs, uint32_t inode){
     }
 
 	if(obj->yco_latest == version){
+		curr = obj->yco_latest->ycv_header_chunk;
+		while(curr != NULL){
+			// We're looking for an unlinked or deleted header. If one exists, then this object should be considered unallocated
+			if((curr->ycc_parent_id == YAFFS_OBJECT_UNLINKED) || (curr->ycc_parent_id == YAFFS_OBJECT_DELETED)){
+				fprintf(stderr, "obj id = %x, verion %x\n", obj->yco_obj_id, obj->yco_latest->ycv_version);
+				return 0;
+			}
+			curr = curr ->ycc_next;
+		}
 		return 1;
 	}
 	else{
@@ -1537,8 +1585,9 @@ yaffsfs_inode_walk(TSK_FS_INFO *fs, TSK_INUM_T start_inum,
 
     /* The ORPHAN flag is unsupported for YAFFS2 */
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
-        if (tsk_verbose)
+        if (tsk_verbose){
             tsk_fprintf(stderr, "yaffsfs_inode_walk: ORPHAN flag unsupported by YAFFS2");
+		}
     }
 
     if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&

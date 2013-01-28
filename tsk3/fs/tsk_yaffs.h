@@ -17,6 +17,9 @@
 #ifndef _TSK_YAFFSFS_H
 #define _TSK_YAFFSFS_H
 
+#include <map>
+#include <utility>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -87,12 +90,14 @@ typedef struct yaffsObj_header {
 #define YAFFS_SPARE_OBJECT_TYPE_SHIFT   28
 #define YAFFS_SPARE_OBJECT_TYPE_MASK    0xf0000000
 
+
   typedef struct  yaffsObj_spare {
     uint32_t seq_number;
     uint32_t object_id;
     uint32_t chunk_id;
     uint32_t n_bytes;
 
+	uint32_t has_extra_fields;
     uint32_t extra_object_type;
     uint32_t extra_parent_id;
   } YaffsSpare;
@@ -178,7 +183,13 @@ typedef struct _YaffsCacheChunk {
   uint32_t ycc_obj_id;
   uint32_t ycc_chunk_id;
   uint32_t ycc_parent_id;
+  uint32_t ycc_n_bytes;
 } YaffsCacheChunk;
+
+typedef struct _YaffsCacheChunkGroup {
+	YaffsCacheChunk * cache_chunks_head;
+	YaffsCacheChunk * cache_chunks_tail;
+} YaffsCacheChunkGroup;
 
     /*
      * Structure of an yaffsfs file system handle.
@@ -188,11 +199,22 @@ typedef struct _YaffsCacheChunk {
 
         unsigned int page_size;
         unsigned int spare_size;
+		unsigned int chunks_per_block;
+
+		// Offsets into the spare area
+		unsigned int spare_seq_offset;
+		unsigned int spare_obj_id_offset;
+		unsigned int spare_chunk_id_offset;
+		unsigned int spare_nbytes_offset;
 
         tsk_lock_t cache_lock;
         YaffsCacheObject *cache_objects;
-        YaffsCacheChunk *cache_chunks_head;
-        YaffsCacheChunk *cache_chunks_tail;
+		std::map<uint32_t, YaffsCacheChunkGroup> * chunkMap;
+        //YaffsCacheChunk *cache_chunks_head;
+        //YaffsCacheChunk *cache_chunks_tail;
+
+		// If the user specified that the image is YAFFS2, print out additional verbose error messages
+		int autoDetect;
     } YAFFSFS_INFO;
 
 #define YAFFS_FILE_CONTENT_LEN 0

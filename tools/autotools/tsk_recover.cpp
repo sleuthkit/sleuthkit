@@ -148,8 +148,16 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
     *utf16 = '\0';
 
+
+	// TEMP TEMP TEMP
+	//int pathlen = wcslen(m_base_dir);
+	//int path16len = wcslen(path16);
+	//printf("pathlen: %d, path16len: %d\n", pathlen, path16len);
+
     //combine the target directory with volume name and path
-    wchar_t path16full[FILENAME_MAX];
+    //wchar_t path16full[FILENAME_MAX];
+	wchar_t path16full[FILENAME_MAX+1];
+	path16full[FILENAME_MAX] = L'\0'; // Try this
     wcsncpy(path16full, (wchar_t *) m_base_dir, FILENAME_MAX);
     wcsncat(path16full, L"\\", FILENAME_MAX-wcslen(path16full));
     wcsncat(path16full, path16, FILENAME_MAX-wcslen(path16full));
