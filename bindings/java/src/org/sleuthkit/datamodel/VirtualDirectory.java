@@ -44,12 +44,12 @@ public class VirtualDirectory extends AbstractFile {
 	private TSK_FS_NAME_FLAG_ENUM dirFlags;
 
 	protected VirtualDirectory(SleuthkitCase db, long obj_id, String name, long size, 
-			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_TYPE_ENUM dir_type, TSK_FS_NAME_FLAG_ENUM dirFlags,
+			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_NAME_FLAG_ENUM dirFlags,
 			short metaFlags, String parentPath) {
 		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0, parentPath);
 
 		this.metaType = metaType;
-		this.dirType = dir_type;
+		this.dirType = dirType;
 		this.dirFlags = dirFlags;
 		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(metaFlags);
 	}
@@ -87,7 +87,7 @@ public class VirtualDirectory extends AbstractFile {
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
-		throw new UnsupportedOperationException("Reading LayoutDirectory is not supported.");
+		throw new UnsupportedOperationException("Reading VirtualDirectory is not supported.");
 	}
 
 
