@@ -37,7 +37,7 @@ import org.junit.runners.Suite;
  * Runs all regression tests.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.BottomUpTest.class,org.sleuthkit.datamodel.SequentialTraversal.class,org.sleuthkit.datamodel.CrossCompare.class,org.sleuthkit.datamodel.CPPtoJavaCompare.class})
+@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.SequentialTraversal.class,org.sleuthkit.datamodel.CrossCompare.class,org.sleuthkit.datamodel.BottomUpTest.class})//,org.sleuthkit.datamodel.CPPtoJavaCompare.class})
 public class DataModelTestSuite {
 	static final String TEST_IMAGE_DIR_NAME = "test" + java.io.File.separator + "Input";
 	static final String INPT = "inpt";
@@ -177,7 +177,7 @@ public class DataModelTestSuite {
 		{
 			return;
 		}
-		String cmd=tsk_loc + " " + img.get(0);
+		String[] cmd={tsk_loc, img.get(0)};
 		try {
 			Process p=Runtime.getRuntime().exec(cmd);
 			Scanner read = new Scanner(p.getInputStream());
@@ -258,6 +258,17 @@ public class DataModelTestSuite {
 		else
 		{
 			return "C:\\Users\\" + System.getProperty("user.name")+ "\\Cygwin\\bin\\sort.exe";
+		}
+	}
+	private static String getDiffPath()
+	{
+		if(!System.getProperty("os.name").contains("Windows"))
+		{
+			return "diff";
+		}
+		else
+		{
+			return "C:\\Users\\" + System.getProperty("user.name")+ "\\Cygwin\\bin\\diff.exe";
 		}
 	}
 	/**
@@ -344,6 +355,7 @@ public class DataModelTestSuite {
 	 */
 	public static void main(String[] args){
 		String tempDirPath = System.getProperty("java.io.tmpdir");
+		tempDirPath = tempDirPath.substring(0,tempDirPath.length()-1);
 		java.io.File pth = new java.io.File(DataModelTestSuite.goldStandardPath());
 		for(java.io.File del: pth.listFiles())
 		{
@@ -360,7 +372,7 @@ public class DataModelTestSuite {
 				DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn, exFile);
 			}
 			String standardPathCPP = DataModelTestSuite.standardPath(paths,CPPtoJavaCompare.class.getSimpleName());
-			DataModelTestSuite.getTSKData(standardPathCPP, paths);
+			//DataModelTestSuite.getTSKData(standardPathCPP, paths);
 		}
 	}
 	/**
@@ -383,8 +395,9 @@ public class DataModelTestSuite {
 					in2.close();
 					f1.close();
 					f2.close();
+					//runDiff(original, results);
 					DiffUtil dif = new DiffUtil(fi1.getAbsolutePath(),fi2.getAbsolutePath(),original.substring(original.lastIndexOf(java.io.File.separator)+1));
-					new Thread(dif).start();
+					dif.getDiff();
 					return false;
 				}
 			}
@@ -393,6 +406,30 @@ public class DataModelTestSuite {
 		} catch (IOException ex) {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't compare content", ex);
 			return false;
+		}
+	}
+	private static void runDiff(String path1, String path2)
+	{
+		String diffPath = getDiffPath();
+		String outputLoc = path2.replace(".txt", "_Diff.txt");
+		String[] cmd = {diffPath, path1, path2};
+		try {
+			Process p=Runtime.getRuntime().exec(cmd);
+			Scanner read = new Scanner(p.getInputStream());
+			Scanner error1 = new Scanner(p.getErrorStream());
+			FileWriter out = new FileWriter(outputLoc);
+			while(read.hasNextLine())
+			{
+				String line = read.nextLine();
+				out.append(line);
+				out.flush();
+				if(read.hasNextLine())
+				{
+					out.append("\n");
+				}
+			}
+		} catch (Exception ex) {
+			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Failed to run Diff program", ex);
 		}
 	}
 }
