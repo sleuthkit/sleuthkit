@@ -31,14 +31,23 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+/**
+ * This class gets the Diff of two files. It creates its own thread because it can take a long time to run and the outcome of the Diff has no effect on the outcome of a test,
+ * the test has already passed or failed by the time DiffUtil is being run.
+ */
 public class DiffUtil implements Runnable{
 
-	static String pathOriginal, pathRevised, title;
+	String pathOriginal, pathRevised, title;
+	/**
+	 * Creates an instance of diffUtil
+	 * @param path1 The path to the first file being compared
+	 * @param path2 The path to the second file being compared
+	 * @param title The title of the file, excluding extensions, for use in naming the Diff file.
+	 */
 	public DiffUtil(String path1, String path2, String title){
 		pathOriginal = path1;
 		pathRevised = path2;
-		DiffUtil.title = title;
+		this.title = title;
 	}
 	private static List<String> fileToLines(String filename) {
 		List<String> lines = new LinkedList<String>();
@@ -81,7 +90,6 @@ public class DiffUtil implements Runnable{
 		} catch (IOException ex) {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't write Diff to file", ex);
 		}
-		System.out.println(diff.toString());
 		return diff.toString();
 	}
 

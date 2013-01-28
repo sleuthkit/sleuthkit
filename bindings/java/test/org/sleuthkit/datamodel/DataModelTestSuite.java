@@ -87,8 +87,8 @@ public class DataModelTestSuite {
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
 			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
-			java.io.File exfile = new java.io.File(standardFile.toString().replace(".txt",EX+".txt"));
-			exfile.createNewFile();
+			java.io.File xfile = new java.io.File(exFile);
+			xfile.createNewFile();
 			try{
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
 			}catch (TskDataException ex){
@@ -109,7 +109,7 @@ public class DataModelTestSuite {
 	}
 	/**
 	 * Gets the paths to the test image files by looking for a test image
-	 * directory above the local SVN trunk/branch.
+	 * in the given output directory
 	 * @return A list of lists of paths to image parts
 	 */
 	static List<List<String>> getImagePaths() {
@@ -161,8 +161,12 @@ public class DataModelTestSuite {
 			del.deleteOnExit();
 		}
 	}
-	
-	public static void getTSKData(String StandardPath, List<String> img)
+	/**
+	 * Runs tsk_gettimes to create a standard for comparing DataModel and TSK output.
+	 * @param StandardPath The path to the file to put the tsk data in
+	 * @param img the path to the image, is a list for compatability reasons
+	 */
+	private static void getTSKData(String StandardPath, List<String> img)
 	{
 		String tsk_loc = null;
 		if(System.getProperty("os.name").contains("Windows"))
@@ -203,15 +207,39 @@ public class DataModelTestSuite {
 		} catch (Exception ex) {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Failed to run CPP program", ex);
 		}
+		java.io.File xfile = new java.io.File(StandardPath.replace(".txt",DataModelTestSuite.EX+".txt"));
+		try {
+			xfile.createNewFile();
+		} catch (IOException ex) {
+			Logger.getLogger(DataModelTestSuite.class.getName()).log(Level.SEVERE, null, ex);
+		}
 	}
-	public static String stripExtension(String title)
+	/**
+	 * Strips the image extension from the given string
+	 * @param title the title to have its extension stripped
+	 * @return 
+	 */
+	private static String stripExtension(String title)
 	{
 		return title.replace(".001", "").replace(".img","").replace(".dd", "").replace(".E01", "").replace(".raw","");
 	}
+	/**
+	 * builds the path for an output file
+	 * @param path the path to the directory for the file to be stored in
+	 * @param name the name of the file
+	 * @param type the output type of the file
+	 * @param Ext the file extension
+	 * @return 
+	 */
 	public static String buildPath(String path, String name, String type, String Ext)
 	{
 		return path+java.io.File.separator+name+"_"+type+Ext;
 	}
+	/**
+	 * Returns the name of an image from the given path
+	 * @param img
+	 * @return 
+	 */
 	public static String getImgName(String img)
 	{
 		String[] imgSp = img.split("\\\\");
@@ -221,7 +249,7 @@ public class DataModelTestSuite {
 	{
 		return System.getProperty(RSLT, "test"+java.io.File.separator+"output"+java.io.File.separator+"results");
 	}
-	public static String getSortPath()
+	private static String getSortPath()
 	{
 		if(!System.getProperty("os.name").contains("Windows"))
 		{
@@ -232,7 +260,12 @@ public class DataModelTestSuite {
 			return "C:\\Users\\" + System.getProperty("user.name")+ "\\Cygwin\\bin\\sort.exe";
 		}
 	}
-	public static void writeExceptions(String filename, Exception ex)
+	/**
+	 * Writes the given exception to the given file
+	 * @param filename the path to the file to be written to
+	 * @param ex the exception to be written
+	 */
+	protected static void writeExceptions(String filename, Exception ex)
 	{
 		filename = filename.replace(".txt",EX+".txt");
 		FileWriter exWriter;
@@ -246,7 +279,7 @@ public class DataModelTestSuite {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't log Exception", ex1);
 		}
 	}
-	public static String goldStandardPath()
+	private static String goldStandardPath()
 	{
 		return System.getProperty(GOLD, ("test" + java.io.File.separator + "output" + java.io.File.separator + "gold"));
 	}
@@ -280,7 +313,13 @@ public class DataModelTestSuite {
 		}
 		return hex.toString();
 	}
-	public static String getFileData(File fi) throws TskCoreException
+	/**
+	 * gets the metadata from a datamodel file object
+	 * @param fi
+	 * @return
+	 * @throws TskCoreException 
+	 */
+	protected static String getFileData(File fi) throws TskCoreException
 	{
 		String[] path = fi.getUniquePath().split("/", 3);
 		String name = null;
@@ -345,7 +384,7 @@ public class DataModelTestSuite {
 					f1.close();
 					f2.close();
 					DiffUtil dif = new DiffUtil(fi1.getAbsolutePath(),fi2.getAbsolutePath(),original.substring(original.lastIndexOf(java.io.File.separator)+1));
-					dif.getDiff();
+					new Thread(dif).start();
 					return false;
 				}
 			}

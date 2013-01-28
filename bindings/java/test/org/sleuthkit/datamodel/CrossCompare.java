@@ -66,7 +66,6 @@ public class CrossCompare {
 		try {
 			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
 			java.io.File testFolder=new java.io.File(DataModelTestSuite.getRsltPath());
-			title = DataModelTestSuite.stripExtension(title);
 			java.io.File testStandard1 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, Seq, "_sorted.txt"));
 			java.io.File testStandard2 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, TD, "_sorted.txt"));
 			String testStandardPath1 = testStandard1.getPath();

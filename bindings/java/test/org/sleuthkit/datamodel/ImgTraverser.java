@@ -8,8 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
- * @author smoss
+ * A basic implementation of traverser, has a standard test that allows for easy modification of the way tests are run
  */
 public abstract class ImgTraverser implements Traverser
 {
