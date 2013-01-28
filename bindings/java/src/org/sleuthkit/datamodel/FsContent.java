@@ -43,7 +43,7 @@ public abstract class FsContent extends AbstractFile {
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 
 	///read only database tsk_files fields
-	protected final long fsObjId, metaAddr, size, ctime, crtime, atime, mtime;
+	protected final long fsObjId, metaAddr, ctime, crtime, atime, mtime;
 	protected final int uid, gid;
 	protected final short attrId;
 	protected final TSK_FS_ATTR_TYPE_ENUM attrType;
@@ -52,10 +52,6 @@ public abstract class FsContent extends AbstractFile {
 	protected final Set<TSK_FS_META_MODE_ENUM> modes;
 	protected final TSK_FS_NAME_TYPE_ENUM dirType;
 	protected final TSK_FS_NAME_FLAG_ENUM dirFlag;
-	/*
-	 * path of parent directory
-	 */
-	protected final String parentPath;
 	
 	private String uniquePath;
 
@@ -107,8 +103,8 @@ public abstract class FsContent extends AbstractFile {
 	FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
 			TSK_FS_ATTR_TYPE_ENUM attrType, short attr_id, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_NAME_FLAG_ENUM dirFlag,
 			short meta_flags, long size, long ctime, long crtime, long atime, long mtime, int uid, int gid, short modes, FileKnown known,
-			String parent_path, String md5Hash) {
-		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS);
+			String parentPath, String md5Hash) {
+		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, size, parentPath);
 		this.fsObjId = fs_obj_id;
 		this.metaAddr = meta_addr;
 		this.attrType = attrType;
@@ -117,7 +113,6 @@ public abstract class FsContent extends AbstractFile {
 		this.dirType = dirType;
 		this.dirFlag = dirFlag;
 		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(meta_flags);
-		this.size = size;
 		this.ctime = ctime;
 		this.crtime = crtime;
 		this.atime = atime;
@@ -126,7 +121,6 @@ public abstract class FsContent extends AbstractFile {
 		this.gid = gid;
 		this.modes = TSK_FS_META_MODE_ENUM.valuesOf(modes);
 		this.known = known;
-		this.parentPath = parent_path;
 		this.md5Hash = md5Hash;
 		
 	}
@@ -307,11 +301,6 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	public boolean isMetaFlagSet(TSK_FS_META_FLAG_ENUM metaFlag) {
 		return metaFlags.contains(metaFlag);
-	}
-
-	@Override
-	public long getSize() {
-		return size;
 	}
 
 	@Override
@@ -540,15 +529,6 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	public FileKnown getKnown() {
 		return known;
-	}
-
-	/**
-	 * Get the absolute parent path string of this FsContent
-	 *
-	 * @return the parent path string
-	 */
-	public String getParentPath() {
-		return this.parentPath;
 	}
 
 	@Override

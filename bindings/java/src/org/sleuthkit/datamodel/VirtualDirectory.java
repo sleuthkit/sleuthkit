@@ -37,25 +37,21 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class VirtualDirectory extends AbstractFile {
 
-	//TODO move up to AbstractFile class
-	private long size;
 	//TODO use enums for types and flags
 	private TSK_FS_NAME_TYPE_ENUM dirType;
 	private Set<TSK_FS_META_FLAG_ENUM> metaFlags;
 	private TSK_FS_META_TYPE_ENUM metaType;
 	private TSK_FS_NAME_FLAG_ENUM dirFlags;
-	private String parent_path;
 
 	protected VirtualDirectory(SleuthkitCase db, long obj_id, String name, long size, 
 			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_TYPE_ENUM dir_type, TSK_FS_NAME_FLAG_ENUM dirFlags,
-			short metaFlags, String parent_path) {
-		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR);
+			short metaFlags, String parentPath) {
+		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0, parentPath);
 
 		this.metaType = metaType;
 		this.dirType = dir_type;
 		this.dirFlags = dirFlags;
 		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(metaFlags);
-		this.parent_path = parent_path;
 	}
 
 	public TSK_FS_META_TYPE_ENUM getMetaType() {
@@ -72,10 +68,6 @@ public class VirtualDirectory extends AbstractFile {
 
 	public short getMetaFlags() {
 		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
-	}
-
-	public String getParent_path() {
-		return parent_path;
 	}
 
 	@Override
@@ -98,10 +90,6 @@ public class VirtualDirectory extends AbstractFile {
 		throw new UnsupportedOperationException("Reading LayoutDirectory is not supported.");
 	}
 
-	@Override
-	public long getSize() {
-		return 0;
-	}
 
 	@Override
 	public boolean isDir() {

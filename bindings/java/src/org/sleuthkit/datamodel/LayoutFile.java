@@ -39,10 +39,10 @@ public class LayoutFile extends AbstractFile{
 	
 	//layout ranges associated with this file
 	private List<TskFileRange> ranges;
-	private long size = -1;
 	
-	protected LayoutFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type) {
-		super(db, obj_id, name, type);
+	protected LayoutFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type, String parentPath) {
+		super(db, obj_id, name, type, -1, parentPath);
+		this.size = calcSize(); //update calculated size
 	}
 
 	/**
@@ -50,13 +50,13 @@ public class LayoutFile extends AbstractFile{
 	 * @return number of file layout ranges objects associated
 	 */
 	public int getNumParts() {
-		int size = 0;
+		int numParts = 0;
 		try {
-			size = getRanges().size();
+			numParts = getRanges().size();
 		} catch (TskCoreException ex) {
 			Logger.getLogger(LayoutFile.class.getName()).log(Level.INFO, "Error getting layout content ranges for size", ex);
 		}
-		return size;
+		return numParts;
 	}
 
 	@Override
@@ -77,14 +77,6 @@ public class LayoutFile extends AbstractFile{
 		return Collections.<Long>emptyList();
 	}
 
-	@Override
-    public synchronized long getSize() {
-		if (size == -1) {
-			//lazy load
-			size = calcSize();
-		}
-        return size;
-    }
 	
 	@Override
 	public boolean isDir(){
@@ -101,15 +93,15 @@ public class LayoutFile extends AbstractFile{
 	 * @return total content size in bytes
 	 */
     private long calcSize() {
-        long size = 0;
+        long calcSize = 0;
         try {
             for (TskFileRange range : getRanges()) {
-                size += range.getByteLen();
+                calcSize += range.getByteLen();
             }
         }catch (TskCoreException ex) {
-			Logger.getLogger(LayoutFile.class.getName()).log(Level.INFO, "boo", ex);
+			Logger.getLogger(LayoutFile.class.getName()).log(Level.SEVERE, "Error calculating layout file size from ranges", ex);
         }
-        return size;
+        return calcSize;
     }
 	
 

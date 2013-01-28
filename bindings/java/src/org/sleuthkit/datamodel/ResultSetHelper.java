@@ -22,12 +22,15 @@ class ResultSetHelper {
 	}
 
 	/**
-	 * Create an image from the result set containing query results on tsk_image_info table
+	 * Create an image from the result set containing query results on
+	 * tsk_image_info table
+	 *
 	 * @param rs result set containing query results
 	 * @param name name of the image
 	 * @param imagePaths image file paths
 	 * @return image object created
-	 * @throws TskCoreException thrown if critical error occurred within tsk core
+	 * @throws TskCoreException thrown if critical error occurred within tsk
+	 * core
 	 * @throws SQLException thrown if SQL error occurres
 	 */
 	Image image(ResultSet rs, String name, String[] imagePaths) throws TskCoreException, SQLException {
@@ -46,17 +49,19 @@ class ResultSetHelper {
 
 	/**
 	 * Get image path string from the result set on tsk_image_names table
+	 *
 	 * @param rs result set with the tsk_image_names query result
-	 * @return image path 
+	 * @return image path
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	String imagePath(ResultSet rs) throws SQLException {
 		return rs.getString("name");
 	}
 
-	
 	/**
-	 * Create an VolumeSystem object from the result set containing query results on tsk_vs_info table
+	 * Create an VolumeSystem object from the result set containing query
+	 * results on tsk_vs_info table
+	 *
 	 * @param rs resultset containing query results
 	 * @param parent parent image
 	 * @return volume system object newly created
@@ -76,8 +81,9 @@ class ResultSetHelper {
 	}
 
 	/**
-	 * Create an Volume object from the result set containing query results on tsk_vs_parts table
-	 * 
+	 * Create an Volume object from the result set containing query results on
+	 * tsk_vs_parts table
+	 *
 	 * @param rs result set containing query results
 	 * @param parent parent volume system
 	 * @return newly created Volume object
@@ -90,10 +96,12 @@ class ResultSetHelper {
 		vol.setParent(parent);
 		return vol;
 	}
-	
+
 	/**
-	 * Create a FileSystem object from the result set containing query results on tsk_fs_info table
-	 * @param rs the result set 
+	 * Create a FileSystem object from the result set containing query results
+	 * on tsk_fs_info table
+	 *
+	 * @param rs the result set
 	 * @param parent parent content object
 	 * @return newly create FileSystem object
 	 * @throws SQLException thrown if SQL error occurred
@@ -109,11 +117,13 @@ class ResultSetHelper {
 	}
 
 	/**
-	 * Create a File object from the result set containing query results on tsk_files table
+	 * Create a File object from the result set containing query results on
+	 * tsk_files table
+	 *
 	 * @param rs the result set
 	 * @param fs parent file system
 	 * @return a newly create File
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
 	File file(ResultSet rs, FileSystem fs) throws SQLException {
 		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), rs.getLong("meta_addr"), TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")),
@@ -126,7 +136,9 @@ class ResultSetHelper {
 	}
 
 	/**
-	 * Create a Directory object from the result set containing query results on tsk_files table
+	 * Create a Directory object from the result set containing query results on
+	 * tsk_files table
+	 *
 	 * @param rs the result set
 	 * @param fs parent file system
 	 * @name the directory name (TODO why do we need it passed, just query it )
@@ -143,9 +155,10 @@ class ResultSetHelper {
 		return dir;
 	}
 
-	
 	/**
-	 * Create a Directory object from the result set containing query results on tsk_files table
+	 * Create a Directory object from the result set containing query results on
+	 * tsk_files table
+	 *
 	 * @param rs the result set
 	 * @param fs the parent file system,
 	 * @return a newly created Directory object
@@ -156,7 +169,9 @@ class ResultSetHelper {
 	}
 
 	/**
-	 * Create a tsk file layout range object from the resultset on tsk_file_layout table
+	 * Create a tsk file layout range object from the resultset on
+	 * tsk_file_layout table
+	 *
 	 * @param rs the result set containg query results
 	 * @return newly create tsk file range object
 	 * @throws SQLException thrown if SQL error occurred
@@ -164,5 +179,31 @@ class ResultSetHelper {
 	TskFileRange tskFileRange(ResultSet rs) throws SQLException {
 		return new TskFileRange(rs.getLong("obj_id"), rs.getLong("byte_start"),
 				rs.getLong("byte_len"), rs.getLong("sequence"));
+	}
+
+	/**
+	 * Creates an derived file given result set and parent id (optional)
+	 * @param rs exsting active result set
+	 * @param parentId parent id or AbstractContent.UNKNOWN_ID
+	 * @return derived file object created
+	 * @throws SQLException 
+	 */
+	DerivedFile derivedFile(ResultSet rs, long parentId) throws SQLException {
+		boolean hasLocalPath = rs.getBoolean("has_path");
+		long objId = rs.getLong("obj_id");
+		String localPath = null;
+		if (hasLocalPath) {
+			localPath = db.getFilePath(objId);
+		}
+		
+		String parentPath = rs.getString("parent_path");
+		if (parentPath == null) {
+			parentPath = "";
+		}
+		
+		final DerivedFile df =
+				new DerivedFile(db, objId, rs.getString("name"), rs.getLong("size"), parentPath, localPath, parentId);
+		
+		return df;
 	}
 }

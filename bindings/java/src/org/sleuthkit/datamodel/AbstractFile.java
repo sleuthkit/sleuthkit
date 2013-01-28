@@ -23,52 +23,82 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 /**
- * Common fields methods for objects stored in tsk_files table
- * Abstract files are divided into subtypes defined in TSK_DB_FILES_TYPE_ENUM
- * and further divided into files and directories
+ * Common fields methods for objects stored in tsk_files table Abstract files
+ * are divided into subtypes defined in TSK_DB_FILES_TYPE_ENUM and further
+ * divided into files and directories
  */
 public abstract class AbstractFile extends AbstractContent {
-    
-    protected final TskData.TSK_DB_FILES_TYPE_ENUM type;
-	
+
+	protected final TskData.TSK_DB_FILES_TYPE_ENUM type;
+	protected long size;
+	/*
+	 * path of parent directory
+	 */
+	protected final String parentPath;
+
 	/**
-	 * Initializes common fields used by AbstactFile implementations (objects in tsk_files table)
-	 * 
+	 * Initializes common fields used by AbstactFile implementations (objects in
+	 * tsk_files table)
+	 *
 	 * @param db case / db handle where this file belongs to
 	 * @param obj_id object id in tsk_objects table
 	 * @param name name field of the file
 	 * @param type type of the file
 	 */
-    protected AbstractFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type) {
-        super(db, obj_id, name);
-        this.type = type;
-    }
-    
+	protected AbstractFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type, long size, String parentPath) {
+		super(db, obj_id, name);
+		this.type = type;
+		this.size = size;
+		this.parentPath = parentPath;
+	}
+
 	/**
 	 * Gets type of the abstract file as defined in TSK_DB_FILES_TYPE_ENUM
-	 * 
+	 *
 	 * @return the type of the abstract file
 	 */
-    public TskData.TSK_DB_FILES_TYPE_ENUM getType() {
-        return type;
-    }
-    
+	public TskData.TSK_DB_FILES_TYPE_ENUM getType() {
+		return type;
+	}
+
 	/**
-	 * Gets file ranges associated with the file.  File ranges are objects in tsk_file_layout table
-	 * Any file type (especially unallocated) may have 1 or more block ranges associated with it
-	 * 
-	 * @return list of file layout ranges
-	 * @throws TskCoreException exception thrown if critical error occurred within tsk core
+	 * Get size of the file
+	 *
+	 * @return file size in bytes
 	 */
-    public abstract List<TskFileRange> getRanges() throws TskCoreException;
+	@Override
+	public long getSize() {
+		return size;
+	}
+
+	/**
+	 * Get path of the parent of this file
+	 * @return path string of the parent
+	 */
+	public String getParentPath() {
+		return parentPath;
+	}
 	
 	
+
+	/**
+	 * Gets file ranges associated with the file. File ranges are objects in
+	 * tsk_file_layout table Any file type (especially unallocated) may have 1
+	 * or more block ranges associated with it
+	 *
+	 * @return list of file layout ranges
+	 * @throws TskCoreException exception thrown if critical error occurred
+	 * within tsk core
+	 */
+	public abstract List<TskFileRange> getRanges() throws TskCoreException;
+
 	/**
 	 * is this a virtual file or directory
+	 *
 	 * @return true if it's virtual, false otherwise
 	 */
 	public abstract boolean isVirtual();
-	
+
 	/**
 	 * Is this object a file
 	 *
@@ -82,7 +112,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if directory, false otherwise
 	 */
 	public abstract boolean isDir();
-	
+
 	/**
 	 * Is this a root of a file system
 	 *
@@ -97,10 +127,10 @@ public abstract class AbstractFile extends AbstractContent {
 	 * volume path segments removed.
 	 */
 	public static String createNonUniquePath(String uniquePath) {
-		
+
 		// split the path into parts
 		String[] pathSegments = uniquePath.split("/\\");
-		
+
 		// see if uniquePath had an image and/or volume name
 		int index = 0;
 		if (pathSegments[0].startsWith("img_")) {
@@ -109,17 +139,17 @@ public abstract class AbstractFile extends AbstractContent {
 		if (pathSegments[1].startsWith("vol_")) {
 			++index;
 		}
-		
+
 		// Assemble the non-unique path (skipping over the image and volume
 		// name, if they exist).
 		StringBuilder strbuf = new StringBuilder();
 		for (; index < pathSegments.length; ++index) {
 			strbuf.append("/").append(pathSegments[index]);
 		}
-		
+
 		return strbuf.toString();
 	}
-	
+
 	/**
 	 * @return a list of AbstractFiles that are the children of this Directory.
 	 * Only returns children of type TskData.TSK_DB_FILES_TYPE_ENUM.FS.
@@ -127,16 +157,15 @@ public abstract class AbstractFile extends AbstractContent {
 	public List<AbstractFile> listFiles() throws TskCoreException {
 		// first, get all children
 		List<Content> children = getChildren();
-		
+
 		// only keep those that are of type AbstractFile
 		List<AbstractFile> files = new ArrayList<AbstractFile>();
 		for (Content child : children) {
 			if (child instanceof AbstractFile) {
-				AbstractFile afChild = (AbstractFile)child;
+				AbstractFile afChild = (AbstractFile) child;
 				files.add(afChild);
 			}
 		}
 		return files;
 	}
-    
 }

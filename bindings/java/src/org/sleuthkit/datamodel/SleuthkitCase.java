@@ -59,6 +59,7 @@ import org.sqlite.SQLiteJDBCLoader;
 public class SleuthkitCase {
 
 	private String dbPath;
+	private String dbDirPath;
 	private volatile SleuthkitJNI.CaseDbHandle caseHandle;
 	private volatile Connection con;
 	private ResultSetHelper rsHelper = new ResultSetHelper(this);
@@ -92,12 +93,18 @@ public class SleuthkitCase {
 	private PreparedStatement getFileSt;
 	private PreparedStatement getFileWithParentSt;
 	private PreparedStatement updateMd5St;
+	private PreparedStatement getPathSt;
+	private PreparedStatement getDerivedInfoSt;
+	private PreparedStatement getDerivedMethodSt;
+	private PreparedStatement getLastContentIdSt;
+	private PreparedStatement addObjectSt;
+	private PreparedStatement addLocalFileSt;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
 	/**
 	 * constructor (private) - client uses openCase() and newCase() instead
 	 *
-	 * @param dbPath path to the database
+	 * @param dbPath path to the database file
 	 * @param caseHandle handle to the case database API
 	 * @throws SQLException thrown if SQL error occurred
 	 * @throws ClassNotFoundException thrown if database driver could not be
@@ -108,11 +115,21 @@ public class SleuthkitCase {
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException, TskCoreException {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
+		this.dbDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
 		this.caseHandle = caseHandle;
 		con = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
 		configureDB();
 		initBlackboardTypes();
 		initStatements();
+	}
+
+	/**
+	 * Get location of the database directory
+	 *
+	 * @return absolute database directory path
+	 */
+	public String getDbDirPath() {
+		return dbDirPath;
 	}
 
 	private void initStatements() throws SQLException {
@@ -156,7 +173,7 @@ public class SleuthkitCase {
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id "
 				+ "WHERE (tsk_objects.par_obj_id = ? "
 				+ "AND tsk_files.type = ? )");
-		
+
 		getAbstractFileById = con.prepareStatement("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1");
 
 		addArtifactSt1 = con.prepareStatement(
@@ -192,8 +209,25 @@ public class SleuthkitCase {
 		getFileSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? and LOWER(name) NOT LIKE '%journal%' AND fs_obj_id = ?");
 
 		getFileWithParentSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND LOWER(parent_path) LIKE ? AND fs_obj_id = ?");
-		
+
 		updateMd5St = con.prepareStatement("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?");
+
+		getPathSt = con.prepareStatement("SELECT path FROM tsk_files_path WHERE obj_id = ?");
+
+		getDerivedInfoSt = con.prepareStatement("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?");
+
+		getDerivedMethodSt = con.prepareStatement("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?");
+
+		getLastContentIdSt = con.prepareStatement(
+				"SELECT MAX(obj_id) from tsk_objects");
+		
+		addObjectSt = con.prepareStatement(
+				"INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (?, ?, ?)");
+		
+		addLocalFileSt = con.prepareStatement(
+				"INSERT INTO tsk_files (obj_id, fs_obj_id, name, dir_type, meta_type, dir_flags, meta_flags, size, parent_path) "
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		
 	}
 
 	private void closeStatements() {
@@ -290,15 +324,45 @@ public class SleuthkitCase {
 				getFileWithParentSt.close();
 				getFileWithParentSt = null;
 			}
-			
+
 			if (updateMd5St != null) {
 				updateMd5St.close();
 				updateMd5St = null;
 			}
 
+			if (getPathSt != null) {
+				getPathSt.close();
+				getPathSt = null;
+			}
+
+			if (getDerivedInfoSt != null) {
+				getDerivedInfoSt.close();
+				getDerivedInfoSt = null;
+			}
+
+			if (getDerivedMethodSt != null) {
+				getDerivedMethodSt.close();
+				getDerivedMethodSt = null;
+			}
+
+			if (getLastContentIdSt != null) {
+				getLastContentIdSt.close();
+				getLastContentIdSt = null;
+			}
+			
+			if (addObjectSt != null) {
+				addObjectSt.close();
+				addObjectSt = null;
+			}
+			
+			if (addLocalFileSt != null) {
+				addLocalFileSt.close();
+				addLocalFileSt = null;
+			}
+
 		} catch (SQLException e) {
 			logger.log(Level.WARNING,
-					"Error closing prepared statement", e);
+					"Error closing prepared statements", e);
 		}
 	}
 
@@ -1890,7 +1954,9 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 
-			getAbstractFileChildren.setLong(1, parent.getId());
+			long parentId = parent.getId();
+			
+			getAbstractFileChildren.setLong(1, parentId);
 			getAbstractFileChildren.setShort(2, type.getFileType());
 
 			final ResultSet rs = getAbstractFileChildren.executeQuery();
@@ -1905,14 +1971,29 @@ public class SleuthkitCase {
 					}
 					children.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
+					String parentPath = rs.getString("parent_path");
+					if (parentPath == null) {
+						parentPath = "";
+					}
 					VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
 							rs.getString("name"), rs.getLong("size"),
 							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
-							rs.getShort("meta_flags"), rs.getString("parent_path"));
+							rs.getShort("meta_flags"), parentPath);
 					children.add(virtDir);
-				} else {
-					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"), TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")));
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS) {
+					String parentPath = rs.getString("parent_path");
+					if (parentPath == null) {
+						parentPath = "";
+					}
+					final LayoutFile lf = 
+							new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"), 
+							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS, parentPath);
 					children.add(lf);
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED) {
+					final DerivedFile df = rsHelper.derivedFile(rs, parentId);
+					children.add(df);
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.LOCAL) {
+					//TODO
 				}
 			}
 			rs.close();
@@ -2155,6 +2236,96 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * /internal Get a path of a file in tsk_files_path table or null if there
+	 * is none
+	 *
+	 * @param id id of the file to get path for
+	 * @return file path of null
+	 * @throws SQLException file path could not be queried due to user error
+	 */
+	String getFilePath(long id) throws SQLException {
+
+		String filePath = null;
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			getPathSt.setLong(1, id);
+			rs = getPathSt.executeQuery();
+			if (rs.next()) {
+				filePath = rs.getString(1);
+			}
+		} catch (SQLException ex) {
+			logger.log(Level.SEVERE, "Error getting file path for file: " + id, ex);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after getting file path by id.", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+
+		return filePath;
+	}
+
+	/**
+	 * Get a derived method for a file, or null if none
+	 *
+	 * @param id id of the derived file
+	 * @return derived method or null if not present
+	 * @throws TskCoreException exception throws if core error occurred and
+	 * method could not be queried
+	 */
+	DerivedFile.DerivedMethod getDerivedMethod(long id) throws TskCoreException {
+		DerivedFile.DerivedMethod method = null;
+
+		ResultSet rs1 = null;
+		ResultSet rs2 = null;
+		dbReadLock();
+		try {
+			getDerivedInfoSt.setLong(1, id);
+			rs1 = getDerivedInfoSt.executeQuery();
+			if (rs1.next()) {
+				int method_id = rs1.getInt(1);
+				String rederive = rs1.getString(1);
+
+				method = new DerivedFile.DerivedMethod(method_id, rederive);
+
+				getDerivedMethodSt.setInt(1, method_id);
+				rs2 = getDerivedMethodSt.executeQuery();
+				if (rs2.next()) {
+					method.setToolName(rs2.getString(1));
+					method.setToolVersion(rs2.getString(2));
+					method.setOther(rs2.getString(3));
+				}
+			}
+		} catch (SQLException e) {
+			logger.log(Level.SEVERE, "Error getting derived method for file: " + id, e);
+		} finally {
+			if (rs1 != null) {
+				try {
+					rs1.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after getting derived file method", ex);
+				}
+			}
+			if (rs2 != null) {
+				try {
+					rs2.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after getting derived file method", ex);
+				}
+			}
+
+			dbReadUnlock();
+		}
+
+		return method;
+	}
+
+	/**
 	 * Get abstract file object from tsk_files table by its id
 	 *
 	 * @param id id of the file object in tsk_files table
@@ -2168,7 +2339,7 @@ public class SleuthkitCase {
 		try {
 			getAbstractFileById.setLong(1, id);
 			rs = getAbstractFileById.executeQuery();
-			
+
 			List<AbstractFile> results;
 			if ((results = resultSetToAbstractFiles(rs)).size() > 0) {
 				return results.get(0);
@@ -2187,7 +2358,7 @@ public class SleuthkitCase {
 			}
 			dbReadUnlock();
 		}
-		
+
 	}
 
 	/**
@@ -2265,6 +2436,125 @@ public class SleuthkitCase {
 		}
 
 		return fsContents;
+	}
+
+	/**
+	 * Get last (max) object id of content object in tsk_objects Note, if you
+	 * are using this id to create a new object, make sure you are getting and
+	 * using it in the same write lock/transaction to avoid potential
+	 * concurrency issues with other writes
+	 *
+	 * @return currently max id
+	 * @throws SQLException exception thrown when database error occurs
+	 */
+	private long getLastObjectId() throws SQLException {
+		long id = -1;
+		dbReadLock();
+		try {
+			ResultSet rs = getLastContentIdSt.executeQuery();
+			if (rs.next()) {
+				id = rs.getLong(1);
+			}
+			rs.close();
+		} finally {
+			dbReadUnlock();
+		}
+
+		return id;
+	}
+
+	/**
+	 * Create a new derived file object and add it to database
+	 *
+	 * TODO add support for derived method and refactor common code with
+	 * LocalFiles
+	 *
+	 * @param parentId id of the parent object (derived or local file), must be a valid > 0 id
+	 * @param fsObjId fs object id of the fs of ancestor file, or 0 if there is no file system
+	 * @param fileName file name the derived file
+	 * @param parentPath  parent path of the parent of the derived file
+	 * @param size size of the derived file in bytes
+	 * @param localPath local path of the derived file, including the file name.  The path is relative to the database path.
+	 * @param rederiveDetails details needed to re-derive file (will be specific
+	 * to the derivation method), currently unused
+	 * @param toolName name of derivation method/tool, currently unused
+	 * @param toolVersion version of derivation method/tool, currently unused
+	 * @param otherDetails details of derivation method/tool, currently unused
+	 * @return newly created derived file object
+	 * @throws TskCoreException exception thrown if the object creation failed
+	 * due to a critical system error
+	 */
+	public DerivedFile createDerivedFile(long parentId, long fsObjId, String fileName, String parentPath, long size, String localPath, String rederiveDetails,
+			String toolName, String toolVersion, String otherDetails) throws TskCoreException {
+
+		if (parentId < 1) {
+			throw new IllegalArgumentException("Parent id of a new derived file must be greater than 1");
+		}
+		
+		long newObjId = -1;
+
+		dbWriteLock();
+
+		//all in one write lock and transaction
+		//get last object id
+		//create tsk_objects object with new id
+		//create tsk_files object with the new id
+		//TODO create derived method
+
+		try {
+
+			con.setAutoCommit(false);
+
+			newObjId = getLastObjectId() + 1;
+			if (newObjId < 1) {
+				String msg = "Error creating a derived file, cannot get new id of the object, file name: " + fileName;
+				throw new TskCoreException(msg);
+			}
+
+			addObjectSt.setLong(1, newObjId);
+			addObjectSt.setLong(2, parentId);
+			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			addObjectSt.executeUpdate();
+			
+			//obj_id, fs_obj_id, name, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
+			addLocalFileSt.setLong(1, newObjId);
+			addLocalFileSt.setLong(2, fsObjId);
+			addLocalFileSt.setString(3, fileName);
+			
+			//TODO
+			addLocalFileSt.setLong(1, newObjId);
+			addLocalFileSt.setLong(1, newObjId);
+			addLocalFileSt.setLong(1, newObjId);
+			addLocalFileSt.setLong(1, newObjId);
+			addLocalFileSt.setLong(1, newObjId);
+			
+			addLocalFileSt.setString(9, parentPath);
+			
+			
+			//TODO add localPath (need  another helper method)
+			
+		} catch (SQLException e) {
+			String msg = "Error creating a derived file, file name: " + fileName;
+			throw new TskCoreException(msg, e);
+		} finally {
+			try {
+				con.commit();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Error committing after adding derived file", ex);
+			} finally {
+				try {
+					con.setAutoCommit(true);
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error setting auto-commit after adding derived file", ex);
+				}
+				finally {
+					dbWriteUnlock();
+				}
+			}
+		}
+
+
+		return null;
 	}
 
 	/**
@@ -2435,12 +2725,12 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 	}
-	
+
 	/**
 	 * @param id ID of the desired VolumeSystem
 	 * @param parentId ID of the VolumeSystem's parent
 	 * @return the VolumeSystem with the given ID
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	VolumeSystem getVolumeSystemById(long id, long parentId) throws TskCoreException {
 		VolumeSystem vs = getVolumeSystemById(id, null);
@@ -2460,12 +2750,12 @@ public class SleuthkitCase {
 	FileSystem getFileSystemById(long id, Image parent) throws TskCoreException {
 		return getFileSystemByIdHelper(id, parent);
 	}
-	
+
 	/**
 	 * @param id ID of the desired FileSystem
 	 * @param parentId ID of the FileSystem's parent
 	 * @return the desired FileSystem
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	FileSystem getFileSystemById(long id, long parentId) throws TskCoreException {
 		Volume vol = null;
@@ -2557,12 +2847,12 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 	}
-	
+
 	/**
 	 * @param id ID of the desired Volume
 	 * @param parentId ID of the Volume's parent
 	 * @return the desired Volume
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	Volume getVolumeById(long id, long parentId) throws TskCoreException {
 		Volume vol = getVolumeById(id, null);
@@ -3064,7 +3354,7 @@ public class SleuthkitCase {
 	 * @return list of file objects from tsk_files table containing the results
 	 * @throws SQLException if the query fails
 	 */
-	public List<AbstractFile> resultSetToAbstractFiles(ResultSet rs) throws SQLException {
+	private List<AbstractFile> resultSetToAbstractFiles(ResultSet rs) throws SQLException {
 
 		ArrayList<AbstractFile> results = new ArrayList<AbstractFile>();
 		dbReadLock();
@@ -3080,19 +3370,37 @@ public class SleuthkitCase {
 					}
 					results.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
+					String parentPath = rs.getString("parent_path");
+					if (parentPath == null) {
+						parentPath = "";
+					}
 					final VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
 							rs.getString("name"), rs.getLong("size"),
 							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
-							rs.getShort("meta_flags"), rs.getString("parent_path"));
+							rs.getShort("meta_flags"), parentPath);
 					results.add(virtDir);
-				} else {
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()) {
+					String parentPath = rs.getString("parent_path");
+					if (parentPath == null) {
+						parentPath = "";
+					}
 					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
 							rs.getString("name"),
-							TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(type));
+							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS, parentPath);
 					results.add(lf);
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType()) {
+					final DerivedFile df;
+					df = rsHelper.derivedFile(rs, AbstractContent.UNKNOWN_ID);
+					results.add(df);
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.LOCAL.getFileType()) {
+					//TODO
 				}
-			}
-		} finally {
+
+			} //end for each rs
+		} //catch (SQLException e) {
+		//	logger.log(Level.SEVERE, "Error getting abstract file from result set.", e);
+		//}
+		finally {
 			dbReadUnlock();
 		}
 
@@ -3165,11 +3473,10 @@ public class SleuthkitCase {
 	}
 
 	@Override
-	public void finalize() throws Throwable{
+	public void finalize() throws Throwable {
 		try {
 			close();
-		}
-		finally {
+		} finally {
 			super.finalize();
 		}
 	}

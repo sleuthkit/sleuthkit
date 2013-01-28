@@ -37,27 +37,57 @@ import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
  */
 public class DerivedFile extends AbstractFile {
 
-	private String localPath;
+	private String localPath; ///< local path as stored in db tsk_files_path, is relative to the db
+	private String localAbsPath; ///< absolute path representation of the local path
 	private boolean isFile;
-	private long size;
 	private volatile DerivedMethod derivedMethod;
 	private java.io.File localFile;
 	private volatile RandomAccessFile fileHandle;
 	private static final Logger logger = Logger.getLogger(DerivedFile.class.getName());
+	
+	private boolean hasDerivedMethod = true; ///< whether it has the derived method to lazy load or not
 
-	public DerivedFile(SleuthkitCase db, long obj_id, String name, TSK_DB_FILES_TYPE_ENUM type, String localPath) {
-		super(db, obj_id, name, type);
+	/**
+	 * Create a db representation of a derived file
+	 * @param db sleuthkit case handle
+	 * @param objId object if of this file already in database
+	 * @param name name of this derived file
+	 * @param size size of the file
+	 * @param parentPath path of the parent of this derived file (e.g. fs zip file, or another derived file path)
+	 * @param localPath local path of this derived file, relative to the db path
+	 */
+	DerivedFile(SleuthkitCase db, long objId, String name, long size, String parentPath, String localPath) {
+		super(db, objId, name, TSK_DB_FILES_TYPE_ENUM.DERIVED, size, parentPath);
 		this.localPath = localPath;
 
-		localFile = new java.io.File(localPath);
-		isFile = localFile.isFile();
-		size = localFile.length();
+		if (localPath == null) {
+			localPath = "";
+		} else {
+			localAbsPath = db.getDbDirPath() + java.io.File.separator + localPath;
+			localFile = new java.io.File(localAbsPath);
+			isFile = localFile.isFile();
+		}
 	}
+	
+	/**
+	 * Create a db representation of a derived file, passing available parent id
+	 * @param db sleuthkit case handle
+	 * @param objId object if of this file already in database
+	 * @param name name of this derived file
+	 * @param size the size of the file
+	 * @param parentPath path of the parent of this derived file (e.g. fs zip file, or another derived file path)
+	 * @param localPath local path of this derived file, relative to the db path
+	 * @param parentId parent id of this derived file to set if available
+	 */
+	DerivedFile(SleuthkitCase db, long objId, String name, long size, String parentPath, String localPath, long parentId) {
+		this(db, objId, name, size, parentPath, localPath);
+		
+		if (parentId > 0) {
+			setParentId(parentId);
+		}
+	}
+	
 
-	@Override
-	public long getSize() {
-		return size;
-	}
 
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
@@ -95,10 +125,10 @@ public class DerivedFile extends AbstractFile {
 		//TODO navigate local file system, OR via tsk database
 		//even if local file (not dir), still check for children,
 		//as it can have other derived files
-		
+
 		//derived file/dir children, can only be other derived files
 		return getSleuthkitCase().getAbstractFileChildren(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
-		
+
 	}
 
 	@Override
@@ -112,15 +142,25 @@ public class DerivedFile extends AbstractFile {
 	}
 
 	public boolean exists() {
+		if (localFile == null) {
+			return false;
+		}
 		return localFile.exists();
 	}
 
 	public boolean canRead() {
+		if (localFile == null) {
+			return false;
+		}
 		return localFile.canRead();
 	}
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
+		if (localFile == null) {
+			throw new TskCoreException("Local derived file not initialized: " + this.toString());
+		}
+
 		int bytesRead = 0;
 
 		synchronized (this) {
@@ -128,7 +168,7 @@ public class DerivedFile extends AbstractFile {
 				try {
 					fileHandle = new RandomAccessFile(localFile, "r");
 				} catch (FileNotFoundException ex) {
-					final String msg = "Cannot read derived file: " + this.toString();
+					final String msg = "Error reading derived file: " + this.toString();
 					logger.log(Level.SEVERE, msg, ex);
 					//TODO decide if to swallow exception in this case, file could have been deleted or moved
 					throw new TskCoreException(msg, ex);
@@ -154,9 +194,23 @@ public class DerivedFile extends AbstractFile {
 		return bytesRead;
 	}
 
-	public synchronized DerivedMethod getDerivedMethod() {
-		if (derivedMethod == null) {
-			//TODO derivedMethod = SleuthkitCase....
+	/**
+	 * Get derived method for this derived file if it exists, or null
+	 * @return derived method if exists, or null
+	 * @throws TskCoreException exception thrown when critical error occurred and derived method could not be queried
+	 */
+	public synchronized DerivedMethod getDerivedMethod() throws TskCoreException {
+		if (derivedMethod == null && hasDerivedMethod == true) {
+			try {
+				derivedMethod = getSleuthkitCase().getDerivedMethod(getId());
+				if (derivedMethod == null) {
+					hasDerivedMethod = false;  //do not attempt to lazy load
+				}
+			} catch (TskCoreException e) {
+				String msg = "Error getting derived method for file id: " + getId();
+				logger.log(Level.WARNING, msg, e);
+				throw new TskCoreException(msg, e);
+			}
 		}
 
 		return derivedMethod;
@@ -175,24 +229,42 @@ public class DerivedFile extends AbstractFile {
 	}
 
 	/**
-	 * Method used to derive the file
+	 * Method used to derive the file super-set of tsk_files_derived and
+	 * tsk_files_derived_method tables
 	 */
 	public static class DerivedMethod {
 
-		private int derived_id; //Unique id for this derivation method.
-		private String toolName; //Name of derivation method/tool
-		private String toolVersion; //Version of tool used in derivation method
-		private String other; //Other details 
+		private int derivedId; ///< Unique id for this derivation method.
+		private String toolName; ///< Name of derivation method/tool
+		private String toolVersion; ///< Version of tool used in derivation method
+		private String other; ///< Other details 
+		private String rederiveDetails; ///< details to rederive specific to this method
 
-		public DerivedMethod(int derived_id, String toolName, String toolVersion, String other) {
-			this.derived_id = derived_id;
+		public DerivedMethod(int derivedId, String rederiveDetails) {
+			this.derivedId = derivedId;
+			this.rederiveDetails = rederiveDetails;
+			if (this.rederiveDetails == null) {
+				this.rederiveDetails = "";
+			}
+			this.toolName = "";
+			this.toolVersion = "";
+			this.other = "";
+		}
+
+		void setToolName(String toolName) {
 			this.toolName = toolName;
+		}
+
+		void setToolVersion(String toolVersion) {
 			this.toolVersion = toolVersion;
+		}
+
+		void setOther(String other) {
 			this.other = other;
 		}
 
-		public int getDerived_id() {
-			return derived_id;
+		public int getDerivedId() {
+			return derivedId;
 		}
 
 		public String getToolName() {
@@ -207,9 +279,13 @@ public class DerivedFile extends AbstractFile {
 			return other;
 		}
 
+		public String getRederiveDetails() {
+			return rederiveDetails;
+		}
+
 		@Override
 		public String toString() {
-			return "DerivedMethod{" + "derived_id=" + derived_id + ", toolName=" + toolName + ", toolVersion=" + toolVersion + ", other=" + other + '}';
+			return "DerivedMethod{" + "derived_id=" + derivedId + ", toolName=" + toolName + ", toolVersion=" + toolVersion + ", other=" + other + ", rederiveDetails=" + rederiveDetails + '}';
 		}
 	}
 }
