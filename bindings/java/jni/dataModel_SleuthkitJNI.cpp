@@ -802,13 +802,6 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
         return 0;
     }
 
-    //allocate file handle structure
-    TSK_JNI_FILEHANDLE * fileHandle = 
-        (TSK_JNI_FILEHANDLE *) tsk_malloc(sizeof(TSK_JNI_FILEHANDLE));
-    if (fileHandle == NULL) {
-        setThrowTskCoreError(env, "Could not allocate memory for TSK_JNI_FILEHANDLE");
-        return 0;
-    }
 	
     TSK_FS_FILE *file_info;
     //open file
@@ -824,6 +817,15 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
     if (tsk_fs_attr == NULL) {
         tsk_fs_file_close(file_info);
         setThrowTskCoreError(env, tsk_error_get());
+        return 0;
+    }
+
+    //allocate file handle structure to encapsulate file and attribute
+    TSK_JNI_FILEHANDLE * fileHandle = 
+        (TSK_JNI_FILEHANDLE *) tsk_malloc(sizeof(TSK_JNI_FILEHANDLE));
+    if (fileHandle == NULL) {
+        tsk_fs_file_close(file_info);
+        setThrowTskCoreError(env, "Could not allocate memory for TSK_JNI_FILEHANDLE");
         return 0;
     }
 
