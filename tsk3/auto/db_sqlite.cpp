@@ -763,7 +763,7 @@ int
         "%" PRIuINUM ","
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "%lld,%lld,%lld,%lld,%d,%d,%d,%s,%d,"
+        "%lld,%lld,%lld,%lld,%d,%d,%d,'%s',%d,"
         "'%s')",
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,

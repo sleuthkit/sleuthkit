@@ -30,14 +30,46 @@
 
 
 
-/* When we list deleted files in a directory, we need to look at all MFT entries
- * to find unallocated ones that point to the given directory as teh parent directory.
- * We cache these results in an "orphan map". */
+/* When we list a directory, we need to also look at MFT entries and what
+ * they list as their parents. We used to do this only for orphan files, but 
+ * we were pointed to a case whereby allocated files were not in IDX_ALLOC, but were
+ * shown in Windows (when mounted).  They must have been found via the MFT entry, so 
+ * we now load all parent to child relationships into the map. 
+ * 
+ * One of these classes is created per parent folder */
 class NTFS_PAR_MAP  {
+private:
+        // maps sequence number to list of inums for the folder at that seq.
+        std::map <uint32_t, std::vector <TSK_INUM_T> > seq2addrs;
 public:
-        std::vector <TSK_INUM_T>addrs;
-        void add (TSK_INUM_T inum) {
-            addrs.push_back(inum);
+        /**
+         * Add a child to this parent.
+         * @param seq Sequence of the parent that this child belonged to
+         * @param inum Address of child in the folder.
+         */
+        void add (uint32_t seq, TSK_INUM_T inum) {
+            seq2addrs[seq].push_back(inum);
+        }
+
+        /**
+         * Test if there are any children for this directory at a given sequence.
+         * @param seq Sequence to test.
+         * @returns true if children exist
+         */
+        bool exists (uint32_t seq) {
+            if (seq2addrs.count(seq) > 0) 
+                return true;
+            else
+                return false;
+        }
+
+        /** 
+         * Get the children for this folder at a given sequence.  Use exists first. 
+         * @param seq Sequence number to retrieve children for.
+         * @returns list of INUMS for children.
+         */
+        std::vector <TSK_INUM_T> & get (uint32_t seq) {
+            return seq2addrs[seq];
         }
  };
 
@@ -70,53 +102,60 @@ static std::map<TSK_INUM_T, NTFS_PAR_MAP> * getParentMap(NTFS_INFO *ntfs) {
  * @returns 1 on error
  */
 static uint8_t
-ntfs_orphan_map_add(NTFS_INFO * ntfs, TSK_INUM_T par, TSK_INUM_T child)
+ntfs_parent_map_add(NTFS_INFO * ntfs, TSK_FS_META_NAME_LIST *name_list, TSK_INUM_T child)
 {
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpOrphanMap = getParentMap(ntfs);   
-    NTFS_PAR_MAP &tmpParMap = (*tmpOrphanMap)[par];
-    tmpParMap.add(child);
+    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
+    NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[name_list->par_inode];
+    tmpParMap.add(name_list->par_seq, child);
     return 0;
 }
 
 /** \internal
- * Returns if a parent has orphan children or not.
+ * Returns if a parent has children or not.
  *
  * Note: This routine assumes &ntfs->orhpan_map_lock is locked by the caller.
  *
  * @param ntfs File system that has already been analyzed
  * @param par Parent inode to find child files for
- * @returns true if parent has orphan children.
+ * @seq seq Sequence of parent folder 
+ * @returns true if parent has children.
  */
 static bool 
-ntfs_orphan_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par) 
+ntfs_parent_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par, uint32_t seq) 
 {
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpOrphanMap = getParentMap(ntfs);
-    if (tmpOrphanMap->count(par) > 0) 
-        return true;
-    else 
-        return false;
+    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
+    if (tmpParentMap->count(par) > 0) {
+        NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[par];
+        if (tmpParMap.exists(seq))
+            return true;
+    }
+    return false;
 }
 
 /** \internal
- * Look up a map entry by the parent address. You should call ntfs_orphan_map_exists() before this, otherwise
+ * Look up a map entry by the parent address. You should call ntfs_parent_map_exists() before this, otherwise
  * an empty entry could be created. 
  *
  * Note: This routine assumes &ntfs->orhpan_map_lock is locked by the caller.
  *
  * @param ntfs File system that has already been analyzed
  * @param par Parent inode to find child files for
- * @returns address of orphan files in the parent directory
+ * @param seq Sequence of parent inode 
+ * @returns address of children files in the parent directory
  */
 static std::vector <TSK_INUM_T> &
-ntfs_orphan_map_get(NTFS_INFO * ntfs, TSK_INUM_T par)
+ntfs_parent_map_get(NTFS_INFO * ntfs, TSK_INUM_T par, uint32_t seq)
 {
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpOrphanMap = getParentMap(ntfs);
-    NTFS_PAR_MAP &tmpParMap = (*tmpOrphanMap)[par];
-    return tmpParMap.addrs;
+    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
+    NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[par];
+    return tmpParMap.get(seq);
 }
 
 
 
+// note that for consistency, this should be called parent_map_free, but
+// that would have required an API change in a point release and this better
+// matches the name in NTFS_INFO
 void
 ntfs_orphan_map_free(NTFS_INFO * a_ntfs)
 {
@@ -131,9 +170,9 @@ ntfs_orphan_map_free(NTFS_INFO * a_ntfs)
         tsk_release_lock(&a_ntfs->orphan_map_lock);
         return;
     }
-    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpOrphanMap = getParentMap(a_ntfs);
+    std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(a_ntfs);
 
-    delete tmpOrphanMap;
+    delete tmpParentMap;
     a_ntfs->orphan_map = NULL;
     tsk_release_lock(&a_ntfs->orphan_map_lock);
 }
@@ -142,7 +181,7 @@ ntfs_orphan_map_free(NTFS_INFO * a_ntfs)
 /* inode_walk callback that is used to populate the orphan_map
  * structure in NTFS_INFO */
 static TSK_WALK_RET_ENUM
-ntfs_orphan_act(TSK_FS_FILE * fs_file, void *ptr)
+ntfs_parent_act(TSK_FS_FILE * fs_file, void *ptr)
 {
     NTFS_INFO *ntfs = (NTFS_INFO *) fs_file->fs_info;
     TSK_FS_META_NAME_LIST *fs_name_list;
@@ -150,7 +189,7 @@ ntfs_orphan_act(TSK_FS_FILE * fs_file, void *ptr)
     /* go through each file name structure */
     fs_name_list = fs_file->meta->name2;
     while (fs_name_list) {
-        if (ntfs_orphan_map_add(ntfs, fs_name_list->par_inode,
+        if (ntfs_parent_map_add(ntfs, fs_name_list,
                 fs_file->meta->addr))
             return TSK_WALK_ERROR;
         fs_name_list = fs_name_list->next;
@@ -1022,29 +1061,28 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         getParentMap(ntfs);
 
         if (a_fs->inode_walk(a_fs, a_fs->first_inum, a_fs->last_inum,
-                TSK_FS_META_FLAG_UNALLOC, ntfs_orphan_act, NULL)) {
+                (TSK_FS_META_FLAG_ENUM)(TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_ALLOC), ntfs_parent_act, NULL)) {
             tsk_release_lock(&ntfs->orphan_map_lock);
             return TSK_ERR;
         }
     }
 
     // see if there are any entries for this dir
-    if (ntfs_orphan_map_exists(ntfs, a_addr)) {
+    if (ntfs_parent_map_exists(ntfs, a_addr, fs_dir->fs_file->meta->seq)) {
         TSK_FS_NAME *fs_name;
         TSK_FS_FILE *fs_file_orp = NULL;
 
-        std::vector <TSK_INUM_T> &orphanChilds = ntfs_orphan_map_get(ntfs, a_addr);
+        std::vector <TSK_INUM_T> &childFiles = ntfs_parent_map_get(ntfs, a_addr, fs_dir->fs_file->meta->seq);
 
         if ((fs_name = tsk_fs_name_alloc(256, 0)) == NULL)
             return TSK_ERR;
 
-        fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
         fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
 
-        for (size_t a = 0; a < orphanChilds.size(); a++) {
+        for (size_t a = 0; a < childFiles.size(); a++) {
             /* Fill in the basics of the fs_name entry
              * so we can print in the fls formats */
-            fs_name->meta_addr = orphanChilds[a];
+            fs_name->meta_addr = childFiles[a];
 
             // lookup the file to get its name (we did not cache that)
             fs_file_orp =
@@ -1052,6 +1090,11 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             if ((fs_file_orp) && (fs_file_orp->meta)
                 && (fs_file_orp->meta->name2)) {
                 TSK_FS_META_NAME_LIST *n2 = fs_file_orp->meta->name2;
+                if (fs_file_orp->meta->flags & TSK_FS_META_FLAG_ALLOC)
+                    fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+                else
+                    fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
+
                 while (n2) {
                     if (n2->par_inode == a_addr) {
                         strncpy(fs_name->name, n2->name,

@@ -21,7 +21,8 @@ package org.sleuthkit.datamodel;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -34,10 +35,12 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
  * Generalized class that stores metadata that are common to both File and
  * Directory objects stored in tsk_files table Caches internal tsk file handle
  * and reuses it for reads
- * 
+ *
  * TODO move common getters to AbstractFile class
  */
 public abstract class FsContent extends AbstractFile {
+	
+	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 
 	///read only database tsk_files fields
 	protected final long fsObjId, metaAddr, size, ctime, crtime, atime, mtime;
@@ -49,11 +52,13 @@ public abstract class FsContent extends AbstractFile {
 	protected final Set<TSK_FS_META_MODE_ENUM> modes;
 	protected final TSK_FS_NAME_TYPE_ENUM dirType;
 	protected final TSK_FS_NAME_FLAG_ENUM dirFlag;
-	
 	/*
 	 * path of parent directory
 	 */
 	protected final String parentPath;
+	
+	private String uniquePath;
+
 	///read-write database tsk_files fields
 	/**
 	 * known status in database
@@ -64,15 +69,14 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	protected String md5Hash;
 	///other members
-
 	/**
 	 * parent file system
 	 */
-	protected FileSystem parentFileSystem;
+	private FileSystem parentFileSystem;
 	/**
 	 * file Handle
 	 */
-	protected long fileHandle = 0;
+	protected volatile long fileHandle = 0;
 
 	/**
 	 * Constructor to create FsContent object instance from database
@@ -123,7 +127,13 @@ public abstract class FsContent extends AbstractFile {
 		this.modes = TSK_FS_META_MODE_ENUM.valuesOf(modes);
 		this.known = known;
 		this.parentPath = parent_path;
-		this.md5Hash = md5Hash;
+		if (md5Hash.equals("NULL")) {
+			this.md5Hash = null;
+		}
+		else {
+			this.md5Hash = md5Hash;
+		}
+		
 	}
 
 	/**
@@ -131,27 +141,27 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @param parent parent file system object
 	 */
-	protected void setFileSystem(FileSystem parent) {
+	void setFileSystem(FileSystem parent) {
 		parentFileSystem = parent;
 	}
 
 	/**
-	 * Sets md5 hash string
-	 * Note: database or other FsContent objects are not updated.
-	 * Currently only SleuthkiCase calls it to update the object while updating tsk_files entry
-	 * 
-	 * @param md5Hash 
+	 * Sets md5 hash string Note: database or other FsContent objects are not
+	 * updated. Currently only SleuthkiCase calls it to update the object while
+	 * updating tsk_files entry
+	 *
+	 * @param md5Hash
 	 */
 	void setMd5Hash(String md5Hash) {
 		this.md5Hash = md5Hash;
 	}
 
 	/**
-	 * Sets known status
-	 * Note: database or other FsContent objects are not updated.
-	 * Currently only SleuthkiCase calls it to update the object while updating tsk_files entry
-	 * 
-	 * @param known 
+	 * Sets known status Note: database or other FsContent objects are not
+	 * updated. Currently only SleuthkiCase calls it to update the object while
+	 * updating tsk_files entry
+	 *
+	 * @param known
 	 */
 	void setKnown(FileKnown known) {
 		this.known = known;
@@ -165,27 +175,28 @@ public abstract class FsContent extends AbstractFile {
 		}
 		synchronized (this) {
 			if (fileHandle == 0) {
-				fileHandle = 
-						SleuthkitJNI.openFile(parentFileSystem.getFileSystemHandle(), metaAddr, attrType, attrId);
+				fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
 			}
 		}
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 	}
 
-	
 	@Override
 	public boolean isRoot() {
+		try {
+			getFileSystem();
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Exception while calling 'getFileSystem' on " + this, ex);
+			return false;
+		}
 		return parentFileSystem.getRoot_inum() == this.getMetaAddr();
 	}
-		
+
 	/*
 	 * -------------------------------------------------------------------------
 	 * Getters to retrieve meta-data attributes values
 	 * -------------------------------------------------------------------------
 	 */
-	
-
-
 	/**
 	 * Gets parent directory
 	 *
@@ -201,13 +212,16 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return the file system object of the parent
 	 */
-	public FileSystem getFileSystem() {
+	public FileSystem getFileSystem() throws TskCoreException {
+		if (parentFileSystem == null) {
+			parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, AbstractContent.UNKNOWN_ID);
+		}
 		return parentFileSystem;
 	}
-
+	
 	@Override
 	public Image getImage() throws TskCoreException {
-		return this.getFileSystem().getImage();
+		return getFileSystem().getImage();
 	}
 
 	/**
@@ -237,6 +251,10 @@ public abstract class FsContent extends AbstractFile {
 		return metaType;
 	}
 
+	public String getMetaTypeAsString() {
+		return metaType.toString();
+	}
+
 	/**
 	 * Get the directory type id
 	 *
@@ -246,13 +264,24 @@ public abstract class FsContent extends AbstractFile {
 		return dirType;
 	}
 
+	public String getDirTypeAsString() {
+		return dirType.toString();
+	}
+
 	/**
-	 * Get the directory flags
-	 *
-	 * @return directory flags
+	 * @param flag the TSK_FS_NAME_FLAG_ENUM to check
+	 * @return true if the given flag is set in this FsContent object.
 	 */
-	public TSK_FS_NAME_FLAG_ENUM getDirFlag() {
-		return dirFlag;
+	public boolean isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM flag) {
+		return dirFlag == flag;
+	}
+
+	/**
+	 * @return a string representation of the directory name flag (type
+	 * TSK_FS_NAME_FLAG_ENUM)
+	 */
+	public String getDirFlagAsString() {
+		return dirFlag.toString();
 	}
 
 	/**
@@ -265,18 +294,22 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	/**
-	 * Get the meta data flags
-	 *
-	 * @return meta data flags
+	 * @return a string representation of the meta flags
 	 */
-	public short getMetaFlagsInt() {
-		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
+	public String getMetaFlagsAsString() {
+		String str = "";
+		if (metaFlags.contains(TSK_FS_META_FLAG_ENUM.ALLOC)) {
+			str = TSK_FS_META_FLAG_ENUM.ALLOC.toString();
+		} else if (metaFlags.contains(TSK_FS_META_FLAG_ENUM.ALLOC)) {
+			str = TSK_FS_META_FLAG_ENUM.UNALLOC.toString();
+		}
+		return str;
 	}
-	
-	public Set<TSK_FS_META_FLAG_ENUM> getMetaFlags() {
-		return Collections.unmodifiableSet(metaFlags);
-	}
-	
+
+	/**
+	 * @param metaFlag the TSK_FS_META_FLAG_ENUM to check
+	 * @return true if the given meta flag is set in this FsContent object.
+	 */
 	public boolean isMetaFlagSet(TSK_FS_META_FLAG_ENUM metaFlag) {
 		return metaFlags.contains(metaFlag);
 	}
@@ -380,18 +413,128 @@ public abstract class FsContent extends AbstractFile {
 	public int getGid() {
 		return gid;
 	}
-	
-	public Set<TSK_FS_META_MODE_ENUM> getModes() {
-		return modes;
-	}
 
 	/**
-	 * Get the mode
+	 * Convert mode and meta type to a user-displayable string
 	 *
-	 * @return mode
+	 * @param mode mode attribute of the file/dir
+	 * @param metaType meta type attribute of the file/dir
+	 * @return converted, formatted user-displayable string
 	 */
-	public short getModesInt() {
-		return TSK_FS_META_MODE_ENUM.toInt(modes);
+	public String getModesAsString() {
+		int mode = TSK_FS_META_MODE_ENUM.toInt(modes);
+		String result = "";
+
+		short isuid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISUID.getMode();
+		short isgid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISGID.getMode();
+		short isvtx = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISVTX.getMode();
+
+		short irusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IRUSR.getMode();
+		short iwusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWUSR.getMode();
+		short ixusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXUSR.getMode();
+
+		short irgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IRGRP.getMode();
+		short iwgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWGRP.getMode();
+		short ixgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXGRP.getMode();
+
+		short iroth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IROTH.getMode();
+		short iwoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWOTH.getMode();
+		short ixoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXOTH.getMode();
+
+		// first character = the Meta Type
+		result += metaType.toString();
+
+		// second and third characters = user permissions
+		if ((mode & irusr) == irusr) {
+			result += "r";
+		} else {
+			result += "-";
+		}
+		if ((mode & iwusr) == iwusr) {
+			result += "w";
+		} else {
+			result += "-";
+		}
+
+		// fourth character = set uid
+		if ((mode & isuid) == isuid) {
+			if ((mode & ixusr) == ixusr) {
+				result += "s";
+			} else {
+				result += "S";
+			}
+		} else {
+			if ((mode & ixusr) == ixusr) {
+				result += "x";
+			} else {
+				result += "-";
+			}
+		}
+
+		// fifth and sixth characters = group permissions
+		if ((mode & irgrp) == irgrp) {
+			result += "r";
+		} else {
+			result += "-";
+		}
+		if ((mode & iwgrp) == iwgrp) {
+			result += "w";
+		} else {
+			result += "-";
+		}
+
+		// seventh character = set gid
+		if ((mode & isgid) == isgid) {
+			if ((mode & ixgrp) == ixgrp) {
+				result += "s";
+			} else {
+				result += "S";
+			}
+		} else {
+			if ((mode & ixgrp) == ixgrp) {
+				result += "x";
+			} else {
+				result += "-";
+			}
+		}
+
+		// eighth and ninth character = other permissions
+		if ((mode & iroth) == iroth) {
+			result += "r";
+		} else {
+			result += "-";
+		}
+		if ((mode & iwoth) == iwoth) {
+			result += "w";
+		} else {
+			result += "-";
+		}
+
+		// tenth character = sticky bit
+		if ((mode & isvtx) == isvtx) {
+			if ((mode & ixoth) == ixoth) {
+				result += "t";
+			} else {
+				result += "T";
+			}
+		} else {
+			if ((mode & ixoth) == ixoth) {
+				result += "x";
+			} else {
+				result += "-";
+			}
+		}
+
+		// check the result
+		if (result.length() != 10) {
+			// throw error here
+			result = "ERROR";
+		}
+		return result;
+	}
+
+	public boolean isModeSet(TSK_FS_META_MODE_ENUM mode) {
+		return modes.contains(mode);
 	}
 
 	/**
@@ -414,49 +557,35 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	@Override
-	public String getUniquePath() throws TskCoreException {
-		if (uniquePath != null) {
-			return uniquePath;
+	public synchronized String getUniquePath() throws TskCoreException {
+		if (uniquePath == null) {
+			StringBuilder sb = new StringBuilder();
+			sb.append(getFileSystem().getUniquePath());
+			sb.append(getParentPath());
+			sb.append(getName());
+			uniquePath = sb.toString();
 		}
-
-		StringBuilder sb = new StringBuilder();
-		//prepend image and volume to file path
-		Image image = this.getImage();
-		StringTokenizer tok = new StringTokenizer(image.getName(), "/\\");
-		String imageName = null;
-		while (tok.hasMoreTokens()) {
-			imageName = tok.nextToken();
-		}
-		sb.append("/img_").append(imageName);
-		if (parentFileSystem != null) {
-			Content vol = parentFileSystem.getParent();
-			if (vol != null
-					&& !vol.equals(image)) {
-				sb.append("/vol_");
-				sb.append(vol.getName());
-			}
-		}
-
-		sb.append(getParentPath());
-		sb.append(getName());
-
-		uniquePath = sb.toString();
 		return uniquePath;
 	}
 
 	/**
 	 * Get the md5 hash value as calculated, if present
 	 *
-	 * @return md5 hash string, if it is present
+	 * @return md5 hash string, if it is present or null if it is not
 	 */
 	public String getMd5Hash() {
 		return this.md5Hash;
 	}
 
 	@Override
-	public void finalize() {
-		if (fileHandle != 0) {
-			SleuthkitJNI.closeFile(fileHandle);
+	public void finalize() throws Throwable {
+		try {
+			if (fileHandle != 0) {
+				SleuthkitJNI.closeFile(fileHandle);
+				fileHandle = 0;
+			}
+		} finally {
+			super.finalize();
 		}
 	}
 

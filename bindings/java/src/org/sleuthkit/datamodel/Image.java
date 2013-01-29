@@ -77,9 +77,13 @@ public class Image extends AbstractContent {
 
 	@Override
 	public void finalize() throws Throwable {
-		super.finalize();
-		if (imageHandle != 0) {
-			SleuthkitJNI.closeImg(imageHandle);
+		try {
+			if (imageHandle != 0) {
+				SleuthkitJNI.closeImg(imageHandle);
+				imageHandle = 0;
+			}
+		} finally {
+			super.finalize();
 		}
 	}
 
@@ -123,6 +127,11 @@ public class Image extends AbstractContent {
 		return ssize;
 	}
 
+	@Override
+	public String getUniquePath() throws TskCoreException {
+		return "/img_" + getName();
+	}
+
 	/**
 	 * Get the image path
 	 *
@@ -131,69 +140,51 @@ public class Image extends AbstractContent {
 	public String[] getPaths() {
 		return paths;
 	}
-	
+
 	/**
 	 * @return a list of VolumeSystem associated with this Image.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public List<VolumeSystem> getVolumeSystems() throws TskCoreException {
-		
+
 		List<Content> children = getChildren();
 		List<VolumeSystem> vs = new ArrayList<VolumeSystem>();
 		for (Content child : children) {
 			if (child instanceof VolumeSystem) {
-				vs.add((VolumeSystem)child);
+				vs.add((VolumeSystem) child);
 			}
 		}
-		
+
 		return vs;
 	}
-	
+
 	/**
 	 * @return a list of Volume associated with this Image.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public List<Volume> getVolumes() throws TskCoreException {
-		
+
 		List<Content> children = getChildren();
 		List<Volume> volumes = new ArrayList<Volume>();
 		for (Content child : children) {
 			if (child instanceof Volume) {
-				volumes.add((Volume)child);
+				volumes.add((Volume) child);
 			}
 		}
-		
+
 		return volumes;
 	}
-	
+
 	/**
 	 * @return a list of FileSystems in this Image. This includes FileSystems
 	 * that are both children of this Image as well as children of Volumes in
 	 * this image.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public List<FileSystem> getFileSystems() throws TskCoreException {
 		List<FileSystem> fs = new ArrayList<FileSystem>();
 		fs.addAll(getSleuthkitCase().getFileSystems(this));
 		return fs;
-	}
-	
-	/**
-	 * @return a list of FileSystem that are direct descendents of this Image.
-	 * @throws TskCoreException 
-	 */
-	public List<FileSystem> getDirectFileSystems() throws TskCoreException {
-		
-		// find all children that are FileSystems
-		List<Content> children = getChildren();
-		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
-		for (Content child : children) {
-			if (child instanceof FileSystem) {
-				fileSystems.add((FileSystem)child);
-			}
-		}
-		
-		return fileSystems;
 	}
 
 	/**

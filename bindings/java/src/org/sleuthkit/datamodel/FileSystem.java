@@ -18,13 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
-import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
+import java.util.List;
 
 /**
  * Represents a file system object stored in tsk_fs_info table
@@ -39,7 +33,7 @@ public class FileSystem extends AbstractContent {
 			firstInum, lastInum;
 	private TskData.TSK_FS_TYPE_ENUM fsType;
 	private Content parent;
-	private long filesystemHandle = 0;
+	private volatile long filesystemHandle = 0;
 
 	/**
 	 * Constructor most inputs are from the database
@@ -67,31 +61,10 @@ public class FileSystem extends AbstractContent {
 		this.lastInum = last_inum;
 	}
 
-	/**
-	 * Set the parent content object, will be called by the parent 
-	 * when populating the object from database.
-	 * 
-	 * @param p parent volume or image.
-	 * Should only be called by methods which ensure p is a volume or image
-	 */
-	protected void setParent(Content p) {
-		parent = p;
-	}
-
-
 	@Override
 	public synchronized int read(byte[] buf, long offset, long len) throws TskCoreException {
 		return SleuthkitJNI.readFs(getFileSystemHandle(), buf, offset, len);
 	}
-
-	/**
-	 * Get the parent volume or image Content object
-	 * @return parent content object (volume or image)
-	 */
-	public Content getParent() {
-		return parent;
-	}
-
 
 	@Override
 	public long getSize() {
@@ -114,22 +87,16 @@ public class FileSystem extends AbstractContent {
 	
 	public Directory getRootDirectory() throws TskCoreException {
 		
-		String directDirectoryDescendents = "SELECT tsk_files.*"
-				+ " FROM tsk_objects JOIN tsk_files"
-				+ " ON tsk_objects.obj_id = tsk_files.obj_id"
-				+ " WHERE (tsk_objects.par_obj_id = " + getId()
-				+ " AND tsk_files.type = " + TSK_DB_FILES_TYPE_ENUM.FS.getFileType()
-				+ " AND tsk_files.dir_type = " + TSK_FS_NAME_TYPE_ENUM.DIR.getValue() + ")";
+		List<Content> children = getChildren();
+		if (children.size() != 1) {
+			throw new TskCoreException("FileSystem must have only one child.");
+		}
 		
-		Directory dir = null;
-		try {
-			ResultSet rs = getSleuthkitCase().runQuery(directDirectoryDescendents);
-			dir = new ResultSetHelper(getSleuthkitCase()).directory(rs, this);
-		} catch (SQLException ex) {
-			throw new TskCoreException("There was a problem while trying to obtain this file system's root directory: ", ex);
+		if (!(children.get(0) instanceof Directory)) {
+			throw new TskCoreException("Child of FileSystem must be a Directory.");
 		}
 
-		return dir;
+		return (Directory)children.get(0);
 	}
 
 	/**
@@ -194,26 +161,28 @@ public class FileSystem extends AbstractContent {
 		return lastInum;
 	}
 
-
 	@Override
-	public void finalize() {
-		if (filesystemHandle != 0) {
-			SleuthkitJNI.closeFs(filesystemHandle);
+	public void finalize() throws Throwable {
+		try {
+			if (filesystemHandle != 0) {
+				SleuthkitJNI.closeFs(filesystemHandle);
+				filesystemHandle = 0;
+			}
+		}
+		finally {
+			super.finalize();
 		}
 	}
-
 
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
-
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
-
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
@@ -224,7 +193,6 @@ public class FileSystem extends AbstractContent {
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getFileSystemChildrenIds(this);
 	}
-
 
 	@Override
 	public Image getImage() throws TskCoreException {
