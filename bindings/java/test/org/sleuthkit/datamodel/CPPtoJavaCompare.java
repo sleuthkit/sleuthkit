@@ -61,7 +61,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 	public void CPPtoJavaCompare() {
 		try {
 			List<Boolean> test = basicTest();
-			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", test.get(1),true);
+			assertEquals("Generated results ("+DataModelTestSuite.sortedFlPth(oldStandardPath) +") differ with gold standard ("+DataModelTestSuite.sortedFlPth(testStandardPath)+") .", test.get(0),true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}

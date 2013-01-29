@@ -37,7 +37,7 @@ import org.junit.runners.Suite;
  * Runs all regression tests.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.SequentialTraversal.class,org.sleuthkit.datamodel.CrossCompare.class,org.sleuthkit.datamodel.BottomUpTest.class,org.sleuthkit.datamodel.CPPtoJavaCompare.class})
+@Suite.SuiteClasses({/*org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.SequentialTraversal.class,org.sleuthkit.datamodel.CrossCompare.class,org.sleuthkit.datamodel.BottomUpTest.class,*/org.sleuthkit.datamodel.CPPtoJavaCompare.class})
 public class DataModelTestSuite {
 	static final String TEST_IMAGE_DIR_NAME = "test" + java.io.File.separator + "Input";
 	static final String INPT = "inpt";
@@ -98,11 +98,8 @@ public class DataModelTestSuite {
 			try (FileWriter standardWriter = type.traverse(sk, standardFile.getAbsolutePath() , exFile)) {
 				standardWriter.flush();
 			}
-			String sortedloc = standardFile.getAbsolutePath().replace(".txt", "_Sorted.txt");
-			String cygpath = getSortPath();
-			String[] cmd={cygpath ,standardFile.getAbsolutePath(), "-o", sortedloc};
-			Runtime.getRuntime().exec(cmd).waitFor();
-		}catch (IOException | TskCoreException | InterruptedException ex) {
+			runSort(standardFile.getAbsolutePath());
+		}catch (IOException | TskCoreException ex) {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't create Standard", ex);
 			throw new RuntimeException(ex);
 		}
@@ -163,10 +160,10 @@ public class DataModelTestSuite {
 	}
 	/**
 	 * Runs tsk_gettimes to create a standard for comparing DataModel and TSK output.
-	 * @param StandardPath The path to the file to put the tsk data in
+	 * @param standardPath The path to the file to put the tsk data in
 	 * @param img the path to the image, is a list for compatability reasons
 	 */
-	private static void getTSKData(String StandardPath, List<String> img)
+	private static void getTSKData(String standardPath, List<String> img)
 	{
 		String tsk_loc;
 		if(System.getProperty("os.name").contains("Windows"))
@@ -182,7 +179,7 @@ public class DataModelTestSuite {
 			Process p=Runtime.getRuntime().exec(cmd);
 			Scanner read = new Scanner(p.getInputStream());
 			Scanner error1 = new Scanner(p.getErrorStream());
-			FileWriter out = new FileWriter(StandardPath);
+			FileWriter out = new FileWriter(standardPath);
 			while(read.hasNextLine())
 			{
 				String line = read.nextLine();
@@ -204,10 +201,11 @@ public class DataModelTestSuite {
 					}
 				}
 			}
+			runSort(standardPath);
 		} catch (Exception ex) {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Failed to run CPP program", ex);
 		}
-		java.io.File xfile = new java.io.File(StandardPath.replace(".txt",DataModelTestSuite.EX+".txt"));
+		java.io.File xfile = new java.io.File(standardPath.replace(".txt",DataModelTestSuite.EX+".txt"));
 		try {
 			xfile.createNewFile();
 		} catch (IOException ex) {
@@ -355,17 +353,17 @@ public class DataModelTestSuite {
 		java.io.File pth = new java.io.File(DataModelTestSuite.goldStandardPath());
 		for(java.io.File del: pth.listFiles())
 		{
-			del.delete();
+			//del.delete();
 		}
 		List<Traverser> tests = DataModelTestSuite.getTests();
 		List<List<String>> imagePaths = DataModelTestSuite.getImagePaths();
 		for(List<String> paths : imagePaths) {
 			for(Traverser tstrn: tests)
 			{
-				String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
-				System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
-				String exFile = standardPath.replace(".txt",DataModelTestSuite.EX+".txt");
-				DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn, exFile);
+				//String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
+				//System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
+				//String exFile = standardPath.replace(".txt",DataModelTestSuite.EX+".txt");
+				//DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn, exFile);
 			}
 			String standardPathCPP = DataModelTestSuite.standardPath(paths,CPPtoJavaCompare.class.getSimpleName());
 			DataModelTestSuite.getTSKData(standardPathCPP, paths);
@@ -401,6 +399,22 @@ public class DataModelTestSuite {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't compare content", ex);
 			return false;
 		}
+	}
+	protected static void runSort(String inp)
+	{
+		String outp = sortedFlPth(inp);
+		String cygpath = getSortPath();
+		String[] cmd={cygpath ,inp, "-o",outp};
+		try {
+			Runtime.getRuntime().exec(cmd).waitFor();
+		} catch (IOException | InterruptedException ex) {
+			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't create Standard", ex);
+			throw new RuntimeException(ex);
+		}
+	}
+	protected static String sortedFlPth(String path)
+	{
+		return path.replace(".txt", "_Sorted.txt");
 	}
 	private static void runDiff(String path1, String path2)
 	{

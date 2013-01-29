@@ -50,7 +50,7 @@ public class BottomUpTest {
 	 */
 	@Parameterized.Parameters
 	public static Collection<Object[]> testImageData() {
-		Collection<Object[]> data = new ArrayList<Object[]>();
+		Collection<Object[]> data = new ArrayList<>();
 		
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
