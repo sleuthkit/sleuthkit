@@ -181,7 +181,7 @@ AS_IF([test "x$with_libewf" != "xno"],
     )]
     # Check for the header file first to make sure they have the dev install
     [AC_CHECK_HEADERS([libewf.h],
-      [AC_CHECK_LIB([ewf], [libewf_open])]
+      [AC_CHECK_LIB([ewf], [libewf_get_version])]
     )]
 )
 
