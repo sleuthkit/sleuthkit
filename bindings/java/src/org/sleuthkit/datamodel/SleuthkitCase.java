@@ -42,6 +42,7 @@ import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
@@ -99,6 +100,7 @@ public class SleuthkitCase {
 	private PreparedStatement getLastContentIdSt;
 	private PreparedStatement addObjectSt;
 	private PreparedStatement addLocalFileSt;
+	private PreparedStatement addPathSt;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
 	/**
@@ -227,6 +229,9 @@ public class SleuthkitCase {
 		addLocalFileSt = con.prepareStatement(
 				"INSERT INTO tsk_files (obj_id, fs_obj_id, name, dir_type, meta_type, dir_flags, meta_flags, size, parent_path) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		
+		addPathSt = con.prepareStatement(
+				"INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)");
 		
 	}
 
@@ -358,6 +363,11 @@ public class SleuthkitCase {
 			if (addLocalFileSt != null) {
 				addLocalFileSt.close();
 				addLocalFileSt = null;
+			}
+			
+			if (addPathSt != null) {
+				addPathSt.close();
+				addPathSt = null;
 			}
 
 		} catch (SQLException e) {
@@ -2054,10 +2064,10 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
-			String query = "select tsk_objects.obj_id, tsk_objects.type ";
-			query += "from tsk_objects left join tsk_files ";
-			query += "on tsk_objects.obj_id=tsk_files.obj_id ";
-			query += "where tsk_objects.par_obj_id = " + c.getId() + " ";
+			String query = "SELECT tsk_objects.obj_id, tsk_objects.type ";
+			query += "FROM tsk_objects left join tsk_files ";
+			query += "ON tsk_objects.obj_id=tsk_files.obj_id ";
+			query += "WHERE tsk_objects.par_obj_id = " + c.getId() + " ";
 			ResultSet rs = s.executeQuery(query);
 
 			Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
@@ -2462,17 +2472,30 @@ public class SleuthkitCase {
 
 		return id;
 	}
+	
+	/**
+	 * Add a path (such as a local path) for a content object to tsk_file_paths
+	 * @param objId object id of the file to add the path for
+	 * @param path the path to add
+	 * @throws SQLException exception thrown when database error occurred and path was not added
+	 */
+	private void addFilePath(long objId, String path) throws SQLException {
+		addPathSt.setLong(1, objId);
+		addPathSt.setString(2, path);
+		addPathSt.executeUpdate();
+	}
 
 	/**
-	 * Create a new derived file object and add it to database
+	 * Creates a new derived file object, adds it to database and returns it.
 	 *
-	 * TODO add support for derived method and refactor common code with
+	 * TODO add support for adding derived method and re-factor common code with
 	 * LocalFiles
 	 *
 	 * @param parentId id of the parent object (derived or local file), must be a valid > 0 id
 	 * @param fsObjId fs object id of the fs of ancestor file, or 0 if there is no file system
-	 * @param fileName file name the derived file
 	 * @param parentPath  parent path of the parent of the derived file
+	 * @param fileName file name the derived file
+	 * @param isFile whether a file or directory, true if a file
 	 * @param size size of the derived file in bytes
 	 * @param localPath local path of the derived file, including the file name.  The path is relative to the database path.
 	 * @param rederiveDetails details needed to re-derive file (will be specific
@@ -2484,12 +2507,15 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if the object creation failed
 	 * due to a critical system error
 	 */
-	public DerivedFile createDerivedFile(long parentId, long fsObjId, String fileName, String parentPath, long size, String localPath, String rederiveDetails,
+	public DerivedFile addDerivedFile(long parentId, long fsObjId, String parentPath, String fileName, 
+			boolean isFile, long size, String localPath, String rederiveDetails,
 			String toolName, String toolVersion, String otherDetails) throws TskCoreException {
 
 		if (parentId < 1) {
 			throw new IllegalArgumentException("Parent id of a new derived file must be greater than 1");
 		}
+		
+		DerivedFile ret = null;
 		
 		long newObjId = -1;
 
@@ -2499,8 +2525,6 @@ public class SleuthkitCase {
 		//get last object id
 		//create tsk_objects object with new id
 		//create tsk_files object with the new id
-		//TODO create derived method
-
 		try {
 
 			con.setAutoCommit(false);
@@ -2511,27 +2535,44 @@ public class SleuthkitCase {
 				throw new TskCoreException(msg);
 			}
 
+			//tsk_objects
 			addObjectSt.setLong(1, newObjId);
 			addObjectSt.setLong(2, parentId);
 			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			addObjectSt.executeUpdate();
 			
+			//tsk_files
 			//obj_id, fs_obj_id, name, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
+			
+			//obj_id, fs_obj_id, name
 			addLocalFileSt.setLong(1, newObjId);
 			addLocalFileSt.setLong(2, fsObjId);
 			addLocalFileSt.setString(3, fileName);
 			
-			//TODO
-			addLocalFileSt.setLong(1, newObjId);
-			addLocalFileSt.setLong(1, newObjId);
-			addLocalFileSt.setLong(1, newObjId);
-			addLocalFileSt.setLong(1, newObjId);
-			addLocalFileSt.setLong(1, newObjId);
+			//flags
+			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG:TSK_FS_NAME_TYPE_ENUM.DIR;
+			addLocalFileSt.setShort(4, dirType.getValue());
+			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG:TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			addLocalFileSt.setShort(5, metaType.getValue());
 			
+			//note: using alloc under assumption that derived files derive from alloc files
+			addLocalFileSt.setShort(6, TSK_FS_NAME_FLAG_ENUM.ALLOC.getValue());
+			addLocalFileSt.setShort(7, (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue() 
+					| TSK_FS_META_FLAG_ENUM.USED.getValue()) );
+			
+			//size
+			addLocalFileSt.setLong(8, size);
+			//parent path
 			addLocalFileSt.setString(9, parentPath);
 			
+			addLocalFileSt.executeUpdate();
 			
-			//TODO add localPath (need  another helper method)
+			//add localPath 
+			addFilePath(newObjId, localPath);
+			
+			ret = new DerivedFile(this, newObjId, fileName, size, parentPath, localPath, parentId);
+			
+			//TODO add derived method
 			
 		} catch (SQLException e) {
 			String msg = "Error creating a derived file, file name: " + fileName;
@@ -2554,7 +2595,7 @@ public class SleuthkitCase {
 		}
 
 
-		return null;
+		return ret;
 	}
 
 	/**
