@@ -1067,12 +1067,27 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         }
     }
 
-    // see if there are any entries for this dir
-    if (ntfs_parent_map_exists(ntfs, a_addr, fs_dir->fs_file->meta->seq)) {
+    
+    /* see if there are any entries for this dir.
+     * NTFS Updates the sequence when a directory is deleted and not when 
+     * it is allocated.  So, if we have a deleted directory, then use
+     * its previous sequence number to find the files that were in it when
+     * it was allocated.
+     */
+    uint16_t seqToSrch = fs_dir->fs_file->meta->seq;
+    if (fs_dir->fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) {
+        if (fs_dir->fs_file->meta->seq > 0)
+            seqToSrch = fs_dir->fs_file->meta->seq - 1;
+        else
+            // I can't imagine how we get here or what we should do except maybe not do the search.
+            seqToSrch = 0;
+    }
+
+    if (ntfs_parent_map_exists(ntfs, a_addr, seqToSrch)) {
         TSK_FS_NAME *fs_name;
         TSK_FS_FILE *fs_file_orp = NULL;
 
-        std::vector <TSK_INUM_T> &childFiles = ntfs_parent_map_get(ntfs, a_addr, fs_dir->fs_file->meta->seq);
+        std::vector <TSK_INUM_T> &childFiles = ntfs_parent_map_get(ntfs, a_addr, seqToSrch);
 
         if ((fs_name = tsk_fs_name_alloc(256, 0)) == NULL)
             return TSK_ERR;
