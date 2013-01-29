@@ -395,9 +395,7 @@ public class DataModelTestSuite {
 					in2.close();
 					f1.close();
 					f2.close();
-					//runDiff(original, results);
-					DiffUtil dif = new DiffUtil(fi1.getAbsolutePath(),fi2.getAbsolutePath(),original.substring(original.lastIndexOf(java.io.File.separator)+1));
-					dif.getDiff();
+					DiffUtil.getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),original.substring(original.lastIndexOf(java.io.File.separator)+1));
 					return false;
 				}
 			}
