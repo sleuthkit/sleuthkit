@@ -47,7 +47,7 @@ public class SequentialTraversal extends ImgTraverser{
 	 */
 	@Parameterized.Parameters
 	public static Collection<Object[]> testImageData() {
-		Collection<Object[]> data = new ArrayList<Object[]>();
+		Collection<Object[]> data = new ArrayList<>();
 		
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
@@ -74,7 +74,7 @@ public class SequentialTraversal extends ImgTraverser{
 	@Override
 	public FileWriter traverse(SleuthkitCase sk, String path, String exFile)
 	{
-		FileWriter reslt = null;
+		FileWriter reslt;
 		try {
 			reslt = new FileWriter(path);
 			int x = 1;

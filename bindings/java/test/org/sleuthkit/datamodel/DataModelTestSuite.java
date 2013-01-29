@@ -60,7 +60,7 @@ public class DataModelTestSuite {
 	}
 	public static List<Traverser> getTests()
 	{
-		List<Traverser> ret = new ArrayList<Traverser>();
+		List<Traverser> ret = new ArrayList<>();
 		ret.add(new SequentialTraversal(null));
 		ret.add(new TopDownTraversal(null));
 		return ret;
@@ -95,14 +95,14 @@ public class DataModelTestSuite {
 				writeExceptions(standardFile.toString(), ex);
 			}
 			process.commit();
-			FileWriter standardWriter = type.traverse(sk, standardFile.getAbsolutePath() , exFile);
-			standardWriter.flush();
-			standardWriter.close();
+			try (FileWriter standardWriter = type.traverse(sk, standardFile.getAbsolutePath() , exFile)) {
+				standardWriter.flush();
+			}
 			String sortedloc = standardFile.getAbsolutePath().replace(".txt", "_Sorted.txt");
 			String cygpath = getSortPath();
 			String[] cmd={cygpath ,standardFile.getAbsolutePath(), "-o", sortedloc};
 			Runtime.getRuntime().exec(cmd).waitFor();
-		}catch (Exception ex) {
+		}catch (IOException | TskCoreException | InterruptedException ex) {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't create Standard", ex);
 			throw new RuntimeException(ex);
 		}
@@ -123,9 +123,9 @@ public class DataModelTestSuite {
 				return f.getName().endsWith(".001")||f.getName().endsWith(".img")||f.getName().endsWith(".dd")||f.getName().endsWith(".E01")||f.getName().endsWith(".raw");
 			}
 		};
-		List<List<String>> images = new ArrayList<List<String>>();
+		List<List<String>> images = new ArrayList<>();
 		for (java.io.File imageSet : dir.listFiles(imageFilter)) {
-			ArrayList<String> imgs = new ArrayList<String>();
+			ArrayList<String> imgs = new ArrayList<>();
 			imgs.add(imageSet.getAbsolutePath());
 			images.add(imgs);
 		}
@@ -168,7 +168,7 @@ public class DataModelTestSuite {
 	 */
 	private static void getTSKData(String StandardPath, List<String> img)
 	{
-		String tsk_loc = null;
+		String tsk_loc;
 		if(System.getProperty("os.name").contains("Windows"))
 		{
 			tsk_loc = "C:\\Users\\" + System.getProperty("user.name") + "\\Documents\\GitHub\\sleuthkit\\win32\\Release\\tsk_gettimes";
@@ -301,18 +301,14 @@ public class DataModelTestSuite {
 			MessageDigest md5 = MessageDigest.getInstance("MD5");
 
 			for (long i = 0; i < size; i = i + READ_BUFFER_SIZE) {
-				int read = c.read(readBuffer, i, Math.min(size - i, READ_BUFFER_SIZE));
+				c.read(readBuffer, i, Math.min(size - i, READ_BUFFER_SIZE));
 				md5.update(readBuffer);
 			}
 			String hash = toHex(md5.digest());
 
 			result.append("md5=" + hash);
 
-		} catch (IOException ex) {
-			writeExceptions(exFile, ex);
-		} catch (TskCoreException ex) {
-			writeExceptions(exFile, ex);
-		} catch (NoSuchAlgorithmException ex) {
+		} catch (IOException | TskCoreException | NoSuchAlgorithmException ex) {
 			writeExceptions(exFile, ex);
 		}
 	}
@@ -333,7 +329,7 @@ public class DataModelTestSuite {
 	protected static String getFileData(File fi) throws TskCoreException
 	{
 		String[] path = fi.getUniquePath().split("/", 3);
-		String name = null;
+		String name;
 		if(path[2].contains("vol_")){
 			String[] pthget = path[2].split("_",2);
 			name = "(FilePath): " + pthget[pthget.length-1];

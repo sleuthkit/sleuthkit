@@ -36,8 +36,8 @@ import java.util.logging.Logger;
 public class DiffUtil{
 
 	private static List<String> fileToLines(String filename) {
-		List<String> lines = new LinkedList<String>();
-		String line = "";
+		List<String> lines = new LinkedList<>();
+		String line;
 		try {
 			BufferedReader in = new BufferedReader(new FileReader(new java.io.File(filename).getAbsolutePath()));
 			while ((line = in.readLine()) != null) {
@@ -69,10 +69,10 @@ public class DiffUtil{
 			diff.append("\n");
 		}
 		try {
-			FileWriter out = new FileWriter(outp);
-			out.append(diff);
-			out.flush();
-			out.close();
+			try (FileWriter out = new FileWriter(outp)) {
+				out.append(diff);
+				out.flush();
+			}
 		} catch (IOException ex) {
 			Logger.getLogger(DiffUtil.class.getName()).log(Level.SEVERE, "Couldn't write Diff to file", ex);
 		}

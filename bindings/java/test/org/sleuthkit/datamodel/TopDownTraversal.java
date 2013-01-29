@@ -49,7 +49,7 @@ public class TopDownTraversal extends ImgTraverser{
 	 */
 	@Parameters
 	public static Collection<Object[]> testImageData() {
-		Collection<Object[]> data = new ArrayList<Object[]>();
+		Collection<Object[]> data = new ArrayList<>();
 		
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
@@ -73,6 +73,7 @@ public class TopDownTraversal extends ImgTraverser{
 	 * topDownDF method
 	 * @param c the root Content object
 	 */
+	@Override
 	public FileWriter traverse(SleuthkitCase sk, String path, String exFile) {
 		List<Content> lc=null;
 		try {
@@ -80,7 +81,7 @@ public class TopDownTraversal extends ImgTraverser{
 		} catch (TskCoreException ex) {
 			DataModelTestSuite.writeExceptions(exFile, ex);
 		}
-		List<Long> lp=new ArrayList<Long>();
+		List<Long> lp=new ArrayList<>();
 		try {
 			FileWriter reslt = new FileWriter(path);
 			FileWriter levs = new FileWriter(path.replace("_" + this.getClass().getSimpleName() + ".txt", DataModelTestSuite.LVS+".txt"));
@@ -122,11 +123,9 @@ public class TopDownTraversal extends ImgTraverser{
 					}
 					else
 					{
-						topDownDF(c.getChildren(),new ArrayList<Long>(lp), exFile, reslt, levs);
+						topDownDF(c.getChildren(),new ArrayList<>(lp), exFile, reslt, levs);
 					}
-				} catch (IOException ex) {
-					DataModelTestSuite.writeExceptions(exFile, ex);
-				} catch (TskCoreException ex) {
+				} catch (	IOException | TskCoreException ex) {
 					DataModelTestSuite.writeExceptions(exFile, ex);
 				}
 				lp.remove(0);
