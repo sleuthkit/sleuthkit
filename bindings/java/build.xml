@@ -3,15 +3,16 @@
         Sleuthkit Java DataModel 
 	</description>
 
-  <!-- Makes LIBEWF run properly if on mac -->
-	<condition property="isMac">
-		<os family="mac"/>
-	</condition>
 
   <!-- some dlls come from LIBEWF_HOME -->
 	<property environment="env"/>
 	<condition property="ewfFound">
-		<isset property="env.LIBEWF_HOME"/>
+		<and>
+			<isset property="env.LIBEWF_HOME"/>
+			<not>
+				<os family="mac"/>
+			</not>
+		</and>
 	</condition>
 	
   <!-- set global properties for this build -->
