@@ -40,7 +40,7 @@ public class Directory extends FsContent {
 			long ctime, long crtime, long atime, long mtime, short mode,
 			int uid, int gid, FileKnown known, String parent_path, String md5Hash) {
 		super(db, obj_id, name, fs_obj_id, meta_addr,
-				attr_type, attr_id, metaType, dirType, dirFlag,
+				attr_type, attr_id, dirType, metaType, dirFlag,
 				meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known,
 				parent_path, md5Hash);
 	}

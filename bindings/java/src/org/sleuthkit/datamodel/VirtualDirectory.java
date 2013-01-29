@@ -37,39 +37,19 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class VirtualDirectory extends AbstractFile {
 
-	//TODO use enums for types and flags
-	private TSK_FS_NAME_TYPE_ENUM dirType;
-	private Set<TSK_FS_META_FLAG_ENUM> metaFlags;
-	private TSK_FS_META_TYPE_ENUM metaType;
-	private TSK_FS_NAME_FLAG_ENUM dirFlags;
 
-	protected VirtualDirectory(SleuthkitCase db, long obj_id, String name, long size, 
-			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_NAME_FLAG_ENUM dirFlags,
-			short metaFlags, String parentPath) {
-		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0, parentPath);
+	protected VirtualDirectory(SleuthkitCase db, long obj_id, String name, 
+			TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
+			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
+			long size, String parentPath) {
+		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 
+				dirType, metaType, dirFlag, meta_flags,
+				0, parentPath);
 
-		this.metaType = metaType;
-		this.dirType = dirType;
-		this.dirFlags = dirFlags;
-		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(metaFlags);
+
 	}
 
-	public TSK_FS_META_TYPE_ENUM getMetaType() {
-		return metaType;
-	}
-
-	public TSK_FS_NAME_TYPE_ENUM getDirType() {
-		return dirType;
-	}
-
-	public TSK_FS_NAME_FLAG_ENUM getDirFlags() {
-		return dirFlags;
-	}
-
-	public short getMetaFlags() {
-		return TSK_FS_META_FLAG_ENUM.toInt(metaFlags);
-	}
-
+	
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getLayoutDirectoryChildren(this);

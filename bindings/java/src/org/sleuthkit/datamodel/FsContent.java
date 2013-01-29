@@ -39,22 +39,15 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
  * TODO move common getters to AbstractFile class
  */
 public abstract class FsContent extends AbstractFile {
-	
-	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 
+	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	///read only database tsk_files fields
 	protected final long fsObjId, metaAddr, ctime, crtime, atime, mtime;
 	protected final int uid, gid;
 	protected final short attrId;
 	protected final TSK_FS_ATTR_TYPE_ENUM attrType;
-	protected final TSK_FS_META_TYPE_ENUM metaType;
-	protected final Set<TSK_FS_META_FLAG_ENUM> metaFlags;
 	protected final Set<TSK_FS_META_MODE_ENUM> modes;
-	protected final TSK_FS_NAME_TYPE_ENUM dirType;
-	protected final TSK_FS_NAME_FLAG_ENUM dirFlag;
-	
 	private String uniquePath;
-
 	///read-write database tsk_files fields
 	/**
 	 * known status in database
@@ -76,17 +69,17 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Constructor to create FsContent object instance from database
-	 *
+	 * 
 	 * @param db
 	 * @param obj_id
 	 * @param name
 	 * @param fs_obj_id
 	 * @param meta_addr
-	 * @param attr_type
+	 * @param attrType
 	 * @param attr_id
-	 * @param meta_type
-	 * @param dir_type
-	 * @param dir_flags
+	 * @param dirType
+	 * @param metaType
+	 * @param dirFlag
 	 * @param meta_flags
 	 * @param size
 	 * @param ctime
@@ -95,24 +88,21 @@ public abstract class FsContent extends AbstractFile {
 	 * @param mtime
 	 * @param uid
 	 * @param gid
-	 * @param mode
+	 * @param modes
 	 * @param known
 	 * @param parentPath
-	 * @param md5Hash
+	 * @param md5Hash 
 	 */
 	FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
-			TSK_FS_ATTR_TYPE_ENUM attrType, short attr_id, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_NAME_FLAG_ENUM dirFlag,
-			short meta_flags, long size, long ctime, long crtime, long atime, long mtime, int uid, int gid, short modes, FileKnown known,
+			TSK_FS_ATTR_TYPE_ENUM attrType, short attr_id, 
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags, 
+			long size, long ctime, long crtime, long atime, long mtime, int uid, int gid, short modes, FileKnown known,
 			String parentPath, String md5Hash) {
-		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, size, parentPath);
+		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, dirType, metaType, dirFlag, meta_flags, size, parentPath);
 		this.fsObjId = fs_obj_id;
 		this.metaAddr = meta_addr;
 		this.attrType = attrType;
 		this.attrId = attr_id;
-		this.metaType = metaType;
-		this.dirType = dirType;
-		this.dirFlag = dirFlag;
-		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(meta_flags);
 		this.ctime = ctime;
 		this.crtime = crtime;
 		this.atime = atime;
@@ -123,11 +113,10 @@ public abstract class FsContent extends AbstractFile {
 		this.known = known;
 		if (md5Hash.equals("NULL")) {
 			this.md5Hash = null;
-		}
-		else {
+		} else {
 			this.md5Hash = md5Hash;
 		}
-		
+
 	}
 
 	/**
@@ -212,7 +201,7 @@ public abstract class FsContent extends AbstractFile {
 		}
 		return parentFileSystem;
 	}
-	
+
 	@Override
 	public Image getImage() throws TskCoreException {
 		return getFileSystem().getImage();
@@ -234,78 +223,6 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	public short getAttrId() {
 		return attrId;
-	}
-
-	/**
-	 * Get the meta data type
-	 *
-	 * @return meta data type
-	 */
-	public TSK_FS_META_TYPE_ENUM getMetaType() {
-		return metaType;
-	}
-
-	public String getMetaTypeAsString() {
-		return metaType.toString();
-	}
-
-	/**
-	 * Get the directory type id
-	 *
-	 * @return directory type id
-	 */
-	public TSK_FS_NAME_TYPE_ENUM getDirType() {
-		return dirType;
-	}
-
-	public String getDirTypeAsString() {
-		return dirType.toString();
-	}
-
-	/**
-	 * @param flag the TSK_FS_NAME_FLAG_ENUM to check
-	 * @return true if the given flag is set in this FsContent object.
-	 */
-	public boolean isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM flag) {
-		return dirFlag == flag;
-	}
-
-	/**
-	 * @return a string representation of the directory name flag (type
-	 * TSK_FS_NAME_FLAG_ENUM)
-	 */
-	public String getDirFlagAsString() {
-		return dirFlag.toString();
-	}
-
-	/**
-	 * Get the file meta address
-	 *
-	 * @return Address of the meta data structure
-	 */
-	public long getMetaAddr() {
-		return metaAddr;
-	}
-
-	/**
-	 * @return a string representation of the meta flags
-	 */
-	public String getMetaFlagsAsString() {
-		String str = "";
-		if (metaFlags.contains(TSK_FS_META_FLAG_ENUM.ALLOC)) {
-			str = TSK_FS_META_FLAG_ENUM.ALLOC.toString();
-		} else if (metaFlags.contains(TSK_FS_META_FLAG_ENUM.ALLOC)) {
-			str = TSK_FS_META_FLAG_ENUM.UNALLOC.toString();
-		}
-		return str;
-	}
-
-	/**
-	 * @param metaFlag the TSK_FS_META_FLAG_ENUM to check
-	 * @return true if the given meta flag is set in this FsContent object.
-	 */
-	public boolean isMetaFlagSet(TSK_FS_META_FLAG_ENUM metaFlag) {
-		return metaFlags.contains(metaFlag);
 	}
 
 	@Override
@@ -401,6 +318,15 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	public int getGid() {
 		return gid;
+	}
+
+	/**
+	 * Get the file meta address
+	 *
+	 * @return Address of the meta data structure
+	 */
+	public long getMetaAddr() {
+		return metaAddr;
 	}
 
 	/**

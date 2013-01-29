@@ -20,7 +20,11 @@ package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.StringTokenizer;
+import java.util.Set;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
  * Common fields methods for objects stored in tsk_files table Abstract files
@@ -35,6 +39,10 @@ public abstract class AbstractFile extends AbstractContent {
 	 * path of parent directory
 	 */
 	protected final String parentPath;
+	protected final TSK_FS_NAME_TYPE_ENUM dirType;
+	protected final TSK_FS_META_TYPE_ENUM metaType;
+	protected final TSK_FS_NAME_FLAG_ENUM dirFlag;
+	protected final Set<TSK_FS_META_FLAG_ENUM> metaFlags;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -45,9 +53,15 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param name name field of the file
 	 * @param type type of the file
 	 */
-	protected AbstractFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type, long size, String parentPath) {
+	protected AbstractFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
+			long size, String parentPath) {
 		super(db, obj_id, name);
 		this.type = type;
+		this.dirType = dirType;
+		this.metaType = metaType;
+		this.dirFlag = dirFlag;
+		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(meta_flags);
 		this.size = size;
 		this.parentPath = parentPath;
 	}
@@ -73,13 +87,12 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Get path of the parent of this file
+	 *
 	 * @return path string of the parent
 	 */
 	public String getParentPath() {
 		return parentPath;
 	}
-	
-	
 
 	/**
 	 * Gets file ranges associated with the file. File ranges are objects in
@@ -167,5 +180,69 @@ public abstract class AbstractFile extends AbstractContent {
 			}
 		}
 		return files;
+	}
+
+	/**
+	 * Get the meta data type
+	 *
+	 * @return meta data type
+	 */
+	public TSK_FS_META_TYPE_ENUM getMetaType() {
+		return metaType;
+	}
+
+	public String getMetaTypeAsString() {
+		return metaType.toString();
+	}
+
+	/**
+	 * Get the directory type id
+	 *
+	 * @return directory type id
+	 */
+	public TSK_FS_NAME_TYPE_ENUM getDirType() {
+		return dirType;
+	}
+
+	public String getDirTypeAsString() {
+		return dirType.toString();
+	}
+
+	/**
+	 * @param flag the TSK_FS_NAME_FLAG_ENUM to check
+	 * @return true if the given flag is set in this FsContent object.
+	 */
+	public boolean isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM flag) {
+		return dirFlag == flag;
+	}
+
+	/**
+	 * @return a string representation of the directory name flag (type
+	 * TSK_FS_NAME_FLAG_ENUM)
+	 */
+	public String getDirFlagAsString() {
+		return dirFlag.toString();
+	}
+
+
+	/**
+	 * @return a string representation of the meta flags
+	 */
+	public String getMetaFlagsAsString() {
+		String str = "";
+		if (metaFlags.contains(TSK_FS_META_FLAG_ENUM.ALLOC)) {
+			str = TSK_FS_META_FLAG_ENUM.ALLOC.toString();
+		} else if (metaFlags.contains(TSK_FS_META_FLAG_ENUM.ALLOC)) {
+			str = TSK_FS_META_FLAG_ENUM.UNALLOC.toString();
+		}
+		return str;
+	}
+
+	/**
+	 * @param metaFlag the TSK_FS_META_FLAG_ENUM to check
+	 * @return true if the given meta flag is set in this FsContent object.
+	 */
+	public boolean isMetaFlagSet(TSK_FS_META_FLAG_ENUM metaFlag) {
+		return metaFlags.contains(metaFlag);
 	}
 }

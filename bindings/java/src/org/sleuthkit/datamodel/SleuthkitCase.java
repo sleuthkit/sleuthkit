@@ -1986,9 +1986,10 @@ public class SleuthkitCase {
 						parentPath = "";
 					}
 					VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
-							rs.getString("name"), rs.getLong("size"),
-							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
-							rs.getShort("meta_flags"), parentPath);
+							rs.getString("name"), 
+							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
+							rs.getLong("size"), parentPath);
 					children.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS) {
 					String parentPath = rs.getString("parent_path");
@@ -1997,7 +1998,11 @@ public class SleuthkitCase {
 					}
 					final LayoutFile lf = 
 							new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"), 
-							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS, parentPath);
+							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS, 
+							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
+							rs.getLong("size"),
+							parentPath);
 					children.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED) {
 					final DerivedFile df = rsHelper.derivedFile(rs, parentId);
@@ -2556,9 +2561,11 @@ public class SleuthkitCase {
 			addLocalFileSt.setShort(5, metaType.getValue());
 			
 			//note: using alloc under assumption that derived files derive from alloc files
-			addLocalFileSt.setShort(6, TSK_FS_NAME_FLAG_ENUM.ALLOC.getValue());
-			addLocalFileSt.setShort(7, (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue() 
-					| TSK_FS_META_FLAG_ENUM.USED.getValue()) );
+			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
+			addLocalFileSt.setShort(6, dirFlag.getValue());
+			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue() 
+					| TSK_FS_META_FLAG_ENUM.USED.getValue());
+			addLocalFileSt.setShort(7, metaFlags);
 			
 			//size
 			addLocalFileSt.setLong(8, size);
@@ -2570,7 +2577,8 @@ public class SleuthkitCase {
 			//add localPath 
 			addFilePath(newObjId, localPath);
 			
-			ret = new DerivedFile(this, newObjId, fileName, size, parentPath, localPath, parentId);
+			ret = new DerivedFile(this, newObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+					size, parentPath, localPath, parentId);
 			
 			//TODO add derived method
 			
@@ -3416,9 +3424,10 @@ public class SleuthkitCase {
 						parentPath = "";
 					}
 					final VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
-							rs.getString("name"), rs.getLong("size"),
-							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
-							rs.getShort("meta_flags"), parentPath);
+							rs.getString("name"), 
+							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
+							rs.getLong("size"), parentPath);
 					results.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()) {
 					String parentPath = rs.getString("parent_path");
@@ -3427,7 +3436,11 @@ public class SleuthkitCase {
 					}
 					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
 							rs.getString("name"),
-							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS, parentPath);
+							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS, 
+							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
+							rs.getLong("size"),
+							parentPath);
 					results.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType()) {
 					final DerivedFile df;

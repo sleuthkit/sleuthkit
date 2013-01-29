@@ -36,12 +36,12 @@ public class File extends FsContent {
 
 	//constructor used for getfile from tskDb
 	protected File(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr, TSK_FS_ATTR_TYPE_ENUM attrType,
-			short attr_id, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM meta_type,
+			short attr_id, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags, long size, long ctime, long crtime,
 			long atime, long mtime, short mode, int uid, int gid, FileKnown known,
 			String parent_path, String md5Hash) {
 		super(db, obj_id, name, fs_obj_id, meta_addr,
-				attrType, attr_id, meta_type, dirType, dirFlag,
+				attrType, attr_id, dirType, metaType, dirFlag,
 				meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known,
 				parent_path, md5Hash);
 	}
