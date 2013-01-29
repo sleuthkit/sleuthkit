@@ -127,7 +127,12 @@ public abstract class FsContent extends AbstractFile {
 		this.modes = TSK_FS_META_MODE_ENUM.valuesOf(modes);
 		this.known = known;
 		this.parentPath = parent_path;
-		this.md5Hash = md5Hash;
+		if (md5Hash.equals("NULL")) {
+			this.md5Hash = null;
+		}
+		else {
+			this.md5Hash = md5Hash;
+		}
 		
 	}
 
@@ -566,7 +571,7 @@ public abstract class FsContent extends AbstractFile {
 	/**
 	 * Get the md5 hash value as calculated, if present
 	 *
-	 * @return md5 hash string, if it is present
+	 * @return md5 hash string, if it is present or null if it is not
 	 */
 	public String getMd5Hash() {
 		return this.md5Hash;
