@@ -67,7 +67,7 @@ bool opt_mactime  = false;
 bool opt_md5      = true;		// calculate the MD5 for every file?
 bool opt_sha1     = true;		// calculate the SHA1 for every file?
 bool opt_save     = false;
-bool opt_get_fragments = false;
+bool opt_get_fragments = true;// get byte runs even if data is not otherwise accessed
 bool opt_no_data  = false;		// don't get the data
 bool opt_allocated_only = false;
 bool opt_body_file = false;
@@ -136,8 +136,9 @@ void usage()
     printf("\n");
     printf("Ways to make this program run faster:\n");
     printf("    -I ignore NTFS system files\n");
-    printf("    -g just report the file fragments - don't get the data\n");
+    printf("    -g just report the file objects - don't get the data\n");
     printf("    -O only walk allocated files\n");
+    printf("    -b do not report byte runs if data not accessed\n");
     printf("    -z do not calculate MD5 or SHA1 values\n");
     printf("    -Gnn - Only process the contents of files smaller than nn gigabytes (default %d)\n",
 	   opt_maxgig);
@@ -483,7 +484,7 @@ int main(int argc, char * const *argv1)
 	
 
  //   while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dEfG:gmv1IMX:S:T:VZn:c:b:xOzh?"))) > 0 ) { // s: removed
-    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gmv1IMX:T:VZn:c:b:xOzh?"))) > 0 ) { // s: removed
+    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gbmv1IMX:T:VZn:c:xOzh?"))) > 0 ) { // s: removed
 	switch (ch) {
 	case _TSK_T('1'): opt_sha1++;break;
 	case _TSK_T('m'):
@@ -507,7 +508,8 @@ int main(int argc, char * const *argv1)
 //	    opt_compute_sector_hashes=true;
 //	    break;
 	case _TSK_T('f'): opt_magic = true;break;
-	case _TSK_T('g'): opt_no_data++; break;
+	case _TSK_T('g'): opt_no_data = true; break;
+  case _TSK_T('b'): opt_get_fragments = false; break;
 	case _TSK_T('G'): opt_maxgig = TATOI(OPTARG);break;
 	case _TSK_T('h'): usage(); break;
 	case _TSK_T('I'): opt_ignore_ntfs_system_files=true;break;
