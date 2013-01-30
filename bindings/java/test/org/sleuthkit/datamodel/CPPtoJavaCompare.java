@@ -61,18 +61,10 @@ public class CPPtoJavaCompare extends ImgTraverser {
 	public void CPPtoJavaCompare() {
 		try {
 			List<Boolean> test = basicTest();
-			assertEquals("Generated results ("+DataModelTestSuite.sortedFlPth(oldStandardPath) +") differ with gold standard ("+DataModelTestSuite.sortedFlPth(testStandardPath)+") .", test.get(0),true);
+			assertEquals("Generated results ("+oldStandardPath +") differ with gold standard ("+testStandardPath+") .", test.get(1),true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}
-	}
-	@Override
-	public List<Boolean> basicTest()
-	{
-		super.basicTest();
-		List<Boolean> ret = new ArrayList<>(1);
-		ret.add(DataModelTestSuite.comparecontent(DataModelTestSuite.sortedFlPth(oldStandardPath), DataModelTestSuite.sortedFlPth(testStandardPath)));
-		return ret;		
 	}
 	@Override
 	public FileWriter traverse(SleuthkitCase sk, String path, String exFile)
@@ -84,10 +76,10 @@ public class CPPtoJavaCompare extends ImgTraverser {
 				topDownDF(sk.getRootObjects(), reslt, exFile);
 					return reslt;
 			} catch (TskCoreException ex) {
-				Logger.getLogger(CPPtoJavaCompare.class.getName()).log(Level.SEVERE, null, ex);
+				Logger.getLogger(CPPtoJavaCompare.class.getName()).log(Level.SEVERE, "Failed to Traverse", ex);
 			}
 		} catch (IOException ex) {
-			Logger.getLogger(CPPtoJavaCompare.class.getName()).log(Level.SEVERE, null, ex);
+			Logger.getLogger(CPPtoJavaCompare.class.getName()).log(Level.SEVERE, "Failed to Traverse", ex);
 		}
 		return null;
 	}
@@ -99,7 +91,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 					try {
 						reslt.append(DataModelTestSuite.getFileData((File) c));
 					} catch (IOException ex) {
-						Logger.getLogger(CPPtoJavaCompare.class.getName()).log(Level.SEVERE, null, ex);
+						Logger.getLogger(CPPtoJavaCompare.class.getName()).log(Level.SEVERE, "Failed to Traverse", ex);
 					}
 				}
 				topDownDF(c.getChildren(), reslt, exFile);
