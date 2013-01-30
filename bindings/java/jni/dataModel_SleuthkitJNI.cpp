@@ -3,7 +3,7 @@
  ** The Sleuth Kit 
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -451,26 +451,33 @@ JNIEXPORT jlong JNICALL
         //exception already set
         return 0;
     }
-    
-    char envstr[32];
 
-    const char * str8 = env->GetStringUTFChars(timezone,
-            &isCopy);
-    snprintf(envstr, 32, "TZ=%s", str8);
+    if (env->GetStringUTFLength(timezone) > 0) {
+        const char *tzstr = env->GetStringUTFChars(timezone, &isCopy);
 
-    env->ReleaseStringUTFChars(timezone, str8);
+        if (strlen(tzstr) > 64) {
+            env->ReleaseStringUTFChars(timezone, tzstr);
+            stringstream ss;
+            ss << "Timezone is too long";
+            setThrowTskCoreError(env, ss.str().c_str());
+            return 0;
+        }
 
+        char envstr[70];
+        snprintf(envstr, 70, "TZ=%s", tzstr);
+        env->ReleaseStringUTFChars(timezone, tzstr);
 
-    if (0 != putenv(envstr)) {
-        stringstream ss;
-        ss << "Error setting timezone environment, using: ";
-        ss << envstr;
-        setThrowTskCoreError(env, ss.str().c_str());
-        return 0;
+        if (0 != putenv(envstr)) {
+            stringstream ss;
+            ss << "Error setting timezone environment, using: ";
+            ss << envstr;
+            setThrowTskCoreError(env, ss.str().c_str());
+            return 0;
+        }
+
+        /* we should be checking this somehow */
+        TZSET();
     }
-
-    /* we should be checking this somehow */
-    TZSET();
 
     TskAutoDb *tskAuto = tskCase->initAddImage();
     if (tskAuto == NULL) {
@@ -537,10 +544,13 @@ JNIEXPORT void JNICALL
         }
     }
     
-   const char * tzchar = env->
-       GetStringUTFChars(timezone, &isCopy);
-    tskAuto->setTz(string(tzchar));
-    env->ReleaseStringUTFChars(timezone, tzchar);
+    if (env->GetStringLength(timezone) > 0) {
+        const char * tzchar = env->
+            GetStringUTFChars(timezone, &isCopy);
+
+        tskAuto->setTz(string(tzchar));
+        env->ReleaseStringUTFChars(timezone, tzchar);
+    }
 
     // process the image (parts)
     uint8_t ret = 0;
