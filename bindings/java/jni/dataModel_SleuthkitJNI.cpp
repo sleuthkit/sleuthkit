@@ -540,11 +540,13 @@ JNIEXPORT void JNICALL
         }
     }
     
-    const char * tzchar = env->
+    if (env->GetStringLength(timezone) > 0) {
+        const char * tzchar = env->
             GetStringUTFChars(timezone, &isCopy);
 
-
-    tskAuto->setTz(string(tzchar));
+        tskAuto->setTz(string(tzchar));
+        env->ReleaseStringUTFChars(timezone, tzchar);
+    }
 
     // process the image (parts)
     uint8_t ret = 0;
@@ -576,8 +578,6 @@ JNIEXPORT void JNICALL
             env->GetObjectArrayElement(paths, i), imagepaths8[i]);
     }
     free(imagepaths8);
-
-    env->ReleaseStringUTFChars(timezone, tzchar);
 
     // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
     tskAuto->closeImage();
