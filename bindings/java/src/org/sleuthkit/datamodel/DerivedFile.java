@@ -60,11 +60,11 @@ public class DerivedFile extends AbstractFile {
 	 * @param parentPath path of the parent of this derived file (e.g. fs zip file, or another derived file path)
 	 * @param localPath local path of this derived file, relative to the db path
 	 */
-	DerivedFile(SleuthkitCase db, long objId, String name, 
+	DerivedFile(SleuthkitCase db, long objId, long fsObjId, String name, 
 			TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
 			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
 			long size, String parentPath, String localPath) {
-		super(db, objId, name, TSK_DB_FILES_TYPE_ENUM.DERIVED, dirType, metaType, dirFlag, meta_flags, size, parentPath);
+		super(db, objId, fsObjId, name, TSK_DB_FILES_TYPE_ENUM.DERIVED, dirType, metaType, dirFlag, meta_flags, size, parentPath);
 		this.localPath = localPath;
 
 		if (localPath == null) {
@@ -80,6 +80,7 @@ public class DerivedFile extends AbstractFile {
 	 * Create a db representation of a derived file, passing available parent id
 	 * @param db sleuthkit case handle
 	 * @param objId object if of this file already in database
+	 * @param fsObjId id of the associated filesystem or AbstractContent.UNKNOWN_ID
 	 * @param name name of this derived file
 	 * @param dirType
 	 * @param metaType 
@@ -90,11 +91,11 @@ public class DerivedFile extends AbstractFile {
 	 * @param localPath local path of this derived file, relative to the db path
 	 * @param parentId parent id of this derived file to set if available
 	 */
-	DerivedFile(SleuthkitCase db, long objId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
+	DerivedFile(SleuthkitCase db, long objId, long fsObjId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
 			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
 			
 			long size, String parentPath, String localPath, long parentId) {
-		this(db, objId, name, dirType, metaType, dirFlag, meta_flags, size, parentPath, localPath);
+		this(db, objId, fsObjId, name, dirType, metaType, dirFlag, meta_flags, size, parentPath, localPath);
 		
 		if (parentId > 0) {
 			setParentId(parentId);

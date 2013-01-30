@@ -42,7 +42,7 @@ public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	///read only database tsk_files fields
-	protected final long fsObjId, metaAddr, ctime, crtime, atime, mtime;
+	protected final long metaAddr, ctime, crtime, atime, mtime;
 	protected final int uid, gid;
 	protected final short attrId;
 	protected final TSK_FS_ATTR_TYPE_ENUM attrType;
@@ -58,10 +58,7 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	protected String md5Hash;
 	///other members
-	/**
-	 * parent file system
-	 */
-	private FileSystem parentFileSystem;
+
 	/**
 	 * file Handle
 	 */
@@ -71,9 +68,9 @@ public abstract class FsContent extends AbstractFile {
 	 * Constructor to create FsContent object instance from database
 	 * 
 	 * @param db
-	 * @param obj_id
+	 * @param objId
+	 * @param fsObjId
 	 * @param name
-	 * @param fs_obj_id
 	 * @param meta_addr
 	 * @param attrType
 	 * @param attr_id
@@ -93,13 +90,12 @@ public abstract class FsContent extends AbstractFile {
 	 * @param parentPath
 	 * @param md5Hash 
 	 */
-	FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
+	FsContent(SleuthkitCase db, long objId, long fsObjId, String name, long meta_addr,
 			TSK_FS_ATTR_TYPE_ENUM attrType, short attr_id, 
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags, 
 			long size, long ctime, long crtime, long atime, long mtime, int uid, int gid, short modes, FileKnown known,
 			String parentPath, String md5Hash) {
-		super(db, obj_id, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, dirType, metaType, dirFlag, meta_flags, size, parentPath);
-		this.fsObjId = fs_obj_id;
+		super(db, objId, fsObjId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, dirType, metaType, dirFlag, meta_flags, size, parentPath);
 		this.metaAddr = meta_addr;
 		this.attrType = attrType;
 		this.attrId = attr_id;
@@ -119,14 +115,6 @@ public abstract class FsContent extends AbstractFile {
 
 	}
 
-	/**
-	 * Sets the parent file system, called by parent during object creation
-	 *
-	 * @param parent parent file system object
-	 */
-	void setFileSystem(FileSystem parent) {
-		parentFileSystem = parent;
-	}
 
 	/**
 	 * Sets md5 hash string Note: database or other FsContent objects are not
@@ -166,13 +154,14 @@ public abstract class FsContent extends AbstractFile {
 
 	@Override
 	public boolean isRoot() {
+		FileSystem fs = null;
 		try {
-			getFileSystem();
+			fs = getFileSystem();
 		} catch (TskCoreException ex) {
 			logger.log(Level.SEVERE, "Exception while calling 'getFileSystem' on " + this, ex);
 			return false;
 		}
-		return parentFileSystem.getRoot_inum() == this.getMetaAddr();
+		return fs.getRoot_inum() == this.getMetaAddr();
 	}
 
 	/*
@@ -190,17 +179,7 @@ public abstract class FsContent extends AbstractFile {
 		return getSleuthkitCase().getParentDirectory(this);
 	}
 
-	/**
-	 * Get the parent file system
-	 *
-	 * @return the file system object of the parent
-	 */
-	public FileSystem getFileSystem() throws TskCoreException {
-		if (parentFileSystem == null) {
-			parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, AbstractContent.UNKNOWN_ID);
-		}
-		return parentFileSystem;
-	}
+	
 
 	@Override
 	public Image getImage() throws TskCoreException {
