@@ -110,7 +110,7 @@ public class BlackboardAttribute {
 		TSK_KEYWORD_REGEXP(11, "TSK_KEYWORD_REGEXP", "Keyword Regular Expression"),
 		TSK_KEYWORD_PREVIEW(12, "TSK_KEYWORD_PREVIEW", "Keyword Preview"),
 		TSK_KEYWORD_SET(13, "TSK_KEYWORD_SET", "Keyword Set"), // @@@ Deprecated
-		TSK_USERNAME(14, "TSK_USERNAME", "Username"),
+		TSK_USER_NAME(14, "TSK_USER_NAME", "Username"),
 		TSK_DOMAIN(15, "TSK_DOMAIN", "Domain"),
 		TSK_PASSWORD(16, "TSK_PASSWORD", "Password"),
 		TSK_NAME_PERSON(17, "TSK_NAME_PERSON", "Person Name"),
@@ -168,6 +168,7 @@ public class BlackboardAttribute {
 		TSK_DATETIME_MODIFIED(69, "TSK_DATETIME_MODIFIED", "Date Modified"),
 		TSK_PROCESSOR_ARCHITECTURE(70, "TSK_PROCESSOR_ARCHITECTURE", "Processor Architecture"),
 		TSK_VERSION(71, "TSK_VERSION", "Version"),
+		TSK_USER_ID(72, "TSK_USER_ID", "User ID"),
 		;
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		private String label;

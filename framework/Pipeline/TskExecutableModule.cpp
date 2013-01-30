@@ -34,6 +34,7 @@
 #include "Poco/Path.h"
 #include "Poco/DateTimeFormatter.h"
 #include "Poco/DateTimeFormat.h"
+#include "Poco/Environment.h"
 
 /**
  * Constructor
@@ -79,8 +80,22 @@ void TskExecutableModule::setPath(const std::string& location)
 {
     try
     {
+        // Autogenerate filename extension if needed
+        Poco::Path tempPath = location;
+        if (tempPath.getExtension().empty())
+        {
+            std::string os = Poco::Environment::osName();
+            if (os.find("Windows") != std::string::npos ||
+                os.find("CYGWIN")  != std::string::npos ||
+                os.find("MINGW")   != std::string::npos )
+            {
+                tempPath.setExtension("exe");
+            }
+            // Else we assume the user is on a platform that doesn't use executable extensions.
+        }
+
         // Call our parent to validate the location.
-        TskModule::setPath(location);
+        TskModule::setPath(tempPath.toString());
 
         m_name = Poco::Path(m_modulePath).getBaseName();
 

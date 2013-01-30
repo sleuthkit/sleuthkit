@@ -26,6 +26,7 @@
 #include "Poco/File.h"
 #include "Poco/Exception.h"
 #include "Poco/Path.h"
+#include "Poco/String.h"
 
 // C/C++ library includes
 #include <assert.h>
@@ -37,6 +38,10 @@ namespace
 {
     const size_t SECTOR_SIZE = 512;
     const size_t DEFAULT_SECTORS_PER_READ = 32; 
+}
+
+TskCarvePrepSectorConcat::TskCarvePrepSectorConcat()
+{
 }
 
 int TskCarvePrepSectorConcat::processSectors(bool scheduleCarving)
@@ -71,7 +76,7 @@ void TskCarvePrepSectorConcat::processFiles(const std::string &fileName, bool sc
         throw TskException("TskCarvePrepSectorConcat::processFiles : empty file name argument");
     }
 
-    std::string outputFolderPath;
+	std::string outputFolderPath;
     std::string outputFileName;
     size_t maxOutputFileSize;
     setUpForCarvePrep(outputFolderPath, outputFileName, maxOutputFileSize);

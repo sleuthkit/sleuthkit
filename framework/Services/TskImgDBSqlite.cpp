@@ -3742,34 +3742,3 @@ void TskImgDBSqlite::executeStatement(const std::string &stmtToExecute, sqlite3_
         throw TskException(msg.str());
     }
 }
-
-
-
-/**
- * Store meta_addr to object id mapping of the directory in a local cache map
- * @param fsObjId fs id of this directory
- * @param meta_addr meta_addr of this directory
- * @param objId object id of this directory from the objects table
- */
-void TskImgDBSqlite::storeParObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId) {
-	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
-	//store only if does not exist
-	if (tmpMap.count(meta_addr) == 0)
-		tmpMap[meta_addr] = objId;
-}
-
-/**
- * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
- * @param fs_file file to find parent obj id for
- * @param fsObjId fs id of this file
- * @returns parent obj id ( > 0), -1 on error
- */
-int64_t TskImgDBSqlite::findParObjId(const int64_t & fsObjId, TSK_INUM_T meta_addr) {
-    //get from cache by parent meta addr, if available
-    map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
-    if (tmpMap.count(meta_addr) > 0) {
-        return tmpMap[meta_addr];
-    }
-
-    return getFileId(fsObjId, meta_addr);
-}
