@@ -408,7 +408,25 @@ public:
     friend class TskDBBlackboard;
 
 protected:
-    // Blackboard methods.
+    map<int64_t, map<TSK_INUM_T,int64_t> > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to its parent's ID in the database
+
+	/**
+	 * Store meta_addr to object id mapping of the directory in a local cache map
+	 * @param fsObjId fs id of this directory
+	 * @param meta_addr meta_addr of this directory
+	 * @param objId object id of this directory from the objects table
+	 */
+    void storeParObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId);
+
+	/**
+	 * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
+	 * @param fs_file file to find parent obj id for
+	 * @param fsObjId fs id of this file
+	 * @returns parent obj id ( > 0), -1 on error
+	 */	
+	int64_t findParObjId(const int64_t & fsObjId, TSK_INUM_T meta_addr);    
+
+	// Blackboard methods.
     virtual TskBlackboardArtifact createBlackboardArtifact(uint64_t file_id, int artifactTypeID) = 0;
     virtual void addBlackboardAttribute(TskBlackboardAttribute attr) = 0;
     
@@ -433,7 +451,7 @@ protected:
     virtual vector<int> findAttributeTypes(int artifactTypeId) = 0;
 
 private:
-    
+
 };
 
 /**

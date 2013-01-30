@@ -450,19 +450,32 @@ JNIEXPORT jlong JNICALL
         return 0;
     }
 
-    char envstr[32];
-    snprintf(envstr, 32, "TZ=%s", env->GetStringUTFChars(timezone,
-            &isCopy));
-    if (0 != putenv(envstr)) {
-        stringstream ss;
-        ss << "Error setting timezone environment, using: ";
-        ss << envstr;
-        setThrowTskCoreError(env, ss.str().c_str());
-        return 0;
-    }
 
-    /* we should be checking this somehow */
-    TZSET();
+    if (env->GetStringUTFLength(timezone) > 0) {
+        const char *tzstr = env->GetStringUTFChars(timezone, &isCopy);
+
+        if (strlen(tzstr) > 64) {
+            stringstream ss;
+            ss << "Timezone is too long";
+            setThrowTskCoreError(env, ss.str().c_str());
+            return 0;
+        }
+
+        char envstr[70];
+        snprintf(envstr, 70, "TZ=%s", tzstr);
+        env->ReleaseStringUTFChars(timezone, tzstr);
+
+        if (0 != putenv(envstr)) {
+            stringstream ss;
+            ss << "Error setting timezone environment, using: ";
+            ss << envstr;
+            setThrowTskCoreError(env, ss.str().c_str());
+            return 0;
+        }
+
+        /* we should be checking this somehow */
+        TZSET();
+    }
 
     TskAutoDb *tskAuto = tskCase->initAddImage();
     if (tskAuto == NULL) {
@@ -527,11 +540,13 @@ JNIEXPORT void JNICALL
         }
     }
     
-    const char * tzchar = env->
+    if (env->GetStringLength(timezone) > 0) {
+        const char * tzchar = env->
             GetStringUTFChars(timezone, &isCopy);
 
-
-    tskAuto->setTz(string(tzchar));
+        tskAuto->setTz(string(tzchar));
+        env->ReleaseStringUTFChars(timezone, tzchar);
+    }
 
     // process the image (parts)
     uint8_t ret = 0;
@@ -563,8 +578,6 @@ JNIEXPORT void JNICALL
             env->GetObjectArrayElement(paths, i), imagepaths8[i]);
     }
     free(imagepaths8);
-
-    env->ReleaseStringUTFChars(timezone, tzchar);
 
     // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
     tskAuto->closeImage();

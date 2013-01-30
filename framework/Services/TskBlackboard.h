@@ -65,6 +65,8 @@ typedef enum TSK_ARTIFACT_TYPE {
     TSK_TAG_FILE = 17, ///< File tags.
     TSK_TAG_ARTIFACT = 18, ///< Result tags.
     TSK_OS_INFO = 19, ///< Information pertaining to an operating system.
+    TSK_OS_ACCOUNT, ///< An operating system user account.
+    TSK_SERVICE_ACCOUNT, ///< A network service user account.
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
     * - UPDATE map in TskBlackboard.cpp
@@ -95,9 +97,9 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_KEYWORD_REGEXP = 11,///< STRING: A regular expression string
     TSK_KEYWORD_PREVIEW = 12,///< STRING: A text preview
     TSK_KEYWORD_SET = 13,///< STRING: A keyword set -- Deprecated in favor of TSK_SET_NAME
-    TSK_USERNAME = 14,///< String of a user name.  Use TskBlackboard::TSK_DOMAIN to store the domain that the username is from (if it is known). 
+    TSK_USER_NAME = 14,///< String of a user name.  Use TskBlackboard::TSK_DOMAIN to store the domain that the username is from (if it is known). 
     TSK_DOMAIN = 15,///< String of a DNS Domain name, e.g. sleuthkit.org  use TskBlackboad::TSK_URL for a full URL.
-    TSK_PASSWORD = 16,///< String of a password that was found.  Use TskBlackboard::TSK_USERNAME and TskBlackboard::TSK_DOMAIN to link the password to a given user and site. 
+    TSK_PASSWORD = 16,///< String of a password that was found.  Use TskBlackboard::TSK_USER_NAME and TskBlackboard::TSK_DOMAIN to link the password to a given user and site. 
     TSK_NAME_PERSON = 17,///< String of a person name
     TSK_DEVICE_MODEL = 18,///< String of manufacturer name of device that was connected (or somehow related to) the data being analyzed
     TSK_DEVICE_MAKE = 19,///< String of make of a device that was connected (or somehow related to) the data being analyzed
@@ -153,6 +155,7 @@ typedef enum TSK_ATTRIBUTE_TYPE {
     TSK_DATETIME_MODIFIED = 69,///< Time in Unix epoch that something was modified
     TSK_PROCESSOR_ARCHITECTURE = 70,///< String of processor architecture.  Naming convention from http://en.wikipedia.org/wiki/Comparison_of_CPU_architectures.  So far, we've used x86, x86-64, and IA64.
     TSK_VERSION = 71,///< String for a software version 
+    TSK_USER_ID,///< User IDfor a user account, e.g., a Windows SID or Linux UID.
 
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 
