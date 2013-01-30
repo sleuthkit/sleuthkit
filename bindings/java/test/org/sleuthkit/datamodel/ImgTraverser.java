@@ -32,11 +32,4 @@ public abstract class ImgTraverser implements Traverser
 		ret.add(DataModelTestSuite.comparecontent(oldStandardPath, testStandardPath));
 		return ret;
 	}
-	public List<Boolean> sortedTest()
-	{
-		basicTest();
-		List<Boolean> ret = new ArrayList<>(1);
-		ret.add(DataModelTestSuite.comparecontent(DataModelTestSuite.sortedFlPth(oldStandardPath), DataModelTestSuite.sortedFlPth(testStandardPath)));
-		return ret;
-	}
 }

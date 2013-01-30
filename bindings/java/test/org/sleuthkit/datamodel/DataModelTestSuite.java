@@ -85,7 +85,7 @@ public class DataModelTestSuite {
 			standardFile.createNewFile();
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
-			String timezone = "";
+			String timezone = "Etc/Universal";
 			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
 			java.io.File xfile = new java.io.File(exFile);
 			xfile.createNewFile();
@@ -193,7 +193,7 @@ public class DataModelTestSuite {
 					String crea = lineContents[10];
 					String acc = lineContents[7];
 					String modif = lineContents[8];
-					out.append("(FilePath): " + name + " (Size): " + size + " (Creation Time): " + crea + " (Accessed Time): " + acc + " (Modified Time): " + modif);
+					out.append("(FilePath): " + name + " (Size): " + size + " (Modified Time): " + modif + " (Accessed Time): " + acc + " (Creation Time): " + crea);
 					out.flush();
 					if(read.hasNextLine())
 					{
@@ -340,7 +340,7 @@ public class DataModelTestSuite {
 		String crea = " (Creation Time): " + fi.getCrtime();
 		String acc = " (Accessed Time): " + fi.getAtime();
 		String modif = " (Modified Time): " + fi.getMtime();
-		return name + size + crea + acc + modif + "\n";
+		return name + size + modif +  acc + crea +"\n";
 	}
 		/**
 	 * Calls {@link #createStandard(String, String, String[]) createStandard}

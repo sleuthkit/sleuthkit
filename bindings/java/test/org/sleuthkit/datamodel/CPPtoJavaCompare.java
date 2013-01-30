@@ -67,6 +67,14 @@ public class CPPtoJavaCompare extends ImgTraverser {
 		}
 	}
 	@Override
+	public List<Boolean> basicTest()
+	{
+		super.basicTest();
+		List<Boolean> ret = new ArrayList<>(1);
+		ret.add(DataModelTestSuite.comparecontent(DataModelTestSuite.sortedFlPth(oldStandardPath), DataModelTestSuite.sortedFlPth(testStandardPath)));
+		return ret;		
+	}
+	@Override
 	public FileWriter traverse(SleuthkitCase sk, String path, String exFile)
 	{
 		FileWriter reslt;
