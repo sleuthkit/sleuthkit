@@ -170,6 +170,14 @@ public class ReprDataModel {
 		
 	}
 	
+	private void reprDerivedFile(DerivedFile df) {
+		repr("getSize", df.getSize());
+		repr("getId", df.getId());
+		repr("getName", df.getName());
+		repr("getParentPath", df.getParentPath());
+		repr("getLocalPath", df.getLocalPath());
+	}
+	
 	private void reprLayoutDirectory(VirtualDirectory ld) {
 		repr("getSize", ld.getSize());
 		repr("getId", ld.getId());
@@ -389,6 +397,12 @@ public class ReprDataModel {
 		@Override
 		public Void visit(VirtualDirectory u) {
 			reprLayoutDirectory(u);
+			return null;
+		}
+		
+		@Override
+		public Void visit(DerivedFile df) {
+			reprDerivedFile(df);
 			return null;
 		}
 		
