@@ -3227,8 +3227,11 @@ ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
 
 
 #if TSK_USE_SID
-/*
+/** \internal
+ * Process all the $SII entries into a single array by removing all the Attribute Headers.
  * Note: This routine assumes &ntfs->sid_lock is locked by the caller.
+ * @param fs File system structure to store results into
+ * @param sii_buffer Buffer of raw $SII entries to parse
  */
 static void
 ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
@@ -3253,6 +3256,7 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
         idx_buffer_length =
             tsk_getu32(fs->endian, idxrec->list.bufend_off);
 
+        // get pointer to first record
         sii =
             (ntfs_attr_sii *) ((uintptr_t) & idxrec->list +
             tsk_getu32(fs->endian, idxrec->list.begin_off));
@@ -3260,6 +3264,7 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
         total_bytes_processed =
             (uint8_t) ((uintptr_t) sii - (uintptr_t) idxrec);
 
+        // copy records into NTFS_INFO
         do {
 /*
 			if ((tsk_getu16(fs->endian,sii->size) == 0x14) &&
@@ -3271,8 +3276,7 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
             memcpy(ntfs->sii_data.buffer +
                 (ntfs->sii_data.used * sizeof(ntfs_attr_sii)), sii,
                 sizeof(ntfs_attr_sii));
-            ntfs->sii_data.size += sizeof(ntfs_attr_sii);
-            ntfs->sii_data.used += 1;
+            ntfs->sii_data.used++;
 
 /*
 				printf("Security id %d is at offset 0x%I64x for 0x%x bytes\n", tsk_getu32(fs->endian,sii->key_sec_id),
@@ -3310,9 +3314,8 @@ ntfs_load_secure(NTFS_INFO * ntfs)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & ntfs->fs_info;
     TSK_FS_META *fs_meta = NULL;
-    const TSK_FS_ATTR *fs_attr = NULL;
+    const TSK_FS_ATTR *fs_attr_sds = NULL;
     const TSK_FS_ATTR *fs_attr_sii = NULL;
-    NTFS_SXX_BUFFER sds_buffer;
     NTFS_SXX_BUFFER sii_buffer;
     TSK_FS_FILE *secure = NULL;
     ssize_t cnt;
@@ -3336,6 +3339,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         tsk_error_reset();
         return 0;
     }
+
     // Make sure the TSK_FS_META is not NULL. We need it to get the
     // $SII and $SDH attributes.
     fs_meta = secure->meta;
@@ -3347,6 +3351,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         tsk_fs_file_close(secure);
         return 0;
     }
+
     // Get the $SII attribute.
     fs_attr_sii =
         tsk_fs_attrlist_get_name_type(fs_meta->attr, NTFS_ATYPE_IDXALLOC,
@@ -3360,9 +3365,10 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         return 0;
 
     }
+
     // Get the $SDS attribute.
-    fs_attr = tsk_fs_attrlist_get(fs_meta->attr, NTFS_ATYPE_DATA);
-    if (!fs_attr) {
+    fs_attr_sds = tsk_fs_attrlist_get(fs_meta->attr, NTFS_ATYPE_DATA);
+    if (!fs_attr_sds) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: error getting $Secure:$SDS $Data attribute\n");
@@ -3371,7 +3377,9 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         return 0;
     }
 
-    // Allocate space for the entire $SII stream.
+    /* First we read in $SII to a local buffer adn then process it into NTFS_INFO */
+
+    // Allocate local space for the entire $SII stream.
     sii_buffer.size = (size_t) roundup(fs_attr_sii->size, fs->block_size);
     sii_buffer.used = 0;
 
@@ -3384,38 +3392,6 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         return 0;
     }
     if ((sii_buffer.buffer = tsk_malloc(sii_buffer.size)) == NULL) {
-        return 1;
-    }
-    // We will use this structure to store the raw $SII entries since
-    // they are a fixed size (x28 bytes)
-    ntfs->sii_data.size = 0;
-    ntfs->sii_data.used = 0;    // use this to count the number of $SII entries
-    if ((ntfs->sii_data.buffer = tsk_malloc(sii_buffer.size)) == NULL) {
-        free(sii_buffer.buffer);
-        tsk_fs_file_close(secure);
-        return 1;
-    }
-
-    // Allocate space for the entire $SDS stream with all the security
-    // descriptors. We should be able to use the $SII offset to index
-    // into the $SDS stream.
-    sds_buffer.size = (size_t) roundup(fs_attr->size, fs->block_size);
-    // arbitrary check because we had problems before with alloc too much memory
-    if (sds_buffer.size > 64000000) {
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "ntfs_load_secure: sds_buffer.size is too large: %z\n",
-                sds_buffer.size);
-        return 0;
-    }
-    sds_buffer.used = 0;
-    if ((sds_buffer.buffer = tsk_malloc(sds_buffer.size)) == NULL) {
-        free(sii_buffer.buffer);
-        if (ntfs->sii_data.buffer)
-            free(ntfs->sii_data.buffer);
-        ntfs->sii_data.buffer = NULL;
-
-        tsk_fs_file_close(secure);
         return 1;
     }
 
@@ -3431,44 +3407,68 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         tsk_error_reset();
 
         free(sii_buffer.buffer);
-        free(sds_buffer.buffer);
-        if (ntfs->sii_data.buffer)
-            free(ntfs->sii_data.buffer);
-        ntfs->sii_data.buffer = NULL;
-
         tsk_fs_file_close(secure);
         return 0;
     }
 
+    // allocate the structure for the processed version of the data   
+    ntfs->sii_data.used = 0;    // use this to count the number of $SII entries
+    if ((ntfs->sii_data.buffer = (char *)tsk_malloc(sii_buffer.size)) == NULL) {
+        free(sii_buffer.buffer);
+        tsk_fs_file_close(secure);
+        return 1;
+    }
+    ntfs->sii_data.size = sii_buffer.size;
+
+    // parse sii_buffer into ntfs->sii_data.
+    ntfs_proc_sii(fs, &sii_buffer);
+    free(sii_buffer.buffer);
+
+
+    /* Now we copy $SDS into NTFS_INFO. We do not do any processing in this step.*/
+
+    // Allocate space for the entire $SDS stream with all the security
+    // descriptors. We should be able to use the $SII offset to index
+    // into the $SDS stream.
+    ntfs->sds_data.size = (size_t) roundup(fs_attr_sds->size, fs->block_size);
+    // arbitrary check because we had problems before with alloc too much memory
+    if (ntfs->sds_data.size > 64000000) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "ntfs_load_secure: ntfs->sds_data.size is too large: %z\n",
+                ntfs->sds_data.size);
+        free(ntfs->sii_data.buffer);
+        ntfs->sii_data.buffer = NULL;
+        tsk_fs_file_close(secure);
+
+        return 0;
+    }
+    ntfs->sds_data.used = 0;
+    if ((ntfs->sds_data.buffer = (char *)tsk_malloc(ntfs->sds_data.size)) == NULL) {
+        free(ntfs->sii_data.buffer);
+        ntfs->sii_data.buffer = NULL;
+        tsk_fs_file_close(secure);
+        return 1;
+    }
+
     // Read in the raw $SDS ($DATA) stream.
     cnt =
-        tsk_fs_attr_read(fs_attr, (TSK_OFF_T) sds_buffer.used,
-        sds_buffer.buffer, sds_buffer.size, TSK_FS_FILE_READ_FLAG_NONE);
-    if (cnt != sds_buffer.size) {
+        tsk_fs_attr_read(fs_attr_sds, 0,
+        ntfs->sds_data.buffer, ntfs->sds_data.size, TSK_FS_FILE_READ_FLAG_NONE);
+    if (cnt != ntfs->sds_data.size) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: error reading $Secure:$SDS attribute: %s\n",
                 tsk_error_get_errstr());
         tsk_error_reset();
 
-        free(sii_buffer.buffer);
-        free(sds_buffer.buffer);
-        if (ntfs->sii_data.buffer)
-            free(ntfs->sii_data.buffer);
+        free(ntfs->sii_data.buffer);
         ntfs->sii_data.buffer = NULL;
-
+        free(ntfs->sds_data.buffer);
+        ntfs->sds_data.buffer = NULL;
         tsk_fs_file_close(secure);
         return 0;
     }
-
-    // Process all the $SII entries into a single array by removing all the Attribute Headers.
-    ntfs_proc_sii(fs, &sii_buffer);
-
-    // Initialize our global to hold the raw $SDS stream.
-    ntfs->sds_data = sds_buffer;
-
-    free(sii_buffer.buffer);
-    free(sds_buffer.buffer);
 
     tsk_fs_file_close(secure);
     return 0;
@@ -4942,6 +4942,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     }
 
     /* load the SID data into ntfs_info ($Secure - $SDS, $SDH, $SII */
+
+
 #if TSK_USE_SID
     if (ntfs_load_secure(ntfs)) {
         fs->tag = 0;
@@ -4974,6 +4976,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 ntfs->fs->mft_clust), tsk_getu64(fs->endian,
                 ntfs->fs->mftm_clust));
     }
+
+
 
     return fs;
 }
