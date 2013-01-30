@@ -3430,7 +3430,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     // Allocate space for the entire $SDS stream with all the security
     // descriptors. We should be able to use the $SII offset to index
     // into the $SDS stream.
-    ntfs->sds_data.size = (size_t) roundup(fs_attr_sds->size, fs->block_size);
+    ntfs->sds_data.size = (size_t)fs_attr_sds->size;
     // arbitrary check because we had problems before with alloc too much memory
     if (ntfs->sds_data.size > 64000000) {
         if (tsk_verbose)
@@ -3439,6 +3439,8 @@ ntfs_load_secure(NTFS_INFO * ntfs)
                 ntfs->sds_data.size);
         free(ntfs->sii_data.buffer);
         ntfs->sii_data.buffer = NULL;
+        ntfs->sii_data.used = 0;
+        ntfs->sii_data.size = 0;
         tsk_fs_file_close(secure);
 
         return 0;
@@ -3447,6 +3449,8 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     if ((ntfs->sds_data.buffer = (char *)tsk_malloc(ntfs->sds_data.size)) == NULL) {
         free(ntfs->sii_data.buffer);
         ntfs->sii_data.buffer = NULL;
+        ntfs->sii_data.used = 0;
+        ntfs->sii_data.size = 0;
         tsk_fs_file_close(secure);
         return 1;
     }
@@ -3464,8 +3468,12 @@ ntfs_load_secure(NTFS_INFO * ntfs)
 
         free(ntfs->sii_data.buffer);
         ntfs->sii_data.buffer = NULL;
+        ntfs->sii_data.used = 0;
+        ntfs->sii_data.size = 0;
         free(ntfs->sds_data.buffer);
         ntfs->sds_data.buffer = NULL;
+        ntfs->sds_data.used = 0;
+        ntfs->sds_data.size = 0;
         tsk_fs_file_close(secure);
         return 0;
     }
