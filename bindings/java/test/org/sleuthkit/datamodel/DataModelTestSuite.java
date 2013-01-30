@@ -243,12 +243,10 @@ public class DataModelTestSuite {
 		}
 	}
 	private static String getDiffPath(){
-		if(!System.getProperty("os.name").contains("Windows"))
-		{
+		if(!System.getProperty("os.name").contains("Windows")){
 			return "diff";
 		}
-		else
-		{
+		else{
 			return "C:\\Users\\" + System.getProperty("user.name")+ "\\Cygwin\\bin\\diff.exe";
 		}
 	}
@@ -331,18 +329,14 @@ public class DataModelTestSuite {
 		String tempDirPath = System.getProperty("java.io.tmpdir");
 		tempDirPath = tempDirPath.substring(0,tempDirPath.length()-1);
 		java.io.File pth = new java.io.File(DataModelTestSuite.goldStandardPath());
-		/*for(java.io.File del: pth.listFiles())
-		{
-			del.delete();
-		}*/
 		List<Traverser> tests = DataModelTestSuite.getTests();
 		List<List<String>> imagePaths = DataModelTestSuite.getImagePaths();
 		for(List<String> paths : imagePaths) {
 			for(Traverser tstrn: tests){
-				//String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
-				//System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
-				//String exFile = standardPath.replace(".txt",DataModelTestSuite.EX+".txt");
-				//DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn, exFile);
+				String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
+				System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
+				String exFile = standardPath.replace(".txt",DataModelTestSuite.EX+".txt");
+				DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn, exFile);
 			}
 			String standardPathCPP = DataModelTestSuite.standardPath(paths,CPPtoJavaCompare.class.getSimpleName());
 			DataModelTestSuite.getTSKData(standardPathCPP, paths);
@@ -362,8 +356,7 @@ public class DataModelTestSuite {
 			Scanner in1 = new Scanner(f1);
 			Scanner in2 = new Scanner(f2);
 			while (in1.hasNextLine()||in2.hasNextLine()) {
-				if((in1.hasNextLine()^in2.hasNextLine())||!(in1.nextLine().equals(in2.nextLine())))
-				{
+				if((in1.hasNextLine()^in2.hasNextLine())||!(in1.nextLine().equals(in2.nextLine()))){
 					in1.close();
 					in2.close();
 					f1.close();
@@ -402,8 +395,7 @@ public class DataModelTestSuite {
 			Scanner read = new Scanner(p.getInputStream());
 			Scanner error1 = new Scanner(p.getErrorStream());
 			FileWriter out = new FileWriter(outputLoc);
-			while(read.hasNextLine())
-			{
+			while(read.hasNextLine()){
 				String line = read.nextLine();
 				out.append(line);
 				out.flush();
