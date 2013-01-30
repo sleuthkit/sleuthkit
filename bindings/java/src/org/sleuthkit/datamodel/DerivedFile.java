@@ -90,9 +90,9 @@ public class DerivedFile extends AbstractFile {
 	 * @param localPath local path of this derived file, relative to the db path
 	 * @param parentId parent id of this derived file to set if available
 	 */
-	DerivedFile(SleuthkitCase db, long objId, String name, 
-			TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
+	DerivedFile(SleuthkitCase db, long objId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
 			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
+			
 			long size, String parentPath, String localPath, long parentId) {
 		this(db, objId, name, dirType, metaType, dirFlag, meta_flags, size, parentPath, localPath);
 		
@@ -100,8 +100,24 @@ public class DerivedFile extends AbstractFile {
 			setParentId(parentId);
 		}
 	}
-	
 
+	/**
+	 * Get local path of the file relative to database dir
+	 * @return local relative file path
+	 */
+	public String getLocalPath() {
+		return localPath;
+	}
+
+	/**
+	 * Get local absolute path of the file
+	 * @return local absolute file path
+	 */
+	public String getLocalAbsPath() {
+		return localAbsPath;
+	}
+	
+	
 
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
@@ -241,6 +257,14 @@ public class DerivedFile extends AbstractFile {
 			super.finalize(); //To change body of generated methods, choose Tools | Templates.
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "DerivedFile{" + "localPath=" + localPath + ", localAbsPath=" + localAbsPath + ", isFile=" + isFile + ", derivedMethod=" + derivedMethod + ", localFile=" + localFile + ", fileHandle=" + fileHandle + ", hasDerivedMethod=" + hasDerivedMethod + '}';
+	}
+	
+	
+	
 
 	/**
 	 * Method used to derive the file super-set of tsk_files_derived and
