@@ -67,8 +67,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 		}
 	}
 	@Override
-	public FileWriter traverse(SleuthkitCase sk, String path, String exFile)
-	{
+	public FileWriter traverse(SleuthkitCase sk, String path, String exFile){
 		FileWriter reslt;
 		try {
 			reslt = new FileWriter(path);
@@ -86,8 +85,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 	public void topDownDF(List<Content> lc, Appendable reslt, String exFile){
 		for(Content c : lc) {
 			try {
-				if(c instanceof File)
-				{
+				if(c instanceof File){
 					try {
 						reslt.append(DataModelTestSuite.getFileData((File) c));
 					} catch (IOException ex) {

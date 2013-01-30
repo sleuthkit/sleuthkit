@@ -72,8 +72,7 @@ public class SequentialTraversal extends ImgTraverser{
 	 * @param lp that lc's list of parents in most recent first order
 	 */
 	@Override
-	public FileWriter traverse(SleuthkitCase sk, String path, String exFile)
-	{
+	public FileWriter traverse(SleuthkitCase sk, String path, String exFile){
 		FileWriter reslt;
 		try {
 			reslt = new FileWriter(path);

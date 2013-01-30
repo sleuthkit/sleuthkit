@@ -98,8 +98,7 @@ public class TopDownTraversal extends ImgTraverser{
 	 * @param lc a list of content to be read
 	 * @param lp that lc's list of parents in most recent first order
 	 */
-	private void topDownDF(List<Content> lc, List<Long> lp, String exFile, Appendable reslt, Appendable levs)
-	{
+	private void topDownDF(List<Content> lc, List<Long> lp, String exFile, Appendable reslt, Appendable levs){
 			for(Content c : lc) {
 				try {
 					reslt.append(((AbstractContent)c).toString(false));
@@ -117,12 +116,10 @@ public class TopDownTraversal extends ImgTraverser{
 				}
 				lp.add(0,c.getId());
 				try {
-					if (c.getChildren().isEmpty())
-					{
+					if (c.getChildren().isEmpty()){
 						levs.append(lp.toString() + "\n");
 					}
-					else
-					{
+					else{
 						topDownDF(c.getChildren(),new ArrayList<>(lp), exFile, reslt, levs);
 					}
 				} catch (	IOException | TskCoreException ex) {

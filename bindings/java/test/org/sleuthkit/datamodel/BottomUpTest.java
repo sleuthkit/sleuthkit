@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 201 Basis Technology Corp.
+ * Copyright 2013 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -77,8 +78,7 @@ public class BottomUpTest {
 			process.commit();
 			java.io.File lvs = new java.io.File(dbFile.getAbsolutePath()+java.io.File.separator+title);
 			Scanner climber = new Scanner(lvs);
-			while(climber.hasNextLine())
-			{
+			while(climber.hasNextLine()){
 				String cliNL = climber.nextLine();
 				cliNL = cliNL.substring(1);
 				String[] ids = cliNL.split("[\\],]\\s?+");
@@ -89,8 +89,7 @@ public class BottomUpTest {
 					c = c.getParent();
 				}
 			}
-		} catch (Exception ex)
-		{
+		} catch (TskCoreException | FileNotFoundException | NumberFormatException ex){
 			System.out.println(ex.toString());
 			fail("Failed to run BottomUp test");
 		}
