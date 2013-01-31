@@ -2489,20 +2489,19 @@ public class SleuthkitCase {
 		addPathSt.setString(2, path);
 		addPathSt.executeUpdate();
 	}
-
+	
+	
 	/**
 	 * Creates a new derived file object, adds it to database and returns it.
 	 *
 	 * TODO add support for adding derived method and re-factor common code with
 	 * LocalFiles
-	 *
-	 * @param parentId id of the parent object (derived or local file), must be a valid > 0 id
-	 * @param fsObjId fs object id of the fs of ancestor file, or 0 if there is no file system
-	 * @param parentPath  parent path of the parent of the derived file
+	 * 
 	 * @param fileName file name the derived file
-	 * @param isFile whether a file or directory, true if a file
-	 * @param size size of the derived file in bytes
 	 * @param localPath local path of the derived file, including the file name.  The path is relative to the database path.
+	 * @param size size of the derived file in bytes
+	 * @param isFile whether a file or directory, true if a file
+	 * @param parentFile parent file object (derived or local file)
 	 * @param rederiveDetails details needed to re-derive file (will be specific
 	 * to the derivation method), currently unused
 	 * @param toolName name of derivation method/tool, currently unused
@@ -2512,13 +2511,13 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if the object creation failed
 	 * due to a critical system error
 	 */
-	public DerivedFile addDerivedFile(long parentId, long fsObjId, String parentPath, String fileName, 
-			boolean isFile, long size, String localPath, String rederiveDetails,
-			String toolName, String toolVersion, String otherDetails) throws TskCoreException {
+	public DerivedFile addDerivedFile(String fileName, String localPath,
+            long size, boolean isFile, AbstractFile parentFile,
+            String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
 
-		if (parentId < 1) {
-			throw new IllegalArgumentException("Parent id of a new derived file must be greater than 1");
-		}
+		final long parentId = parentFile.getId();
+		final long fsObjId = parentFile.getFileSystemId();
+		final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/';
 		
 		DerivedFile ret = null;
 		
