@@ -238,7 +238,7 @@ public class DataModelTestSuite {
 		}
 		else
 		{
-			return "C:\\Users\\" + System.getProperty("user.name")+ "\\Cygwin\\bin\\sort.exe";
+			return "C:\\cygwin\\bin\\sort.exe";
 		}
 	}
 	private static String getDiffPath(){
@@ -246,7 +246,7 @@ public class DataModelTestSuite {
 			return "diff";
 		}
 		else{
-			return "C:\\Users\\" + System.getProperty("user.name")+ "\\Cygwin\\bin\\diff.exe";
+			return "C:\\cygwin\\bin\\diff.exe";
 		}
 	}
 	/**
@@ -328,6 +328,16 @@ public class DataModelTestSuite {
 		String tempDirPath = System.getProperty("java.io.tmpdir");
 		tempDirPath = tempDirPath.substring(0,tempDirPath.length()-1);
 		java.io.File pth = new java.io.File(DataModelTestSuite.goldStandardPath());
+		FileFilter testExFilter = new FileFilter() {
+			@Override
+			public boolean accept(java.io.File f) {
+				return f.getName().contains(EX);
+			}
+		};
+		for(java.io.File del: pth.listFiles(testExFilter))
+		{
+			del.delete();
+		}
 		List<Traverser> tests = DataModelTestSuite.getTests();
 		List<List<String>> imagePaths = DataModelTestSuite.getImagePaths();
 		for(List<String> paths : imagePaths) {
