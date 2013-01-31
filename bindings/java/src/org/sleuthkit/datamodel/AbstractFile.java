@@ -34,12 +34,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public abstract class AbstractFile extends AbstractContent {
 
 	protected final TskData.TSK_DB_FILES_TYPE_ENUM type;
-	protected long fsObjId;
-	
-	/**
-	 * parent file system
-	 */
-	private volatile FileSystem parentFileSystem;
 	protected long size;
 	/*
 	 * path of parent directory
@@ -61,11 +55,10 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param name name field of the file
 	 * @param type type of the file
 	 */
-	protected AbstractFile(SleuthkitCase db, long obj_id, long fsObjId, String name, TskData.TSK_DB_FILES_TYPE_ENUM type,
+	protected AbstractFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
 			long size, String parentPath) {
 		super(db, obj_id, name);
-		this.fsObjId = fsObjId;
 		this.type = type;
 		this.dirType = dirType;
 		this.metaType = metaType;
@@ -82,36 +75,6 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public TskData.TSK_DB_FILES_TYPE_ENUM getType() {
 		return type;
-	}
-
-	/**
-	 * Get the parent file system id
-	 *
-	 * @return the parent file system id
-	 */
-	public long getFileSystemId() {
-		return fsObjId;
-	}
-
-	/**
-	 * Sets the parent file system, called by parent during object creation
-	 *
-	 * @param parent parent file system object
-	 */
-	void setFileSystem(FileSystem parent) {
-		parentFileSystem = parent;
-	}
-
-	/**
-	 * Get the parent file system
-	 *
-	 * @return the file system object of the parent
-	 */
-	public synchronized FileSystem getFileSystem() throws TskCoreException {
-		if (parentFileSystem == null) {
-			parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, AbstractContent.UNKNOWN_ID);
-		}
-		return parentFileSystem;
 	}
 
 	/**

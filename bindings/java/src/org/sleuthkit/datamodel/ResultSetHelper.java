@@ -202,7 +202,7 @@ class ResultSetHelper {
 		}
 		
 		final DerivedFile df =
-				new DerivedFile(db, objId, rs.getLong("fs_obj_id"), rs.getString("name"), 
+				new DerivedFile(db, objId, rs.getString("name"), 
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
 				rs.getLong("size"), parentPath, localPath, parentId);

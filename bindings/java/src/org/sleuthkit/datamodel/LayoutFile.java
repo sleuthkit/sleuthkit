@@ -40,11 +40,11 @@ public class LayoutFile extends AbstractFile{
 	//layout ranges associated with this file
 	private List<TskFileRange> ranges;
 	
-	protected LayoutFile(SleuthkitCase db, long objId, long fsObjId, String name, TskData.TSK_DB_FILES_TYPE_ENUM type, 
+	protected LayoutFile(SleuthkitCase db, long objId, String name, TskData.TSK_DB_FILES_TYPE_ENUM type, 
 			TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
 			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
 			long size, String parentPath) {
-		super(db, objId, fsObjId, name, type, dirType, metaType, dirFlag, meta_flags, size, parentPath);
+		super(db, objId, name, type, dirType, metaType, dirFlag, meta_flags, size, parentPath);
 		//this.size = calcSize(); //update calculated size
 	}
 

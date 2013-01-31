@@ -228,8 +228,8 @@ public class SleuthkitCase {
 				"INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (?, ?, ?)");
 		
 		addLocalFileSt = con.prepareStatement(
-				"INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path) "
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+				"INSERT INTO tsk_files (obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path) "
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 		
 		addPathSt = con.prepareStatement(
 				"INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)");
@@ -2036,7 +2036,7 @@ public class SleuthkitCase {
 					if (parentPath == null) {
 						parentPath = "";
 					}
-					VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"), rs.getLong("fs_obj_id"),
+					VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
 							rs.getString("name"), 
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
@@ -2048,7 +2048,7 @@ public class SleuthkitCase {
 						parentPath = "";
 					}
 					final LayoutFile lf = 
-							new LayoutFile(this, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), rs.getString("name"), 
+							new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"), 
 							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS, 
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
@@ -2567,7 +2567,6 @@ public class SleuthkitCase {
             String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
 
 		final long parentId = parentFile.getId();
-		final long fsObjId = parentFile.getFileSystemId();
 		final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/';
 		
 		DerivedFile ret = null;
@@ -2601,37 +2600,36 @@ public class SleuthkitCase {
 			
 			//obj_id, fs_obj_id, name
 			addLocalFileSt.setLong(1, newObjId);
-			addLocalFileSt.setLong(2, fsObjId);
-			addLocalFileSt.setString(3, fileName);
+			addLocalFileSt.setString(2, fileName);
 			
 			//type, has_path
-			addLocalFileSt.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType());
-			addLocalFileSt.setBoolean(5, true);
+			addLocalFileSt.setShort(3, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType());
+			addLocalFileSt.setBoolean(4, true);
 			
 			//flags
 			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG:TSK_FS_NAME_TYPE_ENUM.DIR;
-			addLocalFileSt.setShort(6, dirType.getValue());
+			addLocalFileSt.setShort(5, dirType.getValue());
 			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG:TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
-			addLocalFileSt.setShort(7, metaType.getValue());
+			addLocalFileSt.setShort(6, metaType.getValue());
 			
 			//note: using alloc under assumption that derived files derive from alloc files
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
-			addLocalFileSt.setShort(8, dirFlag.getValue());
+			addLocalFileSt.setShort(7, dirFlag.getValue());
 			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue() 
 					| TSK_FS_META_FLAG_ENUM.USED.getValue());
-			addLocalFileSt.setShort(9, metaFlags);
+			addLocalFileSt.setShort(8, metaFlags);
 			
 			//size
-			addLocalFileSt.setLong(10, size);
+			addLocalFileSt.setLong(9, size);
 			//parent path
-			addLocalFileSt.setString(11, parentPath);
+			addLocalFileSt.setString(10, parentPath);
 			
 			addLocalFileSt.executeUpdate();
 			
 			//add localPath 
 			addFilePath(newObjId, localPath);
 			
-			ret = new DerivedFile(this, newObjId, fsObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+			ret = new DerivedFile(this, newObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					size, parentPath, localPath, parentId);
 			
 			//TODO add derived method
@@ -3449,9 +3447,9 @@ public class SleuthkitCase {
 		try {
 			Statement s1 = con.createStatement();
 
-			s1.executeUpdate("delete from tsk_image_names where obj_id = " + obj_id);
+			s1.executeUpdate("DELETE FROM tsk_image_names WHERE obj_id = " + obj_id);
 			for (int i = 0; i < paths.size(); i++) {
-				s1.executeUpdate("insert into tsk_image_names values (" + obj_id + ", \"" + paths.get(i) + "\", " + i + ")");
+				s1.executeUpdate("INSERT INTO tsk_image_names VALUES (" + obj_id + ", \"" + paths.get(i) + "\", " + i + ")");
 			}
 
 			s1.close();
@@ -3494,7 +3492,6 @@ public class SleuthkitCase {
 						parentPath = "";
 					}
 					final VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
-							rs.getLong("fs_obj_id"),
 							rs.getString("name"), 
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
@@ -3505,7 +3502,7 @@ public class SleuthkitCase {
 					if (parentPath == null) {
 						parentPath = "";
 					}
-					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"), rs.getLong("fs_obj_id"),
+					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
 							rs.getString("name"),
 							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS, 
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
