@@ -2679,14 +2679,30 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
-		Statement statement;
+		Statement statement = null;
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			statement = con.createStatement();
-			return resultSetToFsContents(statement.executeQuery("SELECT * FROM tsk_files WHERE " + sqlWhereClause));
+			rs = statement.executeQuery("SELECT * FROM tsk_files WHERE " + sqlWhereClause);
+			return resultSetToFsContents(rs);
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
 		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after executing  findFilesWhere", ex);
+				}
+			}
+			if (statement != null) {
+				try {
+					statement.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing statement after executing  findFilesWhere", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 	}
