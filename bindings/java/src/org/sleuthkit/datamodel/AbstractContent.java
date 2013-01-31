@@ -36,6 +36,8 @@ public abstract class AbstractContent implements Content {
 	private Content parent;
 	private String uniquePath;
 	protected long parentId;
+	private volatile boolean hasChildren;
+	private volatile boolean checkedHasChildren;
 	
 
 	protected AbstractContent(SleuthkitCase db, long obj_id, String name) {
@@ -43,6 +45,9 @@ public abstract class AbstractContent implements Content {
 		this.objId = obj_id;
 		this.name = name;
 		this.parentId = -1;
+		
+		checkedHasChildren = false;
+		hasChildren = false;
 	}
 
 	@Override
@@ -69,6 +74,18 @@ public abstract class AbstractContent implements Content {
 			}
 		}
 		return uniquePath;
+	}
+	
+	@Override
+	public boolean hasChildren() throws TskCoreException {
+		if (checkedHasChildren == true) {
+			return hasChildren;
+		}
+		
+		hasChildren = this.getSleuthkitCase().getContentHasChildren(this);
+		checkedHasChildren = true;
+		
+		return hasChildren;
 	}
 
 	@Override

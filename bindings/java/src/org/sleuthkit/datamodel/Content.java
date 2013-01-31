@@ -90,6 +90,16 @@ public interface Content extends SleuthkitVisitableItem {
 	 */
 	public List<Content> getChildren() throws TskCoreException;
 	
+	
+	/**
+	 * Returns true if the content object has children objects.
+	 * Note, this should be more efficient than getting children and checking it empty.
+	 * 
+	 * @return true if has children, false otherwise.
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	public boolean hasChildren() throws TskCoreException;
+	
 	/**
 	 * @return returns the parent of this Content object or null if there isn't
 	 * one as is the case for Image.

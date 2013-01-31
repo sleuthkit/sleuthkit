@@ -101,6 +101,7 @@ public class SleuthkitCase {
 	private PreparedStatement addObjectSt;
 	private PreparedStatement addLocalFileSt;
 	private PreparedStatement addPathSt;
+	private PreparedStatement hasChildrenSt;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
 	/**
@@ -232,6 +233,10 @@ public class SleuthkitCase {
 		
 		addPathSt = con.prepareStatement(
 				"INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)");
+		
+		hasChildrenSt = con.prepareStatement(
+				"SELECT COUNT(obj_id) FROM tsk_objects WHERE par_obj_id = ?"
+				);
 		
 	}
 
@@ -368,6 +373,11 @@ public class SleuthkitCase {
 			if (addPathSt != null) {
 				addPathSt.close();
 				addPathSt = null;
+			}
+			
+			if (hasChildrenSt != null) {
+				hasChildrenSt.close();
+				hasChildrenSt = null;
 			}
 
 		} catch (SQLException e) {
@@ -1947,6 +1957,47 @@ public class SleuthkitCase {
 	 */
 	private void addBuiltInAttrType(ATTRIBUTE_TYPE type) throws TskCoreException {
 		addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
+	}
+	
+	/**
+	 * Checks if the content object has children.
+	 * Note: this is generally more efficient then preloading all children and checking
+	 * if the set is empty, and facilities lazy loading.
+	 * 
+	 * @param content content object to check for children
+	 * @return true if has children, false otherwise
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	boolean getContentHasChildren(Content content) throws TskCoreException {
+		boolean hasChildren = false;
+		
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			hasChildrenSt.setLong(1, content.getId());
+			rs = hasChildrenSt.executeQuery();
+			if (rs.next()) {
+				hasChildren = rs.getInt(1) > 0;
+			}
+		
+		}
+		catch (SQLException e) {
+			logger.log(Level.SEVERE, "Error checking for children of parent: " + content, e);
+		}
+		finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing a result set after checking for children.", ex);
+				}
+			}
+			dbReadUnlock();
+			
+		}
+		return hasChildren;
+		
 	}
 
 	/**
