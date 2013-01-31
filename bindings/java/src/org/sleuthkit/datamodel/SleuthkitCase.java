@@ -223,21 +223,20 @@ public class SleuthkitCase {
 
 		getLastContentIdSt = con.prepareStatement(
 				"SELECT MAX(obj_id) from tsk_objects");
-		
+
 		addObjectSt = con.prepareStatement(
 				"INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (?, ?, ?)");
-		
+
 		addLocalFileSt = con.prepareStatement(
 				"INSERT INTO tsk_files (obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-		
+
 		addPathSt = con.prepareStatement(
 				"INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)");
-		
+
 		hasChildrenSt = con.prepareStatement(
-				"SELECT COUNT(obj_id) FROM tsk_objects WHERE par_obj_id = ?"
-				);
-		
+				"SELECT COUNT(obj_id) FROM tsk_objects WHERE par_obj_id = ?");
+
 	}
 
 	private void closeStatements() {
@@ -359,22 +358,22 @@ public class SleuthkitCase {
 				getLastContentIdSt.close();
 				getLastContentIdSt = null;
 			}
-			
+
 			if (addObjectSt != null) {
 				addObjectSt.close();
 				addObjectSt = null;
 			}
-			
+
 			if (addLocalFileSt != null) {
 				addLocalFileSt.close();
 				addLocalFileSt = null;
 			}
-			
+
 			if (addPathSt != null) {
 				addPathSt.close();
 				addPathSt = null;
 			}
-			
+
 			if (hasChildrenSt != null) {
 				hasChildrenSt.close();
 				hasChildrenSt = null;
@@ -1958,12 +1957,12 @@ public class SleuthkitCase {
 	private void addBuiltInAttrType(ATTRIBUTE_TYPE type) throws TskCoreException {
 		addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
 	}
-	
+
 	/**
-	 * Checks if the content object has children.
-	 * Note: this is generally more efficient then preloading all children and checking
-	 * if the set is empty, and facilities lazy loading.
-	 * 
+	 * Checks if the content object has children. Note: this is generally more
+	 * efficient then preloading all children and checking if the set is empty,
+	 * and facilities lazy loading.
+	 *
 	 * @param content content object to check for children
 	 * @return true if has children, false otherwise
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -1971,7 +1970,7 @@ public class SleuthkitCase {
 	 */
 	boolean getContentHasChildren(Content content) throws TskCoreException {
 		boolean hasChildren = false;
-		
+
 		ResultSet rs = null;
 		dbReadLock();
 		try {
@@ -1980,12 +1979,10 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				hasChildren = rs.getInt(1) > 0;
 			}
-		
-		}
-		catch (SQLException e) {
+
+		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error checking for children of parent: " + content, e);
-		}
-		finally {
+		} finally {
 			if (rs != null) {
 				try {
 					rs.close();
@@ -1994,10 +1991,10 @@ public class SleuthkitCase {
 				}
 			}
 			dbReadUnlock();
-			
+
 		}
 		return hasChildren;
-		
+
 	}
 
 	/**
@@ -2016,7 +2013,7 @@ public class SleuthkitCase {
 		try {
 
 			long parentId = parent.getId();
-			
+
 			getAbstractFileChildren.setLong(1, parentId);
 			getAbstractFileChildren.setShort(2, type.getFileType());
 
@@ -2037,7 +2034,7 @@ public class SleuthkitCase {
 						parentPath = "";
 					}
 					VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
-							rs.getString("name"), 
+							rs.getString("name"),
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
 							rs.getLong("size"), parentPath);
@@ -2047,9 +2044,9 @@ public class SleuthkitCase {
 					if (parentPath == null) {
 						parentPath = "";
 					}
-					final LayoutFile lf = 
-							new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"), 
-							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS, 
+					final LayoutFile lf =
+							new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"),
+							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
 							rs.getLong("size"),
@@ -2504,52 +2501,30 @@ public class SleuthkitCase {
 		return fsContents;
 	}
 
-	/**
-	 * Get last (max) object id of content object in tsk_objects Note, if you
-	 * are using this id to create a new object, make sure you are getting and
-	 * using it in the same write lock/transaction to avoid potential
-	 * concurrency issues with other writes
-	 *
-	 * @return currently max id
-	 * @throws SQLException exception thrown when database error occurs
-	 */
-	private long getLastObjectId() throws SQLException {
-		long id = -1;
-		dbReadLock();
-		try {
-			ResultSet rs = getLastContentIdSt.executeQuery();
-			if (rs.next()) {
-				id = rs.getLong(1);
-			}
-			rs.close();
-		} finally {
-			dbReadUnlock();
-		}
-
-		return id;
-	}
 	
 	/**
 	 * Add a path (such as a local path) for a content object to tsk_file_paths
+	 *
 	 * @param objId object id of the file to add the path for
 	 * @param path the path to add
-	 * @throws SQLException exception thrown when database error occurred and path was not added
+	 * @throws SQLException exception thrown when database error occurred and
+	 * path was not added
 	 */
 	private void addFilePath(long objId, String path) throws SQLException {
 		addPathSt.setLong(1, objId);
 		addPathSt.setString(2, path);
 		addPathSt.executeUpdate();
 	}
-	
-	
+
 	/**
 	 * Creates a new derived file object, adds it to database and returns it.
 	 *
 	 * TODO add support for adding derived method and re-factor common code with
 	 * LocalFiles
-	 * 
+	 *
 	 * @param fileName file name the derived file
-	 * @param localPath local path of the derived file, including the file name.  The path is relative to the database path.
+	 * @param localPath local path of the derived file, including the file name.
+	 * The path is relative to the database path.
 	 * @param size size of the derived file in bytes
 	 * @param isFile whether a file or directory, true if a file
 	 * @param parentFile parent file object (derived or local file)
@@ -2563,14 +2538,14 @@ public class SleuthkitCase {
 	 * due to a critical system error
 	 */
 	public DerivedFile addDerivedFile(String fileName, String localPath,
-            long size, boolean isFile, AbstractFile parentFile,
-            String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
+			long size, boolean isFile, AbstractFile parentFile,
+			String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
 
 		final long parentId = parentFile.getId();
 		final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/';
-		
+
 		DerivedFile ret = null;
-		
+
 		long newObjId = -1;
 
 		dbWriteLock();
@@ -2594,46 +2569,46 @@ public class SleuthkitCase {
 			addObjectSt.setLong(2, parentId);
 			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			addObjectSt.executeUpdate();
-			
+
 			//tsk_files
 			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
-			
+
 			//obj_id, fs_obj_id, name
 			addLocalFileSt.setLong(1, newObjId);
 			addLocalFileSt.setString(2, fileName);
-			
+
 			//type, has_path
 			addLocalFileSt.setShort(3, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType());
 			addLocalFileSt.setBoolean(4, true);
-			
+
 			//flags
-			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG:TSK_FS_NAME_TYPE_ENUM.DIR;
+			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
 			addLocalFileSt.setShort(5, dirType.getValue());
-			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG:TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
 			addLocalFileSt.setShort(6, metaType.getValue());
-			
+
 			//note: using alloc under assumption that derived files derive from alloc files
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
 			addLocalFileSt.setShort(7, dirFlag.getValue());
-			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue() 
+			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 					| TSK_FS_META_FLAG_ENUM.USED.getValue());
 			addLocalFileSt.setShort(8, metaFlags);
-			
+
 			//size
 			addLocalFileSt.setLong(9, size);
 			//parent path
 			addLocalFileSt.setString(10, parentPath);
-			
+
 			addLocalFileSt.executeUpdate();
-			
+
 			//add localPath 
 			addFilePath(newObjId, localPath);
-			
+
 			ret = new DerivedFile(this, newObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					size, parentPath, localPath, parentId);
-			
+
 			//TODO add derived method
-			
+
 		} catch (SQLException e) {
 			String msg = "Error creating a derived file, file name: " + fileName;
 			throw new TskCoreException(msg, e);
@@ -2647,8 +2622,7 @@ public class SleuthkitCase {
 					con.setAutoCommit(true);
 				} catch (SQLException ex) {
 					logger.log(Level.SEVERE, "Error setting auto-commit after adding derived file", ex);
-				}
-				finally {
+				} finally {
 					dbWriteUnlock();
 				}
 			}
@@ -3432,6 +3406,46 @@ public class SleuthkitCase {
 
 		return images;
 	}
+	
+	
+	/**
+	 * Get last (max) object id of content object in tsk_objects.
+	 * 
+	 * Note, if you
+	 * are using this id to create a new object, make sure you are getting and
+	 * using it in the same write lock/transaction to avoid potential
+	 * concurrency issues with other writes
+	 *
+	 * @return currently max id
+	 * @throws TskCoreException exception thrown when database error occurs and last object id could not be queried
+	 */
+	public long getLastObjectId() throws TskCoreException {
+		long id = -1;
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			rs = getLastContentIdSt.executeQuery();
+			if (rs.next()) {
+				id = rs.getLong(1);
+			}
+		} catch (SQLException e) {
+			final String msg = "Error closing result set after getting last object id.";
+			logger.log(Level.SEVERE, msg, e);
+			throw new TskCoreException(msg, e);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after getting last object id.", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+
+		return id;
+	}
+
 
 	/**
 	 * Set the file paths for the image given by obj_id
@@ -3492,7 +3506,7 @@ public class SleuthkitCase {
 						parentPath = "";
 					}
 					final VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
-							rs.getString("name"), 
+							rs.getString("name"),
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
 							rs.getLong("size"), parentPath);
@@ -3504,7 +3518,7 @@ public class SleuthkitCase {
 					}
 					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
 							rs.getString("name"),
-							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS, 
+							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
 							rs.getLong("size"),
@@ -3521,8 +3535,7 @@ public class SleuthkitCase {
 			} //end for each rs
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error getting abstract file from result set.", e);
-		}
-		finally {
+		} finally {
 			dbReadUnlock();
 		}
 
