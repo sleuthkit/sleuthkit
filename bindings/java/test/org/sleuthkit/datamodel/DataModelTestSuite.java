@@ -27,7 +27,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.BeforeClass;
@@ -83,7 +82,7 @@ public class DataModelTestSuite {
 			standardFile.createNewFile();
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
-			String timezone = TimeZone.getDefault().getID();
+			String timezone = "";
 			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
 			java.io.File xfile = new java.io.File(exFile);
 			xfile.createNewFile();
