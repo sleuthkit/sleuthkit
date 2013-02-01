@@ -95,7 +95,6 @@ typedef struct yaffsObj_header {
     uint32_t seq_number;
     uint32_t object_id;
     uint32_t chunk_id;
-    uint32_t n_bytes;
 
 	uint32_t has_extra_fields;
     uint32_t extra_object_type;
@@ -200,6 +199,9 @@ typedef struct _YaffsCacheChunkGroup {
         unsigned int page_size;
         unsigned int spare_size;
 		unsigned int chunks_per_block;
+
+		uint32_t max_obj_id;
+		uint32_t max_version;
 
 		// Offsets into the spare area
 		unsigned int spare_seq_offset;
