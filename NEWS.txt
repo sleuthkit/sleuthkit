@@ -5,6 +5,9 @@ Numbers refer to SourceForge.net tracker IDs:
 New Features:
 - Numerous performance improvements to framework.
 - Added fiwalk tool from Simson.  Not supported in Visual Studio yet.
+- Added new API to TskImgDB that returns the base name of an image.
+- Removed requirement in framework to specify module extension in pipeline configuration file.
+- Added blackboard artifacts to represent both operating system and network service user accounts.
 
 Bug Fixes:
 - Fixed fcat to work on NTFS files (still doesn't support ADS though). 
@@ -12,6 +15,7 @@ Bug Fixes:
 - NTFS code now looks at all MFT entries when listing directory contents. It used to only look at unallocated entries for orphan files. This fixes an image that had allocated files missing from the directory b-tree.
 - NTFS code uses sequence number when searching MFT entries for all files. 
 - Libewf detection code change to support v2 API more reliably (ID: 3596212). 
+- NTFS $SII code could crash in rare cases if $SDS was multiple of block size. 
 
 ---------------- VERSION 4.0.1 --------------
 New Features:

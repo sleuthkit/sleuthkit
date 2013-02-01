@@ -744,10 +744,12 @@ int
     // if md5 hashes are being used
     if (md5 != NULL) {
         // copy the hash as hexidecimal into the buffer
+        md5Text[0] = '\'';
         for (int i = 0; i < 16; i++) {
-            sprintf(&(md5Text[i * 2]), "%x%x", (md5[i] >> 4) & 0xf,
+            sprintf(&(md5Text[i*2 + 1]), "%x%x", (md5[i] >> 4) & 0xf,
                 md5[i] & 0xf);
         }
+        strcat(md5Text, "'");
     }
 
 
@@ -763,7 +765,7 @@ int
         "%" PRIuINUM ","
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "%lld,%lld,%lld,%lld,%d,%d,%d,'%s',%d,"
+        "%lld,%lld,%lld,%lld,%d,%d,%d,%s,%d,"
         "'%s')",
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,

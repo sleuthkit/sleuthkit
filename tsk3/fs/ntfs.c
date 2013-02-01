@@ -2942,7 +2942,8 @@ ntfs_load_ver(NTFS_INFO * ntfs)
 #if TSK_USE_SID
 /** \internal
  * Prints the value of sds into the a_sidstr string in ASCII form.  This will allocate a new buffer for the
- * string, so a_sidstr should not point to a buffer.
+ * string, so a_sidstr should not point to a buffer. Output is in format of:
+ * S-R-I-S-S... with 'R' being revision, 'I' being the identifier authority, and 'S' being subauthority values.
  *
  * @param a_fs File system
  * @param a_sds SDS
@@ -2953,12 +2954,10 @@ static uint8_t
 ntfs_sds_to_str(TSK_FS_INFO * a_fs, const ntfs_attr_sds * a_sds,
     char **a_sidstr)
 {
-    char *sid_str = NULL;
     ntfs_sid *sid = NULL;
 
-    // "S-"
-    unsigned int sid_str_len = 2;
-    uint32_t owner_offset = 0;
+    uint32_t owner_offset;
+    *a_sidstr = NULL;
 
     if ((a_fs == NULL) || (a_sds == NULL) || (a_sidstr == NULL)) {
         tsk_error_reset();
@@ -2979,34 +2978,30 @@ ntfs_sds_to_str(TSK_FS_INFO * a_fs, const ntfs_attr_sds * a_sds,
         return 1;
     }
 
-    *a_sidstr = NULL;
-
     sid =
         (ntfs_sid *) ((uint8_t *) & a_sds->self_rel_sec_desc +
         owner_offset);
 
-    // "1-"
-    sid_str_len += 2;
     //tsk_fprintf(stderr, "Revision: %i\n", sid->revision);
 
     // This check helps not process invalid data, which was noticed while testing
     // a failing harddrive
     if (sid->revision == 1) {
-        int index;
-        int len;
-        uint64_t authority;
-        int i, j;
-        char *sid_str_offset;
+        uint64_t authority = 0;
+        int i, len;
+        char *sid_str_offset = NULL;
+        char *sid_str = NULL;
+        unsigned int sid_str_len;
 
         //tsk_fprintf(stderr, "Sub-Authority Count: %i\n", sid->sub_auth_count);
-
-        for (authority = i = 0, j = 40; i < 6; i++, j -= 8)
-            authority += (uint64_t) sid->ident_auth[i] << j;
+        authority = 0;
+        for (i = 0; i < 6; i++)
+            authority += (uint64_t) sid->ident_auth[i] << ((5-i)*8);
 
         //tsk_fprintf(stderr, "NT Authority: %" PRIu64 "\n", authority);
 
-        // "-XXXXXXXXXX"
-        sid_str_len += (1 + 10) * sid->sub_auth_count;
+        // "S-1-AUTH-SUBAUTH-SUBAUTH..."
+        sid_str_len = 4 + 13 + (1 + 10) * sid->sub_auth_count + 1;
 
         // Allocate the buffer for the string representation of the SID.
         if ((sid_str = (char *) tsk_malloc(sid_str_len)) == NULL) {
@@ -3016,9 +3011,9 @@ ntfs_sds_to_str(TSK_FS_INFO * a_fs, const ntfs_attr_sds * a_sds,
         len = sprintf(sid_str, "S-1-%" PRIu64, authority);
         sid_str_offset = sid_str + len;
 
-        for (index = 0; index < sid->sub_auth_count; index++) {
+        for (i = 0; i < sid->sub_auth_count; i++) {
             len =
-                sprintf(sid_str_offset, "-%" PRIu32, sid->sub_auth[index]);
+                sprintf(sid_str_offset, "-%" PRIu32, sid->sub_auth[i]);
             sid_str_offset += len;
         }
         *a_sidstr = sid_str;
@@ -3134,13 +3129,18 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
         return sds;
     }
     else {
-        if (sii_secid != 0) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "ntfs_get_sds: entry found was for wrong Security ID (%"PRIu32" vs %"PRIu32")\n",
+                        sds_secid, sii_secid);
+
+//        if (sii_secid != 0) {
+        
             // There is obviously a mismatch between the information in the SII entry and that in the SDS entry.
             // After looking at these mismatches, it appears there is not a pattern. Perhaps some entries have been reused.
 
             //printf("\nsecid %d hash %x offset %I64x size %x\n", sii_secid, sii_sechash, sii_sds_file_off, sii_sds_ent_size);
             //printf("secid %d hash %x offset %I64x size %x\n", sds_secid, sds_sechash, sds_file_off, sds_ent_size);
-        }
+  //      }
     }
 
     tsk_error_reset();
@@ -4164,7 +4164,7 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
         tsk_fprintf(hFile, "\n");
         tsk_fprintf(hFile, "Owner ID: %" PRIu32 "\n",
             tsk_getu32(fs->endian, si->own_id));
-
+        
 #if TSK_USE_SID
         ntfs_file_get_sidstr(fs_file, &sid_str);
 
