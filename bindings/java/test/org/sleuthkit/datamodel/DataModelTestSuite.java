@@ -175,7 +175,7 @@ public class DataModelTestSuite {
 	private static void getTSKData(String standardPath, List<String> img){
 		String tsk_loc;
 		if(System.getProperty("os.name").contains("Windows")){
-			tsk_loc = "C:\\Users\\" + System.getProperty("user.name") + "\\Documents\\GitHub\\sleuthkit\\win32\\Release\\tsk_gettimes";
+			tsk_loc = "\\Users\\" + System.getProperty("user.name") + "\\Documents\\GitHub\\sleuthkit\\win32\\Release\\tsk_gettimes";
 		}
 		else{
 			return;

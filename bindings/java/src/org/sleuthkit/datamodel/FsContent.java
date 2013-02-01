@@ -127,8 +127,7 @@ public abstract class FsContent extends AbstractFile {
 		this.modes = TSK_FS_META_MODE_ENUM.valuesOf(modes);
 		this.known = known;
 		this.parentPath = parent_path;
-		System.out.println(md5Hash);
-		if (md5Hash.equals("NULL")) {
+		if (md5Hash == null || md5Hash.equals("NULL")){
 			this.md5Hash = null;
 		}
 		else {
