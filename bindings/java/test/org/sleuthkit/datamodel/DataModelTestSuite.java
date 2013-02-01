@@ -111,7 +111,6 @@ public class DataModelTestSuite {
 			logg.log(Level.SEVERE, "Couldn't create Standard", ex);
 			throw new RuntimeException(ex);
 		}catch (TskCoreException ex){
-			System.out.println("what");
 			writeExceptions(standardFile.getAbsolutePath(), ex);
 		}
 	}

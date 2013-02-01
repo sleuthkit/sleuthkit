@@ -122,15 +122,11 @@ public class TopDownTraversal extends ImgTraverser{
 					logg.log(Level.SEVERE, "Failed to Traverse", ex);
 				}
 				lp.add(0,c.getId());
-				System.out.println(lp);
 				try {
-					System.out.println(((AbstractContent)c).toString(false));
 					if (c.getChildren().isEmpty()){
-						System.out.println(((AbstractContent)c).toString(false));
 						levs.append(lp.toString() + "\n");
 					}
 					else{
-						System.out.println(((AbstractContent)c).toString(false));
 						topDownDF(c.getChildren(),new ArrayList<>(lp), reslt, levs);
 					}
 				} catch (IOException ex){

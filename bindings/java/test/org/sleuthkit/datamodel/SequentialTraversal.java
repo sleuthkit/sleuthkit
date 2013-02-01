@@ -87,7 +87,6 @@ public class SequentialTraversal extends ImgTraverser{
 			try {
 				while ((c = sk.getContentById(x))!=null)
 				{
-					System.out.println(((AbstractContent)c).toString(false));
 					reslt.append(((AbstractContent)c).toString(false));
 					if(c instanceof File)
 					{
