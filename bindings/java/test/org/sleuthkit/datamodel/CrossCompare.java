@@ -28,24 +28,25 @@ import org.junit.runners.Parameterized;
 
 /**
  *
- * Ensures that a sequential traversal of a given image produces the same result as a 
- * Top Down depth first traversal.
+ * Ensures that a sequential traversal of a given image produces the same result
+ * as a Top Down depth first traversal.
  */
 @RunWith(Parameterized.class)
 public class CrossCompare {
-		
 
 	private List<String> imagePaths;
-	private String Seq , TD;
-	
+	private String Seq, TD;
+
 	public CrossCompare(List<String> imagePaths, String Seq, String TD) {
 		this.imagePaths = imagePaths;
 		this.Seq = Seq;
 		this.TD = TD;
 	}
+
 	/**
-	 * Get the sets of filenames for each test image, they should be located in 
+	 * Get the sets of filenames for each test image, they should be located in
 	 * the folder specified by the build.xml
+	 *
 	 * @return A Collection of one-element Object arrays, where that one element
 	 * is a List<String> containing the image file paths (the type is weird
 	 * because that's what JUnit wants for parameters).
@@ -53,7 +54,7 @@ public class CrossCompare {
 	@Parameterized.Parameters
 	public static Collection<Object[]> testImageData() {
 		Collection<Object[]> data = new ArrayList<>();
-		
+
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths, SequentialTraversal.class.getSimpleName(), TopDownTraversal.class.getSimpleName()});
 		}
@@ -61,21 +62,21 @@ public class CrossCompare {
 	}
 
 	/**
-	 * Compares the sorted results of the different traversals against each other
+	 * Compares the sorted results of the different traversals against each
+	 * other
 	 */
 	@Test
 	public void CrossCompare() {
 		try {
 			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
-			java.io.File testFolder=new java.io.File(DataModelTestSuite.getRsltPath());
+			java.io.File testFolder = new java.io.File(DataModelTestSuite.getRsltPath());
 			java.io.File testStandard1 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, Seq, "_sorted.txt"));
 			java.io.File testStandard2 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, TD, "_sorted.txt"));
 			String testStandardPath1 = testStandard1.getPath();
 			String testStandardPath2 = testStandard2.getPath();
-			assertEquals("Generated results ("+testStandardPath1+") differ with gold standard ("+testStandardPath2+") .", DataModelTestSuite.comparecontent(testStandardPath1, testStandardPath2),true);
+			assertEquals("Generated results (" + testStandardPath1 + ") differ with gold standard (" + testStandardPath2 + ") .", DataModelTestSuite.comparecontent(testStandardPath1, testStandardPath2), true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}
 	}
-	
 }

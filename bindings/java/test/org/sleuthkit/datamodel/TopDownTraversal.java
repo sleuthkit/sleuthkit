@@ -33,17 +33,22 @@ import org.junit.runners.Parameterized.Parameters;
 
 /**
  *
- * Verifies that the current version of TSK produces the same output of previous versions by doing a TopDown Depth first traversal of the given images.
+ * Verifies that the current version of TSK produces the same output of previous
+ * versions by doing a TopDown Depth first traversal of the given images.
  */
 @RunWith(Parameterized.class)
-public class TopDownTraversal extends ImgTraverser{
+public class TopDownTraversal extends ImgTraverser {
+
 	private static final Logger logg = Logger.getLogger(TopDownTraversal.class.getName());
+
 	public TopDownTraversal(List<String> imagePaths) {
 		this.imagePaths = imagePaths;
 	}
+
 	/**
-	 * Get the sets of filenames for each test image, they should be located in 
+	 * Get the sets of filenames for each test image, they should be located in
 	 * the folder specified by the build.xml
+	 *
 	 * @return A Collection of one-element Object arrays, where that one element
 	 * is a List<String> containing the image file paths (the type is weird
 	 * because that's what JUnit wants for parameters).
@@ -51,7 +56,7 @@ public class TopDownTraversal extends ImgTraverser{
 	@Parameters
 	public static Collection<Object[]> testImageData() {
 		Collection<Object[]> data = new ArrayList<>();
-		
+
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
 		}
@@ -65,14 +70,17 @@ public class TopDownTraversal extends ImgTraverser{
 	public void testTopDownDiff() {
 		try {
 			List<Boolean> test = basicTest();
-			assertEquals("Generated results ("+exFile+") differ with gold standard ("+oldExceptionsPath+") .", test.get(0),true);
-			assertEquals("Generated results ("+testStandardPath+") differ with gold standard ("+oldStandardPath+") .", test.get(1),true);
+			assertEquals("Generated results (" + exFile + ") differ with gold standard (" + oldExceptionsPath + ") .", test.get(0), true);
+			assertEquals("Generated results (" + testStandardPath + ") differ with gold standard (" + oldStandardPath + ") .", test.get(1), true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}
 	}
+
 	/**
-	 * Traverses through an image and generates a top down representation the image
+	 * Traverses through an image and generates a top down representation the
+	 * image
+	 *
 	 * @param sk the sleuthkit case used for the traversal
 	 * @param path the location of the output file
 	 * @param exFile the exFile to store exceptions
@@ -80,17 +88,17 @@ public class TopDownTraversal extends ImgTraverser{
 	 */
 	@Override
 	public FileWriter traverse(SleuthkitCase sk, String path) {
-		List<Content> lc=null;
+		List<Content> lc = null;
 		try {
 			lc = sk.getRootObjects();
 		} catch (TskCoreException ex) {
 			DataModelTestSuite.writeExceptions(testStandardPath, ex);
 		}
-		List<Long> lp=new ArrayList<>();
+		List<Long> lp = new ArrayList<>();
 		try {
 			FileWriter reslt = new FileWriter(path);
-			FileWriter levs = new FileWriter(path.replace("_" + this.getClass().getSimpleName() + ".txt", DataModelTestSuite.LVS+".txt"));
-			topDownDF(lc,lp, reslt, levs);
+			FileWriter levs = new FileWriter(path.replace("_" + this.getClass().getSimpleName() + ".txt", DataModelTestSuite.LVS + ".txt"));
+			topDownDF(lc, lp, reslt, levs);
 			levs.flush();
 			return reslt;
 		} catch (IOException ex) {
@@ -98,43 +106,44 @@ public class TopDownTraversal extends ImgTraverser{
 			return null;
 		}
 	}
+
 	/**
-	 * Traverses through an image and generates a TSK gettimes like representation
+	 * Traverses through an image and generates a TSK gettimes like
+	 * representation
+	 *
 	 * @param lc the list of content to be traversed
 	 * @param lp the list of a content's parents
 	 * @param reslt the filewriter to append output to
 	 * @param levs the filewriter to append leaves to
 	 */
-	private void topDownDF(List<Content> lc, List<Long> lp, Appendable reslt, Appendable levs){
-			for(Content c : lc) {
-				try {
-					reslt.append(((AbstractContent)c).toString(false));
-				} catch (IOException ex) {
-					logg.log(Level.SEVERE, "Failed to Traverse", ex);
-				}
-				if(c instanceof File)
-				{
-					DataModelTestSuite.readContent(c, reslt, testStandardPath);
-				}
-				try {
-					reslt.append("\n");
-				} catch (IOException ex) {
-					logg.log(Level.SEVERE, "Failed to Traverse", ex);
-				}
-				lp.add(0,c.getId());
-				try {
-					if (c.getChildren().isEmpty()){
-						levs.append(lp.toString() + "\n");
-					}
-					else{
-						topDownDF(c.getChildren(),new ArrayList<>(lp), reslt, levs);
-					}
-				} catch (IOException ex){
-					logg.log(Level.SEVERE, "Failed to Traverse", ex);
-				}catch(TskCoreException ex){
-					DataModelTestSuite.writeExceptions(testStandardPath, ex);
-				}
-				lp.remove(0);
+	private void topDownDF(List<Content> lc, List<Long> lp, Appendable reslt, Appendable levs) {
+		for (Content c : lc) {
+			try {
+				reslt.append(((AbstractContent) c).toString(false));
+			} catch (IOException ex) {
+				logg.log(Level.SEVERE, "Failed to Traverse", ex);
 			}
+			if (c instanceof File) {
+				DataModelTestSuite.readContent(c, reslt, testStandardPath);
+			}
+			try {
+				reslt.append("\n");
+			} catch (IOException ex) {
+				logg.log(Level.SEVERE, "Failed to Traverse", ex);
+			}
+			lp.add(0, c.getId());
+			try {
+				if (c.getChildren().isEmpty()) {
+					levs.append(lp.toString() + "\n");
+				} else {
+					topDownDF(c.getChildren(), new ArrayList<>(lp), reslt, levs);
+				}
+			} catch (IOException ex) {
+				logg.log(Level.SEVERE, "Failed to Traverse", ex);
+			} catch (TskCoreException ex) {
+				DataModelTestSuite.writeExceptions(testStandardPath, ex);
+			}
+			lp.remove(0);
+		}
 	}
 }

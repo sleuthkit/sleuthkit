@@ -22,28 +22,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A basic implementation of traverser, has a standard test that allows for easy modification of the way tests are run
+ * A basic implementation of traverser, has a standard test that allows for easy
+ * modification of the way tests are run
  */
-public abstract class ImgTraverser implements Traverser
-{
+public abstract class ImgTraverser implements Traverser {
+
 	protected List<String> imagePaths;
 	protected String exFile;
 	protected String testStandardPath;
 	protected String oldStandardPath;
 	protected String oldExceptionsPath;
+
 	/**
-	 * sets up the variables for a basic test, method can be called for any traversal test
-	 * @return 
+	 * sets up the variables for a basic test, method can be called for any
+	 * traversal test
+	 *
+	 * @return
 	 */
-	public List<Boolean> basicTest(){
+	public List<Boolean> basicTest() {
 		String title = DataModelTestSuite.getImgName(imagePaths.get(0));
-		java.io.File testFolder=new java.io.File(DataModelTestSuite.getRsltPath());
+		java.io.File testFolder = new java.io.File(DataModelTestSuite.getRsltPath());
 		java.io.File testStandard = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, this.getClass().getSimpleName(), ".txt"));
 		testStandardPath = testStandard.getPath();
-		exFile = testStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
+		exFile = testStandardPath.replace(".txt", DataModelTestSuite.EX + ".txt");
 		oldStandardPath = DataModelTestSuite.standardPath(imagePaths, this.getClass().getSimpleName());
 		DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, this);
-		oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
+		oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX + ".txt");
 		List<Boolean> ret = new ArrayList<>(2);
 		ret.add(DataModelTestSuite.comparecontent(oldExceptionsPath, exFile));
 		ret.add(DataModelTestSuite.comparecontent(oldStandardPath, testStandardPath));

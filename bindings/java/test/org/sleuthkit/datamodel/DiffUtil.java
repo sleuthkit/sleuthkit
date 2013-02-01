@@ -29,15 +29,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 /**
  * This class gets the Diff of two files.
  */
-public class DiffUtil{
+public class DiffUtil {
 
 	/**
 	 * converts a file to a series of lines
+	 *
 	 * @param filename the name of the file
-	 * @return 
+	 * @return
 	 */
 	private static List<String> fileToLines(String filename) {
 		List<String> lines = new LinkedList<>();
@@ -53,17 +55,19 @@ public class DiffUtil{
 		}
 		return lines;
 	}
+
 	/**
 	 * Returns the diff between the two given files
+	 *
 	 * @param pathOriginal The path to the original file
 	 * @param pathRevised The path to the revised (new) file
 	 * @return A representation of the diff
 	 */
 	public static void getDiff(String pathOriginal, String pathRevised, String title) {
-		List<String> originalLines, revisedLines;	
+		List<String> originalLines, revisedLines;
 		originalLines = fileToLines(pathOriginal);
 		revisedLines = fileToLines(pathRevised);
-		java.io.File outp = new java.io.File(DataModelTestSuite.getRsltPath() + java.io.File.separator + title.replace(".txt","_Diff.txt"));
+		java.io.File outp = new java.io.File(DataModelTestSuite.getRsltPath() + java.io.File.separator + title.replace(".txt", "_Diff.txt"));
 		// Compute diff. Get the Patch object. Patch is the container for computed deltas.
 		Patch patch = DiffUtils.diff(originalLines, revisedLines);
 		StringBuilder diff = new StringBuilder();

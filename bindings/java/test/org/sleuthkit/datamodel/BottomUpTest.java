@@ -34,16 +34,18 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class BottomUpTest {
+
 	static final String BU = "_BU";
 	private List<String> imagePaths;
 
-	
 	public BottomUpTest(List<String> imagePaths) {
 		this.imagePaths = imagePaths;
 	}
+
 	/**
-	 * Get the sets of filenames for each test image, they should be located in 
+	 * Get the sets of filenames for each test image, they should be located in
 	 * the folder specified by the build.xml
+	 *
 	 * @return A Collection of one-element Object arrays, where that one element
 	 * is a List<String> containing the image file paths (the type is weird
 	 * because that's what JUnit wants for parameters).
@@ -51,51 +53,52 @@ public class BottomUpTest {
 	@Parameterized.Parameters
 	public static Collection<Object[]> testImageData() {
 		Collection<Object[]> data = new ArrayList<>();
-		
+
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
 		}
 		return data;
 	}
+
 	/**
-	 * Runs a bottom up traversal of the image, starting at each leaf and going until it reaches the top
+	 * Runs a bottom up traversal of the image, starting at each leaf and going
+	 * until it reaches the top
 	 */
 	@Test
 	public void testBottomUpDiff() {
 		String title = DataModelTestSuite.getImgName(imagePaths.get(0));
-		String exFile = DataModelTestSuite.buildPath(DataModelTestSuite.getRsltPath(), title, BU,".txt");
-		try{
-			java.io.File dbFile=new java.io.File(DataModelTestSuite.getRsltPath());
-			String tempDirPath= dbFile.getAbsolutePath();
+		String exFile = DataModelTestSuite.buildPath(DataModelTestSuite.getRsltPath(), title, BU, ".txt");
+		try {
+			java.io.File dbFile = new java.io.File(DataModelTestSuite.getRsltPath());
+			String tempDirPath = dbFile.getAbsolutePath();
 			String dbPath = DataModelTestSuite.buildPath(tempDirPath, title, BU, ".db");
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
-			title = title + DataModelTestSuite.LVS+ ".txt";
+			title = title + DataModelTestSuite.LVS + ".txt";
 			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
-			try{
+			try {
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
-			}catch (TskDataException ex){
+			} catch (TskDataException ex) {
 				DataModelTestSuite.writeExceptions(exFile, ex);
 			}
 			process.commit();
-			java.io.File lvs = new java.io.File(dbFile.getAbsolutePath()+java.io.File.separator+title);
+			java.io.File lvs = new java.io.File(dbFile.getAbsolutePath() + java.io.File.separator + title);
 			Scanner climber = new Scanner(lvs);
-			while(climber.hasNextLine()){
+			while (climber.hasNextLine()) {
 				String cliNL = climber.nextLine();
 				cliNL = cliNL.substring(1);
 				String[] ids = cliNL.split("[\\],]\\s?+");
 				Content c = sk.getContentById(Integer.parseInt(ids[0]));
-				for(int x = 0; x<ids.length; x++)
-				{
-					assertEquals("Got ID " + c.getId() + " should have gotten ID " + ids[x], ids[x].equals(((Long)c.getId()).toString()), true);
+				for (int x = 0; x < ids.length; x++) {
+					assertEquals("Got ID " + c.getId() + " should have gotten ID " + ids[x], ids[x].equals(((Long) c.getId()).toString()), true);
 					c = c.getParent();
 				}
 			}
-		} catch (FileNotFoundException | NumberFormatException ex){
+		} catch (FileNotFoundException | NumberFormatException ex) {
 			System.out.println(ex.toString());
 			fail("Failed to run BottomUp test");
-		} catch(TskCoreException ex) {
+		} catch (TskCoreException ex) {
 			DataModelTestSuite.writeExceptions(exFile, ex);
 		}
 	}

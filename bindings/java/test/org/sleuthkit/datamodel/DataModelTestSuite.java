@@ -32,13 +32,15 @@ import java.util.logging.Logger;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+
 /**
  *
  * Runs all regression tests and contains utility methods for the tests
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.SequentialTraversal.class,org.sleuthkit.datamodel.CrossCompare.class,org.sleuthkit.datamodel.BottomUpTest.class,org.sleuthkit.datamodel.CPPtoJavaCompare.class})
+@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class, org.sleuthkit.datamodel.SequentialTraversal.class, org.sleuthkit.datamodel.CrossCompare.class, org.sleuthkit.datamodel.BottomUpTest.class, org.sleuthkit.datamodel.CPPtoJavaCompare.class})
 public class DataModelTestSuite {
+
 	static final String TEST_IMAGE_DIR_NAME = "test" + java.io.File.separator + "Input";
 	static final String INPT = "inpt";
 	static final String GOLD = "gold";
@@ -51,31 +53,37 @@ public class DataModelTestSuite {
 	static final int READ_BUFFER_SIZE = 8192;
 	static final String HASH_ALGORITHM = "MD5";
 	private static final Logger logg = Logger.getLogger(DataModelTestSuite.class.getName());
+
 	/**
 	 * Empties the results directory
-	 * @throws Exception 
+	 *
+	 * @throws Exception
 	 */
 	@BeforeClass
-	public static void setUpClass() throws Exception{
+	public static void setUpClass() throws Exception {
 		java.io.File results = new java.io.File(getRsltPath());
-		for(java.io.File del: results.listFiles()){
+		for (java.io.File del : results.listFiles()) {
 			del.delete();
 		}
 	}
+
 	/**
 	 * Generates a list of the traversals to be used for standard creations
-	 * @return 
+	 *
+	 * @return
 	 */
-	public static List<Traverser> getTests(){
+	public static List<Traverser> getTests() {
 		List<Traverser> ret = new ArrayList<>();
 		ret.add(new SequentialTraversal(null));
 		ret.add(new TopDownTraversal(null));
 		return ret;
 	}
+
 	/**
 	 * Creates the Sleuth Kit database for an image, then generates a string
-	 * representation of the given traversal type of the resulting database to use as a standard for
-	 * comparison, and saves the the standard to a file.
+	 * representation of the given traversal type of the resulting database to
+	 * use as a standard for comparison, and saves the the standard to a file.
+	 *
 	 * @param standardPath The path to save the standard file to (will be
 	 * overwritten if it already exists)
 	 * @param tempDirPath An existing directory to create the test database in
@@ -83,7 +91,7 @@ public class DataModelTestSuite {
 	 * @param type The type of traversal to run.
 	 * @param exFile The exceptions file, will be used for logging purposes
 	 */
-	public static void createStandard(String standardPath, String tempDirPath, List<String> imagePaths, Traverser type){
+	public static void createStandard(String standardPath, String tempDirPath, List<String> imagePaths, Traverser type) {
 		java.io.File standardFile = new java.io.File(standardPath);
 		String exFile = standardFile.getAbsolutePath().replace(".txt", EX + ".txt");
 		try {
@@ -97,9 +105,9 @@ public class DataModelTestSuite {
 			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
 			java.io.File xfile = new java.io.File(exFile);
 			xfile.createNewFile();
-			try{
+			try {
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
-			}catch (TskDataException ex){
+			} catch (TskDataException ex) {
 				writeExceptions(standardFile.getAbsolutePath(), ex);
 			}
 			process.commit();
@@ -107,23 +115,25 @@ public class DataModelTestSuite {
 				standardWriter.flush();
 			}
 			runSort(standardFile.getAbsolutePath());
-		}catch (IOException ex) {
+		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Couldn't create Standard", ex);
 			throw new RuntimeException(ex);
-		}catch (TskCoreException ex){
+		} catch (TskCoreException ex) {
 			writeExceptions(standardFile.getAbsolutePath(), ex);
 		}
 	}
+
 	/**
-	 * Gets the paths to the test image files by looking for a test image
-	 * in the given output directory
+	 * Gets the paths to the test image files by looking for a test image in the
+	 * given output directory
+	 *
 	 * @return A list of lists of paths to image parts
 	 */
 	static List<List<String>> getImagePaths() {
-		
+
 		// needs to be absolute file because we're going to walk up its path
-		java.io.File dir = new java.io.File(System.getProperty(INPT,TEST_IMAGE_DIR_NAME));
-		
+		java.io.File dir = new java.io.File(System.getProperty(INPT, TEST_IMAGE_DIR_NAME));
+
 		FileFilter imageFilter = new FileFilter() {
 			@Override
 			public boolean accept(java.io.File f) {
@@ -138,57 +148,63 @@ public class DataModelTestSuite {
 		}
 		return images;
 	}
+
 	/**
 	 * Get the path for a standard corresponding to the given image path.
+	 *
 	 * @param imagePaths path of the image to get a standard for
 	 * @return path to put/find the standard at
 	 */
 	static String standardPath(List<String> imagePaths, String type) {
 		String firstImage = getImgName(imagePaths.get(0));
-		String standardPath = goldStandardPath() + java.io.File.separator + firstImage + "_" + type+".txt";
+		String standardPath = goldStandardPath() + java.io.File.separator + firstImage + "_" + type + ".txt";
 		return standardPath;
 	}
+
 	/**
 	 * removes the files with the file name from the from the given path
+	 *
 	 * @param path the path to the folder where files are to be deleted
 	 * @param filename the name of the files to be deleted
 	 */
-	public static void emptyResults(String path, String filename){
+	public static void emptyResults(String path, String filename) {
 		final String filt = filename.replace(TD, "").replace(".txt", "").replace(SEQ, "");
 		FileFilter imageResFilter = new FileFilter() {
 			@Override
 			public boolean accept(java.io.File f) {
-				return f.getName().contains(filt)&!f.getName().contains(LVS)&!f.getName().contains("Sorted");
+				return f.getName().contains(filt) & !f.getName().contains(LVS) & !f.getName().contains("Sorted");
 			}
 		};
 		java.io.File pth = new java.io.File(path);
-		for(java.io.File del: pth.listFiles(imageResFilter)){
+		for (java.io.File del : pth.listFiles(imageResFilter)) {
 			del.deleteOnExit();
 		}
 	}
+
 	/**
-	 * Runs tsk_gettimes to create a standard for comparing DataModel and TSK output.
+	 * Runs tsk_gettimes to create a standard for comparing DataModel and TSK
+	 * output.
+	 *
 	 * @param standardPath The path to the file to put the tsk data in
 	 * @param img the path to the image, is a list for compatability reasons
 	 */
-	private static void getTSKData(String standardPath, List<String> img){
+	private static void getTSKData(String standardPath, List<String> img) {
 		String tsk_loc;
-		if(System.getProperty("os.name").contains("Windows")){
+		if (System.getProperty("os.name").contains("Windows")) {
 			tsk_loc = "\\Users\\" + System.getProperty("user.name") + "\\Documents\\GitHub\\sleuthkit\\win32\\Release\\tsk_gettimes";
-		}
-		else{
+		} else {
 			return;
 		}
-		String[] cmd={tsk_loc, img.get(0)};
+		String[] cmd = {tsk_loc, img.get(0)};
 		try {
-			Process p=Runtime.getRuntime().exec(cmd);
+			Process p = Runtime.getRuntime().exec(cmd);
 			Scanner read = new Scanner(p.getInputStream());
 			Scanner error1 = new Scanner(p.getErrorStream());
 			FileWriter out = new FileWriter(standardPath);
 			read.nextLine();
-			while(read.hasNextLine()){
+			while (read.hasNextLine()) {
 				String line = read.nextLine();
-				line = line.replace(" (deleted)","");
+				line = line.replace(" (deleted)", "");
 				line = line.replace("(null)", "");
 				//removes unknown data attached to metaAddr
 				String[] linecontents = line.split("\\|");
@@ -203,100 +219,114 @@ public class DataModelTestSuite {
 		} catch (Exception ex) {
 			logg.log(Level.SEVERE, "Failed to run CPP program", ex);
 		}
-		java.io.File xfile = new java.io.File(standardPath.replace(".txt",DataModelTestSuite.EX+".txt"));
+		java.io.File xfile = new java.io.File(standardPath.replace(".txt", DataModelTestSuite.EX + ".txt"));
 		try {
 			xfile.createNewFile();
 		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Failed to create exceptions file", ex);
 		}
 	}
+
 	/**
 	 * Strips the file extension from the given string
+	 *
 	 * @param title the file to have its extension stripped
-	 * @return 
+	 * @return
 	 */
-	private static String stripExtension(String title){
+	private static String stripExtension(String title) {
 		return title.substring(0, title.lastIndexOf("."));
 	}
+
 	/**
 	 * builds the path for an output file
+	 *
 	 * @param path the path to the directory for the file to be stored in
 	 * @param name the name of the file
 	 * @param type the output type of the file
 	 * @param Ext the file extension
 	 * @return the path for an output file
 	 */
-	public static String buildPath(String path, String name, String type, String Ext){
-		return path+java.io.File.separator+name+"_"+type+Ext;
+	public static String buildPath(String path, String name, String type, String Ext) {
+		return path + java.io.File.separator + name + "_" + type + Ext;
 	}
+
 	/**
 	 * Returns the name of an image from the given path
+	 *
 	 * @param img
-	 * @return 
+	 * @return
 	 */
-	public static String getImgName(String img){
+	public static String getImgName(String img) {
 		String[] imgSp = img.split("\\\\");
-		return stripExtension(imgSp[imgSp.length-1]);
+		return stripExtension(imgSp[imgSp.length - 1]);
 	}
+
 	/**
 	 * Gets the location results are stored in.
-	 * @return 
+	 *
+	 * @return
 	 */
-	public static String getRsltPath(){
-		return System.getProperty(RSLT, "test"+java.io.File.separator+"output"+java.io.File.separator+"results");
+	public static String getRsltPath() {
+		return System.getProperty(RSLT, "test" + java.io.File.separator + "output" + java.io.File.separator + "results");
 	}
+
 	/**
 	 * returns the path to the sort command
-	 * @return 
+	 *
+	 * @return
 	 */
-	private static String getSortPath(){
-		if(!System.getProperty("os.name").contains("Windows")){
+	private static String getSortPath() {
+		if (!System.getProperty("os.name").contains("Windows")) {
 			return "sort";
-		}
-		else
-		{
+		} else {
 			return "\\cygwin\\bin\\sort.exe";
 		}
 	}
+
 	/**
 	 * returns the path to the diff command
-	 * @return 
+	 *
+	 * @return
 	 */
-	private static String getDiffPath(){
-		if(!System.getProperty("os.name").contains("Windows")){
+	private static String getDiffPath() {
+		if (!System.getProperty("os.name").contains("Windows")) {
 			return "diff";
-		}
-		else{
+		} else {
 			return "\\cygwin\\bin\\diff.exe";
 		}
 	}
+
 	/**
 	 * Writes the given exception to the given file
+	 *
 	 * @param filename the path of the file that exceptions are being stored for
 	 * @param ex the exception to be written
 	 */
-	protected static void writeExceptions(String filename, Exception ex){
-		filename = filename.replace(".txt",EX+".txt");
+	protected static void writeExceptions(String filename, Exception ex) {
+		filename = filename.replace(".txt", EX + ".txt");
 		FileWriter exWriter;
 		try {
 			exWriter = new FileWriter(filename, true);
 			exWriter.append(ex.toString());
 			exWriter.flush();
 			exWriter.close();
-		}
-		catch (IOException ex1) {
+		} catch (IOException ex1) {
 			logg.log(Level.SEVERE, "Couldn't log Exception", ex1);
 		}
 	}
+
 	/**
 	 * returns the gold standard path
-	 * @return 
+	 *
+	 * @return
 	 */
-	private static String goldStandardPath(){
+	private static String goldStandardPath() {
 		return System.getProperty(GOLD, ("test" + java.io.File.separator + "output" + java.io.File.separator + "gold"));
 	}
+
 	/**
 	 * Reads the data for a given content object, used to create hashes
+	 *
 	 * @param c the content object to be read
 	 * @param result the appendable to append the results to
 	 * @param StrgFile the file path that the content is being read for
@@ -317,12 +347,15 @@ public class DataModelTestSuite {
 
 		} catch (IOException | NoSuchAlgorithmException ex) {
 			logg.log(Level.SEVERE, "Failed to generate Hash", ex);
-		} catch (TskCoreException ex){
+		} catch (TskCoreException ex) {
 			writeExceptions(StrgFile, ex);
 		}
 	}
+
 	/**
-	 * Helper method for Read Content, converts a byte array to a Hexadecimal String
+	 * Helper method for Read Content, converts a byte array to a Hexadecimal
+	 * String
+	 *
 	 * @param bytes given byte array.
 	 * @return a Hexadecimal String
 	 */
@@ -333,43 +366,45 @@ public class DataModelTestSuite {
 		}
 		return hex.toString();
 	}
+
 	/**
 	 * gets the metadata from a datamodel file object
+	 *
 	 * @param fi
 	 * @return
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
-	protected static String getFsCData(FsContent fi) throws TskCoreException{
+	protected static String getFsCData(FsContent fi) throws TskCoreException {
 		String[] path = fi.getUniquePath().split("/", 3);
 		String name;
-		if(path[2].contains("vol_")){
-			String[] pthget = path[2].split("_",2);
-			name = pthget[pthget.length-1];
-		}
-		else{
+		if (path[2].contains("vol_")) {
+			String[] pthget = path[2].split("_", 2);
+			name = pthget[pthget.length - 1];
+		} else {
 			name = path[2];
 		}
 		name = name.replaceAll("[^\\x20-\\x7e]", "");
 		String prpnd;
-		if(fi.isFile()){
+		if (fi.isFile()) {
 			prpnd = "r/";
-		}
-		else{
+		} else {
 			prpnd = "d/";
 		}
-		if(fi.isVirtual()&&!fi.isDir()){
+		if (fi.isVirtual() && !fi.isDir()) {
 			prpnd = "v/";
 		}
 		return ("0|" + name + "|" + fi.metaAddr + "|" + prpnd + fi.getModesAsString() + "|0|0|" + fi.getSize() + "|" + fi.getAtime() + "|" + fi.getMtime() + "|" + fi.getCtime() + "|" + fi.getCrtime());
 	}
+
 	/**
 	 * Calls {@link #createStandard(String, String, String[]) createStandard}
 	 * with default arguments
-	 * @param args Ignored 
+	 *
+	 * @param args Ignored
 	 */
-	public static void main(String[] args){
+	public static void main(String[] args) {
 		String tempDirPath = System.getProperty("java.io.tmpdir");
-		tempDirPath = tempDirPath.substring(0,tempDirPath.length()-1);
+		tempDirPath = tempDirPath.substring(0, tempDirPath.length() - 1);
 		java.io.File pth = new java.io.File(DataModelTestSuite.goldStandardPath());
 		FileFilter testExFilter = new FileFilter() {
 			@Override
@@ -377,25 +412,27 @@ public class DataModelTestSuite {
 				return f.getName().contains(EX);
 			}
 		};
-		for(java.io.File del: pth.listFiles(testExFilter))
-		{
+		for (java.io.File del : pth.listFiles(testExFilter)) {
 			del.delete();
 		}
 		List<Traverser> tests = DataModelTestSuite.getTests();
 		List<List<String>> imagePaths = DataModelTestSuite.getImagePaths();
-		for(List<String> paths : imagePaths) {
-			for(Traverser tstrn: tests){
+		for (List<String> paths : imagePaths) {
+			for (Traverser tstrn : tests) {
 				String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
 				System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
-				String exFile = standardPath.replace(".txt",DataModelTestSuite.EX+".txt");
+				String exFile = standardPath.replace(".txt", DataModelTestSuite.EX + ".txt");
 				DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn);
 			}
-			String standardPathCPP = DataModelTestSuite.standardPath(paths,CPPtoJavaCompare.class.getSimpleName());
+			String standardPathCPP = DataModelTestSuite.standardPath(paths, CPPtoJavaCompare.class.getSimpleName());
 			DataModelTestSuite.getTSKData(standardPathCPP, paths);
 		}
 	}
+
 	/**
-	 * Compares the content of two files to determine if they are equal, if they are it removes the file from the results folder
+	 * Compares the content of two files to determine if they are equal, if they
+	 * are it removes the file from the results folder
+	 *
 	 * @param original is the first file to be compared
 	 * @param results is the second file to be compared
 	 */
@@ -403,17 +440,17 @@ public class DataModelTestSuite {
 		try {
 			java.io.File fi1 = new java.io.File(original);
 			java.io.File fi2 = new java.io.File(results);
-			FileReader f1 = new FileReader (new java.io.File(original).getAbsolutePath());
-			FileReader f2 = new FileReader (new java.io.File(results).getAbsolutePath());
+			FileReader f1 = new FileReader(new java.io.File(original).getAbsolutePath());
+			FileReader f2 = new FileReader(new java.io.File(results).getAbsolutePath());
 			Scanner in1 = new Scanner(f1);
 			Scanner in2 = new Scanner(f2);
-			while (in1.hasNextLine()||in2.hasNextLine()) {
-				if((in1.hasNextLine()^in2.hasNextLine())||!(in1.nextLine().equals(in2.nextLine()))){
+			while (in1.hasNextLine() || in2.hasNextLine()) {
+				if ((in1.hasNextLine() ^ in2.hasNextLine()) || !(in1.nextLine().equals(in2.nextLine()))) {
 					in1.close();
 					in2.close();
 					f1.close();
 					f2.close();
-					DiffUtil.getDiff(fi1.getAbsolutePath(),fi2.getAbsolutePath(),original.substring(original.lastIndexOf(java.io.File.separator)+1));
+					DiffUtil.getDiff(fi1.getAbsolutePath(), fi2.getAbsolutePath(), original.substring(original.lastIndexOf(java.io.File.separator) + 1));
 					return false;
 				}
 			}
@@ -424,14 +461,16 @@ public class DataModelTestSuite {
 			return false;
 		}
 	}
+
 	/**
 	 * runs sort on the given file
-	 * @param inp 
+	 *
+	 * @param inp
 	 */
-	private static void runSort(String inp){
+	private static void runSort(String inp) {
 		String outp = sortedFlPth(inp);
 		String cygpath = getSortPath();
-		String[] cmd={cygpath ,inp, "-o",outp};
+		String[] cmd = {cygpath, inp, "-o", outp};
 		try {
 			Runtime.getRuntime().exec(cmd).waitFor();
 		} catch (IOException | InterruptedException ex) {
@@ -439,29 +478,33 @@ public class DataModelTestSuite {
 			throw new RuntimeException(ex);
 		}
 	}
+
 	/**
 	 * Returns the name of the sorted file
+	 *
 	 * @param path the original name of the file
-	 * @return 
+	 * @return
 	 */
-	protected static String sortedFlPth(String path){
+	protected static String sortedFlPth(String path) {
 		return path.replace(".txt", "_Sorted.txt");
 	}
+
 	/**
 	 * Runs the Cygwin Diff algorithm on two files, is currently unused
+	 *
 	 * @param path1 is the path to the first file
 	 * @param path2 is the path to the second file
 	 */
-	private static void runDiff(String path1, String path2){
+	private static void runDiff(String path1, String path2) {
 		String diffPath = getDiffPath();
 		String outputLoc = path2.replace(".txt", "_Diff.txt");
 		String[] cmd = {diffPath, path1, path2};
 		try {
-			Process p=Runtime.getRuntime().exec(cmd);
+			Process p = Runtime.getRuntime().exec(cmd);
 			Scanner read = new Scanner(p.getInputStream());
 			Scanner error1 = new Scanner(p.getErrorStream());
 			FileWriter out = new FileWriter(outputLoc);
-			while(read.hasNextLine()){
+			while (read.hasNextLine()) {
 				String line = read.nextLine();
 				out.append(line);
 				out.flush();
@@ -472,13 +515,15 @@ public class DataModelTestSuite {
 			logg.log(Level.SEVERE, "Failed to run Diff program", ex);
 		}
 	}
+
 	/**
 	 * Returns whether or not a file is an image file
+	 *
 	 * @param name the name of the file
-	 * @return a boolean that is true if the name ends with an image file extension
+	 * @return a boolean that is true if the name ends with an image file
+	 * extension
 	 */
-	protected static boolean isImgFile(String name)
-	{
-		return name.endsWith(".001")||name.endsWith(".raw")||name.endsWith(".img")||name.endsWith(".E01")||name.endsWith(".dd");
+	protected static boolean isImgFile(String name) {
+		return name.endsWith(".001") || name.endsWith(".raw") || name.endsWith(".img") || name.endsWith(".E01") || name.endsWith(".dd");
 	}
 }
