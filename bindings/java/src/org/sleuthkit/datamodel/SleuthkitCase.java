@@ -3870,10 +3870,10 @@ public class SleuthkitCase {
 	/**
 	 * Find all the files with the given MD5 hash.
 	 *
-	 * @param md5Hash	hash value to match files with
-	 * @return List of FsContent with the given hash
+	 * @param md5Hashhash value to match files with
+	 * @return List of AbstractFile with the given hash
 	 */
-	public List<FsContent> findFilesByMd5(String md5Hash) {
+	public List<AbstractFile> findFilesByMd5(String md5Hash) {
 		ResultSet rs = null;
 		Statement s = null;
 		dbReadLock();
@@ -3884,7 +3884,7 @@ public class SleuthkitCase {
 					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + "' "
 					+ "AND md5 = '" + md5Hash + "' "
 					+ "AND size > '0'");
-			return resultSetToFsContents(rs);
+			return resultSetToAbstractFiles(rs);
 
 
 		} catch (SQLException ex) {
@@ -3902,7 +3902,7 @@ public class SleuthkitCase {
 			}
 			dbReadUnlock();
 		}
-		return new ArrayList<FsContent>();
+		return Collections.<AbstractFile>emptyList();
 	}
 
 	/**
