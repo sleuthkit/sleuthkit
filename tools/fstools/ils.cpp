@@ -188,6 +188,7 @@ main(int argc, char **argv1)
              */
         case _TSK_T('a'):
             flags |= TSK_FS_META_FLAG_ALLOC;
+			flags &= ~TSK_FS_META_FLAG_UNALLOC;
             break;
         case _TSK_T('A'):
             flags |= TSK_FS_META_FLAG_UNALLOC;
