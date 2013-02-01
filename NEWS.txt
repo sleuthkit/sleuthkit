@@ -15,6 +15,7 @@ Bug Fixes:
 - NTFS code now looks at all MFT entries when listing directory contents. It used to only look at unallocated entries for orphan files. This fixes an image that had allocated files missing from the directory b-tree.
 - NTFS code uses sequence number when searching MFT entries for all files. 
 - Libewf detection code change to support v2 API more reliably (ID: 3596212). 
+- NTFS $SII code could crash in rare cases if $SDS was multiple of block size. 
 
 ---------------- VERSION 4.0.1 --------------
 New Features:
