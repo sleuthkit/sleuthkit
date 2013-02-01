@@ -2644,7 +2644,48 @@ public class SleuthkitCase {
 		return findFiles(image, fileName, parentFsContent.getName());
 	}
 
+	
 	/**
+	 * Count files matching the specific Where clause
+	 * 
+	 * @param sqlWhereClause a SQL where clause appropriate for the desired
+	 * files (do not begin the WHERE clause with the word WHERE!)
+	 * @return count of files each of which satisfy the given WHERE clause
+	 * @throws TskCoreException
+	 */
+	public long countFilesWhere(String sqlWhereClause) throws TskCoreException {
+		Statement statement = null;
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			statement = con.createStatement();
+			rs = statement.executeQuery("COUNT (*) FROM tsk_files WHERE " + sqlWhereClause);
+			return rs.getLong(1);
+		} catch (SQLException e) {
+			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after executing  countFilesWhere", ex);
+				}
+			}
+			if (statement != null) {
+				try {
+					statement.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing statement after executing  countFilesWhere", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+	}
+
+	
+	/**
+	 * Find and return list of files matching the specific Where clause
+	 * 
 	 * @param sqlWhereClause a SQL where clause appropriate for the desired
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of FsContent each of which satisfy the given WHERE clause
@@ -2679,6 +2720,8 @@ public class SleuthkitCase {
 		}
 	}
 
+	
+	
 	/**
 	 * @param image the image to search for the given file name
 	 * @param filePath The full path to the file(s) of interest. This can
