@@ -77,11 +77,7 @@ public abstract class AbstractFile extends AbstractContent {
 		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(meta_flags);
 		this.size = size;
 		this.parentPath = parentPath;
-		if (md5Hash == null || md5Hash.equals("NULL")) {
-			this.md5Hash = null;
-		} else {
-			this.md5Hash = md5Hash;
-		}
+		this.md5Hash = md5Hash;
 		if (knownState == null) {
 			this.knownState = FileKnown.UKNOWN;
 		}
