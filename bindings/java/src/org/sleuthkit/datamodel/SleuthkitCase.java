@@ -3777,22 +3777,22 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Store the md5Hash for the FsContent in the database
+	 * Store the md5Hash for the file in the database
 	 *
-	 * @param	fsContent	The FsContent object
+	 * @param	file	The file object
 	 * @param	md5Hash	The object's md5Hash
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
 	 */
-	void setMd5Hash(FsContent fsContent, String md5Hash) throws TskCoreException {
-		long id = fsContent.getId();
+	void setMd5Hash(AbstractFile file, String md5Hash) throws TskCoreException {
+		long id = file.getId();
 		SleuthkitCase.dbWriteLock();
 		try {
 			updateMd5St.setString(1, md5Hash);
 			updateMd5St.setLong(2, id);
 			updateMd5St.executeUpdate();
 			//update the object itself
-			fsContent.setMd5Hash(md5Hash);
+			file.setMd5Hash(md5Hash);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting MD5 hash.", ex);
 		} finally {

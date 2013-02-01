@@ -38,12 +38,12 @@ public class Hash {
 	 * Generate the md5 hash for the given FsContent and store it in the
 	 * database
 	 *
-	 * @param fsContent FsContent object whose md5 hash we want to calculate
+	 * @param file file object whose md5 hash we want to calculate
 	 * @return md5 of the given FsContent object
 	 */
-	public String calculateMd5(FsContent fsContent) throws IOException {
+	public String calculateMd5(AbstractFile file) throws IOException {
 		String hashText = "";
-		InputStream in = new ReadContentInputStream(fsContent);
+		InputStream in = new ReadContentInputStream(file);
 		Logger logger = Logger.getLogger(Hash.class.getName());
 		try {
 			MessageDigest md = MessageDigest.getInstance("md5");
@@ -59,7 +59,7 @@ public class Hash {
 			while (hashText.length() < 32) {
 				hashText = "0" + hashText;
 			}
-			fsContent.getSleuthkitCase().setMd5Hash(fsContent, hashText);
+			file.getSleuthkitCase().setMd5Hash(file, hashText);
 		} catch (NoSuchAlgorithmException ex) {
 			logger.log(Level.WARNING, "No algorithm known as 'md5'", ex);
 		} catch (TskCoreException ex) {
