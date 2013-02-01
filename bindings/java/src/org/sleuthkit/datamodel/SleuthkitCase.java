@@ -3747,15 +3747,15 @@ public class SleuthkitCase {
 	 * Store the known status for the FsContent in the database Note: will not
 	 * update status if content is already 'Known Bad'
 	 *
-	 * @param	fsContent	The FsContent object
+	 * @param	file	The AbstractFile object
 	 * @param	fileKnown	The object's known status
 	 * @return	true if the known status was updated, false otherwise
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
 	 */
-	public boolean setKnown(FsContent fsContent, FileKnown fileKnown) throws TskCoreException {
-		long id = fsContent.getId();
-		FileKnown currentKnown = fsContent.getKnown();
+	public boolean setKnown(AbstractFile file, FileKnown fileKnown) throws TskCoreException {
+		long id = file.getId();
+		FileKnown currentKnown = file.getKnown();
 		if (currentKnown.compareTo(fileKnown) > 0) {
 			return false;
 		}
@@ -3767,7 +3767,7 @@ public class SleuthkitCase {
 					+ "WHERE obj_id=" + id);
 			s.close();
 			//update the object itself
-			fsContent.setKnown(fileKnown);
+			file.setKnown(fileKnown);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting Known status.", ex);
 		} finally {
