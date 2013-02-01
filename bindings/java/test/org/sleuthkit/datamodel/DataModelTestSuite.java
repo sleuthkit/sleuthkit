@@ -34,7 +34,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 /**
  *
- * Runs all regression tests.
+ * Runs all regression tests and contains utility methods for the tests
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class,org.sleuthkit.datamodel.SequentialTraversal.class,org.sleuthkit.datamodel.CrossCompare.class,org.sleuthkit.datamodel.BottomUpTest.class,org.sleuthkit.datamodel.CPPtoJavaCompare.class})
@@ -97,7 +97,6 @@ public class DataModelTestSuite {
 			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
 			java.io.File xfile = new java.io.File(exFile);
 			xfile.createNewFile();
-			System.out.println(exFile);
 			try{
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
 			}catch (TskDataException ex){
@@ -112,6 +111,7 @@ public class DataModelTestSuite {
 			logg.log(Level.SEVERE, "Couldn't create Standard", ex);
 			throw new RuntimeException(ex);
 		}catch (TskCoreException ex){
+			System.out.println("what");
 			writeExceptions(standardFile.getAbsolutePath(), ex);
 		}
 	}
