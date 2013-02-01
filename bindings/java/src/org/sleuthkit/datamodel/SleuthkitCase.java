@@ -2659,7 +2659,7 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			statement = con.createStatement();
-			rs = statement.executeQuery("COUNT (*) FROM tsk_files WHERE " + sqlWhereClause);
+			rs = statement.executeQuery("SELECT COUNT (*) FROM tsk_files WHERE " + sqlWhereClause);
 			return rs.getLong(1);
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
