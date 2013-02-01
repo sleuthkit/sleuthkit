@@ -586,6 +586,9 @@ int main(int argc, char * const *argv1)
     if(!filename){
 	errx(1,"must provide filename");
     }
+    if(opt_no_data && (opt_md5 || opt_sha1 || opt_save || opt_magic)) {
+      errx(1, "-g conflicts with options requiring data access (-z may be needed)");
+    }
 
     if(opt_save){
 	if(access(save_outdir.c_str(),F_OK)){
