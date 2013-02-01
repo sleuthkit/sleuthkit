@@ -117,7 +117,22 @@ public class DerivedFile extends AbstractFile {
 		return localAbsPath;
 	}
 	
-	
+	@Override
+	public Image getImage() throws TskCoreException {
+		//TODO need schema support to implement this more efficiently
+		Image image = null;
+		Content ancestor = getParent();
+		image = ancestor.getImage();
+		while (image == null) {
+			ancestor = ancestor.getParent();
+			if (ancestor == null) {
+				//should never happen
+				break;
+			}
+			image = ancestor.getImage();
+		}
+		return image;
+	}
 
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
