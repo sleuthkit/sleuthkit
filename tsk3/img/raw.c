@@ -80,7 +80,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             /* if it is a Windows device, try again with SHARE_WRITE */
             if ((raw_info->images[idx][0] == _TSK_T('\\'))
                 && (raw_info->images[idx][1] == _TSK_T('\\'))
-                && (raw_info->images[idx][2] == _TSK_T('.'))
+                && ((raw_info->images[idx][2] == _TSK_T('.')) || (raw_info->images[idx][2] == _TSK_T('?')))
                 && (raw_info->images[idx][3] == _TSK_T('\\'))) {
 
                 if ( tsk_verbose ) {
@@ -95,11 +95,12 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         }
         
         if ( cimg->fd == INVALID_HANDLE_VALUE ) {
+            int lastError = (int)GetLastError();
             cimg->fd = 0; /* so we don't close it next time */
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                                "\" - %d", raw_info->images[idx], (int) GetLastError());
+                                "\" - %d", raw_info->images[idx], lastError);
             return -1;
         }
 
@@ -138,12 +139,13 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
 
             if ((li.LowPart == INVALID_SET_FILE_POINTER) &&
                 (GetLastError() != NO_ERROR)) {
+                int lastError = (int)GetLastError();
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_SEEK);
                 tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
                     "\" offset %" PRIuOFF " seek - %d",
                     raw_info->images[idx], rel_offset,
-                    (int) GetLastError());
+                    lastError);
                 return -1;
             }
             cimg->seek_pos = rel_offset;
@@ -156,12 +158,13 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             len = (size_t)(raw_info->img_info.size - rel_offset);
 
         if (FALSE == ReadFile(cimg->fd, buf, (DWORD) len, &nread, NULL)) {
+            int lastError = GetLastError();
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_READ);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
                 "\" offset: %" PRIuOFF " read len: %" PRIuSIZE " - %d",
                 raw_info->images[idx], rel_offset, len,
-                (int) GetLastError());
+                lastError);
             return -1;
         }
         cnt = (ssize_t) nread;
@@ -451,24 +454,25 @@ get_size(const TSK_TCHAR * a_file, uint8_t a_is_winobj)
             }
 
             if (fd == INVALID_HANDLE_VALUE) {
+                int lastError = (int)GetLastError();
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_OPEN);
                 // print string of commonly found errors
-                if (GetLastError() == ERROR_ACCESS_DENIED) {
+                if (lastError == ERROR_ACCESS_DENIED) {
                     tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
                         "\" - access denied", a_file);
                 }
-                else if (GetLastError() == ERROR_SHARING_VIOLATION) {
+                else if (lastError == ERROR_SHARING_VIOLATION) {
                     tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
                         "\" - sharing violation", a_file);
                 }
-                else if (GetLastError() == ERROR_FILE_NOT_FOUND) {
+                else if (lastError == ERROR_FILE_NOT_FOUND) {
                     tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
                         "\" - file not found", a_file);
                 }
                 else {
                     tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                        "\" - (error %d)", a_file, (int) GetLastError());
+                        "\" - (error %d)", a_file, lastError);
                 }
                 return -2;
             }
@@ -479,10 +483,11 @@ get_size(const TSK_TCHAR * a_file, uint8_t a_is_winobj)
         if (a_is_winobj == 0) {
             dwLo = GetFileSize(fd, &dwHi);
             if (dwLo == 0xffffffff) {
+                int lastError = (int)GetLastError();
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_OPEN);
                 tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                    "\" - GetFileSize: %d", a_file, (int) GetLastError());
+                    "\" - GetFileSize: %d", a_file, lastError);
                 size = -1;
             }
             else {
@@ -506,11 +511,12 @@ get_size(const TSK_TCHAR * a_file, uint8_t a_is_winobj)
 
                 if (FALSE == DeviceIoControl(fd, IOCTL_DISK_GET_DRIVE_GEOMETRY,
                         NULL, 0, &pdg, sizeof(pdg), &junk, (LPOVERLAPPED) NULL)) {
+                    int lastError = (int)GetLastError();
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_IMG_OPEN);
                     tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
                         "\" - DeviceIoControl: %d", a_file,
-                        (int) GetLastError());
+                        lastError);
                     size = -1;
                 }
                 else {
@@ -608,7 +614,7 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     /* determine if this is the path to a Windows device object */
     if ((a_images[0][0] == _TSK_T('\\'))
         && (a_images[0][1] == _TSK_T('\\'))
-        && (a_images[0][2] == _TSK_T('.'))
+        && ((a_images[0][2] == _TSK_T('.')) || (a_images[0][2] == _TSK_T('?')))
         && (a_images[0][3] == _TSK_T('\\'))) {
         raw_info->is_winobj = 1;
     }
