@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.TskData.FileKnown;
 
 /**
  * Layout file object representation of a layout file stored in tsk_files table.
@@ -43,8 +44,8 @@ public class LayoutFile extends AbstractFile{
 	protected LayoutFile(SleuthkitCase db, long objId, String name, TskData.TSK_DB_FILES_TYPE_ENUM type, 
 			TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
 			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
-			long size, String parentPath) {
-		super(db, objId, name, type, dirType, metaType, dirFlag, meta_flags, size, parentPath);
+			long size, String parentPath, String md5Hash, FileKnown knownState) {
+		super(db, objId, name, type, dirType, metaType, dirFlag, meta_flags, size, parentPath, md5Hash, knownState);
 		//this.size = calcSize(); //update calculated size
 	}
 

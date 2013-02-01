@@ -205,7 +205,7 @@ class ResultSetHelper {
 				new DerivedFile(db, objId, rs.getString("name"), 
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-				rs.getLong("size"), parentPath, localPath, parentId);
+				rs.getLong("size"), parentPath, localPath, rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentId);
 		
 		return df;
 	}

@@ -53,14 +53,7 @@ public abstract class FsContent extends AbstractFile {
 	 * parent file system
 	 */
 	private volatile FileSystem parentFileSystem;
-	/**
-	 * known status in database
-	 */
-	protected FileKnown known;
-	/*
-	 * md5 hash
-	 */
-	protected String md5Hash;
+
 	///other members
 	/**
 	 * file Handle
@@ -89,16 +82,16 @@ public abstract class FsContent extends AbstractFile {
 	 * @param uid
 	 * @param gid
 	 * @param modes
-	 * @param known
+	 * @param knownState
 	 * @param parentPath
 	 * @param md5Hash
 	 */
 	FsContent(SleuthkitCase db, long objId, long fsObjId, String name, long meta_addr,
 			TSK_FS_ATTR_TYPE_ENUM attrType, short attr_id,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
-			long size, long ctime, long crtime, long atime, long mtime, int uid, int gid, short modes, FileKnown known,
+			long size, long ctime, long crtime, long atime, long mtime, int uid, int gid, short modes, FileKnown knownState,
 			String parentPath, String md5Hash) {
-		super(db, objId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, dirType, metaType, dirFlag, meta_flags, size, parentPath);
+		super(db, objId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, dirType, metaType, dirFlag, meta_flags, size, parentPath, md5Hash, knownState);
 		this.metaAddr = meta_addr;
 		this.attrType = attrType;
 		this.attrId = attr_id;
@@ -109,14 +102,7 @@ public abstract class FsContent extends AbstractFile {
 		this.uid = uid;
 		this.gid = gid;
 		this.modes = TSK_FS_META_MODE_ENUM.valuesOf(modes);
-		this.known = known;
-		if (md5Hash.equals("NULL")) {
-			this.md5Hash = null;
-		} else {
-			this.md5Hash = md5Hash;
-		}
 		this.fsObjId = fsObjId;
-
 	}
 
 	/**
@@ -149,27 +135,6 @@ public abstract class FsContent extends AbstractFile {
 		return parentFileSystem;
 	}
 
-	/**
-	 * Sets md5 hash string Note: database or other FsContent objects are not
-	 * updated. Currently only SleuthkiCase calls it to update the object while
-	 * updating tsk_files entry
-	 *
-	 * @param md5Hash
-	 */
-	void setMd5Hash(String md5Hash) {
-		this.md5Hash = md5Hash;
-	}
-
-	/**
-	 * Sets known status Note: database or other FsContent objects are not
-	 * updated. Currently only SleuthkiCase calls it to update the object while
-	 * updating tsk_files entry
-	 *
-	 * @param known
-	 */
-	void setKnown(FileKnown known) {
-		this.known = known;
-	}
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
@@ -462,15 +427,7 @@ public abstract class FsContent extends AbstractFile {
 		return modes.contains(mode);
 	}
 
-	/**
-	 * Get "known" file status - after running a HashDB ingest on it As marked
-	 * by a known file database, such as NSRL
-	 *
-	 * @return file known status enum value
-	 */
-	public FileKnown getKnown() {
-		return known;
-	}
+
 
 	@Override
 	public synchronized String getUniquePath() throws TskCoreException {
@@ -484,14 +441,7 @@ public abstract class FsContent extends AbstractFile {
 		return uniquePath;
 	}
 
-	/**
-	 * Get the md5 hash value as calculated, if present
-	 *
-	 * @return md5 hash string, if it is present or null if it is not
-	 */
-	public String getMd5Hash() {
-		return this.md5Hash;
-	}
+	
 
 	@Override
 	public void finalize() throws Throwable {

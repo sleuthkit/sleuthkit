@@ -41,11 +41,10 @@ public class VirtualDirectory extends AbstractFile {
 	protected VirtualDirectory(SleuthkitCase db, long objId, String name, 
 			TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
 			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
-			long size, String parentPath) {
+			long size, String parentPath, String md5Hash, TskData.FileKnown knownState) {
 		super(db, objId, name, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 
 				dirType, metaType, dirFlag, meta_flags,
-				0, parentPath);
-
+				0, parentPath, md5Hash, knownState);
 
 	}
 

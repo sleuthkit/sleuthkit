@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 
 /**
@@ -59,12 +60,15 @@ public class DerivedFile extends AbstractFile {
 	 * @param size size of the file
 	 * @param parentPath path of the parent of this derived file (e.g. fs zip file, or another derived file path)
 	 * @param localPath local path of this derived file, relative to the db path
+	 * @param md5Hash
+	 * @param knownState
 	 */
 	DerivedFile(SleuthkitCase db, long objId, String name, 
 			TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
 			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
-			long size, String parentPath, String localPath) {
-		super(db, objId, name, TSK_DB_FILES_TYPE_ENUM.DERIVED, dirType, metaType, dirFlag, meta_flags, size, parentPath);
+			long size, String parentPath, String localPath, String md5Hash, FileKnown knownState) {
+		super(db, objId, name, TSK_DB_FILES_TYPE_ENUM.DERIVED, dirType, metaType, dirFlag, meta_flags, 
+				size, parentPath, md5Hash, knownState);
 		this.localPath = localPath;
 
 		if (localPath == null) {
@@ -88,13 +92,15 @@ public class DerivedFile extends AbstractFile {
 	 * @param size the size of the file
 	 * @param parentPath path of the parent of this derived file (e.g. fs zip file, or another derived file path)
 	 * @param localPath local path of this derived file, relative to the db path
+	 * @param md5Hash
+	 * @param knownState
 	 * @param parentId parent id of this derived file to set if available
 	 */
 	DerivedFile(SleuthkitCase db, long objId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
 			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
 			
-			long size, String parentPath, String localPath, long parentId) {
-		this(db, objId, name, dirType, metaType, dirFlag, meta_flags, size, parentPath, localPath);
+			long size, String parentPath, String localPath, String md5Hash, FileKnown knownState, long parentId) {
+		this(db, objId, name, dirType, metaType, dirFlag, meta_flags, size, parentPath, localPath, md5Hash, knownState);
 		
 		if (parentId > 0) {
 			setParentId(parentId);

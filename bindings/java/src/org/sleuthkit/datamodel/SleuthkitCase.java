@@ -2037,7 +2037,7 @@ public class SleuthkitCase {
 							rs.getString("name"),
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-							rs.getLong("size"), parentPath);
+							rs.getLong("size"), parentPath, rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")));
 					children.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS) {
 					String parentPath = rs.getString("parent_path");
@@ -2050,7 +2050,7 @@ public class SleuthkitCase {
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
 							rs.getLong("size"),
-							parentPath);
+							parentPath, rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")));
 					children.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED) {
 					final DerivedFile df = rsHelper.derivedFile(rs, parentId);
@@ -2605,7 +2605,7 @@ public class SleuthkitCase {
 			addFilePath(newObjId, localPath);
 
 			ret = new DerivedFile(this, newObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, parentPath, localPath, parentId);
+					size, parentPath, localPath, null, null, parentId);
 
 			//TODO add derived method
 
@@ -3552,7 +3552,7 @@ public class SleuthkitCase {
 							rs.getString("name"),
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-							rs.getLong("size"), parentPath);
+							rs.getLong("size"), parentPath, rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")));
 					results.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()) {
 					String parentPath = rs.getString("parent_path");
@@ -3565,7 +3565,7 @@ public class SleuthkitCase {
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
 							rs.getLong("size"),
-							parentPath);
+							parentPath, rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")));
 					results.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType()) {
 					final DerivedFile df;

@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
@@ -43,6 +44,14 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final TSK_FS_META_TYPE_ENUM metaType;
 	protected final TSK_FS_NAME_FLAG_ENUM dirFlag;
 	protected final Set<TSK_FS_META_FLAG_ENUM> metaFlags;
+	/**
+	 * knownState status in database
+	 */
+	protected TskData.FileKnown knownState;
+	/*
+	 * md5 hash
+	 */
+	protected String md5Hash;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -54,10 +63,12 @@ public abstract class AbstractFile extends AbstractContent {
 	 * AbstractContent.UNKNOWN_ID
 	 * @param name name field of the file
 	 * @param type type of the file
+	 * @param md5Hash md5sum of the file, or null or "NULL" if not present
+	 * @param knownState knownState status of the file, or null if unknown (default)
 	 */
 	protected AbstractFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
-			long size, String parentPath) {
+			long size, String parentPath, String md5Hash, FileKnown knownState ) {
 		super(db, obj_id, name);
 		this.type = type;
 		this.dirType = dirType;
@@ -66,6 +77,17 @@ public abstract class AbstractFile extends AbstractContent {
 		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(meta_flags);
 		this.size = size;
 		this.parentPath = parentPath;
+		if (md5Hash == null || md5Hash.equals("NULL")) {
+			this.md5Hash = null;
+		} else {
+			this.md5Hash = md5Hash;
+		}
+		if (knownState == null) {
+			this.knownState = FileKnown.UKNOWN;
+		}
+		else {
+			this.knownState = knownState;
+		}
 	}
 
 	/**
@@ -75,6 +97,47 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public TskData.TSK_DB_FILES_TYPE_ENUM getType() {
 		return type;
+	}
+
+	/**
+	 * Sets md5 hash string Note: database or other FsContent objects are not
+	 * updated. Currently only SleuthkiCase calls it to update the object while
+	 * updating tsk_files entry
+	 *
+	 * @param md5Hash
+	 */
+	void setMd5Hash(String md5Hash) {
+		this.md5Hash = md5Hash;
+	}
+
+	/**
+	 * Get the md5 hash value as calculated, if present
+	 *
+	 * @return md5 hash string, if it is present or null if it is not
+	 */
+	public String getMd5Hash() {
+		return this.md5Hash;
+	}
+
+	/**
+	 * Sets knownState status Note: database or other file objects are not updated.
+	 * Currently only SleuthkiCase calls it to update the object while updating
+	 * tsk_files entry
+	 *
+	 * @param knownState
+	 */
+	void setKnown(TskData.FileKnown known) {
+		this.knownState = known;
+	}
+
+	/**
+	 * Get "knownState" file status - after running a HashDB ingest on it As marked
+	 * by a knownState file database, such as NSRL
+	 *
+	 * @return file knownState status enum value
+	 */
+	public TskData.FileKnown getKnown() {
+		return knownState;
 	}
 
 	/**
@@ -246,4 +309,11 @@ public abstract class AbstractFile extends AbstractContent {
 	public boolean isMetaFlagSet(TSK_FS_META_FLAG_ENUM metaFlag) {
 		return metaFlags.contains(metaFlag);
 	}
+
+	@Override
+	public String toString() {
+		return "AbstractFile{" + "type=" + type + ", size=" + size + ", parentPath=" + parentPath + ", dirType=" + dirType + ", metaType=" + metaType + ", dirFlag=" + dirFlag + ", metaFlags=" + metaFlags + ", knownState=" + knownState + ", md5Hash=" + md5Hash + '}';
+	}
+	
+	
 }
