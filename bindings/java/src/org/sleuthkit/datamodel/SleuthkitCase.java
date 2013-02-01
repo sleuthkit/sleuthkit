@@ -3879,11 +3879,9 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			s = con.createStatement();
-			rs = s.executeQuery("SELECT * FROM tsk_files "
-					+ "WHERE type = '" + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + "' "
-					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + "' "
-					+ "AND md5 = '" + md5Hash + "' "
-					+ "AND size > '0'");
+			rs = s.executeQuery("SELECT * FROM tsk_files WHERE "
+				+ " md5 = " + md5Hash + " "
+					+ "AND size > 0");
 			return resultSetToAbstractFiles(rs);
 
 
