@@ -35,7 +35,6 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class BottomUpTest {
 	static final String BU = "_BU";
-
 	private List<String> imagePaths;
 
 	
@@ -58,11 +57,14 @@ public class BottomUpTest {
 		}
 		return data;
 	}
-	
+	/**
+	 * Runs a bottom up traversal of the image, starting at each leaf and going until it reaches the top
+	 */
 	@Test
 	public void testBottomUpDiff() {
+		String title = DataModelTestSuite.getImgName(imagePaths.get(0));
+		String exFile = DataModelTestSuite.buildPath(DataModelTestSuite.getRsltPath(), title, BU,".txt");
 		try{
-			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
 			java.io.File dbFile=new java.io.File(DataModelTestSuite.getRsltPath());
 			String tempDirPath= dbFile.getAbsolutePath();
 			String dbPath = DataModelTestSuite.buildPath(tempDirPath, title, BU, ".db");
@@ -74,6 +76,7 @@ public class BottomUpTest {
 			try{
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
 			}catch (TskDataException ex){
+				DataModelTestSuite.writeExceptions(exFile, ex);
 			}
 			process.commit();
 			java.io.File lvs = new java.io.File(dbFile.getAbsolutePath()+java.io.File.separator+title);
@@ -89,9 +92,11 @@ public class BottomUpTest {
 					c = c.getParent();
 				}
 			}
-		} catch (TskCoreException | FileNotFoundException | NumberFormatException ex){
+		} catch (FileNotFoundException | NumberFormatException ex){
 			System.out.println(ex.toString());
 			fail("Failed to run BottomUp test");
+		} catch(TskCoreException ex) {
+			DataModelTestSuite.writeExceptions(exFile, ex);
 		}
 	}
 }

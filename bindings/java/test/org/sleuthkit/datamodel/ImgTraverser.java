@@ -31,7 +31,10 @@ public abstract class ImgTraverser implements Traverser
 	protected String testStandardPath;
 	protected String oldStandardPath;
 	protected String oldExceptionsPath;
-	
+	/**
+	 * sets up the variables for a basic test, method can be called for any traversal test
+	 * @return 
+	 */
 	public List<Boolean> basicTest(){
 		String title = DataModelTestSuite.getImgName(imagePaths.get(0));
 		java.io.File testFolder=new java.io.File(DataModelTestSuite.getRsltPath());
@@ -39,7 +42,7 @@ public abstract class ImgTraverser implements Traverser
 		testStandardPath = testStandard.getPath();
 		exFile = testStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
 		oldStandardPath = DataModelTestSuite.standardPath(imagePaths, this.getClass().getSimpleName());
-		DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, this, exFile);
+		DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, this);
 		oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX+".txt");
 		List<Boolean> ret = new ArrayList<>(2);
 		ret.add(DataModelTestSuite.comparecontent(oldExceptionsPath, exFile));

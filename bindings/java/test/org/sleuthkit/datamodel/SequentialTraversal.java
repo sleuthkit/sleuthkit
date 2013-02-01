@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,7 +36,7 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class SequentialTraversal extends ImgTraverser{
-	
+	private static final Logger logg = Logger.getLogger(SequentialTraversal.class.getName());
 	public SequentialTraversal(List<String> imagePaths) {
 		this.imagePaths = imagePaths;
 	}
@@ -55,7 +57,9 @@ public class SequentialTraversal extends ImgTraverser{
 		return data;
 	}
 
-	
+	/**
+	 * Runs the test
+	 */
 	@Test
 	public void testSequentialDiff() {
 		try {
@@ -66,13 +70,15 @@ public class SequentialTraversal extends ImgTraverser{
 			fail("Couldn't open gold standard file.");
 		}
 	}
-		/**
-	 * Creates a sequential representation of a database
-	 * @param lc a list of content to be read
-	 * @param lp that lc's list of parents in most recent first order
+	/**
+	 * Traverses through an image and generates a sequential representation of the image
+	 * @param sk the sleuthkit case used for the traversal
+	 * @param path the location of the output file
+	 * @param exFile the exFile to store exceptions, is only used for compatability with basic test
+	 * @return the file writer to be closed by testStandard
 	 */
 	@Override
-	public FileWriter traverse(SleuthkitCase sk, String path, String exFile){
+	public FileWriter traverse(SleuthkitCase sk, String path){
 		FileWriter reslt;
 		try {
 			reslt = new FileWriter(path);
@@ -90,11 +96,11 @@ public class SequentialTraversal extends ImgTraverser{
 					x++;
 				}
 			} catch (TskCoreException ex) {
-				DataModelTestSuite.writeExceptions(exFile, ex);
+				DataModelTestSuite.writeExceptions(testStandardPath, ex);
 			}
 			return reslt;
 		} catch (IOException ex) {
-			DataModelTestSuite.writeExceptions(exFile, ex);
+			logg.log(Level.SEVERE, "Failed to Traverse", ex);
 			return null;
 		}
 	}

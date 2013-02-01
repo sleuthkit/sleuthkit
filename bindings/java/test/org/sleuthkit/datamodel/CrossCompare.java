@@ -60,7 +60,9 @@ public class CrossCompare {
 		return data;
 	}
 
-	
+	/**
+	 * Compares the sorted results of the different traversals against each other
+	 */
 	@Test
 	public void CrossCompare() {
 		try {

@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,8 +37,7 @@ import org.junit.runners.Parameterized.Parameters;
  */
 @RunWith(Parameterized.class)
 public class TopDownTraversal extends ImgTraverser{
-
-	
+	private static final Logger logg = Logger.getLogger(TopDownTraversal.class.getName());
 	public TopDownTraversal(List<String> imagePaths) {
 		this.imagePaths = imagePaths;
 	}
@@ -57,7 +58,9 @@ public class TopDownTraversal extends ImgTraverser{
 		return data;
 	}
 
-	
+	/**
+	 * Runs the test
+	 */
 	@Test
 	public void testTopDownDiff() {
 		try {
@@ -69,50 +72,54 @@ public class TopDownTraversal extends ImgTraverser{
 		}
 	}
 	/**
-	 * Entry point to represent a Content object and it's children, sets up the 
-	 * topDownDF method
-	 * @param c the root Content object
+	 * Traverses through an image and generates a top down representation the image
+	 * @param sk the sleuthkit case used for the traversal
+	 * @param path the location of the output file
+	 * @param exFile the exFile to store exceptions
+	 * @return the file writer to be closed by testStandard
 	 */
 	@Override
-	public FileWriter traverse(SleuthkitCase sk, String path, String exFile) {
+	public FileWriter traverse(SleuthkitCase sk, String path) {
 		List<Content> lc=null;
 		try {
 			lc = sk.getRootObjects();
 		} catch (TskCoreException ex) {
-			DataModelTestSuite.writeExceptions(exFile, ex);
+			DataModelTestSuite.writeExceptions(testStandardPath, ex);
 		}
 		List<Long> lp=new ArrayList<>();
 		try {
 			FileWriter reslt = new FileWriter(path);
 			FileWriter levs = new FileWriter(path.replace("_" + this.getClass().getSimpleName() + ".txt", DataModelTestSuite.LVS+".txt"));
-			topDownDF(lc,lp, exFile, reslt, levs);
+			topDownDF(lc,lp, reslt, levs);
 			levs.flush();
 			return reslt;
 		} catch (IOException ex) {
-			DataModelTestSuite.writeExceptions(exFile, ex);
+			logg.log(Level.SEVERE, "Failed to Traverse", ex);
 			return null;
 		}
 	}
 	/**
-	 * Creates a top down representation of a database
-	 * @param lc a list of content to be read
-	 * @param lp that lc's list of parents in most recent first order
+	 * Traverses through an image and generates a TSK gettimes like representation
+	 * @param lc the list of content to be traversed
+	 * @param lp the list of a content's parents
+	 * @param reslt the filewriter to append output to
+	 * @param levs the filewriter to append leaves to
 	 */
-	private void topDownDF(List<Content> lc, List<Long> lp, String exFile, Appendable reslt, Appendable levs){
+	private void topDownDF(List<Content> lc, List<Long> lp, Appendable reslt, Appendable levs){
 			for(Content c : lc) {
 				try {
 					reslt.append(((AbstractContent)c).toString(false));
 				} catch (IOException ex) {
-					DataModelTestSuite.writeExceptions(exFile, ex);
+					logg.log(Level.SEVERE, "Failed to Traverse", ex);
 				}
 				if(c instanceof File)
 				{
-					DataModelTestSuite.readContent(c, reslt, exFile);
+					DataModelTestSuite.readContent(c, reslt, testStandardPath);
 				}
 				try {
 					reslt.append("\n");
 				} catch (IOException ex) {
-					DataModelTestSuite.writeExceptions(exFile, ex);
+					logg.log(Level.SEVERE, "Failed to Traverse", ex);
 				}
 				lp.add(0,c.getId());
 				try {
@@ -120,10 +127,12 @@ public class TopDownTraversal extends ImgTraverser{
 						levs.append(lp.toString() + "\n");
 					}
 					else{
-						topDownDF(c.getChildren(),new ArrayList<>(lp), exFile, reslt, levs);
+						topDownDF(c.getChildren(),new ArrayList<>(lp), reslt, levs);
 					}
-				} catch (	IOException | TskCoreException ex) {
-					DataModelTestSuite.writeExceptions(exFile, ex);
+				} catch (	IOException ex){
+					logg.log(Level.SEVERE, "Failed to Traverse", ex);
+				}catch(TskCoreException ex){
+					DataModelTestSuite.writeExceptions(testStandardPath, ex);
 				}
 				lp.remove(0);
 			}

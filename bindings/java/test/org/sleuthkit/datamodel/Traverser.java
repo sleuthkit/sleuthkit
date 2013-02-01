@@ -22,8 +22,10 @@ import java.io.FileWriter;
 
 /**
  * Is an interface for tests that traverse an image.
- * 
+ * @param sk the sleuthkit case used for the traversal
+ * @param path the location of the output file
+ * @param exFile the exFile to store exceptions
  */
 public interface Traverser {
-	public FileWriter traverse(SleuthkitCase sk, String path, String exFile);
+	public FileWriter traverse(SleuthkitCase sk, String path);
 }

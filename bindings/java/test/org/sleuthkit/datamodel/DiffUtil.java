@@ -30,11 +30,15 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 /**
- * This class gets the Diff of two files. It creates its own thread because it can take a long time to run and the outcome of the Diff has no effect on the outcome of a test,
- * the test has already passed or failed by the time DiffUtil is being run.
+ * This class gets the Diff of two files.
  */
 public class DiffUtil{
 
+	/**
+	 * converts a file to a series of lines
+	 * @param filename the name of the file
+	 * @return 
+	 */
 	private static List<String> fileToLines(String filename) {
 		List<String> lines = new LinkedList<>();
 		String line;
