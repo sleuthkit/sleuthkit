@@ -409,11 +409,9 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	/**
-	 * Convert mode and meta type to a user-displayable string
+	 * Get the file's mode as a user-displayable string
 	 *
-	 * @param mode mode attribute of the file/dir
-	 * @param metaType meta type attribute of the file/dir
-	 * @return converted, formatted user-displayable string
+	 * @return  formatted user-displayable string for mode
 	 */
 	public String getModesAsString() {
 		int mode = TSK_FS_META_MODE_ENUM.toInt(modes);

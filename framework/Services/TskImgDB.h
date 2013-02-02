@@ -81,7 +81,7 @@ struct TskCarvedFileInfo
     std::string hash;
 
     /**
-     * A "cfile" name for the carved file of the form: cfile_<vol_id>_<start_sector>_<file_id>.<ext>.
+     * A "cfile" name for the carved file of the form: cfile_[vol_id]_[start_sector]_[file_id].[ext].
      */
     std::string cFileName;
 };
@@ -238,7 +238,7 @@ public:
      * @param fileName File name
      * @param fileSystemAttrType File system attribute type (see #TSK_FS_ATTR_TYPE_ENUM)
      * @param fileSystemAttrID File system attribute ID, used to index attributes for files with multiple attributes 
-     * @param [out] fileId File ID assigned to the file by the image database
+     * @param [out] fileID File ID assigned to the file by the image database
      * @param filePath Path to the file in the image, file name omitted
      * @returns 0 on success or -1 on error.
      */
@@ -420,8 +420,8 @@ protected:
 
 	/**
 	 * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
-	 * @param fs_file file to find parent obj id for
-	 * @param fsObjId fs id of this file
+	 * @param fsObjId Id of file system that this file and parent should be in.
+	 * @param meta_addr File system address to find parent of
 	 * @returns parent obj id ( > 0), -1 on error
 	 */	
 	int64_t findParObjId(const int64_t & fsObjId, TSK_INUM_T meta_addr);    
