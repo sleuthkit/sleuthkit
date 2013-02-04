@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
@@ -41,12 +42,9 @@ public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	///read only database tsk_files fields
-	protected final long metaAddr, ctime, crtime, atime, mtime;
+	
 	protected final long fsObjId;
-	protected final int uid, gid;
-	protected final short attrId;
-	protected final TSK_FS_ATTR_TYPE_ENUM attrType;
-	protected final Set<TSK_FS_META_MODE_ENUM> modes;
+
 	private String uniquePath;
 	///read-write database tsk_files fields
 	/**
@@ -61,49 +59,43 @@ public abstract class FsContent extends AbstractFile {
 	protected volatile long fileHandle = 0;
 
 	/**
-	 * Constructor to create FsContent object instance from database
-	 *
+	 * Create an FsContent object from a database object
+	 * 
 	 * @param db
 	 * @param objId
 	 * @param fsObjId
-	 * @param name
-	 * @param meta_addr
 	 * @param attrType
-	 * @param attr_id
+	 * @param attrId
+	 * @param name
+	 * @param metaAddr
 	 * @param dirType
 	 * @param metaType
 	 * @param dirFlag
-	 * @param meta_flags
+	 * @param metaFlags
 	 * @param size
 	 * @param ctime
 	 * @param crtime
 	 * @param atime
 	 * @param mtime
+	 * @param modes
 	 * @param uid
 	 * @param gid
-	 * @param modes
-	 * @param knownState
-	 * @param parentPath
 	 * @param md5Hash
+	 * @param knownState
+	 * @param parentPath 
 	 */
-	FsContent(SleuthkitCase db, long objId, long fsObjId, String name, long meta_addr,
-			TSK_FS_ATTR_TYPE_ENUM attrType, short attr_id,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
-			long size, long ctime, long crtime, long atime, long mtime, int uid, int gid, short modes, FileKnown knownState,
-			String parentPath, String md5Hash) {
-		super(db, objId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, dirType, metaType, dirFlag, meta_flags, size, parentPath, md5Hash, knownState);
-		this.metaAddr = meta_addr;
-		this.attrType = attrType;
-		this.attrId = attr_id;
-		this.ctime = ctime;
-		this.crtime = crtime;
-		this.atime = atime;
-		this.mtime = mtime;
-		this.uid = uid;
-		this.gid = gid;
-		this.modes = TSK_FS_META_MODE_ENUM.valuesOf(modes);
+	FsContent(SleuthkitCase db, long objId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId, 
+			String name, long metaAddr, 
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid,  String md5Hash, FileKnown knownState,
+			String parentPath) {
+		super(db, objId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
 		this.fsObjId = fsObjId;
 	}
+
+
+	
+	
 
 	/**
 	 * Get the parent file system id
@@ -182,253 +174,13 @@ public abstract class FsContent extends AbstractFile {
 		return getFileSystem().getImage();
 	}
 
-	/**
-	 * Get the attribute type
-	 *
-	 * @return attribute type
-	 */
-	public TSK_FS_ATTR_TYPE_ENUM getAttrType() {
-		return attrType;
-	}
-
-	/**
-	 * Get the attribute id
-	 *
-	 * @return attribute id
-	 */
-	public short getAttrId() {
-		return attrId;
-	}
-
+	
 	@Override
 	public List<TskFileRange> getRanges() {
 		return Collections.<TskFileRange>emptyList();
 	}
 
-	/**
-	 * Get the change time
-	 *
-	 * @return change time
-	 */
-	public long getCtime() {
-		return ctime;
-	}
-
-	/**
-	 * Get the change time as Date
-	 *
-	 * @return change time as Date
-	 */
-	public String getCtimeAsDate() {
-		return FsContent.epochToTime(ctime);
-	}
-
-	/**
-	 * Get the creation time
-	 *
-	 * @return creation time
-	 */
-	public long getCrtime() {
-		return crtime;
-	}
-
-	/**
-	 * Get the creation time as Date
-	 *
-	 * @return creation time as Date
-	 */
-	public String getCrtimeAsDate() {
-		return FsContent.epochToTime(crtime);
-	}
-
-	/**
-	 * Get the access time
-	 *
-	 * @return access time
-	 */
-	public long getAtime() {
-		return atime;
-	}
-
-	/**
-	 * Get the access time as Date
-	 *
-	 * @return access time as Date
-	 */
-	public String getAtimeAsDate() {
-		return FsContent.epochToTime(atime);
-	}
-
-	/**
-	 * Get the modified time
-	 *
-	 * @return modified time
-	 */
-	public long getMtime() {
-		return mtime;
-	}
-
-	/**
-	 * Get the modified time as Date
-	 *
-	 * @return modified time as Date
-	 */
-	public String getMtimeAsDate() {
-		return FsContent.epochToTime(mtime);
-	}
-
-	/**
-	 * Get the user id
-	 *
-	 * @return user id
-	 */
-	public int getUid() {
-		return uid;
-	}
-
-	/**
-	 * Get the group id
-	 *
-	 * @return group id
-	 */
-	public int getGid() {
-		return gid;
-	}
-
-	/**
-	 * Get the file meta address
-	 *
-	 * @return Address of the meta data structure
-	 */
-	public long getMetaAddr() {
-		return metaAddr;
-	}
-
-	/**
-	 * Convert mode and meta type to a user-displayable string
-	 *
-	 * @param mode mode attribute of the file/dir
-	 * @param metaType meta type attribute of the file/dir
-	 * @return converted, formatted user-displayable string
-	 */
-	public String getModesAsString() {
-		int mode = TSK_FS_META_MODE_ENUM.toInt(modes);
-		String result = "";
-
-		short isuid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISUID.getMode();
-		short isgid = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISGID.getMode();
-		short isvtx = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_ISVTX.getMode();
-
-		short irusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IRUSR.getMode();
-		short iwusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWUSR.getMode();
-		short ixusr = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXUSR.getMode();
-
-		short irgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IRGRP.getMode();
-		short iwgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWGRP.getMode();
-		short ixgrp = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXGRP.getMode();
-
-		short iroth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IROTH.getMode();
-		short iwoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IWOTH.getMode();
-		short ixoth = TskData.TSK_FS_META_MODE_ENUM.TSK_FS_META_MODE_IXOTH.getMode();
-
-		// first character = the Meta Type
-		result += metaType.toString();
-
-		// second and third characters = user permissions
-		if ((mode & irusr) == irusr) {
-			result += "r";
-		} else {
-			result += "-";
-		}
-		if ((mode & iwusr) == iwusr) {
-			result += "w";
-		} else {
-			result += "-";
-		}
-
-		// fourth character = set uid
-		if ((mode & isuid) == isuid) {
-			if ((mode & ixusr) == ixusr) {
-				result += "s";
-			} else {
-				result += "S";
-			}
-		} else {
-			if ((mode & ixusr) == ixusr) {
-				result += "x";
-			} else {
-				result += "-";
-			}
-		}
-
-		// fifth and sixth characters = group permissions
-		if ((mode & irgrp) == irgrp) {
-			result += "r";
-		} else {
-			result += "-";
-		}
-		if ((mode & iwgrp) == iwgrp) {
-			result += "w";
-		} else {
-			result += "-";
-		}
-
-		// seventh character = set gid
-		if ((mode & isgid) == isgid) {
-			if ((mode & ixgrp) == ixgrp) {
-				result += "s";
-			} else {
-				result += "S";
-			}
-		} else {
-			if ((mode & ixgrp) == ixgrp) {
-				result += "x";
-			} else {
-				result += "-";
-			}
-		}
-
-		// eighth and ninth character = other permissions
-		if ((mode & iroth) == iroth) {
-			result += "r";
-		} else {
-			result += "-";
-		}
-		if ((mode & iwoth) == iwoth) {
-			result += "w";
-		} else {
-			result += "-";
-		}
-
-		// tenth character = sticky bit
-		if ((mode & isvtx) == isvtx) {
-			if ((mode & ixoth) == ixoth) {
-				result += "t";
-			} else {
-				result += "T";
-			}
-		} else {
-			if ((mode & ixoth) == ixoth) {
-				result += "x";
-			} else {
-				result += "-";
-			}
-		}
-
-		// check the result
-		if (result.length() != 10) {
-			// throw error here
-			result = "ERROR";
-		}
-		return result;
-	}
-
-	public boolean isModeSet(TSK_FS_META_MODE_ENUM mode) {
-		return modes.contains(mode);
-	}
-
-
-
+	
 	@Override
 	public synchronized String getUniquePath() throws TskCoreException {
 		if (uniquePath == null) {
@@ -455,38 +207,5 @@ public abstract class FsContent extends AbstractFile {
 		}
 	}
 
-	/*
-	 * -------------------------------------------------------------------------
-	 * Util methods to convert / map the data
-	 * -------------------------------------------------------------------------
-	 */
-	/**
-	 * Return the epoch into string in ISO 8601 dateTime format
-	 *
-	 * @param epoch time in seconds
-	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 */
-	public static String epochToTime(long epoch) {
-		String time = "0000-00-00 00:00:00";
-		if (epoch != 0) {
-			time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(epoch * 1000));
-		}
-		return time;
-	}
 
-	/**
-	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
-	 *
-	 * @param time formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 * @return epoch time in seconds
-	 */
-	public static long timeToEpoch(String time) {
-		long epoch = 0;
-		try {
-			epoch = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(time).getTime() / 1000;
-		} catch (Exception e) {
-		}
-
-		return epoch;
-	}
 }

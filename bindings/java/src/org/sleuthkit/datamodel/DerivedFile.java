@@ -27,6 +27,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
  * Represents a file or directory that has been derived from another file.
@@ -45,70 +49,94 @@ public class DerivedFile extends AbstractFile {
 	private java.io.File localFile;
 	private volatile RandomAccessFile fileHandle;
 	private static final Logger logger = Logger.getLogger(DerivedFile.class.getName());
-	
 	private boolean hasDerivedMethod = true; ///< whether it has the derived method to lazy load or not
 
 	/**
 	 * Create a db representation of a derived file
-	 * @param db sleuthkit case handle
+	 *
+	 * @param db
 	 * @param objId object if of this file already in database
+	 * @param attrType
+	 * @param attrId
 	 * @param name name of this derived file
+	 * @param metaAddr
 	 * @param dirType
-	 * @param metaType 
-	 * @param dirFlag 
-	 * @param metaType 
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
 	 * @param size size of the file
-	 * @param parentPath path of the parent of this derived file (e.g. fs zip file, or another derived file path)
-	 * @param localPath local path of this derived file, relative to the db path
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
 	 * @param md5Hash
 	 * @param knownState
+	 * @param parentPath path of the parent of this derived file (e.g. fs zip
+	 * file, or another derived file path)
+	 * @param localPath local path of this derived file, relative to the db path
 	 */
-	DerivedFile(SleuthkitCase db, long objId, String name, 
-			TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
-			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
-			long size, String parentPath, String localPath, String md5Hash, FileKnown knownState) {
-		super(db, objId, name, TSK_DB_FILES_TYPE_ENUM.DERIVED, dirType, metaType, dirFlag, meta_flags, 
-				size, parentPath, md5Hash, knownState);
+	protected DerivedFile(SleuthkitCase db, long objId, String name, 
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, 
+			short metaFlags, long size, String md5Hash, 
+			FileKnown knownState, String parentPath, String localPath) {
+		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short)0, 
+				name, TSK_DB_FILES_TYPE_ENUM.DERIVED, 0L, dirType, metaType, dirFlag, 
+				metaFlags, size, 0L, 0L, 0L, 0L, (short)0, 0, 0, md5Hash, knownState, parentPath);
+
 		this.localPath = localPath;
 
-		if (localPath == null) {
-			localPath = "";
+		if (this.localPath == null) {
+			this.localPath = "";
 		} else {
-			localAbsPath = db.getDbDirPath() + java.io.File.separator + localPath;
+			localAbsPath = db.getDbDirPath() + java.io.File.separator + this.localPath;
 			localFile = new java.io.File(localAbsPath);
 			isFile = localFile.isFile();
 		}
 	}
-	
+
 	/**
-	 * Create a db representation of a derived file, passing available parent id
-	 * @param db sleuthkit case handle
+	 * Create a db representation of a derived file
+	 *
+	 * @param db
 	 * @param objId object if of this file already in database
+	 * @param attrType
+	 * @param attrId
 	 * @param name name of this derived file
+	 * @param metaAddr
 	 * @param dirType
-	 * @param metaType 
-	 * @param dirFlag 
-	 * @param metaType 
-	 * @param size the size of the file
-	 * @param parentPath path of the parent of this derived file (e.g. fs zip file, or another derived file path)
-	 * @param localPath local path of this derived file, relative to the db path
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
+	 * @param size size of the file
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
 	 * @param md5Hash
 	 * @param knownState
+	 * @param parentPath path of the parent of this derived file (e.g. fs zip
+	 * file, or another derived file path)
+	 * @param localPath local path of this derived file, relative to the db path
 	 * @param parentId parent id of this derived file to set if available
 	 */
-	DerivedFile(SleuthkitCase db, long objId, String name, TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
-			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
-			
-			long size, String parentPath, String localPath, String md5Hash, FileKnown knownState, long parentId) {
-		this(db, objId, name, dirType, metaType, dirFlag, meta_flags, size, parentPath, localPath, md5Hash, knownState);
-		
+	protected DerivedFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
+		this(db, objId, name, dirType, metaType, dirFlag, metaFlags, size, md5Hash, knownState, parentPath, localPath);
+
 		if (parentId > 0) {
 			setParentId(parentId);
 		}
+
 	}
 
 	/**
 	 * Get local path of the file relative to database dir
+	 *
 	 * @return local relative file path
 	 */
 	public String getLocalPath() {
@@ -117,12 +145,13 @@ public class DerivedFile extends AbstractFile {
 
 	/**
 	 * Get local absolute path of the file
+	 *
 	 * @return local absolute file path
 	 */
 	public String getLocalAbsPath() {
 		return localAbsPath;
 	}
-	
+
 	@Override
 	public Image getImage() throws TskCoreException {
 		//TODO need schema support to implement this more efficiently
@@ -247,8 +276,10 @@ public class DerivedFile extends AbstractFile {
 
 	/**
 	 * Get derived method for this derived file if it exists, or null
+	 *
 	 * @return derived method if exists, or null
-	 * @throws TskCoreException exception thrown when critical error occurred and derived method could not be queried
+	 * @throws TskCoreException exception thrown when critical error occurred
+	 * and derived method could not be queried
 	 */
 	public synchronized DerivedMethod getDerivedMethod() throws TskCoreException {
 		if (derivedMethod == null && hasDerivedMethod == true) {
@@ -283,9 +314,6 @@ public class DerivedFile extends AbstractFile {
 	public String toString() {
 		return "DerivedFile{" + "localPath=" + localPath + ", localAbsPath=" + localAbsPath + ", isFile=" + isFile + ", derivedMethod=" + derivedMethod + ", localFile=" + localFile + ", fileHandle=" + fileHandle + ", hasDerivedMethod=" + hasDerivedMethod + '}';
 	}
-	
-	
-	
 
 	/**
 	 * Method used to derive the file super-set of tsk_files_derived and

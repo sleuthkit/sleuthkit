@@ -34,17 +34,16 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class File extends FsContent {
 
-	//constructor used for getfile from tskDb
-	protected File(SleuthkitCase db, long objId, long fsObjId, long meta_addr, TSK_FS_ATTR_TYPE_ENUM attrType,
-			short attr_id, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
-			TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags, long size, long ctime, long crtime,
-			long atime, long mtime, short mode, int uid, int gid, FileKnown known,
-			String parent_path, String md5Hash) {
-		super(db, objId, fsObjId, name, meta_addr,
-				attrType, attr_id, dirType, metaType, dirFlag,
-				meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known,
-				parent_path, md5Hash);
+	public File(SleuthkitCase db, long objId, long fsObjId, 
+			TSK_FS_ATTR_TYPE_ENUM attrType, short attrId, String name, long metaAddr, 
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
+			long size, long ctime, long crtime, long atime, long mtime, 
+			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath) {
+		super(db, objId, fsObjId, attrType, attrId, name, metaAddr, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
 	}
+	
+	
 
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
@@ -68,7 +67,7 @@ public class File extends FsContent {
 
 	@Override
 	public boolean isVirtual() {
-		return (!type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)
+		return (!fileType.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)
 				|| dirType == TSK_FS_NAME_TYPE_ENUM.VIRT);
 	}
 

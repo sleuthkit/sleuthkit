@@ -24,6 +24,11 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
  * Layout file object representation of a layout file stored in tsk_files table.
@@ -41,13 +46,17 @@ public class LayoutFile extends AbstractFile{
 	//layout ranges associated with this file
 	private List<TskFileRange> ranges;
 	
-	protected LayoutFile(SleuthkitCase db, long objId, String name, TskData.TSK_DB_FILES_TYPE_ENUM type, 
-			TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
-			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
-			long size, String parentPath, String md5Hash, FileKnown knownState) {
-		super(db, objId, name, type, dirType, metaType, dirFlag, meta_flags, size, parentPath, md5Hash, knownState);
+	protected LayoutFile(SleuthkitCase db, long objId, String name, 
+			TSK_DB_FILES_TYPE_ENUM fileType, 
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
+			long size, String md5Hash, FileKnown knownState, String parentPath) {
+		//super(db, objId, attrType, attr_id, name, fileType, metaAddr, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
+		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short)0, name, fileType, 0L, dirType, metaType, dirFlag, metaFlags, 0L, 0L, 0L, 0L, 0L, (short)0, 0, 0, md5Hash, knownState, parentPath);
 		//this.size = calcSize(); //update calculated size
 	}
+	
+	
 
 	/**
 	 * Get number of file layout ranges associated with this layout file

@@ -2035,9 +2035,11 @@ public class SleuthkitCase {
 					}
 					VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
 							rs.getString("name"),
-							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), 
+							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-							rs.getLong("size"), parentPath, rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")));
+							rs.getLong("size"), rs.getString("md5"), 
+							FileKnown.valueOf(rs.getByte("known")), parentPath);
 					children.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS) {
 					String parentPath = rs.getString("parent_path");
@@ -2047,10 +2049,12 @@ public class SleuthkitCase {
 					final LayoutFile lf =
 							new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"),
 							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
-							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
-							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
+							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), 
+							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
+							rs.getShort("meta_flags"),
 							rs.getLong("size"),
-							parentPath, rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")));
+							rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath);
 					children.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED) {
 					final DerivedFile df = rsHelper.derivedFile(rs, parentId);
@@ -2605,7 +2609,7 @@ public class SleuthkitCase {
 			addFilePath(newObjId, localPath);
 
 			ret = new DerivedFile(this, newObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, parentPath, localPath, null, null, parentId);
+					size, null, null, parentPath, localPath, parentId);
 
 			//TODO add derived method
 
@@ -3550,9 +3554,12 @@ public class SleuthkitCase {
 					}
 					final VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
 							rs.getString("name"),
-							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
-							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-							rs.getLong("size"), parentPath, rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")));
+							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), 
+							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
+							rs.getShort("meta_flags"),
+							rs.getLong("size"), rs.getString("md5"), 
+							FileKnown.valueOf(rs.getByte("known")), parentPath);
 					results.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()) {
 					String parentPath = rs.getString("parent_path");
@@ -3565,7 +3572,7 @@ public class SleuthkitCase {
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
 							rs.getLong("size"),
-							parentPath, rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")));
+							rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath);
 					results.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType()) {
 					final DerivedFile df;

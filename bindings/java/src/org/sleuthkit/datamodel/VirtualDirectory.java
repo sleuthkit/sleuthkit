@@ -20,8 +20,9 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
@@ -37,23 +38,19 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class VirtualDirectory extends AbstractFile {
 
-
-	protected VirtualDirectory(SleuthkitCase db, long objId, String name, 
-			TskData.TSK_FS_NAME_TYPE_ENUM dirType, TskData.TSK_FS_META_TYPE_ENUM metaType, 
-			TskData.TSK_FS_NAME_FLAG_ENUM dirFlag, short meta_flags,
-			long size, String parentPath, String md5Hash, TskData.FileKnown knownState) {
-		super(db, objId, name, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 
-				dirType, metaType, dirFlag, meta_flags,
-				0, parentPath, md5Hash, knownState);
-
+	protected VirtualDirectory(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, 
+			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
+			long size, String md5Hash, FileKnown knownState, String parentPath) {
+		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short)0, name, 
+				TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0L, dirType, metaType, dirFlag, 
+				metaFlags, 0L, 0L, 0L, 0L, 0L, (short)0, 0, 0, md5Hash, knownState, parentPath);
 	}
 
-	
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getLayoutDirectoryChildren(this);
 	}
-	
+
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getLayoutDirectoryChildrenIds(this);
@@ -61,14 +58,13 @@ public class VirtualDirectory extends AbstractFile {
 
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
-		 return Collections.<TskFileRange>emptyList();
+		return Collections.<TskFileRange>emptyList();
 	}
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		throw new UnsupportedOperationException("Reading VirtualDirectory is not supported.");
 	}
-
 
 	@Override
 	public boolean isDir() {
@@ -79,7 +75,7 @@ public class VirtualDirectory extends AbstractFile {
 	public boolean isFile() {
 		return false;
 	}
-	
+
 	@Override
 	public boolean isRoot() {
 		return false;

@@ -126,11 +126,17 @@ class ResultSetHelper {
 	 * @throws SQLException
 	 */
 	File file(ResultSet rs, FileSystem fs) throws SQLException {
-		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), rs.getLong("meta_addr"), TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")),
-				rs.getShort("attr_id"), rs.getString("name"), TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), rs.getLong("size"),
+		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), 
+				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")),
+				rs.getShort("attr_id"), rs.getString("name"), rs.getLong("meta_addr"),
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
+				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), 
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
+				rs.getShort("meta_flags"), rs.getLong("size"),
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path"), rs.getString("md5"));
+				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), 
+				rs.getString("md5"),
+				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path"));
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -146,11 +152,17 @@ class ResultSetHelper {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs, String name) throws SQLException {
-		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), rs.getLong("meta_addr"), TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")),
-				rs.getShort("attr_id"), name, TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), rs.getLong("size"),
+		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), 
+				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")),
+				rs.getShort("attr_id"), name, rs.getLong("meta_addr"), 
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
+				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), 
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
+				rs.getShort("meta_flags"), rs.getLong("size"),
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path"), rs.getString("md5"));
+				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"),
+				rs.getString("md5"),
+				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path"));
 		dir.setFileSystem(fs);
 		return dir;
 	}
@@ -203,9 +215,13 @@ class ResultSetHelper {
 		
 		final DerivedFile df =
 				new DerivedFile(db, objId, rs.getString("name"), 
-				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
-							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-				rs.getLong("size"), parentPath, localPath, rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentId);
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), 
+				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
+				rs.getLong("size"), 
+				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), 
+				parentPath, localPath,
+				parentId);
 		
 		return df;
 	}
