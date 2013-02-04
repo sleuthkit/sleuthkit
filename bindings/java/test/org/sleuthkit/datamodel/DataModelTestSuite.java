@@ -201,7 +201,6 @@ public class DataModelTestSuite {
 			Scanner read = new Scanner(p.getInputStream());
 			Scanner error1 = new Scanner(p.getErrorStream());
 			FileWriter out = new FileWriter(standardPath);
-			read.nextLine();
 			while (read.hasNextLine()) {
 				String line = read.nextLine();
 				line = line.replace(" (deleted)", "");
@@ -393,7 +392,7 @@ public class DataModelTestSuite {
 		if (fi.isVirtual() && !fi.isDir()) {
 			prpnd = "v/";
 		}
-		return ("0|" + name + "|" + fi.metaAddr + "|" + prpnd + fi.getModesAsString() + "|0|0|" + fi.getSize() + "|" + fi.getAtime() + "|" + fi.getMtime() + "|" + fi.getCtime() + "|" + fi.getCrtime());
+		return ("0|" + name + "|" + fi.metaAddr + "|" + prpnd + fi.getModesAsString() + "|" + fi.getUid() + "|0|" + fi.getSize() + "|" + fi.getAtime() + "|" + fi.getMtime() + "|" + fi.getCtime() + "|" + fi.getCrtime());
 	}
 
 	/**
@@ -421,7 +420,6 @@ public class DataModelTestSuite {
 			for (ImgTraverser tstrn : tests) {
 				String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
 				System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
-				String exFile = standardPath.replace(".txt", DataModelTestSuite.EX + ".txt");
 				DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn);
 			}
 			String standardPathCPP = DataModelTestSuite.standardPath(paths, CPPtoJavaCompare.class.getSimpleName());

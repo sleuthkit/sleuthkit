@@ -121,7 +121,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 	private void tskTraverse(List<Content> lc, Appendable reslt) {
 		for (Content c : lc) {
 			try {
-				if (c instanceof FsContent) {
+				if (c instanceof FsContent && !c.getUniquePath().endsWith(".") && !c.getUniquePath().endsWith("/")) {
 					try {
 						reslt.append(DataModelTestSuite.getFsCData((FsContent) c));
 						reslt.append("\n");
