@@ -2,14 +2,38 @@ Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
 ---------------- VERSION 4.0.2 --------------
+Core: 
 New Features:
-- Numerous performance improvements to framework.
 - Added fiwalk tool from Simson.  Not supported in Visual Studio yet.
 
 Bug Fixes:
 - Fixed fcat to work on NTFS files (still doesn't support ADS though). 
 - Fixed HFS+ support in tsk_loaddb / SQLite -- root directory was not added.
 - NTFS code now looks at all MFT entries when listing directory contents. It used to only look at unallocated entries for orphan files. This fixes an image that had allocated files missing from the directory b-tree.
+- NTFS code uses sequence number when searching MFT entries for all files. 
+- Libewf detection code change to support v2 API more reliably (ID: 3596212). 
+- NTFS $SII code could crash in rare cases if $SDS was multiple of block size. 
+
+Framework:
+- Added new API to TskImgDB that returns the base name of an image.
+- Numerous performance improvements to framework.
+- Removed requirement in framework to specify module extension in pipeline configuration file.
+- Added blackboard artifacts to represent both operating system and network service user accounts.
+
+Java Bindings:
+- added more APIs to find files by name, path and where clause
+- added API to get currently processed dir when image is being added,
+- added API to return specific types of children of image, volume system, volume, file system.
+- moved more common methods up to Content interface
+- deprecated context of blackboard attributes, 
+- deprecated SleuthkitCase.runQuery() and SleuthkitCase.closeRunQuery() 
+- fixed ReadContentInputStream bugs  (ignoring offset into a buffer, implementing available() )
+- methods that are lazy loading are now thread safe
+- Hash class is now thread-safe
+- use more PreparedStatements to improve performance
+- changed source level from java 1.6 to 1.7
+- Throw exceptions from C++ side better
+
 
 ---------------- VERSION 4.0.1 --------------
 New Features:

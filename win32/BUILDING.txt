@@ -6,14 +6,14 @@ The Visual Studio Solution file has three build targets: Debug, Debug_NoLibs, an
 
 The steps below outline the process required to compile the Debug and Release targets.
 
-1) Download libewf-20120304 from:
+1) Download libewf-20130128 (or later) from:
     http://sourceforge.net/projects/libewf/
 
 2) Open archive file and follow the README instructions in libewf to build libewf_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libewf_dll.  Later steps also depend on the zlib dll being built inside of libewf. 
 
 3) Set the LIBEWF_HOME environment variable to point to the libewf folder that you created and built in step 2. 
 
-4) If you want ot build libtsk_jni for the Java JNI bindings, then set the JDK_HOME environment variable to point to the top directory of your Java SDK.
+4) If you want to build libtsk_jni for the Java JNI bindings, then set the JDK_HOME environment variable to point to the top directory of your Java SDK.
 
 5) Open the TSK Visual Studio Solution file, tsk-win.sln, in the win32 directory. 
 

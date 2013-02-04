@@ -24,12 +24,12 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
-import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
-import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
 
 /**
  * Generalized class that stores metadata that are common to both File and
@@ -102,7 +102,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param mode
 	 * @param known
 	 * @param parent_path
-	 * @param md5Hash
+	 * @param md5Hash String of MD5 hash of content or null if not known
 	 */
 	FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
 			TSK_FS_ATTR_TYPE_ENUM attrType, short attr_id, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_NAME_FLAG_ENUM dirFlag,
@@ -128,7 +128,6 @@ public abstract class FsContent extends AbstractFile {
 		this.known = known;
 		this.parentPath = parent_path;
 		this.md5Hash = md5Hash;
-		
 	}
 
 	/**
@@ -410,11 +409,9 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	/**
-	 * Convert mode and meta type to a user-displayable string
+	 * Get the file's mode as a user-displayable string
 	 *
-	 * @param mode mode attribute of the file/dir
-	 * @param metaType meta type attribute of the file/dir
-	 * @return converted, formatted user-displayable string
+	 * @return  formatted user-displayable string for mode
 	 */
 	public String getModesAsString() {
 		int mode = TSK_FS_META_MODE_ENUM.toInt(modes);
@@ -566,7 +563,7 @@ public abstract class FsContent extends AbstractFile {
 	/**
 	 * Get the md5 hash value as calculated, if present
 	 *
-	 * @return md5 hash string, if it is present
+	 * @return md5 hash string, if it is present or null if it is not
 	 */
 	public String getMd5Hash() {
 		return this.md5Hash;

@@ -36,6 +36,9 @@
 class TSK_FRAMEWORK_API TskCarvePrepSectorConcat : public CarvePrep
 {
 public:
+	TskCarvePrepSectorConcat();
+	virtual ~TskCarvePrepSectorConcat() {}
+
     virtual int processSectors(bool scheduleCarving);
 
     /**
@@ -68,6 +71,7 @@ protected:
     virtual void onUnallocSectorsImgFileCreated(int unallocSectorsImgId, bool scheduleCarving) const; 
 
 private:
+
     /**
      * Looks up carving parameters and creates the output folder
      * if it doesn't already exist.

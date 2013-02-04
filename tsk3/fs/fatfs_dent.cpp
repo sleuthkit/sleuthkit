@@ -19,7 +19,7 @@
 */
 
 /**
-* \file fatfs_dent.c
+* \file fatfs_dent.cpp
 * Contains the internal TSK FAT file name processing code.
 */
 
@@ -99,7 +99,7 @@ static std::map<TSK_INUM_T, TSK_INUM_T> * getParentMap(FATFS_INFO *fatfs) {
 * @param fatfs File system
 * @param par_inum Parent folder meta data address.
 * @param dir_inum Sub-folder meta data address.
-* @param returns 0
+* @returns 0
 */
 uint8_t
     fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum,
@@ -439,7 +439,9 @@ static TSK_RETVAL_ENUM
             * slot in the cluster, but it needs to refer to the original
             * slot
             */
-            if (TSK_FS_ISDOT(fs_name->name)) {
+            if (TSK_FS_ISDOT(fs_name->name)
+                    && (fs_name->type == TSK_FS_NAME_TYPE_DIR)
+                    && idx < 2) {
                 if (fs_name->name[1] == '\0') {
                     fs_name->meta_addr =
                         a_fs_dir->fs_file->meta->addr;

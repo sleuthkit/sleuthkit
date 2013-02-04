@@ -213,7 +213,7 @@ public class TskData {
 		
 		/**
 		 * Returns all the enum elements that match the flags in metaFlag
-		 * @param metaFlag
+		 * @param metaFlags Flags to convert to Enums. 
 		 * @return matching TSK_FS_META_FLAG_ENUM elements
 		 */
 		public static Set<TSK_FS_META_FLAG_ENUM> valuesOf(short metaFlags) {

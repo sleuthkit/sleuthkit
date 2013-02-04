@@ -4,7 +4,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.0.1)
+AC_INIT(sleuthkit, 4.0.2)
 m4_include([m4/ax_pthread.m4])
 # include the version from 1.12.1. This will work for 
 m4_include([m4/cppunit.m4])
@@ -181,7 +181,7 @@ AS_IF([test "x$with_libewf" != "xno"],
     )]
     # Check for the header file first to make sure they have the dev install
     [AC_CHECK_HEADERS([libewf.h],
-      [AC_CHECK_LIB([ewf], [libewf_open])]
+      [AC_CHECK_LIB([ewf], [libewf_get_version])]
     )]
 )
 
