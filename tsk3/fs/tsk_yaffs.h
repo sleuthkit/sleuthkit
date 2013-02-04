@@ -212,8 +212,6 @@ typedef struct _YaffsCacheChunkGroup {
         tsk_lock_t cache_lock;
         YaffsCacheObject *cache_objects;
 		std::map<uint32_t, YaffsCacheChunkGroup> * chunkMap;
-        //YaffsCacheChunk *cache_chunks_head;
-        //YaffsCacheChunk *cache_chunks_tail;
 
 		// If the user specified that the image is YAFFS2, print out additional verbose error messages
 		int autoDetect;

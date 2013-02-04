@@ -191,17 +191,9 @@ yaffscache_chunk_add(YAFFSFS_INFO *yfs, TSK_OFF_T offset, uint32_t seq_number,
 	// Find the chunk that should go right before the new chunk
     result = yaffscache_chunk_find_insertion_point(yfs, obj_id, offset, seq_number, &prev);
 
-	//fprintf(stderr, "Back from find_insertion_point\n");
-	//fflush(stderr);
-
 	if (result == TSK_ERR) {
         return TSK_ERR;
     }
-
-	// Quick check that everything got set up right - there should be a chunkMap element for this obj_id now
-	//if(yfs->chunkMap->find(obj_id) == yfs->chunkMap->end()){
-		//return TSK_ERR;
-	//}
 
     if (prev == NULL) {
 		// No previous chunk - new chunk is the lowest we've seen and the new start of the list
@@ -763,7 +755,6 @@ uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs){
 			// Copy it into the big array of spares
 			nGoodSpares++;
 			for(i = 0;i < yfs->spare_size;i++){
-				//printf("Trying to set allSpares[%x]\n", blocksTested * yfs->spare_size * chunksToTest + (chunksToTest - 1) * yfs->spare_size + i);
 				allSpares[blocksTested * yfs->spare_size * chunksToTest + (chunksToTest - 1) * yfs->spare_size + i] = spareBuffer[i];
 			}
 
@@ -956,7 +947,7 @@ uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs){
 	}
 
 	// If we get down here, we failed to find a good offset for the spare data.
-	// If we have an "ok" one, use that (offsets are already set in yfs)
+	// If we have an "ok" one, use that
 	free(spareBuffer);
 	free(allSpares);
 
@@ -1089,30 +1080,11 @@ yaffsfs_read_spare(YAFFSFS_INFO *yfs, YaffsSpare ** spare, TSK_OFF_T offset)
      * Complete read of the YAFFS2 spare
      */
 
-    /*
-     * NOTE: The layout of the tags in the spare was determined by looking at
-     *       nanddump images and the YAFFS2 sourcecode.  It doesn't match
-     *       older documentation, but appears to be correct for the dumps
-     *       that we have obtained.  Is this going to change often? Am I
-     *       just missing something?  I can't figure out what the first
-     *       30 bytes are used for. The layout, at least, matches what I see 
-     *       in the YAFFS2 and Android git repositories.
-     */
 
-
-    //memcpy(&seq_number, &spr[30], 4);
-    //memcpy(&object_id, &spr[34], 4);
-    //memcpy(&chunk_id, &spr[38], 4);
-    //memcpy(&n_bytes, &spr[42], 4);
-
+	// The format of the spare area should have been determined earlier
 	memcpy(&seq_number, &spr[yfs->spare_seq_offset], 4);
 	memcpy(&object_id, &spr[yfs->spare_obj_id_offset], 4);
 	memcpy(&chunk_id, &spr[yfs->spare_chunk_id_offset], 4);
-
-	//#define YAFFS_SPARE_FLAGS_IS_HEADER     0x80000000
-	//#define YAFFS_SPARE_PARENT_ID_MASK      0x0fffffff
-	//#define YAFFS_SPARE_OBJECT_TYPE_SHIFT   28
-	//#define YAFFS_SPARE_OBJECT_TYPE_MASK    0xf0000000
 
     if ((YAFFS_SPARE_FLAGS_IS_HEADER & chunk_id) != 0) {
 
@@ -1292,7 +1264,7 @@ yaffsfs_cache_fs(YAFFSFS_INFO * yfs)
     return TSK_OK;
 }
 
-// A version is current if:
+// A version is allocated if:
 //   1. This version is pointed to by yco_latest
 //   2. This version didn't have a delete/unlinked header after the most recent copy of the normal header
 uint8_t yaffs_is_version_allocated(YAFFSFS_INFO * yfs, uint32_t inode){
@@ -1310,7 +1282,7 @@ uint8_t yaffs_is_version_allocated(YAFFSFS_INFO * yfs, uint32_t inode){
 	if(obj->yco_latest == version){
 		curr = obj->yco_latest->ycv_header_chunk;
 		while(curr != NULL){
-			// We're looking for an unlinked or deleted header. If one exists, then this object should be considered unallocated
+			// We're looking for a newer unlinked or deleted header. If one exists, then this object should be considered unallocated
 			if((curr->ycc_parent_id == YAFFS_OBJECT_UNLINKED) || (curr->ycc_parent_id == YAFFS_OBJECT_DELETED)){
 				return 0;
 			}
@@ -1345,18 +1317,15 @@ yaffs_make_directory(YAFFSFS_INFO *yaffsfs, TSK_FS_FILE *a_fs_file,
 		(inode == yaffsfs->fs_info.last_inum)){
 		fs_file->meta->flags =
 		   (TSK_FS_META_FLAG_ENUM)(TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
-		//fs_file->name->flags = TSK_FS_NAME_FLAG_ALLOC;
 	}
 	else{
 		if(yaffs_is_version_allocated(yaffsfs, inode)){
 			fs_file->meta->flags =
 				(TSK_FS_META_FLAG_ENUM)(TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
-			//fs_file->name->flags = TSK_FS_NAME_FLAG_ALLOC;
 		}
 		else{
 			fs_file->meta->flags =
 				(TSK_FS_META_FLAG_ENUM)(TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNALLOC);
-			//fs_file->name->flags = TSK_FS_NAME_FLAG_UNALLOC;
 		}
 	}
     fs_file->meta->uid = fs_file->meta->gid = 0;
@@ -1401,12 +1370,10 @@ yaffs_make_regularfile( YAFFSFS_INFO * yaffsfs, TSK_FS_FILE * a_fs_file,
 	if(yaffs_is_version_allocated(yaffsfs, inode)){
 		fs_file->meta->flags =
 		   (TSK_FS_META_FLAG_ENUM)(TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
-		//fs_file->name->flags = TSK_FS_NAME_FLAG_ALLOC;
 	}
 	else{
 		fs_file->meta->flags =
 		   (TSK_FS_META_FLAG_ENUM)(TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNALLOC);
-		//fs_file->name->flags = TSK_FS_NAME_FLAG_ALLOC;
 	}
 
     fs_file->meta->uid = fs_file->meta->gid = 0;
@@ -1762,33 +1729,12 @@ yaffsfs_inode_walk(TSK_FS_INFO *fs, TSK_INUM_T start_inum,
         int retval;
 
         result = yaffscache_version_find_by_inode(yfs, obj_id, &curr_version, &curr_obj);
-        if (result != TSK_OK) {
-			// I'm not sure why we'd do anything if we didn't find the given object...
-			/*
-			fprintf(stderr, "Return from yc_verion was not TSK_OK\n");
-            if (flags & TSK_FS_META_FLAG_UNALLOC) {
-                fs_file->meta->flags = TSK_FS_META_FLAG_UNALLOC;
-                fs_file->meta->addr = obj_id;
+        if (result == TSK_OK) {
 
-                retval = a_action(fs_file, a_ptr);
-                if (retval == TSK_WALK_STOP) {
-					fprintf(stderr, "TSK_WALK_STOP\n");
-                    tsk_fs_file_close(fs_file);
-                    return 0;
-                }
-                else if (retval == TSK_WALK_ERROR) {
-					fprintf(stderr, "TSK_WALK_ERROR\n");
-                    tsk_fs_file_close(fs_file);
-                    return 1;
-                }
-            }*/
-        }
-        else {
             TSK_INUM_T curr_inode;
             YaffsCacheVersion *version;
 
 			// ALLOC, UNALLOC, or both are set at this point 
-            //if ((flags & (TSK_FS_META_FLAG_UNUSED | TSK_FS_META_FLAG_UNALLOC)) == 0) {
 			if (flags & TSK_FS_META_FLAG_ALLOC) {
 				// Allocated only - just look at current version
 				if (yaffscache_obj_id_and_version_to_inode(obj_id, curr_obj->yco_latest->ycv_version, &curr_inode) != TSK_OK) {
@@ -2317,9 +2263,8 @@ yaffs_dir_open_meta_cb(YaffsCacheObject *obj, YaffsCacheVersion *version, void *
     fs_name->name[fs_name->name_size - 65] = 0;
 
 	// Only put object/version string onto unallocated versions
-	if(! yaffs_is_version_allocated(cb_args->yfs, curr_inode)){
-		//snprintf(version_string, 64, ":%d,%d", obj_id, vnum); 
-		snprintf(version_string, 64, "#%d,%d", obj_id, vnum); // ':' is illegal on windows
+	if(! yaffs_is_version_allocated(cb_args->yfs, curr_inode)){ 
+		snprintf(version_string, 64, "#%d,%d", obj_id, vnum); 
 		strncat(fs_name->name, version_string, 31);
 		fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
 	}
@@ -2558,18 +2503,12 @@ yaffsfs_load_attrs(TSK_FS_FILE *file)
     file_block_count = data_run->len;
 
     // initialize the data run
-    if (tsk_verbose)
-        tsk_fprintf(stderr, "yaffsfs_load_attrs: before tsk_fs_attr_set_run\n");
-
     if (tsk_fs_attr_set_run(file, attr, data_run, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             meta->size, meta->size, roundup(meta->size, fs->block_size), (TSK_FS_ATTR_FLAG_ENUM)0, 0)) {
         meta->attr_state = TSK_FS_META_ATTR_ERROR;
         return 1;
     }
-
-    if (tsk_verbose)
-        tsk_fprintf(stderr, "yaffsfs_load_attrs: after tsk_fs_attr_set_run\n");
 
     /* Walk the version pointer back to the start adding single
      * block runs as we go.
@@ -2588,9 +2527,6 @@ yaffsfs_load_attrs(TSK_FS_FILE *file)
 
 	curr = version->ycv_last_chunk;
     while (curr != NULL && curr->ycc_obj_id == obj->yco_obj_id) {
-        if (tsk_verbose)
-            tsk_fprintf(stderr, "yaffsfs_load_attrs: Looking at %08x %08x %08x\n",
-                    curr->ycc_obj_id, curr->ycc_chunk_id, curr->ycc_seq_number);
 
         if (curr->ycc_chunk_id == 0) {
             if (tsk_verbose)
@@ -2807,8 +2743,6 @@ yaffs2_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
      */
     //tsk_init_lock(&yaffsfs->lock);
     yaffsfs->cache_objects = NULL;
-    //yaffsfs->cache_chunks_head = NULL;
-    //yaffsfs->cache_chunks_tail = NULL;
     yaffsfs_cache_fs(yaffsfs);
 
     if (tsk_verbose) {
