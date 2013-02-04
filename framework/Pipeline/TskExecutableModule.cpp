@@ -106,19 +106,23 @@ void TskExecutableModule::setPath(const std::string& location)
         {
             std::wstringstream msg;
             msg << L"TskExecutableModule::setPath - File is not executable: "
-                << m_modulePath.c_str() << std::endl;
+                << m_modulePath.c_str();
             LOGERROR(msg.str());
             throw TskException("File is not executable.");
         }
+    }
+    catch (TskException& tskEx)
+    {
+        throw tskEx;
     }
     catch(std::exception& ex)
     {
         // Log a message and throw a framework exception.
         std::wstringstream msg;
-        msg << "TskExecutableModule::setPath : " << ex.what() << std::endl;
+        msg << "TskExecutableModule::setPath : " << ex.what();
         LOGERROR(msg.str());
 
-        throw new TskException("Failed to set location: " + m_modulePath);
+        throw TskException("Failed to set location: " + m_modulePath);
     }
 }
 
@@ -194,7 +198,7 @@ TskModule::Status TskExecutableModule::execute(TskFile * fileToAnalyze){
                 // If a module fails we log a warning message and continue.
                 std::wstringstream msg;
                 msg << L"TskExecutableModule::execute - Module (" << m_modulePath.c_str()
-                    << L") failed with exit code: " << exitCode << std::endl;
+                    << L") failed with exit code: " << exitCode;
                 LOGWARN(msg.str());
             }
         }
@@ -211,7 +215,7 @@ TskModule::Status TskExecutableModule::execute(TskFile * fileToAnalyze){
                 // If a module fails we log a warning message and continue.
                 std::wstringstream msg;
                 msg << L"TskExecutableModule::execute - Module (" << m_modulePath.c_str()
-                    << L") failed with exit code: " << exitCode << std::endl;
+                    << L") failed with exit code: " << exitCode;
                 LOGWARN(msg.str());
             }
         }
@@ -219,7 +223,7 @@ TskModule::Status TskExecutableModule::execute(TskFile * fileToAnalyze){
     catch (Poco::Exception& ex)
     {
         std::wstringstream errorMsg;
-        errorMsg << L"TskExecutableModule::execute - Error: " << ex.displayText().c_str() << std::endl;
+        errorMsg << L"TskExecutableModule::execute - Error: " << ex.displayText().c_str();
         LOGERROR(errorMsg.str());
         throw TskException("Module execution failed.");
     }
