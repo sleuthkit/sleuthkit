@@ -98,11 +98,11 @@ bool ValidatePipeline::isValid(const char *a_configPath) const
 
                     std::string pipelineType = pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE_ATTRIBUTE);
 
-                    std::auto_ptr<TskPipeline> pipeline;
+                    TskPipeline * pipeline;
                     if (pipelineType == TskPipelineManager::FILE_ANALYSIS_PIPELINE_STR)
-                        pipeline.reset(new TskFileAnalysisPipeline());
+                        pipeline = new TskFileAnalysisPipeline();
                     else if (pipelineType == TskPipelineManager::REPORTING_PIPELINE_STR)
-                        pipeline.reset(new TskReportPipeline());
+                        pipeline = new TskReportPipeline();
                     else {
                         fprintf(stdout, "Unsupported pipeline type: %s\n", pipelineType.c_str());
                         failed = true;
