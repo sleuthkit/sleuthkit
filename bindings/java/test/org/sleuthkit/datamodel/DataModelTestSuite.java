@@ -392,7 +392,7 @@ public class DataModelTestSuite {
 		if (fi.isVirtual() && !fi.isDir()) {
 			prpnd = "v/";
 		}
-		return ("0|" + name + "|" + fi.metaAddr + "|" + prpnd + fi.getModesAsString() + "|" + fi.getUid() + "|0|" + fi.getSize() + "|" + fi.getAtime() + "|" + fi.getMtime() + "|" + fi.getCtime() + "|" + fi.getCrtime());
+		return ("0|" + name + "|" + fi.metaAddr + "|" + fi.getMetaTypeAsString() + "/" + fi.getModesAsString() + "|" + fi.getUid() + "|0|" + fi.getSize() + "|" + fi.getAtime() + "|" + fi.getMtime() + "|" + fi.getCtime() + "|" + fi.getCrtime());
 	}
 
 	/**
