@@ -72,8 +72,8 @@ public class DataModelTestSuite {
 	 *
 	 * @return
 	 */
-	public static List<Traverser> getTests() {
-		List<Traverser> ret = new ArrayList<>();
+	public static List<ImgTraverser> getTests() {
+		List<ImgTraverser> ret = new ArrayList<>();
 		ret.add(new SequentialTraversal(null));
 		ret.add(new TopDownTraversal(null));
 		return ret;
@@ -91,7 +91,7 @@ public class DataModelTestSuite {
 	 * @param type The type of traversal to run.
 	 * @param exFile The exceptions file, will be used for logging purposes
 	 */
-	public static void createStandard(String standardPath, String tempDirPath, List<String> imagePaths, Traverser type) {
+	public static void createStandard(String standardPath, String tempDirPath, List<String> imagePaths, ImgTraverser type) {
 		java.io.File standardFile = new java.io.File(standardPath);
 		String exFile = standardFile.getAbsolutePath().replace(".txt", EX + ".txt");
 		try {
@@ -415,10 +415,10 @@ public class DataModelTestSuite {
 		for (java.io.File del : pth.listFiles(testExFilter)) {
 			del.delete();
 		}
-		List<Traverser> tests = DataModelTestSuite.getTests();
+		List<ImgTraverser> tests = DataModelTestSuite.getTests();
 		List<List<String>> imagePaths = DataModelTestSuite.getImagePaths();
 		for (List<String> paths : imagePaths) {
-			for (Traverser tstrn : tests) {
+			for (ImgTraverser tstrn : tests) {
 				String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
 				System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
 				String exFile = standardPath.replace(".txt", DataModelTestSuite.EX + ".txt");

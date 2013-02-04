@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +26,7 @@ import java.util.List;
  * A basic implementation of traverser, has a standard test that allows for easy
  * modification of the way tests are run
  */
-public abstract class ImgTraverser implements Traverser {
+public abstract class ImgTraverser{
 
 	protected List<String> imagePaths;
 	protected String exFile;
@@ -53,4 +54,5 @@ public abstract class ImgTraverser implements Traverser {
 		ret.add(DataModelTestSuite.comparecontent(oldStandardPath, testStandardPath));
 		return ret;
 	}
+	abstract public FileWriter traverse(SleuthkitCase sk, String path);
 }
