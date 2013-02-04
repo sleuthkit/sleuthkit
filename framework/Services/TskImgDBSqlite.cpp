@@ -2644,7 +2644,7 @@ int TskImgDBSqlite::addModule(const std::string& name, const std::string& descri
     else
     {
         std::wstringstream msg;
-        msg << L"TskModule::addModule - Failed to prepare statement: " << stmt;
+        msg << L"TskImgDBSqlite::addModule - Failed to prepare statement: " << stmt;
         LOGERROR(msg.str());
     }
     
