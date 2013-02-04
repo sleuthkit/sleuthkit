@@ -21,7 +21,7 @@
 #include "tsk_ntfs.h"
 
 /**
- * \file ntfs_dent.c
+ * \file ntfs_dent.cpp
  * NTFS file name processing internal functions.
  */
 

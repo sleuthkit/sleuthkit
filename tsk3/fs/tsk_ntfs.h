@@ -523,9 +523,9 @@ extern "C" {
  * Structure used in Security Descriptor lookups
  */
     typedef struct {
-        char *buffer;
-        size_t size;
-        size_t used;
+        char *buffer;   ///< Buffer to store data in
+        size_t size;    ///< Number of bytes in buffer
+        size_t used;    ///< Number of records used in the buffer (size depends on type of data stored)
     } NTFS_SXX_BUFFER;
 
 

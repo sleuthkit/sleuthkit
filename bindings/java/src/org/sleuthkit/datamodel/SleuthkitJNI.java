@@ -252,7 +252,7 @@ public class SleuthkitJNI {
 				}
 
 				synchronized (this) {
-					autoDbPointer = initAddImgNat(caseDbPointer, longToShort(timezone), processUnallocSpace, noFatFsOrphans);
+					autoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timezone), processUnallocSpace, noFatFsOrphans);
 				}
 				if (autoDbPointer == 0) {
 					//additional check in case initAddImgNat didn't throw exception
@@ -689,7 +689,11 @@ public class SleuthkitJNI {
 	 * @param timezone the long form (e.g., America/New_York)
 	 * @return the short form (e.g., EST5EDT)
 	 */
-	private static String longToShort(String timezone) {
+	private static String timezoneLongToShort(String timezone) {
+		if (timezone == null || timezone.isEmpty()) {
+			return "";
+		}
+		
 		String result = "";
 
 		TimeZone zone = TimeZone.getTimeZone(timezone);

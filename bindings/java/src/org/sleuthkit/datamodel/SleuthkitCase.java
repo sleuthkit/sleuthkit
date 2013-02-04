@@ -1003,7 +1003,6 @@ public class SleuthkitCase {
 	 * object id
 	 *
 	 * @param artifactTypeID artifact type id
-	 * @param artifactTypeName artifact type name
 	 * @param obj_id associated object id
 	 * @return count of matching blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
