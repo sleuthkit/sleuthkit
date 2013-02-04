@@ -71,7 +71,5 @@ api-docs:
 	doxygen framework/docs/Doxyfile
 	doxygen bindings/java/doxygen/Doxyfile
 
-framework-docs:
-
 man-html:
 	cd man;build-html

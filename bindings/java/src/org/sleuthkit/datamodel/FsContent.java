@@ -102,7 +102,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param mode
 	 * @param known
 	 * @param parent_path
-	 * @param md5Hash
+	 * @param md5Hash String of MD5 hash of content or null if not known
 	 */
 	FsContent(SleuthkitCase db, long obj_id, String name, long fs_obj_id, long meta_addr,
 			TSK_FS_ATTR_TYPE_ENUM attrType, short attr_id, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_NAME_FLAG_ENUM dirFlag,
@@ -127,13 +127,7 @@ public abstract class FsContent extends AbstractFile {
 		this.modes = TSK_FS_META_MODE_ENUM.valuesOf(modes);
 		this.known = known;
 		this.parentPath = parent_path;
-		if (md5Hash == null || md5Hash.equals("NULL")){
-			this.md5Hash = null;
-		}
-		else {
-			this.md5Hash = md5Hash;
-		}
-		
+		this.md5Hash = md5Hash;
 	}
 
 	/**
@@ -415,11 +409,9 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	/**
-	 * Convert mode and meta type to a user-displayable string
+	 * Get the file's mode as a user-displayable string
 	 *
-	 * @param mode mode attribute of the file/dir
-	 * @param metaType meta type attribute of the file/dir
-	 * @return converted, formatted user-displayable string
+	 * @return  formatted user-displayable string for mode
 	 */
 	public String getModesAsString() {
 		int mode = TSK_FS_META_MODE_ENUM.toInt(modes);

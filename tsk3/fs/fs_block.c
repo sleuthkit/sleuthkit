@@ -74,6 +74,7 @@ tsk_fs_block_get(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
  * @param a_fs The file system to read the block from.
  * @param a_fs_block The structure to write the block data into or NULL to have one created.
  * @param a_addr The file system address to read.
+ * @param a_flags Flag to assign to the returned TSK_FS_BLOCK (use if you already have it as part of a block_walk-type scenario)
  * @return The TSK_FS_BLOCK with the data or NULL on error.  (If a_fs_block was not NULL, this will
  * be the same structure). 
  */
