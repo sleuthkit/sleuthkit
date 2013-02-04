@@ -148,12 +148,6 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
     }
     *utf16 = '\0';
 
-
-	// TEMP TEMP TEMP
-	//int pathlen = wcslen(m_base_dir);
-	//int path16len = wcslen(path16);
-	//printf("pathlen: %d, path16len: %d\n", pathlen, path16len);
-
     //combine the target directory with volume name and path
     //wchar_t path16full[FILENAME_MAX];
 	wchar_t path16full[FILENAME_MAX+1];
