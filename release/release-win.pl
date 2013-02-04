@@ -167,6 +167,9 @@ sub build_core {
 	# Get rid of everything in the release dir (since we'll be doing * copy)
 	`rm -rf Release`;
 	`rm -f BuildErrors.txt`;
+	# This was not required with VS2008, but is with 2010. Otherwise, 
+	# it won't build with the tagged version
+	`rm -rf */Release`;
 
 	die "Release folder not deleted" if (-x "Release/fls.exe");
 
@@ -260,6 +263,9 @@ sub build_framework {
 	# Get rid of everything in the release dir (since we'll be doing * copy)
 	`rm -rf Release`;
 	`rm -f BuildErrors.txt`;
+	# This was not needed for VS2008, but is for VS2010
+	`rm -rf ../../TskModules/*/win32/Release`;
+
 	# 2008 version
 	#`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
 	# 2010 version
@@ -339,6 +345,8 @@ sub package_framework {
 		if (-f "TskModules/$f/README.txt") {
 			`cp TskModules/$f/README.txt \"${rdir}/docs/README_${f}.txt\"`;
 			`unix2dos \"${rdir}/docs/README_${f}.txt\" 2> /dev/null`;
+			`cp TskModules/$f/NEWS.txt \"${rdir}/docs/NEWS_${f}.txt\"`;
+			`unix2dos \"${rdir}/docs/NEWS_${f}.txt\" 2> /dev/null`;
 			
 		}
 		else {
