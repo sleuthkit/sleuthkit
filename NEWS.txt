@@ -1,6 +1,11 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.1.0 --------------
+Core:
+- Added YAFFS2 support (patch from viaForensics).
+ 
+
 ---------------- VERSION 4.0.2 --------------
 Core: 
 New Features:
