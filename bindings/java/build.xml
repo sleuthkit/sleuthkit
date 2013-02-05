@@ -149,7 +149,7 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	</target>
 	<target name="test-download-imgs" description="Get test images and store them in the path represented by the test-input variable.">
 		<mkdir dir="${test-input}" />
-
+		
 		<get src="http://digitalcorpora.org/corp/nps/drives/nps-2009-canon2/nps-2009-canon2-gen5.raw" dest="${test-input}"/>
 		<get src="http://digitalcorpora.org/corp/nps/drives/nps-2009-ntfs1/ntfs1-gen2.raw" dest="${test-input}"/>
 	</target>
