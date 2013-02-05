@@ -3878,7 +3878,7 @@ public class SleuthkitCase {
 	/**
 	 * Find all the files with the given MD5 hash.
 	 *
-	 * @param md5Hashhash value to match files with
+	 * @param md5Hash hash value to match files with
 	 * @return List of AbstractFile with the given hash
 	 */
 	public List<AbstractFile> findFilesByMd5(String md5Hash) {

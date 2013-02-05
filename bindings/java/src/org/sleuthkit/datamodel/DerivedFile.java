@@ -56,22 +56,12 @@ public class DerivedFile extends AbstractFile {
 	 *
 	 * @param db
 	 * @param objId object if of this file already in database
-	 * @param attrType
-	 * @param attrId
 	 * @param name name of this derived file
-	 * @param metaAddr
 	 * @param dirType
 	 * @param metaType
 	 * @param dirFlag
 	 * @param metaFlags
 	 * @param size size of the file
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param modes
-	 * @param uid
-	 * @param gid
 	 * @param md5Hash
 	 * @param knownState
 	 * @param parentPath path of the parent of this derived file (e.g. fs zip
@@ -102,22 +92,12 @@ public class DerivedFile extends AbstractFile {
 	 *
 	 * @param db
 	 * @param objId object if of this file already in database
-	 * @param attrType
-	 * @param attrId
 	 * @param name name of this derived file
-	 * @param metaAddr
 	 * @param dirType
 	 * @param metaType
 	 * @param dirFlag
 	 * @param metaFlags
 	 * @param size size of the file
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param modes
-	 * @param uid
-	 * @param gid
 	 * @param md5Hash
 	 * @param knownState
 	 * @param parentPath path of the parent of this derived file (e.g. fs zip

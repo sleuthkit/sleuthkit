@@ -72,7 +72,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param dirType
 	 * @param metaType
 	 * @param dirFlag
-	 * @param meta_flags
+	 * @param metaFlags
 	 * @param size
 	 * @param ctime
 	 * @param crtime
@@ -247,9 +247,7 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Get the file's mode as a user-displayable string
 	 *
-	 * @param mode mode attribute of the file/dir
-	 * @param metaType meta type attribute of the file/dir
-	 @return  formatted user-displayable string for mode
+	 * @return  formatted user-displayable string for mode
 	 */
 	public String getModesAsString() {
 		int mode = TskData.TSK_FS_META_MODE_ENUM.toInt(modes);
