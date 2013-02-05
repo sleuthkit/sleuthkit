@@ -130,6 +130,7 @@ tsk_fs_file_open_meta(TSK_FS_INFO * a_fs,
             free(fs_file);
         return NULL;
     }
+
     return fs_file;
 }
 

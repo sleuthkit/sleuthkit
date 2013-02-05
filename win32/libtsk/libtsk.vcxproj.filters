@@ -270,7 +270,7 @@
     <ClCompile Include="..\..\tsk3\fs\ntfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk3\fs\yaffs.c">
+    <ClCompile Include="..\..\tsk3\fs\yaffs.cpp">
       <Filter>fs</Filter>
     </ClCompile>
   </ItemGroup>
