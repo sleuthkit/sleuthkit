@@ -108,7 +108,7 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\tsk3\fs\yaffs.c" />
+    <ClCompile Include="..\..\tsk3\fs\yaffs.cpp" />
     <ClCompile Include="..\..\tsk3\vs\bsd.c" />
     <ClCompile Include="..\..\tsk3\vs\dos.c" />
     <ClCompile Include="..\..\tsk3\vs\gpt.c" />
