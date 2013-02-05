@@ -463,7 +463,7 @@ yaffscache_versions_compute(YAFFSFS_INFO *yfs)
 
 typedef TSK_RETVAL_ENUM yc_find_children_cb(YaffsCacheObject *obj, YaffsCacheVersion *version, void *args);
 static TSK_RETVAL_ENUM
-yaffscache_find_children(YAFFSFS_INFO *yfs, uint32_t parent_inode, yc_find_children_cb cb, void *args)
+yaffscache_find_children(YAFFSFS_INFO *yfs, TSK_INUM_T parent_inode, yc_find_children_cb cb, void *args)
 {
     YaffsCacheObject *obj;
     YaffsCacheVersion *version;
@@ -679,7 +679,7 @@ uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs){
 	int goodOffsetFound = 0; // Flag to mark that we've found an offset that also passed secondary testing
 	int bestOffset = 0;
 
-	int i;
+	unsigned int i;
 
 	int thisChunkBase;
 	int lastChunkBase;
@@ -1239,7 +1239,7 @@ yaffsfs_cache_fs(YAFFSFS_INFO * yfs)
 	// Having multiple inodes point to the same object seems to cause trouble in TSK, especally in orphan file detection,
 	//  so set the version number of the final one to zero.
 	// While we're at it, find the highest obj_id and the highest version (before resetting to zero)
-	uint32_t orphanParentID = yfs->fs_info.last_inum;
+	TSK_INUM_T orphanParentID = yfs->fs_info.last_inum;
 	YaffsCacheObject * currObj = yfs->cache_objects;
 	YaffsCacheVersion * currVer;
 	while(currObj != NULL){
@@ -1267,7 +1267,7 @@ yaffsfs_cache_fs(YAFFSFS_INFO * yfs)
 // A version is allocated if:
 //   1. This version is pointed to by yco_latest
 //   2. This version didn't have a delete/unlinked header after the most recent copy of the normal header
-uint8_t yaffs_is_version_allocated(YAFFSFS_INFO * yfs, uint32_t inode){
+uint8_t yaffs_is_version_allocated(YAFFSFS_INFO * yfs, TSK_INUM_T inode){
 	YaffsCacheObject * obj;
 	YaffsCacheVersion * version;
 	YaffsCacheChunk * curr;
@@ -1304,7 +1304,7 @@ uint8_t yaffs_is_version_allocated(YAFFSFS_INFO * yfs, uint32_t inode){
 
 static uint8_t
 yaffs_make_directory(YAFFSFS_INFO *yaffsfs, TSK_FS_FILE *a_fs_file, 
-                     uint32_t inode, char *name)
+                     TSK_INUM_T inode, char *name)
 {
     TSK_FS_FILE *fs_file = a_fs_file;
 
@@ -1359,7 +1359,7 @@ yaffs_make_directory(YAFFSFS_INFO *yaffsfs, TSK_FS_FILE *a_fs_file,
 
 static uint8_t
 yaffs_make_regularfile( YAFFSFS_INFO * yaffsfs, TSK_FS_FILE * a_fs_file, 
-			uint32_t inode, char * name )
+			TSK_INUM_T inode, char * name )
 {
     TSK_FS_FILE *fs_file = a_fs_file;
 
@@ -2014,8 +2014,6 @@ static uint8_t
 yaffsfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 {
     YAFFSFS_INFO *yfs = (YAFFSFS_INFO *) fs;
-    time_t tmptime;
-    char timeBuf[128];
 	unsigned int obj_count, version_count;
     uint32_t obj_first, obj_last, version_first, version_last;
 
@@ -2446,7 +2444,7 @@ yaffsfs_load_attrs(TSK_FS_FILE *file)
     TSK_FS_INFO *fs;
     YAFFSFS_INFO *yfs;
 	TSK_FS_ATTR_RUN *data_run;
-	uint32_t file_block_count;
+	TSK_DADDR_T file_block_count;
 	YaffsCacheObject *obj;
     YaffsCacheVersion *version;
 	TSK_RETVAL_ENUM result;
