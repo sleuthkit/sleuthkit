@@ -55,7 +55,7 @@ public class TopDownTraversal extends ImgTraverser {
 	 */
 	@Parameters
 	public static Collection<Object[]> testImageData() {
-		Collection<Object[]> data = new ArrayList<>();
+		Collection<Object[]> data = new ArrayList<Object[]>();
 
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
@@ -94,7 +94,7 @@ public class TopDownTraversal extends ImgTraverser {
 		} catch (TskCoreException ex) {
 			DataModelTestSuite.writeExceptions(testStandardPath, ex);
 		}
-		List<Long> lp = new ArrayList<>();
+		List<Long> lp = new ArrayList<Long>();
 		try {
 			FileWriter reslt = new FileWriter(path);
 			FileWriter levs = new FileWriter(path.replace("_" + this.getClass().getSimpleName() + ".txt", DataModelTestSuite.LVS + ".txt"));
@@ -136,7 +136,7 @@ public class TopDownTraversal extends ImgTraverser {
 				if (c.getChildren().isEmpty()) {
 					levs.append(lp.toString() + "\n");
 				} else {
-					topDownDF(c.getChildren(), new ArrayList<>(lp), reslt, levs);
+					topDownDF(c.getChildren(), new ArrayList<Long>(lp), reslt, levs);
 				}
 			} catch (IOException ex) {
 				logg.log(Level.SEVERE, "Failed to Traverse", ex);

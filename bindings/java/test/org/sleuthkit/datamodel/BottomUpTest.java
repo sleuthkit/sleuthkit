@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,7 +54,7 @@ public class BottomUpTest {
 	 */
 	@Parameterized.Parameters
 	public static Collection<Object[]> testImageData() {
-		Collection<Object[]> data = new ArrayList<>();
+		Collection<Object[]> data = new ArrayList<Object[]>();
 
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
@@ -84,7 +86,8 @@ public class BottomUpTest {
 			}
 			process.commit();
 			java.io.File lvs = new java.io.File(dbFile.getAbsolutePath() + java.io.File.separator + title);
-			Scanner climber = new Scanner(lvs);
+			Scanner climber;
+			climber = new Scanner(lvs);
 			while (climber.hasNextLine()) {
 				String cliNL = climber.nextLine();
 				cliNL = cliNL.substring(1);
@@ -95,10 +98,12 @@ public class BottomUpTest {
 					c = c.getParent();
 				}
 			}
-		} catch (FileNotFoundException | NumberFormatException ex) {
+		} catch (NumberFormatException ex) {
 			System.out.println(ex.toString());
 			fail("Failed to run BottomUp test");
 		} catch (TskCoreException ex) {
+			DataModelTestSuite.writeExceptions(exFile, ex);
+		} catch (FileNotFoundException ex) {
 			DataModelTestSuite.writeExceptions(exFile, ex);
 		}
 	}

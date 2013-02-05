@@ -73,7 +73,7 @@ public class DataModelTestSuite {
 	 * @return
 	 */
 	public static List<ImgTraverser> getTests() {
-		List<ImgTraverser> ret = new ArrayList<>();
+		List<ImgTraverser> ret = new ArrayList<ImgTraverser>();
 		ret.add(new SequentialTraversal(null));
 		ret.add(new TopDownTraversal(null));
 		return ret;
@@ -111,9 +111,8 @@ public class DataModelTestSuite {
 				writeExceptions(standardFile.getAbsolutePath(), ex);
 			}
 			process.commit();
-			try (FileWriter standardWriter = type.traverse(sk, standardFile.getAbsolutePath())) {
-				standardWriter.flush();
-			}
+			FileWriter standardWriter = type.traverse(sk, standardFile.getAbsolutePath());
+			standardWriter.flush();
 			runSort(standardFile.getAbsolutePath());
 		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Couldn't create Standard", ex);
@@ -140,9 +139,9 @@ public class DataModelTestSuite {
 				return isImgFile(f.getName());
 			}
 		};
-		List<List<String>> images = new ArrayList<>();
+		List<List<String>> images = new ArrayList<List<String>>();
 		for (java.io.File imageSet : dir.listFiles(imageFilter)) {
-			ArrayList<String> imgs = new ArrayList<>();
+			ArrayList<String> imgs = new ArrayList<String>();
 			imgs.add(imageSet.getAbsolutePath());
 			images.add(imgs);
 		}
@@ -344,7 +343,9 @@ public class DataModelTestSuite {
 
 			result.append("md5=" + hash);
 
-		} catch (IOException | NoSuchAlgorithmException ex) {
+		} catch (NoSuchAlgorithmException ex) {
+			logg.log(Level.SEVERE, "Failed to generate Hash", ex);
+		} catch (IOException ex){
 			logg.log(Level.SEVERE, "Failed to generate Hash", ex);
 		} catch (TskCoreException ex) {
 			writeExceptions(StrgFile, ex);
@@ -471,7 +472,10 @@ public class DataModelTestSuite {
 		String[] cmd = {cygpath, inp, "-o", outp};
 		try {
 			Runtime.getRuntime().exec(cmd).waitFor();
-		} catch (IOException | InterruptedException ex) {
+		} catch (InterruptedException ex) {
+			logg.log(Level.SEVERE, "Couldn't create Standard", ex);
+			throw new RuntimeException(ex);
+		} catch(IOException ex){
 			logg.log(Level.SEVERE, "Couldn't create Standard", ex);
 			throw new RuntimeException(ex);
 		}

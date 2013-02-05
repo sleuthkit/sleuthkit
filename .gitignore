@@ -7,6 +7,10 @@
 /bindings/java/dist
 /bindings/java/test/output
 /bindings/java/test/input
+/bindings/java/nbproject/genfiles.properties
+/bindings/java/nbproject/nbjdk.properties
+/bindings/java/nbproject/jdk.xml
+/bindings/java/nbproject/nbjdk.xml
 
 # Windows build folders
 /win32/Debug_NoLibs/

@@ -52,7 +52,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 	 */
 	@Parameterized.Parameters
 	public static Collection<Object[]> testImageData() {
-		Collection<Object[]> data = new ArrayList<>();
+		Collection<Object[]> data = new ArrayList<Object[]>();
 
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
@@ -81,7 +81,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 		super.basicTest();
 		oldStandardPath = DataModelTestSuite.sortedFlPth(oldStandardPath);
 		testStandardPath = DataModelTestSuite.sortedFlPth(testStandardPath);
-		List<Boolean> ret = new ArrayList<>(1);
+		List<Boolean> ret = new ArrayList<Boolean>(1);
 		ret.add(DataModelTestSuite.comparecontent(oldStandardPath, testStandardPath));
 		return ret;
 	}

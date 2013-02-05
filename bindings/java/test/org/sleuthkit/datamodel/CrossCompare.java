@@ -53,7 +53,7 @@ public class CrossCompare {
 	 */
 	@Parameterized.Parameters
 	public static Collection<Object[]> testImageData() {
-		Collection<Object[]> data = new ArrayList<>();
+		Collection<Object[]> data = new ArrayList<Object[]>();
 
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths, SequentialTraversal.class.getSimpleName(), TopDownTraversal.class.getSimpleName()});

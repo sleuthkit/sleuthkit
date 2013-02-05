@@ -49,7 +49,7 @@ public abstract class ImgTraverser{
 		oldStandardPath = DataModelTestSuite.standardPath(imagePaths, this.getClass().getSimpleName());
 		DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, this);
 		oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX + ".txt");
-		List<Boolean> ret = new ArrayList<>(2);
+		List<Boolean> ret = new ArrayList<Boolean>(2);
 		ret.add(DataModelTestSuite.comparecontent(oldExceptionsPath, exFile));
 		ret.add(DataModelTestSuite.comparecontent(oldStandardPath, testStandardPath));
 		return ret;
