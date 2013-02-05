@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -302,5 +303,9 @@ public class Image extends AbstractContent {
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getImageChildrenIds(this);
+	}
+	@Override
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "Image [\t" + "\t" + "paths " + Arrays.toString(paths) + "\t" + "size " + size + "\t" + "ssize " + ssize + "\t" + "timezone " + timezone + "\t" + "type " + type + "]\t";
 	}
 }
