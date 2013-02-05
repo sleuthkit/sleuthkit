@@ -189,8 +189,11 @@ public class DataModelTestSuite {
 	 */
 	private static void getTSKData(String standardPath, List<String> img) {
 		String tsk_loc;
+		java.io.File  up = new java.io.File(System.getProperty("user.dir"));
+		up = up.getParentFile();
+		up = up.getParentFile();
 		if (System.getProperty("os.name").contains("Windows")) {
-			tsk_loc = "\\Users\\" + System.getProperty("user.name") + "\\Documents\\GitHub\\sleuthkit\\win32\\Release\\tsk_gettimes";
+			tsk_loc = up.getAbsolutePath() + "\\win32\\Release\\tsk_gettimes";
 		} else {
 			return;
 		}
