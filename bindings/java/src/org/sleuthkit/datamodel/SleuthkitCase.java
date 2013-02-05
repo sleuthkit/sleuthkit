@@ -97,11 +97,11 @@ public class SleuthkitCase {
 	private PreparedStatement getPathSt;
 	private PreparedStatement getDerivedInfoSt;
 	private PreparedStatement getDerivedMethodSt;
-	private PreparedStatement getLastContentIdSt;
 	private PreparedStatement addObjectSt;
 	private PreparedStatement addLocalFileSt;
 	private PreparedStatement addPathSt;
 	private PreparedStatement hasChildrenSt;
+	private PreparedStatement getLastContentIdSt;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
 	/**
@@ -338,6 +338,11 @@ public class SleuthkitCase {
 				updateMd5St.close();
 				updateMd5St = null;
 			}
+			
+			if (getLastContentIdSt != null) {
+				getLastContentIdSt.close();
+				getLastContentIdSt = null;
+			}
 
 			if (getPathSt != null) {
 				getPathSt.close();
@@ -354,10 +359,6 @@ public class SleuthkitCase {
 				getDerivedMethodSt = null;
 			}
 
-			if (getLastContentIdSt != null) {
-				getLastContentIdSt.close();
-				getLastContentIdSt = null;
-			}
 
 			if (addObjectSt != null) {
 				addObjectSt.close();
@@ -1086,7 +1087,6 @@ public class SleuthkitCase {
 	 * object id
 	 *
 	 * @param artifactTypeID artifact type id
-	 * @param artifactTypeName artifact type name
 	 * @param obj_id associated object id
 	 * @return count of matching blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -3859,6 +3859,7 @@ public class SleuthkitCase {
 		}
 		return count;
 	}
+	
 
 	/**
 	 * Escape the single quotes in the given string so they can be added to the

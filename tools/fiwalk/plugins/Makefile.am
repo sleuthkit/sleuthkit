@@ -2,7 +2,7 @@ bin_PROGRAMS = jpeg_extract
 jpeg_extract_SOURCES = jpeg_extract.cpp
 
 EXTRA_DIST = jpeg_extract.java word_extract.java Libextract_plugin.java ficonfig.txt\
-	docx_diff.py docx_extractor.py docx_grep.py odf_extractor.py
+    docx_extractor.py docx_grep.py odf_extractor.py
 
 plugins.jar: jpeg_extract.class word_extract.class Libextract_plugin.class
 	jar cfv plugins.jar jpeg_extract.class word_extract.class Libextract_plugin.class

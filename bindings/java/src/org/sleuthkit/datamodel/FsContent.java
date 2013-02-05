@@ -25,11 +25,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
-import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
-import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
 
 /**
  * Generalized class that stores metadata that are common to both File and
@@ -80,7 +81,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param modes
 	 * @param uid
 	 * @param gid
-	 * @param md5Hash
+	 * @param md5Hash String of MD5 hash of content or null if not known
 	 * @param knownState
 	 * @param parentPath 
 	 */
@@ -180,7 +181,6 @@ public abstract class FsContent extends AbstractFile {
 		return Collections.<TskFileRange>emptyList();
 	}
 
-	
 	@Override
 	public synchronized String getUniquePath() throws TskCoreException {
 		if (uniquePath == null) {

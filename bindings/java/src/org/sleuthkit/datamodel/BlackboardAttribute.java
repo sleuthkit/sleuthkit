@@ -348,7 +348,6 @@ public class BlackboardAttribute {
 	 *
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
-	 * @param context extra information about the attribute
 	 * @param valueDouble the value
 	 */
 	public BlackboardAttribute(int attributeTypeID, String moduleName,

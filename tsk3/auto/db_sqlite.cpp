@@ -1500,7 +1500,7 @@ uint8_t TskDbSqlite::getParentImageId (const int64_t objId, int64_t & imageId) {
 /**
 * Query tsk_objects and tsk_files given file system id and return the root directory object
 * @param fsObjId (int) file system id to query root dir object for
-* @param objInfo (out) TSK_DB_OBJECT root dir entry representation to return
+* @param rootDirObjInfo (out) TSK_DB_OBJECT root dir entry representation to return
 * @returns TSK_ERR on error (or if not found), TSK_OK on success
 */
 uint8_t TskDbSqlite::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) {
