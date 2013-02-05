@@ -88,8 +88,7 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
   
 	<target name="test-create-standards"
 			description="Traverses the Images stored in the path represented by test-input variable and creates then stores them to the path represented by the test-standards variable, run test-download-imgs at least once before this."
-			depends="compile-test"
-        description="create gold standards to run the datamodel tests against" >
+			depends="compile-test" >
 		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
 		<java classname="org.sleuthkit.datamodel.DataModelTestSuite" classpathref="libraries"	fork="true" failonerror="true">
 			<sysproperty key="java.library.path" value="${dlls}"/>
@@ -101,8 +100,7 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
   
 	<target name="test" 
 			description="Traverses the Images stored in the path represented by test-input variable, creates results files stored in the path represented by test-results, and compares them to the standards stored in the path represented by the test-standards variable, always run test-create-standards at least once before before running test."
-			depends="compile-test"
-        description="run the tests" >
+			depends="compile-test" >
 		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
 		<junit fork="on" haltonfailure="yes" dir=".">
 			<sysproperty key="java.library.path" value="${dlls}"/>
