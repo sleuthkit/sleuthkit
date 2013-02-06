@@ -7,12 +7,10 @@
   <!-- some dlls come from LIBEWF_HOME -->
 	<property environment="env"/>
 	<condition property="ewfFound">
-		<and>
+		<or>
 			<isset property="env.LIBEWF_HOME"/>
-			<not>
-				<os family="mac"/>
-			</not>
-		</and>
+			<os family="mac"/>
+		</or>
 	</condition>
 	
   <!-- set global properties for this build -->
