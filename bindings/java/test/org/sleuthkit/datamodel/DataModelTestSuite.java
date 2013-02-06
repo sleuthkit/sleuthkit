@@ -258,7 +258,12 @@ public class DataModelTestSuite {
 	 * @return
 	 */
 	public static String getImgName(String img) {
-		String[] imgSp = img.split("\\\\");
+		String[] imgSp;
+		if (System.getProperty("os.name").contains("Windows")) {
+			 imgSp = img.split("\\\\");
+		} else {
+			 imgSp = img.split(java.io.File.pathSeparator);;
+		}
 		return stripExtension(imgSp[imgSp.length - 1]);
 	}
 
