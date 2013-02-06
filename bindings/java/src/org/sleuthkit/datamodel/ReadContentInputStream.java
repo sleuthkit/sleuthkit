@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2013 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -118,4 +118,60 @@ public class ReadContentInputStream extends InputStream {
 		}
         return (int)(length - position);
     }
+
+	@Override
+	public long skip(long n) throws IOException {
+		//more efficient skip() implementation than superclass
+		//as it does not involve reads
+		long toSkip = Math.min(n, length - position);  //allow to skip to EOF
+		position += toSkip;
+		return toSkip;
+		//0 1 2 3 4 5      len: 6
+	}
+
+	@Override
+	public void close() throws IOException {
+		super.close(); 
+		//nothing to be done currently, file handles are closed when content is gc'ed
+	}
+
+	@Override
+	public boolean markSupported() {
+		return false;
+	}
+	
+	/// additional methods to facilitate stream seeking
+	
+	/**
+	 * Get total length of the stream
+	 * @return number of bytes that can be read from this stream
+	 */
+	public long getLength() {
+		return length;
+	}
+	
+	/**
+	 * Get current position in the stream
+	 * @return current offset in bytes
+	 */
+	public long getCurPosition() {
+		return position;
+	}
+	
+	/**
+	 * Set new current position in the stream, up to and including EOF
+	 * @param newPosition new position in the stream to be set
+	 * @return the actual position set, which can be less than position passed in
+	 * if EOF has been reached
+	 */
+	public long seek(long newPosition) {
+		if (newPosition < 0) {
+			throw new IllegalArgumentException ("Illegal negative new position in the stream");
+		}
+		
+		position = Math.min(newPosition, length);
+		return position;
+		
+	}
+	
 }
