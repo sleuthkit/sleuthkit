@@ -235,6 +235,7 @@ public class DataModelTestSuite {
 	 * @return
 	 */
 	private static String stripExtension(String title) {
+		System.out.println(title);
 		return title.substring(0, title.lastIndexOf("."));
 	}
 
@@ -262,7 +263,7 @@ public class DataModelTestSuite {
 		if (System.getProperty("os.name").contains("Windows")) {
 			 imgSp = img.split("\\\\");
 		} else {
-			 imgSp = img.split(java.io.File.pathSeparator);;
+			 imgSp = img.split("/");;
 		}
 		return stripExtension(imgSp[imgSp.length - 1]);
 	}
@@ -429,6 +430,7 @@ public class DataModelTestSuite {
 			for (ImgTraverser tstrn : tests) {
 				String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
 				System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
+				System.out.println(System.getProperty("java.library.path"));
 				DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn);
 			}
 			String standardPathCPP = DataModelTestSuite.standardPath(paths, CPPtoJavaCompare.class.getSimpleName());
