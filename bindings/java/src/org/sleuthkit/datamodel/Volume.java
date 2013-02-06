@@ -258,4 +258,10 @@ public class Volume extends AbstractContent {
 		
 		return fileSystems;
 	}
+	
+	@Override
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "Volume [\t" + "addr " + addr + "\t" + "desc " + desc + "\t" + "flags " + flags + "\t" + "length " + length + "\t" + "start " + start + "]\t";
+	}
+	
 }

@@ -30,17 +30,20 @@
             </folders>
             <ide-actions>
                 <action name="build">
+                    <script>nbproject/nbjdk.xml</script>
                     <target>dist</target>
                 </action>
                 <action name="clean">
+                    <script>nbproject/nbjdk.xml</script>
                     <target>clean</target>
                 </action>
                 <action name="rebuild">
+                    <script>nbproject/nbjdk.xml</script>
                     <target>clean</target>
                     <target>dist</target>
                 </action>
                 <action name="run.single">
-                    <script>nbproject/ide-file-targets.xml</script>
+                    <script>nbproject/nbjdk.xml</script>
                     <target>run-selected-file-in-test</target>
                     <context>
                         <property>run.class</property>
@@ -53,7 +56,7 @@
                     </context>
                 </action>
                 <action name="compile.single">
-                    <script>nbproject/ide-file-targets.xml</script>
+                    <script>nbproject/nbjdk.xml</script>
                     <target>compile-selected-files-in-test</target>
                     <context>
                         <property>files</property>
@@ -66,25 +69,30 @@
                     </context>
                 </action>
                 <action name="test">
+                    <script>nbproject/nbjdk.xml</script>
                     <target>test</target>
                 </action>
                 <action name="javadoc">
+                    <script>nbproject/nbjdk.xml</script>
                     <target>javadoc</target>
                 </action>
             </ide-actions>
             <export>
                 <type>folder</type>
                 <location>build</location>
+                <script>nbproject/nbjdk.xml</script>
                 <build-target>dist</build-target>
             </export>
             <export>
                 <type>folder</type>
                 <location>build</location>
+                <script>nbproject/nbjdk.xml</script>
                 <build-target>dist</build-target>
             </export>
             <export>
                 <type>folder</type>
                 <location>test</location>
+                <script>nbproject/nbjdk.xml</script>
                 <build-target>dist</build-target>
             </export>
             <view>
@@ -116,7 +124,7 @@
                 <package-root>src</package-root>
                 <classpath mode="compile">lib;lib/diffutils-1.2.1.jar;lib/sqlite-jdbc-3.7.8-SNAPSHOT.jar;lib/junit-4.8.2.jar</classpath>
                 <built-to>build</built-to>
-                <source-level>1.7</source-level>
+                <source-level>1.6</source-level>
             </compilation-unit>
             <compilation-unit>
                 <package-root>test</package-root>
@@ -124,7 +132,7 @@
                 <classpath mode="compile">build;lib/diffutils-1.2.1.jar;lib/diffutils-1.2.1-javadoc.jar;lib/diffutils-1.2.1-sources.jar;lib/junit-4.8.2.jar</classpath>
                 <built-to>build</built-to>
                 <built-to>test</built-to>
-                <source-level>1.7</source-level>
+                <source-level>1.6</source-level>
             </compilation-unit>
         </java-data>
         <preferences xmlns="http://www.netbeans.org/ns/auxiliary-configuration-preferences/1">

@@ -19,6 +19,8 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
@@ -29,14 +31,12 @@ import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 public abstract class AbstractContent implements Content {
 
 	public final static long UNKNOWN_ID = -1;
-	
 	private SleuthkitCase db;
 	private long objId;
 	private String name;
 	private Content parent;
 	private String uniquePath;
 	protected long parentId;
-	
 
 	protected AbstractContent(SleuthkitCase db, long obj_id, String name) {
 		this.db = db;
@@ -194,5 +194,27 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public long getAllArtifactsCount() throws TskCoreException {
 		return db.getBlackboardArtifactsCount(objId);
+	}
+
+	@Override
+	public String toString() {
+		return toString(true);
+	}
+
+	public String toString(boolean preserveState){
+		if (preserveState) {
+			return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" + "name " + name + "\t" + "parentId " + parentId + "\t" + "uniquePath " + uniquePath + "]\t";
+		} else {
+			try {
+				if (getParent() != null) {
+					return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" + "name " + name + "\t" + "getUniquePath " + getUniquePath() + "\t" + "getParent " + getParent().getId() + "]\t";
+				} else {
+					return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" + "name " + name + "\t" + "uniquePath " + getUniquePath() + "\t" + "parentId " + parentId + "]\t";
+				}
+			} catch (TskCoreException ex) {
+				Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, "Could not find Parent", ex);
+				return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" + "name " + name + "\t" + "parentId " + parentId + "\t" + "uniquePath " + uniquePath + "]\t";
+			}
+		}
 	}
 }
