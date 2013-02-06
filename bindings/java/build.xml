@@ -23,7 +23,6 @@
 	<property name="test-results" location="test/output/results"/>
 	<property name="test-input" location="test/input"/>
 	<property name="test-types" location="test/org/sleuthkit/datamodel"/>
-	<property name="dlls" location="jni"/>
 	<condition property="dlls" value="jni">  
         <os family="unix"/>  
     </condition>  
