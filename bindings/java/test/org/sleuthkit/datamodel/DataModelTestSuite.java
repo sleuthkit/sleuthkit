@@ -195,7 +195,7 @@ public class DataModelTestSuite {
 		if (System.getProperty("os.name").contains("Windows")) {
 			tsk_loc = up.getAbsolutePath() + "\\win32\\Release\\tsk_gettimes";
 		} else {
-			return;
+			tsk_loc = up.getAbsolutePath() + "/tools/autotools/tsk_gettimes";
 		}
 		String[] cmd = {tsk_loc, img.get(0)};
 		try {
