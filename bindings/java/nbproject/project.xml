@@ -30,20 +30,17 @@
             </folders>
             <ide-actions>
                 <action name="build">
-                    <script>nbproject/nbjdk.xml</script>
                     <target>dist</target>
                 </action>
                 <action name="clean">
-                    <script>nbproject/nbjdk.xml</script>
                     <target>clean</target>
                 </action>
                 <action name="rebuild">
-                    <script>nbproject/nbjdk.xml</script>
                     <target>clean</target>
                     <target>dist</target>
                 </action>
                 <action name="run.single">
-                    <script>nbproject/nbjdk.xml</script>
+                    <script>nbproject/ide-file-targets.xml</script>
                     <target>run-selected-file-in-test</target>
                     <context>
                         <property>run.class</property>
@@ -56,7 +53,7 @@
                     </context>
                 </action>
                 <action name="compile.single">
-                    <script>nbproject/nbjdk.xml</script>
+                    <script>nbproject/ide-file-targets.xml</script>
                     <target>compile-selected-files-in-test</target>
                     <context>
                         <property>files</property>
@@ -69,30 +66,25 @@
                     </context>
                 </action>
                 <action name="test">
-                    <script>nbproject/nbjdk.xml</script>
                     <target>test</target>
                 </action>
                 <action name="javadoc">
-                    <script>nbproject/nbjdk.xml</script>
                     <target>javadoc</target>
                 </action>
             </ide-actions>
             <export>
                 <type>folder</type>
                 <location>build</location>
-                <script>nbproject/nbjdk.xml</script>
                 <build-target>dist</build-target>
             </export>
             <export>
                 <type>folder</type>
                 <location>build</location>
-                <script>nbproject/nbjdk.xml</script>
                 <build-target>dist</build-target>
             </export>
             <export>
                 <type>folder</type>
                 <location>test</location>
-                <script>nbproject/nbjdk.xml</script>
                 <build-target>dist</build-target>
             </export>
             <view>
