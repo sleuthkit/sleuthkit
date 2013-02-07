@@ -262,7 +262,7 @@ public class DataModelTestSuite {
 		if (System.getProperty("os.name").contains("Windows")) {
 			 imgSp = img.split("\\\\");
 		} else {
-			 imgSp = img.split("/");;
+			 imgSp = img.split("/");
 		}
 		return stripExtension(imgSp[imgSp.length - 1]);
 	}
