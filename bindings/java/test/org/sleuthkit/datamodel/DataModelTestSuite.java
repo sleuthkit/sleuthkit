@@ -235,7 +235,6 @@ public class DataModelTestSuite {
 	 * @return
 	 */
 	private static String stripExtension(String title) {
-		System.out.println(title);
 		return title.substring(0, title.lastIndexOf("."));
 	}
 
