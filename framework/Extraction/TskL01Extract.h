@@ -23,8 +23,20 @@
 #include <vector>
 #include <map>
 
+#ifndef HAVE_LIBEWF
+#define HAVE_LIBEWF 1
+#endif
+
+namespace ewf
+{
+    #include "ewf.h"
+}
+
+
+
 /**
- * @todo derive from a new base class?
+ * @todo This might be used by class TskImageFileTsk
+ * @todo derive from a new base class (or none at all)?
  * 
  */
 class TSK_FRAMEWORK_API TskL01Extract : public TskImageFile
@@ -67,7 +79,9 @@ private:
         const TSK_FS_ATTR * fsAttr;
     };
 
-    int TskL01Extract::openContainers();
+    int openContainers();
+    void traverse(ewf::libewf_file_entry_t *parent, int index);
+    void printName(ewf::libewf_file_entry_t *node);
 
     TskImgDB &m_db;
     TSK_IMG_INFO *m_img_info;

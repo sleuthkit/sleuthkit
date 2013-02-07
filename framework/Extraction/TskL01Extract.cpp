@@ -23,14 +23,11 @@
 #include "Services/TskServices.h"
 #include "tsk3/base/tsk_base_i.h"
 
-#ifndef HAVE_LIBEWF
-#define HAVE_LIBEWF 1
-#endif
+//namespace ewf
+//{
+//    #include "ewf.h"
+//}
 
-namespace ewf
-{
-#include "ewf.h"
-}
 
 TskL01Extract::TskL01Extract() :
     m_db(TskServices::Instance().getImgDB())
@@ -93,11 +90,100 @@ int TskL01Extract::openContainers()
         return -1;
     }
 
-    ewf::IMG_EWF_INFO* ewfInfo = (ewf::IMG_EWF_INFO*)m_img_info;
+    ewf::IMG_EWF_INFO *ewfInfo = (ewf::IMG_EWF_INFO*)m_img_info;
 
-    return 0;
+    ewf::libewf_file_entry_t *root = NULL;
+    ewf::libewf_error_t *ewfError = NULL;
+    int ret = ewf::libewf_handle_get_root_file_entry(ewfInfo->handle, &root, &ewfError);
+    if (ret == -1)
+    {
+        std::wstringstream logMessage;
+        char errorString[512];
+        errorString[0] = '\0';
+        ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
+        logMessage << L"TskL01Extract::openContainers - Error with libewf_handle_get_root_file_entry: " << errorString << std::endl;
+        LOGERROR(logMessage.str());
+        return -1;
+    }
+
+    if (ret > 0)
+    {
+        ewf::uint8_t nameString[512];
+        nameString[0] = '\0';
+        ewfError = NULL;
+        if (ewf::libewf_file_entry_get_utf8_name(root, nameString, 512, &ewfError) == -1)
+        {
+            std::wstringstream logMessage;
+            char errorString[512];
+            errorString[0] = '\0';
+            ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
+            logMessage << L"TskL01Extract::openContainers - Error with libewf_file_entry_get_utf8_name: " << errorString << std::endl;
+            LOGERROR(logMessage.str());
+            return -1;
+        }
+
+       
+        traverse(root, 0);
+    }
+
+    /// dev testing ////
+    return -1;
+    //return 0;
 }
 
+
+void TskL01Extract::traverse(ewf::libewf_file_entry_t *parent, int index)
+{
+    std::cerr << "traversing child " << index << std::endl;
+  
+    ewf::libewf_error_t *ewfError = NULL;
+
+    int num = 0;
+    ewf::libewf_file_entry_get_number_of_sub_file_entries(parent, &num, &ewfError);
+
+    if (num > 0)
+    {
+        ewf::libewf_file_entry_t *child = NULL;
+
+        if (ewf::libewf_file_entry_get_sub_file_entry(parent, index, &child, &ewfError) == -1)
+        {
+            std::wstringstream logMessage;
+            char errorString[512];
+            errorString[0] = '\0';
+            ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
+            logMessage << L"TskL01Extract::openContainers - Error with libewf_file_entry_get_sub_file_entry: " << errorString << std::endl;
+            LOGERROR(logMessage.str());
+        }
+        
+        printName(child);
+        std::cerr << "number of sub file entries = " << num << std::endl;
+
+        //recurse
+        for (int i=0; i < num; ++i)
+        {
+            traverse(child, i);
+        }
+    }
+}
+
+
+void TskL01Extract::printName(ewf::libewf_file_entry_t *node)
+{
+    ewf::uint8_t nameString[512];
+    nameString[0] = '\0';
+    ewf::libewf_error_t *ewfError = NULL;
+    if (ewf::libewf_file_entry_get_utf8_name(node, nameString, 512, &ewfError) == -1)
+    {
+        std::wstringstream logMessage;
+        char errorString[512];
+        errorString[0] = '\0';
+        ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
+        logMessage << L"TskL01Extract::openContainers - Error with libewf_file_entry_get_utf8_name: " << errorString << std::endl;
+        LOGERROR(logMessage.str());
+        return;
+    }
+    std::cerr << "L01 node file name = " << nameString << std::endl;
+}
 
 void TskL01Extract::close()
 {
