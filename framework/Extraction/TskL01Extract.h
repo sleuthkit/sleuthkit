@@ -26,17 +26,15 @@
 #ifndef HAVE_LIBEWF
 #define HAVE_LIBEWF 1
 #endif
-
+///@todo use handle or pimpl to hide namespace pollution
 namespace ewf
 {
     #include "ewf.h"
 }
 
 
-
 /**
- * @todo This might be used by class TskImageFileTsk
- * @todo derive from a new base class (or none at all)?
+ * @todo derive from a new base class (or none at all)? and simplify the interface
  * 
  */
 class TSK_FRAMEWORK_API TskL01Extract : public TskImageFile
@@ -80,8 +78,11 @@ private:
     };
 
     int openContainers();
-    void traverse(ewf::libewf_file_entry_t *parent, int index);
-    void printName(ewf::libewf_file_entry_t *node);
+    void traverse(ewf::libewf_file_entry_t *parent);
+    void getName(ewf::libewf_file_entry_t *node);
+    void getFileType(ewf::libewf_file_entry_t *node);
+    uint64_t getFileSize(ewf::libewf_file_entry_t *node);
+    void getFileData(ewf::libewf_file_entry_t *node, const size_t dataSize);
 
     TskImgDB &m_db;
     TSK_IMG_INFO *m_img_info;
@@ -90,8 +91,6 @@ private:
     std::vector<std::wstring> m_images; 
     const wchar_t **m_images_ptrs;
 
-    //std::vector<OPEN_FILE *> m_openFiles; // maps handle returned from openFile() to the open TSK_FS_FILE object
-    //std::map<uint64_t, TSK_FS_INFO *> m_openFs; // maps the byte offset of a file system to its open object.
 };
 
 #endif
