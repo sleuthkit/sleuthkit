@@ -187,7 +187,7 @@ public class DataModelTestSuite {
 	 * @param standardPath The path to the file to put the tsk data in
 	 * @param img the path to the image, is a list for compatability reasons
 	 */
-	private static void getTSKData(String standardPath, List<String> img) {
+	 private static void getTSKData(String standardPath, List<String> img) {
 		String tsk_loc;
 		java.io.File  up = new java.io.File(System.getProperty("user.dir"));
 		up = up.getParentFile();
