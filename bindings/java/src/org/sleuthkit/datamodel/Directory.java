@@ -66,18 +66,5 @@ public class Directory extends FsContent {
 		return getSleuthkitCase().getDirectoryChildrenIds(this);
 	}
 
-	@Override
-	public boolean isVirtual() {
-		return fileType.equals(TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR);
-	}
 
-	@Override
-	public boolean isDir() {
-		return true;
-	}
-
-	@Override
-	public boolean isFile() {
-		return false;
-	}
 }

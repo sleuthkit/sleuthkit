@@ -44,9 +44,7 @@ public class DerivedFile extends AbstractFile {
 
 	private String localPath; ///< local path as stored in db tsk_files_path, is relative to the db
 	private String localAbsPath; ///< absolute path representation of the local path
-	private boolean isFile;
 	private volatile DerivedMethod derivedMethod;
-	private java.io.File localFile;
 	private volatile RandomAccessFile fileHandle;
 	private static final Logger logger = Logger.getLogger(DerivedFile.class.getName());
 	private boolean hasDerivedMethod = true; ///< whether it has the derived method to lazy load or not
@@ -82,8 +80,6 @@ public class DerivedFile extends AbstractFile {
 			this.localPath = "";
 		} else {
 			localAbsPath = db.getDbDirPath() + java.io.File.separator + this.localPath;
-			localFile = new java.io.File(localAbsPath);
-			isFile = localFile.isFile();
 		}
 	}
 
@@ -160,20 +156,6 @@ public class DerivedFile extends AbstractFile {
 		return false;
 	}
 
-	@Override
-	public boolean isVirtual() {
-		return false;
-	}
-
-	@Override
-	public boolean isFile() {
-		return isFile;
-	}
-
-	@Override
-	public boolean isDir() {
-		return !isFile;
-	}
 
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
@@ -202,23 +184,27 @@ public class DerivedFile extends AbstractFile {
 	}
 
 	public boolean exists() {
-		if (localFile == null) {
-			return false;
-		}
+		java.io.File localFile = new java.io.File(localAbsPath);
 		return localFile.exists();
 	}
 
 	public boolean canRead() {
-		if (localFile == null) {
-			return false;
-		}
+		java.io.File localFile = new java.io.File(localAbsPath);
 		return localFile.canRead();
 	}
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
-		if (localFile == null) {
-			throw new TskCoreException("Local derived file not initialized: " + this.toString());
+		java.io.File localFile = new java.io.File(localAbsPath);
+		if (! localFile.exists()) {
+			throw new TskCoreException("Error reading derived file, it does not exist at local path: " + localAbsPath);
+		}
+		if (! localFile.canRead()) {
+			throw new TskCoreException("Error reading derived file, file not readable at local path: " + localAbsPath);
+		}
+		
+		if (isDir() ) {
+			return 0;
 		}
 
 		int bytesRead = 0;
@@ -292,7 +278,7 @@ public class DerivedFile extends AbstractFile {
 
 	@Override
 	public String toString() {
-		return "DerivedFile{" + "localPath=" + localPath + ", localAbsPath=" + localAbsPath + ", isFile=" + isFile + ", derivedMethod=" + derivedMethod + ", localFile=" + localFile + ", fileHandle=" + fileHandle + ", hasDerivedMethod=" + hasDerivedMethod + '}';
+		return "DerivedFile{" + "localPath=" + localPath + ", localAbsPath=" + localAbsPath + ", derivedMethod=" + derivedMethod  + ", fileHandle=" + fileHandle + ", hasDerivedMethod=" + hasDerivedMethod + '}';
 	}
 
 	/**

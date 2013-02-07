@@ -441,21 +441,31 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @return true if it's virtual, false otherwise
 	 */
-	public abstract boolean isVirtual();
+	public boolean isVirtual() {
+		return fileType.equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)
+				|| dirType.equals(TskData.TSK_FS_NAME_TYPE_ENUM.VIRT)
+				|| metaType.equals(TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT);
+	}
+	
 
 	/**
 	 * Is this object a file
 	 *
 	 * @return true if a file, false otherwise
 	 */
-	public abstract boolean isFile();
+	public boolean isFile() {
+		return dirType.equals(TSK_FS_NAME_TYPE_ENUM.REG)
+				|| dirType.equals(TSK_FS_NAME_TYPE_ENUM.VIRT);
+	}
 
 	/**
 	 * Is this object a directory
 	 *
 	 * @return true if directory, false otherwise
 	 */
-	public abstract boolean isDir();
+	public boolean isDir() {
+		return dirType.equals(TSK_FS_NAME_TYPE_ENUM.DIR);
+	}
 
 	/**
 	 * Is this a root of a file system

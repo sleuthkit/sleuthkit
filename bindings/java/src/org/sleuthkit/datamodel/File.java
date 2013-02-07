@@ -65,19 +65,6 @@ public class File extends FsContent {
 		return getSleuthkitCase().getAbstractFileChildrenIds(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
 
-	@Override
-	public boolean isVirtual() {
-		return (!fileType.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)
-				|| dirType == TSK_FS_NAME_TYPE_ENUM.VIRT);
-	}
 
-	@Override
-	public boolean isDir() {
-		return false;
-	}
 
-	@Override
-	public boolean isFile() {
-		return true;
-	}
 }

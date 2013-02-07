@@ -66,15 +66,6 @@ public class VirtualDirectory extends AbstractFile {
 		throw new UnsupportedOperationException("Reading VirtualDirectory is not supported.");
 	}
 
-	@Override
-	public boolean isDir() {
-		return true;
-	}
-
-	@Override
-	public boolean isFile() {
-		return false;
-	}
 
 	@Override
 	public boolean isRoot() {
@@ -96,8 +87,4 @@ public class VirtualDirectory extends AbstractFile {
 		return getParent().getImage();
 	}
 
-	@Override
-	public boolean isVirtual() {
-		return true;
-	}
 }
