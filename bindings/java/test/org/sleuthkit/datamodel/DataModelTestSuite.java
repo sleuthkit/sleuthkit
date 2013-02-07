@@ -195,7 +195,7 @@ public class DataModelTestSuite {
 		if (System.getProperty("os.name").contains("Windows")) {
 			tsk_loc = up.getAbsolutePath() + "\\win32\\Release\\tsk_gettimes";
 		} else {
-			return;
+			tsk_loc = up.getAbsolutePath() + "/tools/autotools/tsk_gettimes";
 		}
 		String[] cmd = {tsk_loc, img.get(0)};
 		try {
@@ -258,7 +258,12 @@ public class DataModelTestSuite {
 	 * @return
 	 */
 	public static String getImgName(String img) {
-		String[] imgSp = img.split("\\\\");
+		String[] imgSp;
+		if (System.getProperty("os.name").contains("Windows")) {
+			 imgSp = img.split("\\\\");
+		} else {
+			 imgSp = img.split("/");
+		}
 		return stripExtension(imgSp[imgSp.length - 1]);
 	}
 
@@ -406,6 +411,19 @@ public class DataModelTestSuite {
 	 * @param args Ignored
 	 */
 	public static void main(String[] args) {
+		if(System.getProperty("os.name").contains("Mac")||System.getProperty("os.name").toLowerCase().contains("unix")){
+			java.io.File dep = new java.io.File("/usr/local/lib");
+			boolean deps = false;
+			for(String chk: dep.list())
+			{
+				deps = (deps||chk.toLowerCase().contains("tsk"));
+			}
+			if(!deps)
+			{
+				System.out.println("Run make install on tsk");
+				throw new RuntimeException("Run make install on tsk");
+			}
+		}
 		String tempDirPath = System.getProperty("java.io.tmpdir");
 		tempDirPath = tempDirPath.substring(0, tempDirPath.length() - 1);
 		java.io.File pth = new java.io.File(DataModelTestSuite.goldStandardPath());
@@ -452,7 +470,7 @@ public class DataModelTestSuite {
 					in2.close();
 					f1.close();
 					f2.close();
-					DiffUtil.getDiff(fi1.getAbsolutePath(), fi2.getAbsolutePath(), original.substring(original.lastIndexOf(java.io.File.separator) + 1));
+					runDiff(fi1.getAbsolutePath(), fi2.getAbsolutePath());
 					return false;
 				}
 			}
