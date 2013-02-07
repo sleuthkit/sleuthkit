@@ -58,10 +58,10 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	protected String md5Hash;
 
-	
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
+	 *
 	 * @param db case / db handle where this file belongs to
 	 * @param objId object id in tsk_objects table
 	 * @param attrType
@@ -84,7 +84,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param md5Hash md5sum of the file, or null or "NULL" if not present
 	 * @param knownState knownState status of the file, or null if unknown
 	 * (default)
-	 * @param parentPath 
+	 * @param parentPath
 	 */
 	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr,
@@ -247,7 +247,7 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Get the file's mode as a user-displayable string
 	 *
-	 * @return  formatted user-displayable string for mode
+	 * @return formatted user-displayable string for mode
 	 */
 	public String getModesAsString() {
 		int mode = TskData.TSK_FS_META_MODE_ENUM.toInt(modes);
@@ -446,7 +446,6 @@ public abstract class AbstractFile extends AbstractContent {
 				|| dirType.equals(TskData.TSK_FS_NAME_TYPE_ENUM.VIRT)
 				|| metaType.equals(TskData.TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT);
 	}
-	
 
 	/**
 	 * Is this object a file
@@ -454,8 +453,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if a file, false otherwise
 	 */
 	public boolean isFile() {
-		return dirType.equals(TSK_FS_NAME_TYPE_ENUM.REG)
-				|| dirType.equals(TSK_FS_NAME_TYPE_ENUM.VIRT);
+		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG);
+
 	}
 
 	/**
@@ -464,7 +463,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if directory, false otherwise
 	 */
 	public boolean isDir() {
-		return dirType.equals(TSK_FS_NAME_TYPE_ENUM.DIR);
+		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR);
 	}
 
 	/**
