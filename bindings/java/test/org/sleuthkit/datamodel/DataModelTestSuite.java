@@ -411,6 +411,19 @@ public class DataModelTestSuite {
 	 * @param args Ignored
 	 */
 	public static void main(String[] args) {
+		if(System.getProperty("os.name").contains("Mac")||System.getProperty("os.name").toLowerCase().contains("unix")){
+			java.io.File dep = new java.io.File("/usr/local/lib");
+			boolean deps = false;
+			for(String chk: dep.list())
+			{
+				deps = (deps||chk.toLowerCase().contains("tsk"));
+			}
+			if(!deps)
+			{
+				System.out.println("Run make install on tsk");
+				throw new RuntimeException("Run make install on tsk");
+			}
+		}
 		String tempDirPath = System.getProperty("java.io.tmpdir");
 		tempDirPath = tempDirPath.substring(0, tempDirPath.length() - 1);
 		java.io.File pth = new java.io.File(DataModelTestSuite.goldStandardPath());
@@ -429,7 +442,6 @@ public class DataModelTestSuite {
 			for (ImgTraverser tstrn : tests) {
 				String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
 				System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
-				System.out.println(System.getProperty("java.library.path"));
 				DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn);
 			}
 			String standardPathCPP = DataModelTestSuite.standardPath(paths, CPPtoJavaCompare.class.getSimpleName());
