@@ -9,7 +9,7 @@
 	<condition property="ewfFound">
 		<or>
 			<isset property="env.LIBEWF_HOME"/>
-			<os family="mac"/>
+			<os family="unix"/>
 		</or>
 	</condition>
 	
@@ -23,7 +23,7 @@
 	<property name="test-results" location="test/output/results"/>
 	<property name="test-input" location="test/input"/>
 	<property name="test-types" location="test/org/sleuthkit/datamodel"/>
-	<condition property="dlls" value="jni">  
+	<condition property="dlls" value="jni/.libs">  
         <os family="unix"/>  
     </condition>  
     <condition property="dlls" value="${env.LIBEWF_HOME}/msvscpp/zlib;${env.LIBEWF_HOME}/msvscpp/Release;../../win32/Release">  
