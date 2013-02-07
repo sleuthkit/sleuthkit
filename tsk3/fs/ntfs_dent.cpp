@@ -258,7 +258,7 @@ static uint8_t
 is_time(uint64_t t)
 {
 #define SEC_BTWN_1601_1970_DIV100 ((369*365 + 89) * 24 * 36)
-#define SEC_BTWN_1601_2010_DIV100 (SEC_BTWN_1601_1970_DIV100 + (40*365 + 6) * 24 * 36)
+#define SEC_BTWN_1601_2020_DIV100 (SEC_BTWN_1601_1970_DIV100 + (50*365 + 6) * 24 * 36)
 
     t /= 1000000000;            /* put the time in seconds div by additional 100 */
 
@@ -268,7 +268,7 @@ is_time(uint64_t t)
     if (t < SEC_BTWN_1601_1970_DIV100)
         return 0;
 
-    if (t > SEC_BTWN_1601_2010_DIV100)
+    if (t > SEC_BTWN_1601_2020_DIV100)
         return 0;
 
     return 1;
