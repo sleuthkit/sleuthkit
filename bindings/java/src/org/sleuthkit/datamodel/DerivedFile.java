@@ -46,6 +46,7 @@ public class DerivedFile extends AbstractFile {
 	private String localAbsPath; ///< absolute path representation of the local path
 	private volatile DerivedMethod derivedMethod;
 	private volatile RandomAccessFile fileHandle;
+	private volatile java.io.File localFile;
 	private static final Logger logger = Logger.getLogger(DerivedFile.class.getName());
 	private boolean hasDerivedMethod = true; ///< whether it has the derived method to lazy load or not
 
@@ -66,13 +67,13 @@ public class DerivedFile extends AbstractFile {
 	 * file, or another derived file path)
 	 * @param localPath local path of this derived file, relative to the db path
 	 */
-	protected DerivedFile(SleuthkitCase db, long objId, String name, 
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, 
-			short metaFlags, long size, String md5Hash, 
+	protected DerivedFile(SleuthkitCase db, long objId, String name,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag,
+			short metaFlags, long size, String md5Hash,
 			FileKnown knownState, String parentPath, String localPath) {
-		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short)0, 
-				name, TSK_DB_FILES_TYPE_ENUM.DERIVED, 0L, dirType, metaType, dirFlag, 
-				metaFlags, size, 0L, 0L, 0L, 0L, (short)0, 0, 0, md5Hash, knownState, parentPath);
+		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
+				name, TSK_DB_FILES_TYPE_ENUM.DERIVED, 0L, dirType, metaType, dirFlag,
+				metaFlags, size, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath);
 
 		this.localPath = localPath;
 
@@ -156,7 +157,6 @@ public class DerivedFile extends AbstractFile {
 		return false;
 	}
 
-
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
@@ -184,33 +184,47 @@ public class DerivedFile extends AbstractFile {
 	}
 
 	public boolean exists() {
-		java.io.File localFile = new java.io.File(localAbsPath);
+		getLocalFile();
 		return localFile.exists();
 	}
 
 	public boolean canRead() {
-		java.io.File localFile = new java.io.File(localAbsPath);
+		getLocalFile();
 		return localFile.canRead();
+	}
+
+	/**
+	 * lazy load local file
+	 *
+	 * @return
+	 */
+	private java.io.File getLocalFile() {
+		if (localFile == null) {
+			synchronized (this) {
+				localFile = new java.io.File(localAbsPath);
+			}
+		}
+		return localFile;
 	}
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
-		java.io.File localFile = new java.io.File(localAbsPath);
-		if (! localFile.exists()) {
+		if (isDir()) {
+			return 0;
+		}
+
+		getLocalFile();
+		if (!localFile.exists()) {
 			throw new TskCoreException("Error reading derived file, it does not exist at local path: " + localAbsPath);
 		}
-		if (! localFile.canRead()) {
+		if (!localFile.canRead()) {
 			throw new TskCoreException("Error reading derived file, file not readable at local path: " + localAbsPath);
-		}
-		
-		if (isDir() ) {
-			return 0;
 		}
 
 		int bytesRead = 0;
 
-		synchronized (this) {
-			if (fileHandle == null) {
+		if (fileHandle == null) {
+			synchronized (this) {
 				try {
 					fileHandle = new RandomAccessFile(localFile, "r");
 				} catch (FileNotFoundException ex) {
@@ -278,7 +292,7 @@ public class DerivedFile extends AbstractFile {
 
 	@Override
 	public String toString() {
-		return "DerivedFile{" + "localPath=" + localPath + ", localAbsPath=" + localAbsPath + ", derivedMethod=" + derivedMethod  + ", fileHandle=" + fileHandle + ", hasDerivedMethod=" + hasDerivedMethod + '}';
+		return "DerivedFile{" + "localPath=" + localPath + ", localAbsPath=" + localAbsPath + ", derivedMethod=" + derivedMethod + ", fileHandle=" + fileHandle + ", hasDerivedMethod=" + hasDerivedMethod + '}';
 	}
 
 	/**
