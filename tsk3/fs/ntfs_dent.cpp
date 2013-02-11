@@ -258,7 +258,7 @@ static uint8_t
 is_time(uint64_t t)
 {
 #define SEC_BTWN_1601_1970_DIV100 ((369*365 + 89) * 24 * 36)
-#define SEC_BTWN_1601_2010_DIV100 (SEC_BTWN_1601_1970_DIV100 + (40*365 + 6) * 24 * 36)
+#define SEC_BTWN_1601_2020_DIV100 (SEC_BTWN_1601_1970_DIV100 + (50*365 + 6) * 24 * 36)
 
     t /= 1000000000;            /* put the time in seconds div by additional 100 */
 
@@ -268,7 +268,7 @@ is_time(uint64_t t)
     if (t < SEC_BTWN_1601_1970_DIV100)
         return 0;
 
-    if (t > SEC_BTWN_1601_2010_DIV100)
+    if (t > SEC_BTWN_1601_2020_DIV100)
         return 0;
 
     return 1;
@@ -1306,14 +1306,23 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
     return 0;
 }
 
-/*
- * this is a much faster way of doing it in NTFS
- *
- * the inode that is passed in this case is the one to find the name
- * for
+/* \ingroup fslib
+ * NTFS can map a meta address to its name much faster than in other file systems
+ * because each entry stores the address of its parent.
  *
  * This can not be called with dent_walk because the path
  * structure will get messed up!
+ *
+ * @param fs File system being analyzed
+ * @param inode_toid Address of file to find the name for.
+ * @param type_toid Attribute type to find the more specific name for (if you want more than just the base file name)
+ * @param type_used 1 if the type_toid value was passed a valid value.  0 otherwise.
+ * @param id_toid Attribute id to find the more specific name for (if you want more than just the base file name)
+ * @param id_used 1 if the id_toid value was passed a valid value. 0 otherwise.
+ * @param dir_walk_flags Flags to use during search
+ * @param action Callback that will be called for each name that uses the specified addresses.
+ * @param ptr Pointer that will be passed into action when it is called (so that you can pass in other data)
+ * @returns 1 on error, 0 on sucess
  */
 
 uint8_t
