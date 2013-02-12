@@ -61,6 +61,10 @@ public class DerivedFile extends AbstractFile {
 	 * @param dirFlag
 	 * @param metaFlags
 	 * @param size size of the file
+	 * @param ctime
+	 * @param crtime
+	 * @param atime 
+	 * @param mtime
 	 * @param md5Hash
 	 * @param knownState
 	 * @param parentPath path of the parent of this derived file (e.g. fs zip
@@ -69,11 +73,13 @@ public class DerivedFile extends AbstractFile {
 	 */
 	protected DerivedFile(SleuthkitCase db, long objId, String name,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag,
-			short metaFlags, long size, String md5Hash,
+			short metaFlags, long size, 
+			long ctime, long crtime, long atime, long mtime,
+			String md5Hash,
 			FileKnown knownState, String parentPath, String localPath) {
 		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
 				name, TSK_DB_FILES_TYPE_ENUM.DERIVED, 0L, dirType, metaType, dirFlag,
-				metaFlags, size, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath);
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath);
 
 		this.localPath = localPath;
 
@@ -95,6 +101,10 @@ public class DerivedFile extends AbstractFile {
 	 * @param dirFlag
 	 * @param metaFlags
 	 * @param size size of the file
+	 * @param ctime
+	 * @param crtime
+	 * @param atime 
+	 * @param mtime
 	 * @param md5Hash
 	 * @param knownState
 	 * @param parentPath path of the parent of this derived file (e.g. fs zip
@@ -102,8 +112,10 @@ public class DerivedFile extends AbstractFile {
 	 * @param localPath local path of this derived file, relative to the db path
 	 * @param parentId parent id of this derived file to set if available
 	 */
-	protected DerivedFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
-		this(db, objId, name, dirType, metaType, dirFlag, metaFlags, size, md5Hash, knownState, parentPath, localPath);
+	protected DerivedFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, 
+			long ctime, long crtime, long atime, long mtime,
+			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
+		this(db, objId, name, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
 
 		if (parentId > 0) {
 			setParentId(parentId);

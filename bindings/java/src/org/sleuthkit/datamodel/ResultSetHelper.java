@@ -219,6 +219,7 @@ class ResultSetHelper {
 				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
 				rs.getLong("size"), 
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
 				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), 
 				parentPath, localPath,
 				parentId);

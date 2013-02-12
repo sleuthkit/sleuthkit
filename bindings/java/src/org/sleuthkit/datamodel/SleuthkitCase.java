@@ -228,8 +228,8 @@ public class SleuthkitCase {
 				"INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (?, ?, ?)");
 
 		addLocalFileSt = con.prepareStatement(
-				"INSERT INTO tsk_files (obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path) "
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+				"INSERT INTO tsk_files (obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) "
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
 		addPathSt = con.prepareStatement(
 				"INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)");
@@ -2535,6 +2535,10 @@ public class SleuthkitCase {
 	 * @param localPath local path of the derived file, including the file name.
 	 * The path is relative to the database path.
 	 * @param size size of the derived file in bytes
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
 	 * @param isFile whether a file or directory, true if a file
 	 * @param parentFile parent file object (derived or local file)
 	 * @param rederiveDetails details needed to re-derive file (will be specific
@@ -2547,7 +2551,8 @@ public class SleuthkitCase {
 	 * due to a critical system error
 	 */
 	public DerivedFile addDerivedFile(String fileName, String localPath,
-			long size, boolean isFile, AbstractFile parentFile,
+			long size, long ctime, long crtime, long atime, long mtime, 
+			boolean isFile, AbstractFile parentFile,
 			String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
 
 		//escape special chars in strings from file names
@@ -2609,8 +2614,14 @@ public class SleuthkitCase {
 
 			//size
 			addLocalFileSt.setLong(9, size);
+			//mactimes
+			//long ctime, long crtime, long atime, long mtime,
+			addLocalFileSt.setLong(10, ctime);
+			addLocalFileSt.setLong(11, crtime);
+			addLocalFileSt.setLong(12, atime);
+			addLocalFileSt.setLong(13, mtime);
 			//parent path
-			addLocalFileSt.setString(10, parentPath);
+			addLocalFileSt.setString(14, parentPath);
 
 			addLocalFileSt.executeUpdate();
 			
@@ -2618,7 +2629,7 @@ public class SleuthkitCase {
 			addFilePath(newObjId, localPath);
 
 			ret = new DerivedFile(this, newObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, null, null, parentPath, localPath, parentId);
+					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId);
 
 			//TODO add derived method
 
@@ -2627,7 +2638,7 @@ public class SleuthkitCase {
 			throw new TskCoreException(msg, e);
 		} finally {
 			try {
-				addLocalFileSt.clearParameters();
+				addObjectSt.clearParameters();
 				addLocalFileSt.clearParameters();
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error clearing parameters after adding derived file", ex);
