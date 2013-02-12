@@ -2,8 +2,7 @@
 <project name="TSKTestTargets">
 	<target name="test-precond" 
 			description="Traverses the Images stored in the path represented by test-input variable, creates results files stored in the path represented by test-results, and compares them to the standards stored in the path represented by the test-standards variable, always run test-create-standards at least once before before running test."
-			depends="compile-test, depender" 
-			if="pres">
+			depends="compile-test, depender">
 		<junit fork="on" haltonfailure="yes" dir=".">
 			<sysproperty key="rslt" value="${test-results}"/>
 			<sysproperty key="gold" value="${test-standards}"/>
@@ -12,20 +11,18 @@
 			<formatter type="plain" usefile="false" />
 			<test name="org.sleuthkit.datamodel.DataModelTestSuite" />
 		</junit>
-		<property name="imp" value="true"/>
 	</target>
 	<target name="test-create-standards-precond"
 			description="Traverses the Images stored in the path represented by test-input variable and creates then stores them to the path represented by the test-standards variable, run test-download-imgs at least once before this."
-			depends="compile-test, depender"
-			if="pres">
+			depends="compile-test, depender">
 		<java classname="org.sleuthkit.datamodel.DataModelTestSuite" classpathref="libraries"	fork="true" failonerror="true">
 			<sysproperty key="gold" value="${test-standards}"/>
 			<sysproperty key="inpt" value="${test-input}"/>
 			<sysproperty key="types" value="${test-types}"/>
 		</java>
-		<property name="imp" value="true"/>
 	</target>
 	<target name="depender">
 		<available file="/usr/local/lib/libtsk_jni.a" property="pres"/>
+		<fail unless="pres" message="Run make install on The Sleuthkit."/>
 	</target>
 </project>

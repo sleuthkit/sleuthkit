@@ -19,7 +19,6 @@
 			<formatter type="plain" usefile="false" />
 			<test name="org.sleuthkit.datamodel.DataModelTestSuite" />
 		</junit>
-		<property name="imp" value="true"/>
 	</target>
 	<target name="test-create-standards-precond"
 			description="Traverses the Images stored in the path represented by test-input variable and creates then stores them to the path represented by the test-standards variable, run test-download-imgs at least once before this."
@@ -31,6 +30,5 @@
 			<sysproperty key="inpt" value="${test-input}"/>
 			<sysproperty key="types" value="${test-types}"/>
 		</java>
-		<property name="imp" value="true"/>
 	</target>
 </project>
