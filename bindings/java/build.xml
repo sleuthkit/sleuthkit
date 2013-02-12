@@ -125,12 +125,14 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	</target>
 	<target name="test" 
 			description="Traverses the Images stored in the path represented by test-input variable, creates results files stored in the path represented by test-results, and compares them to the standards stored in the path represented by the test-standards variable, always run test-create-standards at least once before before running test."
-			depends="compile-test, test-precond">
-				<fail if="imp" message="Run make install on The Sleuthkit."/>
+			depends="compile-test, test-precond"
+			unless="imp">
+				<fail message="Run make install on The Sleuthkit."/>
 	</target>
 	<target name="test-create-standards"
 			description="Traverses the Images stored in the path represented by test-input variable and creates then stores them to the path represented by the test-standards variable, run test-download-imgs at least once before this."
-			depends="compile-test, test-create-standards-precond">
-				<fail if="imp" message="Run make install on The Sleuthkit."/>
+			depends="compile-test, test-create-standards-precond"
+			unless="imp">
+				<fail message="Run make install on The Sleuthkit."/>
 	</target>
 </project>
