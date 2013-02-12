@@ -9,15 +9,7 @@
         <os family="windows"/>  
     </condition>  
     <import file="build-${os.family}.xml"/> 
-  <!-- some dlls come from LIBEWF_HOME -->
-	<property environment="env"/>
-	<condition property="ewfFound">
-		<or>
-			<isset property="env.LIBEWF_HOME"/>
-			<os family="unix"/>
-		</or>
-	</condition>
-	
+
   <!-- set global properties for this build -->
 	<property name="src" location="src/org/sleuthkit/datamodel"/>
 	<property name="build" location="build/"/>
@@ -134,11 +126,11 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	<target name="test" 
 			description="Traverses the Images stored in the path represented by test-input variable, creates results files stored in the path represented by test-results, and compares them to the standards stored in the path represented by the test-standards variable, always run test-create-standards at least once before before running test."
 			depends="compile-test, test-precond">
+				<fail if="imp" message="Run make install on The Sleuthkit."/>
 	</target>
 	<target name="test-create-standards"
 			description="Traverses the Images stored in the path represented by test-input variable and creates then stores them to the path represented by the test-standards variable, run test-download-imgs at least once before this."
-			depends="compile-test, test-create-standards-precond" 
-			unless="imp">
-				<echo message="Run make install on The Sleuthkit"/>
+			depends="compile-test, test-create-standards-precond">
+				<fail if="imp" message="Run make install on The Sleuthkit."/>
 	</target>
 </project>

@@ -4,7 +4,6 @@
 			description="Traverses the Images stored in the path represented by test-input variable, creates results files stored in the path represented by test-results, and compares them to the standards stored in the path represented by the test-standards variable, always run test-create-standards at least once before before running test."
 			depends="compile-test, depender" 
 			if="pres">
-		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
 		<junit fork="on" haltonfailure="yes" dir=".">
 			<sysproperty key="rslt" value="${test-results}"/>
 			<sysproperty key="gold" value="${test-standards}"/>
@@ -19,7 +18,6 @@
 			description="Traverses the Images stored in the path represented by test-input variable and creates then stores them to the path represented by the test-standards variable, run test-download-imgs at least once before this."
 			depends="compile-test, depender"
 			if="pres">
-		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
 		<java classname="org.sleuthkit.datamodel.DataModelTestSuite" classpathref="libraries"	fork="true" failonerror="true">
 			<sysproperty key="gold" value="${test-standards}"/>
 			<sysproperty key="inpt" value="${test-input}"/>
