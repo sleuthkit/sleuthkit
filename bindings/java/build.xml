@@ -20,12 +20,6 @@
 	<property name="test-results" location="test/output/results"/>
 	<property name="test-input" location="test/input"/>
 	<property name="test-types" location="test/org/sleuthkit/datamodel"/>
-	<condition property="fam" value="windows">
-		<os family="windows"/> 
-	</condition>
-	<condition property="fam" value="unix">
-		<os family="unix"/> 
-	</condition>
   
 	<path id="libraries">
 		<fileset dir="${lib}">
