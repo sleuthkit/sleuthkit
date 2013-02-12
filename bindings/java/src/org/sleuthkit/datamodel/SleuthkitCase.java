@@ -2515,9 +2515,14 @@ public class SleuthkitCase {
 	 * path was not added
 	 */
 	private void addFilePath(long objId, String path) throws SQLException {
-		addPathSt.setLong(1, objId);
-		addPathSt.setString(2, path);
-		addPathSt.executeUpdate();
+		try {
+			addPathSt.setLong(1, objId);
+			addPathSt.setString(2, path);
+			addPathSt.executeUpdate();
+		}
+		finally {
+			addPathSt.clearParameters();
+		}
 	}
 
 	/**
@@ -2545,6 +2550,10 @@ public class SleuthkitCase {
 			long size, boolean isFile, AbstractFile parentFile,
 			String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
 
+		//escape special chars in strings from file names
+		fileName = escapeForBlackboard(fileName);
+		localPath = escapeForBlackboard(localPath);
+		
 		final long parentId = parentFile.getId();
 		final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/';
 
@@ -2604,7 +2613,7 @@ public class SleuthkitCase {
 			addLocalFileSt.setString(10, parentPath);
 
 			addLocalFileSt.executeUpdate();
-
+			
 			//add localPath 
 			addFilePath(newObjId, localPath);
 
@@ -2617,6 +2626,13 @@ public class SleuthkitCase {
 			String msg = "Error creating a derived file, file name: " + fileName;
 			throw new TskCoreException(msg, e);
 		} finally {
+			try {
+				addLocalFileSt.clearParameters();
+				addLocalFileSt.clearParameters();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Error clearing parameters after adding derived file", ex);
+			}
+			
 			try {
 				con.commit();
 			} catch (SQLException ex) {
