@@ -5,7 +5,8 @@
 /bindings/java/lib/
 /bindings/java/build/
 /bindings/java/dist
-/bindings/java/test/output
+/bindings/java/test/output/results
+/bindings/java/test/output/gold/dummy
 /bindings/java/test/input
 /bindings/java/nbproject/genfiles.properties
 /bindings/java/nbproject/nbjdk.properties
