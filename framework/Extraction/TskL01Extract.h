@@ -22,15 +22,30 @@
 
 #include <vector>
 #include <map>
+#include <streambuf>
 
 #ifndef HAVE_LIBEWF
 #define HAVE_LIBEWF 1
 #endif
-///@todo use handle or pimpl to hide namespace pollution
+
+///@todo use interface idiom or pimpl idiom
+
 namespace ewf
 {
     #include "ewf.h"
 }
+
+
+// Since std::streambuf::pubsetbuf() has compiler dependent behavior, we
+// will instead derive from it in order to set the internal buffer.
+class BufStreamBuf : public std::streambuf
+{
+public:
+    BufStreamBuf(char *gbegin, char *gend)
+    {
+        setg(gbegin, gbegin, gend);
+    }
+};
 
 
 /**
@@ -49,7 +64,7 @@ public:
     virtual int open();
     virtual void close();
 
-    virtual std::vector<std::wstring> filenames() const { return m_images; }
+    virtual std::vector<std::wstring> filenames() const { std::vector<std::wstring> dummy; return dummy; }
 
     virtual int getSectorData(const uint64_t sect_start, 
                               const uint64_t sect_len, 
@@ -71,25 +86,29 @@ public:
     virtual int closeFile(const int handle);
 
 private:
-    struct TSK_FRAMEWORK_API OPEN_FILE
+    struct ArchivedFile
     {
-        TSK_FS_FILE * fsFile;
-        const TSK_FS_ATTR * fsAttr;
+        ewf::libewf_file_entry_t * entry;
+        std::string    name;
+        uint64_t       size;
+        ewf::uint8_t   type;
+        char *dataBuf;
     };
 
-    int openContainers();
+    int openContainer();
     void traverse(ewf::libewf_file_entry_t *parent);
-    void getName(ewf::libewf_file_entry_t *node);
-    void getFileType(ewf::libewf_file_entry_t *node);
-    uint64_t getFileSize(ewf::libewf_file_entry_t *node);
-    void getFileData(ewf::libewf_file_entry_t *node, const size_t dataSize);
+    const std::string getName(ewf::libewf_file_entry_t *node);
+    const ewf::uint8_t getFileType(ewf::libewf_file_entry_t *node);
+    const uint64_t getFileSize(ewf::libewf_file_entry_t *node);
+    char * getFileData(ewf::libewf_file_entry_t *node, const size_t dataSize);
+    void saveFile(const uint64_t fileId, const ArchivedFile &archivedFile);
 
     TskImgDB &m_db;
     TSK_IMG_INFO *m_img_info;
-    
-    // Not actually images; these refer to L01 files
-    std::vector<std::wstring> m_images; 
-    const wchar_t **m_images_ptrs;
+    ewf::IMG_EWF_INFO *m_ewfInfo;
+
+    std::wstring m_containerFilename; 
+    std::vector<ArchivedFile> m_archivedFiles;
 
 };
 
