@@ -24,14 +24,14 @@
 	<target name="depender"
 			depends="depender1"
 			unless="present">
-		<copy file="/usr/local/lib/libtsk_jni.la" tofile="./libtsk_jni.la"/>
-		<copy file="/usr/local/lib/libtsk_jni.0.0.0.dylib" tofile="./libtsk_jni.0.0.0.dylib"/>
-		<copy file="/usr/local/lib/libtsk_jni.0.dylib" tofile="./libtsk_jni.0.dylib"/>
-		<copy file="/usr/local/lib/libtsk_jni.a" tofile="./libtsk_jni.a"/>
-		<copy file="/usr/local/lib/libtsk_jni.dylib" tofile="./libtsk_jni.dylib"/>
+		<copy file="./jni/.libs/libtsk_jni.la" tofile="./libtsk_jni.la"/>
+		<copy file="./jni/.libs/libtsk_jni.0.0.0.dylib" tofile="./libtsk_jni.0.0.0.dylib"/>
+		<copy file="./jni/.libs/libtsk_jni.0.dylib" tofile="./libtsk_jni.0.dylib"/>
+		<copy file="./jni/.libs/libtsk_jni.a" tofile="./libtsk_jni.a"/>
+		<copy file="./jni/.libs/libtsk_jni.dylib" tofile="./libtsk_jni.dylib"/>
 	</target>
 	<target name="depender1">
-		<available file="/usr/local/lib/libtsk_jni.a" property="pres"/>
+		<available file="./jni/.libs/libtsk_jni.a" property="pres"/>
 		<fail unless="pres" message="Run make install on The Sleuthkit."/>
 		<available file="./libtsk_jni.dylib" property="present"/>
 	</target>
