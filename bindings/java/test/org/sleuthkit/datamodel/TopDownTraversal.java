@@ -119,7 +119,7 @@ public class TopDownTraversal extends ImgTraverser {
 	private void topDownDF(List<Content> lc, List<Long> lp, Appendable reslt, Appendable levs) {
 		for (Content c : lc) {
 			try {
-				reslt.append(((AbstractContent) c).toString(false));
+				reslt.append(((AbstractContent) c).toString(false).replaceAll("paths \\[([A-z]:)?.+?\\]", ""));
 			} catch (IOException ex) {
 				logg.log(Level.SEVERE, "Failed to Traverse", ex);
 			}
