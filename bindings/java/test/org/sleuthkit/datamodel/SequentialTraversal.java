@@ -94,7 +94,7 @@ public class SequentialTraversal extends ImgTraverser {
 			Content c;
 			try {
 				while ((c = sk.getContentById(x)) != null) {
-					reslt.append(((AbstractContent) c).toString(false));
+					reslt.append(((AbstractContent) c).toString(false).replaceAll("paths \\[([A-z]:)?.+?\\]", ""));
 					if (c instanceof File) {
 						DataModelTestSuite.readContent(c, reslt, exFile);
 					}

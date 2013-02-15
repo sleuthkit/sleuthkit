@@ -1,4 +1,4 @@
-AbstractContent [	objId 0000000001	name nps-2009-canon2-gen5.raw	uniquePath /img_nps-2009-canon2-gen5.raw	parentId -1]	Image [		paths [C:\Users\smoss\Documents\GitHub\sleuthkit\bindings\java\test\input\nps-2009-canon2-gen5.raw]	size 0	ssize 512	timezone 	type 1]	
+AbstractContent [	objId 0000000001	name nps-2009-canon2-gen5.raw	uniquePath /img_nps-2009-canon2-gen5.raw	parentId -1]	Image [			size 0	ssize 512	timezone 	type 1]	
 AbstractContent [	objId 0000000002	name 	getUniquePath /img_nps-2009-canon2-gen5.raw	getParent 1]	VolumeSystem [	blockSize 512	imgOffset 0	type 1]	
 AbstractContent [	objId 0000000003	name vol1	getUniquePath /img_nps-2009-canon2-gen5.raw/vol_vol1	getParent 2]	Volume [	addr 1	desc Unallocated	flags 2	length 51	start 0]	
 AbstractContent [	objId 0000000069	name Unalloc_3_0_26112	getUniquePath /img_nps-2009-canon2-gen5.raw/vol_vol1/Unalloc_3_0_26112	getParent 3]	AbstractFile [	type UNALLOC_BLOCKS	isDir false	isFile true	isRoot false	isVirtual	true]	LayoutFile [	]	
