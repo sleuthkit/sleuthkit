@@ -66,6 +66,8 @@ extern "C" {
 
         TSK_IMG_TYPE_EWF_EWF = 0x0040,  ///< EWF version
 
+        TSK_IMG_TYPE_VSS = 0x0100, /// Volume shadow snapshot (NTFS) 
+
         TSK_IMG_TYPE_UNSUPP = 0xffff,   ///< Unsupported disk image type
     } TSK_IMG_TYPE_ENUM;
 
