@@ -43,7 +43,8 @@ namespace ewf
 }
 
 
-TskL01Extract::TskL01Extract() :
+TskL01Extract::TskL01Extract(const std::wstring &archivePath) :
+    m_archivePath(archivePath),
     m_db(TskServices::Instance().getImgDB()),
     m_img_info(NULL)
 {
@@ -73,18 +74,17 @@ void TskL01Extract::close()
 }
 
 /*
-    If parent is NULL, then we don't use that as a source for paths and we set the parent ID to 0.
+ *   If parent is NULL, then we don't use that as a source for paths and we set the parent ID to 0.
  */
 ///@todo use m_parentFile if it's not null
-int TskL01Extract::extractFiles(const std::wstring &archivePath, TskFile * parent /*= NULL*/)
+int TskL01Extract::extractFiles(TskFile * parent /*= NULL*/)
 {
-    m_archivePath = archivePath;
     m_parentFile = parent;
 
     static const std::string MSG_PREFIX = "TskL01Extract::extractFiles : ";
     try
     {
-        if (archivePath.empty() && (parent == NULL))
+        if (m_archivePath.empty() && (parent == NULL))
         {
             throw TskException(MSG_PREFIX + "No path to archive provided.");
         }
@@ -230,7 +230,7 @@ int TskL01Extract::extractFiles(const std::wstring &archivePath, TskFile * paren
         return -1;
     }
 
-    return 0;
+    return 0; //success
 }
 
 
@@ -249,7 +249,7 @@ int TskL01Extract::openContainer()
         if (m_img_info == NULL) 
         {
             std::stringstream logMessage;
-            logMessage << "Error with tsk_img_open: " << tsk_error_get() << std::endl;
+            logMessage << "Error with tsk_img_open_sing: " << tsk_error_get() << std::endl;
             throw TskException(logMessage.str());
         }
 
@@ -263,7 +263,7 @@ int TskL01Extract::openContainer()
         if (ret == -1)
         {
             std::stringstream logMessage;
-            logMessage << "TskL01Extract::openContainers - Error with libewf_handle_get_root_file_entry: ";
+            logMessage << "Error with libewf_handle_get_root_file_entry: ";
             throw TskException(logMessage.str());
         }
 
@@ -308,9 +308,8 @@ int TskL01Extract::openContainer()
         LOGERROR(MSG_PREFIX + "unrecognized exception");
         return -1;
     }
-    /// dev testing ////
-    //return -1;
-    return 0;
+
+    return 0;   //success
 }
 
 /*
@@ -434,7 +433,7 @@ char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t d
             char errorString[512];
             errorString[0] = '\0';
             ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
-            logMessage << "TskL01Extract::getFileData - Error with libewf_file_entry_read_buffer: " << errorString << std::endl;
+            logMessage << "TskL01Extract::getFileData - Error : " << errorString << std::endl;
             LOGERROR(logMessage.str());
             return NULL;
         }

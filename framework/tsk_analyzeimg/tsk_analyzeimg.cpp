@@ -22,6 +22,7 @@
 #include "File/TskFileManagerImpl.h"
 #include "Extraction/TskCarvePrepSectorConcat.h"
 #include "Extraction/TskCarveExtractScalpel.h"
+#include "Extraction/TskExtract.h"
 
 #include "Poco/Path.h"
 #include "Poco/File.h"
@@ -265,18 +266,27 @@ int main(int argc, char **argv1)
     TskSchedulerQueue scheduler;
     TskServices::Instance().setScheduler(scheduler);
 
-    // Create an ImageFile and register it with the framework.
-    TskImageFileTsk imageFileTsk;
-    if (imageFileTsk.open(imagePath) != 0) {
-        std::wstringstream msg;
-        msg << L"Error opening image: " << imagePath;
-        LOGERROR(msg.str());
-        return 1;
-    }
-    TskServices::Instance().setImageFile(imageFileTsk);
-
     // Create a FileManager and register it with the framework.
     TskServices::Instance().setFileManager(TskFileManagerImpl::instance());
+
+    TskImageFileTsk imageFileTsk;
+
+    // Check to see if input image is actually a container file
+    ExtractorPtr containerExtractor = createExtractor(imagePath, "L01");
+    //ExtractorPtr containerExtractor = createExtractor(imagePath, "RAR");
+    //ExtractorPtr containerExtractor = createExtractor(imagePath);
+
+    if (containerExtractor.isNull())
+    {
+        // Create an ImageFile and register it with the framework.
+        if (imageFileTsk.open(imagePath) != 0) {
+            std::wstringstream msg;
+            msg << L"Error opening image: " << imagePath;
+            LOGERROR(msg.str());
+            return 1;
+        }
+        TskServices::Instance().setImageFile(imageFileTsk);
+    }
 
     // Let's get the pipelines setup to make sure there are no errors.
     TskPipelineManager pipelineMgr;
@@ -314,12 +324,27 @@ int main(int argc, char **argv1)
     }
 
     // now we analyze the data.
+
     // Extract
-    if (imageFileTsk.extractFiles() != 0) {
-        std::wstringstream msg;
-        msg << L"Error adding file system info to database";
-        LOGERROR(msg.str());
-        return 1;
+    if (!containerExtractor.isNull())
+    {
+        if (containerExtractor->extractFiles() != 0)
+        {
+            std::wstringstream msg;
+            msg << L"Error adding archived file info to database";
+            LOGERROR(msg.str());
+            return 1;
+        }
+    }
+    else
+    {
+        if (imageFileTsk.extractFiles() != 0)
+        {
+            std::wstringstream msg;
+            msg << L"Error adding file system info to database";
+            LOGERROR(msg.str());
+            return 1;
+        }
     }
 
     std::auto_ptr<TskCarveExtractScalpel> carver;

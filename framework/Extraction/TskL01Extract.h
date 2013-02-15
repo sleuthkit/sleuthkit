@@ -15,7 +15,7 @@
 #ifndef _TSK_L01EXTRACT_H
 #define _TSK_L01EXTRACT_H
 
-#include "TskExtractInterface.h"
+#include "TskExtract.h"
 #include "TskImageFile.h"
 #include "Services/TskImgDB.h"
 #include "Services/Log.h"
@@ -27,8 +27,6 @@
 
 namespace ewf
 {
-//    #include "ewf.h"
-//#include <libewf/types.h>
 #include <libewf.h>
 }
 
@@ -49,14 +47,14 @@ public:
  * 
  * 
  */
-class TskL01Extract : public TskExtractInterface
+class TskL01Extract : public TskExtract
 {
 public:
-    TskL01Extract();
+    explicit TskL01Extract(const std::wstring &archivePath);
     virtual ~TskL01Extract();
 
     // Interface 
-    virtual int extractFiles(const std::wstring &archivePath, TskFile * parent = NULL);
+    virtual int extractFiles(TskFile * parent = NULL);
 
 private:
     struct ArchivedFile
@@ -67,7 +65,8 @@ private:
         ewf::uint8_t   type;
         char          *dataBuf;
     };
-    
+
+    TskL01Extract();
     // No copying
     TskL01Extract(const TskL01Extract&);
     TskL01Extract& operator=(const TskL01Extract&);
@@ -81,11 +80,10 @@ private:
     char *             getFileData(ewf::libewf_file_entry_t *node, const size_t dataSize);
     void               saveFile(const uint64_t fileId, const ArchivedFile &archivedFile);
 
-    TskImgDB          &m_db;
-    TSK_IMG_INFO      *m_img_info;
-    //ewf::IMG_EWF_INFO *m_ewfInfo;
-
-    //std::wstring m_containerFilename; 
+    std::wstring  m_archivePath;
+    TskFile      *m_parentFile;
+    TskImgDB     &m_db;
+    TSK_IMG_INFO *m_img_info;
     std::vector<ArchivedFile> m_archivedFiles;
 };
 
