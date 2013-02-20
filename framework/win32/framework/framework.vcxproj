@@ -51,8 +51,6 @@
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
@@ -107,6 +105,7 @@ ren "$(OutDir)framework_config_win32dev.xml" framework_config.xml
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Extraction\TskExtract.cpp" />
     <ClCompile Include="..\..\Extraction\TskL01Extract.cpp" />
     <ClCompile Include="..\..\Services\Log.cpp" />
     <ClCompile Include="..\..\Services\Scheduler.cpp" />
@@ -145,6 +144,7 @@ ren "$(OutDir)framework_config_win32dev.xml" framework_config.xml
   <ItemGroup>
     <ClInclude Include="..\..\Extraction\CarveExtract.h" />
     <ClInclude Include="..\..\Extraction\CarvePrep.h" />
+    <ClInclude Include="..\..\Extraction\TskExtract.h" />
     <ClInclude Include="..\..\Extraction\TskL01Extract.h" />
     <ClInclude Include="..\..\framework.h" />
     <ClInclude Include="..\..\framework_i.h" />

@@ -15,15 +15,18 @@
 #ifndef _TSK_L01EXTRACT_H
 #define _TSK_L01EXTRACT_H
 
+#include <vector>
+#include <map>
+#include <streambuf>
+
+#include "Poco/Path.h"
+
 #include "TskExtract.h"
 #include "TskImageFile.h"
 #include "Services/TskImgDB.h"
 #include "Services/Log.h"
 #include "tsk3/libtsk.h"
 
-#include <vector>
-#include <map>
-#include <streambuf>
 
 namespace ewf
 {
@@ -54,17 +57,20 @@ public:
     virtual ~TskL01Extract();
 
     // Interface 
-    virtual int extractFiles(TskFile * parent = NULL);
+    virtual int extractFiles(TskFile * containerFile = NULL);
 
 private:
     struct ArchivedFile
     {
         ewf::libewf_file_entry_t *entry;
-        std::string    name;
+        //std::string    name;
+        Poco::Path     path;
         uint64_t       size;
         ewf::uint8_t   type;
         char          *dataBuf;
     };
+
+
 
     TskL01Extract();
     // No copying

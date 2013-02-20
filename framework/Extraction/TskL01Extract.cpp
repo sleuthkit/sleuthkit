@@ -19,7 +19,6 @@
 #include <sstream>
 #include <algorithm>
 
-// Poco includes
 #include "Poco/SharedPtr.h"
 #include "Poco/Path.h"
 #include "Poco/File.h"
@@ -28,7 +27,6 @@
 // Framework includes
 #include "framework_i.h" // to get TSK_FRAMEWORK_API
 #include "TskL01Extract.h"
-//#include "TskAutoImpl.h"
 #include "Services/TskServices.h"
 #include "Utilities/TskUtilities.h"
 #include "tsk3/base/tsk_base_i.h"
@@ -74,17 +72,17 @@ void TskL01Extract::close()
 }
 
 /*
- *   If parent is NULL, then we don't use that as a source for paths and we set the parent ID to 0.
+ *   If containerFile is NULL, then we don't use that as a source for paths and we set the parent ID to 0.
  */
-///@todo use m_parentFile if it's not null
-int TskL01Extract::extractFiles(TskFile * parent /*= NULL*/)
+int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
 {
-    m_parentFile = parent;
-
     static const std::string MSG_PREFIX = "TskL01Extract::extractFiles : ";
+    
     try
     {
-        if (m_archivePath.empty() && (parent == NULL))
+        m_parentFile = containerFile;
+
+        if (m_archivePath.empty())
         {
             throw TskException(MSG_PREFIX + "No path to archive provided.");
         }
@@ -94,15 +92,17 @@ int TskL01Extract::extractFiles(TskFile * parent /*= NULL*/)
             return -1;
         }
 
-        if (m_img_info == NULL) {
+        if (m_img_info == NULL)
+        {
             throw TskException(MSG_PREFIX +"Images not open yet");
         }
 
         TskImgDB& imgDB = TskServices::Instance().getImgDB();
+
 		// Create a map of directory names to file ids to use to 
 		// associate files/directories with the correct parent.
-		//std::map<std::string, uint64_t> directoryMap;
-        uint64_t parentId = 0;
+		std::map<std::string, uint64_t> directoryMap;
+
 #if 0
         m_db.addImageInfo((int)m_img_info->itype, m_img_info->sector_size);
 
@@ -134,81 +134,98 @@ int TskL01Extract::extractFiles(TskFile * parent /*= NULL*/)
         std::vector<ArchivedFile>::iterator it = m_archivedFiles.begin();
         for (; it != m_archivedFiles.end(); ++it)
         {
-            if (it->type == 'f')
+            Poco::Path path(it->path);
+            Poco::Path parent = it->path.parent();
+            std::string name;
+
+            if (path.isDirectory())
             {
-                Poco::Path path(it->name);
-                Poco::Path parent = path.parent();
-                std::string name;
+                name = path[path.depth() - 1];
+            }
+            else
+            {
+                name = path[path.depth()];
+            }
 
-                if (path.isDirectory())
-                    name = path[path.depth() - 1];
-                else
-                    name = path[path.depth()];
-
-                ///@todo create a tskfile for the L01 file?
-
-                // Determine the parent id of the file.
-                //if (path.depth() == 0 || path.isDirectory() && path.depth() == 1)
-                //    // This file or directory lives at the root so our parent id
-                //    // is the containing file id.
-                //    parentId = pFile->getId();
-                //else
-                //{
-                //    // We are not at the root so we need to lookup the id of our
-                //    // parent directory.
-                //    std::map<std::string, uint64_t>::const_iterator pos;
-                //    pos = directoryMap.find(parent.toString());
-
-                //    if (pos == directoryMap.end())
-                //    {
-                //        //parentId = getParentIdForPath(parent, pFile->getId(), pFile->getFullPath(), directoryMap);
-                //    }
-                //    else
-                //    {
-                //        parentId = pos->second;
-                //    }
-                //}
-
-                // Store some extra details about the derived (i.e, extracted) file.
-                std::stringstream details;
-
-                uint64_t fileId;
-
-                std::string fullpath = "";
-                //fullpath.append(pFile->getFullPath());
-                //fullpath.append("\\");
-                fullpath.append(path.toString());
-                ///@todo file timestamp?
-                if (imgDB.addDerivedFileInfo(name,
-                    parentId,
-                    path.isDirectory(),
-                    it->size,
-                    details.str(), 
-                    0, // ctime
-                    0, // crtime
-                    0, // atime
-                    0, //utc time
-                    fileId, fullpath) == -1) 
+            // Determine the parent id of the file.
+            uint64_t parentId = 0;
+            if (path.depth() == 0 || path.isDirectory() && path.depth() == 1)
+            {
+                // This file or directory lives at the root so our parent id
+                // is the containing file id (if a containing file was provided).
+                if (m_parentFile != NULL)
                 {
-                        std::wstringstream msg;
-                        msg << L"addDerivedFileInfo failed for name="
-                            << name.c_str();
-                        LOGERROR(msg.str());
+                    parentId = m_parentFile->getId();
                 }
+            }
+            else
+            {
+                // We are not at the root so we need to lookup the id of our
+                // parent directory.
+                std::map<std::string, uint64_t>::const_iterator pos;
+                pos = directoryMap.find(parent.toString());
 
+                if (pos == directoryMap.end())
+                {
+                    //error!
+                    std::stringstream msg;
+                    msg << "extractFiles: parent ID not mapped for " << it->path.toString();
+                    LOGERROR(msg.str());
+                }
+                else
+                {
+                    parentId = pos->second;
+                }
+            }
+
+            // Store some extra details about the derived (i.e, extracted) file.
+            std::stringstream details;  ///@todo anything here?
+
+            std::string fullpath = "";
+            if (m_parentFile != NULL)
+            {
+                fullpath.append(m_parentFile->getFullPath());
+            }
+            fullpath.append("\\");
+            fullpath.append(path.toString());
+
+            ///@todo file timestamp?
+            uint64_t fileId;
+            if (imgDB.addDerivedFileInfo(name,
+                parentId,
+                path.isDirectory(),
+                it->size,
+                details.str(), 
+                0, // ctime
+                0, // crtime
+                0, // atime
+                0, //utc time
+                fileId, fullpath) == -1) 
+            {
+                    std::wstringstream msg;
+                    msg << L"addDerivedFileInfo failed for name="
+                        << name.c_str();
+                    LOGERROR(msg.str());
+            }
+
+            if (path.isDirectory())
+            {
+                directoryMap[path.toString()] = fileId;
+            }
+            else
+            {
                 // For file nodes, recreate file locally
-                if (it->dataBuf != NULL)
+                // Will save zero-length files
+                if ((it->dataBuf != NULL) || (it->size == 0))
                 {
                     saveFile(fileId, *it);
                 }
-
-                // Schedule
-                imgDB.updateFileStatus(fileId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
             }
+
+            // Schedule
+            imgDB.updateFileStatus(fileId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
         }
 
-        ///@todo dev test
-        std::cerr << "Done extracting!\n";
     }
     catch (TskException &ex)
     {
@@ -315,33 +332,51 @@ int TskL01Extract::openContainer()
 /*
     Traverse the hierarchy inside the container
 
-    ///@todo This puts the entire size of the uncompressed archive onto the heap,
-    which might be bad for large files.
+    ///@todo This puts the entire size of the uncompressed archive onto the heap, which might be bad for large files.
  */
 void TskL01Extract::traverse(ewf::libewf_file_entry_t *parent)
 {
+    static Poco::Path currPath;
+
     TskL01Extract::ArchivedFile fileInfo;
     fileInfo.entry   = parent;
-    fileInfo.name    = getName(parent);
     fileInfo.type    = getFileType(parent);
     fileInfo.size    = getFileSize(parent);
     fileInfo.dataBuf = getFileData(parent, fileInfo.size);
 
-    m_archivedFiles.push_back(fileInfo);
+    std::string name = getName(parent);
+
+    bool saveDirectory = false;
+    if ((fileInfo.type == 'd') && !name.empty())
+    {
+        saveDirectory = true;
+    }
+
+    if (saveDirectory)
+    {
+        currPath.pushDirectory(name);
+        fileInfo.path = currPath;
+        m_archivedFiles.push_back(fileInfo);
+    }
+    else if (fileInfo.type == 'f')
+    {
+        Poco::Path tempPath = currPath;
+        tempPath.setFileName(name);
+        fileInfo.path = tempPath;
+        m_archivedFiles.push_back(fileInfo);
+    }
 
     int num = 0;
     ewf::libewf_error_t *ewfError = NULL;
     ewf::libewf_file_entry_get_number_of_sub_file_entries(parent, &num, &ewfError);
-
-    ///@todo remove dev debug prints
-    std::cerr << "number of sub file entries = " << num << std::endl;
+    
+    //std::cerr << "number of sub file entries = " << num << std::endl;
 
     if (num > 0)
     {
         //recurse
         for (int i=0; i < num; ++i)
         {
-            std::cerr << "traversing child " << i << std::endl;
             ewf::libewf_file_entry_t *child = NULL;
             ewfError = NULL;
             if (ewf::libewf_file_entry_get_sub_file_entry(parent, i, &child, &ewfError) == -1)
@@ -352,13 +387,17 @@ void TskL01Extract::traverse(ewf::libewf_file_entry_t *parent)
             traverse(child);
         }
     }
+
+    if (saveDirectory)
+    {
+        currPath.popDirectory();
+    }
 }
 
 
 const std::string TskL01Extract::getName(ewf::libewf_file_entry_t *node)
 {
-    ///@todo
-    //libewf_file_entry_get_utf8_name_size
+    ///@todo use libewf_file_entry_get_utf8_name_size
 
     ewf::uint8_t nameString[512];
     nameString[0] = '\0';
@@ -372,7 +411,7 @@ const std::string TskL01Extract::getName(ewf::libewf_file_entry_t *node)
         logMessage << "TskL01Extract::getName - Error with libewf_file_entry_get_utf8_name: " << errorString << std::endl;
         throw TskException(logMessage.str());
     }
-    std::cerr << "File name = " << nameString << std::endl;
+    //std::cerr << "File name = " << nameString << std::endl;
     std::string s;
     s.assign((char*)&nameString[0]);
     return s;
@@ -395,8 +434,8 @@ const ewf::uint8_t TskL01Extract::getFileType(ewf::libewf_file_entry_t *node)
         throw TskException("TskL01Extract::getFileType - Error with libewf_file_entry_get_flags: ");
     }
 
-    std::cerr << "File type = " << type << std::endl;
-    std::cerr << "File flags = " << flags << std::endl;
+    //std::cerr << "File type = " << type << std::endl;
+    //std::cerr << "File flags = " << flags << std::endl;
     return type;
 }
 
@@ -414,7 +453,7 @@ const uint64_t TskL01Extract::getFileSize(ewf::libewf_file_entry_t *node)
         logMessage << "TskL01Extract::getFileSize - Error with libewf_file_entry_get_utf8_name: " << errorString << std::endl;
         throw TskException(logMessage.str());
     }
-    std::cerr << "File size = " << (int)fileSize << std::endl;
+    //std::cerr << "File size = " << (int)fileSize << std::endl;
     return fileSize;
 }
 
@@ -437,12 +476,13 @@ char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t d
             LOGERROR(logMessage.str());
             return NULL;
         }
-        std::cerr << "Data bytes read = " << (int)bytesRead<< std::endl;
+        //std::cerr << "Data bytes read = " << (int)bytesRead<< std::endl;
 
         return buffer;
     }
     return NULL;
 }
+
 
 
 /* Create an uncompressed version of the file on the local file system.

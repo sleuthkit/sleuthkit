@@ -32,13 +32,13 @@ public:
     TskExtract() {}
     virtual ~TskExtract() {}
 
-    virtual int extractFiles(TskFile * parent = NULL) = 0;
+    virtual int extractFiles(TskFile * containerFile = NULL) = 0;
 };
 
 
 TSK_FRAMEWORK_API typedef Poco::SharedPtr<TskExtract> ExtractorPtr;
 
-// Non-member Factory Functions
+// Non-member Factory Function
 TSK_FRAMEWORK_API ExtractorPtr createExtractor(const std::wstring &archivePath, const std::string extFilter = "");
 
 #endif
