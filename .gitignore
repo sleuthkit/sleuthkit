@@ -13,6 +13,13 @@
 /bindings/java/nbproject/jdk.xml
 /bindings/java/nbproject/nbjdk.xml
 /bindings/java/libts*
+*~
+*.class
+/bindings/java/build/
+/bindings/java/dist/
+/bindings/java/nbproject/*
+!/bindings/java/nbproject/project.xml
+!/bindings/java/nbproject/project.properties
 
 # Windows build folders
 /win32/Debug_NoLibs/
