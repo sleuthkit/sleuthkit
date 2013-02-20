@@ -27,6 +27,10 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Cygwin needs this, but not everyone defines it
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -35,4 +39,9 @@ extern void *tsk_img_malloc(size_t);
 extern void tsk_img_free(void *);
 extern TSK_TCHAR **tsk_img_findFiles(const TSK_TCHAR * a_startingName,
     int *a_numFound);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
