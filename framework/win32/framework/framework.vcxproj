@@ -77,7 +77,7 @@ ren "$(OutDir)framework_config_win32dev.xml" framework_config.xml
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..;$(ProjectDir)\..\..\..;$(POCO_HOME)\Foundation\include;$(POCO_HOME)\Util\include;$(POCO_HOME)\XML\include;$(POCO_HOME)\Net\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..;$(ProjectDir)\..\..\..;$(ProjectDir)\..\..\..\tsk3\img;$(POCO_HOME)\Foundation\include;$(POCO_HOME)\Util\include;$(POCO_HOME)\XML\include;$(POCO_HOME)\Net\include;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;TSK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
