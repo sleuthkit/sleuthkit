@@ -17,7 +17,6 @@
 
 #include <vector>
 #include <map>
-#include <streambuf>
 
 #include "Poco/Path.h"
 
@@ -32,18 +31,6 @@ namespace ewf
 {
 #include <libewf.h>
 }
-
-
-// Since std::streambuf::pubsetbuf() has compiler dependent behavior, we
-// will instead derive from it in order to set the internal buffer.
-class BufStreamBuf : public std::streambuf
-{
-public:
-    BufStreamBuf(char *gbegin, char *gend)
-    {
-        setg(gbegin, gbegin, gend);
-    }
-};
 
 
 /**
