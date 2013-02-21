@@ -2554,10 +2554,6 @@ public class SleuthkitCase {
 			long size, long ctime, long crtime, long atime, long mtime, 
 			boolean isFile, AbstractFile parentFile,
 			String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
-
-		//escape special chars in strings from file names
-		fileName = escapeForBlackboard(fileName);
-		localPath = escapeForBlackboard(localPath);
 		
 		final long parentId = parentFile.getId();
 		final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/';
@@ -2631,7 +2627,7 @@ public class SleuthkitCase {
 			ret = new DerivedFile(this, newObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId);
 
-			//TODO add derived method
+			//TODO add derived method to tsk_files_derived and tsk_files_derived_method 
 
 		} catch (SQLException e) {
 			String msg = "Error creating a derived file, file name: " + fileName;
