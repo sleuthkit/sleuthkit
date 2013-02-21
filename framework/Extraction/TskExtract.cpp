@@ -19,6 +19,7 @@
 #include "Poco/SharedPtr.h"
 
 #include "framework_i.h" // to get TSK_FRAMEWORK_API
+#include "Utilities/TskUtilities.h"
 #include "TskExtract.h"
 #include "TskL01Extract.h"
 
@@ -33,20 +34,15 @@ ExtractorPtr createExtractor(const std::wstring &archivePath, const std::string 
     //Check based on file signature 
     if (extFilter.empty())
     {
-        // Convert unicode string to utf8
-        int length = archivePath.length();
-        char *narrowPath = new char[length + 1];
-        locale loc;
-        use_facet< ctype<wchar_t> >(loc).narrow( archivePath.c_str(), archivePath.c_str() + length + 1, '?', narrowPath);
-
-        if (isL01File(narrowPath))
+        std::string narrowPath = TskUtilities::toUTF8(archivePath);
+        if (isL01File(narrowPath.c_str()))
         {
             return new TskL01Extract(archivePath);
         }
     }
     else
     {
-        ///@todo check filename extension matches the extFilter
+        ///@todo verify filetype matches?
         if (extFilter == "L01")
         {
             return new TskL01Extract(archivePath);
