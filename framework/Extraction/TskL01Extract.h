@@ -50,14 +50,10 @@ private:
     struct ArchivedFile
     {
         ewf::libewf_file_entry_t *entry;
-        //std::string    name;
         Poco::Path     path;
         uint64_t       size;
         ewf::uint8_t   type;
-        char          *dataBuf;
     };
-
-
 
     TskL01Extract();
     // No copying

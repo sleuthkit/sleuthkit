@@ -63,12 +63,6 @@ void TskL01Extract::close()
         m_img_info = NULL;
     }
 
-    std::vector<ArchivedFile>::iterator it = m_archivedFiles.begin();
-    for (; it != m_archivedFiles.end(); ++it)
-    {
-        delete [] it->dataBuf;
-    }
-
     m_archivePath.clear();
 }
 
@@ -217,10 +211,7 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
             {
                 // For file nodes, recreate file locally
                 // Will save zero-length files
-                if ((it->dataBuf != NULL) || (it->size == 0))
-                {
-                    saveFile(fileId, *it);
-                }
+                saveFile(fileId, *it);
             }
 
             // Schedule
@@ -332,8 +323,6 @@ int TskL01Extract::openContainer()
 
 /*
     Traverse the hierarchy inside the container
-
-    ///@todo This puts the entire size of the uncompressed archive onto the heap, which might be bad for large files.
  */
 void TskL01Extract::traverse(ewf::libewf_file_entry_t *parent)
 {
@@ -343,7 +332,6 @@ void TskL01Extract::traverse(ewf::libewf_file_entry_t *parent)
     fileInfo.entry   = parent;
     fileInfo.type    = getFileType(parent);
     fileInfo.size    = getFileSize(parent);
-    fileInfo.dataBuf = getFileData(parent, fileInfo.size);
 
     std::string name = getName(parent);
 
@@ -487,17 +475,29 @@ char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t d
 
 
 /* Create an uncompressed version of the file on the local file system.
+ * Note this will save zero-length files.
  */
 void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archivedFile)
 {
+    char *dataBuf = NULL;
     try
     {
-        Poco::BasicMemoryStreamBuf< char, std::char_traits<char> >  b(archivedFile.dataBuf, archivedFile.size);
-        std::istream in(&b);
-        TskServices::Instance().getFileManager().addFile(fileId, in);
+        // Get data from archive
+        dataBuf = getFileData(archivedFile.entry, archivedFile.size);
+
+        if ((dataBuf != NULL) || (archivedFile.size == 0))
+        {
+            // Save it as a file to local filesystem
+            Poco::BasicMemoryStreamBuf< char, std::char_traits<char> >  b(dataBuf, archivedFile.size);
+            std::istream in(&b);
+            TskServices::Instance().getFileManager().addFile(fileId, in);
+        }
+
+        delete [] dataBuf;
     }
     catch (Poco::Exception& ex)
     {
+        delete [] dataBuf;
         std::wstringstream msg;
         msg << L"TskL01Extract::addFile - Error saving file from stream : " << ex.displayText().c_str();
         LOGERROR(msg.str());
