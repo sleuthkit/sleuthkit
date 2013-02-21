@@ -23,6 +23,7 @@
 #include "Poco/Path.h"
 #include "Poco/File.h"
 #include "Poco/FileStream.h"
+#include "Poco/MemoryStream.h"
 
 // Framework includes
 #include "framework_i.h" // to get TSK_FRAMEWORK_API
@@ -491,9 +492,8 @@ void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archived
 {
     try
     {
-        BufStreamBuf b(archivedFile.dataBuf, archivedFile.dataBuf + archivedFile.size);
+        Poco::BasicMemoryStreamBuf< char, std::char_traits<char> >  b(archivedFile.dataBuf, archivedFile.size);
         std::istream in(&b);
-
         TskServices::Instance().getFileManager().addFile(fileId, in);
     }
     catch (Poco::Exception& ex)
