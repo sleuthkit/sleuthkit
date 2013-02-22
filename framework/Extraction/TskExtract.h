@@ -39,6 +39,6 @@ public:
 TSK_FRAMEWORK_API typedef Poco::SharedPtr<TskExtract> ExtractorPtr;
 
 // Non-member Factory Function
-TSK_FRAMEWORK_API ExtractorPtr createExtractor(const std::wstring &archivePath, const std::string extFilter = "");
+TSK_FRAMEWORK_API ExtractorPtr createTskExtractor(const std::wstring &archivePath, const std::string extFilter = "");
 
 #endif

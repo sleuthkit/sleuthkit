@@ -72,7 +72,7 @@ private:
     std::wstring  m_archivePath;
     TskFile      *m_parentFile;
     TskImgDB     &m_db;
-    TSK_IMG_INFO *m_img_info;
+    TSK_IMG_INFO *m_imgInfo;
     std::vector<ArchivedFile> m_archivedFiles;
 };
 

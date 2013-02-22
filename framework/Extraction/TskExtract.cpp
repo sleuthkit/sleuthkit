@@ -13,7 +13,6 @@
  * 
  */
 
-#include <locale>
 #include <string>
 
 #include "Poco/SharedPtr.h"
@@ -29,7 +28,7 @@ bool isL01File(const char *path);
 
 
 /// Factory Function
-ExtractorPtr createExtractor(const std::wstring &archivePath, const std::string extFilter /*= ""*/)
+ExtractorPtr createTskExtractor(const std::wstring &archivePath, const std::string extFilter /*= ""*/)
 {
     //Check based on file signature 
     if (extFilter.empty())

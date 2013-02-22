@@ -45,7 +45,7 @@ namespace ewf
 TskL01Extract::TskL01Extract(const std::wstring &archivePath) :
     m_archivePath(archivePath),
     m_db(TskServices::Instance().getImgDB()),
-    m_img_info(NULL)
+    m_imgInfo(NULL)
 {
 }
 
@@ -57,10 +57,10 @@ TskL01Extract::~TskL01Extract()
 
 void TskL01Extract::close()
 {
-    if (m_img_info)
+    if (m_imgInfo)
     {
-        tsk_img_close(m_img_info);
-        m_img_info = NULL;
+        tsk_img_close(m_imgInfo);
+        m_imgInfo = NULL;
     }
 
     m_archivePath.clear();
@@ -87,7 +87,7 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
             return -1;
         }
 
-        if (m_img_info == NULL)
+        if (m_imgInfo == NULL)
         {
             throw TskException(MSG_PREFIX +"Images not open yet");
         }
@@ -99,7 +99,7 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
 		std::map<std::string, uint64_t> directoryMap;
 
 #if 0
-        m_db.addImageInfo((int)m_img_info->itype, m_img_info->sector_size);
+        m_db.addImageInfo((int)m_imgInfo->itype, m_imgInfo->sector_size);
 
         char *img_ptr = NULL;
 #ifdef TSK_WIN32
@@ -254,8 +254,8 @@ int TskL01Extract::openContainer()
             throw TskException("Error: archive path is empty.");
         }
 
-        m_img_info = tsk_img_open_sing(m_archivePath.c_str(), TSK_IMG_TYPE_EWF_EWF, 512);
-        if (m_img_info == NULL) 
+        m_imgInfo = tsk_img_open_sing(m_archivePath.c_str(), TSK_IMG_TYPE_EWF_EWF, 512);
+        if (m_imgInfo == NULL) 
         {
             std::stringstream logMessage;
             logMessage << "Error with tsk_img_open_sing: " << tsk_error_get() << std::endl;
@@ -264,8 +264,8 @@ int TskL01Extract::openContainer()
 
         /// TSK stores different struct objs to the same pointer
         ///@todo does C++ <> cast work on this?
-        ewf::IMG_EWF_INFO *ewfInfo = (ewf::IMG_EWF_INFO*)m_img_info;
-        m_img_info = &(ewfInfo->img_info);
+        ewf::IMG_EWF_INFO *ewfInfo = (ewf::IMG_EWF_INFO*)m_imgInfo;
+        m_imgInfo = &(ewfInfo->img_info);
 
         ewf::libewf_file_entry_t *root = NULL;
         int ret = ewf::libewf_handle_get_root_file_entry(ewfInfo->handle, &root, &ewfError);

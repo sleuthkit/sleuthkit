@@ -272,9 +272,7 @@ int main(int argc, char **argv1)
     TskImageFileTsk imageFileTsk;
 
     // Check to see if input image is actually a container file
-    //ExtractorPtr containerExtractor = createExtractor(imagePath, "L01");
-    //ExtractorPtr containerExtractor = createExtractor(imagePath, "RAR");
-    ExtractorPtr containerExtractor = createExtractor(imagePath);
+    ExtractorPtr containerExtractor = createTskExtractor(imagePath);
 
     if (containerExtractor.isNull())
     {
