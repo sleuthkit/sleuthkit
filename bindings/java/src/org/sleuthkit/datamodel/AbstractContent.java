@@ -87,6 +87,10 @@ public abstract class AbstractContent implements Content {
 		hasChildren = this.getSleuthkitCase().getContentHasChildren(this);
 		checkedHasChildren = true;
 		
+		if (!hasChildren) {
+			childrenCount = 0;
+		}
+		
 		return hasChildren;
 	}
 	
@@ -96,7 +100,11 @@ public abstract class AbstractContent implements Content {
 			return childrenCount;
 		}
 		
-		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);		
+		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);	
+		
+		hasChildren = childrenCount > 0;
+		checkedHasChildren = true;
+		
 		return childrenCount;
 	}
 
