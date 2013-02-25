@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.StringTokenizer;
 
 /**
  * Common fields methods for objects stored in tsk_files table
@@ -138,5 +137,8 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 		return files;
 	}
-    
+	@Override
+    public String toString(boolean preserveState){
+		return super.toString(preserveState) + "AbstractFile [\t" + "type " + type + "\t" + "isDir " + isDir() + "\t" + "isFile " + isFile() + "\t" + "isRoot " + isRoot() + "\t" + "isVirtual\t" + isVirtual() + "]\t";
+	}
 }

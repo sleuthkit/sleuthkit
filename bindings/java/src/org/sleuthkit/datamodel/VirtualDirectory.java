@@ -137,4 +137,8 @@ public class VirtualDirectory extends AbstractFile {
 	public boolean isVirtual() {
 		return true;
 	}
+	@Override
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "VirtualDirectory [\t" + "\tdirFlags " + dirFlags + "\t" + "dirType " + dirType + "\t" + "metaFlags " + metaFlags + "\t" + "metaType " + metaType + "\t" + "parent_path " + parent_path + "\t" + "size " + size + "]\t";
+	}		
 }

@@ -92,6 +92,7 @@ public class SleuthkitCase {
 	private PreparedStatement getFileSt;
 	private PreparedStatement getFileWithParentSt;
 	private PreparedStatement updateMd5St;
+	private PreparedStatement getLastContentIdSt;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
 	/**
@@ -194,6 +195,8 @@ public class SleuthkitCase {
 		getFileWithParentSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND LOWER(parent_path) LIKE ? AND fs_obj_id = ?");
 		
 		updateMd5St = con.prepareStatement("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?");
+		
+		getLastContentIdSt = con.prepareStatement("SELECT MAX(obj_id) from tsk_objects");
 	}
 
 	private void closeStatements() {
@@ -294,6 +297,11 @@ public class SleuthkitCase {
 			if (updateMd5St != null) {
 				updateMd5St.close();
 				updateMd5St = null;
+			}
+			
+			if (getLastContentIdSt != null) {
+				getLastContentIdSt.close();
+				getLastContentIdSt = null;
 			}
 
 		} catch (SQLException e) {
@@ -3365,6 +3373,44 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 		return count;
+	}
+	
+	/**
+	 * Get last (max) object id of content object in tsk_objects.
+	 *
+	 * Note, if you are using this id to create a new object, make sure you are
+	 * getting and using it in the same write lock/transaction to avoid
+	 * potential concurrency issues with other writes
+	 *
+	 * @return currently max id
+	 * @throws TskCoreException exception thrown when database error occurs and
+	 * last object id could not be queried
+	 */
+	public long getLastObjectId() throws TskCoreException {
+		long id = -1;
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			rs = getLastContentIdSt.executeQuery();
+			if (rs.next()) {
+				id = rs.getLong(1);
+			}
+		} catch (SQLException e) {
+			final String msg = "Error getting last object id.";
+			logger.log(Level.SEVERE, msg, e);
+			throw new TskCoreException(msg, e);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after getting last object id.", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+
+		return id;
 	}
 
 	/**
