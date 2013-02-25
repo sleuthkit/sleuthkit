@@ -38,6 +38,7 @@ public abstract class AbstractContent implements Content {
 	protected long parentId;
 	private volatile boolean hasChildren;
 	private volatile boolean checkedHasChildren;
+	private volatile int childrenCount;
 	
 
 	protected AbstractContent(SleuthkitCase db, long obj_id, String name) {
@@ -48,6 +49,7 @@ public abstract class AbstractContent implements Content {
 		
 		checkedHasChildren = false;
 		hasChildren = false;
+		childrenCount = -1;
 	}
 
 	@Override
@@ -86,6 +88,16 @@ public abstract class AbstractContent implements Content {
 		checkedHasChildren = true;
 		
 		return hasChildren;
+	}
+	
+	@Override
+	public int getChildrenCount() throws TskCoreException {
+		if (childrenCount != -1) {
+			return childrenCount;
+		}
+		
+		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);		
+		return childrenCount;
 	}
 
 	@Override

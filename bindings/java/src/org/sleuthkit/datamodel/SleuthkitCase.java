@@ -379,6 +379,7 @@ public class SleuthkitCase {
 				hasChildrenSt.close();
 				hasChildrenSt = null;
 			}
+			
 
 		} catch (SQLException e) {
 			logger.log(Level.WARNING,
@@ -1994,6 +1995,45 @@ public class SleuthkitCase {
 
 		}
 		return hasChildren;
+
+	}
+	
+	/**
+	 * Counts if the content object  children. Note: this is generally more
+	 * efficient then preloading all children and counting,
+	 * and facilities lazy loading.
+	 *
+	 * @param content content object to check for children count
+	 * @return children count
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	int getContentChildrenCount(Content content) throws TskCoreException {
+		int countChildren = -1;
+
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			hasChildrenSt.setLong(1, content.getId());
+			rs = hasChildrenSt.executeQuery();
+			if (rs.next()) {
+				countChildren = rs.getInt(1);
+			}
+
+		} catch (SQLException e) {
+			logger.log(Level.SEVERE, "Error checking for children of parent: " + content, e);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing a result set after checking for children.", ex);
+				}
+			}
+			dbReadUnlock();
+
+		}
+		return countChildren;
 
 	}
 

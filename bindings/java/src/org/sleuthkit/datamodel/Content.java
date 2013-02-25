@@ -101,6 +101,15 @@ public interface Content extends SleuthkitVisitableItem {
 	public boolean hasChildren() throws TskCoreException;
 	
 	/**
+	 * Returns count of children objects.
+	 * Note, this should be more efficient than getting children and counting them.
+	 * 
+	 * @return children count
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	public int getChildrenCount() throws TskCoreException;
+	
+	/**
 	 * @return returns the parent of this Content object or null if there isn't
 	 * one as is the case for Image.
 	 * @throws TskCoreException 
