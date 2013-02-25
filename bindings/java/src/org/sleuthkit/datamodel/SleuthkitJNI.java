@@ -684,6 +684,7 @@ public class SleuthkitJNI {
 	}
 
 	/**
+	 * Convert this timezone from long to short form
 	 * Convert timezoneLongForm passed in from long to short form
 	 *
 	 * @param timezoneLongForm the long form (e.g., America/New_York)
@@ -696,12 +697,10 @@ public class SleuthkitJNI {
 		}
 		
 		String timezoneShortForm = "";
-
 		TimeZone zone = TimeZone.getTimeZone(timezoneLongForm);
 		int offset = zone.getRawOffset() / 1000;
 		int hour = offset / 3600;
 		int min = (offset % 3600) / 60;
-
 		DateFormat dfm = new SimpleDateFormat("z");
 		dfm.setTimeZone(zone);
 		boolean hasDaylight = zone.useDaylightTime();

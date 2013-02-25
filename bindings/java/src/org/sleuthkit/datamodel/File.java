@@ -34,7 +34,33 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class File extends FsContent {
 
-	public File(SleuthkitCase db, long objId, long fsObjId, 
+	/**
+	 * Create a File from db
+	 * 
+	 * @param db
+	 * @param objId
+	 * @param fsObjId
+	 * @param attrType
+	 * @param attrId
+	 * @param name
+	 * @param metaAddr
+	 * @param dirType
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
+	 * @param md5Hash
+	 * @param knownState
+	 * @param parentPath 
+	 */
+	protected File(SleuthkitCase db, long objId, long fsObjId, 
 			TSK_FS_ATTR_TYPE_ENUM attrType, short attrId, String name, long metaAddr, 
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
@@ -67,4 +93,8 @@ public class File extends FsContent {
 
 
 
+	@Override
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "File [\t" + "]\t";
+	}
 }

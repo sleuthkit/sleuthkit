@@ -20,14 +20,10 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
-import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
-import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
-import org.sleuthkit.datamodel.TskData.TSK_FS_META_MODE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
@@ -208,4 +204,13 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 
+	@Override
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) 
+				+ "FsContent [\t" 
+				+ "fsObjId " + fsObjId 
+				+ "\t" + "uniquePath " + uniquePath 
+				+ "\t" + "fileHandle " + fileHandle 
+				+ "]\t";
+	}
 }

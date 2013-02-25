@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel;
 import java.util.Collections;
 import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
-import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
@@ -87,4 +86,8 @@ public class VirtualDirectory extends AbstractFile {
 		return getParent().getImage();
 	}
 
+	@Override
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "VirtualDirectory [\t" + "]\t";
+	}		
 }

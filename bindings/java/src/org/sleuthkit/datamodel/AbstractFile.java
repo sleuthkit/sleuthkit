@@ -585,9 +585,24 @@ public abstract class AbstractFile extends AbstractContent {
 		return metaFlags.contains(metaFlag);
 	}
 
+		
 	@Override
-	public String toString() {
-		return "AbstractFile{" + "fileType=" + fileType + ", dirType=" + dirType + ", metaType=" + metaType + ", dirFlag=" + dirFlag + ", metaFlags=" + metaFlags + ", size=" + size + ", metaAddr=" + metaAddr + ", ctime=" + ctime + ", crtime=" + crtime + ", atime=" + atime + ", mtime=" + mtime + ", uid=" + uid + ", gid=" + gid + ", attrId=" + attrId + ", attrType=" + attrType + ", modes=" + modes + ", parentPath=" + parentPath + ", knownState=" + knownState + ", md5Hash=" + md5Hash + '}';
+	public String toString(boolean preserveState) {
+		return super.toString(preserveState) + "AbstractFile [\t" 
+				+ "\t" + "fileType " + fileType
+				+ "\tctime " + ctime 
+				+ "\tcrtime " + crtime 
+				+ "\t" + "mtime " + mtime + "\t" + "atime " + atime 
+				+ "\t" + "attrId " + attrId 
+				+ "\t" + "attrType " + attrType
+				+ "\t" + "dirFlag " + dirFlag + "\t" + "dirType " + dirType 
+				+ "\t" + "uid " + uid
+				+ "\t" + "gid " + gid 
+				+ "\t" + "metaAddr " + metaAddr + "\t" + "metaFlags " + metaFlags 
+				+ "\t" + "metaType " + metaType + "\t" + "modes " + modes 
+				+ "\t" + "parentPath " + parentPath + "\t" + "size " + size 
+				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash 
+				+ "]\t";
 	}
 
 	/*
@@ -624,4 +639,6 @@ public abstract class AbstractFile extends AbstractContent {
 
 		return epoch;
 	}
+	
+	
 }
