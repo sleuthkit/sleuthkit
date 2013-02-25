@@ -272,7 +272,7 @@ int main(int argc, char **argv1)
     TskImageFileTsk imageFileTsk;
 
     // Check to see if input image is actually a container file
-    ExtractorPtr containerExtractor = createTskExtractor(imagePath);
+    ExtractorPtr containerExtractor = createExtractor(imagePath);
 
     if (containerExtractor.isNull())
     {

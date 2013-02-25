@@ -21,7 +21,6 @@
 #include "Poco/Path.h"
 
 #include "TskExtract.h"
-#include "TskImageFile.h"
 #include "Services/TskImgDB.h"
 #include "Services/Log.h"
 #include "tsk3/libtsk.h"
