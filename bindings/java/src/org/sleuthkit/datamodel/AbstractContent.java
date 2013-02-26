@@ -243,26 +243,26 @@ public abstract class AbstractContent implements Content {
 		if (preserveState) {
 			return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" 
 					+ "name " + name + "\t" + "parentId " + parentId + "\t" 
-					+ "\t" + "checkedHasChildren" + checkedHasChildren 
-					+ "\t" + "hasChildren" + hasChildren 
-					+ "\t" + "childrenCount" + childrenCount 
+					+ "\t" + "checkedHasChildren " + checkedHasChildren 
+					+ "\t" + "hasChildren " + hasChildren 
+					+ "\t" + "childrenCount " + childrenCount 
 					+ "uniquePath " + uniquePath + "]\t";
 		} else {
 			try {
 				if (getParent() != null) {
 					return "AbstractContent [\t" + "objId " + String.format("%010d", objId) 
 							+ "\t" + "name " + name 
-								+ "\t" + "checkedHasChildren" + checkedHasChildren 
-								+ "\t" + "hasChildren" + hasChildren 
-								+ "\t" + "childrenCount" + childrenCount 
+								+ "\t" + "checkedHasChildren " + checkedHasChildren 
+								+ "\t" + "hasChildren " + hasChildren 
+								+ "\t" + "childrenCount " + childrenCount 
 							+ "\t" + "getUniquePath " + getUniquePath() 
 							+ "\t" + "getParent " + getParent().getId() + "]\t";
 				} else {
 					return "AbstractContent [\t" + "objId " 
 							+ String.format("%010d", objId) + "\t" + "name " + name 
-								+ "\t" + "checkedHasChildren" + checkedHasChildren 
-								+ "\t" + "hasChildren" + hasChildren 
-								+ "\t" + "childrenCount" + childrenCount 
+								+ "\t" + "checkedHasChildren " + checkedHasChildren 
+								+ "\t" + "hasChildren " + hasChildren 
+								+ "\t" + "childrenCount " + childrenCount 
 							+ "\t" + "uniquePath " + getUniquePath() 
 							+ "\t" + "parentId " + parentId + "]\t";
 				}
@@ -270,9 +270,9 @@ public abstract class AbstractContent implements Content {
 				Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, "Could not find Parent", ex);
 				return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" 
 					+ "name " + name + "\t" + "parentId " + parentId + "\t" 
-					+ "\t" + "checkedHasChildren" + checkedHasChildren 
-					+ "\t" + "hasChildren" + hasChildren 
-					+ "\t" + "childrenCount" + childrenCount 
+					+ "\t" + "checkedHasChildren " + checkedHasChildren 
+					+ "\t" + "hasChildren " + hasChildren 
+					+ "\t" + "childrenCount " + childrenCount 
 					+ "uniquePath " + uniquePath + "]\t";
 			}
 		}
