@@ -68,8 +68,10 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
     TskDbSqlite *db = new TskDbSqlite(path, true);
 
     // Open the database.
-    if (db->open(true))
+    if (db->open(true)) {
+        delete(db);
         return NULL;
+    }
 
     return new TskCaseDb(db);
 }
@@ -96,8 +98,10 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
     TskDbSqlite *db = new TskDbSqlite(path, true);
 
     // Open the database.
-    if (db->open(false))
+    if (db->open(false)) {
+        delete(db);
         return NULL;
+    }
 
     return new TskCaseDb(db);
 }

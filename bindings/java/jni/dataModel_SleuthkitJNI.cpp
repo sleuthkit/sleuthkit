@@ -3,7 +3,7 @@
  ** The Sleuth Kit 
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -181,7 +181,9 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
     jboolean isCopy;
     char *str8 = (char *) env->GetStringUTFChars(strJ, &isCopy);
 
-    return TSNPRINTF(buffer, size, _TSK_T("%") PRIcTSK, str8);
+    int ret = TSNPRINTF(buffer, size, _TSK_T("%") PRIcTSK, str8);
+    env->ReleaseStringUTFChars(strJ, str8);
+    return ret;
 }
 
 
@@ -450,11 +452,11 @@ JNIEXPORT jlong JNICALL
         return 0;
     }
 
-
     if (env->GetStringUTFLength(timezone) > 0) {
         const char *tzstr = env->GetStringUTFChars(timezone, &isCopy);
 
         if (strlen(tzstr) > 64) {
+            env->ReleaseStringUTFChars(timezone, tzstr);
             stringstream ss;
             ss << "Timezone is too long";
             setThrowTskCoreError(env, ss.str().c_str());
@@ -529,13 +531,15 @@ JNIEXPORT void JNICALL
         return;
     }
     for (int i = 0; i < num_imgs; i++) {
+        jstring jsPath = (jstring) env->GetObjectArrayElement(paths,
+                i);
         imagepaths8[i] =
             (char *) env->
-            GetStringUTFChars((jstring) env->GetObjectArrayElement(paths,
-                i), &isCopy);
+            GetStringUTFChars(jsPath, &isCopy);
         if (imagepaths8[i] == NULL) {
             setThrowTskCoreError(env,
                 "runAddImgNat: Can't convert path strings.");
+            // @@@ should cleanup here paths that have been converted in imagepaths8[i]
             return;
         }
     }
@@ -571,16 +575,19 @@ JNIEXPORT void JNICALL
         }
     }
 
+    // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
+    //close image first before freeing the image paths
+    tskAuto->closeImage();
+
     // cleanup
     for (int i = 0; i < num_imgs; i++) {
+        jstring jsPath = (jstring)
+            env->GetObjectArrayElement(paths, i);
         env->
-            ReleaseStringUTFChars((jstring)
-            env->GetObjectArrayElement(paths, i), imagepaths8[i]);
+            ReleaseStringUTFChars(jsPath, imagepaths8[i]);
+        env->DeleteLocalRef(jsPath);
     }
     free(imagepaths8);
-
-    // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
-    tskAuto->closeImage();
 
     // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
@@ -805,13 +812,6 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
         return 0;
     }
 
-    //allocate file handle structure
-    TSK_JNI_FILEHANDLE * fileHandle = 
-        (TSK_JNI_FILEHANDLE *) tsk_malloc(sizeof(TSK_JNI_FILEHANDLE));
-    if (fileHandle == NULL) {
-        setThrowTskCoreError(env, "Could not allocate memory for TSK_JNI_FILEHANDLE");
-        return 0;
-    }
 	
     TSK_FS_FILE *file_info;
     //open file
@@ -827,6 +827,15 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
     if (tsk_fs_attr == NULL) {
         tsk_fs_file_close(file_info);
         setThrowTskCoreError(env, tsk_error_get());
+        return 0;
+    }
+
+    //allocate file handle structure to encapsulate file and attribute
+    TSK_JNI_FILEHANDLE * fileHandle = 
+        (TSK_JNI_FILEHANDLE *) tsk_malloc(sizeof(TSK_JNI_FILEHANDLE));
+    if (fileHandle == NULL) {
+        tsk_fs_file_close(file_info);
+        setThrowTskCoreError(env, "Could not allocate memory for TSK_JNI_FILEHANDLE");
         return 0;
     }
 
@@ -1317,9 +1326,11 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
     jboolean isCopy;
     char *str8 = (char *) env->GetStringUTFChars(logPath, &isCopy);
     if (freopen(str8, "a", stderr) == NULL) {
+        env->ReleaseStringUTFChars(logPath, str8);
         setThrowTskCoreError(env, "Couldn't open verbose log file for appending.");
         return;
     }
+    env->ReleaseStringUTFChars(logPath, str8);
     tsk_verbose++;
 }
 

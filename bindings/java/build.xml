@@ -38,7 +38,7 @@
 		<mkdir dir="${test-results}"/>
 	</target>
   
-	<property name="ivy.install.version" value="2.1.0-rc2" />
+	<property name="ivy.install.version" value="2.3.0-rc2" />
 	<condition property="ivy.home" value="${env.IVY_HOME}">
 		<isset property="env.IVY_HOME" />
 	</condition>
@@ -114,8 +114,8 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	</target>
 	<target name="test-download-imgs" description="Get test images and store them in the path represented by the test-input variable.">
 		<mkdir dir="${test-input}" />
-		<get src="http://digitalcorpora.org/corp/nps/drives/nps-2009-canon2/nps-2009-canon2-gen5.raw" dest="${test-input}"/>
-		<get src="http://digitalcorpora.org/corp/nps/drives/nps-2009-ntfs1/ntfs1-gen2.raw" dest="${test-input}"/>
+		<get src="http://digitalcorpora.org/corp/nps/drives/nps-2009-canon2/nps-2009-canon2-gen6.raw" dest="${test-input}"/>
+		<get src="http://digitalcorpora.org/corp/nps/drives/nps-2009-ntfs1/ntfs1-gen2.E01" dest="${test-input}"/>
 	</target>
 	<target name="test" 
 			description="Traverses the Images stored in the path represented by test-input variable, creates results files stored in the path represented by test-results, and compares them to the standards stored in the path represented by the test-standards variable, always run test-create-standards at least once before before running test."
