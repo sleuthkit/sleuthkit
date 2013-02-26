@@ -6,6 +6,7 @@ Numbers refer to SourceForge.net tracker IDs:
 	
 Java Bindings:
 - added DerivedFile datamodel support
+- added faster skip() and random seek support to ReadContentInputStream
 - refactored datamodel by pushing common methods up to AbstractFile
 - fixed minor memory leaks 
 - improved regression testing framework for java bindings datamodel
