@@ -685,17 +685,19 @@ public class SleuthkitJNI {
 
 	/**
 	 * Convert this timezone from long to short form
+	 * Convert timezoneLongForm passed in from long to short form
 	 *
-	 * @param timezone the long form (e.g., America/New_York)
-	 * @return the short form (e.g., EST5EDT)
+	 * @param timezoneLongForm the long form (e.g., America/New_York)
+	 * @return the short form (e.g., EST5EDT) string representation, or an empty string if
+	 * empty long form was passed in
 	 */
-	private static String timezoneLongToShort(String timezone) {
-		if (timezone == null || timezone.isEmpty()) {
+	private static String timezoneLongToShort(String timezoneLongForm) {
+		if (timezoneLongForm  == null || timezoneLongForm.isEmpty()) {
 			return "";
 		}
 		
-		String result = "";
-		TimeZone zone = TimeZone.getTimeZone(timezone);
+		String timezoneShortForm = "";
+		TimeZone zone = TimeZone.getTimeZone(timezoneLongForm);
 		int offset = zone.getRawOffset() / 1000;
 		int hour = offset / 3600;
 		int min = (offset % 3600) / 60;
@@ -705,14 +707,14 @@ public class SleuthkitJNI {
 		String first = dfm.format(new GregorianCalendar(2010, 1, 1).getTime()).substring(0, 3); // make it only 3 letters code
 		String second = dfm.format(new GregorianCalendar(2011, 6, 6).getTime()).substring(0, 3); // make it only 3 letters code
 		int mid = hour * -1;
-		result = first + Integer.toString(mid);
+		timezoneShortForm = first + Integer.toString(mid);
 		if (min != 0) {
-			result = result + ":" + (min < 10 ? "0" : "") + Integer.toString(min);
+			timezoneShortForm = timezoneShortForm + ":" + (min < 10 ? "0" : "") + Integer.toString(min);
 		}
 		if (hasDaylight) {
-			result = result + second;
+			timezoneShortForm = timezoneShortForm + second;
 		}
-		return result;
+		return timezoneShortForm;
 	}
 
 	/**
