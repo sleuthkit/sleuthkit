@@ -36,7 +36,7 @@ namespace ewf
  * 
  * 
  */
-class TskL01Extract : public TskExtract
+class TskL01Extract : public TskArchiveExtraction::TskExtract
 {
 public:
     explicit TskL01Extract(const std::wstring &archivePath);
