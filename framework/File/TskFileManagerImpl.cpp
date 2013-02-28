@@ -170,6 +170,7 @@ void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& fileP
             Poco::FileOutputStream fos(destFile.path());
             char buffer[FILE_BUFFER_SIZE];
             int bytesRead = 0;
+            fileToSave->seek(0, std::ios_base::beg);
 
             do
             {
