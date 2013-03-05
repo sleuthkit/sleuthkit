@@ -75,12 +75,21 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
     
     try
     {
-        m_parentFile = containerFile;
+        m_containerFile = containerFile;
 
         if (m_archivePath.empty())
         {
             throw TskException(MSG_PREFIX + "No path to archive provided.");
         }
+
+        std::string L01Path = TskUtilities::toUTF8(m_archivePath);
+        if (m_containerFile != NULL)
+        {
+            L01Path = m_containerFile->getPath();
+        }
+
+        //m_db.addImageInfo((int)m_img_info->itype, m_img_info->sector_size);
+        m_db.addImageName(L01Path.c_str());
 
         if (openContainer() != 0)
         {
@@ -92,39 +101,10 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
             throw TskException(MSG_PREFIX +"Images not open yet");
         }
 
-        TskImgDB& imgDB = TskServices::Instance().getImgDB();
 
 		// Create a map of directory names to file ids to use to 
 		// associate files/directories with the correct parent.
 		std::map<std::string, uint64_t> directoryMap;
-
-#if 0
-        m_db.addImageInfo((int)m_imgInfo->itype, m_imgInfo->sector_size);
-
-        char *img_ptr = NULL;
-#ifdef TSK_WIN32
-        char img2[1024];
-        UTF8 *ptr8;
-        UTF16 *ptr16;
-
-        ptr8 = (UTF8 *) img2;
-        ptr16 = (UTF16 *) m_archivePath.c_str();
-
-        TSKConversionResult retval =
-            tsk_UTF16toUTF8_lclorder((const UTF16 **) &ptr16, (UTF16 *)
-            & ptr16[wcslen(m_archivePath.c_str()) + 1], &ptr8,
-            (UTF8 *) ((uintptr_t) ptr8 + 1024), TSKlenientConversion);
-        if (retval != TSKconversionOK) 
-        {
-            throw TskException("TskL01Extract::extractFiles: Error converting image to UTF-8");
-        }
-        img_ptr = img2;
-#else
-        img_ptr = (char *) m_archivePath;
-#endif
-
-        m_db.addImageName(img_ptr);
-#endif
 
         std::vector<ArchivedFile>::iterator it = m_archivedFiles.begin();
         for (; it != m_archivedFiles.end(); ++it)
@@ -148,9 +128,9 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
             {
                 // This file or directory lives at the root so our parent id
                 // is the containing file id (if a containing file was provided).
-                if (m_parentFile != NULL)
+                if (m_containerFile != NULL)
                 {
-                    parentId = m_parentFile->getId();
+                    parentId = m_containerFile->getId();
                 }
             }
             else
@@ -177,24 +157,23 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
             std::stringstream details;  ///@todo anything here?
 
             std::string fullpath = "";
-            if (m_parentFile != NULL)
+            if (m_containerFile != NULL)
             {
-                fullpath.append(m_parentFile->getFullPath());
+                fullpath.append(m_containerFile->getFullPath());
             }
             fullpath.append("\\");
             fullpath.append(path.toString());
 
-            ///@todo file timestamp?
             uint64_t fileId;
-            if (imgDB.addDerivedFileInfo(name,
+            if (m_db.addDerivedFileInfo(name,
                 parentId,
                 path.isDirectory(),
                 it->size,
                 details.str(), 
-                0, // ctime
-                0, // crtime
-                0, // atime
-                0, //utc time
+                static_cast<int>(it->ctime),
+                static_cast<int>(it->crtime),
+                static_cast<int>(it->atime),
+                static_cast<int>(it->mtime),
                 fileId, fullpath) == -1) 
             {
                     std::wstringstream msg;
@@ -215,7 +194,7 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
             }
 
             // Schedule
-            imgDB.updateFileStatus(fileId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
+            m_db.updateFileStatus(fileId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
         }
 
     }
@@ -332,7 +311,10 @@ void TskL01Extract::traverse(ewf::libewf_file_entry_t *parent)
     fileInfo.entry   = parent;
     fileInfo.type    = getFileType(parent);
     fileInfo.size    = getFileSize(parent);
-
+    fileInfo.ctime   = getEntryChangeTime(parent);
+    fileInfo.crtime  = getCreationTime(parent);
+    fileInfo.atime   = getAccessTime(parent);
+    fileInfo.mtime   = getModifiedTime(parent);
     std::string name = getName(parent);
 
     bool saveDirectory = false;
@@ -429,7 +411,7 @@ const ewf::uint8_t TskL01Extract::getFileType(ewf::libewf_file_entry_t *node)
 }
 
 
-const uint64_t TskL01Extract::getFileSize(ewf::libewf_file_entry_t *node)
+const ewf::uint64_t TskL01Extract::getFileSize(ewf::libewf_file_entry_t *node)
 {
     ewf::size64_t fileSize = 0;
     ewf::libewf_error_t *ewfError = NULL;
@@ -444,6 +426,81 @@ const uint64_t TskL01Extract::getFileSize(ewf::libewf_file_entry_t *node)
     }
     //std::cerr << "File size = " << (int)fileSize << std::endl;
     return fileSize;
+}
+
+
+const ewf::uint32_t TskL01Extract::getEntryChangeTime(ewf::libewf_file_entry_t *node)
+{
+    ewf::uint32_t timeValue = 0;
+    ewf::libewf_error_t *ewfError = NULL;
+    if (ewf::libewf_file_entry_get_entry_modification_time(node, &timeValue, &ewfError) == -1)
+    {
+        std::stringstream logMessage;
+        char errorString[512];
+        errorString[0] = '\0';
+        ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
+        logMessage << "TskL01Extract::getEntryChangeTime - Error: " << errorString << std::endl;
+        LOGERROR(logMessage.str());
+        return 0;
+    }
+
+    return timeValue;
+}
+
+const ewf::uint32_t TskL01Extract::getCreationTime(ewf::libewf_file_entry_t *node)
+{
+    ewf::uint32_t timeValue = 0;
+    ewf::libewf_error_t *ewfError = NULL;
+    if (ewf::libewf_file_entry_get_creation_time(node, &timeValue, &ewfError) == -1)
+    {
+        std::stringstream logMessage;
+        char errorString[512];
+        errorString[0] = '\0';
+        ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
+        logMessage << "TskL01Extract::getCreationTime - Error: " << errorString << std::endl;
+        LOGERROR(logMessage.str());
+        return 0;
+    }
+
+    return timeValue;
+}
+
+
+const ewf::uint32_t TskL01Extract::getAccessTime(ewf::libewf_file_entry_t *node)
+{
+    ewf::uint32_t timeValue = 0;
+    ewf::libewf_error_t *ewfError = NULL;
+    if (ewf::libewf_file_entry_get_access_time(node, &timeValue, &ewfError) == -1)
+    {
+        std::stringstream logMessage;
+        char errorString[512];
+        errorString[0] = '\0';
+        ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
+        logMessage << "TskL01Extract::getAccessTime - Error: " << errorString << std::endl;
+        LOGERROR(logMessage.str());
+        return 0;
+    }
+
+    return timeValue;
+}
+
+
+const ewf::uint32_t TskL01Extract::getModifiedTime(ewf::libewf_file_entry_t *node)
+{
+    ewf::uint32_t timeValue = 0;
+    ewf::libewf_error_t *ewfError = NULL;
+    if (ewf::libewf_file_entry_get_modification_time(node, &timeValue, &ewfError) == -1)
+    {
+        std::stringstream logMessage;
+        char errorString[512];
+        errorString[0] = '\0';
+        ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
+        logMessage << "TskL01Extract::getModifiedTime - Error: " << errorString << std::endl;
+        LOGERROR(logMessage.str());
+        return 0;
+    }
+
+    return timeValue;
 }
 
 
