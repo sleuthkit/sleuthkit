@@ -321,10 +321,12 @@ int main(int argc, char **argv1)
         exit(1);
     }
 
-    // now we analyze the data.
+    // Now we analyze the data.
+
+    std::auto_ptr<TskCarveExtractScalpel> carver;
 
     // Extract
-    if (!containerExtractor.isNull())
+    if (!containerExtractor.isNull())   // Input is an archive file
     {
         if (containerExtractor->extractFiles() != 0)
         {
@@ -334,7 +336,7 @@ int main(int argc, char **argv1)
             return 1;
         }
     }
-    else
+    else // Input is an image file
     {
         if (imageFileTsk.extractFiles() != 0)
         {
@@ -343,14 +345,13 @@ int main(int argc, char **argv1)
             LOGERROR(msg.str());
             return 1;
         }
-    }
 
-    std::auto_ptr<TskCarveExtractScalpel> carver;
-    if (doCarving && !GetSystemProperty("SCALPEL_DIR").empty())
-    {
-        TskCarvePrepSectorConcat carvePrep;
-        carvePrep.processSectors(true);
-        carver.reset(new TskCarveExtractScalpel());
+        if (doCarving && !GetSystemProperty("SCALPEL_DIR").empty())
+        {
+            TskCarvePrepSectorConcat carvePrep;
+            carvePrep.processSectors(true);
+            carver.reset(new TskCarveExtractScalpel());
+        }
     }
 
     TskSchedulerQueue::task_struct *task;
