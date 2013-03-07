@@ -41,6 +41,10 @@ namespace ewf
     #include "ewf.h"
 }
 
+namespace
+{
+    static const unsigned int ExtractChunkSize = 65536;
+}
 
 TskL01Extract::TskL01Extract(const std::wstring &archivePath) :
     m_archivePath(archivePath),
@@ -503,7 +507,7 @@ const ewf::uint32_t TskL01Extract::getModifiedTime(ewf::libewf_file_entry_t *nod
     return timeValue;
 }
 
-
+/// Deprecated
 char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t dataSize)
 {
     if (dataSize > 0)
@@ -522,7 +526,6 @@ char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t d
             LOGERROR(logMessage.str());
             return NULL;
         }
-        //std::cerr << "Data bytes read = " << (int)bytesRead<< std::endl;
 
         return buffer;
     }
@@ -539,24 +542,61 @@ void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archived
     char *dataBuf = NULL;
     try
     {
-        // Get data from archive
-        dataBuf = getFileData(archivedFile.entry, archivedFile.size);
-
-        if ((dataBuf != NULL) || (archivedFile.size == 0))
+        // If a file with this id already exists we raise an error
+        TskFile * pFile = TskServices::Instance().getFileManager().getFile(fileId);
+        if (pFile != NULL && pFile->exists())
         {
-            // Save it as a file to local filesystem
-            Poco::BasicMemoryStreamBuf< char, std::char_traits<char> >  b(dataBuf, archivedFile.size);
-            std::istream in(&b);
-            TskServices::Instance().getFileManager().addFile(fileId, in);
+            std::stringstream msg;
+            msg << "File id " << fileId << " already exists.";
+            throw TskFileException(msg.str());
         }
 
-        delete [] dataBuf;
+        // Create a blank file
+        Poco::Path destPath(TskUtilities::toUTF8(TskServices::Instance().getFileManager().getPath(fileId)));
+        Poco::File destFile(destPath);
+        destFile.createFile();
+
+        // Get data from archive
+        if (archivedFile.size > 0)
+        {
+            Poco::FileOutputStream fos(destFile.path(), std::ios::binary);
+
+            ewf::uint64_t chunkSize = ExtractChunkSize;
+            if (archivedFile.size < ExtractChunkSize)
+            {
+                chunkSize = archivedFile.size;
+            }
+            dataBuf = new char[chunkSize];
+
+            ewf::uint64_t accum = 0;
+            ewf::libewf_error_t *ewfError = NULL;
+
+            // Read and save data in chunks so that we only put <= ExtractChunkSize bytes on the heap at a time
+            while (accum < archivedFile.size)
+            {
+                ewf::ssize_t bytesRead = ewf::libewf_file_entry_read_buffer(archivedFile.entry, dataBuf, chunkSize, &ewfError);
+                if (bytesRead == -1)
+                {
+                    std::stringstream logMessage;
+                    char errorString[512];
+                    errorString[0] = '\0';
+                    ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
+                    logMessage << "TskL01Extract::saveFile - Error : " << errorString << std::endl;
+                    LOGERROR(logMessage.str());
+                    break;
+                }
+               
+                fos.write(dataBuf, bytesRead);
+                accum += bytesRead;
+            }
+            delete [] dataBuf;
+        }
     }
     catch (Poco::Exception& ex)
     {
         delete [] dataBuf;
         std::wstringstream msg;
-        msg << L"TskL01Extract::addFile - Error saving file from stream : " << ex.displayText().c_str();
+        msg << L"TskL01Extract::saveFile - Error saving file from stream : " << ex.displayText().c_str();
         LOGERROR(msg.str());
         throw TskFileException("Error saving file from stream.");
     }
