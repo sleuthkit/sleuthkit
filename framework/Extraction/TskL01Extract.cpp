@@ -44,6 +44,20 @@ namespace ewf
 namespace
 {
     static const unsigned int ExtractChunkSize = 65536;
+
+    // This is needed in order to use Poco::SharedPtr on arrays
+    // and have them properly delete.
+    template <class C>
+    class ArrayReleasePolicy
+    {
+    public:
+        static void release(C* pObj)
+        /// Delete the object.
+        /// Note that pObj can be 0.
+        {
+            delete [] pObj;
+        }
+    };
 }
 
 TskL01Extract::TskL01Extract(const std::wstring &archivePath) :
@@ -539,7 +553,7 @@ char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t d
  */
 void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archivedFile)
 {
-    char *dataBuf = NULL;
+    //char *dataBuf = NULL;
     try
     {
         // If a file with this id already exists we raise an error
@@ -566,7 +580,9 @@ void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archived
             {
                 chunkSize = archivedFile.size;
             }
-            dataBuf = new char[chunkSize];
+            //dataBuf = new char[chunkSize];
+            //char *buf = new char[chunkSize];
+            Poco::SharedPtr<char, Poco::ReferenceCounter, ArrayReleasePolicy<char> > dataBuf(new char[chunkSize]);
 
             ewf::uint64_t accum = 0;
             ewf::libewf_error_t *ewfError = NULL;
@@ -589,12 +605,12 @@ void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archived
                 fos.write(dataBuf, bytesRead);
                 accum += bytesRead;
             }
-            delete [] dataBuf;
+            //delete [] dataBuf;
         }
     }
     catch (Poco::Exception& ex)
     {
-        delete [] dataBuf;
+        //delete [] dataBuf;
         std::wstringstream msg;
         msg << L"TskL01Extract::saveFile - Error saving file from stream : " << ex.displayText().c_str();
         LOGERROR(msg.str());
