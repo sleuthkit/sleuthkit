@@ -553,7 +553,6 @@ char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t d
  */
 void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archivedFile)
 {
-    //char *dataBuf = NULL;
     try
     {
         // If a file with this id already exists we raise an error
@@ -580,8 +579,7 @@ void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archived
             {
                 chunkSize = archivedFile.size;
             }
-            //dataBuf = new char[chunkSize];
-            //char *buf = new char[chunkSize];
+
             Poco::SharedPtr<char, Poco::ReferenceCounter, ArrayReleasePolicy<char> > dataBuf(new char[chunkSize]);
 
             ewf::uint64_t accum = 0;
@@ -605,12 +603,11 @@ void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archived
                 fos.write(dataBuf, bytesRead);
                 accum += bytesRead;
             }
-            //delete [] dataBuf;
+            fos.close();
         }
     }
     catch (Poco::Exception& ex)
     {
-        //delete [] dataBuf;
         std::wstringstream msg;
         msg << L"TskL01Extract::saveFile - Error saving file from stream : " << ex.displayText().c_str();
         LOGERROR(msg.str());
