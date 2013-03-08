@@ -189,4 +189,8 @@ public class LayoutFile extends AbstractFile{
 	public boolean isRoot() {
 		return false;
 	}
+	@Override
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "LayoutFile [\t" + "]\t";
+	}
 }

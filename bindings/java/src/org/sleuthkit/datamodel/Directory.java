@@ -79,4 +79,9 @@ public class Directory extends FsContent {
 	public boolean isFile() {
 		return false;
 	}
+	
+	@Override
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "Directory [\t" + "]\t";
+	}
 }

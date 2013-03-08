@@ -695,12 +695,10 @@ public class SleuthkitJNI {
 		}
 		
 		String result = "";
-
 		TimeZone zone = TimeZone.getTimeZone(timezone);
 		int offset = zone.getRawOffset() / 1000;
 		int hour = offset / 3600;
 		int min = (offset % 3600) / 60;
-
 		DateFormat dfm = new SimpleDateFormat("z");
 		dfm.setTimeZone(zone);
 		boolean hasDaylight = zone.useDaylightTime();

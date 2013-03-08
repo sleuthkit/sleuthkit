@@ -170,6 +170,11 @@ void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& fileP
             Poco::FileOutputStream fos(destFile.path());
             char buffer[FILE_BUFFER_SIZE];
             int bytesRead = 0;
+
+            // Remember the offset the file was at when we were called.
+            TSK_OFF_T savedOffset = fileToSave->tell();
+
+            // Reset to start of file to ensure all content is saved.
             fileToSave->seek(0, std::ios_base::beg);
 
             do
@@ -183,6 +188,9 @@ void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& fileP
             // Flush and close the output stream.
             fos.flush();
             fos.close();
+
+            // Restore the saved offset.
+            fileToSave->seek(savedOffset, std::ios_base::beg);
 
             // Close the file
             fileToSave->close();

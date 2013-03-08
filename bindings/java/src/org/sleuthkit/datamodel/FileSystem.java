@@ -198,4 +198,9 @@ public class FileSystem extends AbstractContent {
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
 	}
+	
+	@Override
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "FileSystem [\t" + " blockCount " + blockCount + "\t" + "blockSize " + blockSize + "\t" + "firstInum " + firstInum + "\t" + "fsType " + fsType + "\t" + "imgOffset " + imgOffset + "\t" + "lastInum " + lastInum + "\t" + "rootInum " + rootInum + "\t" + "]";
+	}
 }
