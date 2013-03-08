@@ -65,6 +65,7 @@ private:
 
     void                close();
     int                 openContainer();
+    TSK_IMG_INFO *      openEwfSimple();
     void                traverse(ewf::libewf_file_entry_t *parent);
     const std::string   getName(ewf::libewf_file_entry_t *node);
     const ewf::uint8_t  getFileType(ewf::libewf_file_entry_t *node);

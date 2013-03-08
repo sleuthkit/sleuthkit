@@ -31,6 +31,7 @@
 #include "Services/TskServices.h"
 #include "Utilities/TskUtilities.h"
 #include "tsk3/base/tsk_base_i.h"
+#include "tsk3/img/tsk_img_i.h"
 
 #ifndef HAVE_LIBEWF
 #define HAVE_LIBEWF 1
@@ -58,6 +59,29 @@ namespace
             delete [] pObj;
         }
     };
+
+    // Copied from tsk3/img/ewf.c
+    void ewf_image_close(TSK_IMG_INFO * img_info)
+    {
+        int i;
+        ewf::IMG_EWF_INFO *ewf_info = (ewf::IMG_EWF_INFO *) img_info;
+
+        ewf::libewf_handle_close(ewf_info->handle, NULL);
+        ewf::libewf_handle_free(&(ewf_info->handle), NULL);
+
+        // this stuff crashes if we used glob. v2 of the API has a free method.
+        // not clear from the docs what we should do in v1...
+        // @@@ Probably a memory leak in v1 unless libewf_close deals with it
+        if (ewf_info->used_ewf_glob == 0) {
+            for (i = 0; i < ewf_info->num_imgs; i++) {
+                free(ewf_info->images[i]);
+            }
+            free(ewf_info->images);
+        }
+
+        tsk_deinit_lock(&(ewf_info->read_lock));
+        free(img_info);
+    }
 }
 
 TskL01Extract::TskL01Extract(const std::wstring &archivePath) :
@@ -252,7 +276,8 @@ int TskL01Extract::openContainer()
             throw TskException("Error: archive path is empty.");
         }
 
-        m_imgInfo = tsk_img_open_sing(m_archivePath.c_str(), TSK_IMG_TYPE_EWF_EWF, 512);
+        //m_imgInfo = tsk_img_open_sing(m_archivePath.c_str(), TSK_IMG_TYPE_EWF_EWF, 512);
+        m_imgInfo = openEwfSimple();
         if (m_imgInfo == NULL) 
         {
             std::stringstream logMessage;
@@ -261,7 +286,6 @@ int TskL01Extract::openContainer()
         }
 
         /// TSK stores different struct objs to the same pointer
-        ///@todo does C++ <> cast work on this?
         ewf::IMG_EWF_INFO *ewfInfo = (ewf::IMG_EWF_INFO*)m_imgInfo;
         m_imgInfo = &(ewfInfo->img_info);
 
@@ -319,6 +343,117 @@ int TskL01Extract::openContainer()
     return 0;   //success
 }
 
+
+/**
+    Originally we used tsk_img_open_sing(), but that leads to calling ewf_open(),
+    which in turn will fail if the L01 file has an incorrect filename extension.
+    This function is a simpler version of ewf_open() which will not fail if the
+    filename extension is wrong.
+*/
+TSK_IMG_INFO * TskL01Extract::openEwfSimple()
+{
+    const int a_num_img = 1;
+    unsigned int a_ssize = 512;
+    int result = 0;
+    TSK_IMG_INFO *img_info = NULL;
+    ewf::libewf_error_t *ewfError = NULL;
+    ewf::IMG_EWF_INFO *ewf_info = NULL;
+
+    try
+    {
+        if ((ewf_info = (ewf::IMG_EWF_INFO *) tsk_img_malloc(sizeof(ewf::IMG_EWF_INFO))) == NULL)
+        {
+            throw TskException("tsk_img_malloc");
+        }
+        img_info = (TSK_IMG_INFO *) ewf_info;
+
+        if (ewf::libewf_handle_initialize(&(ewf_info->handle), &ewfError) != 1)
+        {
+            throw TskException("libewf_handle_initialize");
+        }
+
+        //int i;
+        ewf_info->num_imgs = a_num_img;
+        if ((ewf_info->images = (TSK_TCHAR **) tsk_malloc(a_num_img * sizeof(TSK_TCHAR *))) == NULL)
+        {
+            throw TskException("tsk_malloc");
+        }
+
+        if ((ewf_info->images[0] =
+            (TSK_TCHAR *) tsk_malloc((TSTRLEN(m_archivePath.c_str()) + 1) * sizeof(TSK_TCHAR))) == NULL)
+        {
+            throw TskException("tsk_malloc 2");
+        }
+        TSTRNCPY(ewf_info->images[0], m_archivePath.c_str(), TSTRLEN(m_archivePath.c_str()) + 1);
+
+        ewfError = NULL;
+    #if defined( TSK_WIN32 )
+        if (libewf_handle_open_wide(ewf_info->handle, (wchar_t * const *) ewf_info->images,
+            ewf_info->num_imgs, ewf::LIBEWF_ACCESS_FLAG_READ, &ewfError) != 1)
+    #else
+        if (ewf::libewf_handle_open(ewf_info->handle,
+                (char *const *) ewf_info->images,
+                ewf_info->num_imgs, LIBEWF_OPEN_READ, &ewfError) != 1)
+    #endif
+        {
+            throw TskException("libewf_handle_open_wide");
+        }
+
+        ewfError = NULL;
+        if (ewf::libewf_handle_get_media_size(ewf_info->handle,
+                (ewf::size64_t *) & (img_info->size), &ewfError) != 1)
+        {
+            throw TskException("libewf_handle_get_media_size");
+        }
+
+        ewfError = NULL;
+        result = ewf::libewf_handle_get_utf8_hash_value_md5(ewf_info->handle,
+            (uint8_t *) ewf_info->md5hash, 33, &ewfError);
+
+        if (result == -1)
+        {
+            throw TskException("libewf_handle_get_utf8_hash_value_md5");
+        }
+        ewf_info->md5hash_isset = result;
+
+        if (a_ssize != 0)
+        {
+            img_info->sector_size = a_ssize;
+        }
+        else
+        {
+            img_info->sector_size = 512;
+        }
+
+        img_info->itype = TSK_IMG_TYPE_EWF_EWF;
+        img_info->close = ewf_image_close;
+        ///@todo is there any chance of these function pointers getting called?
+        img_info->read = NULL; //&ewf::ewf_image_read;
+        img_info->imgstat = NULL; //&ewf::ewf_image_imgstat;
+
+        // initialize the read lock
+        tsk_init_lock(&(ewf_info->read_lock));
+
+        return img_info;
+    }
+    catch (TskException &ex)
+    {
+        std::ostringstream msg;
+        msg << "openEwfSimple: TskException: " << ex.message();
+        if (ewfError)
+        {
+            char errorString[512];
+            errorString[0] = '\0';
+            ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
+            msg << "libewf error: " << errorString << std::endl;
+        }
+        LOGERROR(msg.str());
+        free(ewf_info);
+        return NULL;
+    }
+}
+
+
 /*
     Traverse the hierarchy inside the container
  */
@@ -360,8 +495,6 @@ void TskL01Extract::traverse(ewf::libewf_file_entry_t *parent)
     ewf::libewf_error_t *ewfError = NULL;
     ewf::libewf_file_entry_get_number_of_sub_file_entries(parent, &num, &ewfError);
     
-    //std::cerr << "number of sub file entries = " << num << std::endl;
-
     if (num > 0)
     {
         //recurse
@@ -401,7 +534,7 @@ const std::string TskL01Extract::getName(ewf::libewf_file_entry_t *node)
         logMessage << "TskL01Extract::getName - Error with libewf_file_entry_get_utf8_name: " << errorString << std::endl;
         throw TskException(logMessage.str());
     }
-    //std::cerr << "File name = " << nameString << std::endl;
+
     std::string s;
     s.assign((char*)&nameString[0]);
     return s;
@@ -424,8 +557,6 @@ const ewf::uint8_t TskL01Extract::getFileType(ewf::libewf_file_entry_t *node)
         throw TskException("TskL01Extract::getFileType - Error with libewf_file_entry_get_flags: ");
     }
 
-    //std::cerr << "File type = " << type << std::endl;
-    //std::cerr << "File flags = " << flags << std::endl;
     return type;
 }
 
@@ -443,7 +574,7 @@ const ewf::uint64_t TskL01Extract::getFileSize(ewf::libewf_file_entry_t *node)
         logMessage << "TskL01Extract::getFileSize - Error with libewf_file_entry_get_utf8_name: " << errorString << std::endl;
         throw TskException(logMessage.str());
     }
-    //std::cerr << "File size = " << (int)fileSize << std::endl;
+
     return fileSize;
 }
 
