@@ -1103,21 +1103,21 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             // lookup the file to get its name (we did not cache that)
             fs_file_orp =
                 tsk_fs_file_open_meta(a_fs, fs_file_orp, fs_name->meta_addr);
-            if ((fs_file_orp) && (fs_file_orp->meta)
-                && (fs_file_orp->meta->name2)) {
-                TSK_FS_META_NAME_LIST *n2 = fs_file_orp->meta->name2;
-                if (fs_file_orp->meta->flags & TSK_FS_META_FLAG_ALLOC)
-                    fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-                else
-                    fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
+            if (fs_file_orp) {
+                if ((fs_file_orp->meta) && (fs_file_orp->meta->name2)) {
+                    TSK_FS_META_NAME_LIST *n2 = fs_file_orp->meta->name2;
+                    if (fs_file_orp->meta->flags & TSK_FS_META_FLAG_ALLOC)
+                        fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+                    else
+                        fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
 
-                while (n2) {
-                    if (n2->par_inode == a_addr) {
-                        strncpy(fs_name->name, n2->name,
-                            fs_name->name_size);
-                        tsk_fs_dir_add(fs_dir, fs_name);
+                    while (n2) {
+                        if (n2->par_inode == a_addr) {
+                            strncpy(fs_name->name, n2->name, fs_name->name_size);
+                            tsk_fs_dir_add(fs_dir, fs_name);
+                        }
+                        n2 = n2->next;
                     }
-                    n2 = n2->next;
                 }
                 //free
                 tsk_fs_file_close(fs_file_orp);
