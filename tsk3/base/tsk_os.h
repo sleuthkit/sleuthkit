@@ -141,14 +141,15 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define TSNPRINTF _snwprintf
 #define TPUTENV	_wputenv
 #define TZSET	_tzset
-#define TSTAT _wstat64
 
 #if defined(_MSC_VER)
 #define TSTRTOULL _wcstoui64
 #define STAT_STR    __stat64
+#define TSTAT _wstat64
 #elif defined(__MINGW32__)
 #define TSTRTOULL wcstoull
 #define STAT_STR    _stat
+#define TSTAT _wstat
 #endif
 
 
