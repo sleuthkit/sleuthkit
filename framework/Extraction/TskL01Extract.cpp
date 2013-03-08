@@ -119,7 +119,6 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
             throw TskException(MSG_PREFIX +"Images not open yet");
         }
 
-
 		// Create a map of directory names to file ids to use to 
 		// associate files/directories with the correct parent.
 		std::map<std::string, uint64_t> directoryMap;
@@ -213,6 +212,7 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
 
             // Schedule
             m_db.updateFileStatus(fileId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
+            TskServices::Instance().getScheduler().schedule(Scheduler::FileAnalysis, fileId, fileId);
         }
 
     }
