@@ -1085,7 +1085,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     if (ntfs_parent_map_exists(ntfs, a_addr, seqToSrch)) {
         TSK_FS_NAME *fs_name;
-        TSK_FS_FILE *fs_file_orp = NULL;
+        
 
         std::vector <TSK_INUM_T> &childFiles = ntfs_parent_map_get(ntfs, a_addr, seqToSrch);
 
@@ -1095,6 +1095,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
 
         for (size_t a = 0; a < childFiles.size(); a++) {
+            TSK_FS_FILE *fs_file_orp = NULL;
             /* Fill in the basics of the fs_name entry
              * so we can print in the fls formats */
             fs_name->meta_addr = childFiles[a];
@@ -1118,6 +1119,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     }
                     n2 = n2->next;
                 }
+                //free
+                tsk_fs_file_close(fs_file_orp);
             }
         }
         tsk_fs_name_free(fs_name);
