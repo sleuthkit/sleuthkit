@@ -41,6 +41,24 @@ namespace ewf
     #include "ewf.h"
 }
 
+namespace
+{
+    static const unsigned int ExtractChunkSize = 65536;
+
+    // This is needed in order to use Poco::SharedPtr on arrays
+    // and have them properly delete.
+    template <class C>
+    class ArrayReleasePolicy
+    {
+    public:
+        static void release(C* pObj)
+        /// Delete the object.
+        /// Note that pObj can be 0.
+        {
+            delete [] pObj;
+        }
+    };
+}
 
 TskL01Extract::TskL01Extract(const std::wstring &archivePath) :
     m_archivePath(archivePath),
@@ -100,7 +118,6 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
         {
             throw TskException(MSG_PREFIX +"Images not open yet");
         }
-
 
 		// Create a map of directory names to file ids to use to 
 		// associate files/directories with the correct parent.
@@ -190,11 +207,13 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
             {
                 // For file nodes, recreate file locally
                 // Will save zero-length files
-                saveFile(fileId, *it);
+                if (saveFile(fileId, *it) == 0)
+                {
+                    // Schedule
+                    m_db.updateFileStatus(fileId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
+                    TskServices::Instance().getScheduler().schedule(Scheduler::FileAnalysis, fileId, fileId);
+                }
             }
-
-            // Schedule
-            m_db.updateFileStatus(fileId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
         }
 
     }
@@ -257,7 +276,7 @@ int TskL01Extract::openContainer()
 
         if (ret > 0)
         {
-            ewf::uint8_t nameString[512];
+            uint8_t nameString[512];
             nameString[0] = '\0';
             ewfError = NULL;
             if (ewf::libewf_file_entry_get_utf8_name(root, nameString, 512, &ewfError) == -1)
@@ -370,7 +389,7 @@ const std::string TskL01Extract::getName(ewf::libewf_file_entry_t *node)
 {
     ///@todo use libewf_file_entry_get_utf8_name_size
 
-    ewf::uint8_t nameString[512];
+    uint8_t nameString[512];
     nameString[0] = '\0';
     ewf::libewf_error_t *ewfError = NULL;
     if (ewf::libewf_file_entry_get_utf8_name(node, nameString, 512, &ewfError) == -1)
@@ -389,16 +408,16 @@ const std::string TskL01Extract::getName(ewf::libewf_file_entry_t *node)
 }
 
 
-const ewf::uint8_t TskL01Extract::getFileType(ewf::libewf_file_entry_t *node)
+const uint8_t TskL01Extract::getFileType(ewf::libewf_file_entry_t *node)
 {
-    ewf::uint8_t type = 0;
+    uint8_t type = 0;
     ewf::libewf_error_t *ewfError = NULL;
     if (ewf::libewf_file_entry_get_type(node, &type, &ewfError) == -1)
     {
         throw TskException("TskL01Extract::getFileType - Error with libewf_file_entry_get_utf8_name: ");
     }
 
-    ewf::uint32_t flags = 0;
+    uint32_t flags = 0;
     ewfError = NULL;
     if (ewf::libewf_file_entry_get_flags(node, &flags, &ewfError) == -1)
     {
@@ -411,7 +430,7 @@ const ewf::uint8_t TskL01Extract::getFileType(ewf::libewf_file_entry_t *node)
 }
 
 
-const ewf::uint64_t TskL01Extract::getFileSize(ewf::libewf_file_entry_t *node)
+const uint64_t TskL01Extract::getFileSize(ewf::libewf_file_entry_t *node)
 {
     ewf::size64_t fileSize = 0;
     ewf::libewf_error_t *ewfError = NULL;
@@ -429,9 +448,9 @@ const ewf::uint64_t TskL01Extract::getFileSize(ewf::libewf_file_entry_t *node)
 }
 
 
-const ewf::uint32_t TskL01Extract::getEntryChangeTime(ewf::libewf_file_entry_t *node)
+const uint32_t TskL01Extract::getEntryChangeTime(ewf::libewf_file_entry_t *node)
 {
-    ewf::uint32_t timeValue = 0;
+    uint32_t timeValue = 0;
     ewf::libewf_error_t *ewfError = NULL;
     if (ewf::libewf_file_entry_get_entry_modification_time(node, &timeValue, &ewfError) == -1)
     {
@@ -447,9 +466,9 @@ const ewf::uint32_t TskL01Extract::getEntryChangeTime(ewf::libewf_file_entry_t *
     return timeValue;
 }
 
-const ewf::uint32_t TskL01Extract::getCreationTime(ewf::libewf_file_entry_t *node)
+const uint32_t TskL01Extract::getCreationTime(ewf::libewf_file_entry_t *node)
 {
-    ewf::uint32_t timeValue = 0;
+    uint32_t timeValue = 0;
     ewf::libewf_error_t *ewfError = NULL;
     if (ewf::libewf_file_entry_get_creation_time(node, &timeValue, &ewfError) == -1)
     {
@@ -466,9 +485,9 @@ const ewf::uint32_t TskL01Extract::getCreationTime(ewf::libewf_file_entry_t *nod
 }
 
 
-const ewf::uint32_t TskL01Extract::getAccessTime(ewf::libewf_file_entry_t *node)
+const uint32_t TskL01Extract::getAccessTime(ewf::libewf_file_entry_t *node)
 {
-    ewf::uint32_t timeValue = 0;
+    uint32_t timeValue = 0;
     ewf::libewf_error_t *ewfError = NULL;
     if (ewf::libewf_file_entry_get_access_time(node, &timeValue, &ewfError) == -1)
     {
@@ -485,9 +504,9 @@ const ewf::uint32_t TskL01Extract::getAccessTime(ewf::libewf_file_entry_t *node)
 }
 
 
-const ewf::uint32_t TskL01Extract::getModifiedTime(ewf::libewf_file_entry_t *node)
+const uint32_t TskL01Extract::getModifiedTime(ewf::libewf_file_entry_t *node)
 {
-    ewf::uint32_t timeValue = 0;
+    uint32_t timeValue = 0;
     ewf::libewf_error_t *ewfError = NULL;
     if (ewf::libewf_file_entry_get_modification_time(node, &timeValue, &ewfError) == -1)
     {
@@ -503,7 +522,7 @@ const ewf::uint32_t TskL01Extract::getModifiedTime(ewf::libewf_file_entry_t *nod
     return timeValue;
 }
 
-
+/// Deprecated
 char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t dataSize)
 {
     if (dataSize > 0)
@@ -511,7 +530,7 @@ char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t d
         //Poco::SharedPtr<unsigned char, Poco::ReferenceCounter, ArrayReleasePolicy> buffer(new unsigned char[dataSize]);
         char *buffer = new char[dataSize];
         ewf::libewf_error_t *ewfError = NULL;
-        ewf::ssize_t bytesRead = ewf::libewf_file_entry_read_buffer(node, buffer, dataSize, &ewfError);
+        ssize_t bytesRead = ewf::libewf_file_entry_read_buffer(node, buffer, dataSize, &ewfError);
         if (bytesRead == -1)
         {
             std::stringstream logMessage;
@@ -522,7 +541,6 @@ char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t d
             LOGERROR(logMessage.str());
             return NULL;
         }
-        //std::cerr << "Data bytes read = " << (int)bytesRead<< std::endl;
 
         return buffer;
     }
@@ -534,31 +552,68 @@ char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t d
 /* Create an uncompressed version of the file on the local file system.
  * Note this will save zero-length files.
  */
-void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archivedFile)
+int TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archivedFile)
 {
-    char *dataBuf = NULL;
     try
     {
-        // Get data from archive
-        dataBuf = getFileData(archivedFile.entry, archivedFile.size);
-
-        if ((dataBuf != NULL) || (archivedFile.size == 0))
+        // If a file with this id already exists we raise an error
+        TskFile * pFile = TskServices::Instance().getFileManager().getFile(fileId);
+        if (pFile != NULL && pFile->exists())
         {
-            // Save it as a file to local filesystem
-            Poco::BasicMemoryStreamBuf< char, std::char_traits<char> >  b(dataBuf, archivedFile.size);
-            std::istream in(&b);
-            TskServices::Instance().getFileManager().addFile(fileId, in);
+            std::stringstream msg;
+            msg << "File id " << fileId << " already exists.";
+            throw TskFileException(msg.str());
         }
 
-        delete [] dataBuf;
+        // Create a blank file
+        Poco::Path destPath(TskUtilities::toUTF8(TskServices::Instance().getFileManager().getPath(fileId)));
+        Poco::File destFile(destPath);
+        destFile.createFile();
+
+        // Get data from archive
+        if (archivedFile.size > 0)
+        {
+            Poco::FileOutputStream fos(destFile.path(), std::ios::binary);
+
+            uint64_t chunkSize = ExtractChunkSize;
+            if (archivedFile.size < ExtractChunkSize)
+            {
+                chunkSize = archivedFile.size;
+            }
+
+            Poco::SharedPtr<char, Poco::ReferenceCounter, ArrayReleasePolicy<char> > dataBuf(new char[chunkSize]);
+
+            uint64_t accum = 0;
+            ewf::libewf_error_t *ewfError = NULL;
+
+            // Read and save data in chunks so that we only put <= ExtractChunkSize bytes on the heap at a time
+            while (accum < archivedFile.size)
+            {
+                ssize_t bytesRead = ewf::libewf_file_entry_read_buffer(archivedFile.entry, dataBuf, chunkSize, &ewfError);
+                if (bytesRead == -1)
+                {
+                    std::stringstream logMessage;
+                    char errorString[512];
+                    errorString[0] = '\0';
+                    ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
+                    logMessage << "TskL01Extract::saveFile - Error : " << errorString << std::endl;
+                    LOGERROR(logMessage.str());
+                    return -1;
+                }
+               
+                fos.write(dataBuf, bytesRead);
+                accum += bytesRead;
+            }
+            fos.close();
+        }
+        return 0;
     }
     catch (Poco::Exception& ex)
     {
-        delete [] dataBuf;
         std::wstringstream msg;
-        msg << L"TskL01Extract::addFile - Error saving file from stream : " << ex.displayText().c_str();
+        msg << L"TskL01Extract::saveFile - Error saving file from stream : " << ex.displayText().c_str();
         LOGERROR(msg.str());
-        throw TskFileException("Error saving file from stream.");
+        return -2;
     }
 }
 
