@@ -207,12 +207,13 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
             {
                 // For file nodes, recreate file locally
                 // Will save zero-length files
-                saveFile(fileId, *it);
+                if (saveFile(fileId, *it) == 0)
+                {
+                    // Schedule
+                    m_db.updateFileStatus(fileId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
+                    TskServices::Instance().getScheduler().schedule(Scheduler::FileAnalysis, fileId, fileId);
+                }
             }
-
-            // Schedule
-            m_db.updateFileStatus(fileId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
-            TskServices::Instance().getScheduler().schedule(Scheduler::FileAnalysis, fileId, fileId);
         }
 
     }
@@ -551,7 +552,7 @@ char * TskL01Extract::getFileData(ewf::libewf_file_entry_t *node, const size_t d
 /* Create an uncompressed version of the file on the local file system.
  * Note this will save zero-length files.
  */
-void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archivedFile)
+int TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archivedFile)
 {
     try
     {
@@ -597,7 +598,7 @@ void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archived
                     ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
                     logMessage << "TskL01Extract::saveFile - Error : " << errorString << std::endl;
                     LOGERROR(logMessage.str());
-                    break;
+                    return -1;
                 }
                
                 fos.write(dataBuf, bytesRead);
@@ -605,13 +606,14 @@ void TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archived
             }
             fos.close();
         }
+        return 0;
     }
     catch (Poco::Exception& ex)
     {
         std::wstringstream msg;
         msg << L"TskL01Extract::saveFile - Error saving file from stream : " << ex.displayText().c_str();
         LOGERROR(msg.str());
-        throw TskFileException("Error saving file from stream.");
+        return -2;
     }
 }
 

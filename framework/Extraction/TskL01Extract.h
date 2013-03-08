@@ -74,7 +74,7 @@ private:
     const ewf::uint32_t getCreationTime(ewf::libewf_file_entry_t *node);
     const ewf::uint32_t getAccessTime(ewf::libewf_file_entry_t *node);
     const ewf::uint32_t getModifiedTime(ewf::libewf_file_entry_t *node);
-    void                saveFile(const uint64_t fileId, const ArchivedFile &archivedFile);
+    int                 saveFile(const uint64_t fileId, const ArchivedFile &archivedFile);
 
     std::wstring  m_archivePath;
     TskFile      *m_containerFile;
