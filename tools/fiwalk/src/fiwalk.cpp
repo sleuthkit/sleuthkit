@@ -201,6 +201,8 @@ static string fw_empty("");
  */
 void comment(const char *format,...)
 {
+    if(opt_body_file) return;           // no comments in body file
+
     char buf[1024];
     va_list ap;
     va_start(ap, format);
@@ -454,7 +456,6 @@ static int convert(TSK_TCHAR *OPTARG, char **_opt_arg)
 int main(int argc, char * const *argv1)
 {
     int ch;
-//    extern int optind;
     const char *arff_fn = 0;
     const char *text_fn = 0;
     string *xml_fn = 0;
@@ -482,7 +483,6 @@ int main(int argc, char * const *argv1)
 #endif
 	
 
- //   while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dEfG:gmv1IMX:S:T:VZn:c:b:xOzh?"))) > 0 ) { // s: removed
     while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gmv1IMX:T:VZn:c:b:xOzh?"))) > 0 ) { // s: removed
 	switch (ch) {
 	case _TSK_T('1'): opt_sha1++;break;
