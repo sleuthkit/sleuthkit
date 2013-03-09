@@ -1,3 +1,7 @@
+2013-03-08  Simson Garfinkel  <simsong@Mucha.local>
+
+	* src/fiwalk_tsk.cpp (process_tsk_file): removed #ifdef HAVE_TSK_FS_META_MAKE_LS since we are now part of sleuthKit
+
 2012-11-10  Simson Garfinkel  <simsong@ubuntu>
 
 	* src/fiwalk.cpp (main): removed packaging of AFF metadata into XML file.
