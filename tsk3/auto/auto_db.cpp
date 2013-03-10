@@ -240,6 +240,9 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
         processFile(file_root, "");
     }
 
+    if (file_root != NULL) 
+        tsk_fs_file_close(file_root);
+
     // make sure that flags are set to get all files -- we need this to
     // find parent directory
      
