@@ -125,10 +125,13 @@ uint8_t
 
 
     // convert image paths to UTF-8
-    char **img_ptrs = (char **) tsk_malloc(sizeof(char **));
+    char **img_ptrs = (char **) tsk_malloc(a_num * sizeof(char *));
+    if (img_ptrs == NULL) {
+        return 1;
+    }
 
     for (int i = 0; i < a_num; i++) {
-        char img2[1024];
+        char * img2 = (char*) tsk_malloc(1024 * sizeof(char));
         UTF8 *ptr8;
         UTF16 *ptr16;
 
@@ -149,9 +152,18 @@ uint8_t
     }
 
     if (addImageDetails(img_ptrs, a_num)) {
+        //cleanup
+        for (int i = 0; i < a_num; ++i) {
+            free(img_ptrs[i]);
+        }
+        free(img_ptrs);
         return 1;
     }
 
+    //cleanup
+    for (int i = 0; i < a_num; ++i) {
+        free(img_ptrs[i]);
+    }
     free(img_ptrs);
 
     return 0;
