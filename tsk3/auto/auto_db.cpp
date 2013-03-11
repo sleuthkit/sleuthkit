@@ -152,6 +152,8 @@ uint8_t
         return 1;
     }
 
+    free(img_ptrs);
+
     return 0;
 #else
     return openImageUtf8(a_num, a_images, a_type, a_ssize);
