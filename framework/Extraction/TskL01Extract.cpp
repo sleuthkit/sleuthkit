@@ -361,6 +361,13 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
 
     try
     {
+        // Make an absolute path (if it's relative) so that libewf doesn't cause 
+        // an error when it tries to make it absolute.
+        Poco::Path tempPath(TskUtilities::toUTF8(m_archivePath));
+        tempPath.makeAbsolute();
+        // We convert to unicode here because that is what the TSK_IMG_INFO structure requires.
+        std::wstring ewfArchivePath = TskUtilities::toUTF16(tempPath.toString());
+
         if ((ewf_info = (ewf::IMG_EWF_INFO *) tsk_img_malloc(sizeof(ewf::IMG_EWF_INFO))) == NULL)
         {
             throw TskException("tsk_img_malloc");
@@ -380,20 +387,21 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
         }
 
         if ((ewf_info->images[0] =
-            (TSK_TCHAR *) tsk_malloc((TSTRLEN(m_archivePath.c_str()) + 1) * sizeof(TSK_TCHAR))) == NULL)
+            (TSK_TCHAR *) tsk_malloc((TSTRLEN(ewfArchivePath.c_str()) + 1) * sizeof(TSK_TCHAR))) == NULL)
         {
             throw TskException("tsk_malloc 2");
         }
-        TSTRNCPY(ewf_info->images[0], m_archivePath.c_str(), TSTRLEN(m_archivePath.c_str()) + 1);
+        TSTRNCPY(ewf_info->images[0], ewfArchivePath.c_str(), TSTRLEN(ewfArchivePath.c_str()) + 1);
 
+        ///NOTE: libewf_handle_open_wide() will not open the file if the filename length is < 4 chars long.
         ewfError = NULL;
     #if defined( TSK_WIN32 )
-        if (libewf_handle_open_wide(ewf_info->handle, (wchar_t * const *) ewf_info->images,
+        if (ewf::libewf_handle_open_wide(ewf_info->handle, (TSK_TCHAR * const *) ewf_info->images,
             ewf_info->num_imgs, ewf::LIBEWF_ACCESS_FLAG_READ, &ewfError) != 1)
     #else
         if (ewf::libewf_handle_open(ewf_info->handle,
                 (char *const *) ewf_info->images,
-                ewf_info->num_imgs, LIBEWF_OPEN_READ, &ewfError) != 1)
+                ewf_info->num_imgs, ewf::LIBEWF_OPEN_READ, &ewfError) != 1)
     #endif
         {
             throw TskException("libewf_handle_open_wide");
@@ -445,7 +453,7 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
             char errorString[512];
             errorString[0] = '\0';
             ewf::libewf_error_backtrace_sprint(ewfError, errorString, 512);
-            msg << "libewf error: " << errorString << std::endl;
+            msg << " - libewf error: " << errorString << std::endl;
         }
         LOGERROR(msg.str());
         free(ewf_info);
