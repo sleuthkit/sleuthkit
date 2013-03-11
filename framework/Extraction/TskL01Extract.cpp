@@ -82,6 +82,20 @@ namespace
         tsk_deinit_lock(&(ewf_info->read_lock));
         free(img_info);
     }
+
+    // Function to plug in as func ptr to TSK_IMG_INFO structure.
+    ssize_t null_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
+    {
+        // Do nothing.
+        return 0;
+    }
+
+    // Function to plug in as func ptr to TSK_IMG_INFO structure.
+    void null_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
+    {
+        // Do nothing.
+    }
+
 }
 
 TskL01Extract::TskL01Extract(const std::wstring &archivePath) :
@@ -433,11 +447,10 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
             img_info->sector_size = 512;
         }
 
-        img_info->itype = TSK_IMG_TYPE_EWF_EWF;
-        img_info->close = ewf_image_close;
-        ///@todo is there any chance of these function pointers getting called?
-        img_info->read = NULL; //&ewf::ewf_image_read;
-        img_info->imgstat = NULL; //&ewf::ewf_image_imgstat;
+        img_info->itype   = TSK_IMG_TYPE_EWF_EWF;
+        img_info->close   = ewf_image_close;
+        img_info->read    = null_read;
+        img_info->imgstat = null_imgstat;
 
         // initialize the read lock
         tsk_init_lock(&(ewf_info->read_lock));
