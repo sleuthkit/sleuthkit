@@ -258,7 +258,7 @@ static uint8_t
 is_time(uint64_t t)
 {
 #define SEC_BTWN_1601_1970_DIV100 ((369*365 + 89) * 24 * 36)
-#define SEC_BTWN_1601_2010_DIV100 (SEC_BTWN_1601_1970_DIV100 + (40*365 + 6) * 24 * 36)
+#define SEC_BTWN_1601_2020_DIV100 (SEC_BTWN_1601_1970_DIV100 + (50*365 + 6) * 24 * 36)
 
     t /= 1000000000;            /* put the time in seconds div by additional 100 */
 
@@ -268,7 +268,7 @@ is_time(uint64_t t)
     if (t < SEC_BTWN_1601_1970_DIV100)
         return 0;
 
-    if (t > SEC_BTWN_1601_2010_DIV100)
+    if (t > SEC_BTWN_1601_2020_DIV100)
         return 0;
 
     return 1;
@@ -1085,7 +1085,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
     if (ntfs_parent_map_exists(ntfs, a_addr, seqToSrch)) {
         TSK_FS_NAME *fs_name;
-        TSK_FS_FILE *fs_file_orp = NULL;
+        
 
         std::vector <TSK_INUM_T> &childFiles = ntfs_parent_map_get(ntfs, a_addr, seqToSrch);
 
@@ -1095,6 +1095,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
 
         for (size_t a = 0; a < childFiles.size(); a++) {
+            TSK_FS_FILE *fs_file_orp = NULL;
             /* Fill in the basics of the fs_name entry
              * so we can print in the fls formats */
             fs_name->meta_addr = childFiles[a];
@@ -1102,22 +1103,24 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             // lookup the file to get its name (we did not cache that)
             fs_file_orp =
                 tsk_fs_file_open_meta(a_fs, fs_file_orp, fs_name->meta_addr);
-            if ((fs_file_orp) && (fs_file_orp->meta)
-                && (fs_file_orp->meta->name2)) {
-                TSK_FS_META_NAME_LIST *n2 = fs_file_orp->meta->name2;
-                if (fs_file_orp->meta->flags & TSK_FS_META_FLAG_ALLOC)
-                    fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-                else
-                    fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
+            if (fs_file_orp) {
+                if ((fs_file_orp->meta) && (fs_file_orp->meta->name2)) {
+                    TSK_FS_META_NAME_LIST *n2 = fs_file_orp->meta->name2;
+                    if (fs_file_orp->meta->flags & TSK_FS_META_FLAG_ALLOC)
+                        fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+                    else
+                        fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
 
-                while (n2) {
-                    if (n2->par_inode == a_addr) {
-                        strncpy(fs_name->name, n2->name,
-                            fs_name->name_size);
-                        tsk_fs_dir_add(fs_dir, fs_name);
+                    while (n2) {
+                        if (n2->par_inode == a_addr) {
+                            strncpy(fs_name->name, n2->name, fs_name->name_size);
+                            tsk_fs_dir_add(fs_dir, fs_name);
+                        }
+                        n2 = n2->next;
                     }
-                    n2 = n2->next;
                 }
+                //free
+                tsk_fs_file_close(fs_file_orp);
             }
         }
         tsk_fs_name_free(fs_name);
@@ -1306,14 +1309,23 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
     return 0;
 }
 
-/*
- * this is a much faster way of doing it in NTFS
- *
- * the inode that is passed in this case is the one to find the name
- * for
+/* \ingroup fslib
+ * NTFS can map a meta address to its name much faster than in other file systems
+ * because each entry stores the address of its parent.
  *
  * This can not be called with dent_walk because the path
  * structure will get messed up!
+ *
+ * @param fs File system being analyzed
+ * @param inode_toid Address of file to find the name for.
+ * @param type_toid Attribute type to find the more specific name for (if you want more than just the base file name)
+ * @param type_used 1 if the type_toid value was passed a valid value.  0 otherwise.
+ * @param id_toid Attribute id to find the more specific name for (if you want more than just the base file name)
+ * @param id_used 1 if the id_toid value was passed a valid value. 0 otherwise.
+ * @param dir_walk_flags Flags to use during search
+ * @param action Callback that will be called for each name that uses the specified addresses.
+ * @param ptr Pointer that will be passed into action when it is called (so that you can pass in other data)
+ * @returns 1 on error, 0 on sucess
  */
 
 uint8_t

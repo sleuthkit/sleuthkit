@@ -178,7 +178,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
                 file_info("inode", fs_file->name->par_addr);
                 if(x) x->pop();
             }
-            if(t||a)
+            if((t||a) && !opt_body_file)
             {
                 file_info("parent_inode", fs_file->name->par_addr);
             }
@@ -216,7 +216,6 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
 
     /* Finally output the informaton */
     if(opt_body_file && (fs_file->meta != NULL)){
-#ifdef HAVE_TSK_FS_META_MAKE_LS
 	char ls[64];
 	tsk_fs_meta_make_ls(fs_file->meta,ls,sizeof(ls));
 	fprintf(t,"%s|%s|%"PRId64"|%s|%d|%d|%"PRId64"|%d|%d|%d|%d\n",
@@ -228,9 +227,6 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
 		(uint32_t)fs_file->meta->ctime,
 		(uint32_t)fs_file->meta->crtime);
 	return TSK_WALK_CONT;
-#else
-	err(1,"Cannot make body file without tsk_fs_meta_make_ls. Upgrade your sluthkit.");
-#endif
     }
 
     /* Available information in fs_file:

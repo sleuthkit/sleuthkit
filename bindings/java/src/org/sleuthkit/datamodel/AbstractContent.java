@@ -19,6 +19,8 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
@@ -29,20 +31,26 @@ import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 public abstract class AbstractContent implements Content {
 
 	public final static long UNKNOWN_ID = -1;
-	
 	private SleuthkitCase db;
 	private long objId;
 	private String name;
 	private Content parent;
 	private String uniquePath;
 	protected long parentId;
+	private volatile boolean hasChildren;
+	private volatile boolean checkedHasChildren;
+	private volatile int childrenCount;
 	
 
 	protected AbstractContent(SleuthkitCase db, long obj_id, String name) {
 		this.db = db;
 		this.objId = obj_id;
 		this.name = name;
-		this.parentId = -1;
+		this.parentId = UNKNOWN_ID;
+		
+		checkedHasChildren = false;
+		hasChildren = false;
+		childrenCount = -1;
 	}
 
 	@Override
@@ -69,6 +77,36 @@ public abstract class AbstractContent implements Content {
 			}
 		}
 		return uniquePath;
+	}
+	
+	@Override
+	public boolean hasChildren() throws TskCoreException {
+		if (checkedHasChildren == true) {
+			return hasChildren;
+		}
+		
+		hasChildren = this.getSleuthkitCase().getContentHasChildren(this);
+		checkedHasChildren = true;
+		
+		if (!hasChildren) {
+			childrenCount = 0;
+		}
+		
+		return hasChildren;
+	}
+	
+	@Override
+	public int getChildrenCount() throws TskCoreException {
+		if (childrenCount != -1) {
+			return childrenCount;
+		}
+		
+		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);	
+		
+		hasChildren = childrenCount > 0;
+		checkedHasChildren = true;
+		
+		return childrenCount;
 	}
 
 	@Override
@@ -194,5 +232,49 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public long getAllArtifactsCount() throws TskCoreException {
 		return db.getBlackboardArtifactsCount(objId);
+	}
+
+	@Override
+	public String toString() {
+		return toString(true);
+	}
+
+	public String toString(boolean preserveState){
+		if (preserveState) {
+			return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" 
+					+ "name " + name + "\t" + "parentId " + parentId + "\t" 
+					+ "\t" + "checkedHasChildren " + checkedHasChildren 
+					+ "\t" + "hasChildren " + hasChildren 
+					+ "\t" + "childrenCount " + childrenCount 
+					+ "uniquePath " + uniquePath + "]\t";
+		} else {
+			try {
+				if (getParent() != null) {
+					return "AbstractContent [\t" + "objId " + String.format("%010d", objId) 
+							+ "\t" + "name " + name 
+								+ "\t" + "checkedHasChildren " + checkedHasChildren 
+								+ "\t" + "hasChildren " + hasChildren 
+								+ "\t" + "childrenCount " + childrenCount 
+							+ "\t" + "getUniquePath " + getUniquePath() 
+							+ "\t" + "getParent " + getParent().getId() + "]\t";
+				} else {
+					return "AbstractContent [\t" + "objId " 
+							+ String.format("%010d", objId) + "\t" + "name " + name 
+								+ "\t" + "checkedHasChildren " + checkedHasChildren 
+								+ "\t" + "hasChildren " + hasChildren 
+								+ "\t" + "childrenCount " + childrenCount 
+							+ "\t" + "uniquePath " + getUniquePath() 
+							+ "\t" + "parentId " + parentId + "]\t";
+				}
+			} catch (TskCoreException ex) {
+				Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, "Could not find Parent", ex);
+				return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" 
+					+ "name " + name + "\t" + "parentId " + parentId + "\t" 
+					+ "\t" + "checkedHasChildren " + checkedHasChildren 
+					+ "\t" + "hasChildren " + hasChildren 
+					+ "\t" + "childrenCount " + childrenCount 
+					+ "uniquePath " + uniquePath + "]\t";
+			}
+		}
 	}
 }

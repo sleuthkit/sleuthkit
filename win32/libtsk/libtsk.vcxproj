@@ -166,6 +166,7 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     <ClCompile Include="..\..\tsk3\auto\db_sqlite.cpp" />
     <ClCompile Include="..\..\tsk3\auto\sqlite3.c" />
     <ClCompile Include="..\..\tsk3\base\md5c.c" />
+    <ClCompile Include="..\..\tsk3\base\crc.c" />
     <ClCompile Include="..\..\tsk3\base\mymalloc.c" />
     <ClCompile Include="..\..\tsk3\base\sha1c.c" />
     <ClCompile Include="..\..\tsk3\base\tsk_endian.c" />

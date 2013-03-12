@@ -222,6 +222,9 @@
     <ClCompile Include="..\..\tsk3\base\XGetopt.c">
       <Filter>base</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk3\base\crc.c">
+       <Filter>base</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tsk3\hashdb\encase_index.c">
       <Filter>hash</Filter>
     </ClCompile>

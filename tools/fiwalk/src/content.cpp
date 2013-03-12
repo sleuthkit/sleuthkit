@@ -306,7 +306,7 @@ void content::write_record()
 bool content::need_file_walk()
 {
   return opt_md5 || opt_sha1 || opt_save || do_plugin || opt_magic
-      || opt_get_fragments;
+      || opt_get_fragments || opt_body_file;
 //      || opt_compute_sector_hashes;
 }
 
@@ -330,26 +330,6 @@ void content::add_seg(int64_t img_offset,int64_t fs_offset,
  */
 void content::add_bytes(const u_char *buf,uint64_t file_offset,ssize_t size)
 {
-//    if(opt_compute_sector_hashes){
-//	/* process the sector hashes as necessary */
-//	const u_char *b = buf;
-//	ssize_t s = size;
-//
-//	while(s>0){
-//	    /* See how many bytes to copy */
-//	    ssize_t count = s;
-//	    ssize_t needed = sectorhash_size-h_sectorhash.hashed_bytes;
-//	    if (count > needed) count = needed;
-//	    h_sectorhash.update(b,needed);
-//	    if(h_sectorhash.hashed_bytes == sectorhash_size){
-//		/* Time to write the sector hash and reset the hash counter */
-//		sectorhashes.push_back(h_sectorhash.final().hexdigest());
-//		h_sectorhash.release();	
-//	    }
-//	    b += count;
-//	    s -= count;
-//	}
-//    }
     if(invalid==false){
 	if(opt_md5)   h_md5.update((unsigned char *)buf,size);
 	if(opt_sha1)  h_sha1.update((unsigned char *)buf,size);

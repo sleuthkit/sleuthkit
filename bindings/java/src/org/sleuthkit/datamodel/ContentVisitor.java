@@ -94,6 +94,14 @@ public interface ContentVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(VirtualDirectory ld);
+	
+	/**
+	 * Act on (visit) a DerivedFile content object
+	 *
+	 * @param df derived file to visit / act on
+	 * @return result of the visit
+	 */
+	T visit(DerivedFile df);
 
 	/**
 	 * The default content visitor - quickest method for implementing a custom
@@ -147,6 +155,11 @@ public interface ContentVisitor<T> {
 		@Override
 		public T visit(VirtualDirectory ld) {
 			return defaultVisit(ld);
+		}
+		
+		@Override
+		public T visit(DerivedFile df) {
+			return defaultVisit(df);
 		}
 	}
 }

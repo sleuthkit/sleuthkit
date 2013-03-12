@@ -308,6 +308,35 @@ tsk_fs_time_to_str(time_t time, char buf[128])
     return buf;
 }
 
+/** \ingroup fslib
+ * Converts a time value to a string representation. Prints
+ * all zero values instead of 1970 if time is 0.
+ * @param time Time to be displayed.
+ * @param buf Buffer to print into (must b 64 bytes or larger)
+ * @param subsecs Subseconds to be printed
+ * @returns Pointer to buffer that was passed in.
+ */
+char *
+tsk_fs_time_to_str_subsecs(time_t time, unsigned int subsecs, char buf[128])
+{
+    buf[0] = '\0';
+    if (time <= 0) {
+        strncpy(buf, "0000-00-00 00:00:00 (UTC)", 32);
+    }
+    else {
+        struct tm *tmTime = localtime(&time);
+        
+        snprintf(buf, 64, "%.4d-%.2d-%.2d %.2d:%.2d:%.2d.%.9d (%s)",
+                 (int) tmTime->tm_year + 1900,
+                 (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
+                 tmTime->tm_hour,
+                 (int) tmTime->tm_min, (int) tmTime->tm_sec,
+                 subsecs,
+                 tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
+    }
+    return buf;
+}
+
 
 static void
 tsk_fs_print_time(FILE * hFile, time_t time)

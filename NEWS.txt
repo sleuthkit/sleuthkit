@@ -4,7 +4,17 @@ Numbers refer to SourceForge.net tracker IDs:
 ---------------- VERSION 4.1.0 --------------
 Core:
 - Added YAFFS2 support (patch from viaForensics).
+- Added Ext4 support (patch from kfairbanks)
  
+---------------- VERSION Current --------------
+	
+	
+Java Bindings:
+- added DerivedFile datamodel support
+- added faster skip() and random seek support to ReadContentInputStream
+- refactored datamodel by pushing common methods up to AbstractFile
+- fixed minor memory leaks 
+- improved regression testing framework for java bindings datamodel
 
 ---------------- VERSION 4.0.2 --------------
 Core: 
