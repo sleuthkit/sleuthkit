@@ -41,7 +41,7 @@ void TskAuto::setCurVsPart(const TSK_VS_PART_INFO *partInfo) {
     if (partInfo->desc)
         m_curVsPartDescr = partInfo->desc;
     else
-        m_curvsPartDescr = "";
+        m_curVsPartDescr = "";
     m_curVsPartFlag = partInfo->flags;
 }
 
