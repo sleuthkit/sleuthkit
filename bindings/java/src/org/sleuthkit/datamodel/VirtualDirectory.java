@@ -62,7 +62,7 @@ public class VirtualDirectory extends AbstractFile {
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
-		throw new UnsupportedOperationException("Reading VirtualDirectory is not supported.");
+		return 0;
 	}
 
 
