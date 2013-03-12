@@ -421,10 +421,4 @@ tsk_error_reset()
     info->errstr[0] = 0;
     info->errstr2[0] = 0;
     info->errstr_print[0] = 0;
-
-#ifdef TSK_MULTITHREAD_LIB
-#ifdef TSK_WIN32
-    tsk_error_win32_thread_cleanup();
-#endif
-#endif
 }
