@@ -65,8 +65,7 @@ tsk_fs_meta_alloc(size_t a_buf_len)
  * block pointers. 
  *
  * @param fs_meta Structure to resize
- * @param direct_count Number of direct block address pointers to include in structure
- * @param indir_count Number of indirect block address pointers to include in structure
+ * @param a_buf_len Size of file system specific data that is used to store references to file content
  * @return NULL on error 
  */
 TSK_FS_META *
