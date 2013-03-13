@@ -714,6 +714,7 @@ int
             }
         }
     }
+    name[j++] = '\0';
 
 
     // clean up path
@@ -738,7 +739,7 @@ int
             escaped_path[k++] = path[i];
         }
     }
-
+    escaped_path[k++] = '\0';
 
     char md5Text[48] = "NULL";
 
