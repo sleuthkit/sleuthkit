@@ -2467,6 +2467,26 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         }
     }
 
+    /* We have seen this case on an image that seemed to be only 
+     * setting blk_siz_l instead of both blk_sz_m and _l. We should
+     * support both in the future, but this prevents a crash later
+     * on when we divide by block_size. */
+    if (fs->block_size == 0) {
+        fs->tag = 0;
+        iso9660_close(fs);
+        if (tsk_verbose)
+            fprintf(stderr,
+                "iso9660_open: Block size is 0\n");
+        if (test)
+            return NULL;
+        else {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+            tsk_error_set_errstr("Block size is 0");
+            return NULL;
+        }
+    }
+
     fs->first_block = 0;
     fs->last_block = fs->last_block_act = fs->block_count - 1;
 
