@@ -77,6 +77,13 @@ public class Image extends AbstractContent {
 	}
 
 	@Override
+	public void close() {
+		//frees nothing, as we are caching image handles
+	}
+
+	
+	
+	@Override
 	public void finalize() throws Throwable {
 		try {
 			if (imageHandle != 0) {
