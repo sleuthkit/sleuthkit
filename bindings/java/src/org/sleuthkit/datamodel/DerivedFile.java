@@ -63,7 +63,7 @@ public class DerivedFile extends AbstractFile {
 	 * @param size size of the file
 	 * @param ctime
 	 * @param crtime
-	 * @param atime 
+	 * @param atime
 	 * @param mtime
 	 * @param md5Hash
 	 * @param knownState
@@ -73,7 +73,7 @@ public class DerivedFile extends AbstractFile {
 	 */
 	protected DerivedFile(SleuthkitCase db, long objId, String name,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag,
-			short metaFlags, long size, 
+			short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash,
 			FileKnown knownState, String parentPath, String localPath) {
@@ -103,7 +103,7 @@ public class DerivedFile extends AbstractFile {
 	 * @param size size of the file
 	 * @param ctime
 	 * @param crtime
-	 * @param atime 
+	 * @param atime
 	 * @param mtime
 	 * @param md5Hash
 	 * @param knownState
@@ -112,7 +112,7 @@ public class DerivedFile extends AbstractFile {
 	 * @param localPath local path of this derived file, relative to the db path
 	 * @param parentId parent id of this derived file to set if available
 	 */
-	protected DerivedFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, 
+	protected DerivedFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
 		this(db, objId, name, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
@@ -220,6 +220,22 @@ public class DerivedFile extends AbstractFile {
 	}
 
 	@Override
+	public void close() {
+		if (fileHandle != null) {
+			synchronized (this) {
+				if (fileHandle != null) {
+					try {
+						fileHandle.close();
+					} catch (IOException ex) {
+						logger.log(Level.SEVERE, "Could not close file handle for file: " + this.toString(), ex);
+					}
+					fileHandle = null;
+				}
+			}
+		}
+	}
+
+	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		if (isDir()) {
 			return 0;
@@ -237,13 +253,15 @@ public class DerivedFile extends AbstractFile {
 
 		if (fileHandle == null) {
 			synchronized (this) {
-				try {
-					fileHandle = new RandomAccessFile(localFile, "r");
-				} catch (FileNotFoundException ex) {
-					final String msg = "Error reading derived file: " + this.toString();
-					logger.log(Level.SEVERE, msg, ex);
-					//TODO decide if to swallow exception in this case, file could have been deleted or moved
-					throw new TskCoreException(msg, ex);
+				if (fileHandle == null) {
+					try {
+						fileHandle = new RandomAccessFile(localFile, "r");
+					} catch (FileNotFoundException ex) {
+						final String msg = "Error reading derived file: " + this.toString();
+						logger.log(Level.SEVERE, msg, ex);
+						//TODO decide if to swallow exception in this case, file could have been deleted or moved
+						throw new TskCoreException(msg, ex);
+					}
 				}
 			}
 		}
@@ -293,10 +311,7 @@ public class DerivedFile extends AbstractFile {
 	@Override
 	protected void finalize() throws Throwable {
 		try {
-			if (fileHandle != null) {
-				fileHandle.close();
-				fileHandle = null;
-			}
+			close();
 		} finally {
 			super.finalize(); //To change body of generated methods, choose Tools | Templates.
 		}
