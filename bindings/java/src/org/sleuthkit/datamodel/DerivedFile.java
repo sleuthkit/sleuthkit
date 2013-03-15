@@ -227,7 +227,7 @@ public class DerivedFile extends AbstractFile {
 					try {
 						fileHandle.close();
 					} catch (IOException ex) {
-						logger.log(Level.SEVERE, "Could not close file handle. ", ex);
+						logger.log(Level.SEVERE, "Could not close file handle for file: " + this.toString(), ex);
 					}
 					fileHandle = null;
 				}
