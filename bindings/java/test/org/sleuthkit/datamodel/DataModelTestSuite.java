@@ -18,10 +18,15 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.FileFilter;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -47,9 +52,10 @@ public class DataModelTestSuite {
 	static final String RSLT = "rslt";
 	static final String SEQ = "_Seq";
 	static final String TD = "_TD";
-	static final String LVS = "_Leaves";
-	static final String EX = "_Exceptions";
+	static final String LVS = "_Lvs";
+	static final String EX = "_Exc";
 	static final String TST = "types";
+	static final String CPP = "CPP";
 	static final int READ_BUFFER_SIZE = 8192;
 	static final String HASH_ALGORITHM = "MD5";
 	private static final Logger logg = Logger.getLogger(DataModelTestSuite.class.getName());
@@ -94,9 +100,10 @@ public class DataModelTestSuite {
 	public static void createStandard(String standardPath, String tempDirPath, List<String> imagePaths, ImgTraverser type) {
 		java.io.File standardFile = new java.io.File(standardPath);
 		String exFile = standardFile.getAbsolutePath().replace(".txt", EX + ".txt");
+		List<Exception> inp = new ArrayList<Exception>();
 		try {
 			String firstImageFile = getImgName(imagePaths.get(0));
-			String dbPath = buildPath(tempDirPath, firstImageFile, type.getClass().getSimpleName(), ".db");
+			String dbPath = buildPath(tempDirPath, firstImageFile, type.testName, ".db");
 			java.io.File dbFile = new java.io.File(dbPath);
 			standardFile.createNewFile();
 			dbFile.delete();
@@ -108,17 +115,20 @@ public class DataModelTestSuite {
 			try {
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
 			} catch (TskDataException ex) {
-				writeExceptions(standardFile.getAbsolutePath(), ex);
+				inp.add(ex);
 			}
+			writeExceptions(standardFile.getAbsolutePath(), inp);
 			process.commit();
-			FileWriter standardWriter = type.traverse(sk, standardFile.getAbsolutePath());
+			OutputStreamWriter standardWriter = type.traverse(sk, standardFile.getAbsolutePath());
 			standardWriter.flush();
 			runSort(standardFile.getAbsolutePath());
 		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Couldn't create Standard", ex);
 			throw new RuntimeException(ex);
 		} catch (TskCoreException ex) {
-			writeExceptions(standardFile.getAbsolutePath(), ex);
+			List<Exception> inp1 = new ArrayList<Exception>();
+			inp1.add(ex);
+			writeExceptions(standardFile.getAbsolutePath(), inp1);
 		}
 	}
 
@@ -156,7 +166,7 @@ public class DataModelTestSuite {
 	 */
 	static String standardPath(List<String> imagePaths, String type) {
 		String firstImage = getImgName(imagePaths.get(0));
-		String standardPath = goldStandardPath() + java.io.File.separator + firstImage + "_" + type + ".txt";
+		String standardPath = goldStandardPath() + java.io.File.separator + firstImage + type + ".txt";
 		return standardPath;
 	}
 
@@ -248,7 +258,7 @@ public class DataModelTestSuite {
 	 * @return the path for an output file
 	 */
 	public static String buildPath(String path, String name, String type, String Ext) {
-		return path + java.io.File.separator + name + "_" + type + Ext;
+		return path + java.io.File.separator + name + type + Ext;
 	}
 
 	/**
@@ -308,11 +318,11 @@ public class DataModelTestSuite {
 	 * @param filename the path of the file that exceptions are being stored for
 	 * @param ex the exception to be written
 	 */
-	protected static void writeExceptions(String filename, Exception ex) {
+	protected static void writeExceptions(String filename, List<Exception> ex) {
 		filename = filename.replace(".txt", EX + ".txt");
-		FileWriter exWriter;
+		OutputStreamWriter exWriter;
 		try {
-			exWriter = new FileWriter(filename, true);
+			exWriter = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(filename), 8192), Charset.forName("UTF-8"));
 			exWriter.append(ex.toString());
 			exWriter.flush();
 			exWriter.close();
@@ -356,7 +366,9 @@ public class DataModelTestSuite {
 		} catch (IOException ex){
 			logg.log(Level.SEVERE, "Failed to generate Hash", ex);
 		} catch (TskCoreException ex) {
-			writeExceptions(StrgFile, ex);
+			List<Exception> inp = new ArrayList<Exception>();
+			inp.add(ex);
+			writeExceptions(StrgFile, inp);
 		}
 	}
 
@@ -440,11 +452,11 @@ public class DataModelTestSuite {
 		List<List<String>> imagePaths = DataModelTestSuite.getImagePaths();
 		for (List<String> paths : imagePaths) {
 			for (ImgTraverser tstrn : tests) {
-				String standardPath = DataModelTestSuite.standardPath(paths, tstrn.getClass().getSimpleName());
-				System.out.println("Creating " + tstrn.getClass().getSimpleName() + " standard for: " + paths.get(0));
+				String standardPath = DataModelTestSuite.standardPath(paths, tstrn.testName);
+				System.out.println("Creating " + tstrn.testName + " standard for: " + paths.get(0));
 				DataModelTestSuite.createStandard(standardPath, tempDirPath, paths, tstrn);
 			}
-			String standardPathCPP = DataModelTestSuite.standardPath(paths, CPPtoJavaCompare.class.getSimpleName());
+			String standardPathCPP = DataModelTestSuite.standardPath(paths, CPP);
 			DataModelTestSuite.getTSKData(standardPathCPP, paths);
 		}
 	}
@@ -460,8 +472,8 @@ public class DataModelTestSuite {
 		try {
 			java.io.File fi1 = new java.io.File(original);
 			java.io.File fi2 = new java.io.File(results);
-			FileReader f1 = new FileReader(new java.io.File(original).getAbsolutePath());
-			FileReader f2 = new FileReader(new java.io.File(results).getAbsolutePath());
+			BufferedReader f1 = new BufferedReader(new FileReader(new java.io.File(original).getAbsolutePath()), 8192*4);
+			BufferedReader f2 = new BufferedReader(new FileReader(new java.io.File(results).getAbsolutePath()), 8192*4);
 			Scanner in1 = new Scanner(f1);
 			Scanner in2 = new Scanner(f2);
 			while (in1.hasNextLine() || in2.hasNextLine()) {

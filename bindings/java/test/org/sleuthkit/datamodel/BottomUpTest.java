@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -82,7 +80,9 @@ public class BottomUpTest {
 			try {
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
 			} catch (TskDataException ex) {
-				DataModelTestSuite.writeExceptions(exFile, ex);
+				List<Exception> inp = new ArrayList<Exception>();
+				inp.add(ex);
+				DataModelTestSuite.writeExceptions(exFile, inp);
 			}
 			process.commit();
 			java.io.File lvs = new java.io.File(dbFile.getAbsolutePath() + java.io.File.separator + title);
@@ -102,9 +102,13 @@ public class BottomUpTest {
 			System.out.println(ex.toString());
 			fail("Failed to run BottomUp test");
 		} catch (TskCoreException ex) {
-			DataModelTestSuite.writeExceptions(exFile, ex);
+			List<Exception> inp = new ArrayList<Exception>();
+			inp.add(ex);
+			DataModelTestSuite.writeExceptions(exFile, inp);
 		} catch (FileNotFoundException ex) {
-			DataModelTestSuite.writeExceptions(exFile, ex);
+			List<Exception> inp = new ArrayList<Exception>();
+			inp.add(ex);
+			DataModelTestSuite.writeExceptions(exFile, inp);
 		}
 	}
 }

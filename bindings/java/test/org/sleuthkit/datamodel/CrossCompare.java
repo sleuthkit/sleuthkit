@@ -56,7 +56,7 @@ public class CrossCompare {
 		Collection<Object[]> data = new ArrayList<Object[]>();
 
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
-			data.add(new Object[]{imagePaths, SequentialTraversal.class.getSimpleName(), TopDownTraversal.class.getSimpleName()});
+			data.add(new Object[]{imagePaths, DataModelTestSuite.SEQ, DataModelTestSuite.TD});
 		}
 		return data;
 	}
