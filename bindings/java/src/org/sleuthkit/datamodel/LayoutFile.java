@@ -105,6 +105,12 @@ public class LayoutFile extends AbstractFile{
         }
         return calcSize;
     }
+
+	@Override
+	public void close() {
+		//nothing to be closed
+	}
+	
 	
 
 	@Override
