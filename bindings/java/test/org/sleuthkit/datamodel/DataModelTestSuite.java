@@ -55,7 +55,7 @@ public class DataModelTestSuite {
 	static final String LVS = "_Lvs";
 	static final String EX = "_Exc";
 	static final String TST = "types";
-	static final String CPP = "CPP";
+	static final String CPP = "_CPP";
 	static final int READ_BUFFER_SIZE = 8192;
 	static final String HASH_ALGORITHM = "MD5";
 	private static final Logger logg = Logger.getLogger(DataModelTestSuite.class.getName());
