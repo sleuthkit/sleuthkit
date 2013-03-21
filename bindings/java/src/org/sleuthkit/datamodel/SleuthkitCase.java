@@ -3951,7 +3951,7 @@ public class SleuthkitCase {
 		try {
 			s = con.createStatement();
 			rs = s.executeQuery("SELECT * FROM tsk_files WHERE "
-				+ " md5 = " + md5Hash + " "
+				+ " md5 = '" + md5Hash + "' "
 					+ "AND size > 0");
 			return resultSetToAbstractFiles(rs);
 
