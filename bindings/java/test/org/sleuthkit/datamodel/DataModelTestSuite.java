@@ -52,7 +52,7 @@ public class DataModelTestSuite {
 	static final String RSLT = "rslt";
 	static final String SEQ = "_Seq";
 	static final String TD = "_TD";
-	static final String LVS = "_Lvs";
+	static final String BttmUp = "_BU";
 	static final String EX = "_Exc";
 	static final String TST = "types";
 	static final String CPP = "_CPP";
@@ -181,7 +181,7 @@ public class DataModelTestSuite {
 		FileFilter imageResFilter = new FileFilter() {
 			@Override
 			public boolean accept(java.io.File f) {
-				return f.getName().contains(filt) & !f.getName().contains(LVS) & !f.getName().contains("Sorted");
+				return f.getName().contains(filt) & !f.getName().contains(BttmUp) & !f.getName().contains("Sorted");
 			}
 		};
 		java.io.File pth = new java.io.File(path);

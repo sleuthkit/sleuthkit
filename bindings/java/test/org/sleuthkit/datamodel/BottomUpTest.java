@@ -75,7 +75,7 @@ public class BottomUpTest {
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
-			title = title + DataModelTestSuite.LVS + ".txt";
+			title = title + DataModelTestSuite.BttmUp + ".txt";
 			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
 			try {
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
