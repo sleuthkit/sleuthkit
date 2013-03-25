@@ -104,7 +104,7 @@ public class TopDownTraversal extends ImgTraverser {
 		try {
 			Charset chr = Charset.forName("UTF-8");
 			OutputStreamWriter reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path),8192*4), chr);
-			OutputStreamWriter levs = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path.replace(this.testName + ".txt", DataModelTestSuite.LVS + ".txt")), 8192*4),chr);
+			OutputStreamWriter levs = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path.replace(this.testName + ".txt", DataModelTestSuite.BTTMUP + ".txt")), 8192*4),chr);
 			List<Exception> inp = topDownDF(lc, lp, reslt, levs);
 			levs.flush();
 			DataModelTestSuite.writeExceptions(path, inp);

@@ -70,8 +70,8 @@ public class CrossCompare {
 		try {
 			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
 			java.io.File testFolder = new java.io.File(DataModelTestSuite.getRsltPath());
-			java.io.File testStandard1 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, Seq, "_sorted.txt"));
-			java.io.File testStandard2 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, TD, "_sorted.txt"));
+			java.io.File testStandard1 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, Seq, "_SRT.txt"));
+			java.io.File testStandard2 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, TD, "_SRT.txt"));
 			String testStandardPath1 = testStandard1.getPath();
 			String testStandardPath2 = testStandard2.getPath();
 			assertEquals("Generated results (" + testStandardPath1 + ") differ with gold standard (" + testStandardPath2 + ") .", DataModelTestSuite.comparecontent(testStandardPath1, testStandardPath2), true);
