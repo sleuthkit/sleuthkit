@@ -18,8 +18,11 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.FileWriter;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -40,6 +43,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 	private static final Logger logg = Logger.getLogger(CPPtoJavaCompare.class.getName());
 
 	public CPPtoJavaCompare(List<String> imagePaths) {
+		testName = DataModelTestSuite.CPP;
 		this.imagePaths = imagePaths;
 	}
 
@@ -95,15 +99,17 @@ public class CPPtoJavaCompare extends ImgTraverser {
 	 * @return the file writer to be closed by testStandard
 	 */
 	@Override
-	public FileWriter traverse(SleuthkitCase sk, String path) {
-		FileWriter reslt;
+	public OutputStreamWriter traverse(SleuthkitCase sk, String path) {
+		OutputStreamWriter reslt;
 		try {
-			reslt = new FileWriter(path);
+			reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path), 8192*4), Charset.forName("UTF-8"));
 			try {
 				tskTraverse(sk.getRootObjects(), reslt);
 				return reslt;
 			} catch (TskCoreException ex) {
-				DataModelTestSuite.writeExceptions(testStandardPath, ex);
+				List<Exception> inp = new ArrayList<Exception>();
+				inp.add(ex);
+				DataModelTestSuite.writeExceptions(testStandardPath, inp);
 			}
 		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Failed to Traverse", ex);
@@ -131,7 +137,9 @@ public class CPPtoJavaCompare extends ImgTraverser {
 				}
 				tskTraverse(c.getChildren(), reslt);
 			} catch (TskCoreException ex) {
-				DataModelTestSuite.writeExceptions(testStandardPath, ex);
+				List<Exception> inp = new ArrayList<Exception>();
+				inp.add(ex);
+				DataModelTestSuite.writeExceptions(testStandardPath, inp);
 			}
 		}
 	}
