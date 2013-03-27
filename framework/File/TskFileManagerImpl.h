@@ -45,11 +45,9 @@ public:
 
     // Save the given file to disk.
     virtual void saveFile(TskFile* fileToSave);
-    virtual void saveFile(const uint64_t fileId);
 
     // Copy the given file to the specified fully qualified file name
     virtual void copyFile(TskFile* fileToSave, const std::wstring& filePath);
-    virtual void copyFile(const uint64_t fileId, const std::wstring& filePath);
 
 	// Copy the contents of a directory to the specified path.
 	virtual void copyDirectory(TskFile* directoryToCopy, const std::wstring& destinationPath, const bool bRecurse = false);
@@ -61,7 +59,6 @@ public:
 
     // Delete the file from disk.
     virtual void deleteFile(TskFile* fileToDelete);
-    virtual void deleteFile(const uint64_t fileId);
 
 private:
     // Private constructors and assignment operator to prevent direct

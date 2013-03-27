@@ -15,9 +15,10 @@
 
 #include <sstream>
 
-// Framework includes
+// TSK Framework includes
 #include "TskFileManagerImpl.h"
 #include "TskFileTsk.h"
+#include "Services/TskImgDB.h"
 #include "Services/TskSystemProperties.h"
 #include "Services/TskServices.h"
 #include "Utilities/TskException.h"
@@ -29,6 +30,10 @@
 #include "Poco/FileStream.h"
 #include "Poco/StreamCopier.h"
 #include "Poco/NumberFormatter.h"
+
+// C/C++ standard library includes
+#include <cassert>
+#include <sstream>
 
 TskFileManagerImpl * TskFileManagerImpl::m_pInstance = NULL;
 
@@ -47,10 +52,6 @@ TskFileManagerImpl& TskFileManagerImpl::instance()
     return *m_pInstance;
 }
 
-/**
- * Open a reference to our files folder, creating it if it does not
- * exist.
- */
 void TskFileManagerImpl::initialize()
 {
     try
@@ -78,7 +79,6 @@ void TskFileManagerImpl::initialize()
     }
 }
 
-
 TskFile * TskFileManagerImpl::getFile(const uint64_t fileId)
 {
     /* If we were to ever have different subclasses of TskFile
@@ -87,7 +87,6 @@ TskFile * TskFileManagerImpl::getFile(const uint64_t fileId)
      */
     return new TskFileTsk(fileId);
 }
-
 
 std::wstring TskFileManagerImpl::getPath(const uint64_t fileId)
 {
@@ -113,6 +112,26 @@ std::wstring TskFileManagerImpl::getPath(const uint64_t fileId)
     return path;
 }
 
+void TskFileManagerImpl::saveFile(TskFile* fileToSave)
+{
+    TskImgDB::FILE_TYPES fileType = fileToSave->getTypeId(); 
+    if ((fileType != TskImgDB::IMGDB_FILES_TYPE_CARVED) && (fileType != TskImgDB::IMGDB_FILES_TYPE_DERIVED)) 
+    {
+        copyFile(fileToSave, getPath(fileToSave->getId()));
+    }
+    else
+    {
+        // Carved and derived files should already have been saved to storage by a call to addFile().
+        Poco::File file(Poco::Path(TskUtilities::toUTF8(getPath(fileToSave->getId()))));
+        assert(file.exists());
+        if(!file.exists())
+        {
+            std::ostringstream msg;
+            msg << "TskFileManagerImpl::saveFile : " << (fileType == TskImgDB::IMGDB_FILES_TYPE_CARVED ? "carved file" : "derived file") << " with file id = " << fileToSave->getId() << " does not exist in storage"; 
+            throw TskException(msg.str());
+        }
+    }
+}
 
 void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& filePath)
 {
@@ -201,7 +220,7 @@ void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& fileP
         // Rethrow the exception up to our caller
         throw tskEx;
     }
-    catch (Poco::PathNotFoundException& ex)
+    catch (Poco::PathNotFoundException&)
     {
         throw TskException("Path not found : " + fileToSave->getPath());
     }
@@ -286,27 +305,6 @@ void TskFileManagerImpl::copyDirectory(TskFile* directoryToCopy, const std::wstr
     }
 }
 
-void TskFileManagerImpl::saveFile(TskFile* fileToSave)
-{
-    // Determine what the path should be based on TskFile.id()
-    // and call copyFile(fileToSave, path)
-	// Note that all saveFile() methods ultimately resolve
-	// to a call to copyFile().
-    copyFile(fileToSave, getPath(fileToSave->getId()));
-}
-
-void TskFileManagerImpl::saveFile(const uint64_t fileId)
-{
-    // Use the default implementation in our parent class
-    TskFileManager::saveFile(fileId);
-}
-
-void TskFileManagerImpl::copyFile(const uint64_t fileId, const std::wstring& filePath)
-{
-    // Use the default implementation in our parent class
-    TskFileManager::copyFile(fileId, filePath);
-}
-
 void TskFileManagerImpl::addFile(const uint64_t fileId, std::istream& istr)
 {
     // If a file with this id already exists we raise an error
@@ -382,10 +380,4 @@ void TskFileManagerImpl::deleteFile(TskFile* fileToDelete)
 
         throw TskFileException("Failed to delete file.");
     }
-}
-
-void TskFileManagerImpl::deleteFile(const uint64_t fileId)
-{
-    // Use the default implementation in our parent class
-    TskFileManager::deleteFile(fileId);
 }
