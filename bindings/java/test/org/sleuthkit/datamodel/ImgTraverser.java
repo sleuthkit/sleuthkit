@@ -18,7 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.FileWriter;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +33,7 @@ public abstract class ImgTraverser{
 	protected String testStandardPath;
 	protected String oldStandardPath;
 	protected String oldExceptionsPath;
+	protected String testName;
 
 	/**
 	 * sets up the variables for a basic test, method can be called for any
@@ -43,10 +44,10 @@ public abstract class ImgTraverser{
 	public List<Boolean> basicTest() {
 		String title = DataModelTestSuite.getImgName(imagePaths.get(0));
 		java.io.File testFolder = new java.io.File(DataModelTestSuite.getRsltPath());
-		java.io.File testStandard = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, this.getClass().getSimpleName(), ".txt"));
+		java.io.File testStandard = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, this.testName, ".txt"));
 		testStandardPath = testStandard.getPath();
 		exFile = testStandardPath.replace(".txt", DataModelTestSuite.EX + ".txt");
-		oldStandardPath = DataModelTestSuite.standardPath(imagePaths, this.getClass().getSimpleName());
+		oldStandardPath = DataModelTestSuite.standardPath(imagePaths, this.testName);
 		DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, this);
 		oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX + ".txt");
 		List<Boolean> ret = new ArrayList<Boolean>(2);
@@ -54,5 +55,5 @@ public abstract class ImgTraverser{
 		ret.add(DataModelTestSuite.comparecontent(oldStandardPath, testStandardPath));
 		return ret;
 	}
-	abstract public FileWriter traverse(SleuthkitCase sk, String path);
+	abstract public OutputStreamWriter traverse(SleuthkitCase sk, String path);
 }
