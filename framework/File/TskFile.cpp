@@ -364,7 +364,8 @@ vector<TskBlackboardArtifact> TskFile::getAllArtifacts()
 }
 
 /**
- * Get all artifacts associated with this file with the given type name
+ * @deprecated
+ * Get all attributes associated with this file with the given type name
  * @param attributeTypeName type name
  * @returns all matching attributes will return an empty vector if there are no matches
  */
@@ -376,7 +377,8 @@ vector<TskBlackboardAttribute> TskFile::getAttributes(string attributeTypeName)
 }
 
 /**
- * Get all artifacts associated with this file with the given type id
+ * @deprecated
+ * Get all attributes associated with this file with the given type id
  * @param attributeTypeID type id
  * @returns all matching attributes will return an empty vector if there are no matches
  */
@@ -388,8 +390,9 @@ vector<TskBlackboardAttribute> TskFile::getAttributes(int attributeTypeID)
 }
 
 /**
- * Get all artifacts associated with this file with the given type
- * @param type artifact type
+ * @deprecated
+ * Get all attributes associated with this file with the given type
+ * @param type attributes type
  * @returns all matching attributes will return an empty vector if there are no matches
  */
 vector<TskBlackboardAttribute> TskFile::getAttributes(TSK_ATTRIBUTE_TYPE type)
@@ -400,8 +403,9 @@ vector<TskBlackboardAttribute> TskFile::getAttributes(TSK_ATTRIBUTE_TYPE type)
 }
 
 /**
- * Get all artifacts associated with this file
- * @returns all artifacts
+ * @deprecated
+ * Get all attributes associated with this file
+ * @returns all attributes
  */
 vector<TskBlackboardAttribute> TskFile::getAllAttributes()
 {
