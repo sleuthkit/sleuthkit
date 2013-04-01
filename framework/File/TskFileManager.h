@@ -25,6 +25,11 @@
 class TSK_FRAMEWORK_API TskFileManager
 {
 public:
+    typedef std::unique_ptr<TskFile> FilePtr;
+    typedef std::vector< FilePtr >   FilePtrList;
+    
+    virtual FilePtrList findFilesByName(const std::string& name) = 0;
+
     /**
      * Return a TskFile object for a given file ID.
      * @param fileId ID of file to return object of.

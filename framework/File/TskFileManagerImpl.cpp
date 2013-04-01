@@ -13,8 +13,6 @@
  * Default implementation of the TskFileManager class.
  */
 
-#include <sstream>
-
 // TSK Framework includes
 #include "TskFileManagerImpl.h"
 #include "TskFileTsk.h"
@@ -34,6 +32,7 @@
 // C/C++ standard library includes
 #include <cassert>
 #include <sstream>
+#include <memory>
 
 TskFileManagerImpl * TskFileManagerImpl::m_pInstance = NULL;
 
@@ -77,6 +76,25 @@ void TskFileManagerImpl::initialize()
         // Throw a framework specific exception
         throw TskFileException(ex.message());
     }
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByName(const std::string& name)
+{
+    TskFileManager::FilePtrList ret;
+	std::stringstream condition;
+    condition << "WHERE files.dir_type = 5 AND UPPER(files.name) = '"
+              << name << "'";
+	// Get the file ids matching our condition
+	TskImgDB& imgDB = TskServices::Instance().getImgDB();
+	std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+
+    ///todo reuse 
+	for (std::vector<uint64_t>::iterator it = fileIds.begin(); it != fileIds.end(); ++it)
+	{
+        ret.push_back(TskFileManager::FilePtr(getFile(*it)));
+    }
+
+    return ret;
 }
 
 TskFile * TskFileManagerImpl::getFile(const uint64_t fileId)

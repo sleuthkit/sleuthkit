@@ -37,6 +37,8 @@ public:
     // The TskFileManagerImpl is implemented as a singleton
     static TskFileManagerImpl& instance();
 
+    virtual TskFileManager::FilePtrList findFilesByName(const std::string& name);
+
     // Return a File object for the given file id.
     virtual TskFile* getFile(const uint64_t fileId);
 
