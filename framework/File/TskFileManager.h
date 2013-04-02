@@ -28,13 +28,6 @@ public:
     typedef std::unique_ptr<TskFile> FilePtr;
     typedef std::vector< FilePtr >   FilePtrList;
     
-    virtual FilePtrList findFilesByName(const std::string& name, const TSK_FS_META_TYPE_ENUM fsFileType = TSK_FS_META_TYPE_UNDEF) = 0;
-    virtual FilePtrList findFilesByExtension(const std::vector<std::string>& extensions) = 0;
-    virtual FilePtrList findFilesByParent(const uint64_t parentFileId) = 0;
-    virtual FilePtrList findFilesByFsFileType(TSK_FS_META_TYPE_ENUM fsFileType) = 0;
-    //virtual FilePtrList findFilesByPattern(const std::string& namePattern, const std::string& pathPattern) = 0;
-    virtual FilePtrList getFiles(const std::vector<uint64_t>& fileIds) = 0;
-
     /**
      * Return a TskFile object for a given file ID.
      * @param fileId ID of file to return object of.
@@ -42,6 +35,42 @@ public:
      * @throws TskException in case of error.
      */
     virtual TskFile * getFile(const uint64_t fileId) = 0;
+
+    /**
+     * Return a list of TskFile objects mapped to the given list of file ids.
+     * @param fileIds List of fileId IDs.
+     * @returns List of pointers to file objects.
+     */
+    virtual FilePtrList getFiles(const std::vector<uint64_t>& fileIds) = 0;
+
+    /**
+     * Return a list of TskFile objects matching the given filename
+     * @param name The file name.
+     * @param fsFileType Optional file meta type. Will not filter on meta_type if this is omitted.
+     * @returns List of pointers to file objects.
+     */
+    virtual FilePtrList findFilesByName(const std::string& name, const TSK_FS_META_TYPE_ENUM fsFileType = TSK_FS_META_TYPE_UNDEF) = 0;
+    
+    /**
+     * Return a list of TskFile objects matching the given filename extension
+     * @param extensions List of file name extension strings.
+     * @returns List of pointers to file objects.
+     */
+    virtual FilePtrList findFilesByExtension(const std::vector<std::string>& extensions) = 0;
+    
+    /**
+     * Return a list of TskFile objects that are children of the given file id.
+     * @param parentFileId ID of parent file.
+     * @returns List of pointers to file objects.
+     */
+    virtual FilePtrList findFilesByParent(const uint64_t parentFileId) = 0;
+    
+    /**
+     * Return a list of TskFile objects that match the given file meta type.
+     * @param fsFileType File meta type.
+     * @returns List of pointers to file objects.
+     */
+    virtual FilePtrList findFilesByFsFileType(TSK_FS_META_TYPE_ENUM fsFileType) = 0;
 
     /** 
      * Return the fully qualified path to where the local instance of the file with the given ID

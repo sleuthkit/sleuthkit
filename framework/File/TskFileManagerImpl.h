@@ -37,15 +37,26 @@ public:
     // The TskFileManagerImpl is implemented as a singleton
     static TskFileManagerImpl& instance();
 
-    virtual TskFileManager::FilePtrList findFilesByName(const std::string& name, const TSK_FS_META_TYPE_ENUM fsFileType = TSK_FS_META_TYPE_UNDEF);
-    virtual TskFileManager::FilePtrList findFilesByExtension(const std::vector<std::string>& extensions);
-    virtual TskFileManager::FilePtrList findFilesByParent(const uint64_t parentFileId);
-    virtual TskFileManager::FilePtrList findFilesByFsFileType(TSK_FS_META_TYPE_ENUM fsFileType);
-    //virtual TskFileManager::FilePtrList findFilesByPattern(const std::string& namePattern, const std::string& pathPattern);
-    virtual TskFileManager::FilePtrList getFiles(const std::vector<uint64_t>& fileIds);
-
     // Return a File object for the given file id.
     virtual TskFile* getFile(const uint64_t fileId);
+
+    // Return a list of File objects mapped to the given list of file ids.
+    virtual TskFileManager::FilePtrList getFiles(const std::vector<uint64_t>& fileIds);
+
+    // Return a list of File objects matching the given filename
+    virtual TskFileManager::FilePtrList findFilesByName(const std::string& name, const TSK_FS_META_TYPE_ENUM fsFileType = TSK_FS_META_TYPE_UNDEF);
+    
+    // Return a list of File objects matching the given filename extension
+    virtual TskFileManager::FilePtrList findFilesByExtension(const std::vector<std::string>& extensions);
+    
+    // Return a list of File objects that are children of the given file id
+    virtual TskFileManager::FilePtrList findFilesByParent(const uint64_t parentFileId);
+    
+    // Return a list of File objects that match the given file meta type
+    virtual TskFileManager::FilePtrList findFilesByFsFileType(TSK_FS_META_TYPE_ENUM fsFileType);
+    
+    // Return a list of File objects 
+    //virtual TskFileManager::FilePtrList findFilesByPattern(const std::string& namePattern, const std::string& pathPattern);
 
     // Return the path including the file name for the given file id.
     virtual std::wstring getPath(const uint64_t fileId);

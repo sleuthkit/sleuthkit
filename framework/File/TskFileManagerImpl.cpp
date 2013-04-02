@@ -78,6 +78,26 @@ void TskFileManagerImpl::initialize()
     }
 }
 
+TskFile * TskFileManagerImpl::getFile(const uint64_t fileId)
+{
+    /* If we were to ever have different subclasses of TskFile
+     * that differentiate file types, this is where the logic
+     * should go to create the correct version. 
+     */
+    return new TskFileTsk(fileId);
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::getFiles(const std::vector<uint64_t>& fileIds)
+{
+	TskFileManager::FilePtrList ret;
+    for (std::vector<uint64_t>::const_iterator it = fileIds.begin(); it != fileIds.end(); ++it)
+    {
+        ret.push_back(TskFileManager::FilePtr(getFile(*it)));
+    }
+
+	return ret;
+}
+
 TskFileManager::FilePtrList TskFileManagerImpl::findFilesByName(const std::string& name, const TSK_FS_META_TYPE_ENUM fsFileType /*= TSK_FS_META_TYPE_UNDEF*/)
 {
     // Construct SQL condition
@@ -150,27 +170,6 @@ TskFileManager::FilePtrList TskFileManagerImpl::findFilesByFsFileType(TSK_FS_MET
 //	TskFileManager::FilePtrList ret;
 //	return ret;
 //}
-
-
-TskFileManager::FilePtrList TskFileManagerImpl::getFiles(const std::vector<uint64_t>& fileIds)
-{
-	TskFileManager::FilePtrList ret;
-    for (std::vector<uint64_t>::const_iterator it = fileIds.begin(); it != fileIds.end(); ++it)
-    {
-        ret.push_back(TskFileManager::FilePtr(getFile(*it)));
-    }
-
-	return ret;
-}
-
-TskFile * TskFileManagerImpl::getFile(const uint64_t fileId)
-{
-    /* If we were to ever have different subclasses of TskFile
-     * that differentiate file types, this is where the logic
-     * should go to create the correct version. 
-     */
-    return new TskFileTsk(fileId);
-}
 
 std::wstring TskFileManagerImpl::getPath(const uint64_t fileId)
 {
