@@ -28,7 +28,12 @@ public:
     typedef std::unique_ptr<TskFile> FilePtr;
     typedef std::vector< FilePtr >   FilePtrList;
     
-    virtual FilePtrList findFilesByName(const std::string& name) = 0;
+    virtual FilePtrList findFilesByName(const std::string& name, const TSK_FS_NAME_TYPE_ENUM fsFileType = TSK_FS_NAME_TYPE_REG) = 0;
+    virtual FilePtrList findFilesByExtension(const std::vector<std::string>& extensions) = 0;
+    virtual FilePtrList findFilesByParent(const uint64_t parentFileId) = 0;
+    virtual FilePtrList findFilesByFsFileType(TSK_FS_NAME_TYPE_ENUM fsFileType) = 0;
+    //virtual FilePtrList findFilesByPattern(const std::string& namePattern, const std::string& pathPattern) = 0;
+    virtual FilePtrList getFiles(const std::vector<uint64_t>& fileIds) = 0;
 
     /**
      * Return a TskFile object for a given file ID.

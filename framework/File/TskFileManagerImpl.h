@@ -37,7 +37,12 @@ public:
     // The TskFileManagerImpl is implemented as a singleton
     static TskFileManagerImpl& instance();
 
-    virtual TskFileManager::FilePtrList findFilesByName(const std::string& name);
+    virtual TskFileManager::FilePtrList findFilesByName(const std::string& name, const TSK_FS_NAME_TYPE_ENUM fsFileType = TSK_FS_NAME_TYPE_REG);
+    virtual TskFileManager::FilePtrList findFilesByExtension(const std::vector<std::string>& extensions);
+    virtual TskFileManager::FilePtrList findFilesByParent(const uint64_t parentFileId);
+    virtual TskFileManager::FilePtrList findFilesByFsFileType(TSK_FS_NAME_TYPE_ENUM fsFileType);
+    //virtual TskFileManager::FilePtrList findFilesByPattern(const std::string& namePattern, const std::string& pathPattern);
+    virtual TskFileManager::FilePtrList getFiles(const std::vector<uint64_t>& fileIds);
 
     // Return a File object for the given file id.
     virtual TskFile* getFile(const uint64_t fileId);
