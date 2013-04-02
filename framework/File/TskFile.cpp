@@ -20,6 +20,9 @@
 #include "TskFile.h"
 #include "Services/TskServices.h"
 
+// Poco includes
+#include "Poco/NumberFormatter.h"
+
 /**
  * Delete the TskFile object.
  */
@@ -35,7 +38,7 @@ void TskFile::initialize()
 
     if (imgDB != NULL) {
         if (imgDB->getFileRecord(m_id, m_fileRecord)) {
-            throw TskException("TskFile::initialize: Error looking up file: " + m_id);
+            throw TskException("TskFile::initialize: Error looking up file: " + Poco::NumberFormatter::format(m_id));
         }
     }
 }
