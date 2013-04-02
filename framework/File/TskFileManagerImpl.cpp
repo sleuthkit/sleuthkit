@@ -165,11 +165,20 @@ TskFileManager::FilePtrList TskFileManagerImpl::findFilesByFsFileType(TSK_FS_MET
     return getFiles(fileIds);
 }
 
-//TskFileManager::FilePtrList TskFileManagerImpl::findFilesByPattern(const std::string& namePattern, const std::string& pathPattern)
-//{
-//	TskFileManager::FilePtrList ret;
-//	return ret;
-//}
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByPattern(const std::string& namePattern, const std::string& pathPattern)
+{
+    // Construct SQL condition
+    TskImgDB& imgDB = TskServices::Instance().getImgDB();
+    std::stringstream condition;
+    condition << "WHERE files.meta_type = " << static_cast<int>(TSK_FS_META_TYPE_REG)
+              << " AND UPPER(files.name) LIKE " << imgDB.quote(namePattern) 
+              << " AND UPPER(files.full_path) LIKE " << imgDB.quote(pathPattern);
+
+    // Get the file ids matching our condition
+    std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+
+    return getFiles(fileIds);
+}
 
 std::wstring TskFileManagerImpl::getPath(const uint64_t fileId)
 {

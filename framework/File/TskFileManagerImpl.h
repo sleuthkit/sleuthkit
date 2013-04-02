@@ -56,7 +56,7 @@ public:
     virtual TskFileManager::FilePtrList findFilesByFsFileType(TSK_FS_META_TYPE_ENUM fsFileType);
     
     // Return a list of File objects 
-    //virtual TskFileManager::FilePtrList findFilesByPattern(const std::string& namePattern, const std::string& pathPattern);
+    virtual TskFileManager::FilePtrList findFilesByPattern(const std::string& namePattern, const std::string& pathPattern);
 
     // Return the path including the file name for the given file id.
     virtual std::wstring getPath(const uint64_t fileId);

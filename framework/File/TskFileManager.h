@@ -72,6 +72,9 @@ public:
      */
     virtual FilePtrList findFilesByFsFileType(TSK_FS_META_TYPE_ENUM fsFileType) = 0;
 
+
+    virtual FilePtrList findFilesByPattern(const std::string& namePattern, const std::string& pathPattern) = 0;
+
     /** 
      * Return the fully qualified path to where the local instance of the file with the given ID
      * should exist.  This does not validate that the ID is for a file and does
