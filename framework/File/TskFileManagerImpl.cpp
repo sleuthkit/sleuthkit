@@ -80,21 +80,66 @@ void TskFileManagerImpl::initialize()
 
 TskFileManager::FilePtrList TskFileManagerImpl::findFilesByName(const std::string& name)
 {
-    TskFileManager::FilePtrList ret;
-	std::stringstream condition;
-    condition << "WHERE files.dir_type = 5 AND UPPER(files.name) = '"
-              << name << "'";
-	// Get the file ids matching our condition
-	TskImgDB& imgDB = TskServices::Instance().getImgDB();
-	std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+    std::stringstream condition;
+    condition << "WHERE files.dir_type = " << static_cast<int>(TSK_FS_NAME_TYPE_REG)
+              << " AND UPPER(files.name) = '" << name << "'";
 
-    ///todo reuse 
-	for (std::vector<uint64_t>::iterator it = fileIds.begin(); it != fileIds.end(); ++it)
-	{
+    // Get the file ids matching our condition
+    TskImgDB& imgDB = TskServices::Instance().getImgDB();
+    std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+
+    return getFiles(fileIds);
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByPattern(const std::string& namePattern, const std::string& pathPattern)
+{
+	TskFileManager::FilePtrList ret;
+	return ret;
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByExtension(const std::vector<std::string>& extensions)
+{
+    std::stringstream condition;
+    ///@todo Do we actually need to do an ORDER here?
+
+    ///@todo Loop
+    condition << "WHERE UPPER(name) LIKE UPPER('%" << extensions.at(0) << "') ESCAPE '#' "
+              << " ORDER BY file_id";
+
+    // Get the file ids matching our condition
+    TskImgDB& imgDB = TskServices::Instance().getImgDB();
+    std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+
+	return getFiles(fileIds);
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByParent(const uint64_t parentFileId)
+{
+    std::stringstream condition;
+    condition << "WHERE par_file_id = " << parentFileId;
+
+    // Get the file ids matching our condition
+    TskImgDB& imgDB = TskServices::Instance().getImgDB();
+    std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+
+	return getFiles(fileIds);
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByFsFileType(TSK_FS_NAME_TYPE_ENUM fsFileType)
+{
+	TskFileManager::FilePtrList ret;
+	return ret;
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::getFiles(const std::vector<uint64_t>& fileIds)
+{
+	TskFileManager::FilePtrList ret;
+    for (std::vector<uint64_t>::const_iterator it = fileIds.begin(); it != fileIds.end(); ++it)
+    {
         ret.push_back(TskFileManager::FilePtr(getFile(*it)));
     }
 
-    return ret;
+	return ret;
 }
 
 TskFile * TskFileManagerImpl::getFile(const uint64_t fileId)
