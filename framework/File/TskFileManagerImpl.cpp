@@ -78,10 +78,11 @@ void TskFileManagerImpl::initialize()
     }
 }
 
-TskFileManager::FilePtrList TskFileManagerImpl::findFilesByName(const std::string& name)
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByName(const std::string& name, const TSK_FS_NAME_TYPE_ENUM fsFileType /*= TSK_FS_NAME_TYPE_REG*/)
 {
+    // Construct SQL condition
     std::stringstream condition;
-    condition << "WHERE files.dir_type = " << static_cast<int>(TSK_FS_NAME_TYPE_REG)
+    condition << "WHERE files.dir_type = " << static_cast<int>(fsFileType)
               << " AND UPPER(files.name) = '" << name << "'";
 
     // Get the file ids matching our condition
@@ -91,23 +92,25 @@ TskFileManager::FilePtrList TskFileManagerImpl::findFilesByName(const std::strin
     return getFiles(fileIds);
 }
 
-TskFileManager::FilePtrList TskFileManagerImpl::findFilesByPattern(const std::string& namePattern, const std::string& pathPattern)
-{
-	TskFileManager::FilePtrList ret;
-	return ret;
-}
-
 TskFileManager::FilePtrList TskFileManagerImpl::findFilesByExtension(const std::vector<std::string>& extensions)
 {
+    // Construct SQL condition
+    TskImgDB& imgDB = TskServices::Instance().getImgDB();
     std::stringstream condition;
-    ///@todo Do we actually need to do an ORDER here?
-
-    ///@todo Loop
-    condition << "WHERE UPPER(name) LIKE UPPER('%" << extensions.at(0) << "') ESCAPE '#' "
-              << " ORDER BY file_id";
+    ///@todo check if extension already has a period
+    //period = ".";
+    condition << "WHERE (UPPER(name) LIKE ";
+    for (std::vector<std::string>::const_iterator it = extensions.begin(); it != extensions.end(); ++it)
+    {
+        condition << imgDB.quote("%." + *it);
+        if (it != --extensions.end())
+        {
+            condition << " OR UPPER(name) LIKE ";
+        }
+    }
+    condition << ") AND size > 0";
 
     // Get the file ids matching our condition
-    TskImgDB& imgDB = TskServices::Instance().getImgDB();
     std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
 
 	return getFiles(fileIds);
@@ -115,6 +118,7 @@ TskFileManager::FilePtrList TskFileManagerImpl::findFilesByExtension(const std::
 
 TskFileManager::FilePtrList TskFileManagerImpl::findFilesByParent(const uint64_t parentFileId)
 {
+    // Construct SQL condition
     std::stringstream condition;
     condition << "WHERE par_file_id = " << parentFileId;
 
@@ -127,9 +131,23 @@ TskFileManager::FilePtrList TskFileManagerImpl::findFilesByParent(const uint64_t
 
 TskFileManager::FilePtrList TskFileManagerImpl::findFilesByFsFileType(TSK_FS_NAME_TYPE_ENUM fsFileType)
 {
-	TskFileManager::FilePtrList ret;
-	return ret;
+    // Construct SQL condition
+    std::stringstream condition;
+    condition << "WHERE files.dir_type = " << static_cast<int>(fsFileType);
+
+    // Get the file ids matching our condition
+    TskImgDB& imgDB = TskServices::Instance().getImgDB();
+    std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+
+    return getFiles(fileIds);
 }
+
+//TskFileManager::FilePtrList TskFileManagerImpl::findFilesByPattern(const std::string& namePattern, const std::string& pathPattern)
+//{
+//	TskFileManager::FilePtrList ret;
+//	return ret;
+//}
+
 
 TskFileManager::FilePtrList TskFileManagerImpl::getFiles(const std::vector<uint64_t>& fileIds)
 {
