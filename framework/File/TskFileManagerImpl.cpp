@@ -78,12 +78,15 @@ void TskFileManagerImpl::initialize()
     }
 }
 
-TskFileManager::FilePtrList TskFileManagerImpl::findFilesByName(const std::string& name, const TSK_FS_NAME_TYPE_ENUM fsFileType /*= TSK_FS_NAME_TYPE_REG*/)
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByName(const std::string& name, const TSK_FS_META_TYPE_ENUM fsFileType /*= TSK_FS_META_TYPE_UNDEF*/)
 {
     // Construct SQL condition
     std::stringstream condition;
-    condition << "WHERE files.dir_type = " << static_cast<int>(fsFileType)
-              << " AND UPPER(files.name) = '" << name << "'";
+    condition << "WHERE UPPER(files.name) = '" << name << "'";
+    if (fsFileType != TSK_FS_META_TYPE_UNDEF)
+    {
+        condition << " AND files.meta_type = " << static_cast<int>(fsFileType);
+    }
 
     // Get the file ids matching our condition
     TskImgDB& imgDB = TskServices::Instance().getImgDB();
@@ -129,11 +132,11 @@ TskFileManager::FilePtrList TskFileManagerImpl::findFilesByParent(const uint64_t
 	return getFiles(fileIds);
 }
 
-TskFileManager::FilePtrList TskFileManagerImpl::findFilesByFsFileType(TSK_FS_NAME_TYPE_ENUM fsFileType)
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByFsFileType(TSK_FS_META_TYPE_ENUM fsFileType)
 {
     // Construct SQL condition
     std::stringstream condition;
-    condition << "WHERE files.dir_type = " << static_cast<int>(fsFileType);
+    condition << "WHERE files.meta_type = " << static_cast<int>(fsFileType);
 
     // Get the file ids matching our condition
     TskImgDB& imgDB = TskServices::Instance().getImgDB();
