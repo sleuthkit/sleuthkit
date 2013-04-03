@@ -981,7 +981,7 @@ uint8_t TskAutoDb::addUnallocImageSpaceToDb() {
 *
 * @returns curDirPath string representing currently analyzed directory
 */
-std::string TskAutoDb::getCurDir() {
+const std::string TskAutoDb::getCurDir() {
     string curDirPath;
     tsk_take_lock(&m_curDirPathLock);
     curDirPath = m_curDirPath;
