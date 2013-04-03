@@ -17,7 +17,7 @@
  * not subject to copyright.
  */
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 #include "fiwalk.h"
 #include <sys/types.h>
 

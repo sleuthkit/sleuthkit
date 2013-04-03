@@ -12,7 +12,7 @@
  * \file hfind.c
  * Command line tool to index and lookup values in a hash database
  */
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 #include <locale.h>
 
 static TSK_TCHAR *progname;

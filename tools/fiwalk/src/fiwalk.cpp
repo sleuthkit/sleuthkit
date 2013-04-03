@@ -33,7 +33,7 @@
 
 
 /* config.h must be first */
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 
 #include <stdio.h>
 #include "fiwalk.h"

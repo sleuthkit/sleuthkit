@@ -1,0 +1,87 @@
+/*! \page basicpage Library Basics
+
+This page describes some of the basic concepts of the TSK library.  It is assumed that you have built and installed the TSK library based on either the instructions in the <tt>INSTALL.txt</tt> file or via a package.   Refer to the files in the <tt>samples</tt> directory for examples on the topics in this and later sections.  
+
+\section basic_layers Layers
+
+TSK is organized into several layers (and sub-layers).   These layers represent layers of abstraction that are used with data storage.  The User's Guide and API Reference are organized based on these layers. 
+
+The lowest layer that TSK has is the <b>Base Layer</b>, which contains common programming and data structure functions that can be applied to all layers.   This is where error handling, types, and convenience functions are defined.  
+
+The next layer up is the <b>Disk Image Layer</b>, which allows disk images in various formats to be opened and processed.  This layer hides the details associated with split, compressed, and encrypted image files from the other layers. All disk images must be first opened by the Disk Image Layer functions before they can be processed by other layers. 
+
+The next layer up is the <b>Volume System Layer</b>. This layer focuses on processing data as a volume system, such as DOS partition tables or BSD disk label structures.  If the disk image being analyzed has a volume system on it, then this set of functions will tell you starting and ending location of its partitions.  
+
+The next layer up is the <b>File System Layer</b>.  This layer focuses on processing data as a file system, such as FAT or NTFS. File systems can be located in a partition or can be the full disk image file.  These set of functions allow you to read arbitrary data from the file system, list files, and open files.  There are several sub-layers in the File System Layer and they are described in \ref fs_layers.  
+
+There is an independent <b>Hash Database Layer</b> that handles hash databases, such as NSRL and md5sum outputs.  This API allows you to create an index of hashes and perform fast lookups of them.  These functions do not depend on the Disk Image, Volume System, or File System Layers. 
+
+There is also an <b>Automation Layer</b> that integrates all of the previous layers in an automated fashion.  It defines a C++ class named TskAuto that hides a lot of the details about analyzing file and volume systems. 
+
+A basic diagram of the relationship between these layers is shown here. Note that if a disk image file does not have a volume system, then we can use the File System Layer functions directly on it. 
+
+<pre>
+
+ +==========================================================+
+ |                                                          | 
+ |                       +================+                 |
+ |                       |      Base      |                 |
+ |                       +================+                 |
+ |                         /            \                   |
+ |                        /              \                  |
+ |              +==============+      +==================+  |
+ |              |  Disk Image  |      |   Hash Database  |  |
+ |              +==============+      +==================+  |
+ |                 /       |                                |
+ |                /        |                                |
+ |   +===============+     |                                |
+ |   | Volume System |     |                                |
+ |   +===============+     |                                |
+ |               \         |                                |
+ |                \        |                                |
+ |               +===============+                          |
+ |               |  File System  |                          |
+ |               +===============+                          |
+ |                                                          |
+ |                                                          |
+ |                        Automation                        |
+ +==========================================================+
+
+</pre>
+ 
+
+\section basic_build Build Environment
+This section describes how to incorporate the TSK library into your application.  In general, all you need to do is include a TSK header file and link in the library. 
+
+      \subsection ov_build_unix Unix
+This document assumes that you used <tt>'make install'</tt> to install the library and header files and that you used the default location of <tt>/usr/local/</tt>.  If you specified a different location, you will need to do the obvious path replacements in this document. 
+
+To include the API definitions, you will need to include the <tt>tsk/libtsk.h</tt> file in your source code. Depending on system configuration, you may need to add <tt>/usr/local/include</tt> to the list of directories that your compiler looks in for header files (using <tt>-I</tt> for example). 
+
+<code>
+\#include <tsk/libtsk.h>
+</code>
+
+To include the library in your application during the linking phase, you will need to add <tt>-ltsk</tt>  to add the <tt>libtsk</tt> library.  Depending on system configuration, you may need to add <tt>/usr/local/lib/</tt> to the list of directories that your compiler looks in for libraries (using <tt>-L</tt> for example).
+
+Note that if you built TSK with support for AFFLIB and libewf then you will also  need to include <tt>-lewf</tt> and/or <tt>-lafflib</tt>.  You may also need to include other libraries that AFFLIB and libewf require (my current system requires <tt>-lcrypto -lssl -lz -lncurses -lreadlin</tt>).  Refer to the libewf and AFFLIB documentation for details.   
+
+      \subsection ov_build_win Windows
+The Windows setup is similar to the Unix setup, except that you need to include more libraries and there is no automated install or build process.  
+
+The Visual Studio solution file is located in <tt>win32/tsk-win.sln</tt>.  There is a <tt>libtsk</tt> project for the five library layers (as described in \ref basic_layers).  Build this to create a static library in the <tt>Debug</tt>, <tt>Release</tt>, or <tt>Debug_NoLibs</tt> folder (depending on which version you built). The <tt>Debug_NoLibs</tt> configuration does not have any dependencies on libewf or afflib.
+
+To include the header files, configure your build environment to search in the root TSK directory (i.e. <tt>sleuthkit-3.0.0</tt>) and include the <tt>tsk/libtsk.h</tt> file in your source code. The location of the TSK directory will depend on where you unpacked it. 
+
+To link with the libraries, you must configure your environment to include the <tt>libtsk</tt> library.  You will need to specify the directory where the library is located, which could be the <tt>Debug</tt> or <tt>Release</tt> subdirectories in the <tt>win32</tt> directory.  You can also move the library to a different location. 
+
+Note that your Windows application must have UNICODE support enabled. 
+
+\section basic_cpp C++ Wrapers
+Nearly all of the TSK code is written in C and the original API is a collection of C functions and structs.  There are also C++ classes that are wrappers around the C code.  The C++ class allocates the C structs and provides getter and setter methods to access the public data.  The remainder of this doc primarily refers to the C functions, but will provide a link to the corresponding C++ class when one exists. 
+
+Next to \ref basepage
+
+Back to \ref users_guide "Table of Contents"
+    
+*/

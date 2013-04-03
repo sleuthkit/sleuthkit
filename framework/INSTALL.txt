@@ -1,0 +1,89 @@
+                    The Sleuth Kit Framework
+                http://www.sleuthkit.org/sleuthkit
+
+                    Installation Instructions
+
+                   Last Modified: Feb 25, 2013
+
+
+REQUIREMENTS
+=============================================================================
+Tested Platform:
+- Linux 2.*
+- Mac OS X
+- Windows
+
+Build System:
+- C/C++ compiler
+- GNU Make
+- GNU autoconf, automake, and libtool
+
+
+Required Libraries:
+The following libraries must be installed before building and install the framework.
+
+- POCO: POCO is a set of open source C++ classes for building portable applications. 
+The Sleuth Kit framework uses POCO to handle some basic internal tasks.  
+Testing has been performed with version 1.4.4 of the POCO libraries.
+    Available at http://www.pocoproject.org
+
+INSTALLATION
+=============================================================================
+
+Refer to the BUILDING.txt file in the msvcpp directory for details on building using 
+Microsoft Visual Studio 2010.
+
+Before you compile the framework, ensure that you have downloaded
+all of the modules. The modules are loaded as git Submodules. Use the
+following commands to download all of the modules before compiling:
+
+% git submodule init
+% git submodule update
+
+The Sleuth Kit framework uses the GNU autotools for building and installation.
+There are a few steps to this process.  First, run the 'configure'
+script in the framework directory.
+
+    $ ./configure
+
+If there were no errors, then run 'make'.
+
+    $ make
+
+The 'make' process will take a while and will build the framework and submodules.
+When this process is complete, the executables will be located in the "tools" directory
+and the module libraries will be located in the "runtime" directory.  
+To install them, type 'make install'.
+
+    $ make install
+
+By default, this will copy everything in to the /usr/local/ structure.
+So, the executables will be in '/usr/local/bin'.  This directory will
+need to be in your PATH if you want to run the TSK framework commands without 
+specifying '/usr/local/bin' everytime.
+
+
+If you get an error like:
+
+  libtool: Version mismatch error.  This is libtool 2.2.10, but the
+  libtool: definition of this LT_INIT comes from libtool 2.2.4.
+  libtool: You should recreate aclocal.m4 with macros from libtool 2.2.10
+  libtool: and run autoconf again.
+
+Run:
+    ./bootstrap 
+
+and then go back to running configure and make.  To run 'bootstrap',
+you'll need to have the autotools installed (see the list at the
+top of this page).
+
+
+CONFIGURE OPTIONS
+-----------------------------------------------------------------------------
+The framework doesn't support extra arguments to 'configure'
+
+
+-----------------------------------------------------------------------------
+
+Brian Carrier
+carrier <at> sleuthkit <dot> org

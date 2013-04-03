@@ -31,7 +31,7 @@ effort (for example the reengineering of a great many Capstone chips).
 
 #include <stdio.h>
 #include <string.h>
-#include "tsk3/libtsk.h"
+#include "tsk/libtsk.h"
 
 
 #define SHA_HASH_LENGTH 	20

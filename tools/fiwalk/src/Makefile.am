@@ -2,7 +2,7 @@ bin_PROGRAMS = fiwalk
 
 AM_CFLAGS = -Wall
 AM_CPPFLAGS = -I../../.. -Wall
-LDADD = ../../../tsk3/libtsk3.la
+LDADD = ../../../tsk/libtsk.la
 
 EXTRA_DIST = README_PLUGINS.txt ficonfig.txt \
     config-simple.txt word-count-plugin.sh \
