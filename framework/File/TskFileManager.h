@@ -19,15 +19,43 @@
 #include "framework_i.h"
 #include "TskFile.h"
 
+
 /**
  * Responsible for managing TskFile objects in the system.
  */
 class TSK_FRAMEWORK_API TskFileManager
 {
 public:
-    typedef std::unique_ptr<TskFile> FilePtr;
-    typedef std::vector< FilePtr >   FilePtrList;
-    
+    //typedef std::unique_ptr<TskFile> FilePtr;
+    //typedef std::vector< FilePtr >   FilePtrList;
+    typedef TskFile* FilePtr;
+    typedef std::vector< FilePtr > FilePtrList;
+
+    ///@experimental 
+    class AutoFilePtrList
+    {
+    public:
+        AutoFilePtrList(FilePtrList v) : m_Files(v) {}
+
+        ~AutoFilePtrList()
+        {
+            for (FilePtrList::iterator it = m_Files.begin(); it != m_Files.end(); ++it)
+            {
+                delete *it;
+                *it = NULL;
+            }
+        }
+
+        FilePtrList::iterator begin() { return m_Files.begin(); }
+        FilePtrList::iterator end()   { return m_Files.end(); }
+
+    private:
+        AutoFilePtrList(const AutoFilePtrList&);
+        AutoFilePtrList& operator=(const AutoFilePtrList&);
+
+        TskFileManager::FilePtrList m_Files;
+    };
+
     /**
      * Return a TskFile object for a given file ID.
      * @param fileId ID of file to return object of.
