@@ -979,10 +979,12 @@ uint8_t TskAutoDb::addUnallocImageSpaceToDb() {
 * Returns the directory currently being analyzed by processFile().
 * Safe to use from another thread than processFile().
 *
-* @param curDirPathOut reference to currently analyzed directory
+* @returns curDirPath string representing currently analyzed directory
 */
-void TskAutoDb::getCurDir(std::string & curDirPathOut) {
+std::string TskAutoDb::getCurDir() {
+    string curDirPath;
     tsk_take_lock(&m_curDirPathLock);
-    curDirPathOut = m_curDirPath;
+    curDirPath = m_curDirPath;
     tsk_release_lock(&m_curDirPathLock);
+    return curDirPath;
 }
