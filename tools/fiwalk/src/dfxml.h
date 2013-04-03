@@ -70,7 +70,7 @@
   #endif
 #endif
 
-#include "tsk3/libtsk.h"
+#include "tsk/libtsk.h"
 
 #ifdef __cplusplus
 class xml {

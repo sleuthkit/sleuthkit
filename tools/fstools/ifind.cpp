@@ -19,7 +19,7 @@
 **
 */
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 #include <locale.h>
 #include <time.h>
 

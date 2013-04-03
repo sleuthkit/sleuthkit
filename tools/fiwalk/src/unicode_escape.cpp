@@ -24,7 +24,7 @@
  * not subject to copyright.
  */
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 #include "unicode_escape.h"
 
 #include <stdio.h>

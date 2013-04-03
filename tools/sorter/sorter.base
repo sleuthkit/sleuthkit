@@ -12,7 +12,7 @@
 use strict;
 use integer;
 
-my $SHARE_DIR = "$DATA_DIR/tsk3/sorter/";
+my $SHARE_DIR = "$DATA_DIR/tsk/sorter/";
 
 my $SK_FLS     = "${BIN_DIR}/fls";
 my $SK_ICAT    = "${BIN_DIR}/icat";

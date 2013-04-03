@@ -3,3 +3,13 @@ aclocal \
     && (libtoolize || glibtoolize) \
     && automake --foreign --add-missing \
     && autoconf
+
+for m in `ls modules`
+do
+    (cd modules;
+    if test -d $m; then
+        echo $m
+        (cd $m; sh ./bootstrap)
+    fi;
+    )
+done

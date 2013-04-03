@@ -3,7 +3,7 @@
  * Turns a binary buffer into a hexdecimal string.
  */
 
-#include "tsk3/tsk_config.h"
+#include "tsk/tsk_config.h"
 #include "hexbuf.h"
 #include <stdio.h>
 

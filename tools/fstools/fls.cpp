@@ -19,7 +19,7 @@
 ** This software is distributed under the Common Public License 1.0
 **
 */
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 #include <locale.h>
 #include <time.h>
 

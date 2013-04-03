@@ -17,7 +17,7 @@
  */
 
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 
 #include "dfxml.h"
 #include <errno.h>
@@ -486,7 +486,7 @@ void xml::add_DFXML_build_environment()
 	xmlout("compilation_date",buf);
     }
 #endif
-#ifdef HAVE_LIBTSK3
+#ifdef HAVE_LIBTSK
     xmlout("library", "", std::string("name=\"tsk\" version=\"") + tsk_version_get_str() + "\"",false);
 #endif
 #ifdef HAVE_LIBAFFLIB

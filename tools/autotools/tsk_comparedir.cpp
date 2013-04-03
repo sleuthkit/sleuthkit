@@ -9,7 +9,7 @@
  **
  */
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 #include "tsk_comparedir.h"
 #include <locale.h>
 #include <sys/stat.h>

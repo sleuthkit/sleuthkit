@@ -9,8 +9,8 @@
  **
  */
 
-#include "tsk3/tsk_tools_i.h"
-#include "tsk3/auto/tsk_case_db.h"
+#include "tsk/tsk_tools_i.h"
+#include "tsk/auto/tsk_case_db.h"
 #include <locale.h>
 
 static TSK_TCHAR *progname;

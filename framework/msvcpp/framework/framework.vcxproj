@@ -1,0 +1,195 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>libtskframework</ProjectName>
+    <ProjectGuid>{F791B16A-1489-4526-9FFF-CB481CEC5414}</ProjectGuid>
+    <RootNamespace>framework</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..;$(ProjectDir)\..\..\..;$(POCO_HOME)\Foundation\include;$(POCO_HOME)\Util\include;$(POCO_HOME)\XML\include;$(POCO_HOME)\Net\include;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(ProjectDir)\..\..\..\tsk\img;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;TSK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>libewf.lib;libtsk.lib;ws2_32.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(POCO_HOME)\lib;$(ProjectDir)\..\..\..\win32\Debug;$(LIBEWF_HOME)\msvscpp\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ImportLibrary>$(OutDir)$(ProjectName).lib</ImportLibrary>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir "$(ProjectDir)..\..\runtime"
+move /Y "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\runtime"
+xcopy "$(POCO_HOME)\bin\PocoFoundationd.dll" "$(ProjectDir)..\..\runtime" /R /Y
+xcopy "$(POCO_HOME)\bin\PocoNetd.dll" "$(ProjectDir)..\..\runtime" /R /Y
+xcopy "$(POCO_HOME)\bin\PocoUtild.dll" "$(ProjectDir)..\..\runtime" /R /Y
+xcopy "$(POCO_HOME)\bin\PocoXMLd.dll" "$(ProjectDir)..\..\runtime" /R /Y
+xcopy "$(LIBEWF_HOME)\msvscpp\Release\libewf.dll" "$(ProjectDir)..\..\runtime" /R /Y
+xcopy "$(LIBEWF_HOME)\msvscpp\Release\zlib.dll" "$(ProjectDir)..\..\runtime" /R /Y
+del "$(ProjectDir)..\..\runtime\framework_config.xml"
+xcopy "$(ProjectDir)..\..\SampleConfig\framework_config_win32dev.xml" "$(ProjectDir)..\..\runtime" /R /Y
+ren "$(ProjectDir)..\..\runtime\framework_config_win32dev.xml" framework_config.xml</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..;$(ProjectDir)\..\..\..;$(POCO_HOME)\Foundation\include;$(POCO_HOME)\Util\include;$(POCO_HOME)\XML\include;$(POCO_HOME)\Net\include;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;TSK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>libewf.lib;libtsk.lib;ws2_32.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(POCO_HOME)\lib;$(ProjectDir)\..\..\..\win32\Release;$(LIBEWF_HOME)\msvscpp\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImportLibrary>$(OutDir)$(ProjectName).lib</ImportLibrary>
+    </Link>
+    <PostBuildEvent>
+      <Command>mkdir "$(ProjectDir)..\..\runtime"
+move /Y "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\runtime"
+xcopy "$(POCO_HOME)\bin\PocoFoundation.dll" "$(ProjectDir)..\..\runtime" /R /Y
+xcopy "$(POCO_HOME)\bin\PocoNet.dll" "$(ProjectDir)..\..\runtime" /R /Y
+xcopy "$(POCO_HOME)\bin\PocoUtil.dll" "$(ProjectDir)..\..\runtime" /R /Y
+xcopy "$(POCO_HOME)\bin\PocoXML.dll" "$(ProjectDir)..\..\runtime" /R /Y
+xcopy "$(LIBEWF_HOME)\msvscpp\Release\libewf.dll" "$(ProjectDir)..\..\runtime" /R /Y
+xcopy "$(LIBEWF_HOME)\msvscpp\Release\zlib.dll" "$(ProjectDir)..\..\runtime" /R /Y
+del "$(ProjectDir)..\..\runtime\framework_config.xml"
+xcopy "$(ProjectDir)..\..\SampleConfig\framework_config_win32dev.xml" "$(ProjectDir)..\..\runtime" /R /Y
+ren "$(ProjectDir)..\..\runtime\framework_config_win32dev.xml" framework_config.xml</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\tsk\framework\extraction\TskExtract.cpp" />
+    <ClCompile Include="..\..\tsk\framework\extraction\TskL01Extract.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\Log.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\Scheduler.cpp" />
+    <ClCompile Include="..\..\tsk\framework\utilities\SectorRuns.cpp" />
+    <ClCompile Include="..\..\tsk\framework\extraction\TskAutoImpl.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\TskBlackboard.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\TskBlackboardArtifact.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\TskBlackboardAttribute.cpp" />
+    <ClCompile Include="..\..\tsk\framework\extraction\TskCarveExtractScalpel.cpp" />
+    <ClCompile Include="..\..\tsk\framework\extraction\TskCarvePrepSectorConcat.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\TskDBBlackboard.cpp" />
+    <ClCompile Include="..\..\tsk\framework\utilities\TskException.cpp" />
+    <ClCompile Include="..\..\tsk\framework\pipeline\TskExecutableModule.cpp" />
+    <ClCompile Include="..\..\tsk\framework\file\TskFile.cpp" />
+    <ClCompile Include="..\..\tsk\framework\pipeline\TskFileAnalysisPipeline.cpp" />
+    <ClCompile Include="..\..\tsk\framework\pipeline\TskFileAnalysisPluginModule.cpp" />
+    <ClCompile Include="..\..\tsk\framework\file\TskFileManagerImpl.cpp" />
+    <ClCompile Include="..\..\tsk\framework\file\TskFileTsk.cpp" />
+    <ClCompile Include="..\..\tsk\framework\extraction\TskImageFile.cpp" />
+    <ClCompile Include="..\..\tsk\framework\extraction\TskImageFileTsk.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\TskImgDB.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\TskImgDBSqlite.cpp" />
+    <ClCompile Include="..\..\tsk\framework\pipeline\TskModule.cpp" />
+    <ClCompile Include="..\..\tsk\framework\pipeline\TskPipeline.cpp" />
+    <ClCompile Include="..\..\tsk\framework\pipeline\TskPipelineManager.cpp" />
+    <ClCompile Include="..\..\tsk\framework\pipeline\TskPluginModule.cpp" />
+    <ClCompile Include="..\..\tsk\framework\pipeline\TskReportPipeline.cpp" />
+    <ClCompile Include="..\..\tsk\framework\pipeline\TskReportPluginModule.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\TskSchedulerQueue.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\TskServices.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\TskSystemProperties.cpp" />
+    <ClCompile Include="..\..\tsk\framework\services\TskSystemPropertiesImpl.cpp" />
+    <ClCompile Include="..\..\tsk\framework\utilities\TskUtilities.cpp" />
+    <ClCompile Include="..\..\tsk\framework\utilities\UnallocRun.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\tsk\framework\extraction\CarveExtract.h" />
+    <ClInclude Include="..\..\tsk\framework\extraction\CarvePrep.h" />
+    <ClInclude Include="..\..\tsk\framework\extraction\TskExtract.h" />
+    <ClInclude Include="..\..\tsk\framework\extraction\TskL01Extract.h" />
+    <ClInclude Include="..\..\tsk\framework\framework.h" />
+    <ClInclude Include="..\..\tsk\framework\framework_i.h" />
+    <ClInclude Include="..\..\tsk\framework\services\Log.h" />
+    <ClInclude Include="..\..\tsk\framework\services\Scheduler.h" />
+    <ClInclude Include="..\..\tsk\framework\TskVersionInfo.h" />
+    <ClInclude Include="..\..\tsk\framework\utilities\SectorRuns.h" />
+    <ClInclude Include="..\..\tsk\framework\extraction\TskAutoImpl.h" />
+    <ClInclude Include="..\..\tsk\framework\services\TskBlackboard.h" />
+    <ClInclude Include="..\..\tsk\framework\services\TskBlackboardArtifact.h" />
+    <ClInclude Include="..\..\tsk\framework\services\TskBlackBoardAttribute.h" />
+    <ClInclude Include="..\..\tsk\framework\extraction\TskCarveExtractScalpel.h" />
+    <ClInclude Include="..\..\tsk\framework\extraction\TskCarvePrepSectorConcat.h" />
+    <ClInclude Include="..\..\tsk\framework\services\TskDBBlackboard.h" />
+    <ClInclude Include="..\..\tsk\framework\utilities\TskException.h" />
+    <ClInclude Include="..\..\tsk\framework\pipeline\TskExecutableModule.h" />
+    <ClInclude Include="..\..\tsk\framework\file\TskFile.h" />
+    <ClInclude Include="..\..\tsk\framework\pipeline\TskFileAnalysisPipeline.h" />
+    <ClInclude Include="..\..\tsk\framework\pipeline\TskFileAnalysisPluginModule.h" />
+    <ClInclude Include="..\..\tsk\framework\file\TskFileManager.h" />
+    <ClInclude Include="..\..\tsk\framework\file\TskFileManagerImpl.h" />
+    <ClInclude Include="..\..\tsk\framework\file\TskFileTsk.h" />
+    <ClInclude Include="..\..\tsk\framework\extraction\TskImageFile.h" />
+    <ClInclude Include="..\..\tsk\framework\extraction\TskImageFileTsk.h" />
+    <ClInclude Include="..\..\tsk\framework\services\TskImgDB.h" />
+    <ClInclude Include="..\..\tsk\framework\services\TskImgDBSqlite.h" />
+    <ClInclude Include="..\..\tsk\framework\pipeline\TskModule.h" />
+    <ClInclude Include="..\..\tsk\framework\pipeline\TskPipeline.h" />
+    <ClInclude Include="..\..\tsk\framework\pipeline\TskPipelineManager.h" />
+    <ClInclude Include="..\..\tsk\framework\pipeline\TskPluginModule.h" />
+    <ClInclude Include="..\..\tsk\framework\pipeline\TskReportPipeline.h" />
+    <ClInclude Include="..\..\tsk\framework\pipeline\TskReportPluginModule.h" />
+    <ClInclude Include="..\..\tsk\framework\services\TskSchedulerQueue.h" />
+    <ClInclude Include="..\..\tsk\framework\services\TskServices.h" />
+    <ClInclude Include="..\..\tsk\framework\services\TskSystemProperties.h" />
+    <ClInclude Include="..\..\tsk\framework\services\TskSystemPropertiesImpl.h" />
+    <ClInclude Include="..\..\tsk\framework\utilities\TskUtilities.h" />
+    <ClInclude Include="..\..\tsk\framework\utilities\UnallocRun.h" />
+    <ClInclude Include="..\..\tsk\framework\utilities\TskModuleDev.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
