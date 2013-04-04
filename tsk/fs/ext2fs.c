@@ -29,7 +29,7 @@
 
 #include "tsk_fs_i.h"
 #include "tsk_ext2fs.h"
-#include "tsk3/base/crc.h"
+#include "tsk/base/crc.h"
 #include <stddef.h>
 //#define Ext4_DBG 1
 //#define EXT4_CHECKSUMS 1
