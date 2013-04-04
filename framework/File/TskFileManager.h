@@ -29,27 +29,6 @@ public:
     typedef TskFile* FilePtr;
     typedef std::vector< FilePtr > FilePtrList;
 
-    class AutoFilePtrList
-    {
-    public:
-        AutoFilePtrList(FilePtrList v) : m_Files(v) {}
-        ~AutoFilePtrList()
-        {
-            for (FilePtrList::iterator it = m_Files.begin(); it != m_Files.end(); ++it)
-            {
-                delete *it;
-            }
-        }
-        FilePtrList::iterator begin() { return m_Files.begin(); }
-        FilePtrList::iterator end()   { return m_Files.end(); }
-        FilePtrList::size_type size() { return m_Files.size(); }
-    private:
-        AutoFilePtrList(const AutoFilePtrList&);
-        AutoFilePtrList& operator=(const AutoFilePtrList&);
-
-        TskFileManager::FilePtrList m_Files;
-    };
-
     /**
      * Return a TskFile object for a given file ID.
      * @param fileId ID of file to return object of.
@@ -210,6 +189,39 @@ public:
     {
         deleteFile(getFile(fileId));
     }
+
+    /**
+        This nested class should be used to hold a FilePtrList object returned
+        by methods such as findFilesByName() so that the file objects will be 
+        automatically freed. Example:
+        @code
+        AutoFilePtrList flist(fileManager.findFilesByName(fileName));
+        for (FilePtrList::iterator i = flist.begin(); i != flist.end(); ++i)
+        { ... //do stuff }
+        // Don't worry about delete'ing each file obj--flist will take care of
+        // that when it goes out of scope.
+        @endcode
+    */
+    class AutoFilePtrList
+    {
+    public:
+        AutoFilePtrList(FilePtrList v) : m_Files(v) {}
+        ~AutoFilePtrList()
+        {
+            for (FilePtrList::iterator it = m_Files.begin(); it != m_Files.end(); ++it)
+            {
+                delete *it;
+            }
+        }
+        FilePtrList::iterator begin() { return m_Files.begin(); }
+        FilePtrList::iterator end()   { return m_Files.end(); }
+        FilePtrList::size_type size() { return m_Files.size(); }
+    private:
+        AutoFilePtrList(const AutoFilePtrList&);
+        AutoFilePtrList& operator=(const AutoFilePtrList&);
+
+        TskFileManager::FilePtrList m_Files;
+    };
 
 protected:
     /// Default Constructor
