@@ -42,7 +42,7 @@ public:
         }
         FilePtrList::iterator begin() { return m_Files.begin(); }
         FilePtrList::iterator end()   { return m_Files.end(); }
-
+        FilePtrList::size_type size() { return m_Files.size(); }
     private:
         AutoFilePtrList(const AutoFilePtrList&);
         AutoFilePtrList& operator=(const AutoFilePtrList&);
