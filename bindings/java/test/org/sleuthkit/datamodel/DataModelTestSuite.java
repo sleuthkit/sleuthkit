@@ -18,15 +18,12 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.FileFilter;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -320,10 +317,13 @@ public class DataModelTestSuite {
 	 */
 	protected static void writeExceptions(String filename, List<Exception> ex) {
 		filename = filename.replace(".txt", EX + ".txt");
-		OutputStreamWriter exWriter;
+		FileWriter exWriter;
 		try {
-			exWriter = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(filename), 8192), Charset.forName("UTF-8"));
-			exWriter.append(ex.toString());
+			exWriter = new FileWriter(filename, true);
+			for(Exception exc: ex)
+			{
+				exWriter.append(exc.toString());
+			}
 			exWriter.flush();
 			exWriter.close();
 		} catch (IOException ex1) {
