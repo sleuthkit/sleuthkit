@@ -2197,7 +2197,7 @@ const std::vector<TskFileRecord> TskImgDBSqlite::getFileRecords(const std::strin
  * @param condition Must be a valid SQL string defining the selection criteria.
  * @returns The number of files matching the selection criteria. 
  */
-int TskImgDBSqlite::getFileCount(std::string& condition) const
+int TskImgDBSqlite::getFileCount(const std::string& condition) const
 {
     if (!m_db)
         throw TskException("Database not initialized.");

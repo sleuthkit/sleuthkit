@@ -351,7 +351,7 @@ public:
     virtual const std::vector<TskFileRecord> getFileRecords(const std::string& condition) const = 0;
 
     // Get the number of files that match the given condition
-    virtual int getFileCount(std::string& condition) const = 0;
+    virtual int getFileCount(const std::string& condition) const = 0;
 
     /**
      * Returns the file ids and carved file names for a unique set of carved files.
