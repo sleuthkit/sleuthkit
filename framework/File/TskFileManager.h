@@ -26,26 +26,20 @@
 class TSK_FRAMEWORK_API TskFileManager
 {
 public:
-    //typedef std::unique_ptr<TskFile> FilePtr;
-    //typedef std::vector< FilePtr >   FilePtrList;
     typedef TskFile* FilePtr;
     typedef std::vector< FilePtr > FilePtrList;
 
-    ///@experimental 
     class AutoFilePtrList
     {
     public:
         AutoFilePtrList(FilePtrList v) : m_Files(v) {}
-
         ~AutoFilePtrList()
         {
             for (FilePtrList::iterator it = m_Files.begin(); it != m_Files.end(); ++it)
             {
                 delete *it;
-                *it = NULL;
             }
         }
-
         FilePtrList::iterator begin() { return m_Files.begin(); }
         FilePtrList::iterator end()   { return m_Files.end(); }
 
