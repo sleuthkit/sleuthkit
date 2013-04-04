@@ -18,18 +18,12 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -329,9 +323,9 @@ public class DataModelTestSuite {
 			for(Exception exc: ex)
 			{
 				exWriter.append(exc.toString());
-				exWriter.flush();
-				exWriter.close();
 			}
+			exWriter.flush();
+			exWriter.close();
 		} catch (IOException ex1) {
 			logg.log(Level.SEVERE, "Couldn't log Exception", ex1);
 		}
