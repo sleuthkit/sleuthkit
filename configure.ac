@@ -14,7 +14,7 @@ m4_include([m4/ac_prog_javac.m4])
 
 
 AC_CONFIG_SRCDIR([tsk3/base/tsk_base.h])
-AM_CONFIG_HEADER([tsk3/tsk_config.h])
+AC_CONFIG_HEADERS([tsk3/tsk_config.h])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([foreign])
 AM_PATH_CPPUNIT(1.12.1)

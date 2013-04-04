@@ -37,6 +37,13 @@ public interface Content extends SleuthkitVisitableItem {
 	 * tsk core
 	 */
 	public int read(byte[] buf, long offset, long len) throws TskCoreException;
+	
+	/**
+	 * Free native resources after read is done on the Content object.  
+	 * After closing, read can be called again on the same Content object,
+	 * which should result in re-opening of new native resources.
+	 */
+	public void close();
 
 	/**
 	 * Get the size of the content
@@ -89,6 +96,25 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public List<Content> getChildren() throws TskCoreException;
+	
+	
+	/**
+	 * Returns true if the content object has children objects.
+	 * Note, this should be more efficient than getting children and checking it empty.
+	 * 
+	 * @return true if has children, false otherwise.
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	public boolean hasChildren() throws TskCoreException;
+	
+	/**
+	 * Returns count of children objects.
+	 * Note, this should be more efficient than getting children and counting them.
+	 * 
+	 * @return children count
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	public int getChildrenCount() throws TskCoreException;
 	
 	/**
 	 * @return returns the parent of this Content object or null if there isn't

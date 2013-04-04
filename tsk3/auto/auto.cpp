@@ -2,7 +2,7 @@
  ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -38,7 +38,10 @@ TskAuto::~TskAuto()
 
 
 void TskAuto::setCurVsPart(const TSK_VS_PART_INFO *partInfo) {
-    m_curVsPartDescr = partInfo->desc;
+    if (partInfo->desc)
+        m_curVsPartDescr = partInfo->desc;
+    else
+        m_curVsPartDescr = "";
     m_curVsPartFlag = partInfo->flags;
 }
 

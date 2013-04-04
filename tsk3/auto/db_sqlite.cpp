@@ -2,7 +2,7 @@
  ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -714,6 +714,7 @@ int
             }
         }
     }
+    name[j++] = '\0';
 
 
     // clean up path
@@ -722,6 +723,7 @@ int
     char *
         escaped_path;
     if ((escaped_path = (char *) tsk_malloc(epath_len + 2)) == NULL) { // +2 = space for leading slash and terminating null
+        free(name);
         return 1;
     }
 
@@ -737,7 +739,7 @@ int
             escaped_path[k++] = path[i];
         }
     }
-
+    escaped_path[k++] = '\0';
 
     char md5Text[48] = "NULL";
 
@@ -753,30 +755,37 @@ int
     }
 
 
-    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
+        free(name);
+        free(escaped_path);
         return 1;
+    }
 
     snprintf(foo, 4096,
         "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
-        "%lld,%lld,"
+        "%" PRId64 ",%" PRId64 ","
         "%d,"
         "%d,%d,'%s',"
         "%" PRIuINUM ","
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "%lld,%lld,%lld,%lld,%d,%d,%d,%s,%d,"
+        "%llu,%llu,%llu,%llu,"
+        "%d,%d,%d,%s,%d,"
         "'%s')",
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,
         type, idx, name,
         fs_file->name->meta_addr,
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-        size, crtime, ctime, atime, mtime, meta_mode, gid, uid, md5Text, known,
+        size, 
+        (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+        meta_mode, gid, uid, md5Text, known,
         escaped_path);
 
     if (attempt_exec(foo, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
         free(name);
+        free(escaped_path);
         return 1;
     }
 
@@ -786,6 +795,8 @@ int
     }
 
     free(name);
+    free(escaped_path);
+
     return 0;
 }
 

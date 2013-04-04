@@ -21,11 +21,11 @@ package org.sleuthkit.datamodel;
 import java.util.List;
 
 /**
- * Represents a file system object stored in tsk_fs_info table
- * FileSystem has a parent content object (volume or image) and children content objects (files and directories)
- * and fs-specific attributes.
- * The object also maintains a handle to internal file-system structures 
- * and the handle is reused across reads.
+ * Represents a file system object stored in tsk_fs_info table FileSystem has a
+ * parent content object (volume or image) and children content objects (files
+ * and directories) and fs-specific attributes. The object also maintains a
+ * handle to internal file-system structures and the handle is reused across
+ * reads.
  */
 public class FileSystem extends AbstractContent {
 
@@ -37,6 +37,7 @@ public class FileSystem extends AbstractContent {
 
 	/**
 	 * Constructor most inputs are from the database
+	 *
 	 * @param db the case handle
 	 * @param obj_id the unique object id
 	 * @param name filesystem name
@@ -62,7 +63,14 @@ public class FileSystem extends AbstractContent {
 	}
 
 	@Override
-	public synchronized int read(byte[] buf, long offset, long len) throws TskCoreException {
+	public void close() {
+		//does nothing currently, we are caching the fs handles
+	}
+	
+	
+
+	@Override
+	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		return SleuthkitJNI.readFs(getFileSystemHandle(), buf, offset, len);
 	}
 
@@ -73,35 +81,41 @@ public class FileSystem extends AbstractContent {
 	}
 
 	/**
-	 * Lazily loads the internal file system structure: won't be loaded until this is called
-	 * and maintains the handle to it to reuse it
+	 * Lazily loads the internal file system structure: won't be loaded until
+	 * this is called and maintains the handle to it to reuse it
+	 *
 	 * @return a filesystem pointer from the sleuthkit
-	 * @throws TskCoreException exception throw if an internal tsk core error occurs  
+	 * @throws TskCoreException exception throw if an internal tsk core error
+	 * occurs
 	 */
-	synchronized long getFileSystemHandle() throws TskCoreException {
+	long getFileSystemHandle() throws TskCoreException {
 		if (filesystemHandle == 0) {
-			filesystemHandle = SleuthkitJNI.openFs(getImage().getImageHandle(), imgOffset);
+			synchronized (this) {
+				if (filesystemHandle == 0) {
+					filesystemHandle = SleuthkitJNI.openFs(getImage().getImageHandle(), imgOffset);
+				}
+			}
 		}
 		return this.filesystemHandle;
 	}
-	
+
 	public Directory getRootDirectory() throws TskCoreException {
-		
+
 		List<Content> children = getChildren();
 		if (children.size() != 1) {
 			throw new TskCoreException("FileSystem must have only one child.");
 		}
-		
+
 		if (!(children.get(0) instanceof Directory)) {
 			throw new TskCoreException("Child of FileSystem must be a Directory.");
 		}
 
-		return (Directory)children.get(0);
+		return (Directory) children.get(0);
 	}
 
 	/**
 	 * Get the byte offset of this file system in the image
-	 * 
+	 *
 	 * @return offset
 	 */
 	public long getImageOffset() {
@@ -110,7 +124,7 @@ public class FileSystem extends AbstractContent {
 
 	/**
 	 * Get the file system type
-	 * 
+	 *
 	 * @return enum value of fs type
 	 */
 	public TskData.TSK_FS_TYPE_ENUM getFsType() {
@@ -119,7 +133,7 @@ public class FileSystem extends AbstractContent {
 
 	/**
 	 * Get the block size
-	 * 
+	 *
 	 * @return block size
 	 */
 	public long getBlock_size() {
@@ -128,7 +142,7 @@ public class FileSystem extends AbstractContent {
 
 	/**
 	 * Get the number of blocks
-	 * 
+	 *
 	 * @return block count
 	 */
 	public long getBlock_count() {
@@ -137,7 +151,7 @@ public class FileSystem extends AbstractContent {
 
 	/**
 	 * Get the inum of the root directory
-	 * 
+	 *
 	 * @return Root metadata address of the file system
 	 */
 	public long getRoot_inum() {
@@ -146,7 +160,7 @@ public class FileSystem extends AbstractContent {
 
 	/**
 	 * Get the first inum in this file system
-	 * 
+	 *
 	 * @return first inum
 	 */
 	public long getFirst_inum() {
@@ -155,6 +169,7 @@ public class FileSystem extends AbstractContent {
 
 	/**
 	 * Get the last inum
+	 *
 	 * @return last inum
 	 */
 	public long getLastInum() {
@@ -168,8 +183,7 @@ public class FileSystem extends AbstractContent {
 				SleuthkitJNI.closeFs(filesystemHandle);
 				filesystemHandle = 0;
 			}
-		}
-		finally {
+		} finally {
 			super.finalize();
 		}
 	}
@@ -188,7 +202,7 @@ public class FileSystem extends AbstractContent {
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getFileSystemChildren(this);
 	}
-	
+
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getFileSystemChildrenIds(this);
@@ -198,9 +212,9 @@ public class FileSystem extends AbstractContent {
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
 	}
-	
+
 	@Override
-	public String toString(boolean preserveState){
+	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "FileSystem [\t" + " blockCount " + blockCount + "\t" + "blockSize " + blockSize + "\t" + "firstInum " + firstInum + "\t" + "fsType " + fsType + "\t" + "imgOffset " + imgOffset + "\t" + "lastInum " + lastInum + "\t" + "rootInum " + rootInum + "\t" + "]";
 	}
 }

@@ -177,6 +177,7 @@ main(int argc, char **argv1)
 
     autoDb->closeImage();
     delete tskCase;
+    delete autoDb;
     
     exit(0);
 }
