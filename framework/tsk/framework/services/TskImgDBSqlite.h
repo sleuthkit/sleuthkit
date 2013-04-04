@@ -93,7 +93,7 @@ public:
     virtual const std::vector<TskFileRecord> getFileRecords(const std::string& condition) const;
 
     // Get the number of files that match the given condition
-    virtual int getFileCount(std::string& condition) const;
+    virtual int getFileCount(const std::string& condition) const;
 
     virtual std::map<uint64_t, std::string> getUniqueCarvedFiles(HASH_TYPE hashType) const;
     virtual std::vector<TskCarvedFileInfo> getUniqueCarvedFilesInfo(HASH_TYPE hashType) const;
