@@ -30,23 +30,24 @@
 /win32/*/Release/
 /win32/*/*.user
 win32/ipch
-framework/win32/Debug/
-framework/win32/Release/
-framework/win32/*/Debug/
-framework/win32/*/Release/
-framework/win32/*/*.user
-framework/win32/BuildLog.txt
-framework/win32/*/ipch
+framework/msvcpp/framework/Debug/
+framework/msvcpp/framework/Release/
+framework/msvcpp/*/*.user
+framework/msvcpp/*/Debug/
+framework/msvcpp/*/Release/
+framework/msvcpp/BuildLog.txt
+framework/msvcpp/*/ipch
+framework/runtime/
 
 # IntelliSense data
 /win32/*.ncb
 /win32/*.sdf
-framework/win32/framework/*.ncb
-framework/win32/framework/*sdf
+framework/msvcpp/framework/*.ncb
+framework/msvcpp/framework/*sdf
 
 # Visual Studio user options
 /win32/tsk-win.suo
-framework/win32/framework/*.suo
+framework/msvcpp/framework/*.suo
 *.sln.cache
 
 # Make crud
