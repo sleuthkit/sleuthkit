@@ -18,6 +18,7 @@
 #include <istream>
 #include <sstream>
 #include <algorithm>
+#include <memory>
 
 #include "Poco/SharedPtr.h"
 #include "Poco/Path.h"
@@ -709,8 +710,8 @@ int TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archivedF
     try
     {
         // If a file with this id already exists we raise an error
-        TskFile * pFile = TskServices::Instance().getFileManager().getFile(fileId);
-        if (pFile != NULL && pFile->exists())
+        std::auto_ptr<TskFile> pFile(TskServices::Instance().getFileManager().getFile(fileId));
+        if (pFile.get() != NULL && pFile->exists())
         {
             std::stringstream msg;
             msg << "File id " << fileId << " already exists.";
