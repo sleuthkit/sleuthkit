@@ -611,7 +611,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
 
     // add the block map, if requested and the file is non-resident
     if ((m_blkMapFlag) && (isNonResident(fs_attr))
-        && (isDotDir(fs_file, path) == 0)) {
+        && (isDotDir(fs_file) == 0)) {
         TSK_FS_ATTR_RUN *run;
         int sequence = 0;
 

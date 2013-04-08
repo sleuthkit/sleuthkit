@@ -667,11 +667,12 @@ TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
 
 /**
  * Utility method to help determine if a file is a . or .. directory.
+ * @param a_fs_file File to evaluate
  *
  * @returns 1 if the file is a dot directory, 0 if not. 
  */
 uint8_t
-TskAuto::isDotDir(TSK_FS_FILE * a_fs_file, const char *a_path)
+TskAuto::isDotDir(TSK_FS_FILE * a_fs_file)
 {
     if ((!a_fs_file) || (!a_fs_file->name)
         || (a_fs_file->name->type != TSK_FS_NAME_TYPE_DIR))
