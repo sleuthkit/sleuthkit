@@ -38,6 +38,7 @@ framework/msvcpp/*/Release/
 framework/msvcpp/BuildLog.txt
 framework/msvcpp/*/ipch
 framework/runtime/
+framework/SampleConfig/to_install/
 
 # IntelliSense data
 /win32/*.ncb

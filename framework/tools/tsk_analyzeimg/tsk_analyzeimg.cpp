@@ -117,11 +117,6 @@ int main(int argc, char **argv1)
     while ((ch =
         GETOPT(argc, argv, _TSK_T("d:c:p:vVLC"))) > 0) {
         switch (ch) {
-        case _TSK_T('?'):
-        default:
-            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
-                argv[OPTIND]);
-            usage(argv1[0]);
         case _TSK_T('c'):
 #ifdef TSK_WIN32
             framework_config.assign(TskUtilities::toUTF8(std::wstring(OPTARG)));
@@ -129,6 +124,7 @@ int main(int argc, char **argv1)
             framework_config.assign(OPTARG);
 #endif
             break;
+
         case _TSK_T('p'):
 #ifdef TSK_WIN32
             pipeline_config.assign(TskUtilities::toUTF8(std::wstring(OPTARG)));
@@ -136,13 +132,16 @@ int main(int argc, char **argv1)
             pipeline_config.assign(OPTARG);
 #endif
             break;
+
         case _TSK_T('v'):
             tsk_verbose++;
             break;
+
         case _TSK_T('V'):
             tsk_version_print(stdout);
             exit(0);
             break;
+
         case _TSK_T('d'):
 #ifdef TSK_WIN32
             outDirPath.assign(TskUtilities::toUTF8(std::wstring(OPTARG)));
@@ -150,12 +149,20 @@ int main(int argc, char **argv1)
             outDirPath.assign(OPTARG);
 #endif
             break;
+
         case _TSK_T('C'):
             doCarving = false;
             break;
+
         case _TSK_T('L'):
             suppressSTDERR = true;
             break;
+
+        case _TSK_T('?'):
+        default:
+            TFPRINTF(stderr, _TSK_T("Invalid argument: %s\n"),
+                argv[OPTIND]);
+            usage(argv1[0]);
         }
     }
 
@@ -182,17 +189,20 @@ int main(int argc, char **argv1)
     // Load the framework config if they specified it
     try
     {
+        // try the one specified on the command line
         if (framework_config.size()) {
-            // Initialize properties based on the config file.
             TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();
             systemProperties->initialize(framework_config);
             TskServices::Instance().setSystemProperties(*systemProperties);
         }
+        // try the one in the current directory
         else if (Poco::File("framework_config.xml").exists()) {
             TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();
             systemProperties->initialize("framework_config.xml");
             TskServices::Instance().setSystemProperties(*systemProperties);
         }
+        // try one back up a few directories for the use case that we built this in
+        // the source tree.
         else {
             TskSystemPropertiesImpl *systemProperties = new TskSystemPropertiesImpl();
             systemProperties->initialize();
@@ -208,10 +218,11 @@ int main(int argc, char **argv1)
     }
     catch (TskException& ex)
     {
-        fprintf(stderr, "%s\n", ex.message().c_str());
+        fprintf(stderr, "Loading framework config file: %s\n", ex.message().c_str());
         return 1;
     }
 
+    // if they didn't specify the output directory, make one
     if (outDirPath == "") {
         outDirPath.assign(imagePath);
         outDirPath.append("_tsk_out");
@@ -224,28 +235,26 @@ int main(int argc, char **argv1)
     }
 
     SetSystemProperty(TskSystemProperties::OUT_DIR, outDirPath);
-
-    if (makeDir(outDirPath.c_str())) 
-    {
+    // make the output dirs, makeDir() logs the error.
+    if (makeDir(outDirPath.c_str()))  {
         return 1;
     }
 
-    if (makeDir(GetSystemProperty(TskSystemProperties::SYSTEM_OUT_DIR).c_str()))
-    {
+    if (makeDir(GetSystemProperty(TskSystemProperties::SYSTEM_OUT_DIR).c_str())) {
         return 1;
     }
 
-    if (makeDir(GetSystemProperty(TskSystemProperties::MODULE_OUT_DIR).c_str()))
-    {
+    if (makeDir(GetSystemProperty(TskSystemProperties::MODULE_OUT_DIR).c_str())) {
         return 1;
     }
 
     std::string logDir = GetSystemProperty(TskSystemProperties::LOG_DIR);
-    if (makeDir(logDir.c_str())) 
-    {
+    if (makeDir(logDir.c_str()))  {
         return 1;
     }
 
+
+    // Create a log object
     struct tm * newtime;
     time_t aclock;
 
