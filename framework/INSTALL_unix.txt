@@ -1,9 +1,9 @@
                     The Sleuth Kit Framework
                 http://www.sleuthkit.org/sleuthkit
 
-                    Installation Instructions
+              Installation Instructions for Linux / OS X
 
-                   Last Modified: Feb 25, 2013
+                   Last Modified: Apr 8, 2013
 
 
 REQUIREMENTS
@@ -11,7 +11,6 @@ REQUIREMENTS
 Tested Platform:
 - Linux 2.*
 - Mac OS X
-- Windows
 
 Build System:
 - C/C++ compiler
@@ -20,17 +19,24 @@ Build System:
 
 
 Required Libraries:
-The following libraries must be installed before building and install the framework.
+The following libraries must be installed before building and install
+the framework.
 
-- POCO: POCO is a set of open source C++ classes for building portable applications. 
-The Sleuth Kit framework uses POCO to handle some basic internal tasks.  
-Testing has been performed with version 1.4.4 of the POCO libraries.
+- POCO: POCO is a set of open source C++ classes for building
+portable applications.  The Sleuth Kit framework uses POCO to handle
+some basic internal tasks.  Testing has been performed with version
+1.4.4 of the POCO libraries.
     Available at http://www.pocoproject.org
+
+The modules may also have library dependencies.  For example, the
+file type module requires libmagic.  The documents in each module
+will list them .
+
 
 INSTALLATION
 =============================================================================
 
-Refer to the BUILDING.txt file in the msvcpp directory for details on building using 
+Refer to the INSTALL_win.txt file for details on building using
 Microsoft Visual Studio 2010.
 
 Before you compile the framework, ensure that you have downloaded
@@ -40,28 +46,35 @@ following commands to download all of the modules before compiling:
 % git submodule init
 % git submodule update
 
-The Sleuth Kit framework uses the GNU autotools for building and installation.
-There are a few steps to this process.  First, run the 'configure'
-script in the framework directory.
+The Sleuth Kit framework uses the GNU autotools for building and
+installation.  There are a few steps to this process.  First, run
+the 'configure' script in the framework directory.  This will also
+run configure in all of the modules.  The modules have been designed
+to not fatally fail if a dependency exists so that you can continue
+to build all of them.  Refer to the end of the output for messages
+about missing dependencies.
 
     $ ./configure
 
-If there were no errors, then run 'make'.
+If there were no errors, then run 'make'.  This will also run make
+in all of the modules.
 
     $ make
 
-The 'make' process will take a while and will build the framework and submodules.
-When this process is complete, the executables will be located in the "tools" directory
-and the module libraries will be located in the "runtime" directory.  
-To install them, type 'make install'.
+The 'make' process will take a while and will build the framework
+library, tools that use the framework, and modules that load into
+the framework.  
+
+The tools are in the "tools" directory and the modules were copied
+into the "runtime" directory. You can run the tools from this layout.
+For quick reference, tsk_analyzeimg is a tool that can drive the
+entire framework.
+
+To install the tools, moduless, and framework, type 'make install'.
 
     $ make install
 
 By default, this will copy everything in to the /usr/local/ structure.
-So, the executables will be in '/usr/local/bin'.  This directory will
-need to be in your PATH if you want to run the TSK framework commands without 
-specifying '/usr/local/bin' everytime.
-
 
 If you get an error like:
 
