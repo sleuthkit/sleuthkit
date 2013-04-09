@@ -98,7 +98,7 @@ namespace
 
 }
 
-TskL01Extract::TskL01Extract(const std::wstring &archivePath) :
+TskL01Extract::TskL01Extract(const std::string &archivePath) :
     m_archivePath(archivePath),
     m_db(TskServices::Instance().getImgDB()),
     m_imgInfo(NULL)
@@ -138,7 +138,7 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
             throw TskException(MSG_PREFIX + "No path to archive provided.");
         }
 
-        std::string L01Path = TskUtilities::toUTF8(m_archivePath);
+        std::string L01Path = m_archivePath;
         if (m_containerFile != NULL)
         {
             L01Path = m_containerFile->getPath();
@@ -377,7 +377,7 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
     {
         // Make an absolute path (if it's relative) so that libewf doesn't cause 
         // an error when it tries to make it absolute.
-        Poco::Path tempPath(TskUtilities::toUTF8(m_archivePath));
+        Poco::Path tempPath(m_archivePath);
         tempPath.makeAbsolute();
         // We convert to unicode here because that is what the TSK_IMG_INFO structure requires.
         std::wstring ewfArchivePath = TskUtilities::toUTF16(tempPath.toString());

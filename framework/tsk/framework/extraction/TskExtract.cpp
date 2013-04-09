@@ -66,11 +66,22 @@ namespace TskArchiveExtraction
      */
     ExtractorPtr createExtractor(const std::wstring &archivePath, const std::string filter /*= ""*/)
     {
+        return createExtractor(TskUtilities::toUTF8(archivePath), filter);
+    }
+
+    /**
+     * Factory Function
+     * @param   archivePath Local path of the container file.
+     * @param   extFilter   Optional filter string specifying a particular type of archive.
+     * @returns Smart pointer to a new extractor object appropriate to the container
+     *          Pointer will be NULL if an extractor is not found for this container.
+     */
+    ExtractorPtr createExtractor(const std::string &archivePath, const std::string filter /*= ""*/)
+    {
         //Check based on file signature 
         if (filter.empty())
         {
-            std::string narrowPath = TskUtilities::toUTF8(archivePath);
-            if (isL01File(narrowPath.c_str()))
+            if (isL01File(archivePath.c_str()))
             {
                 return new TskL01Extract(archivePath);
             }
