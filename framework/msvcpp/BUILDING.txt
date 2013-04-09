@@ -25,7 +25,10 @@ Development environment setup consists of the following steps:
    Sleuth Kit BUILDING.txt file for details on setting LIBEWF_HOME.
 4) Ensure that the TSK_HOME environment variable is set and refers to the
    directory to which you extracted the Sleuth Kit.
-5) Run 'nmake' in the framework\msvcpp directory.
+5) Run 'nmake' in the framework\msvcpp directory. This will result in
+   debug versions of the framework and analysis modules in the 
+   framework\runtime directory. For release builds, run 'nmake release'.
+   For other build options run 'nmake usage'.
 
 
 If the above simple build process does not work the following sections

@@ -19,15 +19,16 @@ POCO_DEBUG_FLAGS = "/property:Configuration=debug_shared"
 
 LOGFILE_FLAGS = "/fileloggerparameters:logfile=$(BUILDLOG);Append;Verbosity=detailed"
 
-all:	framework
+all:	debug
 
 usage:
-    @echo Usage: nmake [poco ^| libewf ^| all_deps ^| framework ^| clean ^| spotless]
+    @echo Usage: nmake [poco ^| libewf ^| all_deps ^| debug ^| release ^| clean ^| spotless]
     @echo "   poco: Builds debug and release versions of Poco libraries"
     @echo "   libewf: Builds release version of libewf_dll and zlib"
     @echo "   all_deps: Builds all dependencies (i.e. Poco, libewf and zlib)"
-    @echo "   framework: Cleans debug and release versions of libtsk and libtskframework"
-    @echo "   clean: Cleans libtsk and libtskframework"
+    @echo "   release: Builds release versions of libtsk and libtskframework"
+    @echo "   debug: Builds debug versions of libtsk and libtskframework"
+    @echo "   clean: Cleans debug and release versions of libtsk and libtskframework"
     @echo "   spotless: Cleans libtsk, libtskframework, libewf, zlib and Poco."
 
 poco:
@@ -47,11 +48,13 @@ libewf:
     
 all_deps: poco libewf
 
-framework: all_deps
-	$(MSBUILD)  $(TSK_SOLN) /target:libtsk $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
-	$(MSBUILD)  $(FRMWK_SOLN) $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
+release: all_deps
 	$(MSBUILD)  $(TSK_SOLN) /target:libtsk $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
 	$(MSBUILD)  $(FRMWK_SOLN) $(RELEASE_FLAGS) $(LOGFILE_FLAGS)
+
+debug: all_deps
+	$(MSBUILD)  $(TSK_SOLN) /target:libtsk $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
+	$(MSBUILD)  $(FRMWK_SOLN) $(DEBUG_FLAGS) $(LOGFILE_FLAGS)
 
 clean:
     $(RM) $(BUILDLOG)
