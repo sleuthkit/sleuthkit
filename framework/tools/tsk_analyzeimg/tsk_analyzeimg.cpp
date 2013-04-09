@@ -24,7 +24,7 @@
 #include "tsk/framework/file/TskFileManagerImpl.h"
 #include "tsk/framework/extraction/TskCarvePrepSectorConcat.h"
 #include "tsk/framework/extraction/TskCarveExtractScalpel.h"
-#include "Extraction/TskExtract.h"
+#include "tsk/framework/extraction/TskExtract.h"
 
 #include "Poco/Path.h"
 #include "Poco/File.h"
@@ -304,8 +304,8 @@ int main(int argc, char **argv1)
     {
         // Create an ImageFile and register it with the framework.
         if (imageFileTsk.open(imagePath) != 0) {
-            std::wstringstream msg;
-            msg << L"Error opening image: " << imagePath;
+            std::stringstream msg;
+            msg << "Error opening image: " << imagePath;
             LOGERROR(msg.str());
             return 1;
         }
