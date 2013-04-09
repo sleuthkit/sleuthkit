@@ -2572,7 +2572,7 @@ public class SleuthkitCase {
 	 * @return a VirtualDirectory object representing the one added to the database.
 	 * @throws TskCoreException 
 	 */
-	public VirtualDirectory addVirtualDirectory(long parentId, String directoryName) throws TskCoreException {
+	private VirtualDirectory addVirtualDirectory(long parentId, String directoryName) throws TskCoreException {
 		
 		// get the parent path
 		String parentPath = getFilePath(parentId);
@@ -2630,13 +2630,7 @@ public class SleuthkitCase {
 			//size
 			long size = 0;
 			addFileSt.setLong(9, size);
-			//mactimes
-			//long ctime, long crtime, long atime, long mtime,
-			long time = 0;
-//			addFileSt.setLong(10, time);
-//			addFileSt.setLong(11, time);
-//			addFileSt.setLong(12, time);
-//			addFileSt.setLong(13, time);
+
 			//parent path
 			addFileSt.setString(14, parentPath);
 
@@ -2672,6 +2666,8 @@ public class SleuthkitCase {
 
 		return vd;
 	}
+	
+	
 
 	/**
 	 * Creates a new derived file object, adds it to database and returns it.
