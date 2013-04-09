@@ -291,7 +291,7 @@ void TskPluginModule::validateLibraryVersionInfo()
    }
 
    typedef TskVersionInfo::BuildType (*GetBuildType)();
-   GetBuildType getBuildType = (GetBuildType) m_sharedLibrary.getSymbol(TskPluginModule::GET_COMPILER_SYMBOL);
+   GetBuildType getBuildType = (GetBuildType) m_sharedLibrary.getSymbol(TskPluginModule::GET_BUILD_TYPE_SYMBOL);
    if (TskVersionInfo::getBuildType() != getBuildType())
    {
       throw TskException("TskPluginModule::validateLibraryVersionInfo : build target mismatch");
