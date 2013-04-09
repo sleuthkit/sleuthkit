@@ -66,6 +66,10 @@ public class SleuthkitCase {
 	private ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private int artifactIDcounter = 1001;
 	private int attributeIDcounter = 1001;
+	
+	// for use by getCarvedDirectoryId method only
+	private Map<Long, Long> systemIdMap;
+
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
 	private static final Lock caseDbLock = rwLock.writeLock(); //using exclusing lock for all db ops for now
@@ -99,6 +103,7 @@ public class SleuthkitCase {
 	private PreparedStatement getDerivedMethodSt;
 	private PreparedStatement addObjectSt;
 	private PreparedStatement addFileSt;
+	private PreparedStatement addLayoutFileSt;
 	private PreparedStatement addPathSt;
 	private PreparedStatement hasChildrenSt;
 	private PreparedStatement getLastContentIdSt;
@@ -230,6 +235,10 @@ public class SleuthkitCase {
 		addFileSt = con.prepareStatement(
 				"INSERT INTO tsk_files (obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		
+		addLayoutFileSt = con.prepareStatement(
+				"INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) "
+				+ "VALUES (?, ?, ?, ?)");
 
 		addPathSt = con.prepareStatement(
 				"INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)");
@@ -368,6 +377,11 @@ public class SleuthkitCase {
 			if (addFileSt != null) {
 				addFileSt.close();
 				addFileSt = null;
+			}
+			
+			if (addLayoutFileSt != null) {
+				addLayoutFileSt.close();
+				addLayoutFileSt = null;
 			}
 
 			if (addPathSt != null) {
@@ -2637,7 +2651,7 @@ public class SleuthkitCase {
 			addFileSt.executeUpdate();
 			
 			vd = new VirtualDirectory(this, newObjId, directoryName, dirType,
-					metaType, dirFlag, metaFlags, size, dbPath, FileKnown.UKNOWN,
+					metaType, dirFlag, metaFlags, size, null, FileKnown.UKNOWN,
 					parentPath);
 		} catch (SQLException e) {
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
@@ -2667,7 +2681,142 @@ public class SleuthkitCase {
 		return vd;
 	}
 	
+	/**
+	 * @param systemId a volume or file system ID
+	 * @return the ID of the '$CarvedFiles' directory for the given systemId
+	 */
+	private long getCarvedDirectoryId(long systemId) {
+		throw new UnsupportedOperationException("Not yet implemented.");
+	}
 	
+	/**
+	 * Adds a carved file to the VirtualDirectory '$CarvedFiles' in the volume
+	 * or file system given by systemId.
+	 * @param name the name of the carved file (containing appropriate extension)
+	 * @param systemId the ID of the parent volume or file system
+	 * @param sectors a list of SectorGroups giving this sectors that make up
+	 * this carved file.
+	 */
+	public LayoutFile addCarvedFile(String carvedFileName, long carvedFileSize,
+			long systemId, List<TskFileRange> data) throws TskCoreException {
+		
+		// get the ID of the appropriate '$CarvedFiles' directory
+		long carvedFilesId = getCarvedDirectoryId(systemId);
+		
+		// get the path for the $CarvedFiles directory
+		String parentPath = getFilePath(carvedFilesId);
+		if (parentPath == null) {
+			parentPath = "";
+		}
+		
+		dbWriteLock();
+		
+		LayoutFile lf = null;
+
+		//all in one write lock and transaction
+		//get last object id
+		//create tsk_objects object with new id
+		//create tsk_files object with the new id
+		try {
+
+			con.setAutoCommit(false);
+
+			long newObjId = getLastObjectId() + 1;
+			if (newObjId < 1) {
+				throw new TskCoreException("Error creating a virtual directory, cannot get new id of the object.");
+			}
+
+			//tsk_objects
+			addObjectSt.setLong(1, newObjId);
+			addObjectSt.setLong(2, carvedFilesId);
+			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			addObjectSt.executeUpdate();
+
+			//tsk_files
+			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
+
+			//obj_id, fs_obj_id, name
+			addFileSt.setLong(1, newObjId);
+			addFileSt.setString(2, carvedFileName);
+
+			//type, has_path
+			final TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS;
+			addFileSt.setShort(3, type.getFileType());
+			addFileSt.setBoolean(4, true);
+
+			//flags
+			final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.REG;
+			addFileSt.setShort(5, dirType.getValue());
+			final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG;
+			addFileSt.setShort(6, metaType.getValue());
+
+			//note: using alloc under assumption that derived files derive from alloc files
+			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.UNALLOC;
+			addFileSt.setShort(7, dirFlag.getValue());
+			final short metaFlags = TSK_FS_META_FLAG_ENUM.UNALLOC.getValue();
+			addFileSt.setShort(8, metaFlags);
+
+			//size
+			addFileSt.setLong(9, carvedFileSize);
+
+			//parent path
+			addFileSt.setString(14, parentPath);
+
+			addFileSt.executeUpdate();
+			
+			// tsk_file_layout
+			
+			// add an entry in the tsk_layout_file table for each TskFileRange
+			for (TskFileRange tskFileRange : data) {
+				
+				// set the object ID
+				addLayoutFileSt.setLong(1, newObjId);
+				
+				// set byte_start
+				addLayoutFileSt.setLong(2, tskFileRange.getByteStart());
+				
+				// set byte_len
+				addLayoutFileSt.setLong(3, tskFileRange.getByteLen());
+				
+				// set the sequence number
+				addLayoutFileSt.setLong(4, tskFileRange.getSequence());
+				
+				// execute it
+				addLayoutFileSt.executeUpdate();
+			}
+
+			// create the LayoutFile object
+			lf = new LayoutFile(this, newObjId, carvedFileName, type, dirType,
+					metaType, dirFlag, metaFlags, carvedFileSize, null,
+					FileKnown.UKNOWN, parentPath);
+
+		} catch (SQLException e) {
+			throw new TskCoreException("Error creating a carved file '" + carvedFileName + "'", e);
+		} finally {
+			try {
+				addObjectSt.clearParameters();
+				addFileSt.clearParameters();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Error clearing parameters after adding derived file", ex);
+			}
+			
+			try {
+				con.commit();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Error committing after adding derived file", ex);
+			} finally {
+				try {
+					con.setAutoCommit(true);
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error setting auto-commit after adding derived file", ex);
+				} finally {
+					dbWriteUnlock();
+				}
+			}
+		}
+
+		return lf;
+	}
 
 	/**
 	 * Creates a new derived file object, adds it to database and returns it.
