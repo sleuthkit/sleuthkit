@@ -68,7 +68,8 @@ ValidatePipeline::~ValidatePipeline()
 */
 bool ValidatePipeline::isValid(const char *a_configPath) const
 {
-    bool result = false;
+    bool failed = false;
+
     std::ifstream in(a_configPath);
     if (!in) {
         fprintf(stdout, "Error opening pipeline config file: %s\n", a_configPath);
@@ -86,7 +87,6 @@ bool ValidatePipeline::isValid(const char *a_configPath) const
             if (pipelines->length() == 0) {
                 fprintf(stdout, "No pipelines found in config file.\n");
             } else {
-                bool failed = false;
                 // parse all pipelines in the config file
                 for (unsigned long i = 0; i < pipelines->length(); i++)
                 {
@@ -96,33 +96,34 @@ bool ValidatePipeline::isValid(const char *a_configPath) const
                     std::ostringstream pipelineXml;
                     writer.writeNode(pipelineXml, pNode);
 
-                    std::string pipelineType = pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE);
+                    std::string pipelineType = pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE_ATTRIBUTE);
 
                     TskPipeline * pipeline;
-                    if (pipelineType == TskPipelineManager::FILE_ANALYSIS_PIPELINE)
+                    if (pipelineType == TskPipelineManager::FILE_ANALYSIS_PIPELINE_STR)
                         pipeline = new TskFileAnalysisPipeline();
-                    else if (pipelineType == TskPipelineManager::REPORTING_PIPELINE)
+                    else if (pipelineType == TskPipelineManager::REPORTING_PIPELINE_STR)
                         pipeline = new TskReportPipeline();
-                    else
+                    else {
                         fprintf(stdout, "Unsupported pipeline type: %s\n", pipelineType.c_str());
+                        failed = true;
+                        continue;
+                    }
 
                     try {
                         pipeline->validate(pipelineXml.str());
                     } catch (...) {
-                        fprintf(stdout, "Error parsing pipeline: %s\n", pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE).c_str());
+                        fprintf(stdout, "Error parsing pipeline: %s\n", pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE_ATTRIBUTE).c_str());
                         failed = true;
                     }
-                    delete pipeline;
                 }
-                if (!failed)
-                    result = true;
             }
         } catch (Poco::XML::SAXParseException& ex) {
             fprintf(stderr, "Error parsing pipeline config file: %s (%s)\n", a_configPath, ex.what());
         }
-
     }
-    return result;
+ 
+    // If any of the pipelines failed validation we return false
+    return failed ? false : true;
 }
 
 static std::wstring getProgDir()

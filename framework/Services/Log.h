@@ -116,7 +116,7 @@ public:
      */
     void logInfo(const std::wstring &msg)  { log(Log::Info,  msg); };
 
-    int open(const wchar_t * a_outDir);
+    int open(const wchar_t * a_logFileFullPath);
     int open();
     int close();
     const wchar_t * getLogPath();

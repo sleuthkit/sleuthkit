@@ -18,8 +18,11 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.FileWriter;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -42,6 +45,7 @@ public class TopDownTraversal extends ImgTraverser {
 	private static final Logger logg = Logger.getLogger(TopDownTraversal.class.getName());
 
 	public TopDownTraversal(List<String> imagePaths) {
+		testName = DataModelTestSuite.TD;
 		this.imagePaths = imagePaths;
 	}
 
@@ -87,19 +91,23 @@ public class TopDownTraversal extends ImgTraverser {
 	 * @return the file writer to be closed by testStandard
 	 */
 	@Override
-	public FileWriter traverse(SleuthkitCase sk, String path) {
+	public OutputStreamWriter traverse(SleuthkitCase sk, String path) {
 		List<Content> lc = null;
 		try {
 			lc = sk.getRootObjects();
 		} catch (TskCoreException ex) {
-			DataModelTestSuite.writeExceptions(testStandardPath, ex);
+			List<Exception> inp = new ArrayList<Exception>();
+			inp.add(ex);
+			DataModelTestSuite.writeExceptions(testStandardPath, inp);
 		}
 		List<Long> lp = new ArrayList<Long>();
 		try {
-			FileWriter reslt = new FileWriter(path);
-			FileWriter levs = new FileWriter(path.replace("_" + this.getClass().getSimpleName() + ".txt", DataModelTestSuite.LVS + ".txt"));
-			topDownDF(lc, lp, reslt, levs);
+			Charset chr = Charset.forName("UTF-8");
+			OutputStreamWriter reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path),8192*4), chr);
+			OutputStreamWriter levs = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path.replace(this.testName + ".txt", DataModelTestSuite.BTTMUP + ".txt")), 8192*4),chr);
+			List<Exception> inp = topDownDF(lc, lp, reslt, levs);
 			levs.flush();
+			DataModelTestSuite.writeExceptions(path, inp);
 			return reslt;
 		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Failed to Traverse", ex);
@@ -116,7 +124,8 @@ public class TopDownTraversal extends ImgTraverser {
 	 * @param reslt the filewriter to append output to
 	 * @param levs the filewriter to append leaves to
 	 */
-	private void topDownDF(List<Content> lc, List<Long> lp, Appendable reslt, Appendable levs) {
+	private List<Exception> topDownDF(List<Content> lc, List<Long> lp, Appendable reslt, Appendable levs) {
+		List<Exception> inp = new ArrayList<Exception>();
 		for (Content c : lc) {
 			try {
 				reslt.append(((AbstractContent) c).toString(false).replaceAll("paths \\[([A-z]:)?.+?\\]", ""));
@@ -136,14 +145,15 @@ public class TopDownTraversal extends ImgTraverser {
 				if (c.getChildren().isEmpty()) {
 					levs.append(lp.toString() + "\n");
 				} else {
-					topDownDF(c.getChildren(), new ArrayList<Long>(lp), reslt, levs);
+					inp.addAll(topDownDF(c.getChildren(), new ArrayList<Long>(lp), reslt, levs));
 				}
 			} catch (IOException ex) {
 				logg.log(Level.SEVERE, "Failed to Traverse", ex);
 			} catch (TskCoreException ex) {
-				DataModelTestSuite.writeExceptions(testStandardPath, ex);
+				inp.add(ex);
 			}
 			lp.remove(0);
 		}
+		return inp;
 	}
 }

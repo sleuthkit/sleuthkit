@@ -546,7 +546,11 @@ int
     if (fs_file->name == NULL)
         return 0;
 
-    if (fs_file->fs_info->root_inum == fs_file->name->meta_addr) {
+    /* we want the root directory to have its parent be the file system
+     * object.  We need to have special care though because the ".." entries
+     * in sub-folders of the root directory have a meta_addr of the root dir. */
+    if ((fs_file->fs_info->root_inum == fs_file->name->meta_addr) && 
+            ((fs_file->name->name == NULL) || (0 == TSK_FS_ISDOT(fs_file->name->name)))) {
         // this entry is for root directory
         parObjId = fsObjId;
     }

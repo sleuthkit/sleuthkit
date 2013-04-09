@@ -1462,12 +1462,13 @@ int TskImgDBSqlite::addDerivedFileInfo(const std::string& name, const uint64_t p
     char * errmsg;
 
     TSK_FS_NAME_TYPE_ENUM dirType = isDirectory ? TSK_FS_NAME_TYPE_DIR : TSK_FS_NAME_TYPE_REG;
+    TSK_FS_META_TYPE_ENUM metaType = isDirectory ? TSK_FS_META_TYPE_DIR : TSK_FS_META_TYPE_REG;
 
     // insert into files table
     sqlite3_snprintf(1024, stmt,
-        "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, size, ctime, crtime, atime, mtime, status, full_path) "
-        "VALUES (NULL, %d, '%q', %llu, %d, %llu, %d, %d, %d, %d, %d, '%q')",
-        IMGDB_FILES_TYPE_DERIVED, name.c_str(), parentId, dirType, size, ctime, crtime, atime, mtime, IMGDB_FILES_STATUS_CREATED, path.c_str());
+        "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type, size, ctime, crtime, atime, mtime, status, full_path) "
+        "VALUES (NULL, %d, '%q', %llu, %d, %d, %llu, %d, %d, %d, %d, %d, '%q')",
+        IMGDB_FILES_TYPE_DERIVED, name.c_str(), parentId, dirType, metaType, size, ctime, crtime, atime, mtime, IMGDB_FILES_STATUS_CREATED, path.c_str());
 
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) 
     {
@@ -2644,7 +2645,7 @@ int TskImgDBSqlite::addModule(const std::string& name, const std::string& descri
     else
     {
         std::wstringstream msg;
-        msg << L"TskModule::addModule - Failed to prepare statement: " << stmt;
+        msg << L"TskImgDBSqlite::addModule - Failed to prepare statement: " << stmt;
         LOGERROR(msg.str());
     }
     

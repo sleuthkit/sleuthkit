@@ -51,6 +51,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
         m_fileHashFlag = false;
     m_noFatFsOrphans = false;
     m_addUnallocSpace = false;
+    tsk_init_lock(&m_curDirPathLock);
 }
 
 TskAutoDb::~TskAutoDb()
@@ -60,6 +61,7 @@ TskAutoDb::~TskAutoDb()
         revertAddImage();
 
     closeImage();
+    tsk_deinit_lock(&m_curDirPathLock);
 }
 
 void
@@ -538,7 +540,9 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     int64_t cur = fs_file->name->par_addr;
     if(m_curDirId != cur){
         m_curDirId = cur;
+        tsk_take_lock(&m_curDirPathLock);
         m_curDirPath = path;
+        tsk_release_lock(&m_curDirPathLock);
     }
 
     /* process the attributes.  The case of having 0 attributes can occur
@@ -972,10 +976,15 @@ uint8_t TskAutoDb::addUnallocImageSpaceToDb() {
 }
 
 /**
-* Returns the directory currently being analyzed by processFile()
+* Returns the directory currently being analyzed by processFile().
+* Safe to use from another thread than processFile().
 *
-* @returns reference to currently analyzed directory
+* @returns curDirPath string representing currently analyzed directory
 */
-const std::string TskAutoDb::getCurDir(){
-    return TskAutoDb::m_curDirPath;
+const std::string TskAutoDb::getCurDir() {
+    string curDirPath;
+    tsk_take_lock(&m_curDirPathLock);
+    curDirPath = m_curDirPath;
+    tsk_release_lock(&m_curDirPathLock);
+    return curDirPath;
 }

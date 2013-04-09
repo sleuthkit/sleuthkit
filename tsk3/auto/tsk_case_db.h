@@ -94,6 +94,7 @@ class TskAutoDb:public TskAuto {
     int64_t m_curDirId;		///< Object ID of the directory currently being processed
     int64_t m_curUnallocDirId;	
     string m_curDirPath;		//< Path of the current directory being processed
+    tsk_lock_t m_curDirPathLock; //< protects concurrent access to m_curDirPath
     string m_curImgTZone;
     bool m_blkMapFlag;
     bool m_fileHashFlag;
