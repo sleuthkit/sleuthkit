@@ -14,8 +14,8 @@
 #include <sstream>
 #include <Windows.h>
 
-#include "framework.h"
-#include "Services/TskSystemPropertiesImpl.h"
+#include "tsk/framework/framework.h"
+#include "tsk/framework/services/TskSystemPropertiesImpl.h"
 
 #include "Poco/AutoPtr.h"
 #include "Poco/Path.h"
