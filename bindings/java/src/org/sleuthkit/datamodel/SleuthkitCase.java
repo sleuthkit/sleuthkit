@@ -98,7 +98,7 @@ public class SleuthkitCase {
 	private PreparedStatement getDerivedInfoSt;
 	private PreparedStatement getDerivedMethodSt;
 	private PreparedStatement addObjectSt;
-	private PreparedStatement addLocalFileSt;
+	private PreparedStatement addFileSt;
 	private PreparedStatement addPathSt;
 	private PreparedStatement hasChildrenSt;
 	private PreparedStatement getLastContentIdSt;
@@ -227,7 +227,7 @@ public class SleuthkitCase {
 		addObjectSt = con.prepareStatement(
 				"INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (?, ?, ?)");
 
-		addLocalFileSt = con.prepareStatement(
+		addFileSt = con.prepareStatement(
 				"INSERT INTO tsk_files (obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) "
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
@@ -365,9 +365,9 @@ public class SleuthkitCase {
 				addObjectSt = null;
 			}
 
-			if (addLocalFileSt != null) {
-				addLocalFileSt.close();
-				addLocalFileSt = null;
+			if (addFileSt != null) {
+				addFileSt.close();
+				addFileSt = null;
 			}
 
 			if (addPathSt != null) {
@@ -2347,10 +2347,9 @@ public class SleuthkitCase {
 	 * is none
 	 *
 	 * @param id id of the file to get path for
-	 * @return file path of null
-	 * @throws SQLException file path could not be queried due to user error
+	 * @return file path or null
 	 */
-	String getFilePath(long id) throws SQLException {
+	String getFilePath(long id) {
 
 		String filePath = null;
 		ResultSet rs = null;
@@ -2564,6 +2563,115 @@ public class SleuthkitCase {
 			addPathSt.clearParameters();
 		}
 	}
+	
+	/**
+	 * Adds a virtual directory to the database and returns a VirtualDirectory
+	 * object representing it.
+	 * @param parentId the ID of the parent
+	 * @param directoryName the name of the virtual directory to create
+	 * @return a VirtualDirectory object representing the one added to the database.
+	 * @throws TskCoreException 
+	 */
+	public VirtualDirectory addVirtualDirectory(long parentId, String directoryName) throws TskCoreException {
+		
+		// get the parent path
+		String parentPath = getFilePath(parentId);
+		if (parentPath == null) {
+			parentPath = "";
+		}
+		
+		dbWriteLock();
+		
+		VirtualDirectory vd = null;
+
+		//all in one write lock and transaction
+		//get last object id
+		//create tsk_objects object with new id
+		//create tsk_files object with the new id
+		try {
+
+			con.setAutoCommit(false);
+
+			long newObjId = getLastObjectId() + 1;
+			if (newObjId < 1) {
+				throw new TskCoreException("Error creating a virtual directory, cannot get new id of the object.");
+			}
+
+			//tsk_objects
+			addObjectSt.setLong(1, newObjId);
+			addObjectSt.setLong(2, parentId);
+			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			addObjectSt.executeUpdate();
+
+			//tsk_files
+			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
+
+			//obj_id, fs_obj_id, name
+			addFileSt.setLong(1, newObjId);
+			addFileSt.setString(2, directoryName);
+
+			//type, has_path
+			addFileSt.setShort(3, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
+			addFileSt.setBoolean(4, true);
+
+			//flags
+			final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
+			addFileSt.setShort(5, dirType.getValue());
+			final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			addFileSt.setShort(6, metaType.getValue());
+
+			//note: using alloc under assumption that derived files derive from alloc files
+			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
+			addFileSt.setShort(7, dirFlag.getValue());
+			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
+					| TSK_FS_META_FLAG_ENUM.USED.getValue());
+			addFileSt.setShort(8, metaFlags);
+
+			//size
+			long size = 0;
+			addFileSt.setLong(9, size);
+			//mactimes
+			//long ctime, long crtime, long atime, long mtime,
+			long time = 0;
+//			addFileSt.setLong(10, time);
+//			addFileSt.setLong(11, time);
+//			addFileSt.setLong(12, time);
+//			addFileSt.setLong(13, time);
+			//parent path
+			addFileSt.setString(14, parentPath);
+
+			addFileSt.executeUpdate();
+			
+			vd = new VirtualDirectory(this, newObjId, directoryName, dirType,
+					metaType, dirFlag, metaFlags, size, dbPath, FileKnown.UKNOWN,
+					parentPath);
+		} catch (SQLException e) {
+			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
+		} finally {
+			try {
+				addObjectSt.clearParameters();
+				addFileSt.clearParameters();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Error clearing parameters after adding virtual directory.", ex);
+			}
+			
+			try {
+				con.commit();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Error committing after adding virtual directory.", ex);
+			} finally {
+				try {
+					con.setAutoCommit(true);
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error setting auto-commit after adding virtual directory.", ex);
+				} finally {
+					dbWriteUnlock();
+				}
+			}
+		}
+
+		return vd;
+	}
 
 	/**
 	 * Creates a new derived file object, adds it to database and returns it.
@@ -2599,7 +2707,7 @@ public class SleuthkitCase {
 		final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/';
 
 		DerivedFile ret = null;
-
+		
 		long newObjId = -1;
 
 		dbWriteLock();
@@ -2628,38 +2736,38 @@ public class SleuthkitCase {
 			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
 
 			//obj_id, fs_obj_id, name
-			addLocalFileSt.setLong(1, newObjId);
-			addLocalFileSt.setString(2, fileName);
+			addFileSt.setLong(1, newObjId);
+			addFileSt.setString(2, fileName);
 
 			//type, has_path
-			addLocalFileSt.setShort(3, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType());
-			addLocalFileSt.setBoolean(4, true);
+			addFileSt.setShort(3, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType());
+			addFileSt.setBoolean(4, true);
 
 			//flags
 			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
-			addLocalFileSt.setShort(5, dirType.getValue());
+			addFileSt.setShort(5, dirType.getValue());
 			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
-			addLocalFileSt.setShort(6, metaType.getValue());
+			addFileSt.setShort(6, metaType.getValue());
 
 			//note: using alloc under assumption that derived files derive from alloc files
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
-			addLocalFileSt.setShort(7, dirFlag.getValue());
+			addFileSt.setShort(7, dirFlag.getValue());
 			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 					| TSK_FS_META_FLAG_ENUM.USED.getValue());
-			addLocalFileSt.setShort(8, metaFlags);
+			addFileSt.setShort(8, metaFlags);
 
 			//size
-			addLocalFileSt.setLong(9, size);
+			addFileSt.setLong(9, size);
 			//mactimes
 			//long ctime, long crtime, long atime, long mtime,
-			addLocalFileSt.setLong(10, ctime);
-			addLocalFileSt.setLong(11, crtime);
-			addLocalFileSt.setLong(12, atime);
-			addLocalFileSt.setLong(13, mtime);
+			addFileSt.setLong(10, ctime);
+			addFileSt.setLong(11, crtime);
+			addFileSt.setLong(12, atime);
+			addFileSt.setLong(13, mtime);
 			//parent path
-			addLocalFileSt.setString(14, parentPath);
+			addFileSt.setString(14, parentPath);
 
-			addLocalFileSt.executeUpdate();
+			addFileSt.executeUpdate();
 			
 			//add localPath 
 			addFilePath(newObjId, localPath);
@@ -2675,7 +2783,7 @@ public class SleuthkitCase {
 		} finally {
 			try {
 				addObjectSt.clearParameters();
-				addLocalFileSt.clearParameters();
+				addFileSt.clearParameters();
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error clearing parameters after adding derived file", ex);
 			}
