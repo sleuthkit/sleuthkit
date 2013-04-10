@@ -8,6 +8,7 @@ Core:
  
 Framework:
 - Added Linux and MAC support.
+- Added L01 support.
 - Added APIs to find files by name, path and extension.
 - Removed deprecated TskFile::getAttributes methods.
 
