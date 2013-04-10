@@ -2685,8 +2685,55 @@ public class SleuthkitCase {
 	 * @param systemId a volume or file system ID
 	 * @return the ID of the '$CarvedFiles' directory for the given systemId
 	 */
-	private long getCarvedDirectoryId(long systemId) {
-		throw new UnsupportedOperationException("Not yet implemented.");
+	private long getCarvedDirectoryId(long systemId) throws TskCoreException {
+		
+		final String carvedFilesDirName = "$CarvedFiles";
+		
+		// first, check the cache
+		Long carvedDirId = systemIdMap.get(systemId);
+		if (carvedDirId != null) {
+			return carvedDirId;
+		}
+
+		// it's not in the cache. Go to the DB
+		// determine if we've got a volume system or file system ID
+		Content vsOrFs = getContentById(systemId);
+		List<Content> children = null;
+		if (vsOrFs instanceof FileSystem) {
+			FileSystem fs = (FileSystem)vsOrFs;
+			children = fs.getRootDirectory().getChildren();
+		} else if (vsOrFs instanceof VolumeSystem) {
+			VolumeSystem vs = (VolumeSystem)vsOrFs;
+			children = vs.getChildren();
+		} else {
+			throw new TskCoreException("The given ID (" + systemId + ") was not a file system or volume system.");
+		}
+
+		// see if any of the children are a '$CarvedFiles' directory
+		Content carvedFilesDir = null;
+		for (Content child : children) {
+			if (child.getName().equals(carvedFilesDirName)) {
+				carvedFilesDir = child;
+				break;
+			}
+		}
+		
+		// if we found it, add it to the cache and return its ID
+		if (carvedFilesDir != null) {
+			
+			// add it to the cache
+			systemIdMap.put(systemId, carvedFilesDir.getId());
+			
+			return carvedFilesDir.getId();
+		}
+		
+		// a carved files directory does not exist; create one
+		VirtualDirectory vd = addVirtualDirectory(systemId, carvedFilesDirName);
+		
+		// add it to the cache
+		systemIdMap.put(systemId, vd.getId());
+
+		return vd.getId();
 	}
 	
 	/**
@@ -2732,8 +2779,8 @@ public class SleuthkitCase {
 			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			addObjectSt.executeUpdate();
 
-			//tsk_files
-			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
+			// tsk_files
+			// obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
 
 			//obj_id, fs_obj_id, name
 			addFileSt.setLong(1, newObjId);
@@ -2744,22 +2791,26 @@ public class SleuthkitCase {
 			addFileSt.setShort(3, type.getFileType());
 			addFileSt.setBoolean(4, true);
 
-			//flags
+			// dirType
 			final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.REG;
 			addFileSt.setShort(5, dirType.getValue());
+
+			// metaType
 			final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG;
 			addFileSt.setShort(6, metaType.getValue());
 
-			//note: using alloc under assumption that derived files derive from alloc files
+			// dirFlag
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.UNALLOC;
 			addFileSt.setShort(7, dirFlag.getValue());
+
+			// metaFlags
 			final short metaFlags = TSK_FS_META_FLAG_ENUM.UNALLOC.getValue();
 			addFileSt.setShort(8, metaFlags);
 
-			//size
+			// size
 			addFileSt.setLong(9, carvedFileSize);
 
-			//parent path
+			// parent path
 			addFileSt.setString(14, parentPath);
 
 			addFileSt.executeUpdate();
@@ -3002,7 +3053,6 @@ public class SleuthkitCase {
 		}
 	}
 
-	
 	/**
 	 * Find and return list of files matching the specific Where clause
 	 * 
@@ -3040,8 +3090,6 @@ public class SleuthkitCase {
 		}
 	}
 
-	
-	
 	/**
 	 * @param image the image to search for the given file name
 	 * @param filePath The full path to the file(s) of interest. This can
