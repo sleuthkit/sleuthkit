@@ -306,7 +306,7 @@ TSK_RETVAL_ENUM TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
 TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_path)
 {
     // skip the . and .. dirs
-    if (isDotDir(a_fsFile, a_path) == 1)
+    if (isDotDir(a_fsFile) == 1)
     {
         return TSK_OK;
     }
