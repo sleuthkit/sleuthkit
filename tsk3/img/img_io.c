@@ -45,8 +45,32 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     tsk_take_lock(&(a_img_info->cache_lock));
 
     // if they ask for more than the cache length, skip the cache
-    if (a_len > TSK_IMG_INFO_CACHE_LEN) {
-        ssize_t nbytes = a_img_info->read(a_img_info, a_off, a_buf, a_len);
+    if ((a_len + a_off % 512) > TSK_IMG_INFO_CACHE_LEN) {
+        ssize_t nbytes;
+
+        /* Some of the lower-level methods like block-sized reads.
+         * So if the len is not that multiple, then make it. */
+        if (a_len % a_img_info->sector_size) {
+            char *buf2 = a_buf;
+            size_t len2;
+            len2 = roundup(a_len, a_img_info->sector_size);
+            if ((buf2 = (char *)tsk_malloc(len2)) == NULL) {
+                tsk_release_lock(&(a_img_info->cache_lock));
+                return -1;
+            }
+            nbytes = a_img_info->read(a_img_info, a_off, buf2, len2);
+            if ((nbytes > 0) && (nbytes < (ssize_t)a_len)) {
+                memcpy(a_buf, buf2, nbytes);
+            }
+            else {
+                memcpy(a_buf, buf2, a_len);
+                nbytes = a_len;
+            }
+            free(buf2);
+        }
+        else {
+            nbytes = a_img_info->read(a_img_info, a_off, a_buf, a_len);
+        }
         tsk_release_lock(&(a_img_info->cache_lock));
         return nbytes;
     }

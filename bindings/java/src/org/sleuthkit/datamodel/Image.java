@@ -18,31 +18,36 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Represents a disk image file, stored in tsk_image_info.
- * Populated based on data in database.
- * 
+ * Represents a disk image file, stored in tsk_image_info. Populated based on
+ * data in database.
+ *
  * Caches internal tsk image handle and reuses it for reads
  */
 public class Image extends AbstractContent {
 	//data about image
 
-	private long type, ssize;
+	private long type, ssize, size;
 	private String[] paths;
-	private long imageHandle = 0;
+	private volatile long imageHandle = 0;
 	private String timezone;
 
 	/**
 	 * constructor most inputs are from the database
+	 *
 	 * @param db database object
-	 * @param obj_id 
+	 * @param obj_id
 	 * @param type
 	 * @param ssize
 	 * @param name
-	 * @param paths 
-	 * @param timezone 
+	 * @param paths
+	 * @param timezone
 	 */
 	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone) throws TskCoreException {
 		super(db, obj_id, name);
@@ -50,10 +55,12 @@ public class Image extends AbstractContent {
 		this.ssize = ssize;
 		this.paths = paths;
 		this.timezone = timezone;
+		this.size = 0;
 	}
 
 	/**
 	 * Get the handle to the sleuthkit image info object
+	 *
 	 * @return the object pointer
 	 */
 	public synchronized long getImageHandle() throws TskCoreException {
@@ -64,21 +71,29 @@ public class Image extends AbstractContent {
 		return imageHandle;
 	}
 
-
 	@Override
 	public Image getImage() {
 		return this;
 	}
 
-
 	@Override
-	public void finalize() throws Throwable {
-		super.finalize();
-		if (imageHandle != 0) {
-			SleuthkitJNI.closeImg(imageHandle);
-		}
+	public void close() {
+		//frees nothing, as we are caching image handles
 	}
 
+	
+	
+	@Override
+	public void finalize() throws Throwable {
+		try {
+			if (imageHandle != 0) {
+				SleuthkitJNI.closeImg(imageHandle);
+				imageHandle = 0;
+			}
+		} finally {
+			super.finalize();
+		}
+	}
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
@@ -88,13 +103,23 @@ public class Image extends AbstractContent {
 
 	@Override
 	public long getSize() {
-		return 0;
+		if (size == 0) {
+			try {
+				if (paths.length > 0) {
+					//should always had at least one path 
+					size = SleuthkitJNI.findDeviceSize(paths[0]);
+				}
+			} catch (TskCoreException ex) {
+				Logger.getLogger(Image.class.getName()).log(Level.SEVERE, "Could not find image size, image: " + this.getId(), ex);
+			}
+		}
+		return size;
 	}
 
 	//Methods for retrieval of meta-data attributes
-	
 	/**
 	 * Get the image type
+	 *
 	 * @return image type
 	 */
 	public long getType() {
@@ -103,14 +128,21 @@ public class Image extends AbstractContent {
 
 	/**
 	 * Get the sector size
+	 *
 	 * @return sector size
 	 */
 	public long getSsize() {
 		return ssize;
 	}
 
+	@Override
+	public String getUniquePath() throws TskCoreException {
+		return "/img_" + getName();
+	}
+
 	/**
 	 * Get the image path
+	 *
 	 * @return image path
 	 */
 	public String[] getPaths() {
@@ -118,7 +150,54 @@ public class Image extends AbstractContent {
 	}
 
 	/**
+	 * @return a list of VolumeSystem associated with this Image.
+	 * @throws TskCoreException
+	 */
+	public List<VolumeSystem> getVolumeSystems() throws TskCoreException {
+
+		List<Content> children = getChildren();
+		List<VolumeSystem> vs = new ArrayList<VolumeSystem>();
+		for (Content child : children) {
+			if (child instanceof VolumeSystem) {
+				vs.add((VolumeSystem) child);
+			}
+		}
+
+		return vs;
+	}
+
+	/**
+	 * @return a list of Volume associated with this Image.
+	 * @throws TskCoreException
+	 */
+	public List<Volume> getVolumes() throws TskCoreException {
+
+		List<Content> children = getChildren();
+		List<Volume> volumes = new ArrayList<Volume>();
+		for (Content child : children) {
+			if (child instanceof Volume) {
+				volumes.add((Volume) child);
+			}
+		}
+
+		return volumes;
+	}
+
+	/**
+	 * @return a list of FileSystems in this Image. This includes FileSystems
+	 * that are both children of this Image as well as children of Volumes in
+	 * this image.
+	 * @throws TskCoreException
+	 */
+	public List<FileSystem> getFileSystems() throws TskCoreException {
+		List<FileSystem> fs = new ArrayList<FileSystem>();
+		fs.addAll(getSleuthkitCase().getFileSystems(this));
+		return fs;
+	}
+
+	/**
 	 * Get the timezone set for the image
+	 *
 	 * @return timezone string representation
 	 */
 	public String getTimeZone() {
@@ -126,11 +205,9 @@ public class Image extends AbstractContent {
 	}
 
 	// ----- Methods for Image Type conversion / mapping -----
-	
-	
-	
 	/**
 	 * Convert image type id to string value
+	 *
 	 * @param imageType to convert
 	 * @return string representation of the image type
 	 */
@@ -146,9 +223,9 @@ public class Image extends AbstractContent {
 		return result;
 	}
 
-	
 	/**
 	 * Convert image type value string to image type id
+	 *
 	 * @param imageType value string to convert
 	 * @return image type id
 	 */
@@ -166,6 +243,7 @@ public class Image extends AbstractContent {
 
 	/**
 	 * Convert image type id to string representation
+	 *
 	 * @param imageType to convert
 	 * @return user-readable string representation of the image type
 	 */
@@ -214,28 +292,27 @@ public class Image extends AbstractContent {
 		return result;
 	}
 
-	
-
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
-
 
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
 
-	
-	
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getImageChildren(this);
 	}
-	
+
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getImageChildrenIds(this);
+	}
+	@Override
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "Image [\t" + "\t" + "paths " + Arrays.toString(paths) + "\t" + "size " + size + "\t" + "ssize " + ssize + "\t" + "timezone " + timezone + "\t" + "type " + type + "]\t";
 	}
 }

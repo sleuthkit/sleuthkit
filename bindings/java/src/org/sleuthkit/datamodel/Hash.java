@@ -26,46 +26,47 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.InputStream;
 
-
 /**
  * Utility to calculate a hash for FsContent and store in tsk database
  */
 public class Hash {
 
-    private final static int BUFFER_SIZE = 8192;
-	private final static byte[] buffer = new byte[BUFFER_SIZE];
+	private final static int BUFFER_SIZE = 16 * 1024;
+	private final byte[] buffer = new byte[BUFFER_SIZE];
 
-    /**
-     * Generate the md5 hash for the given FsContent
-     * and store it in the database
-     * 
-     * @param fsContent     FsContent object whose md5 hash we want to calculate
-     * @return              md5 of the given FsContent object
-     */
-    public static String calculateMd5(FsContent fsContent) throws IOException{
-        String hashText = "";
-        InputStream in = new ReadContentInputStream(fsContent);
-        Logger logger = Logger.getLogger(Hash.class.getName());
-        try {
-            MessageDigest md = MessageDigest.getInstance("md5");
-            int len = in.read(buffer);
-            while (len != -1) {
-                md.update(buffer, 0, len);
-                len = in.read(buffer);
-            }
-            byte[] hash = md.digest();
-            BigInteger bigInt = new BigInteger(1, hash);
-            hashText = bigInt.toString(16);
-            // zero padding
-            while (hashText.length() < 32) {
-                hashText = "0" + hashText;
-            }
-            fsContent.getSleuthkitCase().setMd5Hash(fsContent, hashText);
-        } catch (NoSuchAlgorithmException ex) {
-            logger.log(Level.WARNING, "No algorithm known as 'md5'", ex);
-        } catch (TskCoreException ex) {
-            logger.log(Level.WARNING, "Error updating content's md5 in database", ex);
-        }
-        return hashText;
-    }
+	/**
+	 * Generate the md5 hash for the given FsContent and store it in the
+	 * database
+	 *
+	 * @param file file object whose md5 hash we want to calculate
+	 * @return md5 of the given FsContent object
+	 */
+	public String calculateMd5(AbstractFile file) throws IOException {
+		String hashText = "";
+		InputStream in = new ReadContentInputStream(file);
+		Logger logger = Logger.getLogger(Hash.class.getName());
+		try {
+			MessageDigest md = MessageDigest.getInstance("md5");
+			int len = in.read(buffer);
+			while (len != -1) {
+				md.update(buffer, 0, len);
+				len = in.read(buffer);
+			}
+			byte[] hash = md.digest();
+			BigInteger bigInt = new BigInteger(1, hash);
+			hashText = bigInt.toString(16);
+			// zero padding
+			while (hashText.length() < 32) {
+				hashText = "0" + hashText;
+			}
+			file.getSleuthkitCase().setMd5Hash(file, hashText);
+		} catch (NoSuchAlgorithmException ex) {
+			logger.log(Level.WARNING, "No algorithm known as 'md5'", ex);
+		} catch (TskCoreException ex) {
+			logger.log(Level.WARNING, "Error updating content's md5 in database", ex);
+		} finally {
+			in.close();
+		}
+		return hashText;
+	}
 }

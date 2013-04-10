@@ -4826,8 +4826,10 @@ hfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start_blk,
             && (!(flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC)))
             continue;
 
+        if (flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
+            myflags |= TSK_FS_BLOCK_FLAG_AONLY;
 
-        if (tsk_fs_block_get(fs, fs_block, addr) == NULL) {
+        if (tsk_fs_block_get_flag(fs, fs_block, addr, (TSK_FS_BLOCK_FLAG_ENUM)myflags) == NULL) {
             tsk_fs_block_free(fs_block);
             return 1;
         }
@@ -5955,9 +5957,15 @@ hfs_close(TSK_FS_INFO * fs)
         tsk_fs_dir_close(hfs->meta_dir);
         hfs->meta_dir = NULL;
     }
+
     if (hfs->dir_meta_dir) {
         tsk_fs_dir_close(hfs->dir_meta_dir);
         hfs->dir_meta_dir = NULL;
+    }
+
+    if (hfs->extents_file) {
+        tsk_fs_file_close(hfs->extents_file);
+        hfs->extents_file = NULL;
     }
 
     tsk_release_lock(&(hfs->metadata_dir_cache_lock));

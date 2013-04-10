@@ -48,6 +48,18 @@ void
     TskAuto::closeImage();
 }
 
+
+/**
+ * Main method to call for this class after image has been opened as it takes care of the transactions.
+ */
+uint8_t TSKAutoImpl::extractFiles() 
+{
+    m_db.begin();
+    uint8_t retval = findFilesInImg();  
+    commitAndSchedule();
+    return retval;
+}
+
 /**
 * Scan the image for file systems creating allocated volumes for file systems found
 * and unallocated volumes for areas in the image that do not contain file systems.
@@ -279,10 +291,11 @@ TSK_RETVAL_ENUM TSKAutoImpl::insertFileData(TSK_FS_FILE * a_fsFile,
         return TSK_COR;
     }
     
-    if (TskServices::Instance().getScheduler().schedule(Scheduler::FileAnalysis, fileId, fileId)) {
-        LOGERROR(L"Error adding file for scheduling");
-        return TSK_COR;
-    }
+    Scheduler::task_struct task;
+    task.task = Scheduler::FileAnalysis;
+    task.id = fileId;
+    m_filesToSchedule.push(task);
+
     return TSK_OK;
 }
 
@@ -297,7 +310,6 @@ TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_
         return TSK_OK;
     }
 
-    m_db.begin();
     TSK_RETVAL_ENUM retval;
     // process the attributes if there are more than 1
     if (tsk_fs_file_attr_getsize(a_fsFile) == 0)
@@ -326,8 +338,30 @@ TSK_RETVAL_ENUM TSKAutoImpl::processFile(TSK_FS_FILE * a_fsFile, const char * a_
         LOGINFO(msg.str());
     }
 
-    m_db.commit();
+    if (m_filesToSchedule.size() > m_numOfFilesToQueue) {
+        commitAndSchedule();
+        m_db.begin();
+    }
+
     return retval;
+}
+
+/**
+ * commits the open transaction and schedules the files that
+ * were queued up as being part of that transaction.
+ * Does not create a new transaction.
+ */
+void TSKAutoImpl::commitAndSchedule()
+{
+    m_db.commit();
+
+    while (m_filesToSchedule.size() > 0) {
+        Scheduler::task_struct &task = m_filesToSchedule.front();
+        if (TskServices::Instance().getScheduler().schedule(task)) {
+            LOGERROR(L"Error adding file for scheduling");
+        }
+        m_filesToSchedule.pop();
+    }
 }
 
 uint8_t TSKAutoImpl::handleError()

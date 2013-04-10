@@ -18,9 +18,13 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.ArrayList;
 import java.util.List;
+import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
  * Representation of Directory object, stored in tsk_files table. Directory can
@@ -29,17 +33,42 @@ import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
  */
 public class Directory extends FsContent {
 
-	//constructor used for getdir from tskDb
-	protected Directory(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr,
-			short attr_type, short attr_id, String name, short dir_type,
-			short meta_type, short dir_flags, short meta_flags, long size,
-			long ctime, long crtime, long atime, long mtime, short mode,
-			int uid, int gid, byte known, String parent_path, String md5Hash) {
-		super(db, obj_id, name, fs_obj_id, meta_addr,
-				attr_type, attr_id, meta_type, dir_type, dir_flags,
-				meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known,
-				parent_path, md5Hash);
+	/**
+	 * Create directory from db 
+	 * 
+	 * @param db
+	 * @param objId
+	 * @param fsObjId
+	 * @param attrType
+	 * @param attrId
+	 * @param name
+	 * @param metaAddr
+	 * @param dirType
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
+	 * @param md5Hash
+	 * @param knownState
+	 * @param parentPath 
+	 */	
+	protected  Directory (SleuthkitCase db, long objId, long fsObjId, 
+			TSK_FS_ATTR_TYPE_ENUM attrType, short attrId, 
+			String name, long metaAddr, 
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
+			long size, long ctime, long crtime, long atime, long mtime, short modes, 
+			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath) {
+		super(db, objId, fsObjId, attrType, attrId, name, metaAddr, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
 	}
+	
 
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
@@ -61,18 +90,10 @@ public class Directory extends FsContent {
 		return getSleuthkitCase().getDirectoryChildrenIds(this);
 	}
 
-	@Override
-	public boolean isVirtual() {
-		return type.equals(TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR);
-	}
 
+	
 	@Override
-	public boolean isDir() {
-		return true;
-	}
-
-	@Override
-	public boolean isFile() {
-		return false;
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "Directory [\t" + "]\t";
 	}
 }

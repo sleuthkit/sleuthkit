@@ -277,11 +277,13 @@ tsk_fs_dir_open(TSK_FS_INFO * a_fs, const char *a_dir)
 
     retval = tsk_fs_path2inum(a_fs, a_dir, &inum, fs_name);
     if (retval == -1) {
+        tsk_fs_name_free(fs_name);
         return NULL;
     }
     else if (retval == 1) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("tsk_fs_dir_open: path not found: %s", a_dir);
+        tsk_fs_name_free(fs_name);
         return NULL;
     }
 
@@ -981,7 +983,7 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
                 data)) {
             tsk_error_errstr2_concat
                 (" - find_orphan_meta_walk_cb: identifying inodes allocated by file names");
-            return TSK_ERR;
+            return TSK_WALK_ERROR;
         }
     }
 

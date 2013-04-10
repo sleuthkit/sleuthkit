@@ -48,8 +48,10 @@ mac_load_table(TSK_VS_INFO * vs)
     for (idx = 0; idx < max_part; idx++) {
         uint32_t part_start;
         uint32_t part_size;
+        uint32_t part_status;
         char *str;
         ssize_t cnt;
+        int flag = 0;
 
 
         /* Read the entry */
@@ -105,15 +107,21 @@ mac_load_table(TSK_VS_INFO * vs)
 
         part_start = tsk_getu32(vs->endian, part->start_sec);
         part_size = tsk_getu32(vs->endian, part->size_sec);
+        part_status = tsk_getu32(vs->endian, part->status);
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "mac_load: %" PRIu32 "  Starting Sector: %" PRIu32
-                "  Size: %" PRIu32 " Type: %s\n", idx, part_start,
-                part_size, part->type);
+                "  Size: %" PRIu32 " Type: %s Status: %"PRIu32"\n", idx, part_start,
+                part_size, part->type, part_status);
 
         if (part_size == 0)
             continue;
+
+        if (part_status == 0)
+            flag = TSK_VS_PART_FLAG_UNALLOC;
+        else
+            flag = TSK_VS_PART_FLAG_ALLOC;
 
         // make sure the first couple are within the bounds of the image.
         if ((idx < 2) && (part_start > max_addr)) {
@@ -138,7 +146,7 @@ mac_load_table(TSK_VS_INFO * vs)
         strncpy(str, (char *) part->type, sizeof(part->name));
 
         if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
-                (TSK_DADDR_T) part_size, TSK_VS_PART_FLAG_ALLOC, str, -1,
+                (TSK_DADDR_T) part_size, (TSK_VS_PART_FLAG_ENUM)flag, str, -1,
                 idx))
             return 1;
     }

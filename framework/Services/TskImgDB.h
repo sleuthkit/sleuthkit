@@ -81,7 +81,7 @@ struct TskCarvedFileInfo
     std::string hash;
 
     /**
-     * A "cfile" name for the carved file of the form: cfile_<vol_id>_<start_sector>_<file_id>.<ext>.
+     * A "cfile" name for the carved file of the form: cfile_[vol_id]_[start_sector]_[file_id].[ext].
      */
     std::string cFileName;
 };
@@ -220,7 +220,14 @@ public:
 
     virtual int addToolInfo(const char* name, const char* version) = 0;
     virtual int addImageInfo(int type, int sectorSize) = 0;
-    virtual int addImageName(char const * imgName) = 0;
+
+    /**
+     * Add the path to the image to the image database
+     *
+     * @param imgPath The image path.
+     */    
+    virtual int addImageName(char const * imgPath) = 0;
+    
     virtual int addVolumeInfo(const TSK_VS_PART_INFO * vs_part) = 0;
     virtual int addFsInfo(int volId, int fsId, const TSK_FS_INFO * fs_info) = 0;
 
@@ -231,7 +238,7 @@ public:
      * @param fileName File name
      * @param fileSystemAttrType File system attribute type (see #TSK_FS_ATTR_TYPE_ENUM)
      * @param fileSystemAttrID File system attribute ID, used to index attributes for files with multiple attributes 
-     * @param [out] fileId File ID assigned to the file by the image database
+     * @param [out] fileID File ID assigned to the file by the image database
      * @param filePath Path to the file in the image, file name omitted
      * @returns 0 on success or -1 on error.
      */
@@ -274,7 +281,21 @@ public:
      */
     virtual int getFileRecord(const uint64_t fileId, TskFileRecord& fileRecord) const = 0;
     virtual SectorRuns * getFileSectors(uint64_t fileId) const = 0;
+
+    /**
+     * Gets the base name of the image, i.e., the file name of the first image path stored in the database.
+     *
+     * @return The name of the image, possibly the empty string if no image paths have been stored.
+     */    
+    virtual std::string getImageBaseName() const = 0;
+
+    /**
+     * Gets a list of image paths.
+     *
+     * @returns A vector of image paths as std::wstrings. There may be multiple paths for a split image or the list may be empty if no image paths have been stored.
+     */
     virtual std::vector<std::wstring> getImageNames() const = 0;
+
     virtual int getFileUniqueIdentifiers(uint64_t a_fileId, uint64_t &a_fsOffset, uint64_t &a_fsFileId, int &a_attrType, int &a_attrId) const = 0;
     virtual int getNumVolumes() const = 0;
     virtual int getImageInfo(int & type, int & sectorSize) const = 0;
@@ -387,7 +408,25 @@ public:
     friend class TskDBBlackboard;
 
 protected:
-    // Blackboard methods.
+    map<int64_t, map<TSK_INUM_T,int64_t> > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to its parent's ID in the database
+
+	/**
+	 * Store meta_addr to object id mapping of the directory in a local cache map
+	 * @param fsObjId fs id of this directory
+	 * @param meta_addr meta_addr of this directory
+	 * @param objId object id of this directory from the objects table
+	 */
+    void storeParObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId);
+
+	/**
+	 * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
+	 * @param fsObjId Id of file system that this file and parent should be in.
+	 * @param meta_addr File system address to find parent of
+	 * @returns parent obj id ( > 0), -1 on error
+	 */	
+	int64_t findParObjId(const int64_t & fsObjId, TSK_INUM_T meta_addr);    
+
+	// Blackboard methods.
     virtual TskBlackboardArtifact createBlackboardArtifact(uint64_t file_id, int artifactTypeID) = 0;
     virtual void addBlackboardAttribute(TskBlackboardAttribute attr) = 0;
     
@@ -412,7 +451,7 @@ protected:
     virtual vector<int> findAttributeTypes(int artifactTypeId) = 0;
 
 private:
-    
+
 };
 
 /**

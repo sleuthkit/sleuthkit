@@ -2,7 +2,7 @@
 ** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
+** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
 **
 ** This software is distributed under the Common Public License 1.0
 **
@@ -41,6 +41,7 @@ TskCaseDb::~TskCaseDb()
         tsk_hdb_close(m_knownBadDb);
         m_knownBadDb = NULL;
     }
+    m_tag = 0;
 }
 
 /**
@@ -67,8 +68,10 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
     TskDbSqlite *db = new TskDbSqlite(path, true);
 
     // Open the database.
-    if (db->open(true))
+    if (db->open(true)) {
+        delete(db);
         return NULL;
+    }
 
     return new TskCaseDb(db);
 }
@@ -95,8 +98,10 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
     TskDbSqlite *db = new TskDbSqlite(path, true);
 
     // Open the database.
-    if (db->open(false))
+    if (db->open(false)) {
+        delete(db);
         return NULL;
+    }
 
     return new TskCaseDb(db);
 }

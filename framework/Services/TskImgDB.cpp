@@ -25,6 +25,23 @@ TskImgDB::~TskImgDB()
 {
 }
 
+void TskImgDB::storeParObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId) {
+	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
+	//store only if does not exist
+	if (tmpMap.count(meta_addr) == 0)
+		tmpMap[meta_addr] = objId;
+}
+
+int64_t TskImgDB::findParObjId(const int64_t & fsObjId, TSK_INUM_T meta_addr) {
+    //get from cache by parent meta addr, if available
+    map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
+    if (tmpMap.count(meta_addr) > 0) {
+        return tmpMap[meta_addr];
+    }
+
+    return getFileId(fsObjId, meta_addr);
+}
+
 TskBlackboardAttribute TskImgDB::createAttribute(uint64_t artifactID, int attributeTypeID, uint64_t objectID, string moduleName, string context,
 		TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, uint64_t valueLong, double valueDouble, 
         string valueString, vector<unsigned char> valueBytes){

@@ -56,9 +56,6 @@ main(int argc, char **argv1)
     TSK_TCHAR *cp;
     extern int OPTIND;
     TSK_DADDR_T addr;
-    int bl_flags =
-        (TSK_FS_BLOCK_FLAG_UNALLOC | TSK_FS_BLOCK_FLAG_ALLOC |
-        TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_CONT);
     TSK_TCHAR **argv;
     unsigned int ssize = 0;
 
@@ -184,7 +181,7 @@ main(int argc, char **argv1)
     }
 
 
-    if (tsk_fs_blkstat(fs, addr, (TSK_FS_BLOCK_FLAG_ENUM) bl_flags)) {
+    if (tsk_fs_blkstat(fs, addr)) {
         tsk_error_print(stderr);
         fs->close(fs);
         img->close(img);

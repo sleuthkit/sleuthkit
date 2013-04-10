@@ -20,6 +20,7 @@
 #include <sstream>
 #include <iomanip>
 #include <map>
+#include <assert.h>
 
 #include "TskImgDBSqlite.h"
 #include "TskServices.h"
@@ -28,6 +29,7 @@
 
 #include "Poco/UnicodeConverter.h"
 #include "Poco/NumberParser.h"
+#include "Poco/Path.h"
 
 #define IMGDB_CHUNK_SIZE 1024*1024*1 // what size chunks should the database use when growing and shrinking
 #define IMGDB_MAX_RETRY_COUNT 50    // how many times will we retry a SQL statement
@@ -121,6 +123,16 @@ int TskImgDBSqlite::initialize()
 
     char * stmt;
 
+    sqlite3_stmt *statement;
+
+    // set page size -- 4k is much faster on Windows than the default
+    executeStatement("PRAGMA page_size = 4096;", statement, "TskImgDBSqlite::initialize");
+    sqlite3_finalize(statement);
+
+    // we don't have a mechanism to recover from a crash anyway
+    executeStatement("PRAGMA synchronous = 0;", statement, "TskImgDBSqlite::initialize");
+    sqlite3_finalize(statement);
+
     // ----- DB_INFO
     stmt = "CREATE TABLE db_info (name TEXT PRIMARY KEY, version TEXT)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) {
@@ -189,7 +201,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- FS_FILES
-    stmt = "CREATE TABLE fs_files (file_id INTEGER NOT NULL, fs_id INTEGER, "
+    stmt = "CREATE TABLE fs_files (file_id INTEGER PRIMARY KEY, fs_id INTEGER, "
         "fs_file_id INTEGER, attr_type INTEGER, attr_id INTEGER)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
@@ -213,7 +225,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- CARVED_FILES
-    stmt = "CREATE TABLE carved_files (file_id INTEGER, vol_id INTEGER)";
+    stmt = "CREATE TABLE carved_files (file_id INTEGER PRIMARY KEY, vol_id INTEGER)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
         _snwprintf_s(infoMessage, MAX_BUFF_LENGTH, L"TskImgDBSqlite::initialize - Error creating carved_files table: %S", errmsg);
@@ -247,7 +259,7 @@ int TskImgDBSqlite::initialize()
     }
 
     // ----- ALLOC_UNALLOC_MAP
-    stmt = "CREATE TABLE alloc_unalloc_map (vol_id, unalloc_img_id INTEGER, "
+    stmt = "CREATE TABLE alloc_unalloc_map (vol_id INTEGER, unalloc_img_id INTEGER, "
         "unalloc_img_sect_start INTEGER, sect_len INTEGER, orig_img_sect_start INTEGER)";
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
@@ -499,7 +511,7 @@ int TskImgDBSqlite::addImageInfo(int type, int size)
     return 0;
 }
 
-int TskImgDBSqlite::addImageName(char const * imgName)
+int TskImgDBSqlite::addImageName(char const *imgPath)
 {
     char *errmsg;
     char stmt[1024];
@@ -509,7 +521,7 @@ int TskImgDBSqlite::addImageName(char const * imgName)
 
     sqlite3_snprintf(1024, stmt,
         "INSERT INTO image_names (seq, name) VALUES (NULL, '%q')",
-        imgName);
+        imgPath);
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK)
     {
         wchar_t infoMessage[MAX_BUFF_LENGTH];
@@ -772,7 +784,7 @@ int TskImgDBSqlite::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileSyste
         "dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, full_path) VALUES (NULL, %d, %d,"
         "'%q',%llu,%d,%d,%d,%d,%" PRIuOFF",%d,%d,%d,%d,%d,%d,%d,'%q')", 
         IMGDB_FILES_TYPE_FS, IMGDB_FILES_STATUS_READY_FOR_ANALYSIS, fileName, 
-        getFileId(fileSystemID, fileSystemFile->name->par_addr), 
+        findParObjId(fileSystemID, fileSystemFile->name->par_addr), 
         fileSystemFile->name->type, meta_type,
         fileSystemFile->name->flags, meta_flags, size, crtime, ctime, atime,
         mtime, meta_mode, gid, uid, fullpath.c_str());
@@ -803,6 +815,11 @@ int TskImgDBSqlite::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileSyste
 
         sqlite3_free(errmsg);
         return -1;
+    }
+
+    //if dir, update parent id cache
+    if (meta_type == TSK_FS_META_TYPE_DIR) {
+        storeParObjId(fileSystemID, fileSystemFile->name->meta_addr, fileID);
     }
 
     return 0;
@@ -1094,10 +1111,24 @@ SectorRuns * TskImgDBSqlite::getFreeSectors() const
     return sr;
 }
 
-/**
- * Returns the list of image names that were stored in the database.
- * @returns empty list on error
- */
+std::string TskImgDBSqlite::getImageBaseName() const
+{
+    // There may be multiple file paths if the image is a split image. Oreder by sequence number to extract the file name from the first path.
+    sqlite3_stmt *statement;
+    executeStatement("SELECT name FROM image_names ORDER BY seq;", statement, "TskImgDBSqlite::getImageBaseName");
+
+    int result = sqlite3_step(statement);
+    if (result == SQLITE_ROW) 
+    {
+        Poco::Path imagePath(reinterpret_cast<const char*>(sqlite3_column_text(statement, 0))); // Reinterpret from const unsigned char*
+        return imagePath.getFileName();
+    }
+    else
+    {
+        return "";
+    }
+}
+
 std::vector<std::wstring> TskImgDBSqlite::getImageNames() const
 {
     std::vector<std::wstring> imgList;
@@ -1122,11 +1153,6 @@ std::vector<std::wstring> TskImgDBSqlite::getImageNames() const
         }
 
         sqlite3_finalize(statement);
-    }
-
-    if (imgList.empty()) 
-    {
-        LOGERROR(L"No images found in TskImgDBSqlite");
     }
 
     return imgList;
@@ -1436,12 +1462,13 @@ int TskImgDBSqlite::addDerivedFileInfo(const std::string& name, const uint64_t p
     char * errmsg;
 
     TSK_FS_NAME_TYPE_ENUM dirType = isDirectory ? TSK_FS_NAME_TYPE_DIR : TSK_FS_NAME_TYPE_REG;
+    TSK_FS_META_TYPE_ENUM metaType = isDirectory ? TSK_FS_META_TYPE_DIR : TSK_FS_META_TYPE_REG;
 
     // insert into files table
     sqlite3_snprintf(1024, stmt,
-        "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, size, ctime, crtime, atime, mtime, status, full_path) "
-        "VALUES (NULL, %d, '%q', %llu, %d, %llu, %d, %d, %d, %d, %d, '%q')",
-        IMGDB_FILES_TYPE_DERIVED, name.c_str(), parentId, dirType, size, ctime, crtime, atime, mtime, IMGDB_FILES_STATUS_CREATED, path.c_str());
+        "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type, size, ctime, crtime, atime, mtime, status, full_path) "
+        "VALUES (NULL, %d, '%q', %llu, %d, %d, %llu, %d, %d, %d, %d, %d, '%q')",
+        IMGDB_FILES_TYPE_DERIVED, name.c_str(), parentId, dirType, metaType, size, ctime, crtime, atime, mtime, IMGDB_FILES_STATUS_CREATED, path.c_str());
 
     if (sqlite3_exec(m_db, stmt, NULL, NULL, &errmsg) != SQLITE_OK) 
     {
@@ -2603,7 +2630,7 @@ int TskImgDBSqlite::addModule(const std::string& name, const std::string& descri
                 name.c_str(), description.c_str());
             if (sqlite3_exec(m_db, insertStmt, NULL, NULL, &errmsg) == SQLITE_OK) 
             {
-                moduleId = sqlite3_last_insert_rowid(m_db);
+                moduleId = (int)sqlite3_last_insert_rowid(m_db);
             } 
             else 
             {
@@ -2618,7 +2645,7 @@ int TskImgDBSqlite::addModule(const std::string& name, const std::string& descri
     else
     {
         std::wstringstream msg;
-        msg << L"TskModule::addModule - Failed to prepare statement: " << stmt;
+        msg << L"TskImgDBSqlite::addModule - Failed to prepare statement: " << stmt;
         LOGERROR(msg.str());
     }
     
@@ -2677,7 +2704,7 @@ int TskImgDBSqlite::getModuleInfo(std::vector<TskModuleInfo> & moduleInfoList) c
     if (sqlite3_prepare_v2(m_db, stmt.str().c_str(), -1, &statement, 0) == SQLITE_OK) {
         TskModuleInfo moduleInfo;
         while (sqlite3_step(statement) == SQLITE_ROW) {
-            moduleInfo.module_id = (uint64_t)sqlite3_column_int64(statement, 0);
+            moduleInfo.module_id = (int)sqlite3_column_int64(statement, 0);
             moduleInfo.module_name = (char *)sqlite3_column_text(statement, 1);
             moduleInfo.module_description = (char *)sqlite3_column_text(statement, 2);
             moduleInfoList.push_back(moduleInfo);
@@ -2812,7 +2839,7 @@ int TskImgDBSqlite::addUnallocImg(int & unallocImgId)
     stmt << "INSERT INTO unalloc_img_status (unalloc_img_id, status) VALUES (NULL, " << TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CREATED << ")";
     char * errmsg;
     if (sqlite3_exec(m_db, stmt.str().c_str(), NULL, NULL, &errmsg) == SQLITE_OK) {
-        unallocImgId = sqlite3_last_insert_rowid(m_db);
+        unallocImgId = (int)sqlite3_last_insert_rowid(m_db);
         rc = 0;
     } else {
         wchar_t infoMessage[MAX_BUFF_LENGTH];

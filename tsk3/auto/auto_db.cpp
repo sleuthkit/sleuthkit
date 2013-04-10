@@ -2,7 +2,7 @@
  ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -36,6 +36,8 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_curFsId = 0;
     m_curFileId = 0;
     m_curUnallocDirId = 0;
+    m_curDirId = 0;
+    m_curDirPath = "";
     m_blkMapFlag = false;
     m_vsFound = false;
     m_volFound = false;
@@ -49,6 +51,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
         m_fileHashFlag = false;
     m_noFatFsOrphans = false;
     m_addUnallocSpace = false;
+    tsk_init_lock(&m_curDirPathLock);
 }
 
 TskAutoDb::~TskAutoDb()
@@ -58,6 +61,7 @@ TskAutoDb::~TskAutoDb()
         revertAddImage();
 
     closeImage();
+    tsk_deinit_lock(&m_curDirPathLock);
 }
 
 void
@@ -123,10 +127,13 @@ uint8_t
 
 
     // convert image paths to UTF-8
-    char **img_ptrs = (char **) tsk_malloc(sizeof(char **));
+    char **img_ptrs = (char **) tsk_malloc(a_num * sizeof(char *));
+    if (img_ptrs == NULL) {
+        return 1;
+    }
 
     for (int i = 0; i < a_num; i++) {
-        char img2[1024];
+        char * img2 = (char*) tsk_malloc(1024 * sizeof(char));
         UTF8 *ptr8;
         UTF16 *ptr16;
 
@@ -147,8 +154,19 @@ uint8_t
     }
 
     if (addImageDetails(img_ptrs, a_num)) {
+        //cleanup
+        for (int i = 0; i < a_num; ++i) {
+            free(img_ptrs[i]);
+        }
+        free(img_ptrs);
         return 1;
     }
+
+    //cleanup
+    for (int i = 0; i < a_num; ++i) {
+        free(img_ptrs[i]);
+    }
+    free(img_ptrs);
 
     return 0;
 #else
@@ -235,8 +253,11 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 
     // We won't hit the root directory on the walk, so open it now 
     if ((file_root = tsk_fs_file_open(fs_info, NULL, "/")) != NULL) {
-        processAttributes(file_root, "");
+        processFile(file_root, "");
+        tsk_fs_file_close(file_root);
+        file_root = NULL;
     }
+
 
     // make sure that flags are set to get all files -- we need this to
     // find parent directory
@@ -426,7 +447,7 @@ void
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::stopAddImage: Stop request received\n");
-
+    
     m_stopped = true;
     setStopProcessing();
     // flag is checked every time processFile() is called
@@ -509,10 +530,19 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
 
     // Check if the process has been canceled
-    if (m_stopped) {
+     if (m_stopped) {
         if (tsk_verbose)
             tsk_fprintf(stderr, "TskAutoDb::processFile: Stop request detected\n");
         return TSK_STOP;
+    }
+
+     // If not processing the same directroy as last time function was called, update the directory
+    int64_t cur = fs_file->name->par_addr;
+    if(m_curDirId != cur){
+        m_curDirId = cur;
+        tsk_take_lock(&m_curDirPathLock);
+        m_curDirPath = path;
+        tsk_release_lock(&m_curDirPathLock);
     }
 
     /* process the attributes.  The case of having 0 attributes can occur
@@ -943,4 +973,18 @@ uint8_t TskAutoDb::addUnallocImageSpaceToDb() {
         retImgFile = m_db->addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId);
     }
     return retImgFile;
+}
+
+/**
+* Returns the directory currently being analyzed by processFile().
+* Safe to use from another thread than processFile().
+*
+* @returns curDirPath string representing currently analyzed directory
+*/
+const std::string TskAutoDb::getCurDir() {
+    string curDirPath;
+    tsk_take_lock(&m_curDirPathLock);
+    curDirPath = m_curDirPath;
+    tsk_release_lock(&m_curDirPathLock);
+    return curDirPath;
 }

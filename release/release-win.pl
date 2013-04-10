@@ -24,8 +24,8 @@ print "TESTING MODE (no commits)\n" if ($TESTING);
 
 
 unless (@ARGV == 1) {
-	print stderr "Missing arguments: tag_version\n";
-	print stderr "    for example: release-win.pl sleuthkit-3.1.0\n";
+	print stderr "Missing arguments: version\n";
+	print stderr "    for example: release-win.pl 3.1.0\n";
 	print stderr "    or to use current working code: release-win.pl no-tag\n";
 	die "stopping";
 
@@ -39,6 +39,9 @@ my $SVNDIR = "$RELDIR/../";
 my $TSKDIR = "${SVNDIR}";
 
 my $TAGNAME = $ARGV[0];
+unless ($TAGNAME eq "no-tag") {
+	$TAGNAME = "sleuthkit-${TAGNAME}";
+}
 my $VER = "";
 
 
@@ -55,7 +58,7 @@ my $VER = "";
 # Verify LIBEWF is built
 die "LIBEWF missing" unless (-d "$ENV{'LIBEWF_HOME'}");
 die "libewf dll missing" 
-	unless (-e "$ENV{'LIBEWF_HOME'}/msvscpp/release/libewf.dll" ); 
+	unless (-e "$ENV{'LIBEWF_HOME'}/msvscpp/Release/libewf.dll" ); 
 
 
 #######################
@@ -123,7 +126,7 @@ sub update_code {
 		`git submodule foreach git checkout master`;
 
 		# Verify the tag exists
-		exec_pipe(*OUT, "git tag | grep \"${TAGNAME}\"");
+		exec_pipe(*OUT, "git tag | grep \"^${TAGNAME}\"");
 		my $foo = read_pipe_line(*OUT);
 		if ($foo eq "") {
 		    print "Tag ${TAGNAME} doesn't exist\n";
@@ -148,7 +151,7 @@ sub update_code {
 	print "Version found in configure.ac: $VER\n";
 
 	if ($no_tag == 0) {
-		die "tag name and configure.ac have different versions ($TAGNAME vs $VER)" 
+		die "tag name and configure.ac have different versions ($TAGNAME vs sleuthkit-$VER)" 
 			if ("sleuthkit-".$VER != $TAGNAME);
 	}
 
@@ -162,8 +165,14 @@ sub build_core {
 	print "Building TSK source\n";
 	chdir "win32" or die "error changing directory into win32";
 	# Get rid of everything in the release dir (since we'll be doing * copy)
-	`rm -f release/*`;
+	`rm -rf Release`;
 	`rm -f BuildErrors.txt`;
+	# This was not required with VS2008, but is with 2010. Otherwise, 
+	# it won't build with the tagged version
+	`rm -rf */Release`;
+
+	die "Release folder not deleted" if (-x "Release/fls.exe");
+
 	# 2008 version
 	# `vcbuild /errfile:BuildErrors.txt tsk-win.sln "Release|Win32"`; 
 	# 2010 version
@@ -171,9 +180,9 @@ sub build_core {
 	die "Build errors -- check win32/BuildErrors.txt" if (-s "BuildErrors.txt");
 
 	# Do a basic check on some of the executables
-	die "mmls missing" unless (-x "release/mmls.exe");
-	die "fls missing" unless (-x "release/fls.exe");
-	die "hfind missing" unless (-x "release/hfind.exe");
+	die "mmls missing" unless (-x "Release/mmls.exe");
+	die "fls missing" unless (-x "Release/fls.exe");
+	die "hfind missing" unless (-x "Release/hfind.exe");
 	chdir "..";
 }
 
@@ -197,9 +206,9 @@ sub package_core {
 	mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdir";
 
 
-	`cp win32/release/*.exe \"${rdir}/bin\"`;
-	`cp win32/release/*.dll \"${rdir}/bin\"`;
-	`cp win32/release/*.lib \"${rdir}/lib\"`;
+	`cp win32/Release/*.exe \"${rdir}/bin\"`;
+	`cp win32/Release/*.dll \"${rdir}/bin\"`;
+	`cp win32/Release/*.lib \"${rdir}/lib\"`;
 
 	# basic cleanup
 	`rm \"${rdir}/bin/callback-sample.exe\"`;
@@ -252,8 +261,11 @@ sub build_framework {
 
 	chdir "framework/win32/framework" or die "error changing directory into framework/win32";
 	# Get rid of everything in the release dir (since we'll be doing * copy)
-	`rm -rf release/*`;
+	`rm -rf Release`;
 	`rm -f BuildErrors.txt`;
+	# This was not needed for VS2008, but is for VS2010
+	`rm -rf ../../TskModules/*/win32/Release`;
+
 	# 2008 version
 	#`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
 	# 2010 version
@@ -287,7 +299,7 @@ sub package_framework {
 	chdir "framework" or die "error changing directory into framework";
 
 	# Copy the files
-	chdir "win32/framework/release" or die "Error changing directory into release / framework";
+	chdir "win32/framework/Release" or die "Error changing directory into release / framework";
 
 	`cp *.exe \"${rdir}/bin\"`;
 	`cp libtsk*.dll \"${rdir}/bin\"`;
@@ -333,6 +345,8 @@ sub package_framework {
 		if (-f "TskModules/$f/README.txt") {
 			`cp TskModules/$f/README.txt \"${rdir}/docs/README_${f}.txt\"`;
 			`unix2dos \"${rdir}/docs/README_${f}.txt\" 2> /dev/null`;
+			`cp TskModules/$f/NEWS.txt \"${rdir}/docs/NEWS_${f}.txt\"`;
+			`unix2dos \"${rdir}/docs/NEWS_${f}.txt\" 2> /dev/null`;
 			
 		}
 		else {

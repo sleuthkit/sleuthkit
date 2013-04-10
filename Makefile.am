@@ -40,8 +40,6 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     framework/win32/*/*.sln \
     framework/win32/Makefile
 
-CLEANFILES = tsk3/tsk_incs.h
-
 ACLOCAL_AMFLAGS = -I m4
 
 # directories to compile
@@ -70,8 +68,6 @@ api-docs:
 	doxygen tsk3/docs/Doxyfile
 	doxygen framework/docs/Doxyfile
 	doxygen bindings/java/doxygen/Doxyfile
-
-framework-docs:
 
 man-html:
 	cd man;build-html

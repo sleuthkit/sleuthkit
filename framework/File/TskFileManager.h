@@ -19,12 +19,49 @@
 #include "framework_i.h"
 #include "TskFile.h"
 
+
 /**
  * Responsible for managing TskFile objects in the system.
  */
 class TSK_FRAMEWORK_API TskFileManager
 {
 public:
+    typedef TskFile* FilePtr;
+    typedef std::vector< FilePtr > FilePtrList;
+
+    /**
+        This nested class should be used to hold a FilePtrList object returned
+        by methods such as findFilesByName() so that the file objects will be 
+        automatically freed. Example:
+        @code
+        AutoFilePtrList flist(fileManager.findFilesByName(fileName));
+        for (FilePtrList::iterator i = flist.begin(); i != flist.end(); ++i)
+        { ... //do stuff }
+        // Don't worry about delete'ing each file obj--flist will take care of
+        // that when it goes out of scope.
+        @endcode
+    */
+    class AutoFilePtrList
+    {
+    public:
+        AutoFilePtrList(FilePtrList v) : m_Files(v) {}
+        ~AutoFilePtrList()
+        {
+            for (FilePtrList::iterator it = m_Files.begin(); it != m_Files.end(); ++it)
+            {
+                delete *it;
+            }
+        }
+        FilePtrList::iterator begin() { return m_Files.begin(); }
+        FilePtrList::iterator end()   { return m_Files.end(); }
+        FilePtrList::size_type size() { return m_Files.size(); }
+    private:
+        AutoFilePtrList(const AutoFilePtrList&);
+        AutoFilePtrList& operator=(const AutoFilePtrList&);
+
+        TskFileManager::FilePtrList m_Files;
+    };
+
     /**
      * Return a TskFile object for a given file ID.
      * @param fileId ID of file to return object of.
@@ -32,6 +69,50 @@ public:
      * @throws TskException in case of error.
      */
     virtual TskFile * getFile(const uint64_t fileId) = 0;
+
+    /**
+     * Return a list of TskFile objects mapped to the given list of file ids.
+     * @param fileIds List of fileId IDs.
+     * @returns List of pointers to file objects.
+     */
+    virtual FilePtrList getFiles(const std::vector<uint64_t>& fileIds) = 0;
+
+    /**
+     * Return a list of TskFile objects matching the given filename
+     * @param name The file name.
+     * @param fsFileType Optional file meta type. Will not filter on meta_type if this is omitted.
+     * @returns List of pointers to file objects. Caller must use AutoFilePtrList or manually free them.
+     */
+    virtual FilePtrList findFilesByName(const std::string& name, const TSK_FS_META_TYPE_ENUM fsFileType = TSK_FS_META_TYPE_UNDEF) = 0;
+    
+    /**
+     * Return a list of TskFile objects matching the given filename extension
+     * @param extensions List of file name extension strings.
+     * @returns List of pointers to file objects.  Caller must use AutoFilePtrList or manually free them.
+     */
+    virtual FilePtrList findFilesByExtension(const std::vector<std::string>& extensions) = 0;
+    
+    /**
+     * Return a list of TskFile objects that are children of the given file id.
+     * @param parentFileId ID of parent file.
+     * @returns List of pointers to file objects.  Caller must use AutoFilePtrList or manually free them.
+     */
+    virtual FilePtrList findFilesByParent(const uint64_t parentFileId) = 0;
+    
+    /**
+     * Return a list of TskFile objects that match the given file meta type.
+     * @param fsFileType File meta type.
+     * @returns List of pointers to file objects. Caller must use AutoFilePtrList or manually free them.
+     */
+    virtual FilePtrList findFilesByFsFileType(TSK_FS_META_TYPE_ENUM fsFileType) = 0;
+
+    /**
+     * Return a list of TskFile objects that match the given file and path patterns.
+     * @param namePattern File name pattern. Can include "%" wildcards.
+     * @param pathPattern File path pattern. Can include "%" wildcards.
+     * @returns List of pointers to file objects. Caller must use AutoFilePtrList or manually free them.
+     */
+    virtual FilePtrList findFilesByPattern(const std::string& namePattern, const std::string& pathPattern) = 0;
 
     /** 
      * Return the fully qualified path to where the local instance of the file with the given ID

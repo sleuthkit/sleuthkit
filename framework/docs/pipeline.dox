@@ -78,7 +78,7 @@ This is possible because there is a set of configuration file macros that the fr
 
 There are a number of TskSystemProperties::PredefinedProperty macros. 
 To substitute the value of a TskSystemProperties::PredefinedProperty into an <tt>arguments</tt> or <tt>output</tt> string, surround the system property name with '#' marks.  
-For example, use <tt>#SYSTEM_OUT_DIR#/file1.txt</tt> to refer to a file named <tt>file1.txt</tt> in the system output directory. 
+For example, use <tt>\#SYSTEM_OUT_DIR\#/file1.txt</tt> to refer to a file named <tt>file1.txt</tt> in the system output directory. 
 
 File analysis modules can also use the TskModule::CURRENT_FILE_MACRO macro. This macro expands to the path of the file the module is currently analyzing. 
 Note that although this macro is not strictly necessary for plug-in modules because they have access to file metadata through the TskFile objects passed to them by the pipeline, executable modules can only obtain the path to the current file using this macro. 

@@ -23,6 +23,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
  * Layout file object representation of a layout file stored in tsk_files table.
@@ -40,36 +46,30 @@ public class LayoutFile extends AbstractFile{
 	//layout ranges associated with this file
 	private List<TskFileRange> ranges;
 	
-    private Content parent;
-	
-	protected LayoutFile(SleuthkitCase db, long obj_id, String name, TskData.TSK_DB_FILES_TYPE_ENUM type) {
-		super(db, obj_id, name, type);
+	protected LayoutFile(SleuthkitCase db, long objId, String name, 
+			TSK_DB_FILES_TYPE_ENUM fileType, 
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
+			long size, String md5Hash, FileKnown knownState, String parentPath) {
+		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short)0, name, fileType, 0L, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short)0, 0, 0, md5Hash, knownState, parentPath);
+		//this.size = calcSize(); //update calculated size
 	}
 	
-	/**
-     * Set the parent class, will be called by the parent
-	 * 
-     * @param p parent
-     */
-    protected void setParent(Content p){
-        parent = p;
-    }
 	
+
 	/**
 	 * Get number of file layout ranges associated with this layout file
 	 * @return number of file layout ranges objects associated
 	 */
 	public int getNumParts() {
-		int size = 0;
+		int numParts = 0;
 		try {
-			size = getRanges().size();
+			numParts = getRanges().size();
 		} catch (TskCoreException ex) {
 			Logger.getLogger(LayoutFile.class.getName()).log(Level.INFO, "Error getting layout content ranges for size", ex);
 		}
-		return size;
+		return numParts;
 	}
-
-	
 
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
@@ -78,7 +78,6 @@ public class LayoutFile extends AbstractFile{
         }
         return ranges;
 	}
-
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
@@ -90,36 +89,28 @@ public class LayoutFile extends AbstractFile{
 		return Collections.<Long>emptyList();
 	}
 
-	@Override
-    public long getSize() {
-        return calcSize();
-    }
-	
-	@Override
-	public boolean isDir(){
-        return false;
-    }
-	
-	@Override
-	public boolean isFile() {
-		return true;
-	}
     
 	/**
 	 * Calculate the size from all ranges / blocks
 	 * @return total content size in bytes
 	 */
     private long calcSize() {
-        long size = 0;
+        long calcSize = 0;
         try {
             for (TskFileRange range : getRanges()) {
-                size += range.getByteLen();
+                calcSize += range.getByteLen();
             }
         }catch (TskCoreException ex) {
-			Logger.getLogger(LayoutFile.class.getName()).log(Level.INFO, "boo", ex);
+			Logger.getLogger(LayoutFile.class.getName()).log(Level.SEVERE, "Error calculating layout file size from ranges", ex);
         }
-        return size;
+        return calcSize;
     }
+
+	@Override
+	public void close() {
+		//nothing to be closed
+	}
+	
 	
 
 	@Override
@@ -188,23 +179,19 @@ public class LayoutFile extends AbstractFile{
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
-	
-	/**
-	 * Get parent content object (either filesystem, or volume)
-	 * @return the parent content object
-	 */
-	public Content getParent() {
-		return parent;
-	}
-	
 
 	@Override
 	public Image getImage() throws TskCoreException{
 		return getParent().getImage();
 	}
+
 	
 	@Override
-	public boolean isVirtual() {
-		return true;
+	public boolean isRoot() {
+		return false;
+	}
+	@Override
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "LayoutFile [\t" + "]\t";
 	}
 }

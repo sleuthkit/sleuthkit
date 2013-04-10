@@ -110,6 +110,12 @@
     <ClCompile Include="..\..\Utilities\UnallocRun.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Extraction\TskExtract.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Extraction\TskL01Extract.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Extraction\CarveExtract.h">
@@ -227,6 +233,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\TskVersionInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Extraction\TskExtract.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Extraction\TskL01Extract.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

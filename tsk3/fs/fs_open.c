@@ -256,6 +256,9 @@ tsk_fs_close(TSK_FS_INFO * a_fs)
 {
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG))
         return;
+
+    // each file system is supposed to call tsk_fs_free() 
+
     a_fs->close(a_fs);
 }
 
@@ -286,6 +289,16 @@ tsk_fs_free(TSK_FS_INFO * a_fs_info)
         tsk_list_free(a_fs_info->list_inum_named);
         a_fs_info->list_inum_named = NULL;
     }
+
+    /* we should probably get the lock, but we're 
+     * about to kill the entire object so there are
+     * bigger problems if another thread is still 
+     * using the fs */
+    if (a_fs_info->orphan_dir) {
+        tsk_fs_dir_close(a_fs_info->orphan_dir);
+        a_fs_info->orphan_dir = NULL;
+    }
+
 
     tsk_deinit_lock(&a_fs_info->list_inum_named_lock);
     tsk_deinit_lock(&a_fs_info->orphan_dir_lock);

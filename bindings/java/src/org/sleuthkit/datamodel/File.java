@@ -20,6 +20,10 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collections;
 import java.util.List;
+import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
@@ -30,17 +34,42 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class File extends FsContent {
 
-	//constructor used for getfile from tskDb
-	protected File(SleuthkitCase db, long obj_id, long fs_obj_id, long meta_addr, short attr_type,
-			short attr_id, String name, short dir_type, short meta_type,
-			short dir_flags, short meta_flags, long size, long ctime, long crtime,
-			long atime, long mtime, short mode, int uid, int gid, byte known,
-			String parent_path, String md5Hash) {
-		super(db, obj_id, name, fs_obj_id, meta_addr,
-				attr_type, attr_id, meta_type, dir_type, dir_flags,
-				meta_flags, size, ctime, crtime, atime, mtime, uid, gid, mode, known,
-				parent_path, md5Hash);
+	/**
+	 * Create a File from db
+	 * 
+	 * @param db
+	 * @param objId
+	 * @param fsObjId
+	 * @param attrType
+	 * @param attrId
+	 * @param name
+	 * @param metaAddr
+	 * @param dirType
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
+	 * @param md5Hash
+	 * @param knownState
+	 * @param parentPath 
+	 */
+	protected File(SleuthkitCase db, long objId, long fsObjId, 
+			TSK_FS_ATTR_TYPE_ENUM attrType, short attrId, String name, long metaAddr, 
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
+			long size, long ctime, long crtime, long atime, long mtime, 
+			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath) {
+		super(db, objId, fsObjId, attrType, attrId, name, metaAddr, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
 	}
+	
+	
 
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
@@ -54,27 +83,18 @@ public class File extends FsContent {
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		return Collections.<Content>emptyList();
+		return getSleuthkitCase().getAbstractFileChildren(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
 
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
-		return Collections.<Long>emptyList();
+		return getSleuthkitCase().getAbstractFileChildrenIds(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
 
-	@Override
-	public boolean isVirtual() {
-		return (!type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)
-				|| dir_type == TSK_FS_NAME_TYPE_ENUM.VIRT.getDirType());
-	}
+
 
 	@Override
-	public boolean isDir() {
-		return false;
-	}
-
-	@Override
-	public boolean isFile() {
-		return true;
+	public String toString(boolean preserveState){
+		return super.toString(preserveState) + "File [\t" + "]\t";
 	}
 }

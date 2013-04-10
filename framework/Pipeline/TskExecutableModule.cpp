@@ -34,6 +34,7 @@
 #include "Poco/Path.h"
 #include "Poco/DateTimeFormatter.h"
 #include "Poco/DateTimeFormat.h"
+#include "Poco/Environment.h"
 
 /**
  * Constructor
@@ -79,8 +80,22 @@ void TskExecutableModule::setPath(const std::string& location)
 {
     try
     {
+        // Autogenerate filename extension if needed
+        Poco::Path tempPath = location;
+        if (tempPath.getExtension().empty())
+        {
+            std::string os = Poco::Environment::osName();
+            if (os.find("Windows") != std::string::npos ||
+                os.find("CYGWIN")  != std::string::npos ||
+                os.find("MINGW")   != std::string::npos )
+            {
+                tempPath.setExtension("exe");
+            }
+            // Else we assume the user is on a platform that doesn't use executable extensions.
+        }
+
         // Call our parent to validate the location.
-        TskModule::setPath(location);
+        TskModule::setPath(tempPath.toString());
 
         m_name = Poco::Path(m_modulePath).getBaseName();
 
@@ -91,19 +106,23 @@ void TskExecutableModule::setPath(const std::string& location)
         {
             std::wstringstream msg;
             msg << L"TskExecutableModule::setPath - File is not executable: "
-                << m_modulePath.c_str() << std::endl;
+                << m_modulePath.c_str();
             LOGERROR(msg.str());
             throw TskException("File is not executable.");
         }
+    }
+    catch (TskException& tskEx)
+    {
+        throw tskEx;
     }
     catch(std::exception& ex)
     {
         // Log a message and throw a framework exception.
         std::wstringstream msg;
-        msg << "TskExecutableModule::setPath : " << ex.what() << std::endl;
+        msg << "TskExecutableModule::setPath : " << ex.what();
         LOGERROR(msg.str());
 
-        throw new TskException("Failed to set location: " + m_modulePath);
+        throw TskException("Failed to set location: " + m_modulePath);
     }
 }
 
@@ -179,7 +198,7 @@ TskModule::Status TskExecutableModule::execute(TskFile * fileToAnalyze){
                 // If a module fails we log a warning message and continue.
                 std::wstringstream msg;
                 msg << L"TskExecutableModule::execute - Module (" << m_modulePath.c_str()
-                    << L") failed with exit code: " << exitCode << std::endl;
+                    << L") failed with exit code: " << exitCode;
                 LOGWARN(msg.str());
             }
         }
@@ -196,7 +215,7 @@ TskModule::Status TskExecutableModule::execute(TskFile * fileToAnalyze){
                 // If a module fails we log a warning message and continue.
                 std::wstringstream msg;
                 msg << L"TskExecutableModule::execute - Module (" << m_modulePath.c_str()
-                    << L") failed with exit code: " << exitCode << std::endl;
+                    << L") failed with exit code: " << exitCode;
                 LOGWARN(msg.str());
             }
         }
@@ -204,7 +223,7 @@ TskModule::Status TskExecutableModule::execute(TskFile * fileToAnalyze){
     catch (Poco::Exception& ex)
     {
         std::wstringstream errorMsg;
-        errorMsg << L"TskExecutableModule::execute - Error: " << ex.displayText().c_str() << std::endl;
+        errorMsg << L"TskExecutableModule::execute - Error: " << ex.displayText().c_str();
         LOGERROR(errorMsg.str());
         throw TskException("Module execution failed.");
     }

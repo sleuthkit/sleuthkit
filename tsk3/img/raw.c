@@ -80,7 +80,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             /* if it is a Windows device, try again with SHARE_WRITE */
             if ((raw_info->images[idx][0] == _TSK_T('\\'))
                 && (raw_info->images[idx][1] == _TSK_T('\\'))
-                && (raw_info->images[idx][2] == _TSK_T('.'))
+                && ((raw_info->images[idx][2] == _TSK_T('.')) || (raw_info->images[idx][2] == _TSK_T('?')))
                 && (raw_info->images[idx][3] == _TSK_T('\\'))) {
 
                 if ( tsk_verbose ) {
@@ -95,11 +95,12 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         }
         
         if ( cimg->fd == INVALID_HANDLE_VALUE ) {
+            int lastError = (int)GetLastError();
             cimg->fd = 0; /* so we don't close it next time */
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                                "\" - %d", raw_info->images[idx], (int) GetLastError());
+                                "\" - %d", raw_info->images[idx], lastError);
             return -1;
         }
 
@@ -138,24 +139,32 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
 
             if ((li.LowPart == INVALID_SET_FILE_POINTER) &&
                 (GetLastError() != NO_ERROR)) {
+                int lastError = (int)GetLastError();
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_SEEK);
                 tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
                     "\" offset %" PRIuOFF " seek - %d",
                     raw_info->images[idx], rel_offset,
-                    (int) GetLastError());
+                    lastError);
                 return -1;
             }
             cimg->seek_pos = rel_offset;
         }
 
+        //For physical drive when the buffer is larger than remaining data,
+        // WinAPI ReadFile call returns -1
+        //in this case buffer of exact length must be passed to ReadFile
+        if ((raw_info->is_winobj) && (rel_offset + len > raw_info->img_info.size ))
+            len = (size_t)(raw_info->img_info.size - rel_offset);
+
         if (FALSE == ReadFile(cimg->fd, buf, (DWORD) len, &nread, NULL)) {
+            int lastError = GetLastError();
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_READ);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
                 "\" offset: %" PRIuOFF " read len: %" PRIuSIZE " - %d",
                 raw_info->images[idx], rel_offset, len,
-                (int) GetLastError());
+                lastError);
             return -1;
         }
         cnt = (ssize_t) nread;
@@ -393,13 +402,13 @@ raw_close(TSK_IMG_INFO * img_info)
  *         -2 if unreadable, -3 if it's a directory.
  */
 static TSK_OFF_T
-get_size(const TSK_TCHAR * a_file, uint8_t is_winobj)
+get_size(const TSK_TCHAR * a_file, uint8_t a_is_winobj)
 {
     TSK_OFF_T size = -1;
     struct STAT_STR sb;
 
     if (TSTAT(a_file, &sb) < 0) {
-        if (is_winobj) {
+        if (a_is_winobj) {
             /* stat can fail for Windows objects; ignore that */
             if (tsk_verbose) {
                 tsk_fprintf(stderr,
@@ -433,7 +442,7 @@ get_size(const TSK_TCHAR * a_file, uint8_t is_winobj)
             INVALID_HANDLE_VALUE) {
 
             // if it is a device, try with SHARE_WRITE
-            if (is_winobj) {
+            if (a_is_winobj) {
                 if (tsk_verbose) {
                     tsk_fprintf(stderr,
                         "raw_open: trying Windows device with FILE_SHARE_WRITE mode\n");
@@ -445,24 +454,25 @@ get_size(const TSK_TCHAR * a_file, uint8_t is_winobj)
             }
 
             if (fd == INVALID_HANDLE_VALUE) {
+                int lastError = (int)GetLastError();
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_OPEN);
                 // print string of commonly found errors
-                if (GetLastError() == ERROR_ACCESS_DENIED) {
+                if (lastError == ERROR_ACCESS_DENIED) {
                     tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
                         "\" - access denied", a_file);
                 }
-                else if (GetLastError() == ERROR_SHARING_VIOLATION) {
+                else if (lastError == ERROR_SHARING_VIOLATION) {
                     tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
                         "\" - sharing violation", a_file);
                 }
-                else if (GetLastError() == ERROR_FILE_NOT_FOUND) {
+                else if (lastError == ERROR_FILE_NOT_FOUND) {
                     tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
                         "\" - file not found", a_file);
                 }
                 else {
                     tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                        "\" - (error %d)", a_file, (int) GetLastError());
+                        "\" - (error %d)", a_file, lastError);
                 }
                 return -2;
             }
@@ -470,13 +480,14 @@ get_size(const TSK_TCHAR * a_file, uint8_t is_winobj)
 
         /* We need different techniques to determine the size of Windows physical
          * devices versus normal files */
-        if (is_winobj == 0) {
+        if (a_is_winobj == 0) {
             dwLo = GetFileSize(fd, &dwHi);
             if (dwLo == 0xffffffff) {
+                int lastError = (int)GetLastError();
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_OPEN);
                 tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                    "\" - GetFileSize: %d", a_file, (int) GetLastError());
+                    "\" - GetFileSize: %d", a_file, lastError);
                 size = -1;
             }
             else {
@@ -484,24 +495,39 @@ get_size(const TSK_TCHAR * a_file, uint8_t is_winobj)
             }
         }
         else {
-            DISK_GEOMETRY pdg;
+            
+            //use GET_PARTITION_INFO_EX prior to IOCTL_DISK_GET_DRIVE_GEOMETRY
+            // to determine the physical disk size because
+            //calculating it with the help of GET_DRIVE_GEOMETRY gives only
+            // approximate number
             DWORD junk;
+            
+            PARTITION_INFORMATION_EX partition;
+            if (FALSE == DeviceIoControl(fd,
+                IOCTL_DISK_GET_PARTITION_INFO_EX,
+                NULL, 0, &partition, sizeof(partition), &junk,
+                (LPOVERLAPPED)NULL) )  {
+                DISK_GEOMETRY pdg;
 
-            if (FALSE == DeviceIoControl(fd, IOCTL_DISK_GET_DRIVE_GEOMETRY,
-                    NULL, 0, &pdg, sizeof(pdg), &junk,
-                    (LPOVERLAPPED) NULL)) {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-                tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                    "\" - DeviceIoControl: %d", a_file,
-                    (int) GetLastError());
-                size = -1;
+                if (FALSE == DeviceIoControl(fd, IOCTL_DISK_GET_DRIVE_GEOMETRY,
+                        NULL, 0, &pdg, sizeof(pdg), &junk, (LPOVERLAPPED) NULL)) {
+                    int lastError = (int)GetLastError();
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+                    tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
+                        "\" - DeviceIoControl: %d", a_file,
+                        lastError);
+                    size = -1;
+                }
+                else {
+                    size = pdg.Cylinders.QuadPart *
+                        (TSK_OFF_T) pdg.TracksPerCylinder *
+                        (TSK_OFF_T) pdg.SectorsPerTrack *
+                        (TSK_OFF_T) pdg.BytesPerSector;
+                }
             }
             else {
-                size = pdg.Cylinders.QuadPart *
-                    (TSK_OFF_T) pdg.TracksPerCylinder *
-                    (TSK_OFF_T) pdg.SectorsPerTrack *
-                    (TSK_OFF_T) pdg.BytesPerSector;
+                size = partition.PartitionLength.QuadPart;
             }
         }
 
@@ -566,7 +592,6 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     IMG_RAW_INFO *raw_info;
     TSK_IMG_INFO *img_info;
     int i;
-    int is_winobj = 0;
     TSK_OFF_T first_seg_size;
 
     if ((raw_info =
@@ -583,26 +608,27 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     img_info->sector_size = 512;
     if (a_ssize)
         img_info->sector_size = a_ssize;
+    raw_info->is_winobj = 0;
 
 #if defined(TSK_WIN32) || defined(__CYGWIN__)
     /* determine if this is the path to a Windows device object */
     if ((a_images[0][0] == _TSK_T('\\'))
         && (a_images[0][1] == _TSK_T('\\'))
-        && (a_images[0][2] == _TSK_T('.'))
+        && ((a_images[0][2] == _TSK_T('.')) || (a_images[0][2] == _TSK_T('?')))
         && (a_images[0][3] == _TSK_T('\\'))) {
-        is_winobj = 1;
+        raw_info->is_winobj = 1;
     }
 #endif
 
     /* Check that the first image file exists and is not a directory */
-    first_seg_size = get_size(a_images[0], is_winobj);
+    first_seg_size = get_size(a_images[0], raw_info->is_winobj);
     if (first_seg_size < -1) {
         tsk_img_free(raw_info);
         return NULL;
     }
 
     /* see if there are more of them... */
-    if ((a_num_img == 1) && !is_winobj) {
+    if ((a_num_img == 1) && (raw_info->is_winobj == 0)) {
         if ((raw_info->images =
                 tsk_img_findFiles(a_images[0],
                     &raw_info->num_img)) == NULL) {
@@ -700,7 +726,7 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     for (i = 1; i < raw_info->num_img; i++) {
         TSK_OFF_T size;
         raw_info->cptr[i] = -1;
-        size = get_size(raw_info->images[i], is_winobj);
+        size = get_size(raw_info->images[i], raw_info->is_winobj);
         if (size < 0) {
             if (size == -1) {
                 if (tsk_verbose) {

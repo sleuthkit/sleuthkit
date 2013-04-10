@@ -2,7 +2,7 @@
  ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
- ** Copyright (c) 2010-2011 Brian Carrier.  All Rights reserved
+ ** Copyright (c) 2010-2013 Brian Carrier.  All Rights reserved
  **
  ** This software is distributed under the Common Public License 1.0
  **
@@ -546,7 +546,11 @@ int
     if (fs_file->name == NULL)
         return 0;
 
-    if (fs_file->fs_info->root_inum == fs_file->name->meta_addr) {
+    /* we want the root directory to have its parent be the file system
+     * object.  We need to have special care though because the ".." entries
+     * in sub-folders of the root directory have a meta_addr of the root dir. */
+    if ((fs_file->fs_info->root_inum == fs_file->name->meta_addr) && 
+            ((fs_file->name->name == NULL) || (0 == TSK_FS_ISDOT(fs_file->name->name)))) {
         // this entry is for root directory
         parObjId = fsObjId;
     }
@@ -589,11 +593,11 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & f
 
     // Find the parent file id in the database using the parent metadata address
     if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1, fs_file->name->par_addr),
-                "Error binding meta_addr to statment: %s (result code %d)\n")
+                "TskDbSqlite::findParObjId: Error binding meta_addr to statment: %s (result code %d)\n")
         || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
-            "Error binding fs_obj_id to statment: %s (result code %d)\n")
+            "TskDbSqlite::findParObjId: Error binding fs_obj_id to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
-            "Error selecting file id by meta_addr: %s (result code %d)\n"))
+            "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n"))
     {
         // Statement may be used again, even after error
         sqlite3_reset(m_selectFilePreparedStmt);
@@ -603,7 +607,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & f
     int64_t parObjId = sqlite3_column_int64(m_selectFilePreparedStmt, 0);
 
     if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
-        "Error resetting 'select file id by meta_addr' statement: %s\n")) {
+        "TskDbSqlite::findParObjId: Error resetting 'select file id by meta_addr' statement: %s\n")) {
             return -1;
     }
 
@@ -626,13 +630,13 @@ int
 
     char
      foo[4096];
-    int
+    time_t
      mtime = 0;
-    int
+    time_t
      crtime = 0;
-    int
+    time_t
      ctime = 0;
-    int
+    time_t
      atime = 0;
     TSK_OFF_T size = 0;
     int
@@ -714,6 +718,7 @@ int
             }
         }
     }
+    name[j++] = '\0';
 
 
     // clean up path
@@ -722,6 +727,7 @@ int
     char *
         escaped_path;
     if ((escaped_path = (char *) tsk_malloc(epath_len + 2)) == NULL) { // +2 = space for leading slash and terminating null
+        free(name);
         return 1;
     }
 
@@ -737,50 +743,53 @@ int
             escaped_path[k++] = path[i];
         }
     }
+    escaped_path[k++] = '\0';
 
-
-    char
-     md5Text[1024] = "NULL";
+    char md5Text[48] = "NULL";
 
     // if md5 hashes are being used
     if (md5 != NULL) {
-        char
-            md5TextBuff[16 * 2 + 1];
-        memset(md5TextBuff, 0, 16*2+1);
-
         // copy the hash as hexidecimal into the buffer
+        md5Text[0] = '\'';
         for (int i = 0; i < 16; i++) {
-            sprintf(&(md5TextBuff[i * 2]), "%x%x", (md5[i] >> 4) & 0xf,
+            sprintf(&(md5Text[i*2 + 1]), "%x%x", (md5[i] >> 4) & 0xf,
                 md5[i] & 0xf);
         }
-        snprintf(md5Text, 1024, "'%s'", md5TextBuff);
+        strcat(md5Text, "'");
     }
 
 
-    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
+        free(name);
+        free(escaped_path);
         return 1;
+    }
 
     snprintf(foo, 4096,
         "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
-        "%lld,%lld,"
+        "%" PRId64 ",%" PRId64 ","
         "%d,"
         "%d,%d,'%s',"
         "%" PRIuINUM ","
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "%d,%d,%d,%d,%d,%d,%d,%s,%d,"
+        "%llu,%llu,%llu,%llu,"
+        "%d,%d,%d,%s,%d,"
         "'%s')",
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,
         type, idx, name,
         fs_file->name->meta_addr,
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-        size, crtime, ctime, atime, mtime, meta_mode, gid, uid, md5Text, known,
+        size, 
+        (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+        meta_mode, gid, uid, md5Text, known,
         escaped_path);
 
-    if (attempt_exec(foo, "Error adding data to tsk_files table: %s\n")) {
+    if (attempt_exec(foo, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
         free(name);
+        free(escaped_path);
         return 1;
     }
 
@@ -790,6 +799,8 @@ int
     }
 
     free(name);
+    free(escaped_path);
+
     return 0;
 }
 
@@ -948,7 +959,7 @@ int
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
         TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size);
 
-    if (attempt_exec(sql_stat, "Error adding data to tsk_files table: %s\n")) {
+    if (attempt_exec(sql_stat, "TskDbSqlite::addLayoutFileInfo: Error adding data to tsk_files table: %s\n")) {
         free(name);
         return 1;
     }
@@ -1416,9 +1427,9 @@ uint8_t TskDbSqlite::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
     }
 
     if (attempt(sqlite3_bind_int64(objectsStatement, 1, objId),
-        "Error binding objId to statment: %s (result code %d)\n")
+        "TskDbSqlite::getObjectInfo: Error binding objId to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(objectsStatement), SQLITE_ROW,
-        "Error selecting object by objid: %s (result code %d)\n")) {
+        "TskDbSqlite::getObjectInfo: Error selecting object by objid: %s (result code %d)\n")) {
             sqlite3_finalize(objectsStatement);
             return TSK_ERR;
     }
@@ -1450,9 +1461,9 @@ uint8_t TskDbSqlite::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
     }
 
     if (attempt(sqlite3_bind_int64(vsInfoStatement, 1, objId),
-        "Error binding objId to statment: %s (result code %d)\n")
+        "TskDbSqlite::getVsInfo: Error binding objId to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(vsInfoStatement), SQLITE_ROW,
-        "Error selecting object by objid: %s (result code %d)\n")) {
+        "TskDbSqlite::getVsInfo: Error selecting object by objid: %s (result code %d)\n")) {
             sqlite3_finalize(vsInfoStatement);
             return TSK_ERR;
     }
@@ -1504,7 +1515,7 @@ uint8_t TskDbSqlite::getParentImageId (const int64_t objId, int64_t & imageId) {
 /**
 * Query tsk_objects and tsk_files given file system id and return the root directory object
 * @param fsObjId (int) file system id to query root dir object for
-* @param objInfo (out) TSK_DB_OBJECT root dir entry representation to return
+* @param rootDirObjInfo (out) TSK_DB_OBJECT root dir entry representation to return
 * @returns TSK_ERR on error (or if not found), TSK_OK on success
 */
 uint8_t TskDbSqlite::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) {
@@ -1517,9 +1528,9 @@ uint8_t TskDbSqlite::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT
     }
 
     if (attempt(sqlite3_bind_int64(rootDirInfoStatement, 1, fsObjId),
-        "Error binding objId to statment: %s (result code %d)\n")
+        "TskDbSqlite::getFsRootDirObjectInfo: Error binding objId to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(rootDirInfoStatement), SQLITE_ROW,
-        "Error selecting object by objid: %s (result code %d)\n")) {
+        "TskDbSqlite::getFsRootDirObjectInfo: Error selecting object by objid: %s (result code %d)\n")) {
             sqlite3_finalize(rootDirInfoStatement);
             return TSK_ERR;
     }

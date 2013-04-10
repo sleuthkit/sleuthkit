@@ -20,6 +20,9 @@
 #include "TskFile.h"
 #include "Services/TskServices.h"
 
+// Poco includes
+#include "Poco/NumberFormatter.h"
+
 /**
  * Delete the TskFile object.
  */
@@ -35,7 +38,7 @@ void TskFile::initialize()
 
     if (imgDB != NULL) {
         if (imgDB->getFileRecord(m_id, m_fileRecord)) {
-            throw TskException("TskFile::initialize: Error looking up file: " + m_id);
+            throw TskException("TskFile::initialize: Error looking up file: " + Poco::NumberFormatter::format(m_id));
         }
     }
 }
@@ -295,7 +298,8 @@ void TskFile::setStatus(TskImgDB::FILE_STATUS status)
  * @returns the new artifact
  * @throws error if the artifact type does not exist
  */
-TskBlackboardArtifact TskFile::createArtifact(int artifactTypeID){
+TskBlackboardArtifact TskFile::createArtifact(int artifactTypeID)
+{
     return TskServices::Instance().getBlackboard().createArtifact(m_id, artifactTypeID);
 }
 
@@ -305,7 +309,8 @@ TskBlackboardArtifact TskFile::createArtifact(int artifactTypeID){
  * @returns the new artifact
  * @throws error if the artifact type does not exist
  */
-TskBlackboardArtifact TskFile::createArtifact(TSK_ARTIFACT_TYPE type){
+TskBlackboardArtifact TskFile::createArtifact(TSK_ARTIFACT_TYPE type)
+{
     return TskServices::Instance().getBlackboard().createArtifact(m_id, type);
 }
 
@@ -315,7 +320,8 @@ TskBlackboardArtifact TskFile::createArtifact(TSK_ARTIFACT_TYPE type){
  * @returns the new artifact
  * @throws error if the artifact type does not exist
  */
-TskBlackboardArtifact TskFile::createArtifact(string artifactTypeName){
+TskBlackboardArtifact TskFile::createArtifact(string artifactTypeName)
+{
     return TskServices::Instance().getBlackboard().createArtifact(m_id, artifactTypeName);
 }
 
@@ -324,7 +330,8 @@ TskBlackboardArtifact TskFile::createArtifact(string artifactTypeName){
  * @param artifactTypeName type name
  * @returns all matching artifacts will return an empty vector if there are no matches
  */
-vector<TskBlackboardArtifact> TskFile::getArtifacts(string artifactTypeName){
+vector<TskBlackboardArtifact> TskFile::getArtifacts(string artifactTypeName)
+{
     return TskServices::Instance().getBlackboard().getArtifacts(m_id, artifactTypeName);
 }
 
@@ -333,7 +340,8 @@ vector<TskBlackboardArtifact> TskFile::getArtifacts(string artifactTypeName){
  * @param artifactTypeID type id
  * @returns all matching artifacts will return an empty vector if there are no matches
  */
-vector<TskBlackboardArtifact> TskFile::getArtifacts(int artifactTypeID){
+vector<TskBlackboardArtifact> TskFile::getArtifacts(int artifactTypeID)
+{
     return TskServices::Instance().getBlackboard().getArtifacts(m_id, artifactTypeID);
 }
 
@@ -342,7 +350,8 @@ vector<TskBlackboardArtifact> TskFile::getArtifacts(int artifactTypeID){
  * @param type artifact type
  * @returns all matching artifacts will return an empty vector if there are no matches
  */
-vector<TskBlackboardArtifact> TskFile::getArtifacts(TSK_ARTIFACT_TYPE type){
+vector<TskBlackboardArtifact> TskFile::getArtifacts(TSK_ARTIFACT_TYPE type)
+{
     return TskServices::Instance().getBlackboard().getArtifacts(m_id, type);
 }
 
@@ -350,50 +359,59 @@ vector<TskBlackboardArtifact> TskFile::getArtifacts(TSK_ARTIFACT_TYPE type){
  * Get all artifacts associated with this file
  * @returns all artifacts
  */
-vector<TskBlackboardArtifact> TskFile::getAllArtifacts(){
+vector<TskBlackboardArtifact> TskFile::getAllArtifacts()
+{
     stringstream str;
     str << "WHERE obj_id = " << m_id;
     return TskServices::Instance().getBlackboard().getMatchingArtifacts(str.str());
 }
 
 /**
- * Get all artifacts associated with this file with the given type name
+ * @deprecated
+ * Get all attributes associated with this file with the given type name
  * @param attributeTypeName type name
  * @returns all matching attributes will return an empty vector if there are no matches
  */
-vector<TskBlackboardAttribute> TskFile::getAttributes(string attributeTypeName){
+vector<TskBlackboardAttribute> TskFile::getAttributes(string attributeTypeName)
+{
     stringstream str;
     str << "WHERE obj_id = " << m_id << " AND attribute_type_id = " << TskServices::Instance().getBlackboard().attrTypeNameToTypeID(attributeTypeName);
     return TskServices::Instance().getBlackboard().getMatchingAttributes(str.str());
 }
 
 /**
- * Get all artifacts associated with this file with the given type id
+ * @deprecated
+ * Get all attributes associated with this file with the given type id
  * @param attributeTypeID type id
  * @returns all matching attributes will return an empty vector if there are no matches
  */
-vector<TskBlackboardAttribute> TskFile::getAttributes(int attributeTypeID){
+vector<TskBlackboardAttribute> TskFile::getAttributes(int attributeTypeID)
+{
     stringstream str;
     str << "WHERE obj_id = " << m_id << " AND attribute_type_id = " << attributeTypeID;
     return TskServices::Instance().getBlackboard().getMatchingAttributes(str.str());
 }
 
 /**
- * Get all artifacts associated with this file with the given type
- * @param type artifact type
+ * @deprecated
+ * Get all attributes associated with this file with the given type
+ * @param type attributes type
  * @returns all matching attributes will return an empty vector if there are no matches
  */
-vector<TskBlackboardAttribute> TskFile::getAttributes(TSK_ATTRIBUTE_TYPE type){
+vector<TskBlackboardAttribute> TskFile::getAttributes(TSK_ATTRIBUTE_TYPE type)
+{
     stringstream str;
     str << "WHERE obj_id = " << m_id << " AND attribute_type_id = " << type;
     return TskServices::Instance().getBlackboard().getMatchingAttributes(str.str());
 }
 
 /**
- * Get all artifacts associated with this file
- * @returns all artifacts
+ * @deprecated
+ * Get all attributes associated with this file
+ * @returns all attributes
  */
-vector<TskBlackboardAttribute> TskFile::getAllAttributes(){
+vector<TskBlackboardAttribute> TskFile::getAllAttributes()
+{
     stringstream str;
     str << "WHERE obj_id = " << m_id;
     return TskServices::Instance().getBlackboard().getMatchingAttributes(str.str());
@@ -403,7 +421,8 @@ vector<TskBlackboardAttribute> TskFile::getAllAttributes(){
  * Get the general info artifact for this file
  * @returns the general info artifact or creates it if it has not already been made
  */
-TskBlackboardArtifact TskFile::getGenInfo(){
+TskBlackboardArtifact TskFile::getGenInfo()
+{
     TskBlackboard& blackboard = TskServices::Instance().getBlackboard();
 
     vector<TskBlackboardArtifact> artifacts;
@@ -419,6 +438,7 @@ TskBlackboardArtifact TskFile::getGenInfo(){
  * Add an attribute to the general info artifact for this file
  * @param attr attribute to be added
  */
-void TskFile::addGenInfoAttribute(TskBlackboardAttribute attr){
+void TskFile::addGenInfoAttribute(TskBlackboardAttribute attr)
+{
     getGenInfo().addAttribute(attr);
 }

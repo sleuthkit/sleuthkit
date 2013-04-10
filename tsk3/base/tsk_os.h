@@ -80,6 +80,9 @@
 #include "intrin.h"
 
 // define the sized int types
+#if _MSC_VER >= 1600
+#include <stdint.h>
+#else
 typedef unsigned __int8 uint8_t;
 typedef __int8 int8_t;
 typedef unsigned __int16 uint16_t;
@@ -88,10 +91,15 @@ typedef unsigned __int32 uint32_t;
 typedef __int32 int32_t;
 typedef unsigned __int64 uint64_t;
 typedef __int64 int64_t;
-
+#endif
 // define the typical unix types
 typedef int mode_t;
+// ifdef added from Joachim because it can cause conflicts
+// if python.h is included
+#if !defined( HAVE_SSIZE_T )
+#define HAVE_SSIZE_T
 typedef int ssize_t;
+#endif
 
 // remap some of the POSIX functions
 #define snprintf   _snprintf
@@ -133,14 +141,15 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define TSNPRINTF _snwprintf
 #define TPUTENV	_wputenv
 #define TZSET	_tzset
-#define TSTAT _wstat64
 
 #if defined(_MSC_VER)
 #define TSTRTOULL _wcstoui64
 #define STAT_STR    __stat64
+#define TSTAT _wstat64
 #elif defined(__MINGW32__)
 #define TSTRTOULL wcstoull
 #define STAT_STR    _stat
+#define TSTAT _wstat
 #endif
 
 

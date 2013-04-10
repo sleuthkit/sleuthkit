@@ -40,16 +40,32 @@ public:
     // Return a File object for the given file id.
     virtual TskFile* getFile(const uint64_t fileId);
 
+    // Return a list of File objects mapped to the given list of file ids.
+    virtual TskFileManager::FilePtrList getFiles(const std::vector<uint64_t>& fileIds);
+
+    // Return a list of File objects matching the given filename
+    virtual TskFileManager::FilePtrList findFilesByName(const std::string& name, const TSK_FS_META_TYPE_ENUM fsFileType = TSK_FS_META_TYPE_UNDEF);
+    
+    // Return a list of File objects matching the given filename extension
+    virtual TskFileManager::FilePtrList findFilesByExtension(const std::vector<std::string>& extensions);
+    
+    // Return a list of File objects that are children of the given file id
+    virtual TskFileManager::FilePtrList findFilesByParent(const uint64_t parentFileId);
+    
+    // Return a list of File objects that match the given file meta type
+    virtual TskFileManager::FilePtrList findFilesByFsFileType(TSK_FS_META_TYPE_ENUM fsFileType);
+    
+    // Return a list of File objects that match the given filename and path patterns.
+    virtual TskFileManager::FilePtrList findFilesByPattern(const std::string& namePattern, const std::string& pathPattern);
+
     // Return the path including the file name for the given file id.
     virtual std::wstring getPath(const uint64_t fileId);
 
     // Save the given file to disk.
     virtual void saveFile(TskFile* fileToSave);
-    virtual void saveFile(const uint64_t fileId);
 
     // Copy the given file to the specified fully qualified file name
     virtual void copyFile(TskFile* fileToSave, const std::wstring& filePath);
-    virtual void copyFile(const uint64_t fileId, const std::wstring& filePath);
 
 	// Copy the contents of a directory to the specified path.
 	virtual void copyDirectory(TskFile* directoryToCopy, const std::wstring& destinationPath, const bool bRecurse = false);
@@ -61,7 +77,6 @@ public:
 
     // Delete the file from disk.
     virtual void deleteFile(TskFile* fileToDelete);
-    virtual void deleteFile(const uint64_t fileId);
 
 private:
     // Private constructors and assignment operator to prevent direct

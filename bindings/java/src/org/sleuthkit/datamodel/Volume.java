@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,8 +33,7 @@ public class Volume extends AbstractContent {
 	private long length; //in sectors
 	private long flags;
 	private String desc;
-	private VolumeSystem parentVs;
-	private long volumeHandle = 0;
+	private volatile long volumeHandle = 0;
 
 	/**
 	 * Constructor to create the data object mapped from tsk_vs_parts entry
@@ -59,25 +59,45 @@ public class Volume extends AbstractContent {
 		}
 	}
 
-	/**
-	 * set the parent volume system. called by the parent on creation
-	 *
-	 * @param parent parent volume system
-	 */
-	protected void setParent(VolumeSystem parent) {
-		parentVs = parent;
-	}
-
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		synchronized (this) {
+			Content myParent = getParent();
+			if (!(myParent instanceof VolumeSystem)) {
+				throw new TskCoreException("This volume's parent should be a VolumeSystem, but it's not.");
+			}
+			VolumeSystem parentVs = (VolumeSystem) myParent;
 			// read from the volume
 			if (volumeHandle == 0) {
 				volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
 			}
+
 		}
 		return SleuthkitJNI.readVsPart(volumeHandle, buf, offset, len);
 	}
+
+	@Override
+	public void close() {
+		if (volumeHandle != 0) {
+			synchronized(this) {
+				if (volumeHandle != 0) {
+					SleuthkitJNI.closeVs(volumeHandle);
+					volumeHandle = 0;
+				}
+			}
+		}
+	}
+	
+	@Override
+	public void finalize() throws Throwable {
+		try {
+			close();
+		} finally {
+			super.finalize();
+		}
+	}
+	
+	
 
 	@Override
 	public long getSize() {
@@ -85,13 +105,19 @@ public class Volume extends AbstractContent {
 		return length;
 	}
 
-	/**
-	 * get the parent volume system
-	 *
-	 * @return parent volume system object
-	 */
-	public VolumeSystem getParent() {
-		return parentVs;
+	@Override
+	public synchronized String getUniquePath() throws TskCoreException {
+		String uniquePath = "";
+		String name = getName();
+		if (!name.isEmpty()) {
+			uniquePath = "/vol_" + name;
+		}
+
+		Content myParent = getParent();
+		if (myParent != null) {
+			uniquePath = myParent.getUniquePath() + uniquePath;
+		}
+		return uniquePath;
 	}
 
 	//methods get exact data from database. could be manipulated to get more
@@ -229,7 +255,7 @@ public class Volume extends AbstractContent {
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getVolumeChildren(this);
 	}
-	
+
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getVolumeChildrenIds(this);
@@ -238,5 +264,27 @@ public class Volume extends AbstractContent {
 	@Override
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
+	}
+
+	/**
+	 * @return a list of FileSystem that are direct descendents of this Image.
+	 * @throws TskCoreException
+	 */
+	public List<FileSystem> getFileSystems() throws TskCoreException {
+
+		List<Content> children = getChildren();
+		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
+		for (Content child : children) {
+			if (child instanceof FileSystem) {
+				fileSystems.add((FileSystem) child);
+			}
+		}
+
+		return fileSystems;
+	}
+
+	@Override
+	public String toString(boolean preserveState) {
+		return super.toString(preserveState) + "Volume [\t" + "addr " + addr + "\t" + "desc " + desc + "\t" + "flags " + flags + "\t" + "length " + length + "\t" + "start " + start + "]\t";
 	}
 }

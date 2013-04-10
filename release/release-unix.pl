@@ -282,6 +282,10 @@ sub update_libver {
     }
     return if ($a eq "n");
 
+    exec_pipe(*OUT, "cat tsk3/Makefile.am | grep version\-info");
+    print "Current Makefile Contents: " . read_pipe_line(*OUT) . "\n";
+    close (OUT);
+
     my $cur;
     my $rev;
     my $age;
@@ -298,7 +302,7 @@ sub update_libver {
 
     my $irem;
     while (1) {
-        $irem = prompt_user("Have any interfaces been removed? [y/n]");
+        $irem = prompt_user("Have any interfaces been removed or changed? [y/n]");
         last if (($irem eq "n") || ($irem eq  "y"));
         print "Invalid response: $irem\n";
     }
@@ -341,10 +345,6 @@ sub update_libver {
                 $cur++;
                 $rev = 0;
                 $age++;
-            }
-            elsif ($ichg eq "y") {
-                $cur++;
-                $rev = 0;
             }
             else {
                 $rev++;

@@ -173,9 +173,11 @@ main(int argc, char **argv1)
         tsk_error_print(stderr);
         exit(1);
     }
+    TFPRINTF(stdout, _TSK_T("Database stored at: %s\n"), database);
 
     autoDb->closeImage();
     delete tskCase;
+    delete autoDb;
     
     exit(0);
 }

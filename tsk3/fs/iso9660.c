@@ -387,9 +387,9 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "iso9660_load_inodes_dir: fs: %lu offs: %" PRIuOFF
+            "iso9660_load_inodes_dir: offs: %" PRIuOFF
             " count: %d ctype: %d fn: %s\n",
-            (uintptr_t) fs, a_offs, count, ctype, a_fn);
+            a_offs, count, ctype, a_fn);
 
     // cycle through each sector -- entries will not cross them
     for (i = 0; i < s_cnt; i++) {
@@ -789,8 +789,7 @@ iso9660_load_inodes_pt(ISO_INFO * iso)
     uint8_t is_first = 1;
 
     if (tsk_verbose)
-        tsk_fprintf(stderr, "iso9660_load_inodes_pt: iso: %lu\n",
-            (uintptr_t) iso);
+        tsk_fprintf(stderr, "iso9660_load_inodes_pt\n");
 
     /* initialize in case repeatedly called */
     iso9660_inode_list_free(fs);
@@ -1052,8 +1051,8 @@ iso9660_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     iso9660_inode *dinode;
 
     if (tsk_verbose)
-        tsk_fprintf(stderr, "iso9660_inode_lookup: iso: %lu"
-            " inum: %" PRIuINUM "\n", (uintptr_t) iso, inum);
+        tsk_fprintf(stderr, "iso9660_inode_lookup: iso:"
+            " inum: %" PRIuINUM "\n", inum);
 
     if (a_fs_file == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -1121,11 +1120,11 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
     tsk_error_reset();
 
     if (tsk_verbose)
-        tsk_fprintf(stderr, "iso9660_inode_walk: iso: %lu"
+        tsk_fprintf(stderr, "iso9660_inode_walk: "
             " start: %" PRIuINUM " last: %" PRIuINUM " flags: %d"
-            " action: %lu ptr: %lu\n",
-            (uintptr_t) fs, start, last, flags, (uintptr_t) action,
-            (uintptr_t) ptr);
+            " action: %"PRIu64" ptr: %"PRIu64"\n",
+            start, last, flags, (uint64_t) action,
+            (uint64_t) ptr);
 
     myflags = TSK_FS_META_FLAG_ALLOC;
 
@@ -1285,8 +1284,8 @@ iso9660_is_block_alloc(TSK_FS_INFO * fs, TSK_DADDR_T blk_num)
     iso9660_inode_node *in_node;
 
     if (tsk_verbose)
-        tsk_fprintf(stderr, "iso9660_is_block_alloc: fs: %lu"
-            " blk_num: %" PRIuDADDR "\n", (uintptr_t) fs, blk_num);
+        tsk_fprintf(stderr, "iso9660_is_block_alloc: "
+            " blk_num: %" PRIuDADDR "\n", blk_num);
 
     for (in_node = iso->in_list; in_node; in_node = in_node->next) {
         TSK_DADDR_T first_block = in_node->offset / fs->block_size;
@@ -1330,11 +1329,11 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
     tsk_error_reset();
 
     if (tsk_verbose)
-        tsk_fprintf(stderr, "iso9660_block_walk: fs: %lu"
+        tsk_fprintf(stderr, "iso9660_block_walk: "
             " start: %" PRIuDADDR " last: %" PRIuDADDR " flags: %d"
-            " action: %lu ptr: %lu\n",
-            (uintptr_t) fs, start, last, flags, (uintptr_t) action,
-            (uintptr_t) ptr);
+            " action: %"PRIu64" ptr: %"PRIu64"\n",
+            start, last, flags, (uint64_t) action,
+            (uint64_t) ptr);
 
     /*
      * Sanity checks.
@@ -1389,7 +1388,10 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
             && (!(flags & TSK_FS_BLOCK_WALK_FLAG_UNALLOC)))
             continue;
 
-        if (tsk_fs_block_get(fs, fs_block, addr) == NULL) {
+        if (flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
+            myflags |= TSK_FS_BLOCK_FLAG_AONLY;
+        
+        if (tsk_fs_block_get_flag(fs, fs_block, addr, myflags) == NULL) {
             tsk_error_set_errstr2("iso_block_walk");
             tsk_fs_block_free(fs_block);
             return 1;
@@ -1546,8 +1548,7 @@ iso9660_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     tsk_error_reset();
 
     if (tsk_verbose)
-        tsk_fprintf(stderr, "iso9660_fsstat: fs: %lu \
-			hFile: %lu\n", (uintptr_t) fs, (uintptr_t) hFile);
+        tsk_fprintf(stderr, "iso9660_fsstat:\n");
 
     i = 0;
 
@@ -1784,8 +1785,8 @@ make_unix_perm(TSK_FS_INFO * fs, iso9660_dentry * dd,
     iso9660_inode * dinode, char *perm)
 {
     if (tsk_verbose)
-        tsk_fprintf(stderr, "make_unix_perm: fs: %lu"
-            " dd: %lu\n", (uintptr_t) fs, (uintptr_t) dd);
+        tsk_fprintf(stderr, "make_unix_perm: fs: %"PRIu64
+            " dd: %"PRIu64"\n", (uint64_t) fs, (uint64_t) dd);
 
     memset(perm, '-', 10);
     perm[10] = '\0';
@@ -2391,8 +2392,8 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     }
 
     if (tsk_verbose) {
-        tsk_fprintf(stderr, "iso9660_open img_info: %lu"
-            " ftype: %" PRIu8 " test: %" PRIu8 "\n", (uintptr_t) img_info,
+        tsk_fprintf(stderr, "iso9660_open img_info: %"PRIu64
+            " ftype: %" PRIu8 " test: %" PRIu8 "\n", (uint64_t) img_info,
             ftype, test);
     }
 
@@ -2463,6 +2464,26 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         for (fs->fs_id_used = 0; fs->fs_id_used < 32; fs->fs_id_used++) {
             fs->fs_id[fs->fs_id_used] =
                 iso->svd->svd.vol_id[fs->fs_id_used];
+        }
+    }
+
+    /* We have seen this case on an image that seemed to be only 
+     * setting blk_siz_l instead of both blk_sz_m and _l. We should
+     * support both in the future, but this prevents a crash later
+     * on when we divide by block_size. */
+    if (fs->block_size == 0) {
+        fs->tag = 0;
+        iso9660_close(fs);
+        if (tsk_verbose)
+            fprintf(stderr,
+                "iso9660_open: Block size is 0\n");
+        if (test)
+            return NULL;
+        else {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+            tsk_error_set_errstr("Block size is 0");
+            return NULL;
         }
     }
 

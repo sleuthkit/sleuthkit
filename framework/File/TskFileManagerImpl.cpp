@@ -13,11 +13,10 @@
  * Default implementation of the TskFileManager class.
  */
 
-#include <sstream>
-
-// Framework includes
+// TSK Framework includes
 #include "TskFileManagerImpl.h"
 #include "TskFileTsk.h"
+#include "Services/TskImgDB.h"
 #include "Services/TskSystemProperties.h"
 #include "Services/TskServices.h"
 #include "Utilities/TskException.h"
@@ -29,6 +28,11 @@
 #include "Poco/FileStream.h"
 #include "Poco/StreamCopier.h"
 #include "Poco/NumberFormatter.h"
+
+// C/C++ standard library includes
+#include <cassert>
+#include <sstream>
+#include <memory>
 
 TskFileManagerImpl * TskFileManagerImpl::m_pInstance = NULL;
 
@@ -47,10 +51,6 @@ TskFileManagerImpl& TskFileManagerImpl::instance()
     return *m_pInstance;
 }
 
-/**
- * Open a reference to our files folder, creating it if it does not
- * exist.
- */
 void TskFileManagerImpl::initialize()
 {
     try
@@ -78,7 +78,6 @@ void TskFileManagerImpl::initialize()
     }
 }
 
-
 TskFile * TskFileManagerImpl::getFile(const uint64_t fileId)
 {
     /* If we were to ever have different subclasses of TskFile
@@ -88,6 +87,98 @@ TskFile * TskFileManagerImpl::getFile(const uint64_t fileId)
     return new TskFileTsk(fileId);
 }
 
+TskFileManager::FilePtrList TskFileManagerImpl::getFiles(const std::vector<uint64_t>& fileIds)
+{
+	TskFileManager::FilePtrList ret;
+    for (std::vector<uint64_t>::const_iterator it = fileIds.begin(); it != fileIds.end(); ++it)
+    {
+        ret.push_back(TskFileManager::FilePtr(getFile(*it)));
+    }
+
+	return ret;
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByName(const std::string& name, const TSK_FS_META_TYPE_ENUM fsFileType /*= TSK_FS_META_TYPE_UNDEF*/)
+{
+    // Construct SQL condition
+    std::stringstream condition;
+    condition << "WHERE UPPER(files.name) = '" << name << "'";
+    if (fsFileType != TSK_FS_META_TYPE_UNDEF)
+    {
+        condition << " AND files.meta_type = " << static_cast<int>(fsFileType);
+    }
+
+    // Get the file ids matching our condition
+    TskImgDB& imgDB = TskServices::Instance().getImgDB();
+    std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+
+    return getFiles(fileIds);
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByExtension(const std::vector<std::string>& extensions)
+{
+    // Construct SQL condition
+    TskImgDB& imgDB = TskServices::Instance().getImgDB();
+    std::stringstream condition;
+    ///@todo check if extension already has a period
+    //period = ".";
+    condition << "WHERE (UPPER(name) LIKE ";
+    for (std::vector<std::string>::const_iterator it = extensions.begin(); it != extensions.end(); ++it)
+    {
+        condition << imgDB.quote("%." + *it);
+        if (it != --extensions.end())
+        {
+            condition << " OR UPPER(name) LIKE ";
+        }
+    }
+    condition << ") AND size > 0";
+
+    // Get the file ids matching our condition
+    std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+
+	return getFiles(fileIds);
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByParent(const uint64_t parentFileId)
+{
+    // Construct SQL condition
+    std::stringstream condition;
+    condition << "WHERE par_file_id = " << parentFileId;
+
+    // Get the file ids matching our condition
+    TskImgDB& imgDB = TskServices::Instance().getImgDB();
+    std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+
+	return getFiles(fileIds);
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByFsFileType(TSK_FS_META_TYPE_ENUM fsFileType)
+{
+    // Construct SQL condition
+    std::stringstream condition;
+    condition << "WHERE files.meta_type = " << static_cast<int>(fsFileType);
+
+    // Get the file ids matching our condition
+    TskImgDB& imgDB = TskServices::Instance().getImgDB();
+    std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+
+    return getFiles(fileIds);
+}
+
+TskFileManager::FilePtrList TskFileManagerImpl::findFilesByPattern(const std::string& namePattern, const std::string& pathPattern)
+{
+    // Construct SQL condition
+    TskImgDB& imgDB = TskServices::Instance().getImgDB();
+    std::stringstream condition;
+    condition << "WHERE files.meta_type = " << static_cast<int>(TSK_FS_META_TYPE_REG)
+              << " AND UPPER(files.name) LIKE " << imgDB.quote(namePattern) 
+              << " AND UPPER(files.full_path) LIKE " << imgDB.quote(pathPattern);
+
+    // Get the file ids matching our condition
+    std::vector<uint64_t> fileIds = imgDB.getFileIds(condition.str());
+
+    return getFiles(fileIds);
+}
 
 std::wstring TskFileManagerImpl::getPath(const uint64_t fileId)
 {
@@ -113,6 +204,26 @@ std::wstring TskFileManagerImpl::getPath(const uint64_t fileId)
     return path;
 }
 
+void TskFileManagerImpl::saveFile(TskFile* fileToSave)
+{
+    TskImgDB::FILE_TYPES fileType = fileToSave->getTypeId(); 
+    if ((fileType != TskImgDB::IMGDB_FILES_TYPE_CARVED) && (fileType != TskImgDB::IMGDB_FILES_TYPE_DERIVED)) 
+    {
+        copyFile(fileToSave, getPath(fileToSave->getId()));
+    }
+    else
+    {
+        // Carved and derived files should already have been saved to storage by a call to addFile().
+        Poco::File file(Poco::Path(TskUtilities::toUTF8(getPath(fileToSave->getId()))));
+        assert(file.exists());
+        if(!file.exists())
+        {
+            std::ostringstream msg;
+            msg << "TskFileManagerImpl::saveFile : " << (fileType == TskImgDB::IMGDB_FILES_TYPE_CARVED ? "carved file" : "derived file") << " with file id = " << fileToSave->getId() << " does not exist in storage"; 
+            throw TskException(msg.str());
+        }
+    }
+}
 
 void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& filePath)
 {
@@ -171,6 +282,12 @@ void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& fileP
             char buffer[FILE_BUFFER_SIZE];
             int bytesRead = 0;
 
+            // Remember the offset the file was at when we were called.
+            TSK_OFF_T savedOffset = fileToSave->tell();
+
+            // Reset to start of file to ensure all content is saved.
+            fileToSave->seek(0, std::ios_base::beg);
+
             do
             {
                 memset(buffer, 0, FILE_BUFFER_SIZE);
@@ -183,6 +300,9 @@ void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& fileP
             fos.flush();
             fos.close();
 
+            // Restore the saved offset.
+            fileToSave->seek(savedOffset, std::ios_base::beg);
+
             // Close the file
             fileToSave->close();
         }
@@ -192,7 +312,7 @@ void TskFileManagerImpl::copyFile(TskFile* fileToSave, const std::wstring& fileP
         // Rethrow the exception up to our caller
         throw tskEx;
     }
-    catch (Poco::PathNotFoundException& ex)
+    catch (Poco::PathNotFoundException&)
     {
         throw TskException("Path not found : " + fileToSave->getPath());
     }
@@ -277,27 +397,6 @@ void TskFileManagerImpl::copyDirectory(TskFile* directoryToCopy, const std::wstr
     }
 }
 
-void TskFileManagerImpl::saveFile(TskFile* fileToSave)
-{
-    // Determine what the path should be based on TskFile.id()
-    // and call copyFile(fileToSave, path)
-	// Note that all saveFile() methods ultimately resolve
-	// to a call to copyFile().
-    copyFile(fileToSave, getPath(fileToSave->getId()));
-}
-
-void TskFileManagerImpl::saveFile(const uint64_t fileId)
-{
-    // Use the default implementation in our parent class
-    TskFileManager::saveFile(fileId);
-}
-
-void TskFileManagerImpl::copyFile(const uint64_t fileId, const std::wstring& filePath)
-{
-    // Use the default implementation in our parent class
-    TskFileManager::copyFile(fileId, filePath);
-}
-
 void TskFileManagerImpl::addFile(const uint64_t fileId, std::istream& istr)
 {
     // If a file with this id already exists we raise an error
@@ -373,10 +472,4 @@ void TskFileManagerImpl::deleteFile(TskFile* fileToDelete)
 
         throw TskFileException("Failed to delete file.");
     }
-}
-
-void TskFileManagerImpl::deleteFile(const uint64_t fileId)
-{
-    // Use the default implementation in our parent class
-    TskFileManager::deleteFile(fileId);
 }
