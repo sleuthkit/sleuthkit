@@ -150,6 +150,7 @@ AC_SUBST(RUNTIME_MODULES_CONFIG_DIR, "../../runtime/modules_config")
 #   (cd $(RUNTIME_MODULES_CONFIG_DIR)/<module_name>; ln -s $(MODULES_ROOT_DIR)/c_foobarModule/foobar_config.xml .)
 AC_SUBST(MODULES_ROOT_DIR, "../../../modules")
 
+[rm -f modules/*/missing_libs.txt]
 for i in `ls modules/`
 do
   if test -d "modules/${i}"; then
@@ -164,6 +165,10 @@ do
       c_SummaryReportModule)        AC_CONFIG_SUBDIRS([modules/c_SummaryReportModule]) ;;
       c_TskHashLookupModule)        AC_CONFIG_SUBDIRS([modules/c_TskHashLookupModule]) ;;
       c_ZIPExtractionModule)        AC_CONFIG_SUBDIRS([modules/c_ZIPExtractionModule]) ;;
+# NOTE: There is a small amount of code in the ZIP configure.ac to list out
+# all modules that missed dependencies.  If one gets added after it, then 
+# besure to move that code to that module so that it is shown at the end
+# of a "./configure" run
       *)
         AC_MSG_WARN([Unknown project (${i}) won't be configured automatically.]) ;;
     esac

@@ -6,6 +6,11 @@ Core:
 - Added YAFFS2 support (patch from viaForensics).
 - Added Ext4 support (patch from kfairbanks)
  
+Framework:
+- Added Linux and MAC support.
+- Added APIs to find files by name, path and extension.
+- Removed deprecated TskFile::getAttributes methods.
+
 ---------------- VERSION Current --------------
 	
 	

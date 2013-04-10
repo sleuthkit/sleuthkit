@@ -65,19 +65,18 @@ copy_libs: runtime/modules
 
 copy_configs:
 	-mkdir -p runtime
-	cp SampleConfig/framework_config_$(PLATFORM)dev.xml runtime/framework_config.xml
-	if ! test -d SampleConfig/tmp; then \
-		mkdir SampleConfig/tmp; \
+	cp SampleConfig/framework_config_unixdev.xml runtime/framework_config.xml
+	if ! test -d SampleConfig/to_install; then \
+		mkdir SampleConfig/to_install; \
 	else \
-		if test -f SampleConfig/tmp/framework_config.xml; then \
-			rm -f SampleConfig/tmp/framework_config.xml; \
-		fi \
+        rm -f SampleConfig/to_install/framework_config.xml; \
 	fi
 
 installdir = ${datadir}/tsk
-dist_install_DATA = SampleConfig/tmp/framework_config.xml SampleConfig/pipeline_config.xml
+dist_install_DATA = SampleConfig/to_install/framework_config.xml SampleConfig/pipeline_config.xml
 
-SampleConfig/tmp/framework_config.xml:
+# Creates a framework_config file that has the paths for where things will be installed.
+SampleConfig/to_install/framework_config.xml:
 	sed \
 		-e 's?#CONFIGDIRPATH#?$(DESTDIR)/usr/local/share/tsk?' \
 		-e 's?#MODULEDIRPATH#?$(DESTDIR)/usr/local/lib?' \
