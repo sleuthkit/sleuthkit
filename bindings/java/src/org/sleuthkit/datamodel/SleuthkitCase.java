@@ -68,7 +68,7 @@ public class SleuthkitCase {
 	private int attributeIDcounter = 1001;
 	
 	// for use by getCarvedDirectoryId method only
-	private Map<Long, Long> systemIdMap;
+	private Map<Long, Long> systemIdMap = new HashMap<Long, Long>();
 
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
