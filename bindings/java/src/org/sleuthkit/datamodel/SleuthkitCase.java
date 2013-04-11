@@ -2095,14 +2095,15 @@ public class SleuthkitCase {
 							rs.getLong("size"), rs.getString("md5"), 
 							FileKnown.valueOf(rs.getByte("known")), parentPath);
 					children.add(virtDir);
-				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS) {
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS ||
+						type == TSK_DB_FILES_TYPE_ENUM.CARVED) {
 					String parentPath = rs.getString("parent_path");
 					if (parentPath == null) {
 						parentPath = "";
 					}
 					final LayoutFile lf =
 							new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"),
-							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
+							type,
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), 
 							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
@@ -2786,9 +2787,11 @@ public class SleuthkitCase {
 			addFileSt.setLong(1, newObjId);
 			addFileSt.setString(2, carvedFileName);
 
-			//type, has_path
-			final TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS;
+			// type
+			final TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.CARVED;
 			addFileSt.setShort(3, type.getFileType());
+			
+			// has_path
 			addFileSt.setBoolean(4, true);
 
 			// dirType
@@ -3925,14 +3928,16 @@ public class SleuthkitCase {
 							rs.getLong("size"), rs.getString("md5"), 
 							FileKnown.valueOf(rs.getByte("known")), parentPath);
 					results.add(virtDir);
-				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()) {
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType() ||
+						type == TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()) {
+					TSK_DB_FILES_TYPE_ENUM atype = TSK_DB_FILES_TYPE_ENUM.valueOf(type);
 					String parentPath = rs.getString("parent_path");
 					if (parentPath == null) {
 						parentPath = "";
 					}
 					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
 							rs.getString("name"),
-							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
+							atype,
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
 							rs.getLong("size"),
