@@ -12,7 +12,9 @@
 #include <stdlib.h>
 #include <fstream>
 #include <sstream>
+#ifdef TSK_WIN32
 #include <Windows.h>
+#endif
 
 #include "tsk/framework/framework.h"
 #include "tsk/framework/services/TskSystemPropertiesImpl.h"
@@ -29,7 +31,7 @@
 #include "Poco/SAX/SAXException.h"
 #include "Poco/Util/XMLConfiguration.h"
 #include "Poco/Util/AbstractConfiguration.h"
-
+#include "Poco/TemporaryFile.h"
 
 #define VALIDATE_PIPELINE_VERSION "1.0.0.0"
 
@@ -68,8 +70,7 @@ ValidatePipeline::~ValidatePipeline()
 */
 bool ValidatePipeline::isValid(const char *a_configPath) const
 {
-    bool failed = false;
-
+    bool result = false;
     std::ifstream in(a_configPath);
     if (!in) {
         fprintf(stdout, "Error opening pipeline config file: %s\n", a_configPath);
@@ -87,6 +88,7 @@ bool ValidatePipeline::isValid(const char *a_configPath) const
             if (pipelines->length() == 0) {
                 fprintf(stdout, "No pipelines found in config file.\n");
             } else {
+                bool failed = false;
                 // parse all pipelines in the config file
                 for (unsigned long i = 0; i < pipelines->length(); i++)
                 {
@@ -96,54 +98,37 @@ bool ValidatePipeline::isValid(const char *a_configPath) const
                     std::ostringstream pipelineXml;
                     writer.writeNode(pipelineXml, pNode);
 
-                    std::string pipelineType = pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE_ATTRIBUTE);
+                    std::string pipelineType = pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE);
 
-                    TskPipeline * pipeline;
-                    if (pipelineType == TskPipelineManager::FILE_ANALYSIS_PIPELINE_STR)
+                    TskPipeline * pipeline = 0;
+                    if (pipelineType == TskPipelineManager::FILE_ANALYSIS_PIPELINE)
                         pipeline = new TskFileAnalysisPipeline();
-                    else if (pipelineType == TskPipelineManager::REPORTING_PIPELINE_STR)
+                    else if (pipelineType == TskPipelineManager::REPORTING_PIPELINE ||
+pipelineType == TskPipelineManager::POST_PROCESSING_PIPELINE
+)
                         pipeline = new TskReportPipeline();
-                    else {
+                    else
                         fprintf(stdout, "Unsupported pipeline type: %s\n", pipelineType.c_str());
-                        failed = true;
-                        continue;
-                    }
+                    if (pipeline) {
 
-                    try {
-                        pipeline->validate(pipelineXml.str());
-                    } catch (...) {
-                        fprintf(stdout, "Error parsing pipeline: %s\n", pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE_ATTRIBUTE).c_str());
-                        failed = true;
+                        try {
+                            pipeline->validate(pipelineXml.str());
+                        } catch (...) {
+                            fprintf(stdout, "Error parsing pipeline: %s\n", pElem->getAttribute(TskPipelineManager::PIPELINE_TYPE).c_str());
+                            failed = true;
+                        }
+                        delete pipeline;
                     }
                 }
+                if (!failed)
+                    result = true;
             }
         } catch (Poco::XML::SAXParseException& ex) {
             fprintf(stderr, "Error parsing pipeline config file: %s (%s)\n", a_configPath, ex.what());
         }
+
     }
- 
-    // If any of the pipelines failed validation we return false
-    return failed ? false : true;
-}
-
-static std::wstring getProgDir()
-{
-    wchar_t progPath[256];
-    wchar_t fullPath[256];
-    HINSTANCE hInstance = GetModuleHandle(NULL);
-
-    GetModuleFileName(hInstance, fullPath, 256);
-    for (int i = wcslen(fullPath)-1; i > 0; i--) {
-        if (i > 256)
-            break;
-
-        if (fullPath[i] == '\\') {
-            wcsncpy_s(progPath, fullPath, i+1);
-            progPath[i+1] = '\0';
-            break;
-        }
-    }
-    return std::wstring(progPath);
+    return result;
 }
 
 int main(int argc, char **argv)
@@ -160,23 +145,19 @@ int main(int argc, char **argv)
 
     // open the log temp file
     Log log;
-    wchar_t filename[MAX_PATH];
+    Poco::TemporaryFile filename;
 
-    if (!GetTempFileName(L".", L"", 0, filename)) {
-        fprintf(stderr, "Failed to create temporary file.\n");
-        return 1;
-    }
-    log.open(filename);
+    log.open(filename.path().c_str());
     TskServices::Instance().setLog(log);
 
-    std::wstring progDirPath = getProgDir();
+    std::string progDirPath = TskUtilities::getProgDir();
 
     // Initialize properties based on the config file. Do this to shutdown noise in validation.
     TskSystemPropertiesImpl systemProperties;
     systemProperties.initialize(frameworkConfigPath);
     TskServices::Instance().setSystemProperties(systemProperties);
 
-    SetSystemPropertyW(TskSystemProperties::PROG_DIR, progDirPath); 
+    SetSystemProperty(TskSystemProperties::PROG_DIR, progDirPath); 
 
     ValidatePipeline vp;
     bool valid = vp.isValid(pipelineConfigPath);
@@ -187,15 +168,13 @@ int main(int argc, char **argv)
 
 #define MAX_BUF 1024
     char buf[MAX_BUF];
-    std::ifstream fin(filename);
+    std::ifstream fin(filename.path().c_str());
 
     fprintf(stdout, "\nLog messages created during validation: \n");
     while (fin.getline(buf, MAX_BUF)) {
         fprintf(stdout, "%s\n", buf);
     }
     fin.close();
-
-    (void)DeleteFile(filename);
 
     if (valid)
         return 0;
