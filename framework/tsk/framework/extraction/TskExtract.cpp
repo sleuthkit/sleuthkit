@@ -14,6 +14,7 @@
  */
 
 #include <string>
+#include <cstring>
 
 #include "Poco/SharedPtr.h"
 
@@ -41,9 +42,9 @@ namespace TskArchiveExtraction
         bool isL01File(const char *path)
         {
             bool result = false;
-            FILE *f;
+            FILE *f = fopen(path, "rb");
 
-	        if (!fopen_s(&f, path, "rb")) {
+	        if (f != NULL) {
                 unsigned char buf[4];
                 size_t bytesRead = fread(&buf, sizeof(unsigned char), 3, f);
                 if (bytesRead == 3) {
