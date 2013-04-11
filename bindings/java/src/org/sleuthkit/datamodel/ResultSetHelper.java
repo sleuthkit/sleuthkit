@@ -189,7 +189,7 @@ class ResultSetHelper {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	TskFileRange tskFileRange(ResultSet rs) throws SQLException {
-		return new TskFileRange(rs.getLong("obj_id"), rs.getLong("byte_start"),
+		return new TskFileRange(rs.getLong("byte_start"),
 				rs.getLong("byte_len"), rs.getLong("sequence"));
 	}
 
