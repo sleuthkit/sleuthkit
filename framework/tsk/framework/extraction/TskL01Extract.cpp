@@ -179,7 +179,7 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
 
             // Determine the parent id of the file.
             uint64_t parentId = 0;
-            if (path.depth() == 0 || path.isDirectory() && path.depth() == 1)
+            if (path.depth() == 0 || (path.isDirectory() && path.depth() == 1))
             {
                 // This file or directory lives at the root so our parent id
                 // is the containing file id (if a containing file was provided).
@@ -379,9 +379,15 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
         // an error when it tries to make it absolute.
         Poco::Path tempPath(m_archivePath);
         tempPath.makeAbsolute();
-        // We convert to unicode here because that is what the TSK_IMG_INFO structure requires.
-        std::wstring ewfArchivePath = TskUtilities::toUTF16(tempPath.toString());
-
+        
+        const TSK_TCHAR * ewfArchivePath;
+        
+    #if defined( TSK_WIN32 )
+        ewfArchivePath = TskUtilities::toUTF16(tempPath.toString()).c_str();
+    #else
+        ewfArchivePath = tempPath.toString().c_str();
+    #endif
+    
         if ((ewf_info = (ewf::IMG_EWF_INFO *) tsk_img_malloc(sizeof(ewf::IMG_EWF_INFO))) == NULL)
         {
             throw TskException("tsk_img_malloc");
@@ -401,11 +407,11 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
         }
 
         if ((ewf_info->images[0] =
-            (TSK_TCHAR *) tsk_malloc((TSTRLEN(ewfArchivePath.c_str()) + 1) * sizeof(TSK_TCHAR))) == NULL)
+            (TSK_TCHAR *) tsk_malloc((TSTRLEN(ewfArchivePath) + 1) * sizeof(TSK_TCHAR))) == NULL)
         {
             throw TskException("tsk_malloc 2");
         }
-        TSTRNCPY(ewf_info->images[0], ewfArchivePath.c_str(), TSTRLEN(ewfArchivePath.c_str()) + 1);
+        TSTRNCPY(ewf_info->images[0], ewfArchivePath, TSTRLEN(ewfArchivePath) + 1);
 
         ///NOTE: libewf_handle_open_wide() will not open the file if the filename length is < 4 chars long.
         ewfError = NULL;
@@ -415,7 +421,7 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
     #else
         if (ewf::libewf_handle_open(ewf_info->handle,
                 (char *const *) ewf_info->images,
-                ewf_info->num_imgs, ewf::LIBEWF_OPEN_READ, &ewfError) != 1)
+                ewf_info->num_imgs, ewf::LIBEWF_ACCESS_FLAG_READ, &ewfError) != 1)
     #endif
         {
             throw TskException("libewf_handle_open_wide");
@@ -768,4 +774,3 @@ int TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archivedF
         return -2;
     }
 }
-
