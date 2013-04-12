@@ -144,8 +144,8 @@ public class LayoutFile extends AbstractFile{
 	
 	/**
 	 * Convert an internal offset to an image offset
-	 * @param layoutOffset the offset in this layout file
-	 * @return the corresponding offset in the image
+	 * @param layoutOffset the byte offset in this layout file to map
+	 * @return the corresponding byte offset in the image where the file offset is located
 	 */
 	public long convertToImgOffset(long layoutOffset) {
 		throw new UnsupportedOperationException("Not supported yet!");
