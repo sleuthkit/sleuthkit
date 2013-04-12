@@ -383,7 +383,8 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
         const TSK_TCHAR * ewfArchivePath;
         
     #if defined( TSK_WIN32 )
-        ewfArchivePath = TskUtilities::toUTF16(tempPath.toString()).c_str();
+        std::wstring utf16Path = TskUtilities::toUTF16(tempPath.toString());
+        ewfArchivePath = utf16Path.c_str();
     #else
         ewfArchivePath = tempPath.toString().c_str();
     #endif
