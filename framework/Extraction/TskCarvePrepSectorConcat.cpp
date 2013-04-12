@@ -235,9 +235,10 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
                 }
 
                 // Read another chunk of sectors from this run. 
-                int sectorsRead = sectorRuns.getData(sectorRunOffset, static_cast<int>(sectorsToRead), sectorBuffer);
+                int sectorsRead sectorRuns.getData(sectorRunOffset, static_cast<int>(sectorsToRead), sectorBuffer);
                 if (sectorsRead == -1)
                 {
+                    imgDB.setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CARVED_ERR);
                     LOGERROR("TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : error reading sector contents from sector run");
                     break;
                 }
