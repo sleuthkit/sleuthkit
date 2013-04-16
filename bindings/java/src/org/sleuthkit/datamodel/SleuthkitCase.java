@@ -3055,6 +3055,45 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 	}
+	
+	
+	/**
+	 * Find and return list of all (abstract) files matching the specific Where clause
+	 * 
+	 * @param sqlWhereClause a SQL where clause appropriate for the desired
+	 * files (do not begin the WHERE clause with the word WHERE!)
+	 * @return a list of FsContent each of which satisfy the given WHERE clause
+	 * @throws TskCoreException
+	 */
+	public List<AbstractFile> findAllFilesWhere(String sqlWhereClause) throws TskCoreException {
+		Statement statement = null;
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			statement = con.createStatement();
+			rs = statement.executeQuery("SELECT * FROM tsk_files WHERE " + sqlWhereClause);
+			return resultSetToAbstractFiles(rs);
+		} catch (SQLException e) {
+			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findAllFilesWhere().", e);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after executing  findFilesWhere", ex);
+				}
+			}
+			if (statement != null) {
+				try {
+					statement.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing statement after executing  findFilesWhere", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+	}
+
 
 	/**
 	 * Find and return list of files matching the specific Where clause
