@@ -2683,31 +2683,35 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * @param systemId a volume or file system ID
+	 * @param id an image, volume or file system ID
 	 * @return the ID of the '$CarvedFiles' directory for the given systemId
 	 */
-	private long getCarvedDirectoryId(long systemId) throws TskCoreException {
+	private long getCarvedDirectoryId(long id) throws TskCoreException {
 		
 		final String carvedFilesDirName = "$CarvedFiles";
 		
 		// first, check the cache
-		Long carvedDirId = systemIdMap.get(systemId);
+		Long carvedDirId = systemIdMap.get(id);
 		if (carvedDirId != null) {
 			return carvedDirId;
 		}
 
 		// it's not in the cache. Go to the DB
 		// determine if we've got a volume system or file system ID
-		Content vsOrFs = getContentById(systemId);
-		List<Content> children = null;
-		if (vsOrFs instanceof FileSystem) {
-			FileSystem fs = (FileSystem)vsOrFs;
+		Content parent = getContentById(id);
+		if (parent == null) {
+			throw new TskCoreException("No Content object found with this ID (" + id + ").");
+		}
+		
+		List<Content> children = Collections.EMPTY_LIST;
+		if (parent instanceof FileSystem) {
+			FileSystem fs = (FileSystem)parent;
 			children = fs.getRootDirectory().getChildren();
-		} else if (vsOrFs instanceof VolumeSystem) {
-			VolumeSystem vs = (VolumeSystem)vsOrFs;
-			children = vs.getChildren();
+		} else if (parent instanceof Volume ||
+				parent instanceof Image) {
+			children = parent.getChildren();
 		} else {
-			throw new TskCoreException("The given ID (" + systemId + ") was not a file system or volume system.");
+			throw new TskCoreException("The given ID (" + id + ") was not an image, volume or file system.");
 		}
 
 		// see if any of the children are a '$CarvedFiles' directory
@@ -2723,16 +2727,16 @@ public class SleuthkitCase {
 		if (carvedFilesDir != null) {
 			
 			// add it to the cache
-			systemIdMap.put(systemId, carvedFilesDir.getId());
+			systemIdMap.put(id, carvedFilesDir.getId());
 			
 			return carvedFilesDir.getId();
 		}
 		
 		// a carved files directory does not exist; create one
-		VirtualDirectory vd = addVirtualDirectory(systemId, carvedFilesDirName);
+		VirtualDirectory vd = addVirtualDirectory(id, carvedFilesDirName);
 		
 		// add it to the cache
-		systemIdMap.put(systemId, vd.getId());
+		systemIdMap.put(id, vd.getId());
 
 		return vd.getId();
 	}
