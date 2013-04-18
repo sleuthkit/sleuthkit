@@ -96,7 +96,7 @@ private:
      * 
      * @param outputFolderPath Folder to which the output files are written.
      * @param outputFileName  Name given to the output files.
-     * @param maxOutputFileSize  Maximum output file size.
+     * @param maxOutputFileSize  Maximum output file size in bytes. If 0, then no size limit is used.
      * @param sectorRuns Sector runs to be written to the output files.
      * @param scheduleCarving Whether or not to schedule carving of the output 
      * files.

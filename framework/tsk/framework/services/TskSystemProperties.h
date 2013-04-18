@@ -127,8 +127,8 @@ public:
         UNALLOC_SECTORS_IMG_FILE_NAME,
 
         /**
-         * Maximum allowable size for unallocated sectors image files. Can be 
-         * Set to zero to have no maximum size and instead break files on 
+         * Maximum allowable size (in bytes) for unallocated sectors image files. Can be 
+         * set to zero to have no maximum size and instead break files on 
          * volume boundaries only. Defaults to zero.
          */
         MAX_UNALLOC_SECTORS_IMG_FILE_SIZE,
