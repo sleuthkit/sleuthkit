@@ -428,7 +428,7 @@ int af_display_as_hex(const char *segname)
 }
 #endif
 
-#if _MSC_VER
+#ifdef TSK_WIN32
 
 static int convert(TSK_TCHAR *OPTARG, char **_opt_arg)
 {
@@ -493,7 +493,7 @@ int main(int argc, char * const *argv1)
 	    t = stdout;
 	    break;
 	case _TSK_T('A'):
-#ifdef _MSC_VER
+#ifdef TSK_WIN32
 		convert(OPTARG, &opt_arg);
 		arff_fn = opt_arg;
 #else
@@ -516,7 +516,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('O'): opt_allocated_only=true; break;
 //	case _TSK_T('S'): sectorhash_size = TATOI(OPTARG); break;
 	case _TSK_T('T'):
-#ifdef _MSC_VER
+#ifdef TSK_WIN32
 		convert(OPTARG, &opt_arg);
 		text_fn = opt_arg;
 #else
@@ -525,7 +525,7 @@ int main(int argc, char * const *argv1)
 		break;
 	case _TSK_T('V'): print_version();exit(0);
 	case _TSK_T('X'): 
-#ifdef _MSC_VER
+#ifdef TSK_WIN32
 		convert(OPTARG, &opt_arg);
 		xml_fn = new string(opt_arg);
 #else
@@ -535,7 +535,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('x'): opt_x = true;break;
 	case _TSK_T('Z'): opt_zap = true;break;
 	case _TSK_T('a'): 
-#ifdef _MSC_VER
+#ifdef TSK_WIN32
 		convert(OPTARG, &opt_arg);
 		audit_file = opt_arg;
 #else
@@ -543,7 +543,7 @@ int main(int argc, char * const *argv1)
 #endif
 		break;
 	case _TSK_T('c'): 
-#ifdef _MSC_VER
+#ifdef TSK_WIN32
 		convert(OPTARG, &opt_arg);
 		config_file = opt_arg;
 #else
@@ -574,7 +574,7 @@ int main(int argc, char * const *argv1)
 	argv += OPTIND;
 	argv1 += OPTIND;
 
-#ifdef _MSC_VER
+#ifdef TSK_WIN32
 		convert(argv[0],&argv_0);
 		const char *filename = argv_0;
 #else
@@ -714,7 +714,7 @@ int main(int argc, char * const *argv1)
     signal(SIGINFO,sig_info);
 #endif
 
-#if _MSC_VER
+#ifdef TSK_WIN32
     int count = process_image_file(argc,argv1,audit_file,sector_size);
     if(count<=0 || sector_size!=512){
 	comment("Retrying with 512 byte sector size.");
