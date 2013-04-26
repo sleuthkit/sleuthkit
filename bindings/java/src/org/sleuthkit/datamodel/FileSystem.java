@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -102,15 +103,28 @@ public class FileSystem extends AbstractContent {
 	public Directory getRootDirectory() throws TskCoreException {
 
 		List<Content> children = getChildren();
-		if (children.size() != 1) {
-			throw new TskCoreException("FileSystem must have only one child.");
+		
+		List<Content> childrenFiltered = new ArrayList<Content>();
+		for (Content c : children) {
+			final String childName = c.getName();
+			if (! (".".equals(childName)
+					|| "..".equals(childName) )) {
+				childrenFiltered.add(c);
+			}
+					
+		}
+		
+		if (childrenFiltered.size() != 1) {
+			throw new TskCoreException("FileSystem must have only one (non-dot) child, has: " + childrenFiltered.toString() );
 		}
 
-		if (!(children.get(0) instanceof Directory)) {
-			throw new TskCoreException("Child of FileSystem must be a Directory.");
+		Content firstChild = childrenFiltered.get(0);
+		
+		if (! (firstChild instanceof Directory)) {
+			throw new TskCoreException("Child of FileSystem must be a Directory. is: " + firstChild.toString() );
 		}
 
-		return (Directory) children.get(0);
+		return (Directory) firstChild;
 	}
 
 	/**
