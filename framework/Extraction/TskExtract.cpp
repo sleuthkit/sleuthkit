@@ -14,6 +14,7 @@
  */
 
 #include <string>
+#include <cstring>
 
 #include "Poco/SharedPtr.h"
 
@@ -41,9 +42,9 @@ namespace TskArchiveExtraction
         bool isL01File(const char *path)
         {
             bool result = false;
-            FILE *f;
+            FILE *f = fopen(path, "rb");
 
-	        if (!fopen_s(&f, path, "rb")) {
+	        if (f != NULL) {
                 unsigned char buf[4];
                 size_t bytesRead = fread(&buf, sizeof(unsigned char), 3, f);
                 if (bytesRead == 3) {
@@ -66,11 +67,22 @@ namespace TskArchiveExtraction
      */
     ExtractorPtr createExtractor(const std::wstring &archivePath, const std::string filter /*= ""*/)
     {
+        return createExtractor(TskUtilities::toUTF8(archivePath), filter);
+    }
+
+    /**
+     * Factory Function
+     * @param   archivePath Local path of the container file.
+     * @param   extFilter   Optional filter string specifying a particular type of archive.
+     * @returns Smart pointer to a new extractor object appropriate to the container
+     *          Pointer will be NULL if an extractor is not found for this container.
+     */
+    ExtractorPtr createExtractor(const std::string &archivePath, const std::string filter /*= ""*/)
+    {
         //Check based on file signature 
         if (filter.empty())
         {
-            std::string narrowPath = TskUtilities::toUTF8(archivePath);
-            if (isL01File(narrowPath.c_str()))
+            if (isL01File(archivePath.c_str()))
             {
                 return new TskL01Extract(archivePath);
             }
