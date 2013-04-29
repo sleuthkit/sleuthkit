@@ -487,6 +487,7 @@ JNIEXPORT jlong JNICALL
 
     tskAuto->setAddUnallocSpace(addUnallocSpace?true:false);
     tskAuto->setNoFatFsOrphans(noFatFsOrphans?true:false);
+	tskAuto->setAddUnallocSpace(true, 500000000);
 
     return (jlong) tskAuto;
 }
