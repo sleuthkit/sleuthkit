@@ -166,11 +166,6 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	@Override
-	public List<TskFileRange> getRanges() {
-		return Collections.<TskFileRange>emptyList();
-	}
-
-	@Override
 	public synchronized String getUniquePath() throws TskCoreException {
 		if (uniquePath == null) {
 			StringBuilder sb = new StringBuilder();

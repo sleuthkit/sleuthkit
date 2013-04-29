@@ -68,7 +68,7 @@ public class SleuthkitCase {
 	private int attributeIDcounter = 1001;
 	
 	// for use by getCarvedDirectoryId method only
-	private Map<Long, Long> systemIdMap;
+	private Map<Long, Long> systemIdMap = new HashMap<Long, Long>();
 
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
@@ -2095,14 +2095,15 @@ public class SleuthkitCase {
 							rs.getLong("size"), rs.getString("md5"), 
 							FileKnown.valueOf(rs.getByte("known")), parentPath);
 					children.add(virtDir);
-				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS) {
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS ||
+						type == TSK_DB_FILES_TYPE_ENUM.CARVED) {
 					String parentPath = rs.getString("parent_path");
 					if (parentPath == null) {
 						parentPath = "";
 					}
 					final LayoutFile lf =
 							new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"),
-							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
+							type,
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), 
 							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
@@ -2682,31 +2683,35 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * @param systemId a volume or file system ID
+	 * @param id an image, volume or file system ID
 	 * @return the ID of the '$CarvedFiles' directory for the given systemId
 	 */
-	private long getCarvedDirectoryId(long systemId) throws TskCoreException {
+	private long getCarvedDirectoryId(long id) throws TskCoreException {
 		
 		final String carvedFilesDirName = "$CarvedFiles";
 		
 		// first, check the cache
-		Long carvedDirId = systemIdMap.get(systemId);
+		Long carvedDirId = systemIdMap.get(id);
 		if (carvedDirId != null) {
 			return carvedDirId;
 		}
 
 		// it's not in the cache. Go to the DB
 		// determine if we've got a volume system or file system ID
-		Content vsOrFs = getContentById(systemId);
-		List<Content> children = null;
-		if (vsOrFs instanceof FileSystem) {
-			FileSystem fs = (FileSystem)vsOrFs;
+		Content parent = getContentById(id);
+		if (parent == null) {
+			throw new TskCoreException("No Content object found with this ID (" + id + ").");
+		}
+		
+		List<Content> children = Collections.<Content>emptyList();
+		if (parent instanceof FileSystem) {
+			FileSystem fs = (FileSystem)parent;
 			children = fs.getRootDirectory().getChildren();
-		} else if (vsOrFs instanceof VolumeSystem) {
-			VolumeSystem vs = (VolumeSystem)vsOrFs;
-			children = vs.getChildren();
+		} else if (parent instanceof Volume ||
+				parent instanceof Image) {
+			children = parent.getChildren();
 		} else {
-			throw new TskCoreException("The given ID (" + systemId + ") was not a file system or volume system.");
+			throw new TskCoreException("The given ID (" + id + ") was not an image, volume or file system.");
 		}
 
 		// see if any of the children are a '$CarvedFiles' directory
@@ -2722,16 +2727,16 @@ public class SleuthkitCase {
 		if (carvedFilesDir != null) {
 			
 			// add it to the cache
-			systemIdMap.put(systemId, carvedFilesDir.getId());
+			systemIdMap.put(id, carvedFilesDir.getId());
 			
 			return carvedFilesDir.getId();
 		}
 		
 		// a carved files directory does not exist; create one
-		VirtualDirectory vd = addVirtualDirectory(systemId, carvedFilesDirName);
+		VirtualDirectory vd = addVirtualDirectory(id, carvedFilesDirName);
 		
 		// add it to the cache
-		systemIdMap.put(systemId, vd.getId());
+		systemIdMap.put(id, vd.getId());
 
 		return vd.getId();
 	}
@@ -2786,9 +2791,11 @@ public class SleuthkitCase {
 			addFileSt.setLong(1, newObjId);
 			addFileSt.setString(2, carvedFileName);
 
-			//type, has_path
-			final TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS;
+			// type
+			final TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.CARVED;
 			addFileSt.setShort(3, type.getFileType());
+			
+			// has_path
 			addFileSt.setBoolean(4, true);
 
 			// dirType
@@ -3052,6 +3059,45 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 	}
+	
+	
+	/**
+	 * Find and return list of all (abstract) files matching the specific Where clause
+	 * 
+	 * @param sqlWhereClause a SQL where clause appropriate for the desired
+	 * files (do not begin the WHERE clause with the word WHERE!)
+	 * @return a list of FsContent each of which satisfy the given WHERE clause
+	 * @throws TskCoreException
+	 */
+	public List<AbstractFile> findAllFilesWhere(String sqlWhereClause) throws TskCoreException {
+		Statement statement = null;
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			statement = con.createStatement();
+			rs = statement.executeQuery("SELECT * FROM tsk_files WHERE " + sqlWhereClause);
+			return resultSetToAbstractFiles(rs);
+		} catch (SQLException e) {
+			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findAllFilesWhere().", e);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after executing  findFilesWhere", ex);
+				}
+			}
+			if (statement != null) {
+				try {
+					statement.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing statement after executing  findFilesWhere", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+	}
+
 
 	/**
 	 * Find and return list of files matching the specific Where clause
@@ -3925,14 +3971,16 @@ public class SleuthkitCase {
 							rs.getLong("size"), rs.getString("md5"), 
 							FileKnown.valueOf(rs.getByte("known")), parentPath);
 					results.add(virtDir);
-				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()) {
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType() ||
+						type == TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()) {
+					TSK_DB_FILES_TYPE_ENUM atype = TSK_DB_FILES_TYPE_ENUM.valueOf(type);
 					String parentPath = rs.getString("parent_path");
 					if (parentPath == null) {
 						parentPath = "";
 					}
 					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"),
 							rs.getString("name"),
-							TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
+							atype,
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
 							rs.getLong("size"),
