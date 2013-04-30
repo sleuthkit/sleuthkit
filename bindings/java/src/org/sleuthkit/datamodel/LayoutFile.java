@@ -66,14 +66,15 @@ public class LayoutFile extends AbstractFile{
 		return numParts;
 	}
 
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		return Collections.<Content>emptyList();
-	}
 	
 	@Override
+	public List<Content> getChildren() throws TskCoreException {
+		return getSleuthkitCase().getAbstractFileChildren(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
+	}
+
+	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
-		return Collections.<Long>emptyList();
+		return getSleuthkitCase().getAbstractFileChildrenIds(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
     
 	/**

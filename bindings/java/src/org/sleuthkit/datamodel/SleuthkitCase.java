@@ -2703,7 +2703,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("No Content object found with this ID (" + id + ").");
 		}
 		
-		List<Content> children = Collections.EMPTY_LIST;
+		List<Content> children = Collections.<Content>emptyList();
 		if (parent instanceof FileSystem) {
 			FileSystem fs = (FileSystem)parent;
 			children = fs.getRootDirectory().getChildren();
