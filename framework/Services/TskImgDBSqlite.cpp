@@ -3031,7 +3031,6 @@ int TskImgDBSqlite::addUnusedSector(uint64_t sectStart, uint64_t sectEnd, int vo
 {
     assert(sectEnd > sectStart);
     int rc = -1;
-    unusedSectorsList.clear();
     if (!m_db)
         return rc;
 
