@@ -248,13 +248,14 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
                 // Will save zero-length files
                 if (saveFile(fileId, *it) == 0)
                 {
-                    // Schedule
                     m_db.updateFileStatus(fileId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
-                    TskServices::Instance().getScheduler().schedule(Scheduler::FileAnalysis, fileId, fileId);
+                    m_fileIdsToSchedule.insert(fileId);
                 }
             }
         }
 
+        // Schedule files for analysis
+        scheduleFiles();
     }
     catch (TskException &ex)
     {
@@ -777,3 +778,28 @@ int TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archivedF
     }
 }
 
+void TskL01Extract::scheduleFiles()
+{
+    if (m_fileIdsToSchedule.empty())
+        return;
+
+    Scheduler& scheduler = TskServices::Instance().getScheduler();
+
+    std::set<uint64_t>::const_iterator it = m_fileIdsToSchedule.begin();
+    uint64_t startId = *it, endId = *it;
+
+    while (++it != m_fileIdsToSchedule.end())
+    {
+        if (*it > endId + 1)
+        {
+            scheduler.schedule(Scheduler::FileAnalysis, startId, endId);
+            startId = endId = *it;
+        }
+        else
+        {
+            endId++;
+        }
+    }
+
+    scheduler.schedule(Scheduler::FileAnalysis, startId, endId);
+}
