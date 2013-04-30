@@ -802,4 +802,5 @@ void TskL01Extract::scheduleFiles()
     }
 
     scheduler.schedule(Scheduler::FileAnalysis, startId, endId);
+    m_fileIdsToSchedule.clear();
 }
