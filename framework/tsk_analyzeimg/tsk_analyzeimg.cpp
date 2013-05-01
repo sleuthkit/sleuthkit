@@ -82,6 +82,7 @@ usage(const char *program)
     fprintf(stderr, "\t-p pipeline_config_file: Path to XML pipeline config file (overrides pipeline config specified with -c)\n");
     fprintf(stderr, "\t-d outdir: Path to output directory\n");
     fprintf(stderr, "\t-C: Disable carving, overriding framework config file settings\n");
+    fprintf(stderr, "\t-u: Enable unused sector file creation\n");
     fprintf(stderr, "\t-v: Enable verbose mode to get more debug information\n");
     fprintf(stderr, "\t-V: Display the tool version\n");
     fprintf(stderr, "\t-L: Print no error messages to STDERR -- only log them\n");
@@ -99,6 +100,7 @@ int main(int argc, char **argv1)
     std::wstring outDirPath;
     bool suppressSTDERR = false;
     bool doCarving = true;
+    bool createUnusedSectorFiles = false;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -112,7 +114,7 @@ int main(int argc, char **argv1)
 #endif
 
     while ((ch =
-        GETOPT(argc, argv, _TSK_T("d:c:p:vVLC"))) > 0) {
+        GETOPT(argc, argv, _TSK_T("d:c:p:vuVLC"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -124,6 +126,9 @@ int main(int argc, char **argv1)
             break;
         case _TSK_T('p'):
             pipeline_config = OPTARG;
+            break;
+        case _TSK_T('u'):
+            createUnusedSectorFiles = true;
             break;
         case _TSK_T('v'):
             tsk_verbose++;
@@ -323,7 +328,7 @@ int main(int argc, char **argv1)
 
     // Now we analyze the data.
 
-    std::auto_ptr<TskCarveExtractScalpel> carver;
+    std::auto_ptr<TskCarveExtractScalpel> carver(new TskCarveExtractScalpel(createUnusedSectorFiles));
 
     // Extract
     if (!containerExtractor.isNull())   // Input is an archive file
