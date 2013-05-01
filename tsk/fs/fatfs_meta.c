@@ -22,8 +22,8 @@
  * \file fatfs_meta.c
  * Contains the internal TSK FAT file system code to handle metadata structures.
  */
-#include "tsk_fs_i.h"
-#include "tsk_fatfs.h"
+
+#include "tsk_fatxxfs.h"
 
 /*
  * Identify if the dentry is a valid 8.3 name

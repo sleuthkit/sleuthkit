@@ -14,7 +14,7 @@
  */
 
 #include "tsk_auto_i.h"
-#include "tsk/fs/tsk_fatfs.h"
+#include "tsk/fs/tsk_fatxxfs.h"
 
 
 // @@@ Follow through some error paths for sanity check and update docs somewhere to relfect the new scheme

@@ -67,6 +67,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
@@ -108,6 +109,8 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tsk\fs\exfatfs.c" />
+    <ClCompile Include="..\..\tsk\fs\fatxxfs.c" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />
@@ -194,6 +197,8 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     <ClCompile Include="..\..\tsk\img\raw.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
+    <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_dos.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_gpt.h" />
