@@ -43,9 +43,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class LayoutFile extends AbstractFile{
 	
-	//layout ranges associated with this file
-	private List<TskFileRange> ranges;
-	
 	protected LayoutFile(SleuthkitCase db, long objId, String name, 
 			TSK_DB_FILES_TYPE_ENUM fileType, 
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
@@ -54,8 +51,6 @@ public class LayoutFile extends AbstractFile{
 		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short)0, name, fileType, 0L, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short)0, 0, 0, md5Hash, knownState, parentPath);
 		//this.size = calcSize(); //update calculated size
 	}
-	
-	
 
 	/**
 	 * Get number of file layout ranges associated with this layout file
@@ -71,24 +66,16 @@ public class LayoutFile extends AbstractFile{
 		return numParts;
 	}
 
-	@Override
-	public List<TskFileRange> getRanges() throws TskCoreException {
-		if(ranges == null) {
-            ranges = getSleuthkitCase().getFileRanges(this.getId());
-        }
-        return ranges;
-	}
-
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		return Collections.<Content>emptyList();
-	}
 	
 	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		return Collections.<Long>emptyList();
+	public List<Content> getChildren() throws TskCoreException {
+		return getSleuthkitCase().getAbstractFileChildren(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
 
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		return getSleuthkitCase().getAbstractFileChildrenIds(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
+	}
     
 	/**
 	 * Calculate the size from all ranges / blocks
@@ -111,15 +98,12 @@ public class LayoutFile extends AbstractFile{
 		//nothing to be closed
 	}
 	
-	
-
 	@Override
     public int read(byte[] buf, long offset, long len) throws TskCoreException {
         long offsetInThisLayoutContent = 0; // current offset in this LayoutContent
         int bytesRead = 0; // Bytes read so far
-        Iterator<TskFileRange> it = getRanges().iterator();
-        while(it.hasNext()) {
-            TskFileRange range = it.next();
+		
+        for (TskFileRange range : getRanges()) {
             if (bytesRead < len) { // we haven't read enough yet
                 if (offset < offsetInThisLayoutContent + range.getByteLen()) { // if we are in a range object we want to read from
                     long offsetInRange = 0; // how far into the current range object to start reading
@@ -142,15 +126,6 @@ public class LayoutFile extends AbstractFile{
         return bytesRead;
     }
 	
-	/**
-	 * Convert an internal offset to an image offset
-	 * @param layoutOffset the offset in this layout file
-	 * @return the corresponding offset in the image
-	 */
-	public long convertToImgOffset(long layoutOffset) {
-		throw new UnsupportedOperationException("Not supported yet!");
-	}
-    
 	/*
 	 * Read bytes from an image into a buffer, starting at given position in buffer
 	 * 
