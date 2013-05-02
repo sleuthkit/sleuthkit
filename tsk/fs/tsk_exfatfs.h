@@ -27,12 +27,12 @@ extern "C" {
 /**
  * Boot sector structure for exFAT file systems (TSK_FS_INFO_TYPE_EX_FAT).
  */
-    typedef struct { //RJCTODO: Add doxygen comments to each member
+    typedef struct { //RJCTODO: Add doxygen comments to each member, make names better
         uint8_t jump_to_boot_code[3];
         char fs_name[8];
         uint8_t must_be_zeros[53];
 		uint8_t partition_offset[8];
-		uint8_t vol_len[8];            
+		uint8_t vol_len_in_sectors[8];            
 		uint8_t fat_offset[4];          
 		uint8_t fat_len[4];               
 		uint8_t cluster_heap_offset[4];

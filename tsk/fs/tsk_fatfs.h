@@ -74,7 +74,6 @@ extern "C" {
         uint16_t ssize;         /* size of sectors in bytes */
         uint16_t ssize_sh;      /* power of 2 for size of sectors */
         uint8_t csize;          /* size of clusters in sectors */
-        //uint16_t      reserved;       /* number of reserved sectors */
         uint8_t numfat;         /* number of fat tables */
         uint32_t sectperfat;    /* sectors per fat table */
         uint16_t numroot;       /* number of 32-byte dentries in root dir */
@@ -90,6 +89,11 @@ extern "C" {
 	} FATFS_INFO;
 	// RJCTODO: Add pack directive
 
+    extern uint8_t
+    fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
+        TSK_DADDR_T a_end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
+        TSK_FS_BLOCK_WALK_CB a_action, void *a_ptr);
+
 	/**
 	 * \internal
 	 * Open part of a disk image as an FAT file system. 
@@ -100,11 +104,13 @@ extern "C" {
 	 * @param a_test NOT USED
 	 * @returns NULL on error or if data is not a FAT file system
 	 */
-	extern TSK_FS_INFO *fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftype, uint8_t a_test);
+	extern TSK_FS_INFO 
+    *fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftype, uint8_t a_test);
 
 	// RJCTODO: Add comment
     // RJCTODO: Needed in fs_dir.c by load_orphan_dir_walk_cb
-    extern uint8_t fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum, TSK_INUM_T dir_inum); 
+    extern uint8_t 
+    fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum, TSK_INUM_T dir_inum); 
 
 #ifdef __cplusplus
 }
