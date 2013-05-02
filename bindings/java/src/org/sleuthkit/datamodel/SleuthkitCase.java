@@ -68,7 +68,9 @@ public class SleuthkitCase {
 	private int attributeIDcounter = 1001;
 	
 	// for use by getCarvedDirectoryId method only
-	private Map<Long, Long> systemIdMap = new HashMap<Long, Long>();
+	private final Map<Long, Long> systemIdMap = new HashMap<Long, Long>();
+	// for use by getLocalFilesDirectoryId()
+	private volatile long localFilesVirtualDirId = -1;
 
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
@@ -129,6 +131,7 @@ public class SleuthkitCase {
 		configureDB();
 		initBlackboardTypes();
 		initStatements();
+		
 	}
 
 	/**
@@ -572,7 +575,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get the list of root objects, meaning image files or local files.
+	 * Get the list of root objects, meaning image files or local files virtual dir container.
 	 *
 	 * @return list of content objects.
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -584,8 +587,8 @@ public class SleuthkitCase {
 		try {
 
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("select obj_id, type from tsk_objects "
-					+ "where par_obj_id is NULL");
+			ResultSet rs = s.executeQuery("SELECT obj_id, type from tsk_objects "
+					+ "WHERE par_obj_id IS NULL");
 
 			while (rs.next()) {
 				infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type"))));
@@ -599,7 +602,18 @@ public class SleuthkitCase {
 			for (ObjectInfo i : infos) {
 				if (i.type == ObjectType.IMG) {
 					rootObjs.add(getImageById(i.id));
-				} else {
+				}
+				else if (i.type == ObjectType.ABSTRACTFILE) {
+					//check if virtual dir for local files
+					AbstractFile af = getAbstractFileById(i.id);
+					if (af instanceof VirtualDirectory) {
+						rootObjs.add(af);
+					}
+					else {
+						throw new TskCoreException("Parentless object has wrong type to be a root (ABSTRACTFILE, but not VIRTUAL_DIRECTORY: " + i.type);
+					}
+				} 
+				else {
 					throw new TskCoreException("Parentless object has wrong type to be a root: " + i.type);
 				}
 			}
@@ -2582,7 +2596,7 @@ public class SleuthkitCase {
 	/**
 	 * Adds a virtual directory to the database and returns a VirtualDirectory
 	 * object representing it.
-	 * @param parentId the ID of the parent
+	 * @param parentId the ID of the parent, or 0 if NULL
 	 * @param directoryName the name of the virtual directory to create
 	 * @return a VirtualDirectory object representing the one added to the database.
 	 * @throws TskCoreException 
@@ -2614,7 +2628,9 @@ public class SleuthkitCase {
 
 			//tsk_objects
 			addObjectSt.setLong(1, newObjId);
-			addObjectSt.setLong(2, parentId);
+			if (parentId != 0) {
+				addObjectSt.setLong(2, parentId);
+			}
 			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			addObjectSt.executeUpdate();
 
@@ -2682,63 +2698,146 @@ public class SleuthkitCase {
 		return vd;
 	}
 	
+	
+	/**
+	 * Get ID of the $LocalFiles virtual folder. There is only one per case.
+	 * If it does not exists, creates it and adds it to cache, then gets it from the cache next time.
+	 * 
+	 * @return the ID of the '$LocalFiles' directory for the given systemId
+	 */
+	private long getLocalFilesDirectoryId() throws TskCoreException {
+		
+		final String localFilesDirName = "$LocalFiles";
+
+		//first, quick and atomic check the cache
+		if (localFilesVirtualDirId != -1) {
+			return localFilesVirtualDirId;
+		}
+
+		//use lock to ensure atomic cache check and db/cache update
+		dbWriteLock();
+
+		//recheck after lock acquired
+		if (localFilesVirtualDirId != -1) {
+			return localFilesVirtualDirId;
+		}
+		Statement statement = null;
+		ResultSet rs = null;
+		try {
+			//it's not in the cache. Go to the DB
+			//get topmost virtual directory object with no parent
+			statement = con.createStatement();
+			rs = statement.executeQuery("SELECT tsk_objects.obj_id FROM tsk_objects, tsk_files WHERE " 
+					+ "tsk_objects.par_obj_id IS NULL AND " 
+					+ "tsk_objects.type = " + TskData.ObjectType.ABSTRACTFILE.getObjectType() + " AND " 
+					+ "tsk_objects.obj_id = tsk_files.obj_id AND "
+					+ "tsk_files.type = " + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType() + " AND "
+					+ "tsk_files.name = '" + localFilesDirName + "' "
+					+ "LIMIT 1"
+					);
+			
+			if (rs.next()) {
+				localFilesVirtualDirId = rs.getLong(1);
+			}
+			else {
+				// a local files directory does not exist; create one
+				final VirtualDirectory vd = addVirtualDirectory(
+						0, //NULL parent
+						localFilesDirName);
+				localFilesVirtualDirId = vd.getId();
+			}
+		}
+		catch (SQLException ex) {
+			logger.log(Level.SEVERE, "Error getting local files virtual folder id, ", ex);
+			throw new TskCoreException("Error getting local files virtual folder id, ", ex);
+		}
+		
+		finally {
+			try{
+				if (rs != null) {
+					rs.close();
+				}
+				if (statement != null) {
+					statement.close();
+				}
+			}
+			catch (SQLException e) {
+				logger.log(Level.WARNING, "Error closing statements after getting local files virt folder id", e);
+			}
+			finally {
+				dbWriteUnlock();
+			}
+		}
+
+		return localFilesVirtualDirId;
+	}
+	
 	/**
 	 * @param id an image, volume or file system ID
 	 * @return the ID of the '$CarvedFiles' directory for the given systemId
 	 */
 	private long getCarvedDirectoryId(long id) throws TskCoreException {
-		
+
+		long ret = 0;
 		final String carvedFilesDirName = "$CarvedFiles";
-		
-		// first, check the cache
-		Long carvedDirId = systemIdMap.get(id);
-		if (carvedDirId != null) {
-			return carvedDirId;
-		}
 
-		// it's not in the cache. Go to the DB
-		// determine if we've got a volume system or file system ID
-		Content parent = getContentById(id);
-		if (parent == null) {
-			throw new TskCoreException("No Content object found with this ID (" + id + ").");
-		}
-		
-		List<Content> children = Collections.<Content>emptyList();
-		if (parent instanceof FileSystem) {
-			FileSystem fs = (FileSystem)parent;
-			children = fs.getRootDirectory().getChildren();
-		} else if (parent instanceof Volume ||
-				parent instanceof Image) {
-			children = parent.getChildren();
-		} else {
-			throw new TskCoreException("The given ID (" + id + ") was not an image, volume or file system.");
-		}
+		//use lock to ensure atomic cache check and db/cache update
+		dbWriteLock();
 
-		// see if any of the children are a '$CarvedFiles' directory
-		Content carvedFilesDir = null;
-		for (Content child : children) {
-			if (child.getName().equals(carvedFilesDirName)) {
-				carvedFilesDir = child;
-				break;
+		try {
+			// first, check the cache
+			Long carvedDirId = systemIdMap.get(id);
+			if (carvedDirId != null) {
+				return carvedDirId;
 			}
-		}
-		
-		// if we found it, add it to the cache and return its ID
-		if (carvedFilesDir != null) {
-			
-			// add it to the cache
-			systemIdMap.put(id, carvedFilesDir.getId());
-			
-			return carvedFilesDir.getId();
-		}
-		
-		// a carved files directory does not exist; create one
-		VirtualDirectory vd = addVirtualDirectory(id, carvedFilesDirName);
-		
-		// add it to the cache
-		systemIdMap.put(id, vd.getId());
 
-		return vd.getId();
+			// it's not in the cache. Go to the DB
+			// determine if we've got a volume system or file system ID
+			Content parent = getContentById(id);
+			if (parent == null) {
+				throw new TskCoreException("No Content object found with this ID (" + id + ").");
+			}
+
+			List<Content> children = Collections.<Content>emptyList();
+			if (parent instanceof FileSystem) {
+				FileSystem fs = (FileSystem) parent;
+				children = fs.getRootDirectory().getChildren();
+			} else if (parent instanceof Volume
+					|| parent instanceof Image) {
+				children = parent.getChildren();
+			} else {
+				throw new TskCoreException("The given ID (" + id + ") was not an image, volume or file system.");
+			}
+
+			// see if any of the children are a '$CarvedFiles' directory
+			Content carvedFilesDir = null;
+			for (Content child : children) {
+				if (child.getName().equals(carvedFilesDirName)) {
+					carvedFilesDir = child;
+					break;
+				}
+			}
+
+			// if we found it, add it to the cache and return its ID
+			if (carvedFilesDir != null) {
+
+				// add it to the cache
+				systemIdMap.put(id, carvedFilesDir.getId());
+
+				return carvedFilesDir.getId();
+			}
+
+			// a carved files directory does not exist; create one
+			VirtualDirectory vd = addVirtualDirectory(id, carvedFilesDirName);
+
+			ret = vd.getId();
+			// add it to the cache
+			systemIdMap.put(id, ret);
+		} finally {
+			dbWriteUnlock();
+		}
+
+		return ret;
 	}
 	
 	/**

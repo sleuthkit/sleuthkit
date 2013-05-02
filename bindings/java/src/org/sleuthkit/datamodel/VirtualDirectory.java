@@ -90,7 +90,15 @@ public class VirtualDirectory extends AbstractFile {
 
 	@Override
 	public Image getImage() throws TskCoreException {
-		return getParent().getImage();
+		Content parent =  getParent();
+		if (parent != null) {
+			return parent.getImage();
+		}
+		else {
+			//root-level VirtualDirectory, such as local files container
+			return null;
+		}
+
 	}
 
 	@Override
