@@ -1310,7 +1310,7 @@ fatfs_close(TSK_FS_INFO * fs)
 }
 
 int
-fatxxfs_open(FATFS_INFO *fatfs, int using_backup_boot_sector)
+fatxxfs_open(FATFS_INFO *fatfs)
 {
     const char *myname = "fatxxfs_open";
 	TSK_FS_INFO *fs = &(fatfs->fs_info);
@@ -1508,7 +1508,7 @@ fatxxfs_open(FATFS_INFO *fatfs, int using_backup_boot_sector)
      * The scenario to prevent here is if fat_open is called 6 sectors before the real start
      * of the file system, then we want to detect that it was not a backup that we saw.  
      */
-    if (using_backup_boot_sector) {
+    if (fatfs->using_backup_boot_sector) {
         // only FAT32 has backup boot sectors..
         if (fatfs->fs_info.ftype != TSK_FS_TYPE_FAT32) {
             tsk_error_reset();

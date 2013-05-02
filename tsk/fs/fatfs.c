@@ -36,7 +36,6 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 	int find_boot_sector_attempt = 0;
     ssize_t bytes_read = 0;
     FAT_BOOT_SECTOR_RECORD *bootSector;
-    int using_backup_boot_sector = 0;
 
     tsk_error_reset();
 
@@ -103,8 +102,8 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
         }
         else {
             // Found the magic.
-            using_backup_boot_sector = boot_sector_offset > 0;
-            if (using_backup_boot_sector && tsk_verbose) {
+            fatfs->using_backup_boot_sector = boot_sector_offset > 0;
+            if (fatfs->using_backup_boot_sector && tsk_verbose) {
 				fprintf(stderr, "%s: Using backup boot sector\n", func_name);
             }
             break;
@@ -113,9 +112,9 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 
 	// Attempt to open the file system as one of the FAT types.
 	// RJCTODO: Should this return an error if not detecting and a specific type of FAT fs is specified?
-	if ((a_ftype == TSK_FS_TYPE_FAT_DETECT && !fatxxfs_open(fatfs, using_backup_boot_sector) && !exfatfs_open(fatfs, using_backup_boot_sector)) ||
-		(a_ftype == TSK_FS_TYPE_EXFAT && !exfatfs_open(fatfs, using_backup_boot_sector)) ||
-		(!fatxxfs_open(fatfs, using_backup_boot_sector)))
+	if ((a_ftype == TSK_FS_TYPE_FAT_DETECT && !fatxxfs_open(fatfs) && !exfatfs_open(fatfs)) ||
+		(a_ftype == TSK_FS_TYPE_EXFAT && !exfatfs_open(fatfs)) ||
+		(!fatxxfs_open(fatfs)))
 	{
 		free(fatfs);
 		return NULL;

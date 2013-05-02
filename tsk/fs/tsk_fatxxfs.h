@@ -310,7 +310,7 @@ extern "C" {
     extern void fatfs_dir_buf_free(FATFS_INFO *fatfs);
 
 	// RJCTODO: Comment
-	extern int fatxxfs_open(FATFS_INFO *fatfs, int using_backup_boot_sector);
+	extern int fatxxfs_open(FATFS_INFO *fatfs);
 
 #ifdef __cplusplus
 }

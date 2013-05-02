@@ -85,6 +85,7 @@ extern "C" {
 
 		/* RJCTODO: Comment */
 		char boot_sector_buffer[FAT_BOOT_SECTOR_SIZE];
+        int using_backup_boot_sector;
 
 	} FATFS_INFO;
 	// RJCTODO: Add pack directive
