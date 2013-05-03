@@ -169,5 +169,10 @@ public interface ContentVisitor<T> {
 		public T visit(DerivedFile df) {
 			return defaultVisit(df);
 		}
+		
+		@Override
+		public T visit(LocalFile lf) {
+			return defaultVisit(lf);
+		}
 	}
 }
