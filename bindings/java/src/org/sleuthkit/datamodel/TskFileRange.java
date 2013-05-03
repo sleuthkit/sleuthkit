@@ -24,31 +24,21 @@ package org.sleuthkit.datamodel;
  * This is especially useful for non-fs "virtual" files created for the purpose of data analysis
  */
 public class TskFileRange {
-	private long obj_id;
+
 	private long byteStart;
 	private long byteLen;
 	private long sequence;
 	
 	/**
 	 * Create file range to map the database object
-	 * @param obj_id object id of the associated file
 	 * @param byteStart byte start with respect to the image
 	 * @param byteLen length of the range in bytes
 	 * @param sequence sequence order of the range for the file
 	 */
-	public TskFileRange(long obj_id, long byteStart, long byteLen, long sequence) {
-		this.obj_id = obj_id;
+	public TskFileRange(long byteStart, long byteLen, long sequence) {
 		this.byteStart = byteStart;
 		this.byteLen = byteLen;
 		this.sequence = sequence;
-	}
-	
-	/**
-	 * Get object id of the file associated
-	 * @return object id of the associated file
-	 */
-	public long getID() {
-		return obj_id;
 	}
 	
 	/**

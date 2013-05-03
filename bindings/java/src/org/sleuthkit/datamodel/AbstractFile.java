@@ -45,6 +45,9 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final short attrId;
 	protected final TskData.TSK_FS_ATTR_TYPE_ENUM attrType;
 	protected final Set<TskData.TSK_FS_META_MODE_ENUM> modes;
+	
+	private List<TskFileRange> ranges;
+	
 	/*
 	 * path of parent directory
 	 */
@@ -434,7 +437,38 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @throws TskCoreException exception thrown if critical error occurred
 	 * within tsk core
 	 */
-	public abstract List<TskFileRange> getRanges() throws TskCoreException;
+	public List<TskFileRange> getRanges() throws TskCoreException {
+		if(ranges == null) {
+            ranges = getSleuthkitCase().getFileRanges(this.getId());
+        }
+        return ranges;
+	}
+	
+	/**
+	 * Convert an internal offset to an image offset
+	 * @param fileOffset the byte offset in this layout file to map
+	 * @return the corresponding byte offset in the image where the file offset is located,
+	 * or -1 if the file has no range layout information or if the fileOffset is larger than file size
+	 * @throws TskCoreException exception thrown if critical error occurred within tsk core and offset could not be converted
+	 */
+	public long convertToImgOffset(long fileOffset) throws TskCoreException {
+		long imgOffset = -1;
+		for (TskFileRange byteRange : getRanges()) {
+			
+			// if fileOffset is within the current byteRange, calcuate the image
+			// offset and break
+			long rangeLength = byteRange.getByteLen();
+			if (fileOffset < rangeLength) {
+				imgOffset = byteRange.getByteStart() + fileOffset;
+				break;
+			}
+			
+			// otherwise, decrement fileOffset by the length of the current
+			// byte range and continue
+			fileOffset -= rangeLength;
+		}
+		return imgOffset;
+	}
 
 	/**
 	 * is this a virtual file or directory
