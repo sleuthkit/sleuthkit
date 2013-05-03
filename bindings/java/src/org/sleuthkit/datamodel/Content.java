@@ -37,6 +37,13 @@ public interface Content extends SleuthkitVisitableItem {
 	 * tsk core
 	 */
 	public int read(byte[] buf, long offset, long len) throws TskCoreException;
+	
+	/**
+	 * Free native resources after read is done on the Content object.  
+	 * After closing, read can be called again on the same Content object,
+	 * which should result in re-opening of new native resources.
+	 */
+	public void close();
 
 	/**
 	 * Get the size of the content

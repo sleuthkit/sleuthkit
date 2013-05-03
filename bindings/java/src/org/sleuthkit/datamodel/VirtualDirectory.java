@@ -61,6 +61,13 @@ public class VirtualDirectory extends AbstractFile {
 	}
 
 	@Override
+	public void close() {
+		//nothing to be closed
+	}
+
+	
+	
+	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		return 0;
 	}

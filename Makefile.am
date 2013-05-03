@@ -34,13 +34,11 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     framework/SampleConfig/*.xml \
     framework/docs/* \
     framework/man/* \
-    framework/tools/etsk_analyzeimg/*.cpp \
+    framework/tools/tsk_analyzeimg/*.cpp \
     framework/tools/tsk_validatepipeline/*.cpp \
     framework/msvcpp/*/*.vcproj \
     framework/msvcpp/*/*.sln \
     framework/msvcpp/Makefile
-
-CLEANFILES = tsk/tsk_incs.h
 
 ACLOCAL_AMFLAGS = -I m4
 

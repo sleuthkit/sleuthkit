@@ -39,16 +39,13 @@ public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	///read only database tsk_files fields
-	
 	protected final long fsObjId;
-
 	private String uniquePath;
 	///read-write database tsk_files fields
 	/**
 	 * parent file system
 	 */
 	private volatile FileSystem parentFileSystem;
-
 	///other members
 	/**
 	 * file Handle
@@ -57,7 +54,7 @@ public abstract class FsContent extends AbstractFile {
 
 	/**
 	 * Create an FsContent object from a database object
-	 * 
+	 *
 	 * @param db
 	 * @param objId
 	 * @param fsObjId
@@ -79,20 +76,16 @@ public abstract class FsContent extends AbstractFile {
 	 * @param gid
 	 * @param md5Hash String of MD5 hash of content or null if not known
 	 * @param knownState
-	 * @param parentPath 
+	 * @param parentPath
 	 */
-	FsContent(SleuthkitCase db, long objId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId, 
-			String name, long metaAddr, 
+	FsContent(SleuthkitCase db, long objId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+			String name, long metaAddr,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid,  String md5Hash, FileKnown knownState,
+			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
 		super(db, objId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
 		this.fsObjId = fsObjId;
 	}
-
-
-	
-	
 
 	/**
 	 * Get the parent file system id
@@ -124,16 +117,17 @@ public abstract class FsContent extends AbstractFile {
 		return parentFileSystem;
 	}
 
-
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
 		if (offset == 0 && size == 0) {
 			//special case for 0-size file
 			return 0;
 		}
-		synchronized (this) {
-			if (fileHandle == 0) {
-				fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
+		if (fileHandle == 0) {
+			synchronized (this) {
+				if (fileHandle == 0) {
+					fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
+				}
 			}
 		}
 		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
@@ -171,12 +165,6 @@ public abstract class FsContent extends AbstractFile {
 		return getFileSystem().getImage();
 	}
 
-	
-	@Override
-	public List<TskFileRange> getRanges() {
-		return Collections.<TskFileRange>emptyList();
-	}
-
 	@Override
 	public synchronized String getUniquePath() throws TskCoreException {
 		if (uniquePath == null) {
@@ -189,28 +177,35 @@ public abstract class FsContent extends AbstractFile {
 		return uniquePath;
 	}
 
-	
+	@Override
+	public void close() {
+		if (fileHandle != 0) {
+			synchronized (this) {
+				//need to recheck the handle after unlock
+				if (fileHandle != 0) {
+					SleuthkitJNI.closeFile(fileHandle);
+					fileHandle = 0;
+				}
+			}
+		}
+	}
 
 	@Override
 	public void finalize() throws Throwable {
 		try {
-			if (fileHandle != 0) {
-				SleuthkitJNI.closeFile(fileHandle);
-				fileHandle = 0;
-			}
+			close();
 		} finally {
 			super.finalize();
 		}
 	}
 
-
 	@Override
-	public String toString(boolean preserveState){
-		return super.toString(preserveState) 
-				+ "FsContent [\t" 
-				+ "fsObjId " + fsObjId 
-				+ "\t" + "uniquePath " + uniquePath 
-				+ "\t" + "fileHandle " + fileHandle 
+	public String toString(boolean preserveState) {
+		return super.toString(preserveState)
+				+ "FsContent [\t"
+				+ "fsObjId " + fsObjId
+				+ "\t" + "uniquePath " + uniquePath
+				+ "\t" + "fileHandle " + fileHandle
 				+ "]\t";
 	}
 }

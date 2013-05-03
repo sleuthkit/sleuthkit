@@ -546,7 +546,11 @@ int
     if (fs_file->name == NULL)
         return 0;
 
-    if (fs_file->fs_info->root_inum == fs_file->name->meta_addr) {
+    /* we want the root directory to have its parent be the file system
+     * object.  We need to have special care though because the ".." entries
+     * in sub-folders of the root directory have a meta_addr of the root dir. */
+    if ((fs_file->fs_info->root_inum == fs_file->name->meta_addr) && 
+            ((fs_file->name->name == NULL) || (0 == TSK_FS_ISDOT(fs_file->name->name)))) {
         // this entry is for root directory
         parObjId = fsObjId;
     }
@@ -714,6 +718,7 @@ int
             }
         }
     }
+    name[j++] = '\0';
 
 
     // clean up path
@@ -738,7 +743,7 @@ int
             escaped_path[k++] = path[i];
         }
     }
-
+    escaped_path[k++] = '\0';
 
     char md5Text[48] = "NULL";
 
@@ -763,20 +768,23 @@ int
     snprintf(foo, 4096,
         "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
-        "%lld,%lld,"
+        "%" PRId64 ",%" PRId64 ","
         "%d,"
         "%d,%d,'%s',"
         "%" PRIuINUM ","
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "%lld,%lld,%lld,%lld,%d,%d,%d,%s,%d,"
+        "%llu,%llu,%llu,%llu,"
+        "%d,%d,%d,%s,%d,"
         "'%s')",
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,
         type, idx, name,
         fs_file->name->meta_addr,
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-        size, crtime, ctime, atime, mtime, meta_mode, gid, uid, md5Text, known,
+        size, 
+        (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+        meta_mode, gid, uid, md5Text, known,
         escaped_path);
 
     if (attempt_exec(foo, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {

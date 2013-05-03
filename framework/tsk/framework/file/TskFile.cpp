@@ -212,6 +212,8 @@ std::string TskFile::getFullPath() const
 
 std::string TskFile::getUniquePath() const
 {
+    const uint64_t VOLUME_SHADOW_SNAPSHOT_FILE_PARENT_ID = 9223372036854775807;
+    
     std::stringstream path;
     
     if (m_fileRecord.typeId == TskImgDB::IMGDB_FILES_TYPE_CARVED)
@@ -225,7 +227,16 @@ std::string TskFile::getUniquePath() const
         int unusedInt = 0;
         if (m_fileRecord.typeId == TskImgDB::IMGDB_FILES_TYPE_DERIVED)
         {
-            TskServices::Instance().getImgDB().getFileUniqueIdentifiers(m_fileRecord.parentFileId, fileSystemSectorOffset, unusedUint, unusedInt, unusedInt);
+            if (m_fileRecord.parentFileId != VOLUME_SHADOW_SNAPSHOT_FILE_PARENT_ID)
+            {
+                TskServices::Instance().getImgDB().getFileUniqueIdentifiers(m_fileRecord.parentFileId, fileSystemSectorOffset, unusedUint, unusedInt, unusedInt);
+            }
+            else
+            {
+                // The full path will have an initial component of the form /Volume<N>_Snapshot<N> that
+                // both makes the path unique and clearly indicates the source of the file. 
+                path << m_fileRecord.fullPath;
+            }
         }
         else
         {

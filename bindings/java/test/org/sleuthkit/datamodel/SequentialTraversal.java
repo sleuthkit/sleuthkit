@@ -18,8 +18,11 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.FileWriter;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -40,6 +43,7 @@ public class SequentialTraversal extends ImgTraverser {
 	private static final Logger logg = Logger.getLogger(SequentialTraversal.class.getName());
 
 	public SequentialTraversal(List<String> imagePaths) {
+		testName = DataModelTestSuite.SEQ;
 		this.imagePaths = imagePaths;
 	}
 
@@ -86,10 +90,11 @@ public class SequentialTraversal extends ImgTraverser {
 	 * @return the file writer to be closed by testStandard
 	 */
 	@Override
-	public FileWriter traverse(SleuthkitCase sk, String path) {
-		FileWriter reslt;
+	public OutputStreamWriter traverse(SleuthkitCase sk, String path) {
+		List<Exception> inp = new ArrayList<Exception>();
 		try {
-			reslt = new FileWriter(path);
+			Charset chr = Charset.forName("UTF-8");
+			OutputStreamWriter reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path), 8192*4), chr);
 			int x = 1;
 			Content c;
 			try {
@@ -102,8 +107,9 @@ public class SequentialTraversal extends ImgTraverser {
 					x++;
 				}
 			} catch (TskCoreException ex) {
-				DataModelTestSuite.writeExceptions(testStandardPath, ex);
+				inp.add(ex);
 			}
+			DataModelTestSuite.writeExceptions(path, inp);
 			return reslt;
 		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Failed to Traverse", ex);

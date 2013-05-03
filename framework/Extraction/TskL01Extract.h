@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 
 #include "Poco/Path.h"
 
@@ -39,7 +40,7 @@ namespace ewf
 class TskL01Extract : public TskArchiveExtraction::TskExtract
 {
 public:
-    explicit TskL01Extract(const std::wstring &archivePath);
+    explicit TskL01Extract(const std::string &archivePath);
     virtual ~TskL01Extract();
 
     // Interface 
@@ -76,12 +77,14 @@ private:
     const uint32_t getAccessTime(ewf::libewf_file_entry_t *node);
     const uint32_t getModifiedTime(ewf::libewf_file_entry_t *node);
     int                 saveFile(const uint64_t fileId, const ArchivedFile &archivedFile);
+    void                scheduleFiles();
 
-    std::wstring  m_archivePath;
+    std::string  m_archivePath;
     TskFile      *m_containerFile;
     TskImgDB     &m_db;
     TSK_IMG_INFO *m_imgInfo;
     std::vector<ArchivedFile> m_archivedFiles;
+    std::set<uint64_t> m_fileIdsToSchedule;
 };
 
 #endif

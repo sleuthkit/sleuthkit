@@ -105,8 +105,11 @@ int TskCarveExtractScalpel::processFile(int unallocImgId)
             processCarvedFiles(outputFolderPath.str(), parseCarvingResultsFile(unallocImgId, resultsFilePath.str()));
 
             // Update the unused sector info in the image database so it is known which of the unallocated sectors just carved did not go into a carved file.
-            std::vector<TskUnusedSectorsRecord> unusedSectorsList;
-            imgDB->addUnusedSectors(unallocImgId, unusedSectorsList);
+            if (m_createUnusedSectorFiles)
+            {
+                std::vector<TskUnusedSectorsRecord> unusedSectorsList;
+                imgDB->addUnusedSectors(unallocImgId, unusedSectorsList);
+            }
         }
         else
         {

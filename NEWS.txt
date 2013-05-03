@@ -17,6 +17,7 @@ Framework:
 	
 Java Bindings:
 - added DerivedFile datamodel support
+- added a public method to Content to add ability to close() its tsk handle before the object is gc'd
 - added faster skip() and random seek support to ReadContentInputStream
 - refactored datamodel by pushing common methods up to AbstractFile
 - fixed minor memory leaks 

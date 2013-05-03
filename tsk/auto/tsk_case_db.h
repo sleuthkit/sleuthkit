@@ -72,6 +72,15 @@ class TskAutoDb:public TskAuto {
      */
     virtual void setAddUnallocSpace(bool addUnallocSpace);
 
+	/**
+     * When enabled, records for unallocated file system space will be added to the database. Default value is false.
+     * @param addUnallocSpace If true, create records for contigious unallocated file system sectors.
+	 * @param chunkSize the number of bytes to group unallocated data into. A value of 0 will create
+	 * one large chunk and group only on volume boundaries. A value of -1 will group each consecutive
+	 * chunk.
+     */
+    virtual void setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize);
+
     uint8_t addFilesInImgToDb();
 
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
@@ -94,6 +103,7 @@ class TskAutoDb:public TskAuto {
     int64_t m_curDirId;		///< Object ID of the directory currently being processed
     int64_t m_curUnallocDirId;	
     string m_curDirPath;		//< Path of the current directory being processed
+    tsk_lock_t m_curDirPathLock; //< protects concurrent access to m_curDirPath
     string m_curImgTZone;
     bool m_blkMapFlag;
     bool m_fileHashFlag;
@@ -105,6 +115,7 @@ class TskAutoDb:public TskAuto {
     TSK_HDB_INFO * m_knownBadDb;
     bool m_noFatFsOrphans;
     bool m_addUnallocSpace;
+	int64_t m_chunkSize;
 
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);
@@ -112,12 +123,15 @@ class TskAutoDb:public TskAuto {
 
     //internal structure to keep track of temp. unalloc block range
     typedef struct _UNALLOC_BLOCK_WLK_TRACK {
-        _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDb & tskAutoDb, const TSK_FS_INFO & fsInfo, const int64_t fsObjId)
-            : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0),prevBlock(0),isStart(true) {}
+        _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDb & tskAutoDb, const TSK_FS_INFO & fsInfo, const int64_t fsObjId, int64_t chunkSize)
+            : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0),prevBlock(0),isStart(true), chunkSize(chunkSize) {}
         const TskAutoDb & tskAutoDb;
         const TSK_FS_INFO & fsInfo;
         const int64_t fsObjId;
+		vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;																																										
         TSK_DADDR_T curRangeStart;
+		int64_t size;
+		const int64_t chunkSize;
         TSK_DADDR_T prevBlock;
         bool isStart;
     } UNALLOC_BLOCK_WLK_TRACK;

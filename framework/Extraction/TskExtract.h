@@ -39,8 +39,9 @@ namespace TskArchiveExtraction
 
     TSK_FRAMEWORK_API typedef Poco::SharedPtr<TskExtract> ExtractorPtr;
 
-    // Non-member Factory Function
+    // Non-member Factory Functions
     TSK_FRAMEWORK_API ExtractorPtr createExtractor(const std::wstring &archivePath, const std::string filter = "");
+    TSK_FRAMEWORK_API ExtractorPtr createExtractor(const std::string &archivePath, const std::string filter = "");
 }
 
 #endif

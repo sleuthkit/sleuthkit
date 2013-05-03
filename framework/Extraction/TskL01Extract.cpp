@@ -99,7 +99,7 @@ namespace
 
 }
 
-TskL01Extract::TskL01Extract(const std::wstring &archivePath) :
+TskL01Extract::TskL01Extract(const std::string &archivePath) :
     m_archivePath(archivePath),
     m_db(TskServices::Instance().getImgDB()),
     m_imgInfo(NULL)
@@ -139,7 +139,7 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
             throw TskException(MSG_PREFIX + "No path to archive provided.");
         }
 
-        std::string L01Path = TskUtilities::toUTF8(m_archivePath);
+        std::string L01Path = m_archivePath;
         if (m_containerFile != NULL)
         {
             L01Path = m_containerFile->getPath();
@@ -180,7 +180,7 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
 
             // Determine the parent id of the file.
             uint64_t parentId = 0;
-            if (path.depth() == 0 || path.isDirectory() && path.depth() == 1)
+            if (path.depth() == 0 || (path.isDirectory() && path.depth() == 1))
             {
                 // This file or directory lives at the root so our parent id
                 // is the containing file id (if a containing file was provided).
@@ -248,13 +248,14 @@ int TskL01Extract::extractFiles(TskFile * containerFile /*= NULL*/)
                 // Will save zero-length files
                 if (saveFile(fileId, *it) == 0)
                 {
-                    // Schedule
                     m_db.updateFileStatus(fileId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
-                    TskServices::Instance().getScheduler().schedule(Scheduler::FileAnalysis, fileId, fileId);
+                    m_fileIdsToSchedule.insert(fileId);
                 }
             }
         }
 
+        // Schedule files for analysis
+        scheduleFiles();
     }
     catch (TskException &ex)
     {
@@ -378,11 +379,18 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
     {
         // Make an absolute path (if it's relative) so that libewf doesn't cause 
         // an error when it tries to make it absolute.
-        Poco::Path tempPath(TskUtilities::toUTF8(m_archivePath));
+        Poco::Path tempPath(m_archivePath);
         tempPath.makeAbsolute();
-        // We convert to unicode here because that is what the TSK_IMG_INFO structure requires.
-        std::wstring ewfArchivePath = TskUtilities::toUTF16(tempPath.toString());
-
+        
+        const TSK_TCHAR * ewfArchivePath;
+        
+    #if defined( TSK_WIN32 )
+        std::wstring utf16Path = TskUtilities::toUTF16(tempPath.toString());
+        ewfArchivePath = utf16Path.c_str();
+    #else
+        ewfArchivePath = tempPath.toString().c_str();
+    #endif
+    
         if ((ewf_info = (ewf::IMG_EWF_INFO *) tsk_img_malloc(sizeof(ewf::IMG_EWF_INFO))) == NULL)
         {
             throw TskException("tsk_img_malloc");
@@ -402,11 +410,11 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
         }
 
         if ((ewf_info->images[0] =
-            (TSK_TCHAR *) tsk_malloc((TSTRLEN(ewfArchivePath.c_str()) + 1) * sizeof(TSK_TCHAR))) == NULL)
+            (TSK_TCHAR *) tsk_malloc((TSTRLEN(ewfArchivePath) + 1) * sizeof(TSK_TCHAR))) == NULL)
         {
             throw TskException("tsk_malloc 2");
         }
-        TSTRNCPY(ewf_info->images[0], ewfArchivePath.c_str(), TSTRLEN(ewfArchivePath.c_str()) + 1);
+        TSTRNCPY(ewf_info->images[0], ewfArchivePath, TSTRLEN(ewfArchivePath) + 1);
 
         ///NOTE: libewf_handle_open_wide() will not open the file if the filename length is < 4 chars long.
         ewfError = NULL;
@@ -416,7 +424,7 @@ TSK_IMG_INFO * TskL01Extract::openEwfSimple()
     #else
         if (ewf::libewf_handle_open(ewf_info->handle,
                 (char *const *) ewf_info->images,
-                ewf_info->num_imgs, ewf::LIBEWF_OPEN_READ, &ewfError) != 1)
+                ewf_info->num_imgs, ewf::LIBEWF_ACCESS_FLAG_READ, &ewfError) != 1)
     #endif
         {
             throw TskException("libewf_handle_open_wide");
@@ -770,3 +778,29 @@ int TskL01Extract::saveFile(const uint64_t fileId, const ArchivedFile &archivedF
     }
 }
 
+void TskL01Extract::scheduleFiles()
+{
+    if (m_fileIdsToSchedule.empty())
+        return;
+
+    Scheduler& scheduler = TskServices::Instance().getScheduler();
+
+    std::set<uint64_t>::const_iterator it = m_fileIdsToSchedule.begin();
+    uint64_t startId = *it, endId = *it;
+
+    while (++it != m_fileIdsToSchedule.end())
+    {
+        if (*it > endId + 1)
+        {
+            scheduler.schedule(Scheduler::FileAnalysis, startId, endId);
+            startId = endId = *it;
+        }
+        else
+        {
+            endId++;
+        }
+    }
+
+    scheduler.schedule(Scheduler::FileAnalysis, startId, endId);
+    m_fileIdsToSchedule.clear();
+}

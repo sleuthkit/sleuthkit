@@ -487,6 +487,7 @@ JNIEXPORT jlong JNICALL
 
     tskAuto->setAddUnallocSpace(addUnallocSpace?true:false);
     tskAuto->setNoFatFsOrphans(noFatFsOrphans?true:false);
+	tskAuto->setAddUnallocSpace(true, 500000000);
 
     return (jlong) tskAuto;
 }
@@ -1308,7 +1309,7 @@ JNIEXPORT jstring JNICALL
     (JNIEnv * env,jclass obj, jlong dbHandle)
 {
     TskAutoDb *tskAuto = ((TskAutoDb *) dbHandle);
-    const std::string & curDir = tskAuto->getCurDir();
+    const std::string curDir = tskAuto->getCurDir();
     jstring jdir = (*env).NewStringUTF(curDir.c_str());
     return jdir;
 }
