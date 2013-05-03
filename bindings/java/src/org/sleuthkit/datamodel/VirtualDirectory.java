@@ -37,6 +37,11 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class VirtualDirectory extends AbstractFile {
 
+	//some built-in virtual directory names
+	public static final String NAME_UNALLOC = "$Unalloc";
+	public static final String NAME_CARVED = "$CarvedFiles";
+	public static final String NAME_LOCAL = "$LocalFiles";
+	
 	protected VirtualDirectory(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, 
 			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
 			long size, String md5Hash, FileKnown knownState, String parentPath) {

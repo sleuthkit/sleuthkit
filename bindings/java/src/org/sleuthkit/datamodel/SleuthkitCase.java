@@ -2707,7 +2707,6 @@ public class SleuthkitCase {
 	 */
 	private long getLocalFilesDirectoryId() throws TskCoreException {
 		
-		final String localFilesDirName = "$LocalFiles";
 
 		//first, quick and atomic check the cache
 		if (localFilesVirtualDirId != -1) {
@@ -2732,7 +2731,7 @@ public class SleuthkitCase {
 					+ "tsk_objects.type = " + TskData.ObjectType.ABSTRACTFILE.getObjectType() + " AND " 
 					+ "tsk_objects.obj_id = tsk_files.obj_id AND "
 					+ "tsk_files.type = " + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType() + " AND "
-					+ "tsk_files.name = '" + localFilesDirName + "' "
+					+ "tsk_files.name = '" + VirtualDirectory.NAME_LOCAL + "' "
 					+ "LIMIT 1"
 					);
 			
@@ -2743,7 +2742,7 @@ public class SleuthkitCase {
 				// a local files directory does not exist; create one
 				final VirtualDirectory vd = addVirtualDirectory(
 						0, //NULL parent
-						localFilesDirName);
+						VirtualDirectory.NAME_LOCAL);
 				localFilesVirtualDirId = vd.getId();
 			}
 		}
@@ -2779,7 +2778,6 @@ public class SleuthkitCase {
 	private long getCarvedDirectoryId(long id) throws TskCoreException {
 
 		long ret = 0;
-		final String carvedFilesDirName = "$CarvedFiles";
 
 		//use lock to ensure atomic cache check and db/cache update
 		dbWriteLock();
@@ -2812,7 +2810,7 @@ public class SleuthkitCase {
 			// see if any of the children are a '$CarvedFiles' directory
 			Content carvedFilesDir = null;
 			for (Content child : children) {
-				if (child.getName().equals(carvedFilesDirName)) {
+				if (child.getName().equals(VirtualDirectory.NAME_CARVED)) {
 					carvedFilesDir = child;
 					break;
 				}
@@ -2828,7 +2826,7 @@ public class SleuthkitCase {
 			}
 
 			// a carved files directory does not exist; create one
-			VirtualDirectory vd = addVirtualDirectory(id, carvedFilesDirName);
+			VirtualDirectory vd = addVirtualDirectory(id, VirtualDirectory.NAME_CARVED);
 
 			ret = vd.getId();
 			// add it to the cache
