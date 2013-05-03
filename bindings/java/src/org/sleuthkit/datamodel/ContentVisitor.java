@@ -98,10 +98,18 @@ public interface ContentVisitor<T> {
 	/**
 	 * Act on (visit) a DerivedFile content object
 	 *
+	 * @param lf local file to visit / act on
+	 * @return result of the visit
+	 */
+	T visit(DerivedFile lf);
+	
+	/**
+	 * Act on (visit) a LocalFile content object
+	 *
 	 * @param df derived file to visit / act on
 	 * @return result of the visit
 	 */
-	T visit(DerivedFile df);
+	T visit(LocalFile df);
 
 	/**
 	 * The default content visitor - quickest method for implementing a custom

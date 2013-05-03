@@ -226,4 +226,38 @@ class ResultSetHelper {
 		
 		return df;
 	}
+	
+	/**
+	 * Creates an local file given result set and parent id (optional)
+	 * @param rs exsting active result set
+	 * @param parentId parent id or AbstractContent.UNKNOWN_ID
+	 * @return local file object created
+	 * @throws SQLException 
+	 */
+	LocalFile localFile(ResultSet rs, long parentId) throws SQLException {
+		boolean hasLocalPath = rs.getBoolean("has_path");
+		long objId = rs.getLong("obj_id");
+		String localPath = null;
+		if (hasLocalPath) {
+			localPath = db.getFilePath(objId);
+		}
+		
+		String parentPath = rs.getString("parent_path");
+		if (parentPath == null) {
+			parentPath = "";
+		}
+		
+		final LocalFile lf =
+				new LocalFile(db, objId, rs.getString("name"), 
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), 
+				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
+				rs.getLong("size"), 
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
+				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), 
+				parentPath, localPath,
+				parentId);
+		
+		return lf;
+	}
 }

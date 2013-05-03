@@ -2129,7 +2129,8 @@ public class SleuthkitCase {
 					final DerivedFile df = rsHelper.derivedFile(rs, parentId);
 					children.add(df);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.LOCAL) {
-					//TODO
+					final LocalFile lf = rsHelper.localFile(rs, parentId);
+					children.add(lf);
 				}
 			}
 			rs.close();
@@ -4088,7 +4089,9 @@ public class SleuthkitCase {
 					df = rsHelper.derivedFile(rs, AbstractContent.UNKNOWN_ID);
 					results.add(df);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.LOCAL.getFileType()) {
-					//TODO
+					final LocalFile lf;
+					lf = rsHelper.localFile(rs, AbstractContent.UNKNOWN_ID);
+					results.add(lf);
 				}
 
 			} //end for each rs
