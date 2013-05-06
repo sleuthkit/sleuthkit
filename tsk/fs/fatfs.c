@@ -19,11 +19,103 @@
 #include "tsk_fatxxfs.h"
 #include "tsk_exfatfs.h"
 
-typedef struct
+TSK_FS_INFO *
+fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftype, uint8_t a_test)
 {
-    uint8_t data[FAT_BOOT_SECTOR_SIZE - 2];
-    uint8_t magic[2];
-} FAT_BOOT_SECTOR_RECORD;
+    const char *func_name = "fatfs_open";
+    FATFS_INFO *fatfs = NULL;
+    TSK_FS_INFO *fs = NULL;
+    TSK_OFF_T boot_sector_offset = 0;
+	int find_boot_sector_attempt = 0;
+    ssize_t bytes_read = 0;
+    FAT_BOOT_SECTOR_RECORD *bootSector;
+
+    tsk_error_reset();
+
+    if (TSK_FS_TYPE_ISFAT(a_ftype) == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("%s: Invalid FS Type", func_name);
+        return NULL;
+    }
+
+	// RJCTODO: Add validation of other parameters?
+
+	// Allocate an FATFS_INFO and initialize its generic TSK_FS_INFO members. 
+    if ((fatfs = (FATFS_INFO*)tsk_fs_malloc(sizeof(FATFS_INFO))) == NULL) {
+        return NULL;
+	}
+    fs = &(fatfs->fs_info);
+    fs->ftype = a_ftype;
+    fs->img_info = a_img_info;
+    fs->offset = a_offset;
+    fs->dev_bsize = a_img_info->sector_size;
+    fs->journ_inum = 0;
+    fs->tag = TSK_FS_INFO_TAG;
+
+	// Look for a FAT boot sector. Try up to three times because FAT32 and exFAT file systems have backup boot sectors.
+    for (find_boot_sector_attempt = 0; find_boot_sector_attempt < 3; ++find_boot_sector_attempt) {
+        if (find_boot_sector_attempt == 1) {
+			// The FATXX backup boot sector is located in sector 6, look there.
+            boot_sector_offset = 6 * fs->img_info->sector_size; 
+		}
+        else if (find_boot_sector_attempt == 2) {
+			// The exFAT backup boot sector is located in sector 12, look there.
+            boot_sector_offset = 12 * fs->img_info->sector_size;
+		}
+
+        // Read in the prospective boot sector. 
+        bytes_read = tsk_fs_read(fs, boot_sector_offset, fatfs->boot_sector_buffer, FAT_BOOT_SECTOR_SIZE);
+        if (bytes_read != FAT_BOOT_SECTOR_SIZE) {
+            if (bytes_read >= 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_READ);
+            }
+            tsk_error_set_errstr2("%s: boot sector", func_name); // RJCTODO: Is this a helpful error message?
+			free(fatfs);
+			return NULL;
+        }
+
+        // Check it out...
+        bootSector = (FAT_BOOT_SECTOR_RECORD*)fatfs->boot_sector_buffer;
+        if (tsk_fs_guessu16(fs, bootSector->magic, FATFS_FS_MAGIC) != 0) {
+            // No magic, look for a backup boot sector. 
+            if ((tsk_getu16(TSK_LIT_ENDIAN, bootSector->magic) == 0) && (find_boot_sector_attempt < 3)) {
+                continue;
+            }
+            else {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+                tsk_error_set_errstr("Not a FATFS file system (magic)");
+                if (tsk_verbose) {
+                    fprintf(stderr, "%s: Incorrect FATFS magic\n", func_name);
+				}
+				free(fatfs);
+				return NULL;
+            }
+        }
+        else {
+            // Found the magic.
+            fatfs->using_backup_boot_sector = boot_sector_offset > 0;
+            if (fatfs->using_backup_boot_sector && tsk_verbose) {
+				fprintf(stderr, "%s: Using backup boot sector\n", func_name);
+            }
+            break;
+        }
+    }
+
+	// Attempt to open the file system as one of the FAT types.
+	// RJCTODO: Should this return an error if not detecting and a specific type of FAT fs is specified?
+	if ((a_ftype == TSK_FS_TYPE_FAT_DETECT && !fatxxfs_open(fatfs) && !exfatfs_open(fatfs)) ||
+		(a_ftype == TSK_FS_TYPE_EXFAT && !exfatfs_open(fatfs)) ||
+		(!fatxxfs_open(fatfs)))
+	{
+		free(fatfs);
+		return NULL;
+	}
+
+	return (TSK_FS_INFO*)fatfs;
+}
 
 /**************************************************************************
  *
@@ -304,99 +396,74 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     return 0;
 }
 
-TSK_FS_INFO *
-fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftype, uint8_t a_test)
+/* 
+ * Identifies if a sector is allocated
+ *
+ * If it is less than the data area, then it is allocated
+ * else the FAT table is consulted
+ *
+ * Return 1 if allocated, 0 if unallocated, and -1 if error 
+ */
+int8_t
+fatfs_is_sectalloc(FATFS_INFO * fatfs, TSK_DADDR_T sect)
 {
-    const char *func_name = "fatfs_open";
-    FATFS_INFO *fatfs = NULL;
-    TSK_FS_INFO *fs = NULL;
-    TSK_OFF_T boot_sector_offset = 0;
-	int find_boot_sector_attempt = 0;
-    ssize_t bytes_read = 0;
-    FAT_BOOT_SECTOR_RECORD *bootSector;
+    TSK_FS_INFO *fs = (TSK_FS_INFO *) fatfs;
+    /* If less than the first cluster sector, then it is allocated 
+     * otherwise check the FAT
+     */
+    if (sect < fatfs->firstclustsect)
+        return 1;
 
-    tsk_error_reset();
+    /* If we are in the unused area, then we are "unalloc" */
+    if ((sect <= fs->last_block) &&
+        (sect >= (fatfs->firstclustsect + fatfs->csize * fatfs->clustcnt)))
+        return 0;
 
-    if (TSK_FS_TYPE_ISFAT(a_ftype) == 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("%s: Invalid FS Type", func_name);
-        return NULL;
-    }
-
-	// RJCTODO: Add validation of other parameters?
-
-	// Allocate an FATFS_INFO and initialize its generic TSK_FS_INFO members. 
-    if ((fatfs = (FATFS_INFO*)tsk_fs_malloc(sizeof(FATFS_INFO))) == NULL) {
-        return NULL;
-	}
-    fs = &(fatfs->fs_info);
-    fs->ftype = a_ftype;
-    fs->img_info = a_img_info;
-    fs->offset = a_offset;
-    fs->dev_bsize = a_img_info->sector_size;
-    fs->tag = TSK_FS_INFO_TAG;
-
-	// Look for a FAT boot sector. Try up to three times because FAT32 and exFAT file systems have backup boot sectors.
-    for (find_boot_sector_attempt = 0; find_boot_sector_attempt < 3; ++find_boot_sector_attempt) {
-        if (find_boot_sector_attempt == 1) {
-			// The FATXX backup boot sector is located in sector 6, look there.
-            boot_sector_offset = 6 * fs->img_info->sector_size; 
-		}
-        else if (find_boot_sector_attempt == 2) {
-			// The exFAT backup boot sector is located in sector 12, look there.
-            boot_sector_offset = 12 * fs->img_info->sector_size;
-		}
-
-        // Read in the prospective boot sector. 
-        bytes_read = tsk_fs_read(fs, boot_sector_offset, fatfs->boot_sector_buffer, FAT_BOOT_SECTOR_SIZE);
-        if (bytes_read != FAT_BOOT_SECTOR_SIZE) {
-            if (bytes_read >= 0) {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_FS_READ);
-            }
-            tsk_error_set_errstr2("%s: boot sector", func_name); // RJCTODO: Is this a helpful error message?
-			free(fatfs);
-			return NULL;
-        }
-
-        // Check it out...
-        bootSector = (FAT_BOOT_SECTOR_RECORD*)fatfs->boot_sector_buffer;
-        if (tsk_fs_guessu16(fs, bootSector->magic, FATFS_FS_MAGIC) != 0) {
-            // No magic, look for a backup boot sector. 
-            if ((tsk_getu16(TSK_LIT_ENDIAN, bootSector->magic) == 0) && (find_boot_sector_attempt < 3)) {
-                continue;
-            }
-            else {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-                tsk_error_set_errstr("Not a FATFS file system (magic)");
-                if (tsk_verbose) {
-                    fprintf(stderr, "%s: Incorrect FATFS magic\n", func_name);
-				}
-				free(fatfs);
-				return NULL;
-            }
-        }
-        else {
-            // Found the magic.
-            fatfs->using_backup_boot_sector = boot_sector_offset > 0;
-            if (fatfs->using_backup_boot_sector && tsk_verbose) {
-				fprintf(stderr, "%s: Using backup boot sector\n", func_name);
-            }
-            break;
-        }
-    }
-
-	// Attempt to open the file system as one of the FAT types.
-	// RJCTODO: Should this return an error if not detecting and a specific type of FAT fs is specified?
-	if ((a_ftype == TSK_FS_TYPE_FAT_DETECT && !fatxxfs_open(fatfs) && !exfatfs_open(fatfs)) ||
-		(a_ftype == TSK_FS_TYPE_EXFAT && !exfatfs_open(fatfs)) ||
-		(!fatxxfs_open(fatfs)))
-	{
-		free(fatfs);
-		return NULL;
-	}
-
-	return (TSK_FS_INFO*)fatfs;
+    return fatfs_is_clustalloc(fatfs, FATFS_SECT_2_CLUST(fatfs, sect));
 }
+
+/* Return 1 if allocated, 0 if unallocated, and -1 if error */
+int8_t
+fatfs_is_clustalloc(FATFS_INFO *fatfs, TSK_DADDR_T clust)
+{
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)fatfs;
+    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
+        return exfatfs_is_clust_alloc(fatfs, clust);
+    }
+    else {
+        return fatxxfs_is_clust_alloc(fatfs, clust);
+    }
+}
+
+/* return 1 on error and 0 on success */
+uint8_t
+fatfs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
+    tsk_error_set_errstr("FAT does not have a journal\n");
+    return 1;
+}
+
+/* return 1 on error and 0 on success */
+uint8_t
+fatfs_jentry_walk(TSK_FS_INFO * fs, int a_flags,
+    TSK_FS_JENTRY_WALK_CB a_action, void *a_ptr)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
+    tsk_error_set_errstr("FAT does not have a journal\n");
+    return 1;
+}
+
+/* return 1 on error and 0 on success */
+uint8_t
+fatfs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
+    int a_flags, TSK_FS_JBLK_WALK_CB a_action, void *a_ptr)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
+    tsk_error_set_errstr("FAT does not have a journal\n");
+    return 1;
+}
+

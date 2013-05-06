@@ -51,11 +51,6 @@
 #define FATFS_MAXNAMLEN_UTF8	1024
 #define FATFS_FILE_CONTENT_LEN sizeof(TSK_DADDR_T)      // we will store the starting cluster
 
-/* MASK values for FAT entries */
-#define FATFS_12_MASK	0x00000fff
-#define FATFS_16_MASK	0x0000ffff
-#define FATFS_32_MASK	0x0fffffff
-
 /* Constants for the FAT entry */
 #define FATFS_UNALLOC	0
 #define FATFS_BAD		0x0ffffff7
@@ -70,12 +65,6 @@
 
 #define FATFS_ISBAD(val, mask) \
 	((val) == (FATFS_BAD & mask))
-
-#define FATFS_CLUST_2_SECT(fatfs, c)	\
-	(TSK_DADDR_T)(fatfs->firstclustsect + ((((c) & fatfs->mask) - 2) * fatfs->csize))
-
-#define FATFS_SECT_2_CLUST(fatfs, s)	\
-	(TSK_DADDR_T)(2 + ((s)  - fatfs->firstclustsect) / fatfs->csize)
 
 /* given an inode address, determine in which sector it is located
  * i must be larger than 3 (2 is the root and it doesn't have a sector)
@@ -279,9 +268,11 @@ extern "C" {
         uint8_t part3[4];
     } fatfs_dentry_lfn;
 
-    extern int8_t fatfs_is_sectalloc(FATFS_INFO *, TSK_DADDR_T);
-    extern int8_t fatfs_is_clustalloc(FATFS_INFO * fatfs,
-        TSK_DADDR_T clust);
+	// RJCTODO: Comment
+	extern int fatxxfs_open(FATFS_INFO *fatfs);
+
+    // RJCTODO: Add comment
+    extern int8_t fatxxfs_is_clust_alloc(FATFS_INFO * fatfs, TSK_DADDR_T clust);
 
     extern uint8_t fatfs_isdentry(FATFS_INFO *, fatfs_dentry *, uint8_t);
     extern uint8_t fatfs_make_root(FATFS_INFO *, TSK_FS_META *);
@@ -308,9 +299,6 @@ extern "C" {
         TSK_INUM_T par_inum, TSK_INUM_T dir_inum);
     extern void fatfs_cleanup_ascii(char *);
     extern void fatfs_dir_buf_free(FATFS_INFO *fatfs);
-
-	// RJCTODO: Comment
-	extern int fatxxfs_open(FATFS_INFO *fatfs);
 
 #ifdef __cplusplus
 }

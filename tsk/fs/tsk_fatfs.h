@@ -19,6 +19,7 @@
 
 #include "tsk_fs_i.h"
 
+// RJCTODO: Comment for Doxygen
 // RJCTODO: these appear to be the wrong comments...
 /* size of FAT to read into FATFS_INFO each time */
 /* This must be at least 1024 bytes or else fat12 will get messed up */
@@ -26,16 +27,39 @@
 #define FAT_CACHE_B		4096
 #define FAT_CACHE_S		8       // number of sectors in cache
 
+// RJCTODO: Comment for Doxygen
 #define FAT_BOOT_SECTOR_SIZE 512
+
+// RJCTODO: Comment for Doxygen
+/* MASK values for FAT entries */
+#define FATFS_12_MASK	0x00000fff
+#define FATFS_16_MASK	0x0000ffff
+#define FATFS_32_MASK	0x0fffffff
+#define EXFATFS_MASK	0x0fffffff
+
+// RJCTODO: Comment for Doxygen
+#define FATFS_CLUST_2_SECT(fatfs, c)	\
+	(TSK_DADDR_T)(fatfs->firstclustsect + ((((c) & fatfs->mask) - 2) * fatfs->csize))
+
+// RJCTODO: Comment for Doxygen
+#define FATFS_SECT_2_CLUST(fatfs, s)	\
+	(TSK_DADDR_T)(2 + ((s)  - fatfs->firstclustsect) / fatfs->csize)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+    // RJCTODO: Comment for Doxygen
+    typedef struct
+    {
+        uint8_t data[FAT_BOOT_SECTOR_SIZE - 2];
+        uint8_t magic[2];
+    } FAT_BOOT_SECTOR_RECORD;
 
-/* 
- * Internal TSK_FS_INFO derived structure for FATXX and exFAT file systems.  
- */
+    // RJCTODO: Comment for Doxygen
+    /* 
+     * Internal TSK_FS_INFO derived structure for FATXX and exFAT file systems.  
+     */
     typedef struct {
         TSK_FS_INFO fs_info;    /* super class */
         //TSK_DATA_BUF *table;      /* cached section of file allocation table */
@@ -86,13 +110,10 @@ extern "C" {
 		char boot_sector_buffer[FAT_BOOT_SECTOR_SIZE];
         int using_backup_boot_sector;
 
-	} FATFS_INFO;
-	// RJCTODO: Add pack directive
+		/* RJCTODO: Comment */
+        uint8_t(*is_clust_alloc)(TSK_FS_INFO* fs, TSK_DADDR_T clust);
 
-    extern uint8_t
-    fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
-        TSK_DADDR_T a_end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
-        TSK_FS_BLOCK_WALK_CB a_action, void *a_ptr);
+	} FATFS_INFO;
 
 	/**
 	 * \internal
@@ -108,9 +129,36 @@ extern "C" {
     *fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftype, uint8_t a_test);
 
 	// RJCTODO: Add comment
+    extern int8_t fatfs_is_sectalloc(FATFS_INFO *, TSK_DADDR_T);
+
+    // RJCTODO: Add comment
+    extern int8_t fatfs_is_clustalloc(FATFS_INFO * fatfs,
+        TSK_DADDR_T clust);
+
+	// RJCTODO: Add comment
+    extern uint8_t
+    fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
+        TSK_DADDR_T a_end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
+        TSK_FS_BLOCK_WALK_CB a_action, void *a_ptr);
+
+	// RJCTODO: Add comment
     // RJCTODO: Needed in fs_dir.c by load_orphan_dir_walk_cb
     extern uint8_t 
     fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum, TSK_INUM_T dir_inum); 
+
+    /* return 1 on error and 0 on success */
+    extern uint8_t
+    fatfs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum);
+
+    /* return 1 on error and 0 on success */
+    extern uint8_t
+    fatfs_jentry_walk(TSK_FS_INFO * fs, int a_flags,
+        TSK_FS_JENTRY_WALK_CB a_action, void *a_ptr);
+
+    /* return 1 on error and 0 on success */
+    extern uint8_t
+    fatfs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
+        int a_flags, TSK_FS_JBLK_WALK_CB a_action, void *a_ptr);
 
 #ifdef __cplusplus
 }
