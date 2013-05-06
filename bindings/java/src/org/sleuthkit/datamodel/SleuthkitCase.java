@@ -2977,8 +2977,7 @@ public class SleuthkitCase {
 	/**
 	 * Creates a new derived file object, adds it to database and returns it.
 	 *
-	 * TODO add support for adding derived method and re-factor common code with
-	 * LocalFiles
+	 * TODO add support for adding derived method 
 	 *
 	 * @param fileName file name the derived file
 	 * @param localPath local path of the derived file, including the file name.
@@ -3107,6 +3106,138 @@ public class SleuthkitCase {
 
 		return ret;
 	}
+	
+	/**
+	 * Creates a new local file object, adds it to database and returns it.
+	 *
+	 * @param fileName file name the derived file
+	 * @param localPath local path of the derived file, including the file name.
+	 * The path is relative to the database path.
+	 * @param size size of the derived file in bytes
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param isFile whether a file or directory, true if a file
+	 * @param parent parent file object (such as virtual directory, another local file, or fscontent File),
+	 * or null if adding to a per-case $LocalFiles virtual folder
+	 * @return newly created derived file object
+	 * @throws TskCoreException exception thrown if the object creation failed
+	 * due to a critical system error
+	 */
+	public LocalFile addLocalFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime, 
+			boolean isFile, AbstractFile parent) throws TskCoreException {
+		
+		long parentId = -1;
+		String parentPath;
+		if (parent == null) {
+			parentId = this.getLocalFilesDirectoryId();
+			parentPath = '/' + VirtualDirectory.NAME_LOCAL + '/'; //consider construcitng VirtualDir object and getParentPath() on it
+		}
+		else {
+			parentId = parent.getId();
+			parentPath = parent.getParentPath() + parent.getName() + '/';
+		}
+
+
+		LocalFile ret = null;
+		
+		long newObjId = -1;
+
+		dbWriteLock();
+
+		//all in one write lock and transaction
+		//get last object id
+		//create tsk_objects object with new id
+		//create tsk_files object with the new id
+		try {
+
+			con.setAutoCommit(false);
+
+			newObjId = getLastObjectId() + 1;
+			if (newObjId < 1) {
+				String msg = "Error creating a local file, cannot get new id of the object, file name: " + fileName;
+				throw new TskCoreException(msg);
+			}
+
+			//tsk_objects
+			addObjectSt.setLong(1, newObjId);
+			addObjectSt.setLong(2, parentId);
+			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			addObjectSt.executeUpdate();
+
+			//tsk_files
+			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
+
+			//obj_id, fs_obj_id, name
+			addFileSt.setLong(1, newObjId);
+			addFileSt.setString(2, fileName);
+
+			//type, has_path
+			addFileSt.setShort(3, TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL.getFileType());
+			addFileSt.setBoolean(4, true);
+
+			//flags
+			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
+			addFileSt.setShort(5, dirType.getValue());
+			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			addFileSt.setShort(6, metaType.getValue());
+
+			//note: using alloc under assumption that derived files derive from alloc files
+			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
+			addFileSt.setShort(7, dirFlag.getValue());
+			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
+					| TSK_FS_META_FLAG_ENUM.USED.getValue());
+			addFileSt.setShort(8, metaFlags);
+
+			//size
+			addFileSt.setLong(9, size);
+			//mactimes
+			//long ctime, long crtime, long atime, long mtime,
+			addFileSt.setLong(10, ctime);
+			addFileSt.setLong(11, crtime);
+			addFileSt.setLong(12, atime);
+			addFileSt.setLong(13, mtime);
+			//parent path
+			addFileSt.setString(14, parentPath);
+
+			addFileSt.executeUpdate();
+			
+			//add localPath 
+			addFilePath(newObjId, localPath);
+
+			ret = new LocalFile(this, newObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId);
+
+		} catch (SQLException e) {
+			String msg = "Error creating a derived file, file name: " + fileName;
+			throw new TskCoreException(msg, e);
+		} finally {
+			try {
+				addObjectSt.clearParameters();
+				addFileSt.clearParameters();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Error clearing parameters after adding derived file", ex);
+			}
+			
+			try {
+				con.commit();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Error committing after adding derived file", ex);
+			} finally {
+				try {
+					con.setAutoCommit(true);
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error setting auto-commit after adding derived file", ex);
+				} finally {
+					dbWriteUnlock();
+				}
+			}
+		}
+		return ret;
+	}
+
 
 	/**
 	 * @param image the image to search for the given file name
