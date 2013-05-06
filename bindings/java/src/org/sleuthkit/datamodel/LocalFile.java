@@ -18,12 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
@@ -37,10 +33,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class LocalFile extends AbstractFile {
 
-	private String localPath; ///< local path as stored in db tsk_files_path, is relative to the db
-	private String localAbsPath; ///< absolute path representation of the local path
-	private volatile RandomAccessFile fileHandle;
-	private volatile java.io.File localFile;
+	
 	private static final Logger logger = Logger.getLogger(LocalFile.class.getName());
 
 	/**
@@ -75,13 +68,8 @@ public class LocalFile extends AbstractFile {
 				name, fileType, 0L, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath);
 
-		this.localPath = localPath;
-
-		if (this.localPath == null) {
-			this.localPath = "";
-		} else {
-			localAbsPath = db.getDbDirPath() + java.io.File.separator + this.localPath;
-		}
+		//use the local path functionality of AbstractFile, this sets up the infrastructure for it
+		super.setLocalPath(localPath);
 	}
 
 	/**
@@ -142,36 +130,12 @@ public class LocalFile extends AbstractFile {
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
 		this(db, objId, name, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
-
-
 	}
 
-	protected RandomAccessFile getFileHandle() {
-		return fileHandle;
-	}
-	
-	
-
-	/**
-	 * Get local path of the file relative to database dir
-	 *
-	 * @return local relative file path
-	 */
-	public String getLocalPath() {
-		return localPath;
-	}
-
-	/**
-	 * Get local absolute path of the file
-	 *
-	 * @return local absolute file path
-	 */
-	public String getLocalAbsPath() {
-		return localAbsPath;
-	}
 
 	@Override
 	public Image getImage() throws TskCoreException {
+		//true local file have no tsk image associated
 		return null;
 	}
 
@@ -216,106 +180,9 @@ public class LocalFile extends AbstractFile {
 		return v.visit(this);
 	}
 
-	public boolean exists() {
-		getLocalFile();
-		return localFile.exists();
-	}
-
-	public boolean canRead() {
-		getLocalFile();
-		return localFile.canRead();
-	}
-
-	/**
-	 * lazy load local file
-	 *
-	 * @return
-	 */
-	private java.io.File getLocalFile() {
-		if (localFile == null) {
-			synchronized (this) {
-				localFile = new java.io.File(localAbsPath);
-			}
-		}
-		return localFile;
-	}
-
-	@Override
-	public void close() {
-		if (fileHandle != null) {
-			synchronized (this) {
-				if (fileHandle != null) {
-					try {
-						fileHandle.close();
-					} catch (IOException ex) {
-						logger.log(Level.SEVERE, "Could not close file handle for file: " + this.toString(), ex);
-					}
-					fileHandle = null;
-				}
-			}
-		}
-	}
-
-	@Override
-	public int read(byte[] buf, long offset, long len) throws TskCoreException {
-		if (isDir()) {
-			return 0;
-		}
-
-		getLocalFile();
-		if (!localFile.exists()) {
-			throw new TskCoreException("Error reading derived file, it does not exist at local path: " + localAbsPath);
-		}
-		if (!localFile.canRead()) {
-			throw new TskCoreException("Error reading derived file, file not readable at local path: " + localAbsPath);
-		}
-
-		int bytesRead = 0;
-
-		if (fileHandle == null) {
-			synchronized (this) {
-				if (fileHandle == null) {
-					try {
-						fileHandle = new RandomAccessFile(localFile, "r");
-					} catch (FileNotFoundException ex) {
-						final String msg = "Error reading derived file: " + this.toString();
-						logger.log(Level.SEVERE, msg, ex);
-						//TODO decide if to swallow exception in this case, file could have been deleted or moved
-						throw new TskCoreException(msg, ex);
-					}
-				}
-			}
-		}
-
-		try {
-			//move to the user request offset in the stream
-			long curOffset = fileHandle.getFilePointer();
-			if (curOffset != offset) {
-				fileHandle.seek(offset);
-			}
-			//note, we are always writing at 0 offset of user buffer
-			bytesRead = fileHandle.read(buf, 0, (int) len);
-		} catch (IOException ex) {
-			final String msg = "Cannot read derived file: " + this.toString();
-			logger.log(Level.SEVERE, msg, ex);
-			//TODO decide if to swallow exception in this case, file could have been deleted or moved
-			throw new TskCoreException(msg, ex);
-		}
-
-		return bytesRead;
-	}
-
-	@Override
-	protected void finalize() throws Throwable {
-		try {
-			close();
-		} finally {
-			super.finalize(); //To change body of generated methods, choose Tools | Templates.
-		}
-	}
-
 	@Override
 	public String toString() {
-		return "LocalFile{" + "localPath=" + localPath + ", localAbsPath=" + localAbsPath + ", fileHandle=" + fileHandle + '}';
+		return "LocalFile{" + "localPath=" + getLocalPath() + ", localAbsPath=" + getLocalAbsPath() 
+				+ ", fileHandle=" + getFileHandle() + '}';
 	}
 }

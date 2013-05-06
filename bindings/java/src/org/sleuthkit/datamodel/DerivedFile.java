@@ -28,20 +28,19 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
- * Represents a file or directory that has been derived from another file and contents of which are stored 
- * locally on user's machine.
+ * Represents a file or directory that has been derived from another file and
+ * contents of which are stored locally on user's machine.
  *
- * The file extends LocalFile by adding derived method used and information
+ * The file extends AbstractFile by adding derived method used and information
  * needed to rederive it.
  *
  * Use case example is an extracted file from an archive.
  */
-public class DerivedFile extends LocalFile {
+public class DerivedFile extends AbstractFile {
 
 	private volatile DerivedMethod derivedMethod;
 	private static final Logger logger = Logger.getLogger(DerivedFile.class.getName());
 	private boolean hasDerivedMethod = true; ///< whether it has the derived method to lazy load or not
-
 
 	/**
 	 * Create a db representation of a derived file
@@ -68,11 +67,20 @@ public class DerivedFile extends LocalFile {
 	protected DerivedFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
+
+			super(db, objId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
+				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, dirType, metaType, dirFlag,
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath);
 		
-		super(db, objId, name, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
+			//use the local path read infrastructure
+			setLocalPath(localPath);
 	}
 
-	
+	@Override
+	public boolean isRoot() {
+		//not a root of a fs, since it always has a parent
+		return false;
+	}
 
 	@Override
 	public Image getImage() throws TskCoreException {
@@ -91,8 +99,6 @@ public class DerivedFile extends LocalFile {
 		return image;
 	}
 
-	
-
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		//derived file/dir children, can only be other derived files
@@ -106,7 +112,15 @@ public class DerivedFile extends LocalFile {
 		return getSleuthkitCase().getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
 
-	
+	@Override
+	public <T> T accept(SleuthkitItemVisitor<T> v) {
+		return v.visit(this);
+	}
+
+	@Override
+	public <T> T accept(ContentVisitor<T> v) {
+		return v.visit(this);
+	}
 
 	/**
 	 * Get derived method for this derived file if it exists, or null

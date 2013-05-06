@@ -71,12 +71,6 @@ public class VirtualDirectory extends AbstractFile {
 	}
 
 	
-	
-	@Override
-	public int read(byte[] buf, long offset, long len) throws TskCoreException {
-		return 0;
-	}
-
 
 	@Override
 	public boolean isRoot() {
