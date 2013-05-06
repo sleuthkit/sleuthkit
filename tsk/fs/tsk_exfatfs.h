@@ -20,6 +20,9 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
+//RJCTODO: Comment(?)
+#define EXFAT_DIR_ENTRY_SIZE_IN_BYTES 32 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,7 +52,7 @@ extern "C" {
 		uint8_t reserved[7];
 		uint8_t boot_code[390];
 		uint8_t signature[2];
-	} exfatfs_sb;
+	} exfatfs_sb; //RJCTODO: Change name?
 
     /**
      * Allocation bitmap directory entry structure for exFAT file systems (TSK_FS_INFO_TYPE_EX_FAT).
@@ -59,8 +62,22 @@ extern "C" {
         uint8_t flags; /**< Bit zero is 0 for the first bitmap, 1 for the second bitmap (if TexFAT). */
         uint8_t reserved[18]; /**< Reserved. */
         uint8_t first_cluster_addr[4]; /**< Cluster address of the allocation bitmap. */
-        uint8_t length_in_buytes[8]; /**< Size of the allocation bitmap. */
-    } ALLOC_BITMAP_DIR_ENTRY;
+        uint8_t length_in_bytes[8]; /**< Size of the allocation bitmap. */
+    } EXFATFS_ALLOC_BITMAP_DIR_ENTRY;
+
+    // RJCTODO: Comment
+    enum TSK_FS_EXFAT_DIR_ENTRY_TYPE_ENUM {
+        TSK_FS_EXFAT_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x83,     
+        TSK_FS_EXFAT_DIR_ENTRY_TYPE_VOLUME_GUID = 0xA0,     
+        TSK_FS_EXFAT_DIR_ENTRY_TYPE_ALLOC_BITMAP = 0x81,     
+        TSK_FS_EXFAT_DIR_ENTRY_TYPE_UPCASE_TABLE = 0x82,     
+        TSK_FS_EXFAT_DIR_ENTRY_TYPE_TEX_FAT = 0xA1,     
+        TSK_FS_EXFAT_DIR_ENTRY_TYPE_ACL = 0xE2,     
+        TSK_FS_EXFAT_DIR_ENTRY_TYPE_FILE = 0x85,     
+        TSK_FS_EXFAT_DIR_ENTRY_TYPE_FILE_STREAM_EXT = 0xC0,     
+        TSK_FS_EXFAT_DIR_ENTRY_TYPE_FILE_NAME_EXT = 0xC1,     
+    };
+    typedef enum TSK_FS_EXFAT_DIR_ENTRY_TYPE_ENUM TSK_FS_EXFAT_DIR_ENTRY_TYPE_ENUM;
 
 	/**
 	 * \internal
@@ -72,7 +89,7 @@ extern "C" {
 	extern int exfatfs_open(FATFS_INFO *fatfs);
 
     // RJCTODO: Add comment
-    extern int8_t exfatfs_is_clust_alloc(FATFS_INFO * fatfs, TSK_DADDR_T clust);
+    extern int8_t exfatfs_is_clust_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust);
 
 #ifdef __cplusplus
 }

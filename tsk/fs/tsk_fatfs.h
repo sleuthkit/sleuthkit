@@ -110,8 +110,12 @@ extern "C" {
 		char boot_sector_buffer[FAT_BOOT_SECTOR_SIZE];
         int using_backup_boot_sector;
 
-		/* RJCTODO: Comment */
-        uint8_t(*is_clust_alloc)(TSK_FS_INFO* fs, TSK_DADDR_T clust);
+        struct {
+            uint32_t alloc_bitmap_cluster_addr;
+            uint64_t alloc_bitmap_length_in_bytes;
+            uint32_t second_alloc_bitmap_cluster_addr;
+            uint64_t second_alloc_bitmap_length_in_bytes;
+        } EXFATFS_INFO;
 
 	} FATFS_INFO;
 

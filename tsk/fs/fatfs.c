@@ -106,15 +106,14 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 
 	// Attempt to open the file system as one of the FAT types.
 	// RJCTODO: Should this return an error if not detecting and a specific type of FAT fs is specified?
-	if ((a_ftype == TSK_FS_TYPE_FAT_DETECT && !fatxxfs_open(fatfs) && !exfatfs_open(fatfs)) ||
-		(a_ftype == TSK_FS_TYPE_EXFAT && !exfatfs_open(fatfs)) ||
-		(!fatxxfs_open(fatfs)))
-	{
-		free(fatfs);
+    if ((a_ftype == TSK_FS_TYPE_FAT_DETECT && (fatxxfs_open(fatfs) || exfatfs_open(fatfs))) ||
+		(a_ftype == TSK_FS_TYPE_EXFAT && exfatfs_open(fatfs)) ||
+		(fatxxfs_open(fatfs))) {
+    	return (TSK_FS_INFO*)fatfs;
+	} else {
+        free(fatfs);
 		return NULL;
-	}
-
-	return (TSK_FS_INFO*)fatfs;
+    }
 }
 
 /**************************************************************************

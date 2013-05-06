@@ -18,6 +18,8 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
+#define BIT_IS_SET(bits, pos) ((bits) & (1 << (pos))) 
+
 static int 
 exfatfs_get_fs_size_params(FATFS_INFO *fatfs)
 {
@@ -146,7 +148,7 @@ exfatfs_get_fs_layout(FATFS_INFO *fatfs)
      * that is within the boundaries of the volume. */
     fatfs->clustcnt = tsk_getu32(fs->endian, fatsb->cluster_cnt);
     if ((fatfs->clustcnt == 0) || 
-        ((uint64_t)fatfs->firstdatasect + (fatfs->clustcnt * fatfs->csize) > vol_len_in_sectors)) {
+        ((uint64_t)(fatfs->firstdatasect + (fatfs->clustcnt * fatfs->csize)) > vol_len_in_sectors)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
         tsk_error_set_errstr("Not an exFAT file system (invalid cluster count)");
@@ -227,6 +229,62 @@ exfatfs_get_volume_id(FATFS_INFO *fatfs)
     }
 }
 
+static int
+exfatfs_get_alloc_bitmap(FATFS_INFO *fatfs)
+{
+    const char *func_name = "exfatfs_get_alloc_bitmap";
+	TSK_FS_INFO *fs = &(fatfs->fs_info);
+    TSK_DADDR_T current_sector = fatfs->rootsect;
+    TSK_DADDR_T last_sector_of_data_area = fatfs->firstdatasect + (fatfs->clustcnt * fatfs->csize);
+    char *sector_buf = NULL;
+    ssize_t bytes_read = 0;
+    uint8_t *dir_entry_buf = NULL;
+    uint8_t num_bitmaps_found = 0;
+    int i = 0;
+
+    if ((sector_buf = (char*)tsk_malloc(fatfs->ssize)) == NULL) {
+        return 1;
+    }
+
+    while (current_sector < last_sector_of_data_area && num_bitmaps_found < fatfs->numfat) {
+        /* Read in a sector from the root directory. */
+        bytes_read = tsk_fs_read_block(fs, current_sector, sector_buf, fatfs->ssize);
+        if (bytes_read != fatfs->ssize) {
+            if (bytes_read >= 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_READ);
+            }
+            tsk_error_set_errstr2("%s: sector: %" PRIuDADDR, func_name, current_sector);
+            free(sector_buf);
+            return 1;
+        }
+
+        /* Read the directory entries in the sector, looking for allocation
+         * bitmap entries. There will be one entry unless the file system is 
+         * TexFAT. */
+        for (i = 0; i < fatfs->ssize; i += EXFAT_DIR_ENTRY_SIZE_IN_BYTES) {
+            dir_entry_buf = (uint8_t*)&(sector_buf[i]); 
+            if (dir_entry_buf[0] == TSK_FS_EXFAT_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
+                EXFATFS_ALLOC_BITMAP_DIR_ENTRY *dir_entry = (EXFATFS_ALLOC_BITMAP_DIR_ENTRY *)&dir_entry_buf;
+                if (dir_entry->flags & 0x01) {
+                    fatfs->EXFATFS_INFO.second_alloc_bitmap_cluster_addr = tsk_getu32(fs->endian, dir_entry->first_cluster_addr);
+                    fatfs->EXFATFS_INFO.second_alloc_bitmap_length_in_bytes = tsk_getu32(fs->endian, dir_entry->length_in_bytes);
+                }
+                else {
+                    fatfs->EXFATFS_INFO.alloc_bitmap_cluster_addr = tsk_getu32(fs->endian, dir_entry->first_cluster_addr);
+                    fatfs->EXFATFS_INFO.alloc_bitmap_length_in_bytes = tsk_getu32(fs->endian, dir_entry->length_in_bytes);
+                }
+                ++num_bitmaps_found;
+                if (num_bitmaps_found == fatfs->numfat) {
+                    break;
+                }
+            }
+        }
+    }
+
+    return (num_bitmaps_found == fatfs->numfat);
+}
+
 static void 
 exfatfs_set_func_ptrs(FATFS_INFO *fatfs)
 {
@@ -277,21 +335,22 @@ exfatfs_open(FATFS_INFO *fatfs)
 
     tsk_error_reset();
 
+    /* Is is really an exFAT file system? */
     if (!exfatfs_get_fs_size_params(fatfs) ||
         !exfatfs_get_fs_layout(fatfs) || 
-        !exfatfs_map_fs_layout_to_blocks(fatfs)) {
+        !exfatfs_map_fs_layout_to_blocks(fatfs) ||
+        !exfatfs_get_alloc_bitmap(fatfs)) {
         return 0;
     }
 
     exfatfs_get_volume_id(fatfs);
-
     exfatfs_set_func_ptrs(fatfs);
     exfatfs_init_caches(fatfs);
 
 	return 1;
 }
 
-int8_t exfatfs_is_clust_alloc(FATFS_INFO * fatfs, TSK_DADDR_T clust)
+int8_t exfatfs_is_clust_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust)
 {
     return 0;
 }

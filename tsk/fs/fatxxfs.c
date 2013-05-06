@@ -1335,9 +1335,10 @@ fatxxfs_open(FATFS_INFO *fatfs)
 
 /* Return 1 if allocated, 0 if unallocated, and -1 if error */
 int8_t
-fatxxfs_is_clust_alloc(FATFS_INFO * fatfs, TSK_DADDR_T clust)
+fatxxfs_is_clust_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust)
 {
-    TSK_DADDR_T content;
+    TSK_DADDR_T content = 0;
+
     if (fatfs_getFAT(fatfs, clust, &content))
         return -1;
     else if (content == FATFS_UNALLOC)

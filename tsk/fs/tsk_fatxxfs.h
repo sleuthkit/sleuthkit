@@ -272,7 +272,7 @@ extern "C" {
 	extern int fatxxfs_open(FATFS_INFO *fatfs);
 
     // RJCTODO: Add comment
-    extern int8_t fatxxfs_is_clust_alloc(FATFS_INFO * fatfs, TSK_DADDR_T clust);
+    extern int8_t fatxxfs_is_clust_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust);
 
     extern uint8_t fatfs_isdentry(FATFS_INFO *, fatfs_dentry *, uint8_t);
     extern uint8_t fatfs_make_root(FATFS_INFO *, TSK_FS_META *);
