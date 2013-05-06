@@ -16,11 +16,14 @@ Tested Platform:
 - SunOS 4-5.*
 - Windows
 
-Build System:
+Build System (to compile from a source distribution):
 - C/C++ compiler
 - GNU Make
-- GNU autoconf, automake, and libtool
 - Java compiler / JDK (if you want the java bindings)
+
+Development System (to extend TSK or compile from the repository):
+- GNU autoconf, automake, and libtool
+- Plus the build system requirements
 
 Optional Programs:
 - Autopsy: Provides a graphical HTML-based interface to The
@@ -56,7 +59,11 @@ for useful arguments that can be given to 'configure.
 
     $ ./configure
 
-If there were no errors, then run 'make'.
+If there were no errors, then run 'make'.  If you do not have a
+'configure' script, then it is probably because you cloned the
+source code repository. If so, you will need to have automake,
+autoconf, and libtool installed and you can create the configure
+script using the 'bootstrap' script in the root directory. 
 
     $ make
 

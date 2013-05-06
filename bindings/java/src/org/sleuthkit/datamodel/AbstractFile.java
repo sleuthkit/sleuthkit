@@ -447,7 +447,9 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Convert an internal offset to an image offset
 	 * @param fileOffset the byte offset in this layout file to map
-	 * @return the corresponding byte offset in the image where the file offset is located
+	 * @return the corresponding byte offset in the image where the file offset is located,
+	 * or -1 if the file has no range layout information or if the fileOffset is larger than file size
+	 * @throws TskCoreException exception thrown if critical error occurred within tsk core and offset could not be converted
 	 */
 	public long convertToImgOffset(long fileOffset) throws TskCoreException {
 		long imgOffset = -1;
