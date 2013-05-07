@@ -17,7 +17,6 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     bindings/java/src/org/sleuthkit/datamodel/*.html \
     bindings/java/src/*.html \
     bindings/java/test \
-    bindings/java/teststandards \
     framework/*.txt \
     framework/*.h \
     framework/tsk/framework/extraction/*.cpp \
@@ -49,7 +48,7 @@ endif
 if X_JNI
   JNI=bindings/java/jni
 endif
-SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JNI)
+SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JNI) 
 
 nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/base/tsk_base.h tsk/base/tsk_os.h \
