@@ -20,7 +20,9 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
-//RJCTODO: Comment(?)
+/**
+ * exFAT uses 32 byte directory entries.
+ */
 #define EXFAT_DIR_ENTRY_SIZE_IN_BYTES 32 
 
 #ifdef __cplusplus
@@ -29,43 +31,36 @@ extern "C" {
 
     /**
      * Boot sector structure for exFAT file systems (TSK_FS_INFO_TYPE_EX_FAT).
+     * The boot sector will be at least 512 bytes in length. There will be one
+     * FAT for exFAT and two FATs for TexFAT (transactional FAT).
      */
-    typedef struct { //RJCTODO: Add doxygen comments to each member, make names better
+    typedef struct { 
         uint8_t jump_to_boot_code[3];
         uint8_t fs_name[8];
         uint8_t must_be_zeros[53];
 		uint8_t partition_offset[8];
 		uint8_t vol_len_in_sectors[8];            
 		uint8_t fat_offset[4];          
-		uint8_t fat_len[4];               
+		uint8_t fat_len_in_sectors[4];               
 		uint8_t cluster_heap_offset[4];
 		uint8_t cluster_cnt[4];
 		uint8_t root_dir_cluster[4];
 		uint8_t vol_serial_no[4];
-		uint8_t fs_rev[2];
+		uint8_t fs_revision[2];
 		uint8_t vol_flags[2];
 		uint8_t bytes_per_sector;
 		uint8_t sectors_per_cluster;
-		uint8_t num_fats; /* 2 if TexFAT in use, otherwise 1 */
-		uint8_t drive_select; /* Used by INT 13 */
-		uint8_t percent_in_use;
+		uint8_t num_fats; 
+		uint8_t drive_select;
+		uint8_t percent_of_cluster_heap_in_use;
 		uint8_t reserved[7];
 		uint8_t boot_code[390];
 		uint8_t signature[2];
-	} exfatfs_sb; //RJCTODO: Change name?
+	} EXFATFS_BOOT_SECTOR;
 
     /**
-     * Allocation bitmap directory entry structure for exFAT file systems (TSK_FS_INFO_TYPE_EX_FAT).
+     * exFAT directory entry types, the first byte of a directory entry.
      */
-    typedef struct {
-        uint8_t entry_type; /**< Directory entry type. */ 
-        uint8_t flags; /**< Bit zero is 0 for the first bitmap, 1 for the second bitmap (if TexFAT). */
-        uint8_t reserved[18]; /**< Reserved. */
-        uint8_t first_cluster_addr[4]; /**< Cluster address of the allocation bitmap. */
-        uint8_t length_in_bytes[8]; /**< Size of the allocation bitmap. */
-    } EXFATFS_ALLOC_BITMAP_DIR_ENTRY;
-
-    // RJCTODO: Comment
     enum TSK_FS_EXFAT_DIR_ENTRY_TYPE_ENUM {
         TSK_FS_EXFAT_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x83,     
         TSK_FS_EXFAT_DIR_ENTRY_TYPE_VOLUME_GUID = 0xA0,     
@@ -77,19 +72,40 @@ extern "C" {
         TSK_FS_EXFAT_DIR_ENTRY_TYPE_FILE_STREAM_EXT = 0xC0,     
         TSK_FS_EXFAT_DIR_ENTRY_TYPE_FILE_NAME_EXT = 0xC1,     
     };
-    typedef enum TSK_FS_EXFAT_DIR_ENTRY_TYPE_ENUM TSK_FS_EXFAT_DIR_ENTRY_TYPE_ENUM;
+
+    /**
+     * Allocation bitmap directory entry structure for exFAT file systems
+     * (TSK_FS_INFO_TYPE_EX_FAT). There will be one allocation bitmap for 
+     * exFAT and two for TexFAT (transactional FAT). Bit zero of the flags
+     * byte is 0 in the directory entry for the first bitmap, 1 for in the 
+     * directory entry for the second bitmap.
+     */
+    typedef struct {
+        uint8_t entry_type;
+        uint8_t flags;
+        uint8_t reserved[18];
+        uint8_t first_cluster_addr[4];
+        uint8_t length_in_bytes[8];
+    } EXFATFS_ALLOC_BITMAP_DIR_ENTRY;
 
 	/**
 	 * \internal
 	 * Open part of a disk image as an exFAT file system. 
 	 *
-	 * @param fatfs Generic FAT file system info with boot sector buffer
+	 * @param a_fatfs Generic FAT file system info with boot sector buffer
 	 * @returns 1 on sucess, 0 otherwise
 	 */
-	extern int exfatfs_open(FATFS_INFO *fatfs);
+	extern int exfatfs_open(FATFS_INFO *a_fatfs);
 
-    // RJCTODO: Add comment
-    extern int8_t exfatfs_is_clust_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust);
+	/**
+	 * \internal
+	 * Determine whether a specified cluster is allocated. 
+	 *
+	 * @param a_fatfs Generic FAT file system info with boot sector buffer
+     * @param cluster_addr address of the cluster to check 
+	 * @returns 1 if the cluster is allocated, 0 otherwise
+	 */
+    extern int exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T cluster_addr);
 
 #ifdef __cplusplus
 }

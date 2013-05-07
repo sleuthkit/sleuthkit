@@ -466,3 +466,18 @@ fatfs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
     return 1;
 }
 
+/* fatfs_close - close an fatfs file system */
+void
+fatfs_close(TSK_FS_INFO *fs)
+{
+    FATFS_INFO *fatfs = (FATFS_INFO *) fs;
+ 
+    fatfs_dir_buf_free(fatfs);
+
+    fs->tag = 0;
+	memset(fatfs->boot_sector_buffer, 0, FAT_BOOT_SECTOR_SIZE);
+    tsk_deinit_lock(&fatfs->cache_lock);
+    tsk_deinit_lock(&fatfs->dir_lock);
+	
+    tsk_fs_free(fs);
+}

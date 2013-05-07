@@ -164,6 +164,8 @@ extern "C" {
     fatfs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
         int a_flags, TSK_FS_JBLK_WALK_CB a_action, void *a_ptr);
 
+    extern void fatfs_close(TSK_FS_INFO *fs);
+
 #ifdef __cplusplus
 }
 #endif

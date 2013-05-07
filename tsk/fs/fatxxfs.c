@@ -942,23 +942,6 @@ fatfs_get_default_attr_type(const TSK_FS_FILE * a_file)
     return TSK_FS_ATTR_TYPE_DEFAULT;
 }
 
-/* fatfs_close - close an fatfs file system */
-// RJCTODO: Probably need to move this
-static void
-fatfs_close(TSK_FS_INFO * fs)
-{
-    FATFS_INFO *fatfs = (FATFS_INFO *) fs;
- 
-    fatfs_dir_buf_free(fatfs);
-
-    fs->tag = 0;
-	memset(fatfs->boot_sector_buffer, 0, FAT_BOOT_SECTOR_SIZE);
-    tsk_deinit_lock(&fatfs->cache_lock);
-    tsk_deinit_lock(&fatfs->dir_lock);
-	
-    tsk_fs_free(fs);
-}
-
 int
 fatxxfs_open(FATFS_INFO *fatfs)
 {
