@@ -2706,7 +2706,7 @@ public class SleuthkitCase {
 	 * 
 	 * @return the ID of the '$LocalFiles' directory for the given systemId
 	 */
-	private long getLocalFilesDirectoryId() throws TskCoreException {
+	public long getLocalFilesRootDirectoryId() throws TskCoreException {
 		
 
 		//first, quick and atomic check the cache
@@ -3131,7 +3131,7 @@ public class SleuthkitCase {
 		long parentId = -1;
 		String parentPath;
 		if (parent == null) {
-			parentId = this.getLocalFilesDirectoryId();
+			parentId = this.getLocalFilesRootDirectoryId();
 			parentPath = '/' + VirtualDirectory.NAME_LOCAL + '/'; //consider construcitng VirtualDir object and getParentPath() on it
 		}
 		else {
