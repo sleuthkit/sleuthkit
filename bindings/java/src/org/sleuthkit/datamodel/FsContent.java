@@ -110,9 +110,13 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @return the file system object of the parent
 	 */
-	public synchronized FileSystem getFileSystem() throws TskCoreException {
+	public FileSystem getFileSystem() throws TskCoreException {
 		if (parentFileSystem == null) {
-			parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, AbstractContent.UNKNOWN_ID);
+			synchronized(this) {
+				if (parentFileSystem == null) {
+					parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, AbstractContent.UNKNOWN_ID);
+				}
+			}
 		}
 		return parentFileSystem;
 	}
