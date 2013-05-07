@@ -56,7 +56,7 @@ public class LocalFile extends AbstractFile {
 	 * @param knownState
 	 * @param parentPath path of the parent of this local file (e.g. fs zip
 	 * file, or another local file path)
-	 * @param localPath local path of this local file, relative to the db path
+	 * @param localPath local absolute path of this local file
 	 */
 	protected LocalFile(SleuthkitCase db, long objId, String name, TSK_DB_FILES_TYPE_ENUM fileType, 
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag,
@@ -69,7 +69,7 @@ public class LocalFile extends AbstractFile {
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath);
 
 		//use the local path functionality of AbstractFile, this sets up the infrastructure for it
-		super.setLocalPath(localPath);
+		super.setLocalPath(localPath, true); //local paths for local files are absolute paths
 	}
 
 	/**
@@ -91,8 +91,8 @@ public class LocalFile extends AbstractFile {
 	 * @param md5Hash
 	 * @param knownState
 	 * @param parentPath path of the parent of this local file (e.g. virtual dir or another local file path)
-	 * @param localPath local path of this derived file, relative to the db path
-	 * @param parentId parent id of this derived file to set if available
+	 * @param localPath local path of this local file, relative to the db path
+	 * @param parentId parent id of this local file to set if available
 	 */
 	protected LocalFile(SleuthkitCase db, long objId, String name, TSK_DB_FILES_TYPE_ENUM fileType, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
@@ -123,8 +123,8 @@ public class LocalFile extends AbstractFile {
 	 * @param md5Hash
 	 * @param knownState
 	 * @param parentPath path of the parent of this local file (e.g. virtual dir or another local file path)
-	 * @param localPath local path of this derived file, relative to the db path
-	 * @param parentId parent id of this derived file to set if available
+	 * @param localPath local path of this local file, relative to the db path
+	 * @param parentId parent id of this local file to set if available
 	 */
 	protected LocalFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,

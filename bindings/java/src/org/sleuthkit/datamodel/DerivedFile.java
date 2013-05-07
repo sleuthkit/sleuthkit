@@ -73,7 +73,7 @@ public class DerivedFile extends AbstractFile {
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath);
 		
 			//use the local path read infrastructure
-			setLocalPath(localPath);
+			setLocalPath(localPath, false); //local paths for derived files are relative to case db
 	}
 
 	@Override
