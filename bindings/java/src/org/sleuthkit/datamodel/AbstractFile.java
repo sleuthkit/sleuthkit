@@ -715,13 +715,13 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Set local path for the file, as stored in db tsk_files_path, relative to
-	 * the case db path or absolute.
+	 * the case db path or an absolute path.
 	 * 
 	 * If non-null, reads will be done on the local file
 	 * instead of tsk
 	 *
 	 * @param localPath local path to be set
-	 * @param isAbsolute true if the path is absolute, false if relative
+	 * @param isAbsolute true if the path is absolute, false if relative to the case db
 	 */
 	protected void setLocalPath(String localPath, boolean isAbsolute) {
 		
