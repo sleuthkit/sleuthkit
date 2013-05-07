@@ -2602,7 +2602,7 @@ public class SleuthkitCase {
 	 * @return a VirtualDirectory object representing the one added to the database.
 	 * @throws TskCoreException 
 	 */
-	private VirtualDirectory addVirtualDirectory(long parentId, String directoryName) throws TskCoreException {
+	public VirtualDirectory addVirtualDirectory(long parentId, String directoryName) throws TskCoreException {
 		
 		// get the parent path
 		String parentPath = getFilePath(parentId);
@@ -3111,8 +3111,7 @@ public class SleuthkitCase {
 	 * Creates a new local file object, adds it to database and returns it.
 	 *
 	 * @param fileName file name the derived file
-	 * @param localPath local path of the derived file, including the file name.
-	 * The path is relative to the database path.
+	 * @param localPath local absolute path of the local file, including the file name.
 	 * @param size size of the derived file in bytes
 	 * @param ctime
 	 * @param crtime
