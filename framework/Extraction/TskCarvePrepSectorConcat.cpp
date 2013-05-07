@@ -44,7 +44,7 @@ TskCarvePrepSectorConcat::TskCarvePrepSectorConcat()
 {
 }
 
-int TskCarvePrepSectorConcat::processSectors(bool scheduleCarving)
+int TskCarvePrepSectorConcat::processSectors()
 {
     try 
     {
@@ -56,7 +56,7 @@ int TskCarvePrepSectorConcat::processSectors(bool scheduleCarving)
         std::auto_ptr<SectorRuns> sectorRuns(TskServices::Instance().getImgDB().getFreeSectors());
         if (sectorRuns.get())
         {
-            createUnallocSectorsImgFiles(outputFolderPath, outputFileName, maxOutputFileSize, *sectorRuns, scheduleCarving);
+            createUnallocSectorsImgFiles(outputFolderPath, outputFileName, maxOutputFileSize, *sectorRuns);
         }
     }
     catch (TskException &ex) 
@@ -68,7 +68,7 @@ int TskCarvePrepSectorConcat::processSectors(bool scheduleCarving)
     return 0;
 }
 
-void TskCarvePrepSectorConcat::processFiles(const std::string &fileName, bool scheduleCarving) const
+void TskCarvePrepSectorConcat::processFiles(const std::string &fileName) const
 {
     assert(!fileName.empty());
     if (fileName.empty())
@@ -93,28 +93,26 @@ void TskCarvePrepSectorConcat::processFiles(const std::string &fileName, bool sc
         sectorRuns.reset(imgDB.getFileSectors(*it));
         if (sectorRuns.get()) 
         {
-            createUnallocSectorsImgFiles(outputFolderPath, outputFileName, maxOutputFileSize, *sectorRuns, scheduleCarving);
+            createUnallocSectorsImgFiles(outputFolderPath, outputFileName, maxOutputFileSize, *sectorRuns);
         }
     }
 }
 
-void TskCarvePrepSectorConcat::onUnallocSectorsImgFileCreated(int unallocSectorsImgId, bool scheduleCarving) const
+void TskCarvePrepSectorConcat::onUnallocSectorsImgFileCreated(int unallocSectorsImgId) const
 {
     // Schedule the file for carving.
     TskImgDB &imgDB = TskServices::Instance().getImgDB();
-    if (scheduleCarving) 
+
+    if (TskServices::Instance().getScheduler().schedule(Scheduler::Carve, unallocSectorsImgId, unallocSectorsImgId) == 0)
     {
-        if (TskServices::Instance().getScheduler().schedule(Scheduler::Carve, unallocSectorsImgId, unallocSectorsImgId) == 0)
-        {
-            imgDB.setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_SCHEDULE_OK);
-        }
-        else 
-        {
-            imgDB.setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_SCHEDULE_ERR);
-            std::stringstream msg;
-            msg << "TskCarvePrepSectorConcat::onUnallocSectorsImgFileCreated : failed to schedule carving of unallocated image file " << unallocSectorsImgId; 
-            throw TskException(msg.str());
-        }
+        imgDB.setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_SCHEDULE_OK);
+    }
+    else 
+    {
+        imgDB.setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_SCHEDULE_ERR);
+        std::stringstream msg;
+        msg << "TskCarvePrepSectorConcat::onUnallocSectorsImgFileCreated : failed to schedule carving of unallocated image file " << unallocSectorsImgId; 
+        throw TskException(msg.str());
     }
 }
 
@@ -141,7 +139,7 @@ void TskCarvePrepSectorConcat::setUpForCarvePrep(std::string &outputFolderPath, 
     }
 }
 
-void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &outputFolderPath, const std::string &outputFileName, size_t maxOutputFileSize, SectorRuns &sectorRuns, bool scheduleCarving) const
+void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &outputFolderPath, const std::string &outputFileName, size_t maxOutputFileSize, SectorRuns &sectorRuns) const
 {
     char *sectorBuffer = NULL;
     try
@@ -202,7 +200,7 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
                     // Schedule the current output file for carving. Note that derived classes can change this behavior by overriding onUnallocSectorsImgFileCreated.
                     if (currentFileOffset > 0) 
                     {
-                        onUnallocSectorsImgFileCreated(unallocSectorsImgId, scheduleCarving); 
+                        onUnallocSectorsImgFileCreated(unallocSectorsImgId); 
                     }
 
                     // Get the next output file number. 
@@ -280,7 +278,7 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
         // Schedule the final output file.
         if (currentFileOffset > 0)
         {
-            onUnallocSectorsImgFileCreated(unallocSectorsImgId, scheduleCarving);
+            onUnallocSectorsImgFileCreated(unallocSectorsImgId);
         }
     }
     catch(...)
