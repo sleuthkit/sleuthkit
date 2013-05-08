@@ -11,12 +11,15 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     win32/docs/* \
     bindings/java/README.txt \
     bindings/java/*.xml \
-    bindings/java/doxygen/* \
+    bindings/java/doxygen/Doxyfile \
+    bindings/java/doxygen/*.dox \
+    bindings/java/doxygen/*.html \
     bindings/java/nbproject/project.xml \
     bindings/java/src/org/sleuthkit/datamodel/*.java \
     bindings/java/src/org/sleuthkit/datamodel/*.html \
     bindings/java/src/*.html \
-    bindings/java/test \
+    bindings/java/test/org/* \
+    bindings/java/test/output/Gold/* \
     framework/*.txt \
     framework/*.h \
     framework/tsk/framework/extraction/*.cpp \
