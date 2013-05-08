@@ -39,7 +39,7 @@ public:
 	TskCarvePrepSectorConcat();
 	virtual ~TskCarvePrepSectorConcat() {}
 
-    virtual int processSectors(bool scheduleCarving);
+    virtual int processSectors();
 
     /**
      * Treats the contents of a set of files as unallocated sector runs and 
@@ -49,11 +49,9 @@ public:
      *
      * @param fileName Output files for all files with this name will be 
      * generated.
-     * @param scheduleCarving Set to true if carving of the output files should
-     * be scheduled.
      * @return Throws TskException on error.
      */
-    void processFiles(const std::string &fileName, bool scheduleCarving) const;
+    void processFiles(const std::string &fileName) const;
 
 protected:
 
@@ -64,11 +62,9 @@ protected:
      *
      * @param unallocSectorsImgId ID assigned to the file by 
      * TskImgDB::addUnallocImg().
-     * @param scheduleCarving Set to true if carving of the output file should
-     * be scheduled.
      * @return Default implementation throws TskException on error.
      */
-    virtual void onUnallocSectorsImgFileCreated(int unallocSectorsImgId, bool scheduleCarving) const; 
+    virtual void onUnallocSectorsImgFileCreated(int unallocSectorsImgId) const; 
 
 private:
 
@@ -98,11 +94,9 @@ private:
      * @param outputFileName  Name given to the output files.
      * @param maxOutputFileSize  Maximum output file size in bytes. If 0, then no size limit is used.
      * @param sectorRuns Sector runs to be written to the output files.
-     * @param scheduleCarving Whether or not to schedule carving of the output 
-     * files.
      * @return Throws TskException on error.
      */
-    void createUnallocSectorsImgFiles(const std::string &outputFolderPath, const std::string &outputFileName, size_t maxOutputFileSize, SectorRuns &sectorRuns, bool scheduleCarving) const;
+    void createUnallocSectorsImgFiles(const std::string &outputFolderPath, const std::string &outputFileName, size_t maxOutputFileSize, SectorRuns &sectorRuns) const;
 
     /** 
      * Creates a folder. If the specified folder already exists, deletes it
