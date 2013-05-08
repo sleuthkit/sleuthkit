@@ -704,9 +704,9 @@ public abstract class AbstractFile extends AbstractContent {
 			//note, we are always writing at 0 offset of user buffer
 			bytesRead = fileHandle.read(buf, 0, (int) len);
 		} catch (IOException ex) {
-			final String msg = "Cannot read derived file: " + this.toString();
+			final String msg = "Cannot read local file: " + this.toString();
 			logger.log(Level.SEVERE, msg, ex);
-			//TODO decide if to swallow exception in this case, file could have been deleted or moved
+			//local file could have been deleted / moved
 			throw new TskCoreException(msg, ex);
 		}
 
