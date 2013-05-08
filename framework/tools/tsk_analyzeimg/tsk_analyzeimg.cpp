@@ -384,7 +384,7 @@ int main(int argc, char **argv1)
         if (doCarving && !GetSystemProperty("SCALPEL_DIR").empty())
         {
             TskCarvePrepSectorConcat carvePrep;
-            carvePrep.processSectors(true);
+            carvePrep.processSectors();
             carver.reset(new TskCarveExtractScalpel());
         }
     }
