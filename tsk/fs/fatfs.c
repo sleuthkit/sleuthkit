@@ -481,3 +481,223 @@ fatfs_close(TSK_FS_INFO *fs)
 	
     tsk_fs_free(fs);
 }
+
+/* fatfs_dinode_load - look up disk inode & load into FATFS_DENTRY structure
+ *
+ * return 1 on error and 0 on success
+ * */
+
+uint8_t
+fatfs_dinode_load(TSK_FS_INFO * fs, FATFS_DENTRY * dep, TSK_INUM_T inum)
+{
+    const char *func_name = "fatfs_dinode_load";
+    FATFS_INFO *fatfs = (FATFS_INFO *) fs;
+    ssize_t cnt;
+    size_t off;
+    TSK_DADDR_T sect;
+
+    /*
+     * Sanity check.
+     * Account for virtual Orphan directory and virtual files
+     */
+    if ((inum < fs->first_inum)
+        || (inum > fs->last_inum - FATFS_NUM_SPECFILE)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr("%s: address: %" PRIuINUM,
+            func_name, inum);
+        return 1;
+    }              
+    
+    /* Get the sector that this inode would be in and its offset */
+    sect = FATFS_INODE_2_SECT(fatfs, inum);
+    off = FATFS_INODE_2_OFF(fatfs, inum);
+
+    if (sect > fs->last_block) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr("%s: Inode %" PRIuINUM
+            " in sector too big for image: %" PRIuDADDR, func_name, inum, sect);
+        return 1;
+    }
+
+    cnt = tsk_fs_read(fs, sect * fs->block_size + off, (char *) dep, sizeof(FATFS_DENTRY));
+    if (cnt != sizeof(FATFS_DENTRY)) {
+        if (cnt >= 0) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_READ);
+        }
+        tsk_error_set_errstr2("%s: block: %" PRIuDADDR,
+            func_name, sect);
+        return 1;
+    }
+
+    return 0;
+}
+
+/************************* istat *******************************/
+
+/* Callback a_action for file_walk to print the sector addresses
+ * of a file
+ */
+
+typedef struct {
+    FILE *hFile;
+    int idx;
+    int istat_seen;
+} FATFS_PRINT_ADDR;
+
+static TSK_WALK_RET_ENUM
+print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
+    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
+{
+    FATFS_PRINT_ADDR *print = (FATFS_PRINT_ADDR *) a_ptr;
+
+    tsk_fprintf(print->hFile, "%" PRIuDADDR " ", addr);
+
+    if (++(print->idx) == 8) {
+        tsk_fprintf(print->hFile, "\n");
+        print->idx = 0;
+    }
+    print->istat_seen = 1;
+
+    return TSK_WALK_CONT;
+}
+
+/**
+ * Print details on a specific file to a file handle. 
+ *
+ * @param fs File system file is located in
+ * @param hFile File handle to print text to
+ * @param inum Address of file in file system
+ * @param numblock The number of blocks in file to force print (can go beyond file size)
+ * @param sec_skew Clock skew in seconds to also print times in
+ * 
+ * @returns 1 on error and 0 on success
+ */
+uint8_t
+fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+    TSK_DADDR_T numblock, int32_t sec_skew)
+{
+    TSK_FS_META *fs_meta;
+    TSK_FS_FILE *fs_file;
+    TSK_FS_META_NAME_LIST *fs_name_list;
+    FATFS_PRINT_ADDR print;
+    FATFS_DENTRY dep;
+    FATXXFS_DENTRY *fatxxdep = (FATXXFS_DENTRY*)&dep; //RJCTODO
+    char timeBuf[128];
+
+    // clean up any error messages that are lying around
+    tsk_error_reset();
+
+    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, inum)) == NULL) {
+        return 1;
+    }
+    fs_meta = fs_file->meta;
+
+    tsk_fprintf(hFile, "Directory Entry: %" PRIuINUM "\n", inum);
+
+    tsk_fprintf(hFile, "%sAllocated\n",
+        (fs_meta->flags & TSK_FS_META_FLAG_UNALLOC) ? "Not " : "");
+
+    tsk_fprintf(hFile, "File Attributes: ");
+
+    /* This should only be null if we have the root directory or special file */
+    if (fatfs_dinode_load(fs, &dep, inum)) {
+        if (inum == FATFS_ROOTINO)
+            tsk_fprintf(hFile, "Directory\n");
+        else if (fs_file->meta->type == TSK_FS_META_TYPE_VIRT)
+            tsk_fprintf(hFile, "Virtual\n");
+        else
+            tsk_fprintf(hFile, "File\n");
+    }
+    else if ((fatxxdep->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
+        tsk_fprintf(hFile, "Long File Name\n");
+    }
+    else {
+        if (fatxxdep->attrib & FATFS_ATTR_DIRECTORY)
+            tsk_fprintf(hFile, "Directory");
+        else if (fatxxdep->attrib & FATFS_ATTR_VOLUME)
+            tsk_fprintf(hFile, "Volume Label");
+        else
+            tsk_fprintf(hFile, "File");
+
+        if (fatxxdep->attrib & FATFS_ATTR_READONLY)
+            tsk_fprintf(hFile, ", Read Only");
+        if (fatxxdep->attrib & FATFS_ATTR_HIDDEN)
+            tsk_fprintf(hFile, ", Hidden");
+        if (fatxxdep->attrib & FATFS_ATTR_SYSTEM)
+            tsk_fprintf(hFile, ", System");
+        if (fatxxdep->attrib & FATFS_ATTR_ARCHIVE)
+            tsk_fprintf(hFile, ", Archive");
+
+        tsk_fprintf(hFile, "\n");
+    }
+
+    tsk_fprintf(hFile, "Size: %" PRIuOFF "\n", fs_meta->size);
+
+    if (fs_meta->name2) {
+        fs_name_list = fs_meta->name2;
+        tsk_fprintf(hFile, "Name: %s\n", fs_name_list->name);
+    }
+
+    if (sec_skew != 0) {
+        tsk_fprintf(hFile, "\nAdjusted Directory Entry Times:\n");
+
+        if (fs_meta->mtime)
+            fs_meta->mtime -= sec_skew;
+        if (fs_meta->atime)
+            fs_meta->atime -= sec_skew;
+        if (fs_meta->crtime)
+            fs_meta->crtime -= sec_skew;
+
+        tsk_fprintf(hFile, "Written:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+        tsk_fprintf(hFile, "Accessed:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+        tsk_fprintf(hFile, "Created:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
+
+        if (fs_meta->mtime == 0)
+            fs_meta->mtime += sec_skew;
+        if (fs_meta->atime == 0)
+            fs_meta->atime += sec_skew;
+        if (fs_meta->crtime == 0)
+            fs_meta->crtime += sec_skew;
+
+        tsk_fprintf(hFile, "\nOriginal Directory Entry Times:\n");
+    }
+    else
+        tsk_fprintf(hFile, "\nDirectory Entry Times:\n");
+
+    tsk_fprintf(hFile, "Written:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime,
+            timeBuf));
+    tsk_fprintf(hFile, "Accessed:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+    tsk_fprintf(hFile, "Created:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
+
+    tsk_fprintf(hFile, "\nSectors:\n");
+
+    /* A bad hack to force a specified number of blocks */
+    if (numblock > 0)
+        fs_meta->size = numblock * fs->block_size;
+
+    print.istat_seen = 0;
+    print.idx = 0;
+    print.hFile = hFile;
+
+    if (tsk_fs_file_walk(fs_file,
+            (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK),
+            print_addr_act, (void *) &print)) {
+        tsk_fprintf(hFile, "\nError reading file\n");
+        tsk_error_print(hFile);
+        tsk_error_reset();
+    }
+    else if (print.idx != 0) {
+        tsk_fprintf(hFile, "\n");
+    }
+
+    tsk_fs_file_close(fs_file);
+    return 0;
+}

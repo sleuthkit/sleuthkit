@@ -20,6 +20,12 @@
 #include "tsk_fs_i.h"
 
 // RJCTODO: Comment for Doxygen
+#define FATFS_FIRSTINO	2
+#define FATFS_ROOTINO	2       /* location of root directory inode */
+#define FATFS_FIRST_NORMINO 3
+#define FATFS_NUM_SPECFILE  4   // special files go at end of inode list (before $OrphanFiles) includes MBR, FAT1, FAT2, and Orphans
+
+// RJCTODO: Comment for Doxygen
 // RJCTODO: these appear to be the wrong comments...
 /* size of FAT to read into FATFS_INFO each time */
 /* This must be at least 1024 bytes or else fat12 will get messed up */
@@ -44,6 +50,19 @@
 // RJCTODO: Comment for Doxygen
 #define FATFS_SECT_2_CLUST(fatfs, s)	\
 	(TSK_DADDR_T)(2 + ((s)  - fatfs->firstclustsect) / fatfs->csize)
+
+/* given an inode address, determine in which sector it is located
+    * i must be larger than 3 (2 is the root and it doesn't have a sector)
+    */
+#define FATFS_INODE_2_SECT(fatfs, i)    \
+    (TSK_DADDR_T)((i - FATFS_FIRST_NORMINO)/(fatfs->dentry_cnt_se) + fatfs->firstdatasect)
+
+#define FATFS_INODE_2_OFF(fatfs, i)     \
+    (size_t)(((i - FATFS_FIRST_NORMINO) % fatfs->dentry_cnt_se) * sizeof(FATFS_DENTRY))
+
+/* given a sector IN THE DATA AREA, return the base inode for it */
+#define FATFS_SECT_2_INODE(fatfs, s)    \
+    (TSK_INUM_T)((s - fatfs->firstdatasect) * fatfs->dentry_cnt_se + FATFS_FIRST_NORMINO)
 
 #ifdef __cplusplus
 extern "C" {
@@ -111,13 +130,25 @@ extern "C" {
         int using_backup_boot_sector;
 
         struct {
+            TSK_INUM_T alloc_bitmap_dir_entry_inum;
             uint32_t alloc_bitmap_cluster_addr;
             uint64_t alloc_bitmap_length_in_bytes;
+            TSK_INUM_T second_alloc_bitmap_dir_entry_inum;
             uint32_t second_alloc_bitmap_cluster_addr;
             uint64_t second_alloc_bitmap_length_in_bytes;
         } EXFATFS_INFO;
 
 	} FATFS_INFO;
+
+	/** 
+     * Generic directory entry structure for FATXX and exFAT file systems.
+     */
+    typedef struct {
+        uint8_t data[32];
+    } FATFS_DENTRY;
+
+    extern uint8_t fatfs_dinode_load(TSK_FS_INFO *, FATFS_DENTRY *,
+        TSK_INUM_T);
 
 	/**
 	 * \internal
@@ -149,6 +180,21 @@ extern "C" {
     // RJCTODO: Needed in fs_dir.c by load_orphan_dir_walk_cb
     extern uint8_t 
     fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum, TSK_INUM_T dir_inum); 
+
+    /**
+     * Print details on a specific file to a file handle. 
+     *
+     * @param fs File system file is located in
+     * @param hFile File handle to print text to
+     * @param inum Address of file in file system
+     * @param numblock The number of blocks in file to force print (can go beyond file size)
+     * @param sec_skew Clock skew in seconds to also print times in
+     * 
+     * @returns 1 on error and 0 on success
+     */
+    extern uint8_t
+    fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+        TSK_DADDR_T numblock, int32_t sec_skew);
 
     /* return 1 on error and 0 on success */
     extern uint8_t

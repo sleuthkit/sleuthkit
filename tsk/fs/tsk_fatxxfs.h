@@ -23,16 +23,6 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
-/*
-** Constants
-*/
-#define FATFS_FIRSTINO	2
-#define FATFS_ROOTINO	2       /* location of root directory inode */
-#define FATFS_FIRST_NORMINO 3
-
-    // special files go at end of inode list (before $OrphanFiles)
-#define FATFS_NUM_SPECFILE  4   // includes MBR, FAT1, FAT2, and Orphans
-
 #define FATFS_MBRINO(fs_info) \
     (TSK_FS_ORPHANDIR_INUM(fs_info) - 3)        // inode for master boot record "special file"
 #define FATFS_MBRNAME   "$MBR"
@@ -65,19 +55,6 @@
 
 #define FATFS_ISBAD(val, mask) \
 	((val) == (FATFS_BAD & mask))
-
-/* given an inode address, determine in which sector it is located
- * i must be larger than 3 (2 is the root and it doesn't have a sector)
- */
-#define FATFS_INODE_2_SECT(fatfs, i)    \
-    (TSK_DADDR_T)((i - FATFS_FIRST_NORMINO)/(fatfs->dentry_cnt_se) + fatfs->firstdatasect)
-
-#define FATFS_INODE_2_OFF(fatfs, i)     \
-    (size_t)(((i - FATFS_FIRST_NORMINO) % fatfs->dentry_cnt_se) * sizeof(fatfs_dentry))
-
-/* given a sector IN THE DATA AREA, return the base inode for it */
-#define FATFS_SECT_2_INODE(fatfs, s)    \
-    (TSK_INUM_T)((s - fatfs->firstdatasect) * fatfs->dentry_cnt_se + FATFS_FIRST_NORMINO)
 
 /* Macro to combine the upper and lower 2-byte parts of the starting
  * cluster 
@@ -250,7 +227,7 @@ extern "C" {
         uint8_t wdate[2];
         uint8_t startclust[2];
         uint8_t size[4];
-    } fatfs_dentry;
+    } FATXXFS_DENTRY;
 
 	/* 
 	 * Long file name support for windows 
@@ -274,10 +251,8 @@ extern "C" {
     // RJCTODO: Add comment
     extern int8_t fatxxfs_is_clust_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust);
 
-    extern uint8_t fatfs_isdentry(FATFS_INFO *, fatfs_dentry *, uint8_t);
+    extern uint8_t fatfs_isdentry(FATFS_INFO *, FATXXFS_DENTRY *, uint8_t);
     extern uint8_t fatfs_make_root(FATFS_INFO *, TSK_FS_META *);
-    extern uint8_t fatfs_dinode_load(TSK_FS_INFO *, fatfs_dentry *,
-        TSK_INUM_T);
 
     extern uint8_t fatfs_inode_lookup(TSK_FS_INFO * fs,
         TSK_FS_FILE * a_fs_file, TSK_INUM_T inum);

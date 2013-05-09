@@ -170,7 +170,7 @@ static TSK_RETVAL_ENUM
     unsigned int idx, sidx;
     int a, b;
     TSK_INUM_T ibase;
-    fatfs_dentry *dep;
+    FATXXFS_DENTRY *dep;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
     int sectalloc;
     TSK_FS_NAME *fs_name;
@@ -186,7 +186,7 @@ static TSK_RETVAL_ENUM
         return TSK_ERR;
     }
 
-    dep = (fatfs_dentry *) buf;
+    dep = (FATXXFS_DENTRY *) buf;
 
     if ((fs_name = tsk_fs_name_alloc(FATFS_MAXNAMLEN_UTF8, 32)) == NULL) {
         return TSK_ERR;
@@ -227,7 +227,7 @@ static TSK_RETVAL_ENUM
 
         /* cycle through the directory entries */
         for (idx = 0; idx < fatfs->dentry_cnt_se; idx++, dep++) {
-            fatfs_dentry *dir;
+            FATXXFS_DENTRY *dir;
             TSK_INUM_T inode;
 
             entrySeenCount++;
@@ -252,7 +252,7 @@ static TSK_RETVAL_ENUM
             }
 
             /* Copy the directory entry into the TSK_FS_NAME structure */
-            dir = (fatfs_dentry *) dep;
+            dir = (FATXXFS_DENTRY *) dep;
 
             inode = ibase + idx;
 
