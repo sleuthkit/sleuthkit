@@ -130,12 +130,10 @@ extern "C" {
         int using_backup_boot_sector;
 
         struct {
-            TSK_INUM_T alloc_bitmap_dir_entry_inum;
-            uint32_t alloc_bitmap_cluster_addr;
-            uint64_t alloc_bitmap_length_in_bytes;
-            TSK_INUM_T second_alloc_bitmap_dir_entry_inum;
-            uint32_t second_alloc_bitmap_cluster_addr;
-            uint64_t second_alloc_bitmap_length_in_bytes;
+            uint32_t first_cluster_of_alloc_bitmap;
+            uint64_t length_of_alloc_bitmap_in_bytes;
+            uint32_t first_cluster_of_second_alloc_bitmap;
+            uint64_t length_of_second_alloc_bitmap_in_bytes;
         } EXFATFS_INFO;
 
 	} FATFS_INFO;
@@ -177,6 +175,10 @@ extern "C" {
         TSK_FS_BLOCK_WALK_CB a_action, void *a_ptr);
 
 	// RJCTODO: Add comment
+    extern TSK_FS_BLOCK_FLAG_ENUM
+    fatfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr);
+
+	// RJCTODO: Add comment
     // RJCTODO: Needed in fs_dir.c by load_orphan_dir_walk_cb
     extern uint8_t 
     fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum, TSK_INUM_T dir_inum); 
@@ -209,6 +211,8 @@ extern "C" {
     extern uint8_t
     fatfs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
         int a_flags, TSK_FS_JBLK_WALK_CB a_action, void *a_ptr);
+
+    extern time_t dos2unixtime(uint16_t date, uint16_t time, uint8_t timetens);
 
     extern void fatfs_close(TSK_FS_INFO *fs);
 

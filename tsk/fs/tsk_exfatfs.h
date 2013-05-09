@@ -11,7 +11,8 @@
 /*
  * This code makes use of research presented in the following paper:
  * "Reverse Engineering the exFAT File System" by Robert Shullich
- * Retrieved May 2013 from: http://www.sans.org/reading_room/whitepapers/forensics/reverse-engineering-microsoft-exfat-file-system_33274
+ * Retrieved May 2013 from: 
+ * http://www.sans.org/reading_room/whitepapers/forensics/reverse-engineering-microsoft-exfat-file-system_33274
  *
  */
 
@@ -31,6 +32,11 @@
  * exFAT uses up to 11 UTF-16 characters for volume labels.
  */
 #define EXFATFS_MAX_VOLUME_LABEL_LEN 11
+
+/**
+ * The first cluster of the exFAT cluster heap (data area) is cluster #2.
+ */
+#define EXFATFS_FIRST_CLUSTER 2
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,7 +69,7 @@ extern "C" {
 		uint8_t reserved[7];
 		uint8_t boot_code[390];
 		uint8_t signature[2];
-	} EXFATFS_BOOT_SECTOR;
+	} EXFATFS_VOL_BOOT_REC;
 
     /**
      * exFAT directory entry types, the first byte of a directory entry.
@@ -79,7 +85,9 @@ extern "C" {
         EXFATFS_DIR_ENTRY_TYPE_FILE = 0x85,     
         EXFATFS_DIR_ENTRY_TYPE_FILE_DELETED = 0x05,     
         EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM = 0xC0,     
-        EXFATFS_DIR_ENTRY_TYPE_FILE_NAME = 0xC1     
+        EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM_DELETED = 0x40,  
+        EXFATFS_DIR_ENTRY_TYPE_FILE_NAME = 0xC1,     
+        EXFATFS_DIR_ENTRY_TYPE_FILE_NAME_DELETED = 0x41     
     };
 
     /**
@@ -121,8 +129,8 @@ extern "C" {
         uint8_t entry_type;
         uint8_t flags;
         uint8_t reserved[18];
-        uint8_t first_cluster_addr[4];
-        uint8_t length_in_bytes[8];
+        uint8_t first_cluster_of_bitmap[4];
+        uint8_t length_of_alloc_bitmap_in_bytes[8];
     } EXFATFS_ALLOC_BITMAP_DIR_ENTRY;
 
     /**
@@ -137,8 +145,8 @@ extern "C" {
         uint8_t reserved1[3];
         uint8_t table_check_sum[4];
         uint8_t reserved2[12];
-        uint8_t table_first_cluster_addr[4];
-        uint8_t table_length[8];
+        uint8_t first_cluster_of_table[4];
+        uint8_t table_length_in_bytes[8];
     } EXFATFS_UPCASE_TABLE_DIR_ENTRY;
 
     /**
@@ -217,11 +225,13 @@ extern "C" {
      *
      * A file entry and its stream and file name entries constitute 
      * a file entry set.
+     *
+     * Note that file names are not null-terminated.
      */
     typedef struct {
         uint8_t entry_type;
         uint8_t flags;
-        uint8_t file_name[30];
+        uint8_t utf16_name_chars[30];
     } EXFATFS_FILE_NAME_DIR_ENTRY;
 
 	/**
@@ -231,7 +241,8 @@ extern "C" {
 	 * @param a_fatfs Generic FAT file system info structure.
 	 * @returns 1 on sucess, 0 otherwise.
 	 */
-	extern int exfatfs_open(FATFS_INFO *a_fatfs);
+	extern int 
+    exfatfs_open(FATFS_INFO *a_fatfs);
 
 	/**
 	 * \internal
@@ -241,7 +252,8 @@ extern "C" {
      * @param a_cluster_addr Address of the cluster to check. 
 	 * @returns 1 if the cluster is allocated, 0 otherwise.
 	 */
-    extern int8_t exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr);
+    extern int8_t 
+    exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr);
 
 	/**
 	 * \internal
@@ -252,8 +264,29 @@ extern "C" {
      * @param a_basic 1 if only basic tests should be performed. 
      * Returns 1 if it is, 0 if not
      */
-    extern uint8_t
-    exfatfs_isdentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, TSK_INUM_T a_inum, uint8_t a_basic);
+    extern uint8_t 
+    exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic);
+
+    //RJCTODO: Is this comment still accurate?
+    /**
+     * \internal
+     * Copy the contents of a raw directry entry into a TSK_FS_INFO structure.
+     *
+     * @param a_fatfs File system that directory entry is from.
+     * @param a_fs_meta Generic inode structure to copy data into.
+     * @param a_in Generic directory entry to copy data from.
+     * @param a_sect Sector address where directory entry is from -- used
+     * to determine allocation status.
+     * @param a_inum Address of the inode.
+     *
+     * @returns 1 on error and 0 on success.  Errors should only occur for
+     * Unicode conversion problems and when this occurs the name will be
+     * NULL terminated (but with unknown contents).
+     *
+     */
+    extern TSK_RETVAL_ENUM
+    exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
+        FATFS_DENTRY *a_in, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
 #ifdef __cplusplus
 }

@@ -395,6 +395,36 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     return 0;
 }
 
+TSK_FS_BLOCK_FLAG_ENUM
+fatfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
+{
+    FATFS_INFO *fatfs = (FATFS_INFO *) a_fs;
+    int flags = 0;
+
+    // FATs and boot sector
+    if (a_addr < fatfs->firstdatasect) {
+        flags = TSK_FS_BLOCK_FLAG_META | TSK_FS_BLOCK_FLAG_ALLOC;
+    }
+    // root directory for FAT12/16
+    else if (a_addr < fatfs->firstclustsect) {
+        flags = TSK_FS_BLOCK_FLAG_CONT | TSK_FS_BLOCK_FLAG_ALLOC;
+    }
+    else {
+        int retval;
+        flags = TSK_FS_BLOCK_FLAG_CONT;
+
+        /* Identify its allocation status */
+        retval = fatfs_is_sectalloc(fatfs, a_addr);
+        if (retval != -1) {
+            if (retval == 1)
+                flags |= TSK_FS_BLOCK_FLAG_ALLOC;
+            else
+                flags |= TSK_FS_BLOCK_FLAG_UNALLOC;
+        }
+    }
+    return (TSK_FS_BLOCK_FLAG_ENUM)flags;
+}
+
 /* 
  * Identifies if a sector is allocated
  *

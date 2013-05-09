@@ -11,7 +11,8 @@
 /*
  * This code makes use of research presented in the following paper:
  * "Reverse Engineering the exFAT File System" by Robert Shullich
- * Retrieved May 2013 from: http://www.sans.org/reading_room/whitepapers/forensics/reverse-engineering-microsoft-exfat-file-system_33274
+ * Retrieved May 2013 from:
+ * http://www.sans.org/reading_room/whitepapers/forensics/reverse-engineering-microsoft-exfat-file-system_33274
  *
  */
 
@@ -21,16 +22,242 @@
  * processing for opening file system, processing sectors, and directory entries. 
  */
 
-#include "tsk_exfatfs.h"
+#include "tsk_exfatfs.h" /* Include first to make sure it stands alone. */
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
+
+static uint8_t
+exfatfs_is_vol_label_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic)
+{
+    EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_de;
+
+    if (!a_basic) {
+        /* There is not enough data in a volume label directory entry for an 
+         * in-depth test. */
+         return 0;
+    }
+
+    /* The character count should not exceed the maximum length of the volume 
+     * label. */
+    if (dentry->utf16_char_count > EXFATFS_MAX_VOLUME_LABEL_LEN)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+static uint8_t
+exfatfs_is_vol_guid_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic)
+{
+    if (!a_basic) {
+        /* There is not enough data in a volume GUID directory entry for an
+         * in-depth test. */
+         return 0;
+    }
+
+    return 1;
+}
+
+static uint8_t
+exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic)
+{
+    const char *func_name = "exfatfs_is_alloc_bitmap_dentry";
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    EXFATFS_ALLOC_BITMAP_DIR_ENTRY *dentry = (EXFATFS_ALLOC_BITMAP_DIR_ENTRY*)a_de;
+    uint32_t first_cluster_of_bitmap = 0;
+    uint64_t length_of_alloc_bitmap_in_bytes = 0;
+
+    if (!a_basic) {
+        /* The length of the allocation bitmap should be consistent with the 
+         * number of clusters in the data area as specified in the volume boot
+         * record. */
+        length_of_alloc_bitmap_in_bytes = tsk_getu64(fs->endian, dentry->length_of_alloc_bitmap_in_bytes);
+        if (length_of_alloc_bitmap_in_bytes != (a_fatfs->clustcnt + 7) / 8) {
+            if (tsk_verbose) {
+                fprintf(stderr, "%s: bitmap length incorrect\n", func_name);
+            }
+            return 0;
+        }
+    }
+
+    /* The first cluster of the bit map should be within the data area.
+     * It is usually in the first cluster. */
+    first_cluster_of_bitmap = tsk_getu32(fs->endian, dentry->first_cluster_of_bitmap);
+    if ((first_cluster_of_bitmap < EXFATFS_FIRST_CLUSTER) ||
+        (first_cluster_of_bitmap > a_fatfs->lastclust)) {
+        if (tsk_verbose) {
+            fprintf(stderr, "%s: first cluster not in cluster heap\n", func_name);
+        }
+        return 0;
+    }
+
+    return 1;
+}
+
+static uint8_t
+exfatfs_is_upcase_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic)
+{
+    const char *func_name = "exfatfs_is_upcase_table_dentry";
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    EXFATFS_UPCASE_TABLE_DIR_ENTRY *dentry = (EXFATFS_UPCASE_TABLE_DIR_ENTRY*)a_de;
+    uint32_t first_cluster_of_table = 0;
+
+    if (!a_basic) {
+        /* There is not enough data in an UP-Case table directory entry
+         * for an in-depth test. */
+         return 0;
+    }
+
+    /* The first cluster of the Up-Case table should be within the 
+     * data area. */
+    first_cluster_of_table = tsk_getu32(fs->endian, dentry->first_cluster_of_table);
+    if ((first_cluster_of_table < EXFATFS_FIRST_CLUSTER) ||
+        (first_cluster_of_table > a_fatfs->lastclust)) {
+        if (tsk_verbose) {
+            fprintf(stderr, "%s: first cluster not in cluster heap\n", func_name);
+        }
+        return 0;
+    }
+
+    return 1;
+}
+
+static uint8_t
+exfatfs_is_tex_fat_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic)
+{
+    if (!a_basic) {
+        /* There is not enough data in a UP-TexFAT directory entry
+         * for an in-depth test. */
+         return 0;
+    }
+
+    return 1;
+}
+
+static uint8_t
+exfatfs_is_access_ctrl_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic)
+{
+    if (!a_basic) {
+        /* There is not enough data in an access control table directory entry
+         * for an in-depth test. */
+         return 0;
+    }
+
+    return 1;
+}
+
+static uint8_t
+exfatfs_is_file_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic)
+{
+    const char *func_name = "exfatfs_is_file_dentry";
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    EXFATFS_FILE_DIR_ENTRY *dir_entry = (EXFATFS_FILE_DIR_ENTRY*)a_de;
+
+    if (!a_basic == 0)
+    {
+        // RJCTODO: Check MAC times
+        // RJCTODO: Consider using additional tests similar to bulk extractor tests, e.g., sanity check attributes
+    }
+
+    /* The MAC times should not be all zero. */ 
+    //RJCTODO: Is this legitimate? 
+    if ((tsk_getu16(fs->endian, dir_entry->mtime) == 0) &&
+        (tsk_getu16(fs->endian, dir_entry->atime) == 0) &&
+        (tsk_getu16(fs->endian, dir_entry->ctime) == 0))
+    {
+        if (tsk_verbose) {
+            fprintf(stderr, "%s: MAC times all zero\n", func_name);
+        }
+        return 0;
+    }
+
+    return 1;
+}
+
+static uint8_t
+exfatfs_is_stream_ext_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic)
+{
+    const char *func_name = "exfatfs_is_stream_ext_dentry";
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+
+    if (!a_basic) {
+        // RJCTODO: Validate this entry
+    }
+
+    // RJCTODO: Validate this entry
+
+    return 1;
+}
+
+static uint8_t
+exfatfs_is_file_name_ext_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic)
+{
+    if (!a_basic) {
+        /* There is not enough data in an access control table directory entry
+         * for an in-depth test. */
+         return 0;
+    }
+
+    // RJCTODO: Make sure allocation possible bit is not set. Invalid FAT chain bit should be set.
+    // CAn this be used for other entries?
+
+    return 1;
+}
+
+uint8_t
+exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic)
+{
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+
+    if (a_fatfs == NULL || a_de == NULL) {
+        // RJCTODO: Should record errors? This is a programming error...perhaps an assert?
+        return 0;
+    }
+
+    // RJCTODO: Handling of deleted file is correct?
+    switch (a_de->data[0])
+    {
+    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
+    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY:
+        return exfatfs_is_vol_label_dentry(a_fatfs, a_de, a_basic);
+    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
+        return exfatfs_is_vol_guid_dentry(a_fatfs, a_de, a_basic);
+    case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
+        return exfatfs_is_alloc_bitmap_dentry(a_fatfs, a_de, a_basic);
+    case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
+        return exfatfs_is_upcase_table_dentry(a_fatfs, a_de, a_basic);
+    case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
+        return exfatfs_is_tex_fat_dentry(a_fatfs, a_de, a_basic);
+    case EXFATFS_DIR_ENTRY_TYPE_ACL:
+        return exfatfs_is_access_ctrl_table_dentry(a_fatfs, a_de, a_basic);
+    case EXFATFS_DIR_ENTRY_TYPE_FILE:
+    case EXFATFS_DIR_ENTRY_TYPE_FILE_DELETED:
+        return exfatfs_is_file_dentry(a_fatfs, a_de, a_basic);
+    case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
+    case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM_DELETED:
+        return exfatfs_is_stream_ext_dentry(a_fatfs, a_de, a_basic);
+    case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
+    case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME_DELETED:
+        return exfatfs_is_file_name_ext_dentry(a_fatfs, a_de, a_basic);
+    default:
+        return 0;
+    }
+}
+
+TSK_RETVAL_ENUM
+exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
+    FATFS_DENTRY *a_in, TSK_DADDR_T a_sect, TSK_INUM_T a_inum)
+{
+    return TSK_OK;
+}
 
 static int 
 exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_get_fs_size_params";
 	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_BOOT_SECTOR *exfatbs = (EXFATFS_BOOT_SECTOR*)(&a_fatfs->boot_sector_buffer);
+	EXFATFS_VOL_BOOT_REC *exfatbs = (EXFATFS_VOL_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
 
     /* Get bytes per sector.
      * Bytes per sector is a base 2 logarithm, defining a range of sizes with 
@@ -84,7 +311,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_get_fs_layout";
 	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_BOOT_SECTOR *exfatbs = (EXFATFS_BOOT_SECTOR*)(&a_fatfs->boot_sector_buffer);
+	EXFATFS_VOL_BOOT_REC *exfatbs = (EXFATFS_VOL_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
 
     /* Get maximum number of sectors in the file system, i.e., the size of 
      * the volume. It should be non-zero. */
@@ -200,7 +427,7 @@ static void
 exfatfs_get_volume_id(FATFS_INFO *a_fatfs)
 {
 	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_BOOT_SECTOR *exfatbs = (EXFATFS_BOOT_SECTOR*)(&a_fatfs->boot_sector_buffer);
+	EXFATFS_VOL_BOOT_REC *exfatbs = (EXFATFS_VOL_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
 
     for (fs->fs_id_used = 0; fs->fs_id_used < 4; fs->fs_id_used++) {
         fs->fs_id[fs->fs_id_used] = exfatbs->vol_serial_no[fs->fs_id_used];
@@ -213,11 +440,10 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
     const char *func_name = "exfatfs_get_alloc_bitmap";
 	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     TSK_DADDR_T current_sector = a_fatfs->rootsect;
-    TSK_INUM_T current_inum = FATFS_SECT_2_INODE(a_fatfs, current_sector);
-    TSK_DADDR_T last_sector_of_data_area = a_fatfs->firstdatasect + (a_fatfs->clustcnt * a_fatfs->csize);
+    TSK_DADDR_T last_sector_of_data_area = 0;
     char *sector_buf = NULL;
     ssize_t bytes_read = 0;
-    uint8_t *dir_entry = NULL;
+    EXFATFS_ALLOC_BITMAP_DIR_ENTRY *dir_entry = NULL;
     uint8_t num_bitmaps_found = 0;
     uint64_t i = 0;
 
@@ -225,7 +451,8 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
         return 1;
     }
 
-    while (current_sector < last_sector_of_data_area && num_bitmaps_found < a_fatfs->numfat) {
+    last_sector_of_data_area = a_fatfs->firstdatasect + (a_fatfs->clustcnt * a_fatfs->csize);
+    while (current_sector < last_sector_of_data_area && num_bitmaps_found < a_fatfs->numfat) { // RJCTODO: Should we read in clusters instead of sectors?
         /* Read in a sector from the root directory. The allocation bitmap
          * directory entries will probably be near the beginning of the 
          * directory, probably in the first sector. */
@@ -244,28 +471,26 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
          * bitmap entries. There will be one entry unless the file system is 
          * TexFAT (transactional exFAT), in which case there will be two. */
         for (i = 0; i < a_fatfs->ssize; i += sizeof(FATFS_DENTRY)) {
-            ++current_inum;
-            dir_entry = (uint8_t*)&(sector_buf[i]); 
+            dir_entry = (EXFATFS_ALLOC_BITMAP_DIR_ENTRY*)&(sector_buf[i]); 
 
             /* The type of the directory entry is encoded in the first byte 
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
-            if (dir_entry[0] == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
-                EXFATFS_ALLOC_BITMAP_DIR_ENTRY *dir_entry = (EXFATFS_ALLOC_BITMAP_DIR_ENTRY*)&dir_entry;
-                
-                // RJCTODO: Add check of data length field against the VBR cluster count. Be sure to round up or use "7/8" computation.
+            if (dir_entry->entry_type == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
+                /* Do an in-depth test. */
+                if (!exfatfs_is_alloc_bitmap_dentry(a_fatfs, (FATFS_DENTRY*)dir_entry, 1)) {
+                    continue;
+                }
 
                 /* The first bit of the flags byte is 0 for the first 
                  * allocation bitmap directory entry and 1 for the second 
                  * bitmap directory entry (if there is one). */
                 if (~(dir_entry->flags & 0x01)) {
-                    a_fatfs->EXFATFS_INFO.alloc_bitmap_cluster_addr = tsk_getu32(fs->endian, dir_entry->first_cluster_addr);
-                    a_fatfs->EXFATFS_INFO.alloc_bitmap_length_in_bytes = tsk_getu32(fs->endian, dir_entry->length_in_bytes);
-                    a_fatfs->EXFATFS_INFO.alloc_bitmap_dir_entry_inum = current_inum; 
+                    a_fatfs->EXFATFS_INFO.first_cluster_of_alloc_bitmap = tsk_getu32(fs->endian, dir_entry->first_cluster_of_bitmap);
+                    a_fatfs->EXFATFS_INFO.length_of_alloc_bitmap_in_bytes = tsk_getu32(fs->endian, dir_entry->length_of_alloc_bitmap_in_bytes);
                 }
                 else {
-                    a_fatfs->EXFATFS_INFO.second_alloc_bitmap_cluster_addr = tsk_getu32(fs->endian, dir_entry->first_cluster_addr);
-                    a_fatfs->EXFATFS_INFO.second_alloc_bitmap_length_in_bytes = tsk_getu32(fs->endian, dir_entry->length_in_bytes);
-                    a_fatfs->EXFATFS_INFO.second_alloc_bitmap_dir_entry_inum = current_inum; 
+                    a_fatfs->EXFATFS_INFO.first_cluster_of_second_alloc_bitmap = tsk_getu32(fs->endian, dir_entry->first_cluster_of_bitmap);
+                    a_fatfs->EXFATFS_INFO.length_of_second_alloc_bitmap_in_bytes = tsk_getu32(fs->endian, dir_entry->length_of_alloc_bitmap_in_bytes);
                 }
                 ++num_bitmaps_found;
 
@@ -286,7 +511,7 @@ static int
 exfatfs_map_fs_layout_to_blocks(FATFS_INFO *a_fatfs)
 {
 	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_BOOT_SECTOR *exfatbs = (EXFATFS_BOOT_SECTOR*)(&a_fatfs->boot_sector_buffer);
+	EXFATFS_VOL_BOOT_REC *exfatbs = (EXFATFS_VOL_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
 
     fs->duname = "Sector";
     fs->block_size = a_fatfs->ssize;    
@@ -429,223 +654,4 @@ exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
 
     /* Check the bit that corresponds to the specified cluster. */
     return ((1 << (a_cluster_addr % 8)) & bitmap_byte[0]);
-}
-
-static uint8_t
-exfatfs_is_vol_label_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, TSK_INUM_T a_inum, uint8_t a_basic)
-{
-    EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_de;
-
-    // RJCTODO: Do we want to throw in some check for being in the first sector of the root directory?
-
-    /* The character count should not exceed the maximum length of the volume 
-     * label. */
-    if (dentry->utf16_char_count > EXFATFS_MAX_VOLUME_LABEL_LEN)
-    {
-        return 0;
-    }
-
-    return 1;
-}
-
-static uint8_t
-exfatfs_is_vol_guid_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, TSK_INUM_T a_inum, uint8_t a_basic)
-{
-    // RJCTODO: Do we want to throw in a secondary count check? Do more research?
-    // RJCTODO: Do we want to throw in some check for being in the first sector of the root directory?
-
-    /* The inspection of the entry type byte that branched the flow of control
-     * to this point is the only viable check at present. */
-    return 1;
-}
-
-static uint8_t
-exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, TSK_INUM_T a_inum, uint8_t a_basic)
-{
-    /* Compare the inode number(s) recorded when searching for the allocation
-     * bitmap directory entries. */
-    return ((a_inum == a_fatfs->EXFATFS_INFO.alloc_bitmap_dir_entry_inum) ||
-            (a_inum == a_fatfs->EXFATFS_INFO.second_alloc_bitmap_dir_entry_inum && a_fatfs->numfat == 2));
-}
-
-static uint8_t
-exfatfs_is_upcase_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, TSK_INUM_T a_inum, uint8_t a_basic)
-{
-    const char *func_name = "exfatfs_is_upcase_table_dentry"; // RJCTODO: May not need this
-    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-    EXFATFS_UPCASE_TABLE_DIR_ENTRY *dentry = (EXFATFS_UPCASE_TABLE_DIR_ENTRY*)a_de;
-    uint32_t table_first_cluster_addr = tsk_getu32(fs->endian, dentry->table_first_cluster_addr);
-    TSK_DADDR_T table_first_sector_addr = FATFS_CLUST_2_SECT(a_fatfs, table_first_cluster_addr);
-
-    /* The UP-Case table should be within the bounds of the cluster heap
-     * (data area). */
-    if ((table_first_sector_addr < a_fatfs->firstdatasect) || 
-        (table_first_cluster_addr > a_fatfs->lastclust)) {
-            return 0;
-    }
-
-    // RJCTODO: Do we want to throw in some check for being in the first sector of the root directory?
-    // RJCTODO: Compute the checksum of the table?
-
-    return 1;
-}
-
-static uint8_t
-exfatfs_is_tex_fat_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, TSK_INUM_T a_inum, uint8_t a_basic)
-{
-    // RJCTODO: Do we want to throw in some check for being in the first sector of the root directory?
-
-    /* The inspection of the entry type byte that branched the flow of control
-     * to this point is the only viable check at present. */
-    return 1;
-}
-
-static uint8_t
-exfatfs_is_access_ctrl_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, TSK_INUM_T a_inum, uint8_t a_basic)
-{
-    // RJCTODO: Do we want to throw in some check for being in the first sector of the root directory?
-
-    /* The inspection of the entry type byte that branched the flow of control
-     * to this point is the only viable check at present. */
-    return 1;
-}
-
-static uint8_t
-exfatfs_is_file_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, TSK_INUM_T a_inum, uint8_t a_basic)
-{
-    const char *func_name = "exfatfs_is_file_dentry";
-    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-    EXFATFS_FILE_DIR_ENTRY *dir_entry = (EXFATFS_FILE_DIR_ENTRY*)a_de;
-    TSK_DADDR_T sector_of_dir_entry = FATFS_INODE_2_SECT(a_fatfs, a_inum);
-    TSK_OFF_T offset_of_dir_entry = FATFS_INODE_2_OFF(a_fatfs, a_inum);
-    TSK_OFF_T offset_of_secondary_entries = 0;
-    FATFS_DENTRY secondary_entries[18];
-    ssize_t bytes_read = 0;
-    uint8_t max_secondary_entries_read = 0;
-    uint8_t i = 0;
-
-    if (a_basic == 0)
-    {
-        /* Try to read in the secondary entries. */
-        offset_of_secondary_entries = (sector_of_dir_entry * fs->block_size) + offset_of_dir_entry + sizeof(FATFS_DENTRY);
-        bytes_read = tsk_fs_read(fs, sector_of_dir_entry * fs->block_size + offset_of_dir_entry + sizeof(FATFS_DENTRY), (char*)secondary_entries, sizeof(secondary_entries));
-        if (bytes_read == -1) {
-            // RJCTODO: Error already logged? 
-            return 0;
-        }
-
-        /* Examine the secondary entries. */
-        if (bytes_read >= sizeof(FATFS_DENTRY)) {
-            max_secondary_entries_read = bytes_read / sizeof(FATFS_DENTRY);
-            i = 0;
-            while (i < dir_entry->secondary_entries_count && i < max_secondary_entries_read) {
-                if (i = 0) {
-                    /* Try to get the stream extension directory entry. */
-                    EXFATFS_FILE_STREAM_DIR_ENTRY *stream_entry = (EXFATFS_FILE_STREAM_DIR_ENTRY*)&(secondary_entries[i]); 
-                    if (stream_entry->entry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) {
-                        return 0;
-                    }
-
-                    // RJCTODO: Name length is in bytes? Should not be zero?
-                    // RJCTODO: If the first cluster is zero, the FAT chain flag should indicate no chain
-                }
-                else {
-                    /* Try to get a file name extension directory. */
-                    EXFATFS_FILE_NAME_DIR_ENTRY *name_entry = (EXFATFS_FILE_NAME_DIR_ENTRY*)&(secondary_entries[i]); 
-                    if (name_entry->entry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) {
-                        return 0;
-                    }
-                }
-            }
-        }
-
-        // RJCTODO: Verify check sum, if have full set?
-        // RJCTODO: Check MAC times
-    }
-
-    /* A file directory entry must be followed by a stream extension directory
-       and at least one file name extension directory. */
-    if (dir_entry->secondary_entries_count < 2 || dir_entry->secondary_entries_count > 3)
-    {
-        if (tsk_verbose) {
-            fprintf(stderr, "%s: invalid secondary entries count (%d)\n", func_name, dir_entry->secondary_entries_count);
-        }
-        return 0;
-    }
-
-    // RJCTODO: Consider using additional tests similar to bulk extractor tests, e.g., sanity check attributes
-
-    /* The MAC times should not be all zero. */ 
-    //RJCTODO: Is this legitimate? 
-    if ((tsk_getu16(fs->endian, dir_entry->mtime) == 0) &&
-        (tsk_getu16(fs->endian, dir_entry->atime) == 0) &&
-        (tsk_getu16(fs->endian, dir_entry->ctime) == 0))
-    {
-        if (tsk_verbose) {
-            fprintf(stderr, "%s: MAC times all zero\n", func_name);
-        }
-        return 0;
-    }
-
-    return 1;
-}
-
-static uint8_t
-exfatfs_is_stream_ext_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, TSK_INUM_T a_inum, uint8_t a_basic)
-{
-    const char *func_name = "exfatfs_is_stream_ext_dentry";
-    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
- 
-    // RJCTODO: Try to read in and validate file entry
-    // RJCTODO: Validate this entry
-    // RJCTODO: Try to read in file name entries and check them - simple check is one dir entry before and after type checks
-    return 1;
-}
-
-static uint8_t
-exfatfs_is_file_name_ext_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, TSK_INUM_T a_inum, uint8_t a_basic)
-{
-    // RJCTODO: Can verify that the preceding directory entry is either a stream extension entry or a name entry.
-    // For a more elaborate check, can walk back to the file entry and check it.
-    return 1;
-}
-
-uint8_t
-exfatfs_isdentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, TSK_INUM_T a_inum, uint8_t a_basic)
-{
-    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-
-    if (a_fatfs == NULL || 
-        a_de == NULL || 
-        a_inum < fs->first_inum || 
-        a_inum > fs->last_inum ) {
-        // RJCTODO: Should record errors? This is a programming error...perhaps an assert?
-        return 0;
-    }
-
-    switch (a_de->data[0])
-    {
-    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
-    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY:
-        return exfatfs_is_vol_label_dentry(a_fatfs, a_de, a_inum, a_basic);
-    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
-        return exfatfs_is_vol_guid_dentry(a_fatfs, a_de, a_inum, a_basic);
-    case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
-        return exfatfs_is_alloc_bitmap_dentry(a_fatfs, a_de, a_inum, a_basic);
-    case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
-        return exfatfs_is_upcase_table_dentry(a_fatfs, a_de, a_inum, a_basic);
-    case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
-        return exfatfs_is_tex_fat_dentry(a_fatfs, a_de,  a_inum, a_basic);
-    case EXFATFS_DIR_ENTRY_TYPE_ACL:
-        return exfatfs_is_access_ctrl_table_dentry(a_fatfs, a_de, a_inum, a_basic);
-    case EXFATFS_DIR_ENTRY_TYPE_FILE:
-    case EXFATFS_DIR_ENTRY_TYPE_FILE_DELETED:
-        return exfatfs_is_file_dentry(a_fatfs, a_de, a_inum, a_basic);
-    case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
-        return exfatfs_is_stream_ext_dentry(a_fatfs, a_de, a_inum, a_basic);
-    case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
-        return exfatfs_is_file_name_ext_dentry(a_fatfs, a_de, a_inum, a_basic);
-    default:
-        return 0;
-    }
 }
