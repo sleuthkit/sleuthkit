@@ -109,8 +109,11 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tsk\fs\exaftfs_dent.c" />
     <ClCompile Include="..\..\tsk\fs\exfatfs.c" />
+    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs.c" />
+    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />

@@ -34,9 +34,27 @@
 #define EXFATFS_MAX_VOLUME_LABEL_LEN 11
 
 /**
+ * Up to 15 UTF-16 characters of a file name may be contained in an exFAT
+ * file name directory entry. The total number of characters in the
+ * file name is found in the file stream directory entry for a file.
+ */
+#define EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH 15
+
+/**
  * The first cluster of the exFAT cluster heap (data area) is cluster #2.
  */
 #define EXFATFS_FIRST_CLUSTER 2
+
+/**
+ * File names for exFAT "virtual files" corresponding to non-file 
+ * directory entries.
+ */
+#define EXFATFS_NO_VOLUME_LABEL_VIRT_FILENAME "$VOLUME_LABEL_NONE"   
+#define EXFATFS_VOLUME_GUID_VIRT_FILENAME "$VOLUME_GUID"   
+#define EXFATFS_ALLOC_BITMAP_VIRT_FILENAME "$ALLOC_BITMAP"   
+#define EXFATFS_UPCASE_TABLE_VIRT_FILENAME "$UPCASE_TABLE"   
+#define EXFATFS_TEX_FAT_VIRT_FILENAME "$TEX_FAT"   
+#define EXFATFS_ACT_VIRT_FILENAME "$ACT"   
 
 #ifdef __cplusplus
 extern "C" {
@@ -81,7 +99,7 @@ extern "C" {
         EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP = 0x81,     
         EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE = 0x82,     
         EXFATFS_DIR_ENTRY_TYPE_TEX_FAT = 0xA1,     
-        EXFATFS_DIR_ENTRY_TYPE_ACL = 0xE2,     
+        EXFATFS_DIR_ENTRY_TYPE_ACT = 0xE2,     
         EXFATFS_DIR_ENTRY_TYPE_FILE = 0x85,     
         EXFATFS_DIR_ENTRY_TYPE_FILE_DELETED = 0x05,     
         EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM = 0xC0,     
@@ -267,6 +285,11 @@ extern "C" {
     extern uint8_t 
     exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic);
 
+    // RJCTODO: Comment
+    extern uint8_t
+    exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic);
+
+
     //RJCTODO: Is this comment still accurate?
     /**
      * \internal
@@ -274,7 +297,7 @@ extern "C" {
      *
      * @param a_fatfs File system that directory entry is from.
      * @param a_fs_meta Generic inode structure to copy data into.
-     * @param a_in Generic directory entry to copy data from.
+     * @param a_dentry Generic directory entry to copy data from.
      * @param a_sect Sector address where directory entry is from -- used
      * to determine allocation status.
      * @param a_inum Address of the inode.
@@ -286,7 +309,7 @@ extern "C" {
      */
     extern TSK_RETVAL_ENUM
     exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-        FATFS_DENTRY *a_in, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
+        FATFS_DENTRY *a_dentry, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
 #ifdef __cplusplus
 }

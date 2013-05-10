@@ -277,6 +277,15 @@
     <ClCompile Include="..\..\tsk\fs\fatxxfs.c">
       <Filter>fs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\exaftfs_dent.c">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c">
+      <Filter>fs</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">

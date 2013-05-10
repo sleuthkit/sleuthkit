@@ -43,6 +43,8 @@
 #define FATFS_32_MASK	0x0fffffff
 #define EXFATFS_MASK	0x0fffffff
 
+#define FATFS_FILE_CONTENT_LEN sizeof(TSK_DADDR_T)      // we will store the starting cluster
+
 // RJCTODO: Comment for Doxygen
 #define FATFS_CLUST_2_SECT(fatfs, c)	\
 	(TSK_DADDR_T)(fatfs->firstclustsect + ((((c) & fatfs->mask) - 2) * fatfs->csize))
@@ -145,6 +147,9 @@ extern "C" {
         uint8_t data[32];
     } FATFS_DENTRY;
 
+    extern TSKConversionResult
+    fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UTF16 *src, uint8_t src_len, TSK_INUM_T a_inum, const char *a_desc);
+
     extern uint8_t fatfs_dinode_load(TSK_FS_INFO *, FATFS_DENTRY *,
         TSK_INUM_T);
 
@@ -197,6 +202,14 @@ extern "C" {
     extern uint8_t
     fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         TSK_DADDR_T numblock, int32_t sec_skew);
+
+    extern uint8_t fatfs_inode_walk(TSK_FS_INFO * fs,
+        TSK_INUM_T start_inum, TSK_INUM_T end_inum,
+        TSK_FS_META_FLAG_ENUM a_flags, TSK_FS_META_WALK_CB a_action,
+        void *a_ptr);
+
+    extern uint8_t fatfs_inode_lookup(TSK_FS_INFO * fs,
+        TSK_FS_FILE * a_fs_file, TSK_INUM_T inum);
 
     /* return 1 on error and 0 on success */
     extern uint8_t

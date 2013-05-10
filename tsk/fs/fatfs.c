@@ -19,6 +19,52 @@
 #include "tsk_fatxxfs.h"
 #include "tsk_exfatfs.h"
 
+TSKConversionResult
+fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UTF16 *src, uint8_t src_len, TSK_INUM_T a_inum, const char *a_desc)
+{
+    const char *func_name = "exfatfs_copy_utf16_str_2_meta_name";
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    TSKConversionResult conv_result = TSKconversionOK;
+    UTF8 *dest = NULL;
+    UTF8 *dest_end = 0;
+
+    dest = (UTF8*)a_fs_meta->name2->name;
+    dest_end = (UTF8*)((uintptr_t)a_fs_meta->name2->name + sizeof(a_fs_meta->name2->name));
+    conv_result = tsk_UTF16toUTF8(fs->endian, (const UTF16**)&src, (UTF16*)&src[src_len], &dest, dest_end, TSKlenientConversion);
+    if (conv_result == TSKconversionOK) {
+        /* Make sure the result is NULL-terminated. */
+        if ((uintptr_t) dest > (uintptr_t) a_fs_meta->name2->name + sizeof(a_fs_meta->name2->name)) {
+            a_fs_meta->name2->name[sizeof(a_fs_meta->name2->name) - 1] = '\0';
+        }
+        else {
+            *dest = '\0';
+        }
+    }
+    else {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_UNICODE);
+        tsk_error_set_errstr("%s: Error converting %s for inum %d from UTF16 to UTF8: %d", func_name, a_desc, a_inum, conv_result);
+        *dest = '\0';
+    }
+
+    // RJCTODO: Work this in
+    ///* clean up non-ASCII because we are
+    //    * copying it into a buffer that is supposed to be UTF-8 and
+    //    * we don't know what encoding it is actually in or if it is 
+    //    * simply junk. */
+    //fatfs_cleanup_ascii(fs_meta->name2->name);
+
+    ///* Clean up name to remove control characters */
+    //i = 0;
+    //while (fs_meta->name2->name[i] != '\0') {
+    //    if (TSK_IS_CNTRL(fs_meta->name2->name[i]))
+    //        fs_meta->name2->name[i] = '^';
+    //    i++;
+    //}
+
+    return conv_result;
+}
+
 TSK_FS_INFO *
 fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftype, uint8_t a_test)
 {
@@ -632,6 +678,7 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     tsk_fprintf(hFile, "File Attributes: ");
 
+    // RJCTODO: Fix this up for exFAT
     /* This should only be null if we have the root directory or special file */
     if (fatfs_dinode_load(fs, &dep, inum)) {
         if (inum == FATFS_ROOTINO)
@@ -641,10 +688,10 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         else
             tsk_fprintf(hFile, "File\n");
     }
-    else if ((fatxxdep->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
+    else if ((fs->ftype != TSK_FS_TYPE_EXFAT) && (fatxxdep->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
         tsk_fprintf(hFile, "Long File Name\n");
     }
-    else {
+    else if (fs->ftype != TSK_FS_TYPE_EXFAT) {
         if (fatxxdep->attrib & FATFS_ATTR_DIRECTORY)
             tsk_fprintf(hFile, "Directory");
         else if (fatxxdep->attrib & FATFS_ATTR_VOLUME)
@@ -717,15 +764,17 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     print.idx = 0;
     print.hFile = hFile;
 
-    if (tsk_fs_file_walk(fs_file,
-            (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK),
-            print_addr_act, (void *) &print)) {
-        tsk_fprintf(hFile, "\nError reading file\n");
-        tsk_error_print(hFile);
-        tsk_error_reset();
-    }
-    else if (print.idx != 0) {
-        tsk_fprintf(hFile, "\n");
+    if (fs->ftype != TSK_FS_TYPE_EXFAT) {
+        if (tsk_fs_file_walk(fs_file,
+                (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK),
+                print_addr_act, (void *) &print)) {
+            tsk_fprintf(hFile, "\nError reading file\n");
+            tsk_error_print(hFile);
+            tsk_error_reset();
+        }
+        else if (print.idx != 0) {
+            tsk_fprintf(hFile, "\n");
+        }
     }
 
     tsk_fs_file_close(fs_file);
