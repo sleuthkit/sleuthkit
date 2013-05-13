@@ -54,7 +54,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private boolean localPathSet = false; ///< if set by setLocalPath(), reads are done on local file 
 	private String localPath; ///< local path as stored in db tsk_files_path, is relative to the db, 
 	private String localAbsPath; ///< absolute path representation of the local path
-	private volatile RandomAccessFile fileHandle;
+	private volatile RandomAccessFile localFileHandle;
 	private volatile java.io.File localFile;
 	//range support
 	private List<TskFileRange> ranges;
@@ -636,7 +636,8 @@ public abstract class AbstractFile extends AbstractContent {
 	
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
-		//if localPath is set, use local, otherwise, use specific
+		//template method
+		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
 		if (localPathSet) {
 			return readLocal(buf, offset, len);
 		}
@@ -648,18 +649,25 @@ public abstract class AbstractFile extends AbstractContent {
 	
 	/**
 	 * Custom (non-local) read method that child classes can implement
+	 * 
 	 * @param buf buffer to read into
 	 * @param offset start reading position in the file
 	 * @param len number of bytes to read
 	 * @return number of bytes read
-	 * @throws TskCoreException 
+	 * @throws TskCoreException exception thrown when file could not be read 
 	 */
 	protected int readCustom(byte[] buf, long offset, long len) throws TskCoreException {
 		return 0;
 	}
 
 	/**
-	 * local file path support 
+	 * Local file path read support 
+	 * 
+	 * @param buf buffer to read into
+	 * @param offset start reading position in the file
+	 * @param len number of bytes to read
+	 * @return number of bytes read
+	 * @throws TskCoreException exception thrown when file could not be read
 	 */
 	protected final int readLocal(byte[] buf, long offset, long len) throws TskCoreException {
 		if (!localPathSet) {
@@ -680,15 +688,15 @@ public abstract class AbstractFile extends AbstractContent {
 
 		int bytesRead = 0;
 
-		if (fileHandle == null) {
+		if (localFileHandle == null) {
 			synchronized (this) {
-				if (fileHandle == null) {
+				if (localFileHandle == null) {
 					try {
-						fileHandle = new RandomAccessFile(localFile, "r");
+						localFileHandle = new RandomAccessFile(localFile, "r");
 					} catch (FileNotFoundException ex) {
 						final String msg = "Error reading local file: " + this.toString();
 						logger.log(Level.SEVERE, msg, ex);
-						//TODO decide if to swallow exception in this case, file could have been deleted or moved
+						//file could have been deleted or moved
 						throw new TskCoreException(msg, ex);
 					}
 				}
@@ -697,12 +705,12 @@ public abstract class AbstractFile extends AbstractContent {
 
 		try {
 			//move to the user request offset in the stream
-			long curOffset = fileHandle.getFilePointer();
+			long curOffset = localFileHandle.getFilePointer();
 			if (curOffset != offset) {
-				fileHandle.seek(offset);
+				localFileHandle.seek(offset);
 			}
 			//note, we are always writing at 0 offset of user buffer
-			bytesRead = fileHandle.read(buf, 0, (int) len);
+			bytesRead = localFileHandle.read(buf, 0, (int) len);
 		} catch (IOException ex) {
 			final String msg = "Cannot read local file: " + this.toString();
 			logger.log(Level.SEVERE, msg, ex);
@@ -716,9 +724,7 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Set local path for the file, as stored in db tsk_files_path, relative to
 	 * the case db path or an absolute path.
-	 * 
-	 * If non-null, reads will be done on the local file
-	 * instead of tsk
+	 * When set, subsequent invocations of read() will read the file in the local path.
 	 *
 	 * @param localPath local path to be set
 	 * @param isAbsolute true if the path is absolute, false if relative to the case db
@@ -741,14 +747,11 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 	}
 
-	protected RandomAccessFile getFileHandle() {
-		return fileHandle;
-	}
 
 	/**
-	 * Get local path of the file relative to database dir
+	 * Get local relative to case db path of the file 
 	 *
-	 * @return local relative file path
+	 * @return local file path if set
 	 */
 	public String getLocalPath() {
 		return localPath;
@@ -757,17 +760,17 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Get local absolute path of the file, if localPath has been set
 	 *
-	 * @return local absolute file path
+	 * @return local absolute file path if local path has been set, or null
 	 */
 	public String getLocalAbsPath() {
 		return localAbsPath;
 	}
 
 	/**
-	 * Check if the file exists. If tsk, always true, if local, checks if actual
-	 * local path exists
+	 * Check if the file exists. 
+	 * If non-local always true, if local, checks if actual local path exists
 	 *
-	 * @return true if the file exists
+	 * @return true if the file exists, false otherwise
 	 */
 	public boolean exists() {
 		if (!localPathSet) {
@@ -779,7 +782,8 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Check if the file exists and is readable. If tsk, always true, if local,
+	 * Check if the file exists and is readable. 
+	 * If non-local (e.g. within an image), always true, if local,
 	 * checks if actual local path exists and is readable
 	 *
 	 * @return true if the file is readable
@@ -795,9 +799,9 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * lazy load local file is localPath has been set, null otherwise
+	 * Lazy load local file handle and return it, if localPath has been set
 	 *
-	 * @return java.io.File object representing the local file
+	 * @return java.io.File object representing the local file, or null if local path has not been set
 	 */
 	private java.io.File getLocalFile() {
 		if (!localPathSet) {
@@ -818,15 +822,15 @@ public abstract class AbstractFile extends AbstractContent {
 	public void close() {
 
 		//close local file handle if set
-		if (fileHandle != null) {
+		if (localFileHandle != null) {
 			synchronized (this) {
-				if (fileHandle != null) {
+				if (localFileHandle != null) {
 					try {
-						fileHandle.close();
+						localFileHandle.close();
 					} catch (IOException ex) {
 						logger.log(Level.SEVERE, "Could not close file handle for file: " + this.toString(), ex);
 					}
-					fileHandle = null;
+					localFileHandle = null;
 				}
 			}
 		}
@@ -838,13 +842,10 @@ public abstract class AbstractFile extends AbstractContent {
 		try {
 			close();
 		} finally {
-			super.finalize(); //To change body of generated methods, choose Tools | Templates.
+			super.finalize(); 
 		}
 	}
 
-	/**
-	 * other utils *
-	 */
 	@Override
 	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "AbstractFile [\t"
@@ -861,6 +862,8 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "\t" + "metaType " + metaType + "\t" + "modes " + modes
 				+ "\t" + "parentPath " + parentPath + "\t" + "size " + size
 				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash
+				+ "\t" + "localPathSet " + localPathSet + "\t" + "localPath " + localPath
+				+ "\t" + "localAbsPath " + localAbsPath + "\t" + "localFile " + localFile
 				+ "]\t";
 	}
 

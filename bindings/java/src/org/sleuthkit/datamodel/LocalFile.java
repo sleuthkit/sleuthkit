@@ -181,8 +181,7 @@ public class LocalFile extends AbstractFile {
 	}
 
 	@Override
-	public String toString() {
-		return "LocalFile{" + "localPath=" + getLocalPath() + ", localAbsPath=" + getLocalAbsPath() 
-				+ ", fileHandle=" + getFileHandle() + '}';
+	public String toString(boolean preserveState) {
+		return super.toString(preserveState) + "LocalFile [\t" + "]\t";
 	}
 }

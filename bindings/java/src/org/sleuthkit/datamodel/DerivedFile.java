@@ -156,8 +156,11 @@ public class DerivedFile extends AbstractFile {
 	}
 
 	@Override
-	public String toString() {
-		return "DerivedFile{" + "localPath=" + getLocalPath() + ", localAbsPath=" + getLocalAbsPath() + ", derivedMethod=" + derivedMethod + ", fileHandle=" + getFileHandle() + ", hasDerivedMethod=" + hasDerivedMethod + '}';
+	public String toString(boolean preserveState) {
+		return super.toString(preserveState) + "DerivedFile{" 
+				+  "derivedMethod=" + derivedMethod 
+				+ ", hasDerivedMethod=" + hasDerivedMethod 
+				+ '}';
 	}
 
 	/**
