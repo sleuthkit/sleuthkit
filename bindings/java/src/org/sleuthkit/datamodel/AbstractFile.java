@@ -672,10 +672,10 @@ public abstract class AbstractFile extends AbstractContent {
 
 		getLocalFile();
 		if (!localFile.exists()) {
-			throw new TskCoreException("Error reading derived file, it does not exist at local path: " + localAbsPath);
+			throw new TskCoreException("Error reading local file, it does not exist at local path: " + localAbsPath);
 		}
 		if (!localFile.canRead()) {
-			throw new TskCoreException("Error reading derived file, file not readable at local path: " + localAbsPath);
+			throw new TskCoreException("Error reading local file, file not readable at local path: " + localAbsPath);
 		}
 
 		int bytesRead = 0;
@@ -686,7 +686,7 @@ public abstract class AbstractFile extends AbstractContent {
 					try {
 						fileHandle = new RandomAccessFile(localFile, "r");
 					} catch (FileNotFoundException ex) {
-						final String msg = "Error reading derived file: " + this.toString();
+						final String msg = "Error reading local file: " + this.toString();
 						logger.log(Level.SEVERE, msg, ex);
 						//TODO decide if to swallow exception in this case, file could have been deleted or moved
 						throw new TskCoreException(msg, ex);
