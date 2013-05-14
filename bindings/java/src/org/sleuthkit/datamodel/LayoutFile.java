@@ -99,7 +99,7 @@ public class LayoutFile extends AbstractFile{
 	}
 	
 	@Override
-    protected int readCustom(byte[] buf, long offset, long len) throws TskCoreException {
+    protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
         long offsetInThisLayoutContent = 0; // current offset in this LayoutContent
         int bytesRead = 0; // Bytes read so far
 		

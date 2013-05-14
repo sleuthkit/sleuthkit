@@ -122,7 +122,7 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	@Override
-	protected int readCustom(byte[] buf, long offset, long len) throws TskCoreException {
+	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
 		if (offset == 0 && size == 0) {
 			//special case for 0-size file
 			return 0;

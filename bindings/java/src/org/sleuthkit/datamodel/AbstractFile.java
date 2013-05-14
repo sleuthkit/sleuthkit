@@ -642,13 +642,13 @@ public abstract class AbstractFile extends AbstractContent {
 			return readLocal(buf, offset, len);
 		}
 		else {
-			return readCustom(buf, offset, len);
+			return readInt(buf, offset, len);
 		}
 		
 	}
 	
 	/**
-	 * Custom (non-local) read method that child classes can implement
+	 * Internal custom read  (non-local) method that child classes can implement
 	 * 
 	 * @param buf buffer to read into
 	 * @param offset start reading position in the file
@@ -656,7 +656,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return number of bytes read
 	 * @throws TskCoreException exception thrown when file could not be read 
 	 */
-	protected int readCustom(byte[] buf, long offset, long len) throws TskCoreException {
+	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
 		return 0;
 	}
 
