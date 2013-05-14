@@ -259,9 +259,7 @@ extern "C" {
      * @param a_basic 1 if only basic tests should be performed. 
      * Returns 1 if it is, 0 if not
      */    
-    extern uint8_t fatxxfs_is_dentry(FATFS_INFO *, FATFS_DENTRY *, uint8_t);
-
-    extern uint8_t fatfs_make_root(FATFS_INFO *, TSK_FS_META *);
+    extern uint8_t fatxxfs_is_dentry(FATFS_INFO *, char *, uint8_t);
 
     extern uint8_t fatfs_make_data_run(TSK_FS_FILE * a_fs_file);
 
@@ -278,8 +276,7 @@ extern "C" {
     extern void fatfs_cleanup_ascii(char *);
     extern void fatfs_dir_buf_free(FATFS_INFO *fatfs);
 
-    extern uint8_t is_83_name(FATXXFS_DENTRY * de);
-
+    // RJCTODO: Update
     /**
      * \internal
      * Copy the contents of a raw directry entry into a TSK_FS_INFO structure.
@@ -298,7 +295,7 @@ extern "C" {
      */
     extern TSK_RETVAL_ENUM
     fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-        FATFS_DENTRY *a_in, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
+        char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
 #ifdef __cplusplus
 }

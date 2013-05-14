@@ -65,6 +65,25 @@ fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UT
     return conv_result;
 }
 
+/** 
+ * Cleans up a char string so that it is only ASCII. We do this
+ * before we copy something into a TSK buffer that is supposed 
+ * to be UTF-8.  If it is not ASCII and it is from a single-byte
+ * data structure, then we we clean it up because we dont' know
+ * what the actual encoding is (or if it is corrupt). 
+ * @param name Name to cleanup
+ */
+void
+fatfs_cleanup_ascii(char *name)
+{
+    int i;
+    for (i = 0; name[i] != '\0'; i++) {
+        if ((unsigned char) (name[i]) > 0x7e) {
+            name[i] = '^';
+        }
+    }
+}
+
 TSK_FS_INFO *
 fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftype, uint8_t a_test)
 {
@@ -558,59 +577,6 @@ fatfs_close(TSK_FS_INFO *fs)
     tsk_fs_free(fs);
 }
 
-/* fatfs_dinode_load - look up disk inode & load into FATFS_DENTRY structure
- *
- * return 1 on error and 0 on success
- * */
-
-uint8_t
-fatfs_dinode_load(TSK_FS_INFO * fs, FATFS_DENTRY * dep, TSK_INUM_T inum)
-{
-    const char *func_name = "fatfs_dinode_load";
-    FATFS_INFO *fatfs = (FATFS_INFO *) fs;
-    ssize_t cnt;
-    size_t off;
-    TSK_DADDR_T sect;
-
-    /*
-     * Sanity check.
-     * Account for virtual Orphan directory and virtual files
-     */
-    if ((inum < fs->first_inum)
-        || (inum > fs->last_inum - FATFS_NUM_SPECFILE)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr("%s: address: %" PRIuINUM,
-            func_name, inum);
-        return 1;
-    }              
-    
-    /* Get the sector that this inode would be in and its offset */
-    sect = FATFS_INODE_2_SECT(fatfs, inum);
-    off = FATFS_INODE_2_OFF(fatfs, inum);
-
-    if (sect > fs->last_block) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr("%s: Inode %" PRIuINUM
-            " in sector too big for image: %" PRIuDADDR, func_name, inum, sect);
-        return 1;
-    }
-
-    cnt = tsk_fs_read(fs, sect * fs->block_size + off, (char *) dep, sizeof(FATFS_DENTRY));
-    if (cnt != sizeof(FATFS_DENTRY)) {
-        if (cnt >= 0) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_READ);
-        }
-        tsk_error_set_errstr2("%s: block: %" PRIuDADDR,
-            func_name, sect);
-        return 1;
-    }
-
-    return 0;
-}
-
 /************************* istat *******************************/
 
 /* Callback a_action for file_walk to print the sector addresses
@@ -659,8 +625,9 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     TSK_FS_FILE *fs_file;
     TSK_FS_META_NAME_LIST *fs_name_list;
     FATFS_PRINT_ADDR print;
-    FATFS_DENTRY dep;
-    FATXXFS_DENTRY *fatxxdep = (FATXXFS_DENTRY*)&dep; //RJCTODO
+    char *buf = NULL; //RJCTODO: Free memory or handle this differently
+    size_t inode_size = (fs->ftype == TSK_FS_TYPE_EXFAT ? 64 : 32); // RJCTODO: Deal with magic numbers 
+    FATXXFS_DENTRY *fatxxdep = (FATXXFS_DENTRY*)buf; //RJCTODO
     char timeBuf[128];
 
     // clean up any error messages that are lying around
@@ -678,9 +645,18 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     tsk_fprintf(hFile, "File Attributes: ");
 
+    /* Allocate a buffer based on file system type. */
+    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
+        buf = (char*)tsk_malloc(64 * sizeof(char)); // RJCTODO: consider replacing magic number
+    }
+    else {
+        buf = (char*)tsk_malloc(32 * sizeof(char)); // RJCTODO: consider replacing magic number
+    }
+
     // RJCTODO: Fix this up for exFAT
+    // RJCTODO: Looks like the conditional is wrong here.
     /* This should only be null if we have the root directory or special file */
-    if (fatfs_dinode_load(fs, &dep, inum)) {
+    if (fatfs_dinode_load(fs, buf, inode_size, inum)) {
         if (inum == FATFS_ROOTINO)
             tsk_fprintf(hFile, "Directory\n");
         else if (fs_file->meta->type == TSK_FS_META_TYPE_VIRT)

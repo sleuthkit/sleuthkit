@@ -275,19 +275,21 @@ extern "C" {
 
 	/**
 	 * \internal
-     * Does the pointed to buffer contain an exFAT directory entry?
+     * Determines whether a buffer likely contains an inode.
+     * For the most reliable results, pass 64 bytes and request the 
+     * in-depth test.
      *
 	 * @param a_fatfs Generic FAT file system info structure
-     * @param a_de Buffer that may contain a directory entry.
+     * @param a_buf Buffer that may contain an inode.
      * @param a_basic 1 if only basic tests should be performed. 
-     * Returns 1 if it is, 0 if not
+     * Returns 1 if likely inode found, 0 if not
      */
     extern uint8_t 
-    exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic);
+    exfatfs_is_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic);
 
     // RJCTODO: Comment
     extern uint8_t
-    exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_de, uint8_t a_basic);
+    exfatfs_is_alloc_bitmap_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic);
 
 
     //RJCTODO: Is this comment still accurate?
@@ -309,7 +311,7 @@ extern "C" {
      */
     extern TSK_RETVAL_ENUM
     exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-        FATFS_DENTRY *a_dentry, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
+        char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
 #ifdef __cplusplus
 }

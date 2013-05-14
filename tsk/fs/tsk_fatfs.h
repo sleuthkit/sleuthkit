@@ -147,11 +147,13 @@ extern "C" {
         uint8_t data[32];
     } FATFS_DENTRY;
 
+    // RJCTODO
+    typedef struct {
+        uint8_t data[64];
+    } FATFS_INODE;
+
     extern TSKConversionResult
     fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UTF16 *src, uint8_t src_len, TSK_INUM_T a_inum, const char *a_desc);
-
-    extern uint8_t fatfs_dinode_load(TSK_FS_INFO *, FATFS_DENTRY *,
-        TSK_INUM_T);
 
 	/**
 	 * \internal
@@ -208,8 +210,31 @@ extern "C" {
         TSK_FS_META_FLAG_ENUM a_flags, TSK_FS_META_WALK_CB a_action,
         void *a_ptr);
 
-    extern uint8_t fatfs_inode_lookup(TSK_FS_INFO * fs,
-        TSK_FS_FILE * a_fs_file, TSK_INUM_T inum);
+    /**
+     * \internal
+     * Return the contents of a specific virtual inode.
+     *
+     * @param [in] a_fs File system inode is located in.
+     * @param [out] a_fs_file A file corresponding to the inode address.
+     * @param [in] a_inum An inode address.
+     * @return 1 is returned if an error occurs or if the inode address is not
+     * for a valid inode.
+     */
+    extern uint8_t fatfs_inode_lookup(TSK_FS_INFO *a_fs,
+        TSK_FS_FILE *a_fs_file, TSK_INUM_T a_inum);
+
+    // RJCTODO: Update
+    /**
+     * \internal
+     * Load an inode into a FATFS_DENTRY structure.
+     *
+     * @param [in] a_fs File system inode is located in.
+     * @param [out] a_de A FATFS_DENTRY buffer.
+     * @param [in] a_inum An inode address.
+     * @return return 1 on error and 0 on success
+     */
+    extern uint8_t fatfs_dinode_load(TSK_FS_INFO *a_fs, char *a_buf,
+        size_t a_inode_size, TSK_INUM_T a_inum);
 
     /* return 1 on error and 0 on success */
     extern uint8_t

@@ -365,7 +365,7 @@ extern "C" {
         TSK_FS_META_FLAG_USED = 0x04,   ///< Metadata structure has been allocated at least once
         TSK_FS_META_FLAG_UNUSED = 0x08, ///< Metadata structure has never been allocated. 
         TSK_FS_META_FLAG_COMP = 0x10,   ///< The file contents are compressed. 
-        TSK_FS_META_FLAG_ORPHAN = 0x20, ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
+        TSK_FS_META_FLAG_ORPHAN = 0x20, ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only) //RJCTODO: Fix this comment
     };
     typedef enum TSK_FS_META_FLAG_ENUM TSK_FS_META_FLAG_ENUM;
 
@@ -485,7 +485,7 @@ extern "C" {
         TSK_FS_ATTRLIST *attr;
         TSK_FS_META_ATTR_FLAG_ENUM attr_state;  ///< State of the data in the TSK_FS_META::attr structure
 
-        TSK_FS_META_NAME_LIST *name2;   ///< Name of file stored in metadata (FAT and NTFS Only)
+        TSK_FS_META_NAME_LIST *name2;   ///< Name of file stored in metadata (FATXX and NTFS Only)
         char *link;             ///< Name of target file if this is a symbolic link
     } TSK_FS_META;
 

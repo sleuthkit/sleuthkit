@@ -232,7 +232,7 @@ static TSK_RETVAL_ENUM
 
             entrySeenCount++;
             /* is it a valid dentry? */
-            if (0 == fatxxfs_is_dentry(fatfs, (FATFS_DENTRY*)dep, //RJCTODO: Fix
+            if (0 == fatxxfs_is_dentry(fatfs, (char*)dep,
                 ((isCorruptDir == 0) && (sectalloc)) ? 1 : 0)) {
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
@@ -615,6 +615,7 @@ TSK_RETVAL_ENUM
     fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     TSK_INUM_T a_addr)
 {
+    const char *func_name = "fatfs_dir_open_meta";
     TSK_OFF_T size, len;
     FATFS_INFO *fatfs = (FATFS_INFO *) a_fs;
     char *dirbuf;
@@ -627,15 +628,15 @@ TSK_RETVAL_ENUM
     if ((a_addr < a_fs->first_inum) || (a_addr > a_fs->last_inum)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr("fatfs_dir_open_meta: invalid a_addr value: %"
-            PRIuINUM "\n", a_addr);
+        tsk_error_set_errstr("%s: invalid a_addr value: %"
+            PRIuINUM "\n", func_name, a_addr);
         return TSK_ERR;
     }
     else if (a_fs_dir == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
-            ("fatfs_dir_open_meta: NULL fs_attr argument given");
+            ("%s: NULL fs_attr argument given", func_name);
         return TSK_ERR;
     }
 
@@ -659,8 +660,8 @@ TSK_RETVAL_ENUM
     if (fs_dir->fs_file == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr("fatfs_dir_open_meta: %" PRIuINUM
-            " is not a valid inode", a_addr);
+        tsk_error_set_errstr("%s: %" PRIuINUM
+            " is not a valid inode", func_name, a_addr);
         return TSK_COR;
     }
 
@@ -669,13 +670,13 @@ TSK_RETVAL_ENUM
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-        "fatfs_dir_open_meta: Processing directory %" PRIuINUM "\n",
-        a_addr);
+        "%s: Processing directory %" PRIuINUM "\n",
+        func_name, a_addr);
 
     if (size == 0) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
-            "fatfs_dir_open_meta: directory has 0 size\n");
+            "%s: directory has 0 size\n", func_name);
         return TSK_OK;
     }
 
@@ -705,7 +706,7 @@ TSK_RETVAL_ENUM
     if (tsk_fs_file_walk(fs_dir->fs_file,
         TSK_FS_FILE_WALK_FLAG_SLACK,
         fatfs_dent_action, (void *) &load)) {
-            tsk_error_errstr2_concat("- fatfs_dir_open_meta");
+            tsk_error_errstr2_concat("- fatfs_dir_open_meta"); // RJCTODO
             free(dirbuf);
             free(addrbuf);
             return TSK_COR;
@@ -716,8 +717,8 @@ TSK_RETVAL_ENUM
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_FWALK);
         tsk_error_set_errstr
-            ("fatfs_dir_open_meta: Error reading directory %" PRIuINUM,
-            a_addr);
+            ("%s: Error reading directory %" PRIuINUM,
+            func_name, a_addr);
 
         /* Free the local buffers */
         free(dirbuf);
@@ -727,8 +728,8 @@ TSK_RETVAL_ENUM
 
     if (tsk_verbose)
         fprintf(stderr,
-        "fatfs_dir_open_meta: Parsing directory %" PRIuINUM "\n",
-        a_addr);
+        "%s: Parsing directory %" PRIuINUM "\n",
+        func_name, a_addr);
 
     retval = fatfs_dent_parse_buf(fatfs, fs_dir, dirbuf, len, addrbuf);
 

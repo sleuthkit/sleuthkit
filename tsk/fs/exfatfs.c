@@ -242,6 +242,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
             return 1;
         }
 
+        //RJCTODO: Still using FATFS_DENTRY here
         /* Read the directory entries in the sector, looking for allocation
          * bitmap entries. There will be one entry unless the file system is 
          * TexFAT (transactional exFAT), in which case there will be two. */
@@ -252,7 +253,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
             if (dir_entry->entry_type == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
                 /* Do an in-depth test. */
-                if (!exfatfs_is_alloc_bitmap_dentry(a_fatfs, (FATFS_DENTRY*)dir_entry, 1)) {
+                if (!exfatfs_is_alloc_bitmap_dinode(a_fatfs, (char*)dir_entry, 1)) {
                     continue;
                 }
 
