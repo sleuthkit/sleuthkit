@@ -268,24 +268,23 @@ extern "C" {
 	 *
 	 * @param a_fatfs Generic FAT file system info structure.
      * @param a_cluster_addr Address of the cluster to check. 
-	 * @returns 1 if the cluster is allocated, 0 otherwise.
+	 * @return 1 if the cluster is allocated, 0 otherwise.
 	 */
     extern int8_t 
     exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr);
 
 	/**
 	 * \internal
-     * Determines whether a buffer likely contains an inode.
-     * For the most reliable results, pass 64 bytes and request the 
-     * in-depth test.
+     * Determines whether a buffer likely contains a directory entry.
+     * For the most reliable results, request the in-depth test.
      *
-	 * @param a_fatfs Generic FAT file system info structure
-     * @param a_buf Buffer that may contain an inode.
+	 * @param a_fatfs Generic FAT file system info structure.
+     * @param a_buf Buffer that may contain a directory entry.
      * @param a_basic 1 if only basic tests should be performed. 
-     * Returns 1 if likely inode found, 0 if not
+     * @return 1 if likely directory entry found, 0 if not
      */
     extern uint8_t 
-    exfatfs_is_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic);
+    exfatfs_is_dentry(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic);
 
     // RJCTODO: Comment
     extern uint8_t
@@ -304,7 +303,7 @@ extern "C" {
      * to determine allocation status.
      * @param a_inum Address of the inode.
      *
-     * @returns 1 on error and 0 on success.  Errors should only occur for
+     * @return 1 on error and 0 on success.  Errors should only occur for
      * Unicode conversion problems and when this occurs the name will be
      * NULL terminated (but with unknown contents).
      *

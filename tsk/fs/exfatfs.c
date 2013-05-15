@@ -262,7 +262,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
                  * bitmap directory entry (if there is one). */
                 if (~(dir_entry->flags & 0x01)) {
                     a_fatfs->EXFATFS_INFO.first_cluster_of_alloc_bitmap = tsk_getu32(fs->endian, dir_entry->first_cluster_of_bitmap);
-                    a_fatfs->EXFATFS_INFO.length_of_alloc_bitmap_in_bytes = tsk_getu32(fs->endian, dir_entry->length_of_alloc_bitmap_in_bytes);
+                    a_fatfs->EXFATFS_INFO.length_of_alloc_bitmap_in_bytes = tsk_getu32(fs->endian, dir_entry->length_of_alloc_bitmap_in_bytes); //RJCTODO: Add size consistency checks
                 }
                 else {
                     a_fatfs->EXFATFS_INFO.first_cluster_of_second_alloc_bitmap = tsk_getu32(fs->endian, dir_entry->first_cluster_of_bitmap);
@@ -322,12 +322,15 @@ exfatfs_map_fs_layout_to_inodes(FATFS_INFO *a_fatfs)
     fs->first_inum = FATFS_FIRSTINO;
     fs->root_inum = FATFS_ROOTINO;
 
-    // RJCTODO:
-    // Add on extras for Orphan and special files
-    //fs->last_inum =
-    //    (FATFS_SECT_2_INODE(fatfs,
-    //        fs->last_block_act + 1) - 1) + FATFS_NUM_SPECFILE;
-    //fs->inum_count = fs->last_inum - fs->first_inum + 1;
+    // RJCTODO: Figure out what FATFS_NUM_SPECFILE should be for exFAT.
+    /* Calulate the last inode and add some extras for virtual
+     * directories and files. */
+    fs->last_inum =
+        (FATFS_SECT_2_INODE(a_fatfs,
+            fs->last_block_act + 1) - 1);
+        //(FATFS_SECT_2_INODE(fatfs,
+        //    fs->last_block_act + 1) - 1) + FATFS_NUM_SPECFILE;
+    fs->inum_count = fs->last_inum - fs->first_inum + 1;
 
     return 1;
 }
@@ -389,13 +392,9 @@ exfatfs_open(FATFS_INFO *a_fatfs)
     /* Is is really an exFAT file system? */
     if (!exfatfs_get_fs_size_params(a_fatfs) ||
         !exfatfs_get_fs_layout(a_fatfs) || 
+        !exfatfs_map_fs_layout_to_blocks(a_fatfs) ||
+        !exfatfs_map_fs_layout_to_inodes(a_fatfs) ||
         !exfatfs_get_alloc_bitmap(a_fatfs)) {
-        return 0;
-    }
-
-    /* Map the file system to the generic TSK file system model. */
-    if (!exfatfs_map_fs_layout_to_blocks(a_fatfs) ||
-        !exfatfs_map_fs_layout_to_inodes(a_fatfs)) {
         return 0;
     }
 

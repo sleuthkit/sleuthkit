@@ -194,10 +194,11 @@ exfatfs_is_file_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
 }
 
 uint8_t
-exfatfs_is_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
+exfatfs_is_dentry(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
 {
-    const char *func_name = "exfatfs_is_dinode";
+    const char *func_name = "exfatfs_is_dentry";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    FATFS_DENTRY *dentry = (FATFS_DENTRY*)a_buf; 
 
     if (a_fatfs == NULL) {
         assert(a_fatfs != NULL);
@@ -213,7 +214,7 @@ exfatfs_is_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
         return 0;
     }
 
-    switch (a_buf[0])
+    switch (dentry->data[0])
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY:

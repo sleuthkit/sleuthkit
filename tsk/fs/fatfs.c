@@ -627,13 +627,13 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     FATFS_PRINT_ADDR print;
     char *buf = NULL; //RJCTODO: Free memory or handle this differently
     size_t inode_size = (fs->ftype == TSK_FS_TYPE_EXFAT ? 64 : 32); // RJCTODO: Deal with magic numbers 
-    FATXXFS_DENTRY *fatxxdep = (FATXXFS_DENTRY*)buf; //RJCTODO
+    FATXXFS_DENTRY *fatxxdep = NULL;
     char timeBuf[128];
 
     // clean up any error messages that are lying around
     tsk_error_reset();
 
-    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, inum)) == NULL) {
+    if ((fs_file = tsk_fs_file_open_meta(fs, NULL, inum)) == NULL) { // RJCTODO: Went through a lookup here, why repeat load/copy?
         return 1;
     }
     fs_meta = fs_file->meta;
@@ -652,9 +652,10 @@ fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     else {
         buf = (char*)tsk_malloc(32 * sizeof(char)); // RJCTODO: consider replacing magic number
     }
+    fatxxdep = (FATXXFS_DENTRY*)buf;
 
     // RJCTODO: Fix this up for exFAT
-    // RJCTODO: Looks like the conditional is wrong here.
+    // RJCTODO: Looks like the conditional is wrong here, why does this load again?
     /* This should only be null if we have the root directory or special file */
     if (fatfs_dinode_load(fs, buf, inode_size, inum)) {
         if (inum == FATFS_ROOTINO)

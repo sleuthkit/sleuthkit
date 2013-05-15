@@ -147,11 +147,6 @@ extern "C" {
         uint8_t data[32];
     } FATFS_DENTRY;
 
-    // RJCTODO
-    typedef struct {
-        uint8_t data[64];
-    } FATFS_INODE;
-
     extern TSKConversionResult
     fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UTF16 *src, uint8_t src_len, TSK_INUM_T a_inum, const char *a_desc);
 
