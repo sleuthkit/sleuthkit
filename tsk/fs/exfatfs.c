@@ -253,7 +253,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
             if (dir_entry->entry_type == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
                 /* Do an in-depth test. */
-                if (!exfatfs_is_alloc_bitmap_dinode(a_fatfs, (char*)dir_entry, 1)) {
+                if (!exfatfs_is_alloc_bitmap_dentry(a_fatfs, (FATFS_DENTRY*)dir_entry, 1)) {
                     continue;
                 }
 

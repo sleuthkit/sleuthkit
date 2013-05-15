@@ -43,6 +43,11 @@
 #define FATFS_32_MASK	0x0fffffff
 #define EXFATFS_MASK	0x0fffffff
 
+/** 
+ * Directory entries for all FAT file systems are currently 32 bytes long.
+ */
+#define FATFS_DENTRY_SIZE 32
+
 #define FATFS_FILE_CONTENT_LEN sizeof(TSK_DADDR_T)      // we will store the starting cluster
 
 // RJCTODO: Comment for Doxygen
@@ -144,8 +149,11 @@ extern "C" {
      * Generic directory entry structure for FATXX and exFAT file systems.
      */
     typedef struct {
-        uint8_t data[32];
+        uint8_t data[FATFS_DENTRY_SIZE];
     } FATFS_DENTRY;
+
+    extern uint8_t
+    fatfs_is_ptr_arg_null(void *ptr, const char *param_name, const char *func_name);
 
     extern TSKConversionResult
     fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UTF16 *src, uint8_t src_len, TSK_INUM_T a_inum, const char *a_desc);

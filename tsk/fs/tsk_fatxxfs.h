@@ -23,6 +23,11 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
+/**
+ * RJCTODO: comment 
+ */
+#define FATXXFS_INODE_BUFFER_SIZE FATFS_DENTRY_SIZE
+
 #define FATFS_MBRINO(fs_info) \
     (TSK_FS_ORPHANDIR_INUM(fs_info) - 3)        // inode for master boot record "special file"
 #define FATFS_MBRNAME   "$MBR"

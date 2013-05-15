@@ -46,6 +46,11 @@
 #define EXFATFS_FIRST_CLUSTER 2
 
 /**
+ * RJCTODO: comment 
+ */
+#define EXFATFS_INODE_BUFFER_SIZE (2 * (FATFS_DENTRY_SIZE))
+
+/**
  * File names for exFAT "virtual files" corresponding to non-file 
  * directory entries.
  */
@@ -288,8 +293,7 @@ extern "C" {
 
     // RJCTODO: Comment
     extern uint8_t
-    exfatfs_is_alloc_bitmap_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic);
-
+    exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic);
 
     //RJCTODO: Is this comment still accurate?
     /**

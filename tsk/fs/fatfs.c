@@ -18,6 +18,19 @@
 #include "tsk_fatfs.h"
 #include "tsk_fatxxfs.h"
 #include "tsk_exfatfs.h"
+#include <assert.h>
+
+uint8_t
+fatfs_is_ptr_arg_null(void *ptr, const char *param_name, const char *func_name)
+{
+    assert(ptr != NULL);
+    if (ptr == NULL) {
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("%s: %s argument is NULL", param_name, func_name);
+        return 1;
+    }
+    return 0;
+}
 
 TSKConversionResult
 fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UTF16 *src, uint8_t src_len, TSK_INUM_T a_inum, const char *a_desc)

@@ -762,35 +762,50 @@ fatfs_make_fat(FATFS_INFO * fatfs, uint8_t a_which, TSK_FS_META * fs_meta)
     return 0;
 }
 
+static uint8_t
+fatfs_is_dentry(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
+{
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
+
+    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
+        return exfatfs_is_dentry(a_fatfs, a_buf, a_basic);
+    }
+    else {
+        return fatxxfs_is_dentry(a_fatfs, a_buf, a_basic);
+    }
+}
+
+TSK_RETVAL_ENUM
+fatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
+    char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum)
+{
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
+
+    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
+        return exfatfs_dinode_copy(a_fatfs, a_fs_meta, a_buf, a_sect, a_inum);
+    }
+    else {
+        return fatxxfs_dinode_copy(a_fatfs, a_fs_meta, a_buf, a_sect, a_inum);
+    }
+}
+
 uint8_t
 fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
     TSK_INUM_T a_inum)
 {
     const char *func_name = "fatfs_inode_lookup";
     FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
-    TSK_DADDR_T sect;
-    TSK_RETVAL_ENUM retval;
-    char *buf = NULL; //RJCTODO: Free memory or do differntly
-    size_t inode_size = (a_fs->ftype == TSK_FS_TYPE_EXFAT ? 64 : 32); // RJCTODO: Deal with magic numbers 
-    uint8_t(*is_dentry)(FATFS_INFO*, char*, uint8_t) = (a_fs->ftype == TSK_FS_TYPE_EXFAT ? exfatfs_is_dentry : fatxxfs_is_dentry);
-    TSK_RETVAL_ENUM(*dinode_copy)(FATFS_INFO*, TSK_FS_META*, char*, TSK_DADDR_T, TSK_INUM_T) = (a_fs->ftype == TSK_FS_TYPE_EXFAT ? exfatfs_dinode_copy : fatxxfs_dinode_copy);
+    TSK_DADDR_T sect = 0;
+    TSK_RETVAL_ENUM retval = TSK_OK;
+    char *buf = NULL;
+    size_t inode_size = 0;
 
-    /* Clean up any error messages that are lying around. */
+    /* Clean up any error messages that may be lying around. */
     tsk_error_reset();
 
     /* Validate the function arguments. */
-    if (a_fs == NULL)
-    {
-        assert(a_fs != NULL);
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("%s: a_fs argument is NULL", func_name);
-        return 1;
-    }
-
-    if (a_fs_file == NULL) {
-        assert(a_fs_file != NULL);
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("%s: a_fs_file argument is NULL", func_name);
+    if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name)) {
         return 1;
     }
 
@@ -858,8 +873,8 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
         return 1;
     }
 
-    /* Fill the directory entry buffer with the bytes corresponding to 
-     * the inode. */
+    /* Read enough bytes to determine if the inode is valid. */
+    inode_size = (a_fs->ftype == TSK_FS_TYPE_EXFAT ? EXFATFS_INODE_BUFFER_SIZE : FATXXFS_INODE_BUFFER_SIZE);
     buf = (char*)tsk_malloc(inode_size);
     if (fatfs_dinode_load(a_fs, buf, inode_size, a_inum)) {
         free(buf);
@@ -876,9 +891,16 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
      * folder, information that is not availble here. Thus, the check here is
      * less reliable and may allow some false positives through its filter. 
      */
-    if (is_dentry(fatfs, buf, fatfs_is_sectalloc(fatfs, sect))) {
+
+    // RJCTODO: Devise a function to be implemented for both FATXX and exFAT
+    // that does the necessary dentry checks and the dinode_copy. Make the 
+    // exFAT is_dentry function return a type, so that the exFAT version of this
+    // new function can decide whether to go ahead with a load for a file/stream
+    // dentry pair.
+
+    if (fatfs_is_dentry(fatfs, buf, fatfs_is_sectalloc(fatfs, sect))) {
         if ((retval =
-                dinode_copy(fatfs, a_fs_file->meta, buf, sect,
+                fatfs_dinode_copy(fatfs, a_fs_file->meta, buf, sect,
                     a_inum)) != TSK_OK) {
             /* If there was a unicode conversion error,
              * then still return the inode */
@@ -906,11 +928,6 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
     }
 }
 
-/**************************************************************************
- *
- * INODE WALKING
- *
- *************************************************************************/
 /* Mark the sector used in the bitmap */
 static TSK_WALK_RET_ENUM
 inode_walk_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
@@ -968,8 +985,6 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     uint8_t *dir_sectors_bitmap = NULL;
     ssize_t cnt = 0;
     uint8_t done = 0;
-    uint8_t(*is_dentry)(FATFS_INFO*, char*, uint8_t) = NULL;
-    TSK_RETVAL_ENUM(*dinode_copy)(FATFS_INFO*, TSK_FS_META*, char*, TSK_DADDR_T, TSK_INUM_T) = NULL;
 
     /* Clean up any error messages that may be lying around. */
     tsk_error_reset();
@@ -996,17 +1011,6 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
         tsk_fprintf(stderr,
             "%s: Inode Walking %" PRIuINUM " to %"
             PRIuINUM "\n", func_name, start_inum, end_inum);
-    }
-
-    /* Plug in functions that handle differences in FATXX vs. exFAT file 
-     * systems. */
-    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        is_dentry = exfatfs_is_dentry;
-        dinode_copy = exfatfs_dinode_copy;
-    }
-    else {
-        is_dentry = fatxxfs_is_dentry;
-        dinode_copy = fatxxfs_dinode_copy; 
     }
 
     /* Make sure the flags are set correctly. */
@@ -1396,12 +1400,12 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
                 // RJCTODO: Improve this comment.
                 /* Do a final sanity check */
-                if (0 == is_dentry(fatfs, dep, do_basic_dentry_test)) {
+                if (0 == fatfs_is_dentry(fatfs, dep, do_basic_dentry_test)) {
                     continue;
                 }
 
                 if ((retval2 =
-                        dinode_copy(fatfs, fs_file->meta, dep, sect,
+                        fatfs_dinode_copy(fatfs, fs_file->meta, dep, sect,
                             inum)) != TSK_OK) {
 
                     if (retval2 == TSK_COR) {

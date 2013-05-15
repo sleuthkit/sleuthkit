@@ -26,23 +26,10 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
-// RJCTODO: Put somewhere for wider use or discard.
 static uint8_t
-is_ptr_arg_null(void *ptr, const char *param_name, const char *func_name)
+exfatfs_is_vol_label_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
 {
-    assert(ptr != NULL);
-    if (ptr == NULL) {
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("%s: %s argument is NULL", param_name, func_name);
-        return 1;
-    }
-    return 0;
-}
-
-static uint8_t
-exfatfs_is_vol_label_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
-{
-    EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_buf;
+    EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_dentry;
 
     if (!a_basic) {
         /* There is not enough data in a volume label directory entry for an 
@@ -61,7 +48,7 @@ exfatfs_is_vol_label_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
 }
 
 static uint8_t
-exfatfs_is_vol_guid_inode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
+exfatfs_is_vol_guid_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
 {
     if (!a_basic) {
         /* There is not enough data in a volume GUID directory entry for an
@@ -73,11 +60,11 @@ exfatfs_is_vol_guid_inode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
 }
 
 uint8_t
-exfatfs_is_alloc_bitmap_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
+exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
 {
-    const char *func_name = "exfatfs_is_alloc_bitmap_dinode";
+    const char *func_name = "exfatfs_is_alloc_bitmap_dentry";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-    EXFATFS_ALLOC_BITMAP_DIR_ENTRY *dentry = (EXFATFS_ALLOC_BITMAP_DIR_ENTRY*)a_buf;
+    EXFATFS_ALLOC_BITMAP_DIR_ENTRY *dentry = (EXFATFS_ALLOC_BITMAP_DIR_ENTRY*)a_dentry;
     uint32_t first_cluster_of_bitmap = 0;
     uint64_t length_of_alloc_bitmap_in_bytes = 0;
 
@@ -109,11 +96,11 @@ exfatfs_is_alloc_bitmap_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic
 }
 
 static uint8_t
-exfatfs_is_upcase_table_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
+exfatfs_is_upcase_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
 {
-    const char *func_name = "exfatfs_is_upcase_table_dinode";
+    const char *func_name = "exfatfs_is_upcase_table_dentry";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-    EXFATFS_UPCASE_TABLE_DIR_ENTRY *dentry = (EXFATFS_UPCASE_TABLE_DIR_ENTRY*)a_buf;
+    EXFATFS_UPCASE_TABLE_DIR_ENTRY *dentry = (EXFATFS_UPCASE_TABLE_DIR_ENTRY*)a_dentry;
     uint32_t first_cluster_of_table = 0;
 
     if (!a_basic) {
@@ -137,7 +124,7 @@ exfatfs_is_upcase_table_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic
 }
 
 static uint8_t
-exfatfs_is_tex_fat_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
+exfatfs_is_tex_fat_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
 {
     if (!a_basic) {
         /* There is not enough data in a UP-TexFAT directory entry
@@ -149,7 +136,7 @@ exfatfs_is_tex_fat_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
 }
 
 static uint8_t
-exfatfs_is_access_ctrl_table_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
+exfatfs_is_access_ctrl_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
 {
     if (!a_basic) {
         /* There is not enough data in an access control table directory entry
@@ -161,22 +148,48 @@ exfatfs_is_access_ctrl_table_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_
 }
 
 static uint8_t
-exfatfs_is_file_dinode(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
+exfatfs_is_file_stream_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
 {
-    const char *func_name = "exfatfs_is_file_dinode";
+    const char *func_name = "exfatfs_is_file_stream_dentry";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-    EXFATFS_FILE_DIR_ENTRY *file_dentry = (EXFATFS_FILE_DIR_ENTRY*)a_buf;
-    EXFATFS_FILE_STREAM_DIR_ENTRY *stream_dentry = (EXFATFS_FILE_STREAM_DIR_ENTRY*)(a_buf + 32); 
+
+    if (!a_basic) {
+        // RJCTODO: Validate this entry
+    }
+
+    // RJCTODO: Validate this entry
+
+    return 1;
+}
+
+static uint8_t
+exfatfs_is_file_name_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
+{
+    if (!a_basic) {
+        /* There is not enough data in an access control table directory entry
+         * for an in-depth test. */
+         return 0;
+    }
+
+    // RJCTODO: Make sure allocation possible bit is not set. Invalid FAT chain bit should be set.
+    // CAn this be used for other entries?
+
+    return 1;
+}
+
+static uint8_t
+exfatfs_is_file_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
+{
+    const char *func_name = "exfatfs_is_file_dentry";
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    EXFATFS_FILE_DIR_ENTRY *file_dentry = (EXFATFS_FILE_DIR_ENTRY*)a_dentry;
 
     if (!a_basic == 0)
     {
-        return ((stream_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) ||
-                (stream_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM_DELETED));
+        // RJCTODO: Check MAC times
     }
 
-    // RJCTODO: Check MAC times
     // RJCTODO: Consider using additional tests similar to bulk extractor tests, e.g., sanity check attributes
-    // RJCTODO: Stream dentry checks
 
     /* The MAC times should not be all zero. */ 
     //RJCTODO: Is this legitimate? 
@@ -218,115 +231,87 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY:
-        return exfatfs_is_vol_label_dinode(a_fatfs, a_buf, a_basic);
+        return exfatfs_is_vol_label_dentry(a_fatfs, dentry, a_basic);
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
-        return exfatfs_is_vol_guid_inode(a_fatfs, a_buf, a_basic);
+        return exfatfs_is_vol_guid_dentry(a_fatfs, dentry, a_basic);
     case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
-        return exfatfs_is_alloc_bitmap_dinode(a_fatfs, a_buf, a_basic);
+        return exfatfs_is_alloc_bitmap_dentry(a_fatfs, dentry, a_basic);
     case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
-        return exfatfs_is_upcase_table_dinode(a_fatfs, a_buf, a_basic);
+        return exfatfs_is_upcase_table_dentry(a_fatfs, dentry, a_basic);
     case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
-        return exfatfs_is_tex_fat_dinode(a_fatfs, a_buf, a_basic);
+        return exfatfs_is_tex_fat_dentry(a_fatfs, dentry, a_basic);
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
-        return exfatfs_is_access_ctrl_table_dinode(a_fatfs, a_buf, a_basic);
+        return exfatfs_is_access_ctrl_table_dentry(a_fatfs, dentry, a_basic);
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
     case EXFATFS_DIR_ENTRY_TYPE_FILE_DELETED:
-        return exfatfs_is_file_dinode(a_fatfs, a_buf, a_basic);
+        return exfatfs_is_file_dentry(a_fatfs, dentry, a_basic);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM_DELETED:
+        return exfatfs_is_file_stream_dentry(a_fatfs, dentry, a_basic);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME_DELETED:
+        return exfatfs_is_file_name_dentry(a_fatfs, dentry, a_basic);
     default:
         return 0;
     }
 }
 
 //RCJTODO: Using names for inodes or not?
-//static TSK_RETVAL_ENUM 
-//exfatfs_copy_vol_label_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, char *a_buf, TSK_INUM_T a_inum)
-//{
-//    EXFATFS_VOL_LABEL_DIR_ENTRY *dir_entry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_buf;
-//
-//    if (dir_entry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY) {
-//        if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_meta, (UTF16*)dir_entry->volume_label, dir_entry->utf16_char_count, a_inum, "volume label") == TSKconversionOK) {
-//            return TSK_OK;
-//        }
-//        else {
-//            return TSK_COR;
-//        }
-//    }
-//    else {
-//        strcpy(a_fs_meta->name2->name, EXFATFS_NO_VOLUME_LABEL_VIRT_FILENAME);
-//        return TSK_OK;
-//    }
-//}
+static TSK_RETVAL_ENUM 
+exfatfs_copy_vol_label_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, char *a_buf, TSK_INUM_T a_inum)
+{
+    EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_buf;
+
+    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY) {
+        if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_meta, (UTF16*)dentry->volume_label, dentry->utf16_char_count, a_inum, "volume label") == TSKconversionOK) {
+            return TSK_OK;
+        }
+        else {
+            return TSK_COR;
+        }
+    }
+    else {
+        strcpy(a_fs_meta->name2->name, EXFATFS_NO_VOLUME_LABEL_VIRT_FILENAME);
+        return TSK_OK;
+    }
+}
 
 static TSK_RETVAL_ENUM 
 exfatfs_copy_file_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, char *a_buf, TSK_INUM_T a_inum)
 {
     const char *func_name = "exfatfs_copy_file_dinode";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-    EXFATFS_FILE_DIR_ENTRY *dir_entry = (EXFATFS_FILE_DIR_ENTRY*)a_buf;
+    EXFATFS_FILE_DIR_ENTRY *dentry = (EXFATFS_FILE_DIR_ENTRY*)a_buf;
 
-    //a_fs_meta->mode = attr2mode(in->attrib);
-    //a_fs_meta->type = attr2type(in->attrib);
-
-    ///* There is no notion of link in FAT, just deleted or not */
-    //fs_meta->nlink = (in->name[0] == FATFS_SLOT_DELETED) ? 0 : 1;
-    //fs_meta->size = (TSK_OFF_T) tsk_getu32(fs->endian, in->size);
-
-    ///* If these are valid dates, then convert to a unix date format */
-    //if (FATFS_ISDATE(tsk_getu16(fs->endian, in->wdate)))
-    //    fs_meta->mtime =
-    //        dos2unixtime(tsk_getu16(fs->endian, in->wdate),
-    //        tsk_getu16(fs->endian, in->wtime), 0);
-    //else
-    //    fs_meta->mtime = 0;
-    //fs_meta->mtime_nano = 0;
-
-    //if (FATFS_ISDATE(tsk_getu16(fs->endian, in->adate)))
-    //    fs_meta->atime =
-    //        dos2unixtime(tsk_getu16(fs->endian, in->adate), 0, 0);
-    //else
-    //    fs_meta->atime = 0;
-    //fs_meta->atime_nano = 0;
-
-
-    ///* cdate is the creation date in FAT and there is no change,
-    //    * so we just put in into change and set create to 0.  The other
-    //    * front-end code knows how to handle it and display it
-    //    */
-    //if (FATFS_ISDATE(tsk_getu16(fs->endian, in->cdate))) {
-    //    fs_meta->crtime =
-    //        dos2unixtime(tsk_getu16(fs->endian, in->cdate),
-    //        tsk_getu16(fs->endian, in->ctime), in->ctimeten);
-    //    fs_meta->crtime_nano = dos2nanosec(in->ctimeten);
-    //}
-    //else {
-    //    fs_meta->crtime = 0;
-    //    fs_meta->crtime_nano = 0;
-    //}
-
-    //// FAT does not have a changed time
-    //fs_meta->ctime = 0;
-    //fs_meta->ctime_nano = 0;
+    // RJCTODO: Implement
 
     return TSK_OK;
 }
 
-//RCJTODO: Using names for inodes or not?
-//static TSK_RETVAL_ENUM 
-//exfatfs_copy_file_name_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, char *a_buf, TSK_INUM_T a_inum)
-//{
-//    EXFATFS_FILE_NAME_DIR_ENTRY *dir_entry = (EXFATFS_FILE_NAME_DIR_ENTRY*)a_buf;
-//
-//    if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_meta, (UTF16*)dir_entry->utf16_name_chars, EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH, a_inum, "file name segment") == TSKconversionOK) {
-//        return TSK_OK;
-//    }
-//    else {
-//        return TSK_COR;
-//    }
-//}
+static TSK_RETVAL_ENUM 
+exfatfs_copy_file_stream_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, char *a_buf, TSK_INUM_T a_inum)
+{
+    const char *func_name = "exfatfs_copy_file_stream_dinode";
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    EXFATFS_FILE_STREAM_DIR_ENTRY *dentry = (EXFATFS_FILE_STREAM_DIR_ENTRY*)a_buf;
+
+    // RJCTODO: Implement
+
+    return TSK_OK;
+}
+
+static TSK_RETVAL_ENUM 
+exfatfs_copy_file_name_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, char *a_buf, TSK_INUM_T a_inum)
+{
+    EXFATFS_FILE_NAME_DIR_ENTRY *dentry = (EXFATFS_FILE_NAME_DIR_ENTRY*)a_buf;
+
+    if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_meta, (UTF16*)dentry->utf16_name_chars, EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH, a_inum, "file name segment") == TSKconversionOK) {
+        return TSK_OK;
+    }
+    else {
+        return TSK_COR;
+    }
+}
 
 // RJCTODO: Consider using this for FATXX as well.
 static uint8_t
@@ -335,8 +320,8 @@ exfatfs_dinode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, TSK_DADDR_
     const char *func_name = "exfatfs_dinode_copy_init";
     int8_t ret_val = 0;
 
-    if ((is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) ||
-        (is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name))) {
+    if ((fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) ||
+        (fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name))) {
         return TSK_ERR;
     }
 
@@ -408,10 +393,11 @@ exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
 {
     const char *func_name = "exfatfs_dinode_copy";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    FATFS_DENTRY *dentry = (FATFS_DENTRY*)a_buf; 
 
-    if ((is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) ||
-        (is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name)) ||
-        (is_ptr_arg_null(a_buf, "a_buf", func_name))) {
+    if ((fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) ||
+        (fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name)) ||
+        (fatfs_is_ptr_arg_null(a_buf, "a_buf", func_name))) {
         return TSK_ERR;
     }
 
@@ -421,34 +407,36 @@ exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
 
     //RJCTODO: May not support copying all directory entries as inodes?
     //RCJTODO: Using names for inodes or not?
-    switch (a_buf[0])
+    switch (dentry->data[0])
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY:
-        //return exfatfs_copy_vol_label_dinode(a_fatfs, a_fs_meta, a_buf, a_inum);
+        return exfatfs_copy_vol_label_dinode(a_fatfs, a_fs_meta, a_buf, a_inum);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
-        //strcpy(a_fs_meta->name2->name, EXFATFS_VOLUME_GUID_VIRT_FILENAME);
+        strcpy(a_fs_meta->name2->name, EXFATFS_VOLUME_GUID_VIRT_FILENAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
-        //strcpy(a_fs_meta->name2->name, EXFATFS_ALLOC_BITMAP_VIRT_FILENAME);
+        strcpy(a_fs_meta->name2->name, EXFATFS_ALLOC_BITMAP_VIRT_FILENAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
-        //strcpy(a_fs_meta->name2->name, EXFATFS_UPCASE_TABLE_VIRT_FILENAME);
+        strcpy(a_fs_meta->name2->name, EXFATFS_UPCASE_TABLE_VIRT_FILENAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
-        //strcpy(a_fs_meta->name2->name, EXFATFS_TEX_FAT_VIRT_FILENAME);
+        strcpy(a_fs_meta->name2->name, EXFATFS_TEX_FAT_VIRT_FILENAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
-        //strcpy(a_fs_meta->name2->name, EXFATFS_ACT_VIRT_FILENAME);
+        strcpy(a_fs_meta->name2->name, EXFATFS_ACT_VIRT_FILENAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
     case EXFATFS_DIR_ENTRY_TYPE_FILE_DELETED:
         return exfatfs_copy_file_dinode(a_fatfs, a_fs_meta, a_buf, a_inum);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM_DELETED:
+        return exfatfs_copy_file_stream_dinode(a_fatfs, a_fs_meta, a_buf, a_inum);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME_DELETED:
+        return exfatfs_copy_file_name_dinode(a_fatfs, a_fs_meta, a_buf, a_inum);
     default:
         return TSK_ERR;
     }
