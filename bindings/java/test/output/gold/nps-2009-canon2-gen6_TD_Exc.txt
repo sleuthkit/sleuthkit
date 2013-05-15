@@ -1,0 +1,1 @@
+org.sleuthkit.datamodel.TskCoreException: Database Error (Database C:\Users\AMALIN~1\AppData\Local\Temp\nps-2009-canon2-gen6_TD.db already exists.  Must be deleted first.)
