@@ -52,7 +52,7 @@ public class VirtualDirectory extends AbstractFile {
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getLayoutDirectoryChildren(this);
+		return getSleuthkitCase().getVirtualDirectoryChildren(this);
 	}
 
 	@Override

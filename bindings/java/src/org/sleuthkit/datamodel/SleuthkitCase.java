@@ -3989,18 +3989,18 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Returns a list of direct children for a given layout directory
+	 * Returns a list of all direct children for a given virtual directory
 	 *
-	 * @param ldir layout directory to get the list of direct children for
-	 * @return list of direct children (layout files or layout directories) for
-	 * a given layout directory
+	 * @param vDir virtual directory to get the list of direct children for
+	 * @return list of direct children (layout/local files or directories) for
+	 * a given virtual directory
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
 	 */
-	List<Content> getLayoutDirectoryChildren(VirtualDirectory ldir) throws TskCoreException {
+	List<Content> getVirtualDirectoryChildren(VirtualDirectory vDir) throws TskCoreException {
 		List<Content> ret = new ArrayList<Content>();
 		for (TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
-			ret.addAll(getAbstractFileChildren(ldir, type));
+			ret.addAll(getAbstractFileChildren(vDir, type));
 		}
 		return ret;
 	}
