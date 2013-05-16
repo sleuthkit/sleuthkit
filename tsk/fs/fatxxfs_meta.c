@@ -283,6 +283,58 @@ fatxxfs_is_dentry(FATFS_INFO * fatfs, char * a_de, uint8_t a_basic)
     }
 }
 
+uint8_t
+fatxxfs_copy_inode_if_valid(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, 
+    TSK_DADDR_T a_sector, TSK_INUM_T a_inum, 
+    char *a_buf, uint8_t do_basic_validity_test)
+{
+    const char *func_name = "fatxxfs_copy_inode_if_valid";
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
+    TSK_RETVAL_ENUM ret_val = TSK_OK;
+
+    /* Clean up any error messages that may be lying around. */
+    tsk_error_reset();
+
+    /* Validate the function arguments. */
+    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
+        fatfs_is_ptr_arg_null(a_buf, "a_buf", func_name)) {
+        return 1;
+    }
+
+    /* 
+     * Use the directory entry check function to see if the bytes in the 
+     * buffer appear to be a valid inode. If so, call the copy function to 
+     * populate the TSK_FS_META struct with data parsed from the buffer.
+     */
+    if (fatxxfs_is_dentry(a_fatfs, a_buf, do_basic_validity_test)) {
+        ret_val = fatxxfs_dinode_copy(a_fatfs, a_fs_file->meta, a_buf, 
+            a_sector, a_inum);
+        if (ret_val == TSK_OK) {
+            return 0;
+        }
+        else if (ret_val == TSK_COR) {
+            /* If there was a Unicode conversion error,
+                * then still return the inode. */
+            if (tsk_verbose) {
+                tsk_error_print(stderr);
+            }
+            tsk_error_reset();
+            return 0;
+        }
+        else {
+            return 1;
+        }
+    }
+    else {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr("%s: %" PRIuINUM
+            " is not an inode", func_name, a_inum);
+        return 1;
+    }
+}
+
 /* timetens is number of tenths of a second for a 2 second range (values 0 to 199) */
 static uint32_t
 dos2nanosec(uint8_t timetens)

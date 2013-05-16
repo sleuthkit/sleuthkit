@@ -137,10 +137,8 @@ extern "C" {
         int using_backup_boot_sector;
 
         struct {
-            uint32_t first_cluster_of_alloc_bitmap;
+            uint64_t first_sector_of_alloc_bitmap;
             uint64_t length_of_alloc_bitmap_in_bytes;
-            uint32_t first_cluster_of_second_alloc_bitmap;
-            uint64_t length_of_second_alloc_bitmap_in_bytes;
         } EXFATFS_INFO;
 
 	} FATFS_INFO;
@@ -213,16 +211,6 @@ extern "C" {
         TSK_FS_META_FLAG_ENUM a_flags, TSK_FS_META_WALK_CB a_action,
         void *a_ptr);
 
-    /**
-     * \internal
-     * Return the contents of a specific virtual inode.
-     *
-     * @param [in] a_fs File system inode is located in.
-     * @param [out] a_fs_file A file corresponding to the inode address.
-     * @param [in] a_inum An inode address.
-     * @return 1 is returned if an error occurs or if the inode address is not
-     * for a valid inode.
-     */
     extern uint8_t fatfs_inode_lookup(TSK_FS_INFO *a_fs,
         TSK_FS_FILE *a_fs_file, TSK_INUM_T a_inum);
 

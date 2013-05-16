@@ -402,6 +402,8 @@ extern "C" {
 
     enum TSK_FS_META_MODE_ENUM {
         /* The following describe the file permissions */
+        TSK_FS_META_MODE_UNSPECIFIED = 0000000,       ///< unspecified  
+
         TSK_FS_META_MODE_ISUID = 0004000,       ///< set user id on execution 
         TSK_FS_META_MODE_ISGID = 0002000,       ///< set group id on execution 
         TSK_FS_META_MODE_ISVTX = 0001000,       ///< sticky bit 

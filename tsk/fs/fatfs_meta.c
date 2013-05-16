@@ -20,7 +20,8 @@
 
 /**
  * \file fatfs_meta.c
- * Contains the internal TSK FAT file system code to handle metadata structures.
+ * Contains the internal TSK FAT file system code to handle the metadata 
+ * category processing.
  */
 
 #include "tsk_fatfs.h"
@@ -513,6 +514,219 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
     }
 }
 
+// RJCTODO: Ask Brian about Doxygen comments on static functions
+/**
+ * \internal
+ * Create an TSK_FS_META structure for the root directory.  FAT does
+ * not have a directory entry for the root directory, but this
+ * function collects the data needed to make one.
+ *
+ * @param fatfs File system to analyze.
+ * @param fs_meta Inode structure to copy root directory information into.
+ * @return 1 on error and 0 on success
+ */
+static uint8_t
+fatfs_make_root(FATFS_INFO *fatfs, TSK_FS_META *fs_meta)
+{
+    TSK_DADDR_T *addr_ptr = NULL;
+
+    fs_meta->type = TSK_FS_META_TYPE_DIR;
+    fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
+    fs_meta->nlink = 1;
+    fs_meta->addr = FATFS_ROOTINO;
+    fs_meta->flags = (TSK_FS_META_FLAG_ENUM)(TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
+    fs_meta->uid = fs_meta->gid = 0;
+    fs_meta->mtime = fs_meta->atime = fs_meta->ctime = fs_meta->crtime = 0;
+    fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
+        fs_meta->crtime_nano = 0;
+
+    if (fs_meta->name2 == NULL) {
+        if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST *)
+                tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL) {
+            return 1;
+        }
+        fs_meta->name2->next = NULL;
+    }
+    fs_meta->name2->name[0] = '\0';
+
+    fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
+    if (fs_meta->attr) {
+        tsk_fs_attrlist_markunused(fs_meta->attr);
+    }
+    addr_ptr = (TSK_DADDR_T*)fs_meta->content_ptr;
+    
+    if (fatfs->fs_info.ftype == TSK_FS_TYPE_FAT32) {
+        /* Get the number of allocated clusters */
+        TSK_DADDR_T cnum;
+        TSK_DADDR_T clust;
+        TSK_LIST *list_seen = NULL;
+
+        /* base cluster */
+        clust = FATFS_SECT_2_CLUST(fatfs, fatfs->rootsect);
+        addr_ptr[0] = clust;
+
+        cnum = 0;
+        while ((clust) && (0 == FATFS_ISEOF(clust, FATFS_32_MASK))) {
+            TSK_DADDR_T nxt;
+
+            /* Make sure we do not get into an infinite loop */
+            if (tsk_list_find(list_seen, clust)) {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                        "Loop found while determining root directory size\n");
+                break;
+            }
+            if (tsk_list_add(&list_seen, clust)) {
+                tsk_list_free(list_seen);
+                list_seen = NULL;
+                return 1;
+            }
+
+            cnum++;
+            if (fatfs_getFAT(fatfs, clust, &nxt))
+                break;
+            else
+                clust = nxt;
+        }
+        tsk_list_free(list_seen);
+        list_seen = NULL;
+        fs_meta->size = (cnum * fatfs->csize) << fatfs->ssize_sh;
+    }
+    else if (fatfs->fs_info.ftype == TSK_FS_TYPE_EXFAT) {
+        // RJCTODO: Figure out what to do here and comment it.
+        fs_meta->size = 0;
+        addr_ptr[0] = 1;
+    }
+    else {
+        /* FAT12 and FAT16 don't use the FAT for the root directory, so set 
+         * TSK_FS_META.content_ptr to a distinguished value other code will
+         * have will have to check as a special condition and set 
+         * TSK_FS_META.size to the number of bytes between the end of the 
+         * FATs and the start of the clusters. */
+        TSK_DADDR_T snum  = fatfs->firstclustsect - fatfs->firstdatasect;
+        fs_meta->size = snum << fatfs->ssize_sh;
+        addr_ptr[0] = 1;
+    }
+    return 0;
+}
+
+/**
+* \internal
+ * Create an TSK_FS_META structure for the master boot record.
+ *
+ * @param fatfs File system to analyze
+ * @param fs_meta Inode structure to copy file information into.
+ * @return 1 on error and 0 on success
+ */
+static uint8_t
+fatfs_make_mbr(FATFS_INFO *fatfs, TSK_FS_META *fs_meta)
+{
+    TSK_DADDR_T *addr_ptr;
+    TSK_FS_INFO *fs = (TSK_FS_INFO *) fatfs;
+
+    fs_meta->type = TSK_FS_META_TYPE_VIRT;
+    fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
+    fs_meta->nlink = 1;
+    fs_meta->addr = FATFS_MBRINO(fs);
+    fs_meta->flags = (TSK_FS_META_FLAG_ENUM)
+        (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
+    fs_meta->uid = fs_meta->gid = 0;
+    fs_meta->mtime = fs_meta->atime = fs_meta->ctime = fs_meta->crtime = 0;
+    fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
+        fs_meta->crtime_nano = 0;
+
+    if (fs_meta->name2 == NULL) {
+        if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST *)
+                tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL) {
+            return 1;
+        }
+        fs_meta->name2->next = NULL;
+    }
+    strncpy(fs_meta->name2->name, FATFS_MBRNAME,
+        TSK_FS_META_NAME_LIST_NSIZE);
+
+    fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
+    if (fs_meta->attr) {
+        tsk_fs_attrlist_markunused(fs_meta->attr);
+    }
+
+    addr_ptr = (TSK_DADDR_T*)fs_meta->content_ptr;
+    addr_ptr[0] = 0;
+    fs_meta->size = 512;
+
+    return 0;
+}
+
+/**
+* \internal
+ * Create an TSK_FS_META structure for the FAT tables.
+ *
+ * @param fatfs File system to analyze
+ * @param a_which 1 or 2 to choose between defining FAT1 or FAT2
+ * @param fs_meta Inode structure to copy file information into.
+ * @return 1 on error and 0 on success
+ */
+static uint8_t
+fatfs_make_fat(FATFS_INFO *fatfs, uint8_t a_which, TSK_FS_META *fs_meta)
+{
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)fatfs;
+    TSK_DADDR_T *addr_ptr = (TSK_DADDR_T *)fs_meta->content_ptr;
+
+    // RJCTODO: Can macros be used instead of hard coded numbers?
+    if ((a_which != 1) && (a_which != 2)) {
+        return 1;
+    }
+
+    fs_meta->type = TSK_FS_META_TYPE_VIRT;
+    fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
+    fs_meta->nlink = 1;
+
+    fs_meta->flags = (TSK_FS_META_FLAG_ENUM)
+        (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
+    fs_meta->uid = fs_meta->gid = 0;
+    fs_meta->mtime = fs_meta->atime = fs_meta->ctime = fs_meta->crtime = 0;
+    fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
+        fs_meta->crtime_nano = 0;
+
+    if (fs_meta->name2 == NULL) {
+        if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST *)
+                tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL)
+            return 1;
+        fs_meta->name2->next = NULL;
+    }
+
+    if (a_which == 1) {
+        fs_meta->addr = FATFS_FAT1INO(fs);
+        strncpy(fs_meta->name2->name, FATFS_FAT1NAME,
+            TSK_FS_META_NAME_LIST_NSIZE);
+        addr_ptr[0] = fatfs->firstfatsect;
+    }
+    else {
+        if ((fs->ftype == TSK_FS_TYPE_EXFAT) && (fatfs->numfat != 2)) {
+            return 1; // RJCTODO: Not sure this is the right way to go. 
+        }
+        fs_meta->addr = FATFS_FAT2INO(fs);
+        strncpy(fs_meta->name2->name, FATFS_FAT2NAME,
+            TSK_FS_META_NAME_LIST_NSIZE);
+        addr_ptr[0] = fatfs->firstfatsect + fatfs->sectperfat;
+    }
+
+    fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
+    if (fs_meta->attr) {
+        tsk_fs_attrlist_markunused(fs_meta->attr);
+    }
+
+    fs_meta->size = fatfs->sectperfat * fs->block_size;
+
+    return 0;
+}
+
+/**************************************************************************
+ *
+ * INODE LOOKUP
+ *
+ *************************************************************************/
+
 uint8_t
 fatfs_dinode_load(TSK_FS_INFO *a_fs, char *a_buf, size_t a_inode_size, TSK_INUM_T a_inum) // RJCTODO: Consider making the buffer uint8_t
 {
@@ -562,243 +776,79 @@ fatfs_dinode_load(TSK_FS_INFO *a_fs, char *a_buf, size_t a_inode_size, TSK_INUM_
     return 0;
 }
 
+static uint8_t
+fatfs_copy_inode_if_valid(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, 
+    TSK_INUM_T a_inum)
+{
+    const char *func_name = "fatfs_get_inode_if_valid";
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
+    TSK_DADDR_T sector = 0;
+    int8_t do_basic_validity_test = -1;
+    size_t inode_size = 0;
+    char *buf = NULL;
+    uint8_t ret_val = 0;
+
+    /* Get the sector the inode is in. */ 
+    sector = FATFS_INODE_2_SECT(a_fatfs, a_inum);
+    if (sector > fs->last_block) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr("%s: Inode %" PRIuINUM
+            " in sector too big for image: %" PRIuDADDR, func_name, a_inum, sector);
+        return 1;
+    }
+
+     /* Note that only the sector allocation status is used to choose
+      * between the basic or in-depth version of the inode validity 
+      * test. In other places in the code information about whether or not 
+      * the sector is part of a folder, information that is not available
+      * here, is used to make this decision. Thus, the test here is less
+      * reliable and may result in some false positives. */
+    do_basic_validity_test = fatfs_is_sectalloc(a_fatfs, sector);
+    if (do_basic_validity_test == -1) {
+        return 1;
+    }
+
+    /* Read in enough bytes to determine if the inode is valid. */
+    inode_size = (fs->ftype == TSK_FS_TYPE_EXFAT ? EXFATFS_INODE_BUFFER_SIZE : FATXXFS_INODE_BUFFER_SIZE);
+    buf = (char*)tsk_malloc(inode_size);
+    if (fatfs_dinode_load(fs, buf, inode_size, a_inum)) {
+        free(buf);
+        return 1;
+    }
+
+     /* Copy the inode into the TSK_FS_META member of the TSK_FS_FILE 
+      * structure. */
+    // RJCTODO: May be able to reduce arg list - sector may not need to be passed
+    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
+        ret_val = exfatfs_copy_inode_if_valid(a_fatfs, a_fs_file, sector, 
+            a_inum, buf, (uint8_t)do_basic_validity_test);
+    }
+    else {
+        ret_val = fatxxfs_copy_inode_if_valid(a_fatfs, a_fs_file, sector,
+            a_inum, buf, (uint8_t)do_basic_validity_test);
+    }
+
+    free(buf);
+    return ret_val;
+}
+
 /**
  * \internal
- * Create an TSK_FS_META structure for the root directory.  FAT does
- * not have a directory entry for the root directory, but this
- * function collects the needed data to make one.
+ * Return the contents of a specific virtual inode.
  *
- * @param fatfs File system to analyze
- * @param fs_meta Inode structure to copy root directory information into.
- * @return 1 on error and 0 on success
+ * @param [in] a_fs File system inode is located in.
+ * @param [out] a_fs_file A file corresponding to the inode address.
+ * @param [in] a_inum An inode address.
+ * @return 1 if an error occurs or if the inode address is not
+ * for a valid inode, 0 otherwise.
  */
-static uint8_t
-fatfs_make_root(FATFS_INFO * fatfs, TSK_FS_META * fs_meta)
-{
-    TSK_DADDR_T *addr_ptr;
-
-    fs_meta->type = (TSK_FS_META_TYPE_DIR);
-    fs_meta->mode = 0;
-    fs_meta->nlink = 1;
-    fs_meta->addr = FATFS_ROOTINO;
-    fs_meta->flags = (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
-    fs_meta->uid = fs_meta->gid = 0;
-    fs_meta->mtime = fs_meta->atime = fs_meta->ctime = fs_meta->crtime = 0;
-    fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
-        fs_meta->crtime_nano = 0;
-
-    if (fs_meta->name2 == NULL) {
-        if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST *)
-                tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL)
-            return 1;
-        fs_meta->name2->next = NULL;
-    }
-    fs_meta->name2->name[0] = '\0';
-
-    fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
-    if (fs_meta->attr) {
-        tsk_fs_attrlist_markunused(fs_meta->attr);
-    }
-    addr_ptr = (TSK_DADDR_T *) fs_meta->content_ptr;
-
-    /* TSK_FS_TYPE_FAT12 and TSK_FS_TYPE_FAT16 don't use the FAT for root directory, so
-     * we will have to fake it.
-     */
-    if (fatfs->fs_info.ftype != TSK_FS_TYPE_FAT32) {
-        TSK_DADDR_T snum;
-
-        /* Other code will have to check this as a special condition
-         */
-        addr_ptr[0] = 1;
-
-        /* difference between end of FAT and start of clusters */
-        snum = fatfs->firstclustsect - fatfs->firstdatasect;
-
-        /* number of bytes */
-        fs_meta->size = snum << fatfs->ssize_sh;
-    }
-    else {
-        /* Get the number of allocated clusters */
-        TSK_DADDR_T cnum;
-        TSK_DADDR_T clust;
-        TSK_LIST *list_seen = NULL;
-
-        /* base cluster */
-        clust = FATFS_SECT_2_CLUST(fatfs, fatfs->rootsect);
-        addr_ptr[0] = clust;
-
-        cnum = 0;
-        while ((clust) && (0 == FATFS_ISEOF(clust, FATFS_32_MASK))) {
-            TSK_DADDR_T nxt;
-
-            /* Make sure we do not get into an infinite loop */
-            if (tsk_list_find(list_seen, clust)) {
-                if (tsk_verbose)
-                    tsk_fprintf(stderr,
-                        "Loop found while determining root directory size\n");
-                break;
-            }
-            if (tsk_list_add(&list_seen, clust)) {
-                tsk_list_free(list_seen);
-                list_seen = NULL;
-                return 1;
-            }
-
-            cnum++;
-            if (fatfs_getFAT(fatfs, clust, &nxt))
-                break;
-            else
-                clust = nxt;
-        }
-        tsk_list_free(list_seen);
-        list_seen = NULL;
-        fs_meta->size = (cnum * fatfs->csize) << fatfs->ssize_sh;
-    }
-    return 0;
-}
-
-/**
-* \internal
- * Create an TSK_FS_META structure for the master boot record.
- *
- * @param fatfs File system to analyze
- * @param fs_meta Inode structure to copy file information into.
- * @return 1 on error and 0 on success
- */
-static uint8_t
-fatfs_make_mbr(FATFS_INFO * fatfs, TSK_FS_META * fs_meta)
-{
-    TSK_DADDR_T *addr_ptr;
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) fatfs;
-
-    fs_meta->type = TSK_FS_META_TYPE_VIRT;
-    fs_meta->mode = 0;
-    fs_meta->nlink = 1;
-    fs_meta->addr = FATFS_MBRINO(fs);
-    fs_meta->flags = (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
-    fs_meta->uid = fs_meta->gid = 0;
-    fs_meta->mtime = fs_meta->atime = fs_meta->ctime = fs_meta->crtime = 0;
-    fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
-        fs_meta->crtime_nano = 0;
-
-    if (fs_meta->name2 == NULL) {
-        if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST *)
-                tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL)
-            return 1;
-        fs_meta->name2->next = NULL;
-    }
-    strncpy(fs_meta->name2->name, FATFS_MBRNAME,
-        TSK_FS_META_NAME_LIST_NSIZE);
-
-    fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
-    if (fs_meta->attr) {
-        tsk_fs_attrlist_markunused(fs_meta->attr);
-    }
-
-    addr_ptr = (TSK_DADDR_T *) fs_meta->content_ptr;
-    addr_ptr[0] = 0;
-    fs_meta->size = 512;
-
-    return 0;
-}
-
-/**
-* \internal
- * Create an TSK_FS_META structure for the FAT tables.
- *
- * @param fatfs File system to analyze
- * @param a_which 1 or 2 to choose between defining FAT1 or FAT2
- * @param fs_meta Inode structure to copy file information into.
- * @return 1 on error and 0 on success
- */
-static uint8_t
-fatfs_make_fat(FATFS_INFO * fatfs, uint8_t a_which, TSK_FS_META * fs_meta)
-{
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) fatfs;
-    TSK_DADDR_T *addr_ptr;
-
-    fs_meta->type = TSK_FS_META_TYPE_VIRT;
-    fs_meta->mode = 0;
-    fs_meta->nlink = 1;
-
-    fs_meta->flags = (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
-    fs_meta->uid = fs_meta->gid = 0;
-    fs_meta->mtime = fs_meta->atime = fs_meta->ctime = fs_meta->crtime = 0;
-    fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
-        fs_meta->crtime_nano = 0;
-
-    if (fs_meta->name2 == NULL) {
-        if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST *)
-                tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL)
-            return 1;
-        fs_meta->name2->next = NULL;
-    }
-
-    if (a_which == 1) {
-        fs_meta->addr = FATFS_FAT1INO(fs);
-        strncpy(fs_meta->name2->name, FATFS_FAT1NAME,
-            TSK_FS_META_NAME_LIST_NSIZE);
-        addr_ptr = (TSK_DADDR_T *) fs_meta->content_ptr;
-        addr_ptr[0] = fatfs->firstfatsect;
-    }
-    else if (a_which == 2) {
-        fs_meta->addr = FATFS_FAT2INO(fs);
-        strncpy(fs_meta->name2->name, FATFS_FAT2NAME,
-            TSK_FS_META_NAME_LIST_NSIZE);
-        addr_ptr = (TSK_DADDR_T *) fs_meta->content_ptr;
-        addr_ptr[0] = fatfs->firstfatsect + fatfs->sectperfat;
-    }
-    else {
-        ////@@@
-    }
-
-    fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
-    if (fs_meta->attr) {
-        tsk_fs_attrlist_markunused(fs_meta->attr);
-    }
-
-    fs_meta->size = fatfs->sectperfat * fs->block_size;
-
-    return 0;
-}
-
-static uint8_t
-fatfs_is_dentry(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
-{
-    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
-
-    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        return exfatfs_is_dentry(a_fatfs, a_buf, a_basic);
-    }
-    else {
-        return fatxxfs_is_dentry(a_fatfs, a_buf, a_basic);
-    }
-}
-
-TSK_RETVAL_ENUM
-fatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-    char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum)
-{
-    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
-
-    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        return exfatfs_dinode_copy(a_fatfs, a_fs_meta, a_buf, a_sect, a_inum);
-    }
-    else {
-        return fatxxfs_dinode_copy(a_fatfs, a_fs_meta, a_buf, a_sect, a_inum);
-    }
-}
-
 uint8_t
 fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
     TSK_INUM_T a_inum)
 {
     const char *func_name = "fatfs_inode_lookup";
     FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
-    TSK_DADDR_T sect = 0;
-    TSK_RETVAL_ENUM retval = TSK_OK;
-    char *buf = NULL;
-    size_t inode_size = 0;
 
     /* Clean up any error messages that may be lying around. */
     tsk_error_reset();
@@ -827,104 +877,73 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
         tsk_fs_meta_reset(a_fs_file->meta);
     }
 
-    /* Manufacture a root inode and other special inodes as required to fit 
-     * the SleuthKit file system model. */
-    if (a_fs->ftype != TSK_FS_TYPE_EXFAT) //RJCTODO: Fix for exFAT
-    {
-        if (a_inum == FATFS_ROOTINO) {
-            if (fatfs_make_root(fatfs, a_fs_file->meta))
-                return 1;
-            else
-                return 0;
-        }
-        else if (a_inum == FATFS_MBRINO(a_fs)) {
-            if (fatfs_make_mbr(fatfs, a_fs_file->meta))
-                return 1;
-            else
-                return 0;
-        }
-        else if (a_inum == FATFS_FAT1INO(a_fs)) {
-            if (fatfs_make_fat(fatfs, 1, a_fs_file->meta))
-                return 1;
-            else
-                return 0;
-        }
-        else if (a_inum == FATFS_FAT2INO(a_fs)) {
-            if (fatfs_make_fat(fatfs, 2, a_fs_file->meta))
-                return 1;
-            else
-                return 0;
-        }
-        else if (a_inum == TSK_FS_ORPHANDIR_INUM(a_fs)) {
-            if (tsk_fs_dir_make_orphan_dir_meta(a_fs, a_fs_file->meta))
-                return 1;
-            else
-                return 0;
-        }
+    /* Either get an inode or manufacture a root inode and other special 
+     * inodes as required to fit the SleuthKit file system model. */
+    if (a_inum == FATFS_ROOTINO) {
+        if (fatfs_make_root(fatfs, a_fs_file->meta))
+            return 1;
+        else
+            return 0;
     }
-
-    /* Get the sector that this inode would be in. */ 
-    sect = FATFS_INODE_2_SECT(fatfs, a_inum);
-    if (sect > a_fs->last_block) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr("%s: Inode %" PRIuINUM
-            " in sector too big for image: %" PRIuDADDR, func_name, a_inum, sect);
-        return 1;
+    else if (a_inum == FATFS_MBRINO(a_fs)) {
+        if (fatfs_make_mbr(fatfs, a_fs_file->meta))
+            return 1;
+        else
+            return 0;
     }
-
-    /* Read enough bytes to determine if the inode is valid. */
-    inode_size = (a_fs->ftype == TSK_FS_TYPE_EXFAT ? EXFATFS_INODE_BUFFER_SIZE : FATXXFS_INODE_BUFFER_SIZE);
-    buf = (char*)tsk_malloc(inode_size);
-    if (fatfs_dinode_load(a_fs, buf, inode_size, a_inum)) {
-        free(buf);
-        return 1;
+    else if (a_inum == FATFS_FAT1INO(a_fs)) {
+        if (fatfs_make_fat(fatfs, 1, a_fs_file->meta))
+            return 1;
+        else
+            return 0;
     }
-
-    /* 
-     * Use the directory entry check function to see if the bytes in the 
-     * buffer appear to be a valid inode. If so, call the copy function to 
-     * populate the TSK_FS_META struct with data parsed from the buffer.
-     * Note that only the sector allocation status is used to select the basic
-     * or in-depth version of the directory entry check, while other places in
-     * the code use information about whether or not the sector is part of a 
-     * folder, information that is not availble here. Thus, the check here is
-     * less reliable and may allow some false positives through its filter. 
-     */
-
-    // RJCTODO: Devise a function to be implemented for both FATXX and exFAT
-    // that does the necessary dentry checks and the dinode_copy. Make the 
-    // exFAT is_dentry function return a type, so that the exFAT version of this
-    // new function can decide whether to go ahead with a load for a file/stream
-    // dentry pair.
-
-    if (fatfs_is_dentry(fatfs, buf, fatfs_is_sectalloc(fatfs, sect))) {
-        if ((retval =
-                fatfs_dinode_copy(fatfs, a_fs_file->meta, buf, sect,
-                    a_inum)) != TSK_OK) {
-            /* If there was a unicode conversion error,
-             * then still return the inode */
-            if (retval == TSK_ERR) {
-                free(buf);
-                return 1;
-            }
-            else {
-                if (tsk_verbose) {
-                    tsk_error_print(stderr);
-                }
-                tsk_error_reset();
-            }
-        }
-        free(buf);
-        return 0;
+    else if (a_inum == FATFS_FAT2INO(a_fs)) {
+        if (fatfs_make_fat(fatfs, 2, a_fs_file->meta))
+            return 1;
+        else
+            return 0;
+    }
+    else if (a_inum == TSK_FS_ORPHANDIR_INUM(a_fs)) {
+        if (tsk_fs_dir_make_orphan_dir_meta(a_fs, a_fs_file->meta))
+            return 1;
+        else
+            return 0;
     }
     else {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr("%s: %" PRIuINUM
-            " is not an inode", func_name, a_inum);
-        free(buf);
-        return 1;
+        return fatfs_copy_inode_if_valid(fatfs, a_fs_file, a_inum); 
+    }
+}
+
+/**************************************************************************
+ *
+ * INODE WALK
+ *
+ *************************************************************************/
+
+static uint8_t
+fatfs_is_dentry(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic)
+{
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
+
+    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
+        return exfatfs_is_dentry(a_fatfs, a_buf, a_basic);
+    }
+    else {
+        return fatxxfs_is_dentry(a_fatfs, a_buf, a_basic);
+    }
+}
+
+TSK_RETVAL_ENUM
+fatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
+    char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum)
+{
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
+
+    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
+        return exfatfs_dinode_copy(a_fatfs, a_fs_meta, a_buf, a_sect, a_inum);
+    }
+    else {
+        return fatxxfs_dinode_copy(a_fatfs, a_fs_meta, a_buf, a_sect, a_inum);
     }
 }
 

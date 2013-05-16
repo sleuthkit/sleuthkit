@@ -14,12 +14,14 @@
  * Retrieved May 2013 from: 
  * http://www.sans.org/reading_room/whitepapers/forensics/reverse-engineering-microsoft-exfat-file-system_33274
  *
- */
+ * Some additional details concerning TexFAT were obtained in May 2013
+ * from:
+ * http://msdn.microsoft.com/en-us/library/ee490643(v=winembedded.60).aspx
+*/
 
 /**
  * \file tsk_exfatfs.h
- * Contains the structures and function APIs for TSK exFATXX file system
- * support.
+ * Contains the structures and functions for TSK exFATXX file system support.
  */
 
 #ifndef _TSK_EXFATFS_H
@@ -257,64 +259,28 @@ extern "C" {
         uint8_t utf16_name_chars[30];
     } EXFATFS_FILE_NAME_DIR_ENTRY;
 
-	/**
-	 * \internal
-	 * Open part of a disk image as an exFAT file system. 
-	 *
-	 * @param a_fatfs Generic FAT file system info structure.
-	 * @returns 1 on sucess, 0 otherwise.
-	 */
+    // RJCTODO: Ask Brian why not have separate headers for internal and API functions?
+
 	extern int 
     exfatfs_open(FATFS_INFO *a_fatfs);
 
-	/**
-	 * \internal
-	 * Determine whether a specified cluster is allocated. 
-	 *
-	 * @param a_fatfs Generic FAT file system info structure.
-     * @param a_cluster_addr Address of the cluster to check. 
-	 * @return 1 if the cluster is allocated, 0 otherwise.
-	 */
     extern int8_t 
     exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr);
 
-	/**
-	 * \internal
-     * Determines whether a buffer likely contains a directory entry.
-     * For the most reliable results, request the in-depth test.
-     *
-	 * @param a_fatfs Generic FAT file system info structure.
-     * @param a_buf Buffer that may contain a directory entry.
-     * @param a_basic 1 if only basic tests should be performed. 
-     * @return 1 if likely directory entry found, 0 if not
-     */
     extern uint8_t 
     exfatfs_is_dentry(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic);
 
-    // RJCTODO: Comment
     extern uint8_t
     exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic);
 
-    //RJCTODO: Is this comment still accurate?
-    /**
-     * \internal
-     * Copy the contents of a raw directry entry into a TSK_FS_INFO structure.
-     *
-     * @param a_fatfs File system that directory entry is from.
-     * @param a_fs_meta Generic inode structure to copy data into.
-     * @param a_dentry Generic directory entry to copy data from.
-     * @param a_sect Sector address where directory entry is from -- used
-     * to determine allocation status.
-     * @param a_inum Address of the inode.
-     *
-     * @return 1 on error and 0 on success.  Errors should only occur for
-     * Unicode conversion problems and when this occurs the name will be
-     * NULL terminated (but with unknown contents).
-     *
-     */
     extern TSK_RETVAL_ENUM
     exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
         char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
+
+    extern uint8_t
+    exfatfs_copy_inode_if_valid(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, 
+        TSK_DADDR_T sect, TSK_INUM_T inum, 
+        char *a_buf, uint8_t do_basic_validity_test);
 
 #ifdef __cplusplus
 }

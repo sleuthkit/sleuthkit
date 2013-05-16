@@ -302,6 +302,11 @@ extern "C" {
     fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
         char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
+    extern uint8_t
+    fatxxfs_copy_inode_if_valid(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, 
+        TSK_DADDR_T sect, TSK_INUM_T inum, 
+        char *a_buf, uint8_t do_basic_validity_test);
+
 #ifdef __cplusplus
 }
 #endif
