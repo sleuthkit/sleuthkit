@@ -4566,8 +4566,7 @@ public class SleuthkitCase {
 		try {
 			s = con.createStatement();
 			rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files "
-					+ "WHERE type = '" + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + "' "
-					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + "' "
+					+ "WHERE dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + "' "
 					+ "AND md5 IS NULL "
 					+ "AND size > '0'");
 			rs.next();
@@ -4608,9 +4607,7 @@ public class SleuthkitCase {
 		try {
 			s = con.createStatement();
 			rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files "
-					+ "WHERE type = '" + TskData.TSK_DB_FILES_TYPE_ENUM.FS.getFileType() + "' "
-					+ "AND dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + "' "
-					+ "AND md5 IS NOT NULL "
+					+ "WHERE md5 IS NOT NULL "
 					+ "AND size > '0'");
 			rs.next();
 			count = rs.getInt(1);
