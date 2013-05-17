@@ -50,6 +50,17 @@
 
 #define FATFS_FILE_CONTENT_LEN sizeof(TSK_DADDR_T)      // we will store the starting cluster
 
+/* flags for attributes field */
+#define FATFS_ATTR_NORMAL	0x00    /* normal file */
+#define FATFS_ATTR_READONLY	0x01    /* file is readonly */
+#define FATFS_ATTR_HIDDEN	0x02    /* file is hidden */
+#define FATFS_ATTR_SYSTEM	0x04    /* file is a system file */
+#define FATFS_ATTR_VOLUME	0x08    /* entry is a volume label */
+#define FATFS_ATTR_DIRECTORY	0x10    /* entry is a directory name */
+#define FATFS_ATTR_ARCHIVE	0x20    /* file is new or modified */
+#define FATFS_ATTR_LFN		0x0f    /* A long file name entry */
+#define FATFS_ATTR_ALL		0x3f    /* all flags set */
+
 // RJCTODO: Comment for Doxygen
 #define FATFS_CLUST_2_SECT(fatfs, c)	\
 	(TSK_DADDR_T)(fatfs->firstclustsect + ((((c) & fatfs->mask) - 2) * fatfs->csize))

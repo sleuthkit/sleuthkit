@@ -41,12 +41,14 @@ exfatfs_is_vol_label_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t
          return 0; // RJCTODO: Is this the right choice?
     }
 
+    // RJCTODO: Things seem to have changed, the max volume label length is more than 12.
+    // I will need to experiment to find out what it is.
     /* The character count should not exceed the maximum length of the volume 
      * label. */
-    if (dentry->utf16_char_count > EXFATFS_MAX_VOLUME_LABEL_LEN)
-    {
-        return 0;
-    }
+    //if (dentry->utf16_char_count > EXFATFS_MAX_VOLUME_LABEL_LEN)
+    //{
+    //    return 0;
+    //}
 
     return 1;
 }
@@ -277,7 +279,7 @@ exfatfs_copy_vol_label_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, char 
     EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_buf;
 
     if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY) {
-        if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_meta, (UTF16*)dentry->volume_label, dentry->utf16_char_count, a_inum, "volume label") == TSKconversionOK) {
+        if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_meta, (UTF16*)dentry->volume_label, dentry->utf16_char_count + 1, a_inum, "volume label") == TSKconversionOK) {
             return TSK_OK;
         }
         else {
@@ -353,7 +355,7 @@ exfatfs_dinode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, TSK_DADDR_
     a_fs_meta->addr = a_inum;
 
     a_fs_meta->type = TSK_FS_META_TYPE_VIRT; // RJCTODO: Is this reasonable? Should it be TSK_FS_META_TYPE_UNDEF instead?
-    // RJCTODO: mode is as at allocation of struct...
+    // RJCTODO: mode is as at allocation of struct...ok? Use new mode?
 
     /* Default values for metadata that only exists in file inodes. */
     a_fs_meta->nlink = 0;
@@ -385,18 +387,12 @@ exfatfs_dinode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, TSK_DADDR_
         tsk_fs_attrlist_markunused(a_fs_meta->attr);
     }
 
-    // RJCTODO: Is this the right choice?
-    if (a_fs_meta->name2 != NULL) {
-        free(a_fs_meta->name2);
-        a_fs_meta->name2 = NULL;
+    if (a_fs_meta->name2 == NULL) {
+        if ((a_fs_meta->name2 = (TSK_FS_META_NAME_LIST*)tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL) {
+            return 0;
+        }
+        a_fs_meta->name2->next = NULL;
     }
-
-    //if (a_fs_meta->name2 == NULL) {
-    //    if ((a_fs_meta->name2 = (TSK_FS_META_NAME_LIST*)tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL) {
-    //        return 0;
-    //    }
-    //    a_fs_meta->name2->next = NULL;
-    //}
 
     return 1;
 }
@@ -473,11 +469,96 @@ exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
     return TSK_OK;
 }
 
-extern uint8_t
-exfatfs_copy_inode_if_valid(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, 
-    TSK_DADDR_T sect, TSK_INUM_T inum, 
-    char *a_buf, uint8_t do_basic_validity_test)
+void
+exfatfs_istat_attrs(FATFS_DENTRY *a_dentry, FILE *a_hFile)
 {
-    // RJCTODO
-    return 1;
+    const char *func_name = "fatxxfs_istat_attrs";
+    EXFATFS_FILE_DIR_ENTRY *file_dentry = NULL;
+
+
+    /* Validate the function parameters. */
+    //if ((fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) ||
+    //    (fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name)) ||
+    //    (fatfs_is_ptr_arg_null(a_buf, "a_buf", func_name))) {
+    //    return TSK_ERR;
+    //}
+
+
+    //if (a_fatfs == NULL) {
+    //    assert(a_fatfs != NULL);
+    //    tsk_error_set_errno(TSK_ERR_FS_ARG);
+    //    tsk_error_set_errstr("%s: a_fatfs argument is NULL", func_name);
+    //    return 0;
+    //}
+
+    //if (a_buf == NULL) {
+    //    assert(a_fatfs != NULL);
+    //    tsk_error_set_errno(TSK_ERR_FS_ARG);
+    //    tsk_error_set_errstr("%s: a_buf argument is NULL", func_name);
+    //    return 0;
+    //}
+
+    switch (a_dentry->data[0])
+    {
+    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
+    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY:
+        tsk_fprintf(a_hFile, "Volume Label\n");
+        break;
+    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
+        tsk_fprintf(a_hFile, "Volume GUID\n");
+        break;
+    case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
+        tsk_fprintf(a_hFile, "Allocation Bitmap\n");
+        break;
+    case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
+        tsk_fprintf(a_hFile, "UpCase Table\n");
+        break;
+    case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
+        tsk_fprintf(a_hFile, "TexFAT\n");
+        break;
+    case EXFATFS_DIR_ENTRY_TYPE_ACT:
+        tsk_fprintf(a_hFile, "Access Control Table\n");
+        break;
+    case EXFATFS_DIR_ENTRY_TYPE_FILE:
+    case EXFATFS_DIR_ENTRY_TYPE_FILE_DELETED:
+        file_dentry = (EXFATFS_FILE_DIR_ENTRY*)a_dentry;
+
+        if (file_dentry->attrs[0] & FATFS_ATTR_DIRECTORY) {
+            tsk_fprintf(a_hFile, "Directory");
+        }
+        else {
+            tsk_fprintf(a_hFile, "File");
+        }
+
+        if (file_dentry->attrs[0] & FATFS_ATTR_READONLY) {
+            tsk_fprintf(a_hFile, ", Read Only");
+        }
+
+        if (file_dentry->attrs[0] & FATFS_ATTR_HIDDEN) {
+            tsk_fprintf(a_hFile, ", Hidden");
+        }
+
+        if (file_dentry->attrs[0] & FATFS_ATTR_SYSTEM) {
+            tsk_fprintf(a_hFile, ", System");
+        }
+
+        if (file_dentry->attrs[0] & FATFS_ATTR_ARCHIVE) {
+            tsk_fprintf(a_hFile, ", Archive");
+        }
+
+        tsk_fprintf(a_hFile, "\n");
+
+        break;
+    case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
+    case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM_DELETED:
+        tsk_fprintf(a_hFile, "File Stream\n"); 
+        // RJCTODO: Want to print secondary flags? I think so
+        break;
+    case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
+    case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME_DELETED:
+        tsk_fprintf(a_hFile, "File Name\n");
+    default:
+        // RJCTODO: Do an error here?
+        break;
+    }
 }

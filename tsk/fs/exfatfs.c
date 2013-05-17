@@ -435,15 +435,21 @@ exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
 {
     const char *func_name = "exfatfs_is_clust_alloc";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-    TSK_DADDR_T bitmap_byte_offset = (a_fatfs->EXFATFS_INFO.first_sector_of_alloc_bitmap * a_fatfs->ssize) + ((a_cluster_addr - 2) / 8);
+    TSK_DADDR_T bitmap_byte_offset = 0;
     uint8_t bitmap_byte[1];
     ssize_t bytes_read = 0;
-
-    uint8_t x;
+    TSK_DADDR_T cluster_addr = 0;
 
     tsk_error_reset();
 
-    /* Read the byte that contains the bit for the specified cluster. */
+     /* Subtract 2 from the cluster address since cluster #2 is the first cluster. */
+    cluster_addr = a_cluster_addr - 2;
+
+    /* Determine the offset of the byte in the allocation bitmap that contains
+     * the bit for the specified cluster. */
+    bitmap_byte_offset = (a_fatfs->EXFATFS_INFO.first_sector_of_alloc_bitmap * a_fatfs->ssize) + (cluster_addr / 8);
+
+    /* Read the byte. */
     bytes_read = tsk_fs_read(fs, bitmap_byte_offset, (char*)(&bitmap_byte[0]), 1);
     if (bytes_read != 1) {
         if (bytes_read >= 0) {
@@ -455,6 +461,5 @@ exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
     }
 
     /* Check the bit that corresponds to the specified cluster. */
-    return ((1 << (a_cluster_addr % 8)) & bitmap_byte[0]);
-    //return isset(&bitmap_byte[0], a_cluster_addr);
+    return (isset(&bitmap_byte[0], cluster_addr) ? 1 : 0);
 }

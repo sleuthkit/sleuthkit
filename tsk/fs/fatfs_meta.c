@@ -547,7 +547,9 @@ fatfs_make_root(FATFS_INFO *fatfs, TSK_FS_META *fs_meta)
         }
         fs_meta->name2->next = NULL;
     }
-    fs_meta->name2->name[0] = '\0';
+    //fs_meta->name2->name[0] = '\0'; RJCTODO: Make sure this is acceptable
+    strncpy(fs_meta->name2->name, FATFS_ROOTNAME,
+        TSK_FS_META_NAME_LIST_NSIZE);
 
     fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
     if (fs_meta->attr) {
@@ -787,6 +789,22 @@ fatfs_copy_inode_if_valid(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     size_t inode_size = 0;
     char *buf = NULL;
     uint8_t ret_val = 0;
+    uint8_t (*is_dentry)(FATFS_INFO*, char*, uint8_t) = NULL;
+    TSK_RETVAL_ENUM (*dinode_copy)(FATFS_INFO*, TSK_FS_META*, char*, TSK_DADDR_T, TSK_INUM_T) = NULL;
+
+    // RJCTODO: Discuss validation of function args policy
+    /* Validate the function arguments. */
+    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name)) {
+        return 1;
+    }
+
+    if (a_inum < fs->first_inum || a_inum > fs->last_inum) {
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr("%s: inode number %" PRIuINUM
+            " too large/small", func_name, a_inum);
+        return 1;
+    }
 
     /* Get the sector the inode is in. */ 
     sector = FATFS_INODE_2_SECT(a_fatfs, a_inum);
@@ -817,16 +835,38 @@ fatfs_copy_inode_if_valid(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         return 1;
     }
 
-     /* Copy the inode into the TSK_FS_META member of the TSK_FS_FILE 
-      * structure. */
-    // RJCTODO: May be able to reduce arg list - sector may not need to be passed
-    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        ret_val = exfatfs_copy_inode_if_valid(a_fatfs, a_fs_file, sector, 
-            a_inum, buf, (uint8_t)do_basic_validity_test);
+    /* 
+     * Use the directory entry check function to see if the bytes in the 
+     * buffer appear to be a valid inode. If so, call the copy function to 
+     * populate the TSK_FS_META struct with data parsed from the buffer.
+     */
+    is_dentry = (fs->ftype == TSK_FS_TYPE_EXFAT ? exfatfs_is_dentry : fatxxfs_is_dentry);
+    dinode_copy = (fs->ftype == TSK_FS_TYPE_EXFAT ? exfatfs_dinode_copy : fatxxfs_dinode_copy);
+    if (is_dentry(a_fatfs, buf, do_basic_validity_test)) {
+        ret_val = dinode_copy(a_fatfs, a_fs_file->meta, buf, 
+            sector, a_inum);
+        if (ret_val == TSK_OK) {
+            ret_val = 0;
+        }
+        else if (ret_val == TSK_COR) {
+            /* If there was a Unicode conversion error,
+                * then still return the inode. */
+            if (tsk_verbose) {
+                tsk_error_print(stderr);
+            }
+            tsk_error_reset();
+            ret_val = 0;
+        }
+        else {
+            ret_val = 1;
+        }
     }
     else {
-        ret_val = fatxxfs_copy_inode_if_valid(a_fatfs, a_fs_file, sector,
-            a_inum, buf, (uint8_t)do_basic_validity_test);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr("%s: %" PRIuINUM
+            " is not an inode", func_name, a_inum);
+        ret_val = 1;
     }
 
     free(buf);
@@ -912,6 +952,182 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
     else {
         return fatfs_copy_inode_if_valid(fatfs, a_fs_file, a_inum); 
     }
+}
+
+/************************* istat *******************************/
+
+/* Callback a_action for file_walk to print the sector addresses
+ * of a file
+ */
+
+typedef struct {
+    FILE *hFile;
+    int idx;
+    int istat_seen;
+} FATFS_PRINT_ADDR;
+
+static TSK_WALK_RET_ENUM
+print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
+    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
+{
+    FATFS_PRINT_ADDR *print = (FATFS_PRINT_ADDR *) a_ptr;
+
+    tsk_fprintf(print->hFile, "%" PRIuDADDR " ", addr);
+
+    if (++(print->idx) == 8) {
+        tsk_fprintf(print->hFile, "\n");
+        print->idx = 0;
+    }
+    print->istat_seen = 1;
+
+    return TSK_WALK_CONT;
+}
+
+/**
+ * Print details on a specific file to a file handle. 
+ *
+ * @param a_fs File system file is located in.
+ * @param a_hFile File handle to print text to.
+ * @param a_inum Address of file in file system.
+ * @param a_numblock The number of blocks in file to force print (can go beyond file size).
+ * @param a_sec_skew Clock skew in seconds to also print times in.
+ * 
+ * @returns 1 on error and 0 on success.
+ */
+uint8_t
+fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
+    TSK_DADDR_T a_numblock, int32_t a_sec_skew)
+{
+    const char* func_name = "fatfs_istat";
+    TSK_FS_META *fs_meta = NULL;
+    TSK_FS_FILE *fs_file =  NULL;
+    char *buf = NULL;
+    TSK_FS_META_NAME_LIST *fs_name_list = NULL;
+    FATFS_PRINT_ADDR print;
+    char timeBuf[128];
+
+    /* Clean up any error messages that are lying around. */
+    tsk_error_reset();
+
+    /* Validate the function arguments. */
+    if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
+        fatfs_is_ptr_arg_null(a_hFile, "a_hFile", func_name)) {
+        return 1;
+    }
+
+    if (a_inum < a_fs->first_inum || a_inum > a_fs->last_inum) {
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr("%s: inode number %" PRIuINUM
+            " too large/small", func_name, a_inum);
+        return 1;
+    }
+
+    /* Create a TSK_FS_FILE corresponding to the specified inode. */
+    if ((fs_file = tsk_fs_file_open_meta(a_fs, NULL, a_inum)) == NULL) {
+        return 1;
+    }
+    fs_meta = fs_file->meta;
+
+    tsk_fprintf(a_hFile, "Directory Entry: %" PRIuINUM "\n", a_inum);
+
+    tsk_fprintf(a_hFile, "%sAllocated\n",
+        (fs_meta->flags & TSK_FS_META_FLAG_UNALLOC) ? "Not " : "");
+
+    tsk_fprintf(a_hFile, "File Attributes: ");
+
+    buf = (char*)tsk_malloc(sizeof(FATFS_DENTRY));
+    if (fatfs_dinode_load(a_fs, buf, sizeof(FATFS_DENTRY), a_inum)) {
+        /* fatfs_dinode_load() returns 1 on error. But the call of  
+         * tsk_fs_file_open_meta() above succeeded, so the inode is valid. 
+         * Therefore, the inode is for either the root directory or a virtual
+         * file (MBR, a FAT). */
+        if (a_inum == FATFS_ROOTINO) {
+            tsk_fprintf(a_hFile, "Directory\n");
+        }
+        else if (fs_file->meta->type == TSK_FS_META_TYPE_VIRT) {
+            tsk_fprintf(a_hFile, "Virtual\n");
+        }
+        else {
+            tsk_fprintf(a_hFile, "File\n");
+        }
+    }
+    else if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
+        exfatfs_istat_attrs((FATFS_DENTRY*)buf, a_hFile);
+    }
+    else {
+        fatxxfs_istat_attrs((FATFS_DENTRY*)buf, a_hFile);
+    };
+
+    tsk_fprintf(a_hFile, "Size: %" PRIuOFF "\n", fs_meta->size);
+
+    if (fs_meta->name2) {
+        fs_name_list = fs_meta->name2;
+        tsk_fprintf(a_hFile, "Name: %s\n", fs_name_list->name);
+    }
+
+    if (a_sec_skew != 0) {
+        tsk_fprintf(a_hFile, "\nAdjusted Directory Entry Times:\n");
+
+        if (fs_meta->mtime)
+            fs_meta->mtime -= a_sec_skew;
+        if (fs_meta->atime)
+            fs_meta->atime -= a_sec_skew;
+        if (fs_meta->crtime)
+            fs_meta->crtime -= a_sec_skew;
+
+        tsk_fprintf(a_hFile, "Written:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->mtime, timeBuf));
+        tsk_fprintf(a_hFile, "Accessed:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+        tsk_fprintf(a_hFile, "Created:\t%s\n",
+            tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
+
+        if (fs_meta->mtime == 0)
+            fs_meta->mtime += a_sec_skew;
+        if (fs_meta->atime == 0)
+            fs_meta->atime += a_sec_skew;
+        if (fs_meta->crtime == 0)
+            fs_meta->crtime += a_sec_skew;
+
+        tsk_fprintf(a_hFile, "\nOriginal Directory Entry Times:\n");
+    }
+    else
+        tsk_fprintf(a_hFile, "\nDirectory Entry Times:\n");
+
+    tsk_fprintf(a_hFile, "Written:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime,
+            timeBuf));
+    tsk_fprintf(a_hFile, "Accessed:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->atime, timeBuf));
+    tsk_fprintf(a_hFile, "Created:\t%s\n",
+        tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
+
+    tsk_fprintf(a_hFile, "\nSectors:\n");
+
+    /* A bad hack to force a specified number of blocks */
+    if (a_numblock > 0)
+        fs_meta->size = a_numblock * a_fs->block_size;
+
+    print.istat_seen = 0;
+    print.idx = 0;
+    print.hFile = a_hFile;
+
+    // RJCTODO: Update for exFAT once file_walk is implemented.
+    if (a_fs->ftype != TSK_FS_TYPE_EXFAT) {
+        if (tsk_fs_file_walk(fs_file,
+                (TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK),
+                print_addr_act, (void *) &print)) {
+            tsk_fprintf(a_hFile, "\nError reading file\n");
+            tsk_error_print(a_hFile);
+            tsk_error_reset();
+        }
+        else if (print.idx != 0) {
+            tsk_fprintf(a_hFile, "\n");
+        }
+    }
+
+    free(buf);
+    tsk_fs_file_close(fs_file);
+    return 0;
 }
 
 /**************************************************************************

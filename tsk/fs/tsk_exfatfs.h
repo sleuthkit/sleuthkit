@@ -48,7 +48,7 @@
 #define EXFATFS_FIRST_CLUSTER 2
 
 /**
- * RJCTODO: comment 
+ * RJCTODO: comment or remove 
  */
 #define EXFATFS_INODE_BUFFER_SIZE (2 * (FATFS_DENTRY_SIZE))
 
@@ -208,7 +208,7 @@ extern "C" {
         uint8_t entry_type;
         uint8_t secondary_entries_count;
         uint8_t check_sum[2];
-        uint8_t file_attrs[2];
+        uint8_t attrs[2];
         uint8_t reserved1[2];
         uint8_t ctime[4];
         uint8_t mtime[4];
@@ -277,10 +277,8 @@ extern "C" {
     exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
         char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
-    extern uint8_t
-    exfatfs_copy_inode_if_valid(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, 
-        TSK_DADDR_T sect, TSK_INUM_T inum, 
-        char *a_buf, uint8_t do_basic_validity_test);
+    extern void
+    exfatfs_istat_attrs(FATFS_DENTRY *a_dentry, FILE *a_hFile);
 
 #ifdef __cplusplus
 }

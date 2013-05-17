@@ -28,6 +28,8 @@
  */
 #define FATXXFS_INODE_BUFFER_SIZE FATFS_DENTRY_SIZE
 
+#define FATFS_ROOTNAME   "$ROOT"
+
 #define FATFS_MBRINO(fs_info) \
     (TSK_FS_ORPHANDIR_INUM(fs_info) - 3)        // inode for master boot record "special file"
 #define FATFS_MBRNAME   "$MBR"
@@ -91,17 +93,6 @@
 // extensions are to be ascii / latin
 #define FATFS_IS_83_EXT(c)		\
     (FATFS_IS_83_NAME((c)) && ((c) < 0x7f))
-
-/* flags for attributes field */
-#define FATFS_ATTR_NORMAL	0x00    /* normal file */
-#define FATFS_ATTR_READONLY	0x01    /* file is readonly */
-#define FATFS_ATTR_HIDDEN	0x02    /* file is hidden */
-#define FATFS_ATTR_SYSTEM	0x04    /* file is a system file */
-#define FATFS_ATTR_VOLUME	0x08    /* entry is a volume label */
-#define FATFS_ATTR_DIRECTORY	0x10    /* entry is a directory name */
-#define FATFS_ATTR_ARCHIVE	0x20    /* file is new or modified */
-#define FATFS_ATTR_LFN		0x0f    /* A long file name entry */
-#define FATFS_ATTR_ALL		0x3f    /* all flags set */
 
 /* flags for lowercase field */
 #define FATFS_CASE_LOWER_BASE	0x08    /* base is lower case */
@@ -302,10 +293,7 @@ extern "C" {
     fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
         char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
-    extern uint8_t
-    fatxxfs_copy_inode_if_valid(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, 
-        TSK_DADDR_T sect, TSK_INUM_T inum, 
-        char *a_buf, uint8_t do_basic_validity_test);
+    extern void fatxxfs_istat_attrs(FATFS_DENTRY *a_dentry, FILE *a_hFile);
 
 #ifdef __cplusplus
 }
