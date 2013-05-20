@@ -100,6 +100,7 @@ extern "C" {
      * exFAT directory entry types, the first byte of a directory entry.
      */
     enum EXFATFS_DIR_ENTRY_TYPE_ENUM {
+        EXFATFS_DIR_ENTRY_TYPE_NONE = 0x00,
         EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x83,     
         EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY = 0x03,     
         EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID = 0xA0,     
@@ -259,7 +260,13 @@ extern "C" {
         uint8_t utf16_name_chars[30];
     } EXFATFS_FILE_NAME_DIR_ENTRY;
 
-    // RJCTODO: Ask Brian why not have separate headers for internal and API functions?
+    //RJCTODO: Comments
+    typedef struct {
+        FATFS_DENTRY primary_dentry;
+        FATFS_DENTRY secondary_dentry;
+    } EXFATFS_INODE;
+
+    // RJCTODO: Consider marking header as internal, splitting up, etc.
 
 	extern int 
     exfatfs_open(FATFS_INFO *a_fatfs);
@@ -267,18 +274,23 @@ extern "C" {
     extern int8_t 
     exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr);
 
-    extern uint8_t 
-    exfatfs_is_dentry(FATFS_INFO *a_fatfs, char *a_buf, uint8_t a_basic);
+    extern enum EXFATFS_DIR_ENTRY_TYPE_ENUM 
+    exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic);
 
-    extern uint8_t
-    exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic);
+    extern enum EXFATFS_DIR_ENTRY_TYPE_ENUM 
+    exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+        uint8_t a_basic);
 
     extern TSK_RETVAL_ENUM
-    exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-        char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
+    exfatfs_inode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
+        EXFATFS_INODE *a_inode, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
+
+    extern uint8_t
+    exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
+        TSK_INUM_T a_inum, TSK_DADDR_T a_sect, uint8_t a_do_basic_test);
 
     extern void
-    exfatfs_istat_attrs(FATFS_DENTRY *a_dentry, FILE *a_hFile);
+    exfatfs_istat_attrs(TSK_FS_INFO *a_fs, TSK_INUM_T a_inum, FILE *a_hFile);
 
 #ifdef __cplusplus
 }

@@ -99,46 +99,6 @@
 #define FATFS_CASE_LOWER_EXT	0x10    /* extension is lower case */
 #define FATFS_CASE_LOWER_ALL	0x18    /* both are lower */
 
-#define FATFS_SEC_MASK		0x1f    /* number of seconds div by 2 */
-#define FATFS_SEC_SHIFT		0
-#define FATFS_SEC_MIN		0
-#define FATFS_SEC_MAX		30
-#define FATFS_MIN_MASK		0x7e0   /* number of minutes 0-59 */
-#define FATFS_MIN_SHIFT		5
-#define FATFS_MIN_MIN		0
-#define FATFS_MIN_MAX		59
-#define FATFS_HOUR_MASK		0xf800  /* number of hours 0-23 */
-#define FATFS_HOUR_SHIFT	11
-#define FATFS_HOUR_MIN		0
-#define FATFS_HOUR_MAX		23
-
-/* return 1 if x is a valid FAT time */
-#define FATFS_ISTIME(x)	\
-	(((((x & FATFS_SEC_MASK) >> FATFS_SEC_SHIFT) > FATFS_SEC_MAX) || \
-	  (((x & FATFS_MIN_MASK) >> FATFS_MIN_SHIFT) > FATFS_MIN_MAX) || \
-	  (((x & FATFS_HOUR_MASK) >> FATFS_HOUR_SHIFT) > FATFS_HOUR_MAX) ) == 0)
-
-#define FATFS_DAY_MASK		0x1f    /* day of month 1-31 */
-#define FATFS_DAY_SHIFT		0
-#define FATFS_DAY_MIN		1
-#define FATFS_DAY_MAX		31
-#define FATFS_MON_MASK		0x1e0   /* month 1-12 */
-#define FATFS_MON_SHIFT		5
-#define FATFS_MON_MIN		1
-#define FATFS_MON_MAX		12
-#define FATFS_YEAR_MASK		0xfe00  /* year, from 1980 0-127 */
-#define FATFS_YEAR_SHIFT	9
-#define FATFS_YEAR_MIN		0
-#define FATFS_YEAR_MAX		127
-
-/* return 1 if x is a valid FAT date */
-#define FATFS_ISDATE(x)	\
-	 (((((x & FATFS_DAY_MASK) >> FATFS_DAY_SHIFT) > FATFS_DAY_MAX) || \
-	   (((x & FATFS_DAY_MASK) >> FATFS_DAY_SHIFT) < FATFS_DAY_MIN) || \
-	   (((x & FATFS_MON_MASK) >> FATFS_MON_SHIFT) > FATFS_MON_MAX) || \
-	   (((x & FATFS_MON_MASK) >> FATFS_MON_SHIFT) < FATFS_MON_MIN) || \
-	   (((x & FATFS_YEAR_MASK) >> FATFS_YEAR_SHIFT) > FATFS_YEAR_MAX) ) == 0)
-
 /* flags for seq field */
 #define FATFS_LFN_SEQ_FIRST	0x40    /* This bit is set for the first lfn entry */
 #define FATFS_LFN_SEQ_MASK	0x3f    /* These bits are a mask for the decreasing
@@ -246,16 +206,7 @@ extern "C" {
     // RJCTODO: Add comment
     extern int8_t fatxxfs_is_clust_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust);
 
-	/**
-	 * \internal
-     * Does the pointed to buffer contain an exFAT directory entry?
-     *
-	 * @param a_fatfs Generic FAT file system info structure
-     * @param a_de Buffer that may contain a directory entry.
-     * @param a_basic 1 if only basic tests should be performed. 
-     * Returns 1 if it is, 0 if not
-     */    
-    extern uint8_t fatxxfs_is_dentry(FATFS_INFO *, char *, uint8_t);
+    extern uint8_t fatxxfs_is_dentry(FATFS_INFO *, FATXXFS_DENTRY *a_dentry, uint8_t a_basic);
 
     extern uint8_t fatfs_make_data_run(TSK_FS_FILE * a_fs_file);
 
@@ -269,7 +220,6 @@ extern "C" {
     extern int fatfs_name_cmp(TSK_FS_INFO *, const char *, const char *);
     extern uint8_t fatfs_dir_buf_add(FATFS_INFO * fatfs,
         TSK_INUM_T par_inum, TSK_INUM_T dir_inum);
-    extern void fatfs_cleanup_ascii(char *);
     extern void fatfs_dir_buf_free(FATFS_INFO *fatfs);
 
     // RJCTODO: Update
@@ -291,9 +241,13 @@ extern "C" {
      */
     extern TSK_RETVAL_ENUM
     fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-        char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
+        FATXXFS_DENTRY *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
-    extern void fatxxfs_istat_attrs(FATFS_DENTRY *a_dentry, FILE *a_hFile);
+    extern uint8_t
+    fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
+        TSK_INUM_T a_inum, TSK_DADDR_T a_sect, uint8_t a_do_basic_test);
+
+    extern void fatxxfs_istat_attrs(TSK_FS_INFO *a_fs, TSK_INUM_T a_inum, FILE *a_hFile);
 
 #ifdef __cplusplus
 }
