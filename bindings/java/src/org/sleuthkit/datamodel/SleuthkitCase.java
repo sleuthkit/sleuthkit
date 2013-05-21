@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2012 Basis Technology Corp.
+ * Copyright 2012-2013 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,8 +69,6 @@ public class SleuthkitCase {
 	
 	// for use by getCarvedDirectoryId method only
 	private final Map<Long, Long> systemIdMap = new HashMap<Long, Long>();
-	// for use by getLocalFilesDirectoryId()
-	private volatile long localFilesVirtualDirId = -1;
 
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
@@ -2096,18 +2094,8 @@ public class SleuthkitCase {
 						result = rsHelper.file(rs, null);
 					}
 					children.add(result);
-				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
-					String parentPath = rs.getString("parent_path");
-					if (parentPath == null) {
-						parentPath = "";
-					}
-					VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
-							rs.getString("name"),
-							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), 
-							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
-							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-							rs.getLong("size"), rs.getString("md5"), 
-							FileKnown.valueOf(rs.getByte("known")), parentPath);
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {	
+					VirtualDirectory virtDir = rsHelper.virtualDirectory(rs);
 					children.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS ||
 						type == TSK_DB_FILES_TYPE_ENUM.CARVED) {
@@ -2701,50 +2689,29 @@ public class SleuthkitCase {
 	
 	
 	/**
-	 * Get ID of the $LocalFiles virtual folder. There is only one per case.
-	 * If it does not exists, creates it and adds it to cache, then gets it from the cache next time.
+	 * Get IDs of the virtual folder roots (at the same level as image), used for containers
+	 * such as for local files. 
 	 * 
-	 * @return the ID of the '$LocalFiles' directory for the given systemId
+	 * @return IDs of virtual directory root objects.
 	 */
-	public long getLocalFilesRootDirectoryId() throws TskCoreException {
+	public List<VirtualDirectory> getVirtualDirectoryRoots() throws TskCoreException {
+		final List<VirtualDirectory> virtDirRootIds = new ArrayList<VirtualDirectory>();
 		
-
-		//first, quick and atomic check the cache
-		if (localFilesVirtualDirId != -1) {
-			return localFilesVirtualDirId;
-		}
-
 		//use lock to ensure atomic cache check and db/cache update
 		dbWriteLock();
 
-		//recheck after lock acquired
-		if (localFilesVirtualDirId != -1) {
-			return localFilesVirtualDirId;
-		}
 		Statement statement = null;
 		ResultSet rs = null;
 		try {
-			//it's not in the cache. Go to the DB
-			//get topmost virtual directory object with no parent
 			statement = con.createStatement();
 			rs = statement.executeQuery("SELECT tsk_objects.obj_id FROM tsk_objects, tsk_files WHERE " 
 					+ "tsk_objects.par_obj_id IS NULL AND " 
 					+ "tsk_objects.type = " + TskData.ObjectType.ABSTRACTFILE.getObjectType() + " AND " 
 					+ "tsk_objects.obj_id = tsk_files.obj_id AND "
-					+ "tsk_files.type = " + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType() + " AND "
-					+ "tsk_files.name = '" + VirtualDirectory.NAME_LOCAL + "' "
-					+ "LIMIT 1"
-					);
-			
-			if (rs.next()) {
-				localFilesVirtualDirId = rs.getLong(1);
-			}
-			else {
-				// a local files directory does not exist; create one
-				final VirtualDirectory vd = addVirtualDirectory(
-						0, //NULL parent
-						VirtualDirectory.NAME_LOCAL);
-				localFilesVirtualDirId = vd.getId();
+					+ "tsk_files.type = " + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
+					
+			while (rs.next()) {
+				virtDirRootIds.add(rsHelper.virtualDirectory(rs));
 			}
 		}
 		catch (SQLException ex) {
@@ -2769,7 +2736,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		return localFilesVirtualDirId;
+		return virtDirRootIds;
 	}
 	
 	/**
@@ -3118,8 +3085,7 @@ public class SleuthkitCase {
 	 * @param atime
 	 * @param mtime
 	 * @param isFile whether a file or directory, true if a file
-	 * @param parent parent file object (such as virtual directory, another local file, or fscontent File),
-	 * or null if adding to a per-case $LocalFiles virtual folder
+	 * @param parent parent file object (such as virtual directory, another local file, or FsContent type of file)
 	 * @return newly created derived file object
 	 * @throws TskCoreException exception thrown if the object creation failed
 	 * due to a critical system error
@@ -3131,14 +3097,12 @@ public class SleuthkitCase {
 		long parentId = -1;
 		String parentPath;
 		if (parent == null) {
-			parentId = this.getLocalFilesRootDirectoryId();
-			parentPath = '/' + VirtualDirectory.NAME_LOCAL + '/'; //consider construcitng VirtualDir object and getParentPath() on it
+			throw new TskCoreException("Error adding local file: " + fileName + ", parent to add to is null");
 		}
 		else {
 			parentId = parent.getId();
 			parentPath = parent.getParentPath() + parent.getName() + '/';
 		}
-
 
 		LocalFile ret = null;
 		
@@ -4186,18 +4150,7 @@ public class SleuthkitCase {
 					}
 					results.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
-					String parentPath = rs.getString("parent_path");
-					if (parentPath == null) {
-						parentPath = "";
-					}
-					final VirtualDirectory virtDir = new VirtualDirectory(this, rs.getLong("obj_id"),
-							rs.getString("name"),
-							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), 
-							TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
-							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
-							rs.getShort("meta_flags"),
-							rs.getLong("size"), rs.getString("md5"), 
-							FileKnown.valueOf(rs.getByte("known")), parentPath);
+					final VirtualDirectory virtDir = rsHelper.virtualDirectory(rs);
 					results.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType() ||
 						type == TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()) {
