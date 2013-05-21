@@ -2704,7 +2704,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			statement = con.createStatement();
-			rs = statement.executeQuery("SELECT tsk_objects.obj_id FROM tsk_objects, tsk_files WHERE " 
+			rs = statement.executeQuery("SELECT tsk_files.* FROM tsk_objects, tsk_files WHERE " 
 					+ "tsk_objects.par_obj_id IS NULL AND " 
 					+ "tsk_objects.type = " + TskData.ObjectType.ABSTRACTFILE.getObjectType() + " AND " 
 					+ "tsk_objects.obj_id = tsk_files.obj_id AND "
