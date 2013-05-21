@@ -2698,7 +2698,7 @@ public class SleuthkitCase {
 		final List<VirtualDirectory> virtDirRootIds = new ArrayList<VirtualDirectory>();
 		
 		//use lock to ensure atomic cache check and db/cache update
-		dbWriteLock();
+		dbReadLock();
 
 		Statement statement = null;
 		ResultSet rs = null;
@@ -2732,7 +2732,7 @@ public class SleuthkitCase {
 				logger.log(Level.WARNING, "Error closing statements after getting local files virt folder id", e);
 			}
 			finally {
-				dbWriteUnlock();
+				dbReadUnlock();
 			}
 		}
 
