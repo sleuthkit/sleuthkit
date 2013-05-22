@@ -31,9 +31,9 @@
 #include "tsk_fatfs.h"
 
 /**
- * exFAT uses up to 11 UTF-16 characters for volume labels.
+ * exFAT uses up to 15 UTF-16 characters for volume labels.
  */
-#define EXFATFS_MAX_VOLUME_LABEL_LEN 11
+#define EXFATFS_MAX_VOLUME_LABEL_LEN 15
 
 /**
  * Up to 15 UTF-16 characters of a file name may be contained in an exFAT
@@ -124,8 +124,7 @@ extern "C" {
     typedef struct {
         uint8_t entry_type;
         uint8_t utf16_char_count;
-        uint8_t volume_label[22];
-        uint8_t reserved[8];
+        uint8_t volume_label[30];
     } EXFATFS_VOL_LABEL_DIR_ENTRY;
 
     /**

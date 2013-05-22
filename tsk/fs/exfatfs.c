@@ -21,14 +21,16 @@
 
 /**
  * \file exfatfs.c
- * Contains the internal TSK exFAT file system code to handle opening an exFAT
- * file system. 
+ * Contains the internal TSK exFAT file system code to access the data in the 
+ * file system data category as defined in the book "File System Forensic 
+ * Analysis" by Brian Carrier (pp. 174-175). 
  */
 
 #include "tsk_exfatfs.h"
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
+// RJCTODO: Add function header comment
 static uint8_t 
 exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
 {
@@ -83,6 +85,7 @@ exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
     return 1;
 }
 
+// RJCTODO: Add function header comment
 static uint8_t 
 exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
 {
@@ -198,6 +201,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
     return 1;
 }
 
+// RJCTODO: Add function header comment
 static void 
 exfatfs_get_volume_id(FATFS_INFO *a_fatfs)
 {
@@ -209,6 +213,7 @@ exfatfs_get_volume_id(FATFS_INFO *a_fatfs)
     }
 }
 
+// RJCTODO: Add function header comment
 static uint8_t
 exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
 {
@@ -290,6 +295,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
     return 0;
 }
 
+// RJCTODO: Add function header comment
 /* There are no blocks in exFAT. To conform to the SleuthKit file system 
  * model, sectors and clusters will be mapped to blocks. */
 static uint8_t 
@@ -314,6 +320,7 @@ exfatfs_map_fs_layout_to_blocks(FATFS_INFO *a_fatfs)
     return 1;
 }
 
+// RJCTODO: Add function header comment
 /* There are no blocks in exFAT. To conform to the SleuthKit file system 
  * model, sectors and clusters will be mapped to inodes. */
 static uint8_t
@@ -343,6 +350,7 @@ exfatfs_map_fs_layout_to_inodes(FATFS_INFO *a_fatfs)
     return 1;
 }
 
+// RJCTODO: Add function header comment
 static void 
 exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
 {
@@ -373,6 +381,7 @@ exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
     fs->close = fatfs_close;
 }
 
+// RJCTODO: Add function header comment
 static void 
 exfatfs_init_caches(FATFS_INFO *a_fatfs)
 {
@@ -394,7 +403,7 @@ exfatfs_init_caches(FATFS_INFO *a_fatfs)
  * Open part of a disk image as an exFAT file system. 
  *
  * @param a_fatfs Generic FAT file system info structure.
- * @returns 1 on sucess, 0 otherwise.
+ * @returns 1 on success, 0 otherwise.
  */
 int
 exfatfs_open(FATFS_INFO *a_fatfs)
@@ -403,6 +412,9 @@ exfatfs_open(FATFS_INFO *a_fatfs)
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
 
     tsk_error_reset();
+    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) {
+        return 0; 
+    }
 
     /* Is is really an exFAT file system? */
     if (!exfatfs_get_fs_size_params(a_fatfs) ||
@@ -420,46 +432,4 @@ exfatfs_open(FATFS_INFO *a_fatfs)
     fs->ftype = TSK_FS_TYPE_EXFAT;
 
 	return 1;
-}
-
-/**
- * \internal
- * Determine whether a specified cluster is allocated. 
- *
- * @param a_fatfs Generic FAT file system info structure.
- * @param a_cluster_addr Address of the cluster to check. 
- * @return 1 if the cluster is allocated, 0 otherwise.
- */
-int8_t 
-exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
-{
-    const char *func_name = "exfatfs_is_clust_alloc";
-    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-    TSK_DADDR_T bitmap_byte_offset = 0;
-    uint8_t bitmap_byte[1];
-    ssize_t bytes_read = 0;
-    TSK_DADDR_T cluster_addr = 0;
-
-    tsk_error_reset();
-
-     /* Subtract 2 from the cluster address since cluster #2 is the first cluster. */
-    cluster_addr = a_cluster_addr - 2;
-
-    /* Determine the offset of the byte in the allocation bitmap that contains
-     * the bit for the specified cluster. */
-    bitmap_byte_offset = (a_fatfs->EXFATFS_INFO.first_sector_of_alloc_bitmap * a_fatfs->ssize) + (cluster_addr / 8);
-
-    /* Read the byte. */
-    bytes_read = tsk_fs_read(fs, bitmap_byte_offset, (char*)(&bitmap_byte[0]), 1);
-    if (bytes_read != 1) {
-        if (bytes_read >= 0) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_READ);
-        }
-        tsk_error_set_errstr2("%s: failed to read bitmap byte", func_name);
-        return -1;
-    }
-
-    /* Check the bit that corresponds to the specified cluster. */
-    return (isset(&bitmap_byte[0], cluster_addr) ? 1 : 0);
 }

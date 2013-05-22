@@ -360,7 +360,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
     }
 
     fs_meta->mode = attr2mode(a_dentry->attrib); // RJCTODO: Fix
-    fs_meta->type = attr2type(a_dentry->attrib);
+    fs_meta->type = attr2type(a_dentry->attrib); // RJCTODO: Use for exFAT
 
     fs_meta->addr = inum;
 
@@ -582,7 +582,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
         fatfs_cleanup_ascii(fs_meta->name2->name);
     }
 
-    /* Clean up name to remove control characters */
+    /* Clean up name to remove control characters */ // RJCTODO: Haven't I seen this elsewhere, in the UTF-16 strcpy?
     i = 0;
     while (fs_meta->name2->name[i] != '\0') {
         if (TSK_IS_CNTRL(fs_meta->name2->name[i]))

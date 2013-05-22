@@ -965,7 +965,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     /* Print the attributes. */
     fatfs_istat_attrs(a_fs, a_inum, fs_file, a_hFile);
 
-    /* Print the size. */
+    /* Print the file size. */
     tsk_fprintf(a_hFile, "Size: %" PRIuOFF "\n", fs_meta->size);
 
     /* Print the name. */
@@ -1001,8 +1001,9 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
 
         tsk_fprintf(a_hFile, "\nOriginal Directory Entry Times:\n");
     }
-    else
+    else {
         tsk_fprintf(a_hFile, "\nDirectory Entry Times:\n");
+    }
 
     tsk_fprintf(a_hFile, "Written:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime,
             timeBuf));
@@ -1197,7 +1198,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             tsk_fs_meta_alloc(FATFS_FILE_CONTENT_LEN)) == NULL)
         return 1;
 
-    /* Handle the root directory, if it's included in the walk. */
+    /* Handle the root directory inode, if it's included in the walk. */
     if (start_inum == FATFS_ROOTINO) {
         if (((TSK_FS_META_FLAG_ALLOC & flags) == TSK_FS_META_FLAG_ALLOC)
             && ((TSK_FS_META_FLAG_USED & flags) == TSK_FS_META_FLAG_USED)
