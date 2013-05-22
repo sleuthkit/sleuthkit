@@ -37,6 +37,10 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class VirtualDirectory extends AbstractFile {
 
+	//some built-in virtual directory names
+	public static final String NAME_UNALLOC = "$Unalloc";
+	public static final String NAME_CARVED = "$CarvedFiles";
+	
 	protected VirtualDirectory(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, 
 			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
 			long size, String md5Hash, FileKnown knownState, String parentPath) {
@@ -47,7 +51,7 @@ public class VirtualDirectory extends AbstractFile {
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getLayoutDirectoryChildren(this);
+		return getSleuthkitCase().getVirtualDirectoryChildren(this);
 	}
 
 	@Override
@@ -66,12 +70,6 @@ public class VirtualDirectory extends AbstractFile {
 	}
 
 	
-	
-	@Override
-	public int read(byte[] buf, long offset, long len) throws TskCoreException {
-		return 0;
-	}
-
 
 	@Override
 	public boolean isRoot() {
@@ -90,7 +88,15 @@ public class VirtualDirectory extends AbstractFile {
 
 	@Override
 	public Image getImage() throws TskCoreException {
-		return getParent().getImage();
+		Content parent =  getParent();
+		if (parent != null) {
+			return parent.getImage();
+		}
+		else {
+			//root-level VirtualDirectory, such as local files container
+			return null;
+		}
+
 	}
 
 	@Override

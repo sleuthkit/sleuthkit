@@ -101,8 +101,8 @@ public class DataModelTestSuite {
 		try {
 			String firstImageFile = getImgName(imagePaths.get(0));
 			String dbPath = buildPath(tempDirPath, firstImageFile, type.testName, ".db");
-			java.io.File dbFile = new java.io.File(dbPath);
 			standardFile.createNewFile();
+			java.io.File dbFile = new java.io.File(dbPath);
 			dbFile.delete();
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
@@ -118,6 +118,7 @@ public class DataModelTestSuite {
 			process.commit();
 			OutputStreamWriter standardWriter = type.traverse(sk, standardFile.getAbsolutePath());
 			standardWriter.flush();
+			sk.close();
 			runSort(standardFile.getAbsolutePath());
 		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Couldn't create Standard", ex);

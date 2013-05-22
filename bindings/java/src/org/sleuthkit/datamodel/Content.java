@@ -82,9 +82,10 @@ public interface Content extends SleuthkitVisitableItem {
 	public long getId();
 
 	/**
-	 * Get the root image
+	 * Get the root image of this content, of null if there is no image associated with this content
+	 * (such as for LocalFile)
 	 *
-	 * @return image
+	 * @return image associated with this Content or null if there isn't any
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public Image getImage() throws TskCoreException;

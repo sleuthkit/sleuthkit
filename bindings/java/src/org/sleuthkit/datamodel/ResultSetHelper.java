@@ -126,15 +126,15 @@ class ResultSetHelper {
 	 * @throws SQLException
 	 */
 	File file(ResultSet rs, FileSystem fs) throws SQLException {
-		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), 
+		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"),
 				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")),
 				rs.getShort("attr_id"), rs.getString("name"), rs.getLong("meta_addr"),
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), 
-				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
+				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
 				rs.getShort("meta_flags"), rs.getLong("size"),
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), 
+				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"),
 				rs.getString("md5"),
 				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path"));
 		f.setFileSystem(fs);
@@ -152,12 +152,12 @@ class ResultSetHelper {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs, String name) throws SQLException {
-		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), 
+		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"),
 				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")),
-				rs.getShort("attr_id"), name, rs.getLong("meta_addr"), 
+				rs.getShort("attr_id"), name, rs.getLong("meta_addr"),
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")), 
-				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
+				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
 				rs.getShort("meta_flags"), rs.getLong("size"),
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
 				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"),
@@ -165,6 +165,29 @@ class ResultSetHelper {
 				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path"));
 		dir.setFileSystem(fs);
 		return dir;
+	}
+
+	/**
+	 * Create a virtual directory object from a result set
+	 *
+	 * @param rs the result set
+	 * @return
+	 * @throws SQLException
+	 */
+	VirtualDirectory virtualDirectory(ResultSet rs) throws SQLException {
+		String parentPath = rs.getString("parent_path");
+		if (parentPath == null) {
+			parentPath = "";
+		}
+		
+		final VirtualDirectory vd = new VirtualDirectory(db, rs.getLong("obj_id"),
+				rs.getString("name"),
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
+				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
+				rs.getLong("size"), rs.getString("md5"),
+				FileKnown.valueOf(rs.getByte("known")), parentPath);
+		return vd;
 	}
 
 	/**
@@ -195,10 +218,11 @@ class ResultSetHelper {
 
 	/**
 	 * Creates an derived file given result set and parent id (optional)
+	 *
 	 * @param rs exsting active result set
 	 * @param parentId parent id or AbstractContent.UNKNOWN_ID
 	 * @return derived file object created
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
 	DerivedFile derivedFile(ResultSet rs, long parentId) throws SQLException {
 		boolean hasLocalPath = rs.getBoolean("has_path");
@@ -207,23 +231,58 @@ class ResultSetHelper {
 		if (hasLocalPath) {
 			localPath = db.getFilePath(objId);
 		}
-		
+
 		String parentPath = rs.getString("parent_path");
 		if (parentPath == null) {
 			parentPath = "";
 		}
-		
+
 		final DerivedFile df =
-				new DerivedFile(db, objId, rs.getString("name"), 
-				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), 
+				new DerivedFile(db, objId, rs.getString("name"),
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
 				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
 				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-				rs.getLong("size"), 
+				rs.getLong("size"),
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), 
+				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")),
 				parentPath, localPath,
 				parentId);
-		
+
 		return df;
+	}
+
+	/**
+	 * Creates an local file given result set and parent id (optional)
+	 *
+	 * @param rs exsting active result set
+	 * @param parentId parent id or AbstractContent.UNKNOWN_ID
+	 * @return local file object created
+	 * @throws SQLException
+	 */
+	LocalFile localFile(ResultSet rs, long parentId) throws SQLException {
+		boolean hasLocalPath = rs.getBoolean("has_path");
+		long objId = rs.getLong("obj_id");
+		String localPath = null;
+		if (hasLocalPath) {
+			localPath = db.getFilePath(objId);
+		}
+
+		String parentPath = rs.getString("parent_path");
+		if (parentPath == null) {
+			parentPath = "";
+		}
+
+		final LocalFile lf =
+				new LocalFile(db, objId, rs.getString("name"),
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
+				TSK_FS_META_TYPE_ENUM.ValueOf(rs.getShort("meta_type")),
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
+				rs.getLong("size"),
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
+				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")),
+				parentPath, localPath,
+				parentId);
+
+		return lf;
 	}
 }

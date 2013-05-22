@@ -111,6 +111,13 @@ public interface SleuthkitItemVisitor<T> {
     T visit(DerivedFile df);
 	
 	/**
+	 * Act on (visit) a LocalFile content object
+	 * @param lf local file to visit / act on
+	 * @return result of the visit
+	 */
+    T visit(LocalFile df);
+	
+	/**
 	 * The default visitor - quickest method for implementing a custom visitor.  
 	 * Every visit method delegates to the defaultVisit method,
 	 * the only required method to be implemented.
@@ -175,6 +182,11 @@ public interface SleuthkitItemVisitor<T> {
 		@Override
 		public T visit(DerivedFile df) {
 			return defaultVisit(df);
+		}
+		
+		@Override
+		public T visit(LocalFile lf) {
+			return defaultVisit(lf);
 		}
     }
 }

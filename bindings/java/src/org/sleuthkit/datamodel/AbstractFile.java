@@ -18,9 +18,14 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -45,9 +50,14 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final short attrId;
 	protected final TskData.TSK_FS_ATTR_TYPE_ENUM attrType;
 	protected final Set<TskData.TSK_FS_META_MODE_ENUM> modes;
-	
+	//local file support
+	private boolean localPathSet = false; ///< if set by setLocalPath(), reads are done on local file 
+	private String localPath; ///< local path as stored in db tsk_files_path, is relative to the db, 
+	private String localAbsPath; ///< absolute path representation of the local path
+	private volatile RandomAccessFile localFileHandle;
+	private volatile java.io.File localFile;
+	//range support
 	private List<TskFileRange> ranges;
-	
 	/*
 	 * path of parent directory
 	 */
@@ -60,6 +70,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * md5 hash
 	 */
 	protected String md5Hash;
+	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -438,23 +449,26 @@ public abstract class AbstractFile extends AbstractContent {
 	 * within tsk core
 	 */
 	public List<TskFileRange> getRanges() throws TskCoreException {
-		if(ranges == null) {
-            ranges = getSleuthkitCase().getFileRanges(this.getId());
-        }
-        return ranges;
+		if (ranges == null) {
+			ranges = getSleuthkitCase().getFileRanges(this.getId());
+		}
+		return ranges;
 	}
-	
+
 	/**
 	 * Convert an internal offset to an image offset
+	 *
 	 * @param fileOffset the byte offset in this layout file to map
-	 * @return the corresponding byte offset in the image where the file offset is located,
-	 * or -1 if the file has no range layout information or if the fileOffset is larger than file size
-	 * @throws TskCoreException exception thrown if critical error occurred within tsk core and offset could not be converted
+	 * @return the corresponding byte offset in the image where the file offset
+	 * is located, or -1 if the file has no range layout information or if the
+	 * fileOffset is larger than file size
+	 * @throws TskCoreException exception thrown if critical error occurred
+	 * within tsk core and offset could not be converted
 	 */
 	public long convertToImgOffset(long fileOffset) throws TskCoreException {
 		long imgOffset = -1;
 		for (TskFileRange byteRange : getRanges()) {
-			
+
 			// if fileOffset is within the current byteRange, calcuate the image
 			// offset and break
 			long rangeLength = byteRange.getByteLen();
@@ -462,7 +476,7 @@ public abstract class AbstractFile extends AbstractContent {
 				imgOffset = byteRange.getByteStart() + fileOffset;
 				break;
 			}
-			
+
 			// otherwise, decrement fileOffset by the length of the current
 			// byte range and continue
 			fileOffset -= rangeLength;
@@ -618,24 +632,238 @@ public abstract class AbstractFile extends AbstractContent {
 	public boolean isMetaFlagSet(TSK_FS_META_FLAG_ENUM metaFlag) {
 		return metaFlags.contains(metaFlag);
 	}
-
+	
+	
+	@Override
+	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
+		//template method
+		//if localPath is set, use local, otherwise, use readCustom() supplied by derived class
+		if (localPathSet) {
+			return readLocal(buf, offset, len);
+		}
+		else {
+			return readInt(buf, offset, len);
+		}
 		
+	}
+	
+	/**
+	 * Internal custom read  (non-local) method that child classes can implement
+	 * 
+	 * @param buf buffer to read into
+	 * @param offset start reading position in the file
+	 * @param len number of bytes to read
+	 * @return number of bytes read
+	 * @throws TskCoreException exception thrown when file could not be read 
+	 */
+	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
+		return 0;
+	}
+
+	/**
+	 * Local file path read support 
+	 * 
+	 * @param buf buffer to read into
+	 * @param offset start reading position in the file
+	 * @param len number of bytes to read
+	 * @return number of bytes read
+	 * @throws TskCoreException exception thrown when file could not be read
+	 */
+	protected final int readLocal(byte[] buf, long offset, long len) throws TskCoreException {
+		if (!localPathSet) {
+			throw new TskCoreException("Error reading local file, local path is not set");
+		}
+		
+		if (isDir()) {
+			return 0;
+		}
+
+		getLocalFile();
+		if (!localFile.exists()) {
+			throw new TskCoreException("Error reading local file, it does not exist at local path: " + localAbsPath);
+		}
+		if (!localFile.canRead()) {
+			throw new TskCoreException("Error reading local file, file not readable at local path: " + localAbsPath);
+		}
+
+		int bytesRead = 0;
+
+		if (localFileHandle == null) {
+			synchronized (this) {
+				if (localFileHandle == null) {
+					try {
+						localFileHandle = new RandomAccessFile(localFile, "r");
+					} catch (FileNotFoundException ex) {
+						final String msg = "Error reading local file: " + this.toString();
+						logger.log(Level.SEVERE, msg, ex);
+						//file could have been deleted or moved
+						throw new TskCoreException(msg, ex);
+					}
+				}
+			}
+		}
+
+		try {
+			//move to the user request offset in the stream
+			long curOffset = localFileHandle.getFilePointer();
+			if (curOffset != offset) {
+				localFileHandle.seek(offset);
+			}
+			//note, we are always writing at 0 offset of user buffer
+			bytesRead = localFileHandle.read(buf, 0, (int) len);
+		} catch (IOException ex) {
+			final String msg = "Cannot read local file: " + this.toString();
+			logger.log(Level.SEVERE, msg, ex);
+			//local file could have been deleted / moved
+			throw new TskCoreException(msg, ex);
+		}
+
+		return bytesRead;
+	}
+
+	/**
+	 * Set local path for the file, as stored in db tsk_files_path, relative to
+	 * the case db path or an absolute path.
+	 * When set, subsequent invocations of read() will read the file in the local path.
+	 *
+	 * @param localPath local path to be set
+	 * @param isAbsolute true if the path is absolute, false if relative to the case db
+	 */
+	protected void setLocalPath(String localPath, boolean isAbsolute) {
+		
+		if (localPath == null || localPath.equals("")) {
+			this.localPath = "";
+			localAbsPath = null;
+			localPathSet = false;
+		} else {
+			this.localPath = localPath;
+			if (isAbsolute) {
+				this.localAbsPath = localPath;
+			}
+			else {
+				this.localAbsPath = getSleuthkitCase().getDbDirPath() + java.io.File.separator + this.localPath;
+			}
+			this.localPathSet = true;
+		}
+	}
+
+
+	/**
+	 * Get local relative to case db path of the file 
+	 *
+	 * @return local file path if set
+	 */
+	public String getLocalPath() {
+		return localPath;
+	}
+
+	/**
+	 * Get local absolute path of the file, if localPath has been set
+	 *
+	 * @return local absolute file path if local path has been set, or null
+	 */
+	public String getLocalAbsPath() {
+		return localAbsPath;
+	}
+
+	/**
+	 * Check if the file exists. 
+	 * If non-local always true, if local, checks if actual local path exists
+	 *
+	 * @return true if the file exists, false otherwise
+	 */
+	public boolean exists() {
+		if (!localPathSet) {
+			return true;
+		} else {
+			getLocalFile();
+			return localFile.exists();
+		}
+	}
+
+	/**
+	 * Check if the file exists and is readable. 
+	 * If non-local (e.g. within an image), always true, if local,
+	 * checks if actual local path exists and is readable
+	 *
+	 * @return true if the file is readable
+	 */
+	public boolean canRead() {
+		if (!localPathSet) {
+			return true;
+		} else {
+			getLocalFile();
+			return localFile.canRead();
+		}
+
+	}
+
+	/**
+	 * Lazy load local file handle and return it, if localPath has been set
+	 *
+	 * @return java.io.File object representing the local file, or null if local path has not been set
+	 */
+	private java.io.File getLocalFile() {
+		if (!localPathSet) {
+			return null;
+		}
+
+		if (localFile == null) {
+			synchronized (this) {
+				if (localFile == null) {
+					localFile = new java.io.File(localAbsPath);
+				}
+			}
+		}
+		return localFile;
+	}
+
+	@Override
+	public void close() {
+
+		//close local file handle if set
+		if (localFileHandle != null) {
+			synchronized (this) {
+				if (localFileHandle != null) {
+					try {
+						localFileHandle.close();
+					} catch (IOException ex) {
+						logger.log(Level.SEVERE, "Could not close file handle for file: " + this.toString(), ex);
+					}
+					localFileHandle = null;
+				}
+			}
+		}
+
+	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		try {
+			close();
+		} finally {
+			super.finalize(); 
+		}
+	}
+
 	@Override
 	public String toString(boolean preserveState) {
-		return super.toString(preserveState) + "AbstractFile [\t" 
+		return super.toString(preserveState) + "AbstractFile [\t"
 				+ "\t" + "fileType " + fileType
-				+ "\tctime " + ctime 
-				+ "\tcrtime " + crtime 
-				+ "\t" + "mtime " + mtime + "\t" + "atime " + atime 
-				+ "\t" + "attrId " + attrId 
+				+ "\tctime " + ctime
+				+ "\tcrtime " + crtime
+				+ "\t" + "mtime " + mtime + "\t" + "atime " + atime
+				+ "\t" + "attrId " + attrId
 				+ "\t" + "attrType " + attrType
-				+ "\t" + "dirFlag " + dirFlag + "\t" + "dirType " + dirType 
+				+ "\t" + "dirFlag " + dirFlag + "\t" + "dirType " + dirType
 				+ "\t" + "uid " + uid
-				+ "\t" + "gid " + gid 
-				+ "\t" + "metaAddr " + metaAddr + "\t" + "metaFlags " + metaFlags 
-				+ "\t" + "metaType " + metaType + "\t" + "modes " + modes 
-				+ "\t" + "parentPath " + parentPath + "\t" + "size " + size 
-				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash 
+				+ "\t" + "gid " + gid
+				+ "\t" + "metaAddr " + metaAddr + "\t" + "metaFlags " + metaFlags
+				+ "\t" + "metaType " + metaType + "\t" + "modes " + modes
+				+ "\t" + "parentPath " + parentPath + "\t" + "size " + size
+				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash
+				+ "\t" + "localPathSet " + localPathSet + "\t" + "localPath " + localPath
+				+ "\t" + "localAbsPath " + localAbsPath + "\t" + "localFile " + localFile
 				+ "]\t";
 	}
 
@@ -673,6 +901,4 @@ public abstract class AbstractFile extends AbstractContent {
 
 		return epoch;
 	}
-	
-	
 }
