@@ -206,7 +206,7 @@ extern "C" {
     // RJCTODO: Add comment
     extern int8_t fatxxfs_is_clust_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust);
 
-    extern uint8_t fatxxfs_is_dentry(FATFS_INFO *, FATXXFS_DENTRY *a_dentry, uint8_t a_basic);
+    extern uint8_t fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic);
 
     extern uint8_t fatfs_make_data_run(TSK_FS_FILE * a_fs_file);
 
@@ -241,13 +241,14 @@ extern "C" {
      */
     extern TSK_RETVAL_ENUM
     fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-        FATXXFS_DENTRY *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
+        FATFS_DENTRY *a_dentry, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
     extern uint8_t
-    fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-        TSK_INUM_T a_inum, TSK_DADDR_T a_sect, uint8_t a_do_basic_test);
+    fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
+        TSK_INUM_T a_inum);
 
-    extern void fatxxfs_istat_attrs(TSK_FS_INFO *a_fs, TSK_INUM_T a_inum, FILE *a_hFile);
+    extern void fatxxfs_istat_attrs(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+        FILE *a_hFile);
 
 #ifdef __cplusplus
 }

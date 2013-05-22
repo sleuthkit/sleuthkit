@@ -96,6 +96,12 @@ extern "C" {
 		uint8_t signature[2];
 	} EXFATFS_VOL_BOOT_REC;
 
+
+    // RJCTODO: Comment
+    typedef struct {
+        FATFS_DENTRY dentries[19];
+    } EXFATFS_INODE;
+
     /**
      * exFAT directory entry types, the first byte of a directory entry.
      */
@@ -109,11 +115,11 @@ extern "C" {
         EXFATFS_DIR_ENTRY_TYPE_TEX_FAT = 0xA1,     
         EXFATFS_DIR_ENTRY_TYPE_ACT = 0xE2,     
         EXFATFS_DIR_ENTRY_TYPE_FILE = 0x85,     
-        EXFATFS_DIR_ENTRY_TYPE_FILE_DELETED = 0x05,     
+        EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE = 0x05,     
         EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM = 0xC0,     
-        EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM_DELETED = 0x40,  
+        EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM = 0x40,  
         EXFATFS_DIR_ENTRY_TYPE_FILE_NAME = 0xC1,     
-        EXFATFS_DIR_ENTRY_TYPE_FILE_NAME_DELETED = 0x41     
+        EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME = 0x41     
     };
 
     /**
@@ -210,14 +216,17 @@ extern "C" {
         uint8_t check_sum[2];
         uint8_t attrs[2];
         uint8_t reserved1[2];
-        uint8_t ctime[4];
-        uint8_t mtime[4];
-        uint8_t atime[4];
-        uint8_t ctime_10_ms_increments;
-        uint8_t ltime_10_ms_increments;
-        uint8_t ctime_time_zone_offset;
-        uint8_t mtime_time_zone_offset;
-        uint8_t atime_time_zone_offset;
+        uint8_t created_date[2];
+        uint8_t created_time[2];
+        uint8_t modified_date[2];
+        uint8_t modified_time[2];
+        uint8_t accessed_date[2];
+        uint8_t accessed_time[2];
+        uint8_t created_time_10_ms_increments;
+        uint8_t modified_time_10_ms_increments;
+        uint8_t created_time_time_zone_offset;
+        uint8_t modified_time_time_zone_offset;
+        uint8_t accessed_time_time_zone_offset;
         uint8_t reserved2[7];
     } EXFATFS_FILE_DIR_ENTRY;
 
@@ -259,12 +268,6 @@ extern "C" {
         uint8_t utf16_name_chars[30];
     } EXFATFS_FILE_NAME_DIR_ENTRY;
 
-    //RJCTODO: Comments
-    typedef struct {
-        FATFS_DENTRY primary_dentry;
-        FATFS_DENTRY secondary_dentry;
-    } EXFATFS_INODE;
-
     // RJCTODO: Consider marking header as internal, splitting up, etc.
 
 	extern int 
@@ -281,15 +284,15 @@ extern "C" {
         uint8_t a_basic);
 
     extern TSK_RETVAL_ENUM
-    exfatfs_inode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-        EXFATFS_INODE *a_inode, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
+    exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
+        FATFS_DENTRY *a_dentry, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
     extern uint8_t
-    exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-        TSK_INUM_T a_inum, TSK_DADDR_T a_sect, uint8_t a_do_basic_test);
+    exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
+        TSK_INUM_T a_inum);
 
     extern void
-    exfatfs_istat_attrs(TSK_FS_INFO *a_fs, TSK_INUM_T a_inum, FILE *a_hFile);
+    exfatfs_istat_attrs(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile);
 
 #ifdef __cplusplus
 }

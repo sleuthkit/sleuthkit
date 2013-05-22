@@ -234,6 +234,10 @@ extern "C" {
     extern TSK_FS_BLOCK_FLAG_ENUM
     fatfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr);
 
+    extern uint8_t
+    fatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+        uint8_t a_basic);
+
     // RJCTODO: Needed in fs_dir.c by load_orphan_dir_walk_cb
     extern uint8_t 
     fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum, TSK_INUM_T dir_inum); 
@@ -250,7 +254,7 @@ extern "C" {
     extern uint8_t fatfs_inode_lookup(TSK_FS_INFO *a_fs,
         TSK_FS_FILE *a_fs_file, TSK_INUM_T a_inum);
 
-    extern uint8_t fatfs_dentry_load(TSK_FS_INFO *a_fs, FATFS_DENTRY *a_dentry, 
+    extern uint8_t fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
         TSK_INUM_T a_inum);
 
     extern uint8_t

@@ -728,24 +728,24 @@ fatfs_make_fat(FATFS_INFO *fatfs, uint8_t a_which, TSK_FS_META *fs_meta)
  * @returns return 1 on error and 0 on success //RJCTODO: Consider swapping sense of return values
  */
 uint8_t
-fatfs_dentry_load(TSK_FS_INFO *a_fs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum)
+fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum)
 {
     const char *func_name = "fatfs_dentry_load";
-    FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
     TSK_DADDR_T sect = 0;
     size_t off = 0;
     ssize_t cnt = 0;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
+    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_is_ptr_arg_null(a_dentry, "a_dentry", func_name) ||
-        !fatfs_is_inum_in_range(a_fs, a_inum, func_name)) {
+        !fatfs_is_inum_in_range(fs, a_inum, func_name)) {
         return 1;
     }
     
     /* Map the inode address to a sector. */
-    sect = FATFS_INODE_2_SECT(fatfs, a_inum);
-    if (sect > a_fs->last_block) {
+    sect = FATFS_INODE_2_SECT(a_fatfs, a_inum);
+    if (sect > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
         tsk_error_set_errstr("%s: Inode %" PRIuINUM
@@ -754,10 +754,10 @@ fatfs_dentry_load(TSK_FS_INFO *a_fs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum)
     }
 
     /* Get the byte offset of the inode address within the sector. */
-    off = FATFS_INODE_2_OFF(fatfs, a_inum);
+    off = FATFS_INODE_2_OFF(a_fatfs, a_inum);
 
     /* Read in the bytes. */
-    cnt = tsk_fs_read(a_fs, sect * a_fs->block_size + off, (char*)a_dentry, sizeof(FATFS_DENTRY));
+    cnt = tsk_fs_read(fs, sect * fs->block_size + off, (char*)a_dentry, sizeof(FATFS_DENTRY));
     if (cnt != sizeof(FATFS_DENTRY)) {
         if (cnt >= 0) {
             tsk_error_reset();
@@ -769,6 +769,19 @@ fatfs_dentry_load(TSK_FS_INFO *a_fs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum)
     }
 
     return 0;
+}
+
+uint8_t
+fatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
+{
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
+
+    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
+        return exfatfs_is_dentry(a_fatfs, a_dentry, a_basic);
+    }
+    else {
+        return fatxxfs_is_dentry(a_fatfs, a_dentry, a_basic);
+    }
 }
 
 /**
@@ -788,8 +801,6 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
 {
     const char *func_name = "fatfs_inode_lookup";
     FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
-    TSK_DADDR_T sector = 0;
-    uint8_t do_basic_validity_test = 1;
 
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
@@ -809,7 +820,8 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
         tsk_fs_meta_reset(a_fs_file->meta);
     }
 
-    /* Either get the inode or manufacture a root or virtual inode. */
+    /* Manufacture an inode for the root directory or a FAT virtual file,
+     * or do a look up. */
     if (a_inum == FATFS_ROOTINO) {
         if (fatfs_make_root(fatfs, a_fs_file->meta))
             return 1;
@@ -841,33 +853,11 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
             return 0;
     }
     else {
-        /* Map the inode address to a sector. */ 
-        sector = FATFS_INODE_2_SECT(fatfs, a_inum);
-        if (sector > a_fs->last_block) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-            tsk_error_set_errstr("%s: Inode %" PRIuINUM
-                " in sector too big for image: %" PRIuDADDR, func_name, a_inum, sector);
-            return 1;
-        }
-
-         /* Note that only the sector allocation status is used to choose
-          * between the basic or in-depth version of the inode validity 
-          * test. In other places in the code information about whether or not 
-          * the sector that contains the inode is part of a folder is used to 
-          * make this decision. Here, that information is not available. Thus, 
-          * the test here is less reliable and may result in some false 
-          * positives. */
-        do_basic_validity_test = fatfs_is_sectalloc(fatfs, sector);
-        if (do_basic_validity_test == -1) {
-            return 1;
-        }
-
         if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
-            return exfatfs_inode_lookup(fatfs, a_fs_file->meta, a_inum, sector, do_basic_validity_test); 
-        }
+            return exfatfs_inode_lookup(fatfs, a_fs_file, a_inum);
+        } 
         else {
-            return fatxxfs_inode_lookup(fatfs, a_fs_file->meta, a_inum, sector, do_basic_validity_test); 
+            return fatxxfs_inode_lookup(fatfs, a_fs_file, a_inum);
         }
     }
 }
@@ -902,8 +892,15 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 }
 
 static void
-fatfs_istat_attrs(TSK_FS_INFO *a_fs, TSK_INUM_T a_inum, TSK_FS_FILE *a_fs_file, FILE *a_hFile)
+fatfs_istat_attrs(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, TSK_FS_FILE *a_fs_file, FILE *a_hFile)
 {
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+
+    // RJCTODO: I this the right approach?
+    if (a_fs_file->meta->type == TSK_FS_META_TYPE_UNDEF) {
+        return;
+    }
+
     tsk_fprintf(a_hFile, "File Attributes: ");
 
     if (a_inum == FATFS_ROOTINO) {
@@ -912,11 +909,11 @@ fatfs_istat_attrs(TSK_FS_INFO *a_fs, TSK_INUM_T a_inum, TSK_FS_FILE *a_fs_file, 
     else if (a_fs_file->meta->type == TSK_FS_META_TYPE_VIRT) {
         tsk_fprintf(a_hFile, "Virtual\n");
     }
-    else if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
-        exfatfs_istat_attrs(a_fs, a_inum, a_hFile);
+    else if (fs->ftype == TSK_FS_TYPE_EXFAT) {
+        exfatfs_istat_attrs(a_fatfs, a_inum, a_hFile);
     }
     else {
-        fatxxfs_istat_attrs(a_fs, a_inum, a_hFile);
+        fatxxfs_istat_attrs(a_fatfs, a_inum, a_hFile);
     };
 }
 
@@ -936,6 +933,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     TSK_DADDR_T a_numblock, int32_t a_sec_skew)
 {
     const char* func_name = "fatfs_istat";
+    FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
     TSK_FS_META *fs_meta = NULL; 
     TSK_FS_FILE *fs_file =  NULL;
     TSK_FS_META_NAME_LIST *fs_name_list = NULL;
@@ -963,7 +961,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
         (fs_meta->flags & TSK_FS_META_FLAG_UNALLOC) ? "Not " : "");
 
     /* Print the attributes. */
-    fatfs_istat_attrs(a_fs, a_inum, fs_file, a_hFile);
+    fatfs_istat_attrs(fatfs, a_inum, fs_file, a_hFile);
 
     /* Print the file size. */
     tsk_fprintf(a_hFile, "Size: %" PRIuOFF "\n", fs_meta->size);
@@ -1039,30 +1037,17 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     return 0;
 }
 
-static uint8_t
-fatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
-{
-    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
-
-    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        return exfatfs_is_dentry(a_fatfs, a_dentry, a_basic);
-    }
-    else {
-        return fatxxfs_is_dentry(a_fatfs, (FATXXFS_DENTRY*)a_dentry, a_basic);
-    }
-}
-
-TSK_RETVAL_ENUM
+static TSK_RETVAL_ENUM
 fatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-    char *a_buf, TSK_DADDR_T a_sect, TSK_INUM_T a_inum)
+    FATFS_DENTRY *a_dentry, TSK_DADDR_T a_sect, TSK_INUM_T a_inum)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
 
     if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        return exfatfs_inode_copy(a_fatfs, a_fs_meta, (EXFATFS_INODE*)a_buf, a_sect, a_inum);
+        return exfatfs_dinode_copy(a_fatfs, a_fs_meta, a_dentry, a_sect, a_inum);
     }
     else {
-        return fatxxfs_dinode_copy(a_fatfs, a_fs_meta, (FATXXFS_DENTRY*)a_buf, a_sect, a_inum);
+        return fatxxfs_dinode_copy(a_fatfs, a_fs_meta, a_dentry, a_sect, a_inum);
     }
 }
 
@@ -1453,7 +1438,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
             /* If the sector is not allocated to a directory and the first 
              * chunk is not a directory entry, skip the sector. */
             if ((!isset(dir_sectors_bitmap, sect)) &&
-                ((fs->ftype != TSK_FS_TYPE_EXFAT) && (!fatxxfs_is_dentry(fatfs, (FATXXFS_DENTRY*)dep, 0)) ||
+                ((fs->ftype != TSK_FS_TYPE_EXFAT) && (!fatxxfs_is_dentry(fatfs, dep, 0)) ||
                  (exfatfs_is_dentry(fatfs, dep, 0) == 0))) {
                 sect++;
                 continue;
@@ -1543,7 +1528,7 @@ fatfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
                 }
 
                 if ((retval2 =
-                        fatfs_dinode_copy(fatfs, fs_file->meta, (char*)dep, sect,
+                        fatfs_dinode_copy(fatfs, fs_file->meta, dep, sect,
                             inum)) != TSK_OK) {
 
                     if (retval2 == TSK_COR) {
