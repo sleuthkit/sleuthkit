@@ -6,7 +6,7 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     packages/sleuthkit.spec \
     win32/BUILDING.txt \
     win32/NOTES.txt \
-    win32/*/*.vcproj \
+    win32/*/*.vcxproj \
     win32/tsk-win.sln \
     win32/docs/* \
     bindings/java/README.txt \
@@ -18,8 +18,6 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     bindings/java/src/org/sleuthkit/datamodel/*.java \
     bindings/java/src/org/sleuthkit/datamodel/*.html \
     bindings/java/src/*.html \
-    bindings/java/test/org/* \
-    bindings/java/test/output/Gold/* \
     framework/*.txt \
     framework/*.h \
     framework/tsk/framework/extraction/*.cpp \
