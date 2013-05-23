@@ -232,7 +232,7 @@ static TSK_RETVAL_ENUM
 
             entrySeenCount++;
             /* is it a valid dentry? */
-            if (0 == fatxxfs_is_dentry(fatfs, (char*)dep,
+            if (0 == fatxxfs_is_dentry(fatfs, (FATFS_DENTRY*)dep,
                 ((isCorruptDir == 0) && (sectalloc)) ? 1 : 0)) {
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
