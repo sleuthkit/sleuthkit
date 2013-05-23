@@ -281,6 +281,7 @@ fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust, TSK_DADDR_T * value)
         return 0;
 
     case TSK_FS_TYPE_FAT32:
+    case TSK_FS_TYPE_EXFAT:
         /* Get sector in FAT for cluster and load if needed */
         sect = fatfs->firstfatsect + ((clust << 2) >> fatfs->ssize_sh);
 
@@ -290,7 +291,6 @@ fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust, TSK_DADDR_T * value)
             tsk_release_lock(&fatfs->cache_lock);
             return 1;
         }
-
 
         /* get pointer to entry in current buffer */
         a_ptr = (uint8_t *) fatfs->fatc_buf[cidx] +

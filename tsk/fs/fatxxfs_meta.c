@@ -293,14 +293,6 @@ fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
     }
 }
 
-/* timetens is number of tenths of a second for a 2 second range (values 0 to 199) */
-static uint32_t
-dos2nanosec(uint8_t timetens)
-{
-    timetens %= 100;
-    return timetens * 10000000;
-}
-
 /*
  * convert the attribute list in FAT to a UNIX mode
  */
@@ -686,7 +678,7 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
-        !fatfs_is_inum_in_range(&(a_fatfs->fs_info), a_inum, func_name)) {
+        !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
         return 1;
     }
 
@@ -778,4 +770,65 @@ fatxxfs_istat_attrs(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
 
         tsk_fprintf(a_hFile, "\n");
     }
+}
+
+void
+fatxx_get_root_dir_size()
+{
+    //addr_ptr = (TSK_DADDR_T*)fs_meta->content_ptr;
+    //if (fatfs->fs_info.ftype == TSK_FS_TYPE_FAT32) {
+    //    /* Get the number of allocated clusters */
+    //    TSK_DADDR_T cnum;
+    //    TSK_DADDR_T clust;
+    //    TSK_LIST *list_seen = NULL;
+
+    //    /* base cluster */
+    //    clust = FATFS_SECT_2_CLUST(fatfs, fatfs->rootsect);
+    //    addr_ptr[0] = clust;
+
+    //    cnum = 0;
+    //    while ((clust) && (0 == FATFS_ISEOF(clust, FATFS_32_MASK))) {
+    //        TSK_DADDR_T nxt;
+
+    //        /* Make sure we do not get into an infinite loop */
+    //        if (tsk_list_find(list_seen, clust)) {
+    //            if (tsk_verbose)
+    //                tsk_fprintf(stderr,
+    //                    "Loop found while determining root directory size\n");
+    //            break;
+    //        }
+    //        if (tsk_list_add(&list_seen, clust)) {
+    //            tsk_list_free(list_seen);
+    //            list_seen = NULL;
+    //            return 1;
+    //        }
+
+    //        cnum++;
+    //        if (fatfs_getFAT(fatfs, clust, &nxt))
+    //            break;
+    //        else
+    //            clust = nxt;
+    //    }
+    //    tsk_list_free(list_seen);
+    //    list_seen = NULL;
+
+    //    /* Calculate the size. */
+    //    fs_meta->size = (cnum * fatfs->csize) << fatfs->ssize_sh;
+    //}
+    //else if (fatfs->fs_info.ftype == TSK_FS_TYPE_EXFAT) {
+    //    // RJCTODO: Figure out what to do here and comment it.
+    //    fs_meta->size = 0;
+    //    addr_ptr[0] = 1;
+    //}
+    //else {
+    //    /* FAT12 and FAT16 don't use the FAT for the root directory, so set 
+    //     * TSK_FS_META.content_ptr to a distinguished value other code will
+    //     * have will have to check as a special condition. */ 
+    //    addr_ptr[0] = 1;
+
+    //    /* Set the size equal to the number of bytes between the end of the 
+    //     * FATs and the start of the clusters. */
+    //    //TSK_DADDR_T snum  = fatfs->firstclustsect - fatfs->firstdatasect;
+    //    fs_meta->size = (fatfs->firstclustsect - fatfs->firstdatasect) << fatfs->ssize_sh;
+    //}
 }

@@ -365,9 +365,10 @@ exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
     fs->istat = fatfs_istat;
     fs->file_add_meta = fatfs_inode_lookup;
 
+    fs->load_attrs = fatfs_make_data_run;
+
     // RJCTODO: Set remaining pointers, group and comment.
     fs->get_default_attr_type = 0;
-    fs->load_attrs = 0;
     fs->dir_open_meta = 0;
     fs->name_cmp = 0;
     fs->fsstat = 0;

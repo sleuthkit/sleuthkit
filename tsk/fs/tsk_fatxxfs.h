@@ -208,11 +208,6 @@ extern "C" {
 
     extern uint8_t fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic);
 
-    extern uint8_t fatfs_make_data_run(TSK_FS_FILE * a_fs_file);
-
-    extern uint8_t fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust,
-        TSK_DADDR_T * value);
-
     extern TSK_RETVAL_ENUM
         fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         TSK_INUM_T a_addr);

@@ -665,7 +665,6 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
         return 1;
     }
 
-
     memset(&dinfo, 0, sizeof(DENT_DINFO));
     if ((dinfo.stack_seen = tsk_stack_create()) == NULL)
         return 1;

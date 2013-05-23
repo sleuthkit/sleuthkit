@@ -27,77 +27,6 @@
 #include "tsk_fatxxfs.h"
 #include "tsk_exfatfs.h"
 
-/*
-** Convert the DOS time to the UNIX version
-**
-** UNIX stores the time in seconds from 1970 in UTC
-** FAT dates are the actual date with the year relative to 1980
-**
-*/
-time_t
-dos2unixtime(uint16_t date, uint16_t time, uint8_t timetens)
-{
-    struct tm tm1;
-    time_t ret;
-
-    if (date == 0)
-        return 0;
-
-    memset(&tm1, 0, sizeof(struct tm));
-
-    tm1.tm_sec = ((time & FATFS_SEC_MASK) >> FATFS_SEC_SHIFT) * 2;
-    if ((tm1.tm_sec < 0) || (tm1.tm_sec > 60))
-        tm1.tm_sec = 0;
-    // the ctimetens value has a range of 0 to 199
-    if (timetens > 100)
-        tm1.tm_sec++;
-
-    tm1.tm_min = ((time & FATFS_MIN_MASK) >> FATFS_MIN_SHIFT);
-    if ((tm1.tm_min < 0) || (tm1.tm_min > 59))
-        tm1.tm_min = 0;
-
-    tm1.tm_hour = ((time & FATFS_HOUR_MASK) >> FATFS_HOUR_SHIFT);
-    if ((tm1.tm_hour < 0) || (tm1.tm_hour > 23))
-        tm1.tm_hour = 0;
-
-    tm1.tm_mday = ((date & FATFS_DAY_MASK) >> FATFS_DAY_SHIFT);
-    if ((tm1.tm_mday < 1) || (tm1.tm_mday > 31))
-        tm1.tm_mday = 0;
-
-    tm1.tm_mon = ((date & FATFS_MON_MASK) >> FATFS_MON_SHIFT) - 1;
-    if ((tm1.tm_mon < 0) || (tm1.tm_mon > 11))
-        tm1.tm_mon = 0;
-
-    /* There is a limit to the year because the UNIX time value is
-     * a 32-bit value
-     * the maximum UNIX time is Tue Jan 19 03:14:07 2038
-     */
-    tm1.tm_year = ((date & FATFS_YEAR_MASK) >> FATFS_YEAR_SHIFT) + 80;
-    if ((tm1.tm_year < 0) || (tm1.tm_year > 137))
-        tm1.tm_year = 0;
-
-    /* set the daylight savings variable to -1 so that mktime() figures
-     * it out */
-    tm1.tm_isdst = -1;
-
-    ret = mktime(&tm1);
-
-    if (ret < 0) {
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "dos2unixtime: Error running mktime() on: %d:%d:%d %d/%d/%d\n",
-                ((time & FATFS_HOUR_MASK) >> FATFS_HOUR_SHIFT),
-                ((time & FATFS_MIN_MASK) >> FATFS_MIN_SHIFT),
-                ((time & FATFS_SEC_MASK) >> FATFS_SEC_SHIFT) * 2,
-                ((date & FATFS_MON_MASK) >> FATFS_MON_SHIFT) - 1,
-                ((date & FATFS_DAY_MASK) >> FATFS_DAY_SHIFT),
-                ((date & FATFS_YEAR_MASK) >> FATFS_YEAR_SHIFT) + 80);
-        return 0;
-    }
-
-    return ret;
-}
-
 /** \internal
  * Process the file and load up the clusters into the FS_DATA attribute
  * in fs_meta. The run will list the starting sector and length in sectors
@@ -164,8 +93,10 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
     /* We need to handle the special files specially because they
      * are not in the FAT.  Except for FAT32 root dirs, those are normal.
      */
-    if ((a_fs_file->meta->addr == FATFS_ROOTINO)
-        && (fs->ftype != TSK_FS_TYPE_FAT32) && (clust == 1)) {
+    if ((a_fs_file->meta->addr == FATFS_ROOTINO) && 
+        (fs->ftype != TSK_FS_TYPE_FAT32) &&
+        (fs->ftype != TSK_FS_TYPE_EXFAT) &&
+        (clust == 1)) {
         TSK_FS_ATTR_RUN *data_run;
 
         if (tsk_verbose)
@@ -527,6 +458,7 @@ fatfs_make_root(FATFS_INFO *fatfs, TSK_FS_META *fs_meta)
 {
     TSK_DADDR_T *addr_ptr = NULL;
 
+    /* Manufacture some metadata. */
     fs_meta->type = TSK_FS_META_TYPE_DIR;
     fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
     fs_meta->nlink = 1;
@@ -537,6 +469,7 @@ fatfs_make_root(FATFS_INFO *fatfs, TSK_FS_META *fs_meta)
     fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
         fs_meta->crtime_nano = 0;
 
+    /* Give the root directory an empty name. */
     if (fs_meta->name2 == NULL) {
         if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST *)
                 tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL) {
@@ -546,13 +479,15 @@ fatfs_make_root(FATFS_INFO *fatfs, TSK_FS_META *fs_meta)
     }
     fs_meta->name2->name[0] = '\0';
 
+    // RJCTODO: This again - what is it?
     fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
     if (fs_meta->attr) {
         tsk_fs_attrlist_markunused(fs_meta->attr);
     }
+
     addr_ptr = (TSK_DADDR_T*)fs_meta->content_ptr;
-    
-    if (fatfs->fs_info.ftype == TSK_FS_TYPE_FAT32) {
+    if (fatfs->fs_info.ftype == TSK_FS_TYPE_FAT32 ||
+        fatfs->fs_info.ftype == TSK_FS_TYPE_EXFAT) {
         /* Get the number of allocated clusters */
         TSK_DADDR_T cnum;
         TSK_DADDR_T clust;
@@ -587,22 +522,20 @@ fatfs_make_root(FATFS_INFO *fatfs, TSK_FS_META *fs_meta)
         }
         tsk_list_free(list_seen);
         list_seen = NULL;
+
+        /* Calculate the size. */
         fs_meta->size = (cnum * fatfs->csize) << fatfs->ssize_sh;
-    }
-    else if (fatfs->fs_info.ftype == TSK_FS_TYPE_EXFAT) {
-        // RJCTODO: Figure out what to do here and comment it.
-        fs_meta->size = 0;
-        addr_ptr[0] = 1;
     }
     else {
         /* FAT12 and FAT16 don't use the FAT for the root directory, so set 
          * TSK_FS_META.content_ptr to a distinguished value other code will
-         * have will have to check as a special condition and set 
-         * TSK_FS_META.size to the number of bytes between the end of the 
-         * FATs and the start of the clusters. */
-        TSK_DADDR_T snum  = fatfs->firstclustsect - fatfs->firstdatasect;
-        fs_meta->size = snum << fatfs->ssize_sh;
+         * have will have to check as a special condition. */ 
         addr_ptr[0] = 1;
+
+        /* Set the size equal to the number of bytes between the end of the 
+         * FATs and the start of the clusters. */
+        //TSK_DADDR_T snum  = fatfs->firstclustsect - fatfs->firstdatasect;
+        fs_meta->size = (fatfs->firstclustsect - fatfs->firstdatasect) << fatfs->ssize_sh;
     }
     return 0;
 }
@@ -739,7 +672,7 @@ fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_is_ptr_arg_null(a_dentry, "a_dentry", func_name) ||
-        !fatfs_is_inum_in_range(fs, a_inum, func_name)) {
+        !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
         return 1;
     }
     
@@ -805,7 +738,7 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
         fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
-        !fatfs_is_inum_in_range(a_fs, a_inum, func_name)) {
+        !fatfs_is_inum_in_range(fatfs, a_inum, func_name)) {
         return 1;
     }
 
@@ -862,18 +795,16 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
     }
 }
 
-/************************* istat *******************************/
-
-/* Callback a_action for file_walk to print the sector addresses
- * of a file
- */
-
+/* Used for istat callback */
 typedef struct {
     FILE *hFile;
     int idx;
     int istat_seen;
 } FATFS_PRINT_ADDR;
 
+/* Callback a_action for file_walk to print the sector addresses
+ * of a file, used for istat
+ */
 static TSK_WALK_RET_ENUM
 print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
@@ -889,32 +820,6 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     print->istat_seen = 1;
 
     return TSK_WALK_CONT;
-}
-
-static void
-fatfs_istat_attrs(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, TSK_FS_FILE *a_fs_file, FILE *a_hFile)
-{
-    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-
-    // RJCTODO: I this the right approach?
-    if (a_fs_file->meta->type == TSK_FS_META_TYPE_UNDEF) {
-        return;
-    }
-
-    tsk_fprintf(a_hFile, "File Attributes: ");
-
-    if (a_inum == FATFS_ROOTINO) {
-        tsk_fprintf(a_hFile, "Directory\n");
-    }
-    else if (a_fs_file->meta->type == TSK_FS_META_TYPE_VIRT) {
-        tsk_fprintf(a_hFile, "Virtual\n");
-    }
-    else if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        exfatfs_istat_attrs(a_fatfs, a_inum, a_hFile);
-    }
-    else {
-        fatxxfs_istat_attrs(a_fatfs, a_inum, a_hFile);
-    };
 }
 
 /**
@@ -943,7 +848,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
         fatfs_is_ptr_arg_null(a_hFile, "a_hFile", func_name) ||
-        !fatfs_is_inum_in_range(a_fs, a_inum, func_name)) {
+        !fatfs_is_inum_in_range(fatfs, a_inum, func_name)) {
         return 1;
     }
 
@@ -961,7 +866,25 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
         (fs_meta->flags & TSK_FS_META_FLAG_UNALLOC) ? "Not " : "");
 
     /* Print the attributes. */
-    fatfs_istat_attrs(fatfs, a_inum, fs_file, a_hFile);
+    tsk_fprintf(a_hFile, "File Attributes: ");
+
+    if (a_inum == FATFS_ROOTINO) {
+        tsk_fprintf(a_hFile, "Directory\n");
+    }
+    else if (fs_meta->type == TSK_FS_META_TYPE_VIRT) {
+        tsk_fprintf(a_hFile, "Virtual\n");
+    }
+    else if (fs_meta->type != TSK_FS_META_TYPE_UNDEF) {  // RJCTODO: Is this the right approach? Should everything have attributes?
+        if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
+            exfatfs_istat_attrs(fatfs, a_inum, a_hFile);
+        }
+        else {
+            fatxxfs_istat_attrs(fatfs, a_inum, a_hFile);
+        }
+    }
+    else {
+        tsk_fprintf(a_hFile, "\n");
+    }
 
     /* Print the file size. */
     tsk_fprintf(a_hFile, "Size: %" PRIuOFF "\n", fs_meta->size);
@@ -1020,7 +943,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     print.istat_seen = 0;
     print.idx = 0;
     print.hFile = a_hFile;
-    if (a_fs->ftype != TSK_FS_TYPE_EXFAT) {
+    //if (a_fs->ftype != TSK_FS_TYPE_EXFAT) { // RJCTODO
         if (tsk_fs_file_walk(fs_file,
                 (TSK_FS_FILE_WALK_FLAG_ENUM)(TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK),
                 print_addr_act, (void *) &print)) {
@@ -1031,7 +954,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
         else if (print.idx != 0) {
             tsk_fprintf(a_hFile, "\n");
         }
-    }
+    //}
 
     tsk_fs_file_close(fs_file);
     return 0;
@@ -1044,7 +967,7 @@ fatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
     TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
 
     if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        return exfatfs_dinode_copy(a_fatfs, a_fs_meta, a_dentry, a_sect, a_inum);
+        return exfatfs_dinode_copy_stub(a_fatfs, a_fs_meta, a_dentry, a_sect, a_inum);
     }
     else {
         return fatxxfs_dinode_copy(a_fatfs, a_fs_meta, a_dentry, a_sect, a_inum);

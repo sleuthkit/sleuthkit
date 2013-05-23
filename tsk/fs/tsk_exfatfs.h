@@ -99,7 +99,7 @@ extern "C" {
 
     // RJCTODO: Comment
     typedef struct {
-        FATFS_DENTRY dentries[19];
+        FATFS_DENTRY dentries[2];
     } EXFATFS_INODE;
 
     /**
@@ -284,7 +284,7 @@ extern "C" {
         uint8_t a_basic);
 
     extern TSK_RETVAL_ENUM
-    exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
+    exfatfs_dinode_copy_stub(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
         FATFS_DENTRY *a_dentry, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
     extern uint8_t

@@ -209,7 +209,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "fatfs_block_walk: Walking non-data area (pre %"
-                PRIuDADDR "\n", fatfs->firstclustsect);
+                PRIuDADDR "\n)", fatfs->firstclustsect);
 
         if ((data_buf = (char *) tsk_malloc(fs->block_size * 8)) == NULL) {
             tsk_fs_block_free(fs_block);

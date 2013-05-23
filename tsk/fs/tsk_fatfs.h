@@ -211,7 +211,12 @@ extern "C" {
     fatfs_is_ptr_arg_null(void *ptr, const char *param_name, const char *func_name);
 
     extern uint8_t
-    fatfs_is_inum_in_range(TSK_FS_INFO *a_fs, TSK_INUM_T a_inum, const char *func_name);
+    fatfs_is_inum_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *func_name);
+
+    extern time_t dos2unixtime(uint16_t date, uint16_t time, uint8_t timetens);
+
+    extern uint32_t
+    dos2nanosec(uint8_t timetens);
 
     extern TSKConversionResult
     fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UTF16 *src, uint8_t src_len, TSK_INUM_T a_inum, const char *a_desc);
@@ -233,6 +238,11 @@ extern "C" {
 
     extern TSK_FS_BLOCK_FLAG_ENUM
     fatfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr);
+
+    extern uint8_t fatfs_make_data_run(TSK_FS_FILE * a_fs_file);
+
+    extern uint8_t fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust,
+        TSK_DADDR_T * value);
 
     extern uint8_t
     fatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
@@ -267,8 +277,6 @@ extern "C" {
     extern uint8_t
     fatfs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
         int a_flags, TSK_FS_JBLK_WALK_CB a_action, void *a_ptr);
-
-    extern time_t dos2unixtime(uint16_t date, uint16_t time, uint8_t timetens);
 
     extern void fatfs_close(TSK_FS_INFO *fs);
 
