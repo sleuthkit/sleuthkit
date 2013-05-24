@@ -272,7 +272,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
                  * determine which clusters are allocated. */
                 if (~(dentry->flags & 0x01)) {
                     first_sector_of_alloc_bitmap = FATFS_CLUST_2_SECT(a_fatfs, tsk_getu32(fs->endian, dentry->first_cluster_of_bitmap));
-                    alloc_bitmap_length_in_bytes = tsk_getu32(fs->endian, dentry->length_of_alloc_bitmap_in_bytes);
+                    alloc_bitmap_length_in_bytes = tsk_getu64(fs->endian, dentry->length_of_alloc_bitmap_in_bytes);
                     last_sector_of_alloc_bitmap = first_sector_of_alloc_bitmap + (alloc_bitmap_length_in_bytes / a_fatfs->ssize) - 1;
 
                     /* The allocation bitmap must lie within the boundaries of the data area. 
@@ -358,17 +358,17 @@ exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
 
     /* Content category functions. */ 
     fs->block_walk = fatfs_block_walk;
-    fs->block_getflags = 0;
+    fs->block_getflags = fatfs_block_getflags;
 
     /* Metadata category functions. */
     fs->inode_walk = fatfs_inode_walk;
     fs->istat = fatfs_istat;
     fs->file_add_meta = fatfs_inode_lookup;
-
+    fs->get_default_attr_type = fatfs_get_default_attr_type;
     fs->load_attrs = fatfs_make_data_run;
 
-    // RJCTODO: Set remaining pointers, group and comment.
-    fs->get_default_attr_type = 0;
+    /* Name category functions. */
+    // RJCTODO: Set these pointers
     fs->dir_open_meta = 0;
     fs->name_cmp = 0;
     fs->fsstat = 0;

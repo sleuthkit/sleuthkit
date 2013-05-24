@@ -239,6 +239,9 @@ extern "C" {
     extern TSK_FS_BLOCK_FLAG_ENUM
     fatfs_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr);
 
+    extern TSK_FS_ATTR_TYPE_ENUM
+    fatfs_get_default_attr_type(const TSK_FS_FILE * a_file);
+
     extern uint8_t fatfs_make_data_run(TSK_FS_FILE * a_fs_file);
 
     extern uint8_t fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust,

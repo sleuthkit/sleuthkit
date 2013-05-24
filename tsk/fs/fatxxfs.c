@@ -738,12 +738,6 @@ fatfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     return 0;
 }
 
-static TSK_FS_ATTR_TYPE_ENUM
-fatfs_get_default_attr_type(const TSK_FS_FILE * a_file)
-{
-    return TSK_FS_ATTR_TYPE_DEFAULT;
-}
-
 int
 fatxxfs_open(FATFS_INFO *fatfs)
 {

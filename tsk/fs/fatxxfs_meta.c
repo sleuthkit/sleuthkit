@@ -339,6 +339,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
     FATXXFS_DENTRY *dentry = (FATXXFS_DENTRY*)a_dentry;
     TSK_DADDR_T *addr_ptr;
+    uint32_t flags = 0;
 
     if (fs_meta->content_len < FATFS_FILE_CONTENT_LEN) {
         if ((fs_meta =
@@ -353,8 +354,8 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
         tsk_fs_attrlist_markunused(fs_meta->attr);
     }
 
-    fs_meta->mode = attr2mode(dentry->attrib); // RJCTODO: Fix
-    fs_meta->type = attr2type(dentry->attrib); // RJCTODO: Use for exFAT
+    fs_meta->mode = (TSK_FS_META_MODE_ENUM)attr2mode(dentry->attrib);
+    fs_meta->type = attr2type(dentry->attrib);
 
     fs_meta->addr = inum;
 
@@ -365,16 +366,17 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
         return TSK_ERR;
     }
     else if (retval == 1) {
-        fs_meta->flags = ((dentry->name[0] == FATFS_SLOT_DELETED) ?
+        flags = ((dentry->name[0] == FATFS_SLOT_DELETED) ?
             TSK_FS_META_FLAG_UNALLOC : TSK_FS_META_FLAG_ALLOC);
     }
     else {
-        fs_meta->flags = TSK_FS_META_FLAG_UNALLOC;
+        flags = TSK_FS_META_FLAG_UNALLOC;
     }
 
     /* Slot has not been used yet */
-    fs_meta->flags |= ((dentry->name[0] == FATFS_SLOT_EMPTY) ? // RJCTODO: Fix
+    flags |= ((dentry->name[0] == FATFS_SLOT_EMPTY) ?
         TSK_FS_META_FLAG_UNUSED : TSK_FS_META_FLAG_USED);
+    fs_meta->flags = (TSK_FS_META_FLAG_ENUM)flags;
 
     if ((dentry->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
         /* LFN entries don't have these values */
@@ -737,7 +739,7 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
 }
 
 void
-fatxxfs_istat_attrs(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
+fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
 {
     FATXXFS_DENTRY dentry;
 

@@ -56,7 +56,6 @@
  * File names for exFAT "virtual files" corresponding to non-file 
  * directory entries.
  */
-#define EXFATFS_NO_VOLUME_LABEL_VIRT_FILENAME "$VOLUME_LABEL_NONE"   
 #define EXFATFS_VOLUME_GUID_VIRT_FILENAME "$VOLUME_GUID"   
 #define EXFATFS_ALLOC_BITMAP_VIRT_FILENAME "$ALLOC_BITMAP"   
 #define EXFATFS_UPCASE_TABLE_VIRT_FILENAME "$UPCASE_TABLE"   
@@ -292,7 +291,7 @@ extern "C" {
         TSK_INUM_T a_inum);
 
     extern void
-    exfatfs_istat_attrs(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile);
+    exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile);
 
 #ifdef __cplusplus
 }
