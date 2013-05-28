@@ -47,21 +47,6 @@
 #define FATFS_MAXNAMLEN	256
 #define FATFS_MAXNAMLEN_UTF8	1024
 
-/* Constants for the FAT entry */
-#define FATFS_UNALLOC	0
-#define FATFS_BAD		0x0ffffff7
-#define FATFS_EOFS		0x0ffffff8
-#define FATFS_EOFE		0x0fffffff
-
-/* macro to identify if the FAT value is End of File
- * returns 1 if it is and 0 if it is not 
- */
-#define FATFS_ISEOF(val, mask)	\
-	((val >= (FATFS_EOFS & mask)) && (val <= (FATFS_EOFE)))
-
-#define FATFS_ISBAD(val, mask) \
-	((val) == (FATFS_BAD & mask))
-
 /* Macro to combine the upper and lower 2-byte parts of the starting
  * cluster 
  */

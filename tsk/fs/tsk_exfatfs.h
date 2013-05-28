@@ -99,7 +99,7 @@ extern "C" {
     // RJCTODO: Comment
     typedef struct {
         FATFS_DENTRY dentries[2];
-    } EXFATFS_INODE;
+    } EXFATFS_DENTRY_SET;
 
     /**
      * exFAT directory entry types, the first byte of a directory entry.

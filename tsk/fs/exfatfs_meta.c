@@ -95,6 +95,7 @@ exfatfs_is_vol_label_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t
     EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_dentry;
     uint8_t i = 0;
     
+    // RJCTODO: This might not be viable if these funcs are to be used for a BE scanner...
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_is_ptr_arg_null(a_dentry, "a_dentry", func_name)) {
@@ -457,42 +458,139 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do_basi
 
 /**
  * \internal
- * Copy the contents of a volume label entry into a 
- * TSK_FS_META structure.
+ * Construct a single, non-resident data run for the TSK_FS_META object of a 
+ * TSK_FS_FILE object.  
  *
- * @param a_fatfs File system that directory entry is from.
- * @param a_fs_meta Generic inode structure to copy data into.
- * @param a_inode Raw inode structure to copy data from.
+ * @param a_fs_file Generic file with generic inode structure (TSK_FS_META).
+ * @return 1 if successful, 0 otherwise.  
+ */
+static uint8_t
+exfatfs_make_contiguous_data_run(TSK_FS_FILE *a_fs_file, TSK_OFF_T allocated_size)
+{
+    const char *func_name = "exfatfs_make_contiguous_data_run";
+    TSK_DADDR_T first_cluster = 0;
+    FATFS_INFO *fatfs = NULL;
+    TSK_FS_ATTR_RUN *data_run;
+    TSK_FS_ATTR *fs_attr = NULL;
+    TSK_OFF_T total_size = 0;
+
+    tsk_error_reset();
+    if (fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file->fs_info, "a_fs_file->fs_info", func_name)) {
+        return 0;
+    }
+
+    if (tsk_verbose) {
+        tsk_fprintf(stderr,
+            "%s: Loading attrs for inode: %" PRIuINUM
+            "\n", func_name, a_fs_file->meta->addr);
+    }
+
+    /* Get the first cluster address of the file. If the address does not
+     * make sense, set the attribute state to TSK_FS_META_ATTR_ERROR so
+     * that there is no subsequent attempt to load a data run into the
+     * attribute list. */
+    first_cluster = ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0];
+    fatfs = (FATFS_INFO*)a_fs_file->fs_info;
+    if ((first_cluster > (fatfs->lastclust)) &&
+        (FATFS_ISEOF(first_cluster, fatfs->mask) == 0)) {
+        a_fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
+        tsk_error_reset();
+        if (a_fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) {
+            tsk_error_set_errno(TSK_ERR_FS_RECOVER);
+        }
+        else {
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        }
+        tsk_error_set_errstr
+            ("%s: Starting cluster address too large: %"
+            PRIuDADDR, func_name, first_cluster);
+        return 0;
+    }
+
+    /* Allocate an attribute list for the file. */
+    a_fs_file->meta->attr = tsk_fs_attrlist_alloc();
+
+    /* Allocate a non-resident attribute for the file and add it to the
+     * attribute list. */
+    if ((fs_attr =
+            tsk_fs_attrlist_getnew(a_fs_file->meta->attr,
+                TSK_FS_ATTR_NONRES)) == NULL) {
+        return 0;
+    }
+
+    /* Allocate a single run for the attribute. */
+    data_run = tsk_fs_attr_run_alloc();
+    if (data_run == NULL) {
+        return 0;
+    }
+
+    /* Set the starting sector address and run length for the run. */
+    data_run->addr = FATFS_CLUST_2_SECT(fatfs, ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0]);
+    data_run->len = roundup(allocated_size, fatfs->csize * a_fs_file->fs_info->block_size);
+
+    /* Make the run and add it to the attribute. */
+    if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run, NULL,
+            TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
+            data_run->len,
+            a_fs_file->meta->size,
+            data_run->len, TSK_FS_ATTR_FLAG_NONE, 0)) {
+        return 0;
+    }
+
+    /* Mark the attribute list as loaded. */
+    a_fs_file->meta->attr_state = TSK_FS_META_ATTR_STUDIED;
+
+    return 1;
+}
+
+/**
+ * \internal
+ * Use a volume label directory entry corresponding to the exFAT 
+ * equivalent of an inode to populate the TSK_FS_META object of a 
+ * TSK_FS_FILE object.
+ *
+ * @param a_fatfs Source file system for the directory entries.
+ * @param a_fs_file Generic file with generic inode structure (TSK_FS_META).
+ * @param a_dentries One or more directory entries.
  * @param a_inum Address of the inode.
- * @return TSK_RETVAL_ENUM.  Errors should only occur for
- * Unicode conversion problems and when this occurs the name will be
- * NULL terminated (but with unknown contents).
+ * @param a_is_alloc Allocation status of the inode.
+ * @return TSK_RETVAL_ENUM.  
  */
 static TSK_RETVAL_ENUM 
-exfatfs_copy_vol_label_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, EXFATFS_INODE *a_inode, TSK_INUM_T a_inum)
+exfatfs_copy_vol_label_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, EXFATFS_DENTRY_SET *a_dentries, TSK_INUM_T a_inum)
 {
     const char *func_name = "exfatfs_copy_vol_label_dinode";
     EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = NULL;
 
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name) ||
-        fatfs_is_ptr_arg_null(a_inode, "a_inode", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
+        fatfs_is_ptr_arg_null(a_dentries, "a_dentries", func_name) ||
         !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
         return TSK_ERR;
     }
 
-    dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)&a_inode->dentries[0];
+    dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)&a_dentries->dentries[0];
+    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
+           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY);
     if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL &&
         dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY) {
-            // RJCTODO: At least assert, also do these tests elsewhere
-            return TSK_ERR;
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("%s: invalid directory entry type (%d)", 
+            func_name, dentry->entry_type);
+        return TSK_ERR;
     }
 
     /* If there is a volume label, copy it to the name field of the 
      * TSK_FS_META structure. */
     if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY) {
-        if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_meta, (UTF16*)dentry->volume_label, dentry->utf16_char_count + 1, a_inum, "volume label") != TSKconversionOK) {
+        if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_file->meta, 
+            (UTF16*)dentry->volume_label, dentry->utf16_char_count + 1, 
+            a_inum, "volume label") != TSKconversionOK) {
             return TSK_COR;
         }
     }
@@ -502,229 +600,285 @@ exfatfs_copy_vol_label_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, EXFAT
 
 /**
  * \internal
- * Copy the contents of an allocation bitmap directory entry into a 
- * TSK_FS_META structure.
+ * Use an allocation bitmap directory entry corresponding to the exFAT 
+ * equivalent of an inode to populate the TSK_FS_META object of a 
+ * TSK_FS_FILE object.
  *
- * @param a_fatfs File system that directory entry is from.
- * @param a_fs_meta Generic inode structure to copy data into.
- * @param a_inode Raw inode structure to copy data from.
+ * @param a_fatfs Source file system for the directory entries.
+ * @param a_fs_file Generic file with generic inode structure (TSK_FS_META).
+ * @param a_dentries One or more directory entries.
+ * @param a_inum Address of the inode.
+ * @param a_is_alloc Allocation status of the inode.
  * @return TSK_RETVAL_ENUM.  
  */
 static TSK_RETVAL_ENUM 
-exfatfs_copy_alloc_bitmap_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, EXFATFS_INODE *a_inode)
+exfatfs_copy_alloc_bitmap_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, EXFATFS_DENTRY_SET *a_dentries)
 {
     const char *func_name = "exfatfs_copy_alloc_bitmap_dinode";
     EXFATFS_ALLOC_BITMAP_DIR_ENTRY *dentry = NULL;
-    TSK_DADDR_T *first_clust_addr_ptr = NULL;
 
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name) ||
-        fatfs_is_ptr_arg_null(a_inode, "a_inode", func_name)) {
+        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
+        fatfs_is_ptr_arg_null(a_dentries, "a_dentries", func_name)) {
         return TSK_ERR;
     }
 
-    dentry = (EXFATFS_ALLOC_BITMAP_DIR_ENTRY*)&a_inode->dentries[0];
+    dentry = (EXFATFS_ALLOC_BITMAP_DIR_ENTRY*)&a_dentries->dentries[0];
+    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP);
     if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
-            // RJCTODO: At least assert, also do these tests elsewhere
-            return TSK_ERR;
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("%s: invalid directory entry type (%d)", 
+            func_name, dentry->entry_type);
+        return TSK_ERR;
     }
 
     /* Set the file name to a descriptive pseudo file name. */
-    strcpy(a_fs_meta->name2->name, EXFATFS_ALLOC_BITMAP_VIRT_FILENAME);
+    strcpy(a_fs_file->meta->name2->name, EXFATFS_ALLOC_BITMAP_VIRT_FILENAME);
 
     /* Set the size of the allocation bitmap and the address of its 
      * first cluster. */
-    first_clust_addr_ptr = (TSK_DADDR_T*)a_fs_meta->content_ptr;
-    first_clust_addr_ptr[0] = FATFS_SECT_2_CLUST(a_fatfs, a_fatfs->EXFATFS_INFO.first_sector_of_alloc_bitmap);
-    a_fs_meta->size = a_fatfs->EXFATFS_INFO.length_of_alloc_bitmap_in_bytes;
-
-    // RJCTODO: Preload - this should not do a FAT chain walk.
-
-    return TSK_OK;
-}
-
-/**
- * \internal
- * Copy the contents of an UP-Case table directory entry into a 
- * TSK_FS_META structure.
- *
- * @param a_fatfs File system that directory entry is from.
- * @param a_fs_meta Generic inode structure to copy data into.
- * @param a_inode Raw inode structure to copy data from.
- * @return TSK_RETVAL_ENUM.  
- */
-static TSK_RETVAL_ENUM 
-exfatfs_copy_upcase_table_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, EXFATFS_INODE *a_inode)
-{
-    const char *func_name = "exfatfs_copy_upcase_table_dinode";
-    EXFATFS_UPCASE_TABLE_DIR_ENTRY *dentry = NULL;
-    TSK_DADDR_T *first_clust_addr_ptr = NULL;
-
-    tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name) ||
-        fatfs_is_ptr_arg_null(a_inode, "a_inode", func_name)) {
+    ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0] = FATFS_SECT_2_CLUST(a_fatfs, a_fatfs->EXFATFS_INFO.first_sector_of_alloc_bitmap);
+    a_fs_file->meta->size = a_fatfs->EXFATFS_INFO.length_of_alloc_bitmap_in_bytes;
+    
+    /* There is no FAT chain walk for the allocation bitmap. Do an eager
+     * load instead of a lazy load of its data run. */
+    if (!exfatfs_make_contiguous_data_run(a_fs_file, a_fs_file->meta->size)) {
         return TSK_ERR;
     }
 
-    strcpy(a_fs_meta->name2->name, EXFATFS_UPCASE_TABLE_VIRT_FILENAME);
-    a_fs_meta->type = TSK_FS_META_TYPE_VIRT; // RJCTODO: Is this correct?
+    return TSK_OK;
+}
+
+/**
+ * \internal
+ * Use an UP-Case table directory entry corresponding to the exFAT equivalent
+ * of an inode to populate the TSK_FS_META object of a TSK_FS_FILE object.
+ *
+ * @param a_fatfs Source file system for the directory entries.
+ * @param a_fs_file Generic file with generic inode structure (TSK_FS_META).
+ * @param a_dentries One or more directory entries.
+ * @param a_inum Address of the inode.
+ * @param a_is_alloc Allocation status of the inode.
+ * @return TSK_RETVAL_ENUM.  
+ */
+static TSK_RETVAL_ENUM 
+exfatfs_copy_upcase_table_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, EXFATFS_DENTRY_SET *a_dentries)
+{
+    const char *func_name = "exfatfs_copy_upcase_table_dinode";
+    EXFATFS_UPCASE_TABLE_DIR_ENTRY *dentry = NULL;
+
+    tsk_error_reset();
+    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
+        fatfs_is_ptr_arg_null(a_dentries, "a_dentries", func_name)) {
+        return TSK_ERR;
+    }
+
+    dentry = (EXFATFS_UPCASE_TABLE_DIR_ENTRY*)(&a_dentries[0]);
+    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE);
+    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("%s: invalid directory entry type (%d)", 
+            func_name, dentry->entry_type);
+        return TSK_ERR;
+    }
+
+    strcpy(a_fs_file->meta->name2->name, EXFATFS_UPCASE_TABLE_VIRT_FILENAME);
 
     /* Set the size of the Up-Case table and the address of its 
      * first cluster. */
-    dentry = (EXFATFS_UPCASE_TABLE_DIR_ENTRY*)(&a_inode[0]); // RJCTODO: Make sure others don't trust this pointer blindly
-    first_clust_addr_ptr = (TSK_DADDR_T*)a_fs_meta->content_ptr;
-    first_clust_addr_ptr[0] = tsk_getu32(a_fatfs->fs_info.endian, dentry->first_cluster_of_table);
-    a_fs_meta->size = tsk_getu64(a_fatfs->fs_info.endian, dentry->table_length_in_bytes); // RJCTODO: This appears to be wrong...
+    ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0] = tsk_getu32(a_fatfs->fs_info.endian, dentry->first_cluster_of_table);
+    a_fs_file->meta->size = tsk_getu64(a_fatfs->fs_info.endian, dentry->table_length_in_bytes); // RJCTODO: This value appears to be wrong...
 
-    // RJCTODO: Preload - this should not do a FAT chain walk. Probably won't need to because of size, but...
+    /* There is no FAT chain walk for the upcase table. Do an eager
+     * load instead of a lazy load of its data run. */
+    if (!exfatfs_make_contiguous_data_run(a_fs_file, a_fs_file->meta->size)) {
+        return TSK_ERR;
+    }
 
     return TSK_OK;
 }
 
 /**
  * \internal
- * Copy the contents of a file and a file stream directory entry into a 
- * TSK_FS_META structure.
+ * Use a a file and a file stream directory entry corresponding to the exFAT 
+ * equivalent of an inode to populate the TSK_FS_META object of a TSK_FS_FILE 
+ * object.
  *
- * @param a_fatfs File system that directory entry is from.
- * @param a_fs_meta Generic inode structure to copy data into.
- * @param a_inode Raw inode structure to copy data from.
+ * @param a_fatfs Source file system for the directory entries.
+ * @param a_fs_file Generic file with generic inode structure (TSK_FS_META).
+ * @param a_dentries One or more directory entries.
+ * @param a_inum Address of the inode.
+ * @param a_is_alloc Allocation status of the inode.
  * @return TSK_RETVAL_ENUM.  
  */
 static TSK_RETVAL_ENUM 
-exfatfs_copy_file_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, EXFATFS_INODE *a_inode)
+exfatfs_copy_file_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, EXFATFS_DENTRY_SET *a_dentries)
 {
     const char *func_name = "exfatfs_copy_file_dinode";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     EXFATFS_FILE_DIR_ENTRY *dentry = NULL;
     EXFATFS_FILE_STREAM_DIR_ENTRY *stream_dentry = NULL;
-    TSK_DADDR_T *first_clust_addr_ptr = NULL;
+    TSK_FS_META *fs_meta =  NULL;
+    uint32_t mode = 0;
+    TSK_OFF_T allocated_size = 0;
 
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name) ||
-        fatfs_is_ptr_arg_null(a_inode, "a_inode", func_name)) {
+        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
+        fatfs_is_ptr_arg_null(a_dentries, "a_dentries", func_name)) {
         return TSK_ERR;
     }
 
-    /* Treating a file entry and a stream entry as a single inode. */
-    dentry = (EXFATFS_FILE_DIR_ENTRY*)(&a_inode->dentries[0]);
-    stream_dentry = (EXFATFS_FILE_STREAM_DIR_ENTRY*)(&a_inode->dentries[1]);
+    fs_meta = a_fs_file->meta;
 
+    dentry = (EXFATFS_FILE_DIR_ENTRY*)(&a_dentries->dentries[0]);
+    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
+           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE);
     if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_FILE &&
         dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) {
-            // RJCTODO: At least assert, also do these tests elsewhere
-            return TSK_ERR;
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("%s: invalid file directory entry type (%d)", 
+            func_name, dentry->entry_type);
+        return TSK_ERR;
     }
 
+    stream_dentry = (EXFATFS_FILE_STREAM_DIR_ENTRY*)(&a_dentries->dentries[1]);
+    assert(stream_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
+           stream_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM);
     if (stream_dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM &&
         stream_dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM) {
-            // RJCTODO: At least assert
-            return TSK_ERR;
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("%s: invalid file stream directory entry type (%d)", 
+            func_name, stream_dentry->entry_type);
+        return TSK_ERR;
     }
 
     /* Regular file or directory? */
     if (dentry->attrs[0] & FATFS_ATTR_DIRECTORY) {
-        a_fs_meta->type = TSK_FS_META_TYPE_DIR;
+        fs_meta->type = TSK_FS_META_TYPE_DIR;
     }
     else {
-        a_fs_meta->type = TSK_FS_META_TYPE_REG;
+        fs_meta->type = TSK_FS_META_TYPE_REG;
     }
 
-    // RJCTODO: Need to set mode?
+    /* Mode? */
+    mode = fs_meta->mode; 
+    if ((dentry->attrs[0] & FATFS_ATTR_READONLY) == 0) {
+        mode |=
+            (TSK_FS_META_MODE_IRUSR | TSK_FS_META_MODE_IRGRP |
+            TSK_FS_META_MODE_IROTH);
+    }
+    if ((dentry->attrs[0] & FATFS_ATTR_HIDDEN) == 0) {
+        mode |=
+            (TSK_FS_META_MODE_IWUSR | TSK_FS_META_MODE_IWGRP |
+            TSK_FS_META_MODE_IWOTH);
+    }
+    fs_meta->mode = (TSK_FS_META_MODE_ENUM)mode;
 
     /* There is no notion of links in exFAT, just deleted or not deleted. 
      * If the file is not deleted, treat this as having one link. */
-    a_fs_meta->nlink = (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) ? 0 : 1;
+    fs_meta->nlink = (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) ? 0 : 1;
 
-    // RJCTODO: Could cut down on code duplication here...
     /* Copy the last modified time, converted to UNIX date format. */
     if (FATFS_ISDATE(tsk_getu16(fs->endian, dentry->modified_date))) {
-        a_fs_meta->mtime =
+        fs_meta->mtime =
             dos2unixtime(tsk_getu16(fs->endian, dentry->modified_time),
             tsk_getu16(fs->endian, dentry->modified_date), 
             dentry->modified_time_10_ms_increments);
     }
     else {
-        a_fs_meta->mtime = 0;
-        a_fs_meta->mtime_nano = 0;
+        fs_meta->mtime = 0;
+        fs_meta->mtime_nano = 0;
     }
 
     /* Copy the last accessed time, converted to UNIX date format. */
     if (FATFS_ISDATE(tsk_getu16(fs->endian, dentry->accessed_date))) {
-        a_fs_meta->atime =
+        fs_meta->atime =
             dos2unixtime(tsk_getu16(fs->endian, dentry->accessed_time), 
             tsk_getu16(fs->endian, dentry->accessed_date), 0);
     }
     else {
-        a_fs_meta->atime = 0;
+        fs_meta->atime = 0;
     }
-    a_fs_meta->atime_nano = 0;
+    fs_meta->atime_nano = 0;
 
     /* exFAT does not have a last changed time. */
-    a_fs_meta->ctime = 0;
-    a_fs_meta->ctime_nano = 0;
+    fs_meta->ctime = 0;
+    fs_meta->ctime_nano = 0;
 
     /* Copy the created time, converted to UNIX date format. */
     if (FATFS_ISDATE(tsk_getu16(fs->endian, dentry->created_date))) {
-        a_fs_meta->crtime =
+        fs_meta->crtime =
             dos2unixtime(tsk_getu16(fs->endian, dentry->created_time),
             tsk_getu16(fs->endian, dentry->created_date), 
             dentry->created_time_10_ms_increments); // RJCTODO: Is this correct? The comments on the conversion routine may be incorrect...
-        a_fs_meta->crtime_nano = dos2nanosec(dentry->created_time_10_ms_increments);
+        fs_meta->crtime_nano = dos2nanosec(dentry->created_time_10_ms_increments);
     }
     else {
-        a_fs_meta->crtime = 0;
-        a_fs_meta->crtime_nano = 0;
+        fs_meta->crtime = 0;
+        fs_meta->crtime_nano = 0;
     }
 
-    // RJCTODO: Set the first cluster and size
-    // RJCTODO: Verify this field vs. data length.
-    first_clust_addr_ptr = (TSK_DADDR_T*)a_fs_meta->content_ptr;
-    first_clust_addr_ptr[0] = tsk_getu32(a_fatfs->fs_info.endian, stream_dentry->first_cluster_addr);
-    a_fs_meta->size = tsk_getu64(fs->endian, stream_dentry->valid_data_length);
+    /* Set the size of the file and the address of its first cluster. */
+    ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0] = 
+        tsk_getu32(a_fatfs->fs_info.endian, stream_dentry->first_cluster_addr);
+    fs_meta->size = tsk_getu64(fs->endian, stream_dentry->valid_data_length); 
+    allocated_size = tsk_getu64(fs->endian, stream_dentry->data_length); // RJCTODO: Is this the right approach?
 
-    // RJCTODO: If the second bit of the secondary flags is set there is no FAT chain. Preload attr runs.
+    /* If the FAT chain bit of the secondary flags of the stream entry is set,
+     * the file is not fragmented and there is no FAT chain to walk. Do an 
+     * eager load instead of a lazy load of its data run. */
+    if ((stream_dentry->flags & 0x02) == 0 &&
+        !exfatfs_make_contiguous_data_run(a_fs_file, a_fs_file->meta->size)) {
+        return TSK_ERR;
+    }
 
     return TSK_OK;
 }
 
 /**
  * \internal
- * Copy the contents of a file name directory entry into a 
- * TSK_FS_META structure.
+ * Use a file name directory entry corresponding to the exFAT equivalent of
+ * an inode to populate the TSK_FS_META object of a TSK_FS_FILE object.
  *
- * @param a_fatfs File system that directory entry is from.
- * @param a_fs_meta Generic inode structure to copy data into.
- * @param a_inode Raw inode structure to copy data from.
- * @return TSK_RETVAL_ENUM.  Errors should only occur for
- * Unicode conversion problems and when this occurs the name will be
- * NULL terminated (but with unknown contents).
+ * @param a_fatfs Source file system for the directory entries.
+ * @param a_fs_file Generic file with generic inode structure (TSK_FS_META).
+ * @param a_dentries One or more directory entries.
+ * @param a_inum Address of the inode.
+ * @param a_is_alloc Allocation status of the inode.
+ * @return TSK_RETVAL_ENUM.  
  */
 static TSK_RETVAL_ENUM 
-exfatfs_copy_file_name_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, EXFATFS_INODE *a_inode, TSK_INUM_T a_inum)
+exfatfs_copy_file_name_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, EXFATFS_DENTRY_SET *a_dentries, TSK_INUM_T a_inum)
 {
     const char *func_name = "exfatfs_copy_file_name_dinode";
     EXFATFS_FILE_NAME_DIR_ENTRY *dentry = NULL;
 
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name) ||
-        fatfs_is_ptr_arg_null(a_inode, "a_inode", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_meta", func_name) ||
+        fatfs_is_ptr_arg_null(a_dentries, "a_dentries", func_name) ||
         !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
         return TSK_ERR;
     }
 
-    dentry = (EXFATFS_FILE_NAME_DIR_ENTRY*)(&a_inode->dentries[0]);
+    dentry = (EXFATFS_FILE_NAME_DIR_ENTRY*)(&a_dentries->dentries[0]);
     // RJCTODO: Verify entry type
 
-    /* It may actually be for a directory, but there is no good way to tell
-     * at this point. */
-    a_fs_meta->type = TSK_FS_META_TYPE_REG;
 
-    if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_meta, (UTF16*)dentry->utf16_name_chars, EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH, a_inum, "file name segment") == TSKconversionOK) {
+    if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_file->meta, 
+        (UTF16*)dentry->utf16_name_chars, EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH,
+        a_inum, "file name segment") == TSKconversionOK) {
         return TSK_OK;
     }
     else {
@@ -732,77 +886,86 @@ exfatfs_copy_file_name_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, EXFAT
     }
 }
 
+// RJCTODO: Improve comment
 /**
  * \internal
  * Initialize the members of a TSK_FS_META for copying the contents of an
- * an inode consisiting of or more raw directry entries into it. 
+ * an inode consisting of one or more raw directry entries into it. 
  *
  * @param a_fatfs File system that directory entry is from.
- * @param a_fs_meta Generic inode structure to copy data into.
+ * @param a_fs_file Generic file with generic inode structure to 
+ * copy data into.
  * @param a_inum Address of the inode.
  * @param a_is_alloc Allocation status of the inode.
  * @return 1 on success, 0 otherwise.
  */
 static uint8_t
-exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, TSK_INUM_T a_inum, uint8_t a_is_alloc)
+exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, TSK_INUM_T a_inum, uint8_t a_is_alloc)
 {
     const char *func_name = "exfatfs_inode_copy_init";
+    TSK_FS_META *fs_meta = NULL;
     int8_t ret_val = 0;
 
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
         !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
         return TSK_ERR;
     }
 
-    /* Default to virtual inode for type. The code for file inodes will reset 
-     * this to file or directory. */
-    a_fs_meta->type = TSK_FS_META_TYPE_VIRT;
+    fs_meta = a_fs_file->meta;
 
-    a_fs_meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
-    a_fs_meta->addr = a_inum;
-    a_fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED; // RJCTODO: Is this correct? Is it correct for non-file entries? Do existing callbacks handle it correctly?
+    /* Record allocation status and the inode address. */
+    fs_meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
+    fs_meta->addr = a_inum;
+
+    /* As for FATXX, make regular file the default type. */
+    fs_meta->type = TSK_FS_META_TYPE_REG;
+
+    /* As for FATXX, mark everything as executable. */
+    fs_meta->mode = (TSK_FS_META_MODE_ENUM)(TSK_FS_META_MODE_IXUSR | TSK_FS_META_MODE_IXGRP |
+        TSK_FS_META_MODE_IXOTH);
 
     /* There is no notion of links in exFAT, just deleted or not deleted. 
      * With not deleted being equivalent to having one link, set nlink to 1
      * here so that it will be set for static things like the allocation 
      * bitmap. The code for file inodes can reset or unset it appropriately. */
-    a_fs_meta->nlink = 1;
+    fs_meta->nlink = 1;
 
     /* Initialize size to zero. The code for particular inode types will 
      * fill in another value, if appropriate. */
-    a_fs_meta->size = 0;
+    fs_meta->size = 0;
 
     /* Default values for time stamp metadata. The code for file inodes will 
      * fill in actual time stamp data. */
-    a_fs_meta->mtime = 0;
-    a_fs_meta->mtime_nano = 0;
-    a_fs_meta->atime = 0;
-    a_fs_meta->atime_nano = 0;
-    a_fs_meta->ctime = 0;
-    a_fs_meta->ctime_nano = 0;
-    a_fs_meta->crtime = 0;
-    a_fs_meta->crtime_nano = 0;
+    fs_meta->mtime = 0;
+    fs_meta->mtime_nano = 0;
+    fs_meta->atime = 0;
+    fs_meta->atime_nano = 0;
+    fs_meta->ctime = 0;
+    fs_meta->ctime_nano = 0;
+    fs_meta->crtime = 0;
+    fs_meta->crtime_nano = 0;
 
     /* Metadata that does not exist in exFAT. */
-    a_fs_meta->uid = 0;
-    a_fs_meta->gid = 0;
-    a_fs_meta->seq = 0;
+    fs_meta->uid = 0;
+    fs_meta->gid = 0;
+    fs_meta->seq = 0;
 
     /* Allocate space for a name. */
-    if (a_fs_meta->name2 == NULL) {
-        if ((a_fs_meta->name2 = (TSK_FS_META_NAME_LIST*)tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL) {
+    if (fs_meta->name2 == NULL) {
+        if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST*)tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL) {
             return 0;
         }
-        a_fs_meta->name2->next = NULL;
+        fs_meta->name2->next = NULL;
     }
 
     /* Allocate space for saving the cluster address of the first cluster 
      * of file inodes, whether virtual (e.g., allocation bitmap) or file. */
-    if (a_fs_meta->content_len < FATFS_FILE_CONTENT_LEN) {
-        if ((a_fs_meta =
-                tsk_fs_meta_realloc(a_fs_meta,
+    if (fs_meta->content_len < FATFS_FILE_CONTENT_LEN) {
+        if ((fs_meta =
+                tsk_fs_meta_realloc(fs_meta,
                     FATFS_FILE_CONTENT_LEN)) == NULL) {
             return 0;
         }
@@ -811,9 +974,9 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, TSK_INUM_T 
     /* Mark the generic attribute list as not in use (in the generic file model
      * attributes are containers for data or metadata). Population of this 
      * stuff is done on demand (lazy look up). */
-    a_fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
-    if (a_fs_meta->attr) {
-        tsk_fs_attrlist_markunused(a_fs_meta->attr);
+    fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
+    if (fs_meta->attr) {
+        tsk_fs_attrlist_markunused(fs_meta->attr);
     }
 
     return 1;
@@ -821,61 +984,60 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, TSK_INUM_T 
 
 /**
  * \internal
- * Copy the contents of one or more raw directory entries into a 
- * TSK_FS_META structure.
+ * Use one or more directory entries corresponding to the exFAT equivalent of
+ * an inode to populate the TSK_FS_META object of a TSK_FS_FILE object.
  *
- * @param a_fatfs File system that directory entry is from.
- * @param a_fs_meta Generic inode structure to copy data into.
- * @param a_inode Raw inode structure to copy data from.
+ * @param a_fatfs Source file system for the directory entries.
+ * @param a_fs_file Generic file with generic inode structure (TSK_FS_META).
+ * @param a_dentries One or more directory entries.
  * @param a_inum Address of the inode.
  * @param a_is_alloc Allocation status of the inode.
- * @return TSK_RETVAL_ENUM.  Errors should only occur for
- * Unicode conversion problems and when this occurs the name will be
- * NULL terminated (but with unknown contents).
+ * @return TSK_RETVAL_ENUM.  
  */
 static TSK_RETVAL_ENUM
-exfatfs_copy_dinode(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, 
-    EXFATFS_INODE *a_inode, TSK_INUM_T a_inum, uint8_t a_is_alloc)
+exfatfs_copy_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, 
+    EXFATFS_DENTRY_SET *a_dentries, TSK_INUM_T a_inum, uint8_t a_is_alloc)
 {
     const char *func_name = "exfatfs_copy_dinode";
 
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name) ||
-        fatfs_is_ptr_arg_null(a_inode, "a_inode", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
+        fatfs_is_ptr_arg_null(a_dentries, "a_dentries", func_name) ||
         !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
         return TSK_ERR;
     }
 
-    if (!exfatfs_inode_copy_init(a_fatfs, a_fs_meta, a_inum, a_is_alloc)) {
+    if (!exfatfs_inode_copy_init(a_fatfs, a_fs_file, a_inum, a_is_alloc)) {
         return TSK_ERR;
     }
 
-    switch (a_inode->dentries[0].data[0])
+    switch (a_dentries->dentries[0].data[0])
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY:
-        return exfatfs_copy_vol_label_dinode(a_fatfs, a_fs_meta, a_inode, a_inum);
+        return exfatfs_copy_vol_label_dinode(a_fatfs, a_fs_file, a_dentries, a_inum);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
-        strcpy(a_fs_meta->name2->name, EXFATFS_VOLUME_GUID_VIRT_FILENAME);
+        strcpy(a_fs_file->meta->name2->name, EXFATFS_VOLUME_GUID_VIRT_FILENAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
-        return exfatfs_copy_alloc_bitmap_dinode(a_fatfs, a_fs_meta, a_inode);
+        return exfatfs_copy_alloc_bitmap_dinode(a_fatfs, a_fs_file, a_dentries);
     case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
-        return exfatfs_copy_upcase_table_dinode(a_fatfs, a_fs_meta, a_inode);
+        return exfatfs_copy_upcase_table_dinode(a_fatfs, a_fs_file, a_dentries);
     case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
-        strcpy(a_fs_meta->name2->name, EXFATFS_TEX_FAT_VIRT_FILENAME);
+        strcpy(a_fs_file->meta->name2->name, EXFATFS_TEX_FAT_VIRT_FILENAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
-        strcpy(a_fs_meta->name2->name, EXFATFS_ACT_VIRT_FILENAME);
+        strcpy(a_fs_file->meta->name2->name, EXFATFS_ACT_VIRT_FILENAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
     case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE:
-        return exfatfs_copy_file_dinode(a_fatfs, a_fs_meta, a_inode);
+        return exfatfs_copy_file_dinode(a_fatfs, a_fs_file, a_dentries);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
     case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME:
-        return exfatfs_copy_file_name_dinode(a_fatfs, a_fs_meta, a_inode, a_inum);
+        return exfatfs_copy_file_name_dinode(a_fatfs, a_fs_file, a_dentries, a_inum);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
     case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM:
     default:
@@ -893,7 +1055,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     const char *func_name = "exfatfs_inode_lookup";
     TSK_DADDR_T sector = 0;
     int8_t sect_is_alloc = 0;
-    EXFATFS_INODE inode;
+    EXFATFS_DENTRY_SET inode;
     uint64_t inode_offset = 0;
     TSK_DADDR_T cluster_base_sector = 0;
     TSK_INUM_T next_inum = 0;
@@ -982,8 +1144,8 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
             }
         }
 
-        copy_result = exfatfs_copy_dinode(a_fatfs, a_fs_file->meta, 
-            &inode, a_inum, sect_is_alloc); 
+        copy_result = exfatfs_copy_dinode(a_fatfs, a_fs_file, &inode, a_inum, 
+            sect_is_alloc); 
     }
 
     if (copy_result == TSK_OK) {
@@ -1001,6 +1163,46 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     else {
         return 1;
     }
+}
+
+// RJCTODO: Add function header comment
+static void
+exfatfs_istat_file_attr_flags(FATFS_DENTRY *a_dentry, FILE *a_hFile)
+{
+    const char *func_name = "exfatfs_istat_file_attr_flags";
+    EXFATFS_FILE_DIR_ENTRY *file_dentry = NULL;
+
+    if (fatfs_is_ptr_arg_null(a_dentry, "a_dentry", func_name) ||
+        fatfs_is_ptr_arg_null(a_hFile, "a_hFile", func_name)) {
+        return; 
+    }
+
+    file_dentry = (EXFATFS_FILE_DIR_ENTRY*)(&a_dentry);
+
+    if (file_dentry->attrs[0] & FATFS_ATTR_DIRECTORY) {
+        tsk_fprintf(a_hFile, "Directory");
+    }
+    else {
+        tsk_fprintf(a_hFile, "File");
+    }
+
+    if (file_dentry->attrs[0] & FATFS_ATTR_READONLY) {
+        tsk_fprintf(a_hFile, ", Read Only");
+    }
+
+    if (file_dentry->attrs[0] & FATFS_ATTR_HIDDEN) {
+        tsk_fprintf(a_hFile, ", Hidden");
+    }
+
+    if (file_dentry->attrs[0] & FATFS_ATTR_SYSTEM) {
+        tsk_fprintf(a_hFile, ", System");
+    }
+
+    if (file_dentry->attrs[0] & FATFS_ATTR_ARCHIVE) {
+        tsk_fprintf(a_hFile, ", Archive");
+    }
+
+    tsk_fprintf(a_hFile, "\n");
 }
 
 // RJCTODO: Add function header comment
@@ -1030,41 +1232,23 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
         tsk_fprintf(a_hFile, "Volume Label\n");
         break;
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
+        tsk_fprintf(a_hFile, "Volume GUID\n");
+        break;
     case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:     
+        tsk_fprintf(a_hFile, "Allocation Bitmap\n");
+        break;
     case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:     
+        tsk_fprintf(a_hFile, "Up-Case Table\n");
+        break;
     case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:     
+        tsk_fprintf(a_hFile, "TexFAT\n");
+        break;
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
-        tsk_fprintf(a_hFile, "Virtual\n");
+        tsk_fprintf(a_hFile, "Access Control Table\n");
         break;
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
     case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE:
-        file_dentry = (EXFATFS_FILE_DIR_ENTRY*)(&dentry);
-
-        if (file_dentry->attrs[0] & FATFS_ATTR_DIRECTORY) {
-            tsk_fprintf(a_hFile, "Directory");
-        }
-        else {
-            tsk_fprintf(a_hFile, "File");
-        }
-
-        if (file_dentry->attrs[0] & FATFS_ATTR_READONLY) {
-            tsk_fprintf(a_hFile, ", Read Only");
-        }
-
-        if (file_dentry->attrs[0] & FATFS_ATTR_HIDDEN) {
-            tsk_fprintf(a_hFile, ", Hidden");
-        }
-
-        if (file_dentry->attrs[0] & FATFS_ATTR_SYSTEM) {
-            tsk_fprintf(a_hFile, ", System");
-        }
-
-        if (file_dentry->attrs[0] & FATFS_ATTR_ARCHIVE) {
-            tsk_fprintf(a_hFile, ", Archive");
-        }
-
-        tsk_fprintf(a_hFile, "\n");
-
+        exfatfs_istat_file_attr_flags(&dentry, a_hFile);
         break;
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
     case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM:

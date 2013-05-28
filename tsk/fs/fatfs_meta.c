@@ -413,27 +413,25 @@ uint8_t
 fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
 {
     const char *func_name = "fatfs_make_data_run";
-    TSK_FS_INFO *fs;
-    TSK_DADDR_T clust;
-    TSK_OFF_T size_remain;
+    TSK_FS_INFO *fs = NULL;
+    TSK_DADDR_T clust = 0;
+    TSK_OFF_T size_remain = 0;
     TSK_FS_ATTR *fs_attr = NULL;
-    TSK_FS_META *fs_meta;
-    FATFS_INFO *fatfs;
+    TSK_FS_META *fs_meta = NULL;
+    FATFS_INFO *fatfs = NULL;
 
-    if ((a_fs_file == NULL) || (a_fs_file->meta == NULL)
-        || (a_fs_file->fs_info == NULL)) {
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("%s: called with NULL pointers", func_name);
-        return 1;
+    if ((fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name)) ||
+        (fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name)) ||
+        (fatfs_is_ptr_arg_null(a_fs_file->fs_info, "a_fs_file->fs_info", func_name))) {
+        return TSK_ERR;
     }
+    
     fs_meta = a_fs_file->meta;
     fs = a_fs_file->fs_info;
-    fatfs = (FATFS_INFO *) fs;
+    fatfs = (FATFS_INFO*)fs;
 
-    clust = ((TSK_DADDR_T *) fs_meta->content_ptr)[0];
-    size_remain = roundup(fs_meta->size, fatfs->csize * fs->block_size);
-
-    // see if we have already loaded the runs
+    /* Check for already loaded runs, since a lazy load is used. If not 
+     * loaded, allocate a run list. */
     if ((fs_meta->attr != NULL)
         && (fs_meta->attr_state == TSK_FS_META_ATTR_STUDIED)) {
         return 0;
@@ -441,7 +439,6 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
     else if (fs_meta->attr_state == TSK_FS_META_ATTR_ERROR) {
         return 1;
     }
-    // not sure why this would ever happen, but...
     else if (fs_meta->attr != NULL) {
         tsk_fs_attrlist_markunused(fs_meta->attr);
     }
@@ -449,49 +446,60 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         fs_meta->attr = tsk_fs_attrlist_alloc();
     }
 
-    // sanity check on input
+    /* Get the first cluster address of the file. */
+    clust = ((TSK_DADDR_T*)fs_meta->content_ptr)[0];
     if ((clust > (fatfs->lastclust)) &&
         (FATFS_ISEOF(clust, fatfs->mask) == 0)) {
         fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
         tsk_error_reset();
-        if (a_fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)
+        if (a_fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) {
             tsk_error_set_errno(TSK_ERR_FS_RECOVER);
-        else
+        }
+        else {
             tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        }
         tsk_error_set_errstr
             ("%s: Starting cluster address too large: %"
             PRIuDADDR, func_name, clust);
         return 1;
     }
 
-    /* We need to handle the special files specially because they
-     * are not in the FAT.  Except for FAT32 root dirs, those are normal.
-     */
+    /* Figure out the total run length. */
+    size_remain = roundup(fs_meta->size, fatfs->csize * fs->block_size);
+
     if ((a_fs_file->meta->addr == FATFS_ROOTINO) && 
         (fs->ftype != TSK_FS_TYPE_FAT32) &&
         (fs->ftype != TSK_FS_TYPE_EXFAT) &&
         (clust == 1)) {
+        /* Make a data run for a FAT12 or FAT16 root directory. The root 
+         * directory for these file systems is not tracked in the FAT. It
+         * is a contiguous run beginning in the first sector of the data
+         * area. */
         TSK_FS_ATTR_RUN *data_run;
 
-        if (tsk_verbose)
+        if (tsk_verbose) {
             tsk_fprintf(stderr,
                 "%s: Loading root directory\n", func_name);
+        }
 
-        // make a non-resident run
+        /* Allocate a single, non-resident run. */
         data_run = tsk_fs_attr_run_alloc();
         if (data_run == NULL) {
             return 1;
         }
+
+        /* Set the starting sector address and run length. */
         data_run->addr = fatfs->rootsect;
         data_run->len = fatfs->firstclustsect - fatfs->firstdatasect;
 
+        // RJCTODO: Huh? Also, duplicated code.
         if ((fs_attr =
                 tsk_fs_attrlist_getnew(fs_meta->attr,
                     TSK_FS_ATTR_NONRES)) == NULL) {
             return 1;
         }
 
-        // initialize the data run
+        /* Initialize the data run. */
         if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run, NULL,
                 TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
                 data_run->len * fs->block_size,
@@ -503,25 +511,31 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
         return 0;
     }
-
-    // see if it is one of the special files
-    else if ((a_fs_file->meta->addr > fs->last_inum - FATFS_NUM_SPECFILE)
-        && (a_fs_file->meta->addr != TSK_FS_ORPHANDIR_INUM(fs))) {
+    else if (((fs->ftype == TSK_FS_TYPE_EXFAT) &&  // RJCTODO: Consider making this into a function
+              (fs_meta->type == TSK_FS_META_TYPE_VIRT)) ||
+             ((a_fs_file->meta->addr > fs->last_inum - FATFS_NUM_SPECFILE) &&
+              (a_fs_file->meta->addr != TSK_FS_ORPHANDIR_INUM(fs)))) {
+        /* Make a data run for a virtual file: MBR, FAT, or various exFAT file
+         * directory entries (allocation bitmap, UpCase-Table. */ // RJCTODO: Correct
         TSK_FS_ATTR_RUN *data_run;
 
-        if (tsk_verbose)
+        if (tsk_verbose) {
             tsk_fprintf(stderr,
-                "%s: Loading special file: %" PRIuINUM
+                "%s: Loading virtual file: %" PRIuINUM
                 "\n", func_name, a_fs_file->meta->addr);
+        }
 
-        // make a non-resident run
+        /* Allocate a single, non-resident run. */
         data_run = tsk_fs_attr_run_alloc();
         if (data_run == NULL) {
             return 1;
         }
+
+        /* Set the starting sector address and run length. */
         data_run->addr = clust;
         data_run->len = a_fs_file->meta->size / fs->block_size;
 
+        // RJCTODO: Huh? Also, duplicated code.
         if ((fs_attr =
                 tsk_fs_attrlist_getnew(fs_meta->attr,
                     TSK_FS_ATTR_NONRES)) == NULL) {
@@ -540,13 +554,12 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
         return 0;
     }
-
-    /* A deleted file that we want to recover
-     * In this case, we could get a lot of errors because of inconsistent
-     * data.  TO make it clear that these are from a recovery, we set most
-     * error codes to _RECOVER so that they can be more easily suppressed.
-     */
     else if (fs_meta->flags & TSK_FS_META_FLAG_UNALLOC) {
+        /* A deleted file that we want to recover
+         * In this case, we could get a lot of errors because of inconsistent
+         * data.  TO make it clear that these are from a recovery, we set most
+         * error codes to _RECOVER so that they can be more easily suppressed.
+         */
         TSK_DADDR_T sbase;
         TSK_DADDR_T startclust = clust;
         TSK_OFF_T recoversize = fs_meta->size;
@@ -702,19 +715,20 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
 
         return 0;
     }
-
-    /* Normal cluster chain walking */
     else {
         TSK_LIST *list_seen = NULL;
         TSK_FS_ATTR_RUN *data_run = NULL;
         TSK_FS_ATTR_RUN *data_run_head = NULL;
         TSK_OFF_T full_len_s = 0;
         TSK_DADDR_T sbase;
+        /* Normal cluster chain walking for a file or directory, including
+         * FAT32 and exFAT root directories. */
 
-        if (tsk_verbose)
+        if (tsk_verbose) {
             tsk_fprintf(stderr,
                 "%s: Processing file %" PRIuINUM
                 " in normal mode\n", func_name, fs_meta->addr);
+        }
 
         /* Cycle through the cluster chain */
         while ((clust & fatfs->mask) > 0 && (int64_t) size_remain > 0 &&
@@ -893,8 +907,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     if (a_inum == FATFS_ROOTINO) {
         tsk_fprintf(a_hFile, "Root Directory\n");
     }
-    else if (fs_meta->type == TSK_FS_META_TYPE_VIRT &&
-             fs_meta->type != TSK_FS_TYPE_EXFAT) {
+    else if (fs_meta->type == TSK_FS_META_TYPE_VIRT) {
         tsk_fprintf(a_hFile, "Virtual\n");
     }
     else if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {

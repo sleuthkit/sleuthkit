@@ -87,6 +87,21 @@
 #define FATFS_SECT_2_INODE(fatfs, s)    \
     (TSK_INUM_T)((s - fatfs->firstdatasect) * fatfs->dentry_cnt_se + FATFS_FIRST_NORMINO)
 
+/* Constants for the FAT entry */
+#define FATFS_UNALLOC	0
+#define FATFS_BAD		0x0ffffff7
+#define FATFS_EOFS		0x0ffffff8
+#define FATFS_EOFE		0x0fffffff
+
+/* macro to identify if the FAT value is End of File
+ * returns 1 if it is and 0 if it is not 
+ */
+#define FATFS_ISEOF(val, mask)	\
+	((val >= (FATFS_EOFS & mask)) && (val <= (FATFS_EOFE)))
+
+#define FATFS_ISBAD(val, mask) \
+	((val) == (FATFS_BAD & mask))
+
 #define FATFS_SEC_MASK		0x1f    /* number of seconds div by 2 */
 #define FATFS_SEC_SHIFT		0
 #define FATFS_SEC_MIN		0

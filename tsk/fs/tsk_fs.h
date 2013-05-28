@@ -167,8 +167,6 @@ extern "C" {
         TSK_FS_ATTR_RUN_FLAG_ENUM flags;        ///< Flags for run
     };
 
-
-
     /**
     * Flags used for the TSK_FS_ATTR structure, which is used to 
     * store file content metadata. 

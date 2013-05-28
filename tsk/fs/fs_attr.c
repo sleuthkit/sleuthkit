@@ -324,7 +324,6 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
         return 0;
     }
 
-
     /*
      * If this is not in the begining, then we need to make a filler 
      * to account for the cluster numbers we haven't seen yet
