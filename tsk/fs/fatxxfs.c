@@ -1090,7 +1090,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
     fs->file_add_meta = fatfs_inode_lookup;
 
     fs->get_default_attr_type = fatfs_get_default_attr_type;
-    fs->load_attrs = fatfs_make_data_run;
+    fs->load_attrs = fatfs_make_data_runs;
 
     fs->dir_open_meta = fatfs_dir_open_meta;
     fs->name_cmp = fatfs_name_cmp;

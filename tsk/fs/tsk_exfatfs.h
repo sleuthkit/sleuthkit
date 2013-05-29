@@ -48,9 +48,10 @@
 #define EXFATFS_FIRST_CLUSTER 2
 
 /**
- * RJCTODO: comment or remove 
+ * The second bit of the general secondary flags byte is set if there is no
+ 8 FAT chain for a file, i.e., the file is not fragmented.
  */
-#define EXFATFS_INODE_BUFFER_SIZE (2 * (FATFS_DENTRY_SIZE))
+#define EXFATFS_INVALID_FAT_CHAIN_MASK 0x02
 
 /**
  * File names for exFAT "virtual files" corresponding to non-file 
@@ -290,7 +291,7 @@ extern "C" {
     exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         TSK_INUM_T a_inum);
 
-    extern void
+    extern uint8_t
     exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile);
 
 #ifdef __cplusplus

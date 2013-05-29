@@ -154,6 +154,7 @@ extern "C" {
     } FAT_BOOT_SECTOR_RECORD;
 
     // RJCTODO: Comment for Doxygen
+    // RJCTODO: Should unsigned ints in FATFS be changed to TSK_OFF_T?
     /* 
      * Internal TSK_FS_INFO derived structure for FATXX and exFAT file systems.  
      */
@@ -257,7 +258,7 @@ extern "C" {
     extern TSK_FS_ATTR_TYPE_ENUM
     fatfs_get_default_attr_type(const TSK_FS_FILE * a_file);
 
-    extern uint8_t fatfs_make_data_run(TSK_FS_FILE * a_fs_file);
+    extern uint8_t fatfs_make_data_runs(TSK_FS_FILE * a_fs_file);
 
     extern uint8_t fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust,
         TSK_DADDR_T * value);

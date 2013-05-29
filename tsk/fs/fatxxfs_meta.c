@@ -738,16 +738,30 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     }
 }
 
-void
+/**
+ * Output the file attributes of an exFAT file directory entry in 
+ * human-readable form.
+ *
+ * @param a_fatfs Source file system for the directory entry.
+ * @param a_inum Inode address associated with the directory entry.
+ * @param a_hFile Handle of the file to which to write.
+ * @return 0 on success, 1 on failure
+ */
+uint8_t
 fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
 {
+    const char *func_name = "fatxxfs_istat_attr_flags";
     FATXXFS_DENTRY dentry;
 
-    // RJCTODO: Need arg checks
+    tsk_error_reset();
+    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_is_ptr_arg_null(a_hFile, "a_hFile", func_name) ||
+        !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
+        return 1; 
+    }
 
-    if (fatfs_dentry_load(a_fatfs, (FATFS_DENTRY*)(&dentry), a_inum) != 0) {
-        // RJCTODO: Report error, diff function return type?
-        return; 
+    if (fatfs_dentry_load(a_fatfs, (FATFS_DENTRY*)(&dentry), a_inum)) {
+        return 1; 
     }
 
     if ((dentry.attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {

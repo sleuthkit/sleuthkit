@@ -263,7 +263,7 @@ fatfs_make_fat(FATFS_INFO *fatfs, uint8_t a_which, TSK_FS_META *fs_meta)
  * @param [in] a_fs The file system from which to read the bytes.
  * @param [out] a_de The FATFS_DENTRY.
  * @param [in] a_inum An inode address.
- * @returns return 1 on error and 0 on success //RJCTODO: Consider swapping sense of return values
+ * @return 0 on success, 1 on failure 
  */
 uint8_t
 fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum)
@@ -400,25 +400,25 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
     }
 }
 
-//RJCTODO: Slightly out of date
 /** \internal
- * Process the file and load up the clusters into the FS_DATA attribute
- * in fs_meta. The run will list the starting sector and length in sectors
+ * Make data runs out of the clusters allocated to a file represented by a 
+ * TSK_FS_FILE structure. Each data run will have a starting sector and a 
+ * length in sectors. The runs will be stored as a non-resident attribute in 
+ * the TSK_FS_ATTRLIST of the TSK_FS_META structure of the TSK_FS_FILE. 
  *
- * @param a_fs_file File to process and structore to store results in
- *
- * @returns 1 on error and 0 on success
+ * @param a_fs_file A representation of a file.
+ * @return 1 on error and 0 on success
  */
 uint8_t
-fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
+fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
 {
-    const char *func_name = "fatfs_make_data_run";
+    const char *func_name = "fatfs_make_data_runs";
     TSK_FS_INFO *fs = NULL;
+    TSK_FS_META *fs_meta = NULL;
+    FATFS_INFO *fatfs = NULL;
     TSK_DADDR_T clust = 0;
     TSK_OFF_T size_remain = 0;
     TSK_FS_ATTR *fs_attr = NULL;
-    TSK_FS_META *fs_meta = NULL;
-    FATFS_INFO *fatfs = NULL;
 
     if ((fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name)) ||
         (fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name)) ||
@@ -430,8 +430,9 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
     fs = a_fs_file->fs_info;
     fatfs = (FATFS_INFO*)fs;
 
-    /* Check for already loaded runs, since a lazy load is used. If not 
-     * loaded, allocate a run list. */
+    /* Check for an already populated attribute list, since a lazy strategy
+     * is used to fill in attributes. If the attribute list is not yet 
+     * allocated, do so now. */  
     if ((fs_meta->attr != NULL)
         && (fs_meta->attr_state == TSK_FS_META_ATTR_STUDIED)) {
         return 0;
@@ -446,7 +447,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         fs_meta->attr = tsk_fs_attrlist_alloc();
     }
 
-    /* Get the first cluster address of the file. */
+    /* Get the stashed first cluster address of the file. */
     clust = ((TSK_DADDR_T*)fs_meta->content_ptr)[0];
     if ((clust > (fatfs->lastclust)) &&
         (FATFS_ISEOF(clust, fatfs->mask) == 0)) {
@@ -464,17 +465,19 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         return 1;
     }
 
-    /* Figure out the total run length. */
+    /* Figure out the allocated length of the file in bytes. Because the
+     * allocation unit for FAT file systems is the cluster, round the
+     * size up to a multiple of cluster size. */
     size_remain = roundup(fs_meta->size, fatfs->csize * fs->block_size);
 
+    // RJCTODO: Consider addressing the code duplication below.
     if ((a_fs_file->meta->addr == FATFS_ROOTINO) && 
         (fs->ftype != TSK_FS_TYPE_FAT32) &&
         (fs->ftype != TSK_FS_TYPE_EXFAT) &&
         (clust == 1)) {
-        /* Make a data run for a FAT12 or FAT16 root directory. The root 
-         * directory for these file systems is not tracked in the FAT. It
-         * is a contiguous run beginning in the first sector of the data
-         * area. */
+        /* Make a single contiguous data run for a FAT12 or FAT16 root 
+         * directory. The root directory for these file systems is not 
+         * tracked in the FAT. */
         TSK_FS_ATTR_RUN *data_run;
 
         if (tsk_verbose) {
@@ -482,24 +485,26 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
                 "%s: Loading root directory\n", func_name);
         }
 
-        /* Allocate a single, non-resident run. */
+        /* Allocate the run. */
         data_run = tsk_fs_attr_run_alloc();
         if (data_run == NULL) {
             return 1;
         }
 
-        /* Set the starting sector address and run length. */
+        /* Set the starting sector address and run length. The run begins with 
+         * the first sector of the data area. */
         data_run->addr = fatfs->rootsect;
         data_run->len = fatfs->firstclustsect - fatfs->firstdatasect;
 
-        // RJCTODO: Huh? Also, duplicated code.
+        /* Allocate a non-resident attribute to hold the run and add it
+         to the attribute list. */
         if ((fs_attr =
                 tsk_fs_attrlist_getnew(fs_meta->attr,
                     TSK_FS_ATTR_NONRES)) == NULL) {
             return 1;
         }
 
-        /* Initialize the data run. */
+        /* Tie everything together. */
         if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run, NULL,
                 TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
                 data_run->len * fs->block_size,
@@ -509,14 +514,13 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         }
 
         fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
+
         return 0;
     }
-    else if (((fs->ftype == TSK_FS_TYPE_EXFAT) &&  // RJCTODO: Consider making this into a function
-              (fs_meta->type == TSK_FS_META_TYPE_VIRT)) ||
-             ((a_fs_file->meta->addr > fs->last_inum - FATFS_NUM_SPECFILE) &&
-              (a_fs_file->meta->addr != TSK_FS_ORPHANDIR_INUM(fs)))) {
-        /* Make a data run for a virtual file: MBR, FAT, or various exFAT file
-         * directory entries (allocation bitmap, UpCase-Table. */ // RJCTODO: Correct
+    else if ((a_fs_file->meta->addr > fs->last_inum - FATFS_NUM_SPECFILE) &&
+             (a_fs_file->meta->addr != TSK_FS_ORPHANDIR_INUM(fs))) {
+        /* Make a single contiguous data run for a virtual directory or 
+         * virtual file (MBR, FAT). */
         TSK_FS_ATTR_RUN *data_run;
 
         if (tsk_verbose) {
@@ -525,7 +529,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
                 "\n", func_name, a_fs_file->meta->addr);
         }
 
-        /* Allocate a single, non-resident run. */
+        /* Allocate the run. */
         data_run = tsk_fs_attr_run_alloc();
         if (data_run == NULL) {
             return 1;
@@ -535,14 +539,15 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         data_run->addr = clust;
         data_run->len = a_fs_file->meta->size / fs->block_size;
 
-        // RJCTODO: Huh? Also, duplicated code.
+        /* Allocate a non-resident attribute to hold the run and add it
+         to the attribute list. */
         if ((fs_attr =
                 tsk_fs_attrlist_getnew(fs_meta->attr,
                     TSK_FS_ATTR_NONRES)) == NULL) {
             return 1;
         }
 
-        // initialize the data run
+        /* Tie everything together. */
         if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run, NULL,
                 TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
                 data_run->len * fs->block_size,
@@ -555,9 +560,9 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         return 0;
     }
     else if (fs_meta->flags & TSK_FS_META_FLAG_UNALLOC) {
-        /* A deleted file that we want to recover
+        /* Make data runs for a deleted file that we want to recover.
          * In this case, we could get a lot of errors because of inconsistent
-         * data.  TO make it clear that these are from a recovery, we set most
+         * data.  To make it clear that these are from a recovery, we set most
          * error codes to _RECOVER so that they can be more easily suppressed.
          */
         TSK_DADDR_T sbase;
@@ -716,12 +721,13 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         return 0;
     }
     else {
+        // RJCTODO: Find and fix the bug that causes sectors to be printed incorrectly.
         TSK_LIST *list_seen = NULL;
         TSK_FS_ATTR_RUN *data_run = NULL;
         TSK_FS_ATTR_RUN *data_run_head = NULL;
         TSK_OFF_T full_len_s = 0;
         TSK_DADDR_T sbase;
-        /* Normal cluster chain walking for a file or directory, including
+        /* Do normal cluster chain walking for a file or directory, including
          * FAT32 and exFAT root directories. */
 
         if (tsk_verbose) {
@@ -814,6 +820,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
             fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
             return 1;
         }
+
         // initialize the data run
         if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run_head, NULL,
                 TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
@@ -827,6 +834,7 @@ fatfs_make_data_run(TSK_FS_FILE * a_fs_file)
         list_seen = NULL;
 
         fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
+
         return 0;
     }
 }
@@ -911,10 +919,14 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
         tsk_fprintf(a_hFile, "Virtual\n");
     }
     else if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
-        exfatfs_istat_attr_flags(fatfs, a_inum, a_hFile);
+        if (exfatfs_istat_attr_flags(fatfs, a_inum, a_hFile)) {
+            return 1;
+        }
     }
     else {
-        fatxxfs_istat_attr_flags(fatfs, a_inum, a_hFile);
+        if (fatxxfs_istat_attr_flags(fatfs, a_inum, a_hFile)) {
+            return 1;
+        }
     }
 
     /* Print the file size. */

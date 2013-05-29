@@ -227,7 +227,8 @@ extern "C" {
     fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         TSK_INUM_T a_inum);
 
-    extern void fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+    extern uint8_t 
+    fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
         FILE *a_hFile);
 
 #ifdef __cplusplus
