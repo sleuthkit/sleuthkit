@@ -121,6 +121,7 @@ extern "C" {
         EXFATFS_DIR_ENTRY_TYPE_FILE_NAME = 0xC1,     
         EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME = 0x41     
     };
+    typedef enum EXFATFS_DIR_ENTRY_TYPE_ENUM EXFATFS_DIR_ENTRY_TYPE_ENUM;
 
     /**
      * Volume label directory entry structure for exFAT file systems.
@@ -282,10 +283,6 @@ extern "C" {
     extern enum EXFATFS_DIR_ENTRY_TYPE_ENUM 
     exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
         uint8_t a_basic);
-
-    extern TSK_RETVAL_ENUM
-    exfatfs_dinode_copy_stub(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-        FATFS_DENTRY *a_dentry, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
 
     extern uint8_t
     exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,

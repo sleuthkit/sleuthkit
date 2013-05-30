@@ -18,6 +18,18 @@
 #include <assert.h>
 
 uint8_t
+fatfs_is_inum_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum)
+{
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs; 
+
+    if ((a_inum < fs->first_inum) || 
+        (a_inum > fs->last_inum - FATFS_NUM_SPECFILE)) {
+        return 0;
+    }
+    return 1;
+}
+
+uint8_t
 fatfs_is_ptr_arg_null(void *ptr, const char *param_name, const char *func_name)
 {
     assert(ptr != NULL);
@@ -31,15 +43,14 @@ fatfs_is_ptr_arg_null(void *ptr, const char *param_name, const char *func_name)
 }
 
 uint8_t
-fatfs_is_inum_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *func_name)
+fatfs_is_inum_arg_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *func_name)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs; 
 
-    if ((a_inum < fs->first_inum)
-        || (a_inum > fs->last_inum - FATFS_NUM_SPECFILE)) {
+    if (!fatfs_is_inum_in_range(a_fatfs, a_inum)) {
         tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-        tsk_error_set_errstr("%s: address: %" PRIuINUM, func_name, a_inum);
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("%s: invalid inode address: %" PRIuINUM, func_name, a_inum);
         return 0;
     }              
     return 1;

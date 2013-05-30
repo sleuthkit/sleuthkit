@@ -277,7 +277,7 @@ fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_is_ptr_arg_null(a_dentry, "a_dentry", func_name) ||
-        !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
+        !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
         return 1;
     }
     
@@ -343,7 +343,7 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
         fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
-        !fatfs_is_inum_in_range(fatfs, a_inum, func_name)) {
+        !fatfs_is_inum_arg_in_range(fatfs, a_inum, func_name)) {
         return 1;
     }
 
@@ -892,7 +892,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
         fatfs_is_ptr_arg_null(a_hFile, "a_hFile", func_name) ||
-        !fatfs_is_inum_in_range(fatfs, a_inum, func_name)) {
+        !fatfs_is_inum_arg_in_range(fatfs, a_inum, func_name)) {
         return 1;
     }
 
@@ -1007,7 +1007,7 @@ fatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
     TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
 
     if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        return exfatfs_dinode_copy_stub(a_fatfs, a_fs_meta, a_dentry, a_sect, a_inum);
+        return TSK_ERR; // RJCTODO: Not supported yet.
     }
     else {
         return fatxxfs_dinode_copy(a_fatfs, a_fs_meta, a_dentry, a_sect, a_inum);

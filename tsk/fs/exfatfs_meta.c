@@ -584,7 +584,7 @@ exfatfs_copy_vol_label_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, EXFAT
         fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
         fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
         fatfs_is_ptr_arg_null(a_dentries, "a_dentries", func_name) ||
-        !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
+        !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
         return TSK_ERR;
     }
 
@@ -864,11 +864,11 @@ exfatfs_copy_file_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, EXFATFS_DE
  * Use a file name directory entry corresponding to the exFAT equivalent of
  * an inode to populate the TSK_FS_META object of a TSK_FS_FILE object.
  *
- * @param a_fatfs Source file system for the directory entries.
- * @param a_fs_file Generic file with generic inode structure (TSK_FS_META).
- * @param a_dentries One or more directory entries.
- * @param a_inum Address of the inode.
- * @param a_is_alloc Allocation status of the inode.
+ * @param a_fatfs [in] Source file system for the directory entry.
+ * @param a_dentries [in] One or more directory entries.
+ * @param a_inum [in] Address of the inode.
+ * @param a_is_alloc [in] Allocation status of the inode.
+ * @param a_fs_file [in, out] Generic file with generic inode structure (TSK_FS_META).
  * @return TSK_RETVAL_ENUM.  
  */
 static TSK_RETVAL_ENUM 
@@ -882,7 +882,7 @@ exfatfs_copy_file_name_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, EXFAT
         fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
         fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_meta", func_name) ||
         fatfs_is_ptr_arg_null(a_dentries, "a_dentries", func_name) ||
-        !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
+        !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
         return TSK_ERR;
     }
 
@@ -900,21 +900,22 @@ exfatfs_copy_file_name_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, EXFAT
     }
 }
 
-// RJCTODO: Improve comment
+
 /**
  * \internal
- * Initialize the members of a TSK_FS_META for copying the contents of an
- * an inode consisting of one or more raw directry entries into it. 
+ * Initialize the members of a TSK_FS_META object before copying the contents
+ * of an an inode consisting of one or more raw exFAT directry entries into it. 
  *
- * @param a_fatfs File system that directory entry is from.
- * @param a_fs_file Generic file with generic inode structure to 
- * copy data into.
+ * @param a_fatfs [in] Source file system for the directory entries.
  * @param a_inum Address of the inode.
  * @param a_is_alloc Allocation status of the inode.
- * @return 1 on success, 0 otherwise.
+ * @param a_fs_file [in, out] Generic file with generic inode structure to 
+ * initialize.
+ * @return 0 on success, 1 on failure
  */
 static uint8_t
-exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, TSK_INUM_T a_inum, uint8_t a_is_alloc)
+exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+    uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file)
 {
     const char *func_name = "exfatfs_inode_copy_init";
     TSK_FS_META *fs_meta = NULL;
@@ -924,8 +925,8 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, TSK_INUM_T 
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
         fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
-        !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
-        return TSK_ERR;
+        !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
+        return 1;
     }
 
     fs_meta = a_fs_file->meta;
@@ -970,18 +971,18 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, TSK_INUM_T 
     /* Allocate space for a name. */
     if (fs_meta->name2 == NULL) {
         if ((fs_meta->name2 = (TSK_FS_META_NAME_LIST*)tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL) {
-            return 0;
+            return 1;
         }
         fs_meta->name2->next = NULL;
     }
 
     /* Allocate space for saving the cluster address of the first cluster 
-     * of file inodes, whether virtual (e.g., allocation bitmap) or file. */
+     * of file inodes, including allocation bitmaps and upcase tables. */
     if (fs_meta->content_len < FATFS_FILE_CONTENT_LEN) {
         if ((fs_meta =
                 tsk_fs_meta_realloc(fs_meta,
                     FATFS_FILE_CONTENT_LEN)) == NULL) {
-            return 0;
+            return 1;
         }
     }
 
@@ -993,7 +994,7 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, TSK_INUM_T 
         tsk_fs_attrlist_markunused(fs_meta->attr);
     }
 
-    return 1;
+    return 0;
 }
 
 /**
@@ -1001,29 +1002,27 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, TSK_INUM_T 
  * Use one or more directory entries corresponding to the exFAT equivalent of
  * an inode to populate the TSK_FS_META object of a TSK_FS_FILE object.
  *
- * @param a_fatfs Source file system for the directory entries.
- * @param a_fs_file Generic file with generic inode structure (TSK_FS_META).
- * @param a_dentries One or more directory entries.
- * @param a_inum Address of the inode.
- * @param a_is_alloc Allocation status of the inode.
+ * @param a_fatfs [in] Source file system for the directory entries.
+ * @param a_dentries [in] One or more directory entries.
+ * @param a_inum [in] Address of the inode.
+ * @param a_is_alloc [in] Allocation status of the inode.
+ * @param a_fs_file [in, out] Generic file with generic inode structure (TSK_FS_META).
  * @return TSK_RETVAL_ENUM.  
  */
 static TSK_RETVAL_ENUM
-exfatfs_copy_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file, 
-    EXFATFS_DENTRY_SET *a_dentries, TSK_INUM_T a_inum, uint8_t a_is_alloc)
+exfatfs_copy_inode(FATFS_INFO *a_fatfs, EXFATFS_DENTRY_SET *a_dentries, 
+    TSK_INUM_T a_inum, uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file)
 {
-    const char *func_name = "exfatfs_copy_dinode";
+    const char *func_name = "exfatfs_copy_inode";
 
-    tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
-        fatfs_is_ptr_arg_null(a_dentries, "a_dentries", func_name) ||
-        !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
-        return TSK_ERR;
-    }
+    assert(a_fatfs != NULL);
+    assert(a_dentries != NULL);
+    assert(fatfs_is_inum_in_range(a_fatfs, a_inum));
+    assert(a_dentries != NULL);
+    assert(a_fs_file != NULL);
+    assert(a_fs_file->meta != NULL);
 
-    if (!exfatfs_inode_copy_init(a_fatfs, a_fs_file, a_inum, a_is_alloc)) {
+    if (exfatfs_inode_copy_init(a_fatfs, a_inum, a_is_alloc, a_fs_file)) {
         return TSK_ERR;
     }
 
@@ -1064,12 +1063,158 @@ exfatfs_copy_dinode(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
 
 /**
  * \internal
- * Use one or more directory entries corresponding to the exFAT equivalent of
- * an inode to populate the TSK_FS_META object of a TSK_FS_FILE object.
+ * Given an inode address, load the corresponding directory entry and test
+ * to see if it's an exFAT file stream directory entry.
  *
- * @param a_fatfs Source file system for the directory entries.
- * @param a_fs_file The TSK_FS_FILE object.
- * @param a_inum Address of the inode.
+ * @param a_fatfs [in] Source file system for the directory entries.
+ * @param a_stream_entry_inum [in] The inode address associated with the 
+ * supposed file stream entry.
+ * @param a_sector_is_alloc [in] The allocation status of the sector that
+ * contains the supposed file stream entry.
+ * @param a_file_dentry_type [in] The companion file entry type, 
+ * deleted or not.
+ * @param a_dentry [in, out] A directory entry structure. The stream 
+ * entry, if found, will be loaded into it.
+ * @return 0 on success, 1 on failure
+ */
+static uint8_t
+exfatfs_load_and_test_file_stream_dentry(FATFS_INFO *a_fatfs, 
+    TSK_INUM_T a_stream_entry_inum, uint8_t a_sector_is_alloc, 
+    EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type,
+    FATFS_DENTRY *a_dentry)
+{
+    EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
+
+    assert(a_fatfs != NULL);
+    assert(fatfs_is_inum_in_range(a_fatfs, a_stream_entry_inum));
+    assert(a_dentry != NULL);
+
+    if (fatfs_dentry_load(a_fatfs, a_dentry, a_stream_entry_inum) == 0) {
+        /* Is the next entry likely a stream entry? */
+        dentry_type = exfatfs_is_dentry(a_fatfs, a_dentry, a_sector_is_alloc);
+
+        /* If it is and its not deleted/deleted status matches that of the
+            * file entry, call it good. */
+        if ((a_file_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE && 
+            dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) ||
+            (a_file_dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE &&
+                dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM)) {
+                    return 0;
+        }
+    }
+
+    /* Did not find the file stream entry. */
+    memset((void*)a_dentry, 0, sizeof(FATFS_DENTRY));
+    return 1;
+}
+
+/**
+ * \internal
+ * Given an exFAT file directory entry, try to find the corresponding file
+ * stream directory entry.
+ *
+ * @param a_fatfs [in] Source file system for the directory entries.
+ * @param a_file_entry_inum [in] The inode address associated with the file 
+ * entry.
+ * @param a_sector [in] The address of the sector where the file entry was 
+ * found.
+ * @param a_sector_is_alloc [in] The allocation status of the sector.
+ * @param a_file_dentry_type [in] The file entry type, deleted or not.
+ * @param a_dentry_set [in, out] A directory entry set with the file entry 
+ * as the first entry. The stream entry, if found, will be loaded into the
+ * second entry in the set.
+ * @return 0 on success, 1 on failure
+ */
+static uint8_t
+exfatfs_load_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
+    TSK_DADDR_T a_sector, uint8_t a_sector_is_alloc,  
+    EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type,
+    EXFATFS_DENTRY_SET *a_dentry_set)
+{
+    const char *func_name = "exfatfs_load_file_stream_dentry";
+    TSK_INUM_T stream_entry_inum = 0;
+    TSK_DADDR_T cluster = 0;
+    TSK_DADDR_T cluster_base_sector = 0;
+    TSK_DADDR_T last_entry_offset = 0;
+    TSK_DADDR_T file_entry_offset = 0;
+    EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
+    TSK_DADDR_T next_cluster = 0;
+
+    assert(a_fatfs != NULL);
+    assert(a_dentry_set != NULL);
+    assert(fatfs_is_inum_in_range(a_fatfs, a_file_entry_inum));
+
+    /* Check for the most common case first - the file stream entry is located
+     * immediately after the file entry. This should be true for any file 
+     * entry for a non-deleted file in an allocated cluster, provided that 
+     * the entry is not the last 32 bytes of the cluster. Even then, if the
+     * directory is not fragmented, the stream entry will still follow the
+     * file entry. Finally, if the file entry is for a deleted file and it was
+     * found in an unallocated cluster, the only viable place to look for the
+     * stream entry is in the bytes following the file entry. */
+    stream_entry_inum = a_file_entry_inum + 1;
+    if (!fatfs_is_inum_in_range(a_fatfs, stream_entry_inum)) {
+        return 1;
+    }
+    if (exfatfs_load_and_test_file_stream_dentry(a_fatfs, stream_entry_inum, 
+        a_sector_is_alloc, a_file_dentry_type, 
+        &(a_dentry_set->dentries[1])) == 0) {
+        /* Found it. */
+        return 0;
+    }
+
+    /* If the stream entry was not found immediately following the file entry
+     * and the cluster is allocated, it is possible that the entry is the
+     * last thirty two bytes of a cluster in a fragmented directory. In this
+     * case, the FAT can be consulted to see if there is a next cluster. If 
+     * so, the stream entry may be the first 32 bytes of that cluster. */
+    if (a_sector_is_alloc) {
+        /* Calculate the byte offset of the last possible directory entry in 
+         * the current cluster. */
+        cluster = FATFS_SECT_2_CLUST(a_fatfs, a_sector);
+        cluster_base_sector = FATFS_CLUST_2_SECT(a_fatfs, cluster); 
+        last_entry_offset = (cluster_base_sector * a_fatfs->ssize) + 
+            (a_fatfs->csize * a_fatfs->ssize) - sizeof(FATFS_DENTRY);   
+
+        /* Get the byte offset of the file entry. */
+        file_entry_offset = FATFS_INODE_2_OFF(a_fatfs, a_file_entry_inum);
+
+        if (file_entry_offset == last_entry_offset) {
+            /* The file entry is the last in its cluster. Look up the next
+             * cluster. */
+            if ((fatfs_getFAT(a_fatfs, cluster, &next_cluster) == 0) &&
+                (next_cluster != 0)) {
+                /* Found the next cluster in the FAT, get its first sector
+                 * and the inode address of the first bytes of the sector. */
+                cluster_base_sector = FATFS_CLUST_2_SECT(a_fatfs, cluster); 
+                stream_entry_inum = FATFS_SECT_2_INODE(a_fatfs, 
+                    cluster_base_sector);
+                if (!fatfs_is_inum_in_range(a_fatfs, stream_entry_inum)) {
+                    return 1;
+                }
+                if (exfatfs_load_and_test_file_stream_dentry(a_fatfs, 
+                    stream_entry_inum, a_sector_is_alloc, a_file_dentry_type, 
+                    &(a_dentry_set->dentries[1])) == 0) {
+                    /* Found it. */
+                    return 0;
+                }
+            }
+        }
+    }
+
+    /* Did not find the file stream entry. */
+    return 0;
+}
+
+/**
+ * \internal
+ * Read in the bytes from an exFAT file system that correspond to the exFAT 
+ * equivalent of an inode and use them to populate the TSK_FS_META object of
+ * a TSK_FS_FILE object.
+ *
+ * @param a_fatfs [in] Source file system for the directory entries.
+ * @param a_fs_file [in, out] The TSK_FS_FILE object.
+ * @param a_inum [in] Inode address.
  * @return 0 on success, 1 on failure
  */
 uint8_t
@@ -1079,7 +1224,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     const char *func_name = "exfatfs_inode_lookup";
     TSK_DADDR_T sector = 0;
     int8_t sect_is_alloc = 0;
-    EXFATFS_DENTRY_SET inode;
+    EXFATFS_DENTRY_SET dentry_set;
     uint64_t inode_offset = 0;
     TSK_DADDR_T cluster_base_sector = 0;
     TSK_INUM_T next_inum = 0;
@@ -1089,7 +1234,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
-        !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
+        !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
         return 1;
     }
 
@@ -1103,78 +1248,68 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         return 1;
     }
 
+    /* Check the allocation status of the sector. This status will be used
+     * not only as metadata to be reported, but also as a way to choose
+     * between the basic or in-depth version of the tests (below) that 
+     * determine whether or not the bytes corrresponding to the inode are 
+     * likely to be a directory entry. Note that in other places in the code 
+     * information about whether or not the sector that contains the inode is
+     * part of a folder is used to select the test. Here, that information is 
+     * not available, so the test here is less reliable and may result in some 
+     * false positives. */
     sect_is_alloc = fatfs_is_sectalloc(a_fatfs, sector);
     if (sect_is_alloc == -1) {
         return 1;
     }
 
-    if (fatfs_dentry_load(a_fatfs, &inode.dentries[0], a_inum)) {
+    /* Load the bytes at the inode address. */
+    memset((void*)&dentry_set, 0, sizeof(FATFS_DENTRY) * 2);
+    if (fatfs_dentry_load(a_fatfs, &dentry_set.dentries[0], a_inum)) {
         return 1;
     }
 
-    /* Note that only the sector allocation status is used to choose
-     * between the basic or in-depth version of the inode validity 
-     * test. In other places in the code information about whether or not 
-     * the sector that contains the inode is part of a folder is used to 
-     * make this decision. Here, that information is not available. Thus, 
-     * the test here is less reliable and may result in some false 
-     * positives. */
-    dentry_type = exfatfs_is_dentry(a_fatfs, &inode.dentries[0], sect_is_alloc);
+    /* Try typing the bytes as a directory entry.*/
+    dentry_type = exfatfs_is_dentry(a_fatfs, &dentry_set.dentries[0], sect_is_alloc);
+
+    /* For the purposes of inode lookup, the file and file stream entries that
+     * begin a file entry set (a file entry, a file stream antry, and 1-17 
+     * file name entries) are mapped to a single inode. Thus, 1) file stream 
+     * entries are not treated as independent inodes and 2) when a file entry
+     * is found, the companion file stream entry needs to be read in, too. */
     if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_NONE ||
         dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
         dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM) {
-            /* Note that stream entries are handled with file entries 
-             * below. */
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
-            tsk_error_set_errstr("%s: %" PRIuINUM " is not an inode", 
-                func_name, a_inum);
-            return 1;
+        /* Report not an inode. */
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
+        tsk_error_set_errstr("%s: %" PRIuINUM " is not an inode", func_name, 
+            a_inum);
+        return 1;
+    }
+    else if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
+             dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) {
+        /* Read in the file stream entry. If not successful, at least
+         * return the file entry metadata. */
+        exfatfs_load_file_stream_dentry(a_fatfs, a_inum, sector, sect_is_alloc, 
+            dentry_type, &dentry_set);
     }
     else {
-        if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-             dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) {
-            
-            /* Look for the stream entry in the next entry if: 
-             *    a) The file entry is allocated and not at a cluster 
-             *       boundary of a fragmented directory.
-             *    b) The file entry is unallocated, so there is no
-             *       place else to look. */
-            next_inum = a_inum + 1;
-
-            if (sect_is_alloc) {
-                /* Test for a file entry at a cluster boundary. First, get
-                /* the offset of the file entry. */ 
-                uint64_t inode_offset = FATFS_INODE_2_OFF(a_fatfs, a_inum);            
-                
-                /* Then get the base sector of the cluster. */ // RJCTODO: Fix this
-                cluster_base_sector = FATFS_CLUST_2_SECT(a_fatfs, 
-                    (FATFS_SECT_2_CLUST(a_fatfs, sector))) + a_fatfs->csize;
-
-                if (inode_offset == 
-                    ((cluster_base_sector * a_fatfs->ssize) - sizeof(FATFS_DENTRY))) {
-                    // RJCTODO: Figure out where the stream dentry is
-                }
-                else {
-                    next_inum = a_inum + 1; // RJCTODO: Get another var
-                }
-            }
-
-            if (fatfs_dentry_load(a_fatfs, &inode.dentries[1], next_inum) != 0) {
-                return 1;
-            }
+        /* The entry is one of the one entry, one inode types. */
+        if (fatfs_dentry_load(a_fatfs, &dentry_set.dentries[1], next_inum)) {
+            return 1;
         }
-
-        copy_result = exfatfs_copy_dinode(a_fatfs, a_fs_file, &inode, a_inum, 
-            sect_is_alloc); 
     }
 
+    /* Populate the TSK_FS_META object. */
+    copy_result = exfatfs_copy_inode(a_fatfs, &dentry_set, a_inum, 
+        sect_is_alloc, a_fs_file); 
     if (copy_result == TSK_OK) {
         return 0;
     }
     else if (copy_result == TSK_COR) {
-        /* If there was a Unicode conversion error,
-         * then still return the inode. */
+        /* If there was a Unicode conversion error on a string, but the rest 
+         * of the inode metadata is probably o.k. Report the error, but also
+         report a successful look up.*/
         if (tsk_verbose) {
             tsk_error_print(stderr);
         }
@@ -1188,12 +1323,12 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
 
 /**
  * \internal
- * Output file attributes for an exFAT directory entry in 
+ * Output file attributes for an exFAT directory entry/inode in 
  * human-readable form.
  *
- * @param a_fatfs Source file system for the directory entry.
- * @param a_inum Inode address associated with the directory entry.
- * @param a_hFile Handle of the file to which to write.
+ * @param a_fatfs [in] Source file system for the directory entry.
+ * @param a_inum [in] Inode address associated with the directory entry.
+ * @param a_hFile [in] Handle of the file to which to write.
  * @return 0 on success, 1 on failure
  */
 uint8_t
@@ -1207,14 +1342,16 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_is_ptr_arg_null(a_hFile, "a_hFile", func_name) ||
-        !fatfs_is_inum_in_range(a_fatfs, a_inum, func_name)) {
+        !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
         return 1; 
     }
 
+    /* Load the bytes at the inode address. */
     if (fatfs_dentry_load(a_fatfs, (FATFS_DENTRY*)(&dentry), a_inum)) {
         return 1; 
     }
 
+    /* Print the attributes. */
     switch (dentry.data[0])
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
@@ -1283,22 +1420,4 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
     }
 
     return 0;
-}
-
-// RJCTODO: Remove stub when inode_walk is re-implemented
-TSK_RETVAL_ENUM
-exfatfs_dinode_copy_stub(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-    FATFS_DENTRY *a_dentry, TSK_DADDR_T a_sect, TSK_INUM_T a_inum)
-{
-    const char *func_name = "exfatfs_dinode_copy_stub";
-    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-    int8_t sect_is_alloc = 0;
-
-    if ((fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) ||
-        (fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name)) ||
-        (fatfs_is_ptr_arg_null(a_dentry, "a_dentry", func_name))) {
-        return TSK_ERR;
-    }
-
-    return TSK_OK;
 }
