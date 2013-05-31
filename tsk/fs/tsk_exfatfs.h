@@ -49,9 +49,21 @@
 
 /**
  * The second bit of the general secondary flags byte is set if there is no
- 8 FAT chain for a file, i.e., the file is not fragmented.
+ * FAT chain for a file, i.e., the file is not fragmented.
  */
 #define EXFATFS_INVALID_FAT_CHAIN_MASK 0x02
+
+/**
+ * A exFAT file entry set consists of a file directory entry followed by a
+ * file stream directory and at least one file name directory entry.
+ */
+#define EXFATFS_MIN_FILE_SECONDARY_DENTRIES_COUNT 2 
+
+/**
+ * A exFAT file entry set consists of a file directory entry followed by a
+ * file stream directory and up to seventeen file name directory entries.
+ */
+#define EXFATFS_MAX_FILE_SECONDARY_DENTRIES_COUNT 18
 
 /**
  * File names for exFAT "virtual files" corresponding to non-file 

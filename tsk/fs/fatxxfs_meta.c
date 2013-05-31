@@ -745,7 +745,7 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
  * @param a_fatfs Source file system for the directory entry.
  * @param a_inum Inode address associated with the directory entry.
  * @param a_hFile Handle of the file to which to write.
- * @return 0 on success, 1 on failure
+ * @return 0 on success, 1 on failure, per TSK convention
  */
 uint8_t
 fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
@@ -786,6 +786,8 @@ fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
 
         tsk_fprintf(a_hFile, "\n");
     }
+
+    return 0;
 }
 
 void
