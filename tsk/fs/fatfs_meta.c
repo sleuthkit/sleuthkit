@@ -471,6 +471,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
     size_remain = roundup(fs_meta->size, fatfs->csize * fs->block_size);
 
     // RJCTODO: Consider addressing the code duplication below.
+    // RJCTODO: Consider checking for FAT12 and FAT16
     if ((a_fs_file->meta->addr == FATFS_ROOTINO) && 
         (fs->ftype != TSK_FS_TYPE_FAT32) &&
         (fs->ftype != TSK_FS_TYPE_EXFAT) &&
@@ -520,7 +521,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
     else if ((a_fs_file->meta->addr > fs->last_inum - FATFS_NUM_SPECFILE) &&
              (a_fs_file->meta->addr != TSK_FS_ORPHANDIR_INUM(fs))) {
         /* Make a single contiguous data run for a virtual directory or 
-         * virtual file (MBR, FAT). */
+         * virtual file (MBR, FAT). */ // RJCTODO: Is this a correct comment?
         TSK_FS_ATTR_RUN *data_run;
 
         if (tsk_verbose) {
