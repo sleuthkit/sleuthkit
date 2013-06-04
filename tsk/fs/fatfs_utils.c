@@ -22,8 +22,7 @@ fatfs_is_inum_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs; 
 
-    if ((a_inum < fs->first_inum) || 
-        (a_inum > fs->last_inum - FATFS_NUM_SPECFILE)) {
+    if ((a_inum < fs->first_inum) || (a_inum > fs->last_inum)) {
         return 0;
     }
     return 1;

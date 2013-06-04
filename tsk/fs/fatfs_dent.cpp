@@ -744,7 +744,7 @@ TSK_RETVAL_ENUM
 
         // MBR Entry
         strncpy(fs_name->name, FATFS_MBRNAME, fs_name->name_size);
-        fs_name->meta_addr = FATFS_MBRINO(a_fs);
+        fs_name->meta_addr = fatfs->mbr_virt_inum;
         fs_name->type = TSK_FS_NAME_TYPE_VIRT;
         fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
         if (tsk_fs_dir_add(fs_dir, fs_name)) {
@@ -754,7 +754,7 @@ TSK_RETVAL_ENUM
 
         // FAT1 Entry
         strncpy(fs_name->name, FATFS_FAT1NAME, fs_name->name_size);
-        fs_name->meta_addr = FATFS_FAT1INO(a_fs);
+        fs_name->meta_addr = fatfs->fat1_virt_inum;
         fs_name->type = TSK_FS_NAME_TYPE_VIRT;
         fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
         if (tsk_fs_dir_add(fs_dir, fs_name)) {
@@ -763,13 +763,15 @@ TSK_RETVAL_ENUM
         }
 
         // FAT2 Entry
-        strncpy(fs_name->name, FATFS_FAT2NAME, fs_name->name_size);
-        fs_name->meta_addr = FATFS_FAT2INO(a_fs);
-        fs_name->type = TSK_FS_NAME_TYPE_VIRT;
-        fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-        if (tsk_fs_dir_add(fs_dir, fs_name)) {
-            tsk_fs_name_free(fs_name);
-            return TSK_ERR;
+        if (fatfs->numfat == 2) {
+            strncpy(fs_name->name, FATFS_FAT2NAME, fs_name->name_size);
+            fs_name->meta_addr = fatfs->fat2_virt_inum;
+            fs_name->type = TSK_FS_NAME_TYPE_VIRT;
+            fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+            if (tsk_fs_dir_add(fs_dir, fs_name)) {
+                tsk_fs_name_free(fs_name);
+                return TSK_ERR;
+            }
         }
 
         // orphan directory

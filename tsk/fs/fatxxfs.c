@@ -1061,12 +1061,21 @@ fatxxfs_open(FATFS_INFO *fatfs)
 
     fs->root_inum = FATFS_ROOTINO;
     fs->first_inum = FATFS_FIRSTINO;
-    // Add on extras for Orphan and special files
-    fs->last_inum =
-        (FATFS_SECT_2_INODE(fatfs,
-            fs->last_block_act + 1) - 1) + FATFS_NUM_SPECFILE;
-    fs->inum_count = fs->last_inum - fs->first_inum + 1;
 
+    /* Calculate inode addresses for the virtual files (MBR, one or two FATS) 
+     * and the virtual orphan files directory. */
+    fs->last_inum = (FATFS_SECT_2_INODE(fatfs, fs->last_block_act + 1) - 1) + FATFS_NUM_VIRT_FILES(fatfs);
+    fatfs->mbr_virt_inum = fs->last_inum - FATFS_NUM_VIRT_FILES(fatfs) + 1;
+    fatfs->fat1_virt_inum = fatfs->mbr_virt_inum + 1;
+    if (fatfs->numfat == 2) {
+        fatfs->fat2_virt_inum = fatfs->fat1_virt_inum + 1;
+    }
+    else {
+        fatfs->fat2_virt_inum = fatfs->fat1_virt_inum;
+    }
+
+    /* Calculate the total number of inodes. */
+    fs->inum_count = fs->last_inum - fs->first_inum + 1;
 
     /* Volume ID */
     for (fs->fs_id_used = 0; fs->fs_id_used < 4; fs->fs_id_used++) {

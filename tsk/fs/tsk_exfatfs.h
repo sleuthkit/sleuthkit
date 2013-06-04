@@ -296,12 +296,20 @@ extern "C" {
     exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
         uint8_t a_basic);
 
+    extern TSK_RETVAL_ENUM
+    exfatfs_copy_inode(FATFS_INFO *a_fatfs, EXFATFS_DENTRY_SET *a_dentries, 
+        TSK_INUM_T a_inum, uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file);
+
     extern uint8_t
     exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         TSK_INUM_T a_inum);
 
     extern uint8_t
     exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile);
+
+    extern uint8_t
+    exfatfs_should_skip_dentry(FATFS_DENTRY *a_dentry, 
+        unsigned int a_selection_flags, int a_cluster_is_alloc);
 
 #ifdef __cplusplus
 }

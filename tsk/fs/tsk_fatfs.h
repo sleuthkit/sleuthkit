@@ -23,7 +23,14 @@
 #define FATFS_FIRSTINO	2
 #define FATFS_ROOTINO	2       /* location of root directory inode */
 #define FATFS_FIRST_NORMINO 3
-#define FATFS_NUM_SPECFILE  4   // special files go at end of inode list (before $OrphanFiles) includes MBR, FAT1, FAT2, and Orphans
+
+#define FATFS_ROOTNAME "$ROOT"
+#define FATFS_MBRNAME  "$MBR"
+#define FATFS_FAT1NAME "$FAT1"
+#define FATFS_FAT2NAME "$FAT2"
+
+#define FATFS_NUM_VIRT_FILES(fatfs) \
+    (fatfs->numfat + 2)
 
 // RJCTODO: Comments for Doxygen
 // RJCTODO: these appear to be the wrong comments...
@@ -154,13 +161,12 @@ extern "C" {
     } FAT_BOOT_SECTOR_RECORD;
 
     // RJCTODO: Comment for Doxygen
-    // RJCTODO: Should unsigned ints in FATFS be changed to TSK_OFF_T?
+    // RJCTODO: Should unsigned ints in FATFS be changed to TSK_OFF_T? uint32_t?
     /* 
      * Internal TSK_FS_INFO derived structure for FATXX and exFAT file systems.  
      */
     typedef struct {
         TSK_FS_INFO fs_info;    /* super class */
-        //TSK_DATA_BUF *table;      /* cached section of file allocation table */
 
         /* FAT cache */
         /* cache_lock protects fatc_buf, fatc_addr, fatc_ttl */
@@ -169,7 +175,7 @@ extern "C" {
         TSK_DADDR_T fatc_addr[FAT_CACHE_N];     // r/w shared - lock
         uint8_t fatc_ttl[FAT_CACHE_N];  //r/w shared - lock
 
-        /* FIrst sector of FAT */
+        /* First sector of FAT */
         TSK_DADDR_T firstfatsect;
 
         /* First sector after FAT  - For TSK_FS_INFO_TYPE_FAT_12 and TSK_FS_INFO_TYPE_FAT_16, this is where the
@@ -201,10 +207,13 @@ extern "C" {
         uint16_t numroot;       /* number of 32-byte dentries in root dir */
         uint32_t mask;          /* the mask to use for the sectors */
 
+        TSK_INUM_T mbr_virt_inum;
+        TSK_INUM_T fat1_virt_inum;
+        TSK_INUM_T fat2_virt_inum;
+
         tsk_lock_t dir_lock;    //< Lock that protects inum2par.
         void *inum2par;         //< Maps subfolder metadata address to parent folder metadata addresses.
 
-		/* RJCTODO: Comment */
 		char boot_sector_buffer[FAT_BOOT_SECTOR_SIZE];
         int using_backup_boot_sector;
 
@@ -288,6 +297,17 @@ extern "C" {
 
     extern uint8_t fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
         TSK_INUM_T a_inum);
+
+    extern TSK_RETVAL_ENUM
+        fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
+        TSK_INUM_T a_addr);
+
+    extern int fatfs_name_cmp(TSK_FS_INFO *, const char *, const char *);
+
+    extern uint8_t fatfs_dir_buf_add(FATFS_INFO * fatfs,
+        TSK_INUM_T par_inum, TSK_INUM_T dir_inum);
+
+    extern void fatfs_dir_buf_free(FATFS_INFO *fatfs);
 
     extern uint8_t
     fatfs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum);

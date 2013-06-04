@@ -29,6 +29,7 @@
 #include "tsk_exfatfs.h"
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
+#include <assert.h>
 
 // RJCTODO: Add function header comment
 static uint8_t 
@@ -326,7 +327,10 @@ exfatfs_map_fs_layout_to_blocks(FATFS_INFO *a_fatfs)
 static uint8_t
 exfatfs_map_fs_layout_to_inodes(FATFS_INFO *a_fatfs)
 {
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+	TSK_FS_INFO *fs = NULL;
+
+    assert(a_fatfs != NULL);
+	fs = &(a_fatfs->fs_info);
 
     /* Calculate the maximum number of directory entries that will fit in a 
      * sector and a cluster. */
@@ -338,13 +342,22 @@ exfatfs_map_fs_layout_to_inodes(FATFS_INFO *a_fatfs)
      * The first inode address is therefore 2. */
     fs->first_inum = FATFS_FIRSTINO;
 
+    /* Calculate the inode address of teh root directory. */
     fs->root_inum = FATFS_SECT_2_INODE(a_fatfs, a_fatfs->rootsect);
 
-    /* Calulate the last inode and add some extras for virtual
-     * directories and files: root directory, MBR, and two FATS. */
-    fs->last_inum =
-        (FATFS_SECT_2_INODE(a_fatfs,
-            fs->last_block_act + 1) - 1) + FATFS_NUM_SPECFILE;
+    /* Calculate inode addresses for the virtual files (MBR, one or two FATS) 
+     * and the virtual orphan files directory. */
+    fs->last_inum = (FATFS_SECT_2_INODE(a_fatfs, fs->last_block_act + 1) - 1) + FATFS_NUM_VIRT_FILES(a_fatfs);
+    a_fatfs->mbr_virt_inum = fs->last_inum - FATFS_NUM_VIRT_FILES(a_fatfs) + 1;
+    a_fatfs->fat1_virt_inum = a_fatfs->mbr_virt_inum + 1;
+    if (a_fatfs->numfat == 2) {
+        a_fatfs->fat2_virt_inum = a_fatfs->fat1_virt_inum + 1;
+    }
+    else {
+        a_fatfs->fat2_virt_inum = a_fatfs->fat1_virt_inum;
+    }
+    
+    /* Calculate the total number of inodes. */
     fs->inum_count = fs->last_inum - fs->first_inum + 1;
 
     return 1;

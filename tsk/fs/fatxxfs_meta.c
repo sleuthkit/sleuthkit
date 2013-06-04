@@ -789,3 +789,54 @@ fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
 
     return 0;
 }
+
+uint8_t
+fatxxfs_should_skip_dentry(FATFS_DENTRY *a_dentry, 
+    unsigned int a_selection_flags, int a_cluster_is_alloc)
+{
+    FATXXFS_DENTRY *dentry = NULL;
+    unsigned int dentry_flags = 0;
+    TSK_FS_INFO *fs = NULL;
+    // RJCTODO: Insert arg check 
+
+    dentry = (FATXXFS_DENTRY*)a_dentry;
+
+    /* If this is a long file name entry, then skip it and
+     * wait for the short name. */
+    if ((dentry->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
+        return 1;
+    }
+
+    /* Skip the "." and ".." entries because they are redundant. */
+    if (((dentry->attrib & FATFS_ATTR_DIRECTORY) == FATFS_ATTR_DIRECTORY) &&
+         (dentry->name[0] == '.')) {
+        return 1;
+    }
+
+    /* Compare directory entry allocation status with the inode selection
+     * flags. Allocation status is determined first by the allocation status 
+     * of the sector that contains the entry, then by the deleted status of 
+     * the file. This is necessary because when a directory is deleted, its 
+     * contents are not always marked as unallocated. */
+    if (a_cluster_is_alloc == 1) {
+        dentry_flags = (dentry->name[0] == FATFS_SLOT_DELETED ? 
+            TSK_FS_META_FLAG_UNALLOC : TSK_FS_META_FLAG_ALLOC);
+    }
+    else {
+        dentry_flags = TSK_FS_META_FLAG_UNALLOC;
+    }
+
+    if ((a_selection_flags & dentry_flags) != dentry_flags) {
+        return 1;
+    }
+
+    /* Compare FAT slot usage with the inode selection flags. */
+    dentry_flags |= (dentry->name[0] == FATFS_SLOT_EMPTY ?
+        TSK_FS_META_FLAG_UNUSED : TSK_FS_META_FLAG_USED);
+
+    if ((a_selection_flags & dentry_flags) != dentry_flags) {
+        return 1;
+    }
+
+    return 0;
+}

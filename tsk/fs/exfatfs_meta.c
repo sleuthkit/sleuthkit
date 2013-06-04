@@ -737,8 +737,7 @@ exfatfs_copy_upcase_table_inode(FATFS_INFO *a_fatfs, EXFATFS_DENTRY_SET *a_dentr
     strcpy(a_fs_file->meta->name2->name, EXFATFS_UPCASE_TABLE_VIRT_FILENAME);
 
     /* Set the size of the Up-Case table and the address of its 
-     * first cluster. */
-    ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0] = tsk_getu32(a_fatfs->fs_info.endian, dentry->first_cluster_of_table);
+     * first cluster. */((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0] = tsk_getu32(a_fatfs->fs_info.endian, dentry->first_cluster_of_table);
     a_fs_file->meta->size = tsk_getu64(a_fatfs->fs_info.endian, dentry->table_length_in_bytes);
 
     /* There is no FAT chain walk for the upcase table. Do an eager
@@ -1049,7 +1048,7 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
  * @param [in, out] a_fs_file Generic file with generic inode structure (TSK_FS_META).
  * @return TSK_RETVAL_ENUM.  
  */
-static TSK_RETVAL_ENUM
+TSK_RETVAL_ENUM
 exfatfs_copy_inode(FATFS_INFO *a_fatfs, EXFATFS_DENTRY_SET *a_dentries, 
     TSK_INUM_T a_inum, uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file)
 {
@@ -1273,7 +1272,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     uint64_t inode_offset = 0;
     TSK_DADDR_T cluster_base_sector = 0;
     TSK_INUM_T next_inum = 0;
-    enum EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
+    EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     TSK_RETVAL_ENUM copy_result = TSK_OK;
 
     tsk_error_reset();
@@ -1463,6 +1462,42 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
         tsk_error_set_errstr("%s: Inode %" PRIuINUM
             " is not an exFAT directory entry", func_name, a_inum);
+        return 1;
+    }
+
+    return 0;
+}
+
+// RJCTODO: Comment
+uint8_t
+exfatfs_should_skip_dentry(FATFS_DENTRY *a_dentry, 
+    unsigned int a_selection_flags, int a_cluster_is_alloc)
+{
+    unsigned int dentry_flags = 0;
+    // RJCTODO: Insert arg check 
+
+    /* Skip file stream and file name entries. */
+    if (a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
+        a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM ||
+        a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
+        a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME) {
+        return 1;
+    }
+
+    /* Compare directory entry allocation status with the inode selection
+     * flags. Allocation status is determined first by the allocation status 
+     * of the sector that contains the entry, then by the deleted status of 
+     * the file. This ensures that if a directory is deleted and its 
+     * contents are not always marked as unallocated, the correct status will
+     * still be obtained. */
+    if (a_cluster_is_alloc == 1 && !EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) {
+        dentry_flags = TSK_FS_META_FLAG_ALLOC;
+    }
+    else {
+        dentry_flags = TSK_FS_META_FLAG_UNALLOC;
+    }
+
+    if ((a_selection_flags & dentry_flags) != dentry_flags) {
         return 1;
     }
 

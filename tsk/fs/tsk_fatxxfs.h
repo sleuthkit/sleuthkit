@@ -23,25 +23,6 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
-/**
- * RJCTODO: comment 
- */
-#define FATXXFS_INODE_BUFFER_SIZE FATFS_DENTRY_SIZE
-
-#define FATFS_ROOTNAME   "$ROOT"
-
-#define FATFS_MBRINO(fs_info) \
-    (TSK_FS_ORPHANDIR_INUM(fs_info) - 3)        // inode for master boot record "special file"
-#define FATFS_MBRNAME   "$MBR"
-
-#define FATFS_FAT1INO(fs_info) \
-    (TSK_FS_ORPHANDIR_INUM(fs_info) - 2)        // inode for FAT1 "special file"
-#define FATFS_FAT1NAME  "$FAT1"
-
-#define FATFS_FAT2INO(fs_info) \
-    (TSK_FS_ORPHANDIR_INUM(fs_info) - 1)        // inode for FAT2 "special file"
-#define FATFS_FAT2NAME  "$FAT2"
-
 #define FATFS_SBOFF		0
 #define FATFS_FS_MAGIC	0xaa55
 #define FATFS_MAXNAMLEN	256
@@ -193,15 +174,6 @@ extern "C" {
 
     extern uint8_t fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic);
 
-    extern TSK_RETVAL_ENUM
-        fatfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
-        TSK_INUM_T a_addr);
-
-    extern int fatfs_name_cmp(TSK_FS_INFO *, const char *, const char *);
-    extern uint8_t fatfs_dir_buf_add(FATFS_INFO * fatfs,
-        TSK_INUM_T par_inum, TSK_INUM_T dir_inum);
-    extern void fatfs_dir_buf_free(FATFS_INFO *fatfs);
-
     // RJCTODO: Update
     /**
      * \internal
@@ -230,6 +202,10 @@ extern "C" {
     extern uint8_t 
     fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
         FILE *a_hFile);
+
+    extern uint8_t
+    fatxxfs_should_skip_dentry(FATFS_DENTRY *a_dentry, 
+        unsigned int a_selection_flags, int a_cluster_is_alloc);
 
 #ifdef __cplusplus
 }
