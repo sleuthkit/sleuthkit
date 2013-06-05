@@ -1172,7 +1172,7 @@ exfatfs_load_file_stream_dentry(FATFS_INFO *a_fatfs,
  * this generic directory entry structure.
  * @return 0 on success, 1 on failure, per TSK convention
  */
-static uint8_t
+uint8_t
 exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
     TSK_DADDR_T a_sector, uint8_t a_sector_is_alloc,  
     EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type,
@@ -1187,6 +1187,7 @@ exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inu
     EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     TSK_DADDR_T next_cluster = 0;
 
+    // RJCTODO: No longer internal. beef up checks
     assert(a_fatfs != NULL);
     assert(fatfs_is_inum_in_range(a_fatfs, a_file_entry_inum));
     assert(a_stream_dentry != NULL);

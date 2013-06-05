@@ -290,6 +290,12 @@ extern "C" {
     exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
         uint8_t a_basic);
 
+    extern uint8_t
+    exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
+        TSK_DADDR_T a_sector, uint8_t a_sector_is_alloc,  
+        EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type,
+        FATFS_DENTRY *a_stream_dentry);
+
     extern TSK_RETVAL_ENUM
     exfatfs_copy_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
         FATFS_DENTRY *a_dentry, FATFS_DENTRY *a_secondary_dentry, 

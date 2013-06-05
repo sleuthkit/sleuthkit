@@ -1049,12 +1049,20 @@ inode_walk_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *a_ptr)
     return TSK_WALK_CONT;
 }
 
-/*
- * walk the inodes
+/**
+ * Walk the inodes in a specified range and do a TSK_FS_META_WALK_CB callback
+ * for each inode that satisfies criteria specified TSK_FS_META_FLAG_ENUM 
+ * flags. The following flags are supported: TSK_FS_META_FLAG_ALLOC, 
+ * TSK_FS_META_FLAG_UNALLOC, TSK_FS_META_FLAG_USED, TSK_FS_META_FLAG_UNUSED, 
+ * and TSK_FS_META_FLAG_ORPHAN.
  *
- * Flags that are used: TSK_FS_META_FLAG_ALLOC, TSK_FS_META_FLAG_UNALLOC,
- * TSK_FS_META_FLAG_USED, TSK_FS_META_FLAG_UNUSED, TSK_FS_META_FLAG_ORPHAN
- *
+ * @param [in] a_fs File system that contains the inodes.
+ * @param [in] a_start_inum Inclusive lower bound of inode range.
+ * @param [in] a_end_inum Inclusive upper bound of inode range.
+ * @param [in] a_selection_flags Inode selection criteria.
+ * @param [in] a_action Callback function for selected inodes.
+ * @param [in] a_ptr Passed through to callback function.
+ * @return 0 on success, 1 on failure, per TSK convention
  */
 uint8_t
 fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
@@ -1062,8 +1070,8 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     TSK_FS_META_WALK_CB a_action, void *a_ptr)
 {
     char *func_name = "fatfs_inode_walk";
-    FATFS_INFO *fatfs = NULL;
-    unsigned int flags = a_selection_flags; //RJCTODO: Consider change to uint32_t; I added this var to deal with compile warnings...
+    FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
+    unsigned int flags = a_selection_flags;
     TSK_INUM_T end_inum_tmp = 0;
     TSK_FS_FILE *fs_file =  NULL;
     TSK_DADDR_T ssect = 0; 
@@ -1071,30 +1079,27 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     TSK_DADDR_T sect = 0; 
     char *dino_buf = NULL;
     FATFS_DENTRY *dep = NULL;
-    unsigned int myflags = 0; //RJCTODO: Consider change to uint32_t
-    unsigned int dentry_idx = 0; //RJCTODO: Consider change to uint32_t
+    unsigned int myflags = 0;
+    unsigned int dentry_idx = 0;
     uint8_t *dir_sectors_bitmap = NULL;
     ssize_t cnt = 0;
     uint8_t done = 0;
 
     tsk_error_reset();
-
-    if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name)) {
+    if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
+        fatfs_is_ptr_arg_null(a_action, "a_action", func_name)) {
         return 1;
     }
-    fatfs = (FATFS_INFO*)a_fs;
 
     if (a_start_inum < a_fs->first_inum || a_start_inum > a_fs->last_inum) {
-        tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
-        tsk_error_set_errstr("%s: Start inode out of range:  %" PRIuINUM "", 
+        tsk_error_set_errstr("%s: Begin inode out of range:  %" PRIuINUM "", 
             func_name, a_start_inum);
         return 1;
     }
     else if (a_end_inum < a_fs->first_inum || 
              a_end_inum > a_fs->last_inum ||
              a_end_inum < a_start_inum) {
-        tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
         tsk_error_set_errstr("%s: End inode out of range: %" PRIuINUM "", 
             func_name, a_end_inum);
@@ -1103,23 +1108,24 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
 
     /* Make sure the inode selection flags are set correctly. */
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
-        /* If ORPHAN is wanted, then make sure that the UNALLOCATED and USED flags
-         * are set. */
+        /* If ORPHAN file inodes are wanted, make sure that the UNALLOCATED
+         * and USED inode selection flags are set. */
         flags |= TSK_FS_META_FLAG_UNALLOC;
         flags &= ~TSK_FS_META_FLAG_ALLOC;
         flags |= TSK_FS_META_FLAG_USED;
         flags &= ~TSK_FS_META_FLAG_UNUSED;
     }
     else {
-        /* If neither of the ALLOCATED or UNALOCATED flags are set, then set
-         * them both. */
+        /* If neither of the ALLOCATED or UNALLOCATED inode selection flags 
+        * are set, then set them both. */
         if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
             flags |= (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
         }
 
-        /* If neither of the USED or UNUSED flags are set, then set them
-         * both. */
+        /* If neither of the USED or UNUSED inode selection flags are set, 
+         * then set them both. Note that these flags have no effect on an 
+         *inode walk of an exFAT file system. */
         if (((flags & TSK_FS_META_FLAG_USED) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNUSED) == 0)) {
             flags |= (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
@@ -1128,38 +1134,39 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-            "%s: Inode Walking %" PRIuINUM " to %"
+            "%s: Inode walking %" PRIuINUM " to %"
             PRIuINUM "\n", func_name, a_start_inum, a_end_inum);
     }
 
-    /* If we are looking for orphan files and have not yet filled
-     * in the list of unalloc inodes that are pointed to, then fill
-     * in the list.
+    /* If we are looking for orphan files and have not yet populated
+     * the orphan files list for this file system, do so now.
      */
     if ((flags & TSK_FS_META_FLAG_ORPHAN)) {
-        if (tsk_fs_dir_load_inum_named(a_fs) != TSK_OK) {
-            tsk_error_errstr2_concat
-                ("- fatfs_inode_walk: identifying inodes allocated by file names"); //RJCTODO: Use func_name here
+        if (tsk_fs_dir_load_inum_named(a_fs) != TSK_OK) { // RJCTODO: How is this handled for exFAT?
+            tsk_error_errstr2_concat(
+                "%s: Identifying orphan inodes", func_name);
             return 1;
         }
     }
 
-    /* Allocate a TSK_FS_FILE with a TSK_FS_META to populate and pass to
-     * the callback supplied by the caller whenever an inode that fits the
-     * caller's inode selection criteria is found. */
-    if ((fs_file = tsk_fs_file_alloc(a_fs)) == NULL)
+    /* Allocate a TSK_FS_FILE object with a TSK_FS_META object to populate and 
+     * pass to the callback function when an inode that fits the inode 
+     * selection criteria is found. */
+    if ((fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
         return 1;
+    }
 
     if ((fs_file->meta =
-            tsk_fs_meta_alloc(FATFS_FILE_CONTENT_LEN)) == NULL)
+            tsk_fs_meta_alloc(FATFS_FILE_CONTENT_LEN)) == NULL) {
         return 1;
+    }
 
-    /* Handle the root directory inode, if it's included in the walk. */
+    /* Process the root directory inode, if it's included in the walk. */
     if (a_start_inum == FATFS_ROOTINO) {
         if (((TSK_FS_META_FLAG_ALLOC & flags) == TSK_FS_META_FLAG_ALLOC)
             && ((TSK_FS_META_FLAG_USED & flags) == TSK_FS_META_FLAG_USED)
             && ((TSK_FS_META_FLAG_ORPHAN & flags) == 0)) {
-            int retval;
+            TSK_WALK_RET_ENUM retval = TSK_WALK_CONT;
 
             if (fatfs_make_root(fatfs, fs_file->meta)) {
                 tsk_fs_file_close(fs_file);
@@ -1177,7 +1184,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             }
         }
 
-        /* Move on to the next inode, if there is one. */
         a_start_inum++;
         if (a_start_inum == a_end_inum) {
             tsk_fs_file_close(fs_file);
@@ -1185,55 +1191,45 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
         }
     }
 
-    // RJCTODO: Clarify the comments that follow.
-    /* We will be looking at each sector to see if it contains directory
-     * entries.  We can make mistakes and ignore sectors that have valid
-     * entries in them.  To make sure we at least get all sectors that
-     * are allocated by directories in the directory tree, we will
-     * run name_walk and then a file walk on each dir.
-     * We'll be make sure to print those.  We skip this for ORPHAN hunting
-     * because it doesn't help and can introduce infinite loop situations
-     * inode_walk was called by the function that determines which inodes
-     * are orphans. */
-
     /* Allocate a bitmap to keep track of which sectors are allocated to
-     * directories. */
+     * directories. In its initialized state, the bitmap will show all 
+     * sectors as not allocated to directories. */
     if ((dir_sectors_bitmap =
-            (uint8_t *) tsk_malloc((size_t) ((a_fs->block_count +
+            (uint8_t*)tsk_malloc((size_t) ((a_fs->block_count +
                         7) / 8))) == NULL) {
         tsk_fs_file_close(fs_file);
         return 1;
     }
 
-    // RJCTODO: Update when exFAT code is ready for this. For now, treat all sectors as
-    // allocated to directories.
-    /* If not doing an orphan files walk, populate the directory sectors bitmap. */
+    //RJCTODO: Fix when exFAT supports tsk_fs_dir_walk
+    /* If not doing an orphan files search, populate the directory sectors 
+     * bitmap. The bitmap will be used to make sure that no sector marked as
+     * allocated to a directory is skipped when searching for directory 
+     * entries to map to inodes. */
     if ((a_fs->ftype != TSK_FS_TYPE_EXFAT) && (flags & TSK_FS_META_FLAG_ORPHAN) == 0) {
         if (tsk_verbose) {
             tsk_fprintf(stderr,
                 "fatfs_inode_walk: Walking directories to collect sector info\n");
         }
 
-        /* Do a file_walk on the root directory to get its layout. */
+        /* Manufacture an inode for the root directory. */
         if (fatfs_make_root(fatfs, fs_file->meta)) {
             tsk_fs_file_close(fs_file);
             free(dir_sectors_bitmap);
             return 1;
         }
 
-        // RJCTODO: How is this related to the call below? I think this fills in the data runs for the file.
-        // In that case the connection may be slight...
+        /* Do a file_walk on the root directory to get its layout. */
         if (tsk_fs_file_walk(fs_file,
                 (TSK_FS_FILE_WALK_FLAG_ENUM)(TSK_FS_FILE_WALK_FLAG_SLACK | TSK_FS_FILE_WALK_FLAG_AONLY),
-                inode_walk_file_act, (void *) dir_sectors_bitmap)) {
+                inode_walk_file_act, (void*)dir_sectors_bitmap)) {
             tsk_fs_file_close(fs_file);
             free(dir_sectors_bitmap);
             return 1;
         }
 
-        // RJCTODO: Note to self, a directory walk and a name walk seem to be the same according to
-        // the comment above.
-        /* Now do a directory walk to get the rest of the directories. */
+        /* Now walk through the entire directory tree and set the appropriate 
+         * bits in the directory sectors bitmap. */
         if (tsk_fs_dir_walk(a_fs, a_fs->root_inum,
                 (TSK_FS_DIR_WALK_FLAG_ENUM)(TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE |
                 TSK_FS_DIR_WALK_FLAG_NOORPHAN), inode_walk_dent_act,
@@ -1246,21 +1242,12 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
         }
     }
     else {
-        memset((void*)dir_sectors_bitmap, 1, (size_t)(a_fs->block_count + 7)/8);
+        memset((void*)dir_sectors_bitmap, 1, (size_t)(a_fs->block_count + 7)/8); //RJCTODO: Remove when exFAT supports tsk_fs_dir_walk
     }
 
-    // RJCTODO: This comment is not helpful because so much follows, it would be really great to break this function 
-    // up into more easily comprehensible parts. 
-    /* start analyzing each sector
-     *
-     * Perform a test on the first 32 bytes of each sector to identify if
-     * the sector contains directory entries.  If it does, then continue
-     * to analyze it.  If not, then read the next sector
-     */
-
     /* If the end inode is the one of the virtual virtual FAT files or the 
-     * virtual orphan files directory, adjust the end inum and handle them 
-     * virtual inodes outside of the inode walking loop below. */
+     * virtual orphan files directory, adjust the end inum and handle the 
+     * virtual inodes after the main inode walking loop below completes. */
     if (a_end_inum > a_fs->last_inum - FATFS_NUM_VIRT_FILES(fatfs)) {
         end_inum_tmp = a_fs->last_inum - FATFS_NUM_VIRT_FILES(fatfs);
     }
@@ -1268,24 +1255,26 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
         end_inum_tmp = a_end_inum;
     }
 
-    /* Map the starting and ending inodes to the sectors that contain them. */
+    /* Map the begin and end inodes to the sectors that contain them. 
+     * This sets the image level boundaries for the inode walking loop. */
     ssect = FATFS_INODE_2_SECT(fatfs, a_start_inum);
-    lsect = FATFS_INODE_2_SECT(fatfs, end_inum_tmp);
     if (ssect > a_fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
         tsk_error_set_errstr
-            ("%s: Starting inode in sector too big for image: %"
+            ("%s: Begin inode in sector too big for image: %"
             PRIuDADDR, func_name, ssect);
         tsk_fs_file_close(fs_file);
         free(dir_sectors_bitmap);
         return 1;
     }
-    else if (lsect > a_fs->last_block) {
+
+    lsect = FATFS_INODE_2_SECT(fatfs, end_inum_tmp);
+    if (lsect > a_fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
         tsk_error_set_errstr
-            ("%s: Ending inode in sector too big for image: %"
+            ("%s: End inode in sector too big for image: %"
             PRIuDADDR, func_name, lsect);
         tsk_fs_file_close(fs_file);
         free(dir_sectors_bitmap);
@@ -1293,36 +1282,40 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     }
 
     /* Allocate a buffer big enough to read in a cluster at a time. */
-    if ((dino_buf =
-            (char *) tsk_malloc(fatfs->csize << fatfs->ssize_sh)) ==
+    if ((dino_buf = (char*)tsk_malloc(fatfs->csize << fatfs->ssize_sh)) ==
         NULL) {
         tsk_fs_file_close(fs_file);
         free(dir_sectors_bitmap);
         return 1;
     }
 
-    /* Walk the virtual inodes. */
+    /* Walk the inodes. */
     sect = ssect;
     while (sect <= lsect) {
         int cluster_is_alloc = 0;
         size_t num_sectors_to_process = 0;       
         size_t sector_idx = 0;            
         uint8_t do_basic_dentry_test = 0; 
+        FATFS_DENTRY secondary_dentry;
 
-        /* Read a chunk of the image to process on this iteration of the inode
-         * walk. The read size for the data area (exFAT cluster heap) will be
-         * the size of a cluster. However, the root directory for a FAT12 or 
-         * FAT16 file system precedes the data area and the read size for it
-         * should be a sector, not a cluster. */
+        /* Read in a chunk of the image to process on this iteration of the inode
+         * walk. The actual size of the read will depend on whether or not it is 
+         * coming from the root directory of a FAT12 or FAT16 file system. As 
+         * indicated by the size of the buffer, the data area (exFAT cluster 
+         * heap) will for the most part be read in a cluster at a time. 
+         * However, the root directory for a FAT12/FAT16 file system precedes 
+         * the data area and the read size for it should be a sector, not a 
+         * cluster. */
         if (sect < fatfs->firstclustsect) {
+
             if ((flags & TSK_FS_META_FLAG_ORPHAN) != 0) {
-                /* Orpahn hunting, and there are no orphans in the root 
+                /* If orphan file hunting, there are no orphans in the root 
                  * directory, so skip ahead to the data area. */
                 sect = fatfs->firstclustsect;
                 continue;
             }
 
-            /* Read in a sector. */
+            /* Read in a FAT12/FAT16 root directory sector. */
             cnt = tsk_fs_read_block(a_fs, sect, dino_buf, fatfs->ssize);
             if (cnt != fatfs->ssize) {
                 if (cnt >= 0) {
@@ -1337,19 +1330,21 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                 free(dino_buf);
                 return 1;
             }
+
             cluster_is_alloc = 1;
             num_sectors_to_process = 1;
         }
         else {
-            /* Get the base sector for the cluster that contains the current 
-             * sector. The first time through the loop, the current sector is
-             * the sector that conatins the start virtual inode. */
+            /* The walk has proceeded into the data area (exFAT cluster heap).
+             * It's time to read in a cluster at a time. Get the base sector 
+             * for the cluster that contains the current sector. */
             sect =
                 FATFS_CLUST_2_SECT(fatfs, (FATFS_SECT_2_CLUST(fatfs,
                         sect)));
 
             /* Determine whether the cluster is allocated. Skip it if it is
-             * not allocated and the UNALLOCATED flag is not set. */
+             * not allocated and the UNALLOCATED inode selection flag is not 
+             * set. */
             cluster_is_alloc = fatfs_is_sectalloc(fatfs, sect);
             if ((cluster_is_alloc == 0)
                 && ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
@@ -1363,8 +1358,8 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                 return 1;
             }
 
-            /* If the cluster is allocated but is not allocated to a
-             * directory, then skip it.  NOTE: This will miss unallocated
+            /* If the cluster is allocated but is not allocated to a 
+             * directory, then skip it.  NOTE: This will miss orphan file 
              * entries in the slack space of files.
              */
             if ((cluster_is_alloc == 1) && (isset(dir_sectors_bitmap, sect) == 0)) {
@@ -1372,7 +1367,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                 continue;
             }
 
-            /* The final cluster may not be full */
+            /* The final cluster may not be full. */
             if (lsect - sect + 1 < fatfs->csize) {
                 num_sectors_to_process = (size_t) (lsect - sect + 1);
             }
@@ -1380,7 +1375,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                 num_sectors_to_process = fatfs->csize;
             }
 
-            /* Read in a cluster's worth of sectors. */
+            /* Read in a cluster. */
             cnt = tsk_fs_read_block
                 (a_fs, sect, dino_buf, num_sectors_to_process << fatfs->ssize_sh);
             if (cnt != (num_sectors_to_process << fatfs->ssize_sh)) {
@@ -1397,6 +1392,8 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             }
         }
 
+        // RJCTODO: Isn't this unnecessary given the skipping of unallocated
+        // clusters above?
         /* Now that the sectors are read in, prepare to step through them in 
          * directory entry size chunks. Only do a basic test to confirm the 
          * contents of each chunk is a directory entry unless the sector that
@@ -1406,26 +1403,29 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             do_basic_dentry_test = 0;
         }
 
-        /* Work through the the sectors. */
+        /* Walk through the sectors read in. */
         for (sector_idx = 0; sector_idx < num_sectors_to_process; sector_idx++) {
             TSK_INUM_T inum = 0;
 
-            /* If the last virtual inode in this sector is before the start 
+            /* If the last inode in this sector is before the start 
              * inode, skip the sector. */
             if (FATFS_SECT_2_INODE(fatfs, sect + 1) < a_start_inum) {
                 sect++;
                 continue;
             }
 
+            /* Advance the directory entry pointer to the start of the 
+             * sector. */
             dep = (FATFS_DENTRY*)(&dino_buf[sector_idx << fatfs->ssize_sh]);
 
             /* If the sector is not allocated to a directory and the first 
              * chunk is not a directory entry, skip the sector. */
-            if ((!isset(dir_sectors_bitmap, sect)) &&
-                ((a_fs->ftype != TSK_FS_TYPE_EXFAT) && (!fatxxfs_is_dentry(fatfs, dep, 0)) ||
-                 (exfatfs_is_dentry(fatfs, dep, 0) == 0))) {
+            if (!isset(dir_sectors_bitmap, sect)) {
+                if ((a_fs->ftype != TSK_FS_TYPE_EXFAT && !fatxxfs_is_dentry(fatfs, dep, 0)) ||
+                    (exfatfs_is_dentry(fatfs, dep, 0) == EXFATFS_DIR_ENTRY_TYPE_NONE)) {
                 sect++;
                 continue;
+                }
             }
 
             /* Get the base inode address of this sector. */
@@ -1436,30 +1436,43 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                     " starting at inode %" PRIuINUM "\n", func_name, sect, inum);
             }
 
-            /* Work through the directory entry size chunks of the sectors. */
+            /* Walk through the potential directory entries in the sector. */
             for (dentry_idx = 0; dentry_idx < fatfs->dentry_cnt_se;
                 dentry_idx++, inum++, dep++) {
                 int retval;
                 EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
-                TSK_RETVAL_ENUM retval2;
+                TSK_RETVAL_ENUM retval2 = TSK_OK;
 
-                /* If less than the start inode, skip it. */
+                /* If the inode address of the potential entry is less than
+                 * the beginning inode address for the walk, skip it. */
                 if (inum < a_start_inum) {
                     continue;
                 }
 
-                /* If greater than the end inode, break out of the walk loops. */
+                /* If inode address of the potential entry is greater than the
+                 * ending inode address for the walk, terminate the entire 
+                 * walk. */
                 if (inum > end_inum_tmp) {
                     done = 1;
                     break;
                 }
 
-                if ((a_fs->ftype != TSK_FS_TYPE_EXFAT) &&
-                    (fatxxfs_should_skip_dentry(dep, flags, cluster_is_alloc))) {
-                    continue;
+                /* Now check the potential directory entry. It may not be an 
+                 * entry, but if it is, it may not be an entry that maps to an
+                 * inode for the purposes of an inode walk, or an entry that
+                 * satisfies the inode selection flags. */
+                if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
+                    dentry_type = exfatfs_is_dentry(fatfs, dep, cluster_is_alloc);
+                    if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_NONE || 
+                        exfatfs_should_skip_dentry(dep, flags, cluster_is_alloc)) {
+                        continue;
+                    }
                 }
-                else if (exfatfs_should_skip_dentry(dep, flags, cluster_is_alloc)) {
-                    continue;
+                else { 
+                    if (!fatfs_is_dentry(fatfs, dep, do_basic_dentry_test) ||
+                        fatxxfs_should_skip_dentry(dep, flags, cluster_is_alloc)) {
+                        continue;
+                    }
                 }
 
                 /* If the processing flags call for only processing orphan 
@@ -1471,20 +1484,23 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                     continue;
                 }
 
+                /* Copy the directory entry data into the inode structure for the callback. */
                 if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
-                    dentry_type = exfatfs_is_dentry(fatfs, dep, cluster_is_alloc);
-                    if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_NONE) {
-                        continue;
+                    /* For the purposes of inode lookup, the file and file stream entries 
+                     * that begin a file entry set are mapped to a single inode. Thus,  
+                     * file stream entries are not treated as independent inodes and when 
+                     * a file entry is found, the companion file stream entry needs to be 
+                     * found. */
+                    if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
+                        dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) {
+                        if (exfatfs_find_file_stream_dentry(fatfs, inum, sect, cluster_is_alloc, 
+                            dentry_type, &secondary_dentry)) {
+                            continue;
+                        }
                     }
-
-                    // RJCTODO: Fix.
-                    retval2 = exfatfs_copy_inode(fatfs, inum, dep, dep, cluster_is_alloc, fs_file); 
+                    retval2 = exfatfs_copy_inode(fatfs, inum, dep, &secondary_dentry, cluster_is_alloc, fs_file); 
                 }
                 else {
-                    if (0 == fatfs_is_dentry(fatfs, dep, do_basic_dentry_test)) {
-                        continue;
-                    }
-
                     retval2 = fatxxfs_dinode_copy(fatfs, fs_file->meta, dep, sect, inum);
                 }
 
@@ -1512,6 +1528,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                         sect);
                 }
 
+                /* Do the callback. */
                 retval = a_action(fs_file, a_ptr);
                 if (retval == TSK_WALK_STOP) {
                     tsk_fs_file_close(fs_file);
@@ -1525,7 +1542,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                     free(dino_buf);
                     return 1;
                 }
-            }                   /* dentries */
+            }                  
             sect++;
             if (done) {
                 break;
@@ -1536,10 +1553,8 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
         }
     }
 
-
     free(dir_sectors_bitmap);
     free(dino_buf);
-
 
     // handle the virtual orphans folder and FAT files if they asked for them
     if ((a_end_inum > a_fs->last_inum - FATFS_NUM_VIRT_FILES(fatfs))
