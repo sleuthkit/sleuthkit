@@ -171,7 +171,7 @@ fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UT
     }
 
     /* Clean up non-ASCII because we are copying it into a buffer that is 
-     * supposed to be UTF-8 andwe don't know what encoding it is actually in 
+     * supposed to be UTF-8 and we don't know what encoding it is actually in 
      * or if it is simply junk. */
     fatfs_cleanup_ascii(a_fs_meta->name2->name);
 

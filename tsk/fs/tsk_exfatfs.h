@@ -108,12 +108,6 @@ extern "C" {
 		uint8_t signature[2];
 	} EXFATFS_VOL_BOOT_REC;
 
-
-    // RJCTODO: Comment
-    typedef struct {
-        FATFS_DENTRY dentries[2];
-    } EXFATFS_DENTRY_SET;
-
     /**
      * exFAT directory entry types, the first byte of a directory entry.
      */
@@ -297,8 +291,9 @@ extern "C" {
         uint8_t a_basic);
 
     extern TSK_RETVAL_ENUM
-    exfatfs_copy_inode(FATFS_INFO *a_fatfs, EXFATFS_DENTRY_SET *a_dentries, 
-        TSK_INUM_T a_inum, uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file);
+    exfatfs_copy_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+        FATFS_DENTRY *a_dentry, FATFS_DENTRY *a_secondary_dentry, 
+        uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file);
 
     extern uint8_t
     exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,

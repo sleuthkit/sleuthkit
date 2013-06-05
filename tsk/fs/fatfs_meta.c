@@ -1221,7 +1221,8 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             return 1;
         }
 
-        // RJCTODO: How is this related to the call below?
+        // RJCTODO: How is this related to the call below? I think this fills in the data runs for the file.
+        // In that case the connection may be slight...
         if (tsk_fs_file_walk(fs_file,
                 (TSK_FS_FILE_WALK_FLAG_ENUM)(TSK_FS_FILE_WALK_FLAG_SLACK | TSK_FS_FILE_WALK_FLAG_AONLY),
                 inode_walk_file_act, (void *) dir_sectors_bitmap)) {
@@ -1476,8 +1477,8 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                         continue;
                     }
 
-                    // RJCTODO: This does not address the boundary problems.
-                    retval2 = exfatfs_copy_inode(fatfs, (EXFATFS_DENTRY_SET*)dep, inum, cluster_is_alloc, fs_file); 
+                    // RJCTODO: Fix.
+                    retval2 = exfatfs_copy_inode(fatfs, inum, dep, dep, cluster_is_alloc, fs_file); 
                 }
                 else {
                     if (0 == fatfs_is_dentry(fatfs, dep, do_basic_dentry_test)) {
