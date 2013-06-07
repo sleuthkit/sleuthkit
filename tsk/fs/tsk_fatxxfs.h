@@ -207,6 +207,10 @@ extern "C" {
     fatxxfs_should_skip_dentry(FATFS_DENTRY *a_dentry, 
         unsigned int a_selection_flags, int a_cluster_is_alloc);
 
+    extern TSK_RETVAL_ENUM
+    fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
+        TSK_OFF_T len, TSK_DADDR_T * addrs);
+
 #ifdef __cplusplus
 }
 #endif

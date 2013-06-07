@@ -342,8 +342,7 @@ exfatfs_map_fs_layout_to_inodes(FATFS_INFO *a_fatfs)
      * The first inode address is therefore 2. */
     fs->first_inum = FATFS_FIRSTINO;
 
-    /* Calculate the inode address of teh root directory. */
-    fs->root_inum = FATFS_SECT_2_INODE(a_fatfs, a_fatfs->rootsect);
+    fs->root_inum = FATFS_ROOTINO;
 
     /* Calculate inode addresses for the virtual files (MBR, one or two FATS) 
      * and the virtual orphan files directory. */
@@ -369,21 +368,17 @@ exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
 {
 	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
 
-    /* Content category functions. */ 
     fs->block_walk = fatfs_block_walk;
     fs->block_getflags = fatfs_block_getflags;
-
-    /* Metadata category functions. */
     fs->inode_walk = fatfs_inode_walk;
     fs->istat = fatfs_istat;
     fs->file_add_meta = fatfs_inode_lookup;
     fs->get_default_attr_type = fatfs_get_default_attr_type;
     fs->load_attrs = fatfs_make_data_runs;
 
-    /* Name category functions. */
     // RJCTODO: Set these pointers
-    fs->dir_open_meta = 0;
-    fs->name_cmp = 0;
+    fs->dir_open_meta = fatfs_dir_open_meta;
+    fs->name_cmp = fatfs_name_cmp;
     fs->fsstat = 0;
     fs->fscheck = 0;
 

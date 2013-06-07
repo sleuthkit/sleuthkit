@@ -284,6 +284,14 @@ extern "C" {
     fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum, TSK_INUM_T dir_inum); 
 
     extern uint8_t
+    fatfs_dir_buf_get(FATFS_INFO * fatfs, TSK_INUM_T dir_inum,
+    TSK_INUM_T *par_inum);
+
+    // RJCTODO: Change name to have appropriate prefix
+    extern TSK_WALK_RET_ENUM
+    find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr);
+
+    extern uint8_t
     fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         TSK_DADDR_T numblock, int32_t sec_skew);
 

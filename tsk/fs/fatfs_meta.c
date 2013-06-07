@@ -78,7 +78,7 @@ fatfs_make_root(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta)
 
     /* Mark the generic attribute list as not in use (in the generic file model
      * attributes are containers for data or metadata). Population of this 
-     * stuff is done on demand (lazy look up). */
+     * list is done by lazy look up. */
     a_fs_meta->attr_state = TSK_FS_META_ATTR_EMPTY;
     if (a_fs_meta->attr) {
         tsk_fs_attrlist_markunused(a_fs_meta->attr);
@@ -360,7 +360,7 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
 
     /* Manufacture an inode for the root directory or a FAT virtual file,
      * or do a look up. */
-    if (a_inum == FATFS_ROOTINO) {
+    if (a_inum == a_fs->root_inum) {
         if (fatfs_make_root(fatfs, a_fs_file->meta))
             return 1;
         else
@@ -473,7 +473,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
     // RJCTODO: Consider addressing the code duplication below.
     // RJCTODO: Consider breaking out each of the conditional blocks into its own sub-function.
     // RJCTODO: Consider checking for FAT12 and FAT16.
-    if ((a_fs_file->meta->addr == FATFS_ROOTINO) && 
+    if ((a_fs_file->meta->addr == fs->root_inum) && 
         (fs->ftype != TSK_FS_TYPE_FAT32) &&
         (fs->ftype != TSK_FS_TYPE_EXFAT) &&
         (clust == 1)) {
@@ -913,7 +913,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     /* Print the attributes. */
     tsk_fprintf(a_hFile, "File Attributes: ");
 
-    if (a_inum == FATFS_ROOTINO) {
+    if (a_inum == a_fs->root_inum) {
         tsk_fprintf(a_hFile, "Root Directory\n");
     }
     else if (fs_meta->type == TSK_FS_META_TYPE_VIRT) {
@@ -1051,17 +1051,18 @@ inode_walk_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *a_ptr)
 
 /**
  * Walk the inodes in a specified range and do a TSK_FS_META_WALK_CB callback
- * for each inode that satisfies criteria specified TSK_FS_META_FLAG_ENUM 
- * flags. The following flags are supported: TSK_FS_META_FLAG_ALLOC, 
- * TSK_FS_META_FLAG_UNALLOC, TSK_FS_META_FLAG_USED, TSK_FS_META_FLAG_UNUSED, 
- * and TSK_FS_META_FLAG_ORPHAN.
+ * for each inode that satisfies criteria specified by a set of 
+ * TSK_FS_META_FLAG_ENUM flags. The following flags are supported: 
+ * TSK_FS_META_FLAG_ALLOC, TSK_FS_META_FLAG_UNALLOC, TSK_FS_META_FLAG_ORPHAN,
+ * TSK_FS_META_FLAG_USED (FATXX only), and TSK_FS_META_FLAG_UNUSED 
+ * (FATXX only).
  *
  * @param [in] a_fs File system that contains the inodes.
  * @param [in] a_start_inum Inclusive lower bound of inode range.
  * @param [in] a_end_inum Inclusive upper bound of inode range.
  * @param [in] a_selection_flags Inode selection criteria.
  * @param [in] a_action Callback function for selected inodes.
- * @param [in] a_ptr Passed through to callback function.
+ * @param [in] a_ptr Private data pointer passed through to callback function.
  * @return 0 on success, 1 on failure, per TSK convention
  */
 uint8_t
@@ -1162,7 +1163,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     }
 
     /* Process the root directory inode, if it's included in the walk. */
-    if (a_start_inum == FATFS_ROOTINO) {
+    if (a_start_inum == a_fs->root_inum) {
         if (((TSK_FS_META_FLAG_ALLOC & flags) == TSK_FS_META_FLAG_ALLOC)
             && ((TSK_FS_META_FLAG_USED & flags) == TSK_FS_META_FLAG_USED)
             && ((TSK_FS_META_FLAG_ORPHAN & flags) == 0)) {
@@ -1192,8 +1193,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     }
 
     /* Allocate a bitmap to keep track of which sectors are allocated to
-     * directories. In its initialized state, the bitmap will show all 
-     * sectors as not allocated to directories. */
+     * directories. */
     if ((dir_sectors_bitmap =
             (uint8_t*)tsk_malloc((size_t) ((a_fs->block_count +
                         7) / 8))) == NULL) {
@@ -1206,7 +1206,8 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
      * bitmap. The bitmap will be used to make sure that no sector marked as
      * allocated to a directory is skipped when searching for directory 
      * entries to map to inodes. */
-    if ((a_fs->ftype != TSK_FS_TYPE_EXFAT) && (flags & TSK_FS_META_FLAG_ORPHAN) == 0) {
+    //if ((a_fs->ftype != TSK_FS_TYPE_EXFAT) && (flags & TSK_FS_META_FLAG_ORPHAN) == 0) {
+    if ((flags & TSK_FS_META_FLAG_ORPHAN) == 0) {
         if (tsk_verbose) {
             tsk_fprintf(stderr,
                 "fatfs_inode_walk: Walking directories to collect sector info\n");
@@ -1219,7 +1220,9 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             return 1;
         }
 
-        /* Do a file_walk on the root directory to get its layout. */
+        /* Do a file_walk on the root directory to set the bits in the 
+         * directory sectors bitmap for each sector allocated to the root
+         * directory. */
         if (tsk_fs_file_walk(fs_file,
                 (TSK_FS_FILE_WALK_FLAG_ENUM)(TSK_FS_FILE_WALK_FLAG_SLACK | TSK_FS_FILE_WALK_FLAG_AONLY),
                 inode_walk_file_act, (void*)dir_sectors_bitmap)) {
@@ -1228,8 +1231,9 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             return 1;
         }
 
-        /* Now walk through the entire directory tree and set the appropriate 
-         * bits in the directory sectors bitmap. */
+        /* Now walk recursively through the entire directory tree to set the 
+         * bits in the directory sectors bitmap for each sector allocated to 
+         * the children of the root directory. */
         if (tsk_fs_dir_walk(a_fs, a_fs->root_inum,
                 (TSK_FS_DIR_WALK_FLAG_ENUM)(TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE |
                 TSK_FS_DIR_WALK_FLAG_NOORPHAN), inode_walk_dent_act,
@@ -1241,9 +1245,9 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             return 1;
         }
     }
-    else {
-        memset((void*)dir_sectors_bitmap, 1, (size_t)(a_fs->block_count + 7)/8); //RJCTODO: Remove when exFAT supports tsk_fs_dir_walk
-    }
+    //else {
+    //    memset((void*)dir_sectors_bitmap, 1, (size_t)(a_fs->block_count + 7)/8); //RJCTODO: Remove when exFAT supports tsk_fs_dir_walk
+    //}
 
     /* If the end inode is the one of the virtual virtual FAT files or the 
      * virtual orphan files directory, adjust the end inum and handle the 

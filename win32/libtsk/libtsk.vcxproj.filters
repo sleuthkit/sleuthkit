@@ -289,6 +289,7 @@
     <ClCompile Include="..\..\tsk\fs\fatfs_utils.c">
       <Filter>fs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">

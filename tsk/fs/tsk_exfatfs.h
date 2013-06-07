@@ -65,6 +65,9 @@
  */
 #define EXFATFS_MAX_FILE_SECONDARY_DENTRIES_COUNT 18
 
+//RJCTODO: 
+#define EXFATFS_MAX_NAME_LEN_UTF8	1024
+
 /**
  * File names for exFAT "virtual files" corresponding to non-file 
  * directory entries.
