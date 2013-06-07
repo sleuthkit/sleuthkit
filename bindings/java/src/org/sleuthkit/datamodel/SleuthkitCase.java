@@ -107,6 +107,7 @@ public class SleuthkitCase {
 	private PreparedStatement addPathSt;
 	private PreparedStatement hasChildrenSt;
 	private PreparedStatement getLastContentIdSt;
+	private PreparedStatement getFsIdForFileIdSt;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
 	/**
@@ -234,8 +235,8 @@ public class SleuthkitCase {
 				"INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (?, ?, ?)");
 
 		addFileSt = con.prepareStatement(
-				"INSERT INTO tsk_files (obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) "
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+				"INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) "
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 		
 		addLayoutFileSt = con.prepareStatement(
 				"INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) "
@@ -246,6 +247,9 @@ public class SleuthkitCase {
 
 		hasChildrenSt = con.prepareStatement(
 				"SELECT COUNT(obj_id) FROM tsk_objects WHERE par_obj_id = ?");
+		
+		getFsIdForFileIdSt = con.prepareStatement(
+				"SELECT fs_obj_id from tsk_files WHERE obj_id=?");
 
 	}
 
@@ -395,6 +399,11 @@ public class SleuthkitCase {
 				hasChildrenSt = null;
 			}
 			
+			if (getFsIdForFileIdSt != null) {
+				getFsIdForFileIdSt.close();
+				getFsIdForFileIdSt = null;
+			}
+			
 
 		} catch (SQLException e) {
 			logger.log(Level.WARNING,
@@ -470,7 +479,7 @@ public class SleuthkitCase {
 	 */
 	public static SleuthkitCase openCase(String dbPath) throws TskCoreException {
 		SleuthkitCase.dbWriteLock();
-		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
+		final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
 		try {
 			return new SleuthkitCase(dbPath, caseHandle);
 		} catch (SQLException ex) {
@@ -2471,7 +2480,7 @@ public class SleuthkitCase {
 				return null;
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting FsContent by ID.", ex);
+			throw new TskCoreException("Error getting file by ID.", ex);
 		} finally {
 			if (rs != null) {
 				try {
@@ -2484,82 +2493,237 @@ public class SleuthkitCase {
 		}
 
 	}
-
+	
+	
+	
+	
 	/**
-	 * @param image the image to search for the given file name
-	 * @param fileName the name of the file or directory to match (case
-	 * insensitive)
-	 * @return a list of FsContent for files/directories whose name matches the
-	 * given fileName
+	 * Get file system id value for file or -1 if there isn't one
+	 * Note: for FsContent files, this is the real fs
+	 * for other non-fs AbstractFile files, this field is used internally for data source id (the root)
+	 * @param fileId file id to get fs column id for
+	 * @return fs_id or -1 if not present
+	 * @throws SQLException if query failed
 	 */
-	public List<FsContent> findFiles(Image image, String fileName) throws TskCoreException {
+	private long getFileSystemByFileId(long fileId) {
+
+		long ret = -1;
+		ResultSet rs = null;
+
 		dbReadLock();
-
-		// set the file name in the PS
-		List<FsContent> fsContents = new ArrayList<FsContent>();
 		try {
-			for (FileSystem fileSystem : getFileSystems(image)) {
-				getFileSt.setString(1, fileName.toLowerCase());
-				getFileSt.setLong(2, fileSystem.getId());
+			getFsIdForFileIdSt.setLong(1, fileId);
+			rs = getFsIdForFileIdSt.executeQuery();
 
-				// get the result set
-				ResultSet rs = getFileSt.executeQuery();
-
-				// convert to FsConents
-				fsContents.addAll(resultSetToFsContents(rs));
-
-				// close the ResultSet
-				rs.close();
+			if (rs.next()) {
+				ret = rs.getLong(1);
+				if (ret == 0) {
+					ret = -1;
+				}
 			}
-		} catch (Exception e) {
-			throw new TskCoreException(e.getMessage());
-		} finally {
+		}
+		catch (SQLException e) {
+			logger.log(Level.SEVERE, "Error checking file system id of a file", e);
+		}
+		finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after checking file system id of a file", ex);
+				}
+			}
 			dbReadUnlock();
 		}
-
-		return fsContents;
+		return ret;
 	}
 
 	/**
-	 * @param image the image to search for the given file name
+	 * Checks if the file is a (sub)child of the data source (parentless Content object
+	 * such as Image or VirtualDirectory representing filesets)
+	 * @param dataSource dataSource to check
+	 * @param fileId id of file to check
+	 * @return true if the file is in the dataSource hierarchy
+	 * @throws TskCoreException thrown if check failed
+	 */
+	public boolean isFileFromSource(Content dataSource, long fileId) throws TskCoreException {
+		if (dataSource.getParent() != null) {
+			final String msg = "Error, data source should be parent-less (images, file-sets), got: " + dataSource;
+			logger.log(Level.SEVERE, msg);
+			throw new IllegalArgumentException(msg);
+		}
+		
+		//get fs_id for file id
+		long fsId = getFileSystemByFileId(fileId);
+		if (fsId == -1) {
+			return false;
+		}
+		
+		//if image, check if one of fs in data source
+		
+		if (dataSource instanceof Image) {
+			Collection<FileSystem> fss = getFileSystems((Image)dataSource);
+			for (FileSystem fs : fss) {
+				if (fs.getId() == fsId) {
+					return true;
+				}
+			}
+			return false;
+			
+		}
+		//if VirtualDirectory, check if dataSource id is the fs_id
+		else if (dataSource instanceof VirtualDirectory) {
+			//fs_obj_id is not a real fs in this case
+			//we are currently using this field internally to get to data source of non-fs files quicker
+			//this will be fixed in 2.5 schema
+			return dataSource.getId() == fsId;
+			
+		}
+		else {
+			final String msg = "Error, data source should be Image or VirtualDirectory, got: " + dataSource;
+			logger.log(Level.SEVERE, msg);
+			throw new IllegalArgumentException(msg);
+		}
+		
+	}
+	
+	
+	/**
+	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to search for the given file name
+	 * @param fileName the name of the file or directory to match (case
+	 * insensitive)
+	 * @return a list of AbstractFile for files/directories whose name matches the
+	 * given fileName
+	 * @throws TskCoreException thrown if check failed
+	 */
+	public List<AbstractFile> findFiles(Content dataSource, String fileName) throws TskCoreException {
+		
+		if (dataSource.getParent() != null) {
+			final String msg = "Error, data source should be parent-less (images, file-sets), got: " + dataSource;
+			logger.log(Level.SEVERE, msg);
+			throw new IllegalArgumentException(msg);
+		}
+		
+		// set the file name in the prepared statement
+		List<AbstractFile> files = new ArrayList<AbstractFile>();
+		ResultSet rs = null;
+		
+		dbReadLock();
+		try {
+			if (dataSource instanceof Image) {
+				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
+					getFileSt.setString(1, fileName.toLowerCase());
+					getFileSt.setLong(2, fileSystem.getId());
+
+					// get the result set
+					rs = getFileSt.executeQuery();
+
+					// convert to AbstractFiles
+					files.addAll(resultSetToAbstractFiles(rs));
+				}
+			} else if (dataSource instanceof VirtualDirectory) {
+				//fs_obj_id is special for non-fs files (denotes data source)
+				getFileSt.setString(1, fileName.toLowerCase());
+				getFileSt.setLong(2, dataSource.getId());
+
+				// get the result set
+				rs = getFileSt.executeQuery();
+
+				// convert to AbstractFiles
+				files = resultSetToAbstractFiles(rs);
+			} else {
+				final String msg = "Error, data source should be Image or VirtualDirectory, got: " + dataSource;
+				logger.log(Level.SEVERE, msg);
+				throw new IllegalArgumentException(msg);
+			}
+		} catch (SQLException e) {
+			throw new TskCoreException("Error finding files in the data source by name, ", e);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Error closing result set after finding files", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+
+		return files;
+	}
+
+	/**
+	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to search for the given file name
 	 * @param fileName the name of the file or directory to match (case
 	 * insensitive)
 	 * @param dirName the name of a parent directory of fileName (case
 	 * insensitive)
-	 * @return a list of FsContent for files/directories whose name matches
+	 * @return a list of AbstractFile for files/directories whose name matches
 	 * fileName and whose parent directory contains dirName.
 	 */
-	public List<FsContent> findFiles(Image image, String fileName, String dirName) throws TskCoreException {
-		dbReadLock();
-
+	public List<AbstractFile> findFiles(Content dataSource, String fileName, String dirName) throws TskCoreException {
+			if (dataSource.getParent() != null) {
+			final String msg = "Error, data source should be parent-less (images, file-sets), got: " + dataSource;
+			logger.log(Level.SEVERE, msg);
+			throw new IllegalArgumentException(msg);
+		}
+		
 		ResultSet rs = null;
-		List<FsContent> fsContents = new ArrayList<FsContent>();
+		List<AbstractFile> files = new ArrayList<AbstractFile>();
+		
+		dbReadLock();
 		try {
-			for (FileSystem fileSystem : getFileSystems(image)) {
+			if (dataSource instanceof Image) {
+				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
+					getFileWithParentSt.setString(1, fileName.toLowerCase());
+
+					// set the parent directory name
+					getFileWithParentSt.setString(2, "%" + dirName.toLowerCase() + "%");
+
+					// set the fs ID
+					getFileWithParentSt.setLong(3, fileSystem.getId());
+
+					// get the result set
+					rs = getFileWithParentSt.executeQuery();
+
+					// convert to AbstractFiles
+					files.addAll(resultSetToAbstractFiles(rs));
+
+				}
+			} else if (dataSource instanceof VirtualDirectory) {
 				getFileWithParentSt.setString(1, fileName.toLowerCase());
 
 				// set the parent directory name
 				getFileWithParentSt.setString(2, "%" + dirName.toLowerCase() + "%");
 
-				// set the image ID
-				getFileWithParentSt.setLong(3, fileSystem.getId());
+				// set the data source id
+				getFileWithParentSt.setLong(3, dataSource.getId());
 
 				// get the result set
 				rs = getFileWithParentSt.executeQuery();
 
-				// convert to FsConents
-				fsContents.addAll(resultSetToFsContents(rs));
-
-				// close the ResultSet
-				rs.close();
+				// convert to AbstractFiles
+				files = resultSetToAbstractFiles(rs);
+			} else {
+				final String msg = "Error, data source should be Image or VirtualDirectory, got: " + dataSource;
+				logger.log(Level.SEVERE, msg);
+				throw new IllegalArgumentException(msg);
 			}
-		} catch (Exception e) {
-			throw new TskCoreException(e.getMessage());
+
+		} catch (SQLException e) {
+			throw new TskCoreException("Error finding files in the data source by name, ", e);
 		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Error closing result set after finding files", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 
-		return fsContents;
+		return files;
 	}
 
 	
@@ -2598,6 +2762,9 @@ public class SleuthkitCase {
 			parentPath = "";
 		}
 		
+		//propagate fs id if parent is a file and fs id is set
+		long parentFs = this.getFileSystemByFileId(parentId);
+		
 		dbWriteLock();
 		
 		VirtualDirectory vd = null;
@@ -2616,6 +2783,7 @@ public class SleuthkitCase {
 			}
 
 			//tsk_objects
+			addObjectSt.clearParameters(); //clear from previous, so can skip nulls
 			addObjectSt.setLong(1, newObjId);
 			if (parentId != 0) {
 				addObjectSt.setLong(2, parentId);
@@ -2627,32 +2795,40 @@ public class SleuthkitCase {
 			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
 
 			//obj_id, fs_obj_id, name
+			addFileSt.clearParameters(); //clear from previous, so we can skip nulls
 			addFileSt.setLong(1, newObjId);
-			addFileSt.setString(2, directoryName);
+			
+			if (parentFs == -1) {
+				addFileSt.setNull(2, java.sql.Types.BIGINT);
+			}
+			else {
+				addFileSt.setLong(2, parentFs);
+			}
+			addFileSt.setString(3, directoryName);
 
 			//type, has_path
-			addFileSt.setShort(3, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
-			addFileSt.setBoolean(4, true);
+			addFileSt.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
+			addFileSt.setBoolean(5, true);
 
 			//flags
 			final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
-			addFileSt.setShort(5, dirType.getValue());
+			addFileSt.setShort(6, dirType.getValue());
 			final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
-			addFileSt.setShort(6, metaType.getValue());
+			addFileSt.setShort(7, metaType.getValue());
 
 			//note: using alloc under assumption that derived files derive from alloc files
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
-			addFileSt.setShort(7, dirFlag.getValue());
+			addFileSt.setShort(8, dirFlag.getValue());
 			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 					| TSK_FS_META_FLAG_ENUM.USED.getValue());
-			addFileSt.setShort(8, metaFlags);
+			addFileSt.setShort(9, metaFlags);
 
 			//size
 			long size = 0;
-			addFileSt.setLong(9, size);
+			addFileSt.setLong(10, size);
 
 			//parent path
-			addFileSt.setString(14, parentPath);
+			addFileSt.setString(15, parentPath);
 
 			addFileSt.executeUpdate();
 			
@@ -2853,37 +3029,39 @@ public class SleuthkitCase {
 			// obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
 
 			//obj_id, fs_obj_id, name
+			addFileSt.clearParameters(); //clear, so can skip nulls
 			addFileSt.setLong(1, newObjId);
-			addFileSt.setString(2, carvedFileName);
+			addFileSt.setLong(2, systemId); //for carved files, set data-source for consistency.  Set to fs/vs/image, depending what is being carved
+			addFileSt.setString(3, carvedFileName);
 
 			// type
 			final TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.CARVED;
-			addFileSt.setShort(3, type.getFileType());
+			addFileSt.setShort(4, type.getFileType());
 			
 			// has_path
-			addFileSt.setBoolean(4, true);
+			addFileSt.setBoolean(5, true);
 
 			// dirType
 			final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.REG;
-			addFileSt.setShort(5, dirType.getValue());
+			addFileSt.setShort(6, dirType.getValue());
 
 			// metaType
 			final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG;
-			addFileSt.setShort(6, metaType.getValue());
+			addFileSt.setShort(7, metaType.getValue());
 
 			// dirFlag
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.UNALLOC;
-			addFileSt.setShort(7, dirFlag.getValue());
+			addFileSt.setShort(8, dirFlag.getValue());
 
 			// metaFlags
 			final short metaFlags = TSK_FS_META_FLAG_ENUM.UNALLOC.getValue();
-			addFileSt.setShort(8, metaFlags);
+			addFileSt.setShort(9, metaFlags);
 
 			// size
-			addFileSt.setLong(9, carvedFileSize);
+			addFileSt.setLong(10, carvedFileSize);
 
 			// parent path
-			addFileSt.setString(14, parentPath);
+			addFileSt.setString(15, parentPath);
 
 			addFileSt.executeUpdate();
 			
@@ -2972,6 +3150,11 @@ public class SleuthkitCase {
 		
 		final long parentId = parentFile.getId();
 		final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/';
+		
+		//get fs_obj_id of the parentFile and propagate it to the new derived file
+		//note, fs_obj_id is fs id for FsContent, but for others it is used internally as data source id, and it is not 
+		//part of AbstractFile API, until the next schema change
+		long fsObjId = this.getFileSystemByFileId(parentId);
 
 		DerivedFile ret = null;
 		
@@ -2994,6 +3177,7 @@ public class SleuthkitCase {
 			}
 
 			//tsk_objects
+			addObjectSt.clearParameters();
 			addObjectSt.setLong(1, newObjId);
 			addObjectSt.setLong(2, parentId);
 			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
@@ -3003,36 +3187,40 @@ public class SleuthkitCase {
 			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
 
 			//obj_id, fs_obj_id, name
+			addFileSt.clearParameters(); //clear, so can skip nulls
 			addFileSt.setLong(1, newObjId);
-			addFileSt.setString(2, fileName);
+			if (fsObjId > 0) {
+				addFileSt.setLong(2, fsObjId);
+			}
+			addFileSt.setString(3, fileName);
 
 			//type, has_path
-			addFileSt.setShort(3, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType());
-			addFileSt.setBoolean(4, true);
+			addFileSt.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType());
+			addFileSt.setBoolean(5, true);
 
 			//flags
 			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
-			addFileSt.setShort(5, dirType.getValue());
+			addFileSt.setShort(6, dirType.getValue());
 			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
-			addFileSt.setShort(6, metaType.getValue());
+			addFileSt.setShort(7, metaType.getValue());
 
 			//note: using alloc under assumption that derived files derive from alloc files
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
-			addFileSt.setShort(7, dirFlag.getValue());
+			addFileSt.setShort(8, dirFlag.getValue());
 			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 					| TSK_FS_META_FLAG_ENUM.USED.getValue());
-			addFileSt.setShort(8, metaFlags);
+			addFileSt.setShort(9, metaFlags);
 
 			//size
-			addFileSt.setLong(9, size);
+			addFileSt.setLong(10, size);
 			//mactimes
 			//long ctime, long crtime, long atime, long mtime,
-			addFileSt.setLong(10, ctime);
-			addFileSt.setLong(11, crtime);
-			addFileSt.setLong(12, atime);
-			addFileSt.setLong(13, mtime);
+			addFileSt.setLong(11, ctime);
+			addFileSt.setLong(12, crtime);
+			addFileSt.setLong(13, atime);
+			addFileSt.setLong(14, mtime);
 			//parent path
-			addFileSt.setString(14, parentPath);
+			addFileSt.setString(15, parentPath);
 
 			addFileSt.executeUpdate();
 			
@@ -3103,6 +3291,17 @@ public class SleuthkitCase {
 			parentId = parent.getId();
 			parentPath = parent.getParentPath() + parent.getName() + '/';
 		}
+		
+		//check parent is a data source (the root obj) and set fs_obj_id that we currently use to track or data sources accordingly
+		long dataSourceId = -1;
+		boolean isParentDataSource = parent.getParent() == null;
+		if (isParentDataSource) {
+			dataSourceId = parentId;
+		}
+		else {
+			//else propagate from parent fs_obj_id
+			dataSourceId = getFileSystemByFileId(parentId);
+		}
 
 		LocalFile ret = null;
 		
@@ -3125,6 +3324,7 @@ public class SleuthkitCase {
 			}
 
 			//tsk_objects
+			addObjectSt.clearParameters();
 			addObjectSt.setLong(1, newObjId);
 			addObjectSt.setLong(2, parentId);
 			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
@@ -3134,36 +3334,40 @@ public class SleuthkitCase {
 			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
 
 			//obj_id, fs_obj_id, name
+			addFileSt.clearParameters();
 			addFileSt.setLong(1, newObjId);
-			addFileSt.setString(2, fileName);
+			if (dataSourceId > 0) {
+				addFileSt.setLong(2, dataSourceId);
+			}
+			addFileSt.setString(3, fileName);
 
 			//type, has_path
-			addFileSt.setShort(3, TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL.getFileType());
-			addFileSt.setBoolean(4, true);
+			addFileSt.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL.getFileType());
+			addFileSt.setBoolean(5, true);
 
 			//flags
 			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
-			addFileSt.setShort(5, dirType.getValue());
+			addFileSt.setShort(6, dirType.getValue());
 			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
-			addFileSt.setShort(6, metaType.getValue());
+			addFileSt.setShort(7, metaType.getValue());
 
 			//note: using alloc under assumption that derived files derive from alloc files
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
-			addFileSt.setShort(7, dirFlag.getValue());
+			addFileSt.setShort(8, dirFlag.getValue());
 			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 					| TSK_FS_META_FLAG_ENUM.USED.getValue());
-			addFileSt.setShort(8, metaFlags);
+			addFileSt.setShort(9, metaFlags);
 
 			//size
-			addFileSt.setLong(9, size);
+			addFileSt.setLong(10, size);
 			//mactimes
 			//long ctime, long crtime, long atime, long mtime,
-			addFileSt.setLong(10, ctime);
-			addFileSt.setLong(11, crtime);
-			addFileSt.setLong(12, atime);
-			addFileSt.setLong(13, mtime);
+			addFileSt.setLong(11, ctime);
+			addFileSt.setLong(12, crtime);
+			addFileSt.setLong(13, atime);
+			addFileSt.setLong(14, mtime);
 			//parent path
-			addFileSt.setString(14, parentPath);
+			addFileSt.setString(15, parentPath);
 
 			addFileSt.executeUpdate();
 			
@@ -3203,15 +3407,16 @@ public class SleuthkitCase {
 
 
 	/**
-	 * @param image the image to search for the given file name
+	 * Find all files in the data source, by name and parent
+	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to search for the given file name
 	 * @param fileName the name of the file or directory to match (case
 	 * insensitive)
-	 * @param parentFsContent
-	 * @return a list of FsContent for files/directories whose name matches
-	 * fileName and that were inside a directory described by parentFsContent.
+	 * @param parentFile
+	 * @return a list of AbstractFile for files/directories whose name matches
+	 * fileName and that were inside a directory described by parentFile.
 	 */
-	public List<FsContent> findFiles(Image image, String fileName, FsContent parentFsContent) throws TskCoreException {
-		return findFiles(image, fileName, parentFsContent.getName());
+	public List<AbstractFile> findFiles(Content dataSource, String fileName, AbstractFile parentFile) throws TskCoreException {
+		return findFiles(dataSource, fileName, parentFile.getName());
 	}
 
 	
@@ -3329,13 +3534,13 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * @param image the image to search for the given file name
+	 * @param dataSource the data source (Image, VirtualDirectory for file-sets, etc) to search for the given file name
 	 * @param filePath The full path to the file(s) of interest. This can
 	 * optionally include the image and volume names. Treated in a case-
 	 * insensitive manner.
-	 * @return a list of FsContent that have the given file path.
+	 * @return a list of AbstractFile that have the given file path.
 	 */
-	public List<FsContent> openFiles(Image image, String filePath) throws TskCoreException {
+	public List<AbstractFile> openFiles(Content dataSource, String filePath) throws TskCoreException {
 
 		// get the non-unique path (strip of image and volume path segments, if
 		// the exist.
@@ -3353,7 +3558,7 @@ public class SleuthkitCase {
 		String parentPath = path.substring(0, lastSlash);
 		String fileName = path.substring(lastSlash);
 
-		return findFiles(image, fileName, parentPath);
+		return findFiles(dataSource, fileName, parentPath);
 	}
 
 	/**
@@ -3643,6 +3848,7 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 	}
+	
 
 	/**
 	 * Helper to return FileSystems in an Image
@@ -4572,11 +4778,15 @@ public class SleuthkitCase {
 			if (rs != null) {
 				try {
 					rs.close();
-					s.close();
-
-
 				} catch (SQLException ex) {
 					logger.log(Level.WARNING, "Failed to close the result set.", ex);
+				}
+			}
+			if (s != null) {
+				try {
+					s.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Failed to close the statement.", ex);
 				}
 			}
 			dbReadUnlock();
