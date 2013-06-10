@@ -3382,7 +3382,7 @@ public class SleuthkitCase {
 		}
 		else {
 			parentId = parent.getId();
-			parentPath = parent.getParentPath() + parent.getName() + '/';
+			parentPath = parent.getParentPath() + "/" + parent.getName();
 		}
 		
 		//check parent is a data source (the root obj) and set fs_obj_id that we currently use to track or data sources accordingly
