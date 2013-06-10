@@ -99,6 +99,8 @@ public class SleuthkitCase {
 	private PreparedStatement getFileWithParentSt;
 	private PreparedStatement updateMd5St;
 	private PreparedStatement getPathSt;
+	private PreparedStatement getFileParentPathSt;
+	private PreparedStatement getFileNameSt;
 	private PreparedStatement getDerivedInfoSt;
 	private PreparedStatement getDerivedMethodSt;
 	private PreparedStatement addObjectSt;
@@ -223,6 +225,10 @@ public class SleuthkitCase {
 		updateMd5St = con.prepareStatement("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?");
 
 		getPathSt = con.prepareStatement("SELECT path FROM tsk_files_path WHERE obj_id = ?");
+		
+		getFileParentPathSt = con.prepareStatement("SELECT parent_path FROM tsk_files WHERE obj_id = ?");
+		
+		getFileNameSt = con.prepareStatement("SELECT name FROM tsk_files WHERE obj_id = ?");
 
 		getDerivedInfoSt = con.prepareStatement("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?");
 
@@ -347,6 +353,11 @@ public class SleuthkitCase {
 				getFileWithParentSt.close();
 				getFileWithParentSt = null;
 			}
+			
+			if (getFileNameSt != null) {
+				getFileNameSt.close();
+				getFileNameSt = null;
+			}
 
 			if (updateMd5St != null) {
 				updateMd5St.close();
@@ -361,6 +372,11 @@ public class SleuthkitCase {
 			if (getPathSt != null) {
 				getPathSt.close();
 				getPathSt = null;
+			}
+			
+			if (getFileParentPathSt != null) {
+				getFileParentPathSt.close();
+				getFileParentPathSt = null;
 			}
 
 			if (getDerivedInfoSt != null) {
@@ -2370,7 +2386,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * /internal Get a path of a file in tsk_files_path table or null if there
+	 * Get a path of a file in tsk_files_path table or null if there
 	 * is none
 	 *
 	 * @param id id of the file to get path for
@@ -2401,6 +2417,72 @@ public class SleuthkitCase {
 		}
 
 		return filePath;
+	}
+	
+	/**
+	 * Get a parent_path of a file in tsk_files table or null if there
+	 * is none
+	 *
+	 * @param id id of the file to get path for
+	 * @return file path or null
+	 */
+	String getFileParentPath(long id) {
+
+		String parentPath = null;
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			getFileParentPathSt.setLong(1, id);
+			rs = getFileParentPathSt.executeQuery();
+			if (rs.next()) {
+				parentPath = rs.getString(1);
+			}
+		} catch (SQLException ex) {
+			logger.log(Level.SEVERE, "Error getting file parent_path for file: " + id, ex);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after getting parent_file path by id.", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+
+		return parentPath;
+	}
+	
+	/**
+	 * Get a name of a file in tsk_files table or null if there
+	 * is none
+	 *
+	 * @param id id of the file to get name for
+	 * @return file name or null
+	 */
+	String getFileName(long id) {
+		String fileName = null;
+		ResultSet rs = null;
+		dbReadLock();
+		try {
+			getFileNameSt.setLong(1, id);
+			rs = getFileNameSt.executeQuery();
+			if (rs.next()) {
+				fileName = rs.getString(1);
+			}
+		} catch (SQLException ex) {
+			logger.log(Level.SEVERE, "Error getting file parent_path for file: " + id, ex);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after getting parent_file path by id.", ex);
+				}
+			}
+			dbReadUnlock();
+		}
+		return fileName;
 	}
 
 	/**
@@ -2754,12 +2836,15 @@ public class SleuthkitCase {
 	 * @return a VirtualDirectory object representing the one added to the database.
 	 * @throws TskCoreException 
 	 */
-	public VirtualDirectory addVirtualDirectory(long parentId, String directoryName) throws TskCoreException {
-		
+	public VirtualDirectory addVirtualDirectory(long parentId, String directoryName) throws TskCoreException {	
 		// get the parent path
-		String parentPath = getFilePath(parentId);
+		String parentPath = getFileParentPath(parentId);
 		if (parentPath == null) {
 			parentPath = "";
+		} 
+		String parentName = getFileName(parentId);
+		if (parentName != null) {
+			parentPath = parentPath + "/" + parentName;
 		}
 		
 		//propagate fs id if parent is a file and fs id is set
@@ -3000,10 +3085,14 @@ public class SleuthkitCase {
 		// get the ID of the appropriate '$CarvedFiles' directory
 		long carvedFilesId = getCarvedDirectoryId(systemId);
 		
-		// get the path for the $CarvedFiles directory
-		String parentPath = getFilePath(carvedFilesId);
+		// get the parent path for the $CarvedFiles directory		
+		String parentPath = getFileParentPath(carvedFilesId);
 		if (parentPath == null) {
 			parentPath = "";
+		} 
+		String parentName = getFileName(carvedFilesId);
+		if (parentName != null) {
+			parentPath = parentPath + "/" + parentName;
 		}
 		
 		dbWriteLock();
