@@ -2764,6 +2764,10 @@ public class SleuthkitCase {
 		
 		//propagate fs id if parent is a file and fs id is set
 		long parentFs = this.getFileSystemByFileId(parentId);
+		if (parentFs == -1) {
+			//use the parentId fs obj id as data source id  internally
+			parentFs = parentId;
+		}
 		
 		dbWriteLock();
 		
@@ -2798,7 +2802,7 @@ public class SleuthkitCase {
 			addFileSt.clearParameters(); //clear from previous, so we can skip nulls
 			addFileSt.setLong(1, newObjId);
 			
-			if (parentFs == -1) {
+			if (parentFs < 1) {
 				addFileSt.setNull(2, java.sql.Types.BIGINT);
 			}
 			else {
