@@ -1068,6 +1068,7 @@ exfatfs_copy_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         return TSK_ERR;
     }
 
+    // RJCTODO: What's up with the code duplication here?
     switch (a_dentry->data[0])
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:

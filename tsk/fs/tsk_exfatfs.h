@@ -65,7 +65,7 @@
  */
 #define EXFATFS_MAX_FILE_SECONDARY_DENTRIES_COUNT 18
 
-//RJCTODO: 
+//RJCTODO: Is this a good number for this?
 #define EXFATFS_MAX_NAME_LEN_UTF8	1024
 
 /**

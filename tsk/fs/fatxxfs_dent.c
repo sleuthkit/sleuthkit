@@ -25,6 +25,7 @@
 
 #include "tsk_fs_i.h"
 #include "tsk_fatxxfs.h"
+#include <assert.h>
 
 //RJCTODO: Consider changing the name of this
 /* Special data structure allocated for each directory to hold the long
@@ -36,43 +37,60 @@ typedef struct {
     uint8_t seq;                /* seq of first entry in lfn */
 } FATFS_LFN;
 
-// RJCTODO: THis header comment is out of date.
-/*
-* Process the contents of a directory and add them to FS_DIR.
-*
-* @param fatfs File system information structure
-* @param a_fs_dir Structure to store the files in.
-* @param list_seen List of directory inodes that have been seen thus far in
-* directory walking (can be a pointer to a NULL pointer on first call).
-* @param buf Buffer that contains the directory contents.
-* @param len Length of buffer in bytes (must be a multiple of sector size)
-* @param addrs Array where each element is the original address of the
-* corresponding block in buf (size of array is number of blocks in directory).
-*
-* @return -1 on error, 0 on success, and 1 to stop
+// RJCTODO: Update arg names
+/**
+ * /internal
+ * Parse a buffer containing the contents of a directory and add TSK_FS_NAME 
+ * objects for each named file found to the TSK_FS_DIR representation of the 
+ * directory.
+ *
+ * @param a_fatfs File system information structure for file system that
+ * contains the directory.
+ * @param a_fs_dir Directory structure into to which parsed file metadata will
+ * be added.
+ * @param a_buf Buffer that contains the directory contents.
+ * @param a_buf_len Length of buffer in bytes (must be a multiple of sector
+*  size).
+ * @param a_sector_addrs Array where each element is the original address of
+ * the corresponding sector in a_buf (size of array is number of sectors in
+ * the directory).
+ * @return TSK_RETVAL_ENUM
 */
 TSK_RETVAL_ENUM
-fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
-    TSK_OFF_T len, TSK_DADDR_T * addrs)
+fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
+    TSK_OFF_T len, TSK_DADDR_T *addrs)
 {
-    unsigned int idx, sidx;
-    int a, b;
-    TSK_INUM_T ibase;
-    FATXXFS_DENTRY *dep;
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
+    char *func_name = "fatxxfs_dent_parse_buf";
+    unsigned int idx = 0; 
+    unsigned int sidx = 0;
+    int a = 0;
+    int b = 0;
+    TSK_INUM_T ibase = 0;
+    FATXXFS_DENTRY *dep = NULL;
+    TSK_FS_INFO *fs = (TSK_FS_INFO*)&fatfs->fs_info;
     int sectalloc = 0;
-    TSK_FS_NAME *fs_name;
+    TSK_FS_NAME *fs_name = NULL;
     FATFS_LFN lfninfo;
     int entrySeenCount = 0;
     int entryInvalidCount = 0;
     uint8_t isCorruptDir = 0;
 
-    if (buf == NULL) {
+    tsk_error_reset();
+    if (fatfs_is_ptr_arg_null(fatfs, "fatfs", func_name) ||
+        fatfs_is_ptr_arg_null(a_fs_dir, "a_fs_dir", func_name) ||
+        fatfs_is_ptr_arg_null(buf, "buf", func_name) ||
+        fatfs_is_ptr_arg_null(addrs, "addrs", func_name)) {
+        return TSK_ERR; 
+    }
+
+    assert(len > 0);
+    if (len < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("fatfs_dent_parse_buf: buffer is NULL");
-        return TSK_ERR;
+        tsk_error_set_errstr("%s: invalid buffer length", func_name);
+        return TSK_ERR; 
     }
+
     dep = (FATXXFS_DENTRY*)buf;
 
     if ((fs_name = tsk_fs_name_alloc(FATFS_MAXNAMLEN_UTF8, 32)) == NULL) {
@@ -85,7 +103,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
     /* Loop through the sectors in the buffer. */ 
     for (sidx = 0; sidx < (unsigned int) (len / fatfs->ssize); sidx++) {
 
-        /* Get the base inode for this sector */
+        /* Get the base inode for the current sector */
         ibase = FATFS_SECT_2_INODE(fatfs, addrs[sidx]);
         if (ibase > fs->last_inum) {
             tsk_error_reset();
@@ -120,7 +138,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
 
             entrySeenCount++;
 
-            /* is it a valid dentry? */
+            /* Is the current entry a valid entry? */
             if (0 == fatxxfs_is_dentry(fatfs, (FATFS_DENTRY*)dep,
                 ((isCorruptDir == 0) && (sectalloc)) ? 1 : 0)) {
                     if (tsk_verbose)
@@ -128,7 +146,6 @@ fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                         "fatfs_dent_parse_buf: Entry %u is invalid\n",
                         idx);
                     entryInvalidCount++;
-                    // RJCTODO: What does this mean?
                     /* If we have seen four entries and all of them are corrupt,
                     * then test every remaining entry in this folder -- 
                     * even if the sector is allocated. The scenario is one
@@ -141,14 +158,11 @@ fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     continue;
             }
 
-            dir = (FATXXFS_DENTRY*)dep;
+            dir = dep;
 
             /* Compute the inode address corresponding to this directory entry. */
             inode = ibase + idx;
 
-            /* Take care of the name
-            * Copy a long name to a buffer and take action if it
-            * is a small name */
             if ((dir->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
                 /* The current entry is a long file name entry. */
                 fatfs_dentry_lfn *dirl = (fatfs_dentry_lfn *) dir;
@@ -167,7 +181,6 @@ fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     lfninfo.start = FATFS_MAXNAMLEN_UTF8 - 1;
                 }
                 else if (dirl->seq != lfninfo.seq - 1) {
-                    //RJCTODO: Counting down...
                     // @@@ Check the sequence number - the checksum is correct though...
                 }
 
@@ -188,41 +201,38 @@ fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                 // Skip ahead until we get a new sequence num or the 8.3 name
                 continue;
             }
-            // RJCTODO: Does exFAT need this?
-            /* Special case for volume label: name does not have an
-            * extension and we add a note at the end that it is a label */
-            else if ((dir->attrib & FATFS_ATTR_VOLUME) ==
-                FATFS_ATTR_VOLUME) {
-                    a = 0;
+            else if ((dir->attrib & FATFS_ATTR_VOLUME) == FATFS_ATTR_VOLUME) {
+                /* Special case for volume label: name does not have an
+                * extension and we add a note at the end that it is a label */
+                a = 0;
 
-                    for (b = 0; b < 8; b++) {
-                        if ((dir->name[b] >= 0x20) && (dir->name[b] != 0xff)) {
-                            fs_name->name[a++] = dir->name[b];
-                        }
-                        else {
-                            fs_name->name[a++] = '^';
-                        }
+                for (b = 0; b < 8; b++) {
+                    if ((dir->name[b] >= 0x20) && (dir->name[b] != 0xff)) {
+                        fs_name->name[a++] = dir->name[b];
                     }
-                    for (b = 0; b < 3; b++) {
-                        if ((dir->ext[b] >= 0x20) && (dir->ext[b] != 0xff)) {
-                            fs_name->name[a++] = dir->ext[b];
-                        }
-                        else {
-                            fs_name->name[a++] = '^';
-                        }
+                    else {
+                        fs_name->name[a++] = '^';
                     }
+                }
+                for (b = 0; b < 3; b++) {
+                    if ((dir->ext[b] >= 0x20) && (dir->ext[b] != 0xff)) {
+                        fs_name->name[a++] = dir->ext[b];
+                    }
+                    else {
+                        fs_name->name[a++] = '^';
+                    }
+                }
 
-                    fs_name->name[a] = '\0';
-                    /* Append a string to show it is a label */
-                    if (a + 22 < FATFS_MAXNAMLEN_UTF8) {
-                        const char *volstr = " (Volume Label Entry)";
-                        strncat(fs_name->name, volstr,
-                            FATFS_MAXNAMLEN_UTF8 - a);
-                    }
+                fs_name->name[a] = '\0';
+                /* Append a string to show it is a label */
+                if (a + 22 < FATFS_MAXNAMLEN_UTF8) {
+                    const char *volstr = " (Volume Label Entry)";
+                    strncat(fs_name->name, volstr,
+                        FATFS_MAXNAMLEN_UTF8 - a);
+                }
             }
-
-            /* A short (8.3) entry */
             else {
+                /* A short (8.3) entry */
                 char *name_ptr; // The dest location for the short name
 
                 /* if we have a lfn, copy it into fs_name->name
@@ -271,7 +281,6 @@ fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     fs_name->shrt_name[0] = '\0';
                     name_ptr = fs_name->name;   // put 8.3 into normal location
                 }
-
 
                 /* copy in the short name into the place specified above.
                 * Skip spaces and put in the . */
@@ -333,12 +342,14 @@ fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,
                     && (fs_name->type == TSK_FS_NAME_TYPE_DIR)
                     && idx < 2) {
                 if (fs_name->name[1] == '\0') {
+                    /* Current directory - "." */
                     fs_name->meta_addr =
                         a_fs_dir->fs_file->meta->addr;
                 }
                 /* for the parent directory, look up in the list that
                 * is maintained in fafs_info */
                 else if (fs_name->name[1] == '.') {
+                    /* Parent directory - ".." */
                     uint8_t dir_found = 0;
 
                     if (fatfs_dir_buf_get(fatfs, a_fs_dir->fs_file->meta->addr, &(fs_name->meta_addr)) == 0)  {
