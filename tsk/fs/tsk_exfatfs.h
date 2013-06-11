@@ -315,6 +315,10 @@ extern "C" {
     exfatfs_should_skip_dentry(FATFS_DENTRY *a_dentry, 
         unsigned int a_selection_flags, int a_cluster_is_alloc);
 
+    extern TSK_RETVAL_ENUM
+    exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
+        TSK_OFF_T a_buf_len, TSK_DADDR_T *a_sector_addrs);
+
 #ifdef __cplusplus
 }
 #endif

@@ -659,7 +659,7 @@ exfatfs_copy_vol_label_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FATFS_DENTR
      * TSK_FS_META structure. */
     if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY) {
         if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_file->meta, 
-            (UTF16*)dentry->volume_label, dentry->utf16_char_count + 1, 
+            (UTF16*)dentry->volume_label, (size_t)dentry->utf16_char_count + 1, 
             a_inum, "volume label") != TSKconversionOK) {
             return TSK_COR;
         }

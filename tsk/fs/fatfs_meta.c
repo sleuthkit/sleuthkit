@@ -1201,12 +1201,10 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
         return 1;
     }
 
-    //RJCTODO: Fix when exFAT supports tsk_fs_dir_walk
     /* If not doing an orphan files search, populate the directory sectors 
      * bitmap. The bitmap will be used to make sure that no sector marked as
      * allocated to a directory is skipped when searching for directory 
      * entries to map to inodes. */
-    //if ((a_fs->ftype != TSK_FS_TYPE_EXFAT) && (flags & TSK_FS_META_FLAG_ORPHAN) == 0) {
     if ((flags & TSK_FS_META_FLAG_ORPHAN) == 0) {
         if (tsk_verbose) {
             tsk_fprintf(stderr,
@@ -1245,9 +1243,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             return 1;
         }
     }
-    //else {
-    //    memset((void*)dir_sectors_bitmap, 1, (size_t)(a_fs->block_count + 7)/8); //RJCTODO: Remove when exFAT supports tsk_fs_dir_walk
-    //}
 
     /* If the end inode is the one of the virtual virtual FAT files or the 
      * virtual orphan files directory, adjust the end inum and handle the 

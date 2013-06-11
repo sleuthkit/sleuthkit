@@ -247,10 +247,10 @@ extern "C" {
     dos2nanosec(uint8_t timetens);
 
     extern TSKConversionResult
-    fatfs_strcopy_utf16_2_utf8(FATFS_INFO *a_fatfs, UTF16 *src, uint8_t src_len, UTF8 *dest, uint8_t dest_len, TSK_INUM_T a_inum, const char *a_desc);
+    fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *src, size_t src_len, UTF8 *dest, size_t dest_len, TSK_INUM_T a_inum, const char *a_desc);
 
     extern TSKConversionResult
-    fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UTF16 *src, uint8_t src_len, TSK_INUM_T a_inum, const char *a_desc);
+    fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UTF16 *src, size_t src_len, TSK_INUM_T a_inum, const char *a_desc);
 
     extern void fatfs_cleanup_ascii(char *);
 

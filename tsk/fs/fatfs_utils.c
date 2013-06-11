@@ -134,13 +134,13 @@ dos2nanosec(uint8_t timetens)
     return timetens * 10000000;
 }
 
+// RJCTODO: Function header comment
 TSKConversionResult
-fatfs_strcopy_utf16_2_utf8(FATFS_INFO *a_fatfs, UTF16 *src, uint8_t src_len, UTF8 *dest, uint8_t dest_len, TSK_INUM_T a_inum, const char *a_desc)
+fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *src, size_t src_len, UTF8 *dest, size_t dest_len, TSK_INUM_T a_inum, const char *a_desc)
 {
     const char *func_name = "fatfs_copy_utf16_str";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     TSKConversionResult conv_result = TSKconversionOK;
-    UTF8 *dest_end = NULL;
     uint32_t i = 0;
 
     /* Validate the function arguments. */
@@ -149,7 +149,7 @@ fatfs_strcopy_utf16_2_utf8(FATFS_INFO *a_fatfs, UTF16 *src, uint8_t src_len, UTF
     }
 
     //dest_end = (UTF8*)((uintptr_t)dest + sizeof(dest));
-    conv_result = tsk_UTF16toUTF8(fs->endian, (const UTF16**)&src, (UTF16*)&src[src_len], &dest, dest_end, TSKlenientConversion);
+    conv_result = tsk_UTF16toUTF8(fs->endian, (const UTF16**)&src, (UTF16*)&src[src_len], &dest, (UTF8*)&dest[dest_len], TSKlenientConversion);
     if (conv_result == TSKconversionOK) {
         /* Make sure the result is NULL-terminated. */
         if ((uintptr_t) dest > (uintptr_t)dest + sizeof(dest)) {
@@ -166,24 +166,26 @@ fatfs_strcopy_utf16_2_utf8(FATFS_INFO *a_fatfs, UTF16 *src, uint8_t src_len, UTF
         *dest = '\0';
     }
 
-    /* Clean up non-ASCII because we are copying it into a buffer that is 
-     * supposed to be UTF-8 and we don't know what encoding it is actually in 
-     * or if it is simply junk. */
+    /* Clean up non-ASCII characters since the destination buffer is supposed 
+     * to be UTF-8 and the encoding of the source is essentially unknown and 
+     * may be junk. */
     fatfs_cleanup_ascii((char*)dest);
 
-    /* Clean up name to remove control characters */
+    /* Remove control characters. */
     i = 0;
     while (dest[i] != '\0') {
-        if (TSK_IS_CNTRL(dest[i]))
+        if (TSK_IS_CNTRL(dest[i])) {
             dest[i] = '^';
+        }
         ++i;
     }
 
     return conv_result;
 }
 
+// RJCTODO: Replace with above
 TSKConversionResult
-fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UTF16 *src, uint8_t src_len, TSK_INUM_T a_inum, const char *a_desc)
+fatfs_copy_utf16_str_2_meta_name(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta, UTF16 *src, size_t src_len, TSK_INUM_T a_inum, const char *a_desc)
 {
     const char *func_name = "exfatfs_copy_utf16_str_2_meta_name";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);

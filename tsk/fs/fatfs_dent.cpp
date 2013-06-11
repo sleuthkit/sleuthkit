@@ -25,6 +25,7 @@
 
 #include "tsk_fs_i.h"
 #include "tsk_fatxxfs.h"
+#include "tsk_exfatfs.h"
 #include "tsk_fatfs.h"
 
 #include <map>
@@ -340,7 +341,12 @@ TSK_RETVAL_ENUM
         "%s: Parsing directory %" PRIuINUM "\n",
         func_name, a_addr);
 
-    retval = fatxxfs_dent_parse_buf(fatfs, fs_dir, dirbuf, len, addrbuf);
+    if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
+        retval = exfatfs_dent_parse_buf(fatfs, fs_dir, dirbuf, len, addrbuf);
+    }
+    else {
+        retval = fatxxfs_dent_parse_buf(fatfs, fs_dir, dirbuf, len, addrbuf);
+    }
 
     free(dirbuf);
     free(addrbuf);
