@@ -137,6 +137,16 @@ if test -f ../../modules/Makefile.am; then
    AC_SUBST(FW_LIBS, "../../tsk/framework/libtskframework.la ../../../tsk/libtsk.la")
    AC_SUBST(TSK_INCLUDE, "-I../../..")
    AC_SUBST(FW_INCLUDE,  "-I../..")
+
+# This is here because it is alphabetically the last module to be compiled and 
+# it is how we show what is missing.
+   [
+   echo "****************************"
+   echo "Modules missing dependencies:"
+   cat ../*/missing_libs.txt
+   echo "****************************"
+   ]
+
 else
    # Not part of tsk/framework/modules, check if Tsk and Framework has been installed
    AC_SUBST(FW_LIBS, "")

@@ -1,6 +1,5 @@
-ACLOCAL_AMFLAGS = -I m4
-AM_CXXFLAGS = $(FW_INCLUDE) $(TSK_INCLUDE) -Wall
+AM_CXXFLAGS = $(AM_CXXFLAGS_MOD)
 
 lib_LTLIBRARIES = libtskZipExtractionModule.la
 libtskZipExtractionModule_la_SOURCES = ZipExtractionModule.cpp
-libtskZipExtractionModule_la_LIBADD = $(FW_LIBS)
+libtskZipExtractionModule_la_LIBADD = $(AM_LIBADD_MOD)
