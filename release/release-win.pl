@@ -270,14 +270,17 @@ sub build_framework {
 	#`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
 	# 2010 version
 	`msbuild.exe framework.sln /p:Configuration=Release /clp:ErrorsOnly /nologo > BuildErrors.txt`;
-	die "Build errors -- check framework/win32/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
+	die "Build errors -- check framework/msvcpp/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
 
+	chdir "../..";
+
+	chdir "runtime";
 	# Do a basic check on some of the executables
-	die "libtskframework.dll missing" unless (-x "Release/libtskframework.dll");
-	die "tsk_analyzeimg missing" unless (-x "Release/tsk_analyzeimg.exe");
-	die "HashCalcModule.dll missing" unless (-x "Release/HashCalcModule.dll");
+	die "libtskframework.dll missing" unless (-x "libtskframework.dll");
+	die "tsk_analyzeimg missing" unless (-x "tsk_analyzeimg.exe");
+	die "tskHashCalcModule.dll missing" unless (-x "tskHashCalcModule.dll");
+	chdir "../..";
 
-	chdir "../../..";
 }
 
 sub package_framework {
@@ -296,10 +299,9 @@ sub package_framework {
 	mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdir";
 	mkdir ("${rdir}/docs") or die "error making docs release directory: $rdir";
 
-	chdir "framework" or die "error changing directory into framework";
 
 	# Copy the files
-	chdir "runtime" or die "Error changing directory into runtime";
+	chdir "framework/runtime" or die "Error changing directory into runtime";
 	`cp *.exe \"${rdir}/bin\"`;
 	`cp libtsk*.dll \"${rdir}/bin\"`;
 	`cp Poco*.dll \"${rdir}/bin\"`;
