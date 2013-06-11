@@ -115,7 +115,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * @param lf local file to visit / act on
 	 * @return result of the visit
 	 */
-    T visit(LocalFile df);
+    T visit(LocalFile lf);
 	
 	/**
 	 * The default visitor - quickest method for implementing a custom visitor.  
