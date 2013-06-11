@@ -19,7 +19,7 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     bindings/java/src/org/sleuthkit/datamodel/*.html \
     bindings/java/src/*.html \
     framework/*.txt \
-    framework/*.h \
+    framework/tsk/framework/*.h \
     framework/tsk/framework/extraction/*.cpp \
     framework/tsk/framework/extraction/*.h \
     framework/tsk/framework/file/*.cpp \
