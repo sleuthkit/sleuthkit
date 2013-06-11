@@ -36,7 +36,8 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
         tsk_hdb_name_from_path(hdb_info);
         return;
     }
-    hFile = hdb_info->hIdx;
+    //TODO implement sqlite indices
+    hFile = hdb_info->idx_info->idx_struct.idx_plain_txt->hIdx;
     fseeko(hFile, 0, 0);
     if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
         NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||

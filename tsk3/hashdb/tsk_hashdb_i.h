@@ -57,6 +57,14 @@ extern "C" {
 #define TSK_HDB_IDX_HEAD_TYPE_STR	"00000000000000000000000000000000000000000"
 #define TSK_HDB_IDX_HEAD_NAME_STR	"00000000000000000000000000000000000000001"
 
+/**
+ * Properties for the sqlite hash database index
+ */
+#define IDX_SCHEMA_VER "Index Schema Version"
+#define IDX_VERSION_NUM "v1"
+#define IDX_HASHSET_NAME "Hashset Name"
+#define IDX_PLAIN_TXT_HEADER "0000000000000000"
+#define IDX_SQLITE_V1_HEADER "SQLite format 3"
 
 
     extern uint8_t tsk_hdb_idxinitialize(TSK_HDB_INFO *,
@@ -105,6 +113,30 @@ extern "C" {
     extern uint8_t idxonly_getentry(TSK_HDB_INFO *, const char *,
                                     TSK_OFF_T, TSK_HDB_FLAG_ENUM,
                                     TSK_HDB_LOOKUP_FN, void *);
+
+    extern uint8_t plain_txt_open(TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
+    extern void plain_txt_close(TSK_IDX_INFO *);
+    extern uint8_t plain_txt_initialize(TSK_HDB_INFO *, TSK_TCHAR *);
+    extern uint8_t plain_txt_addentry(TSK_HDB_INFO *, char *, TSK_OFF_T);
+    extern uint8_t plain_txt_addentry_bin(TSK_HDB_INFO *,
+            unsigned char *, int, TSK_OFF_T);
+    extern uint8_t plain_txt_finalize(TSK_HDB_INFO *);
+    extern int8_t plain_txt_lookup_str(TSK_HDB_INFO *, const char *,
+                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+    extern int8_t plain_txt_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t,
+                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+
+    extern uint8_t sqlite_v1_open(TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
+    extern void sqlite_v1_close(TSK_IDX_INFO *);
+    extern uint8_t sqlite_v1_initialize(TSK_HDB_INFO *, TSK_TCHAR *);
+    extern uint8_t sqlite_v1_addentry(TSK_HDB_INFO *, char *, TSK_OFF_T);
+    extern uint8_t sqlite_v1_addentry_bin(TSK_HDB_INFO *,
+            unsigned char *, int, TSK_OFF_T);
+    extern uint8_t sqlite_v1_finalize(TSK_HDB_INFO *);
+    extern int8_t sqlite_v1_lookup_str(TSK_HDB_INFO *, const char *,
+                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+    extern int8_t sqlite_v1_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t,
+                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
 #ifdef __cplusplus
 }
 #endif
