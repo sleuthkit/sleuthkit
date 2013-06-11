@@ -42,7 +42,7 @@ public class LocalFile extends AbstractFile {
 	 * @param db
 	 * @param objId object if of this file already in database
 	 * @param name name of this local file
-	 * @param type TSK_DB_FILES_TYPE_ENUM type of the file (local of more specific)
+	 * @param fileType TSK_DB_FILES_TYPE_ENUM type of the file (local of more specific)
 	 * @param dirType
 	 * @param metaType
 	 * @param dirFlag

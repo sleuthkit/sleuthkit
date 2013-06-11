@@ -2582,10 +2582,9 @@ public class SleuthkitCase {
 	/**
 	 * Get file system id value for file or -1 if there isn't one
 	 * Note: for FsContent files, this is the real fs
-	 * for other non-fs AbstractFile files, this field is used internally for data source id (the root)
+	 * for other non-fs AbstractFile files, this field is used internally for data source id (the root content obj)
 	 * @param fileId file id to get fs column id for
 	 * @return fs_id or -1 if not present
-	 * @throws SQLException if query failed
 	 */
 	private long getFileSystemByFileId(long fileId) {
 
@@ -3074,9 +3073,10 @@ public class SleuthkitCase {
 	/**
 	 * Adds a carved file to the VirtualDirectory '$CarvedFiles' in the volume
 	 * or file system given by systemId.
-	 * @param name the name of the carved file (containing appropriate extension)
+	 * @param carvedFileName the name of the carved file to add 
+	 * @param carvedFileSize the size of the carved file to add
 	 * @param systemId the ID of the parent volume or file system
-	 * @param sectors a list of SectorGroups giving this sectors that make up
+	 * @param data the layout information - a list of offsets that make up
 	 * this carved file.
 	 */
 	public LayoutFile addCarvedFile(String carvedFileName, long carvedFileSize,
@@ -4493,7 +4493,7 @@ public class SleuthkitCase {
 	 * @return list of fscontent objects matching the query
 	 * @throws SQLException if SQL query result getting failed
 	 */
-	public List<FsContent> resultSetToFsContents(ResultSet rs) throws SQLException {
+	private List<FsContent> resultSetToFsContents(ResultSet rs) throws SQLException {
 		List<FsContent> results = new ArrayList<FsContent>();
 		List<AbstractFile> temp = resultSetToAbstractFiles(rs);
 		for (AbstractFile f : temp) {
