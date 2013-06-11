@@ -34,6 +34,14 @@ TSK_VS_INFO *
 tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
     TSK_VS_TYPE_ENUM type)
 {
+    if (img_info == NULL) {
+        /* Opening the image file(s) failed, if attempted. */
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_NOFILE);
+        tsk_error_set_errstr("mm_open");
+        return NULL;
+    }
+
     /* Autodetect mode 
      * We need to try all of them in case there are multiple 
      * installations
