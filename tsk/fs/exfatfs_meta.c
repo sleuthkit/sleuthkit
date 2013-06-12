@@ -45,42 +45,44 @@ exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
     const char *func_name = "exfatfs_is_clust_alloc";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     TSK_DADDR_T bitmap_byte_offset = 0;
-    uint8_t bitmap_byte[1];
+    uint8_t bitmap_byte;
     ssize_t bytes_read = 0;
-    TSK_DADDR_T cluster_addr = 0;
 
     tsk_error_reset();
     if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) {
         return -1;
     }
 
-     /* Subtract 2 from the cluster address since cluster #2 is 
-      * the first cluster. */
-    cluster_addr = a_cluster_addr - 2;
-    if ((cluster_addr < EXFATFS_FIRST_CLUSTER) ||
-        (cluster_addr > a_fatfs->lastclust)) {
+    if ((a_cluster_addr < EXFATFS_FIRST_CLUSTER) ||
+        (a_cluster_addr > a_fatfs->lastclust)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("%s: Cluster address out of range", func_name);
     }
 
-    /* Determine the offset of the byte in the allocation bitmap that
-     * contains the bit for the specified cluster. */
-    bitmap_byte_offset = (a_fatfs->EXFATFS_INFO.first_sector_of_alloc_bitmap * a_fatfs->ssize) + (cluster_addr / 8);
+     /* Subtract 2 from the cluster address since cluster #2 is 
+      * the first cluster. */
+    a_cluster_addr = a_cluster_addr - 2;
+
+    /* Determine the offset of the byte in the allocation bitmap that contains
+     * the bit for the specified cluster. In the calculation, two is subtracted
+     * from the cluster address since the the first cluster in the bitmap is
+     * cluster 2. */
+    bitmap_byte_offset = (a_fatfs->EXFATFS_INFO.first_sector_of_alloc_bitmap * a_fatfs->ssize) + (a_cluster_addr / 8);
 
     /* Read the byte. */
-    bytes_read = tsk_fs_read(fs, bitmap_byte_offset, (char*)(&bitmap_byte[0]), 1);
+    bytes_read = tsk_fs_read(fs, bitmap_byte_offset, (char*)&bitmap_byte, 1);
     if (bytes_read != 1) {
         if (bytes_read >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2("%s: failed to read bitmap byte", func_name);
+        tsk_error_set_errstr2("%s: failed to read bitmap byte at offset %" PRIuINUM "", func_name, bitmap_byte_offset);
         return -1;
     }
 
     /* Check the bit that corresponds to the specified cluster. */
-    return (isset(&bitmap_byte[0], cluster_addr) ? 1 : 0);
+    return (bitmap_byte & (1 << (a_cluster_addr % 8)));
 }
 
 /**

@@ -136,6 +136,8 @@ exfatfs_reset_name_info(EXFATFS_FS_NAME_INFO *a_name_info)
     a_name_info->actual_secondary_entry_count = 0;
     a_name_info->expected_check_sum = 0;
     a_name_info->actual_check_sum = 0;
+    a_name_info->expected_name_length = 0;
+    a_name_info->actual_name_length = 0;
     a_name_info->fs_name->name[0] = '\0';
     a_name_info->fs_name->meta_addr = 0;
     a_name_info->fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
@@ -618,7 +620,7 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
             TSK_INUM_T current_inum = base_inum_of_sector + dentry_index;
             EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
 
-            ++entries_count;
+            ++entries_count; // RJCTODO: Should this be reset for each iteration of this loop?
 
             if (!fatfs_is_inum_in_range(a_fatfs, current_inum)) {
                 tsk_fs_name_free(name_info.fs_name);
