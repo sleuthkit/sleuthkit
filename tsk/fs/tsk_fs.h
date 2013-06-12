@@ -358,19 +358,19 @@ extern "C" {
     * Metadata flags used in TSK_FS_META.flags and in request to inode_walk
     */
     enum TSK_FS_META_FLAG_ENUM {
-        TSK_FS_META_FLAG_ALLOC = 0x01,  ///< Metadata structure is currently in an allocated state
-        TSK_FS_META_FLAG_UNALLOC = 0x02,        ///< Metadata structure is currently in an unallocated state
-        TSK_FS_META_FLAG_USED = 0x04,   ///< Metadata structure has been allocated at least once
-        TSK_FS_META_FLAG_UNUSED = 0x08, ///< Metadata structure has never been allocated. 
-        TSK_FS_META_FLAG_COMP = 0x10,   ///< The file contents are compressed. 
-        TSK_FS_META_FLAG_ORPHAN = 0x20, ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only) //RJCTODO: Fix this comment
+        TSK_FS_META_FLAG_ALLOC = 0x01,   ///< Metadata structure is currently in an allocated state
+        TSK_FS_META_FLAG_UNALLOC = 0x02, ///< Metadata structure is currently in an unallocated state
+        TSK_FS_META_FLAG_USED = 0x04,    ///< Metadata structure has been allocated at least once
+        TSK_FS_META_FLAG_UNUSED = 0x08,  ///< Metadata structure has never been allocated. 
+        TSK_FS_META_FLAG_COMP = 0x10,    ///< The file contents are compressed. 
+        TSK_FS_META_FLAG_ORPHAN = 0x20,  ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only) //RJCTODO: Fix this comment
     };
     typedef enum TSK_FS_META_FLAG_ENUM TSK_FS_META_FLAG_ENUM;
 
     enum TSK_FS_META_ATTR_FLAG_ENUM {
-        TSK_FS_META_ATTR_EMPTY, ///< The data in the attributes (if any) is not for this file
-        TSK_FS_META_ATTR_STUDIED,       ///< The data in the attributes are for this file
-        TSK_FS_META_ATTR_ERROR, ///< The attributes for this file could not be loaded
+        TSK_FS_META_ATTR_EMPTY,   ///< The data in the attributes (if any) is not for this file
+        TSK_FS_META_ATTR_STUDIED, ///< The data in the attributes are for this file
+        TSK_FS_META_ATTR_ERROR,   ///< The attributes for this file could not be loaded
     };
     typedef enum TSK_FS_META_ATTR_FLAG_ENUM TSK_FS_META_ATTR_FLAG_ENUM;
 

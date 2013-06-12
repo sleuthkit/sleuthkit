@@ -1018,6 +1018,7 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         }
         fs_meta->name2->next = NULL;
     }
+    fs_meta->name2->name[0] = '\0';
 
     /* Allocate space for saving the cluster address of the first cluster 
      * of file inodes, including allocation bitmaps and upcase tables. */
@@ -1472,8 +1473,9 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
 
 // RJCTODO: Comment
 uint8_t
-exfatfs_should_skip_dentry(FATFS_DENTRY *a_dentry, 
-    unsigned int a_selection_flags, int a_cluster_is_alloc)
+exfatfs_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+    FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
+    int a_cluster_is_alloc)
 {
     unsigned int dentry_flags = 0;
     // RJCTODO: Insert arg check 
@@ -1492,14 +1494,26 @@ exfatfs_should_skip_dentry(FATFS_DENTRY *a_dentry,
      * the file. This ensures that if a directory is deleted and its 
      * contents are not always marked as unallocated, the correct status will
      * still be obtained. */
-    if (a_cluster_is_alloc == 1 && !EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) {
+    if ((a_cluster_is_alloc) && (a_dentry->data[0] != EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE)) {
         dentry_flags = TSK_FS_META_FLAG_ALLOC;
     }
     else {
         dentry_flags = TSK_FS_META_FLAG_UNALLOC;
     }
 
+    dentry_flags |= (a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_NONE) ? TSK_FS_META_FLAG_UNUSED : TSK_FS_META_FLAG_USED;
+
     if ((a_selection_flags & dentry_flags) != dentry_flags) {
+        return 1;
+    }
+
+    // RJCTODO: Correct this comment
+    /* If the processing flags call for only processing orphan 
+        * files, check whether or not this inode is in the seen 
+        * list.*/
+    if ((dentry_flags & TSK_FS_META_FLAG_UNALLOC) &&
+        (a_selection_flags & TSK_FS_META_FLAG_ORPHAN) &&
+        (tsk_fs_dir_find_inum_named(&(a_fatfs->fs_info), a_inum))) {
         return 1;
     }
 

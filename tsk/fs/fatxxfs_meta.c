@@ -328,7 +328,6 @@ attr2mode(uint16_t attr)
     return mode;
 }
 
-
 TSK_RETVAL_ENUM
 fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
     FATFS_DENTRY *a_dentry, TSK_DADDR_T sect, TSK_INUM_T inum)
@@ -791,8 +790,9 @@ fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
 }
 
 uint8_t
-fatxxfs_should_skip_dentry(FATFS_DENTRY *a_dentry, 
-    unsigned int a_selection_flags, int a_cluster_is_alloc)
+fatxxfs_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+    FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
+    int a_cluster_is_alloc)
 {
     FATXXFS_DENTRY *dentry = NULL;
     unsigned int dentry_flags = 0;
@@ -830,11 +830,22 @@ fatxxfs_should_skip_dentry(FATFS_DENTRY *a_dentry,
         return 1;
     }
 
+    // RJCTODO: Correct this comment
     /* Compare FAT slot usage with the inode selection flags. */
     dentry_flags |= (dentry->name[0] == FATFS_SLOT_EMPTY ?
         TSK_FS_META_FLAG_UNUSED : TSK_FS_META_FLAG_USED);
 
     if ((a_selection_flags & dentry_flags) != dentry_flags) {
+        return 1;
+    }
+
+    // RJCTODO: Correct this comment
+    /* If the processing flags call for only processing orphan 
+        * files, check whether or not this inode is in the seen 
+        * list.*/
+    if ((dentry_flags & TSK_FS_META_FLAG_UNALLOC) &&
+        (a_selection_flags & TSK_FS_META_FLAG_ORPHAN) &&
+        (tsk_fs_dir_find_inum_named(&(a_fatfs->fs_info), a_inum))) {
         return 1;
     }
 

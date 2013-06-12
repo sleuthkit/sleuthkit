@@ -453,6 +453,14 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
         /* Record the inum associated with this name. */
         a_name_info->fs_name->meta_addr =  a_inum;
 
+        /* Not a directory. */
+        a_name_info->fs_name->type = TSK_FS_NAME_TYPE_REG;
+
+        // RJCTODO: Give this some thought.
+        if (a_name_info->sector_is_allocated) {
+            a_name_info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;    
+        }
+
         /* Save the volume label. */
         exfatfs_add_name_to_dir_and_reset_info(a_name_info);
     }
@@ -510,6 +518,14 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
         case EXFATFS_DIR_ENTRY_TYPE_ACT:
             strcpy(a_name_info->fs_name->name, EXFATFS_ACT_VIRT_FILENAME);
             break;
+    }
+
+    /* Not a directory. */
+    a_name_info->fs_name->type = TSK_FS_NAME_TYPE_REG;
+
+    // RJCTODO: Give this some thought.
+    if (a_name_info->sector_is_allocated) {
+        a_name_info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;    
     }
 
     /* Save the virtual file name. */

@@ -204,8 +204,9 @@ extern "C" {
         FILE *a_hFile);
 
     extern uint8_t
-    fatxxfs_should_skip_dentry(FATFS_DENTRY *a_dentry, 
-        unsigned int a_selection_flags, int a_cluster_is_alloc);
+    fatxxfs_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
+        FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
+        int a_cluster_is_alloc);
 
     extern TSK_RETVAL_ENUM
     fatxxfs_dent_parse_buf(FATFS_INFO * fatfs, TSK_FS_DIR * a_fs_dir, char *buf,

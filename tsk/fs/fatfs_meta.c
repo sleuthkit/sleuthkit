@@ -1080,7 +1080,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     TSK_DADDR_T sect = 0; 
     char *dino_buf = NULL;
     FATFS_DENTRY *dep = NULL;
-    unsigned int myflags = 0;
     unsigned int dentry_idx = 0;
     uint8_t *dir_sectors_bitmap = NULL;
     ssize_t cnt = 0;
@@ -1461,26 +1460,17 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                  * inode for the purposes of an inode walk, or an entry that
                  * satisfies the inode selection flags. */
                 if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
-                    dentry_type = exfatfs_is_dentry(fatfs, dep, cluster_is_alloc);
+                    dentry_type = exfatfs_is_dentry(fatfs, dep, cluster_is_alloc); // RJCTODO: Resolve this isse - NONE vs. UNUSED
                     if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_NONE || 
-                        exfatfs_should_skip_dentry(dep, flags, cluster_is_alloc)) {
+                        exfatfs_should_skip_dentry(fatfs, inum, dep, flags, cluster_is_alloc)) {
                         continue;
                     }
                 }
                 else { 
                     if (!fatfs_is_dentry(fatfs, dep, do_basic_dentry_test) ||
-                        fatxxfs_should_skip_dentry(dep, flags, cluster_is_alloc)) {
+                        fatxxfs_should_skip_dentry(fatfs, inum, dep, flags, cluster_is_alloc)) {
                         continue;
                     }
-                }
-
-                /* If the processing flags call for only processing orphan 
-                 * files, check whether or not this inode is in the seen 
-                 * list.*/
-                if ((myflags & TSK_FS_META_FLAG_UNALLOC) &&
-                    (flags & TSK_FS_META_FLAG_ORPHAN) &&
-                    (tsk_fs_dir_find_inum_named(a_fs, inum))) {
-                    continue;
                 }
 
                 /* Copy the directory entry data into the inode structure for the callback. */
