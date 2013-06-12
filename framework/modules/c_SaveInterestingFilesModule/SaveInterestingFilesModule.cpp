@@ -75,8 +75,13 @@ namespace
 
         Poco::AutoPtr<Poco::XML::Element> originalPathElement = report->createElement("OriginalPath");        
         fileElement->appendChild(originalPathElement);
-        Poco::AutoPtr<Poco::XML::Text> originalPathText = report->createTextNode(file.getUniquePath());
+        Poco::AutoPtr<Poco::XML::Text> originalPathText = report->createTextNode(file.getFullPath());
         originalPathElement->appendChild(originalPathText);
+
+        Poco::AutoPtr<Poco::XML::Element> uniquePathElement = report->createElement("UniquePath");        
+        fileElement->appendChild(uniquePathElement);
+        Poco::AutoPtr<Poco::XML::Text> uniquePathText = report->createTextNode(file.getUniquePath());
+        uniquePathElement->appendChild(uniquePathText);
 
         if (file.getMetaType() != TSK_FS_META_TYPE_DIR)
         {
@@ -90,33 +95,29 @@ namespace
 
     void saveDirectoryContents(const std::string &dirPath, const TskFile &dir, Poco::XML::Document *report)
     {
-        // Construct a query for the file records corresponding to the files in the directory and fetch them.
-        std::stringstream condition; 
-        condition << "WHERE par_file_id = " << dir.getId();
-        const std::vector<TskFileRecord> fileRecs = TskServices::Instance().getImgDB().getFileRecords(condition.str());
+        // Get a list corresponding to the files in the directory.
+        TskFileManager::AutoFilePtrList files(TskServices::Instance().getFileManager().findFilesByParent(dir.getId()));
 
         // Save each file and subdirectory in the directory.
-        for (std::vector<TskFileRecord>::const_iterator fileRec = fileRecs.begin(); fileRec != fileRecs.end(); ++fileRec)
+        for (TskFileManager::FilePtrList::iterator file = files.begin(); file != files.end(); ++file)
         {
-            std::auto_ptr<TskFile> file(TskServices::Instance().getFileManager().getFile((*fileRec).fileId));
-
-            if (file->getMetaType() == TSK_FS_META_TYPE_DIR)
+            if ((*file)->getMetaType() == TSK_FS_META_TYPE_DIR)
             {
                 // Create a subdirectory to hold the contents of this subdirectory.
                 Poco::Path subDirPath(Poco::Path::forDirectory(dirPath));
-                subDirPath.pushDirectory(file->getName());
+                subDirPath.pushDirectory((*file)->getName());
                 Poco::File(subDirPath).createDirectory();
                 
                 // Recurse into the subdirectory.
-                saveDirectoryContents(subDirPath.toString(), *file, report);
+                saveDirectoryContents(subDirPath.toString(), **file, report);
             }
             else
             {
                 // Save the file.
                 std::stringstream filePath;
-                filePath << dirPath << Poco::Path::separator() << file->getName();
-                TskServices::Instance().getFileManager().copyFile(file.get(), TskUtilities::toUTF16(filePath.str()));
-                addFileToReport(*file, filePath.str(), report);
+                filePath << dirPath << Poco::Path::separator() << (*file)->getName();
+                TskServices::Instance().getFileManager().copyFile(*file, TskUtilities::toUTF16(filePath.str()));
+                addFileToReport(**file, (*file)->getName(), report);
             }
         }
     }
@@ -171,7 +172,7 @@ namespace
         // Save the file.
         TskServices::Instance().getFileManager().copyFile(file.getId(), TskUtilities::toUTF16(filePath.str()));
 
-        addFileToReport(file, filePath.str(), report);
+        addFileToReport(file, fileName.c_str(), report);
     }
 
     void saveFiles(const std::string &setName, const std::string &setDescription, FileSetHitsRange fileSetHitsRange)
@@ -273,7 +274,7 @@ extern "C"
             }
             outputFolderPath = outputDirPath.toString();
 
-            Poco::File(outputDirPath).createDirectory();
+            Poco::File(outputDirPath).createDirectories();
         }
         catch (TskException &ex)
         {
@@ -413,6 +414,8 @@ extern "C"
         const std::string MSG_PREFIX = "SaveInterestingFilesModule::finalize : ";
         try
         {
+            #if !defined(_DEBUG) 
+
             Poco::File outputFolder(outputFolderPath);
             std::vector<Poco::File> filesList;
             outputFolder.list(filesList);
@@ -420,6 +423,8 @@ extern "C"
             {
                 outputFolder.remove(true);
             }
+
+            #endif
         }
         catch (TskException &ex)
         {

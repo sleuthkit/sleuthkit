@@ -35,6 +35,43 @@ namespace
     const char *MODULE_VERSION = "1.0.0";
 }
 
+namespace
+{
+    std::set<uint64_t> fileIdsToSchedule;
+
+    /**
+     * Schedule files for analysis. Iterates over the fileIdsToSchedule
+     * set calling Scheduler::schedule() for each consecutive range of
+     * file ids.
+     */
+    void scheduleFiles()
+    {
+        if (fileIdsToSchedule.empty())
+            return;
+
+        Scheduler& scheduler = TskServices::Instance().getScheduler();
+
+        std::set<uint64_t>::const_iterator it = fileIdsToSchedule.begin();
+        uint64_t startId = *it, endId = *it;
+
+        while (++it != fileIdsToSchedule.end())
+        {
+            if (*it > endId + 1)
+            {
+                scheduler.schedule(Scheduler::FileAnalysis, startId, endId);
+                startId = endId = *it;
+            }
+            else
+            {
+                endId++;
+            }
+        }
+
+        scheduler.schedule(Scheduler::FileAnalysis, startId, endId);
+        fileIdsToSchedule.clear();
+    }
+}
+
 /**
  * Get the file id corresponding to the last directory on the given path.
  * If elements along the path have not been seen before, create new entries
@@ -84,10 +121,7 @@ static uint64_t getParentIdForPath(Poco::Path& path, const uint64_t fileId, std:
                                          parentId,
                                          fullpath) == -1)
             {
-                std::wstringstream msg;
-                msg << L"ZipExtractionModule - addDerivedFileInfo failed for name="
-                    << path[i].c_str();
-                LOGERROR(msg.str());
+                throw TskException("ZipExtraction::getParentIdForPath : Failed to add derived file for " + path[i]);
             }
 
             // Add the full path (to this point) and new id to the map.
@@ -95,6 +129,7 @@ static uint64_t getParentIdForPath(Poco::Path& path, const uint64_t fileId, std:
 
             // Update file status to indicate that it is ready for analysis.
             imgDB.updateFileStatus(parentId, TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS);
+            fileIdsToSchedule.insert(parentId);
         }
         else
         {
@@ -259,12 +294,16 @@ extern "C"
                         msg << L"ZipExtractionModule - addDerivedFileInfo failed for name="
                             << name.c_str();
                         LOGERROR(msg.str());
+
+                        return TskModule::FAIL;
                 }
 
                 TskImgDB::FILE_STATUS fileStatus = TskImgDB::IMGDB_FILES_STATUS_READY_FOR_ANALYSIS;
 
                 if (path.isDirectory())
+                {
                     directoryMap[path.toString()] = fileId;
+                }
                 else
                 {
                     // Only DEFLATE and STORE compression methods are supported. The STORE method
@@ -275,9 +314,6 @@ extern "C"
                         // Save the file for subsequent processing.
                         Poco::Zip::ZipInputStream zipin(input, fh->second);
                         TskServices::Instance().getFileManager().addFile(fileId, zipin);
-
-						// Schedule subsequent processing.
-						TskServices::Instance().getScheduler().schedule(Scheduler::FileAnalysis, fileId, fileId);
                     }
                     else
                     {
@@ -292,7 +328,11 @@ extern "C"
 
                 // Update file status to indicate that it is ready for analysis.
                 imgDB.updateFileStatus(fileId, fileStatus);
+                fileIdsToSchedule.insert(fileId);
             }
+
+            // Schedule files for analysis
+            scheduleFiles();
         }
         catch (Poco::IllegalStateException&)
         {

@@ -97,7 +97,7 @@ extern "C"
             // Create an output folder.
             Poco::Path outputFolderPath = Poco::Path::forDirectory(GetSystemProperty(TskSystemProperties::MODULE_OUT_DIR));
             outputFolderPath.pushDirectory(MODULE_NAME);
-            Poco::File(outputFolderPath).createDirectory();
+            Poco::File(outputFolderPath).createDirectories();
 
             // Generate the report.
             outputFolderPath.setFileName("SummaryReport.htm");
@@ -145,6 +145,8 @@ extern "C"
         msgPrefix << MODULE_NAME << "::finalize : ";
         try
         {
+            #if !defined(_DEBUG) 
+
             // Delete the output folder if it's empty.
             Poco::Path outputFolderPath = Poco::Path::forDirectory(GetSystemProperty(TskSystemProperties::MODULE_OUT_DIR));
             outputFolderPath.pushDirectory(MODULE_NAME);
@@ -155,6 +157,8 @@ extern "C"
             {
                 outputFolder.remove(true);
             }
+
+            #endif
 
             return TskModule::OK;
         }

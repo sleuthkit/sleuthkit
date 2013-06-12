@@ -35,7 +35,7 @@ namespace
 {
     const char *MODULE_NAME = "tskFileTypeSigModule";
     const char *MODULE_DESCRIPTION = "Determines file type based on signature using libmagic";
-    const char *MODULE_VERSION = "1.0.0";
+    const char *MODULE_VERSION = "1.0.3";
 
   static const uint32_t FILE_BUFFER_SIZE = 1024;
 

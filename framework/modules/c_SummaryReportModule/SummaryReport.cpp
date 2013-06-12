@@ -149,7 +149,18 @@ namespace
                 {
                     fsInfo = (*iter2); 
                     if(fsInfo.vol_id == vol_info.vol_id)
-                        out << "<td>" << tsk_fs_type_toname((TSK_FS_TYPE_ENUM)fsInfo.fs_type) << "</td>" << std::endl;
+                    {
+                        const char* fsName = tsk_fs_type_toname((TSK_FS_TYPE_ENUM)fsInfo.fs_type);
+                        if (!fsName)
+                        {
+                            out << "<td>Name of file system type is unknown.</td>" << std::endl;
+                            LOGERROR("writeReport: Name of file system type is unknown.");
+                        }
+                        else
+                        {
+                            out << "<td>" << fsName << "</td>" << std::endl;
+                        }
+                    }
                 }
 
                 out << "</tr>" << std::endl;
@@ -164,6 +175,14 @@ namespace
             condition << "WHERE files.dir_type = " << TSK_FS_NAME_TYPE_REG 
                       << " AND files.type_id = " << TskImgDB::IMGDB_FILES_TYPE_FS;
             out << "<td><b>File System:</b></td>";
+            out << "<td>" << imgdb.getFileCount(condition.str()) << "</td>" << std::endl;
+            out << "</tr>" << std::endl;
+
+            out << "<tr>" << std::endl;
+            condition.str("");
+            condition << "WHERE files.dir_type = " << TSK_FS_NAME_TYPE_REG 
+                      << " AND files.type_id = " << TskImgDB::IMGDB_FILES_TYPE_DERIVED;
+            out << "<td><b>Derived:</b></td>";
             out << "<td>" << imgdb.getFileCount(condition.str()) << "</td>" << std::endl;
             out << "</tr>" << std::endl;
 
