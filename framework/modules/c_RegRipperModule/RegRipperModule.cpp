@@ -135,13 +135,15 @@ namespace
         TskBlackboardArtifact osart = pFile->createArtifact(TSK_OS_INFO);
         for (size_t i = 0; i < names.size(); i++)
         {
-            osart.addAttribute(TskBlackboardAttribute(TSK_NAME, MODULE_NAME, "", names[i]));
+            TskBlackboardAttribute attr(TSK_NAME, MODULE_NAME, "", names[i]);
+            osart.addAttribute(attr);
         }
 
         vector<std::string> versions = getRegRipperValues(fileName, "CSDVersion");
         for (size_t i = 0; i < versions.size(); i++)
         {
-            osart.addAttribute(TskBlackboardAttribute(TSK_VERSION, MODULE_NAME, "", versions[i]));
+            TskBlackboardAttribute attr(TSK_VERSION, MODULE_NAME, "", versions[i]);
+            osart.addAttribute(attr);
         }
     }
 
@@ -159,11 +161,13 @@ namespace
         {
             if (names[i].compare("AMD64") == 0)
             {
-                osart.addAttribute(TskBlackboardAttribute(TSK_PROCESSOR_ARCHITECTURE, MODULE_NAME, "", "x86-64"));
+                TskBlackboardAttribute attr(TSK_PROCESSOR_ARCHITECTURE, MODULE_NAME, "", "x86-64");
+                osart.addAttribute(attr);
             }
             else
             {
-                osart.addAttribute(TskBlackboardAttribute(TSK_PROCESSOR_ARCHITECTURE, MODULE_NAME, "", names[i]));
+                TskBlackboardAttribute attr(TSK_PROCESSOR_ARCHITECTURE, MODULE_NAME, "", names[i]);
+                osart.addAttribute(attr);
             }
         }
     }
