@@ -1,0 +1,24 @@
+Numbers refer to github.net issue #s:
+    https://github.com/sleuthkit/c_RegRipperModule/issues
+
+---------------- VERSION 1.0.2 --------------
+New Features:
+- Added support for using an interpreter command as the exe path argument.
+- Merged master branch and linux-build branch
+- Updated to RegRipper v2.5
+- Output files now have MD5 included in name.
+    
+---------------- VERSION 1.0.1 --------------
+New Features:
+- Added ability to search output for a specific string.
+- Added processorarchitecture.pl plugin.
+
+Bug Fixes:
+- N/A. 
+
+---------------- VERSION 1.0.0 --------------
+New Features:
+- Initial public release.
+
+Bug Fixes:
+- N/A. 

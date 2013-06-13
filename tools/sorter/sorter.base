@@ -12,7 +12,7 @@
 use strict;
 use integer;
 
-my $SHARE_DIR = "$DATA_DIR/tsk3/sorter/";
+my $SHARE_DIR = "$DATA_DIR/tsk/sorter/";
 
 my $SK_FLS     = "${BIN_DIR}/fls";
 my $SK_ICAT    = "${BIN_DIR}/icat";
@@ -1418,9 +1418,11 @@ sub set_platform {
     }
     elsif (($FSTYPE eq "-f linux-ext2")
         || ($FSTYPE eq "-f linux-ext3")
+        || ($FSTYPE eq "-f linux-ext4")
         || ($FSTYPE eq "-f ext")
         || ($FSTYPE eq "-f ext2")
-        || ($FSTYPE eq "-f ext3"))
+        || ($FSTYPE eq "-f ext3")
+        || ($FSTYPE eq "-f ext4"))
     {
         $PLATFORM = "linux";
     }

@@ -1,0 +1,9 @@
+Numbers refer to github.net issue #s:
+    https://github.com/sleuthkit/c_TskHashLookupModule/issues
+
+---------------- VERSION 1.0.0 --------------
+New Features:
+- Initial public release.
+
+Bug Fixes:
+- N/A. 

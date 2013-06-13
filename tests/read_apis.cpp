@@ -17,7 +17,7 @@
  * not all files can be tested with the latter options because the file
  * could be sparse or compressed. 
  */
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 
 static TSK_FS_FILE *s_file2;
 static TSK_OFF_T s_off;

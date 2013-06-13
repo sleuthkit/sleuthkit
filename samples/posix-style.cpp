@@ -38,7 +38,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <tsk3/libtsk.h>
+#include <tsk/libtsk.h>
 
 
 /**

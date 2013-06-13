@@ -1,5 +1,15 @@
 #!/bin/sh
 aclocal \
-    && (libtoolize || glibtoolize) \
-    && automake --foreign --add-missing \
+    && (libtoolize -c --force || glibtoolize -c --force) \
+    && automake --foreign --add-missing --copy \
     && autoconf
+
+for m in `ls modules`
+do
+    (cd modules;
+    if test -d $m; then
+        echo $m
+        (cd $m; sh ./bootstrap)
+    fi;
+    )
+done

@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RegRipperModule", "RegRipperModule.vcxproj", "{4DD49717-8C15-4E07-8C18-D47A093184AA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4DD49717-8C15-4E07-8C18-D47A093184AA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4DD49717-8C15-4E07-8C18-D47A093184AA}.Debug|Win32.Build.0 = Debug|Win32
+		{4DD49717-8C15-4E07-8C18-D47A093184AA}.Release|Win32.ActiveCfg = Release|Win32
+		{4DD49717-8C15-4E07-8C18-D47A093184AA}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

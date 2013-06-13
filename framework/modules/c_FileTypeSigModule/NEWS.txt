@@ -1,0 +1,18 @@
+Numbers refer to github.net issue #s:
+    https://github.com/sleuthkit/c_FileTypeSigModule/issues
+    
+---------------- VERSION 1.0.3 --------------
+- Linux support
+
+---------------- VERSION 1.0.2 --------------
+- Log message update
+
+---------------- VERSION 1.0.1 --------------
+
+
+---------------- VERSION 1.0.0 --------------
+New Features:
+- Initial public release.
+
+Bug Fixes:
+- N/A. 

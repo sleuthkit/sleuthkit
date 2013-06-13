@@ -259,25 +259,28 @@ sub package_core {
 sub build_framework {
 	print "Building TSK framework\n";
 
-	chdir "framework/win32/framework" or die "error changing directory into framework/win32";
+	chdir "framework/msvcpp/framework" or die "error changing directory into framework/msvcpp";
 	# Get rid of everything in the release dir (since we'll be doing * copy)
 	`rm -rf Release`;
 	`rm -f BuildErrors.txt`;
 	# This was not needed for VS2008, but is for VS2010
-	`rm -rf ../../TskModules/*/win32/Release`;
+	`rm -rf ../../modules/*/win32/Release`;
 
 	# 2008 version
 	#`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
 	# 2010 version
 	`msbuild.exe framework.sln /p:Configuration=Release /clp:ErrorsOnly /nologo > BuildErrors.txt`;
-	die "Build errors -- check framework/win32/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
+	die "Build errors -- check framework/msvcpp/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
 
+	chdir "../..";
+
+	chdir "runtime";
 	# Do a basic check on some of the executables
-	die "libtskframework.dll missing" unless (-x "Release/libtskframework.dll");
-	die "tsk_analyzeimg missing" unless (-x "Release/tsk_analyzeimg.exe");
-	die "HashCalcModule.dll missing" unless (-x "Release/HashCalcModule.dll");
+	die "libtskframework.dll missing" unless (-x "libtskframework.dll");
+	die "tsk_analyzeimg missing" unless (-x "tsk_analyzeimg.exe");
+	die "tskHashCalcModule.dll missing" unless (-x "tskHashCalcModule.dll");
+	chdir "../..";
 
-	chdir "../../..";
 }
 
 sub package_framework {
@@ -296,11 +299,9 @@ sub package_framework {
 	mkdir ("${rdir}/licenses") or die "error making licenses release directory: $rdir";
 	mkdir ("${rdir}/docs") or die "error making docs release directory: $rdir";
 
-	chdir "framework" or die "error changing directory into framework";
 
 	# Copy the files
-	chdir "win32/framework/Release" or die "Error changing directory into release / framework";
-
+	chdir "framework/runtime" or die "Error changing directory into runtime";
 	`cp *.exe \"${rdir}/bin\"`;
 	`cp libtsk*.dll \"${rdir}/bin\"`;
 	`cp Poco*.dll \"${rdir}/bin\"`;
@@ -309,8 +310,9 @@ sub package_framework {
 
 	
 	# Copy the modules and config dirs
-	opendir(DIR, ".") or die "Error opening framework release folder";
+	opendir(DIR, ".") or die "Error opening framework runtime folder";
 	while(my $f = readdir(DIR)) {
+        # Skip it unless it ends in Module.dll
 		next unless ($f =~ /Module\.dll$/);
 		`cp \"$f\" \"${rdir}/modules\"`;
 		my $base = $1 if ($f =~ /^(.*)\.dll$/);
@@ -324,11 +326,12 @@ sub package_framework {
 
 	# Special case libs
 	# libmagic
+    die unless (-e "libmagic-1.dll");
 	`cp libmagic-1.dll \"${rdir}/modules\"`;
+    die unless (-e "libgnurx-0.dll");
 	`cp libgnurx-0.dll \"${rdir}/modules\"`;
 
-	chdir "../../..";
-
+	chdir "..";
 
 	`cp SampleConfig/framework_config_bindist.xml \"${rdir}/bin/framework_config.xml\"`;
 	`unix2dos \"${rdir}/bin/framework_config.xml\" 2> /dev/null`;
@@ -339,15 +342,14 @@ sub package_framework {
 
 
 	# Copy the readme files for each module
-	opendir(my $modDir, "./TskModules") or die "Error opening TskModules folder";
+	opendir(my $modDir, "./modules") or die "Error opening modules folder";
 	while(my $f = readdir($modDir)) {
 		next unless ($f =~ /^c_\w+/);
-		if (-f "TskModules/$f/README.txt") {
-			`cp TskModules/$f/README.txt \"${rdir}/docs/README_${f}.txt\"`;
+		if (-f "modules/$f/README.txt") {
+			`cp modules/$f/README.txt \"${rdir}/docs/README_${f}.txt\"`;
 			`unix2dos \"${rdir}/docs/README_${f}.txt\" 2> /dev/null`;
-			`cp TskModules/$f/NEWS.txt \"${rdir}/docs/NEWS_${f}.txt\"`;
+			`cp modules/$f/NEWS.txt \"${rdir}/docs/NEWS_${f}.txt\"`;
 			`unix2dos \"${rdir}/docs/NEWS_${f}.txt\" 2> /dev/null`;
-			
 		}
 		else {
 			print "Didn't find readme in $f\n";
@@ -392,9 +394,9 @@ sub package_framework {
 
 # Assumes path in /cygwin/style
 sub copy_runtime_2010 { 
-    	my $dest = shift(@_);
-	`cp /cygdrive/c/windows/system32/msvcp100.dll \"$dest\"`;
-	`cp /cygdrive/c/windows/system32/msvcr100.dll \"$dest\"`;
+    my $dest = shift(@_);
+    `cp /cygdrive/c/windows/system32/msvcp100.dll \"$dest\"`;
+    `cp /cygdrive/c/windows/system32/msvcr100.dll \"$dest\"`;
 }
 
 chdir ("$TSKDIR") or die "Error changing to TSK dir $TSKDIR";

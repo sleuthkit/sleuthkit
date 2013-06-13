@@ -9,7 +9,7 @@
  * This software is distributed under the Covson Public License 1.0
  */
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 
 #ifdef TSK_WIN32
 #include <fcntl.h>

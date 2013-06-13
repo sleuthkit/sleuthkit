@@ -1,0 +1,74 @@
+2007-05-07  Keith Marshall  <keithmarshall@users.sourceforge.net>
+
+	Another bug reported by Julien Lecomte <julien@famille-lecomte.net>
+
+	* Makefile.in (gnurx-version.dll): Pass CFLAGS in link command.
+
+	* configure.ac (LDFLAGS): Append; don't override user's settings.
+	(MINGW_AC_DEFINE_PACKAGE_ID): Increment `PATCHLEVEL'.
+	* configure: Regenerated.
+
+2007-05-05  Keith Marshall  <keithmarshall@users.sourceforge.net>
+
+	* Makefile.in (SRCDIST_FILES): Remove reference to `nomsvc'.
+
+2007-05-03  Keith Marshall  <keithmarshall@users.sourceforge.net>
+
+	Add `--enable-msvc-implib' configuration option.
+
+	* README (--enable-msvc-implib): Document it.
+	* aclocal.m4 (MINGW_AC_MSVC_IMPORT_LIBS): New macro; implement it.
+
+	* configure.ac (MINGW_AC_MSVC_IMPORT_LIBS): Use it to define...
+	(GNURX_LIB): ...this; no longer set explicitly.
+	* configure: Regenerated.
+
+	* Makefile.in (GNURX_LIB): Use AC_SUBST result, in place of...
+	(gnurx.lib): ...this, as a prequisite for `all' target.
+	(MSVCLIB): Define explicitly; do not use AC_SUBST result.
+
+	* nomsvc: File deleted; it is obsoleted by...
+	(MINGW_AC_MSVC_IMPORT_LIBS): ...this aclocal.m4 macro.
+
+2007-05-02  Keith Marshall  <keithmarshall@users.sourceforge.net>
+
+	Fix bugs reported by Julien Lecomte <julien@famille-lecomte.net>
+
+	* Makefile.in (OBJECTS): Make them depend on `Makefile', to ensure
+	that they will be recompiled after any rerun of `configure'.
+	(DEVDIST_FILES): Don't duplicate `regex.h' in `lib'; it's already
+	explicitly copied to `include'.
+
+2007-04-30  Keith Marshall  <keithmarshall@users.sourceforge.net>
+
+	Adaptation for distribution as MinGW contributed package.
+
+	* aclocal.m4, configure.ac, pkgid.m4: New files.
+	* configure: New file; generated.
+
+	* Makefile: Deleted; replaced by...
+	* Makefile.in: ...this; adapted from `Makefile', with...
+	(PACKAGE): New macro, renames original `THIS' macro.
+	(install, install-dll, install-dev): New installation targets.
+	(bindist, devdist, srcdist): New distribution targets.
+	(DLLVERSION): New macro; replaces hard coded DLL version tag.
+	(srcdir, VPATH): New AC_SUBSTed macros, supporting VPATH build.
+	(prefix, exec_prefix, bindir, libdir, includedir, mandir): AC_SUBSTed
+	macros, specifying installation directories.
+	(LDFLAGS): AC_SUBSTed linker flags.
+	(MSVCLIB): New macro; AC_SUBSTed to invoke or avoid use of `lib'.
+	(ZIPCMD, ZIPEXT): New macros; AC_SUBSTed to control packaging format.
+	(BINDIST_FILES, DEVDIST_FILES, SRCDIST_FILES): New macros.
+
+	* nomsvc: New helper script; invoked if MSVC `lib' not installed.
+
+	* regex.3, regex.7: New files; manpage sources copied from GNU/Linux.
+
+	* README: Add preamble, describing changes for this distribution.
+
+2007-04-27  Keith Marshall  <keithmarshall@users.sourceforge.net>
+
+	Initial import of Tor Lillqvist's port of GNU glibc regex package.
+
+	* MinGW: Vendor tag assigned.
+	* r2-5: Release tag assigned.

@@ -18,12 +18,12 @@
  */
 
 /* config.h must be first */
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 #include "fiwalk.h"
 #include "arff.h"
 #include "plugin.h"
 #include "unicode_escape.h"
-#include "tsk3/fs/tsk_fatfs.h"
+#include "tsk/fs/tsk_fatfs.h"
 
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
@@ -139,8 +139,8 @@ file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char *buf,
     return TSK_WALK_CONT;
 }
 
-/* This is modeled on print_dent_act printit in ./tsk3/fs/fls_lib.c
- * See also tsk_fs_name_print() in ./tsk3/fs/fs_name.c
+/* This is modeled on print_dent_act printit in ./tsk/fs/fls_lib.c
+ * See also tsk_fs_name_print() in ./tsk/fs/fs_name.c
  */
 
 static uint8_t

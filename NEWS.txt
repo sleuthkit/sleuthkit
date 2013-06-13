@@ -1,6 +1,17 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.1.0 --------------
+Core:
+- Added YAFFS2 support (patch from viaForensics).
+- Added Ext4 support (patch from kfairbanks)
+ 
+Framework:
+- Added Linux and MAC support.
+- Added L01 support.
+- Added APIs to find files by name, path and extension.
+- Removed deprecated TskFile::getAttributes methods.
+
 ---------------- VERSION Current --------------
 	
 	

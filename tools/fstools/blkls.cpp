@@ -23,7 +23,7 @@
  *	P.O. Box 704
  *	Yorktown Heights, NY 10598, USA
  */
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 #include <locale.h>
 
 static TSK_TCHAR *progname;

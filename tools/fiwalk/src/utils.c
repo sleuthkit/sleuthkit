@@ -11,7 +11,7 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
-#include "tsk3/tsk_config.h"
+#include "tsk/tsk_config.h"
 #include "utils.h"
 
 #ifdef HAVE_UNISTD_H
