@@ -486,6 +486,37 @@ fatfs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum)
 
 /* return 1 on error and 0 on success */
 uint8_t
+fatfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
+    tsk_error_set_errstr("fscheck not implemented for FAT yet");
+    return 1;
+
+    /* Check that allocated dentries point to start of allcated cluster chain */
+
+
+    /* Size of file is consistent with cluster chain length */
+
+
+    /* Allocated cluster chains have a corresponding alloc dentry */
+
+
+    /* Non file dentries have no clusters */
+
+
+    /* Only one volume label */
+
+
+    /* Dump Bad Sector Addresses */
+
+
+    /* Dump unused sector addresses 
+     * Reserved area, end of FAT, end of Data Area */
+}
+
+/* return 1 on error and 0 on success */
+uint8_t
 fatfs_jentry_walk(TSK_FS_INFO * fs, int a_flags,
     TSK_FS_JENTRY_WALK_CB a_action, void *a_ptr)
 {
@@ -521,3 +552,4 @@ fatfs_close(TSK_FS_INFO *fs)
 	
     tsk_fs_free(fs);
 }
+

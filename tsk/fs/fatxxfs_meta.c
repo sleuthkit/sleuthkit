@@ -830,8 +830,7 @@ fatxxfs_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         return 1;
     }
 
-    // RJCTODO: Correct this comment
-    /* Compare FAT slot usage with the inode selection flags. */
+    /* Has this directory entry (slot) been used? */
     dentry_flags |= (dentry->name[0] == FATFS_SLOT_EMPTY ?
         TSK_FS_META_FLAG_UNUSED : TSK_FS_META_FLAG_USED);
 

@@ -322,38 +322,6 @@ fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust, TSK_DADDR_T * value)
     }
 }
 
-/* return 1 on error and 0 on success */
-static uint8_t
-fatfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
-{
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
-    tsk_error_set_errstr("fscheck not implemented for FAT yet");
-    return 1;
-
-    /* Check that allocated dentries point to start of allcated cluster chain */
-
-
-    /* Size of file is consistent with cluster chain length */
-
-
-    /* Allocated cluster chains have a corresponding alloc dentry */
-
-
-    /* Non file dentries have no clusters */
-
-
-    /* Only one volume label */
-
-
-    /* Dump Bad Sector Addresses */
-
-
-    /* Dump unused sector addresses 
-     * Reserved area, end of FAT, end of Data Area */
-
-}
-
 /**
  * Print details about the file system to a file handle. 
  *
@@ -363,7 +331,7 @@ fatfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-fatfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
+fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 {
     unsigned int i;
     int a;
@@ -390,7 +358,7 @@ fatfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2("fatfs_fsstat: root directory: %" PRIuDADDR,
+        tsk_error_set_errstr2("fatxxfs_fsstat: root directory: %" PRIuDADDR,
             fatfs->rootsect);
         free(data_buf);
         return 1;
@@ -513,7 +481,7 @@ fatfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
                 tsk_error_set_errstr2
-                    ("fatfs_fsstat: TSK_FS_TYPE_FAT32 FSINFO block: %"
+                    ("fatxxfs_fsstat: TSK_FS_TYPE_FAT32 FSINFO block: %"
                     PRIuDADDR, (TSK_DADDR_T) tsk_getu16(fs->endian,
                         sb->a.f32.fsinfo));
                 free(data_buf);
@@ -1104,7 +1072,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
     fs->dir_open_meta = fatfs_dir_open_meta;
     fs->name_cmp = fatfs_name_cmp;
 
-    fs->fsstat = fatfs_fsstat;
+    fs->fsstat = fatxxfs_fsstat;
     fs->fscheck = fatfs_fscheck;
 
     fs->close = fatfs_close;

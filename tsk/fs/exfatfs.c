@@ -31,6 +31,390 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
+/**
+ * Print details about the file system to a file handle. 
+ *
+ * @param fs File system to print details on
+ * @param hFile File handle to print text to
+ * 
+ * @returns 1 on error and 0 on success
+ */
+static uint8_t
+exfatfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
+{
+    //unsigned int i;
+    //int a;
+    //TSK_DADDR_T next, snext, sstart, send;
+    //FATFS_INFO *fatfs = (FATFS_INFO *) fs;
+    //fatfs_sb *sb = (fatfs_sb*)fatfs->boot_sector_buffer;
+    //char *data_buf;
+    //FATXXFS_DENTRY *de;
+    //ssize_t cnt;
+
+    //// clean up any error messages that are lying around
+    //tsk_error_reset();
+
+    //if ((data_buf = (char *) tsk_malloc(fs->block_size)) == NULL) {
+    //    return 1;
+    //}
+
+
+    ///* Read the root directory sector so that we can get the volume
+    // * label from it */
+    //cnt = tsk_fs_read_block(fs, fatfs->rootsect, data_buf, fs->block_size);
+    //if (cnt != fs->block_size) {
+    //    if (cnt >= 0) {
+    //        tsk_error_reset();
+    //        tsk_error_set_errno(TSK_ERR_FS_READ);
+    //    }
+    //    tsk_error_set_errstr2("fatfs_fsstat: root directory: %" PRIuDADDR,
+    //        fatfs->rootsect);
+    //    free(data_buf);
+    //    return 1;
+    //}
+
+
+    ///* Find the dentry that is set as the volume label */
+    //de = (FATXXFS_DENTRY *) data_buf;
+    //for (i = 0; i < fatfs->ssize; i += sizeof(*de)) {
+    //    if (de->attrib == FATFS_ATTR_VOLUME)
+    //        break;
+    //    de++;
+    //}
+    ///* If we didn't find it, then reset de */
+    //if (de->attrib != FATFS_ATTR_VOLUME)
+    //    de = NULL;
+
+
+    ///* Print the general file system information */
+
+    //tsk_fprintf(hFile, "FILE SYSTEM INFORMATION\n");
+    //tsk_fprintf(hFile, "--------------------------------------------\n");
+
+    //tsk_fprintf(hFile, "File System Type: FAT");
+    //if (fs->ftype == TSK_FS_TYPE_FAT12)
+    //    tsk_fprintf(hFile, "12\n");
+    //else if (fs->ftype == TSK_FS_TYPE_FAT16)
+    //    tsk_fprintf(hFile, "16\n");
+    //else if (fs->ftype == TSK_FS_TYPE_FAT32)
+    //    tsk_fprintf(hFile, "32\n");
+    //else
+    //    tsk_fprintf(hFile, "\n");
+
+    //tsk_fprintf(hFile, "\nOEM Name: %c%c%c%c%c%c%c%c\n", sb->oemname[0],
+    //    sb->oemname[1], sb->oemname[2], sb->oemname[3], sb->oemname[4],
+    //    sb->oemname[5], sb->oemname[6], sb->oemname[7]);
+
+
+    //if (fatfs->fs_info.ftype != TSK_FS_TYPE_FAT32) {
+    //    tsk_fprintf(hFile, "Volume ID: 0x%" PRIx32 "\n",
+    //        tsk_getu32(fs->endian, sb->a.f16.vol_id));
+
+    //    tsk_fprintf(hFile,
+    //        "Volume Label (Boot Sector): %c%c%c%c%c%c%c%c%c%c%c\n",
+    //        sb->a.f16.vol_lab[0], sb->a.f16.vol_lab[1],
+    //        sb->a.f16.vol_lab[2], sb->a.f16.vol_lab[3],
+    //        sb->a.f16.vol_lab[4], sb->a.f16.vol_lab[5],
+    //        sb->a.f16.vol_lab[6], sb->a.f16.vol_lab[7],
+    //        sb->a.f16.vol_lab[8], sb->a.f16.vol_lab[9],
+    //        sb->a.f16.vol_lab[10]);
+
+    //    if ((de) && (de->name)) {
+    //        tsk_fprintf(hFile,
+    //            "Volume Label (Root Directory): %c%c%c%c%c%c%c%c%c%c%c\n",
+    //            de->name[0], de->name[1], de->name[2], de->name[3],
+    //            de->name[4], de->name[5], de->name[6], de->name[7],
+    //            de->ext[0], de->ext[1], de->ext[2]);
+    //    }
+    //    else {
+    //        tsk_fprintf(hFile, "Volume Label (Root Directory):\n");
+    //    }
+
+    //    tsk_fprintf(hFile, "File System Type Label: %c%c%c%c%c%c%c%c\n",
+    //        sb->a.f16.fs_type[0], sb->a.f16.fs_type[1],
+    //        sb->a.f16.fs_type[2], sb->a.f16.fs_type[3],
+    //        sb->a.f16.fs_type[4], sb->a.f16.fs_type[5],
+    //        sb->a.f16.fs_type[6], sb->a.f16.fs_type[7]);
+    //}
+    //else {
+
+    //    char *fat_fsinfo_buf;
+    //    fatfs_fsinfo *fat_info;
+
+    //    if ((fat_fsinfo_buf = (char *)
+    //            tsk_malloc(sizeof(fatfs_fsinfo))) == NULL) {
+    //        free(data_buf);
+    //        return 1;
+    //    }
+
+    //    tsk_fprintf(hFile, "Volume ID: 0x%" PRIx32 "\n",
+    //        tsk_getu32(fs->endian, sb->a.f32.vol_id));
+
+    //    tsk_fprintf(hFile,
+    //        "Volume Label (Boot Sector): %c%c%c%c%c%c%c%c%c%c%c\n",
+    //        sb->a.f32.vol_lab[0], sb->a.f32.vol_lab[1],
+    //        sb->a.f32.vol_lab[2], sb->a.f32.vol_lab[3],
+    //        sb->a.f32.vol_lab[4], sb->a.f32.vol_lab[5],
+    //        sb->a.f32.vol_lab[6], sb->a.f32.vol_lab[7],
+    //        sb->a.f32.vol_lab[8], sb->a.f32.vol_lab[9],
+    //        sb->a.f32.vol_lab[10]);
+
+    //    if ((de) && (de->name)) {
+    //        tsk_fprintf(hFile,
+    //            "Volume Label (Root Directory): %c%c%c%c%c%c%c%c%c%c%c\n",
+    //            de->name[0], de->name[1], de->name[2], de->name[3],
+    //            de->name[4], de->name[5], de->name[6], de->name[7],
+    //            de->ext[0], de->ext[1], de->ext[2]);
+    //    }
+    //    else {
+    //        tsk_fprintf(hFile, "Volume Label (Root Directory):\n");
+    //    }
+
+    //    tsk_fprintf(hFile, "File System Type Label: %c%c%c%c%c%c%c%c\n",
+    //        sb->a.f32.fs_type[0], sb->a.f32.fs_type[1],
+    //        sb->a.f32.fs_type[2], sb->a.f32.fs_type[3],
+    //        sb->a.f32.fs_type[4], sb->a.f32.fs_type[5],
+    //        sb->a.f32.fs_type[6], sb->a.f32.fs_type[7]);
+
+
+    //    /* Process the FS info */
+    //    if (tsk_getu16(fs->endian, sb->a.f32.fsinfo)) {
+    //        cnt =
+    //            tsk_fs_read_block(fs, (TSK_DADDR_T) tsk_getu16(fs->endian,
+    //                sb->a.f32.fsinfo), fat_fsinfo_buf,
+    //            sizeof(fatfs_fsinfo));
+
+    //        if (cnt != sizeof(fatfs_fsinfo)) {
+    //            if (cnt >= 0) {
+    //                tsk_error_reset();
+    //                tsk_error_set_errno(TSK_ERR_FS_READ);
+    //            }
+    //            tsk_error_set_errstr2
+    //                ("fatfs_fsstat: TSK_FS_TYPE_FAT32 FSINFO block: %"
+    //                PRIuDADDR, (TSK_DADDR_T) tsk_getu16(fs->endian,
+    //                    sb->a.f32.fsinfo));
+    //            free(data_buf);
+    //            free(fat_fsinfo_buf);
+    //            return 1;
+    //        }
+
+
+    //        fat_info = (fatfs_fsinfo *) fat_fsinfo_buf;
+    //        tsk_fprintf(hFile,
+    //            "Next Free Sector (FS Info): %" PRIuDADDR "\n",
+    //            FATFS_CLUST_2_SECT(fatfs, tsk_getu32(fs->endian,
+    //                    fat_info->nextfree)));
+
+    //        tsk_fprintf(hFile,
+    //            "Free Sector Count (FS Info): %" PRIu32 "\n",
+    //            (tsk_getu32(fs->endian,
+    //                    fat_info->freecnt) * fatfs->csize));
+
+    //        free(fat_fsinfo_buf);
+    //    }
+    //}
+
+    //free(data_buf);
+
+    //tsk_fprintf(hFile, "\nSectors before file system: %" PRIu32 "\n",
+    //    tsk_getu32(fs->endian, sb->prevsect));
+
+    //tsk_fprintf(hFile, "\nFile System Layout (in sectors)\n");
+
+    //tsk_fprintf(hFile, "Total Range: %" PRIuDADDR " - %" PRIuDADDR "\n",
+    //    fs->first_block, fs->last_block);
+
+    //if (fs->last_block != fs->last_block_act)
+    //    tsk_fprintf(hFile,
+    //        "Total Range in Image: %" PRIuDADDR " - %" PRIuDADDR "\n",
+    //        fs->first_block, fs->last_block_act);
+
+    //tsk_fprintf(hFile, "* Reserved: 0 - %" PRIuDADDR "\n",
+    //    fatfs->firstfatsect - 1);
+
+    //tsk_fprintf(hFile, "** Boot Sector: 0\n");
+
+    //if (fatfs->fs_info.ftype == TSK_FS_TYPE_FAT32) {
+    //    tsk_fprintf(hFile, "** FS Info Sector: %" PRIu16 "\n",
+    //        tsk_getu16(fs->endian, sb->a.f32.fsinfo));
+
+    //    tsk_fprintf(hFile, "** Backup Boot Sector: %" PRIu16 "\n",
+    //        tsk_getu16(fs->endian, sb->a.f32.bs_backup));
+    //}
+
+    //for (i = 0; i < fatfs->numfat; i++) {
+    //    TSK_DADDR_T base = fatfs->firstfatsect + i * (fatfs->sectperfat);
+
+    //    tsk_fprintf(hFile, "* FAT %d: %" PRIuDADDR " - %" PRIuDADDR "\n",
+    //        i, base, (base + fatfs->sectperfat - 1));
+    //}
+
+    //tsk_fprintf(hFile, "* Data Area: %" PRIuDADDR " - %" PRIuDADDR "\n",
+    //    fatfs->firstdatasect, fs->last_block);
+
+    //if (fatfs->fs_info.ftype != TSK_FS_TYPE_FAT32) {
+    //    TSK_DADDR_T x = fatfs->csize * fatfs->clustcnt;
+
+    //    tsk_fprintf(hFile,
+    //        "** Root Directory: %" PRIuDADDR " - %" PRIuDADDR "\n",
+    //        fatfs->firstdatasect, fatfs->firstclustsect - 1);
+
+    //    tsk_fprintf(hFile,
+    //        "** Cluster Area: %" PRIuDADDR " - %" PRIuDADDR "\n",
+    //        fatfs->firstclustsect, (fatfs->firstclustsect + x - 1));
+
+    //    if ((fatfs->firstclustsect + x - 1) != fs->last_block) {
+    //        tsk_fprintf(hFile,
+    //            "** Non-clustered: %" PRIuDADDR " - %" PRIuDADDR "\n",
+    //            (fatfs->firstclustsect + x), fs->last_block);
+    //    }
+    //}
+    //else {
+    //    TSK_LIST *list_seen = NULL;
+    //    TSK_DADDR_T x = fatfs->csize * (fatfs->lastclust - 1);
+    //    TSK_DADDR_T clust, clust_p;
+
+    //    tsk_fprintf(hFile,
+    //        "** Cluster Area: %" PRIuDADDR " - %" PRIuDADDR "\n",
+    //        fatfs->firstclustsect, (fatfs->firstclustsect + x - 1));
+
+
+    //    clust_p = fatfs->rootsect;
+    //    clust = FATFS_SECT_2_CLUST(fatfs, fatfs->rootsect);
+    //    while ((clust) && (0 == FATFS_ISEOF(clust, FATFS_32_MASK))) {
+    //        TSK_DADDR_T nxt;
+    //        clust_p = clust;
+
+    //        /* Make sure we do not get into an infinite loop */
+    //        if (tsk_list_find(list_seen, clust)) {
+    //            if (tsk_verbose)
+    //                tsk_fprintf(stderr,
+    //                    "Loop found while determining root directory size\n");
+    //            break;
+    //        }
+    //        if (tsk_list_add(&list_seen, clust)) {
+    //            tsk_list_free(list_seen);
+    //            list_seen = NULL;
+    //            return 1;
+    //        }
+
+    //        if (fatfs_getFAT(fatfs, clust, &nxt))
+    //            break;
+    //        clust = nxt;
+    //    }
+    //    tsk_list_free(list_seen);
+    //    list_seen = NULL;
+
+    //    tsk_fprintf(hFile,
+    //        "*** Root Directory: %" PRIuDADDR " - %" PRIuDADDR "\n",
+    //        fatfs->rootsect, (FATFS_CLUST_2_SECT(fatfs, clust_p + 1) - 1));
+
+    //    if ((fatfs->firstclustsect + x - 1) != fs->last_block) {
+    //        tsk_fprintf(hFile,
+    //            "** Non-clustered: %" PRIuDADDR " - %" PRIuDADDR "\n",
+    //            (fatfs->firstclustsect + x), fs->last_block);
+    //    }
+    //}
+
+
+    //tsk_fprintf(hFile, "\nMETADATA INFORMATION\n");
+    //tsk_fprintf(hFile, "--------------------------------------------\n");
+
+    //tsk_fprintf(hFile, "Range: %" PRIuINUM " - %" PRIuINUM "\n",
+    //    fs->first_inum, fs->last_inum);
+    //tsk_fprintf(hFile, "Root Directory: %" PRIuINUM "\n", fs->root_inum);
+
+
+    //tsk_fprintf(hFile, "\nCONTENT INFORMATION\n");
+    //tsk_fprintf(hFile, "--------------------------------------------\n");
+    //tsk_fprintf(hFile, "Sector Size: %" PRIu16 "\n", fatfs->ssize);
+    //tsk_fprintf(hFile, "Cluster Size: %" PRIu32 "\n",
+    //    (uint32_t) fatfs->csize << fatfs->ssize_sh);
+
+    //tsk_fprintf(hFile, "Total Cluster Range: 2 - %" PRIuDADDR "\n",
+    //    fatfs->lastclust);
+
+
+    ///* cycle via cluster and look at each cluster in the FAT 
+    // * for clusters marked as bad */
+    //cnt = 0;
+    //for (i = 2; i <= fatfs->lastclust; i++) {
+    //    TSK_DADDR_T entry;
+    //    TSK_DADDR_T sect;
+
+    //    /* Get the FAT table entry */
+    //    if (fatfs_getFAT(fatfs, i, &entry))
+    //        break;
+
+    //    if (FATFS_ISBAD(entry, fatfs->mask) == 0) {
+    //        continue;
+    //    }
+
+    //    if (cnt == 0)
+    //        tsk_fprintf(hFile, "Bad Sectors: ");
+
+    //    sect = FATFS_CLUST_2_SECT(fatfs, i);
+    //    for (a = 0; a < fatfs->csize; a++) {
+    //        tsk_fprintf(hFile, "%" PRIuDADDR " ", sect + a);
+    //        if ((++cnt % 8) == 0)
+    //            tsk_fprintf(hFile, "\n");
+    //    }
+    //}
+    //if ((cnt > 0) && ((cnt % 8) != 0))
+    //    tsk_fprintf(hFile, "\n");
+
+    ///* Display the FAT Table */
+    //tsk_fprintf(hFile, "\nFAT CONTENTS (in sectors)\n");
+    //tsk_fprintf(hFile, "--------------------------------------------\n");
+
+    ///* 'sstart' marks the first sector of the current run to print */
+    //sstart = fatfs->firstclustsect;
+
+    ///* cycle via cluster and look at each cluster in the FAT  to make runs */
+    //for (i = 2; i <= fatfs->lastclust; i++) {
+
+    //    /* 'send' marks the end sector of the current run, which will extend
+    //     * when the current cluster continues to the next 
+    //     */
+    //    send = FATFS_CLUST_2_SECT(fatfs, i + 1) - 1;
+
+    //    /* get the next cluster */
+    //    if (fatfs_getFAT(fatfs, i, &next))
+    //        break;
+
+    //    snext = FATFS_CLUST_2_SECT(fatfs, next);
+
+    //    /* we are also using the next sector (clust) */
+    //    if ((next & fatfs->mask) == (i + 1)) {
+    //        continue;
+    //    }
+
+    //    /* The next clust is either further away or the clust is available,
+    //     * print it if is further away 
+    //     */
+    //    else if ((next & fatfs->mask)) {
+    //        if (FATFS_ISEOF(next, fatfs->mask))
+    //            tsk_fprintf(hFile,
+    //                "%" PRIuDADDR "-%" PRIuDADDR " (%" PRIuDADDR
+    //                ") -> EOF\n", sstart, send, send - sstart + 1);
+    //        else if (FATFS_ISBAD(next, fatfs->mask))
+    //            tsk_fprintf(hFile,
+    //                "%" PRIuDADDR "-%" PRIuDADDR " (%" PRIuDADDR
+    //                ") -> BAD\n", sstart, send, send - sstart + 1);
+    //        else
+    //            tsk_fprintf(hFile,
+    //                "%" PRIuDADDR "-%" PRIuDADDR " (%" PRIuDADDR
+    //                ") -> %" PRIuDADDR "\n", sstart, send,
+    //                send - sstart + 1, snext);
+    //    }
+
+    //    /* reset the starting counter */
+    //    sstart = send + 1;
+    //}
+
+    return 0;
+}
+
 // RJCTODO: Add function header comment
 static uint8_t 
 exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
@@ -376,11 +760,10 @@ exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
     fs->get_default_attr_type = fatfs_get_default_attr_type;
     fs->load_attrs = fatfs_make_data_runs;
 
-    // RJCTODO: Set these pointers
     fs->dir_open_meta = fatfs_dir_open_meta;
     fs->name_cmp = fatfs_name_cmp;
-    fs->fsstat = 0;
-    fs->fscheck = 0;
+    fs->fsstat = exfatfs_fsstat;
+    fs->fscheck = fatfs_fscheck;
 
     /* NOP journal functions - exFAT has no file system journal. */
     fs->jblk_walk = fatfs_jblk_walk;

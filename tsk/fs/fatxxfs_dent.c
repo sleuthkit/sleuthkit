@@ -413,7 +413,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
             */
             if (sectalloc == 1) {
                 fs_name->flags = (dep->name[0] == FATFS_SLOT_DELETED) ?
-TSK_FS_NAME_FLAG_UNALLOC : TSK_FS_NAME_FLAG_ALLOC;
+                    TSK_FS_NAME_FLAG_UNALLOC : TSK_FS_NAME_FLAG_ALLOC;
             }
             else {
                 fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;

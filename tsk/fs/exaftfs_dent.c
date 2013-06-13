@@ -30,6 +30,8 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
+// RJCTODO: Why is fls not listing correct times as istat is doing?
+
 /**
  * \internal
  * \struct
@@ -504,19 +506,19 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
 
     switch (a_dentry->data[0]) {
         case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
-            strcpy(a_name_info->fs_name->name, EXFATFS_VOLUME_GUID_VIRT_FILENAME);
+            strcpy(a_name_info->fs_name->name, EXFATFS_VOLUME_GUID_DENTRY_NAME);
             break;
         case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
-            strcpy(a_name_info->fs_name->name, EXFATFS_ALLOC_BITMAP_VIRT_FILENAME);
+            strcpy(a_name_info->fs_name->name, EXFATFS_ALLOC_BITMAP_DENTRY_NAME);
             break;
         case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
-            strcpy(a_name_info->fs_name->name, EXFATFS_UPCASE_TABLE_VIRT_FILENAME);
+            strcpy(a_name_info->fs_name->name, EXFATFS_UPCASE_TABLE_DENTRY_NAME);
             break;
         case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
-            strcpy(a_name_info->fs_name->name, EXFATFS_TEX_FAT_VIRT_FILENAME);
+            strcpy(a_name_info->fs_name->name, EXFATFS_TEX_FAT_DENTRY_NAME);
             break;
         case EXFATFS_DIR_ENTRY_TYPE_ACT:
-            strcpy(a_name_info->fs_name->name, EXFATFS_ACT_VIRT_FILENAME);
+            strcpy(a_name_info->fs_name->name, EXFATFS_ACT_DENTRY_NAME);
             break;
     }
 
