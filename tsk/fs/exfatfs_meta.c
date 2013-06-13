@@ -78,11 +78,17 @@ exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
         tsk_error_set_errstr2("%s: failed to read bitmap byte at offset %" PRIuINUM "", func_name, bitmap_byte_offset);
+     
         return -1;
     }
 
     /* Check the bit that corresponds to the specified cluster. */
-    return (bitmap_byte & (1 << (a_cluster_addr % 8)));
+    if (bitmap_byte & (1 << (a_cluster_addr % 8))) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
 }
 
 /**
