@@ -366,10 +366,10 @@ exfatfs_is_file_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do
     // RJCTODO: Is this a valid test for exFAT?
     if ((tsk_getu16(fs->endian, dentry->modified_date) == 0) &&
         (tsk_getu16(fs->endian, dentry->modified_time) == 0) &&
-        (dentry->modified_time_10_ms_increments == 0) && 
+        (dentry->modified_time_tenths_of_sec == 0) && 
         (tsk_getu16(fs->endian, dentry->created_date) == 0) &&
         (tsk_getu16(fs->endian, dentry->created_time) == 0) &&
-        (dentry->created_time_10_ms_increments == 0) && 
+        (dentry->created_time_tenths_of_sec == 0) && 
         (tsk_getu16(fs->endian, dentry->accessed_date) == 0) &&
         (tsk_getu16(fs->endian, dentry->accessed_time) == 0)) {
         if (tsk_verbose) {
@@ -659,10 +659,10 @@ exfatfs_copy_vol_label_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FATFS_DENTR
 
     /* If there is a volume label, copy it to the name field of the 
      * TSK_FS_META structure. */
+
     if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY) {
-        if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_file->meta, 
-            (UTF16*)dentry->volume_label, (size_t)dentry->utf16_char_count + 1, 
-            a_inum, "volume label") != TSKconversionOK) {
+        if (fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16*)dentry->volume_label, (size_t)dentry->utf16_char_count + 1, 
+            (UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "volume label") != TSKconversionOK) {
             return TSK_COR;
         }
     }
@@ -822,9 +822,10 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_file_dentry,
     /* Copy the last modified time, converted to UNIX date format. */
     if (FATFS_ISDATE(tsk_getu16(fs->endian, file_dentry->modified_date))) {
         fs_meta->mtime =
-            dos2unixtime(tsk_getu16(fs->endian, file_dentry->modified_time),
-            tsk_getu16(fs->endian, file_dentry->modified_date), 
-            file_dentry->modified_time_10_ms_increments);
+            fatfs_dos_2_unix_time(tsk_getu16(fs->endian, file_dentry->modified_date),
+                tsk_getu16(fs->endian, file_dentry->modified_time), 
+                file_dentry->modified_time_tenths_of_sec);
+        fs_meta->mtime_nano = fatfs_dos_2_nanosec(file_dentry->modified_time_tenths_of_sec);
     }
     else {
         fs_meta->mtime = 0;
@@ -834,8 +835,8 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_file_dentry,
     /* Copy the last accessed time, converted to UNIX date format. */
     if (FATFS_ISDATE(tsk_getu16(fs->endian, file_dentry->accessed_date))) {
         fs_meta->atime =
-            dos2unixtime(tsk_getu16(fs->endian, file_dentry->accessed_time), 
-            tsk_getu16(fs->endian, file_dentry->accessed_date), 0);
+            fatfs_dos_2_unix_time(tsk_getu16(fs->endian, file_dentry->accessed_date), 
+                tsk_getu16(fs->endian, file_dentry->accessed_time), 0);
     }
     else {
         fs_meta->atime = 0;
@@ -849,15 +850,17 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_file_dentry,
     /* Copy the created time, converted to UNIX date format. */
     if (FATFS_ISDATE(tsk_getu16(fs->endian, file_dentry->created_date))) {
         fs_meta->crtime =
-            dos2unixtime(tsk_getu16(fs->endian, file_dentry->created_time),
-            tsk_getu16(fs->endian, file_dentry->created_date), 
-            file_dentry->created_time_10_ms_increments); // RJCTODO: Is this correct? The comments on the conversion routine may be incorrect...
-        fs_meta->crtime_nano = dos2nanosec(file_dentry->created_time_10_ms_increments);
+            fatfs_dos_2_unix_time(tsk_getu16(fs->endian, file_dentry->created_date),
+                tsk_getu16(fs->endian, file_dentry->created_time), 
+                file_dentry->created_time_tenths_of_sec);
+        fs_meta->crtime_nano = fatfs_dos_2_nanosec(file_dentry->created_time_tenths_of_sec);
     }
     else {
         fs_meta->crtime = 0;
         fs_meta->crtime_nano = 0;
     }
+
+    // RJCTODO: Do we want to do anything with the time zone offsets?
 
     /* Set the size of the file and the address of its first cluster. */
     ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0] = 
@@ -939,14 +942,13 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     }
 
     /* Copy the file name segment. */
-    if (fatfs_copy_utf16_str_2_meta_name(a_fatfs, a_fs_file->meta, 
-        (UTF16*)dentry->utf16_name_chars, EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH,
-        a_inum, "file name segment") == TSKconversionOK) {
-        return TSK_OK;
-    }
-    else {
+    // RJCTODO: Is there a problem here because we don't know how many of the chars are valid?
+    if (fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16*)dentry->utf16_name_chars, EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH, 
+        (UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "file name segment") != TSKconversionOK) {
         return TSK_COR;
     }
+
+    return TSK_OK;
 }
 
 /**

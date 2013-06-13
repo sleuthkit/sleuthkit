@@ -218,7 +218,7 @@ fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
             }
             else if ((tsk_getu16(fs->endian, dentry->cdate) != 0) &&
                 ((FATFS_ISDATE(tsk_getu16(fs->endian, dentry->cdate)) == 0) ||
-                    (dos2unixtime(tsk_getu16(fs->endian, dentry->cdate),
+                    (fatfs_dos_2_unix_time(tsk_getu16(fs->endian, dentry->cdate),
                             tsk_getu16(fs->endian, dentry->ctime),
                             dentry->ctimeten) == 0))) {
                 if (tsk_verbose)
@@ -232,7 +232,7 @@ fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
             }
             else if ((tsk_getu16(fs->endian, dentry->adate) != 0) &&
                 ((FATFS_ISDATE(tsk_getu16(fs->endian, dentry->adate)) == 0) ||
-                    (dos2unixtime(tsk_getu16(fs->endian, dentry->adate),
+                    (fatfs_dos_2_unix_time(tsk_getu16(fs->endian, dentry->adate),
                             0, 0) == 0))) {
                 if (tsk_verbose)
                     fprintf(stderr, "%s: adate\n", func_name);
@@ -240,7 +240,7 @@ fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
             }
             else if ((tsk_getu16(fs->endian, dentry->wdate) != 0) &&
                 ((FATFS_ISDATE(tsk_getu16(fs->endian, dentry->wdate)) == 0) ||
-                    (dos2unixtime(tsk_getu16(fs->endian, dentry->wdate),
+                    (fatfs_dos_2_unix_time(tsk_getu16(fs->endian, dentry->wdate),
                             tsk_getu16(fs->endian, dentry->wtime), 0) == 0))) {
                 if (tsk_verbose)
                     fprintf(stderr, "%s: wdate\n", func_name);
@@ -396,7 +396,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
         /* If these are valid dates, then convert to a unix date format */
         if (FATFS_ISDATE(tsk_getu16(fs->endian, dentry->wdate)))
             fs_meta->mtime =
-                dos2unixtime(tsk_getu16(fs->endian, dentry->wdate),
+                fatfs_dos_2_unix_time(tsk_getu16(fs->endian, dentry->wdate),
                 tsk_getu16(fs->endian, dentry->wtime), 0);
         else
             fs_meta->mtime = 0;
@@ -404,7 +404,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
 
         if (FATFS_ISDATE(tsk_getu16(fs->endian, dentry->adate)))
             fs_meta->atime =
-                dos2unixtime(tsk_getu16(fs->endian, dentry->adate), 0, 0);
+                fatfs_dos_2_unix_time(tsk_getu16(fs->endian, dentry->adate), 0, 0);
         else
             fs_meta->atime = 0;
         fs_meta->atime_nano = 0;
@@ -416,9 +416,9 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
          */
         if (FATFS_ISDATE(tsk_getu16(fs->endian, dentry->cdate))) {
             fs_meta->crtime =
-                dos2unixtime(tsk_getu16(fs->endian, dentry->cdate),
+                fatfs_dos_2_unix_time(tsk_getu16(fs->endian, dentry->cdate),
                 tsk_getu16(fs->endian, dentry->ctime), dentry->ctimeten);
-            fs_meta->crtime_nano = dos2nanosec(dentry->ctimeten);
+            fs_meta->crtime_nano = fatfs_dos_2_nanosec(dentry->ctimeten);
         }
         else {
             fs_meta->crtime = 0;

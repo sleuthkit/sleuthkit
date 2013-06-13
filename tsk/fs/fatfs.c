@@ -21,7 +21,7 @@
 
 /**
  * \internal
- * Open part of a disk image as an FAT file system. 
+ * Open part of a disk image as a FAT file system. 
  *
  * @param a_img_info Disk image to analyze
  * @param a_offset Byte offset where FAT file system starts

@@ -5,7 +5,7 @@
 ** Meta data layer support for the FAT file system.
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
+** Copyright (c) 2006-2013 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
@@ -1003,20 +1003,6 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
 
     tsk_fs_file_close(fs_file);
     return 0;
-}
-
-static TSK_RETVAL_ENUM
-fatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-    FATFS_DENTRY *a_dentry, TSK_DADDR_T a_sect, TSK_INUM_T a_inum)
-{
-    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
-
-    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        return TSK_ERR;
-    }
-    else {
-        return fatxxfs_dinode_copy(a_fatfs, a_fs_meta, a_dentry, a_sect, a_inum);
-    }
 }
 
 /* Mark the sector used in the bitmap */
