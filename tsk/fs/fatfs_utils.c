@@ -31,9 +31,9 @@
  * @return Returns 1 if the pointer is NULL, 0 otherwise.
  */
 uint8_t
-fatfs_is_ptr_arg_null(void *a_ptr, const char *a_param_name, const char *a_func_name)
+fatfs_ptr_arg_is_null(void *a_ptr, const char *a_param_name, const char *a_func_name)
 {
-    const char *func_name = "fatfs_is_ptr_arg_null";
+    const char *func_name = "fatfs_ptr_arg_is_null";
 
     assert(a_param_name != NULL);
     assert(a_func_name != NULL);
@@ -71,7 +71,7 @@ fatfs_is_inum_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum)
 
     assert(a_fatfs != NULL);
 
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name)) {
         return 0;
     }
 
@@ -104,7 +104,7 @@ fatfs_is_inum_arg_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *a
     assert(a_fatfs != NULL);
     assert(a_func_name != NULL);
 
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name)) {
         return 0;
     }
 
@@ -227,7 +227,7 @@ fatfs_cleanup_ascii(char *str)
 
     assert(str != NULL);
 
-    if (!fatfs_is_ptr_arg_null(str, "str", func_name)) {
+    if (!fatfs_ptr_arg_is_null(str, "str", func_name)) {
         int i;
         for (i = 0; str[i] != '\0'; i++) {
             if ((unsigned char) (str[i]) > 0x7e) {
@@ -270,11 +270,11 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
     assert(a_dest_len > 0);
     assert(a_desc != NULL);
 
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name)) {
         return TSKsourceIllegal; 
     }
 
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_src", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_src", func_name)) {
         return TSKsourceExhausted; 
     }
 
@@ -282,7 +282,7 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
         return TSKsourceExhausted; 
     }
 
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_dest", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_dest", func_name)) {
         return TSKtargetExhausted; 
     }
 
@@ -290,7 +290,7 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
         return TSKtargetExhausted; 
     }
 
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_desc", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_desc", func_name)) {
         return TSKsourceIllegal; 
     }
 

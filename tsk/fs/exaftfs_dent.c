@@ -569,10 +569,10 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
     uint8_t is_corrupt_dir = 0;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_dir, "a_fs_dir", func_name) ||
-        fatfs_is_ptr_arg_null(a_buf, "a_buf", func_name) ||
-        fatfs_is_ptr_arg_null(a_sector_addrs, "a_sector_addrs", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_fs_dir, "a_fs_dir", func_name) ||
+        fatfs_ptr_arg_is_null(a_buf, "a_buf", func_name) ||
+        fatfs_ptr_arg_is_null(a_sector_addrs, "a_sector_addrs", func_name)) {
         return TSK_ERR; 
     }
 

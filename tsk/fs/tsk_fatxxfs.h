@@ -166,31 +166,12 @@ extern "C" {
         uint8_t part3[4];
     } fatfs_dentry_lfn;
 
-	// RJCTODO: Comment
-	extern int fatxxfs_open(FATFS_INFO *fatfs);
+	extern uint8_t fatxxfs_open(FATFS_INFO *fatfs);
 
-    // RJCTODO: Add comment
     extern int8_t fatxxfs_is_clust_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust);
 
     extern uint8_t fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic);
 
-    // RJCTODO: Update
-    /**
-     * \internal
-     * Copy the contents of a raw directry entry into a TSK_FS_INFO structure.
-     *
-     * @param a_fatfs File system that directory entry is from.
-     * @param a_fs_meta Generic inode structure to copy data into.
-     * @param a_in Generic directory entry to copy data from.
-     * @param a_sect Sector address where directory entry is from -- used
-     * to determine allocation status.
-     * @param a_inum Address of the inode.
-     *
-     * @returns 1 on error and 0 on success.  Errors should only occur for
-     * Unicode conversion problems and when this occurs the name will be
-     * NULL terminated (but with unknown contents).
-     *
-     */
     extern TSK_RETVAL_ENUM
     fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
         FATFS_DENTRY *a_dentry, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);

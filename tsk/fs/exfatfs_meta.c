@@ -64,7 +64,7 @@ exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
     ssize_t bytes_read = 0;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name)) {
         return -1;
     }
 
@@ -116,7 +116,7 @@ exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
  * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
  * @returns EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL or EXFATFS_DIR_ENTRY_TYPE_NONE
  */
-static EXFATFS_DIR_ENTRY_TYPE_ENUM
+EXFATFS_DIR_ENTRY_TYPE_ENUM
 exfatfs_is_vol_label_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do_basic_test_only)
 {
     const char *func_name = "exfatfs_is_vol_label_dentry";
@@ -171,7 +171,7 @@ exfatfs_is_vol_label_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t
  * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
  * @returns EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID or EXFATFS_DIR_ENTRY_TYPE_NONE
  */
-static EXFATFS_DIR_ENTRY_TYPE_ENUM
+EXFATFS_DIR_ENTRY_TYPE_ENUM
 exfatfs_is_vol_guid_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do_basic_test_only)
 {
     assert(a_fatfs != NULL);
@@ -202,8 +202,8 @@ exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint
     uint64_t length_of_alloc_bitmap_in_bytes = 0;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_dentry, "a_dentry", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return EXFATFS_DIR_ENTRY_TYPE_NONE;
     }
 
@@ -253,7 +253,7 @@ exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint
  * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
  * @returns EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE or EXFATFS_DIR_ENTRY_TYPE_NONE
  */
-static EXFATFS_DIR_ENTRY_TYPE_ENUM
+EXFATFS_DIR_ENTRY_TYPE_ENUM
 exfatfs_is_upcase_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do_basic_test_only)
 {
     const char *func_name = "exfatfs_is_upcase_table_dentry";
@@ -322,7 +322,7 @@ exfatfs_is_upcase_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint
  * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
  * @returns EXFATFS_DIR_ENTRY_TYPE_TEX_FAT or EXFATFS_DIR_ENTRY_TYPE_NONE
  */
-static EXFATFS_DIR_ENTRY_TYPE_ENUM
+EXFATFS_DIR_ENTRY_TYPE_ENUM
 exfatfs_is_tex_fat_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do_basic_test_only)
 {
     assert(a_fatfs != NULL);
@@ -343,7 +343,7 @@ exfatfs_is_tex_fat_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a
  * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
  * @returns EXFATFS_DIR_ENTRY_TYPE_ACT or EXFATFS_DIR_ENTRY_TYPE_NONE
  */
-static EXFATFS_DIR_ENTRY_TYPE_ENUM
+EXFATFS_DIR_ENTRY_TYPE_ENUM
 exfatfs_is_access_ctrl_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do_basic_test_only)
 {
     assert(a_fatfs != NULL);
@@ -364,7 +364,7 @@ exfatfs_is_access_ctrl_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry,
  * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
  * @returns EXFATFS_DIR_ENTRY_TYPE_FILE or EXFATFS_DIR_ENTRY_TYPE_NONE
  */
-static EXFATFS_DIR_ENTRY_TYPE_ENUM
+EXFATFS_DIR_ENTRY_TYPE_ENUM
 exfatfs_is_file_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do_basic_test_only)
 {
     const char *func_name = "exfatfs_is_file_dentry";
@@ -419,7 +419,7 @@ exfatfs_is_file_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do
  * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
  * @returns EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM or EXFATFS_DIR_ENTRY_TYPE_NONE
  */
-static EXFATFS_DIR_ENTRY_TYPE_ENUM
+EXFATFS_DIR_ENTRY_TYPE_ENUM
 exfatfs_is_file_stream_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do_basic_test_only)
 {
     const char *func_name = "exfatfs_is_file_stream_dentry";
@@ -484,7 +484,7 @@ exfatfs_is_file_stream_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8
  * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
  * @returns EXFATFS_DIR_ENTRY_TYPE_FILE_NAME or EXFATFS_DIR_ENTRY_TYPE_NONE
  */
-static EXFATFS_DIR_ENTRY_TYPE_ENUM
+EXFATFS_DIR_ENTRY_TYPE_ENUM
 exfatfs_is_file_name_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do_basic_test_only)
 {
     assert(a_fatfs != NULL);
@@ -513,8 +513,8 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_do_basi
     TSK_FS_INFO *fs = NULL;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_dentry, "a_dentry", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return EXFATFS_DIR_ENTRY_TYPE_NONE;
     }
 
@@ -1077,11 +1077,11 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
  * @return TSK_RETVAL_ENUM.  
  */
 TSK_RETVAL_ENUM
-exfatfs_copy_dinode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
     FATFS_DENTRY *a_dentry, FATFS_DENTRY *a_secondary_dentry, 
     uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file)
 {
-    const char *func_name = "exfatfs_copy_dinode";
+    const char *func_name = "exfatfs_dinode_copy";
 
     // RJCTODO: No longer a sub-function, add full validation
     assert(a_fatfs != NULL);
@@ -1310,10 +1310,10 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     TSK_RETVAL_ENUM copy_result = TSK_OK;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_file->fs_info, "a_fs_file->fs_info", func_name) ||
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_fs_file, "a_fs_file", func_name) ||
+        fatfs_ptr_arg_is_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
+        fatfs_ptr_arg_is_null(a_fs_file->fs_info, "a_fs_file->fs_info", func_name) ||
         !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
         return 1;
     }
@@ -1373,7 +1373,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     }
 
     /* Populate the TSK_FS_META object OF THE tsk_fs_file object. */
-    copy_result = exfatfs_copy_dinode(a_fatfs, a_inum, &dentry, secondary_dentry,  
+    copy_result = exfatfs_dinode_copy(a_fatfs, a_inum, &dentry, secondary_dentry,  
         sect_is_alloc, a_fs_file); 
     if (copy_result == TSK_OK) {
         return 0;
@@ -1412,8 +1412,8 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
     uint16_t attr_flags = 0;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_hFile, "a_hFile", func_name) ||
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_hFile, "a_hFile", func_name) ||
         !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
         return 1; 
     }

@@ -119,6 +119,7 @@ extern "C" {
 
     /**
      * \internal
+     * \struct
      * Master boot record structure for exFAT file systems. The MBR will be at
      * least 512 bytes in length, but may be padded for larger sector sizes.
      * It is part of a larger structure called the volume boot record (VBR) 
@@ -148,10 +149,11 @@ extern "C" {
 		uint8_t reserved[7]; /*!< */
 		uint8_t boot_code[390]; /*!< */
 		uint8_t signature[2]; /*!< */
-	} EXFATFS_VOL_BOOT_REC;
+	} EXFATFS_MASTER_BOOT_REC;
 
     /**
      * \internal
+     * \enum
      * exFAT directory entry types, the first byte of a directory entry.
      */
     enum EXFATFS_DIR_ENTRY_TYPE_ENUM {
@@ -315,8 +317,11 @@ extern "C" {
         uint8_t utf16_name_chars[30];
     } EXFATFS_FILE_NAME_DIR_ENTRY;
 
-	extern int 
+	extern uint8_t 
     exfatfs_open(FATFS_INFO *a_fatfs);
+
+    extern uint8_t
+    exfatfs_fsstat(TSK_FS_INFO *a_fs, FILE *a_hFile);
 
     extern int8_t 
     exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr);
@@ -328,14 +333,46 @@ extern "C" {
     exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
         uint8_t a_basic);
 
+    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
+    exfatfs_is_vol_label_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+        uint8_t a_do_basic_test_only);
+
+    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
+    exfatfs_is_vol_guid_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+        uint8_t a_do_basic_test_only);
+
+    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
+    exfatfs_is_upcase_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+        uint8_t a_do_basic_test_only);
+
+    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
+    exfatfs_is_tex_fat_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+        uint8_t a_do_basic_test_only);
+
+    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
+    exfatfs_is_access_ctrl_table_dentry(FATFS_INFO *a_fatfs, 
+        FATFS_DENTRY *a_dentry, uint8_t a_do_basic_test_only);
+
+    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
+    exfatfs_is_file_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+        uint8_t a_do_basic_test_only);
+
+    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
+    exfatfs_is_file_stream_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+        uint8_t a_do_basic_test_only);
+
     extern uint8_t
     exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
         TSK_DADDR_T a_sector, uint8_t a_sector_is_alloc,  
         EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type,
         FATFS_DENTRY *a_stream_dentry);
 
+    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
+    exfatfs_is_file_name_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+        uint8_t a_do_basic_test_only);
+
     extern TSK_RETVAL_ENUM
-    exfatfs_copy_dinode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+    exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
         FATFS_DENTRY *a_dentry, FATFS_DENTRY *a_secondary_dentry, 
         uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file);
 

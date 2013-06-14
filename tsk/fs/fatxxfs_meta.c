@@ -657,7 +657,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
 
 /**
  * \internal
- * Populate the TSK_FS_META structure of a TSK_FS_FILE structure for a 
+ * Populate the TSK_FS_META object of a TSK_FS_FILE object for a 
  * given inode address.
  *
  * @param [in] a_fs File system that contains the inode.
@@ -677,8 +677,8 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     TSK_RETVAL_ENUM copy_result = TSK_OK;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_fs_file, "a_fs_file", func_name) ||
         !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
         return 1;
     }
@@ -753,8 +753,8 @@ fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
     FATXXFS_DENTRY dentry;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_hFile, "a_hFile", func_name) ||
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_hFile, "a_hFile", func_name) ||
         !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
         return 1; 
     }

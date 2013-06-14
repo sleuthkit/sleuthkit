@@ -706,7 +706,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     return 0;
 }
 
-int
+uint8_t
 fatxxfs_open(FATFS_INFO *fatfs)
 {
     const char *func_name = "fatxxfs_open";
@@ -743,7 +743,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
         if (tsk_verbose)
             fprintf(stderr, "%s: Invalid sector size (%d)\n",
                 func_name, fatfs->ssize);
-        return 0;
+        return 1;
     }
 
     // cluster size 
@@ -761,7 +761,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not a FATXX file system (cluster size)");
-        return 0;
+        return 1;
     }
 
     // number of FAT tables
@@ -773,7 +773,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not a FATXX file system (number of FATs)");
-        return 0;
+        return 1;
     }
 
     /* We can't do a sanity check on this b.c. TSK_FS_TYPE_FAT32 has a value of 0 */
@@ -799,7 +799,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Not a FATXX file system (invalid sectors per FAT)");
-        return 0;
+        return 1;
     }
 
     fatfs->firstfatsect = tsk_getu16(fs->endian, fatsb->reserved);
@@ -813,7 +813,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
             fprintf(stderr,
                 "%s: Invalid first FAT (%" PRIuDADDR ")\n",
                 func_name, fatfs->firstfatsect);
-        return 0;
+        return 1;
     }
 
     /* Calculate the block info
@@ -877,7 +877,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
             if (tsk_verbose)
                 fprintf(stderr,
                     "%s: Too many sectors for FAT12\n", func_name);
-            return 0;
+            return 1;
         }
     }
 
@@ -888,7 +888,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
             ("Invalid TSK_FS_TYPE_FAT32 image (numroot != 0)");
         if (tsk_verbose)
             fprintf(stderr, "%s: numroom != 0 for FAT32\n", func_name);
-        return 0;
+        return 1;
     }
 
     if ((fatfs->fs_info.ftype != TSK_FS_TYPE_FAT32) && (fatfs->numroot == 0)) {
@@ -898,7 +898,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
             ("Invalid FAT image (numroot == 0, and not TSK_FS_TYPE_FAT32)");
         if (tsk_verbose)
             fprintf(stderr, "%s: numroom == 0 and not FAT32\n", func_name);
-        return 0;
+        return 1;
     }
 
     /* additional sanity checks if we think we are using the backup boot sector.
@@ -915,7 +915,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
             if (tsk_verbose)
                 fprintf(stderr,
                     "%s: Had to use backup boot sector, but this isn't FAT32\n", func_name);
-            return 0;
+            return 1;
         }
         if (fatfs->numroot > 1) {
             uint8_t buf1[512];
@@ -933,7 +933,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
                 }
                 tsk_error_set_errstr2("%s: FAT1", func_name);
                 fs->tag = 0;
-                return 0;
+                return 1;
             }
 
             cnt =
@@ -947,7 +947,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
                 }
                 tsk_error_set_errstr2("%s: FAT2", func_name);
                 fs->tag = 0;
-                return 0;
+                return 1;
             }
 
             numDiffs = 0;
@@ -966,7 +966,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
                     fprintf(stderr,
                         "%s: Too many differences in FAT from guessing (%d diffs)\n",
                         func_name, numDiffs);
-                return 0;
+                return 1;
             }
         }
     }
@@ -986,7 +986,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("Unknown FAT type in %s: %d\n",
             func_name, fatfs->fs_info.ftype);
-        return 0;
+        return 1;
     }
     fs->duname = "Sector";
 
@@ -1086,7 +1086,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
     tsk_init_lock(&fatfs->dir_lock);
     fatfs->inum2par = NULL;
 
-    return 1;
+    return 0;
 }
 
 /* Return 1 if allocated, 0 if unallocated, and -1 if error */

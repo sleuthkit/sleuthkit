@@ -76,10 +76,10 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
     uint8_t isCorruptDir = 0;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(fatfs, "fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_dir, "a_fs_dir", func_name) ||
-        fatfs_is_ptr_arg_null(buf, "buf", func_name) ||
-        fatfs_is_ptr_arg_null(addrs, "addrs", func_name)) {
+    if (fatfs_ptr_arg_is_null(fatfs, "fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_fs_dir, "a_fs_dir", func_name) ||
+        fatfs_ptr_arg_is_null(buf, "buf", func_name) ||
+        fatfs_ptr_arg_is_null(addrs, "addrs", func_name)) {
         return TSK_ERR; 
     }
 

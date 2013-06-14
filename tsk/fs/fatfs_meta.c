@@ -50,8 +50,8 @@ fatfs_make_root(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta)
     TSK_DADDR_T *first_clust_addr_ptr = NULL;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_meta, "a_fs_meta", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_fs_meta, "a_fs_meta", func_name)) {
         return 1;
     }
 
@@ -275,8 +275,8 @@ fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum
     ssize_t cnt = 0;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_is_ptr_arg_null(a_dentry, "a_dentry", func_name) ||
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name) ||
         !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
         return 1;
     }
@@ -341,8 +341,8 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
     FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
-        fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name) ||
+    if (fatfs_ptr_arg_is_null(a_fs, "a_fs", func_name) ||
+        fatfs_ptr_arg_is_null(a_fs_file, "a_fs_file", func_name) ||
         !fatfs_is_inum_arg_in_range(fatfs, a_inum, func_name)) {
         return 1;
     }
@@ -420,9 +420,9 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
     TSK_OFF_T size_remain = 0;
     TSK_FS_ATTR *fs_attr = NULL;
 
-    if ((fatfs_is_ptr_arg_null(a_fs_file, "a_fs_file", func_name)) ||
-        (fatfs_is_ptr_arg_null(a_fs_file->meta, "a_fs_file->meta", func_name)) ||
-        (fatfs_is_ptr_arg_null(a_fs_file->fs_info, "a_fs_file->fs_info", func_name))) {
+    if ((fatfs_ptr_arg_is_null(a_fs_file, "a_fs_file", func_name)) ||
+        (fatfs_ptr_arg_is_null(a_fs_file->meta, "a_fs_file->meta", func_name)) ||
+        (fatfs_ptr_arg_is_null(a_fs_file->fs_info, "a_fs_file->fs_info", func_name))) {
         return TSK_ERR;
     }
     
@@ -891,8 +891,8 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     char timeBuf[128];
  
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
-        fatfs_is_ptr_arg_null(a_hFile, "a_hFile", func_name) ||
+    if (fatfs_ptr_arg_is_null(a_fs, "a_fs", func_name) ||
+        fatfs_ptr_arg_is_null(a_hFile, "a_hFile", func_name) ||
         !fatfs_is_inum_arg_in_range(fatfs, a_inum, func_name)) {
         return 1;
     }
@@ -1072,8 +1072,8 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     uint8_t done = 0;
 
     tsk_error_reset();
-    if (fatfs_is_ptr_arg_null(a_fs, "a_fs", func_name) ||
-        fatfs_is_ptr_arg_null(a_action, "a_action", func_name)) {
+    if (fatfs_ptr_arg_is_null(a_fs, "a_fs", func_name) ||
+        fatfs_ptr_arg_is_null(a_action, "a_action", func_name)) {
         return 1;
     }
 
@@ -1473,7 +1473,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                             continue;
                         }
                     }
-                    retval2 = exfatfs_copy_dinode(fatfs, inum, dep, &secondary_dentry, cluster_is_alloc, fs_file); 
+                    retval2 = exfatfs_dinode_copy(fatfs, inum, dep, &secondary_dentry, cluster_is_alloc, fs_file); 
                 }
                 else {
                     retval2 = fatxxfs_dinode_copy(fatfs, fs_file->meta, dep, sect, inum);
