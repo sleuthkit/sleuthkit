@@ -214,7 +214,9 @@ extern "C" {
 
     /**
     * These are based on the NTFS type values. 
-     * Added types for HFS+.
+    * Added types for HFS+.
+    * NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
+    * with any changes.
     */
     typedef enum {
         TSK_FS_ATTR_TYPE_NOT_FOUND = 0x00,       // 0
@@ -767,6 +769,8 @@ extern "C" {
         TSK_FS_TYPE_YAFFS2_DETECT = 0x00003000,   ///< YAFFS2 auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
+    /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
+     * with any changes. */
     typedef enum TSK_FS_TYPE_ENUM TSK_FS_TYPE_ENUM;
 
     /**
