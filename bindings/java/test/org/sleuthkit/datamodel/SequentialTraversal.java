@@ -72,8 +72,8 @@ public class SequentialTraversal extends ImgTraverser {
 	public void testSequentialDiff() {
 		try {
 			List<Boolean> test = basicTest();
-			assertEquals("Generated results (" + exFile + ") differ with gold standard (" + oldExceptionsPath + ") .", test.get(0), true);
-			assertEquals("Generated results (" + testStandardPath + ") differ with gold standard (" + oldStandardPath + ") .", test.get(1), true);
+			assertEquals("Generated results (" + outputExceptionsPath + ") differ with gold standard (" + goldExceptionsPath + ") .", test.get(0), true);
+			assertEquals("Generated results (" + outputFilePath + ") differ with gold standard (" + goldFilePath + ") .", test.get(1), true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file.");
 		}
@@ -85,7 +85,7 @@ public class SequentialTraversal extends ImgTraverser {
 	 *
 	 * @param sk the sleuthkit case used for the traversal
 	 * @param path the location of the output file
-	 * @param exFile the exFile to store exceptions, is only used for
+	 * @param outputExceptionsPath the outputExceptionsPath to store exceptions, is only used for
 	 * compatability with basic test
 	 * @return the file writer to be closed by testStandard
 	 */
@@ -101,7 +101,7 @@ public class SequentialTraversal extends ImgTraverser {
 				while ((c = sk.getContentById(x)) != null) {
 					reslt.append(((AbstractContent) c).toString(false).replaceAll("paths \\[([A-z]:)?.+?\\]", ""));
 					if (c instanceof File) {
-						DataModelTestSuite.readContent(c, reslt, exFile);
+						DataModelTestSuite.hashContent(c, reslt, outputExceptionsPath);
 					}
 					reslt.append("\n");
 					x++;
