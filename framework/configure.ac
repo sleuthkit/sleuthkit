@@ -166,8 +166,6 @@ do
 # all modules that missed dependencies.  If one gets added after it, then 
 # besure to move that code to that module so that it is shown at the end
 # of a "./configure" run
-      *)
-        AC_MSG_WARN([Unknown project (${i}) won't be configured automatically.]) ;;
     esac
   fi
 done

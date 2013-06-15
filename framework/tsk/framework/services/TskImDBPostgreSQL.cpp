@@ -10,7 +10,7 @@
  */
 
 /**
- * \file TskImgDBPostgreSQL.cpp
+ * \file TskImDBPostgreSQL.cpp 
  * A PostgreSQL based implementation of the framework data access layer.
  */
 #include <stdio.h>
@@ -1235,6 +1235,8 @@ UnallocRun * TskImgDBPostgreSQL::getUnallocRun(int a_unalloc_img_id, int a_file_
  * Adds information about a carved file into the database.  This includes the sector layout
  * information. 
  * 
+ * @param vol_id ID of volume that file is locatd in
+ * @param name Name of file
  * @param size Number of bytes in file
  * @param runStarts Array with starting sector (relative to start of image) for each run in file.
  * @param runLengths Array with number of sectors in each run 
@@ -1243,7 +1245,7 @@ UnallocRun * TskImgDBPostgreSQL::getUnallocRun(int a_unalloc_img_id, int a_file_
  * @returns 0 on success or -1 on error.
  */
 int TskImgDBPostgreSQL::addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t size, 
-                                          uint64_t *runStarts, uint64_t *runLengths, int numRuns, uint64_t & fileId)
+  uint64_t *runStarts, uint64_t *runLengths, int numRuns, uint64_t & fileId)
 {
     if (!initialized())
         return -1;
@@ -1313,6 +1315,7 @@ int TskImgDBPostgreSQL::addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t s
  * 
  * @param name The name of the file.
  * @param parentId The id of the file from which this file is derived.
+ * @param isDirectory True if a directory
  * @param size The size of the file.
  * @param details This is a string that may contain extra details related
  * to the particular type of mechanism that was used to derive this file, 
@@ -1323,6 +1326,7 @@ int TskImgDBPostgreSQL::addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t s
  * @param atime Last access time.
  * @param mtime Last modified time.
  * @param fileId Return the file_id value.
+ * @param path Path of the file
  *
  * @returns 0 on success or -1 on error.
  */
@@ -2800,7 +2804,7 @@ int TskImgDBPostgreSQL::setModuleStatus(uint64_t file_id, int module_id, int sta
 
 /**
  * Get a list of TskModuleStatus.
- * @param moduleStatusList A list of TskModuleStatus (output)
+ * @param moduleInfoList A list of TskModuleInfo (output)
  * @returns 0 on success, -1 on error.
  */
 int TskImgDBPostgreSQL::getModuleInfo(std::vector<TskModuleInfo> & moduleInfoList) const

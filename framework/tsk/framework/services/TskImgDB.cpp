@@ -40,8 +40,8 @@ void TskImgDB::storeParObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_ad
 
 /**
  * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
- * @param fs_file file to find parent obj id for
  * @param fsObjId fs id of this file
+ * @param meta_addr Meta address to find parent obj id for
  * @returns parent obj id ( > 0), -1 on error
  */
 int64_t TskImgDB::findParObjId(const int64_t & fsObjId, TSK_INUM_T meta_addr) {

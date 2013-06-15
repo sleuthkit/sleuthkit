@@ -148,7 +148,7 @@ public:
     *
     * @param imageFile The UTF-8 path to the image file
     * @param imageType The disk image type (can be autodetection)
-    * @param sectionSize Size of device sector in bytes (or 0 for default)
+    * @param sectorSize Size of device sector in bytes (or 0 for default)
     *
     * @return -1 on error and 0 on success
     */
@@ -161,7 +161,7 @@ public:
     *
     * @param imageFile The path to the image file
     * @param imageType The disk image type (can be autodetection)
-    * @param sectionSize Size of device sector in bytes (or 0 for default)
+    * @param sectorSize Size of device sector in bytes (or 0 for default)
     *
     * @return -1 on error and 0 on success
     */
