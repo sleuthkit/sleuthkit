@@ -77,7 +77,13 @@ public class CPPtoJavaCompare extends ImgTraverser {
 		try {
 			// generate the C++ output and store it in gold standard -- even though it won't be checked in -- redesign this!
 			String standardPathCPP = DataModelTestSuite.standardFilePath(imagePaths, DataModelTestSuite.CPP);
+			java.io.File tskOutFile = new java.io.File(standardPathCPP);
+			// get rid of copy from previous runs
+			tskOutFile.delete();
+			
 			runTskGetTimes(standardPathCPP, imagePaths);
+			
+			assertTrue ("TSK gettimes output is zero sized (" + standardPathCPP + ")", tskOutFile.length() > 0);
 			
 			// perform test
 			List<Boolean> test = basicTest();

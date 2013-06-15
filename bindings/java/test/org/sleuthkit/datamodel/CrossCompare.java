@@ -29,18 +29,16 @@ import org.junit.runners.Parameterized;
 /**
  *
  * Ensures that a sequential traversal of a given image produces the same result
- * as a Top Down depth first traversal.
+ * as a Top Down traversal.  Does not use gold standard files.  It compares
+ * the outputs from the two test runs. 
  */
 @RunWith(Parameterized.class)
 public class CrossCompare {
 
 	private List<String> imagePaths;
-	private String Seq, TD;
 
-	public CrossCompare(List<String> imagePaths, String Seq, String TD) {
+	public CrossCompare(List<String> imagePaths) {
 		this.imagePaths = imagePaths;
-		this.Seq = Seq;
-		this.TD = TD;
 	}
 
 	/**
@@ -56,7 +54,7 @@ public class CrossCompare {
 		Collection<Object[]> data = new ArrayList<Object[]>();
 
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
-			data.add(new Object[]{imagePaths, DataModelTestSuite.SEQ, DataModelTestSuite.TD});
+			data.add(new Object[]{imagePaths});
 		}
 		return data;
 	}
@@ -66,17 +64,14 @@ public class CrossCompare {
 	 * other
 	 */
 	@Test
-	public void CrossCompare() {
+	public void testCrossCompareDiff() {
 		try {
-			String title = DataModelTestSuite.getImgName(imagePaths.get(0));
-			java.io.File testFolder = new java.io.File(DataModelTestSuite.getRsltPath());
-			java.io.File testStandard1 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, Seq, "_SRT.txt"));
-			java.io.File testStandard2 = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, TD, "_SRT.txt"));
-			String testStandardPath1 = testStandard1.getPath();
-			String testStandardPath2 = testStandard2.getPath();
-			assertEquals("Generated results (" + testStandardPath1 + ") differ with gold standard (" + testStandardPath2 + ") .", DataModelTestSuite.comparecontent(testStandardPath1, testStandardPath2), true);
+			String seqSortedOutputFile = DataModelTestSuite.sortedFlPth(DataModelTestSuite.resultFilePath(imagePaths, DataModelTestSuite.SEQ));
+			String tdSortedOutputFile = DataModelTestSuite.sortedFlPth(DataModelTestSuite.resultFilePath(imagePaths, DataModelTestSuite.TD));
+	
+			assertEquals("Sequential test results (" + seqSortedOutputFile + ") differ with Top Dow (" + tdSortedOutputFile + ") .", DataModelTestSuite.comparecontent(seqSortedOutputFile, tdSortedOutputFile), true);
 		} catch (Exception ex) {
-			fail("Couldn't open gold standard file.");
+			fail("SequentialTest error: " + ex.getMessage());
 		}
 	}
 }
