@@ -74,13 +74,12 @@ static uint8_t test_root(uint32_t a, uint32_t b)
           }
 }
 
-/** ext2fs_bg_has_super - wrapper around test_root
+/** \internal
+  ext2fs_bg_has_super - wrapper around test_root
     Adapted from E2fsprogs sparse.c
-    @param  flags     pointer to s_feature_ro_compat flags for superblock
-    @param  group_num the block group number
     @return 1 if block group has superblock, otherwise 0
 */
-uint32_t ext2fs_bg_has_super(uint32_t feature_ro_compat, uint32_t group_block)
+static uint32_t ext2fs_bg_has_super(uint32_t feature_ro_compat, uint32_t group_block)
 {
         if (!(feature_ro_compat &
                 EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER))

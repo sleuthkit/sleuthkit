@@ -13,7 +13,7 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 */
 
 /**
-*\file yaffs.c
+*\file yaffs.cpp
 * Contains the internal TSK YAFFS2 file system functions.
 */
 

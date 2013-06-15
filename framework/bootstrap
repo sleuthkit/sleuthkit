@@ -4,12 +4,7 @@ aclocal \
     && automake --foreign --add-missing --copy \
     && autoconf
 
-for m in `ls modules`
-do
-    (cd modules;
-    if test -d $m; then
-        echo $m
-        (cd $m; sh ./bootstrap)
-    fi;
-    )
-done
+echo "c_FileTypeSigModule"
+(cd modules/c_FileTypeSigModule; sh ./bootstrap)
+echo "c_LibExifModule"
+(cd modules/c_LibExifModule; sh ./bootstrap)
