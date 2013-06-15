@@ -7,6 +7,9 @@
 /bindings/java/dist
 /bindings/java/test/output/results
 /bindings/java/test/output/gold/dummy
+/bindings/java/test/output/gold/*_BU.txt
+/bindings/java/test/output/gold/*_CPP.txt
+/bindings/java/test/output/gold/*_CPP_SRT.txt
 /bindings/java/test/input
 /bindings/java/nbproject/genfiles.properties
 /bindings/java/nbproject/nbjdk.properties

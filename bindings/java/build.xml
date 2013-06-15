@@ -112,17 +112,23 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		<mkdir dir="javadoc"/>
 		<javadoc sourcepath="src" destdir="javadoc" overview="src/overview.html" />
 	</target>
-	<target name="test-download-imgs" description="Get test images and store them in the path represented by the test-input variable.">
+
+	<target name="test-download" description="download test images.">
 		<mkdir dir="${test-input}" />
 		<get src="http://digitalcorpora.org/corp/nps/drives/nps-2009-canon2/nps-2009-canon2-gen6.E01" dest="${test-input}"/>
 		<get src="http://digitalcorpora.org/corp/nps/drives/nps-2009-ntfs1/ntfs1-gen2.E01" dest="${test-input}"/>
+		<!--<get src="http://www.cfreds.nist.gov/dfr-images/dfr-16-ext.dd.bz2" dest="${test-input}"/>
+		<bunzip2 src="${test-input}/dfr-16-ext.dd.bz2" /> -->
 	</target>
+
+	<!-- all of the work is done in test-precond -->
 	<target name="test" 
-			description="Traverses the Images stored in the path represented by test-input variable, creates results files stored in the path represented by test-results, and compares them to the standards stored in the path represented by the test-standards variable, always run test-create-standards at least once before before running test."
-			depends="compile-test, test-precond">
+		description="Runs set of regression tests."
+		depends="compile-test, test-precond">
 	</target>
-	<target name="test-create-standards"
-			description="Traverses the Images stored in the path represented by test-input variable and creates then stores them to the path represented by the test-standards variable, run test-download-imgs at least once before this."
-			depends="compile-test, test-create-standards-precond">
+
+	<target name="test-rebuild"
+		description="Rebuilds gold standards."
+		depends="compile-test, test-rebuild-precond">
 	</target>
 </project>
