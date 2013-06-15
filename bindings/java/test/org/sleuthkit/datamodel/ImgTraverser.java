@@ -38,7 +38,7 @@ public abstract class ImgTraverser{
 	/**
 	 * Run a test and compare the unsorted results. 
 	 *
-	 * @return List of test results.  Entry 0 is content and 1 is for exceptions.  True if test passed. 
+	 * @return List of test results.  Entry 0 is exceptions and 1 is for content.  True if test passed. 
 	 */
 	public List<Boolean> basicTest() {
 		String title = DataModelTestSuite.getImgName(imagePaths.get(0));
@@ -51,7 +51,7 @@ public abstract class ImgTraverser{
 		goldFilePath = DataModelTestSuite.standardFilePath(imagePaths, this.testName);
 		goldExceptionsPath = DataModelTestSuite.exceptionPath(goldFilePath);
 		
-		// Generate the sorted output needed for the test
+		// Generate the sorted and unsorted output needed for the test
 		DataModelTestSuite.createOutput(outputFilePath, outputFolder.getAbsolutePath(), imagePaths, this);
 		
 		// compare the unsorted results

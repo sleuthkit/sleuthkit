@@ -36,8 +36,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- *
- * Compares the Java test output to the C++ test output
+ * Compares the Java test output to the C++ test output.
+ * Basic concept is to run tsk_gettimes on an image to get the body
+ * file format and then make equivalent output from Java code.  Diff. 
+ * Does not use gold standards.
  */
 @RunWith(Parameterized.class)
 public class CPPtoJavaCompare extends ImgTraverser {
@@ -90,7 +92,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 			ret.add(DataModelTestSuite.comparecontent(goldFilePathSorted, outputFilePathSorted));			
 			assertEquals("Java output (" + outputFilePathSorted + ") differ with C++ results (" + goldFilePathSorted + ") .", ret.get(0), true);			
 		} catch (Exception ex) {
-			fail("Couldn't open gold standard file.");
+			fail("Couldn't open gold standard file. " + ex.getMessage());
 		}
 	}
 	

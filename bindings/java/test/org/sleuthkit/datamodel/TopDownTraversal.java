@@ -35,9 +35,9 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
- *
  * Verifies that the current version of TSK produces the same output of previous
  * versions by doing a TopDown Depth first traversal of the given images.
+ * Compares data to gold standards. 
  * Also generates the leaf file that is used by the BottomUp Test
  */
 @RunWith(Parameterized.class)
@@ -78,7 +78,7 @@ public class TopDownTraversal extends ImgTraverser {
 			assertEquals("Generated results (" + outputExceptionsPath + ") differ with gold standard (" + goldExceptionsPath + ") .", test.get(0), true);
 			assertEquals("Generated results (" + outputFilePath + ") differ with gold standard (" + goldFilePath + ") .", test.get(1), true);
 		} catch (Exception ex) {
-			fail("Couldn't open gold standard file.");
+			fail("Couldn't open gold standard file. " + ex.getMessage());
 		}
 	}
 

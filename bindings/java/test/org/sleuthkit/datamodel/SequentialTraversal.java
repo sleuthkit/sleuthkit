@@ -34,12 +34,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- *
- * Traverses an image by running through item Ids ascending.
+ * Tests that we get all of the results by directly requesting a specific
+ * object.  Basic concept of test is to sequentially request objects, starting
+ * at 1.  Details of each object are printed and results are compared with
+ * gold standard. 
  */
 @RunWith(Parameterized.class)
 public class SequentialTraversal extends ImgTraverser {
-
 	private static final Logger logg = Logger.getLogger(SequentialTraversal.class.getName());
 
 	public SequentialTraversal(List<String> imagePaths) {
@@ -75,7 +76,7 @@ public class SequentialTraversal extends ImgTraverser {
 			assertEquals("Generated results (" + outputExceptionsPath + ") differ with gold standard (" + goldExceptionsPath + ") .", test.get(0), true);
 			assertEquals("Generated results (" + outputFilePath + ") differ with gold standard (" + goldFilePath + ") .", test.get(1), true);
 		} catch (Exception ex) {
-			fail("Couldn't open gold standard file.");
+			fail("Couldn't open gold standard file." + ex.getMessage());
 		}
 	}
 
@@ -85,8 +86,6 @@ public class SequentialTraversal extends ImgTraverser {
 	 *
 	 * @param sk the sleuthkit case used for the traversal
 	 * @param path the location of the output file
-	 * @param outputExceptionsPath the outputExceptionsPath to store exceptions, is only used for
-	 * compatability with basic test
 	 * @return the file writer to be closed by testStandard
 	 */
 	@Override
@@ -95,10 +94,14 @@ public class SequentialTraversal extends ImgTraverser {
 		try {
 			Charset chr = Charset.forName("UTF-8");
 			OutputStreamWriter reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path), 8192*4), chr);
-			int x = 1;
-			Content c;
+			
 			try {
-				while ((c = sk.getContentById(x)) != null) {
+				for (int x = 1; ;x++) {
+					Content c = sk.getContentById(x);
+					if (c == null) {
+						break;
+					}
+				
 					reslt.append(((AbstractContent) c).toString(false).replaceAll("paths \\[([A-z]:)?.+?\\]", ""));
 					if (c instanceof File) {
 						DataModelTestSuite.hashContent(c, reslt, outputExceptionsPath);

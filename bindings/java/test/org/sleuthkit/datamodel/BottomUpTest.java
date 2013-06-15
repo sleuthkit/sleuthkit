@@ -30,10 +30,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- *
- * Verifies that getParent works as intended by verifying that it gets the
- * same structure as we got from the TopDown tests. Does not compare against
- * a gold standard. 
+ * Performs a "Bottom Up" test by verifying that calls to getParent() are
+ * the same as calls to getChildren() from the root (i.e. the TopDown test). 
+ * Does not compare against a gold standard. 
+ * Basic concept is that TopDown test makes a "leaf file" 
+ * with a line for each file that contains the list of parent IDs for the file. 
+ * The code in this test starts at each leaf file, calls getParent() recursively,
+ * and verifies that the same IDs are reached.  
  */
 @RunWith(Parameterized.class)
 public class BottomUpTest {
@@ -103,7 +106,7 @@ public class BottomUpTest {
 			}
 		} catch (NumberFormatException ex) {
 			System.out.println(ex.toString());
-			fail("Failed to run BottomUp test");
+			fail("Failed to run BottomUp test: " + ex.getMessage());
 		} catch (TskCoreException ex) {
 			List<Exception> inp = new ArrayList<Exception>();
 			inp.add(ex);
