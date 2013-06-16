@@ -172,7 +172,7 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             tsk_error_reset();
         }
 
-		if ((fs_info =
+        if ((fs_info =
                 yaffs2_open(a_img_info, a_offset,
                     TSK_FS_TYPE_YAFFS2_DETECT, 1)) != NULL) {
             if (set == NULL) {
