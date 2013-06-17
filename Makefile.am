@@ -19,7 +19,14 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     bindings/java/src/org/sleuthkit/datamodel/*.html \
     bindings/java/src/*.html \
     framework/*.txt \
+    framework/Makefile.am \
+    framework/bootstrap \
+    framework/config/* \
+    framework/config.h.in \
+    framework/configure.ac \
+    framework/m4/* \
     framework/tsk/framework/*.h \
+    framework/tsk/framework/Makefile.am \
     framework/tsk/framework/extraction/Makefile.am \
     framework/tsk/framework/extraction/*.cpp \
     framework/tsk/framework/extraction/*.h \
@@ -39,8 +46,11 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     framework/SampleConfig/*.xml \
     framework/docs/* \
     framework/man/* \
+    framework/tools/tsk_analyzeimg/Makefile.am \
     framework/tools/tsk_analyzeimg/*.cpp \
+    framework/tools/tsk_validatepipeline/Makefile.am \
     framework/tools/tsk_validatepipeline/*.cpp \
+    framework/tools/Makefile.am \
     framework/msvcpp/*/*.vcxproj \
     framework/msvcpp/*/*.sln \
     framework/msvcpp/Makefile
