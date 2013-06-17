@@ -121,14 +121,5 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		<bunzip2 src="${test-input}/dfr-16-ext.dd.bz2" /> -->
 	</target>
 
-	<!-- all of the work is done in test-precond -->
-	<target name="test" 
-		description="Runs set of regression tests."
-		depends="compile-test, test-precond">
-	</target>
-
-	<target name="test-rebuild"
-		description="Rebuilds gold standards."
-		depends="compile-test, test-rebuild-precond">
-	</target>
+	<!-- NOTE: test and test-rebuild targets are in the OS-specific files -->
 </project>
