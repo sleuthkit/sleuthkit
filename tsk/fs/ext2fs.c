@@ -2401,26 +2401,29 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             ext4_fsstat_datablock_helper(fs, hFile, i, cg_base, gd_size);
         }
         else {
-            if (ext2fs_bg_has_super(tsk_getu32(fs->endian,
-                        sb->s_feature_ro_compat), i)) {
-/*        if ((tsk_getu32(fs->endian, ext2fs->fs->s_feature_ro_compat) &
+            tsk_fprintf(hFile, "    Data Blocks: ");
+            // BC: Commented out from Ext4 commit because it produced
+            // bad data on Ext2 test image.
+            //if (ext2fs_bg_has_super(tsk_getu32(fs->endian,
+            //            sb->s_feature_ro_compat), i)) {
+        if ((tsk_getu32(fs->endian, ext2fs->fs->s_feature_ro_compat) &
                 EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER) &&
             (cg_base == tsk_getu32(fs->endian,
                     ext2fs->grp_buf->bg_block_bitmap))) {
-*/
+
                 /* it goes from the end of the inode bitmap to before the
                  * table
                  *
                  * This hard coded aspect does not scale ...
                  */
-                tsk_fprintf(hFile, "    Data Blocks: ");
+                
                 tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 ", ",
                     tsk_getu32(fs->endian,
                         ext2fs->grp_buf->bg_inode_bitmap) + 1,
                     tsk_getu32(fs->endian,
                         ext2fs->grp_buf->bg_inode_table) - 1);
             }
-            tsk_fprintf(hFile, "    Data Blocks: ");
+
             tsk_fprintf(hFile, "%" PRIu32 " - %" PRIu32 "\n",
                 (uint64_t) tsk_getu32(fs->endian,
                     ext2fs->grp_buf->bg_inode_table) + ibpg,
