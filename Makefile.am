@@ -20,23 +20,28 @@ EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
     bindings/java/src/*.html \
     framework/*.txt \
     framework/tsk/framework/*.h \
+    framework/tsk/framework/extraction/Makefile.am \
     framework/tsk/framework/extraction/*.cpp \
     framework/tsk/framework/extraction/*.h \
+    framework/tsk/framework/file/Makefile.am \
     framework/tsk/framework/file/*.cpp \
     framework/tsk/framework/file/*.h \
+    framework/tsk/framework/pipeline/Makefile.am \
     framework/tsk/framework/pipeline/*.cpp \
     framework/tsk/framework/pipeline/*.h \
+    framework/tsk/framework/services/Makefile.am \
     framework/tsk/framework/services/*.cpp \
     framework/tsk/framework/services/*.h \
-    framework/modules/* \
+    framework/tsk/framework/utilities/Makefile.am \
     framework/tsk/framework/utilities/*.cpp \
     framework/tsk/framework/utilities/*.h \
+    framework/modules/* \
     framework/SampleConfig/*.xml \
     framework/docs/* \
     framework/man/* \
     framework/tools/tsk_analyzeimg/*.cpp \
     framework/tools/tsk_validatepipeline/*.cpp \
-    framework/msvcpp/*/*.vcproj \
+    framework/msvcpp/*/*.vcxproj \
     framework/msvcpp/*/*.sln \
     framework/msvcpp/Makefile
 

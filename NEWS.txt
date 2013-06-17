@@ -6,6 +6,7 @@ Core:
 - Added YAFFS2 support (patch from viaForensics).
 - Added Ext4 support (patch from kfairbanks)
 - changed all include paths to be 'tsk' instead of 'tsk3'
+-- IMPORTANT FOR ALL DEVELOPERS!
  
 Framework:
 - Added Linux and MAC support.
