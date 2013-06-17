@@ -116,7 +116,7 @@ sub verify_precheckin {
             print "$foo";
             $foo = read_pipe_line(*OUT);
         }
-        die "stopping";
+        die "stopping" unless ($TESTING);
     }
     close(OUT);
 
@@ -126,7 +126,7 @@ sub verify_precheckin {
     if ($foo ne "") {
             print "$foo";
         print "Files not pushed to remote\n";
-        die "stopping";
+        die "stopping" unless ($TESTING);
     }
     close(OUT);
 }
@@ -445,6 +445,22 @@ sub verify_tar {
     system ("ant");
     die "Error making jar file" unless (-e "dist/Tsk_DataModel.jar");
     chdir "../..";
+
+    # Compile the framework
+    chdir ("framework") or die "error changing into framework";
+
+    print "Running bootstrap\n";
+    system ("./bootstrap");
+    die "Error running bootstrap in framework" unless (-e "./configure");
+
+    print "Running configure\n";
+    system ("./configure > /dev/null");
+    die "Error running framework configure in tar file" unless (-e "./Makefile");
+
+    print "Running make\n";
+    system ("make > /dev/null");
+    die "Error compiling framework" unless ((-e "tools/tsk_analyzeimg/tsk_analyzeimg") && (-e "runtime/modules/libtskEntropyModule.a"));
+    chdir "..";
 
     # We're done.  Clean up
     chdir "..";
