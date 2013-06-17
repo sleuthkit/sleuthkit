@@ -133,8 +133,10 @@ sub verify_precheckin {
 
 # Create a tag 
 sub tag_dir {
-    system ("git tag ${TSK_RELNAME}");
-    system ("git push --tags") unless ($TESTING);
+    unless ($TESTING) {
+        system ("git tag ${TSK_RELNAME}");
+        system ("git push --tags");
+    }
 }
 
 # Commit the updated version info in the current source directory
