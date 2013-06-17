@@ -374,7 +374,8 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
         a_name_info->fs_name->name_size - 1) {
         if (fatfs_utf16_inode_str_2_utf8(a_name_info->fatfs, 
             (UTF16*)dentry->utf16_name_chars, num_chars_to_copy,
-            (UTF8*)a_name_info->fs_name->name, a_name_info->fs_name->name_size,
+            (UTF8*)&(a_name_info->fs_name->name[a_name_info->actual_name_length]), 
+            a_name_info->fs_name->name_size,
             a_inum, "file name segment") != TSKconversionOK) {
             /* Discard whatever was written by the failed conversion and save
              * whatever has been found to this point, if anything. */
