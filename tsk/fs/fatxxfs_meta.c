@@ -705,8 +705,8 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         return 1;
     }
 
-    if (fatfs_dentry_load(a_fatfs, &dentry, a_inum) != 0) { // RJCTODO: Consider whether to pass FATFS instead of FS
-        // RJCTODO: Report error
+    if (fatfs_dentry_load(a_fatfs, &dentry, a_inum) != 0) {
+        // RJCTODO: Report error?
         return 1;
     }
 

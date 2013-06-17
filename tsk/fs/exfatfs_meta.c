@@ -901,7 +901,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_file_dentry,
         // RJCTODO: Revisit this approach. Why not just add another byte of
         // exFAT specific data to the meta structure and do a lazy load of the
         // contiguous stuff in fatfs_make_data_runs()? Also, if we are doing a 
-        // data run fior a deleted file, we know how many unallocated clusters
+        // data run for a deleted file, we know how many unallocated clusters
         // we can attempt to recover.
         /* If the FAT chain bit of the secondary flags of the stream entry is set,
          * the file is not fragmented and there is no FAT chain to walk. If the 
@@ -1169,7 +1169,7 @@ exfatfs_load_file_stream_dentry(FATFS_INFO *a_fatfs,
         dentry_type = exfatfs_is_dentry(a_fatfs, a_dentry, a_sector_is_alloc);
 
         /* If it is and its not deleted/deleted status matches that of the
-            * file entry, call it good. */
+         * file entry, call it good. */
         if ((a_file_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE && 
              dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) ||
             (a_file_dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE &&
@@ -1214,19 +1214,23 @@ exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inu
     EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     TSK_DADDR_T next_cluster = 0;
 
-    // RJCTODO: No longer internal. beef up checks
+    // RJCTODO: No longer strictly internal. beef up checks
     assert(a_fatfs != NULL);
     assert(fatfs_is_inum_in_range(a_fatfs, a_file_entry_inum));
     assert(a_stream_dentry != NULL);
 
+    // RJCTODO: Consider changing enum to reflect entries NOT_IN_USE vs. DELETED
+    
     /* Check for the most common case first - the file stream entry is located
-     * immediately after the file entry. This should be true for any file 
-     * entry for a non-deleted file in an allocated cluster, provided that 
-     * the entry is not the last 32 bytes of the cluster. Even then, if the
-     * directory is not fragmented, the stream entry will still follow the
-     * file entry. Finally, if the file entry is for a deleted file and it was
-     * found in an unallocated cluster, the only viable place to look for the
-     * stream entry is in the bytes following the file entry. */
+     * immediately after the file entry. This should always be true for any 
+     * in-use file entry in an allocated cluster that is not the last entry in
+     * the cluster. It will also be true if the file entry is the last entry in 
+     * the cluster and the directory that contains the file is not fragmented - 
+     * the stream entry will simply be the first entry of the next cluster. 
+     * Finally, if the file entry is not in-use and was found in an unallocated 
+     * sector, the only viable place to look for the stream entry is in the 
+     * bytes following the file entry, since there is no FAT chain to 
+     * consult. */
     stream_entry_inum = a_file_entry_inum + 1;
     if (fatfs_is_inum_in_range(a_fatfs, stream_entry_inum)) {
         if (exfatfs_load_file_stream_dentry(a_fatfs, 
@@ -1240,9 +1244,9 @@ exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inu
 
     /* If the stream entry was not found immediately following the file entry
      * and the cluster is allocated, it is possible that the file entry was the
-     * last thirty two bytes of a cluster in a fragmented directory. In this
+     * last entry of a cluster in a fragmented directory. In this
      * case, the FAT can be consulted to see if there is a next cluster. If 
-     * so, the stream entry may be the first 32 bytes of that cluster. */
+     * so, the stream entry may be the first entry of that cluster. */
     if (a_sector_is_alloc) {
         /* Calculate the byte offset of the last possible directory entry in 
          * the current cluster. */
@@ -1251,8 +1255,10 @@ exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inu
         last_entry_offset = (cluster_base_sector * a_fatfs->ssize) + 
             (a_fatfs->csize * a_fatfs->ssize) - sizeof(FATFS_DENTRY);   
 
-        /* Get the byte offset of the file entry. */
-        file_entry_offset = FATFS_INODE_2_OFF(a_fatfs, a_file_entry_inum);
+        /* Get the byte offset of the file entry. Note that FATFS_INODE_2_OFF
+         * gices the offset relative to start of a sector. */
+        file_entry_offset = (a_sector * a_fatfs->ssize) + 
+            FATFS_INODE_2_OFF(a_fatfs, a_file_entry_inum);
 
         if (file_entry_offset == last_entry_offset) {
             /* The file entry is the last in its cluster. Look up the next
@@ -1260,12 +1266,12 @@ exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inu
             if ((fatfs_getFAT(a_fatfs, cluster, &next_cluster) == 0) &&
                 (next_cluster != 0)) {
                 /* Found the next cluster in the FAT, so get its first sector
-                 * and the inode address of the first bytes of the sector. */
-                cluster_base_sector = FATFS_CLUST_2_SECT(a_fatfs, cluster); 
+                 * and the inode address of the first entry of the sector. */
+                cluster_base_sector = FATFS_CLUST_2_SECT(a_fatfs, next_cluster); 
                 stream_entry_inum = FATFS_SECT_2_INODE(a_fatfs, 
                     cluster_base_sector);
 
-                if (!fatfs_is_inum_in_range(a_fatfs, stream_entry_inum)) {
+                if (fatfs_is_inum_in_range(a_fatfs, stream_entry_inum)) {
                     if (exfatfs_load_file_stream_dentry(a_fatfs, 
                         stream_entry_inum, a_sector_is_alloc, 
                         a_file_dentry_type, 
@@ -1367,9 +1373,17 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
      * found. */
     if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
         dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) {
-        exfatfs_find_file_stream_dentry(a_fatfs, a_inum, sector, sect_is_alloc, 
-            dentry_type, &stream_dentry);
-        secondary_dentry = &stream_dentry;
+        if (exfatfs_find_file_stream_dentry(a_fatfs, a_inum, sector, sect_is_alloc, 
+            dentry_type, &stream_dentry) == 0) {
+            secondary_dentry = &stream_dentry;
+        }
+        else {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_NUM); // RJCTODO: Get a better errno here.
+            tsk_error_set_errstr("%s: could not find stream entry for file entry at %" PRIuINUM "", func_name, 
+                a_inum);
+            return 1;
+        }
     }
 
     /* Populate the TSK_FS_META object OF THE tsk_fs_file object. */

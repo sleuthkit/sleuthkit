@@ -30,8 +30,6 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
-// RJCTODO: Why is fls not listing correct times as istat is doing?
-
 /**
  * \internal
  * \struct
@@ -459,7 +457,6 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
         /* Not a directory. */
         a_name_info->fs_name->type = TSK_FS_NAME_TYPE_REG;
 
-        // RJCTODO: Give this some thought.
         if (a_name_info->sector_is_allocated) {
             a_name_info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;    
         }
@@ -526,7 +523,6 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
     /* Not a directory. */
     a_name_info->fs_name->type = TSK_FS_NAME_TYPE_REG;
 
-    // RJCTODO: Give this some thought.
     if (a_name_info->sector_is_allocated) {
         a_name_info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;    
     }
@@ -594,9 +590,6 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
     }
     name_info.fs_name->name[0] = '\0';
     name_info.fs_dir = a_fs_dir;
-
-    // RJCTODO: Does this need to be set here? If not, when is it set?
-    // name_info->fs_name->par_addr = a_inum; 
 
     /* Loop through the sectors in the buffer. */ 
     dentry = (FATFS_DENTRY*)a_buf;

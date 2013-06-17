@@ -393,7 +393,6 @@ exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
 static void 
 exfatfs_init_caches(FATFS_INFO *a_fatfs)
 {
-    // RJCTODO: Is all of this needed for exFAT?
     uint32_t i = 0;
 
     for (i = 0; i < FAT_CACHE_N; i++) {
