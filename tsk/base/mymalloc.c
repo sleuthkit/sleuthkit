@@ -34,7 +34,7 @@
 *	not return at all.
 *
 *	tsk_malloc() allocates the requested amount of memory. The memory
-*	is not set to zero.
+*	is set to zero.
 *
 *	tsk_realloc() resizes memory obtained from tsk_malloc() or tsk_realloc()
 *	to the requested size. The result pointer value may differ from
