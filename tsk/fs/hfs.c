@@ -3795,9 +3795,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                         else {
                             // There is data following the compression record, as there should be.
                             if ((fs_attr_unc =
-                                    tsk_fs_attrlist_getnew(fs_file->
-                                        meta->attr,
-                                        TSK_FS_ATTR_RES)) == NULL) {
+                                    tsk_fs_attrlist_getnew(fs_file->meta->
+                                        attr, TSK_FS_ATTR_RES)) == NULL) {
                                 error_returned
                                     (" - hfs_load_extended_attrs, FS_ATTR for uncompressed data");
                                 free(nodeData);
@@ -4829,7 +4828,8 @@ hfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start_blk,
         if (flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
             myflags |= TSK_FS_BLOCK_FLAG_AONLY;
 
-        if (tsk_fs_block_get_flag(fs, fs_block, addr, (TSK_FS_BLOCK_FLAG_ENUM)myflags) == NULL) {
+        if (tsk_fs_block_get_flag(fs, fs_block, addr,
+                (TSK_FS_BLOCK_FLAG_ENUM) myflags) == NULL) {
             tsk_fs_block_free(fs_block);
             return 1;
         }

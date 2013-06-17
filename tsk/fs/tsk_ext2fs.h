@@ -134,13 +134,13 @@ extern "C" {
         uint8_t s_uuid[16];     /* u8[16] */
         char s_volume_name[16];
         char s_last_mounted[64];
-        uint8_t s_algorithm_usage_bitmap[4]; /* u32 */
+        uint8_t s_algorithm_usage_bitmap[4];    /* u32 */
         uint8_t s_prealloc_blocks;      /* u8 */
         uint8_t s_prealloc_dir_blocks;  /* u8 */
-        union pad_or_gdt{
-            uint8_t s_padding1[2];          /* u16 */
-            uint8_t s_reserved_gdt_blocks[2]; /*u16*/
-        }pad_or_gdt;
+        union pad_or_gdt {
+            uint8_t s_padding1[2];      /* u16 */
+            uint8_t s_reserved_gdt_blocks[2];   /*u16 */
+        } pad_or_gdt;
 /* Valid if EXT2_FEATURE_COMPAT_HAS_JOURNAL */
         uint8_t s_journal_uuid[16];     /* u8[16] */
         uint8_t s_journal_inum[4];      /* u32 */
@@ -149,21 +149,21 @@ extern "C" {
         uint8_t s_hash_seed[16];        /* u32[4] */
         uint8_t s_def_hash_version;     /* u8 */
         uint8_t s_jnl_backup_type;      /* u8 */
-        uint8_t s_desc_size[2];         /* u16 */
-        uint8_t s_default_mount_opts[4];  /* u32 */
+        uint8_t s_desc_size[2]; /* u16 */
+        uint8_t s_default_mount_opts[4];        /* u32 */
         uint8_t s_first_meta_bg[4];     /* u32 */
-        uint8_t s_mkfs_time[4];         /* u32 */
+        uint8_t s_mkfs_time[4]; /* u32 */
         uint8_t s_jnl_blocks[17 * 4];   /* u32[17] */
 /* Valid if EXT4_FEATURE_INCOMPAT_64BIT*/
         uint8_t s_blocks_count_hi[4];   /* u32 */
         uint8_t s_r_blocks_count_hi[4]; /* u32 */
-        uint8_t s_free_blocks_count_hi[4]; /* u32 */
+        uint8_t s_free_blocks_count_hi[4];      /* u32 */
         uint8_t s_min_extra_isize[2];   /* u16 */
         uint8_t s_want_extra_isize[2];  /* u16 */
-        uint8_t s_flags[4];             /* u32 */
+        uint8_t s_flags[4];     /* u32 */
         uint8_t s_raid_stride[2];       /* u16 */
         uint8_t s_mmp_interval[2];      /* u16 */
-        uint8_t s_mmp_block[8];         /* u64 */
+        uint8_t s_mmp_block[8]; /* u64 */
         uint8_t s_raid_stripe_width[4]; /* u32 */
         uint8_t s_log_groups_per_flex;  /* u8 */
         uint8_t s_reserved_char_pad;    /* u8 */
@@ -171,7 +171,7 @@ extern "C" {
         uint8_t s_kbytes_written[8];    /* u64 */
         uint8_t s_snapshot_inum[4];     /* u32 */
         uint8_t s_snapshot_id[4];       /* u32 */
-        uint8_t s_snapshot_r_blocks_count[8]; /* u64 */
+        uint8_t s_snapshot_r_blocks_count[8];   /* u64 */
         uint8_t s_snapshot_list[4];     /* u32 */
         uint8_t s_error_count[4];       /* u32 */
         uint8_t s_first_error_time[4];  /* u32 */
@@ -188,7 +188,7 @@ extern "C" {
         uint8_t s_usr_quota_inum[4];    /* u32 */
         uint8_t s_grp_quota_inum[4];    /* u32 */
         uint8_t s_overhead_clusters[4]; /* u32 */
-        uint8_t s_padding[ 109 * 4];
+        uint8_t s_padding[109 * 4];
     } ext2fs_sb;
 
 /* File system State Values */
@@ -231,8 +231,8 @@ extern "C" {
 #define EXT2FS_FEATURE_INCOMPAT_FLEX_BG         0x0200
 #define EXT2FS_FEATURE_INCOMPAT_EA_INODE        0x0400
 #define EXT2FS_FEATURE_INCOMPAT_DIRDATA         0x1000
-#define EXT4FS_FEATURE_INCOMPAT_INLINEDATA      0x2000 /* data in inode */
-#define EXT4FS_FEATURE_INCOMPAT_LARGEDIR        0x4000 /* >2GB or 3-lvl htree */
+#define EXT4FS_FEATURE_INCOMPAT_INLINEDATA      0x2000  /* data in inode */
+#define EXT4FS_FEATURE_INCOMPAT_LARGEDIR        0x4000  /* >2GB or 3-lvl htree */
 
 #define EXT2FS_HAS_RO_COMPAT_FEATURE(fs,sb,mask)\
     ((tsk_getu32(fs->endian,sb->s_feature_ro_compat) & mask) != 0)
@@ -252,7 +252,7 @@ extern "C" {
 /*
  * Group Descriptor
  */
-    typedef struct ext2fs_gd{
+    typedef struct ext2fs_gd {
         uint8_t bg_block_bitmap[4];     /* u32: block of blocks bitmap */
         uint8_t bg_inode_bitmap[4];     /* u32: block of inodes bitmap */
         uint8_t bg_inode_table[4];      /* u32: block of inodes table */
@@ -262,33 +262,33 @@ extern "C" {
         uint8_t f1[14];
     } ext2fs_gd;
 
-#define EXT4_BG_INODE_UNINIT    0x0001 /* Inode table/bitmap not in use */
-#define EXT4_BG_BLOCK_UNINIT    0x0002 /* Block bitmap not in use */
-#define EXT4_BG_INODE_ZEROED    0x0004 /* On-disk itable initialized to zero */
+#define EXT4_BG_INODE_UNINIT    0x0001  /* Inode table/bitmap not in use */
+#define EXT4_BG_BLOCK_UNINIT    0x0002  /* Block bitmap not in use */
+#define EXT4_BG_INODE_ZEROED    0x0004  /* On-disk itable initialized to zero */
 
 #define EXT4BG_HAS_FLAG(fs,gd,flag)\
     ((tsk_getu16(fs->endian,gd->bg_flags) & flag) != 0)
 
-    typedef struct ext4fs_gd{
-        uint8_t bg_block_bitmap_lo[4];      /* u32 */
-        uint8_t bg_inode_bitmap_lo[4];      /* u32 */
-        uint8_t bg_inode_table_lo[4];       /* u32 */
-        uint8_t bg_free_blocks_count_lo[2]; /* u16 */
-        uint8_t bg_free_inodes_count_lo[2]; /* u16 */
-        uint8_t bg_used_dirs_count_lo[2];   /* u16 */
-        uint8_t bg_flags[2];                /* u16 */
-        uint8_t bg_reserved[4*2];           /* u32 */
-        uint8_t bg_itable_unused_lo[2];     /* u16 */
-        uint8_t bg_checksum[2];             /* u16 */
-        uint8_t bg_block_bitmap_hi[4];      /* u32 */
-        uint8_t bg_inode_bitmap_hi[4];      /* u32 */
-        uint8_t bg_inode_table_hi[4];       /* u32 */
-        uint8_t bg_free_blocks_count_hi[2]; /* u16 */
-        uint8_t bg_free_inodes_count_hi[2]; /* u16 */
-        uint8_t bg_used_dirs_count_hi[2];   /* u16 */
-        uint8_t bg_itable_unused_hi[2];     /* u16 */
-        uint8_t bg_reserved2[4*3];          /* u32 */
-    }ext4fs_gd;
+    typedef struct ext4fs_gd {
+        uint8_t bg_block_bitmap_lo[4];  /* u32 */
+        uint8_t bg_inode_bitmap_lo[4];  /* u32 */
+        uint8_t bg_inode_table_lo[4];   /* u32 */
+        uint8_t bg_free_blocks_count_lo[2];     /* u16 */
+        uint8_t bg_free_inodes_count_lo[2];     /* u16 */
+        uint8_t bg_used_dirs_count_lo[2];       /* u16 */
+        uint8_t bg_flags[2];    /* u16 */
+        uint8_t bg_reserved[4 * 2];     /* u32 */
+        uint8_t bg_itable_unused_lo[2]; /* u16 */
+        uint8_t bg_checksum[2]; /* u16 */
+        uint8_t bg_block_bitmap_hi[4];  /* u32 */
+        uint8_t bg_inode_bitmap_hi[4];  /* u32 */
+        uint8_t bg_inode_table_hi[4];   /* u32 */
+        uint8_t bg_free_blocks_count_hi[2];     /* u16 */
+        uint8_t bg_free_inodes_count_hi[2];     /* u16 */
+        uint8_t bg_used_dirs_count_hi[2];       /* u16 */
+        uint8_t bg_itable_unused_hi[2]; /* u16 */
+        uint8_t bg_reserved2[4 * 3];    /* u32 */
+    } ext4fs_gd;
 
 
 /* data address to group number */
@@ -330,39 +330,39 @@ extern "C" {
         uint8_t i_frag;
         uint8_t i_fsize;
         uint8_t f1[2];
-        uint8_t i_uid_high[2];     /* u16 */
-        uint8_t i_gid_high[2];     /* u16 */
-        uint8_t f7[4];             /* u32 */
-        uint8_t i_extra_isize[2];  /* u16 */
-        uint8_t i_pad1[2];         /* u16 */
-        uint8_t i_ctime_extra[4];  /* u32 */
-        uint8_t i_mtime_extra[4];  /* u32 */
-        uint8_t i_atime_extra[4];  /* u32 */
-        uint8_t i_crtime[4];       /* u32 */
-        uint8_t i_crtime_extra[4]; /* u32 */
-        uint8_t i_version_hi[4];   /* u32 */
+        uint8_t i_uid_high[2];  /* u16 */
+        uint8_t i_gid_high[2];  /* u16 */
+        uint8_t f7[4];          /* u32 */
+        uint8_t i_extra_isize[2];       /* u16 */
+        uint8_t i_pad1[2];      /* u16 */
+        uint8_t i_ctime_extra[4];       /* u32 */
+        uint8_t i_mtime_extra[4];       /* u32 */
+        uint8_t i_atime_extra[4];       /* u32 */
+        uint8_t i_crtime[4];    /* u32 */
+        uint8_t i_crtime_extra[4];      /* u32 */
+        uint8_t i_version_hi[4];        /* u32 */
     } ext2fs_inode;
 
     typedef struct ext2fs_extent {
-        uint8_t  ee_block[4];       /* u32 */
-        uint8_t  ee_len[2];         /* u16 */
-        uint8_t  ee_start_hi[2];    /* u16 */
-        uint8_t  ee_start_lo[4];    /* u32 */
+        uint8_t ee_block[4];    /* u32 */
+        uint8_t ee_len[2];      /* u16 */
+        uint8_t ee_start_hi[2]; /* u16 */
+        uint8_t ee_start_lo[4]; /* u32 */
     } ext2fs_extent;
 
     typedef struct ext2fs_extent_idx {
-        uint8_t  ei_block[4];       /* u32 */
-        uint8_t  ei_leaf_lo[4];     /* u32 */
-        uint8_t  ei_leaf_hi[2];     /* u16 */
-        uint8_t  ei_unused[2];      /* u16 */
+        uint8_t ei_block[4];    /* u32 */
+        uint8_t ei_leaf_lo[4];  /* u32 */
+        uint8_t ei_leaf_hi[2];  /* u16 */
+        uint8_t ei_unused[2];   /* u16 */
     } ext2fs_extent_idx;
 
     typedef struct ext2fs_extent_header {
-        uint8_t  eh_magic[2];       /* u16 */
-        uint8_t  eh_entries[2];     /* u16 */
-        uint8_t  eh_max[2];         /* u16 */
-        uint8_t  eh_depth[2];       /* u16 */
-        uint8_t  eh_generation[4];  /* u32 */
+        uint8_t eh_magic[2];    /* u16 */
+        uint8_t eh_entries[2];  /* u16 */
+        uint8_t eh_max[2];      /* u16 */
+        uint8_t eh_depth[2];    /* u16 */
+        uint8_t eh_generation[4];       /* u32 */
     } ext2fs_extent_header;
 
 /* MODE */
@@ -398,22 +398,22 @@ extern "C" {
 #define EXT2_IN_NODUMP 		0x00000040      /* do not dump file */
 #define EXT2_IN_NOA		 	0x00000080      /* do not update atime */
 #define EXT2_IN_DIRTY                   0x00000100
-#define EXT2_IN_COMPRBLK                0x00000200 /* One or more compressed clusters */
-#define EXT2_IN_NOCOMPR                 0x00000400 /* Don't compress */
-#define EXT2_IN_ECOMPR                  0x00000800 /* Compression error */
-#define EXT2_IN_INDEX                   0x00001000 /* hash-indexed directory */
-#define EXT2_IN_IMAGIC                  0x00002000 /* AFS directory */
-#define EXT2_IN_JOURNAL_DATA            0x00004000 /* file data should be journaled */
-#define EXT2_IN_NOTAIL                  0x00008000 /* file tail should not be merged */
-#define EXT2_IN_DIRSYNC                 0x00010000 /* dirsync behaviour (directories only) */
-#define EXT2_IN_TOPDIR                  0x00020000 /* Top of directory hierarchies*/
-#define EXT2_IN_HUGE_FILE               0x00040000 /* Set to each huge file */
-#define EXT2_IN_EXTENTS                 0x00080000 /* Inode uses extents */
-#define EXT2_IN_EA_INODE                0x00200000 /* Inode used for large EA */
-#define EXT2_IN_EOFBLOCKS               0x00400000 /* Blocks allocated beyond EOF */
-#define EXT2_IN_RESERVED                0x80000000 /* reserved for ext4 lib */
-#define EXT2_IN_USER_VISIBLE            0x004BDFFF /* User visible flags */
-#define EXT2_IN_USER_MODIFIABLE         0x004B80FF /* User modifiable flags */
+#define EXT2_IN_COMPRBLK                0x00000200      /* One or more compressed clusters */
+#define EXT2_IN_NOCOMPR                 0x00000400      /* Don't compress */
+#define EXT2_IN_ECOMPR                  0x00000800      /* Compression error */
+#define EXT2_IN_INDEX                   0x00001000      /* hash-indexed directory */
+#define EXT2_IN_IMAGIC                  0x00002000      /* AFS directory */
+#define EXT2_IN_JOURNAL_DATA            0x00004000      /* file data should be journaled */
+#define EXT2_IN_NOTAIL                  0x00008000      /* file tail should not be merged */
+#define EXT2_IN_DIRSYNC                 0x00010000      /* dirsync behaviour (directories only) */
+#define EXT2_IN_TOPDIR                  0x00020000      /* Top of directory hierarchies */
+#define EXT2_IN_HUGE_FILE               0x00040000      /* Set to each huge file */
+#define EXT2_IN_EXTENTS                 0x00080000      /* Inode uses extents */
+#define EXT2_IN_EA_INODE                0x00200000      /* Inode used for large EA */
+#define EXT2_IN_EOFBLOCKS               0x00400000      /* Blocks allocated beyond EOF */
+#define EXT2_IN_RESERVED                0x80000000      /* reserved for ext4 lib */
+#define EXT2_IN_USER_VISIBLE            0x004BDFFF      /* User visible flags */
+#define EXT2_IN_USER_MODIFIABLE         0x004B80FF      /* User modifiable flags */
 
 
 /*
@@ -598,7 +598,7 @@ extern "C" {
         uint8_t chksum_type;
         uint8_t chksum_size;
         uint8_t padding[2];
-        uint8_t chksum[4*JBD2_CHECKSUM_BYTES];
+        uint8_t chksum[4 * JBD2_CHECKSUM_BYTES];
         uint8_t commit_sec[8];
         uint8_t commit_nsec[4];
     } ext4fs_journ_commit_head;

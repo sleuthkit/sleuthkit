@@ -1241,8 +1241,8 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_FS_READ);
                     }
-                    tsk_error_set_errstr2("ffs_block_walk: Block %" PRIuDADDR,
-                        addr);
+                    tsk_error_set_errstr2("ffs_block_walk: Block %"
+                        PRIuDADDR, addr);
                     tsk_fs_block_free(fs_block);
                     free(cache_blk_buf);
                     return 1;
@@ -1250,7 +1250,7 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
                 cache_len_f = frags;
                 cache_addr = addr;
             }
-            cache_offset = (size_t)((addr - cache_addr) * fs->block_size);
+            cache_offset = (size_t) ((addr - cache_addr) * fs->block_size);
         }
 
         if (a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
@@ -1258,8 +1258,7 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
 
         // call the callback
         tsk_fs_block_set(fs, fs_block, addr,
-            myflags | TSK_FS_BLOCK_FLAG_RAW,
-            &cache_blk_buf[cache_offset]);
+            myflags | TSK_FS_BLOCK_FLAG_RAW, &cache_blk_buf[cache_offset]);
         retval = action(fs_block, ptr);
         if (retval == TSK_WALK_STOP) {
             break;

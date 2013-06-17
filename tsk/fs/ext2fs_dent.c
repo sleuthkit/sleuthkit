@@ -267,15 +267,14 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_ERR;
     }
 
-    if (tsk_verbose)
-    {
+    if (tsk_verbose) {
         tsk_fprintf(stderr,
             "ext2fs_dir_open_meta: Processing directory %" PRIuINUM
             "\n", a_addr);
 #ifdef Ext4_DBG
         tsk_fprintf(stderr,
             "ext2fs_dir_open_meta: $OrphanFiles Inum %" PRIuINUM
-            " == %" PRIuINUM ": %d\n", TSK_FS_ORPHANDIR_INUM(a_fs), a_addr, 
+            " == %" PRIuINUM ": %d\n", TSK_FS_ORPHANDIR_INUM(a_fs), a_addr,
             a_addr == TSK_FS_ORPHANDIR_INUM(a_fs));
 #endif
     }
@@ -294,14 +293,15 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     //  handle the orphan directory if its contents were requested
     if (a_addr == TSK_FS_ORPHANDIR_INUM(a_fs)) {
 #ifdef Ext4_DBG
-        tsk_fprintf(stderr,"DEBUG: Getting ready to process ORPHANS\n");
+        tsk_fprintf(stderr, "DEBUG: Getting ready to process ORPHANS\n");
 #endif
         return tsk_fs_dir_find_orphans(a_fs, fs_dir);
     }
-    else
-    {
+    else {
 #ifdef Ext4_DBG
-        tsk_fprintf(stderr,"DEBUG: not orphan %" PRIuINUM "!=%"PRIuINUM"\n", a_addr, TSK_FS_ORPHANDIR_INUM(a_fs));
+        tsk_fprintf(stderr,
+            "DEBUG: not orphan %" PRIuINUM "!=%" PRIuINUM "\n", a_addr,
+            TSK_FS_ORPHANDIR_INUM(a_fs));
 #endif
     }
 
@@ -348,9 +348,9 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
         retval_tmp =
             ext2fs_dent_parse_block(ext2fs, fs_dir,
-            (fs_dir->fs_file->
-                meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
-            &list_seen, dirptr, len);
+            (fs_dir->fs_file->meta->
+                flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, &list_seen,
+            dirptr, len);
 
         if (retval_tmp == TSK_ERR) {
             retval_final = TSK_ERR;

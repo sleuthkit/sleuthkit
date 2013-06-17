@@ -388,8 +388,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "iso9660_load_inodes_dir: offs: %" PRIuOFF
-            " count: %d ctype: %d fn: %s\n",
-            a_offs, count, ctype, a_fn);
+            " count: %d ctype: %d fn: %s\n", a_offs, count, ctype, a_fn);
 
     // cycle through each sector -- entries will not cross them
     for (i = 0; i < s_cnt; i++) {
@@ -497,8 +496,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         (const UTF16 **) &name16,
                         (UTF16 *) & buf[b_offs + sizeof(iso9660_dentry) +
                             dentry->fi_len], &name8,
-                        (UTF8 *) ((uintptr_t) & in_node->
-                            inode.fn[ISO9660_MAXNAMLEN_STD]),
+                        (UTF8 *) ((uintptr_t) & in_node->inode.
+                            fn[ISO9660_MAXNAMLEN_STD]),
                         TSKlenientConversion);
                     if (retVal != TSKconversionOK) {
                         if (tsk_verbose)
@@ -1122,9 +1121,8 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
     if (tsk_verbose)
         tsk_fprintf(stderr, "iso9660_inode_walk: "
             " start: %" PRIuINUM " last: %" PRIuINUM " flags: %d"
-            " action: %"PRIu64" ptr: %"PRIu64"\n",
-            start, last, flags, (uint64_t) action,
-            (uint64_t) ptr);
+            " action: %" PRIu64 " ptr: %" PRIu64 "\n",
+            start, last, flags, (uint64_t) action, (uint64_t) ptr);
 
     myflags = TSK_FS_META_FLAG_ALLOC;
 
@@ -1331,9 +1329,8 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
     if (tsk_verbose)
         tsk_fprintf(stderr, "iso9660_block_walk: "
             " start: %" PRIuDADDR " last: %" PRIuDADDR " flags: %d"
-            " action: %"PRIu64" ptr: %"PRIu64"\n",
-            start, last, flags, (uint64_t) action,
-            (uint64_t) ptr);
+            " action: %" PRIu64 " ptr: %" PRIu64 "\n",
+            start, last, flags, (uint64_t) action, (uint64_t) ptr);
 
     /*
      * Sanity checks.
@@ -1390,7 +1387,7 @@ iso9660_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T last,
 
         if (flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
             myflags |= TSK_FS_BLOCK_FLAG_AONLY;
-        
+
         if (tsk_fs_block_get_flag(fs, fs_block, addr, myflags) == NULL) {
             tsk_error_set_errstr2("iso_block_walk");
             tsk_fs_block_free(fs_block);
@@ -1785,8 +1782,8 @@ make_unix_perm(TSK_FS_INFO * fs, iso9660_dentry * dd,
     iso9660_inode * dinode, char *perm)
 {
     if (tsk_verbose)
-        tsk_fprintf(stderr, "make_unix_perm: fs: %"PRIu64
-            " dd: %"PRIu64"\n", (uint64_t) fs, (uint64_t) dd);
+        tsk_fprintf(stderr, "make_unix_perm: fs: %" PRIu64
+            " dd: %" PRIu64 "\n", (uint64_t) fs, (uint64_t) dd);
 
     memset(perm, '-', 10);
     perm[10] = '\0';
@@ -2392,7 +2389,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     }
 
     if (tsk_verbose) {
-        tsk_fprintf(stderr, "iso9660_open img_info: %"PRIu64
+        tsk_fprintf(stderr, "iso9660_open img_info: %" PRIu64
             " ftype: %" PRIu8 " test: %" PRIu8 "\n", (uint64_t) img_info,
             ftype, test);
     }
@@ -2475,8 +2472,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->tag = 0;
         iso9660_close(fs);
         if (tsk_verbose)
-            fprintf(stderr,
-                "iso9660_open: Block size is 0\n");
+            fprintf(stderr, "iso9660_open: Block size is 0\n");
         if (test)
             return NULL;
         else {

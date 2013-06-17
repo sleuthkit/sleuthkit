@@ -139,8 +139,8 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
     TSK_FS_LOAD_FILE buf1;
     TSK_DADDR_T i;
     int b_desc_seen = 0;
-    ext2fs_journ_sb * journ_sb = NULL;
-	ext4fs_journ_commit_head *commit_head;
+    ext2fs_journ_sb *journ_sb = NULL;
+    ext4fs_journ_commit_head *commit_head;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -328,19 +328,28 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
             tsk_printf("%" PRIuDADDR ":\tSuperblock (seq: %" PRIu32 ")\n",
                 i, big_tsk_getu32(head->entry_seq));
             journ_sb = head;
-            tsk_printf("sb version: %d\n", big_tsk_getu32(head->entry_type));
-            tsk_printf("sb version: %d\n", big_tsk_getu32(journ_sb->entrytype));
-            tsk_printf("sb feature_compat flags 0x%08X\n", big_tsk_getu32(journ_sb->feature_compat));
-            if(big_tsk_getu32(journ_sb->feature_compat) & JBD2_FEATURE_COMPAT_CHECKSUM)
+            tsk_printf("sb version: %d\n",
+                big_tsk_getu32(head->entry_type));
+            tsk_printf("sb version: %d\n",
+                big_tsk_getu32(journ_sb->entrytype));
+            tsk_printf("sb feature_compat flags 0x%08X\n",
+                big_tsk_getu32(journ_sb->feature_compat));
+            if (big_tsk_getu32(journ_sb->
+                    feature_compat) & JBD2_FEATURE_COMPAT_CHECKSUM)
                 tsk_printf("\tJOURNAL_CHECKSUMS\n");
-            tsk_printf("sb feature_incompat flags 0x%08X\n", big_tsk_getu32(journ_sb->feature_incompat));
-            if(big_tsk_getu32(journ_sb->feature_incompat) & JBD2_FEATURE_INCOMPAT_REVOKE) 
+            tsk_printf("sb feature_incompat flags 0x%08X\n",
+                big_tsk_getu32(journ_sb->feature_incompat));
+            if (big_tsk_getu32(journ_sb->
+                    feature_incompat) & JBD2_FEATURE_INCOMPAT_REVOKE)
                 tsk_printf("\tJOURNAL_REVOKE\n");
-            if(big_tsk_getu32(journ_sb->feature_incompat) & JBD2_FEATURE_INCOMPAT_64BIT) 
+            if (big_tsk_getu32(journ_sb->
+                    feature_incompat) & JBD2_FEATURE_INCOMPAT_64BIT)
                 tsk_printf("\tJOURNAL_64BIT\n");
-            if(big_tsk_getu32(journ_sb->feature_incompat) & JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT) 
+            if (big_tsk_getu32(journ_sb->
+                    feature_incompat) & JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)
                 tsk_printf("\tJOURNAL_ASYNC_COMMIT\n");
-            tsk_printf("sb feature_ro_incompat flags 0x%08X\n", big_tsk_getu32(journ_sb->feature_ro_incompat));
+            tsk_printf("sb feature_ro_incompat flags 0x%08X\n",
+                big_tsk_getu32(journ_sb->feature_ro_incompat));
         }
 
         /* Revoke Block */
@@ -354,38 +363,43 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
 
         /* The commit is the end of the entries */
         else if (big_tsk_getu32(head->entry_type) == EXT2_J_ETYPE_COM) {
-            tsk_printf("%" PRIuDADDR ":\t%sCommit Block (seq: %" PRIu32
-                , i, ((i < jinfo->start_blk)
+            tsk_printf("%" PRIuDADDR ":\t%sCommit Block (seq: %" PRIu32, i,
+                ((i < jinfo->start_blk)
                     || (big_tsk_getu32(head->entry_seq) <
                         jinfo->start_seq)) ? "Unallocated " : "Allocated ",
                 big_tsk_getu32(head->entry_seq));
-           commit_head=head;
+            commit_head = head;
             //tsk_printf("commit seq %" PRIu32 "\n", big_tsk_getu32(commit_head->c_header.entry_seq));
-            if(big_tsk_getu32(journ_sb->feature_compat) & JBD2_FEATURE_COMPAT_CHECKSUM)
-            {
+            if (big_tsk_getu32(journ_sb->
+                    feature_compat) & JBD2_FEATURE_COMPAT_CHECKSUM) {
                 int chksum_type = commit_head->chksum_type;
-                if(chksum_type)
-                {
-                    tsk_printf(", checksum_type: %d", commit_head->chksum_type);
-                    switch(commit_head->chksum_type){
-                        case JBD2_CRC32_CHKSUM:
-                            tsk_printf("-CRC32");
-                            break;
-                        case JBD2_MD5_CHKSUM:
-                            tsk_printf("-MD5");
-                            break;
-                        case JBD2_SHA1_CHKSUM:
-                            tsk_printf("-SHA1");
-                            break;
-                        default:
-                            tsk_printf("-UNKOWN");
-                            break;
+                if (chksum_type) {
+                    tsk_printf(", checksum_type: %d",
+                        commit_head->chksum_type);
+                    switch (commit_head->chksum_type) {
+                    case JBD2_CRC32_CHKSUM:
+                        tsk_printf("-CRC32");
+                        break;
+                    case JBD2_MD5_CHKSUM:
+                        tsk_printf("-MD5");
+                        break;
+                    case JBD2_SHA1_CHKSUM:
+                        tsk_printf("-SHA1");
+                        break;
+                    default:
+                        tsk_printf("-UNKOWN");
+                        break;
                     }
-                    tsk_printf(", checksum_size: %d", commit_head->chksum_size);
-                    tsk_printf(", chksum: 0x%08X", big_tsk_getu32(commit_head->chksum));
+                    tsk_printf(", checksum_size: %d",
+                        commit_head->chksum_size);
+                    tsk_printf(", chksum: 0x%08X",
+                        big_tsk_getu32(commit_head->chksum));
                 }
             }
-            tsk_printf(", sec: %llu.%u", tsk_getu64( TSK_BIG_ENDIAN,commit_head->commit_sec), NSEC_PER_SEC/10 * tsk_getu32(TSK_BIG_ENDIAN,commit_head->commit_nsec));
+            tsk_printf(", sec: %llu.%u", tsk_getu64(TSK_BIG_ENDIAN,
+                    commit_head->commit_sec),
+                NSEC_PER_SEC / 10 * tsk_getu32(TSK_BIG_ENDIAN,
+                    commit_head->commit_nsec));
             tsk_printf(")\n");
         }
 

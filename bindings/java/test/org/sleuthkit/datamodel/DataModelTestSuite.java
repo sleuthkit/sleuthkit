@@ -66,7 +66,7 @@ public class DataModelTestSuite {
 	 */
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		java.io.File results = new java.io.File(getRsltPath());
+		java.io.File results = new java.io.File(getRsltDirPath());
 		for (java.io.File del : results.listFiles()) {
 			del.delete();
 		}
@@ -173,9 +173,7 @@ public class DataModelTestSuite {
 	 * @return path to put/find the standard at
 	 */
 	static String standardFilePath(List<String> imagePaths, String type) {
-		String firstImage = getImgName(imagePaths.get(0));
-		String standardPath = standardRootDirPath() + java.io.File.separator + firstImage + type + ".txt";
-		return standardPath;
+		return buildPath(standardRootDirPath(), getImgName(imagePaths.get(0)), type, ".txt");
 	}
 
 	/**
@@ -241,12 +239,23 @@ public class DataModelTestSuite {
 
 	
 	/**
-	 * Gets the location results are stored in.
+	 * Gets the folder where results are stored in.
 	 *
 	 * @return
 	 */
-	public static String getRsltPath() {
+	public static String getRsltDirPath() {
 		return System.getProperty(RSLT, "test" + java.io.File.separator + "output" + java.io.File.separator + "results");
+	}
+	
+	/**
+	 * Get the path for the output (result) file for a given image and test.
+	 *
+	 * @param imagePaths image being tested
+	 * @param type Test type
+	 * @return path to put the test output into
+	 */
+	static String resultFilePath(List<String> imagePaths, String type) {
+		return buildPath(getRsltDirPath(), getImgName(imagePaths.get(0)), type, ".txt");
 	}
 
 	/**

@@ -71,9 +71,9 @@ public class BottomUpTest {
 	@Test
 	public void testBottomUpDiff() {
 		String title = DataModelTestSuite.getImgName(imagePaths.get(0));
-		String exFile = DataModelTestSuite.buildPath(DataModelTestSuite.getRsltPath(), title, DataModelTestSuite.BTTMUP, ".txt");
+		String exFile = DataModelTestSuite.buildPath(DataModelTestSuite.getRsltDirPath(), title, DataModelTestSuite.BTTMUP, ".txt");
 		try {
-			java.io.File dbFile = new java.io.File(DataModelTestSuite.getRsltPath());
+			java.io.File dbFile = new java.io.File(DataModelTestSuite.getRsltDirPath());
 			String tempDirPath = dbFile.getAbsolutePath();
 			String dbPath = DataModelTestSuite.buildPath(tempDirPath, title, DataModelTestSuite.BTTMUP, ".db");
 			dbFile.delete();

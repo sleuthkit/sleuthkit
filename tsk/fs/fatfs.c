@@ -497,15 +497,16 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
 
             if ((a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY) == 0) {
                 cnt =
-                    tsk_fs_read_block(fs, addr, data_buf, fs->block_size * 8);
+                    tsk_fs_read_block(fs, addr, data_buf,
+                    fs->block_size * 8);
                 if (cnt != fs->block_size * 8) {
                     if (cnt >= 0) {
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_FS_READ);
                     }
                     tsk_error_set_errstr2
-                        ("fatfs_block_walk: pre-data area block: %" PRIuDADDR,
-                        addr);
+                        ("fatfs_block_walk: pre-data area block: %"
+                        PRIuDADDR, addr);
                     free(data_buf);
                     tsk_fs_block_free(fs_block);
                     return 1;
@@ -626,7 +627,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
         if (a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
             myflags |= TSK_FS_BLOCK_FLAG_AONLY;
 
-        
+
         /* The final cluster may not be full */
         if (a_end_blk - addr + 1 < fatfs->csize)
             read_size = (size_t) (a_end_blk - addr + 1);
@@ -641,8 +642,8 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
-                tsk_error_set_errstr2("fatfs_block_walk: block: %" PRIuDADDR,
-                    addr);
+                tsk_error_set_errstr2("fatfs_block_walk: block: %"
+                    PRIuDADDR, addr);
                 free(data_buf);
                 tsk_fs_block_free(fs_block);
                 return 1;
@@ -1319,14 +1320,14 @@ static void
 fatfs_close(TSK_FS_INFO * fs)
 {
     FATFS_INFO *fatfs = (FATFS_INFO *) fs;
- 
+
     fatfs_dir_buf_free(fatfs);
 
     fs->tag = 0;
     free(fatfs->sb);
     tsk_deinit_lock(&fatfs->cache_lock);
     tsk_deinit_lock(&fatfs->dir_lock);
-	
+
     tsk_fs_free(fs);
 }
 

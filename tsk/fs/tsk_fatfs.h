@@ -345,7 +345,7 @@ extern "C" {
 
         tsk_lock_t dir_lock;    //< Lock that protects inum2par.
         void *inum2par;         //< Maps subfolder metadata address to parent folder metadata addresses.
-	} FATFS_INFO;
+    } FATFS_INFO;
 
 
     extern int8_t fatfs_is_sectalloc(FATFS_INFO *, TSK_DADDR_T);
@@ -376,7 +376,7 @@ extern "C" {
     extern uint8_t fatfs_dir_buf_add(FATFS_INFO * fatfs,
         TSK_INUM_T par_inum, TSK_INUM_T dir_inum);
     extern void fatfs_cleanup_ascii(char *);
-    extern void fatfs_dir_buf_free(FATFS_INFO *fatfs);
+    extern void fatfs_dir_buf_free(FATFS_INFO * fatfs);
 
 
 #ifdef __cplusplus

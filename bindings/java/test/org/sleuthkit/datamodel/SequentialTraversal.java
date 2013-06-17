@@ -107,7 +107,6 @@ public class SequentialTraversal extends ImgTraverser {
 						DataModelTestSuite.hashContent(c, reslt, outputExceptionsPath);
 					}
 					reslt.append("\n");
-					x++;
 				}
 			} catch (TskCoreException ex) {
 				inp.add(ex);
