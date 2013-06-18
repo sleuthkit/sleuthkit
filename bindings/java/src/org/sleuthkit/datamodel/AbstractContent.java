@@ -31,7 +31,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 public abstract class AbstractContent implements Content {
 
 	public final static long UNKNOWN_ID = -1;
-	private SleuthkitCase db;
+	private final SleuthkitCase db;
 	private long objId;
 	private String name;
 	private Content parent;
