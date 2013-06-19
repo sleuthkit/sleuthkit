@@ -48,8 +48,8 @@ usage()
     tsk_fprintf(stderr, "\t-A: Unallocated inodes\n");
     tsk_fprintf(stderr, "\t-l: Linked inodes\n");
     tsk_fprintf(stderr, "\t-L: Unlinked inodes\n");
-    tsk_fprintf(stderr, "\t-z: Unused inodes (ctime is 0)\n");
-    tsk_fprintf(stderr, "\t-Z: Used inodes (ctime is not 0)\n");
+    tsk_fprintf(stderr, "\t-z: Unused inodes\n");
+    tsk_fprintf(stderr, "\t-Z: Used inodes\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
