@@ -79,28 +79,37 @@
 
 /**
  * \internal
- * Name for exFAT volume GUID directory entry, with the "$" prefix used to 
- * indicate "special file" directory entries and non-file directory entries.
+ * Name for exFAT volume label directory entry that has an empty label, with 
+ * the "$" prefix that is used to indicate "special file" directory entries and
+ * non-file directory entries.
+ */
+#define EXFATFS_EMPTY_VOLUME_LABEL_DENTRY_NAME "$EMPTY_VOLUME_LABEL"   
+
+/**
+ * \internal
+ * Name for exFAT volume GUID directory entry, with the "$" prefix that is used 
+ * to indicate "special file" directory entries and non-file directory entries.
  */
 #define EXFATFS_VOLUME_GUID_DENTRY_NAME "$VOLUME_GUID"   
 
 /**
  * \internal
- * Name for exFAT allocation bitmap directory entry, with the "$" prefix used 
- * to indicate "special file" directory entries and non-file directory entries.
+ * Name for exFAT allocation bitmap directory entry, with the "$" prefix that 
+ * is used to indicate "special file" directory entries and non-file directory 
+ * entries.
  */
 #define EXFATFS_ALLOC_BITMAP_DENTRY_NAME "$ALLOC_BITMAP"   
 
 /**
  * \internal
- * Name for exFAT upcase table directory entry, with the "$" prefix used to 
- * indicate "special file" directory entries and non-file directory entries.
+ * Name for exFAT upcase table directory entry, with the "$" prefix that is 
+ * used to indicate "special file" directory entries and non-file directory entries.
  */
 #define EXFATFS_UPCASE_TABLE_DENTRY_NAME "$UPCASE_TABLE"   
 
 /**
  * \internal
- * Name for exFAT TexFAT directory entry, with the "$" prefix used to 
+ * Name for exFAT TexFAT directory entry, with the "$" prefix that is used to 
  * indicate "special file" directory entries and non-file directory entries.
  */
 #define EXFATFS_TEX_FAT_DENTRY_NAME "$TEX_FAT"   
@@ -108,10 +117,10 @@
 /**
  * \internal
  * Name for exFAT access control table directory entry, with the "$" prefix
- * used to indicate "special file" directory entries and non-file directory 
- * entries.
+ * that is used to indicate "special file" directory entries and non-file 
+ * directory entries.
  */
-#define EXFATFS_ACT_DENTRY_NAME "$ACT"   
+#define EXFATFS_ACT_DENTRY_NAME "$ACCESS_CONTROL_TABLE"   
 
 #ifdef __cplusplus
 extern "C" {
@@ -327,39 +336,41 @@ extern "C" {
     exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr);
 
     extern enum EXFATFS_DIR_ENTRY_TYPE_ENUM 
-    exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic);
+    exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_sector_is_alloc, 
+        uint8_t a_do_basic_test_only); // RJCTODO: Last param is awkward
 
     extern enum EXFATFS_DIR_ENTRY_TYPE_ENUM 
     exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        uint8_t a_basic);
+         uint8_t a_sector_is_alloc, uint8_t a_basic);
 
     extern EXFATFS_DIR_ENTRY_TYPE_ENUM
     exfatfs_is_vol_label_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        uint8_t a_do_basic_test_only);
+         uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
 
     extern EXFATFS_DIR_ENTRY_TYPE_ENUM
     exfatfs_is_vol_guid_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        uint8_t a_do_basic_test_only);
+         uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
 
     extern EXFATFS_DIR_ENTRY_TYPE_ENUM
     exfatfs_is_upcase_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        uint8_t a_do_basic_test_only);
+         uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
 
     extern EXFATFS_DIR_ENTRY_TYPE_ENUM
     exfatfs_is_tex_fat_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        uint8_t a_do_basic_test_only);
+         uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
 
     extern EXFATFS_DIR_ENTRY_TYPE_ENUM
     exfatfs_is_access_ctrl_table_dentry(FATFS_INFO *a_fatfs, 
-        FATFS_DENTRY *a_dentry, uint8_t a_do_basic_test_only);
+        FATFS_DENTRY *a_dentry,  uint8_t a_sector_is_alloc, 
+        uint8_t a_do_basic_test_only);
 
     extern EXFATFS_DIR_ENTRY_TYPE_ENUM
     exfatfs_is_file_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        uint8_t a_do_basic_test_only);
+         uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
 
     extern EXFATFS_DIR_ENTRY_TYPE_ENUM
     exfatfs_is_file_stream_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        uint8_t a_do_basic_test_only);
+         uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
 
     extern uint8_t
     exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
@@ -369,7 +380,7 @@ extern "C" {
 
     extern EXFATFS_DIR_ENTRY_TYPE_ENUM
     exfatfs_is_file_name_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        uint8_t a_do_basic_test_only);
+        uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
 
     extern TSK_RETVAL_ENUM
     exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 

@@ -679,7 +679,7 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_ptr_arg_is_null(a_fs_file, "a_fs_file", func_name) ||
-        !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
+        !fatfs_inum_arg_is_in_range(a_fatfs, a_inum, func_name)) {
         return 1;
     }
 
@@ -755,7 +755,7 @@ fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_ptr_arg_is_null(a_hFile, "a_hFile", func_name) ||
-        !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
+        !fatfs_inum_arg_is_in_range(a_fatfs, a_inum, func_name)) {
         return 1; 
     }
 

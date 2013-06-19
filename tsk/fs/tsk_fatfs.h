@@ -233,13 +233,13 @@ extern "C" {
     } FATFS_DENTRY;
 
     extern uint8_t
-    fatfs_is_inum_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum);
+    fatfs_inum_is_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum);
 
     extern uint8_t
     fatfs_ptr_arg_is_null(void *ptr, const char *param_name, const char *func_name);
 
     extern uint8_t
-    fatfs_is_inum_arg_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *func_name);
+    fatfs_inum_arg_is_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *func_name);
 
     extern time_t fatfs_dos_2_unix_time(uint16_t date, uint16_t time, uint8_t timetens);
 
@@ -280,7 +280,7 @@ extern "C" {
 
     extern uint8_t
     fatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        uint8_t a_basic);
+        uint8_t a_sector_is_alloc, uint8_t a_basic);
 
     // RJCTODO: Needed in fs_dir.c by load_orphan_dir_walk_cb
     extern uint8_t 

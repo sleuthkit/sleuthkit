@@ -944,7 +944,9 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
     }
 
     // use their name if they have one
-    if (a_fs_file->meta->name2) {
+    if (a_fs_file->meta->name2 != NULL &&
+        a_fs_file->meta->name2->name != NULL &&
+        strlen(a_fs_file->meta->name2->name) > 0) {
         strncpy(data->fs_name->name, a_fs_file->meta->name2->name,
             data->fs_name->name_size);
     }

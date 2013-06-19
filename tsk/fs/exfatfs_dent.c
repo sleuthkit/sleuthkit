@@ -194,7 +194,7 @@ exfats_parse_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dent
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
            dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE);
-    assert(fatfs_is_inum_in_range(a_name_info->fatfs, a_inum));
+    assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
     
     /* Starting parse of a new name, so save the current name, if any. */
     exfatfs_add_name_to_dir_and_reset_info(a_name_info);
@@ -258,7 +258,7 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
            dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM);
-    assert(fatfs_is_inum_in_range(a_name_info->fatfs, a_inum));
+    assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
     if ((a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_FILE) && 
         (a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE)) {
@@ -327,7 +327,7 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
            dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME);
-    assert(fatfs_is_inum_in_range(a_name_info->fatfs, a_inum));
+    assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
     if (a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM && 
         a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM &&
@@ -422,7 +422,7 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
            dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY);
-    assert(fatfs_is_inum_in_range(a_name_info->fatfs, a_inum));
+    assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
     /* Starting parse of a new name, save the previous name, if any. */
     exfatfs_add_name_to_dir_and_reset_info(a_name_info);
@@ -441,29 +441,32 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
             exfatfs_reset_name_info(a_name_info);
             return;
         }
-
-        a_name_info->actual_name_length += dentry->utf16_char_count;
-        a_name_info->fs_name->name[a_name_info->actual_name_length] = '\0';
-
-        tag_length = strlen(tag);
-        if ((size_t)a_name_info->actual_name_length + tag_length < 
-            EXFATFS_MAX_NAME_LEN_UTF8) {
-            strcat(a_name_info->fs_name->name, tag);
-        }
-
-        /* Record the inum associated with this name. */
-        a_name_info->fs_name->meta_addr =  a_inum;
-
-        /* Not a directory. */
-        a_name_info->fs_name->type = TSK_FS_NAME_TYPE_REG;
-
-        if (a_name_info->sector_is_allocated) {
-            a_name_info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;    
-        }
-
-        /* Save the volume label. */
-        exfatfs_add_name_to_dir_and_reset_info(a_name_info);
     }
+    else {
+        strcpy(a_name_info->fs_name->name, EXFATFS_EMPTY_VOLUME_LABEL_DENTRY_NAME);
+    }
+
+    a_name_info->actual_name_length += dentry->utf16_char_count;
+    a_name_info->fs_name->name[a_name_info->actual_name_length] = '\0';
+
+    tag_length = strlen(tag);
+    if ((size_t)a_name_info->actual_name_length + tag_length < 
+        EXFATFS_MAX_NAME_LEN_UTF8) {
+        strcat(a_name_info->fs_name->name, tag);
+    }
+
+    /* Record the inum associated with this name. */
+    a_name_info->fs_name->meta_addr =  a_inum;
+
+    /* Not a directory. */
+    a_name_info->fs_name->type = TSK_FS_NAME_TYPE_REG;
+
+    if (a_name_info->sector_is_allocated) {
+        a_name_info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;    
+    }
+
+    /* Save the volume label. */
+    exfatfs_add_name_to_dir_and_reset_info(a_name_info);
 }
 
 /**
@@ -489,7 +492,7 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
            a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP ||
            a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE ||
            a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_ACT);
-    assert(fatfs_is_inum_in_range(a_name_info->fatfs, a_inum));
+    assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
     /* Starting parse of a new name, save the previous name, if any. */
     exfatfs_add_name_to_dir_and_reset_info(a_name_info);
@@ -634,13 +637,13 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
 
             ++entries_count; // RJCTODO: Should this be reset for each iteration of this loop?
 
-            if (!fatfs_is_inum_in_range(a_fatfs, current_inum)) {
+            if (!fatfs_inum_is_in_range(a_fatfs, current_inum)) {
                 tsk_fs_name_free(name_info.fs_name);
                 return TSK_ERR; // RJCTODO: Is this right? More error reporting?
             }
 
             dentry_type = exfatfs_is_dentry(a_fatfs, current_dentry, 
-                (!is_corrupt_dir && name_info.sector_is_allocated)); 
+                name_info.sector_is_allocated, (!is_corrupt_dir && name_info.sector_is_allocated)); 
 
             switch (dentry_type) {
             case EXFATFS_DIR_ENTRY_TYPE_FILE:

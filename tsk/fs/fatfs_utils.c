@@ -64,9 +64,9 @@ fatfs_ptr_arg_is_null(void *a_ptr, const char *a_param_name, const char *a_func_
  * @return Returns 1 if the address is in range, 0 otherwise.
  */
 uint8_t
-fatfs_is_inum_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum)
+fatfs_inum_is_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum)
 {
-    const char *func_name = "fatfs_is_inum_in_range";
+    const char *func_name = "fatfs_inum_is_in_range";
     TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs; 
 
     assert(a_fatfs != NULL);
@@ -96,9 +96,9 @@ fatfs_is_inum_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum)
  * @return Returns 1 if the address is in range, 0 otherwise.
  */
 uint8_t
-fatfs_is_inum_arg_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *a_func_name)
+fatfs_inum_arg_is_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *a_func_name)
 {
-    const char *func_name = "fatfs_is_inum_arg_in_range";
+    const char *func_name = "fatfs_inum_arg_is_in_range";
     TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs; 
 
     assert(a_fatfs != NULL);
@@ -108,7 +108,7 @@ fatfs_is_inum_arg_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *a
         return 0;
     }
 
-    if (!fatfs_is_inum_in_range(a_fatfs, a_inum)) {
+    if (!fatfs_inum_is_in_range(a_fatfs, a_inum)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         if (a_func_name != NULL) {

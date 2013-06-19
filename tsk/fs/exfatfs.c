@@ -260,7 +260,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
             if (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
                 /* Do an in-depth test. */
-                if (!exfatfs_is_alloc_bitmap_dentry(a_fatfs, (FATFS_DENTRY*)dentry, 1)) {
+                if (!exfatfs_is_alloc_bitmap_dentry(a_fatfs, (FATFS_DENTRY*)dentry, 1, 1)) { //RJCTODO: Right choice for alloc arg?
                     continue;
                 }
 
@@ -529,7 +529,7 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
             if (dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
                 dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY) {
                 /* Do an in-depth test. */
-                if (!exfatfs_is_vol_label_dentry(a_fatfs, dentry, 1)) {
+                if (!exfatfs_is_vol_label_dentry(a_fatfs, dentry, 1, 1)) { // RJCTODO: Right choice for parameter?
                     continue;
                 }
 

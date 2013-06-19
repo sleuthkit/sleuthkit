@@ -277,7 +277,7 @@ fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name) ||
-        !fatfs_is_inum_arg_in_range(a_fatfs, a_inum, func_name)) {
+        !fatfs_inum_arg_is_in_range(a_fatfs, a_inum, func_name)) {
         return 1;
     }
     
@@ -310,12 +310,12 @@ fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum
 }
 
 uint8_t
-fatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
+fatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_sector_is_alloc, uint8_t a_basic)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
 
     if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        return exfatfs_is_dentry(a_fatfs, a_dentry, a_basic);
+        return exfatfs_is_dentry(a_fatfs, a_dentry, a_sector_is_alloc, a_basic);
     }
     else {
         return fatxxfs_is_dentry(a_fatfs, a_dentry, a_basic);
@@ -343,7 +343,7 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fs, "a_fs", func_name) ||
         fatfs_ptr_arg_is_null(a_fs_file, "a_fs_file", func_name) ||
-        !fatfs_is_inum_arg_in_range(fatfs, a_inum, func_name)) {
+        !fatfs_inum_arg_is_in_range(fatfs, a_inum, func_name)) {
         return 1;
     }
 
@@ -893,7 +893,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fs, "a_fs", func_name) ||
         fatfs_ptr_arg_is_null(a_hFile, "a_hFile", func_name) ||
-        !fatfs_is_inum_arg_in_range(fatfs, a_inum, func_name)) {
+        !fatfs_inum_arg_is_in_range(fatfs, a_inum, func_name)) {
         return 1;
     }
 
@@ -1406,7 +1406,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
              * chunk is not a directory entry, skip the sector. */
             if (!isset(dir_sectors_bitmap, sect)) {
                 if ((a_fs->ftype != TSK_FS_TYPE_EXFAT && !fatxxfs_is_dentry(fatfs, dep, 0)) ||
-                    (exfatfs_is_dentry(fatfs, dep, 0) == EXFATFS_DIR_ENTRY_TYPE_NONE)) {
+                    (exfatfs_is_dentry(fatfs, dep, cluster_is_alloc, 0) == EXFATFS_DIR_ENTRY_TYPE_NONE)) {
                 sect++;
                 continue;
                 }
@@ -1446,14 +1446,14 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                  * inode for the purposes of an inode walk, or an entry that
                  * satisfies the inode selection flags. */
                 if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
-                    dentry_type = exfatfs_is_dentry(fatfs, dep, cluster_is_alloc); // RJCTODO: Resolve this isse - NONE vs. UNUSED
+                    dentry_type = exfatfs_is_dentry(fatfs, dep, cluster_is_alloc, cluster_is_alloc); // RJCTODO: Resolve this isse - NONE vs. UNUSED
                     if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_NONE || 
                         exfatfs_should_skip_dentry(fatfs, inum, dep, flags, cluster_is_alloc)) {
                         continue;
                     }
                 }
                 else { 
-                    if (!fatfs_is_dentry(fatfs, dep, do_basic_dentry_test) ||
+                    if (!fatfs_is_dentry(fatfs, dep, cluster_is_alloc, do_basic_dentry_test) ||
                         fatxxfs_should_skip_dentry(fatfs, inum, dep, flags, cluster_is_alloc)) {
                         continue;
                     }
