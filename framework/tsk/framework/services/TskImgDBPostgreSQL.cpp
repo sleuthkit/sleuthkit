@@ -10,7 +10,7 @@
  */
 
 /**
- * \file TskImDBPostgreSQL.cpp 
+ * \file TskImgDBPostgreSQL.cpp
  * A PostgreSQL based implementation of the framework data access layer.
  */
 #include <stdio.h>
@@ -20,11 +20,11 @@
 #include <Lmcons.h>
 #include <assert.h>
 
-#include "Services/TskDBBlackboard.h"
+#include "tsk/framework/services/TskDBBlackboard.h"
 #include "TskImgDBPostgreSQL.h"
-#include "Services/TskServices.h"
-#include "Utilities/TskException.h"
-#include "Utilities/TskUtilities.h"
+#include "tsk/framework/services/TskServices.h"
+#include "tsk/framework/utilities/TskException.h"
+#include "tsk/framework/utilities/TskUtilities.h"
 
 #include "Poco/String.h"
 #include "Poco/UnicodeConverter.h"
@@ -157,9 +157,64 @@ int TskImgDBPostgreSQL::initialize()
         return 1;
     }
 
+    if (initializePreparedStatements())
+    {
+        // Error message will have been logged by initializePreparedStatements()
+        return 1;
+    }
+
     addToolInfo("DbSchema", IMGDB_SCHEMA_VERSION);
     LOGINFO(L"ImgDB Created.");
 
+    return 0;
+}
+
+/** 
+ * Initialize prepared statements (server-side function-like objects) in the DB.
+ * Assumes the DB is already created and open.
+ * @returns 1 on error
+ */
+int TskImgDBPostgreSQL::initializePreparedStatements()
+{
+    try
+    {
+        pqxx::work W(*m_dbConnection);
+
+        // Make prepared statement plans
+        {
+            std::stringstream stmt;
+            stmt << "PREPARE addFsFileInfoPlan (int, int, text, bigint, int, int, int, int, bigint, int, int, int, int, int, int, int, text) AS "
+                    << "INSERT INTO files (file_id, type_id, status, name, par_file_id, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, full_path) "
+                    << "VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) "
+                    << "RETURNING file_id";   
+            W.exec(stmt.str());
+        }
+        {
+            std::stringstream stmt;
+            stmt << "PREPARE addCarvedFileInfoPlan (int, int, text, int, int, int, int, bigint, text) AS "
+                    << "INSERT INTO files (file_id, type_id, status, name, par_file_id, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, full_path) "
+                    << "VALUES (DEFAULT, $1, $2, $3, NULL, $4, $5, $6, $7, $8, 0, 0, 0, 0, NULL, NULL, NULL, $9) "
+                    << "RETURNING file_id";   
+            W.exec(stmt.str());
+        }
+        {
+            std::stringstream stmt;
+            stmt << "PREPARE addDerivedFileInfoPlan (int, int, text, bigint, int, int, bigint, int, int, int, int, text) AS "
+                    << "INSERT INTO files (file_id, type_id, status, name, par_file_id, dir_type, meta_type, size, crtime, ctime, atime, mtime, full_path) "
+                    << "VALUES (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) "
+                    << "RETURNING file_id";   
+            W.exec(stmt.str());
+        }
+
+        W.commit();
+    }
+    catch (std::exception& ex)
+    {
+        std::wstringstream errorMsg;
+        errorMsg << L"TskImgDBPostgreSQL::initializePreparedStatements - Error creating prepared statements: " << ex.what() << std::endl;
+        LOGERROR(errorMsg.str());
+        return 1;
+    }
     return 0;
 }
 
@@ -184,6 +239,8 @@ int TskImgDBPostgreSQL::open()
     // connection to a database server that exists on the same machine PostgreSQL will use the 'localhost'
     // rule from the pg_hba.conf file. Unfortunately, SSPI authentication doesn't work in that scenario.
     std::string db_host_ip;
+
+    bool db_new = false;
 
     if (!TskUtilities::getHostIP(db_host, db_host_ip))
         return 1;
@@ -211,6 +268,7 @@ int TskImgDBPostgreSQL::open()
             std::stringstream createDatabase;
             createDatabase << "CREATE DATABASE \"" << m_dbName << "\" WITH OWNER=\"" << name << "\" ENCODING='UTF-8'";
             nontrans.exec(createDatabase);
+            db_new = true;
         }
 
         std::stringstream dbConnectionString;
@@ -228,6 +286,15 @@ int TskImgDBPostgreSQL::open()
         return 1;
     }
 
+    if (!db_new)
+    {
+        if (initializePreparedStatements())
+        {
+            // Error message will have been logged by initializePreparedStatements()
+            return 1;
+        }
+    }
+
     // We successfully connected to the database.
     LOGINFO(L"ImgDB Opened.");
     return 0;
@@ -239,9 +306,19 @@ pqxx::result TskImgDBPostgreSQL::executeStatement(const std::string& stmt) const
 
     try
     {
-        work W(*m_dbConnection);
-        R = W.exec(stmt);
-        W.commit();
+        // if select then do a read-only transaction
+        std::string cmdstr("SELECT");
+        if (stmt.compare(0, cmdstr.size(), cmdstr, 0, cmdstr.size()) == 0)
+        {
+            pqxx::read_transaction trans(*m_dbConnection);
+            R = trans.exec(stmt);
+        }
+        else
+        {
+            pqxx::work W(*m_dbConnection);
+            R = W.exec(stmt);
+            W.commit();
+        }
     }
     catch (const exception &e)
     {
@@ -402,7 +479,7 @@ uint64_t TskImgDBPostgreSQL::getFileId(int a_fsId, uint64_t a_fsFileId) const
     uint64_t fileId = 0;
 
     stmt << "SELECT file_id FROM fs_files WHERE fs_id=" 
-        << a_fsId << "AND fs_file_id=" << a_fsFileId;
+        << a_fsId << " AND fs_file_id=" << a_fsFileId;
 
     try
     {
@@ -575,31 +652,30 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
 
     try
     {
-        stmt << "INSERT INTO files (file_id, type_id, status, name, par_file_id, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, full_path) VALUES ("
-            << "DEFAULT, " << IMGDB_FILES_TYPE_FS << ", " << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << ", " << m_dbConnection->quote(fileName) << ", "
-            << parFileId << ", " << fileSystemFile->name->type << ", " << meta_type << ", "
-            << fileSystemFile->name->flags << ", " << meta_flags << ", " << size << ", " << crtime << ", " << ctime << ", " << atime << ", "
-            << mtime << ", " << meta_mode << ", " << gid << ", " << uid << ", E" << m_dbConnection->quote(fullpath) << ")";
+        // We don't provide file_id to the prepared function because it uses DEFAULT for that.
+        stmt << "EXECUTE addFsFileInfoPlan ("
+            << IMGDB_FILES_TYPE_FS << ", "
+            << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << ", "
+            << m_dbConnection->quote(fileName) << ", "
+            << parFileId << ", "
+            << fileSystemFile->name->type << ", "
+            << meta_type << ", "
+            << fileSystemFile->name->flags << ", "
+            << meta_flags << ", "
+            << size << ", "
+            << crtime << ", "
+            << ctime << ", "
+            << atime << ", "
+            << mtime << ", "
+            << meta_mode << ", "
+            << gid << ", "
+            << uid
+            << ", E" << m_dbConnection->quote(fullpath) << ")";
 
-        executeStatement(stmt.str());
-    }
-    catch (const exception &e)
-    {
-        std::ostringstream errorMsg;
-        errorMsg << msgPrefix << "Error adding data to files table: " << e.what();
-        LOGERROR(errorMsg.str());
-
-        return -1;
-    }
-
-    // get the file_id from the last insert
-    fileID = 0;
-    try
-    {
-        stmt.str("");
-        stmt << "SELECT currval(pg_get_serial_sequence('files', 'file_id'))";
         result R = executeStatement(stmt.str());
-
+        
+        // get the file_id from the last insert
+        fileID = 0;
         if (R.size() == 1)
         {
             fileID = R[0][0].as<uint64_t>();
@@ -614,7 +690,7 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
     catch (const exception &e)
     {
         std::ostringstream errorMsg;
-        errorMsg << msgPrefix << "Error getting the file_id of the last inserted row: " << e.what();
+        errorMsg << msgPrefix << "Error adding data to files table: " << e.what();
         LOGERROR(errorMsg.str());
 
         return -1;
@@ -973,7 +1049,7 @@ std::string TskImgDBPostgreSQL::getImageBaseName() const
     }
 }
 
-std::vector<std::wstring> TskImgDBPostgreSQL::getImageNames() const
+std::vector<std::wstring> TskImgDBPostgreSQL::getImageNamesW() const
 {
     std::vector<std::wstring> imgList;
 
@@ -1008,6 +1084,43 @@ std::vector<std::wstring> TskImgDBPostgreSQL::getImageNames() const
     if (imgList.empty()) 
     {
         LOGERROR(L"No images found in TskImgDBPostgres");
+    }
+
+    return imgList;
+}
+
+std::vector<std::string> TskImgDBPostgreSQL::getImageNames() const
+{
+    std::vector<std::string> imgList;
+
+    if (!initialized())
+        return imgList;
+
+    stringstream stmt;
+
+    stmt << "SELECT name FROM image_names ORDER BY seq";
+
+    try
+    {
+        pqxx::read_transaction trans(*m_dbConnection);
+        pqxx::result R = trans.exec(stmt);
+
+        for (pqxx::result::const_iterator i = R.begin(); i != R.end(); ++i)
+        {
+            imgList.push_back(i[0].c_str());
+        }
+    }
+    catch (const exception &e)
+    {
+        std::stringstream errorMsg;
+        errorMsg << "TskImgDBPostgreSQL::getImageNames - Error getting image names : "
+            << e.what();
+        LOGERROR(errorMsg.str());
+    }
+
+    if (imgList.empty()) 
+    {
+        LOGERROR("No images found in TskImgDBPostgres");
     }
 
     return imgList;
@@ -1235,8 +1348,6 @@ UnallocRun * TskImgDBPostgreSQL::getUnallocRun(int a_unalloc_img_id, int a_file_
  * Adds information about a carved file into the database.  This includes the sector layout
  * information. 
  * 
- * @param vol_id ID of volume that file is locatd in
- * @param name Name of file
  * @param size Number of bytes in file
  * @param runStarts Array with starting sector (relative to start of image) for each run in file.
  * @param runLengths Array with number of sectors in each run 
@@ -1244,25 +1355,28 @@ UnallocRun * TskImgDBPostgreSQL::getUnallocRun(int a_unalloc_img_id, int a_file_
  * @param fileId Carved file Id (output)
  * @returns 0 on success or -1 on error.
  */
-int TskImgDBPostgreSQL::addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t size, 
-  uint64_t *runStarts, uint64_t *runLengths, int numRuns, uint64_t & fileId)
+int TskImgDBPostgreSQL::addCarvedFileInfo(int vol_id, const char *name, uint64_t size, 
+                                          uint64_t *runStarts, uint64_t *runLengths, int numRuns, uint64_t & fileId)
 {
     if (!initialized())
         return -1;
 
-    std::string utf8Name;
-    Poco::UnicodeConverter::toUTF8(name, utf8Name);
+    std::string utf8Name(name);
 
     fileId = 0;
 
     stringstream stmt;
 
-    stmt << "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type,"
-        "dir_flags, meta_flags, size, ctime, crtime, atime, mtime, mode, uid, gid, status, full_path) "
-        "VALUES (DEFAULT, " << IMGDB_FILES_TYPE_CARVED << ", " << m_dbConnection->quote(utf8Name)
-        << ", NULL, " <<  TSK_FS_NAME_TYPE_REG << ", " <<  TSK_FS_META_TYPE_REG << ", "
-        << TSK_FS_NAME_FLAG_UNALLOC << ", " << TSK_FS_META_FLAG_UNALLOC << ", "
-        << size << ", 0, 0, 0, 0, NULL, NULL, NULL, " << IMGDB_FILES_STATUS_CREATED << "," << m_dbConnection->quote(utf8Name) << ")";
+    stmt << "EXECUTE addCarvedFileInfoPlan ("
+        << IMGDB_FILES_TYPE_CARVED << ", "
+        << IMGDB_FILES_STATUS_CREATED << ", "
+        << m_dbConnection->quote(utf8Name) << ", "
+        << TSK_FS_NAME_TYPE_REG << ", "
+        << TSK_FS_META_TYPE_REG << ", "
+        << TSK_FS_NAME_FLAG_UNALLOC << ", "
+        << TSK_FS_META_FLAG_UNALLOC << ", "
+        << size << ","
+        << m_dbConnection->quote(utf8Name) << ")";
 
     try
     {
@@ -1270,10 +1384,6 @@ int TskImgDBPostgreSQL::addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t s
         pqxx::result R = W.exec(stmt);
 
         // get the file_id from the last insert
-        stmt.str("");
-        stmt << "SELECT currval(pg_get_serial_sequence('files', 'file_id'))";
-        R = W.exec(stmt);
-
         fileId = R[0][0].as<uint64_t>();
 
         stmt.str("");
@@ -1315,7 +1425,6 @@ int TskImgDBPostgreSQL::addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t s
  * 
  * @param name The name of the file.
  * @param parentId The id of the file from which this file is derived.
- * @param isDirectory True if a directory
  * @param size The size of the file.
  * @param details This is a string that may contain extra details related
  * to the particular type of mechanism that was used to derive this file, 
@@ -1326,7 +1435,6 @@ int TskImgDBPostgreSQL::addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t s
  * @param atime Last access time.
  * @param mtime Last modified time.
  * @param fileId Return the file_id value.
- * @param path Path of the file
  *
  * @returns 0 on success or -1 on error.
  */
@@ -1338,6 +1446,8 @@ int TskImgDBPostgreSQL::addDerivedFileInfo(const std::string& name, const uint64
 {
     if (!initialized())
         return -1;
+
+    fileId = 0;
 
     // Ensure that strings are valid UTF-8
     std::vector<char> cleanName(name.begin(), name.end());
@@ -1357,9 +1467,19 @@ int TskImgDBPostgreSQL::addDerivedFileInfo(const std::string& name, const uint64
 
     std::stringstream stmt;
 
-    stmt << "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type, size, ctime, crtime, atime, mtime, status, full_path) "
-        "VALUES (DEFAULT, " << IMGDB_FILES_TYPE_DERIVED << ", " << m_dbConnection->quote(&cleanName[0]) << ", " << parentId << ", " << dirType << ", " << metaType << ", " << size
-        << ", " << ctime << ", " << crtime << ", " << atime << ", " << mtime << ", " << IMGDB_FILES_STATUS_CREATED << ", E" << m_dbConnection->quote(&cleanPath[0]) << ")";
+    stmt << "EXECUTE addDerivedFileInfoPlan ("
+        << IMGDB_FILES_TYPE_DERIVED << ", "
+        << IMGDB_FILES_STATUS_CREATED << ", "
+        << m_dbConnection->quote(&cleanName[0]) << ", " 
+        << parentId << ", "
+        << dirType << ", "
+        << metaType << ", "
+        << size << ", "
+        << crtime << ", "
+        << ctime << ", "
+        << atime << ", "
+        << mtime << ", "
+        << m_dbConnection->quote(&cleanPath[0]) << ")";
 
     try
     {
@@ -1367,10 +1487,6 @@ int TskImgDBPostgreSQL::addDerivedFileInfo(const std::string& name, const uint64
         pqxx::result R = W.exec(stmt);
 
         // get the file_id from the last insert
-        stmt.str("");
-        stmt << "SELECT currval(pg_get_serial_sequence('files', 'file_id'))";
-        R = W.exec(stmt);
-
         fileId = R[0][0].as<uint64_t>();
 
         stmt.str("");
@@ -2081,7 +2197,7 @@ std::vector<uint64_t> TskImgDBPostgreSQL::getUniqueFileIds(HASH_TYPE hashType) c
  * @returns The collection of file ids matching the selection criteria. Throws
  * TskException if database not initialized.
  */
-std::vector<uint64_t> TskImgDBPostgreSQL::getFileIds(std::string& condition) const 
+std::vector<uint64_t> TskImgDBPostgreSQL::getFileIds(const std::string& condition) const 
 {
     if (!initialized())
         throw TskException("Database not initialized.");
@@ -2122,12 +2238,12 @@ std::vector<uint64_t> TskImgDBPostgreSQL::getFileIds(std::string& condition) con
  * @returns The collection of file records matching the selection criteria. Throws
  * TskException if database not initialized.
  */
-std::vector<const TskFileRecord> TskImgDBPostgreSQL::getFileRecords(std::string& condition) const 
+const std::vector<TskFileRecord> TskImgDBPostgreSQL::getFileRecords(const std::string& condition) const 
 {
     if (!initialized())
         throw TskException("Database not initialized.");
 
-    std::vector<const TskFileRecord> results;
+    std::vector<TskFileRecord> results;
     
     std::stringstream stmtstrm;
     stmtstrm << "SELECT f.file_id, f.type_id, f.name, f.par_file_id, f.dir_type, f.meta_type, f.dir_flags, "
@@ -2190,7 +2306,7 @@ std::vector<const TskFileRecord> TskImgDBPostgreSQL::getFileRecords(std::string&
  * @param condition Must be a valid SQL string defining the selection criteria.
  * @returns The number of files matching the selection criteria. 
  */
-int TskImgDBPostgreSQL::getFileCount(std::string& condition) const 
+int TskImgDBPostgreSQL::getFileCount(const std::string& condition) const 
 {
     if (!initialized())
         throw TskException("Database not initialized.");
@@ -2233,7 +2349,7 @@ int TskImgDBPostgreSQL::getFileCount(std::string& condition) const
 
 
 
-void TskImgDBPostgreSQL::constructStmt(std::string& stmt, std::string& condition) const
+void TskImgDBPostgreSQL::constructStmt(std::string& stmt, std::string condition) const
 {
     if (!condition.empty())
     {
@@ -2743,14 +2859,12 @@ int TskImgDBPostgreSQL::addModule(const std::string& name, const std::string& de
 
         // Insert a new one
         stmt.str("");
-        stmt << "INSERT INTO modules (module_id, name, description) VALUES (DEFAULT, " << m_dbConnection->quote(name) << ", " << m_dbConnection->quote(description) << ")";
+        stmt << "INSERT INTO modules (module_id, name, description) VALUES (DEFAULT, " << m_dbConnection->quote(name) << ", " << m_dbConnection->quote(description) << ")"
+             << " RETURNING module_id";
 
         R = W.exec(stmt);
 
         // Get the newly assigned module id
-        stmt.str("");
-        stmt << "SELECT currval(pg_get_serial_sequence('modules', 'module_id'))";
-        R = W.exec(stmt);
         R[0][0].to(moduleId);
         W.commit();
     } 
@@ -2804,7 +2918,7 @@ int TskImgDBPostgreSQL::setModuleStatus(uint64_t file_id, int module_id, int sta
 
 /**
  * Get a list of TskModuleStatus.
- * @param moduleInfoList A list of TskModuleInfo (output)
+ * @param moduleStatusList A list of TskModuleStatus (output)
  * @returns 0 on success, -1 on error.
  */
 int TskImgDBPostgreSQL::getModuleInfo(std::vector<TskModuleInfo> & moduleInfoList) const
@@ -2976,16 +3090,15 @@ int TskImgDBPostgreSQL::addUnallocImg(int & unallocImgId)
         return rc;
 
     std::stringstream stmt;
-    stmt << "INSERT INTO unalloc_img_status (unalloc_img_id, status) VALUES (DEFAULT, " << TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CREATED << ")";
+    stmt << "INSERT INTO unalloc_img_status (unalloc_img_id, status) VALUES (DEFAULT, " << TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CREATED << ")"
+         << " RETURNING unalloc_img_id";
+         
     try
     {
         pqxx::work W(*m_dbConnection);
         pqxx::result R = W.exec(stmt);
 
         // get the unalloc_img_id from the last insert
-        stmt.str("");
-        stmt << "SELECT currval(pg_get_serial_sequence('unalloc_img_status', 'unalloc_img_id'))";
-        R = W.exec(stmt);
         unallocImgId = R[0][0].as<int>();
         W.commit();
         rc = 0;
@@ -3210,6 +3323,7 @@ int TskImgDBPostgreSQL::addUnusedSector(uint64_t sectStart, uint64_t sectEnd, in
 {
     assert(sectEnd > sectStart);
     int rc = -1;
+    unusedSectorsList.clear();
     if (!initialized())
         return rc;
 
@@ -3233,7 +3347,9 @@ int TskImgDBPostgreSQL::addUnusedSector(uint64_t sectStart, uint64_t sectEnd, in
             "VALUES (DEFAULT, " << IMGDB_FILES_TYPE_UNUSED << ", " << m_dbConnection->quote(ufilename)
             << ", NULL, " <<  TSK_FS_NAME_TYPE_REG << ", " <<  TSK_FS_META_TYPE_REG << ", "
             << TSK_FS_NAME_FLAG_UNALLOC << ", " << TSK_FS_META_FLAG_UNALLOC << ", "
-            << (thisSectEnd - thisSectStart) * 512 << ", NULL, NULL, NULL, NULL, NULL, NULL, NULL, " << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << "," << m_dbConnection->quote(ufilename) << ")";
+            << (thisSectEnd - thisSectStart) * 512 << ", NULL, NULL, NULL, NULL, NULL, NULL, NULL, " << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << "," << m_dbConnection->quote(ufilename) << ")"
+            << " RETURNING file_id";
+
         try
         {
             pqxx::work W(*m_dbConnection);
@@ -3242,9 +3358,6 @@ int TskImgDBPostgreSQL::addUnusedSector(uint64_t sectStart, uint64_t sectEnd, in
             TskUnusedSectorsRecord record;
 
             // get the file_id from the last insert
-            stmt.str("");
-            stmt << "SELECT currval(pg_get_serial_sequence('files', 'file_id'))";
-            R = W.exec(stmt.str().c_str());
             record.fileId = R[0][0].as<uint64_t>();
             record.sectStart = thisSectStart;
             record.sectLen = thisSectEnd - thisSectStart;
