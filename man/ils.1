@@ -88,11 +88,9 @@ with at least one directory entry in the file system.
 List only inodes without any hard links. These belong to files that no
 longer exist, and to removed files that are still open or executing.
 .IP \fB-z\fR
-List only inodes with zero status change time. Presumably, these
-inodes were never used.
+List only inodes that were likely to have not been used.
 .IP \fB-Z\fR
-List only inodes with non-zero status change time. Presumably, these
-belong to files that still exist, or that existed in the past.
+List only inodes that were likely to be used.
 .PP
 The output format is in time machine format.
 The output begins with a two-line header that
