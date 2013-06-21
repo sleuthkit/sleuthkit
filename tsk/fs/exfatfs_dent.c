@@ -72,16 +72,16 @@ exfatfs_update_file_entry_set_checksum(EXFATFS_FS_NAME_INFO *a_name_info,
     
     dentry_type = (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
     assert(dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE ||
+           dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE ||
            dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM ||
+           dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM ||
            dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME);
+           dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME);
 
     for (index = 0; index < sizeof(a_dentry->data); ++index) {
         /* Skip the expected check sum, found in the file entry. */
         if ((dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-             dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) &&
+             dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE) &&
             (index == 2 || index == 3)) {
             continue;
         }
@@ -91,13 +91,13 @@ exfatfs_update_file_entry_set_checksum(EXFATFS_FS_NAME_INFO *a_name_info,
          * marked as no longer in use. Compensate for this. */
         if (index == 0) {
             switch (dentry_type) {
-            case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE:
+            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
                 byte_to_add = (uint16_t)EXFATFS_DIR_ENTRY_TYPE_FILE;
                 break;
-            case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM:
+            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
                 byte_to_add = (uint16_t)EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM;
                 break;
-            case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME:
+            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
                 byte_to_add = (uint16_t)EXFATFS_DIR_ENTRY_TYPE_FILE_NAME;
                 break;
             default:
@@ -193,7 +193,7 @@ exfats_parse_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dent
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE);
+           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
     
     /* Starting parse of a new name, so save the current name, if any. */
@@ -257,11 +257,11 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM);
+           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
     if ((a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_FILE) && 
-        (a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE)) {
+        (a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE)) {
         /* A file stream entry must follow a file entry, so this entry is a
          * false positive or there is corruption. Save the current name, 
          * if any, and ignore this buffer. */ 
@@ -270,8 +270,8 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
     }
 
     if ((a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE &&
-         dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM) || 
-        (a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE &&
+         dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM) || 
+        (a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE &&
          dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM)) {
         /* The in-use bits of all of the entries in an entry set should be 
          * same, so this entry is a false positive or there is corruption. 
@@ -326,13 +326,13 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME);
+           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
     if (a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM && 
-        a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM &&
+        a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM &&
         a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_NAME &&
-        a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME) {
+        a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME) {
         /* A file name entry must follow a stream or name entry, so this entry is
          * is a false positive or there is corruption. Save the current name, 
          * if any, and ignore this buffer. */ 
@@ -342,9 +342,9 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
 
     if (((a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM || 
           a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME) && 
-         dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME) ||
-        ((a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM || 
-         a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME) &&
+         dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME) ||
+        ((a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM || 
+         a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME) &&
          dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME)) {
         /* The in-use bits of all of the entries in an entry set should be 
          * same, so this entry is a false positive or there is corruption. 
@@ -421,7 +421,7 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY);
+           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
     /* Starting parse of a new name, save the previous name, if any. */
@@ -432,7 +432,7 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     a_name_info->last_dentry_type = 
         (EXFATFS_DIR_ENTRY_TYPE_ENUM)dentry->entry_type;
 
-    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY) {
+    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL) {
         if (fatfs_utf16_inode_str_2_utf8(a_name_info->fatfs, 
             (UTF16*)dentry->volume_label, (size_t)dentry->utf16_char_count + 1, 
             (UTF8*)a_name_info->fs_name->name, a_name_info->fs_name->name_size,
@@ -647,18 +647,18 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
 
             switch (dentry_type) {
             case EXFATFS_DIR_ENTRY_TYPE_FILE:
-            case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE:
+            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
                 exfats_parse_file_dentry(&name_info, current_dentry, current_inum);                 
                 break;
             case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
-            case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM:
+            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
                 exfats_parse_file_stream_dentry(&name_info, current_dentry, current_inum);                 
                 break;
             case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
-            case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME:
+            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
                 exfats_parse_file_name_dentry(&name_info, current_dentry, current_inum);                 
                 break;
-            case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY:
+            case EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL:
             case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
                 exfats_parse_vol_label_dentry(&name_info, current_dentry, current_inum);
                 break;

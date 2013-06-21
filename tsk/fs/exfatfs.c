@@ -31,17 +31,28 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
-// RJCTODO: Add function header comment
+/**
+ * \internal
+ * Parses the MBR of an exFAT file system to obtain file system size 
+ * information - bytes per sector, sectors per cluster, and sectors per FAT -
+ * to add to a FATFS_INFO object.
+ *
+ * @param [in, out] a_fatfs Generic FAT file system info structure.
+ * @return 0 on success, 1 otherwise, per TSK convention.
+ */
 static uint8_t 
 exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_get_fs_size_params";
 	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_MASTER_BOOT_REC *exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
+    EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
 
+    assert(a_fatfs != NULL);
+    
     /* Get bytes per sector.
      * Bytes per sector is a base 2 logarithm, defining a range of sizes with 
      * a min of 512 bytes and a max of 4096 bytes. */ 
+    exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
     a_fatfs->ssize_sh = (uint16_t)exfatbs->bytes_per_sector;
     if ((a_fatfs->ssize_sh < 9) || (a_fatfs->ssize_sh > 12))
     {
@@ -51,7 +62,7 @@ exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid sector size base 2 logarithm (%d), not in range (9 - 12)\n", func_name, a_fatfs->ssize);
         }
-        return 0;
+        return EXFATFS_FAIL;
     }
     a_fatfs->ssize = (1 << a_fatfs->ssize_sh);
 
@@ -66,7 +77,7 @@ exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid cluster size (%d)\n", func_name, a_fatfs->csize);
         }
-        return 0;
+        return EXFATFS_FAIL;
     }
     a_fatfs->csize = (1 << exfatbs->sectors_per_cluster);
 
@@ -80,23 +91,33 @@ exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid number of sectors per FAT (%d)\n", func_name, a_fatfs->sectperfat);
         }
-        return 0;
+        return EXFATFS_FAIL;
     }
 
-    return 1;
+    return EXFATFS_OK;
 }
 
-// RJCTODO: Add function header comment
+/**
+ * \internal
+ * Parses the MBR of an exFAT file system to obtain file system layout 
+ * information to add to a FATFS_INFO object.
+ *
+ * @param [in, out] a_fatfs Generic FAT file system info structure.
+ * @return 0 on success, 1 otherwise, per TSK convention.
+ */
 static uint8_t 
 exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_get_fs_layout";
 	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_MASTER_BOOT_REC *exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
+	EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
     uint64_t vol_len_in_sectors = 0;
     uint64_t last_sector_of_cluster_heap = 0;
 
+    assert(a_fatfs != NULL);
+    
     /* Get the size of the volume. It should be non-zero. */
+	exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
     vol_len_in_sectors = tsk_getu64(fs->endian, exfatbs->vol_len_in_sectors);
     if (vol_len_in_sectors == 0) {
         tsk_error_reset();
@@ -105,7 +126,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid volume length in sectors (%d)\n", func_name, vol_len_in_sectors);
         }
-        return 0;
+        return EXFATFS_FAIL;
     }
 
     /* Get the number of FATs. There will be one FAT for regular exFAT and two 
@@ -118,7 +139,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid number of FATs (%d)\n", func_name, a_fatfs->numfat);
         }
-        return 0;
+        return EXFATFS_FAIL;
     }
 
     /* Get the sector address of the first FAT (FAT0). 
@@ -134,7 +155,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid first FAT sector (%" PRIuDADDR ")\n", func_name, a_fatfs->firstfatsect);
         }
-        return 0;
+        return EXFATFS_FAIL;
     }
 
     /* Get the sector address of the cluster heap (data area). It should be 
@@ -148,7 +169,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid first data sector (%" PRIuDADDR ")\n", func_name, a_fatfs->firstdatasect);
         }
-        return 0;
+        return EXFATFS_FAIL;
     }
 
     /* Unlike FAT12 and FAT16, but like FAT32, the sector address of the first
@@ -169,7 +190,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid cluster count (%" PRIuDADDR ")\n", func_name, a_fatfs->clustcnt);
         }
-        return 0;
+        return EXFATFS_FAIL;
     }
 
     /* The first cluster is #2, so the final cluster is: */
@@ -190,37 +211,31 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid root directory sector address (%d)\n", func_name, a_fatfs->rootsect);
         }
-        return 0;
+        return EXFATFS_FAIL;
     }
 
     /* The number of directory entries in the root directory is not specified
      * in the exFAT boot sector. */
     a_fatfs->numroot = 0;
 
-    // RJCTODO: Need more validation? Special validation for the backup VBR? Think about this.
-
-    return 1;
+    return EXFATFS_OK;
 }
 
-// RJCTODO: Add function header comment
-static void 
-exfatfs_get_volume_id(FATFS_INFO *a_fatfs)
-{
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_MASTER_BOOT_REC *exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
-
-    for (fs->fs_id_used = 0; fs->fs_id_used < 4; fs->fs_id_used++) {
-        fs->fs_id[fs->fs_id_used] = exfatbs->vol_serial_no[fs->fs_id_used];
-    }
-}
-
-// RJCTODO: Add function header comment
+/**
+ * \internal
+ * Searches the root directory of an exFAT file system for an allocation bitmap
+ * directory entry. If the entry is found, data from the entry is saved to a
+ * FATFS_INFO object.
+ *
+ * @param [in, out] a_fatfs Generic FAT file system info structure.
+ * @return 0 on success, 1 otherwise, per TSK convention.
+ */
 static uint8_t
 exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_get_alloc_bitmap";
 	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-    TSK_DADDR_T current_sector = a_fatfs->rootsect;
+    TSK_DADDR_T current_sector = 0;
     TSK_DADDR_T last_sector_of_data_area = 0;
     char *sector_buf = NULL;
     ssize_t bytes_read = 0;
@@ -230,10 +245,15 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
     uint64_t alloc_bitmap_length_in_bytes = 0;
     uint64_t last_sector_of_alloc_bitmap = 0;
 
+    assert(a_fatfs != NULL);
+    
     if ((sector_buf = (char*)tsk_malloc(a_fatfs->ssize)) == NULL) {
-        return 1;
+        return EXFATFS_FAIL;
     }
 
+    // RJCTODO: Fix this. It is too brute force. Walk the root directory during layout discovery and store its data run 
+    // in the FATFS_INFO for a correct search.
+    current_sector = a_fatfs->rootsect;
     last_sector_of_data_area = a_fatfs->firstdatasect + (a_fatfs->clustcnt * a_fatfs->csize) - 1;
     while (current_sector < last_sector_of_data_area) {
         /* Read in a sector from the root directory. The allocation bitmap
@@ -247,7 +267,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
             }
             tsk_error_set_errstr2("%s: sector: %" PRIuDADDR, func_name, current_sector);
             free(sector_buf);
-            return 1;
+            return EXFATFS_FAIL;
         }
 
         /* Read the directory entries in the sector, looking for allocation
@@ -260,7 +280,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
             if (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
                 /* Do an in-depth test. */
-                if (!exfatfs_is_alloc_bitmap_dentry(a_fatfs, (FATFS_DENTRY*)dentry, 1, 1)) { //RJCTODO: Right choice for alloc arg?
+                if (!exfatfs_is_alloc_bitmap_dentry(a_fatfs, (FATFS_DENTRY*)dentry, 1, 0)) {
                     continue;
                 }
 
@@ -285,7 +305,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
                         a_fatfs->EXFATFS_INFO.first_sector_of_alloc_bitmap = first_sector_of_alloc_bitmap; 
                         a_fatfs->EXFATFS_INFO.length_of_alloc_bitmap_in_bytes = alloc_bitmap_length_in_bytes;
                         free(sector_buf);
-                        return 1;
+                        return EXFATFS_OK;
                     }
                 }
             }
@@ -293,21 +313,58 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
     }
     free(sector_buf);
 
-    return 0;
+    return EXFATFS_FAIL;
 }
 
-// RJCTODO: Add function header comment
-/* There are no blocks in exFAT. To conform to the SleuthKit file system 
- * model, sectors and clusters will be mapped to blocks. */
-static uint8_t 
-exfatfs_map_fs_layout_to_blocks(FATFS_INFO *a_fatfs)
+/**
+ * \internal
+ * Parses the MBR of an exFAT file system to obtain a volume serial number to
+ * add to a FATFS_INFO object.
+ *
+ * @param [in, out] a_fatfs Generic FAT file system info structure.
+ */
+static void 
+exfatfs_get_volume_id(FATFS_INFO *a_fatfs)
 {
 	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_MASTER_BOOT_REC *exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
+	EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
+
+    assert(a_fatfs != NULL);
+    
+	exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
+    for (fs->fs_id_used = 0; fs->fs_id_used < 4; fs->fs_id_used++) {
+        fs->fs_id[fs->fs_id_used] = exfatbs->vol_serial_no[fs->fs_id_used];
+    }
+}
+
+/**
+ * \internal
+ * Sets the file system layout members of a FATFS_INFO object for an exFAT file
+ * system. Note that there are no "block" or "inode" concepts in exFAT. So, to 
+ * conform to the SleuthKit generic file system model, sectors are treated as 
+ * blocks, directory entries are treated as inodes, and inode addresses (inode 
+ * numbers) are assigned to every directory-entry-sized chunk of the file 
+ * system. This is the same mapping previously established for TSK treatment of
+ * the other FAT file systems. As with those sister file systems, any given 
+ * inode address may or may not point to a conceptual exFAT inode.
+ *
+ * @param [in, out] a_fatfs Generic FAT file system info structure.
+ */
+static void
+exfatfs_setup_fs_layout_model(FATFS_INFO *a_fatfs)
+{
+	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+	EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
+
+    assert(a_fatfs != NULL);
 
     fs->duname = "Sector";
+
     fs->block_size = a_fatfs->ssize;    
+    
+    exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
     fs->block_count = tsk_getu64(fs->endian, exfatbs->vol_len_in_sectors);
+    
     fs->first_block = 0;
     fs->last_block = fs->last_block_act = fs->block_count - 1;
 
@@ -317,20 +374,6 @@ exfatfs_map_fs_layout_to_blocks(FATFS_INFO *a_fatfs)
         fs->block_count) {
         fs->last_block_act = (fs->img_info->size - fs->offset) / fs->block_size - 1;
     }
-
-    return 1;
-}
-
-// RJCTODO: Add function header comment
-/* There are no blocks in exFAT. To conform to the SleuthKit file system 
- * model, sectors and clusters will be mapped to inodes. */
-static uint8_t
-exfatfs_map_fs_layout_to_inodes(FATFS_INFO *a_fatfs)
-{
-	TSK_FS_INFO *fs = NULL;
-
-    assert(a_fatfs != NULL);
-	fs = &(a_fatfs->fs_info);
 
     /* Calculate the maximum number of directory entries that will fit in a 
      * sector and a cluster. */
@@ -358,15 +401,65 @@ exfatfs_map_fs_layout_to_inodes(FATFS_INFO *a_fatfs)
     
     /* Calculate the total number of inodes. */
     fs->inum_count = fs->last_inum - fs->first_inum + 1;
-
-    return 1;
 }
 
-// RJCTODO: Add function header comment
+/**
+ * \internal
+ * Initializes the data structures used to cache the cluster addresses that 
+ * make up FAT chains in an exFAT file system, and the lock used to make the
+ * data structures thread-safe. 
+ *
+ * @param [in, out] a_fatfs Generic FAT file system info structure.
+ */
+static void 
+exfatfs_init_fat_cache(FATFS_INFO *a_fatfs)
+{
+    uint32_t i = 0;
+
+    assert(a_fatfs != NULL);
+
+    for (i = 0; i < FAT_CACHE_N; i++) {
+        a_fatfs->fatc_addr[i] = 0;
+        a_fatfs->fatc_ttl[i] = 0;
+    }
+
+    tsk_init_lock(&a_fatfs->cache_lock);
+    tsk_init_lock(&a_fatfs->dir_lock);
+    a_fatfs->inum2par = NULL;
+}
+
+/**
+ * \internal
+ * Initializes the data structure used to map inode addresses to parent inode
+ * addresses in an exFAT file system, and the lock used to make the data 
+ * structure thread-safe. 
+ *
+ * @param [in, out] a_fatfs Generic FAT file system info structure.
+ */
+static void 
+exfatfs_init_inums_map(FATFS_INFO *a_fatfs)
+{
+    assert(a_fatfs != NULL);
+
+    tsk_init_lock(&a_fatfs->dir_lock);
+    a_fatfs->inum2par = NULL;
+}
+
+/**
+ * \internal
+ * 
+ * Sets the function pointers in a FATFS_INFO object for an exFAT file system
+ * to point to either generic FAT file system functions or to exFAT file system
+ * functions.
+ *
+ * @param [in, out] a_fatfs Generic FAT file system info structure.
+ */
 static void 
 exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
 {
 	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+
+    assert(a_fatfs != NULL);
 
     fs->block_walk = fatfs_block_walk;
     fs->block_getflags = fatfs_block_getflags;
@@ -389,28 +482,11 @@ exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
     fs->close = fatfs_close;
 }
 
-// RJCTODO: Add function header comment
-static void 
-exfatfs_init_caches(FATFS_INFO *a_fatfs)
-{
-    uint32_t i = 0;
-
-    for (i = 0; i < FAT_CACHE_N; i++) {
-        a_fatfs->fatc_addr[i] = 0;
-        a_fatfs->fatc_ttl[i] = 0;
-    }
-
-    tsk_init_lock(&a_fatfs->cache_lock);
-    tsk_init_lock(&a_fatfs->dir_lock);
-    a_fatfs->inum2par = NULL;
-}
-
 /**
- * \internal
- * Open part of an image file as an exFAT file system. 
+ * Open an exFAT file system in an image file. 
  *
- * @param [in] a_fatfs Generic FAT file system info structure.
- * @returns 0 on success, 1 otherwise, per TSK convention.
+ * @param [in, out] a_fatfs Generic FAT file system info structure.
+ * @return 0 on success, 1 otherwise, per TSK convention.
  */
 uint8_t
 exfatfs_open(FATFS_INFO *a_fatfs)
@@ -418,38 +494,48 @@ exfatfs_open(FATFS_INFO *a_fatfs)
     const char *func_name = "exfatfs_open";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
 
+    assert(a_fatfs != NULL);    
+
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name)) {
-        return 1; 
+        return EXFATFS_FAIL; 
     }
 
-    /* Is is really an exFAT file system? */
-    if (!exfatfs_get_fs_size_params(a_fatfs) ||
-        !exfatfs_get_fs_layout(a_fatfs) || 
-        !exfatfs_map_fs_layout_to_blocks(a_fatfs) ||
-        !exfatfs_map_fs_layout_to_inodes(a_fatfs) ||
-        !exfatfs_get_alloc_bitmap(a_fatfs)) {
-        return 1;
+    if (exfatfs_get_fs_size_params(a_fatfs) == EXFATFS_FAIL ||
+        exfatfs_get_fs_layout(a_fatfs) == EXFATFS_FAIL) {
+        return EXFATFS_FAIL; 
+    }
+
+    if (exfatfs_get_fs_layout(a_fatfs) == EXFATFS_OK) {
+        exfatfs_setup_fs_layout_model(a_fatfs);
+    }
+    else {
+        return EXFATFS_FAIL;
+    }
+
+    if (exfatfs_get_alloc_bitmap(a_fatfs) == EXFATFS_FAIL) {
+        return EXFATFS_FAIL;
     }
 
     exfatfs_get_volume_id(a_fatfs);
+    exfatfs_init_inums_map(a_fatfs);
+    exfatfs_init_fat_cache(a_fatfs);
     exfatfs_set_func_ptrs(a_fatfs);
-    exfatfs_init_caches(a_fatfs);
 
     fs->ftype = TSK_FS_TYPE_EXFAT;
 
-	return 0;
+	return EXFATFS_OK;
 }
 
 /**
  * \internal
- * Searches the root directory for the volume label directory entry. If the
- * entry is found, the metadata is copied into the TSK_FS_META object of a
- * TSK_FS_FILE object.
+ * Searches an exFAT file system for its volume label directory entry, which 
+ * should be in the root directory of the file system. If the entry is found, 
+ * its metadata is copied into the TSK_FS_META object of a TSK_FS_FILE object.
  *
  * @param [in] a_fatfs Generic FAT file system info structure.
  * @param [out] a_fatfs Generic file system file structure.
- * @returns 1 on error and 0 on success, per TSK convention
+ * @return 0 on success, 1 otherwise, per TSK convention.
  */
 static uint8_t
 exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
@@ -471,14 +557,14 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_ptr_arg_is_null(a_fs_file, "a_fs_file", func_name)) {
-        return 1; 
+        return EXFATFS_FAIL; 
     }
 
     /* Allocate or reset the TSK_FS_META object. */
     if (a_fs_file->meta == NULL) {
         if ((a_fs_file->meta =
                 tsk_fs_meta_alloc(FATFS_FILE_CONTENT_LEN)) == NULL) {
-            return 1;
+            return EXFATFS_FAIL;
         }
     }
     else {
@@ -487,12 +573,11 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
 
     /* Allocate a buffer for reading in sector-size chunks of the image. */
     if ((sector_buf = (char*)tsk_malloc(a_fatfs->ssize)) == NULL) {
-        return 1;
+        return EXFATFS_FAIL;
     }
 
-    // RJCTODO: Consider walking the FAT chain for the root directory during FATFS initialization.
-    // This would make the extents of the root directory available to bound this and other root
-    // directory searches.
+    // RJCTODO: Fix this. It is too brute force. Walk the root directory during layout discovery and store its data run 
+    // in the FATFS_INFO for a correct search.
     current_sector = a_fatfs->rootsect;
     last_sector_of_data_area = a_fatfs->firstdatasect + (a_fatfs->clustcnt * a_fatfs->csize) - 1;
     while (current_sector < last_sector_of_data_area) {
@@ -507,13 +592,13 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
             }
             tsk_error_set_errstr2("%s: error reading sector: %" PRIuDADDR, func_name, current_sector);
             free(sector_buf);
-            return 1;
+            return EXFATFS_FAIL;
         }
 
         /* Get the allocation status of the sector (yes, it should be allocated). */
         sector_is_alloc = fatfs_is_sectalloc(a_fatfs, current_sector);
         if (sector_is_alloc == -1) {
-            return 1;
+            return EXFATFS_FAIL;
         }
 
         /* Get the inode address of the first directory entry of the sector. */
@@ -527,9 +612,8 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
             /* The type of the directory entry is encoded in the first byte 
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
             if (dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
-                dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY) {
-                /* Do an in-depth test. */
-                if (!exfatfs_is_vol_label_dentry(a_fatfs, dentry, 1, 1)) { // RJCTODO: Right choice for parameter?
+                dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL) {
+                if (!exfatfs_is_vol_label_dentry(a_fatfs, dentry, 1, 0)) {
                     continue;
                 }
 
@@ -537,17 +621,17 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
                  * TSK_FS_FILE object and exit. */ 
                 if (exfatfs_dinode_copy(a_fatfs, current_inum, dentry, NULL, sector_is_alloc, 
                     a_fs_file) == TSK_OK) {
-                        return 0;
+                        return EXFATFS_OK;
                 }
                 else {
-                    return 1;
+                    return EXFATFS_FAIL;
                 }
             }
         }
     }
 
     free(sector_buf);
-    return 0;
+    return EXFATFS_OK;
 }
 
 /**
@@ -557,7 +641,7 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
  *
  * @param [in] a_fs Generic file system info structure for the file system.
  * @param [in] a_hFile The file handle.
- * @returns 1 on error and 0 on success, per TSK convention
+ * @return 0 on success, 1 otherwise, per TSK convention.
  */
 static uint8_t
 exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
@@ -573,11 +657,11 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
     exfatbs = (EXFATFS_MASTER_BOOT_REC*)&(fatfs->boot_sector_buffer);
 
     if ((fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
-        return 1;
+        return EXFATFS_FAIL;
     }
 
     if ((fs_file->meta = tsk_fs_meta_alloc(FATFS_FILE_CONTENT_LEN)) == NULL) {
-        return 1;
+        return EXFATFS_FAIL;
     }
 
     tsk_fprintf(a_hFile, "FILE SYSTEM INFORMATION\n");
@@ -608,7 +692,7 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
 
     tsk_fs_file_close(fs_file);
 
-    return 0;
+    return EXFATFS_OK;
 }
 
 /**
@@ -618,7 +702,7 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
  *
  * @param [in] a_fs Generic file system info structure for the file system.
  * @param [in] a_hFile The file handle.
- * @returns 1 on error and 0 on success, per TSK convention
+ * @return 0 on success, 1 otherwise, per TSK convention.
  */
 static uint8_t
 exfatfs_fsstat_fs_layout_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
@@ -680,9 +764,6 @@ exfatfs_fsstat_fs_layout_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
         "** Cluster Heap: %" PRIuDADDR " - %" PRIuDADDR "\n",
         fatfs->firstclustsect, (fatfs->firstclustsect + clust_heap_len - 1));
 
-    // RJCTODO: Consider walking the FAT chain for the root directory during FATFS initialization.
-    // This would make the extents of the root directory available to bound this and other root
-    // directory searches.
     /* Walk the FAT chain for the root directory. */
     current_cluster = fatfs->rootsect;
     next_cluster = FATFS_SECT_2_CLUST(fatfs, fatfs->rootsect);
@@ -703,7 +784,7 @@ exfatfs_fsstat_fs_layout_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
         if (tsk_list_add(&root_dir_clusters_seen, next_cluster)) {
             tsk_list_free(root_dir_clusters_seen);
             root_dir_clusters_seen = NULL;
-            return 1;
+            return EXFATFS_FAIL;
         }
 
         if (fatfs_getFAT(fatfs, next_cluster, &nxt)) {
@@ -725,7 +806,7 @@ exfatfs_fsstat_fs_layout_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
             (fatfs->firstclustsect + clust_heap_len), a_fs->last_block);
     }
 
-    return 0;
+    return EXFATFS_OK;
 }
 
 /**
@@ -892,7 +973,7 @@ exfatfs_fsstat_fs_fat_chains_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
  *
  * @param [in] a_fs Generic file system info structure for the file system.
  * @param [in] a_hFile The file handle.
- * @returns 1 on error and 0 on success, per TSK convention
+ * @return 0 on success, 1 otherwise, per TSK convention.
  */
 uint8_t
 exfatfs_fsstat(TSK_FS_INFO *a_fs, FILE *a_hFile)
@@ -905,20 +986,20 @@ exfatfs_fsstat(TSK_FS_INFO *a_fs, FILE *a_hFile)
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fs, "a_fs", func_name) ||
         fatfs_ptr_arg_is_null(a_hFile, "a_hFile", func_name)) {
-        return 1; 
+        return EXFATFS_FAIL; 
     }
 
     if (exfatfs_fsstat_fs_info(a_fs, a_hFile)) {
-        return 1;
+        return EXFATFS_FAIL;
     }
 
     if (exfatfs_fsstat_fs_layout_info(a_fs, a_hFile)) {
-        return 1;
+        return EXFATFS_FAIL;
     }
 
     exfatfs_fsstat_fs_metadata_info(a_fs, a_hFile);
     exfatfs_fsstat_fs_content_info(a_fs, a_hFile);
     exfatfs_fsstat_fs_fat_chains_info(a_fs, a_hFile);
 
-    return 0;
+    return EXFATFS_OK;
 }

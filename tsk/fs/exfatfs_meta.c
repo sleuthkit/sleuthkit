@@ -471,7 +471,7 @@ exfatfs_is_file_stream_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8
     if ((!a_do_basic_test_only) && (file_size > 0)) {
         /* If the file is not marked as deleted and has non-zero size, is its
          * first cluster allocated? */
-        if ((dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM) && 
+        if ((dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM) && 
             (fatfs_is_clustalloc(a_fatfs, (TSK_DADDR_T)first_cluster) != 1)) {
             if (tsk_verbose) {
                 fprintf(stderr, 
@@ -533,7 +533,7 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_sector_
     switch (a_dentry->data[0])
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
-    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY:
+    case EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL:
         return exfatfs_is_vol_label_dentry(a_fatfs, a_dentry, a_sector_is_alloc, a_do_basic_test_only);
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
         return exfatfs_is_vol_guid_dentry(a_fatfs, a_dentry, a_sector_is_alloc, a_do_basic_test_only);
@@ -546,13 +546,13 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_sector_
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
         return exfatfs_is_access_ctrl_table_dentry(a_fatfs, a_dentry, a_sector_is_alloc, a_do_basic_test_only);
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
-    case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE:
+    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
         return exfatfs_is_file_dentry(a_fatfs, a_dentry, a_sector_is_alloc, a_do_basic_test_only);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
-    case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM:
+    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
         return exfatfs_is_file_stream_dentry(a_fatfs, a_dentry, a_sector_is_alloc, a_do_basic_test_only);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
-    case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME:
+    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
         return exfatfs_is_file_name_dentry(a_fatfs, a_dentry, a_sector_is_alloc, a_do_basic_test_only);
     default:
         return EXFATFS_DIR_ENTRY_TYPE_NONE;
@@ -686,11 +686,11 @@ exfatfs_copy_vol_label_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FATFS_DENTR
 
     dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_dentry;
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY);
+           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL);
 
     /* If there is a volume label, copy it to the name field of the 
      * TSK_FS_META structure. */
-    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY) {
+    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL) {
         if (fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16*)dentry->volume_label, (size_t)dentry->utf16_char_count + 1, 
             (UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "volume label") != TSKconversionOK) {
             return TSK_COR;
@@ -820,11 +820,11 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_file_dentry,
 
     file_dentry = (EXFATFS_FILE_DIR_ENTRY*)a_file_dentry;
     assert(file_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-           file_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE);
+           file_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE);
 
     stream_dentry = (EXFATFS_FILE_STREAM_DIR_ENTRY*)a_stream_dentry;
     assert(stream_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
-           stream_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM);
+           stream_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM);
 
     /* Determine whether the file is a regular file or directory. */
     if (file_dentry->attrs[0] & FATFS_ATTR_DIRECTORY) {
@@ -850,7 +850,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_file_dentry,
 
     /* There is no notion of links in exFAT, just deleted or not deleted. 
      * If the file is not deleted, treat this as having one link. */
-    fs_meta->nlink = (file_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) ? 0 : 1;
+    fs_meta->nlink = (file_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE) ? 0 : 1;
 
     /* Copy the last modified time, converted to UNIX date format. */
     if (FATFS_ISDATE(tsk_getu16(fs->endian, file_dentry->modified_date))) {
@@ -959,7 +959,7 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 
     dentry = (EXFATFS_FILE_NAME_DIR_ENTRY*)a_dentry;
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME);
+           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME);
 
     // RJCTODO: This leads to attempts to "recover" a file with a single cluster
     // run for a deleted file name entry.
@@ -1110,7 +1110,7 @@ exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     switch (a_dentry->data[0])
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
-    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY:
+    case EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL:
         a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
         return exfatfs_copy_vol_label_inode(a_fatfs, a_inum, a_dentry, a_fs_file);
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
@@ -1132,14 +1132,14 @@ exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         strcpy(a_fs_file->meta->name2->name, EXFATFS_ACT_DENTRY_NAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
-    case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE:
+    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
         // RJCTODO: Validate secondary dentry.
         return exfatfs_copy_file_inode(a_fatfs, a_dentry, a_is_alloc, a_secondary_dentry, a_fs_file);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
-    case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME:
+    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
         return exfatfs_copy_file_name_inode(a_fatfs, a_inum, a_dentry, a_is_alloc, a_fs_file);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
-    case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM:
+    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
     default:
         /* Stream entries are copied in tandem with the corresponding file entry. */
         return TSK_ERR;
@@ -1184,8 +1184,8 @@ exfatfs_load_file_stream_dentry(FATFS_INFO *a_fatfs,
          * file entry, call it good. */
         if ((a_file_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE && 
              dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) ||
-            (a_file_dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE &&
-             dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM)) {
+            (a_file_dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE &&
+             dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM)) {
             return 0;
         }
     }
@@ -1370,7 +1370,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     dentry_type = exfatfs_is_dentry(a_fatfs, &dentry, sect_is_alloc, sect_is_alloc);
     if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_NONE ||
         dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
-        dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM) {
+        dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
         tsk_error_set_errstr("%s: %" PRIuINUM " is not an inode", func_name, 
@@ -1384,7 +1384,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
      * a file entry is found, the companion file stream entry needs to be 
      * found. */
     if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-        dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) {
+        dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE) {
         if (exfatfs_find_file_stream_dentry(a_fatfs, a_inum, sector, sect_is_alloc, 
             dentry_type, &stream_dentry) == 0) {
             secondary_dentry = &stream_dentry;
@@ -1453,7 +1453,7 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
     switch (dentry.data[0])
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
-    case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL_EMPTY:
+    case EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL:
         tsk_fprintf(a_hFile, "Volume Label\n");
         break;
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
@@ -1472,7 +1472,7 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
         tsk_fprintf(a_hFile, "Access Control Table\n");
         break;
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
-    case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE:
+    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
         file_dentry = (EXFATFS_FILE_DIR_ENTRY*)&dentry;
         attr_flags = tsk_getu16(a_fatfs->fs_info.endian, file_dentry->attrs);
 
@@ -1503,11 +1503,11 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
 
         break;
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
-    case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM:
+    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
         tsk_fprintf(a_hFile, "File Stream\n"); 
         break;
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
-    case EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME:
+    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
         tsk_fprintf(a_hFile, "File Name\n");
         break;
     default:
@@ -1531,9 +1531,9 @@ exfatfs_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 
     /* Skip file stream and file name entries. */
     if (a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
-        a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_STREAM ||
+        a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM ||
         a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
-        a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE_NAME) {
+        a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME) {
         return 1;
     }
 
@@ -1543,7 +1543,7 @@ exfatfs_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
      * the file. This ensures that if a directory is deleted and its 
      * contents are not always marked as unallocated, the correct status will
      * still be obtained. */
-    if ((a_cluster_is_alloc) && (a_dentry->data[0] != EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE)) {
+    if ((a_cluster_is_alloc) && (a_dentry->data[0] != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE)) {
         dentry_flags = TSK_FS_META_FLAG_ALLOC;
     }
     else {

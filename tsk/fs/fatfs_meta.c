@@ -1467,7 +1467,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                      * a file entry is found, the companion file stream entry needs to be 
                      * found. */
                     if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-                        dentry_type == EXFATFS_DIR_ENTRY_TYPE_DELETED_FILE) {
+                        dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE) {
                         if (exfatfs_find_file_stream_dentry(fatfs, inum, sect, cluster_is_alloc, 
                             dentry_type, &secondary_dentry)) {
                             continue;
