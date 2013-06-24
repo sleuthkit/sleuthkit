@@ -2050,6 +2050,27 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             if (fname->nspace == NTFS_FNAME_DOS) {
                 continue;
             }
+            
+            fs_file->meta->time2.ntfs.fn_mtime =
+                nt2unixtime(tsk_getu64(fs->endian, fname->mtime));
+            fs_file->meta->time2.ntfs.fn_mtime_nano =
+                nt2nano(tsk_getu64(fs->endian, fname->mtime));
+            
+            fs_file->meta->time2.ntfs.fn_atime =
+                nt2unixtime(tsk_getu64(fs->endian, fname->atime));
+            fs_file->meta->time2.ntfs.fn_atime_nano =
+                nt2nano(tsk_getu64(fs->endian, fname->atime));
+            
+            fs_file->meta->time2.ntfs.fn_ctime =
+                nt2unixtime(tsk_getu64(fs->endian, fname->ctime));
+            fs_file->meta->time2.ntfs.fn_ctime_nano =
+                nt2nano(tsk_getu64(fs->endian, fname->ctime));
+            
+            fs_file->meta->time2.ntfs.fn_crtime =
+                nt2unixtime(tsk_getu64(fs->endian, fname->crtime));
+            fs_file->meta->time2.ntfs.fn_crtime_nano =
+                nt2nano(tsk_getu64(fs->endian, fname->crtime));
+            
 
             /* Seek to the end of the fs_name structures in TSK_FS_META */
             if (fs_file->meta->name2) {
@@ -2530,7 +2551,15 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
     a_fs_file->meta->ctime_nano = 0;
     a_fs_file->meta->crtime = 0;
     a_fs_file->meta->crtime_nano = 0;
-
+    a_fs_file->meta->time2.ntfs.fn_mtime = 0;
+    a_fs_file->meta->time2.ntfs.fn_mtime_nano = 0;
+    a_fs_file->meta->time2.ntfs.fn_atime = 0;
+    a_fs_file->meta->time2.ntfs.fn_atime_nano = 0;
+    a_fs_file->meta->time2.ntfs.fn_ctime = 0;
+    a_fs_file->meta->time2.ntfs.fn_ctime_nano = 0;
+    a_fs_file->meta->time2.ntfs.fn_crtime = 0;
+    a_fs_file->meta->time2.ntfs.fn_crtime_nano = 0;
+    
     /* add the flags */
     a_fs_file->meta->flags =
         ((tsk_getu16(fs->endian, mft->flags) &
@@ -4247,7 +4276,6 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
     if (fs_attr) {
 
         ntfs_attr_fname *fname = (ntfs_attr_fname *) fs_attr->rd.buf;
-        time_t cr_time, m_time, c_time, a_time;
         uint64_t flags;
         int a = 0;
         tsk_fprintf(hFile, "\n$FILE_NAME Attribute Values:\n");
@@ -4313,42 +4341,49 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
         /*
          * Times
          */
-        cr_time = nt2unixtime(tsk_getu64(fs->endian, fname->crtime));
-        /* altered - modified */
-        m_time = nt2unixtime(tsk_getu64(fs->endian, fname->mtime));
-        /* MFT modified */
-        c_time = nt2unixtime(tsk_getu64(fs->endian, fname->ctime));
-        /* Access */
-        a_time = nt2unixtime(tsk_getu64(fs->endian, fname->atime));
+        
+        /* Times - take it from fs_file->meta instead of redoing the work */
+        
         if (sec_skew != 0) {
             tsk_fprintf(hFile, "\nAdjusted times:\n");
-            cr_time -= sec_skew;
-            m_time -= sec_skew;
-            a_time -= sec_skew;
-            c_time -= sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_mtime)
+                fs_file->meta->time2.ntfs.fn_mtime -= sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_atime)
+                fs_file->meta->time2.ntfs.fn_atime -= sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_ctime)
+                fs_file->meta->time2.ntfs.fn_ctime -= sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_crtime)
+                fs_file->meta->time2.ntfs.fn_crtime -= sec_skew;
+            
             tsk_fprintf(hFile, "Created:\t%s\n",
-                tsk_fs_time_to_str(cr_time, timeBuf));
+                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_crtime, timeBuf));
             tsk_fprintf(hFile, "File Modified:\t%s\n",
-                tsk_fs_time_to_str(m_time, timeBuf));
+                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_mtime, timeBuf));
             tsk_fprintf(hFile, "MFT Modified:\t%s\n",
-                tsk_fs_time_to_str(c_time, timeBuf));
+                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_ctime, timeBuf));
             tsk_fprintf(hFile, "Accessed:\t%s\n",
-                tsk_fs_time_to_str(a_time, timeBuf));
-            cr_time += sec_skew;
-            m_time += sec_skew;
-            a_time += sec_skew;
-            c_time += sec_skew;
+                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_atime, timeBuf));
+            
+            if (fs_file->meta->time2.ntfs.fn_mtime == 0)
+                fs_file->meta->time2.ntfs.fn_mtime += sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_atime == 0)
+                fs_file->meta->time2.ntfs.fn_atime += sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_ctime == 0)
+                fs_file->meta->time2.ntfs.fn_ctime += sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_crtime == 0)
+                fs_file->meta->time2.ntfs.fn_crtime += sec_skew;
+            
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
-
+        
         tsk_fprintf(hFile, "Created:\t%s\n",
-            tsk_fs_time_to_str(cr_time, timeBuf));
+                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_crtime, timeBuf));
         tsk_fprintf(hFile, "File Modified:\t%s\n",
-            tsk_fs_time_to_str(m_time, timeBuf));
+                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_mtime, timeBuf));
         tsk_fprintf(hFile, "MFT Modified:\t%s\n",
-            tsk_fs_time_to_str(c_time, timeBuf));
+                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_ctime, timeBuf));
         tsk_fprintf(hFile, "Accessed:\t%s\n",
-            tsk_fs_time_to_str(a_time, timeBuf));
+                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_atime, timeBuf));
     }
 
 

@@ -472,6 +472,16 @@ extern "C" {
                 time_t bkup_time;       ///< HFS+ backup time
                 uint32_t bkup_time_nano;        ///< nano-second resolution in addition to bkup_time
             } hfs;
+            struct {
+                time_t fn_crtime;   ///< NTFS Created time stored in FILE_NAME
+                time_t fn_crtime_nano;   ///< NTFS Created time stored in FILE_NAME in nano-second resolution
+                time_t fn_mtime;   ///< NTFS mod (content) stored in FILE_NAME
+                time_t fn_mtime_nano;   ///< NTFS mod time stored in FILE_NAME in nano-second resolution
+                time_t fn_atime;   ///< NTFS access time stored in FILE_NAME
+                time_t fn_atime_nano;   ///< NTFS access time stored in FILE_NAME in nano-second resolution
+                time_t fn_ctime;   ///< NTFS change (MFT Entry) time stored in FILE_NAME
+                time_t fn_ctime_nano;   ///< NTFS change (MFT Entry) time stored in FILE_NAME in nano-second resolution
+            } ntfs;
         } time2;
 
         void *content_ptr;      ///< Pointer to file system specific data that is used to store references to file content

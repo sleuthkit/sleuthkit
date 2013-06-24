@@ -5,6 +5,8 @@ Numbers refer to SourceForge.net tracker IDs:
 Core: 
 - Added FILE_SHARE_WRITE to all windows open calls.
 - removed unused methods in CRC code that caused compile errors.
+- Added NTFS FNAME times to time2 struct in TSK_FS_META to make them 
+  easier to access -- should have done this a long time ago!
 
 
 ---------------- VERSION 4.1.0 --------------
