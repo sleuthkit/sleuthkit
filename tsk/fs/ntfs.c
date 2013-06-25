@@ -2070,6 +2070,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 nt2unixtime(tsk_getu64(fs->endian, fname->crtime));
             fs_file->meta->time2.ntfs.fn_crtime_nano =
                 nt2nano(tsk_getu64(fs->endian, fname->crtime));
+
+            fs_file->meta->time2.ntfs.fn_id = id;
             
 
             /* Seek to the end of the fs_name structures in TSK_FS_META */
@@ -2559,6 +2561,7 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
     a_fs_file->meta->time2.ntfs.fn_ctime_nano = 0;
     a_fs_file->meta->time2.ntfs.fn_crtime = 0;
     a_fs_file->meta->time2.ntfs.fn_crtime_nano = 0;
+    a_fs_file->meta->time2.ntfs.fn_id = 0;
     
     /* add the flags */
     a_fs_file->meta->flags =

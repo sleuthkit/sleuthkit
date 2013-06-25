@@ -481,6 +481,7 @@ extern "C" {
                 time_t fn_atime_nano;   ///< NTFS access time stored in FILE_NAME in nano-second resolution
                 time_t fn_ctime;   ///< NTFS change (MFT Entry) time stored in FILE_NAME
                 time_t fn_ctime_nano;   ///< NTFS change (MFT Entry) time stored in FILE_NAME in nano-second resolution
+                uint16_t fn_id; ///< Attribute ID used to populate FN times. 
             } ntfs;
         } time2;
 
