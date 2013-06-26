@@ -9,7 +9,7 @@
 */
 
 /**
- * \file fatxxfs.h
+ * \file tsk_fatfs.h
  * Contains the structures and function APIs for TSK FAT (FAT12, FAT16, FAT32, 
  * exFAT) file system support.
  */
@@ -19,7 +19,8 @@
 
 #include "tsk_fs_i.h"
 
-// RJCTODO: Comments for Doxygen
+#define FATFS_FIRST_CLUSTER_ADDR 2
+
 #define FATFS_FIRSTINO	2
 #define FATFS_ROOTINO	2       /* location of root directory inode */
 #define FATFS_FIRST_NORMINO 3
@@ -32,33 +33,27 @@
 #define FATFS_NUM_VIRT_FILES(fatfs) \
     (fatfs->numfat + 2)
 
-// RJCTODO: Comments for Doxygen
-// RJCTODO: these appear to be the wrong comments...
 /* size of FAT to read into FATFS_INFO each time */
 /* This must be at least 1024 bytes or else fat12 will get messed up */
-#define FAT_CACHE_N		4       // number of caches
-#define FAT_CACHE_B		4096
-#define FAT_CACHE_S		8       // number of sectors in cache
+#define FATFS_FAT_CACHE_N		4       // number of caches
+#define FATFS_FAT_CACHE_B		4096
+#define FATFS_FAT_CACHE_S		8       // number of sectors in cache
 
-// RJCTODO: Comment for Doxygen
-#define FAT_BOOT_SECTOR_SIZE 512
-
-// RJCTODO: Comments for Doxygen
-/* MASK values for FAT entries */
-#define FATFS_12_MASK	0x00000fff
-#define FATFS_16_MASK	0x0000ffff
-#define FATFS_32_MASK	0x0fffffff
-#define EXFATFS_MASK	0x0fffffff
+#define FATFS_MASTER_BOOT_RECORD_SIZE 512
 
 /** 
  * Directory entries for all FAT file systems are currently 32 bytes long.
  */
 #define FATFS_DENTRY_SIZE 32
 
-// RJCTODO: Comment for Doxygen
+/* MASK values for FAT entries */
+#define FATFS_12_MASK	0x00000fff
+#define FATFS_16_MASK	0x0000ffff
+#define FATFS_32_MASK	0x0fffffff
+#define EXFATFS_MASK	0x0fffffff
+
 #define FATFS_FILE_CONTENT_LEN sizeof(TSK_DADDR_T)      // we will store the starting cluster
 
-// RJCTODO: Comment for Doxygen
 /* flags for attributes field */
 #define FATFS_ATTR_NORMAL	0x00    /* normal file */
 #define FATFS_ATTR_READONLY	0x01    /* file is readonly */
@@ -70,27 +65,22 @@
 #define FATFS_ATTR_LFN		0x0f    /* A long file name entry */
 #define FATFS_ATTR_ALL		0x3f    /* all flags set */
 
-// RJCTODO: Comment for Doxygen
 #define FATFS_CLUST_2_SECT(fatfs, c)	\
 	(TSK_DADDR_T)(fatfs->firstclustsect + ((((c) & fatfs->mask) - 2) * fatfs->csize))
 
-// RJCTODO: Comment for Doxygen
 #define FATFS_SECT_2_CLUST(fatfs, s)	\
 	(TSK_DADDR_T)(2 + ((s)  - fatfs->firstclustsect) / fatfs->csize)
 
-// RJCTODO: Comment for Doxygen
 /* given an inode address, determine in which sector it is located
-    * i must be larger than 3 (2 is the root and it doesn't have a sector)
-    */
+ * i must be larger than 3 (2 is the root and it doesn't have a sector)
+ */
 #define FATFS_INODE_2_SECT(fatfs, i)    \
     (TSK_DADDR_T)((i - FATFS_FIRST_NORMINO)/(fatfs->dentry_cnt_se) + fatfs->firstdatasect)
 
-// RJCTODO: Comment for Doxygen
 #define FATFS_INODE_2_OFF(fatfs, i)     \
     (size_t)(((i - FATFS_FIRST_NORMINO) % fatfs->dentry_cnt_se) * sizeof(FATFS_DENTRY))
 
 /* given a sector IN THE DATA AREA, return the base inode for it */
-// RJCTODO: Comment for Doxygen
 #define FATFS_SECT_2_INODE(fatfs, s)    \
     (TSK_INUM_T)((s - fatfs->firstdatasect) * fatfs->dentry_cnt_se + FATFS_FIRST_NORMINO)
 
@@ -161,12 +151,11 @@ extern "C" {
     };
     typedef enum FATFS_DATA_UNIT_ALLOC_STATUS_ENUM FATFS_DATA_UNIT_ALLOC_STATUS_ENUM;
 
-    // RJCTODO: Comment for Doxygen
     typedef struct
     {
-        uint8_t data[FAT_BOOT_SECTOR_SIZE - 2];
+        uint8_t data[FATFS_MASTER_BOOT_RECORD_SIZE - 2];
         uint8_t magic[2];
-    } FAT_BOOT_SECTOR_RECORD;
+    } FATFS_MASTER_BOOT_RECORD;
 
 	/** 
      * Generic directory entry structure for FAT file systems.
@@ -175,8 +164,6 @@ extern "C" {
         uint8_t data[FATFS_DENTRY_SIZE];
     } FATFS_DENTRY;
 
-    // RJCTODO: Comment for Doxygen
-    // RJCTODO: Should unsigned ints in FATFS be changed to TSK_OFF_T? uint32_t?
     /* 
      * Internal TSK_FS_INFO derived structure for FATXX and exFAT file systems.  
      */
@@ -186,9 +173,9 @@ extern "C" {
         /* FAT cache */
         /* cache_lock protects fatc_buf, fatc_addr, fatc_ttl */
         tsk_lock_t cache_lock;
-        char fatc_buf[FAT_CACHE_N][FAT_CACHE_B];        //r/w shared - lock
-        TSK_DADDR_T fatc_addr[FAT_CACHE_N];     // r/w shared - lock
-        uint8_t fatc_ttl[FAT_CACHE_N];  //r/w shared - lock
+        char fatc_buf[FATFS_FAT_CACHE_N][FATFS_FAT_CACHE_B];        //r/w shared - lock
+        TSK_DADDR_T fatc_addr[FATFS_FAT_CACHE_N];     // r/w shared - lock
+        uint8_t fatc_ttl[FATFS_FAT_CACHE_N];  //r/w shared - lock
 
         /* First sector of FAT */
         TSK_DADDR_T firstfatsect;
@@ -229,7 +216,7 @@ extern "C" {
         tsk_lock_t dir_lock;    //< Lock that protects inum2par.
         void *inum2par;         //< Maps subfolder metadata address to parent folder metadata addresses.
 
-		char boot_sector_buffer[FAT_BOOT_SECTOR_SIZE];
+		char boot_sector_buffer[FATFS_MASTER_BOOT_RECORD_SIZE];
         int using_backup_boot_sector;
 
         int8_t (*is_cluster_alloc)(FATFS_INFO *fatfs, TSK_DADDR_T clust);
@@ -251,7 +238,8 @@ extern "C" {
             TSK_FS_DIR *a_fs_dir, char *a_buf, TSK_OFF_T a_buf_len, 
             TSK_DADDR_T *a_sector_addrs);
 
-        // RJCTODO: Consider wrapping this struct around FATFS_INFO...
+        // RJCTODO: Consider wrapping this struct around FATFS_INFO. The original plan was to make a union of
+        // FATXX- and exFAT-specific members, but it turns out that all of the additions are exFAT only.
         struct {
             uint64_t first_sector_of_alloc_bitmap;
             uint64_t length_of_alloc_bitmap_in_bytes;
@@ -301,7 +289,6 @@ extern "C" {
     extern uint8_t fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust,
         TSK_DADDR_T * value);
 
-    // RJCTODO: Needed in fs_dir.c by load_orphan_dir_walk_cb
     extern uint8_t 
     fatfs_dir_buf_add(FATFS_INFO * fatfs, TSK_INUM_T par_inum, TSK_INUM_T dir_inum); 
 
@@ -309,9 +296,8 @@ extern "C" {
     fatfs_dir_buf_get(FATFS_INFO * fatfs, TSK_INUM_T dir_inum,
     TSK_INUM_T *par_inum);
 
-    // RJCTODO: Change name to have appropriate prefix
     extern TSK_WALK_RET_ENUM
-    find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr);
+    fatfs_find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr);
 
     extern uint8_t
     fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,

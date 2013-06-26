@@ -59,35 +59,41 @@
 
 /**
  * \internal
- * Determines whether a specified cluster is allocated. 
+ * Checks whether a specified cluster is allocated according to the allocation 
+ * bitmap of an exFAT file system. 
  *
- * @param [in] a_fatfs FAT file system info structure.
- * @param [in] a_cluster_addr Address of the cluster to check. 
- * @return 1 if the cluster is allocated, 0 otherwise.
+ * @param [in] a_fatfs A FATFS_INFO struct representing an exFAT file system.
+ * @param [in] a_cluster_addr The cluster address of the cluster to check. 
+ * @return 1 if the cluster is allocated, 0 if the cluster is not allocated, 
+ * or -1 if an error occurs.
  */
 int8_t 
 exfatfs_is_cluster_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
 {
-    const char *func_name = "exfatfs_is_cluster_alloc";
+    const char *func_name = "exfatfs_is_clust_alloc";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     TSK_DADDR_T bitmap_byte_offset = 0;
     uint8_t bitmap_byte;
     ssize_t bytes_read = 0;
 
-    tsk_error_reset();
-    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
-        !fatfs_inum_arg_is_in_range(a_fatfs, a_cluster_addr, func_name)) {
+    assert(a_fatfs != NULL);
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name)) {
         return -1;
     }
 
-     /* Subtract 2 from the cluster address since cluster #2 is 
-      * the first cluster. */
-    a_cluster_addr = a_cluster_addr - 2;
+    assert((a_cluster_addr >= FATFS_FIRST_CLUSTER_ADDR) && (a_cluster_addr <= a_fatfs->lastclust));
+    if ((a_cluster_addr < FATFS_FIRST_CLUSTER_ADDR) || (a_cluster_addr > a_fatfs->lastclust)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("%s: cluster address %" PRIuINUM " out of range", func_name, a_cluster_addr);
+        return -1;
+    }
+
+     /* Normalize the cluster address. */
+    a_cluster_addr = a_cluster_addr - FATFS_FIRST_CLUSTER_ADDR;
 
     /* Determine the offset of the byte in the allocation bitmap that contains
-     * the bit for the specified cluster. In the calculation, two is subtracted
-     * from the cluster address since the the first cluster in the bitmap is
-     * cluster 2. */
+     * the bit for the specified cluster. */
     bitmap_byte_offset = (a_fatfs->EXFATFS_INFO.first_sector_of_alloc_bitmap * a_fatfs->ssize) + (a_cluster_addr / 8);
 
     /* Read the byte. */
@@ -97,12 +103,12 @@ exfatfs_is_cluster_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        tsk_error_set_errstr2("%s: failed to read bitmap byte at offset %" PRIuINUM "", func_name, bitmap_byte_offset);
-     
+        tsk_error_set_errstr2("%s: failed to read bitmap byte at offset %" PRIuINUM "", func_name, bitmap_byte_offset); 
         return -1;
     }
 
-    /* Check the bit that corresponds to the specified cluster. */
+    /* Check the bit that corresponds to the specified cluster. Note that this
+     * computation does not yield 0 or 1. */
     if (bitmap_byte & (1 << (a_cluster_addr % 8))) {
         return 1;
     }

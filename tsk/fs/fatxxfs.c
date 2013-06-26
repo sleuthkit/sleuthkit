@@ -723,7 +723,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
     else
         fatfs->rootsect = fatfs->firstdatasect;
 
-    for (i = 0; i < FAT_CACHE_N; i++) {
+    for (i = 0; i < FATFS_FAT_CACHE_N; i++) {
         fatfs->fatc_addr[i] = 0;
         fatfs->fatc_ttl[i] = 0;
     }

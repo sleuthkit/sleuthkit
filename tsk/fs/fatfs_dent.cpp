@@ -54,7 +54,7 @@
 * the walk and this function is used to stop that building process.
 */
 TSK_WALK_RET_ENUM
-    find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
+    fatfs_find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
 {
     TSK_INUM_T par_inum = *(TSK_INUM_T *) ptr;
 

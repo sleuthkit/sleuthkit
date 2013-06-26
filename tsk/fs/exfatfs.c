@@ -418,7 +418,7 @@ exfatfs_init_fat_cache(FATFS_INFO *a_fatfs)
 
     assert(a_fatfs != NULL);
 
-    for (i = 0; i < FAT_CACHE_N; i++) {
+    for (i = 0; i < FATFS_FAT_CACHE_N; i++) {
         a_fatfs->fatc_addr[i] = 0;
         a_fatfs->fatc_ttl[i] = 0;
     }

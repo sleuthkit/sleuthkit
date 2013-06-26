@@ -38,7 +38,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
     TSK_OFF_T boot_sector_offset = 0;
 	int find_boot_sector_attempt = 0;
     ssize_t bytes_read = 0;
-    FAT_BOOT_SECTOR_RECORD *bootSector;
+    FATFS_MASTER_BOOT_RECORD *bootSector;
 
     tsk_error_reset();
 
@@ -75,8 +75,8 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 		}
 
         // Read in the prospective boot sector. 
-        bytes_read = tsk_fs_read(fs, boot_sector_offset, fatfs->boot_sector_buffer, FAT_BOOT_SECTOR_SIZE);
-        if (bytes_read != FAT_BOOT_SECTOR_SIZE) {
+        bytes_read = tsk_fs_read(fs, boot_sector_offset, fatfs->boot_sector_buffer, FATFS_MASTER_BOOT_RECORD_SIZE);
+        if (bytes_read != FATFS_MASTER_BOOT_RECORD_SIZE) {
             if (bytes_read >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -87,7 +87,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
         }
 
         // Check it out...
-        bootSector = (FAT_BOOT_SECTOR_RECORD*)fatfs->boot_sector_buffer;
+        bootSector = (FATFS_MASTER_BOOT_RECORD*)fatfs->boot_sector_buffer;
         if (tsk_fs_guessu16(fs, bootSector->magic, FATFS_FS_MAGIC) != 0) {
             // No magic, look for a backup boot sector. 
             if ((tsk_getu16(TSK_LIT_ENDIAN, bootSector->magic) == 0) && (find_boot_sector_attempt < 3)) {
@@ -127,12 +127,12 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 }
 
 /* TTL is 0 if the entry has not been used.  TTL of 1 means it was the
- * most recently used, and TTL of FAT_CACHE_N means it was the least 
+ * most recently used, and TTL of FATFS_FAT_CACHE_N means it was the least 
  * recently used.  This function has a LRU replacement algo
  *
  * Note: This routine assumes &fatfs->cache_lock is locked by the caller.
  */
-// return -1 on error, or cache index on success (0 to FAT_CACHE_N)
+// return -1 on error, or cache index on success (0 to FATFS_FAT_CACHE_N)
 
 static int
 getFATCacheIdx(FATFS_INFO * fatfs, TSK_DADDR_T sect)
@@ -142,14 +142,14 @@ getFATCacheIdx(FATFS_INFO * fatfs, TSK_DADDR_T sect)
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
 
     // see if we already have it in the cache
-    for (i = 0; i < FAT_CACHE_N; i++) {
+    for (i = 0; i < FATFS_FAT_CACHE_N; i++) {
         if ((fatfs->fatc_ttl[i] > 0) &&
             (sect >= fatfs->fatc_addr[i]) &&
-            (sect < (fatfs->fatc_addr[i] + FAT_CACHE_S))) {
+            (sect < (fatfs->fatc_addr[i] + FATFS_FAT_CACHE_S))) {
             int a;
 
             // update the TTLs to push i to the front
-            for (a = 0; a < FAT_CACHE_N; a++) {
+            for (a = 0; a < FATFS_FAT_CACHE_N; a++) {
                 if (fatfs->fatc_ttl[a] == 0)
                     continue;
 
@@ -166,11 +166,11 @@ getFATCacheIdx(FATFS_INFO * fatfs, TSK_DADDR_T sect)
 //    fprintf(stdout, "FAT Miss: %d\n", (int)sect);
 //    fflush(stdout);
 
-    // Look for an unused entry or an entry with a TTL of FAT_CACHE_N
+    // Look for an unused entry or an entry with a TTL of FATFS_FAT_CACHE_N
     cidx = 0;
-    for (i = 0; i < FAT_CACHE_N; i++) {
+    for (i = 0; i < FATFS_FAT_CACHE_N; i++) {
         if ((fatfs->fatc_ttl[i] == 0) ||
-            (fatfs->fatc_ttl[i] >= FAT_CACHE_N)) {
+            (fatfs->fatc_ttl[i] >= FATFS_FAT_CACHE_N)) {
             cidx = i;
         }
     }
@@ -180,8 +180,8 @@ getFATCacheIdx(FATFS_INFO * fatfs, TSK_DADDR_T sect)
     // read the data
     cnt =
         tsk_fs_read(fs, sect * fs->block_size, fatfs->fatc_buf[cidx],
-        FAT_CACHE_B);
-    if (cnt != FAT_CACHE_B) {
+        FATFS_FAT_CACHE_B);
+    if (cnt != FATFS_FAT_CACHE_B) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -192,9 +192,9 @@ getFATCacheIdx(FATFS_INFO * fatfs, TSK_DADDR_T sect)
 
     // update the TTLs
     if (fatfs->fatc_ttl[cidx] == 0)     // special case for unused entry
-        fatfs->fatc_ttl[cidx] = FAT_CACHE_N + 1;
+        fatfs->fatc_ttl[cidx] = FATFS_FAT_CACHE_N + 1;
 
-    for (i = 0; i < FAT_CACHE_N; i++) {
+    for (i = 0; i < FATFS_FAT_CACHE_N; i++) {
         if (fatfs->fatc_ttl[i] == 0)
             continue;
 
@@ -281,13 +281,13 @@ fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust, TSK_DADDR_T * value)
          * we load the cache to start at this sect.  The cache
          * size must therefore be at least 2 sectors large 
          */
-        if (offs == (FAT_CACHE_B - 1)) {
+        if (offs == (FATFS_FAT_CACHE_B - 1)) {
 
             // read the data -- TTLs will already have been updated
             cnt =
                 tsk_fs_read(fs, sect * fs->block_size,
-                fatfs->fatc_buf[cidx], FAT_CACHE_B);
-            if (cnt != FAT_CACHE_B) {
+                fatfs->fatc_buf[cidx], FATFS_FAT_CACHE_B);
+            if (cnt != FATFS_FAT_CACHE_B) {
                 tsk_release_lock(&fatfs->cache_lock);
                 if (cnt >= 0) {
                     tsk_error_reset();
@@ -809,7 +809,7 @@ fatfs_close(TSK_FS_INFO *fs)
     fatfs_dir_buf_free(fatfs);
 
     fs->tag = 0;
-	memset(fatfs->boot_sector_buffer, 0, FAT_BOOT_SECTOR_SIZE);
+	memset(fatfs->boot_sector_buffer, 0, FATFS_MASTER_BOOT_RECORD_SIZE);
     tsk_deinit_lock(&fatfs->cache_lock);
     tsk_deinit_lock(&fatfs->dir_lock);
 	

@@ -376,7 +376,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
                             (TSK_FS_DIR_WALK_FLAG_ENUM)(TSK_FS_DIR_WALK_FLAG_ALLOC |
                             TSK_FS_DIR_WALK_FLAG_UNALLOC |
                             TSK_FS_DIR_WALK_FLAG_RECURSE),
-                            find_parent_act,
+                            fatfs_find_parent_act,
                             (void *) &a_fs_dir->fs_file->meta->addr)) {
                                 return TSK_OK;
                         }
