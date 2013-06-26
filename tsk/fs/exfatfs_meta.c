@@ -119,57 +119,73 @@ exfatfs_is_cluster_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
 
 /**
  * \internal
- * Determine whether the contents of a 32 byte buffer are likely to be an
- * exFAT volume label directory entry.
+ * Determine whether the contents of a buffer may be an exFAT volume label
+ * directory entry.
  *
- * @param [in] a_fatfs Source file system for the directory entry.
- * @param [in] a_dentry Buffer that may contain a directory entry.
- * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
- * @returns EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL or EXFATFS_DIR_ENTRY_TYPE_NONE
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_alloc_status The allocation status, possibly unknown, of the 
+ * cluster from which the buffer was filled. 
+ * @param [in] a_do_basic_tests_only Whether to do basic or in-depth testing. 
+ * @returns 1 if the directory entry buffer likely contains a volume label 
+ * directory entry, 0 otherwise. 
  */
-EXFATFS_DIR_ENTRY_TYPE_ENUM
-exfatfs_is_vol_label_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry,  uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only)
+uint8_t
+exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, uint8_t a_do_basic_tests_only)
 {
     const char *func_name = "exfatfs_is_vol_label_dentry";
     EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_dentry;
     uint8_t i = 0;
     
-    assert(a_fatfs != NULL);
     assert(a_dentry != NULL);
+    if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 0;
+    }
+
+    /* Check the entry type byte. */
+    if ((dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL) && 
+        (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL)) {
+        return 0;
+    }
+
+    /* There should be a single volume label directory entry at the
+     * beginning of the root directory, so check the allocation status, if 
+     * known, of the cluster from which the buffer was filled. */
+    if (a_cluster_is_alloc == FATFS_DATA_UNIT_ALLOC_STATUS_UNALLOC) {
+        return 0;
+    }
 
     if (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL) {
-        if (dentry->utf16_char_count > EXFATFS_MAX_VOLUME_LABEL_LEN) {
+        /* There is supposed to be a label, check its length. */
+        if ((dentry->utf16_char_count < 1) || (dentry->utf16_char_count > EXFATFS_MAX_VOLUME_LABEL_LEN)) {
             if (tsk_verbose) {
-                fprintf(stderr, "%s: volume label length too long\n", func_name);
+                fprintf(stderr, "%s: incorrect volume label length\n", func_name);
             }
-            return EXFATFS_DIR_ENTRY_TYPE_NONE;
+            return 0;
         }
     }
     else {
+        // RJCTODO: I think I verified that these tests are valid, but check again to be sure.
+        /* There is supposed to be no label, check for a zero in the length
+         * field. */
         if (dentry->utf16_char_count != 0x00) {
             if (tsk_verbose) {
-                fprintf(stderr, 
-                    "%s: volume label length non-zero for no label entry\n", func_name);
+                fprintf(stderr, "%s: volume label length non-zero for no label entry\n", func_name);
             }
-            return EXFATFS_DIR_ENTRY_TYPE_NONE;
+            return 0;
         }
 
-        for(i = 0; i < EXFATFS_MAX_VOLUME_LABEL_LEN * 2; ++i) {
-            /* Every byte of the UTF-16 volume label string should be 0. */
+        /* Every byte of the UTF-16 volume label string should be 0. */
+        for (i = 0; i < EXFATFS_MAX_VOLUME_LABEL_LEN * 2; ++i) {
             if (dentry->volume_label[i] != 0x00) {
-                return EXFATFS_DIR_ENTRY_TYPE_NONE;
-                fprintf(stderr, 
-                    "%s: non-zero byte in label for no label entry\n", func_name);
+                if (tsk_verbose) {
+                    fprintf(stderr, "%s: non-zero byte in label for no label entry\n", func_name);
+                }
+                return 0;
             }
         }
     }
 
-    if (!a_do_basic_test_only) {
-        /* There is not enough data in a volume label entry for an 
-         * in-depth test. */
-    }
-
-    return (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
+    return 1;
 }
 
 /**
@@ -541,7 +557,7 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
     case EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL:
-        return exfatfs_is_vol_label_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
+        return exfatfs_is_vol_label_dentry(a_dentry, a_cluster_is_alloc, a_do_basic_tests_only);
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
         return exfatfs_is_vol_guid_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
     case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
