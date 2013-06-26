@@ -139,7 +139,8 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
             entrySeenCount++;
 
             /* Is the current entry a valid entry? */
-            if (0 == fatxxfs_is_dentry(fatfs, (FATFS_DENTRY*)dep,
+            if (0 == fatxxfs_is_dentry(fatfs, (FATFS_DENTRY*)dep, 
+                (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)sectalloc,
                 ((isCorruptDir == 0) && (sectalloc)) ? 1 : 0)) {
                     if (tsk_verbose)
                         tsk_fprintf(stderr,

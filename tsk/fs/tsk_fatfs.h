@@ -152,6 +152,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+    typedef struct FATFS_INFO FATFS_INFO; 
+
+    enum FATFS_DATA_UNIT_ALLOC_STATUS_ENUM {
+        FATFS_DATA_UNIT_ALLOC_STATUS_UNALLOC = 0,
+        FATFS_DATA_UNIT_ALLOC_STATUS_ALLOC = 1,
+        FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN = 2
+    };
+    typedef enum FATFS_DATA_UNIT_ALLOC_STATUS_ENUM FATFS_DATA_UNIT_ALLOC_STATUS_ENUM;
 
     // RJCTODO: Comment for Doxygen
     typedef struct
@@ -160,12 +168,19 @@ extern "C" {
         uint8_t magic[2];
     } FAT_BOOT_SECTOR_RECORD;
 
+	/** 
+     * Generic directory entry structure for FAT file systems.
+     */
+    typedef struct {
+        uint8_t data[FATFS_DENTRY_SIZE];
+    } FATFS_DENTRY;
+
     // RJCTODO: Comment for Doxygen
     // RJCTODO: Should unsigned ints in FATFS be changed to TSK_OFF_T? uint32_t?
     /* 
      * Internal TSK_FS_INFO derived structure for FATXX and exFAT file systems.  
      */
-    typedef struct {
+    struct FATFS_INFO {
         TSK_FS_INFO fs_info;    /* super class */
 
         /* FAT cache */
@@ -217,20 +232,31 @@ extern "C" {
 		char boot_sector_buffer[FAT_BOOT_SECTOR_SIZE];
         int using_backup_boot_sector;
 
+        int8_t (*is_cluster_alloc)(FATFS_INFO *fatfs, TSK_DADDR_T clust);
+
+        uint8_t (*is_dentry)(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+            FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, 
+            uint8_t a_do_basic_tests_only);
+
+        uint8_t (*inode_lookup)(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
+            TSK_INUM_T a_inum);
+
+        uint8_t (*inode_walk_should_skip_dentry)(FATFS_INFO *a_fatfs, 
+            TSK_INUM_T a_inum, FATFS_DENTRY *a_dentry, 
+            unsigned int a_selection_flags, int a_cluster_is_alloc);
+
+        uint8_t (*istat_attr_flags) (FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile);
+
+        TSK_RETVAL_ENUM (*dent_parse_buf)(FATFS_INFO *a_fatfs, 
+            TSK_FS_DIR *a_fs_dir, char *a_buf, TSK_OFF_T a_buf_len, 
+            TSK_DADDR_T *a_sector_addrs);
+
+        // RJCTODO: Consider wrapping this struct around FATFS_INFO...
         struct {
             uint64_t first_sector_of_alloc_bitmap;
             uint64_t length_of_alloc_bitmap_in_bytes;
         } EXFATFS_INFO;
-
-	} FATFS_INFO;
-
-    // RJCTODO: Comment for Doxygen
-	/** 
-     * Generic directory entry structure for FATXX and exFAT file systems.
-     */
-    typedef struct {
-        uint8_t data[FATFS_DENTRY_SIZE];
-    } FATFS_DENTRY;
+	};
 
     extern uint8_t
     fatfs_inum_is_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum);
@@ -259,9 +285,6 @@ extern "C" {
 
     extern int8_t fatfs_is_sectalloc(FATFS_INFO *, TSK_DADDR_T);
 
-    extern int8_t fatfs_is_clustalloc(FATFS_INFO * fatfs,
-        TSK_DADDR_T clust);
-
     extern uint8_t
     fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
         TSK_DADDR_T a_end_blk, TSK_FS_BLOCK_WALK_FLAG_ENUM a_flags,
@@ -277,10 +300,6 @@ extern "C" {
 
     extern uint8_t fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust,
         TSK_DADDR_T * value);
-
-    extern uint8_t
-    fatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        uint8_t a_sector_is_alloc, uint8_t a_basic);
 
     // RJCTODO: Needed in fs_dir.c by load_orphan_dir_walk_cb
     extern uint8_t 

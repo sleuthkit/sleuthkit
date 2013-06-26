@@ -140,19 +140,21 @@ is_83_name(FATXXFS_DENTRY * de)
 
 /**
  * \internal
- * Does a FATXXFS_DENTRY buffer contain a FATXX directory entry?
+ * Determine whether a buffer likely contains a directory entry.
+ * For the most reliable results, request the in-depth test.
  *
- * @param a_fatfs Generic FAT file system info structure
- * @param a_dentry Buffer that may contain a directory entry.
- * @param a_basic 1 if only basic tests should be performed. 
- * @returns 1 if the buffer contains a valid directory entry, 
- * 0 otherwise
- */    
+ * @param [in] a_fatfs Source file system for the directory entry.
+ * @param [in] a_dentry Buffer that may contain a directory entry.
+ * @param [in] a_cluster_is_alloc The allocation status, possibly unknown, of the 
+ * cluster from which the buffer was filled. 
+ * @param [in] a_do_basic_tests_only Whether to do basic or in-depth testing. 
+ * @return 1 if the buffer likely contains a direcotry entry, 0 otherwise
+ */
 uint8_t
-fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
+fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, uint8_t a_do_basic_tests_only)
 {
     const char *func_name = "fatxxfs_is_dentry";
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
+    TSK_FS_INFO *fs = (TSK_FS_INFO *) & a_fatfs->fs_info;
     FATXXFS_DENTRY *dentry = (FATXXFS_DENTRY*)a_dentry;
 
     if (!a_dentry)
@@ -174,7 +176,7 @@ fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
     }
     else {
         // the basic test is only for the 'essential data'.
-        if (a_basic == 0) {
+        if (a_do_basic_tests_only == 0) {
             if (dentry->lowercase & ~(FATFS_CASE_LOWER_ALL)) {
                 if (tsk_verbose)
                     fprintf(stderr, "%s: lower case all\n", func_name);
@@ -249,8 +251,8 @@ fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
         }
 
         /* verify the starting cluster is small enough */
-        if ((FATFS_DENTRY_CLUST(fs, dentry) > (fatfs->lastclust)) &&
-            (FATFS_ISEOF(FATFS_DENTRY_CLUST(fs, dentry), fatfs->mask) == 0)) {
+        if ((FATFS_DENTRY_CLUST(fs, dentry) > (a_fatfs->lastclust)) &&
+            (FATFS_ISEOF(FATFS_DENTRY_CLUST(fs, dentry), a_fatfs->mask) == 0)) {
             if (tsk_verbose)
                 fprintf(stderr, "%s: start cluster\n", func_name);
             return 0;
@@ -258,7 +260,7 @@ fatxxfs_is_dentry(FATFS_INFO *fatfs, FATFS_DENTRY *a_dentry, uint8_t a_basic)
 
         /* Verify the file size is smaller than the data area */
         else if (tsk_getu32(fs->endian, dentry->size) >
-            ((fatfs->clustcnt * fatfs->csize) << fatfs->ssize_sh)) {
+            ((a_fatfs->clustcnt * a_fatfs->csize) << a_fatfs->ssize_sh)) {
             if (tsk_verbose)
                 fprintf(stderr, "%s: size\n", func_name);
             return 0;
@@ -644,7 +646,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
          * directory */
         else {
             // if the first cluster is allocated, then set size to be 0
-            if (fatfs_is_clustalloc(fatfs, FATFS_DENTRY_CLUST(fs,
+            if (fatxxfs_is_cluster_alloc(fatfs, FATFS_DENTRY_CLUST(fs,
                         dentry)) == 1)
                 fs_meta->size = 0;
             else
@@ -672,7 +674,8 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
 {
     const char *func_name = "fatxxfs_inode_lookup";
     TSK_DADDR_T sector = 0;
-    uint8_t do_basic_test_only = 1;
+    int8_t ret_val = 0;
+    FATFS_DATA_UNIT_ALLOC_STATUS_ENUM sector_alloc_status = FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN;
     FATFS_DENTRY dentry;
     TSK_RETVAL_ENUM copy_result = TSK_OK;
 
@@ -683,7 +686,6 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         return 1;
     }
 
-    /* Map the inode address to a sector. */ 
     sector = FATFS_INODE_2_SECT(a_fatfs, a_inum);
     if (sector > a_fatfs->fs_info.last_block) {
         tsk_error_reset();
@@ -693,6 +695,18 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         return 1;
     }
 
+    if (fatfs_dentry_load(a_fatfs, &dentry, a_inum) != 0) {
+        return 1;
+    }
+
+    ret_val = fatfs_is_sectalloc(a_fatfs, sector);
+    if (ret_val == -1) {
+        return 1;
+    }
+    else {
+        sector_alloc_status = (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)ret_val;
+    }
+
     /* Note that only the sector allocation status is used to choose
      * between the basic or in-depth version of the inode validity 
      * test. In other places in the code information about whether or not 
@@ -700,17 +714,7 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
      * make this decision. Here, that information is not available. Thus, 
      * the test here is less reliable and may result in some false 
      * positives. */
-    do_basic_test_only = fatfs_is_sectalloc(a_fatfs, sector);
-    if (do_basic_test_only == -1) {
-        return 1;
-    }
-
-    if (fatfs_dentry_load(a_fatfs, &dentry, a_inum) != 0) {
-        // RJCTODO: Report error?
-        return 1;
-    }
-
-    if (!fatxxfs_is_dentry(a_fatfs, &dentry, do_basic_test_only)) {
+    if (!fatxxfs_is_dentry(a_fatfs, &dentry, sector_alloc_status, sector_alloc_status)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
         tsk_error_set_errstr("%s: %" PRIuINUM
@@ -790,7 +794,7 @@ fatxxfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile)
 }
 
 uint8_t
-fatxxfs_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+fatxxfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
     FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
     int a_cluster_is_alloc)
 {

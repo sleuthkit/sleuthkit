@@ -309,19 +309,6 @@ fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum
     return 0;
 }
 
-uint8_t
-fatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_sector_is_alloc, uint8_t a_basic)
-{
-    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs;
-
-    if (fs->ftype == TSK_FS_TYPE_EXFAT) {
-        return exfatfs_is_dentry(a_fatfs, a_dentry, a_sector_is_alloc, a_basic);
-    }
-    else {
-        return fatxxfs_is_dentry(a_fatfs, a_dentry, a_basic);
-    }
-}
-
 /**
  * \internal
  * Populate the TSK_FS_META structure of a TSK_FS_FILE structure for a 
@@ -391,12 +378,7 @@ fatfs_inode_lookup(TSK_FS_INFO *a_fs, TSK_FS_FILE *a_fs_file,
             return 0;
     }
     else {
-        if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
-            return exfatfs_inode_lookup(fatfs, a_fs_file, a_inum);
-        } 
-        else {
-            return fatxxfs_inode_lookup(fatfs, a_fs_file, a_inum);
-        }
+        return fatfs->inode_lookup(fatfs, a_fs_file, a_inum);
     }
 }
 
@@ -472,7 +454,6 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
 
     // RJCTODO: Consider addressing the code duplication below.
     // RJCTODO: Consider breaking out each of the conditional blocks into its own sub-function.
-    // RJCTODO: Consider checking for FAT12 and FAT16.
     if ((a_fs_file->meta->addr == fs->root_inum) && 
         (fs->ftype != TSK_FS_TYPE_FAT32) &&
         (fs->ftype != TSK_FS_TYPE_EXFAT) &&
@@ -603,7 +584,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
 
             /* If the starting cluster is already allocated then we can't
              * recover it */
-            retval = fatfs_is_clustalloc(fatfs, startclust);
+            retval = fatfs->is_cluster_alloc(fatfs, startclust);
             if (retval != 0) {
                 canRecover = 0;
             }
@@ -633,7 +614,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
             }
 
             /* Skip allocated clusters */
-            retval = fatfs_is_clustalloc(fatfs, clust);
+            retval = fatfs->is_cluster_alloc(fatfs, clust);
             if (retval == -1) {
                 canRecover = 0;
                 break;
@@ -923,13 +904,8 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
         // RJCTODO: Review this with Brian
         tsk_fprintf(a_hFile, "Virtual Directory\n");
     }
-    else if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
-        if (exfatfs_istat_attr_flags(fatfs, a_inum, a_hFile)) {
-            return 1;
-        }
-    }
     else {
-        if (fatxxfs_istat_attr_flags(fatfs, a_inum, a_hFile)) {
+        if (fatfs->istat_attr_flags(fatfs, a_inum, a_hFile)) {
             return 1;
         }
     }
@@ -1404,12 +1380,10 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
 
             /* If the sector is not allocated to a directory and the first 
              * chunk is not a directory entry, skip the sector. */
-            if (!isset(dir_sectors_bitmap, sect)) {
-                if ((a_fs->ftype != TSK_FS_TYPE_EXFAT && !fatxxfs_is_dentry(fatfs, dep, 0)) ||
-                    (exfatfs_is_dentry(fatfs, dep, cluster_is_alloc, 0) == EXFATFS_DIR_ENTRY_TYPE_NONE)) {
+            if (!isset(dir_sectors_bitmap, sect) &&
+                !fatfs->is_dentry(fatfs, dep, (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)cluster_is_alloc, do_basic_dentry_test)) { // RJCTODO: Make this better
                 sect++;
                 continue;
-                }
             }
 
             /* Get the base inode address of this sector. */
@@ -1445,20 +1419,12 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                  * entry, but if it is, it may not be an entry that maps to an
                  * inode for the purposes of an inode walk, or an entry that
                  * satisfies the inode selection flags. */
-                if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
-                    dentry_type = exfatfs_is_dentry(fatfs, dep, cluster_is_alloc, cluster_is_alloc); // RJCTODO: Resolve this isse - NONE vs. UNUSED
-                    if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_NONE || 
-                        exfatfs_should_skip_dentry(fatfs, inum, dep, flags, cluster_is_alloc)) {
-                        continue;
-                    }
-                }
-                else { 
-                    if (!fatfs_is_dentry(fatfs, dep, cluster_is_alloc, do_basic_dentry_test) ||
-                        fatxxfs_should_skip_dentry(fatfs, inum, dep, flags, cluster_is_alloc)) {
-                        continue;
-                    }
+                if (!fatfs->is_dentry(fatfs, dep, (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)cluster_is_alloc, do_basic_dentry_test) ||
+                    fatfs->inode_walk_should_skip_dentry(fatfs, inum, dep, flags, cluster_is_alloc)) {
+                    continue;
                 }
 
+                // RJCTODO: Eliminate this branch
                 /* Copy the directory entry data into the inode structure for the callback. */
                 if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
                     /* For the purposes of inode lookup, the file and file stream entries 
@@ -1466,10 +1432,10 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                      * file stream entries are not treated as independent inodes and when 
                      * a file entry is found, the companion file stream entry needs to be 
                      * found. */
-                    if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-                        dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE) {
+                    if (dep->data[0] == EXFATFS_DIR_ENTRY_TYPE_FILE ||
+                        dep->data[0] == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE) {
                         if (exfatfs_find_file_stream_dentry(fatfs, inum, sect, cluster_is_alloc, 
-                            dentry_type, &secondary_dentry)) {
+                            dep->data[0], &secondary_dentry)) { // RJCTODO: Fix this
                             continue;
                         }
                     }

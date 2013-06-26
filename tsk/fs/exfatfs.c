@@ -461,25 +461,39 @@ exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
 
     assert(a_fatfs != NULL);
 
+    fs->close = fatfs_close;
+
+    /* File system category functions. */
+    fs->fsstat = exfatfs_fsstat;
+    fs->fscheck = fatfs_fscheck;
+
+    /* Content category functions. */
     fs->block_walk = fatfs_block_walk;
     fs->block_getflags = fatfs_block_getflags;
+
+    /* Meta data category functions. */
     fs->inode_walk = fatfs_inode_walk;
     fs->istat = fatfs_istat;
     fs->file_add_meta = fatfs_inode_lookup;
     fs->get_default_attr_type = fatfs_get_default_attr_type;
     fs->load_attrs = fatfs_make_data_runs;
 
+    /* Name category functions. */
     fs->dir_open_meta = fatfs_dir_open_meta;
     fs->name_cmp = fatfs_name_cmp;
-    fs->fsstat = exfatfs_fsstat;
-    fs->fscheck = fatfs_fscheck;
 
     /* NOP journal functions - exFAT has no file system journal. */
     fs->jblk_walk = fatfs_jblk_walk;
     fs->jentry_walk = fatfs_jentry_walk;
     fs->jopen = fatfs_jopen;
 
-    fs->close = fatfs_close;
+    /* Specialization for exFAT functions. */
+    a_fatfs->is_cluster_alloc = exfatfs_is_cluster_alloc;
+    a_fatfs->is_dentry = exfatfs_is_dentry;
+    a_fatfs->inode_lookup = exfatfs_inode_lookup;
+    a_fatfs->inode_walk_should_skip_dentry = exfatfs_inode_walk_should_skip_dentry;
+    a_fatfs->istat_attr_flags = exfatfs_istat_attr_flags;
+    a_fatfs->dent_parse_buf = exfatfs_dent_parse_buf;
 }
 
 /**

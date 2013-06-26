@@ -46,282 +46,6 @@
  * block to see if it is a file system structure.
  */
 
-/* TTL is 0 if the entry has not been used.  TTL of 1 means it was the
- * most recently used, and TTL of FAT_CACHE_N means it was the least 
- * recently used.  This function has a LRU replacement algo
- *
- * Note: This routine assumes &fatfs->cache_lock is locked by the caller.
- */
-// return -1 on error, or cache index on success (0 to FAT_CACHE_N)
-
-static int
-getFATCacheIdx(FATFS_INFO * fatfs, TSK_DADDR_T sect)
-{
-    int i, cidx;
-    ssize_t cnt;
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
-
-    // see if we already have it in the cache
-    for (i = 0; i < FAT_CACHE_N; i++) {
-        if ((fatfs->fatc_ttl[i] > 0) &&
-            (sect >= fatfs->fatc_addr[i]) &&
-            (sect < (fatfs->fatc_addr[i] + FAT_CACHE_S))) {
-            int a;
-
-            // update the TTLs to push i to the front
-            for (a = 0; a < FAT_CACHE_N; a++) {
-                if (fatfs->fatc_ttl[a] == 0)
-                    continue;
-
-                if (fatfs->fatc_ttl[a] < fatfs->fatc_ttl[i])
-                    fatfs->fatc_ttl[a]++;
-            }
-            fatfs->fatc_ttl[i] = 1;
-//          fprintf(stdout, "FAT Hit: %d\n", sect);
-//          fflush(stdout);
-            return i;
-        }
-    }
-
-//    fprintf(stdout, "FAT Miss: %d\n", (int)sect);
-//    fflush(stdout);
-
-    // Look for an unused entry or an entry with a TTL of FAT_CACHE_N
-    cidx = 0;
-    for (i = 0; i < FAT_CACHE_N; i++) {
-        if ((fatfs->fatc_ttl[i] == 0) ||
-            (fatfs->fatc_ttl[i] >= FAT_CACHE_N)) {
-            cidx = i;
-        }
-    }
-//    fprintf(stdout, "FAT Removing: %d\n", (int)fatfs->fatc_addr[cidx]);
-    //   fflush(stdout);
-
-    // read the data
-    cnt =
-        tsk_fs_read(fs, sect * fs->block_size, fatfs->fatc_buf[cidx],
-        FAT_CACHE_B);
-    if (cnt != FAT_CACHE_B) {
-        if (cnt >= 0) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_READ);
-        }
-        tsk_error_set_errstr2("getFATCacheIdx: FAT: %" PRIuDADDR, sect);
-        return -1;
-    }
-
-    // update the TTLs
-    if (fatfs->fatc_ttl[cidx] == 0)     // special case for unused entry
-        fatfs->fatc_ttl[cidx] = FAT_CACHE_N + 1;
-
-    for (i = 0; i < FAT_CACHE_N; i++) {
-        if (fatfs->fatc_ttl[i] == 0)
-            continue;
-
-        if (fatfs->fatc_ttl[i] < fatfs->fatc_ttl[cidx])
-            fatfs->fatc_ttl[i]++;
-    }
-
-    fatfs->fatc_ttl[cidx] = 1;
-    fatfs->fatc_addr[cidx] = sect;
-
-    return cidx;
-}
-
-/*
- * Set *value to the entry in the File Allocation Table (FAT) 
- * for the given cluster
- *
- * *value is in clusters and may need to be coverted to
- * sectors by the calling function
- *
- * Invalid values in the FAT (i.e. greater than the largest
- * cluster have a value of 0 returned and a 0 return value.
- *
- * Return 1 on error and 0 on success
- */
-uint8_t
-fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust, TSK_DADDR_T * value)
-{
-    uint8_t *a_ptr;
-    uint16_t tmp16;
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
-    TSK_DADDR_T sect, offs;
-    ssize_t cnt;
-    int cidx;
-
-    /* Sanity Check */
-    if (clust > fatfs->lastclust) {
-        /* silently ignore requests for the unclustered sectors... */
-        if ((clust == fatfs->lastclust + 1) &&
-            ((fatfs->firstclustsect + fatfs->csize * fatfs->clustcnt -
-                    1) != fs->last_block)) {
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "fatfs_getFAT: Ignoring request for non-clustered sector\n");
-            return 0;
-        }
-
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("fatfs_getFAT: invalid cluster address: %"
-            PRIuDADDR, clust);
-        return 1;
-    }
-
-    switch (fatfs->fs_info.ftype) {
-    case TSK_FS_TYPE_FAT12:
-        if (clust & 0xf000) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_ARG);
-            tsk_error_set_errstr
-                ("fatfs_getFAT: TSK_FS_TYPE_FAT12 Cluster %" PRIuDADDR
-                " too large", clust);
-            return 1;
-        }
-
-        /* id the sector in the FAT */
-        sect = fatfs->firstfatsect +
-            ((clust + (clust >> 1)) >> fatfs->ssize_sh);
-
-        tsk_take_lock(&fatfs->cache_lock);
-
-        /* Load the FAT if we don't have it */
-        // see if it is in the cache
-        if (-1 == (cidx = getFATCacheIdx(fatfs, sect))) {
-            tsk_release_lock(&fatfs->cache_lock);
-            return 1;
-        }
-
-        /* get the offset into the cache */
-        offs = ((sect - fatfs->fatc_addr[cidx]) << fatfs->ssize_sh) +
-            (clust + (clust >> 1)) % fatfs->ssize;
-
-        /* special case when the 12-bit value goes across the cache
-         * we load the cache to start at this sect.  The cache
-         * size must therefore be at least 2 sectors large 
-         */
-        if (offs == (FAT_CACHE_B - 1)) {
-
-            // read the data -- TTLs will already have been updated
-            cnt =
-                tsk_fs_read(fs, sect * fs->block_size,
-                fatfs->fatc_buf[cidx], FAT_CACHE_B);
-            if (cnt != FAT_CACHE_B) {
-                tsk_release_lock(&fatfs->cache_lock);
-                if (cnt >= 0) {
-                    tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_FS_READ);
-                }
-                tsk_error_set_errstr2
-                    ("fatfs_getFAT: TSK_FS_TYPE_FAT12 FAT overlap: %"
-                    PRIuDADDR, sect);
-                return 1;
-            }
-            fatfs->fatc_addr[cidx] = sect;
-
-            offs = (clust + (clust >> 1)) % fatfs->ssize;
-        }
-
-        /* get pointer to entry in current buffer */
-        a_ptr = (uint8_t *) fatfs->fatc_buf[cidx] + offs;
-
-        tmp16 = tsk_getu16(fs->endian, a_ptr);
-
-        tsk_release_lock(&fatfs->cache_lock);
-
-        /* slide it over if it is one of the odd clusters */
-        if (clust & 1)
-            tmp16 >>= 4;
-
-        *value = tmp16 & FATFS_12_MASK;
-
-        /* sanity check */
-        if ((*value > (fatfs->lastclust)) &&
-            (*value < (0x0ffffff7 & FATFS_12_MASK))) {
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "fatfs_getFAT: TSK_FS_TYPE_FAT12 cluster (%" PRIuDADDR
-                    ") too large (%" PRIuDADDR ") - resetting\n", clust,
-                    *value);
-            *value = 0;
-        }
-        return 0;
-
-    case TSK_FS_TYPE_FAT16:
-        /* Get sector in FAT for cluster and load it if needed */
-        sect = fatfs->firstfatsect + ((clust << 1) >> fatfs->ssize_sh);
-
-        tsk_take_lock(&fatfs->cache_lock);
-
-        if (-1 == (cidx = getFATCacheIdx(fatfs, sect))) {
-            tsk_release_lock(&fatfs->cache_lock);
-            return 1;
-        }
-
-
-        /* get pointer to entry in the cache buffer */
-        a_ptr = (uint8_t *) fatfs->fatc_buf[cidx] +
-            ((sect - fatfs->fatc_addr[cidx]) << fatfs->ssize_sh) +
-            ((clust << 1) % fatfs->ssize);
-
-        *value = tsk_getu16(fs->endian, a_ptr) & FATFS_16_MASK;
-
-        tsk_release_lock(&fatfs->cache_lock);
-
-        /* sanity check */
-        if ((*value > (fatfs->lastclust)) &&
-            (*value < (0x0ffffff7 & FATFS_16_MASK))) {
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "fatfs_getFAT: contents of TSK_FS_TYPE_FAT16 entry %"
-                    PRIuDADDR " too large - resetting\n", clust);
-            *value = 0;
-        }
-        return 0;
-
-    case TSK_FS_TYPE_FAT32:
-    case TSK_FS_TYPE_EXFAT:
-        /* Get sector in FAT for cluster and load if needed */
-        sect = fatfs->firstfatsect + ((clust << 2) >> fatfs->ssize_sh);
-
-        tsk_take_lock(&fatfs->cache_lock);
-
-        if (-1 == (cidx = getFATCacheIdx(fatfs, sect))) {
-            tsk_release_lock(&fatfs->cache_lock);
-            return 1;
-        }
-
-        /* get pointer to entry in current buffer */
-        a_ptr = (uint8_t *) fatfs->fatc_buf[cidx] +
-            ((sect - fatfs->fatc_addr[cidx]) << fatfs->ssize_sh) +
-            (clust << 2) % fatfs->ssize;
-
-        *value = tsk_getu32(fs->endian, a_ptr) & FATFS_32_MASK;
-
-        tsk_release_lock(&fatfs->cache_lock);
-
-        /* sanity check */
-        if ((*value > fatfs->lastclust) &&
-            (*value < (0x0ffffff7 & FATFS_32_MASK))) {
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "fatfs_getFAT: contents of entry %" PRIuDADDR
-                    " too large - resetting\n", clust);
-
-            *value = 0;
-        }
-        return 0;
-
-    default:
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr("fatfs_getFAT: Unknown FAT type: %d",
-            fatfs->fs_info.ftype);
-        return 1;
-    }
-}
-
 /**
  * Print details about the file system to a file handle. 
  *
@@ -1081,6 +805,13 @@ fatxxfs_open(FATFS_INFO *fatfs)
     fs->jentry_walk = fatfs_jentry_walk;
     fs->jopen = fatfs_jopen;
 
+    fatfs->is_cluster_alloc = fatxxfs_is_cluster_alloc;
+    fatfs->is_dentry = fatxxfs_is_dentry;
+    fatfs->inode_lookup = fatxxfs_inode_lookup;
+    fatfs->inode_walk_should_skip_dentry = fatxxfs_inode_walk_should_skip_dentry;
+    fatfs->istat_attr_flags = fatxxfs_istat_attr_flags;
+    fatfs->dent_parse_buf = fatxxfs_dent_parse_buf;
+
     // initialize the caches
     tsk_init_lock(&fatfs->cache_lock);
     tsk_init_lock(&fatfs->dir_lock);
@@ -1090,8 +821,9 @@ fatxxfs_open(FATFS_INFO *fatfs)
 }
 
 /* Return 1 if allocated, 0 if unallocated, and -1 if error */
+// RJCTODO: Can make static
 int8_t
-fatxxfs_is_clust_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust)
+fatxxfs_is_cluster_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust)
 {
     TSK_DADDR_T content = 0;
 

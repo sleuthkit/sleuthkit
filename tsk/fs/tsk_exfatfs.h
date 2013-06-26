@@ -331,14 +331,15 @@ extern "C" {
     exfatfs_open(FATFS_INFO *a_fatfs);
 
     extern int8_t 
-    exfatfs_is_clust_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr);
+    exfatfs_is_cluster_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr);
 
     extern uint8_t
     exfatfs_fsstat(TSK_FS_INFO *a_fs, FILE *a_hFile);
 
-    extern enum EXFATFS_DIR_ENTRY_TYPE_ENUM 
-    exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_sector_is_alloc, 
-        uint8_t a_do_basic_test_only); // RJCTODO: Last param is awkward
+    extern uint8_t 
+    exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
+        FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, 
+        uint8_t a_do_basic_tests_only);
 
     extern enum EXFATFS_DIR_ENTRY_TYPE_ENUM 
     exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
@@ -396,7 +397,7 @@ extern "C" {
     exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FILE *a_hFile);
 
     extern uint8_t
-    exfatfs_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+    exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
         FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
         int a_cluster_is_alloc);
 

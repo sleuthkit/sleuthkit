@@ -642,8 +642,14 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
                 return TSK_ERR; // RJCTODO: Is this right? More error reporting?
             }
 
-            dentry_type = exfatfs_is_dentry(a_fatfs, current_dentry, 
-                name_info.sector_is_allocated, (!is_corrupt_dir && name_info.sector_is_allocated)); 
+            if (exfatfs_is_dentry(a_fatfs, current_dentry, 
+                (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)name_info.sector_is_allocated, 
+                (uint8_t)(!is_corrupt_dir && name_info.sector_is_allocated))) {
+                dentry_type = (EXFATFS_DIR_ENTRY_TYPE_ENUM)current_dentry->data[0];
+            }
+            else {
+                dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
+            }
 
             switch (dentry_type) {
             case EXFATFS_DIR_ENTRY_TYPE_FILE:
