@@ -362,8 +362,7 @@ extern "C" {
 
     extern TSK_RETVAL_ENUM
     exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
-        FATFS_DENTRY *a_dentry, FATFS_DENTRY *a_secondary_dentry, 
-        uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file);
+        FATFS_DENTRY *a_dentry, uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file);
 
     extern uint8_t
     exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,

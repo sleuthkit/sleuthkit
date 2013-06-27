@@ -641,8 +641,8 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
 
                 /* Found it, save it to the TSK_FS_META object of the 
                  * TSK_FS_FILE object and exit. */ 
-                if (exfatfs_dinode_copy(a_fatfs, current_inum, dentry, NULL, sector_is_alloc, 
-                    a_fs_file) == TSK_OK) {
+                if (exfatfs_dinode_copy(a_fatfs, current_inum, dentry, 
+                    sector_is_alloc, a_fs_file) == TSK_OK) {
                         return FATFS_OK;
                 }
                 else {
