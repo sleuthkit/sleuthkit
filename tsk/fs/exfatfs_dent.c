@@ -86,7 +86,7 @@ exfatfs_update_file_entry_set_checksum(EXFATFS_FS_NAME_INFO *a_name_info,
             continue;
         }
 
-        // RJCTODO: Confirm this.
+        // RJCTODO: Confirm this. Or discard the check sum calculation code.
         /* The file system does not update the check sum when an entry set is 
          * marked as no longer in use. Compensate for this. */
         if (index == 0) {
@@ -639,7 +639,7 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
 
             if (!fatfs_inum_is_in_range(a_fatfs, current_inum)) {
                 tsk_fs_name_free(name_info.fs_name);
-                return TSK_ERR; // RJCTODO: Is this right? More error reporting?
+                return TSK_ERR;
             }
 
             if (exfatfs_is_dentry(a_fatfs, current_dentry, 

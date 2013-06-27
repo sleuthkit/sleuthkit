@@ -57,7 +57,7 @@ fatfs_make_root(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta)
 
     /* Manufacture some metadata. */
     a_fs_meta->type = TSK_FS_META_TYPE_DIR;
-    a_fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED; //RJCTODO: This is where it was zero, why I made UNSPEC
+    a_fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
     a_fs_meta->nlink = 1;
     a_fs_meta->addr = FATFS_ROOTINO;
     a_fs_meta->flags = (TSK_FS_META_FLAG_ENUM)(TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_ALLOC);
@@ -1377,7 +1377,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             /* If the sector is not allocated to a directory and the first 
              * chunk is not a directory entry, skip the sector. */
             if (!isset(dir_sectors_bitmap, sect) &&
-                !fatfs->is_dentry(fatfs, dep, (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)cluster_is_alloc, do_basic_dentry_test)) { // RJCTODO: Make this better
+                !fatfs->is_dentry(fatfs, dep, (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)cluster_is_alloc, do_basic_dentry_test)) {
                 sect++;
                 continue;
             }
@@ -1418,7 +1418,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                     continue;
                 }
 
-                // RJCTODO: Eliminate this branch
+                // RJCTODO: Eliminate this branch. For notes on how to do so, see the beginning of exfatfs_meta.c.
                 /* Copy the directory entry data into the inode structure for the callback. */
                 if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
                     /* For the purposes of inode lookup, the file and file stream entries 
@@ -1441,7 +1441,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
 
                 if (retval2 != TSK_OK) {
                     if (retval2 == TSK_COR) {
-                        /* Corrupted, move on to the next chunk. */ // RJCTODO: Check out this logic/return code
+                        /* Corrupted, move on to the next chunk. */
                         if (tsk_verbose) {
                             tsk_error_print(stderr);
                         }

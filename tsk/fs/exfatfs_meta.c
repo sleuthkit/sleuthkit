@@ -31,31 +31,30 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
-// RJCTODO MISC:
+// RJCTODO: This code does not follow the lazy load paradigm for file attributes, i.e., data runs. The reason for this is that unlike FATXX,
+// exFAT only uses the FAT for fragmented files. The valid FAT chain flag in file stream entries is the indicator for regular files. For
+// other "special" files (e.g., allocation bitmap, upcase table) there will always be contiguous data runs. In all cases, the data for deciding
+// whether a run should be contiguous is in the directory entry. We could do away with the eager load of the data runs for exFAT if we allocated another 
+// byte of file-system-specific content in the TSK_FS_META structure to indicate whether or not there was a valid FAT chain for the file. 
+// This would also allow us to have a somewhat smarter recovery algorithm for deleted exFAT files without FAT chains - we would know the maximum 
+// number of clusters from which we could hope to recover any authentic file content more precisely than we do by using file size alone. This would also
+// support a uniform inode_copy function signature for FATXX and exFAY - it would no longer be necessary to pass the entire file object through, just the
+// meta object. On the other hand, the fatxxfs_copy_dinode function could be changed to take a TSK_FS_FILE instead of a TSK_FS_META object parameter.
 
-// RJCTODO: We could do away with the eager load of the data runs for exFAT if we allocated another byte of file system specific content in the 
-// TSK_FS_META structure to indicate whether or not there was a valid FAT chain for the file. This would also allow us to have a somewhat 
-// smarter recovery algorithm for deleted exFAT files without FAT chains - we would know the maximum number of clusters from which we could 
-// hope to recover any authentic file content more precisely than we do by using file size alone. Adding yet another byte to the file system 
-// specific content would allow us to save the directory entry type as well. An immediate benefit of this would be the way we would be able 
-// to skip over the recovery code for the file name entries of deleted files - currently we don't add a data run to the file name entries 
-// of allocated files, yet we tack a "one cluster run" on to each file name entry for a deleted file (see lines 2015-2034 of fatfs_meta.c).
-
-// RJCTODO: If we do the FAT chain flag, we would just grab the contiguous clusters, regardless of allocation status. To be consistent,
-// we might also change the deleted file recovery algorithm to not grab exactly the unallocated clusters.
-
-// RJCTODO: We could filter out most false positives for root directory only dentries for which we have scanty tests (e.g., volume GUID
-// entries if we determine the extents of the root directory up front. Or, we could add an allocated/unallocated param to the is_dentry
-// code and only report volume GUIDs etc. if they are in allocated space. 
+// RJCTODO: Adding yet another byte to the file system specific content (see above for the first proposed new byte) would allow us to save the directory 
+// entry type as well. An immediate benefit of this would be the way we would be able to skip over the recovery code for the file name entries of deleted files - 
+// currently we don't add a data run to the file name entries of allocated files, yet we tack a "one cluster run" on to each file name entry for a deleted file 
+// (see lines 2015-2034 of fatfs_meta.c). This is a bug as far as I'm concerned.
 
 // RJCTODO: Enum variables display nicely in IntelliSense. Use them instead of the integral type flags I put in to deal with compiler warnings
 // and use casts instead.
 
-// RJCTODO: The used/unused flags may not be working correctly and may be ripe for removal. I may not have translated the FATXXFS code correctly for this, also.
+// RJCTODO: Consider standardizing on the use of tsk_error_reset() throughout the FAT code.
 
-// RJCTODO: Add function pointers to FATFS to cut down on nasty branching
+// RJCTODO: Make sure all exFAT code is Doxygen commented. It would be better to also include shared FAT code in this. Even better would be
+// to make sure the FATXX code is documented as well.
 
-// RJCTODO: Finish up the alloc flag to dentry checks stuff
+// RJCTODO: It would be good to obtain real world exFAT images and a Windows CE exFAT image for further testing.
 
 /**
  * \internal
@@ -564,7 +563,7 @@ exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
         fs = &(a_fatfs->fs_info);   
 
         /* Check the size. */
-        file_size = tsk_getu64(fs->endian, dentry->data_length); // RJCTODO: How does this relate to valid data length?
+        file_size = tsk_getu64(fs->endian, dentry->data_length); // RJCTODO: How does this relate to the valid data length field? Is one or the other to be preferred?
         if (file_size > 0) {
             /* Is the file size less than the size of the cluster heap 
              * (data area)? The cluster heap size is computed by multiplying the
@@ -601,6 +600,8 @@ exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
             }
         }
     }
+
+    // RJCTODO: Are there any more checks that could be done?
 
     return 1;
 }
@@ -1022,10 +1023,11 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_file_dentry,
     /* Set the size of the file and the address of its first cluster. */
     ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0] = 
         tsk_getu32(a_fatfs->fs_info.endian, stream_dentry->first_cluster_addr);
-    fs_meta->size = tsk_getu64(fs->endian, stream_dentry->data_length); //RJCTODO: How does this relate to the valid data length field?
+    fs_meta->size = tsk_getu64(fs->endian, stream_dentry->data_length); // RJCTODO: How does this relate to the valid data length field? Is one or the other to be preferred?
 
-    // RJCTODO: Review this with Brian.
-    // RJCTODO: What if a sector boundary is crossed? Probably need to check both sectors. Perhaps the inodes should come through, with no sector allocation check at a higher level...
+    // RJCTODO: What if a cluster boundary is crossed? Probably need to check the allocation status of all the clusters
+    // involved in a file directory entry set. This is another argument for moving the duplicated code to find stream entries out of inode lookup
+    // and walk to here.
     /* Set the allocation status using both the allocation status of the 
      * sector that contains the directory entries and the entry type 
      * settings - essentially a "belt and suspenders" check. */
@@ -1034,11 +1036,6 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_file_dentry,
         (stream_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM)) {
         a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
 
-        // RJCTODO: Revisit this approach. Why not just add another byte of
-        // exFAT specific data to the meta structure and do a lazy load of the
-        // contiguous stuff in fatfs_make_data_runs()? Also, if we are doing a 
-        // data run for a deleted file, we know exactly how many unallocated clusters
-        // we can attempt to recover.
         /* If the FAT chain bit of the secondary flags of the stream entry is set,
          * the file is not fragmented and there is no FAT chain to walk. If the 
          * file is not deleted, do an eager load instead of a lazy load of its 
@@ -1086,7 +1083,7 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
            dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME);
 
     // RJCTODO: This leads to attempts to "recover" a file with a single cluster
-    // run for a deleted file name entry.
+    // run for a deleted file name entry. See remarks at the beginning of this file.
     /* Set the allocation status using both the allocation status of the 
      * sector that contains the directory entries and the entry type 
      * settings - essentially a "belt and suspenders" check. */
@@ -1298,7 +1295,7 @@ exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 static uint8_t
 exfatfs_load_file_stream_dentry(FATFS_INFO *a_fatfs, 
     TSK_INUM_T a_stream_entry_inum, uint8_t a_sector_is_alloc, 
-    EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type, // RJCTODO: Consider sending the desired type of stream entry in
+    EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type, // RJCTODO: Consider sending the desired type of stream entry in, or passing in the file entry.
     FATFS_DENTRY *a_dentry)
 {
     assert(a_fatfs != NULL);

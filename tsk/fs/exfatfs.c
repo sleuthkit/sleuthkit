@@ -31,6 +31,18 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
+// RJCTODO: It may be worthwhile to determine and save the bounds of the root directory when opening the file
+// system. If this is done, then the code in exfatfs_get_alloc_bitmap() and exfatfs_find_volume_label_dentry() could
+// restrict searching to the root directory. This would have the benefit of acting as another file system type validation
+// mechnaism.
+
+// RJCTODO: It would be nice to combine the searches in exfatfs_get_alloc_bitmap() and exfatfs_find_volume_label_dentry(),
+// storing the volume label in the exFAT part of the FATFS_INFO struct. This would make fsstat a little more zippy, but the
+// main benefits would be reduced code duplication and another bit of file system type validation.
+
+// RJCTODO: It may be more logical to put the definition of the "is_dentry" functions in this file than in the meta data
+// category file, given that they have general use. Naturally, this change would be made in the FATXX code as well.
+
 /**
  * \internal
  * Parses the MBR of an exFAT file system to obtain file system size 
@@ -251,8 +263,6 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
         return FATFS_FAIL;
     }
 
-    // RJCTODO: Fix this. It is too brute force. Walk the root directory during layout discovery and store its data run 
-    // in the FATFS_INFO for a correct search.
     current_sector = a_fatfs->rootsect;
     last_sector_of_data_area = a_fatfs->firstdatasect + (a_fatfs->clustcnt * a_fatfs->csize) - 1;
     while (current_sector < last_sector_of_data_area) {
@@ -280,7 +290,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
             if (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
                 /* Do an in-depth test. */
-                if (!exfatfs_is_alloc_bitmap_dentry((FATFS_DENTRY*)dentry, FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN, a_fatfs)) { // RJCTODO: The second argument may need to change if searching only the root directory.
+                if (!exfatfs_is_alloc_bitmap_dentry((FATFS_DENTRY*)dentry, FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN, a_fatfs)) { // RJCTODO: The second argument would change if searching only the root directory. See remarks at beginning of file.
                     continue;
                 }
 
@@ -590,8 +600,6 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
         return FATFS_FAIL;
     }
 
-    // RJCTODO: Fix this. It is too brute force. Walk the root directory during layout discovery and store its data run 
-    // in the FATFS_INFO for a correct search.
     current_sector = a_fatfs->rootsect;
     last_sector_of_data_area = a_fatfs->firstdatasect + (a_fatfs->clustcnt * a_fatfs->csize) - 1;
     while (current_sector < last_sector_of_data_area) {
@@ -627,7 +635,7 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
             if (dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
                 dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL) {
-                if (!exfatfs_is_vol_label_dentry(dentry, FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN)) { // RJCTODO: The second arg should change if searching root directory only.
+                if (!exfatfs_is_vol_label_dentry(dentry, FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN)) { // RJCTODO: The second argument would change if searching only the root directory. See remarks at beginning of file.
                     continue;
                 }
 
@@ -878,7 +886,7 @@ exfatfs_fsstat_fs_content_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
         fatfs->lastclust);
 
     // RJCTODO: Consider eliminating the code duplication between this function and
-    // and the corresponding FATXX code.
+    // and the corresponding FATXX code. 
     /* Check each cluster of the data area to see if it is marked as bad in the
      * FAT. If the cluster is bad, list the bad sectors. */
     bad_sector_cnt = 0;
