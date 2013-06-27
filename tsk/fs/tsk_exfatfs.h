@@ -178,14 +178,14 @@ extern "C" {
      * exFAT directory entry types, the first byte of a directory entry.
      */
     enum EXFATFS_DIR_ENTRY_TYPE_ENUM {
-        EXFATFS_DIR_ENTRY_TYPE_NONE = 0xFF,
-        EXFATFS_DIR_ENTRY_TYPE_UNUSED = 0x00,
+        EXFATFS_DIR_ENTRY_TYPE_NONE = 0xFF, // RJCTODO: Elimminate this
+        EXFATFS_DIR_ENTRY_TYPE_UNUSED = 0x00, // Use this in place of #define in exFAT code
         EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x83,     
         EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL = 0x03,     
         EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID = 0xA0,     
         EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP = 0x81,     
         EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE = 0x82,     
-        EXFATFS_DIR_ENTRY_TYPE_TEX_FAT = 0xA1,     
+        EXFATFS_DIR_ENTRY_TYPE_TEXFAT = 0xA1,     
         EXFATFS_DIR_ENTRY_TYPE_ACT = 0xE2,     
         EXFATFS_DIR_ENTRY_TYPE_FILE = 0x85,     
         EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE = 0x05,     
@@ -357,14 +357,13 @@ extern "C" {
     exfatfs_is_upcase_table_dentry(FATFS_DENTRY *a_dentry, 
         FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status, FATFS_INFO *a_fatfs);
 
-    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
-    exfatfs_is_tex_fat_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-         uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
+    extern uint8_t
+    exfatfs_is_texfat_dentry(FATFS_DENTRY *a_dentry, 
+        FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status);
 
-    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
-    exfatfs_is_access_ctrl_table_dentry(FATFS_INFO *a_fatfs, 
-        FATFS_DENTRY *a_dentry,  uint8_t a_sector_is_alloc, 
-        uint8_t a_do_basic_test_only);
+    extern uint8_t
+    exfatfs_is_access_ctrl_table_dentry(FATFS_DENTRY *a_dentry, 
+        FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status);
 
     extern EXFATFS_DIR_ENTRY_TYPE_ENUM
     exfatfs_is_file_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 

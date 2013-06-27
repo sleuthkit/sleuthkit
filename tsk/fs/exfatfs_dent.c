@@ -515,7 +515,7 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
         case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
             strcpy(a_name_info->fs_name->name, EXFATFS_UPCASE_TABLE_DENTRY_NAME);
             break;
-        case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
+        case EXFATFS_DIR_ENTRY_TYPE_TEXFAT:
             strcpy(a_name_info->fs_name->name, EXFATFS_TEX_FAT_DENTRY_NAME);
             break;
         case EXFATFS_DIR_ENTRY_TYPE_ACT:
@@ -671,7 +671,7 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
             case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
             case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
             case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
-            case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
+            case EXFATFS_DIR_ENTRY_TYPE_TEXFAT:
             case EXFATFS_DIR_ENTRY_TYPE_ACT:
                 exfats_parse_special_file_dentry(&name_info, current_dentry, current_inum);                 
                 break;

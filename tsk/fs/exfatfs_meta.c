@@ -390,45 +390,75 @@ exfatfs_is_upcase_table_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STA
 
 /**
  * \internal
- * Determine whether the contents of a 32 byte buffer are likely to be an
- * exFAT UP-Case table directory entry.
+ * Determine whether the contents of a buffer may be an exFAT TexFAT directory
+ * entry.
  *
- * @param [in] a_fatfs Source file system for the directory entry.
- * @param [in] a_dentry Buffer that may contain a directory entry.
- * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
- * @returns EXFATFS_DIR_ENTRY_TYPE_TEX_FAT or EXFATFS_DIR_ENTRY_TYPE_NONE
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_alloc_status The allocation status, possibly unknown, of the 
+ * cluster from which the buffer was filled. 
+ * @returns 1 if the directory entry buffer likely contains a TexFAT directory
+ * entry, 0 otherwise. 
  */
-EXFATFS_DIR_ENTRY_TYPE_ENUM
-exfatfs_is_tex_fat_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry,  uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only)
+uint8_t
+exfatfs_is_texfat_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status)
 {
-    assert(a_fatfs != NULL);
+    const char *func_name = "exfatfs_is_texfat_dentry";
+    EXFATFS_TEXFAT_DIR_ENTRY *dentry = (EXFATFS_TEXFAT_DIR_ENTRY*)a_dentry;
+    
     assert(a_dentry != NULL);
+    if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 0;
+    }
 
-    /* There is not enough data in a texFAT directory entry
-     * to test anything but the entry type byte. */
-    return (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
+    /* Check the entry type byte. */
+    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_TEXFAT) {
+        return 0;
+    }
+
+    /* There is not enough data in a TexFAT directory entry to test anything
+     * but the entry type byte. However, a TexFAT directory entry should be in 
+     * allocated space, so check the allocation status, if known, of the 
+     * cluster from which the buffer was filled to reduce false positives. */
+    return ((a_alloc_status == FATFS_DATA_UNIT_ALLOC_STATUS_ALLOC) ||
+            (a_alloc_status == FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN));
 }
 
 /**
  * \internal
- * Determine whether the contents of a 32 byte buffer are likely to be an
- * exFAT access control table directory entry.
+ * Determine whether the contents of a buffer may be an exFAT access control 
+ * table directory entry.
  *
- * @param [in] a_fatfs Source file system for the directory entry.
- * @param [in] a_dentry Buffer that may contain a directory entry.
- * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
- * @returns EXFATFS_DIR_ENTRY_TYPE_ACT or EXFATFS_DIR_ENTRY_TYPE_NONE
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_alloc_status The allocation status, possibly unknown, of the 
+ * cluster from which the buffer was filled. 
+ * @returns 1 if the directory entry buffer likely contains an access control
+ * table entry, 0 otherwise. 
  */
-EXFATFS_DIR_ENTRY_TYPE_ENUM
-exfatfs_is_access_ctrl_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry,  uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only)
+uint8_t
+exfatfs_is_access_ctrl_table_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status)
 {
-    assert(a_fatfs != NULL);
+    const char *func_name = "exfatfs_is_texfat_dentry";
+    EXFATFS_TEXFAT_DIR_ENTRY *dentry = (EXFATFS_TEXFAT_DIR_ENTRY*)a_dentry;
+    
     assert(a_dentry != NULL);
+    if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 0;
+    }
 
-    /* There is not enough data in an access control table directory entry
-     * to test anything but the entry type byte. */
-    return (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
+    /* Check the entry type byte. */
+    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_TEXFAT) {
+        return 0;
+    }
+
+    /* There is not enough data in an access control table directory entry to 
+     * test anything but the entry type byte. However, an access control table
+     * directory entry should be in allocated space, so check the allocation 
+     * status, if known, of the cluster from which the buffer was filled to 
+     * reduce false positives. */
+    return ((a_alloc_status == FATFS_DATA_UNIT_ALLOC_STATUS_ALLOC) ||
+            (a_alloc_status == FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN));
 }
+
 
 /**
  * \internal
@@ -608,10 +638,10 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
         return exfatfs_is_alloc_bitmap_dentry(a_dentry, a_cluster_is_alloc, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
         return exfatfs_is_upcase_table_dentry(a_dentry, a_cluster_is_alloc, a_fatfs);
-    case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
-        return exfatfs_is_tex_fat_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
+    case EXFATFS_DIR_ENTRY_TYPE_TEXFAT:
+        return exfatfs_is_texfat_dentry(a_dentry, a_cluster_is_alloc);
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
-        return exfatfs_is_access_ctrl_table_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
+        return exfatfs_is_access_ctrl_table_dentry(a_dentry, a_cluster_is_alloc);
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
     case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
         return exfatfs_is_file_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
@@ -1191,7 +1221,7 @@ exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
         a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
         return exfatfs_copy_upcase_table_inode(a_fatfs, a_dentry, a_fs_file);
-    case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
+    case EXFATFS_DIR_ENTRY_TYPE_TEXFAT:
         a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
         strcpy(a_fs_file->meta->name2->name, EXFATFS_TEX_FAT_DENTRY_NAME);
         return TSK_OK;
@@ -1534,7 +1564,7 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
     case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:     
         tsk_fprintf(a_hFile, "Up-Case Table\n");
         break;
-    case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:     
+    case EXFATFS_DIR_ENTRY_TYPE_TEXFAT:     
         tsk_fprintf(a_hFile, "TexFAT\n");
         break;
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
