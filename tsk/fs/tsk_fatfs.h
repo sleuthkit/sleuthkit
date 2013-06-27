@@ -19,6 +19,24 @@
 
 #include "tsk_fs_i.h"
 
+/**
+ * \internal
+ *
+ * Per TSK convention, FAT file system functions return integer 0 on success
+ * and integer 1 on failure. 
+ */
+#define FATFS_OK 0
+
+/**
+ * \internal
+ *
+ * Per TSK convention, FAT file system functions return integer 0 on success
+ * and integer 1 on failure. 
+ */
+#define FATFS_FAIL 1
+
+#define FATFS_FS_MAGIC	0xaa55
+
 #define FATFS_FIRST_CLUSTER_ADDR 2
 
 #define FATFS_FIRSTINO	2
@@ -138,6 +156,12 @@
 	   (((x & FATFS_MON_MASK) >> FATFS_MON_SHIFT) > FATFS_MON_MAX) || \
 	   (((x & FATFS_MON_MASK) >> FATFS_MON_SHIFT) < FATFS_MON_MIN) || \
 	   (((x & FATFS_YEAR_MASK) >> FATFS_YEAR_SHIFT) > FATFS_YEAR_MAX) ) == 0)
+
+/**
+ * \internal
+ * Buffer size for conversion of exFAT UTF-16 strings to UTF-8 strings.
+ */
+#define FATFS_MAXNAMLEN_UTF8	1024
 
 #ifdef __cplusplus
 extern "C" {

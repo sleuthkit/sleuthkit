@@ -129,7 +129,7 @@ exfatfs_reset_name_info(EXFATFS_FS_NAME_INFO *a_name_info)
     assert(a_name_info != NULL);
     assert(a_name_info->fs_name != NULL);
     assert(a_name_info->fs_name->name != NULL);
-    assert(a_name_info->fs_name->name_size == EXFATFS_MAX_NAME_LEN_UTF8);
+    assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
 
     a_name_info->last_dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     a_name_info->expected_secondary_entry_count = 0;
@@ -158,7 +158,7 @@ exfatfs_add_name_to_dir_and_reset_info(EXFATFS_FS_NAME_INFO *a_name_info)
     assert(a_name_info != NULL);
     assert(a_name_info->fs_name != NULL);
     assert(a_name_info->fs_name->name != NULL);
-    assert(a_name_info->fs_name->name_size == EXFATFS_MAX_NAME_LEN_UTF8);
+    assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
 
     /* If the parsing of the directory entry or directory entry set produced
@@ -189,7 +189,7 @@ exfats_parse_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dent
     assert(a_name_info->fatfs != NULL);
     assert(a_name_info->fs_name != NULL);
     assert(a_name_info->fs_name->name != NULL);
-    assert(a_name_info->fs_name->name_size == EXFATFS_MAX_NAME_LEN_UTF8);
+    assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
@@ -253,7 +253,7 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
     assert(a_name_info->fatfs != NULL);
     assert(a_name_info->fs_name != NULL);
     assert(a_name_info->fs_name->name != NULL);
-    assert(a_name_info->fs_name->name_size == EXFATFS_MAX_NAME_LEN_UTF8);
+    assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
@@ -322,7 +322,7 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     assert(a_name_info->fatfs != NULL);
     assert(a_name_info->fs_name != NULL);
     assert(a_name_info->fs_name->name != NULL);
-    assert(a_name_info->fs_name->name_size == EXFATFS_MAX_NAME_LEN_UTF8);
+    assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
@@ -417,7 +417,7 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     assert(a_name_info->fatfs != NULL);
     assert(a_name_info->fs_name != NULL);
     assert(a_name_info->fs_name->name != NULL);
-    assert(a_name_info->fs_name->name_size == EXFATFS_MAX_NAME_LEN_UTF8);
+    assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
     assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
@@ -451,7 +451,7 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
 
     tag_length = strlen(tag);
     if ((size_t)a_name_info->actual_name_length + tag_length < 
-        EXFATFS_MAX_NAME_LEN_UTF8) {
+        FATFS_MAXNAMLEN_UTF8) {
         strcat(a_name_info->fs_name->name, tag);
     }
 
@@ -485,7 +485,7 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
     assert(a_name_info->fatfs != NULL);
     assert(a_name_info->fs_name != NULL);
     assert(a_name_info->fs_name->name != NULL);
-    assert(a_name_info->fs_name->name_size == EXFATFS_MAX_NAME_LEN_UTF8);
+    assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(a_dentry != NULL);
     assert(a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID ||
@@ -588,7 +588,7 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
 
     memset((void*)&name_info, 0, sizeof(EXFATFS_FS_NAME_INFO));
     name_info.fatfs = a_fatfs;
-    if ((name_info.fs_name = tsk_fs_name_alloc(EXFATFS_MAX_NAME_LEN_UTF8, 0)) == NULL) {
+    if ((name_info.fs_name = tsk_fs_name_alloc(FATFS_MAXNAMLEN_UTF8, 0)) == NULL) {
         return TSK_ERR;
     }
     name_info.fs_name->name[0] = '\0';

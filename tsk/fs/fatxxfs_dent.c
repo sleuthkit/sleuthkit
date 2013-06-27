@@ -27,7 +27,6 @@
 #include "tsk_fatxxfs.h"
 #include <assert.h>
 
-//RJCTODO: Consider changing the name of this
 /* Special data structure allocated for each directory to hold the long
 * file name entries until all entries have been found */
 typedef struct {
@@ -35,9 +34,8 @@ typedef struct {
     uint16_t start;             /* current start of name */
     uint8_t chk;                /* current checksum */
     uint8_t seq;                /* seq of first entry in lfn */
-} FATFS_LFN;
+} FATXXFS_LFN;
 
-// RJCTODO: Update arg names
 /**
  * /internal
  * Parse a buffer containing the contents of a directory and add TSK_FS_NAME 
@@ -70,7 +68,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
     TSK_FS_INFO *fs = (TSK_FS_INFO*)&fatfs->fs_info;
     int sectalloc = 0;
     TSK_FS_NAME *fs_name = NULL;
-    FATFS_LFN lfninfo;
+    FATXXFS_LFN lfninfo;
     int entrySeenCount = 0;
     int entryInvalidCount = 0;
     uint8_t isCorruptDir = 0;
@@ -97,7 +95,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
         return TSK_ERR;
     }
 
-    memset(&lfninfo, 0, sizeof(FATFS_LFN));
+    memset(&lfninfo, 0, sizeof(FATXXFS_LFN));
     lfninfo.start = FATFS_MAXNAMLEN_UTF8 - 1;
 
     /* Loop through the sectors in the buffer. */ 
@@ -166,18 +164,18 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
 
             if ((dir->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
                 /* The current entry is a long file name entry. */
-                fatfs_dentry_lfn *dirl = (fatfs_dentry_lfn *) dir;
+                FATXXFS_DENTRY_LFN *dirl = (FATXXFS_DENTRY_LFN *) dir;
 
                 /* Store the name in dinfo until we get the 8.3 name
                  * Use the checksum to identify a new sequence. */
-                if (((dirl->seq & FATFS_LFN_SEQ_FIRST) && (dirl->seq != FATFS_SLOT_DELETED)) || 
+                if (((dirl->seq & FATXXFS_LFN_SEQ_FIRST) && (dirl->seq != FATXXFS_SLOT_DELETED)) || 
                     (dirl->chksum != lfninfo.chk)) {
                     // @@@ Do a partial output here
                     
                     /* This is the last long file name entry in a sequence. 
                      * Reset the sequence number, check sum, and next char
                      * address. */
-                    lfninfo.seq = dirl->seq & FATFS_LFN_SEQ_MASK;
+                    lfninfo.seq = dirl->seq & FATXXFS_LFN_SEQ_MASK;
                     lfninfo.chk = dirl->chksum;
                     lfninfo.start = FATFS_MAXNAMLEN_UTF8 - 1;
                 }
@@ -291,10 +289,10 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
                         (dir->name[b] != 0x20)) {
 
                             if ((b == 0)
-                                && (dir->name[0] == FATFS_SLOT_DELETED)) {
+                                && (dir->name[0] == FATXXFS_SLOT_DELETED)) {
                                     name_ptr[a++] = '_';
                             }
-                            else if ((dir->lowercase & FATFS_CASE_LOWER_BASE)
+                            else if ((dir->lowercase & FATXXFS_CASE_LOWER_BASE)
                                 && (dir->name[b] >= 'A')
                                 && (dir->name[b] <= 'Z')) {
                                     name_ptr[a++] = dir->name[b] + 32;
@@ -310,7 +308,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
                         (dir->ext[b] != 0x20)) {
                             if (b == 0)
                                 name_ptr[a++] = '.';
-                            if ((dir->lowercase & FATFS_CASE_LOWER_EXT) &&
+                            if ((dir->lowercase & FATXXFS_CASE_LOWER_EXT) &&
                                 (dir->ext[b] >= 'A') && (dir->ext[b] <= 'Z'))
                                 name_ptr[a++] = dir->ext[b] + 32;
                             else
@@ -413,7 +411,7 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
             * do not always clear the flags of each entry
             */
             if (sectalloc == 1) {
-                fs_name->flags = (dep->name[0] == FATFS_SLOT_DELETED) ?
+                fs_name->flags = (dep->name[0] == FATXXFS_SLOT_DELETED) ?
                     TSK_FS_NAME_FLAG_UNALLOC : TSK_FS_NAME_FLAG_ALLOC;
             }
             else {

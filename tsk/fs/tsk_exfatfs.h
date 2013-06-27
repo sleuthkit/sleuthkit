@@ -33,22 +33,6 @@
 
 /**
  * \internal
- *
- * Per TSK convention, exFAT file system functions return integer 0 on success
- * and integer 1 on failure. 
- */
-#define EXFATFS_OK 0
-
-/**
- * \internal
- *
- * Per TSK convention, exFAT file system functions return integer 0 on success
- * and integer 1 on failure. 
- */
-#define EXFATFS_FAIL 1
-
-/**
- * \internal
  * The first cluster of an exFAT cluster heap (data area) is cluster #2.
  */
 #define EXFATFS_FIRST_CLUSTER 2
@@ -89,12 +73,6 @@
  * file is not fragmented.
  */
 #define EXFATFS_INVALID_FAT_CHAIN_MASK 0x02
-
-/**
- * \internal
- * Buffer size for conversion of exFAT UTF-16 strings to UTF-8 strings.
- */
-#define EXFATFS_MAX_NAME_LEN_UTF8 1024
 
 /**
  * Name for an exFAT volume label directory entry that has an empty label, with 
@@ -174,12 +152,14 @@ extern "C" {
 		uint8_t signature[2]; 
 	} EXFATFS_MASTER_BOOT_REC;
 
+    // RJCTODO: It appears that all of the directory entry types have the in-use bit.
+    // This enum and the code should be updated to reflect that, although I suspect that 
+    // only the file directory entry set entries ever have the bit unset.
     /**
      * exFAT directory entry types, the first byte of a directory entry.
      */
     enum EXFATFS_DIR_ENTRY_TYPE_ENUM {
-        EXFATFS_DIR_ENTRY_TYPE_NONE = 0xFF, // RJCTODO: Elimminate this
-        EXFATFS_DIR_ENTRY_TYPE_UNUSED = 0x00, // Use this in place of #define in exFAT code
+        EXFATFS_DIR_ENTRY_TYPE_NONE = 0x00,
         EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x83,     
         EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL = 0x03,     
         EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID = 0xA0,     

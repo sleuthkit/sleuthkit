@@ -648,15 +648,11 @@ uint8_t
 exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, uint8_t a_do_basic_tests_only)
 {
     const char *func_name = "exfatfs_is_dentry";
-    TSK_FS_INFO *fs = NULL;
 
-    tsk_error_reset();
-    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
-        return EXFATFS_DIR_ENTRY_TYPE_NONE;
+    assert(a_dentry != NULL);
+    if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 0;
     }
-
-    fs = &(a_fatfs->fs_info);
 
     switch (a_dentry->data[0])
     {
@@ -683,7 +679,6 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
     case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
         return exfatfs_is_file_name_dentry(a_dentry);
     default:
-        //return EXFATFS_DIR_ENTRY_TYPE_NONE;
         return 0;
     }
 }
@@ -929,7 +924,7 @@ exfatfs_copy_upcase_table_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK
  */
 static TSK_RETVAL_ENUM 
 exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_file_dentry,
-    uint8_t a_is_alloc, FATFS_DENTRY *a_stream_dentry, TSK_FS_FILE *a_fs_file) // RJCTODO: One alloc status or two? Rename?
+    uint8_t a_is_alloc, FATFS_DENTRY *a_stream_dentry, TSK_FS_FILE *a_fs_file)
 {
     const char *func_name = "exfatfs_copy_file_inode";
     TSK_FS_INFO *fs = NULL;
@@ -1027,7 +1022,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_file_dentry,
     /* Set the size of the file and the address of its first cluster. */
     ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0] = 
         tsk_getu32(a_fatfs->fs_info.endian, stream_dentry->first_cluster_addr);
-    fs_meta->size = tsk_getu64(fs->endian, stream_dentry->data_length); //RJCTODO: How does this relate to valid data length?
+    fs_meta->size = tsk_getu64(fs->endian, stream_dentry->data_length); //RJCTODO: How does this relate to the valid data length field?
 
     // RJCTODO: Review this with Brian.
     // RJCTODO: What if a sector boundary is crossed? Probably need to check both sectors. Perhaps the inodes should come through, with no sector allocation check at a higher level...
@@ -1042,7 +1037,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_file_dentry,
         // RJCTODO: Revisit this approach. Why not just add another byte of
         // exFAT specific data to the meta structure and do a lazy load of the
         // contiguous stuff in fatfs_make_data_runs()? Also, if we are doing a 
-        // data run for a deleted file, we know how many unallocated clusters
+        // data run for a deleted file, we know exactly how many unallocated clusters
         // we can attempt to recover.
         /* If the FAT chain bit of the secondary flags of the stream entry is set,
          * the file is not fragmented and there is no FAT chain to walk. If the 
@@ -1142,6 +1137,10 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     fs_meta = a_fs_file->meta;
     fs_meta->addr = a_inum;
 
+    /* Set the allocation status based on the cluster allocation status. File 
+     * entry set entries may change this. */
+    a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
+
     /* As for FATXX, make regular file the default type. */
     fs_meta->type = TSK_FS_META_TYPE_REG;
 
@@ -1214,7 +1213,8 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
  * @param [in] a_inum Address of the inode.
  * @param [in] a_dentries One or more directory entries.
  * @param [in] a_is_alloc Allocation status of the inode.
- * @param [in, out] a_fs_file Generic file with generic inode structure (TSK_FS_META).
+ * @param [in, out] a_fs_file Generic file object with a generic inode 
+ * metadata structure.
  * @return TSK_RETVAL_ENUM.  
  */
 TSK_RETVAL_ENUM
@@ -1224,45 +1224,47 @@ exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 {
     const char *func_name = "exfatfs_dinode_copy";
 
-    // RJCTODO: No longer a sub-function, add full validation
     assert(a_fatfs != NULL);
-    assert(a_dentry != NULL);
     assert(fatfs_inum_is_in_range(a_fatfs, a_inum));
+    assert(a_dentry != NULL);
     assert(a_fs_file != NULL);
     assert(a_fs_file->meta != NULL);
+    assert(a_fs_file->fs_info != NULL);
+
+    tsk_error_reset();
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name) ||
+        fatfs_ptr_arg_is_null(a_fs_file, "a_fs_file", func_name) ||
+        fatfs_ptr_arg_is_null(a_fs_file->meta, "a_fs_file->meta", func_name) ||
+        fatfs_ptr_arg_is_null(a_fs_file->fs_info, "a_fs_file->fs_info", func_name) ||
+        !fatfs_inum_arg_is_in_range(a_fatfs, a_inum, func_name)) {
+        return TSK_ERR;
+    }
 
     if (exfatfs_inode_copy_init(a_fatfs, a_inum, a_is_alloc, a_fs_file)) {
         return TSK_ERR;
     }
 
-    // RJCTODO: What's up with the code duplication here?
     switch (a_dentry->data[0])
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
     case EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL:
-        a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
         return exfatfs_copy_vol_label_inode(a_fatfs, a_inum, a_dentry, a_fs_file);
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
-        a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
         strcpy(a_fs_file->meta->name2->name, EXFATFS_VOLUME_GUID_DENTRY_NAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
-        a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
         return exfatfs_copy_alloc_bitmap_inode(a_fatfs, a_dentry, a_fs_file);
     case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
-        a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
         return exfatfs_copy_upcase_table_inode(a_fatfs, a_dentry, a_fs_file);
     case EXFATFS_DIR_ENTRY_TYPE_TEXFAT:
-        a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
         strcpy(a_fs_file->meta->name2->name, EXFATFS_TEX_FAT_DENTRY_NAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
-        a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
         strcpy(a_fs_file->meta->name2->name, EXFATFS_ACT_DENTRY_NAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
     case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
-        // RJCTODO: Validate secondary dentry.
         return exfatfs_copy_file_inode(a_fatfs, a_dentry, a_is_alloc, a_secondary_dentry, a_fs_file);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
     case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
@@ -1350,13 +1352,17 @@ exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inu
     EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     TSK_DADDR_T next_cluster = 0;
 
-    // RJCTODO: No longer strictly internal. beef up checks
     assert(a_fatfs != NULL);
     assert(fatfs_inum_is_in_range(a_fatfs, a_file_entry_inum));
     assert(a_stream_dentry != NULL);
 
-    // RJCTODO: Consider changing enum to reflect entries NOT_IN_USE vs. DELETED
-    
+    tsk_error_reset();
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        fatfs_ptr_arg_is_null(a_stream_dentry, "a_stream_dentry", func_name) ||
+        !fatfs_inum_arg_is_in_range(a_fatfs, a_file_entry_inum, func_name)) {
+        return FATFS_FAIL;
+    }
+        
     /* Check for the most common case first - the file stream entry is located
      * immediately after the file entry. This should always be true for any 
      * in-use file entry in an allocated cluster that is not the last entry in
@@ -1374,7 +1380,7 @@ exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inu
             a_file_dentry_type, 
             a_stream_dentry) == 0) {
             /* Found it. */
-            return 0;
+            return FATFS_OK;
         }
     }
 
@@ -1413,7 +1419,7 @@ exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inu
                         a_file_dentry_type, 
                         a_stream_dentry) == 0) {
                         /* Found it. */
-                        return 0;
+                        return FATFS_OK;
                     }
                 }
             }
@@ -1421,7 +1427,7 @@ exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inu
     }
 
     /* Did not find the file stream entry. */
-    return 1;
+    return FATFS_FAIL;
 }
 
 /**
@@ -1470,9 +1476,8 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         return 1;
     }
 
-    // RJCTODO: This comment likely needs to change...
     /* Check the allocation status of the sector. This status will be used
-     * not only as metadata to be reported, but also as a way to choose
+     * not only as meta data to be reported, but also as a way to choose
      * between the basic or in-depth version of the tests (below) that 
      * determine whether or not the bytes corrresponding to the inode are 
      * likely to be a directory entry. Note that in other places in the code 
@@ -1551,12 +1556,12 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
 
 /**
  * \internal
- * Output file attributes for an exFAT directory entry/inode in 
+ * Outputs file attributes for an exFAT directory entry/inode in 
  * human-readable form.
  *
  * @param [in] a_fatfs Source file system for the directory entry.
  * @param [in] a_inum Inode address associated with the directory entry.
- * @param [in] a_hFile Handle of the file to which to write.
+ * @param [in] a_hFile Handle of a file to which to write.
  * @return 0 on success, 1 on failure, per TSK convention
  */
 uint8_t
@@ -1567,16 +1572,20 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
     EXFATFS_FILE_DIR_ENTRY *file_dentry = NULL;
     uint16_t attr_flags = 0;
 
+    assert(a_fatfs != NULL);
+    assert(fatfs_inum_is_in_range(a_fatfs, a_inum));
+    assert(a_hFile != NULL);
+
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_ptr_arg_is_null(a_hFile, "a_hFile", func_name) ||
         !fatfs_inum_arg_is_in_range(a_fatfs, a_inum, func_name)) {
-        return 1; 
+        return FATFS_FAIL; 
     }
 
-    /* Load the bytes at the inode address. */
+    /* Load the bytes at the given inode address. */
     if (fatfs_dentry_load(a_fatfs, (FATFS_DENTRY*)(&dentry), a_inum)) {
-        return 1; 
+        return FATFS_FAIL; 
     }
 
     /* Print the attributes. */
@@ -1644,22 +1653,48 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
         tsk_error_set_errstr("%s: Inode %" PRIuINUM
             " is not an exFAT directory entry", func_name, a_inum);
-        return 1;
+        return FATFS_FAIL;
     }
 
-    return 0;
+    return FATFS_OK;
 }
 
-// RJCTODO: Comment
+/**
+ * \internal
+ * Determine whether an exFAT directory entry should be included in an inode
+ *  walk.
+ *
+ * @param [in] a_fatfs Source file system for the directory entry.
+ * @param [in] a_inum Inode address associated with the directory entry.
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_selection_flags The inode selection falgs for the inode walk.
+ * @param [in] a_cluster_is_alloc The allocation status of the cluster that
+ * contains the directory entry.
+ * @return 1 if the entry should be skipped, 0 otherwise
+ */
 uint8_t
 exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
     FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
     int a_cluster_is_alloc)
 {
+    const char *func_name = "exfatfs_inode_walk_should_skip_dentry";
     unsigned int dentry_flags = 0;
-    // RJCTODO: Insert arg check 
+    uint8_t i = 0;
 
-    /* Skip file stream and file name entries. */
+    assert(a_fatfs != NULL);
+    assert(fatfs_inum_is_in_range(a_fatfs, a_inum));
+    assert(a_dentry != NULL);
+
+    tsk_error_reset();
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        !fatfs_inum_arg_is_in_range(a_fatfs, a_inum, func_name) ||
+        fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 1; 
+    }
+
+    /* Skip file stream and file name entries. For inode walks, these entries
+     * are handled with the file entry with which they are associated in a file
+     * entry set. */
     if (a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
         a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM ||
         a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
@@ -1667,12 +1702,11 @@ exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         return 1;
     }
 
-    /* Compare directory entry allocation status with the inode selection
-     * flags. Allocation status is determined first by the allocation status 
-     * of the sector that contains the entry, then by the deleted status of 
-     * the file. This ensures that if a directory is deleted and its 
-     * contents are not always marked as unallocated, the correct status will
-     * still be obtained. */
+    // RJCTODO: This code probably needs to change. See explanatory TODO comment
+    // associated with the EXFATFS_DIR_ENTRY_TYPE_ENUM definition.
+    /* Assign an allocation status to the entry. Allocation status is 
+     * determined first by the allocation status of the cluster that contains
+     * the entry, then by the allocated status of the entry. */
     if ((a_cluster_is_alloc) && (a_dentry->data[0] != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE)) {
         dentry_flags = TSK_FS_META_FLAG_ALLOC;
     }
@@ -1680,14 +1714,15 @@ exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         dentry_flags = TSK_FS_META_FLAG_UNALLOC;
     }
 
-    dentry_flags |= (a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_UNUSED) ? TSK_FS_META_FLAG_UNUSED : TSK_FS_META_FLAG_USED;
-
-    if ((a_selection_flags & dentry_flags) != dentry_flags) { // RJCTODO: Fix this
+    /* Does the allocation status of the entry match that of the inode 
+     * selection flags? */
+    if ((a_selection_flags & dentry_flags) != dentry_flags) {
         return 1;
     }
 
-    /* If the processing flags call for only processing orphan files, check 
-     * whether or not this inode is in the seen list. */
+    /* If the inode selection flags call for only processing orphan files, 
+     * check whether or not this inode is in list of non-orphan files found via
+     * name walk. */
     if ((dentry_flags & TSK_FS_META_FLAG_UNALLOC) &&
         (a_selection_flags & TSK_FS_META_FLAG_ORPHAN) &&
         (tsk_fs_dir_find_inum_named(&(a_fatfs->fs_info), a_inum))) {

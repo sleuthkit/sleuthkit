@@ -316,7 +316,7 @@ TSK_RETVAL_ENUM
     if (tsk_fs_file_walk(fs_dir->fs_file,
         TSK_FS_FILE_WALK_FLAG_SLACK,
         fatfs_dent_action, (void *) &load)) {
-            tsk_error_errstr2_concat("- fatfs_dir_open_meta"); // RJCTODO
+            tsk_error_errstr2_concat("- %s", func_name);
             free(dirbuf);
             free(addrbuf);
             return TSK_COR;

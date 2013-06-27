@@ -23,21 +23,15 @@
 #include "tsk_fs_i.h"
 #include "tsk_fatfs.h"
 
-#define FATFS_SBOFF		0
-#define FATFS_FS_MAGIC	0xaa55
-#define FATFS_MAXNAMLEN	256
-#define FATFS_MAXNAMLEN_UTF8	1024
-
 /* Macro to combine the upper and lower 2-byte parts of the starting
  * cluster 
  */
-#define FATFS_DENTRY_CLUST(fsi, de)	\
+#define FATXXFS_DENTRY_CLUST(fsi, de)	\
 	(TSK_DADDR_T)((tsk_getu16(fsi->endian, de->startclust)) | (tsk_getu16(fsi->endian, de->highclust)<<16))
 
 /* constants for first byte of name[] */
-#define FATFS_SLOT_EMPTY	0x00
-#define FATFS_SLOT_E5		0x05    /* actual value is 0xe5 */
-#define FATFS_SLOT_DELETED	0xe5
+#define FATXXFS_SLOT_E5		0x05    /* actual value is 0xe5 */
+#define FATXXFS_SLOT_DELETED	0xe5
 
 /* 
  *Return 1 if c is an valid charactor for a short file name 
@@ -45,8 +39,7 @@
  * NOTE: 0x05 is allowed in name[0], and 0x2e (".") is allowed for name[0]
  * and name[1] and 0xe5 is allowed for name[0]
  */
-
-#define FATFS_IS_83_NAME(c)		\
+#define FATXXFS_IS_83_NAME(c)		\
 	((((c) < 0x20) || \
 	  ((c) == 0x22) || \
 	  (((c) >= 0x2a) && ((c) <= 0x2c)) || \
@@ -57,17 +50,17 @@
 	  ((c) == 0x7c)) == 0)
 
 // extensions are to be ascii / latin
-#define FATFS_IS_83_EXT(c)		\
-    (FATFS_IS_83_NAME((c)) && ((c) < 0x7f))
+#define FATXXFS_IS_83_EXT(c)		\
+    (FATXXFS_IS_83_NAME((c)) && ((c) < 0x7f))
 
 /* flags for lowercase field */
-#define FATFS_CASE_LOWER_BASE	0x08    /* base is lower case */
-#define FATFS_CASE_LOWER_EXT	0x10    /* extension is lower case */
-#define FATFS_CASE_LOWER_ALL	0x18    /* both are lower */
+#define FATXXFS_CASE_LOWER_BASE	0x08    /* base is lower case */
+#define FATXXFS_CASE_LOWER_EXT	0x10    /* extension is lower case */
+#define FATXXFS_CASE_LOWER_ALL	0x18    /* both are lower */
 
 /* flags for seq field */
-#define FATFS_LFN_SEQ_FIRST	0x40    /* This bit is set for the first lfn entry */
-#define FATFS_LFN_SEQ_MASK	0x3f    /* These bits are a mask for the decreasing
+#define FATXXFS_LFN_SEQ_FIRST	0x40    /* This bit is set for the first lfn entry */
+#define FATXXFS_LFN_SEQ_MASK	0x3f    /* These bits are a mask for the decreasing
                                          * sequence number for the entries */
 #ifdef __cplusplus
 extern "C" {
@@ -120,7 +113,7 @@ extern "C" {
 
         uint8_t magic[2];       /* MAGIC for all versions */
 
-    } fatfs_sb; //RJCTODO: Change name
+    } FATXXFS_SB;
 
     typedef struct {
         uint8_t magic1[4];      /* 41615252 */
@@ -130,8 +123,7 @@ extern "C" {
         uint8_t nextfree[4];    /* next free cluster */
         uint8_t f2[12];
         uint8_t magic3[4];      /* AA550000 */
-    } fatfs_fsinfo;
-
+    } FATXXFS_FSINFO;
 
 	/* directory entry short name structure */
     typedef struct {
@@ -164,7 +156,7 @@ extern "C" {
         uint8_t part2[12];
         uint8_t reserved2[2];
         uint8_t part3[4];
-    } fatfs_dentry_lfn;
+    } FATXXFS_DENTRY_LFN;
 
 	extern uint8_t fatxxfs_open(FATFS_INFO *fatfs);
 

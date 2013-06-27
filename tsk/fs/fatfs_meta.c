@@ -263,7 +263,7 @@ fatfs_make_fat(FATFS_INFO *fatfs, uint8_t a_which, TSK_FS_META *fs_meta)
  * @param [in] a_fs The file system from which to read the bytes.
  * @param [out] a_de The FATFS_DENTRY.
  * @param [in] a_inum An inode address.
- * @return 0 on success, 1 on failure 
+ * @return 0 on success, 1 on failure. 
  */
 uint8_t
 fatfs_dentry_load(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum)
@@ -901,7 +901,6 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
         tsk_fprintf(a_hFile, "Virtual File\n");
     }
     else if (fs_meta->addr == TSK_FS_ORPHANDIR_INUM(a_fs)) {
-        // RJCTODO: Review this with Brian
         tsk_fprintf(a_hFile, "Virtual Directory\n");
     }
     else {
@@ -1068,29 +1067,27 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
         return 1;
     }
 
+    // RJCTODO: Check this decision with Brian after he polls the user community.
+    /* FAT file systems do not really have the concept of unused inodes. */
+    if ((flags & TSK_FS_META_FLAG_UNUSED) && !(flags & TSK_FS_META_FLAG_USED)) {
+        return 0;
+    }
+    flags |= TSK_FS_META_FLAG_USED;
+    flags &= ~TSK_FS_META_FLAG_UNUSED;
+
     /* Make sure the inode selection flags are set correctly. */
     if (flags & TSK_FS_META_FLAG_ORPHAN) {
-        /* If ORPHAN file inodes are wanted, make sure that the UNALLOCATED
-         * and USED inode selection flags are set. */
+        /* If ORPHAN file inodes are wanted, make sure that the UNALLOC
+         * selection flag is set. */
         flags |= TSK_FS_META_FLAG_UNALLOC;
         flags &= ~TSK_FS_META_FLAG_ALLOC;
-        flags |= TSK_FS_META_FLAG_USED;
-        flags &= ~TSK_FS_META_FLAG_UNUSED;
     }
     else {
-        /* If neither of the ALLOCATED or UNALLOCATED inode selection flags 
-        * are set, then set them both. */
+        /* If neither of the ALLOC or UNALLOC inode selection flags are set,
+        *  then set them both. */
         if (((flags & TSK_FS_META_FLAG_ALLOC) == 0) &&
             ((flags & TSK_FS_META_FLAG_UNALLOC) == 0)) {
             flags |= (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_UNALLOC);
-        }
-
-        /* If neither of the USED or UNUSED inode selection flags are set, 
-         * then set them both. Note that these flags have no effect on an 
-         *inode walk of an exFAT file system. */
-        if (((flags & TSK_FS_META_FLAG_USED) == 0) &&
-            ((flags & TSK_FS_META_FLAG_UNUSED) == 0)) {
-            flags |= (TSK_FS_META_FLAG_USED | TSK_FS_META_FLAG_UNUSED);
         }
     }
 
@@ -1101,10 +1098,10 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     }
 
     /* If we are looking for orphan files and have not yet populated
-     * the orphan files list for this file system, do so now.
+     * the list of files reachable by name for this file system, do so now.
      */
     if ((flags & TSK_FS_META_FLAG_ORPHAN)) {
-        if (tsk_fs_dir_load_inum_named(a_fs) != TSK_OK) { // RJCTODO: How is this handled for exFAT?
+        if (tsk_fs_dir_load_inum_named(a_fs) != TSK_OK) {
             tsk_error_errstr2_concat(
                 "%s: Identifying orphan inodes", func_name);
             return 1;
@@ -1126,7 +1123,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     /* Process the root directory inode, if it's included in the walk. */
     if (a_start_inum == a_fs->root_inum) {
         if (((TSK_FS_META_FLAG_ALLOC & flags) == TSK_FS_META_FLAG_ALLOC)
-            && ((TSK_FS_META_FLAG_USED & flags) == TSK_FS_META_FLAG_USED)
             && ((TSK_FS_META_FLAG_ORPHAN & flags) == 0)) {
             TSK_WALK_RET_ENUM retval = TSK_WALK_CONT;
 
@@ -1402,23 +1398,21 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                 TSK_RETVAL_ENUM retval2 = TSK_OK;
 
                 /* If the inode address of the potential entry is less than
-                 * the beginning inode address for the walk, skip it. */
+                 * the beginning inode address for the inode walk, skip it. */
                 if (inum < a_start_inum) {
                     continue;
                 }
 
                 /* If inode address of the potential entry is greater than the
-                 * ending inode address for the walk, terminate the entire 
-                 * walk. */
+                 * ending inode address for the walk, terminate the inode walk. */ 
                 if (inum > end_inum_tmp) {
                     done = 1;
                     break;
                 }
 
-                /* Now check the potential directory entry. It may not be an 
-                 * entry, but if it is, it may not be an entry that maps to an
-                 * inode for the purposes of an inode walk, or an entry that
-                 * satisfies the inode selection flags. */
+                /* If the potential entry is likely not an entry, or it is an  
+                 * entry that is not reported in an inode walk, or it does not   
+                 * satisfy the inode selection flags, then skip it. */
                 if (!fatfs->is_dentry(fatfs, dep, (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)cluster_is_alloc, do_basic_dentry_test) ||
                     fatfs->inode_walk_should_skip_dentry(fatfs, inum, dep, flags, cluster_is_alloc)) {
                     continue;
@@ -1435,7 +1429,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                     if (dep->data[0] == EXFATFS_DIR_ENTRY_TYPE_FILE ||
                         dep->data[0] == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE) {
                         if (exfatfs_find_file_stream_dentry(fatfs, inum, sect, cluster_is_alloc, 
-                            dep->data[0], &secondary_dentry)) { // RJCTODO: Fix this
+                            (EXFATFS_DIR_ENTRY_TYPE_ENUM)dep->data[0], &secondary_dentry)) {
                             continue;
                         }
                     }
@@ -1500,7 +1494,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
     // handle the virtual orphans folder and FAT files if they asked for them
     if ((a_end_inum > a_fs->last_inum - FATFS_NUM_VIRT_FILES(fatfs))
         && (flags & TSK_FS_META_FLAG_ALLOC)
-        && (flags & TSK_FS_META_FLAG_USED)
         && ((flags & TSK_FS_META_FLAG_ORPHAN) == 0)) {
         TSK_INUM_T inum;
 

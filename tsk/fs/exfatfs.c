@@ -62,7 +62,7 @@ exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid sector size base 2 logarithm (%d), not in range (9 - 12)\n", func_name, a_fatfs->ssize);
         }
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
     a_fatfs->ssize = (1 << a_fatfs->ssize_sh);
 
@@ -77,7 +77,7 @@ exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid cluster size (%d)\n", func_name, a_fatfs->csize);
         }
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
     a_fatfs->csize = (1 << exfatbs->sectors_per_cluster);
 
@@ -91,10 +91,10 @@ exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid number of sectors per FAT (%d)\n", func_name, a_fatfs->sectperfat);
         }
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
-    return EXFATFS_OK;
+    return FATFS_OK;
 }
 
 /**
@@ -126,7 +126,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid volume length in sectors (%d)\n", func_name, vol_len_in_sectors);
         }
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     /* Get the number of FATs. There will be one FAT for regular exFAT and two 
@@ -139,7 +139,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid number of FATs (%d)\n", func_name, a_fatfs->numfat);
         }
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     /* Get the sector address of the first FAT (FAT0). 
@@ -155,7 +155,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid first FAT sector (%" PRIuDADDR ")\n", func_name, a_fatfs->firstfatsect);
         }
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     /* Get the sector address of the cluster heap (data area). It should be 
@@ -169,7 +169,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid first data sector (%" PRIuDADDR ")\n", func_name, a_fatfs->firstdatasect);
         }
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     /* Unlike FAT12 and FAT16, but like FAT32, the sector address of the first
@@ -190,7 +190,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid cluster count (%" PRIuDADDR ")\n", func_name, a_fatfs->clustcnt);
         }
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     /* The first cluster is #2, so the final cluster is: */
@@ -211,14 +211,14 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid root directory sector address (%d)\n", func_name, a_fatfs->rootsect);
         }
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     /* The number of directory entries in the root directory is not specified
      * in the exFAT boot sector. */
     a_fatfs->numroot = 0;
 
-    return EXFATFS_OK;
+    return FATFS_OK;
 }
 
 /**
@@ -248,7 +248,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
     assert(a_fatfs != NULL);
     
     if ((sector_buf = (char*)tsk_malloc(a_fatfs->ssize)) == NULL) {
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     // RJCTODO: Fix this. It is too brute force. Walk the root directory during layout discovery and store its data run 
@@ -267,7 +267,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
             }
             tsk_error_set_errstr2("%s: sector: %" PRIuDADDR, func_name, current_sector);
             free(sector_buf);
-            return EXFATFS_FAIL;
+            return FATFS_FAIL;
         }
 
         /* Read the directory entries in the sector, looking for allocation
@@ -294,7 +294,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
                 if (~(dentry->flags & 0x01)) {
                     first_sector_of_alloc_bitmap = FATFS_CLUST_2_SECT(a_fatfs, tsk_getu32(fs->endian, dentry->first_cluster_of_bitmap));
                     alloc_bitmap_length_in_bytes = tsk_getu64(fs->endian, dentry->length_of_alloc_bitmap_in_bytes);
-                    last_sector_of_alloc_bitmap = first_sector_of_alloc_bitmap + (alloc_bitmap_length_in_bytes / a_fatfs->ssize) - 1;
+                    last_sector_of_alloc_bitmap = first_sector_of_alloc_bitmap + (alloc_bitmap_length_in_bytes / a_fatfs->ssize) - 1; // RJCTODO: This computation is incorrect!
 
                     /* The allocation bitmap must lie within the boundaries of the data area. 
                      * It also must be big enough for the number of clusters reported in the VBR. */
@@ -305,7 +305,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
                         a_fatfs->EXFATFS_INFO.first_sector_of_alloc_bitmap = first_sector_of_alloc_bitmap; 
                         a_fatfs->EXFATFS_INFO.length_of_alloc_bitmap_in_bytes = alloc_bitmap_length_in_bytes;
                         free(sector_buf);
-                        return EXFATFS_OK;
+                        return FATFS_OK;
                     }
                 }
             }
@@ -313,7 +313,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
     }
     free(sector_buf);
 
-    return EXFATFS_FAIL;
+    return FATFS_FAIL;
 }
 
 /**
@@ -512,23 +512,23 @@ exfatfs_open(FATFS_INFO *a_fatfs)
 
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name)) {
-        return EXFATFS_FAIL; 
+        return FATFS_FAIL; 
     }
 
-    if (exfatfs_get_fs_size_params(a_fatfs) == EXFATFS_FAIL ||
-        exfatfs_get_fs_layout(a_fatfs) == EXFATFS_FAIL) {
-        return EXFATFS_FAIL; 
+    if (exfatfs_get_fs_size_params(a_fatfs) == FATFS_FAIL ||
+        exfatfs_get_fs_layout(a_fatfs) == FATFS_FAIL) {
+        return FATFS_FAIL; 
     }
 
-    if (exfatfs_get_fs_layout(a_fatfs) == EXFATFS_OK) {
+    if (exfatfs_get_fs_layout(a_fatfs) == FATFS_OK) {
         exfatfs_setup_fs_layout_model(a_fatfs);
     }
     else {
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
-    if (exfatfs_get_alloc_bitmap(a_fatfs) == EXFATFS_FAIL) {
-        return EXFATFS_FAIL;
+    if (exfatfs_get_alloc_bitmap(a_fatfs) == FATFS_FAIL) {
+        return FATFS_FAIL;
     }
 
     exfatfs_get_volume_id(a_fatfs);
@@ -538,7 +538,7 @@ exfatfs_open(FATFS_INFO *a_fatfs)
 
     fs->ftype = TSK_FS_TYPE_EXFAT;
 
-	return EXFATFS_OK;
+	return FATFS_OK;
 }
 
 /**
@@ -571,14 +571,14 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
         fatfs_ptr_arg_is_null(a_fs_file, "a_fs_file", func_name)) {
-        return EXFATFS_FAIL; 
+        return FATFS_FAIL; 
     }
 
     /* Allocate or reset the TSK_FS_META object. */
     if (a_fs_file->meta == NULL) {
         if ((a_fs_file->meta =
                 tsk_fs_meta_alloc(FATFS_FILE_CONTENT_LEN)) == NULL) {
-            return EXFATFS_FAIL;
+            return FATFS_FAIL;
         }
     }
     else {
@@ -587,7 +587,7 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
 
     /* Allocate a buffer for reading in sector-size chunks of the image. */
     if ((sector_buf = (char*)tsk_malloc(a_fatfs->ssize)) == NULL) {
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     // RJCTODO: Fix this. It is too brute force. Walk the root directory during layout discovery and store its data run 
@@ -606,13 +606,13 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
             }
             tsk_error_set_errstr2("%s: error reading sector: %" PRIuDADDR, func_name, current_sector);
             free(sector_buf);
-            return EXFATFS_FAIL;
+            return FATFS_FAIL;
         }
 
         /* Get the allocation status of the sector (yes, it should be allocated). */
         sector_is_alloc = fatfs_is_sectalloc(a_fatfs, current_sector);
         if (sector_is_alloc == -1) {
-            return EXFATFS_FAIL;
+            return FATFS_FAIL;
         }
 
         /* Get the inode address of the first directory entry of the sector. */
@@ -635,17 +635,17 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
                  * TSK_FS_FILE object and exit. */ 
                 if (exfatfs_dinode_copy(a_fatfs, current_inum, dentry, NULL, sector_is_alloc, 
                     a_fs_file) == TSK_OK) {
-                        return EXFATFS_OK;
+                        return FATFS_OK;
                 }
                 else {
-                    return EXFATFS_FAIL;
+                    return FATFS_FAIL;
                 }
             }
         }
     }
 
     free(sector_buf);
-    return EXFATFS_OK;
+    return FATFS_OK;
 }
 
 /**
@@ -671,11 +671,11 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
     exfatbs = (EXFATFS_MASTER_BOOT_REC*)&(fatfs->boot_sector_buffer);
 
     if ((fs_file = tsk_fs_file_alloc(a_fs)) == NULL) {
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     if ((fs_file->meta = tsk_fs_meta_alloc(FATFS_FILE_CONTENT_LEN)) == NULL) {
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     tsk_fprintf(a_hFile, "FILE SYSTEM INFORMATION\n");
@@ -706,7 +706,7 @@ exfatfs_fsstat_fs_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
 
     tsk_fs_file_close(fs_file);
 
-    return EXFATFS_OK;
+    return FATFS_OK;
 }
 
 /**
@@ -798,7 +798,7 @@ exfatfs_fsstat_fs_layout_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
         if (tsk_list_add(&root_dir_clusters_seen, next_cluster)) {
             tsk_list_free(root_dir_clusters_seen);
             root_dir_clusters_seen = NULL;
-            return EXFATFS_FAIL;
+            return FATFS_FAIL;
         }
 
         if (fatfs_getFAT(fatfs, next_cluster, &nxt)) {
@@ -820,7 +820,7 @@ exfatfs_fsstat_fs_layout_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
             (fatfs->firstclustsect + clust_heap_len), a_fs->last_block);
     }
 
-    return EXFATFS_OK;
+    return FATFS_OK;
 }
 
 /**
@@ -1000,20 +1000,20 @@ exfatfs_fsstat(TSK_FS_INFO *a_fs, FILE *a_hFile)
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fs, "a_fs", func_name) ||
         fatfs_ptr_arg_is_null(a_hFile, "a_hFile", func_name)) {
-        return EXFATFS_FAIL; 
+        return FATFS_FAIL; 
     }
 
     if (exfatfs_fsstat_fs_info(a_fs, a_hFile)) {
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     if (exfatfs_fsstat_fs_layout_info(a_fs, a_hFile)) {
-        return EXFATFS_FAIL;
+        return FATFS_FAIL;
     }
 
     exfatfs_fsstat_fs_metadata_info(a_fs, a_hFile);
     exfatfs_fsstat_fs_content_info(a_fs, a_hFile);
     exfatfs_fsstat_fs_fat_chains_info(a_fs, a_hFile);
 
-    return EXFATFS_OK;
+    return FATFS_OK;
 }

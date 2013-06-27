@@ -61,7 +61,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     int a;
     TSK_DADDR_T next, snext, sstart, send;
     FATFS_INFO *fatfs = (FATFS_INFO *) fs;
-    fatfs_sb *sb = (fatfs_sb*)fatfs->boot_sector_buffer;
+    FATXXFS_SB *sb = (FATXXFS_SB*)fatfs->boot_sector_buffer;
     char *data_buf;
     FATXXFS_DENTRY *de;
     ssize_t cnt;
@@ -154,10 +154,10 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     else {
 
         char *fat_fsinfo_buf;
-        fatfs_fsinfo *fat_info;
+        FATXXFS_FSINFO *fat_info;
 
         if ((fat_fsinfo_buf = (char *)
-                tsk_malloc(sizeof(fatfs_fsinfo))) == NULL) {
+                tsk_malloc(sizeof(FATXXFS_FSINFO))) == NULL) {
             free(data_buf);
             return 1;
         }
@@ -197,9 +197,9 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             cnt =
                 tsk_fs_read_block(fs, (TSK_DADDR_T) tsk_getu16(fs->endian,
                     sb->a.f32.fsinfo), fat_fsinfo_buf,
-                sizeof(fatfs_fsinfo));
+                sizeof(FATXXFS_FSINFO));
 
-            if (cnt != sizeof(fatfs_fsinfo)) {
+            if (cnt != sizeof(FATXXFS_FSINFO)) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -214,7 +214,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             }
 
 
-            fat_info = (fatfs_fsinfo *) fat_fsinfo_buf;
+            fat_info = (FATXXFS_FSINFO *) fat_fsinfo_buf;
             tsk_fprintf(hFile,
                 "Next Free Sector (FS Info): %" PRIuDADDR "\n",
                 FATFS_CLUST_2_SECT(fatfs, tsk_getu32(fs->endian,
@@ -435,7 +435,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
 {
     const char *func_name = "fatxxfs_open";
 	TSK_FS_INFO *fs = &(fatfs->fs_info);
-	fatfs_sb *fatsb = (fatfs_sb*)(&fatfs->boot_sector_buffer);
+	FATXXFS_SB *fatsb = (FATXXFS_SB*)(&fatfs->boot_sector_buffer);
 	int i = 0;
 	ssize_t cnt = 0;
     TSK_DADDR_T sectors = 0;
@@ -821,7 +821,6 @@ fatxxfs_open(FATFS_INFO *fatfs)
 }
 
 /* Return 1 if allocated, 0 if unallocated, and -1 if error */
-// RJCTODO: Can make static
 int8_t
 fatxxfs_is_cluster_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust)
 {
@@ -834,4 +833,3 @@ fatxxfs_is_cluster_alloc(FATFS_INFO *fatfs, TSK_DADDR_T clust)
     else
         return 1;
 }
-

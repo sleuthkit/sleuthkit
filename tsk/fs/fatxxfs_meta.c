@@ -18,7 +18,6 @@
 **
 */
 
-// RJCTODO: Update comments
 /**
  * \file fatxxfs.c
  * Contains the internal TSK FATXX (FAT12, FAT16, FAT32) file system code to 
@@ -27,6 +26,7 @@
  */
 
 #include "tsk_fatxxfs.h"
+#include <assert.h>
 
 /*
  * Identify if the dentry is a valid 8.3 name
@@ -41,8 +41,8 @@ is_83_name(FATXXFS_DENTRY * de)
 
     /* The IS_NAME macro will fail if the value is 0x05, which is only
      * valid in name[0], similarly with '.' */
-    if ((de->name[0] != FATFS_SLOT_E5) && (de->name[0] != '.') &&
-        (FATFS_IS_83_NAME(de->name[0]) == 0)) {
+    if ((de->name[0] != FATXXFS_SLOT_E5) && (de->name[0] != '.') &&
+        (FATXXFS_IS_83_NAME(de->name[0]) == 0)) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[0] is invalid\n");
         return 0;
@@ -63,53 +63,53 @@ is_83_name(FATXXFS_DENTRY * de)
             return 0;
         }
     }
-    else if (FATFS_IS_83_NAME(de->name[1]) == 0) {
+    else if (FATXXFS_IS_83_NAME(de->name[1]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[1] is invalid\n");
         return 0;
     }
 
-    if (FATFS_IS_83_NAME(de->name[2]) == 0) {
+    if (FATXXFS_IS_83_NAME(de->name[2]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[2] is invalid\n");
         return 0;
     }
-    else if (FATFS_IS_83_NAME(de->name[3]) == 0) {
+    else if (FATXXFS_IS_83_NAME(de->name[3]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[3] is invalid\n");
         return 0;
     }
-    else if (FATFS_IS_83_NAME(de->name[4]) == 0) {
+    else if (FATXXFS_IS_83_NAME(de->name[4]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[4] is invalid\n");
         return 0;
     }
-    else if (FATFS_IS_83_NAME(de->name[5]) == 0) {
+    else if (FATXXFS_IS_83_NAME(de->name[5]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[5] is invalid\n");
         return 0;
     }
-    else if (FATFS_IS_83_NAME(de->name[6]) == 0) {
+    else if (FATXXFS_IS_83_NAME(de->name[6]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[6] is invalid\n");
         return 0;
     }
-    else if (FATFS_IS_83_NAME(de->name[7]) == 0) {
+    else if (FATXXFS_IS_83_NAME(de->name[7]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: name[7] is invalid\n");
         return 0;
     }
-    else if (FATFS_IS_83_NAME(de->ext[0]) == 0) {
+    else if (FATXXFS_IS_83_NAME(de->ext[0]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: ext[0] is invalid\n");
         return 0;
     }
-    else if (FATFS_IS_83_NAME(de->ext[1]) == 0) {
+    else if (FATXXFS_IS_83_NAME(de->ext[1]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: ext[1] is invalid\n");
         return 0;
     }
-    else if (FATFS_IS_83_NAME(de->ext[2]) == 0) {
+    else if (FATXXFS_IS_83_NAME(de->ext[2]) == 0) {
         if (tsk_verbose)
             fprintf(stderr, "fatfs_is_83_name: ext[2] is invalid\n");
         return 0;
@@ -163,10 +163,10 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
     /* LFN have their own checks, which are pretty weak since most
      * fields are UTF16 */
     if ((dentry->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
-        fatfs_dentry_lfn *de_lfn = (fatfs_dentry_lfn*) dentry;
+        FATXXFS_DENTRY_LFN *de_lfn = (FATXXFS_DENTRY_LFN*) dentry;
 
-        if ((de_lfn->seq > (FATFS_LFN_SEQ_FIRST | 0x0f))
-            && (de_lfn->seq != FATFS_SLOT_DELETED)) {
+        if ((de_lfn->seq > (FATXXFS_LFN_SEQ_FIRST | 0x0f))
+            && (de_lfn->seq != FATXXFS_SLOT_DELETED)) {
             if (tsk_verbose)
                 fprintf(stderr, "%s: LFN seq\n", func_name);
             return 0;
@@ -177,7 +177,7 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
     else {
         // the basic test is only for the 'essential data'.
         if (a_do_basic_tests_only == 0) {
-            if (dentry->lowercase & ~(FATFS_CASE_LOWER_ALL)) {
+            if (dentry->lowercase & ~(FATXXFS_CASE_LOWER_ALL)) {
                 if (tsk_verbose)
                     fprintf(stderr, "%s: lower case all\n", func_name);
                 return 0;
@@ -251,8 +251,8 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
         }
 
         /* verify the starting cluster is small enough */
-        if ((FATFS_DENTRY_CLUST(fs, dentry) > (a_fatfs->lastclust)) &&
-            (FATFS_ISEOF(FATFS_DENTRY_CLUST(fs, dentry), a_fatfs->mask) == 0)) {
+        if ((FATXXFS_DENTRY_CLUST(fs, dentry) > (a_fatfs->lastclust)) &&
+            (FATFS_ISEOF(FATXXFS_DENTRY_CLUST(fs, dentry), a_fatfs->mask) == 0)) {
             if (tsk_verbose)
                 fprintf(stderr, "%s: start cluster\n", func_name);
             return 0;
@@ -267,7 +267,7 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
         }
 
         else if ((tsk_getu32(fs->endian, dentry->size) > 0)
-            && (FATFS_DENTRY_CLUST(fs, dentry) == 0)) {
+            && (FATXXFS_DENTRY_CLUST(fs, dentry) == 0)) {
             if (tsk_verbose)
                 fprintf(stderr,
                     "%s: non-zero size and NULL starting cluster\n", func_name);
@@ -283,7 +283,7 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
             && (tsk_getu16(fs->endian, dentry->cdate) == 0)
             && (tsk_getu16(fs->endian, dentry->adate) == 0)
             && (tsk_getu16(fs->endian, dentry->wdate) == 0)
-            && (FATFS_DENTRY_CLUST(fs, dentry) == 0)
+            && (FATXXFS_DENTRY_CLUST(fs, dentry) == 0)
             && (tsk_getu32(fs->endian, dentry->size) == 0)) {
             if (tsk_verbose)
                 fprintf(stderr,
@@ -367,16 +367,12 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
         return TSK_ERR;
     }
     else if (retval == 1) {
-        flags = ((dentry->name[0] == FATFS_SLOT_DELETED) ?
+        flags = ((dentry->name[0] == FATXXFS_SLOT_DELETED) ?
             TSK_FS_META_FLAG_UNALLOC : TSK_FS_META_FLAG_ALLOC);
     }
     else {
         flags = TSK_FS_META_FLAG_UNALLOC;
     }
-
-    /* Slot has not been used yet */
-    flags |= ((dentry->name[0] == FATFS_SLOT_EMPTY) ?
-        TSK_FS_META_FLAG_UNUSED : TSK_FS_META_FLAG_USED);
     fs_meta->flags = (TSK_FS_META_FLAG_ENUM)flags;
 
     if ((dentry->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
@@ -392,7 +388,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
     }
     else {
         /* There is no notion of link in FAT, just deleted or not */
-        fs_meta->nlink = (dentry->name[0] == FATFS_SLOT_DELETED) ? 0 : 1;
+        fs_meta->nlink = (dentry->name[0] == FATXXFS_SLOT_DELETED) ? 0 : 1;
         fs_meta->size = (TSK_OFF_T) tsk_getu32(fs->endian, dentry->size);
 
         /* If these are valid dates, then convert to a unix date format */
@@ -450,7 +446,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
      * parts of the name to UTF-8 and copy it into the name structure .
      */
     if ((dentry->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
-        fatfs_dentry_lfn *lfn = (fatfs_dentry_lfn *) dentry;
+        FATXXFS_DENTRY_LFN *lfn = (FATXXFS_DENTRY_LFN *) dentry;
 
         /* Convert the first part of the name */
         UTF8 *name8 = (UTF8 *) fs_meta->name2->name;
@@ -548,9 +544,9 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
     else {
         for (i = 0; (i < 8) && (dentry->name[i] != 0) && (dentry->name[i] != ' ');
             i++) {
-            if ((i == 0) && (dentry->name[0] == FATFS_SLOT_DELETED))
+            if ((i == 0) && (dentry->name[0] == FATXXFS_SLOT_DELETED))
                 fs_meta->name2->name[0] = '_';
-            else if ((dentry->lowercase & FATFS_CASE_LOWER_BASE) &&
+            else if ((dentry->lowercase & FATXXFS_CASE_LOWER_BASE) &&
                 (dentry->name[i] >= 'A') && (dentry->name[i] <= 'Z'))
                 fs_meta->name2->name[i] = dentry->name[i] + 32;
             else
@@ -563,7 +559,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
             for (a = 0;
                 (a < 3) && (dentry->ext[a] != 0) && (dentry->ext[a] != ' ');
                 a++, i++) {
-                if ((dentry->lowercase & FATFS_CASE_LOWER_EXT)
+                if ((dentry->lowercase & FATXXFS_CASE_LOWER_EXT)
                     && (dentry->ext[a] >= 'A') && (dentry->ext[a] <= 'Z'))
                     fs_meta->name2->name[i] = dentry->ext[a] + 32;
                 else
@@ -579,7 +575,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
         fatfs_cleanup_ascii(fs_meta->name2->name);
     }
 
-    /* Clean up name to remove control characters */ // RJCTODO: Haven't I seen this elsewhere, in the UTF-16 strcpy?
+    /* Clean up name to remove control characters */
     i = 0;
     while (fs_meta->name2->name[i] != '\0') {
         if (TSK_IS_CNTRL(fs_meta->name2->name[i]))
@@ -593,7 +589,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
         addr_ptr[0] = 0;
     }
     else {
-        addr_ptr[0] = FATFS_DENTRY_CLUST(fs, dentry) & fatfs->mask;
+        addr_ptr[0] = FATXXFS_DENTRY_CLUST(fs, dentry) & fatfs->mask;
     }
 
     /* FAT does not store a size for its directories so make one based
@@ -605,7 +601,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
             TSK_LIST *list_seen = NULL;
 
             /* count the total number of clusters in this file */
-            TSK_DADDR_T clust = FATFS_DENTRY_CLUST(fs, dentry);
+            TSK_DADDR_T clust = FATXXFS_DENTRY_CLUST(fs, dentry);
             int cnum = 0;
 
             while ((clust) && (0 == FATFS_ISEOF(clust, fatfs->mask))) {
@@ -646,7 +642,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
          * directory */
         else {
             // if the first cluster is allocated, then set size to be 0
-            if (fatxxfs_is_cluster_alloc(fatfs, FATFS_DENTRY_CLUST(fs,
+            if (fatxxfs_is_cluster_alloc(fatfs, FATXXFS_DENTRY_CLUST(fs,
                         dentry)) == 1)
                 fs_meta->size = 0;
             else
@@ -798,12 +794,20 @@ fatxxfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
     int a_cluster_is_alloc)
 {
-    FATXXFS_DENTRY *dentry = NULL;
+    const char *func_name = "fatxxfs_inode_walk_should_skip_dentry";
+    FATXXFS_DENTRY *dentry = (FATXXFS_DENTRY*)a_dentry;
     unsigned int dentry_flags = 0;
-    TSK_FS_INFO *fs = NULL;
-    // RJCTODO: Insert arg check 
 
-    dentry = (FATXXFS_DENTRY*)a_dentry;
+    assert(a_fatfs != NULL);
+    assert(fatfs_inum_is_in_range(a_fatfs, a_inum));
+    assert(a_dentry != NULL);
+
+    tsk_error_reset();
+    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
+        !fatfs_inum_arg_is_in_range(a_fatfs, a_inum, func_name) ||
+        fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 1; 
+    }
 
     /* If this is a long file name entry, then skip it and
      * wait for the short name. */
@@ -823,7 +827,7 @@ fatxxfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
      * the file. This is necessary because when a directory is deleted, its 
      * contents are not always marked as unallocated. */
     if (a_cluster_is_alloc == 1) {
-        dentry_flags = (dentry->name[0] == FATFS_SLOT_DELETED ? 
+        dentry_flags = (dentry->name[0] == FATXXFS_SLOT_DELETED ? 
             TSK_FS_META_FLAG_UNALLOC : TSK_FS_META_FLAG_ALLOC);
     }
     else {
@@ -834,18 +838,9 @@ fatxxfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         return 1;
     }
 
-    /* Has this directory entry (slot) been used? */
-    dentry_flags |= (dentry->name[0] == FATFS_SLOT_EMPTY ?
-        TSK_FS_META_FLAG_UNUSED : TSK_FS_META_FLAG_USED);
-
-    if ((a_selection_flags & dentry_flags) != dentry_flags) {
-        return 1;
-    }
-
-    // RJCTODO: Correct this comment
-    /* If the processing flags call for only processing orphan 
-        * files, check whether or not this inode is in the seen 
-        * list.*/
+    /* If the processing flags call for only processing orphan files, check 
+     * whether or not this inode is in list of non-orphan files found via name
+     * walk. */
     if ((dentry_flags & TSK_FS_META_FLAG_UNALLOC) &&
         (a_selection_flags & TSK_FS_META_FLAG_ORPHAN) &&
         (tsk_fs_dir_find_inum_named(&(a_fatfs->fs_info), a_inum))) {
