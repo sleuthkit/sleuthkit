@@ -169,7 +169,7 @@ extern "C" {
 
     extern TSK_RETVAL_ENUM
     fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_FS_META *a_fs_meta,
-        FATFS_DENTRY *a_dentry, TSK_DADDR_T a_sect, TSK_INUM_T a_inum);
+        FATFS_DENTRY *a_dentry, uint8_t a_cluster_is_alloc, TSK_INUM_T a_inum);
 
     extern uint8_t
     fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,

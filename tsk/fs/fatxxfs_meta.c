@@ -332,10 +332,9 @@ attr2mode(uint16_t attr)
 
 TSK_RETVAL_ENUM
 fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
-    FATFS_DENTRY *a_dentry, TSK_DADDR_T sect, TSK_INUM_T inum)
+    FATFS_DENTRY *a_dentry, uint8_t a_cluster_is_alloc, TSK_INUM_T inum)
 {
     const char *func_name = "fatxxfs_dinode_copy";
-    int retval;
     int i;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
     FATXXFS_DENTRY *dentry = (FATXXFS_DENTRY*)a_dentry;
@@ -360,13 +359,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
 
     fs_meta->addr = inum;
 
-    /* Use the allocation status of the sector to determine if the
-     * dentry is allocated or not */
-    retval = fatfs_is_sectalloc(fatfs, sect);
-    if (retval == -1) {
-        return TSK_ERR;
-    }
-    else if (retval == 1) {
+    if (a_cluster_is_alloc) {
         flags = ((dentry->name[0] == FATXXFS_SLOT_DELETED) ?
             TSK_FS_META_FLAG_UNALLOC : TSK_FS_META_FLAG_ALLOC);
     }
@@ -718,7 +711,7 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         return 1;
     }
 
-    copy_result = fatxxfs_dinode_copy(a_fatfs, a_fs_file->meta, &dentry, sector, 
+    copy_result = fatxxfs_dinode_copy(a_fatfs, a_fs_file->meta, &dentry, (uint8_t)sector_alloc_status, 
         a_inum);
     if (copy_result == TSK_OK) {
         return 0;

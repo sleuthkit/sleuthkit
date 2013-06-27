@@ -1430,7 +1430,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                     retval2 = exfatfs_dinode_copy(fatfs, inum, dep, cluster_is_alloc, fs_file); 
                 }
                 else {
-                    retval2 = fatxxfs_dinode_copy(fatfs, fs_file->meta, dep, sect, inum);
+                    retval2 = fatxxfs_dinode_copy(fatfs, fs_file->meta, dep, cluster_is_alloc, inum);
                 }
 
                 if (retval2 != TSK_OK) {

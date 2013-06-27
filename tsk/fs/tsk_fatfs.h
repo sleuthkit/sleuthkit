@@ -168,6 +168,8 @@ extern "C" {
 #endif
     typedef struct FATFS_INFO FATFS_INFO; 
 
+    // RJCTODO: Use of this through out would allow addition of an ERR status
+    // and would make use of the is_alloc functions cleaner.
     enum FATFS_DATA_UNIT_ALLOC_STATUS_ENUM {
         FATFS_DATA_UNIT_ALLOC_STATUS_UNALLOC = 0,
         FATFS_DATA_UNIT_ALLOC_STATUS_ALLOC = 1,
