@@ -331,12 +331,13 @@ attr2mode(uint16_t attr)
 }
 
 TSK_RETVAL_ENUM
-fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
-    FATFS_DENTRY *a_dentry, uint8_t a_cluster_is_alloc, TSK_INUM_T inum)
+fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+    FATFS_DENTRY *a_dentry, uint8_t a_cluster_is_alloc, TSK_FS_FILE *a_fs_file)
 {
     const char *func_name = "fatxxfs_dinode_copy";
     int i;
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
+    TSK_FS_INFO *fs = (TSK_FS_INFO *) & a_fatfs->fs_info;
+    TSK_FS_META *fs_meta = a_fs_file->meta;
     FATXXFS_DENTRY *dentry = (FATXXFS_DENTRY*)a_dentry;
     TSK_DADDR_T *addr_ptr;
     uint32_t flags = 0;
@@ -357,7 +358,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
     fs_meta->mode = (TSK_FS_META_MODE_ENUM)attr2mode(dentry->attrib);
     fs_meta->type = attr2type(dentry->attrib);
 
-    fs_meta->addr = inum;
+    fs_meta->addr = a_inum;
 
     if (a_cluster_is_alloc) {
         flags = ((dentry->name[0] == FATXXFS_SLOT_DELETED) ?
@@ -582,7 +583,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
         addr_ptr[0] = 0;
     }
     else {
-        addr_ptr[0] = FATXXFS_DENTRY_CLUST(fs, dentry) & fatfs->mask;
+        addr_ptr[0] = FATXXFS_DENTRY_CLUST(fs, dentry) & a_fatfs->mask;
     }
 
     /* FAT does not store a size for its directories so make one based
@@ -597,7 +598,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
             TSK_DADDR_T clust = FATXXFS_DENTRY_CLUST(fs, dentry);
             int cnum = 0;
 
-            while ((clust) && (0 == FATFS_ISEOF(clust, fatfs->mask))) {
+            while ((clust) && (0 == FATFS_ISEOF(clust, a_fatfs->mask))) {
                 TSK_DADDR_T nxt;
 
                 /* Make sure we do not get into an infinite loop */
@@ -615,7 +616,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
 
                 cnum++;
 
-                if (fatfs_getFAT(fatfs, clust, &nxt))
+                if (fatfs_getFAT(a_fatfs, clust, &nxt))
                     break;
                 else
                     clust = nxt;
@@ -625,7 +626,7 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
             list_seen = NULL;
 
             fs_meta->size =
-                (TSK_OFF_T) ((cnum * fatfs->csize) << fatfs->ssize_sh);
+                (TSK_OFF_T) ((cnum * a_fatfs->csize) << a_fatfs->ssize_sh);
         }
         /* if the dir is unallocated, then assume 0 or cluster size
          * Ideally, we would have a smart algo here to do recovery
@@ -635,11 +636,11 @@ fatxxfs_dinode_copy(FATFS_INFO *fatfs, TSK_FS_META *fs_meta,
          * directory */
         else {
             // if the first cluster is allocated, then set size to be 0
-            if (fatxxfs_is_cluster_alloc(fatfs, FATXXFS_DENTRY_CLUST(fs,
+            if (fatxxfs_is_cluster_alloc(a_fatfs, FATXXFS_DENTRY_CLUST(fs,
                         dentry)) == 1)
                 fs_meta->size = 0;
             else
-                fs_meta->size = fatfs->csize << fatfs->ssize_sh;
+                fs_meta->size = a_fatfs->csize << a_fatfs->ssize_sh;
         }
     }
 
@@ -711,8 +712,7 @@ fatxxfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
         return 1;
     }
 
-    copy_result = fatxxfs_dinode_copy(a_fatfs, a_fs_file->meta, &dentry, (uint8_t)sector_alloc_status, 
-        a_inum);
+    copy_result = fatxxfs_dinode_copy(a_fatfs, a_inum, &dentry, (uint8_t)sector_alloc_status, a_fs_file);
     if (copy_result == TSK_OK) {
         return 0;
     }

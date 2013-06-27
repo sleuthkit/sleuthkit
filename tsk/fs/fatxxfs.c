@@ -807,6 +807,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
 
     fatfs->is_cluster_alloc = fatxxfs_is_cluster_alloc;
     fatfs->is_dentry = fatxxfs_is_dentry;
+    fatfs->dinode_copy =  fatxxfs_dinode_copy;
     fatfs->inode_lookup = fatxxfs_inode_lookup;
     fatfs->inode_walk_should_skip_dentry = fatxxfs_inode_walk_should_skip_dentry;
     fatfs->istat_attr_flags = fatxxfs_istat_attr_flags;

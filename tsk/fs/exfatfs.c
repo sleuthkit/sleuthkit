@@ -500,6 +500,7 @@ exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
     /* Specialization for exFAT functions. */
     a_fatfs->is_cluster_alloc = exfatfs_is_cluster_alloc;
     a_fatfs->is_dentry = exfatfs_is_dentry;
+    a_fatfs->dinode_copy =  exfatfs_dinode_copy;
     a_fatfs->inode_lookup = exfatfs_inode_lookup;
     a_fatfs->inode_walk_should_skip_dentry = exfatfs_inode_walk_should_skip_dentry;
     a_fatfs->istat_attr_flags = exfatfs_istat_attr_flags;

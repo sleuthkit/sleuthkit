@@ -264,6 +264,9 @@ extern "C" {
             TSK_FS_DIR *a_fs_dir, char *a_buf, TSK_OFF_T a_buf_len, 
             TSK_DADDR_T *a_sector_addrs);
 
+        TSK_RETVAL_ENUM (*dinode_copy)(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
+            FATFS_DENTRY *a_dentry, uint8_t a_cluster_is_alloc, TSK_FS_FILE *a_fs_file);
+
         // RJCTODO: Consider wrapping this struct around FATFS_INFO. The original plan was to make a union of
         // FATXX- and exFAT-specific members, but it turns out that all of the additions are exFAT only.
         struct {

@@ -1417,21 +1417,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                     continue;
                 }
 
-                // RJCTODO: Eliminate this branch. For notes on how to do so, see the beginning of exfatfs_meta.c.
-                /* Copy the directory entry data into the inode structure for the callback. Also note that bombing out
-                 * because the stream entry is not found is perhaps too strict a way to go, not in accord with finding 
-                 * the most data that we can. */
-                if (a_fs->ftype == TSK_FS_TYPE_EXFAT) {
-                    /* For the purposes of inode lookup, the file and file stream entries 
-                     * that begin a file entry set are mapped to a single inode. Thus,  
-                     * file stream entries are not treated as independent inodes and when 
-                     * a file entry is found, the companion file stream entry needs to be 
-                     * found. */
-                    retval2 = exfatfs_dinode_copy(fatfs, inum, dep, cluster_is_alloc, fs_file); 
-                }
-                else {
-                    retval2 = fatxxfs_dinode_copy(fatfs, fs_file->meta, dep, cluster_is_alloc, inum);
-                }
+                retval2 = fatfs->dinode_copy(fatfs, inum, dep, cluster_is_alloc, fs_file);
 
                 if (retval2 != TSK_OK) {
                     if (retval2 == TSK_COR) {
