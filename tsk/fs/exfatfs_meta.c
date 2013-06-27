@@ -125,12 +125,11 @@ exfatfs_is_cluster_alloc(FATFS_INFO *a_fatfs, TSK_DADDR_T a_cluster_addr)
  * @param [in] a_dentry A directory entry buffer.
  * @param [in] a_alloc_status The allocation status, possibly unknown, of the 
  * cluster from which the buffer was filled. 
- * @param [in] a_do_basic_tests_only Whether to do basic or in-depth testing. 
  * @returns 1 if the directory entry buffer likely contains a volume label 
  * directory entry, 0 otherwise. 
  */
 uint8_t
-exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, uint8_t a_do_basic_tests_only)
+exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc)
 {
     const char *func_name = "exfatfs_is_vol_label_dentry";
     EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_dentry;
@@ -190,89 +189,118 @@ exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS
 
 /**
  * \internal
- * Determine whether the contents of a 32 byte buffer are likely to be an
- * exFAT volume GUID directory entry.
+ * Determine whether the contents of a buffer may be an exFAT volume GUID
+ * directory entry.
  *
- * @param [in] a_fatfs Source file system for the directory entry.
- * @param [in] a_dentry Buffer that may contain a directory entry.
- * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
- * @returns EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID or EXFATFS_DIR_ENTRY_TYPE_NONE
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_alloc_status The allocation status, possibly unknown, of the 
+ * cluster from which the buffer was filled. 
+ * @returns 1 if the directory entry buffer likely contains a volume GUID 
+ * directory entry, 0 otherwise. 
  */
-EXFATFS_DIR_ENTRY_TYPE_ENUM
-exfatfs_is_vol_guid_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only) // RJCTODO: Update comments, consider DONT_KNOW option...
+uint8_t
+exfatfs_is_vol_guid_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status)
 {
-    assert(a_fatfs != NULL);
+    const char *func_name = "exfatfs_is_vol_guid_dentry";
+    EXFATFS_VOL_GUID_DIR_ENTRY *dentry = (EXFATFS_VOL_GUID_DIR_ENTRY*)a_dentry;
+    
     assert(a_dentry != NULL);
+    if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 0;
+    }
 
-    /* There is not enough data in a volume GUID directory entry
-     * to test anything but the entry type byte. */
-    if (a_sector_is_alloc) {
-        return (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
+    /* Check the entry type byte. */
+    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID) {
+        return 0;
     }
-    else {
-        return EXFATFS_DIR_ENTRY_TYPE_NONE;
-    }
+
+    /* There is not enough data in a volume GUID directory entry to test
+     * anything but the entry type byte. However, a volume GUID directory 
+     * entry should be in allocated space, so check the allocation status, if
+     * known, of the cluster from which the buffer was filled to reduce false
+     * positives. */
+    return ((a_alloc_status == FATFS_DATA_UNIT_ALLOC_STATUS_ALLOC) ||
+            (a_alloc_status == FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN));
 }
 
 /**
  * \internal
- * Determine whether the contents of a 32 byte buffer are likely to be an
- * exFAT allocation bitmap directory entry.
+ * Determine whether the contents of a buffer may be an exFAT allocation bitmap
+ * directory entry. The test will be more reliable if an optional FATFS_INFO 
+ * struct representing the file system is provided.
  *
- * @param [in] a_fatfs Source file system for the directory entry.
- * @param [in] a_dentry Buffer that may contain a directory entry.
- * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
- * @returns EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP or EXFATFS_DIR_ENTRY_TYPE_NONE
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_alloc_status The allocation status, possibly unknown, of the 
+ * cluster from which the buffer was filled. 
+ * @param [in] a_fatfs A FATFS_INFO struct representing an exFAT file system,
+ * may be NULL.
+ * @returns 1 if the directory entry buffer likely contains an allocation 
+ * bitmap directory entry, 0 otherwise. 
  */
-EXFATFS_DIR_ENTRY_TYPE_ENUM
-exfatfs_is_alloc_bitmap_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry,  uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only)
+uint8_t
+exfatfs_is_alloc_bitmap_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status, FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_is_alloc_bitmap_dentry";
-    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     EXFATFS_ALLOC_BITMAP_DIR_ENTRY *dentry = (EXFATFS_ALLOC_BITMAP_DIR_ENTRY*)a_dentry;
     uint32_t first_cluster_of_bitmap = 0;
     uint64_t length_of_alloc_bitmap_in_bytes = 0;
 
-    tsk_error_reset();
-    if (fatfs_ptr_arg_is_null(a_fatfs, "a_fatfs", func_name) ||
-        fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
-        return EXFATFS_DIR_ENTRY_TYPE_NONE;
+    assert(a_dentry != NULL);
+    if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 0;
     }
 
-    /* The length of the allocation bitmap should be consistent with the 
-     * number of clusters in the data area as specified in the volume boot
-     * record. */
-    length_of_alloc_bitmap_in_bytes = tsk_getu64(fs->endian, dentry->length_of_alloc_bitmap_in_bytes);
-    if (length_of_alloc_bitmap_in_bytes != (a_fatfs->clustcnt + 7) / 8) {
-        if (tsk_verbose) {
-            fprintf(stderr, "%s: bitmap length incorrect\n", func_name);
+    /* Check the entry type byte. */
+    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
+        return 0;
+    }
+
+    /* There should be a single allocation bitmap directory entry near the the
+     * beginning of the root directory, so check the allocation status, if 
+     * known, of the cluster from which the buffer was filled. */
+    if (a_alloc_status == FATFS_DATA_UNIT_ALLOC_STATUS_UNALLOC) {
+        return 0;
+    }
+
+    if (a_fatfs != NULL) {
+        /* The length of the allocation bitmap should be consistent with the 
+         * number of clusters in the data area as specified in the volume boot
+         * record. */
+        length_of_alloc_bitmap_in_bytes = tsk_getu64(a_fatfs->fs_info.endian, dentry->length_of_alloc_bitmap_in_bytes);
+        if (length_of_alloc_bitmap_in_bytes != (a_fatfs->clustcnt + 7) / 8) {
+            if (tsk_verbose) {
+                fprintf(stderr, "%s: bitmap length incorrect\n", func_name);
+            }
+            return 0;
         }
-        return EXFATFS_DIR_ENTRY_TYPE_NONE;
-    }
 
-    /* The first cluster of the bit map should be within the data area.
-     * It is usually in the first cluster. */
-    first_cluster_of_bitmap = tsk_getu32(fs->endian, dentry->first_cluster_of_bitmap);
-    if ((first_cluster_of_bitmap < EXFATFS_FIRST_CLUSTER) ||
-        (first_cluster_of_bitmap > a_fatfs->lastclust)) {
-        if (tsk_verbose) {
-            fprintf(stderr, "%s: first cluster not in cluster heap\n", func_name);
+        /* The first cluster of the bit map should be within the data area.
+         * It is usually in the first cluster. */
+        first_cluster_of_bitmap = tsk_getu32(a_fatfs->fs_info.endian, dentry->first_cluster_of_bitmap);
+        if ((first_cluster_of_bitmap < EXFATFS_FIRST_CLUSTER) ||
+            (first_cluster_of_bitmap > a_fatfs->lastclust)) {
+            if (tsk_verbose) {
+                fprintf(stderr, "%s: first cluster not in cluster heap\n", func_name);
+            }
+            return 0;
         }
-        return EXFATFS_DIR_ENTRY_TYPE_NONE;
-    }
-
-    if (!a_do_basic_test_only) {
-        /* The first cluster of the allocation bitmap should be allocated. */
-        if (exfatfs_is_cluster_alloc(a_fatfs, (TSK_DADDR_T)first_cluster_of_bitmap) != 1) {
+        
+        /* The first cluster of the allocation bitmap should be allocated (the 
+         * other conditions allow this function to be safely used to look for
+         * the allocation bitmap during FATFS_INFO initialization, before a 
+         * cluster allocation is possible). */
+        if ((a_fatfs->EXFATFS_INFO.first_sector_of_alloc_bitmap > 0) &&
+            (a_fatfs->EXFATFS_INFO.length_of_alloc_bitmap_in_bytes > 0) &&
+            (exfatfs_is_cluster_alloc(a_fatfs, (TSK_DADDR_T)first_cluster_of_bitmap) != 1)) {
             if (tsk_verbose) {
                 fprintf(stderr, 
                     "%s: first cluster of allocation bitmap not allocated\n", func_name);
             }
-            return EXFATFS_DIR_ENTRY_TYPE_NONE;
+            return 0;
         }
     }
 
-    return (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
+    return 1;
 }
 
 /**
@@ -557,11 +585,11 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
     case EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL:
-        return exfatfs_is_vol_label_dentry(a_dentry, a_cluster_is_alloc, a_do_basic_tests_only);
+        return exfatfs_is_vol_label_dentry(a_dentry, a_cluster_is_alloc);
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
-        return exfatfs_is_vol_guid_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
+        return exfatfs_is_vol_guid_dentry(a_dentry, a_cluster_is_alloc);
     case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
-        return exfatfs_is_alloc_bitmap_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
+        return exfatfs_is_alloc_bitmap_dentry(a_dentry, a_cluster_is_alloc, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
         return exfatfs_is_upcase_table_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
     case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
