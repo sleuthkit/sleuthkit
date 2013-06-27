@@ -353,9 +353,9 @@ extern "C" {
     exfatfs_is_alloc_bitmap_dentry(FATFS_DENTRY *a_dentry, 
         FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status, FATFS_INFO *a_fatfs);
 
-    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
-    exfatfs_is_upcase_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-         uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
+    extern uint8_t
+    exfatfs_is_upcase_table_dentry(FATFS_DENTRY *a_dentry, 
+        FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status, FATFS_INFO *a_fatfs);
 
     extern EXFATFS_DIR_ENTRY_TYPE_ENUM
     exfatfs_is_tex_fat_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 

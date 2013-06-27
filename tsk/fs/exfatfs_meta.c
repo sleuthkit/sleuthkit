@@ -305,71 +305,87 @@ exfatfs_is_alloc_bitmap_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STA
 
 /**
  * \internal
- * Determine whether the contents of a 32 byte buffer are likely to be an
- * exFAT UP-Case table directory entry.
+ * Determine whether the contents of a buffer may be an exFAT upcase table
+ * directory entry. The test will be more reliable if an optional FATFS_INFO 
+ * struct representing the file system is provided.
  *
- * @param [in] a_fatfs Source file system for the directory entry.
- * @param [in] a_dentry Buffer that may contain a directory entry.
- * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
- * @returns EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE or EXFATFS_DIR_ENTRY_TYPE_NONE
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_alloc_status The allocation status, possibly unknown, of the 
+ * cluster from which the buffer was filled. 
+ * @param [in] a_fatfs A FATFS_INFO struct representing an exFAT file system,
+ * may be NULL.
+ * @returns 1 if the directory entry buffer likely contains an upcase table 
+ * directory entry, 0 otherwise. 
  */
-EXFATFS_DIR_ENTRY_TYPE_ENUM
-exfatfs_is_upcase_table_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry,  uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only)
+uint8_t
+exfatfs_is_upcase_table_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status, FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_is_upcase_table_dentry";
-    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     EXFATFS_UPCASE_TABLE_DIR_ENTRY *dentry = (EXFATFS_UPCASE_TABLE_DIR_ENTRY*)a_dentry;
     uint64_t table_size = 0;
     uint32_t first_cluster_of_table = 0;
 
-    assert(a_fatfs != NULL);
     assert(a_dentry != NULL);
-
-    /* Check the size and the first cluster address. */
-    table_size = tsk_getu64(fs->endian, dentry->table_length_in_bytes);
-    first_cluster_of_table = tsk_getu32(fs->endian, dentry->first_cluster_of_table);
-
-    if (table_size == 0) {
-        if (tsk_verbose) {
-            fprintf(stderr, "%s: table size is zero\n", func_name);
-        }
-        return EXFATFS_DIR_ENTRY_TYPE_NONE;
+    if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 0;
     }
 
-    /* Is the table size less than the size of the cluster heap 
-     * (data area)? The cluster heap size is computed by multiplying the
-     * cluster size by the number of sectors in a cluster and then 
-     * multiplying by the number of bytes in a sector (the last operation 
-     * is optimized as a left shift by the base 2 log of sector size). */
-    if (table_size > (a_fatfs->clustcnt * a_fatfs->csize) << a_fatfs->ssize_sh) {
-        if (tsk_verbose) {
-            fprintf(stderr, "%s: table size too big\n", func_name);
-        }
-        return EXFATFS_DIR_ENTRY_TYPE_NONE;
+    /* Check the entry type byte. */
+    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE) {
+        return 0;
     }
 
-    /* Is the address of the first cluster in range? */
-    if ((first_cluster_of_table < EXFATFS_FIRST_CLUSTER) ||
-        (first_cluster_of_table > a_fatfs->lastclust)) {
-        if (tsk_verbose) {
-            fprintf(stderr, 
-                "%s: first cluster not in cluster heap\n", func_name);
-        }
-        return EXFATFS_DIR_ENTRY_TYPE_NONE;
+    /* There should be a single upcase table directory entry near the the
+     * beginning of the root directory, so check the allocation status, if 
+     * known, of the cluster from which the buffer was filled. */
+    if (a_alloc_status == FATFS_DATA_UNIT_ALLOC_STATUS_UNALLOC) {
+        return 0;
     }
 
-    if (!a_do_basic_test_only) {
+    if (a_fatfs != NULL) {
+        /* Check the size of the table. */
+        table_size = tsk_getu64(a_fatfs->fs_info.endian, dentry->table_length_in_bytes);
+        if (table_size == 0) {
+            if (tsk_verbose) {
+                fprintf(stderr, "%s: table size is zero\n", func_name);
+            }
+            return 0;
+        }
+
+        /* Is the table size less than the size of the cluster heap 
+         * (data area)? The cluster heap size is computed by multiplying the
+         * cluster size by the number of sectors in a cluster and then 
+         * multiplying by the number of bytes in a sector (the last operation 
+         * is optimized as a left shift by the base 2 log of sector size). */
+        if (table_size > (a_fatfs->clustcnt * a_fatfs->csize) << a_fatfs->ssize_sh) {
+            if (tsk_verbose) {
+                fprintf(stderr, "%s: table size too big\n", func_name);
+            }
+            return 0;
+        }
+
+        /* Is the address of the first cluster in range? */
+        first_cluster_of_table = tsk_getu32(a_fatfs->fs_info.endian, dentry->first_cluster_of_table);
+        if ((first_cluster_of_table < EXFATFS_FIRST_CLUSTER) ||
+            (first_cluster_of_table > a_fatfs->lastclust)) {
+            if (tsk_verbose) {
+                fprintf(stderr, 
+                    "%s: first cluster not in cluster heap\n", func_name);
+            }
+            return 0;
+        }
+
         /* The first cluster of the table should be allocated. */
         if (exfatfs_is_cluster_alloc(a_fatfs, (TSK_DADDR_T)first_cluster_of_table) != 1) {
             if (tsk_verbose) {
                 fprintf(stderr, 
                     "%s: first cluster of table not allocated\n", func_name);
             }
-            return EXFATFS_DIR_ENTRY_TYPE_NONE;
+            return 0;
         }
     }
 
-    return (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
+    return 1;
 }
 
 /**
@@ -591,7 +607,7 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
     case EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP:
         return exfatfs_is_alloc_bitmap_dentry(a_dentry, a_cluster_is_alloc, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE:
-        return exfatfs_is_upcase_table_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
+        return exfatfs_is_upcase_table_dentry(a_dentry, a_cluster_is_alloc, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_TEX_FAT:
         return exfatfs_is_tex_fat_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
