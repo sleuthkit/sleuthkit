@@ -462,144 +462,175 @@ exfatfs_is_access_ctrl_table_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLO
 
 /**
  * \internal
- * Determine whether the contents of a 32 byte buffer are likely to be an
- * exFAT file directory entry.
+ * Determine whether the contents of a buffer may be an exFAT file directory 
+ * entry. The test will be more reliable if an optional FATFS_INFO struct 
+ * representing the file system is provided.
  *
- * @param [in] a_fatfs Source file system for the directory entry.
- * @param [in] a_dentry Buffer that may contain a directory entry.
- * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
- * @returns EXFATFS_DIR_ENTRY_TYPE_FILE or EXFATFS_DIR_ENTRY_TYPE_NONE
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_fatfs A FATFS_INFO struct representing an exFAT file system,
+ * may be NULL.
+ * @returns 1 if the directory entry buffer likely contains a file directory 
+ * entry, 0 otherwise. 
  */
-EXFATFS_DIR_ENTRY_TYPE_ENUM
-exfatfs_is_file_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry,  uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only)
+uint8_t
+exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_is_file_dentry";
-    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    TSK_FS_INFO *fs = NULL;
     EXFATFS_FILE_DIR_ENTRY *dentry = (EXFATFS_FILE_DIR_ENTRY*)a_dentry;
 
-    assert(a_fatfs != NULL);
     assert(a_dentry != NULL);
+    if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 0;
+    }
 
+    /* Check the entry type byte. */
+    if ((dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_FILE) && 
+        (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE)) {
+        return 0;
+    }
+
+    /* A file directory entry is the first entry of a file directory entry set
+     * consisting of a file directory entry followed by a file stream directory
+     * entry and from 1 to 17 file name directory entries. The file stream and
+     * file name entries are called secondary entries. */
     if (dentry->secondary_entries_count < EXFATFS_MIN_FILE_SECONDARY_DENTRIES_COUNT ||
         dentry->secondary_entries_count > EXFATFS_MAX_FILE_SECONDARY_DENTRIES_COUNT) {
         if (tsk_verbose) {
             fprintf(stderr, "%s: secondary entries count out of range\n", 
                 func_name);
         }
-        return EXFATFS_DIR_ENTRY_TYPE_NONE;
+        return 0;
     }
 
-    /* Make sure the time stamps aren't all zeros. */
-    // RJCTODO: Is this a valid test for exFAT?
-    if ((tsk_getu16(fs->endian, dentry->modified_date) == 0) &&
-        (tsk_getu16(fs->endian, dentry->modified_time) == 0) &&
-        (dentry->modified_time_tenths_of_sec == 0) && 
-        (tsk_getu16(fs->endian, dentry->created_date) == 0) &&
-        (tsk_getu16(fs->endian, dentry->created_time) == 0) &&
-        (dentry->created_time_tenths_of_sec == 0) && 
-        (tsk_getu16(fs->endian, dentry->accessed_date) == 0) &&
-        (tsk_getu16(fs->endian, dentry->accessed_time) == 0)) {
-        if (tsk_verbose) {
-            fprintf(stderr, "%s: time stamps all zero\n", 
-                func_name);
+    if (a_fatfs != NULL) {
+        fs = &(a_fatfs->fs_info);   
+
+        /* Make sure the time stamps aren't all zeros. */
+        if ((tsk_getu16(fs->endian, dentry->modified_date) == 0) &&
+            (tsk_getu16(fs->endian, dentry->modified_time) == 0) &&
+            (dentry->modified_time_tenths_of_sec == 0) && 
+            (tsk_getu16(fs->endian, dentry->created_date) == 0) &&
+            (tsk_getu16(fs->endian, dentry->created_time) == 0) &&
+            (dentry->created_time_tenths_of_sec == 0) && 
+            (tsk_getu16(fs->endian, dentry->accessed_date) == 0) &&
+            (tsk_getu16(fs->endian, dentry->accessed_time) == 0)) {
+            if (tsk_verbose) {
+                fprintf(stderr, "%s: time stamps all zero\n", 
+                    func_name);
+            }
+            return 0;
         }
-        return EXFATFS_DIR_ENTRY_TYPE_NONE;
     }
 
-    if (!a_do_basic_test_only) {
-        /* There is not enough data in a file directory entry for an 
-         * in-depth test. */
-        // RJCTODO: Consider using additional tests similar to bulk extractor tests.
-    }
-
-    return (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
+    return 1;
 }
 
 /**
  * \internal
- * Determine whether the contents of a 32 byte buffer are likely to be an
- * exFAT file stream directory entry.
+ * Determine whether the contents of a buffer may be an exFAT file stream 
+ * directory entry. The test will be more reliable if an optional FATFS_INFO 
+ * struct representing the file system is provided.
  *
- * @param [in] a_fatfs Source file system for the directory entry.
- * @param [in] a_dentry Buffer that may contain a directory entry.
- * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
- * @returns EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM or EXFATFS_DIR_ENTRY_TYPE_NONE
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_alloc_status The allocation status, possibly unknown, of the 
+ * cluster from which the buffer was filled. 
+ * @param [in] a_fatfs A FATFS_INFO struct representing an exFAT file system,
+ * may be NULL.
+ * @returns 1 if the directory entry buffer likely contains a file stream 
+ * directory entry, 0 otherwise. 
  */
-EXFATFS_DIR_ENTRY_TYPE_ENUM
-exfatfs_is_file_stream_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only)
+uint8_t
+exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_is_file_stream_dentry";
-    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    TSK_FS_INFO *fs = NULL;
     EXFATFS_FILE_STREAM_DIR_ENTRY *dentry = (EXFATFS_FILE_STREAM_DIR_ENTRY*)a_dentry;
     uint64_t file_size = 0;
     uint32_t first_cluster = 0;
 
-    assert(a_fatfs != NULL);
     assert(a_dentry != NULL);
+    if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 0;
+    }
 
-    /* Check the size and the first cluster address. */
-    file_size = tsk_getu64(fs->endian, dentry->data_length); // RJCTODO: How does this relate to valid data length?
-    first_cluster = tsk_getu32(fs->endian, dentry->first_cluster_addr);
-    if (file_size > 0) {
-        /* Is the file size less than the size of the cluster heap 
-         * (data area)? The cluster heap size is computed by multiplying the
-         * cluster size by the number of sectors in a cluster and then 
-         * multiplying by the number of bytes in a sector (the last operation 
-         * is optimized as a left shift by the base 2 log of sector size). */
-        if (file_size > (a_fatfs->clustcnt * a_fatfs->csize) << a_fatfs->ssize_sh) {
-            if (tsk_verbose) {
-                fprintf(stderr, "%s: file size too big\n", func_name);
-            }
-            return EXFATFS_DIR_ENTRY_TYPE_NONE;
-        }
+    /* Check the entry type byte. */
+    if ((dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) && 
+        (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM)) {
+        return 0;
+    }
 
-        /* Is the address of the first cluster in range? */
-        if ((first_cluster < EXFATFS_FIRST_CLUSTER) ||
-            (first_cluster > a_fatfs->lastclust)) {
-            if (tsk_verbose) {
-                fprintf(stderr, 
-                    "%s: first cluster not in cluster heap\n", func_name);
+    if (a_fatfs != NULL) {
+        fs = &(a_fatfs->fs_info);   
+
+        /* Check the size. */
+        file_size = tsk_getu64(fs->endian, dentry->data_length); // RJCTODO: How does this relate to valid data length?
+        if (file_size > 0) {
+            /* Is the file size less than the size of the cluster heap 
+             * (data area)? The cluster heap size is computed by multiplying the
+             * cluster size by the number of sectors in a cluster and then 
+             * multiplying by the number of bytes in a sector (the last operation 
+             * is optimized as a left shift by the base 2 log of sector size). */
+            if (file_size > (a_fatfs->clustcnt * a_fatfs->csize) << a_fatfs->ssize_sh) {
+                if (tsk_verbose) {
+                    fprintf(stderr, "%s: file size too big\n", func_name);
+                }
+                return 0;
             }
-            return EXFATFS_DIR_ENTRY_TYPE_NONE;
+
+            /* Is the address of the first cluster in range? */
+            first_cluster = tsk_getu32(fs->endian, dentry->first_cluster_addr);
+            if ((first_cluster < EXFATFS_FIRST_CLUSTER) ||
+                (first_cluster > a_fatfs->lastclust)) {
+                if (tsk_verbose) {
+                    fprintf(stderr, 
+                        "%s: first cluster not in cluster heap\n", func_name);
+                }
+                return 0;
+            }
+
+            /* If the file is not marked as unallocated and has non-zero size, is its
+             * first cluster allocated? */
+            if ((dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM) && 
+                (exfatfs_is_cluster_alloc(a_fatfs, (TSK_DADDR_T)first_cluster) != 1)) {
+                if (tsk_verbose) {
+                    fprintf(stderr, 
+                        "%s: file not deleted, first cluster not allocated\n", func_name);
+                }
+                return 0;
+            }
         }
     }
 
-    if ((!a_do_basic_test_only) && (file_size > 0)) {
-        /* If the file is not marked as deleted and has non-zero size, is its
-         * first cluster allocated? */
-        if ((dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM) && 
-            (exfatfs_is_cluster_alloc(a_fatfs, (TSK_DADDR_T)first_cluster) != 1)) {
-            if (tsk_verbose) {
-                fprintf(stderr, 
-                    "%s: file not deleted, first cluster not allocated\n", func_name);
-            }
-            return EXFATFS_DIR_ENTRY_TYPE_NONE;
-        }
-    }
-
-    return (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
+    return 1;
 }
 
 /**
  * \internal
- * Determine whether the contents of a 32 byte buffer are likely to be an
- * exFAT file name directory entry.
+ * Determine whether the contents of a buffer may be an exFAT file name 
+ * directory entry.
  *
- * @param [in] a_fatfs Source file system for the directory entry.
- * @param [in] a_dentry Buffer that may contain a directory entry.
- * @param [in] a_do_basic_test_only Whether to do a basic or in-depth test. 
- * @returns EXFATFS_DIR_ENTRY_TYPE_FILE_NAME or EXFATFS_DIR_ENTRY_TYPE_NONE
+ * @param [in] a_dentry A directory entry buffer.
+ * @returns 1 if the directory entry buffer likely contains an file name
+ * directory entry, 0 otherwise. 
  */
-EXFATFS_DIR_ENTRY_TYPE_ENUM
-exfatfs_is_file_name_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only)
+uint8_t
+exfatfs_is_file_name_dentry(FATFS_DENTRY *a_dentry)
 {
-    assert(a_fatfs != NULL);
+    const char *func_name = "exfatfs_is_file_name_dentry";
+    EXFATFS_FILE_NAME_DIR_ENTRY *dentry = (EXFATFS_FILE_NAME_DIR_ENTRY*)a_dentry;
+    
     assert(a_dentry != NULL);
+    if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
+        return 0;
+    }
 
     /* There is not enough data in a file name directory entry
      * to test anything but the entry type byte. */
-    return (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
+    return ((dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME) || 
+            (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME));
 }
+
 
 /**
  * \internal
@@ -644,13 +675,13 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
         return exfatfs_is_access_ctrl_table_dentry(a_dentry, a_cluster_is_alloc);
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
     case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
-        return exfatfs_is_file_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
+        return exfatfs_is_file_dentry(a_dentry, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
     case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
-        return exfatfs_is_file_stream_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
+        return exfatfs_is_file_stream_dentry(a_dentry, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
     case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
-        return exfatfs_is_file_name_dentry(a_fatfs, a_dentry, a_cluster_is_alloc, a_do_basic_tests_only) != EXFATFS_DIR_ENTRY_TYPE_NONE;
+        return exfatfs_is_file_name_dentry(a_dentry);
     default:
         //return EXFATFS_DIR_ENTRY_TYPE_NONE;
         return 0;

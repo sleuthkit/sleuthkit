@@ -365,13 +365,11 @@ extern "C" {
     exfatfs_is_access_ctrl_table_dentry(FATFS_DENTRY *a_dentry, 
         FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_alloc_status);
 
-    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
-    exfatfs_is_file_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-         uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
+    extern uint8_t
+    exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs);
 
-    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
-    exfatfs_is_file_stream_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-         uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
+    extern uint8_t
+    exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs);
 
     extern uint8_t
     exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
@@ -379,9 +377,8 @@ extern "C" {
         EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type,
         FATFS_DENTRY *a_stream_dentry);
 
-    extern EXFATFS_DIR_ENTRY_TYPE_ENUM
-    exfatfs_is_file_name_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 
-        uint8_t a_sector_is_alloc, uint8_t a_do_basic_test_only);
+    extern uint8_t
+    exfatfs_is_file_name_dentry(FATFS_DENTRY *a_dentry);
 
     extern TSK_RETVAL_ENUM
     exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
