@@ -304,7 +304,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
                 if (~(dentry->flags & 0x01)) {
                     first_sector_of_alloc_bitmap = FATFS_CLUST_2_SECT(a_fatfs, tsk_getu32(fs->endian, dentry->first_cluster_of_bitmap));
                     alloc_bitmap_length_in_bytes = tsk_getu64(fs->endian, dentry->length_of_alloc_bitmap_in_bytes);
-                    last_sector_of_alloc_bitmap = first_sector_of_alloc_bitmap + (alloc_bitmap_length_in_bytes / a_fatfs->ssize) - 1; // RJCTODO: This computation is incorrect!
+                    last_sector_of_alloc_bitmap = first_sector_of_alloc_bitmap + (roundup(alloc_bitmap_length_in_bytes, a_fatfs->ssize) / a_fatfs->ssize) - 1;
 
                     /* The allocation bitmap must lie within the boundaries of the data area. 
                      * It also must be big enough for the number of clusters reported in the VBR. */
