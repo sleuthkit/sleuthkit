@@ -40,9 +40,6 @@
 // storing the volume label in the exFAT part of the FATFS_INFO struct. This would make fsstat a little more zippy, but the
 // main benefits would be reduced code duplication and another bit of file system type validation.
 
-// RJCTODO: It may be more logical to put the definition of the "is_dentry" functions in this file than in the meta data
-// category file, given that they have general use. Naturally, this change would be made in the FATXX code as well.
-
 /**
  * \internal
  * Parses the MBR of an exFAT file system to obtain file system size 
