@@ -147,6 +147,18 @@ print_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
                             ((fls_data->flags & TSK_FS_FLS_DOT) == 0)))
                         printit(fs_file, a_path, fs_attr, fls_data);
                 }
+                /* Print the FILE_NAME times if this is the same attribute
+                 * that we collected the times from. */
+                else if ((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_FNAME) &&
+                        (fs_attr->id == fs_file->meta->time2.ntfs.fn_id)){
+                    /* If it is . or .. only print it if the flags say so,
+                     * we continue with other streams though in case the 
+                     * directory has a data stream 
+                     */
+                    if (!((TSK_FS_ISDOT(fs_file->name->name)) &&
+                            ((fls_data->flags & TSK_FS_FLS_DOT) == 0)))
+                        printit(fs_file, a_path, fs_attr, fls_data);
+                }
             }
 
             /* A user reported that an allocated file had the standard

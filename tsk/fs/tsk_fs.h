@@ -472,6 +472,17 @@ extern "C" {
                 time_t bkup_time;       ///< HFS+ backup time
                 uint32_t bkup_time_nano;        ///< nano-second resolution in addition to bkup_time
             } hfs;
+            struct {
+                time_t fn_crtime;   ///< NTFS Created time stored in FILE_NAME
+                time_t fn_crtime_nano;   ///< NTFS Created time stored in FILE_NAME in nano-second resolution
+                time_t fn_mtime;   ///< NTFS mod (content) stored in FILE_NAME
+                time_t fn_mtime_nano;   ///< NTFS mod time stored in FILE_NAME in nano-second resolution
+                time_t fn_atime;   ///< NTFS access time stored in FILE_NAME
+                time_t fn_atime_nano;   ///< NTFS access time stored in FILE_NAME in nano-second resolution
+                time_t fn_ctime;   ///< NTFS change (MFT Entry) time stored in FILE_NAME
+                time_t fn_ctime_nano;   ///< NTFS change (MFT Entry) time stored in FILE_NAME in nano-second resolution
+                uint16_t fn_id; ///< Attribute ID used to populate FN times. 
+            } ntfs;
         } time2;
 
         void *content_ptr;      ///< Pointer to file system specific data that is used to store references to file content
@@ -765,8 +776,8 @@ extern "C" {
         TSK_FS_TYPE_HFS = 0x00001000,   ///< HFS file system
         TSK_FS_TYPE_HFS_DETECT = 0x00001000,    ///< HFS auto detection
         TSK_FS_TYPE_EXT4 = 0x00002000,  ///< Ext4 file system
-        TSK_FS_TYPE_YAFFS2 = 0x00003000,        ///< YAFFS2 file system
-        TSK_FS_TYPE_YAFFS2_DETECT = 0x00003000, ///< YAFFS2 auto detection
+        TSK_FS_TYPE_YAFFS2 = 0x00004000,        ///< YAFFS2 file system
+        TSK_FS_TYPE_YAFFS2_DETECT = 0x00004000, ///< YAFFS2 auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java

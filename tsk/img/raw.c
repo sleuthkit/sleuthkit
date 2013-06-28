@@ -74,26 +74,8 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
 
 #ifdef TSK_WIN32
         cimg->fd = CreateFile(raw_info->images[idx], FILE_READ_DATA,
-                              FILE_SHARE_READ, NULL, OPEN_EXISTING, 0,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0,
                               NULL);
-        if ( cimg->fd == INVALID_HANDLE_VALUE ) {
-            /* if it is a Windows device, try again with SHARE_WRITE */
-            if ((raw_info->images[idx][0] == _TSK_T('\\'))
-                && (raw_info->images[idx][1] == _TSK_T('\\'))
-                && ((raw_info->images[idx][2] == _TSK_T('.')) || (raw_info->images[idx][2] == _TSK_T('?')))
-                && (raw_info->images[idx][3] == _TSK_T('\\'))) {
-
-                if ( tsk_verbose ) {
-                    tsk_fprintf(stderr,
-                            "raw_read_segment: trying Windows device with FILE_SHARE_WRITE mode\n");
-                }
-
-                cimg->fd = CreateFile(raw_info->images[idx], FILE_READ_DATA,
-                                      FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                                      OPEN_EXISTING, 0, NULL);
-            }
-        }
-        
         if ( cimg->fd == INVALID_HANDLE_VALUE ) {
             int lastError = (int)GetLastError();
             cimg->fd = 0; /* so we don't close it next time */
@@ -438,44 +420,30 @@ get_size(const TSK_TCHAR * a_file, uint8_t a_is_winobj)
         DWORD dwHi, dwLo;
 
         if ((fd = CreateFile(a_file, FILE_READ_DATA,
-                    FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL)) ==
+                    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, 
+                    OPEN_EXISTING, 0, NULL)) ==
             INVALID_HANDLE_VALUE) {
-
-            // if it is a device, try with SHARE_WRITE
-            if (a_is_winobj) {
-                if (tsk_verbose) {
-                    tsk_fprintf(stderr,
-                        "raw_open: trying Windows device with FILE_SHARE_WRITE mode\n");
-                }
-
-                fd = CreateFile(a_file, FILE_READ_DATA,
-                    FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                    OPEN_EXISTING, 0, NULL);
+            int lastError = (int)GetLastError();
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+            // print string of commonly found errors
+            if (lastError == ERROR_ACCESS_DENIED) {
+                tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
+                    "\" - access denied", a_file);
             }
-
-            if (fd == INVALID_HANDLE_VALUE) {
-                int lastError = (int)GetLastError();
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-                // print string of commonly found errors
-                if (lastError == ERROR_ACCESS_DENIED) {
-                    tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                        "\" - access denied", a_file);
-                }
-                else if (lastError == ERROR_SHARING_VIOLATION) {
-                    tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                        "\" - sharing violation", a_file);
-                }
-                else if (lastError == ERROR_FILE_NOT_FOUND) {
-                    tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                        "\" - file not found", a_file);
-                }
-                else {
-                    tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
-                        "\" - (error %d)", a_file, lastError);
-                }
-                return -2;
+            else if (lastError == ERROR_SHARING_VIOLATION) {
+                tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
+                    "\" - sharing violation", a_file);
             }
+            else if (lastError == ERROR_FILE_NOT_FOUND) {
+                tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
+                    "\" - file not found", a_file);
+            }
+            else {
+                tsk_error_set_errstr("raw_open: file \"%" PRIttocTSK
+                    "\" - (error %d)", a_file, lastError);
+            }
+            return -2;
         }
 
         /* We need different techniques to determine the size of Windows physical

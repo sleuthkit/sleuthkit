@@ -18,13 +18,13 @@
 #include <vector>
 
 // Framework includes
-#include "framework_i.h"
-#include "Services/TskImgDB.h"
-#include "Utilities/SectorRuns.h"
-#include "Utilities/UnallocRun.h"
-#include "services/TskBlackboard.h"
+#include "tsk/framework/framework_i.h"
+#include "tsk/framework/services/TskImgDB.h"
+#include "tsk/framework/utilities/SectorRuns.h"
+#include "tsk/framework/utilities/UnallocRun.h"
+#include "tsk/framework/services/TskBlackboard.h"
 
-#include "tsk3/libtsk.h"
+#include "tsk/libtsk.h"
 
 #include <iostream>
 #include <stdlib.h>
@@ -42,6 +42,7 @@ public:
     virtual ~ TskImgDBPostgreSQL();
 
     virtual int initialize();
+    virtual int initializePreparedStatements();
     virtual int open();
 
     virtual int close();
@@ -55,7 +56,7 @@ public:
     virtual int addVolumeInfo(const TSK_VS_PART_INFO * vs_part);
     virtual int addFsInfo(int volId, int fsId, const TSK_FS_INFO * fs_info);
     virtual int addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileSystemFile, const char *fileName, int fileSystemAttrType, int fileSystemAttrID, uint64_t &fileID, const char *filePath);
-    virtual int addCarvedFileInfo(int vol_id, wchar_t * name, uint64_t size, uint64_t *runStarts, uint64_t *runLengths, int numRuns, uint64_t & fileId);
+    virtual int addCarvedFileInfo(int vol_id, const char *name, uint64_t size, uint64_t *runStarts, uint64_t *runLengths, int numRuns, uint64_t & fileId);
     virtual int addDerivedFileInfo(const std::string& name, const uint64_t parentId,
                                         const bool isDirectory, const uint64_t size, const std::string& details,
                                         const int ctime, const int crtime, const int atime, const int mtime, uint64_t & fileId, std::string path);
@@ -69,7 +70,8 @@ public:
     virtual int getFileRecord(const uint64_t fileId, TskFileRecord& fileRecord) const;
     virtual SectorRuns * getFileSectors(uint64_t fileId) const;
     virtual std::string getImageBaseName() const;
-    virtual std::vector<std::wstring> getImageNames() const;
+    virtual std::vector<std::wstring> getImageNamesW() const;
+    virtual std::vector<std::string>  getImageNames() const;
     virtual int getFileUniqueIdentifiers(uint64_t a_fileId, uint64_t &a_fsOffset, uint64_t &a_fsFileId, int &a_attrType, int &a_attrId) const;
     virtual int getNumVolumes() const;
     virtual int getNumFiles() const;
@@ -89,11 +91,11 @@ public:
     virtual bool dbExist() const;
 
     /// Get set of file ids that match the given condition (i.e. SQL where clause)
-    virtual std::vector<uint64_t> getFileIds(std::string& condition) const;
-    virtual std::vector<const TskFileRecord> getFileRecords(std::string& condition) const;
+    virtual std::vector<uint64_t> getFileIds(const std::string& condition) const;
+    virtual const std::vector<TskFileRecord> getFileRecords(const std::string& condition) const;
 
     /// Get the number of files that match the given condition
-    virtual int getFileCount(std::string& condition) const;
+    virtual int getFileCount(const std::string& condition) const;
 
     virtual std::map<uint64_t, std::string> getUniqueCarvedFiles(HASH_TYPE hashType) const;
     virtual std::vector<TskCarvedFileInfo> getUniqueCarvedFilesInfo(HASH_TYPE hashType) const;
@@ -154,7 +156,7 @@ private:
 
     bool initialized() const;
     std::vector<uint64_t> getFileIdsWorker(std::string tableName, const std::string condition = "") const;
-    void constructStmt(std::string& stmt, std::string& condition) const;
+    void constructStmt(std::string& stmt, std::string condition) const;
     int addUnusedSector(uint64_t sectStart, uint64_t sectEnd, int volId, std::vector<TskUnusedSectorsRecord> & unusedSectorsList);
     int getFileTypeRecords(std::string& stmt, std::list<TskFileTypeRecord>& fileTypeInfoList) const;
     vector<TskBlackboardArtifact> getArtifactsHelper(uint64_t file_id, int artifactTypeID, string artifactTypeName);
