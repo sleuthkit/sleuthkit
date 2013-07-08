@@ -8,6 +8,7 @@ Core:
 - Added NTFS FNAME times to time2 struct in TSK_FS_META to make them 
   easier to access -- should have done this a long time ago!
 - fls -m and tsk_gettimes output NTFS FNAME times to output for timelines.
+- hfind with EnCase hashsets works when DB is specified (and not only index)
 
 
 ---------------- VERSION 4.1.0 --------------
