@@ -3323,7 +3323,6 @@ int TskImgDBPostgreSQL::addUnusedSector(uint64_t sectStart, uint64_t sectEnd, in
 {
     assert(sectEnd > sectStart);
     int rc = -1;
-    unusedSectorsList.clear();
     if (!initialized())
         return rc;
 
