@@ -108,6 +108,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_PROCESSOR_ARCHITECTURE, TskAttributeNames("TSK_PROCESSOR_ARCHITECTURE", "Processor Architecture")));
     retval.insert(pair<int, TskAttributeNames>(TSK_VERSION, TskAttributeNames("TSK_VERSION", "Version")));
     retval.insert(pair<int, TskAttributeNames>(TSK_USER_ID, TskAttributeNames("TSK_USER_ID", "User ID")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_DESCRIPTION, TskAttributeNames("TSK_DESCRIPTION", "Description")));
 
     return retval;
 }

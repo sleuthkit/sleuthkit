@@ -169,6 +169,7 @@ public class BlackboardAttribute {
 		TSK_PROCESSOR_ARCHITECTURE(70, "TSK_PROCESSOR_ARCHITECTURE", "Processor Architecture"),
 		TSK_VERSION(71, "TSK_VERSION", "Version"),
 		TSK_USER_ID(72, "TSK_USER_ID", "User ID"),
+		TSK_DESCRIPTION(73, "TSK_DESCRIPTION", "Description"),
 		;
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		private String label;
