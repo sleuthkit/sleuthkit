@@ -65,8 +65,9 @@ enum TSK_ARTIFACT_TYPE {
     TSK_TAG_FILE = 17, ///< File tags.
     TSK_TAG_ARTIFACT = 18, ///< Result tags.
     TSK_OS_INFO = 19, ///< Information pertaining to an operating system.
-    TSK_OS_ACCOUNT, ///< An operating system user account.
-    TSK_SERVICE_ACCOUNT, ///< A network service user account.
+    TSK_OS_ACCOUNT = 20, ///< An operating system user account.
+    TSK_SERVICE_ACCOUNT = 21, ///< A network service user account.
+    TSK_TOOL_OUTPUT = 22,  ///< Output from an external tool or module (raw text)
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
     * - UPDATE map in TskBlackboard.cpp
@@ -155,8 +156,8 @@ enum TSK_ATTRIBUTE_TYPE {
     TSK_DATETIME_MODIFIED = 69,///< Time in Unix epoch that something was modified
     TSK_PROCESSOR_ARCHITECTURE = 70,///< String of processor architecture.  Naming convention from http://en.wikipedia.org/wiki/Comparison_of_CPU_architectures.  So far, we've used x86, x86-64, and IA64.
     TSK_VERSION = 71,///< String for a software version 
-    TSK_USER_ID,///< User IDfor a user account, e.g., a Windows SID or Linux UID.
-    TSK_DESCRIPTION, ///< String for a description associated with an artifact.
+    TSK_USER_ID = 72,///< User IDfor a user account, e.g., a Windows SID or Linux UID.
+    TSK_DESCRIPTION = 73, ///< String for a description associated with an artifact.
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 
     * - UPDATE map in TskBlackBoard.cpp too */

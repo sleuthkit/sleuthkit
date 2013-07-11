@@ -33,6 +33,7 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_OS_INFO, TskArtifactNames("TSK_OS_INFO", "Operating System Information")));
     retval.insert(pair<int, TskArtifactNames>(TSK_OS_ACCOUNT, TskArtifactNames("TSK_OS_ACCOUNT", "Operating System User Account")));
     retval.insert(pair<int, TskArtifactNames>(TSK_SERVICE_ACCOUNT, TskArtifactNames("TSK_SERVICE_ACCOUNT", "Network Service User Account")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_TOOL_OUTPUT, TskArtifactNames("TSK_TOOL_OUTPUT", "Raw Tool Output")));
 
     return retval;
 }

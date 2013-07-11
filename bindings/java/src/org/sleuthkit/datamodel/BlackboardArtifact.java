@@ -63,7 +63,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_OS_INFO(19, "TSK_OS_INFO", "Operating System Information"), ///< Information pertaining to an operating system.
 		TSK_OS_ACCOUNT(20, "TSK_OS_ACCOUNT", "Operating System User Account"), ///< An operating system user account.
 		TSK_SERVICE_ACCOUNT(21, "TSK_SERVICE_ACCOUNT", "Network Service User Account"), ///< A network service user account.
-        ; 
+        TSK_TOOL_OUTPUT(22, "TSK_TOOL_OUTPUT", "Raw Tool Output") ///< Output from an external tool or module that (raw text)
+		; 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
 		private int typeID;

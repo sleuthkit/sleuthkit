@@ -1021,6 +1021,26 @@ public class SleuthkitCase {
 		}
 
 	}
+	
+	/**
+	 * Get all of the blackboard artifact types that are in use in the blackboard. 
+	 * 
+	 * @return List of blackboard artifact types
+	 * @throws TskCoreException 
+	 */
+	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypesInUse() throws TskCoreException {
+		// @@@ TODO: This should be rewritten as a single query. 
+		
+		ArrayList<BlackboardArtifact.ARTIFACT_TYPE> allArts = getBlackboardArtifactTypes();
+		ArrayList<BlackboardArtifact.ARTIFACT_TYPE> usedArts = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
+		
+		for (BlackboardArtifact.ARTIFACT_TYPE art : allArts) {
+			if (getBlackboardArtifactsTypeCount(art.getTypeID()) > 0) {
+				usedArts.add(art);
+			}
+		}
+		return usedArts;
+	}
 
 	/**
 	 * Get all blackboard attribute types
