@@ -265,7 +265,7 @@ void file_info(const string &name,const string &value)
 {
     if(a) a->add_value(name,value); 
     if(t && !opt_body_file) fputs(cstr(name + ": " + value + "\n"),t); 
-    if(x) x->xmlout(name,value); 
+    if(x) x->xmlout(name,value,std::string(),true); // escape the XML
 }
 
 /* this file_info is for sending through a hash. */
