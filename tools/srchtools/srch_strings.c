@@ -1,6 +1,6 @@
-/* From binutils-2.15 
+/* From binutils-2.15
  * removed getopt_long stuff
- *  
+ *
  */
 
 /* strings -- print the strings of printable characters in files
@@ -98,7 +98,7 @@
 
 /* The following were taken from other files in binutils */
 // from include/libiberty.h
-enum { 
+enum {
   /* In C99 */
   _sch_isblank  = 0x0001,       /* space \t */
   _sch_iscntrl  = 0x0002,       /* nonprinting characters */
@@ -142,7 +142,7 @@ enum {
 #define vs _sch_isvsp
 #define xd _sch_isxdigit
 
-/* Masks.  */ 
+/* Masks.  */
 #define L  (const unsigned short) (lo|is   |pr) /* lower case letter */
 #define XL (const unsigned short) (lo|is|xd|pr) /* lowercase hex digit */
 #define U  (const unsigned short) (up|is   |pr) /* upper case letter */
@@ -283,7 +283,7 @@ main (int argc, char **argv)
 	case 'n':
 	  string_min = integer_arg (optarg);
 	  if (string_min < 1) {
-	    fprintf (stderr, "invalid number %s", optarg);
+	    fprintf (stderr, "invalid number %s\n", optarg);
 	  }
 	  break;
 
@@ -401,13 +401,13 @@ get_file_size (const char * file_name)
   if (stat (file_name, &statbuf) < 0)
     {
       if (errno == ENOENT)
-        fprintf (stderr, "'%s': No such file", file_name);
+        fprintf (stderr, "'%s': No such file\n", file_name);
       else
-        fprintf (stderr, "Warning: could not locate '%s'.  reason: %s",
+        fprintf (stderr, "Warning: could not locate '%s'.  reason: %s\n",
                    file_name, strerror (errno));
     }
   else if (! S_ISREG (statbuf.st_mode)) {
-    fprintf(stderr, "Warning: '%s' is not an ordinary file", file_name);
+    fprintf(stderr, "Warning: '%s' is not an ordinary file\n", file_name);
   }
   else
     return statbuf.st_size;
@@ -600,7 +600,7 @@ print_strings (const char *filename, FILE *stream, uint64_t address,
 }
 
 /* Parse string S as an integer, using decimal radix by default,
-   but allowing octal and hex numbers as in C.  
+   but allowing octal and hex numbers as in C.
 
    Return 0 on error
  */
@@ -642,7 +642,7 @@ integer_arg (char *s)
     p--;
 
   if (*p) {
-      fprintf(stderr, "invalid integer argument %s", s);
+      fprintf(stderr, "invalid integer argument %s\n", s);
       return 0;
   }
 
