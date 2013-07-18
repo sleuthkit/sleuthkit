@@ -170,6 +170,19 @@ public class BlackboardAttribute {
 		TSK_VERSION(71, "TSK_VERSION", "Version"),
 		TSK_USER_ID(72, "TSK_USER_ID", "User ID"),
 		TSK_DESCRIPTION(73, "TSK_DESCRIPTION", "Description"),
+		TSK_MESSAGE_TYPE(74, "TSK_MESSAGE_TYPE", "Message Type"),	// SMS or MMS or IM ...
+		TSK_PHONE_NUMBER_HOME(75, "TSK_PHONE_NUMBER_HOME", "Phone Number (Home)"),
+		TSK_PHONE_NUMBER_OFFICE(76, "TSK_PHONE_NUMBER_OFFICE", "Phone Number (Office)"),
+		TSK_PHONE_NUMBER_MOBILE(77, "TSK_PHONE_NUMBER_MOBILE", "Phone Number (Mobile)"),
+		TSK_PHONE_NUMBER_FROM(78, "TSK_PHONE_NUMBER_FROM", "From Phone Number"),
+		TSK_PHONE_NUMBER_TO(79, "TSK_PHONE_NUMBER_TO", "To Phone Number"),
+		TSK_DIRECTION(80, "TSK_DIRECTION", "Direction"), // Msg/Call direction: incoming, outgoing
+		TSK_EMAIL_HOME(81, "TSK_EMAIL_HOME", "Email (Home)"),
+		TSK_EMAIL_OFFICE(82, "TSK_EMAIL_OFFICE", "Email (Office)"),
+		TSK_DATETIME_START(83, "TSK_DATETIME_START", "Start Date/Time"),	// start time of an event - call log, Calendar entry
+		TSK_DATETIME_END(84, "TSK_DATETIME_END", "End Date/Time"),	// end time of an event - call log, Calendar entry
+		TSK_CALENDAR_ENTRY_TYPE(85, "TSK_CALENDAR_ENTRY_TYPE", "Calendar Entry Type"),	// meeting, task, 
+		TSK_LOCATION(86, "TSK_LOCATION", "Location"),	// Location string associated with an event - Conf Room Name, Address ....
 		;
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		private String label;
