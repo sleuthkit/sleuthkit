@@ -34,7 +34,12 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_OS_ACCOUNT, TskArtifactNames("TSK_OS_ACCOUNT", "Operating System User Account")));
     retval.insert(pair<int, TskArtifactNames>(TSK_SERVICE_ACCOUNT, TskArtifactNames("TSK_SERVICE_ACCOUNT", "Network Service User Account")));
     retval.insert(pair<int, TskArtifactNames>(TSK_TOOL_OUTPUT, TskArtifactNames("TSK_TOOL_OUTPUT", "Raw Tool Output")));
+	retval.insert(pair<int, TskArtifactNames>(TSK_CONTACT, TskArtifactNames("TSK_CONTACT", "Contacts")));
+	retval.insert(pair<int, TskArtifactNames>(TSK_MESSAGE, TskArtifactNames("TSK_MESSAGE", "Messages")));
+	retval.insert(pair<int, TskArtifactNames>(TSK_CALLLOG, TskArtifactNames("TSK_CALLLOG", "Call Logs")));
+	retval.insert(pair<int, TskArtifactNames>(TSK_CALENDAR_ENTRY, TskArtifactNames("TSK_CALENDAR_ENTRY", "Calendar Entries")));
 
+	
     return retval;
 }
 
@@ -110,6 +115,21 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_VERSION, TskAttributeNames("TSK_VERSION", "Version")));
     retval.insert(pair<int, TskAttributeNames>(TSK_USER_ID, TskAttributeNames("TSK_USER_ID", "User ID")));
     retval.insert(pair<int, TskAttributeNames>(TSK_DESCRIPTION, TskAttributeNames("TSK_DESCRIPTION", "Description")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_MESSAGE_TYPE, TskAttributeNames("TSK_MESSAGE_TYPE",  "Message Type")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER_HOME, TskAttributeNames("TSK_PHONE_NUMBER_HOME",  "Phone Number (Home)")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER_OFFICE, TskAttributeNames("TSK_PHONE_NUMBER_OFFICE",  "Phone Number (Office)")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER_MOBILE, TskAttributeNames("TSK_PHONE_NUMBER_MOBILE",  "Phone Number (Mobile)")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER_FROM, TskAttributeNames("TSK_PHONE_NUMBER_FROM",  "From Phone Number")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER_TO, TskAttributeNames("TSK_PHONE_NUMBER_TO",  "To Phone Number")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_DIRECTION, TskAttributeNames("TSK_DIRECTION",  "Direction")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_HOME, TskAttributeNames("TSK_EMAIL_HOME",  "Email (Home)")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_OFFICE, TskAttributeNames("TSK_EMAIL_OFFICE", "Email (Office)")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_START, TskAttributeNames("TSK_DATETIME_START",  "Start Date/Time")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_END, TskAttributeNames("TSK_DATETIME_END",  "End Date/Time")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_CALENDAR_ENTRY_TYPE, TskAttributeNames("TSK_CALENDAR_ENTRY_TYPE", "Calendar Entry Type")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_LOCATION, TskAttributeNames("TSK_LOCATION", "Location")));
+
+
 
     return retval;
 }
