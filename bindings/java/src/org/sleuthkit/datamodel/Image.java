@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.io.File;
 
 /**
  * Represents a disk image file, stored in tsk_image_info. Populated based on
@@ -314,5 +315,14 @@ public class Image extends AbstractContent {
 	@Override
 	public String toString(boolean preserveState){
 		return super.toString(preserveState) + "Image [\t" + "\t" + "paths " + Arrays.toString(paths) + "\t" + "size " + size + "\t" + "ssize " + ssize + "\t" + "timezone " + timezone + "\t" + "type " + type + "]\t";
+	}
+	
+	public Boolean imageFileExists() {
+		if (paths.length > 0) {
+			File imageFile = new File(paths[0]);
+			return imageFile.exists();
+		}
+		
+		return false;
 	}
 }
