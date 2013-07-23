@@ -5009,7 +5009,7 @@ public class SleuthkitCase {
 				try {
 					s.close();
 				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Failed t o close the statement.", ex);
+					logger.log(Level.WARNING, "Failed to close the statement.", ex);
 				}
 			}
 			dbReadUnlock();
