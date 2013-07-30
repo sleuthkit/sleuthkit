@@ -58,6 +58,7 @@ tsk_fs_icat(TSK_FS_INFO * fs, TSK_INUM_T inum,
     uint16_t id, uint8_t id_used, TSK_FS_FILE_WALK_FLAG_ENUM flags)
 {
     TSK_FS_FILE *fs_file;
+	TSK_FS_HASH_RESULTS hash_results;
 
 #ifdef TSK_WIN32
     if (-1 == _setmode(_fileno(stdout), _O_BINARY)) {
@@ -74,6 +75,9 @@ tsk_fs_icat(TSK_FS_INFO * fs, TSK_INUM_T inum,
     if (!fs_file) {
         return 1;
     }
+
+	tsk_fs_file_hash_calc(fs_file, &hash_results, TSK_FS_HASH_MD5 | TSK_FS_HASH_SHA1);
+	return 0;
 
     if (type_used) {
         if (id_used == 0) {

@@ -50,6 +50,7 @@ static void
 printit(TSK_FS_FILE * fs_file, const char *a_path,
     const TSK_FS_ATTR * fs_attr, const FLS_DATA * fls_data)
 {
+	TSK_FS_HASH_RESULTS hash_results;
     unsigned int i;
 
     if ((!(fls_data->flags & TSK_FS_FLS_FULL)) && (a_path)) {
@@ -70,6 +71,12 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
         tsk_fs_name_print_mac(stdout, fs_file, a_path,
             fs_attr, fls_data->macpre, fls_data->sec_skew);
     }
+	else if(fls_data->flags & TSK_FS_FLS_HASH){
+		tsk_fs_file_hash_calc(fs_file, &hash_results, TSK_FS_HASH_MD5);
+        tsk_fs_name_print_mac_hash(stdout, fs_file, a_path,
+            fs_attr, fls_data->macpre, fls_data->sec_skew,
+			&hash_results, TSK_FS_HASH_MD5);
+	}
     else if (fls_data->flags & TSK_FS_FLS_LONG) {
         tsk_fs_name_print_long(stdout, fs_file, a_path, fs_file->fs_info,
             fs_attr, TSK_FS_FLS_FULL & fls_data->flags ? 1 : 0,

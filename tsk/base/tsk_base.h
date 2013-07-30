@@ -473,6 +473,16 @@ documentation and/or software.
     void TSK_SHA_Init(TSK_SHA_CTX *);
     void TSK_SHA_Update(TSK_SHA_CTX *, BYTE * buffer, int count);
     void TSK_SHA_Final(BYTE * output, TSK_SHA_CTX *);
+
+/* Flags for which type of hash(es) to run */
+	typedef enum{
+		TSK_FS_HASH_INVALID_ID = 0,
+		TSK_FS_HASH_MD5 = 0x01,
+		TSK_FS_HASH_SHA1 = 0x02
+		//TSK_FS_HASH_SHA256 = 0x04,
+	} TSK_FS_HASH_ENUM;
+
+
 //@}
 
 #ifdef __cplusplus

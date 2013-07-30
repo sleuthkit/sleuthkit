@@ -722,6 +722,23 @@ extern "C" {
 
     extern uint8_t tsk_fs_file_get_owner_sid(TSK_FS_FILE *, char **);
 
+	typedef struct {
+		TSK_FS_HASH_ENUM flags;
+		TSK_MD5_CTX md5_context;
+		TSK_SHA_CTX sha1_context;
+	} TSK_FS_HASH_DATA;
+
+	typedef struct {
+		TSK_FS_HASH_ENUM flags;
+		unsigned char md5_digest[16];
+		unsigned char sha1_digest[20];
+	} TSK_FS_HASH_RESULTS;
+
+	extern TSK_WALK_RET_ENUM tsk_fs_file_hash_calc_callback(TSK_FS_FILE * file, TSK_OFF_T offset,
+		TSK_DADDR_T addr, char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);
+
+	extern uint8_t tsk_fs_file_hash_calc(TSK_FS_FILE *, TSK_FS_HASH_RESULTS *, TSK_FS_HASH_ENUM);
+
     //@}
 
 
@@ -1043,6 +1060,7 @@ extern "C" {
         TSK_FS_FLS_DIR = 0x08,
         TSK_FS_FLS_FULL = 0x10,
         TSK_FS_FLS_MAC = 0x20,
+		TSK_FS_FLS_HASH = 0x40
     };
     typedef enum TSK_FS_FLS_FLAG_ENUM TSK_FS_FLS_FLAG_ENUM;
     extern uint8_t tsk_fs_fls(TSK_FS_INFO * fs,

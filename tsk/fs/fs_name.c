@@ -583,6 +583,34 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, const TSK_FS_ATTR * fs_attr,
     const char *prefix, int32_t time_skew)
 {
+	tsk_fs_name_print_mac_hash(hFile, fs_file, a_path, fs_attr, prefix, time_skew, NULL, TSK_FS_HASH_INVALID_ID);
+}
+
+/**
+ * \internal
+ *
+** Print output in the format that mactime reads.
+**
+** If the flags in the fs_file->meta structure are set to FS_FLAG_ALLOC
+** then it is assumed that the inode has been reallocated and the
+** contents are not displayed
+**
+** fs is not required (only used for block size).
+ * @param hFile handle to print results to
+ * @param fs_file File to print details about
+ * @param a_path Parent directory of file (needs to end with "/")
+ * @param fs_attr Attribute in file that is being called for (NULL for non-NTFS)
+ * @param prefix Path of mounting point for image
+ * @param time_skew number of seconds skew to adjust time
+ * @param hash_results Holds the calculated hash values
+ * @param hash_flag indicates which hash to print
+*/
+void
+tsk_fs_name_print_mac_hash(FILE * hFile, const TSK_FS_FILE * fs_file,
+    const char *a_path, const TSK_FS_ATTR * fs_attr,
+    const char *prefix, int32_t time_skew,
+	const TSK_FS_HASH_RESULTS * hash_results, TSK_FS_HASH_ENUM hash_flag)
+{
     char ls[12];
     size_t i;
     uint8_t isADS = 0;
@@ -600,8 +628,30 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
         isADS = 1;
     }
 
-    /* md5 */
-    tsk_fprintf(hFile, "0|");
+    /* hash
+	 * final comparison is checking that we've calculated the requested hash
+	 */
+	if((hash_results == NULL) || (hash_flag == TSK_FS_HASH_INVALID_ID)
+		|| (! (hash_flag & hash_results->flags))){
+		tsk_fprintf(hFile, "0|");
+	}
+	else{
+		if(hash_flag & TSK_FS_HASH_MD5){
+			for(i = 0;i < 16;i++){
+				tsk_fprintf(hFile, "%02x", hash_results->md5_digest[i]);
+			}
+			tsk_fprintf(hFile, "|");
+		}
+		else if(hash_flag & TSK_FS_HASH_SHA1){
+			for(i = 0;i < 20;i++){
+				tsk_fprintf(hFile, "%02x", hash_results->sha1_digest[i]);
+			}
+			tsk_fprintf(hFile, "|");
+		}
+		else{
+			tsk_fprintf(hFile, "0|");
+		}
+	}
 
     /* file name */
     tsk_fprintf(hFile, "%s", prefix);
