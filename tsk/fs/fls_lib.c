@@ -192,7 +192,6 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
 
 #ifdef TSK_WIN32
     {
-        char *cpre;
         size_t clen;
         UTF8 *ptr8;
         UTF16 *ptr16;
@@ -200,11 +199,11 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
 
         if ((tpre != NULL) && (TSTRLEN(tpre) > 0)) {
             clen = TSTRLEN(tpre) * 4;
-            cpre = (char *) tsk_malloc(clen);
-            if (cpre == NULL) {
+            data.macpre = (char *) tsk_malloc(clen);
+            if (data.macpre == NULL) {
                 return 1;
             }
-            ptr8 = (UTF8 *) cpre;
+            ptr8 = (UTF8 *) data.macpre;
             ptr16 = (UTF16 *) tpre;
 
             retval =
@@ -219,18 +218,19 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
                     retval);
                 return 1;
             }
-            data.macpre = cpre;
         }
         else {
-            data.macpre = NULL;
-            cpre = NULL;
+            data.macpre = (char *) tsk_malloc(1);
+            if (data.macpre == NULL) {
+                return 1;
+            }
+            data.macpre[0] = '\0';
         }
 
         retval = tsk_fs_dir_walk(fs, inode, flags, print_dent_act, &data);
 
-        if (cpre)
-            free(cpre);
-
+        free(data.macpre);
+        data.macpre = NULL;
         return retval;
     }
 #else
