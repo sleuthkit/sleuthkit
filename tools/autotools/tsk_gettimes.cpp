@@ -9,7 +9,7 @@
  **
  */
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 #include <locale.h>
 #include <time.h>
 
@@ -21,12 +21,13 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-vV] [-i imgtype] [-b dev_sector_size] [-z zone] [-s seconds] image [image]\n"),
+        ("usage: %s [-vVm] [-i imgtype] [-b dev_sector_size] [-z zone] [-s seconds] image [image]\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
         "\t-b dev_sector_size: The size (in bytes) of the device sectors\n");
+	tsk_fprintf(stderr, "\t-m: Calculate MD5 hash in output (slow)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
     tsk_fprintf(stderr,
@@ -42,6 +43,7 @@ usage()
 class TskGetTimes:public TskAuto {
 public:
     TskGetTimes(int32_t);
+	TskGetTimes(int32_t, bool);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
@@ -50,6 +52,7 @@ public:
 private:
     int m_curVolAddr;
     int32_t m_secSkew;
+	bool m_compute_hash;
 };
 
 
@@ -57,6 +60,14 @@ TskGetTimes::TskGetTimes(int32_t a_secSkew)
 {
     m_curVolAddr = -1;
     m_secSkew = a_secSkew;
+	m_compute_hash = false;
+}
+
+TskGetTimes::TskGetTimes(int32_t a_secSkew, bool a_compute_hash)
+{
+    m_curVolAddr = -1;
+    m_secSkew = a_secSkew;
+	m_compute_hash = a_compute_hash;
 }
 
 // Print errors as they are encountered
@@ -82,10 +93,16 @@ TskGetTimes::filterFs(TSK_FS_INFO * fs_info)
     else 
         volName[0] = '\0';
 
-    if (tsk_fs_fls(fs_info, (TSK_FS_FLS_FLAG_ENUM)(TSK_FS_FLS_MAC | TSK_FS_FLS_DIR | TSK_FS_FLS_FILE | TSK_FS_FLS_FULL),
-       fs_info->root_inum, (TSK_FS_DIR_WALK_FLAG_ENUM)(TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE), volName, m_secSkew)) {
-        
-    }
+	TSK_FS_FLS_FLAG_ENUM fls_flags = (TSK_FS_FLS_FLAG_ENUM)(TSK_FS_FLS_MAC | TSK_FS_FLS_DIR | TSK_FS_FLS_FILE | TSK_FS_FLS_FULL);
+	if(m_compute_hash){
+		fls_flags = (TSK_FS_FLS_FLAG_ENUM)(fls_flags | TSK_FS_FLS_HASH);
+	}
+
+	if (tsk_fs_fls(fs_info, (TSK_FS_FLS_FLAG_ENUM)(fls_flags),
+		fs_info->root_inum, (TSK_FS_DIR_WALK_FLAG_ENUM)(TSK_FS_DIR_WALK_FLAG_ALLOC | TSK_FS_DIR_WALK_FLAG_UNALLOC | TSK_FS_DIR_WALK_FLAG_RECURSE), volName, m_secSkew)) {
+	}
+
+
     return TSK_FILTER_SKIP;
 }
 
@@ -107,6 +124,7 @@ main(int argc, char **argv1)
     unsigned int ssize = 0;
     TSK_TCHAR *cp;
     int32_t sec_skew = 0;
+	bool do_hash = false;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -122,7 +140,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:i:s:vVz:"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:i:s:mvVz:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -161,6 +179,9 @@ main(int argc, char **argv1)
             sec_skew = TATOI(OPTARG);
             break;
 
+        case _TSK_T('m'):
+            do_hash = true;
+            break;
 
         case _TSK_T('v'):
             tsk_verbose++;
@@ -194,7 +215,7 @@ main(int argc, char **argv1)
         usage();
     }
 
-    TskGetTimes tskGetTimes(sec_skew);
+    TskGetTimes tskGetTimes(sec_skew, do_hash);
     if (tskGetTimes.openImage(argc - OPTIND, &argv[OPTIND], imgtype,
             ssize)) {
         tsk_error_print(stderr);

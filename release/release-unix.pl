@@ -116,7 +116,7 @@ sub verify_precheckin {
             print "$foo";
             $foo = read_pipe_line(*OUT);
         }
-        die "stopping";
+        die "stopping" unless ($TESTING);
     }
     close(OUT);
 
@@ -126,15 +126,17 @@ sub verify_precheckin {
     if ($foo ne "") {
             print "$foo";
         print "Files not pushed to remote\n";
-        die "stopping";
+        die "stopping" unless ($TESTING);
     }
     close(OUT);
 }
 
 # Create a tag 
 sub tag_dir {
-    system ("git tag ${TSK_RELNAME}");
-    system ("git push --tags") unless ($TESTING);
+    unless ($TESTING) {
+        system ("git tag ${TSK_RELNAME}");
+        system ("git push --tags");
+    }
 }
 
 # Commit the updated version info in the current source directory
@@ -180,8 +182,8 @@ sub update_hver {
 
     print "Updating the version in tsk_base.h\n";
     
-    open (CONF_IN, "<tsk3/base/tsk_base.h") or die "Cannot open tsk3/base/tsk_base.h";
-    open (CONF_OUT, ">tsk3/base/tsk_base2.h") or die "Cannot open tsk3/base/tsk_base2.h";
+    open (CONF_IN, "<tsk/base/tsk_base.h") or die "Cannot open tsk/base/tsk_base.h";
+    open (CONF_OUT, ">tsk/base/tsk_base2.h") or die "Cannot open tsk/base/tsk_base2.h";
 
     my $found = 0;
     while (<CONF_IN>) {
@@ -230,8 +232,8 @@ sub update_hver {
         die "$found (instead of 2) occurances of VERSION in tsk_base.h";
     }
 
-    unlink ("tsk3/base/tsk_base.h") or die "Error deleting tsk3/base/tsk_base.h";
-    rename ("tsk3/base/tsk_base2.h", "tsk3/base/tsk_base.h") or die "Error renaming tmp tsk3/base/tsk_base.h file";
+    unlink ("tsk/base/tsk_base.h") or die "Error deleting tsk/base/tsk_base.h";
+    rename ("tsk/base/tsk_base2.h", "tsk/base/tsk_base.h") or die "Error renaming tmp tsk/base/tsk_base.h file";
 }
 
 # update the version in the package files in current source directory
@@ -282,7 +284,7 @@ sub update_libver {
     }
     return if ($a eq "n");
 
-    exec_pipe(*OUT, "cat tsk3/Makefile.am | grep version\-info");
+    exec_pipe(*OUT, "cat tsk/Makefile.am | grep version\-info");
     print "Current Makefile Contents: " . read_pipe_line(*OUT) . "\n";
     close (OUT);
 
@@ -290,7 +292,7 @@ sub update_libver {
     my $rev;
     my $age;
     while (1) {
-        $a = prompt_user("Enter library version used in last release (from tsk3/Makefile.am)");
+        $a = prompt_user("Enter library version used in last release (from tsk/Makefile.am)");
         if ($a =~ /(\d+):(\d+):(\d+)/) {
             $cur = $1;
             $rev = $2;
@@ -325,8 +327,8 @@ sub update_libver {
         }
     }
 
-    my $IFILE = "tsk3/Makefile.am";
-    my $OFILE = "tsk3/Makefile.am2";
+    my $IFILE = "tsk/Makefile.am";
+    my $OFILE = "tsk/Makefile.am2";
 
     open (CONF_IN, "<${IFILE}") or 
         die "Cannot open $IFILE";
@@ -443,6 +445,22 @@ sub verify_tar {
     system ("ant");
     die "Error making jar file" unless (-e "dist/Tsk_DataModel.jar");
     chdir "../..";
+
+    # Compile the framework
+    chdir ("framework") or die "error changing into framework";
+
+    print "Running bootstrap\n";
+    system ("./bootstrap");
+    die "Error running bootstrap in framework" unless (-e "./configure");
+
+    print "Running configure\n";
+    system ("./configure > /dev/null");
+    die "Error running framework configure in tar file" unless (-e "./Makefile");
+
+    print "Running make\n";
+    system ("make > /dev/null");
+    die "Error compiling framework" unless ((-e "tools/tsk_analyzeimg/tsk_analyzeimg") && (-e "runtime/modules/libtskEntropyModule.a"));
+    chdir "..";
 
     # We're done.  Clean up
     chdir "..";

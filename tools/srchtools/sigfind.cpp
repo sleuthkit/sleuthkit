@@ -9,7 +9,7 @@
  * This software is distributed under the Common Public License 1.0
  */
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -33,7 +33,7 @@ usage()
     fprintf(stderr,
             "\t-t template: The name of a data structure template:\n");
     fprintf(stderr,
-            "\t\tdospart, ext2, ext3, fat, hfs, hfs+, ntfs, ufs1, ufs2\n");
+            "\t\tdospart, ext2, ext3, ext4, fat, hfs, hfs+, ntfs, ufs1, ufs2\n");
     exit(1);
 }
 
@@ -90,7 +90,8 @@ main(int argc, char **argv)
 
         case 't':
             if ((strcmp(optarg, "ext2") == 0) ||
-                (strcmp(optarg, "ext3") == 0)) {
+                (strcmp(optarg, "ext3") == 0) ||
+                (strcmp(optarg, "ext4") == 0)) {
                 lit_end = 1;
                 sig[0] = 0x53;
                 sig[1] = 0xef;

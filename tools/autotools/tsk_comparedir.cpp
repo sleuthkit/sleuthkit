@@ -9,7 +9,7 @@
  **
  */
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 #include "tsk_comparedir.h"
 #include <locale.h>
 #include <sys/stat.h>
@@ -208,7 +208,7 @@ TSK_RETVAL_ENUM
 TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 {
     //exclude certain types
-    if (isDotDir(a_fs_file, a_path))
+    if (isDotDir(a_fs_file))
         return TSK_OK;
     
     if (isDir(a_fs_file))

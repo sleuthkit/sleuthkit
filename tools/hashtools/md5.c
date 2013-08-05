@@ -24,7 +24,7 @@
 *--*/
 
 #include <stdio.h>
-#include "tsk3/libtsk.h"
+#include "tsk/libtsk.h"
 
 #define MD5_HASH_LENGTH	16
 

@@ -1,0 +1,95 @@
+                    The Sleuth Kit Framework
+                http://www.sleuthkit.org/sleuthkit
+
+              Installation Instructions for Linux / OS X
+
+                   Last Modified: Apr 8, 2013
+
+
+REQUIREMENTS
+=============================================================================
+Tested Platform:
+- Linux 2.*
+- Mac OS X
+
+Build System:
+- C/C++ compiler
+- GNU Make
+- GNU autoconf, automake, and libtool
+
+
+Required Libraries:
+The following libraries must be installed before building and install
+the framework.
+
+- POCO: POCO is a set of open source C++ classes for building
+portable applications.  The Sleuth Kit framework uses POCO to handle
+some basic internal tasks.  Testing has been performed with version
+1.4.4 of the POCO libraries.
+    Available at http://www.pocoproject.org
+
+The modules may also have library dependencies.  For example, the
+file type module requires libmagic.  The documents in each module
+will list them .
+
+
+INSTALLATION
+=============================================================================
+
+Refer to the INSTALL_win.txt file for details on building using
+Microsoft Visual Studio 2010.
+
+The Sleuth Kit framework uses the GNU autotools for building and
+installation.  There are a few steps to this process.  First, run
+the 'configure' script in the framework directory.  This will also
+run configure in all of the modules.  The modules have been designed
+to not fatally fail if a dependency exists so that you can continue
+to build all of them.  Refer to the end of the output for messages
+about missing dependencies.
+
+    $ ./configure
+
+If there were no errors, then run 'make'.  This will also run make
+in all of the modules.
+
+    $ make
+
+The 'make' process will take a while and will build the framework
+library, tools that use the framework, and modules that load into
+the framework.  
+
+The tools are in the "tools" directory and the modules were copied
+into the "runtime" directory. You can run the tools from this layout.
+For quick reference, tsk_analyzeimg is a tool that can drive the
+entire framework.
+
+To install the tools, moduless, and framework, type 'make install'.
+
+    $ make install
+
+By default, this will copy everything in to the /usr/local/ structure.
+
+If you get an error like:
+
+  libtool: Version mismatch error.  This is libtool 2.2.10, but the
+  libtool: definition of this LT_INIT comes from libtool 2.2.4.
+  libtool: You should recreate aclocal.m4 with macros from libtool 2.2.10
+  libtool: and run autoconf again.
+
+Run:
+    ./bootstrap 
+
+and then go back to running configure and make.  To run 'bootstrap',
+you'll need to have the autotools installed (see the list at the
+top of this page).
+
+
+CONFIGURE OPTIONS
+-----------------------------------------------------------------------------
+The framework doesn't support extra arguments to 'configure'
+
+
+-----------------------------------------------------------------------------
+
+Brian Carrier
+carrier <at> sleuthkit <dot> org

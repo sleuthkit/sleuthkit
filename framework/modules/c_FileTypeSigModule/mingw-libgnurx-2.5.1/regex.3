@@ -1,0 +1,302 @@
+.\" Copyright (C), 1995, Graeme W. Wilford. (Wilf.)
+.\"
+.\" Permission is granted to make and distribute verbatim copies of this
+.\" manual provided the copyright notice and this permission notice are
+.\" preserved on all copies.
+.\"
+.\" Permission is granted to copy and distribute modified versions of this
+.\" manual under the conditions for verbatim copying, provided that the
+.\" entire resulting derived work is distributed under the terms of a
+.\" permission notice identical to this one.
+.\" 
+.\" Since the Linux kernel and libraries are constantly changing, this
+.\" manual page may be incorrect or out-of-date.  The author(s) assume no
+.\" responsibility for errors or omissions, or for damages resulting from
+.\" the use of the information contained herein.  The author(s) may not
+.\" have taken the same level of care in the production of this manual,
+.\" which is licensed free of charge, as they might when working
+.\" professionally.
+.\" 
+.\" Formatted or processed versions of this manual, if unaccompanied by
+.\" the source, must acknowledge the copyright and authors of this work.
+.\"
+.\" Wed Jun 14 16:10:28 BST 1995 Wilf. (G.Wilford@ee.surrey.ac.uk)
+.\" Tiny change in formatting - aeb, 950812
+.\" Modified 8 May 1998 by Joseph S. Myers (jsm28@cam.ac.uk)
+.\" 2007-04-30  Keith Marshall  (keithmarshall@users.sourceforge.net)
+.\"   Adapt TH for inclusion in MinGW distribution kit
+.\"
+.\" show the synopsis section nicely
+.de xx
+.in \\n(INu+\\$1
+.ti -\\$1
+..
+.TH REGEX 3 2007-04-30 MinGW "MinGW Programmer's Manual"
+.SH NAME
+regcomp, regexec, regerror, regfree \- POSIX regex functions
+.SH SYNOPSIS
+.B #include <sys/types.h>
+.br
+.B #include <regex.h>
+.sp
+.xx \w'\fBint\ regcomp(\fR'u
+.BI "int\ regcomp(regex_t *" preg ", const char *" regex , 
+.BI "int " cflags );
+.xx \w'\fBint\ regexec(\fR'u
+.BI "int\ regexec(const regex_t *" preg ", const char *" string ,
+.BI "size_t " nmatch ", regmatch_t " pmatch[] , 
+.BI "int " eflags );
+.xx \w'\fBsize_t\ regerror(\fR'u
+.BI "size_t\ regerror(int " errcode , 
+.BI "const regex_t *" preg ", char *" errbuf , 
+.BI "size_t " errbuf_size );
+.xx \w'\fBvoid\ regfree(\fR'
+.BI "void\ regfree(regex_t *" preg );
+.SH "POSIX REGEX COMPILING"
+.BR regcomp ()
+is used to compile a regular expression into a form that is suitable
+for subsequent 
+.BR regexec ()
+searches.
+
+.BR regcomp ()
+is supplied with 
+.IR preg , 
+a pointer to a pattern buffer storage area; 
+.IR regex ,
+a pointer to the null-terminated string and
+.IR cflags ,
+flags used to determine the type of compilation.
+
+All regular expression searching must be done via a compiled pattern
+buffer, thus 
+.BR regexec ()
+must always be supplied with the address of a 
+.BR regcomp ()
+initialized pattern buffer.
+
+.I cflags 
+may be the 
+.RB bitwise- or
+of one or more of the following:
+.TP 
+.B REG_EXTENDED
+Use 
+.B POSIX
+Extended Regular Expression syntax when interpreting 
+.IR regex .
+If not set,
+.B POSIX
+Basic Regular Expression syntax is used.
+.TP 
+.B REG_ICASE
+Do not differentiate case.  Subsequent 
+.BR regexec ()
+searches using this pattern buffer will be case insensitive.
+.TP 
+.B REG_NOSUB
+Support for substring addressing of matches is not required.
+The
+.I nmatch
+and
+.I pmatch
+parameters to 
+.BR regexec ()
+are ignored if the pattern buffer supplied was compiled with this flag set.
+.TP 
+.B REG_NEWLINE
+Match-any-character operators don't match a newline.
+
+A non-matching list 
+.RB ( [^...] )
+not containing a newline does not match a newline.
+    
+Match-beginning-of-line operator
+.RB ( ^ )
+matches the empty string immediately after a newline, regardless of
+whether
+.IR eflags ,
+the execution flags of
+.BR regexec (),
+contains 
+.BR REG_NOTBOL .
+
+Match-end-of-line operator 
+.RB ( $ )
+matches the empty string immediately before a newline, regardless of
+whether 
+.IR eflags 
+contains
+.BR REG_NOTEOL .
+.SH "POSIX REGEX MATCHING"
+.BR regexec ()
+is used to match a null-terminated string
+against the precompiled pattern buffer, 
+.IR preg .
+.I nmatch
+and
+.I pmatch
+are used to provide information regarding the location of any matches.  
+.I eflags
+may be the 
+.RB bitwise- or
+of one or both of 
+.B REG_NOTBOL
+and
+.B REG_NOTEOL 
+which cause changes in matching behaviour described below.
+.TP
+.B REG_NOTBOL
+The match-beginning-of-line operator always fails to match (but see the
+compilation flag
+.B REG_NEWLINE 
+above)
+This flag may be used when different portions of a string are passed to 
+.BR regexec ()
+and the beginning of the string should not be interpreted as the
+beginning of the line.
+.TP
+.B REG_NOTEOL
+The match-end-of-line operator always fails to match (but see the
+compilation flag
+.B REG_NEWLINE
+above)
+.SS "BYTE OFFSETS"
+Unless 
+.B REG_NOSUB
+was set for the compilation of the pattern buffer, it is possible to
+obtain substring match addressing information. 
+.I pmatch
+must be dimensioned to have at least
+.I nmatch
+elements.
+These are filled in by
+.BR regexec ()
+with substring match addresses.  Any unused structure elements
+will contain the value \-1.
+
+The 
+.B regmatch_t 
+structure which is the type of
+.I pmatch
+is defined in
+.IR regex.h .
+
+.RS
+.B typedef struct
+.br
+.B {
+.br
+.BI "  regoff_t " rm_so ;
+.br
+.BI "  regoff_t " rm_eo ;
+.br
+.B }
+.B regmatch_t;
+.RE
+
+Each 
+.I rm_so
+element that is not \-1 indicates the start offset of the next largest
+substring match within the string.  The relative 
+.I rm_eo 
+element indicates the end offset of the match.
+.SH "POSIX ERROR REPORTING"
+.BR regerror ()
+is used to turn the error codes that can be returned by both 
+.BR regcomp ()
+and
+.BR regexec ()
+into error message strings.
+
+.BR regerror ()
+is passed the error code,
+.IR errcode ,
+the pattern buffer,
+.IR preg ,
+a pointer to a character string buffer,
+.IR errbuf ,
+and the size of the string buffer,
+.IR errbuf_size .
+It returns the size of the
+.I errbuf
+required to contain the null-terminated error message string.  If both
+.I errbuf
+and
+.I errbuf_size
+are non-zero, 
+.I errbuf
+is filled in with the first 
+.I "errbuf_size \- 1"
+characters of the error message and a terminating null.
+.SH "POSIX PATTERN BUFFER FREEING"
+Supplying 
+.BR regfree ()
+with a precompiled pattern buffer,
+.I preg
+will free the memory allocated to the pattern buffer by the compiling
+process,
+.BR regcomp ().
+.SH "RETURN VALUE"
+.BR regcomp ()
+returns zero for a successful compilation or an error code for failure.
+
+.BR regexec ()
+returns zero for a successful match or 
+.B REG_NOMATCH
+for failure.
+.SH ERRORS
+The following errors can be returned by 
+.BR regcomp ():
+.TP
+.B REG_BADBR
+Invalid use of back reference operator.
+.TP
+.B REG_BADPAT
+Invalid use of pattern operators such as group or list.
+.TP
+.B REG_BADRPT
+Invalid use of repetition operators such as using 
+.RB ` * '
+as the first character.
+.TP
+.B REG_EBRACE
+Un-matched brace interval operators.
+.TP
+.B REG_EBRACK
+Un-matched bracket list operators.
+.TP
+.B REG_ECOLLATE
+Invalid collating element.
+.TP
+.B REG_ECTYPE
+Unknown character class name.
+.TP
+.B REG_EEND
+Non specific error.  This is not defined by POSIX.2.
+.TP
+.B REG_EESCAPE
+Trailing backslash.
+.TP
+.B REG_EPAREN
+Un-matched parenthesis group operators.
+.TP
+.B REG_ERANGE
+Invalid use of the range operator, eg. the ending point of the range
+occurs prior to the starting point.
+.TP
+.B REG_ESIZE
+Compiled regular expression requires a pattern buffer larger than 64Kb.
+This is not defined by POSIX.2.
+.TP
+.B REG_ESPACE
+The regex routines ran out of memory.
+.TP
+.B REG_ESUBREG
+Invalid back reference to a subexpression.
+.SH "CONFORMING TO"
+POSIX.2
+.SH "SEE ALSO"
+.BR regex (7),
+GNU regex manual
+ 

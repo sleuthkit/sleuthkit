@@ -1,5 +1,10 @@
 #!/bin/sh
 aclocal \
-    && (libtoolize || glibtoolize) \
-    && automake --foreign --add-missing \
+    && (libtoolize -c --force || glibtoolize -c --force) \
+    && automake --foreign --add-missing --copy \
     && autoconf
+
+echo "c_FileTypeSigModule"
+(cd modules/c_FileTypeSigModule; sh ./bootstrap)
+echo "c_LibExifModule"
+(cd modules/c_LibExifModule; sh ./bootstrap)

@@ -18,7 +18,7 @@
  *          
  */
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 
 #define __DARWIN_64_BIT_INO_T 1		
 
@@ -44,7 +44,7 @@
 #include <string>
 #include <vector>
 
-#include <tsk3/libtsk.h>
+#include <tsk/libtsk.h>
 
 #include "fiwalk.h"
 #include "plugin.h"

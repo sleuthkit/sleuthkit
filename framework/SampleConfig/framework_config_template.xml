@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Template of framework config.  Contains enough settings for installation. -->
+<!-- For more information please consult the TskSystemProperties::PredefinedProperty member enumeration documentation at http://www.sleuthkit.org/sleuthkit/docs/framework-docs/classTskSystemProperties.html -->
+<TSK_FRAMEWORK_CONFIG>
+  <CONFIG_DIR>#CONFIGDIRPATH#</CONFIG_DIR>
+  <MODULE_DIR>#MODULEDIRPATH#</MODULE_DIR>
+  <MODULE_CONFIG_DIR>#MODULECONFIGDIRPATH#</MODULE_CONFIG_DIR>
+  <PIPELINE_CONFIG_FILE>#CONFIG_DIR#/pipeline_config.xml</PIPELINE_CONFIG_FILE>
+</TSK_FRAMEWORK_CONFIG>

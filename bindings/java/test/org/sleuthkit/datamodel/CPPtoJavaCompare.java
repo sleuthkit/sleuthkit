@@ -20,12 +20,14 @@ package org.sleuthkit.datamodel;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static org.junit.Assert.*;
@@ -34,8 +36,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- *
- * Compares the Java test output to the C++ test output
+ * Compares the Java test output to the C++ test output.
+ * Basic concept is to run tsk_gettimes on an image to get the body
+ * file format and then make equivalent output from Java code.  Diff. 
+ * Does not use gold standards.
  */
 @RunWith(Parameterized.class)
 public class CPPtoJavaCompare extends ImgTraverser {
@@ -64,31 +68,124 @@ public class CPPtoJavaCompare extends ImgTraverser {
 		return data;
 	}
 
+	
 	/**
 	 * Runs the test
 	 */
 	@Test
-	public void CPPtoJavaCompare() {
+	public void testCppToJavaDiff() {
 		try {
+			// generate the C++ output and store it in gold standard -- even though it won't be checked in -- redesign this!
+			String standardPathCPP = DataModelTestSuite.standardFilePath(imagePaths, DataModelTestSuite.CPP);
+			java.io.File tskOutFile = new java.io.File(standardPathCPP);
+			// get rid of copy from previous runs
+			tskOutFile.delete();
+			
+			runTskGetTimes(standardPathCPP, imagePaths);
+			
+			assertTrue ("TSK gettimes output is zero sized (" + standardPathCPP + ")", tskOutFile.length() > 0);
+			
+			// perform test
 			List<Boolean> test = basicTest();
-			assertEquals("Generated results (" + oldStandardPath + ") differ with gold standard (" + testStandardPath + ") .", test.get(0), true);
+			
+			// compare exceptions
+			assertEquals("Generated exceptions  (" + outputExceptionsPath + ") differ with gold standards (" + goldExceptionsPath + ") .", test.get(0), true);
+			
+			//compare sorted output instead of unsorted output
+			String goldFilePathSorted = DataModelTestSuite.sortedFlPth(goldFilePath);
+			String outputFilePathSorted = DataModelTestSuite.sortedFlPth(outputFilePath);
+			List<Boolean> ret = new ArrayList<Boolean>(1);
+			ret.add(DataModelTestSuite.comparecontent(goldFilePathSorted, outputFilePathSorted));			
+			assertEquals("Java output (" + outputFilePathSorted + ") differ with C++ results (" + goldFilePathSorted + ") .", ret.get(0), true);			
 		} catch (Exception ex) {
-			fail("Couldn't open gold standard file.");
+			fail("Couldn't open gold standard file. " + ex.getMessage());
 		}
 	}
-
+	
+	
 	/**
-	 * Extends basicTest to compare the sorted files and not the output files
+	 * Runs tsk_gettimes to create a standard for comparing DataModel and TSK
+	 * output.
+	 *
+	 * @param outputFile The path to the file to put the tsk data in. Sorted results will be stored in separate file. 
+	 * @param img the path to the image, is a list for compatability reasons
 	 */
-	@Override
-	public List<Boolean> basicTest() {
-		super.basicTest();
-		oldStandardPath = DataModelTestSuite.sortedFlPth(oldStandardPath);
-		testStandardPath = DataModelTestSuite.sortedFlPth(testStandardPath);
-		List<Boolean> ret = new ArrayList<Boolean>(1);
-		ret.add(DataModelTestSuite.comparecontent(oldStandardPath, testStandardPath));
-		return ret;
+	 private static void runTskGetTimes(String outputFile, List<String> img) {
+		String tsk_loc;
+		java.io.File  up = new java.io.File(System.getProperty("user.dir"));
+		up = up.getParentFile();
+		up = up.getParentFile();
+		if (System.getProperty("os.name").contains("Windows")) {
+			tsk_loc = up.getAbsolutePath() + "\\win32\\Release\\tsk_gettimes.exe";
+		} else {
+			tsk_loc = up.getAbsolutePath() + "/tools/autotools/tsk_gettimes";
+		}
+		
+		// verify it exists
+		java.io.File f = new java.io.File(tsk_loc);
+		assertTrue("cannot find tsk_gettimes method", f.exists());
+		
+		String[] cmd = {tsk_loc, img.get(0)};
+		try {
+			Process p = Runtime.getRuntime().exec(cmd);
+			Scanner read = new Scanner(p.getInputStream());
+			Scanner error1 = new Scanner(p.getErrorStream());
+			FileWriter out = new FileWriter(outputFile);
+			while (read.hasNextLine()) {
+				String line = read.nextLine();
+				line = line.replace(" (deleted)", "");
+				line = line.replace("(null)", "");
+				//removes unknown data attached to metaAddr
+				String[] linecontents = line.split("\\|");
+				String metaaddrcon = linecontents[2];
+				String mtad = metaaddrcon.split("\\-")[0];
+				line = line.replace(metaaddrcon, mtad);
+				out.append(line);
+				out.flush();
+				out.append("\n");
+			}
+			DataModelTestSuite.runSort(outputFile);
+		} catch (Exception ex) {
+			logg.log(Level.SEVERE, "Failed to run CPP program", ex);
+		}
+		
+		java.io.File xfile = new java.io.File(DataModelTestSuite.exceptionPath(outputFile));
+		try {
+			xfile.createNewFile();
+		} catch (IOException ex) {
+			logg.log(Level.SEVERE, "Failed to create exceptions file", ex);
+		}
 	}
+	 
+	 /**
+	 * gets the metadata from a datamodel file object
+	 *
+	 * @param fi
+	 * @return
+	 * @throws TskCoreException
+	 */
+	private static String convertToBodyFileFormat(FsContent fi) throws TskCoreException {
+		String[] path = fi.getUniquePath().split("/", 3);
+		String name;
+		if (path[2].contains("vol_")) {
+			String[] pthget = path[2].split("_", 2);
+			name = pthget[pthget.length - 1];
+		} else {
+			name = path[2];
+		}
+		name = name.replaceAll("[^\\x20-\\x7e]", "");
+		String prpnd;
+		if (fi.isFile()) {
+			prpnd = "r/";
+		} else {
+			prpnd = "d/";
+		}
+		if (fi.isVirtual() && !fi.isDir()) {
+			prpnd = "v/";
+		}
+		return ("0|" + name + "|" + fi.metaAddr + "|" + fi.getMetaTypeAsString() + "/" + fi.getModesAsString() + "|" + fi.getUid() + "|0|" + fi.getSize() + "|" + fi.getAtime() + "|" + fi.getMtime() + "|" + fi.getCtime() + "|" + fi.getCrtime());
+	}
+
 
 	/**
 	 * Traverses through an image and generates a TSK gettimes like
@@ -109,7 +206,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 			} catch (TskCoreException ex) {
 				List<Exception> inp = new ArrayList<Exception>();
 				inp.add(ex);
-				DataModelTestSuite.writeExceptions(testStandardPath, inp);
+				DataModelTestSuite.writeExceptions(outputFilePath, inp);
 			}
 		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Failed to Traverse", ex);
@@ -118,7 +215,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 	}
 
 	/**
-	 * Traverses through an image and generates a TSK gettimes like
+	 * Recursively traverses through an image and generates a TSK gettimes like
 	 * representation
 	 *
 	 * @param lc the list of content to be traversed
@@ -129,17 +226,18 @@ public class CPPtoJavaCompare extends ImgTraverser {
 			try {
 				if (c instanceof FsContent && !c.getUniquePath().endsWith(".") && !c.getUniquePath().endsWith("/")) {
 					try {
-						reslt.append(DataModelTestSuite.getFsCData((FsContent) c));
+						reslt.append(convertToBodyFileFormat((FsContent) c));
 						reslt.append("\n");
 					} catch (IOException ex) {
 						logg.log(Level.SEVERE, "Failed to Traverse", ex);
 					}
 				}
+				// recurse into childern
 				tskTraverse(c.getChildren(), reslt);
 			} catch (TskCoreException ex) {
 				List<Exception> inp = new ArrayList<Exception>();
 				inp.add(ex);
-				DataModelTestSuite.writeExceptions(testStandardPath, inp);
+				DataModelTestSuite.writeExceptions(outputFilePath, inp);
 			}
 		}
 	}

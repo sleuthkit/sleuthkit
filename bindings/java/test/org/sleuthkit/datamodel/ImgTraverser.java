@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
+import static org.junit.Assert.*;
 
 /**
  * A basic implementation of traverser, has a standard test that allows for easy
@@ -29,31 +30,40 @@ import java.util.List;
 public abstract class ImgTraverser{
 
 	protected List<String> imagePaths;
-	protected String exFile;
-	protected String testStandardPath;
-	protected String oldStandardPath;
-	protected String oldExceptionsPath;
+	protected String outputFilePath;	// where output of current test is being stored
+	protected String outputExceptionsPath; // exceptions of current test
+	protected String goldFilePath;	// gold paths for test and exception data
+	protected String goldExceptionsPath;
 	protected String testName;
 
 	/**
-	 * sets up the variables for a basic test, method can be called for any
-	 * traversal test
+	 * Run a test and compare the unsorted results. 
 	 *
-	 * @return
+	 * @return List of test results.  Entry 0 is exceptions and 1 is for content.  True if test passed. 
 	 */
-	public List<Boolean> basicTest() {
-		String title = DataModelTestSuite.getImgName(imagePaths.get(0));
-		java.io.File testFolder = new java.io.File(DataModelTestSuite.getRsltPath());
-		java.io.File testStandard = new java.io.File(DataModelTestSuite.buildPath(testFolder.getAbsolutePath(), title, this.testName, ".txt"));
-		testStandardPath = testStandard.getPath();
-		exFile = testStandardPath.replace(".txt", DataModelTestSuite.EX + ".txt");
-		oldStandardPath = DataModelTestSuite.standardPath(imagePaths, this.testName);
-		DataModelTestSuite.createStandard(testStandardPath, testFolder.getAbsolutePath(), imagePaths, this);
-		oldExceptionsPath = oldStandardPath.replace(".txt", DataModelTestSuite.EX + ".txt");
+	public List<Boolean> basicTest() {		
+		// get paths to store output of test and exceptions
+		java.io.File outputFolder = new java.io.File(DataModelTestSuite.getRsltDirPath());
+		java.io.File outputFile = new java.io.File(DataModelTestSuite.resultFilePath(imagePaths, this.testName));
+		outputFile.delete();
+		
+		outputFilePath = outputFile.getPath();
+		outputExceptionsPath = DataModelTestSuite.exceptionPath(outputFilePath);
+		goldFilePath = DataModelTestSuite.standardFilePath(imagePaths, this.testName);
+		goldExceptionsPath = DataModelTestSuite.exceptionPath(goldFilePath);
+		
+		// Generate the sorted and unsorted output needed for the test
+		DataModelTestSuite.createOutput(outputFilePath, outputFolder.getAbsolutePath(), imagePaths, this);
+	
+		// verify there is output
+		assertTrue ("Output file is zero sized (" + outputFilePath + ")", outputFile.length() > 0);
+		
+		// compare the unsorted results
 		List<Boolean> ret = new ArrayList<Boolean>(2);
-		ret.add(DataModelTestSuite.comparecontent(oldExceptionsPath, exFile));
-		ret.add(DataModelTestSuite.comparecontent(oldStandardPath, testStandardPath));
+		ret.add(DataModelTestSuite.comparecontent(goldExceptionsPath, outputExceptionsPath));
+		ret.add(DataModelTestSuite.comparecontent(goldFilePath, outputFilePath));
 		return ret;
 	}
+	
 	abstract public OutputStreamWriter traverse(SleuthkitCase sk, String path);
 }

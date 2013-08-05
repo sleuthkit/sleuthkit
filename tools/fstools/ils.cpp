@@ -23,7 +23,7 @@
  *	Yorktown Heights, NY 10598, USA
  --*/
 
-#include "tsk3/tsk_tools_i.h"
+#include "tsk/tsk_tools_i.h"
 #include <locale.h>
 
 static TSK_TCHAR *progname;
@@ -48,8 +48,8 @@ usage()
     tsk_fprintf(stderr, "\t-A: Unallocated inodes\n");
     tsk_fprintf(stderr, "\t-l: Linked inodes\n");
     tsk_fprintf(stderr, "\t-L: Unlinked inodes\n");
-    tsk_fprintf(stderr, "\t-z: Unused inodes (ctime is 0)\n");
-    tsk_fprintf(stderr, "\t-Z: Used inodes (ctime is not 0)\n");
+    tsk_fprintf(stderr, "\t-z: Unused inodes\n");
+    tsk_fprintf(stderr, "\t-Z: Used inodes\n");
     tsk_fprintf(stderr,
         "\t-i imgtype: The format of the image file (use '-i list' for supported types)\n");
     tsk_fprintf(stderr,
@@ -188,6 +188,7 @@ main(int argc, char **argv1)
              */
         case _TSK_T('a'):
             flags |= TSK_FS_META_FLAG_ALLOC;
+			flags &= ~TSK_FS_META_FLAG_UNALLOC;
             break;
         case _TSK_T('A'):
             flags |= TSK_FS_META_FLAG_UNALLOC;

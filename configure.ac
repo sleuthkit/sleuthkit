@@ -4,7 +4,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.0.2)
+AC_INIT(sleuthkit, 4.1.0)
 m4_include([m4/ax_pthread.m4])
 # include the version from 1.12.1. This will work for 
 m4_include([m4/cppunit.m4])
@@ -13,8 +13,8 @@ m4_include([m4/ac_prog_javac_works.m4])
 m4_include([m4/ac_prog_javac.m4])
 
 
-AC_CONFIG_SRCDIR([tsk3/base/tsk_base.h])
-AC_CONFIG_HEADERS([tsk3/tsk_config.h])
+AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
+AC_CONFIG_HEADERS([tsk/tsk_config.h])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([foreign])
 AM_PATH_CPPUNIT(1.12.1)
@@ -202,32 +202,32 @@ if test "x$JAVAC" != x; then
 fi
 AM_CONDITIONAL([X_JNI],[test "x$JNI_CPPFLAGS" != x])
 
-AC_CONFIG_COMMANDS([tsk3/tsk_incs.h],
+AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
         [
-          echo "#ifndef _TSK_INCS_H" > tsk3/tsk_incs.h
-          echo "#define _TSK_INCS_H" >> tsk3/tsk_incs.h
-          echo "// automatically by ./configure" >> tsk3/tsk_incs.h
-          echo "// Contains the config.h data needed by programs that use libtsk" >> tsk3/tsk_incs.h
-          echo "" >> tsk3/tsk_incs.h
+          echo "#ifndef _TSK_INCS_H" > tsk/tsk_incs.h
+          echo "#define _TSK_INCS_H" >> tsk/tsk_incs.h
+          echo "// automatically by ./configure" >> tsk/tsk_incs.h
+          echo "// Contains the config.h data needed by programs that use libtsk" >> tsk/tsk_incs.h
+          echo "" >> tsk/tsk_incs.h
           if test x$ac_cv_header_unistd_h = xyes; then
-            echo "#include <unistd.h>" >> tsk3/tsk_incs.h
+            echo "#include <unistd.h>" >> tsk/tsk_incs.h
           fi
           if test x$ac_cv_header_inttypes_h = xyes; then
-            echo "#ifndef __STDC_FORMAT_MACROS" >> tsk3/tsk_incs.h
-            echo "#define  __STDC_FORMAT_MACROS" >> tsk3/tsk_incs.h
-            echo "#endif" >> tsk3/tsk_incs.h
-            echo "#include <inttypes.h>" >> tsk3/tsk_incs.h
+            echo "#ifndef __STDC_FORMAT_MACROS" >> tsk/tsk_incs.h
+            echo "#define  __STDC_FORMAT_MACROS" >> tsk/tsk_incs.h
+            echo "#endif" >> tsk/tsk_incs.h
+            echo "#include <inttypes.h>" >> tsk/tsk_incs.h
           fi
           if test x$ac_cv_header_sys_param_h = xyes; then
-            echo "#include <sys/param.h>" >> tsk3/tsk_incs.h
+            echo "#include <sys/param.h>" >> tsk/tsk_incs.h
           fi
 
           if test x$ax_pthread_ok = xyes; then
-            echo "#define TSK_MULTITHREAD_LIB // set because we have pthreads" >> tsk3/tsk_incs.h
+            echo "#define TSK_MULTITHREAD_LIB // set because we have pthreads" >> tsk/tsk_incs.h
           fi
 
-          echo "" >> tsk3/tsk_incs.h
-          echo "#endif" >> tsk3/tsk_incs.h
+          echo "" >> tsk/tsk_incs.h
+          echo "#endif" >> tsk/tsk_incs.h
         ],
         [
           ac_cv_header_unistd_h=$ac_cv_header_unistd_h
@@ -236,14 +236,15 @@ AC_CONFIG_COMMANDS([tsk3/tsk_incs.h],
           ax_pthread_ok=$ax_pthread_ok
         ])
 
+
 AC_CONFIG_FILES([Makefile
-                 tsk3/Makefile
-                 tsk3/base/Makefile
-                 tsk3/img/Makefile
-                 tsk3/vs/Makefile
-                 tsk3/fs/Makefile
-                 tsk3/hashdb/Makefile
-                 tsk3/auto/Makefile
+                 tsk/Makefile
+                 tsk/base/Makefile
+                 tsk/img/Makefile
+                 tsk/vs/Makefile
+                 tsk/fs/Makefile
+                 tsk/hashdb/Makefile
+                 tsk/auto/Makefile
                  tools/Makefile
                  tools/imgtools/Makefile
                  tools/vstools/Makefile
@@ -253,9 +254,9 @@ AC_CONFIG_FILES([Makefile
                  tools/autotools/Makefile
                  tools/sorter/Makefile
                  tools/timeline/Makefile
-		 tools/fiwalk/Makefile
-		 tools/fiwalk/src/Makefile
-		 tools/fiwalk/plugins/Makefile
+                 tools/fiwalk/Makefile
+                 tools/fiwalk/src/Makefile
+                 tools/fiwalk/plugins/Makefile
                  tests/Makefile
                  samples/Makefile
                  man/Makefile

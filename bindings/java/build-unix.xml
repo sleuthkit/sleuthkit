@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1252"?>
 <project name="TSKTestTargets">
-	<target name="test-precond" 
-			description="Traverses the Images stored in the path represented by test-input variable, creates results files stored in the path represented by test-results, and compares them to the standards stored in the path represented by the test-standards variable, always run test-create-standards at least once before before running test."
+	<target name="test" 
+			description="Performs regression tests."
 			depends="compile-test, copyTSKLibs">
 		<junit fork="on" haltonfailure="yes" dir=".">
 			<sysproperty key="rslt" value="${test-results}"/>
@@ -12,8 +12,9 @@
 			<test name="org.sleuthkit.datamodel.DataModelTestSuite" />
 		</junit>
 	</target>
-	<target name="test-create-standards-precond"
-			description="Traverses the Images stored in the path represented by test-input variable and creates then stores them to the path represented by the test-standards variable, run test-download-imgs at least once before this."
+
+	<target name="test-rebuild"
+			description="Rebuilds regression tests."
 			depends="compile-test, copyTSKLibs">
 		<java classname="org.sleuthkit.datamodel.DataModelTestSuite" classpathref="libraries"	fork="true" failonerror="true">
 			<sysproperty key="gold" value="${test-standards}"/>

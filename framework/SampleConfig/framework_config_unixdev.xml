@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- General version of the framework config for running in src tree in Linux/OS X. -->
+<!-- For more information please consult the TskSystemProperties::PredefinedProperty member enumeration documentation at http://www.sleuthkit.org/sleuthkit/docs/framework-docs/classTskSystemProperties.html -->
+<TSK_FRAMEWORK_CONFIG>
+  <CONFIG_DIR>#PROG_DIR#/../../../SampleConfig</CONFIG_DIR>
+  <PIPELINE_CONFIG_FILE>#CONFIG_DIR#/pipeline_config.xml</PIPELINE_CONFIG_FILE>
+  <MODULE_DIR>#PROG_DIR#/../../../runtime/modules</MODULE_DIR>
+  <MODULE_CONFIG_DIR>#PROG_DIR#/../../../runtime/modules_config</MODULE_CONFIG_DIR>
+</TSK_FRAMEWORK_CONFIG>

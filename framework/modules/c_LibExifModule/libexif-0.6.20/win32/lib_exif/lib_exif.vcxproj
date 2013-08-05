@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{DB081B8E-C5A3-44FB-BB6C-8803C26A705A}</ProjectGuid>
+    <RootNamespace>lib_exif</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>.;..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <PreprocessorDefinitions>GETTEXT_PACKAGE="libexif-12";LOCALEDIR=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>.;..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>GETTEXT_PACKAGE="libexif-12";LOCALEDIR=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ForcedIncludeFiles>%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ForcedUsingFiles>%(ForcedUsingFiles)</ForcedUsingFiles>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\libexif\exif-byte-order.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\libexif\exif-content.c" />
+    <ClCompile Include="..\..\libexif\exif-data.c" />
+    <ClCompile Include="..\..\libexif\exif-entry.c" />
+    <ClCompile Include="..\..\libexif\exif-format.c" />
+    <ClCompile Include="..\..\libexif\exif-ifd.c" />
+    <ClCompile Include="..\..\libexif\exif-loader.c" />
+    <ClCompile Include="..\..\libexif\exif-log.c" />
+    <ClCompile Include="..\..\libexif\exif-mem.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\lib_exif\config.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\libexif\canon\exif-mnote-data-canon.c" />
+    <ClCompile Include="..\..\libexif\fuji\exif-mnote-data-fuji.c" />
+    <ClCompile Include="..\..\libexif\olympus\exif-mnote-data-olympus.c" />
+    <ClCompile Include="..\..\libexif\pentax\exif-mnote-data-pentax.c" />
+    <ClCompile Include="..\..\libexif\exif-mnote-data.c" />
+    <ClCompile Include="..\..\libexif\exif-tag.c" />
+    <ClCompile Include="..\..\libexif\exif-utils.c" />
+    <ClCompile Include="..\..\libexif\canon\mnote-canon-entry.c" />
+    <ClCompile Include="..\..\libexif\canon\mnote-canon-tag.c" />
+    <ClCompile Include="..\..\libexif\fuji\mnote-fuji-entry.c" />
+    <ClCompile Include="..\..\libexif\fuji\mnote-fuji-tag.c" />
+    <ClCompile Include="..\..\libexif\olympus\mnote-olympus-entry.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="..\..\libexif\olympus\mnote-olympus-tag.c" />
+    <ClCompile Include="..\..\libexif\pentax\mnote-pentax-entry.c" />
+    <ClCompile Include="..\..\libexif\pentax\mnote-pentax-tag.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\libexif\_stdint.h" />
+    <ClInclude Include="config.h" />
+    <ClInclude Include="..\..\libexif\exif-byte-order.h" />
+    <ClInclude Include="..\..\libexif\exif-content.h" />
+    <ClInclude Include="..\..\libexif\exif-data-type.h" />
+    <ClInclude Include="..\..\libexif\exif-data.h" />
+    <ClInclude Include="..\..\libexif\exif-entry.h" />
+    <ClInclude Include="..\..\libexif\exif-format.h" />
+    <ClInclude Include="..\..\libexif\exif-ifd.h" />
+    <ClInclude Include="..\..\libexif\exif-loader.h" />
+    <ClInclude Include="..\..\libexif\exif-log.h" />
+    <ClInclude Include="..\..\libexif\exif-mem.h" />
+    <ClInclude Include="..\..\libexif\canon\exif-mnote-data-canon.h" />
+    <ClInclude Include="..\..\libexif\fuji\exif-mnote-data-fuji.h" />
+    <ClInclude Include="..\..\libexif\olympus\exif-mnote-data-olympus.h" />
+    <ClInclude Include="..\..\libexif\pentax\exif-mnote-data-pentax.h" />
+    <ClInclude Include="..\..\libexif\exif-mnote-data-priv.h" />
+    <ClInclude Include="..\..\libexif\exif-mnote-data.h" />
+    <ClInclude Include="..\..\libexif\exif-system.h" />
+    <ClInclude Include="..\..\libexif\exif-tag.h" />
+    <ClInclude Include="..\..\libexif\exif-utils.h" />
+    <ClInclude Include="..\..\libexif\exif.h" />
+    <ClInclude Include="..\..\libexif\i18n.h" />
+    <ClInclude Include="..\..\libexif\canon\mnote-canon-entry.h" />
+    <ClInclude Include="..\..\libexif\canon\mnote-canon-tag.h" />
+    <ClInclude Include="..\..\libexif\fuji\mnote-fuji-entry.h" />
+    <ClInclude Include="..\..\libexif\fuji\mnote-fuji-tag.h" />
+    <ClInclude Include="..\..\libexif\olympus\mnote-olympus-entry.h" />
+    <ClInclude Include="..\..\libexif\olympus\mnote-olympus-tag.h" />
+    <ClInclude Include="..\..\libexif\pentax\mnote-pentax-entry.h" />
+    <ClInclude Include="..\..\libexif\pentax\mnote-pentax-tag.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

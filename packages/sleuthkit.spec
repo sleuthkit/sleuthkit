@@ -1,5 +1,5 @@
 Name:		sleuthkit	
-Version:	4.0.2
+Version:	4.1.0
 Release:	1%{?dist}
 Summary:	The Sleuth Kit (TSK) is a library and collection of command line tools that allow you to investigate volume and file system data.	
 
@@ -43,23 +43,23 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/*
 %dir %{_mandir}/man1
 %{_mandir}/man1/*
-%dir /usr/include/tsk3
-/usr/include/tsk3/*
-%dir /usr/include/tsk3/base
-/usr/include/tsk3/base/*
-%dir /usr/include/tsk3/fs
-/usr/include/tsk3/fs/*
-%dir /usr/include/tsk3/hashdb
-/usr/include/tsk3/hashdb/*
-%dir /usr/include/tsk3/img
-/usr/include/tsk3/img/*
-%dir /usr/include/tsk3/vs
-/usr/include/tsk3/vs/*
-%dir /usr/include/tsk3/auto
-/usr/include/tsk3/auto/*
-%dir /usr/share/tsk3
-%dir /usr/share/tsk3/sorter
-/usr/share/tsk3/sorter/*
+%dir /usr/include/tsk
+/usr/include/tsk/*
+%dir /usr/include/tsk/base
+/usr/include/tsk/base/*
+%dir /usr/include/tsk/fs
+/usr/include/tsk/fs/*
+%dir /usr/include/tsk/hashdb
+/usr/include/tsk/hashdb/*
+%dir /usr/include/tsk/img
+/usr/include/tsk/img/*
+%dir /usr/include/tsk/vs
+/usr/include/tsk/vs/*
+%dir /usr/include/tsk/auto
+/usr/include/tsk/auto/*
+%dir /usr/share/tsk
+%dir /usr/share/tsk/sorter
+/usr/share/tsk/sorter/*
 %doc ChangeLog.txt NEWS.txt INSTALL.txt README.txt README_win32.txt
 
 

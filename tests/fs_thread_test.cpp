@@ -19,12 +19,12 @@
 // safety, but by running enough threads and enough repetitions of
 // the test without error, you can be more confident.
 
-#include <tsk3/libtsk.h>
+#include <tsk/libtsk.h>
 
 #include "tsk_thread.h"
 
 // for tsk_getopt() and friends
-#include "tsk3/base/tsk_base_i.h"
+#include "tsk/base/tsk_base_i.h"
 
 #include <stdio.h>
 #include <stdlib.h>

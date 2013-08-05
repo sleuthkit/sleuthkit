@@ -38,7 +38,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <tsk3/libtsk.h>
+#include <tsk/libtsk.h>
 
 static TSK_HDB_INFO *hdb_info;
 
