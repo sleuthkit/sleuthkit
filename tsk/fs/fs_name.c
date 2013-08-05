@@ -583,7 +583,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, const TSK_FS_ATTR * fs_attr,
     const char *prefix, int32_t time_skew)
 {
-	tsk_fs_name_print_mac_hash(hFile, fs_file, a_path, fs_attr, prefix, time_skew, NULL, TSK_FS_HASH_INVALID_ID);
+	tsk_fs_name_print_mac_md5(hFile, fs_file, a_path, fs_attr, prefix, time_skew, NULL);
 }
 
 /**
@@ -602,14 +602,13 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
  * @param fs_attr Attribute in file that is being called for (NULL for non-NTFS)
  * @param prefix Path of mounting point for image
  * @param time_skew number of seconds skew to adjust time
- * @param hash_results Holds the calculated hash values
- * @param hash_flag indicates which hash to print
+ * @param hash_results Holds the calculated md5 hash
 */
 void
-tsk_fs_name_print_mac_hash(FILE * hFile, const TSK_FS_FILE * fs_file,
+tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, const TSK_FS_ATTR * fs_attr,
     const char *prefix, int32_t time_skew,
-	const TSK_FS_HASH_RESULTS * hash_results, TSK_FS_HASH_ENUM hash_flag)
+	const unsigned char * hash_results)
 {
     char ls[12];
     size_t i;
@@ -629,28 +628,16 @@ tsk_fs_name_print_mac_hash(FILE * hFile, const TSK_FS_FILE * fs_file,
     }
 
     /* hash
-	 * final comparison is checking that we've calculated the requested hash
+	 * Print out the first one that is set
 	 */
-	if((hash_results == NULL) || (hash_flag == TSK_FS_HASH_INVALID_ID)
-		|| (! (hash_flag & hash_results->flags))){
+	if(hash_results == NULL){
 		tsk_fprintf(hFile, "0|");
 	}
 	else{
-		if(hash_flag & TSK_FS_HASH_MD5){
-			for(i = 0;i < 16;i++){
-				tsk_fprintf(hFile, "%02x", hash_results->md5_digest[i]);
-			}
-			tsk_fprintf(hFile, "|");
+		for(i = 0;i < 16;i++){
+			tsk_fprintf(hFile, "%02x", hash_results[i]);
 		}
-		else if(hash_flag & TSK_FS_HASH_SHA1){
-			for(i = 0;i < 20;i++){
-				tsk_fprintf(hFile, "%02x", hash_results->sha1_digest[i]);
-			}
-			tsk_fprintf(hFile, "|");
-		}
-		else{
-			tsk_fprintf(hFile, "0|");
-		}
+		tsk_fprintf(hFile, "|");
 	}
 
     /* file name */
