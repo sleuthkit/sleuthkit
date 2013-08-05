@@ -628,7 +628,7 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     }
 
     /* hash
-	 * Print out the first one that is set
+	 * Print out the hash buffer (if not null)
 	 */
 	if(hash_results == NULL){
 		tsk_fprintf(hFile, "0|");
