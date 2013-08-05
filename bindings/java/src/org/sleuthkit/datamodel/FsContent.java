@@ -18,8 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -42,6 +40,8 @@ public abstract class FsContent extends AbstractFile {
 	protected final long fsObjId;
 	private String uniquePath;
 	///read-write database tsk_files fields
+	private final SleuthkitCase tskCase;
+	
 	/**
 	 * parent file system
 	 */
@@ -84,6 +84,7 @@ public abstract class FsContent extends AbstractFile {
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
 		super(db, objId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
+		this.tskCase = db;
 		this.fsObjId = fsObjId;
 	}
 
@@ -123,18 +124,26 @@ public abstract class FsContent extends AbstractFile {
 
 	@Override
 	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
-		if (offset == 0 && size == 0) {
-			//special case for 0-size file
-			return 0;
-		}
-		if (fileHandle == 0) {
-			synchronized (this) {
-				if (fileHandle == 0) {
-					fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
+		try {
+			if (offset == 0 && size == 0) {
+				//special case for 0-size file
+				return 0;
+			}
+			if (fileHandle == 0) {
+				synchronized (this) {
+					if (fileHandle == 0) {
+						fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
+					}
 				}
 			}
+			return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 		}
-		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
+		catch (TskCoreException ex) {
+			if (!getImage().imageFileExists()) {
+				tskCase.submitError("Image File Read Error", "Image file is does not exist or is inaccessible.");
+			}
+			throw ex;
+		}
 	}
 
 	@Override

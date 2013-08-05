@@ -65,8 +65,14 @@ enum TSK_ARTIFACT_TYPE {
     TSK_TAG_FILE = 17, ///< File tags.
     TSK_TAG_ARTIFACT = 18, ///< Result tags.
     TSK_OS_INFO = 19, ///< Information pertaining to an operating system.
-    TSK_OS_ACCOUNT, ///< An operating system user account.
-    TSK_SERVICE_ACCOUNT, ///< A network service user account.
+    TSK_OS_ACCOUNT = 20, ///< An operating system user account.
+    TSK_SERVICE_ACCOUNT = 21, ///< A network service user account.
+    TSK_TOOL_OUTPUT = 22,  ///< Output from an external tool or module (raw text)
+	TSK_CONTACT = 23, ///< A Contact extracted from a phone, or from an Addressbook/Email/Messaging Application
+	TSK_MESSAGE = 24, ///< An SMS/MMS message extracted from phone, or from another messaging application, like IM
+	TSK_CALLLOG = 25, ///< A Phone call log extracted from a phones or softphone application
+	TSK_CALENDAR_ENTRY = 26, ///< A Calendar entry from a phone, PIM or a Calendar application.
+		
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
     * - UPDATE map in TskBlackboard.cpp
@@ -155,7 +161,21 @@ enum TSK_ATTRIBUTE_TYPE {
     TSK_DATETIME_MODIFIED = 69,///< Time in Unix epoch that something was modified
     TSK_PROCESSOR_ARCHITECTURE = 70,///< String of processor architecture.  Naming convention from http://en.wikipedia.org/wiki/Comparison_of_CPU_architectures.  So far, we've used x86, x86-64, and IA64.
     TSK_VERSION = 71,///< String for a software version 
-    TSK_USER_ID,///< User IDfor a user account, e.g., a Windows SID or Linux UID.
+    TSK_USER_ID = 72,///< User IDfor a user account, e.g., a Windows SID or Linux UID.
+    TSK_DESCRIPTION = 73, ///< String for a description associated with an artifact.
+	TSK_MESSAGE_TYPE =74, ///< SMS or MMS or IM ...
+	TSK_PHONE_NUMBER_HOME = 75, ///< Phone number (Home)
+	TSK_PHONE_NUMBER_OFFICE = 76, ///< Phone number (Office)
+	TSK_PHONE_NUMBER_MOBILE = 77, ///< Phone Number (Mobile)
+	TSK_PHONE_NUMBER_FROM = 78, ///<  Source Phone Number, originating a call or message
+	TSK_PHONE_NUMBER_TO = 79, /// < Destination Phone Number, receiving a call or message
+	TSK_DIRECTION = 80,  ///< Msg/Call direction: incoming, outgoing
+	TSK_EMAIL_HOME = 81, ///< Email (Home)"),
+	TSK_EMAIL_OFFICE = 82, ///< Email (Office)
+	TSK_DATETIME_START = 83, ///< start time of an event - call log, Calendar entry
+	TSK_DATETIME_END = 84, ///< end time of an event - call log, Calendar entry
+	TSK_CALENDAR_ENTRY_TYPE = 85, ///< calendar entry type: meeting, task, 
+	TSK_LOCATION = 86, 	// Location string associated with an event - Conf Room Name, Address ....
 
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 

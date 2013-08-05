@@ -35,8 +35,8 @@ import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
-import org.sleuthkit.datamodel.TskData.ObjectType;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.TskData.ObjectType;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
@@ -112,6 +112,8 @@ public class SleuthkitCase {
 	private PreparedStatement getFsIdForFileIdSt;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 
+	private ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
+	
 	/**
 	 * constructor (private) - client uses openCase() and newCase() instead
 	 *
@@ -1020,6 +1022,26 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 
+	}
+	
+	/**
+	 * Get all of the blackboard artifact types that are in use in the blackboard. 
+	 * 
+	 * @return List of blackboard artifact types
+	 * @throws TskCoreException 
+	 */
+	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypesInUse() throws TskCoreException {
+		// @@@ TODO: This should be rewritten as a single query. 
+		
+		ArrayList<BlackboardArtifact.ARTIFACT_TYPE> allArts = getBlackboardArtifactTypes();
+		ArrayList<BlackboardArtifact.ARTIFACT_TYPE> usedArts = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
+		
+		for (BlackboardArtifact.ARTIFACT_TYPE art : allArts) {
+			if (getBlackboardArtifactsTypeCount(art.getTypeID()) > 0) {
+				usedArts.add(art);
+			}
+		}
+		return usedArts;
 	}
 
 	/**
@@ -4993,5 +5015,46 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}
 		return count;
+	}
+	
+	/**
+	 * This is a temporary workaround to avoid an API change.
+	 * @deprecated
+	 */
+	@Deprecated
+	public interface ErrorObserver {
+		void receiveError(String context, String errorMessage);
+	}
+	
+	/**
+	 * This is a temporary workaround to avoid an API change.
+	 * @deprecated
+	 */
+	@Deprecated
+	public void addErrorObserver(ErrorObserver observer) {
+		errorObservers.add(observer);
+	}
+	
+	/**
+	 * This is a temporary workaround to avoid an API change.
+	 * @deprecated
+	 */
+	@Deprecated
+	public void removerErrorObserver(ErrorObserver observer) {
+		int i = errorObservers.indexOf(observer);
+		if (i >= 0) {
+			errorObservers.remove(i);
+		}
+	}
+	
+	/**
+	 * This is a temporary workaround to avoid an API change.
+	 * @deprecated
+	 */
+	@Deprecated
+	public void submitError(String context, String errorMessage) {
+		for (ErrorObserver observer : errorObservers) {
+			observer.receiveError(context, errorMessage);
+		}
 	}
 }
