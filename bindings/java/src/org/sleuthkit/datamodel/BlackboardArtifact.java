@@ -63,7 +63,12 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_OS_INFO(19, "TSK_OS_INFO", "Operating System Information"), ///< Information pertaining to an operating system.
 		TSK_OS_ACCOUNT(20, "TSK_OS_ACCOUNT", "Operating System User Account"), ///< An operating system user account.
 		TSK_SERVICE_ACCOUNT(21, "TSK_SERVICE_ACCOUNT", "Network Service User Account"), ///< A network service user account.
-        TSK_TOOL_OUTPUT(22, "TSK_TOOL_OUTPUT", "Raw Tool Output") ///< Output from an external tool or module that (raw text)
+        TSK_TOOL_OUTPUT(22, "TSK_TOOL_OUTPUT", "Raw Tool Output"), ///< Output from an external tool or module that (raw text)
+		TSK_CONTACT(23, "TSK_CONTACT", "Contacts"), ///< A Contact extracted from a phone, or from an Addressbook/Email/Messaging Application
+		TSK_MESSAGE(24, "TSK_MESSAGE", "Messages"), ///< An SMS/MMS message extracted from phone, or from another messaging application, like IM
+		TSK_CALLLOG(25, "TSK_CALLLOG", "Call Logs"), ///< A Phone call log extracted from a phones or softphone application
+		TSK_CALENDAR_ENTRY(26, "TSK_CALENDAR_ENTRY", "Calendar Entries") ///< A Calendar entry from a phone, PIM or a Calendar application.
+		
 		; 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
