@@ -1,0 +1,3 @@
+Changes to make once we are ready to do a backwards incompatible change.
+- TSK_SERVICE_ACCOUNT to TSK_ACCOUNT
+- HashDB to use new TSK_BASE_HASHDB enum instead of its own ENUM
