@@ -569,10 +569,10 @@ tsk_fs_file_get_owner_sid(TSK_FS_FILE * a_fs_file, char **sid_str)
  * Internal struct used for hash calculations
  */
 typedef struct {
-	TSK_HASH_ENUM flags;
+	TSK_BASE_HASH_ENUM flags;
 	TSK_MD5_CTX md5_context;
 	TSK_SHA_CTX sha1_context;
-} TSK_HASH_DATA;
+} TSK_FS_HASH_DATA;
 
 /**
  * Helper function for tsk_fs_file_get_md5
@@ -582,15 +582,15 @@ tsk_fs_file_hash_calc_callback(TSK_FS_FILE * file, TSK_OFF_T offset,
     TSK_DADDR_T addr, char *buf, size_t size,
     TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr)
 {
-    TSK_HASH_DATA * hash_data = (TSK_HASH_DATA *) ptr;
+    TSK_FS_HASH_DATA * hash_data = (TSK_FS_HASH_DATA *) ptr;
     if (hash_data == NULL)
         return TSK_WALK_CONT;
 
-	if(hash_data->flags & TSK_HASH_MD5){
+	if(hash_data->flags & TSK_BASE_HASH_MD5){
 		TSK_MD5_Update(&(hash_data->md5_context), (unsigned char *) buf, (unsigned int) size);
 	}
 
-	if(hash_data->flags & TSK_HASH_SHA1){
+	if(hash_data->flags & TSK_BASE_HASH_SHA1){
 		TSK_SHA_Update(&(hash_data->sha1_context), (unsigned char *) buf, (unsigned int) size);
 	}
 
@@ -606,8 +606,8 @@ tsk_fs_file_hash_calc_callback(TSK_FS_FILE * file, TSK_OFF_T offset,
  * @param a_flags Indicates which hash algorithm(s) to use
  * @returns 0 on success or 1 on error
  */
-extern uint8_t tsk_fs_file_hash_calc(TSK_FS_FILE * a_fs_file, TSK_HASH_RESULTS * a_hash_results, TSK_HASH_ENUM a_flags){
-	TSK_HASH_DATA hash_data;
+extern uint8_t tsk_fs_file_hash_calc(TSK_FS_FILE * a_fs_file, TSK_FS_HASH_RESULTS * a_hash_results, TSK_BASE_HASH_ENUM a_flags){
+	TSK_FS_HASH_DATA hash_data;
 	int i;
 
     if ((a_fs_file == NULL) || (a_fs_file->fs_info == NULL)
@@ -623,10 +623,10 @@ extern uint8_t tsk_fs_file_hash_calc(TSK_FS_FILE * a_fs_file, TSK_HASH_RESULTS *
         return 1;
     }
 
-	if(a_flags & TSK_HASH_MD5){
+	if(a_flags & TSK_BASE_HASH_MD5){
 		TSK_MD5_Init(&(hash_data.md5_context));
 	}
-	if(a_flags & TSK_HASH_SHA1){
+	if(a_flags & TSK_BASE_HASH_SHA1){
 		TSK_SHA_Init(&(hash_data.sha1_context));
 	}
 
@@ -639,10 +639,10 @@ extern uint8_t tsk_fs_file_hash_calc(TSK_FS_FILE * a_fs_file, TSK_HASH_RESULTS *
     }
 
 	a_hash_results->flags = a_flags;
-	if(a_flags & TSK_HASH_MD5){
+	if(a_flags & TSK_BASE_HASH_MD5){
 		TSK_MD5_Final(a_hash_results->md5_digest, &(hash_data.md5_context));
 	}
-	if(a_flags & TSK_HASH_MD5){
+	if(a_flags & TSK_BASE_HASH_MD5){
 		TSK_SHA_Final(a_hash_results->sha1_digest, &(hash_data.sha1_context));
 	}
 
