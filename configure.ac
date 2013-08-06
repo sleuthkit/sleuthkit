@@ -83,6 +83,7 @@ AX_PTHREAD( [
 # Not all compilers include /usr/local in the include and link path
 if test -d /usr/local/include; then
     CFLAGS="$CFLAGS -I/usr/local/include"
+    CXXFLAGS="$CFLAGS -I/usr/local/include" # Added this in case fiwalk needs it
     LDFLAGS="$LDFLAGS -L/usr/local/lib"
 fi
 
@@ -173,7 +174,8 @@ AS_IF([test "x$with_libewf" != "xno"],
     # Test the dir if they specified something beyond yes/no
     [AS_IF([test "x$with_libewf" != "xyes"],
         [AS_IF([test -d ${with_libewf}/include],
-            [CFLAGS="$CFLAGS -I${with_libewf}/include"
+            [CFLAGS="$CFLAGS -I${with_libewf}/include"  # TSK needs this
+                CXXFLAGS="$CXXFLAGS -I${with_libewf}/include"  # fiwalk needs this
                 LDFLAGS="$LDFLAGS -L${with_libewf}/lib"],
             # Dir given was not correct
             [AC_MSG_FAILURE([libewf directory not found at ${with_libewf}])])
