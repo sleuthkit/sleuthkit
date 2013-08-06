@@ -723,12 +723,12 @@ extern "C" {
     extern uint8_t tsk_fs_file_get_owner_sid(TSK_FS_FILE *, char **);
 
 	typedef struct {
-		TSK_HASH_ENUM flags;
+		TSK_BASE_HASH_ENUM flags;
 		unsigned char md5_digest[16];
 		unsigned char sha1_digest[20];
-	} TSK_HASH_RESULTS;
+	} TSK_FS_HASH_RESULTS;
 
-	extern uint8_t tsk_fs_file_hash_calc(TSK_FS_FILE *, TSK_HASH_RESULTS *, TSK_HASH_ENUM);
+	extern uint8_t tsk_fs_file_hash_calc(TSK_FS_FILE *, TSK_FS_HASH_RESULTS *, TSK_BASE_HASH_ENUM);
 
     //@}
 
