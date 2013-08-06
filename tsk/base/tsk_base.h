@@ -479,7 +479,7 @@ documentation and/or software.
 		TSK_BASE_HASH_INVALID_ID = 0,
 		TSK_BASE_HASH_MD5 = 0x01,
 		TSK_BASE_HASH_SHA1 = 0x02
-		//TSK_HASH_SHA256 = 0x04,
+		//TSK_BASE_HASH_SHA256 = 0x04,
 	} TSK_BASE_HASH_ENUM;
 
 
