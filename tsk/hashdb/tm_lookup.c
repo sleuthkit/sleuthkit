@@ -625,6 +625,18 @@ hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
             return 1;
         }
     }
+    else if (strcmp(ptr, TSK_HDB_DBTYPE_ENCASE_STR) == 0) {
+        if ((hdb_info->db_type != TSK_HDB_DBTYPE_ENCASE_ID) &&
+            (hdb_info->db_type != TSK_HDB_DBTYPE_IDXONLY_ID)) {
+            tsk_release_lock(&hdb_info->lock);
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
+            tsk_error_set_errstr(
+                     "hdb_indexsetup: DB detected as %s, index type has EnCase",
+                     ptr);
+            return 1;
+        }
+    }
     else if (hdb_info->db_type != TSK_HDB_DBTYPE_IDXONLY_ID) {
         tsk_release_lock(&hdb_info->lock);
         tsk_error_reset();

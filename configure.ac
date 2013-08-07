@@ -77,12 +77,12 @@ AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf])
 AX_PTHREAD( [
             AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
             CLIBS="$PTHREAD_LIBS $LIBS"
-            CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+            CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS"
             LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
             CC="$PTHREAD_CC"],[])
 # Not all compilers include /usr/local in the include and link path
 if test -d /usr/local/include; then
-    CFLAGS="$CFLAGS -I/usr/local/include"
+    CPPFLAGS="$CPPFLAGS -I/usr/local/include"
     LDFLAGS="$LDFLAGS -L/usr/local/lib"
 fi
 
@@ -102,7 +102,7 @@ AS_IF([test "x$with_afflib" != "xno"],
     # Test the dir if they specified something beyond yes/no
     [AS_IF([test "x$with_afflib" != "xyes"],
         [AS_IF([test -d ${with_afflib}/include],
-            [CFLAGS="$CFLAGS -I${with_afflib}/include"
+            [CPPFLAGS="$CPPFLAGS -I${with_afflib}/include"
                 LDFLAGS="$LDFLAGS -L${with_afflib}/lib"],
             # Dir given was not correct
             [AC_MSG_FAILURE([AFFLIB directory not found at ${with_afflib}])])
@@ -134,7 +134,7 @@ AS_IF(
    [AS_IF([test "x$with_zlib" != "xyes"],
        [AC_MSG_NOTICE([LOOKING for zlib in ${with_zlib}])]
        [AS_IF([test -d ${with_zlib}],
-           [CFLAGS="$CFLAGS -I${with_zlib}/include"
+           [CPPFLAGS="$CPPFLAGS -I${with_zlib}/include"
                 LDFLAGS="$LDFLAGS -L${with_zlib}/lib"],
            # Dir given was not correct
            [AC_MSG_FAILURE([ZLIB directory not found at ${with_zlib}])]
@@ -173,7 +173,7 @@ AS_IF([test "x$with_libewf" != "xno"],
     # Test the dir if they specified something beyond yes/no
     [AS_IF([test "x$with_libewf" != "xyes"],
         [AS_IF([test -d ${with_libewf}/include],
-            [CFLAGS="$CFLAGS -I${with_libewf}/include"
+            [CPPFLAGS="$CPPFLAGS -I${with_libewf}/include"  
                 LDFLAGS="$LDFLAGS -L${with_libewf}/lib"],
             # Dir given was not correct
             [AC_MSG_FAILURE([libewf directory not found at ${with_libewf}])])

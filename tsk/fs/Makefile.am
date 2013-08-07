@@ -1,4 +1,3 @@
-AM_CFLAGS = -I../.. -I$(srcdir)/../.. -Wall 
 AM_CPPFLAGS = -I../.. -I$(srcdir)/../.. -Wall 
 EXTRA_DIST = .indent.pro
 
