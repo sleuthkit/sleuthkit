@@ -48,7 +48,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_WEB_HISTORY(4, "TSK_WEB_HISTORY", "Web History"), ///< web history
 		TSK_WEB_DOWNLOAD(5, "TSK_WEB_DOWNLOAD", "Downloads"), ///< web downloads
 		TSK_RECENT_OBJECT(6, "TSK_RECENT_OBJ", "Recent Documents"), ///< recent objects 
-		TSK_TRACKPOINT(7, "TSK_TRACKPOINT", "Trackpoints"), ///< trackpoint (geo location data)
+		TSK_GPS_TRACKPOINT(7, "TSK_GPS_TRACKPOINT", "GPS Trackpoints"), ///< trackpoint (geo location data)
 		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG", "Installed Programs"), ///< installed programs
 		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT", "Keyword Hits"), ///< keyword search hits
 		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", "Hashset Hits"), ///< hashset hits
@@ -62,12 +62,18 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_TAG_ARTIFACT(18, "TSK_TAG_ARTIFACT", "Result Tags"), ///< tagged results/artifacts
 		TSK_OS_INFO(19, "TSK_OS_INFO", "Operating System Information"), ///< Information pertaining to an operating system.
 		TSK_OS_ACCOUNT(20, "TSK_OS_ACCOUNT", "Operating System User Account"), ///< An operating system user account.
-		TSK_SERVICE_ACCOUNT(21, "TSK_SERVICE_ACCOUNT", "Network Service User Account"), ///< A network service user account.
+		TSK_SERVICE_ACCOUNT(21, "TSK_SERVICE_ACCOUNT", "Accounts"), ///< An application/service/web user account.
         TSK_TOOL_OUTPUT(22, "TSK_TOOL_OUTPUT", "Raw Tool Output"), ///< Output from an external tool or module that (raw text)
 		TSK_CONTACT(23, "TSK_CONTACT", "Contacts"), ///< A Contact extracted from a phone, or from an Addressbook/Email/Messaging Application
 		TSK_MESSAGE(24, "TSK_MESSAGE", "Messages"), ///< An SMS/MMS message extracted from phone, or from another messaging application, like IM
 		TSK_CALLLOG(25, "TSK_CALLLOG", "Call Logs"), ///< A Phone call log extracted from a phones or softphone application
-		TSK_CALENDAR_ENTRY(26, "TSK_CALENDAR_ENTRY", "Calendar Entries") ///< A Calendar entry from a phone, PIM or a Calendar application.
+		TSK_CALENDAR_ENTRY(26, "TSK_CALENDAR_ENTRY", "Calendar Entries"), ///< A Calendar entry from a phone, PIM or a Calendar application.
+		TSK_SPEED_DIAL_ENTRY(27, "TSK_SPEED_DIAL_ENTRY", "Speed Dial Entries"), ///< A speed dial entry from a phone 
+		TSK_BLUETOOTH_PAIRING(28, "TSK_BLUETOOTH_PAIRING", "BlueTooth Pairings"), ///< A bluetooth pairing entry
+		TSK_GPS_BOOKMARK(29, "TSK_GPS_BOOKMARK", "GPS Bookmarks"),	// GPS Bookmarks
+		TSK_GPS_LAST_KNOWN_LOCATION(30, "TSK_GPS_LAST_KNOWN_LOCATION", "GPS Last Known Location"),	// GPS Last known location
+		TSK_GPS_SEARCH(31, "TSK_GPS_SEARCH", "GPS Searches"),	// GPS Searches
+		 
 		
 		; 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
