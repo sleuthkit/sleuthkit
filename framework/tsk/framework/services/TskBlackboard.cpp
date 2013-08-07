@@ -38,7 +38,11 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
 	retval.insert(pair<int, TskArtifactNames>(TSK_MESSAGE, TskArtifactNames("TSK_MESSAGE", "Messages")));
 	retval.insert(pair<int, TskArtifactNames>(TSK_CALLLOG, TskArtifactNames("TSK_CALLLOG", "Call Logs")));
 	retval.insert(pair<int, TskArtifactNames>(TSK_CALENDAR_ENTRY, TskArtifactNames("TSK_CALENDAR_ENTRY", "Calendar Entries")));
-
+	retval.insert(pair<int, TskArtifactNames>(TSK_SPEED_DIAL_ENTRY, TskArtifactNames("TSK_SPEED_DIAL_ENTRY", "Speed Dial Entries")));
+	retval.insert(pair<int, TskArtifactNames>(TSK_BLUETOOTH_PAIRING, TskArtifactNames("TSK_BLUETOOTH_PAIRING", "Bluetooth Pairings")));
+	retval.insert(pair<int, TskArtifactNames>(TSK_GPS_BOOKMARK, TskArtifactNames("TSK_GPS_BOOKMARK", "GPS Bookmarks")));
+	retval.insert(pair<int, TskArtifactNames>(TSK_GPS_LAST_KNOWN_LOCATION, TskArtifactNames("TSK_GPS_LAST_KNOWN_LOCATION", "GPS Last Known Location")));
+	retval.insert(pair<int, TskArtifactNames>(TSK_GPS_SEARCH, TskArtifactNames("TSK_GPS_SEARCH", "GPS Searches")));
 	
     return retval;
 }
@@ -128,8 +132,12 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
 	retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_END, TskAttributeNames("TSK_DATETIME_END",  "End Date/Time")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_CALENDAR_ENTRY_TYPE, TskAttributeNames("TSK_CALENDAR_ENTRY_TYPE", "Calendar Entry Type")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_LOCATION, TskAttributeNames("TSK_LOCATION", "Location")));
-
-
+	retval.insert(pair<int, TskAttributeNames>(TSK_DIAL_STRING, TskAttributeNames("TSK_DIAL_STRING",  "Dial String")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_DEVICE_NAME, TskAttributeNames("TSK_DEVICE_NAME", "Device Name")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_CATEGORY, TskAttributeNames("TSK_CATEGORY",  "Category")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_MAILBOX_NAME, TskAttributeNames("TSK_MAILBOX_NAME",  "Mailbox Name")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_REPLYTO, TskAttributeNames("TSK_EMAIL_REPLYTO", "ReplyTo Address")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_SERVER_NAME, TskAttributeNames("TSK_SERVER_NAME", "Server Name")));
 
     return retval;
 }
