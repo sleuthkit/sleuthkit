@@ -187,7 +187,7 @@ public class BlackboardAttribute {
 		TSK_DEVICE_NAME(88, "TSK_DEVICE_NAME", "Device Name"),	// device name
 		TSK_CATEGORY(89, "TSK_CATEGORY", "Category"),	// category/type, possible value set varies by the artifact
 		TSK_MAILBOX_NAME(90, "TSK_MAILBOX_NAME", "Mailbox Name"),	// mail box 
-		TSK_EMAIL_REPLYTO(91, "TSK_EMAIL_REPLYTO", "ReplyTo Address"),	// carved data source
+		TSK_EMAIL_REPLYTO(91, "TSK_EMAIL_REPLYTO", "ReplyTo Address"),	// ReplyTo address
 		TSK_SERVER_NAME(92, "TSK_SERVER_NAME", "Server Name"),	// server name
 		
 		
