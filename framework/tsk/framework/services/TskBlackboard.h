@@ -52,7 +52,7 @@ enum TSK_ARTIFACT_TYPE {
     TSK_WEB_HISTORY = 4,///< A web history enrty. 
     TSK_WEB_DOWNLOAD = 5,///< A web download. 
     TSK_RECENT_OBJECT = 6,///< A recently used object (MRU, recent document, etc.).
-    TSK_TRACKPOINT = 7,///< A trackpoint from a GPS log.
+    TSK_GPS_TRACKPOINT = 7,///< A trackpoint from a GPS log.
     TSK_INSTALLED_PROG = 8,///< An installed program. 
     TSK_KEYWORD_HIT = 9,///< A keyword hit. 
     TSK_HASHSET_HIT = 10, ///< A hit within a known bad / notable hashset / hash database. 
