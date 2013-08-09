@@ -52,7 +52,7 @@ enum TSK_ARTIFACT_TYPE {
     TSK_WEB_HISTORY = 4,///< A web history enrty. 
     TSK_WEB_DOWNLOAD = 5,///< A web download. 
     TSK_RECENT_OBJECT = 6,///< A recently used object (MRU, recent document, etc.).
-    TSK_TRACKPOINT = 7,///< A trackpoint from a GPS log.
+    TSK_GPS_TRACKPOINT = 7,///< A trackpoint from a GPS log.
     TSK_INSTALLED_PROG = 8,///< An installed program. 
     TSK_KEYWORD_HIT = 9,///< A keyword hit. 
     TSK_HASHSET_HIT = 10, ///< A hit within a known bad / notable hashset / hash database. 
@@ -72,6 +72,13 @@ enum TSK_ARTIFACT_TYPE {
 	TSK_MESSAGE = 24, ///< An SMS/MMS message extracted from phone, or from another messaging application, like IM
 	TSK_CALLLOG = 25, ///< A Phone call log extracted from a phones or softphone application
 	TSK_CALENDAR_ENTRY = 26, ///< A Calendar entry from a phone, PIM or a Calendar application.
+	TSK_SPEED_DIAL_ENTRY = 27,  ///< A speed dial entry from a phone 
+	TSK_BLUETOOTH_PAIRING = 28,  ///< A bluetooth pairing entry
+	TSK_GPS_BOOKMARK = 29, ///< GPS Bookmarks
+	TSK_GPS_LAST_KNOWN_LOCATION = 30, ///< GPS Last known location
+	TSK_GPS_SEARCH = 31,	///< GPS Searches
+		 
+
 		
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
@@ -176,6 +183,12 @@ enum TSK_ATTRIBUTE_TYPE {
 	TSK_DATETIME_END = 84, ///< end time of an event - call log, Calendar entry
 	TSK_CALENDAR_ENTRY_TYPE = 85, ///< calendar entry type: meeting, task, 
 	TSK_LOCATION = 86, 	// Location string associated with an event - Conf Room Name, Address ....
+	TSK_DIAL_STRING = 87, ///< Short code or dial string for Speed dial, canned messages etc.
+	TSK_DEVICE_NAME = 88, ///< device name
+	TSK_CATEGORY = 89, 	///< category/type, possible value set varies by the artifact
+	TSK_MAILBOX_NAME = 90, 	///< mail box 
+	TSK_EMAIL_REPLYTO = 91, ///< ReplyTo address
+	TSK_SERVER_NAME = 92, 	///< server name
 
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 
