@@ -163,6 +163,16 @@ public interface Content extends SleuthkitVisitableItem {
 	 */
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException;
 
+	
+	/**
+	 * Return the TSK_GEN_INFO artifact for the file so that individual attributes 
+	 * can be added to it.
+	 * 
+	 * @returna Instance of the TSK_GEN_INFO artifact
+	 * @throws TskCoreException 
+	 */
+	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException;
+	
 	/**
 	 * Get all artifacts associated with this content that have the given type
 	 * id
