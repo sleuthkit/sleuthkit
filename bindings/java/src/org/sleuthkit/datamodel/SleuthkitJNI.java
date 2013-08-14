@@ -119,27 +119,23 @@ public class SleuthkitJNI {
 	//Linked library loading
 	static {
 		try {
-			System.loadLibrary("zlib");
-		} catch (UnsatisfiedLinkError e) {
-			System.out.println("SleuthkitJNI: error loading zlib library, " + e.toString());
-		}
-		
-		try {
-			System.loadLibrary("libewf");
-		} catch (UnsatisfiedLinkError e) {
-			System.out.println("SleuthkitJNI: error loading libewf library, " + e.toString());
-		}
-
-		/* We should rename the Windows dll, to remove the lib prefix.
-		 * First try windows version of the name and then try Unix-style.
-		 */
-		try {
-			System.loadLibrary("libtsk_jni");
-		} catch (UnsatisfiedLinkError e1) {
+                //on windows force loading ms crt dependencies first
+                //in case linker can't find them on some systems
+                //Note: if shipping with a different CRT version, this will only print a warning
+                //and try to use linker mechanism to find the correct versions of libs.
+                //We should update this if we officially switch to a new version of CRT/compiler
+                System.loadLibrary("msvcr100");
+                System.loadLibrary("msvcp100");
+				System.out.println("Loaded CRT libraries");
+            } catch (UnsatisfiedLinkError e) {
+				System.out.println("Can't find CRT libraries");
+            }
+		for(LibraryUtils.Lib lib : LibraryUtils.Lib.values()) {
 			try {
-				System.loadLibrary("tsk_jni");
-			} catch (UnsatisfiedLinkError e2) {
-				System.out.println("SleuthkitJNI: Error loading tsk_jni library " + e2.toString());
+				LibraryUtils.loadLibrary(lib);
+				System.out.println("SleuthkitJNI: loaded " + lib);
+			} catch (UnsatisfiedLinkError e) {
+				System.out.println("SleuthkitJNI: error loading " + lib + " library, " + e.toString());
 			}
 		}
 	}
