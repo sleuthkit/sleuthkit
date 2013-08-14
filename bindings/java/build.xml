@@ -25,6 +25,7 @@
 	<property name="x86" location="build/NATIVELIBS/x86" />
 	<property name="x86_64" location="build/NATIVELIBS/x86_64" />
 	<property name="i386" location="build/NATIVELIBS/i386" />
+	<property name="i586" location="build/NATIVELIBS/i586" />
   
 	<path id="libraries">
 		<fileset dir="${lib}">
@@ -50,6 +51,8 @@
 		<mkdir dir="${x86_64}/win" />
 		<mkdir dir="${i386}" />
 		<mkdir dir="${i386}/win" />
+		<mkdir dir="${i586}" />
+		<mkdir dir="${i586}/win" />
 	</target>
   
 	<property name="ivy.install.version" value="2.3.0-rc2" />
@@ -114,36 +117,35 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	
 	<target name="checkLibDirs">
 		<available property="win64.exists" type="dir" file="${basedir}/../../win32/x64/Release" />
-		<echo>win64 exists? ${win64.exists}</echo>
 		<available property="win32.exists" type="dir" file="${basedir}/../../win32/Release" />
-		<echo>win32 exists? ${win32.exists}</echo>
 	</target>
 	
 	<target name="copyWinLibs64" depends="checkLibDirs" if="win64.exists">
 		<property name="win64dir" location="${basedir}/../../win32/x64/Release" />
+		<fileset dir="${win64dir}" id="win64dlls">
+			<include name="*.dll" />
+		</fileset>
 		<copy todir="${amd64}/win">
-			<fileset dir="${win64dir}">
-				<include name="*.dll" />
-			</fileset>
+			<fileset refid="win64dlls" />
 		</copy>
 		<copy todir="${x86_64}/win">
-			<fileset dir="${win64dir}">
-				<include name="*.dll" />
-			</fileset>
+			<fileset refid="win64dlls" />
 		</copy>
 	</target>
 	
 	<target name="copyWinLibs32" depends="checkLibDirs" if="win32.exists">
 		<property name="win32dir" location="${basedir}/../../win32/Release" />
+		<fileset dir="${win32dir}" id="win32dlls">
+			<include name="*.dll" />
+		</fileset>
 		<copy todir="${i386}/win">
-			<fileset dir="${win32dir}">
-				<include name="*.dll" />
-			</fileset>
+			<fileset refid="win32dlls" />
 		</copy>
 		<copy todir="${x86}/win">
-			<fileset dir="${win32dir}">
-				<include name="*.dll" />
-			</fileset>
+			<fileset refid="win32dlls" />
+		</copy>
+		<copy todir="${i586}/win">
+			<fileset refid="win32dlls" />
 		</copy>
 	</target>
 	
