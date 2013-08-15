@@ -2716,8 +2716,8 @@ public class SleuthkitCase {
 	
 	/**
 	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to search for the given file name
-	 * @param fileName the name of the file or directory to match (case
-	 * insensitive)
+	 * @param fileName Pattern of the name of the file or directory to match (case
+	 * insensitive, used in LIKE SQL statement). 
 	 * @return a list of AbstractFile for files/directories whose name matches the
 	 * given fileName
 	 * @throws TskCoreException thrown if check failed
@@ -2780,10 +2780,10 @@ public class SleuthkitCase {
 
 	/**
 	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to search for the given file name
-	 * @param fileName the name of the file or directory to match (case
-	 * insensitive)
-	 * @param dirName the name of a parent directory of fileName (case
-	 * insensitive)
+	 * @param fileName Pattern of the name of the file or directory to match (case
+	 * insensitive, used in LIKE SQL statement). 
+	 * @param dirName Pattern of the name of a parent directory of fileName (case
+	 * insensitive, used in LIKE SQL statement)
 	 * @return a list of AbstractFile for files/directories whose name matches
 	 * fileName and whose parent directory contains dirName.
 	 */
@@ -3547,9 +3547,9 @@ public class SleuthkitCase {
 	/**
 	 * Find all files in the data source, by name and parent
 	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to search for the given file name
-	 * @param fileName the name of the file or directory to match (case
-	 * insensitive)
-	 * @param parentFile
+	 * @param fileName Pattern of the name of the file or directory to match (case
+	 * insensitive, used in LIKE SQL statement). 
+	 * @param parentFile Object for parent file/directory to find children in
 	 * @return a list of AbstractFile for files/directories whose name matches
 	 * fileName and that were inside a directory described by parentFile.
 	 */
