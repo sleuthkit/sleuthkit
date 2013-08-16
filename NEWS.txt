@@ -9,6 +9,7 @@ Core:
   easier to access -- should have done this a long time ago!
 - fls -m and tsk_gettimes output NTFS FNAME times to output for timelines.
 - hfind with EnCase hashsets works when DB is specified (and not only index)
+- TskAuto now goes into UNALLOC partitions by default too. 
 
 
 ---------------- VERSION 4.1.0 --------------
