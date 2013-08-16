@@ -26,6 +26,7 @@
 	<property name="x86_64" location="build/NATIVELIBS/x86_64" />
 	<property name="i386" location="build/NATIVELIBS/i386" />
 	<property name="i586" location="build/NATIVELIBS/i586" />
+	<property name="crt" location="${basedir}/crt" />
   
 	<path id="libraries">
 		<fileset dir="${lib}">
@@ -131,6 +132,15 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		<copy todir="${x86_64}/win">
 			<fileset refid="win64dlls" />
 		</copy>
+		<fileset dir="${crt}/win64" id="crt64dlls">
+			<include name="*.dll" />
+		</fileset>
+		<copy todir="${amd64}/win">
+			<fileset refid="crt64dlls" />
+		</copy>
+		<copy todir="${x86_64}/win">
+			<fileset refid="crt64dlls" />
+		</copy>
 	</target>
 	
 	<target name="copyWinLibs32" depends="checkLibDirs" if="win32.exists">
@@ -146,6 +156,18 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		</copy>
 		<copy todir="${i586}/win">
 			<fileset refid="win32dlls" />
+		</copy>
+		<fileset dir="${crt}/win32" id="crt32dlls">
+			<include name="*.dll" />
+		</fileset>
+		<copy todir="${i386}/win">
+			<fileset refid="crt32dlls" />
+		</copy>
+		<copy todir="${x86}/win">
+			<fileset refid="crt32dlls" />
+		</copy>
+		<copy todir="${i586}/win">
+			<fileset refid="crt32dlls" />
 		</copy>
 	</target>
 	

@@ -118,19 +118,31 @@ public class SleuthkitJNI {
 
 	//Linked library loading
 	static {
-		try {
+		if (LibraryUtils.isWindows()) {
+			try {
                 //on windows force loading ms crt dependencies first
                 //in case linker can't find them on some systems
                 //Note: if shipping with a different CRT version, this will only print a warning
                 //and try to use linker mechanism to find the correct versions of libs.
                 //We should update this if we officially switch to a new version of CRT/compiler
-                System.loadLibrary("msvcr100");
-                System.loadLibrary("msvcp100");
+				for(LibraryUtils.Lib crt : LibraryUtils.getCRTLibs()) {
+					LibraryUtils.loadLibrary(crt);
+				}
 				System.out.println("Loaded CRT libraries");
-            } catch (UnsatisfiedLinkError e) {
-				System.out.println("Can't find CRT libraries");
+            } catch (UnsatisfiedLinkError e1) {
+				System.out.println(e1.toString());
+				try {
+					// Try to load from system path
+					System.out.println("Can't find CRT libraries, attempting to load from System.loadLibrary");
+					System.loadLibrary("msvcr100");
+					System.loadLibrary("msvcp100");
+				} catch (UnsatisfiedLinkError e2) {
+					System.out.println("SleuthkitJNI: error loading CRT libraries, " + e2.toString());
+				}
             }
-		for(LibraryUtils.Lib lib : LibraryUtils.Lib.values()) {
+		}
+		
+		for(LibraryUtils.Lib lib : LibraryUtils.getLibs()) {
 			try {
 				LibraryUtils.loadLibrary(lib);
 				System.out.println("SleuthkitJNI: loaded " + lib);

@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.nio.file.Files;
 
 /**
  * Collection of methods to load libraries embedded in the TSK Datamodel Jar file.
@@ -18,15 +19,22 @@ import java.net.URL;
 public class LibraryUtils {
 	
 	public static final String[] EXTS = new String[] { ".so", ".dylib", ".dll", ".jnilib" };
+	
+	public static final Lib[] CRT_LIBS = new Lib[] { Lib.MSVCP, Lib.MSVCR };
+	
+	public static final Lib[] OTHER_LIBS = new Lib[] { Lib.ZLIB, Lib.LIBEWF, Lib.TSK_JNI };
 	/**
 	 * The libraries the TSK Datamodel needs.
 	 */
 	public enum Lib {
+		MSVCP ("msvcp100"),
+		MSVCR ("msvcr100"),
 		ZLIB ("zlib"),
 		LIBEWF ("libewf"),
 		TSK_JNI ("tsk_jni");
 		
 		private final String name;
+		
 		Lib(String name) {
 			this.name = name;
 		}
@@ -52,7 +60,6 @@ public class LibraryUtils {
 		}
 		// os.arch represents the architecture of the JVM, not the os
 		String arch = System.getProperty("os.arch");
-		System.out.println(arch.toLowerCase() + "/" + os.toLowerCase());
 		return arch.toLowerCase() + "/" + os.toLowerCase();
 	}
 	
@@ -66,7 +73,7 @@ public class LibraryUtils {
 	}
 	
 	/**
-	 * Attempt to load the specified library.
+	 * Attempt to extract and load the specified library.
 	 * 
 	 * @param library
 	 * @return 
@@ -98,7 +105,11 @@ public class LibraryUtils {
 			// copy library to temp folder and load it
 			try {
 				java.io.File libTemp = new java.io.File(System.getProperty("java.io.tmpdir") + libName + libExt);
-				libTemp.deleteOnExit();
+				
+				if(libTemp.exists()) {
+					// Delete old file
+					Files.delete(libTemp.toPath());
+				}
 				
 				InputStream in = libraryURL.openStream();
 				OutputStream out = new FileOutputStream(libTemp);
@@ -112,11 +123,17 @@ public class LibraryUtils {
 				out.close();
 				
 				System.load(libTemp.getAbsolutePath());
-				
-				libTemp.delete();
 			} catch (IOException e) {
 				// Loading failed.
 			} 
 		}
+	} 
+	
+	public static Lib[] getCRTLibs() {
+		return CRT_LIBS;
+	}
+	
+	public static Lib[] getLibs() {
+		return OTHER_LIBS;
 	}
 }
