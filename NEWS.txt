@@ -10,6 +10,8 @@ Core:
 - fls -m and tsk_gettimes output NTFS FNAME times to output for timelines.
 - hfind with EnCase hashsets works when DB is specified (and not only index)
 - TskAuto now goes into UNALLOC partitions by default too. 
+- Added support to automatically find all Cellbrite raw dump files given
+  the name of the first image. 
 
 
 ---------------- VERSION 4.1.0 --------------
