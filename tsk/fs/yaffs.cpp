@@ -2640,7 +2640,7 @@ TSK_FS_INFO *
     yaffsfs->spare_size = ssize == 0 ? YAFFS_DEFAULT_SPARE_SIZE : ssize;
     yaffsfs->chunks_per_block = 64;
     // TODO: Why are 2 different memory allocation methods used in the same code?
-    // This make things unnecessary complex.
+    // This makes things unnecessary complex.
     yaffsfs->chunkMap = new std::map<uint32_t, YaffsCacheChunkGroup>;
     yaffsfs->max_obj_id = 1;
     yaffsfs->max_version = 0;

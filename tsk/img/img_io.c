@@ -200,7 +200,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         // if no error, then set the variables and copy the data
         // Although a read_count of -1 indicates an error,
         // since read_count is used in the calculation it may not be negative.
-        // Also it does not make sence to copy data when the read_count is 0.
+        // Also it does not make sense to copy data when the read_count is 0.
         if( read_count > 0 ) {
             a_img_info->cache_age[cache_next] = CACHE_AGE;
             a_img_info->cache_len[cache_next] = read_count;
