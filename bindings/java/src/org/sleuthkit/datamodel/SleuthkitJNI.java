@@ -118,31 +118,41 @@ public class SleuthkitJNI {
 
 	//Linked library loading
 	static {
-		try {
-			System.loadLibrary("zlib");
-		} catch (UnsatisfiedLinkError e) {
-			System.out.println("SleuthkitJNI: error loading zlib library, " + e.toString());
-		}
-		
-		try {
-			System.loadLibrary("libewf");
-		} catch (UnsatisfiedLinkError e) {
-			System.out.println("SleuthkitJNI: error loading libewf library, " + e.toString());
-		}
+        if (LibraryUtils.isWindows()) {
+            try { 
+                // on windows force loading ms crt dependencies first
+                // in case linker can't find them on some systems
+                // Note: if shipping with a different CRT version, this will only print a warning
+                // and try to use linker mechanism to find the correct versions of libs.
+                // We should update this if we officially switch to a new version of CRT/compiler
 
-		/* We should rename the Windows dll, to remove the lib prefix.
-		 * First try windows version of the name and then try Unix-style.
-		 */
-		try {
-			System.loadLibrary("libtsk_jni");
-		} catch (UnsatisfiedLinkError e1) {
-			try {
-				System.loadLibrary("tsk_jni");
-			} catch (UnsatisfiedLinkError e2) {
-				System.out.println("SleuthkitJNI: Error loading tsk_jni library " + e2.toString());
-			}
-		}
-	}
+                for(LibraryUtils.Lib crt : LibraryUtils.getCRTLibs()) {
+                    LibraryUtils.loadLibrary(crt);
+                }
+                System.out.println("Loaded CRT libraries");
+            } catch (UnsatisfiedLinkError e1) {
+                System.out.println(e1.toString());
+                try {
+                    //Try to load from system path.
+                    System.out.println("Can't find CRT libraries, attempting to load from System.loadLibrary");
+                    System.loadLibrary("msvcr100");
+                    System.loadLibrary("msvcp100");
+                } catch (UnsatisfiedLinkError e2) {
+                    System.out.println("SleuthkitJNI: error loading CRT libraries, " + e2.toString());
+                }
+            }
+        }
+
+        for (LibraryUtils.Lib lib : LibraryUtils.getLibs()) {
+            try {
+                LibraryUtils.loadLibrary(lib);
+                System.out.println("SleuthkitJNI: loaded " + lib);
+            } catch (UnsatisfiedLinkError e) {
+                System.out.println("SleuthkitJNI: error loading " + lib + "library, " + e.toString());
+            }
+        }
+
+    }
 
 	public SleuthkitJNI() {
 	}
