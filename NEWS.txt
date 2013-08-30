@@ -13,6 +13,7 @@ Core:
 - Added support to automatically find all Cellbrite raw dump files given
   the name of the first image. 
 - Java bindings JAR files now have native libraries in them. 
+- Added 64-bit windows targets to VisualStudio files.
 
 
 ---------------- VERSION 4.1.0 --------------
