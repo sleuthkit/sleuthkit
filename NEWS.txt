@@ -15,6 +15,7 @@ Core:
 - Java bindings JAR files now have native libraries in them. 
 - Added 64-bit windows targets to VisualStudio files.
 - Added NTFS sequence to parent address in directory and directory itself.
+- Updated SQLite code to use sequence when finding parent object ID.
 
 
 ---------------- VERSION 4.1.0 --------------

@@ -185,6 +185,9 @@ tsk_fs_file_open(TSK_FS_INFO * a_fs,
     if (fs_file) {
         // Add the name to the structure
         fs_file->name = fs_name;
+        
+        // path2inum did not put this in there...
+        fs_name->meta_seq = fs_file->meta->seq;
     }
     else {
         tsk_fs_name_free(fs_name);

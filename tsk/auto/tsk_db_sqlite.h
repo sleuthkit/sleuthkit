@@ -232,7 +232,7 @@ class TskDbSqlite {
         const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
     int addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size,
         int64_t & objId);
-    void storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId);
+    void storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const uint32_t & meta_seq, const int64_t & objId);
     int64_t findParObjId(const TSK_FS_FILE * fs_file, const int64_t & fsObjId);
     sqlite3 *m_db;
     TSK_TCHAR m_dbFilePath[1024];
@@ -240,7 +240,7 @@ class TskDbSqlite {
     bool m_blkMapFlag;
     bool m_utf8; //encoding used for the database file name, not the actual database
     sqlite3_stmt *m_selectFilePreparedStmt;
-    map<int64_t, map<TSK_INUM_T,int64_t> > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to its object ID in the database
+    map<int64_t, map<TSK_INUM_T, map<uint32_t, int64_t> > > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to a map, which maps a sequence ID to its object ID in the database
 };
 
 #endif
