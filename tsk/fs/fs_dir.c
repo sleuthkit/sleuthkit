@@ -104,6 +104,7 @@ tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir)
     }
     a_fs_dir->names_used = 0;
     a_fs_dir->addr = 0;
+    a_fs_dir->seq = 0;
 }
 
 
@@ -135,6 +136,7 @@ tsk_fs_dir_copy(const TSK_FS_DIR * a_src_dir, TSK_FS_DIR * a_dst_dir)
 
     a_dst_dir->names_used = a_src_dir->names_used;
     a_dst_dir->addr = a_src_dir->addr;
+    a_dst_dir->seq = a_src_dir->seq;
     return 0;
 }
 
@@ -214,8 +216,10 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
         return 1;
 
     // add the parent address
-    if (a_fs_dir->addr)
+    if (a_fs_dir->addr) {
         fs_name_dest->par_addr = a_fs_dir->addr;
+        fs_name_dest->par_seq = a_fs_dir->seq;
+    }
 
     return 0;
 }

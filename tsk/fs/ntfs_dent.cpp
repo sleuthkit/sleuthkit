@@ -640,6 +640,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     fs_dir = *a_fs_dir;
     if (fs_dir) {
         tsk_fs_dir_reset(fs_dir);
+        fs_dir->addr = a_addr;
     }
     else {
         if ((*a_fs_dir = fs_dir =
@@ -668,6 +669,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_COR;
     }
 
+    // Update with the sequence number
+    fs_dir->seq = fs_dir->fs_file->meta->seq;
 
     /*
      * Read the Index Root Attribute  -- we do some sanity checking here

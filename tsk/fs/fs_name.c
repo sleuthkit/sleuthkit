@@ -111,6 +111,7 @@ tsk_fs_name_reset(TSK_FS_NAME * a_fs_name)
     a_fs_name->meta_addr = 0;
     a_fs_name->meta_seq = 0;
     a_fs_name->par_addr = 0;
+    a_fs_name->par_seq = 0;
     a_fs_name->type = 0;
     a_fs_name->flags = 0;
 }
@@ -196,6 +197,7 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
     a_fs_name_to->meta_addr = a_fs_name_from->meta_addr;
     a_fs_name_to->meta_seq = a_fs_name_from->meta_seq;
     a_fs_name_to->par_addr = a_fs_name_from->par_addr;
+    a_fs_name_to->par_seq = a_fs_name_from->par_seq;
     a_fs_name_to->type = a_fs_name_from->type;
     a_fs_name_to->flags = a_fs_name_from->flags;
 
