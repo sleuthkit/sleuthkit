@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.nio.file.Files;
 
 /**
  * Collection of methods to load libraries embedded in the TSK Datamodel Jar file.
@@ -23,6 +22,7 @@ public class LibraryUtils {
 	public static final Lib[] CRT_LIBS = new Lib[] { Lib.MSVCP, Lib.MSVCR };
 	
 	public static final Lib[] OTHER_LIBS = new Lib[] { Lib.ZLIB, Lib.LIBEWF, Lib.TSK_JNI };
+
 	/**
 	 * The libraries the TSK Datamodel needs.
 	 */
@@ -73,6 +73,15 @@ public class LibraryUtils {
 	}
 	
 	/**
+	 * Is the platform Mac?
+	 * 
+	 * @return 
+	 */
+	private static boolean isMac() {
+		return System.getProperty("os.name").toLowerCase().contains("mac");
+	}
+	
+	/**
 	 * Attempt to extract and load the specified library.
 	 * 
 	 * @param library
@@ -84,7 +93,7 @@ public class LibraryUtils {
 		path.append(getPlatform());
 		
 		String libName = library.getLibName();
-		if(library == Lib.TSK_JNI && isWindows()) {
+		if(library == Lib.TSK_JNI && (isWindows() || isMac())) {
 			libName = "lib" + libName;
 		}
 		
@@ -108,7 +117,7 @@ public class LibraryUtils {
 				
 				if(libTemp.exists()) {
 					// Delete old file
-					Files.delete(libTemp.toPath());
+					libTemp.delete();
 				}
 				
 				InputStream in = libraryURL.openStream();
@@ -122,9 +131,12 @@ public class LibraryUtils {
 				in.close();
 				out.close();
 				
+				System.out.println(libTemp.getAbsolutePath());
 				System.load(libTemp.getAbsolutePath());
 			} catch (IOException e) {
-				// Loading failed.
+				System.out.println("IO Exception:");
+				System.out.println(System.getProperty("java.io.tmpdir"));
+				e.printStackTrace();
 			} 
 		}
 	} 
