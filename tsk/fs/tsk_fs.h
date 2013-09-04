@@ -96,7 +96,7 @@ extern "C" {
 
 #define TSK_FS_BLOCK_TAG 0x1b7c3f4a
     /** 
-    * Generic data strcture to hold block data with metadata
+    * Generic data structure to hold block data with metadata
     */
     typedef struct {
         int tag;                ///< \internal Will be set to TSK_FS_BLOCK_TAG if structure is valid / allocated 
@@ -591,7 +591,8 @@ extern "C" {
 
         TSK_INUM_T meta_addr;   ///< Address of the metadata structure that the name points to. 
         uint32_t meta_seq;      ///< Sequence number for metadata structure (NTFS only) 
-        TSK_INUM_T par_addr;    ///< Metadata address of parent directory (equal to meta_addr if this entry is for root directory). 
+        TSK_INUM_T par_addr;    ///< Metadata address of parent directory (equal to meta_addr if this entry is for root directory).
+        uint32_t par_seq;       ///< Sequence number for parent directory (NTFS only)
 
         TSK_FS_NAME_TYPE_ENUM type;     ///< File type information (directory, file, etc.)
         TSK_FS_NAME_FLAG_ENUM flags;    ///< Flags that describe allocation status etc. 
@@ -623,7 +624,8 @@ extern "C" {
         size_t names_used;      ///< Number of name structures in queue being used
         size_t names_alloc;     ///< Number of name structures that were allocated
 
-        TSK_INUM_T addr;        ///< Metadata address of this directory 
+        TSK_INUM_T addr;        ///< Metadata address of this directory
+        uint32_t seq;           ///< Metadata address sequence (NTFS Only)
 
         TSK_FS_INFO *fs_info;   ///< Pointer to file system the directory is located in
     } TSK_FS_DIR;
