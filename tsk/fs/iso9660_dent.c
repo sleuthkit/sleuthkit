@@ -250,6 +250,7 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     fs_dir = *a_fs_dir;
     if (fs_dir) {
         tsk_fs_dir_reset(fs_dir);
+        fs_dir->addr = a_addr;
     }
     else {
         if ((*a_fs_dir = fs_dir =

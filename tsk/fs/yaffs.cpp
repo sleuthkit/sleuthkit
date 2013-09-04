@@ -2339,6 +2339,7 @@ static TSK_RETVAL_ENUM
 
     if (fs_dir) {
         tsk_fs_dir_reset(fs_dir);
+        fs_dir->addr = a_addr;
     }
     else if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
         return TSK_ERR;

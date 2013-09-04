@@ -104,6 +104,7 @@ tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir)
     }
     a_fs_dir->names_used = 0;
     a_fs_dir->addr = 0;
+    a_fs_dir->seq = 0;
 }
 
 
@@ -135,6 +136,7 @@ tsk_fs_dir_copy(const TSK_FS_DIR * a_src_dir, TSK_FS_DIR * a_dst_dir)
 
     a_dst_dir->names_used = a_src_dir->names_used;
     a_dst_dir->addr = a_src_dir->addr;
+    a_dst_dir->seq = a_src_dir->seq;
     return 0;
 }
 
@@ -214,8 +216,10 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
         return 1;
 
     // add the parent address
-    if (a_fs_dir->addr)
+    if (a_fs_dir->addr) {
         fs_name_dest->par_addr = a_fs_dir->addr;
+        fs_name_dest->par_seq = a_fs_dir->seq;
+    }
 
     return 0;
 }
@@ -402,6 +406,14 @@ tsk_fs_dir_get(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
             if (tsk_verbose)
                 tsk_error_print(stderr);
             tsk_error_reset();
+        }
+
+        // if the sequence numbers don't match, then don't load the meta
+        // should ideally have sequence in previous lookup, but it isn't 
+        // in all APIs yet
+        if (fs_file->meta->seq != fs_name->meta_seq) {
+            tsk_fs_meta_close(fs_file->meta);
+            fs_file->meta = NULL;
         }
     }
     return fs_file;
