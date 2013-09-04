@@ -96,7 +96,7 @@ extern "C" {
 
 #define TSK_FS_BLOCK_TAG 0x1b7c3f4a
     /** 
-    * Generic data strcture to hold block data with metadata
+    * Generic data structure to hold block data with metadata
     */
     typedef struct {
         int tag;                ///< \internal Will be set to TSK_FS_BLOCK_TAG if structure is valid / allocated 
