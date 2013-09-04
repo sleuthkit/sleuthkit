@@ -23,7 +23,7 @@ TskAuto::TskAuto()
 {
     m_img_info = NULL;
     m_tag = TSK_AUTO_TAG;
-    m_volFilterFlags = TSK_VS_PART_FLAG_ALLOC;
+    m_volFilterFlags = (TSK_VS_PART_FLAG_ENUM)(TSK_VS_PART_FLAG_ALLOC | TSK_VS_PART_FLAG_UNALLOC);
     m_fileFilterFlags = TSK_FS_DIR_WALK_FLAG_RECURSE;
     m_stopAllProcessing = false;
     m_internalOpen = false;
