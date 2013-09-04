@@ -145,11 +145,8 @@ public class LibraryUtils {
 				in.close();
 				out.close();
 				
-				System.out.println(libTemp.getAbsolutePath());
 				System.load(libTemp.getAbsolutePath());
 			} catch (IOException e) {
-				System.out.println("IO Exception:");
-				System.out.println(System.getProperty("java.io.tmpdir"));
 				e.printStackTrace();
 			} 
 		}
