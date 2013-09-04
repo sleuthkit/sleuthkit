@@ -132,10 +132,9 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
 	retval.insert(pair<int, TskAttributeNames>(TSK_DATETIME_END, TskAttributeNames("TSK_DATETIME_END",  "End Date/Time")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_CALENDAR_ENTRY_TYPE, TskAttributeNames("TSK_CALENDAR_ENTRY_TYPE", "Calendar Entry Type")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_LOCATION, TskAttributeNames("TSK_LOCATION", "Location")));
-	retval.insert(pair<int, TskAttributeNames>(TSK_DIAL_STRING, TskAttributeNames("TSK_DIAL_STRING",  "Dial String")));
+	retval.insert(pair<int, TskAttributeNames>(TSK_SHORTCUT, TskAttributeNames("TSK_SHORTCUT",  "Short Cut")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_DEVICE_NAME, TskAttributeNames("TSK_DEVICE_NAME", "Device Name")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_CATEGORY, TskAttributeNames("TSK_CATEGORY",  "Category")));
-	retval.insert(pair<int, TskAttributeNames>(TSK_MAILBOX_NAME, TskAttributeNames("TSK_MAILBOX_NAME",  "Mailbox Name")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_REPLYTO, TskAttributeNames("TSK_EMAIL_REPLYTO", "ReplyTo Address")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_SERVER_NAME, TskAttributeNames("TSK_SERVER_NAME", "Server Name")));
 

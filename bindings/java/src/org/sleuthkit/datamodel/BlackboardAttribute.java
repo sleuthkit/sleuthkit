@@ -183,12 +183,11 @@ public class BlackboardAttribute {
 		TSK_DATETIME_END(84, "TSK_DATETIME_END", "End Date/Time"),	// end time of an event - call log, Calendar entry
 		TSK_CALENDAR_ENTRY_TYPE(85, "TSK_CALENDAR_ENTRY_TYPE", "Calendar Entry Type"),	// meeting, task, 
 		TSK_LOCATION(86, "TSK_LOCATION", "Location"),	// Location string associated with an event - Conf Room Name, Address ....
-		TSK_DIAL_STRING(87, "TSK_DIAL_STRING", "Dial String"),	// Short code or dial string for Speed dial, canned messages etc.
-		TSK_DEVICE_NAME(88, "TSK_DEVICE_NAME", "Device Name"),	// device name
+		TSK_SHORTCUT(87, "TSK_SHORTCUT", "Short Cut"),	// Short Cut string - short code or dial string for Speed dial, a URL short cut - e.g. bitly string, Windows Desktop Short cut name etc.
+		TSK_DEVICE_NAME(88, "TSK_DEVICE_NAME", "Device Name"),	// device name - a user assigned (usually) device name - such as "Joe's computer", "bob_win8", "BT Headset"
 		TSK_CATEGORY(89, "TSK_CATEGORY", "Category"),	// category/type, possible value set varies by the artifact
-		TSK_MAILBOX_NAME(90, "TSK_MAILBOX_NAME", "Mailbox Name"),	// mail box 
-		TSK_EMAIL_REPLYTO(91, "TSK_EMAIL_REPLYTO", "ReplyTo Address"),	// ReplyTo address
-		TSK_SERVER_NAME(92, "TSK_SERVER_NAME", "Server Name"),	// server name
+		TSK_EMAIL_REPLYTO(90, "TSK_EMAIL_REPLYTO", "ReplyTo Address"),	// ReplyTo address
+		TSK_SERVER_NAME(91, "TSK_SERVER_NAME", "Server Name"),	// server name, e.g. a mail server name - "smtp.google.com", a DNS server name...
 		
 		
 		
