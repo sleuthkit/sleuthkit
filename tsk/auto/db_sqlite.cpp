@@ -569,13 +569,21 @@ int
  * Store meta_addr to object id mapping of the directory in a local cache map
  * @param fsObjId fs id of this directory
  * @param meta_addr meta_addr of this directory
+ * @param meta_seq meta_seq of this directory
  * @param objId object id of this directory from the objects table
  */
-void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId) {
-	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
-	//store only if does not exist
-	if (tmpMap.count(meta_addr) == 0)
-		tmpMap[meta_addr] = objId;
+void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const uint32_t & meta_seq, const int64_t & objId) {
+	map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+	//store only if does not exist -- otherwise '..' and '.' entries will overwrite
+	if (fsMap.count(meta_addr) == 0) {
+        fsMap[meta_addr][meta_seq] = objId;
+    }
+    else {
+        map<uint32_t, int64_t> &fileMap = fsMap[meta_addr];
+        if (fileMap.count(meta_seq) == 0) {
+            fileMap[meta_seq] = objId;
+        }
+    }
 }
 
 /**
@@ -586,12 +594,16 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_ad
  */
 int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & fsObjId) {
 	//get from cache by parent meta addr, if available
-	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
-	if (tmpMap.count(fs_file->name->par_addr) > 0) {
-		return tmpMap[fs_file->name->par_addr];
+	map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+	if (fsMap.count(fs_file->name->par_addr) > 0) {
+        map<uint32_t, int64_t>  &fileMap = fsMap[fs_file->name->par_addr];
+        if (fileMap.count(fs_file->name->par_seq) > 0) {
+		    return fileMap[fs_file->name->par_seq];
+        }
 	}
 
     // Find the parent file id in the database using the parent metadata address
+    // @@@ This should use sequence number when the new database supports it
     if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1, fs_file->name->par_addr),
                 "TskDbSqlite::findParObjId: Error binding meta_addr to statment: %s (result code %d)\n")
         || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
@@ -795,7 +807,7 @@ int
 
     //if dir, update parent id cache
     if (meta_type == TSK_FS_META_TYPE_DIR) {
-        storeObjId(fsObjId, fs_file->name->meta_addr, objId);
+        storeObjId(fsObjId, fs_file->name->meta_addr, fs_file->name->meta_seq, objId);
     }
 
     free(name);

@@ -208,6 +208,18 @@ public abstract class AbstractContent implements Content {
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return db.getBlackboardArtifacts(type, objId);
 	}
+	
+	@Override
+	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException {
+		ArrayList<BlackboardArtifact> arts = getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+		if (arts.isEmpty()) {
+			BlackboardArtifact art = newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+			return art;
+		}
+		else {
+			return arts.get(0);
+		}
+	}
 
 	@Override
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException {

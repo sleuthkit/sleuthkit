@@ -485,9 +485,20 @@ JNIEXPORT jlong JNICALL
         return 0;
     }
 
-    tskAuto->setAddUnallocSpace(addUnallocSpace?true:false);
+    // set the options flags
+    if (addUnallocSpace) {
+        tskAuto->setAddUnallocSpace(true, 500*1024*1024);
+    }
+    else {
+        tskAuto->setAddUnallocSpace(false);
+    }
     tskAuto->setNoFatFsOrphans(noFatFsOrphans?true:false);
-	tskAuto->setAddUnallocSpace(true, 500000000);
+
+    // we don't use the block map and it slows it down
+    tskAuto->createBlockMap(false);
+
+    // ingest modules calc hashes
+    tskAuto->hashFiles(false);
 
     return (jlong) tskAuto;
 }
@@ -518,10 +529,6 @@ JNIEXPORT void JNICALL
         return;
     }
 
-    //change to true when autopsy needs the block table.
-    tskAuto->createBlockMap(false);
-    //change to false if hashes aren't needed
-    tskAuto->hashFiles(false);
 
     // move the strings into the C++ world
 

@@ -2339,6 +2339,7 @@ static TSK_RETVAL_ENUM
 
     if (fs_dir) {
         tsk_fs_dir_reset(fs_dir);
+        fs_dir->addr = a_addr;
     }
     else if ((*a_fs_dir = fs_dir = tsk_fs_dir_alloc(a_fs, a_addr, 128)) == NULL) {
         return TSK_ERR;
@@ -2639,6 +2640,8 @@ TSK_FS_INFO *
     yaffsfs->page_size = psize == 0 ? YAFFS_DEFAULT_PAGE_SIZE : psize;
     yaffsfs->spare_size = ssize == 0 ? YAFFS_DEFAULT_SPARE_SIZE : ssize;
     yaffsfs->chunks_per_block = 64;
+    // TODO: Why are 2 different memory allocation methods used in the same code?
+    // This makes things unnecessary complex.
     yaffsfs->chunkMap = new std::map<uint32_t, YaffsCacheChunkGroup>;
     yaffsfs->max_obj_id = 1;
     yaffsfs->max_version = 0;
@@ -2667,7 +2670,7 @@ TSK_FS_INFO *
         tsk_error_set_errstr("not a YAFFS file system (bad spare format)");
         if (tsk_verbose)
             fprintf(stderr, "yaffsfs_open: could not find valid spare area format\n");
-        return NULL;
+        goto on_error;
     }
 
     /*
@@ -2682,9 +2685,10 @@ TSK_FS_INFO *
         tsk_error_set_errstr("not a YAFFS file system (first record)");
         if (tsk_verbose)
             fprintf(stderr, "yaffsfs_open: invalid first record\n");
-        return NULL;
+        goto on_error;
     }
     free(first_header);
+    first_header = NULL;
 
     fs->duname = "Chunk";
 
@@ -2766,5 +2770,18 @@ TSK_FS_INFO *
     tsk_fs_dir_close(test_dir);
 
     return fs;
+
+on_error:
+    // Make sure to free yaffsfs here otherwise it will leak
+    if( yaffsfs != NULL ) {
+        // TODO: where is chunkMap freed in normal operations?
+        if( yaffsfs->chunkMap != NULL ) {
+            yaffsfs->chunkMap->clear();
+
+            delete yaffsfs->chunkMap;
+        }
+        free( yaffsfs );
+    }
+    return NULL;
 }
 

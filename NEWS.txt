@@ -9,6 +9,13 @@ Core:
   easier to access -- should have done this a long time ago!
 - fls -m and tsk_gettimes output NTFS FNAME times to output for timelines.
 - hfind with EnCase hashsets works when DB is specified (and not only index)
+- TskAuto now goes into UNALLOC partitions by default too. 
+- Added support to automatically find all Cellbrite raw dump files given
+  the name of the first image. 
+- Java bindings JAR files now have native libraries in them. 
+- Added 64-bit windows targets to VisualStudio files.
+- Added NTFS sequence to parent address in directory and directory itself.
+- Updated SQLite code to use sequence when finding parent object ID.
 
 
 ---------------- VERSION 4.1.0 --------------

@@ -142,6 +142,13 @@ getSegmentName(const TSK_TCHAR * a_startingName, int a_segmentNumber)
         return newName;
     }
 
+	// numeric counter, variable width
+    if (endsWith(a_startingName, _TSK_T(".bin"))) {
+		TSNPRINTF(newName + nameLen - 4, 36, _TSK_T("(%d).bin"),
+            a_segmentNumber);
+        return newName;
+    }
+
     // unknown name format
     free(newName);
     return NULL;

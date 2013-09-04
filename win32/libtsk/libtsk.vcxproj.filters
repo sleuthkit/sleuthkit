@@ -222,9 +222,6 @@
     <ClCompile Include="..\..\tsk\base\XGetopt.c">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\base\crc.c">
-       <Filter>base</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\encase_index.c">
       <Filter>hash</Filter>
     </ClCompile>
@@ -273,9 +270,7 @@
     <ClCompile Include="..\..\tsk\fs\ntfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk3\fs\yaffs.cpp">
-      <Filter>fs</Filter>
-    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\yaffs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">
@@ -368,8 +363,6 @@
     <ClInclude Include="..\..\tsk\img\tsk_img_i.h">
       <Filter>img</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\tsk3\fs\tsk_yaffs.h">
-      <Filter>fs</Filter>
-    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h" />
   </ItemGroup>
 </Project>
