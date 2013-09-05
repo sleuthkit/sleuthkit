@@ -69,6 +69,7 @@ Makefile
 *.in
 stamp-h1
 tsk/tsk_config.h
+tsk/tsk_config.h.in
 tsk/tsk_incs.h
 tools/fstools/blkcalc
 aclocal.m4
