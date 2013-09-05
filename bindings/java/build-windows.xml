@@ -33,4 +33,63 @@
 			<sysproperty key="types" value="${test-types}"/>
 		</java>
 	</target>
+	
+	<target name="copyLibs" depends="copyWinLibs" description="Copy native libs to the correct folder" />
+	
+	<target name="copyWinLibs" depends="copyWinLibs64,copyWinLibs32" description="Copy windows dlls to the correct location." />
+	
+	<target name="checkLibDirs">
+		<available property="win64.exists" type="dir" file="${basedir}/../../win32/x64/Release" />
+		<available property="win32.exists" type="dir" file="${basedir}/../../win32/Release" />
+	</target>
+	
+	<target name="copyWinLibs64" depends="checkLibDirs" if="win64.exists">
+		<property name="win64dir" location="${basedir}/../../win32/x64/Release" />
+		<fileset dir="${win64dir}" id="win64dlls">
+			<include name="*.dll" />
+		</fileset>
+		<copy todir="${amd64}/win">
+			<fileset refid="win64dlls" />
+		</copy>
+		<copy todir="${x86_64}/win">
+			<fileset refid="win64dlls" />
+		</copy>
+		<fileset dir="${crt}/win64" id="crt64dlls">
+			<include name="*.dll" />
+		</fileset>
+		<copy todir="${amd64}/win">
+			<fileset refid="crt64dlls" />
+		</copy>
+		<copy todir="${x86_64}/win">
+			<fileset refid="crt64dlls" />
+		</copy>
+	</target>
+	
+	<target name="copyWinLibs32" depends="checkLibDirs" if="win32.exists">
+		<property name="win32dir" location="${basedir}/../../win32/Release" />
+		<fileset dir="${win32dir}" id="win32dlls">
+			<include name="*.dll" />
+		</fileset>
+		<copy todir="${i386}/win">
+			<fileset refid="win32dlls" />
+		</copy>
+		<copy todir="${x86}/win">
+			<fileset refid="win32dlls" />
+		</copy>
+		<copy todir="${i586}/win">
+			<fileset refid="win32dlls" />
+		</copy>
+		<fileset dir="${crt}/win32" id="crt32dlls">
+			<include name="*.dll" />
+		</fileset>
+		<copy todir="${i386}/win">
+			<fileset refid="crt32dlls" />
+		</copy>
+		<copy todir="${x86}/win">
+			<fileset refid="crt32dlls" />
+		</copy>
+		<copy todir="${i586}/win">
+			<fileset refid="crt32dlls" />
+		</copy>
+	</target>
 </project>
