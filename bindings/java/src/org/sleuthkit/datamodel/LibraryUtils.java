@@ -147,7 +147,6 @@ public class LibraryUtils {
 				System.load(libTemp.getAbsolutePath());
 			} catch (IOException e) {
 				// Loading failed.
-				System.out.println("Loading failed");
 			} 
 		}
 	} 
