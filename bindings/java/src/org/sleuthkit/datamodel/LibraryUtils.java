@@ -106,7 +106,7 @@ public class LibraryUtils {
 		path.append(getPlatform());
 		
 		String libName = library.getLibName();
-		if(library == Lib.TSK_JNI && isWindows()) {
+		if(library == Lib.TSK_JNI && (isWindows() || isMac())) {
 			libName = "lib" + libName;
 		}
 		
