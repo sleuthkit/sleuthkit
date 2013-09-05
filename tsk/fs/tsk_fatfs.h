@@ -245,6 +245,8 @@ extern "C" {
 		char boot_sector_buffer[FATFS_MASTER_BOOT_RECORD_SIZE];
         int using_backup_boot_sector;
 
+		int android_ver_1; // Flag for strange FAT variant seen in Android
+
         int8_t (*is_cluster_alloc)(FATFS_INFO *fatfs, TSK_DADDR_T clust);
 
         uint8_t (*is_dentry)(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, 

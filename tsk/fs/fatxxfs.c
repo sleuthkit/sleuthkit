@@ -439,6 +439,8 @@ fatxxfs_open(FATFS_INFO *fatfs)
 	int i = 0;
 	ssize_t cnt = 0;
     TSK_DADDR_T sectors = 0;
+	TSK_FS_DIR * test_dir1; // Directories used to try opening the root directory
+	TSK_FS_DIR * test_dir2; //  to see if it's the Android FAT version
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -817,6 +819,28 @@ fatxxfs_open(FATFS_INFO *fatfs)
     tsk_init_lock(&fatfs->cache_lock);
     tsk_init_lock(&fatfs->dir_lock);
     fatfs->inum2par = NULL;
+
+	// Test to see if this is the odd Android case where the FAT entries have no short name
+	//
+	// If there are no entries found with the normal short name
+	// and we find more entries by removing the short name test for allocated directories, then assume
+	// this is the case where we have no short names
+	fatfs->android_ver_1 = 0;
+	test_dir1 = tsk_fs_dir_open_meta(fs, fs->root_inum);
+
+	if(test_dir1->names_used <= 4){ // At most four automatic directores ($MBR, $FAT1, $FAT1, $OrphanFiles)
+		fatfs->android_ver_1 = 1;
+		test_dir2 = tsk_fs_dir_open_meta(fs, fs->root_inum);
+
+		if(test_dir2->names_used > test_dir1->names_used){
+			fatfs->android_ver_1 = 1;
+		}
+		else{
+			fatfs->android_ver_1 = 0;
+		}
+		tsk_fs_dir_close(test_dir2);
+	}
+	tsk_fs_dir_close(test_dir1);
 
     return 0;
 }

@@ -411,8 +411,12 @@ fatxxfs_dent_parse_buf(FATFS_INFO *fatfs, TSK_FS_DIR *a_fs_dir, char *buf,
             * do not always clear the flags of each entry
             */
             if (sectalloc == 1) {
-                fs_name->flags = (dep->name[0] == FATXXFS_SLOT_DELETED) ?
-                    TSK_FS_NAME_FLAG_UNALLOC : TSK_FS_NAME_FLAG_ALLOC;
+				if(FATXXFS_IS_DELETED(dep->name, fatfs)){
+						fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
+				}
+				else{
+					fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+				}
             }
             else {
                 fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;

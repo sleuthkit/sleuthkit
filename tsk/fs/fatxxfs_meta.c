@@ -273,9 +273,9 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
                     "%s: non-zero size and NULL starting cluster\n", func_name);
             return 0;
         }
-
-        else if (is_83_name(dentry) == 0)
-            return 0;
+		
+		else if((a_fatfs->android_ver_1 == 0) && (is_83_name(dentry) == 0))
+			return 0;
 
         // basic sanity check on values
         else if ((tsk_getu16(fs->endian, dentry->ctime) == 0)
@@ -361,8 +361,13 @@ fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     fs_meta->addr = a_inum;
 
     if (a_cluster_is_alloc) {
-        flags = ((dentry->name[0] == FATXXFS_SLOT_DELETED) ?
-            TSK_FS_META_FLAG_UNALLOC : TSK_FS_META_FLAG_ALLOC);
+
+		if(FATXXFS_IS_DELETED(dentry->name, a_fatfs)){
+				flags = TSK_FS_META_FLAG_UNALLOC;
+		}
+		else{
+			flags = TSK_FS_META_FLAG_ALLOC;
+		}
     }
     else {
         flags = TSK_FS_META_FLAG_UNALLOC;
@@ -382,7 +387,12 @@ fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     }
     else {
         /* There is no notion of link in FAT, just deleted or not */
-        fs_meta->nlink = (dentry->name[0] == FATXXFS_SLOT_DELETED) ? 0 : 1;
+		if(FATXXFS_IS_DELETED(dentry->name, a_fatfs)){
+			fs_meta->nlink = 0;
+		}
+		else{
+			fs_meta->nlink = 1;
+		}
         fs_meta->size = (TSK_OFF_T) tsk_getu32(fs->endian, dentry->size);
 
         /* If these are valid dates, then convert to a unix date format */
@@ -820,8 +830,12 @@ fatxxfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
      * the file. This is necessary because when a directory is deleted, its 
      * contents are not always marked as unallocated. */
     if (a_cluster_is_alloc == 1) {
-        dentry_flags = (dentry->name[0] == FATXXFS_SLOT_DELETED ? 
-            TSK_FS_META_FLAG_UNALLOC : TSK_FS_META_FLAG_ALLOC);
+		if(FATXXFS_IS_DELETED(dentry->name, a_fatfs)){
+			dentry_flags = TSK_FS_META_FLAG_UNALLOC;
+		}
+		else{
+			dentry_flags = TSK_FS_META_FLAG_ALLOC;
+		}
     }
     else {
         dentry_flags = TSK_FS_META_FLAG_UNALLOC;

@@ -33,6 +33,14 @@
 #define FATXXFS_SLOT_E5		0x05    /* actual value is 0xe5 */
 #define FATXXFS_SLOT_DELETED	0xe5
 
+/* Macro to test allocation status
+ * Have seen FAT image that uses non-standard flags in the short name (00 00 -> unallocated, 20 00 -> allocated)
+ */
+#define FATXXFS_IS_DELETED(name, fatfs)	\
+	fatfs->android_ver_1 ? \
+	((name[0] == 0) && (name[1] == 0)) : \
+	(name[0] == FATXXFS_SLOT_DELETED) 
+
 /* 
  *Return 1 if c is an valid charactor for a short file name 
  *
