@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.nio.file.Files;
 
 /**
  * Collection of methods to load libraries embedded in the TSK Datamodel Jar file.
@@ -85,8 +84,17 @@ public class LibraryUtils {
 	public static boolean isWindows() {
 		return System.getProperty("os.name").toLowerCase().contains("windows");
 	}
-	
+
 	/**
+	 * Is the platform Mac?
+	 * 
+	 * @return 
+	 */
+	private static boolean isMac() {
+		return System.getProperty("os.name").toLowerCase().contains("mac");
+	}
+	
+    /**
 	 * Attempt to extract and load the specified library.
 	 * 
 	 * @param library
@@ -122,7 +130,7 @@ public class LibraryUtils {
 				
 				if(libTemp.exists()) {
 					// Delete old file
-					Files.delete(libTemp.toPath());
+					libTemp.delete();
 				}
 				
 				InputStream in = libraryURL.openStream();
