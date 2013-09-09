@@ -4693,10 +4693,10 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     TSK_FS_TYPE_ENUM ftype, uint8_t test)
 {
     char *myname = "ntfs_open";
-    NTFS_INFO *ntfs;
-    TSK_FS_INFO *fs;
-    unsigned int len;
-    ssize_t cnt;
+    NTFS_INFO *ntfs = NULL;
+    TSK_FS_INFO *fs = NULL;
+    unsigned int len = 0;
+    ssize_t cnt = 0;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
