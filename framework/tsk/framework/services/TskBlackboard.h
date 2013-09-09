@@ -183,12 +183,11 @@ enum TSK_ATTRIBUTE_TYPE {
 	TSK_DATETIME_END = 84, ///< end time of an event - call log, Calendar entry
 	TSK_CALENDAR_ENTRY_TYPE = 85, ///< calendar entry type: meeting, task, 
 	TSK_LOCATION = 86, 	// Location string associated with an event - Conf Room Name, Address ....
-	TSK_DIAL_STRING = 87, ///< Short code or dial string for Speed dial, canned messages etc.
-	TSK_DEVICE_NAME = 88, ///< device name
+	TSK_SHORTCUT = 87, ///< Short Cut string - short code or dial string for Speed dial, a URL short cut - e.g. bitly string, Windows Desktop Short cut name etc.
+	TSK_DEVICE_NAME = 88, ///< device name - a user assigned (usually) device name - such as "Joe's computer", "bob_win8", "BT Headset"
 	TSK_CATEGORY = 89, 	///< category/type, possible value set varies by the artifact
-	TSK_MAILBOX_NAME = 90, 	///< mail box 
-	TSK_EMAIL_REPLYTO = 91, ///< ReplyTo address
-	TSK_SERVER_NAME = 92, 	///< server name
+	TSK_EMAIL_REPLYTO = 90, ///< ReplyTo address
+	TSK_SERVER_NAME = 91, 	///< server name
 
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 

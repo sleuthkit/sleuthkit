@@ -37,13 +37,26 @@
         <property environment="env"/>
         <copy file="./jni/.libs/libtsk_jni.dylib" tofile="./libtsk_jni.jnilib"/>
     </target>
+	
+	<target name="copyMacLibs" depends="testTSKLibs" if="tsk_dylib.present">
+        <property environment="env"/>
+		<property name="jni.dylib" location="${basedir}/jni/.libs/libtsk_jni.dylib" />
+		<property name="jni.jnilib" value="libtsk_jni.jnilib" />
+        <copy file="${jni.dylib}" tofile="${x86_64}/mac/${jni.jnilib}"/>
+    </target>
 
     <!-- Non-OS X -->
     <target name="copyTskLibs_so" depends="testTSKLibs" if="tsk_so.present">
         <property environment="env"/>
         <copy file="./jni/.libs/libtsk_jni.so" tofile="./libtsk_jni.so"/>
     </target>
+	
+	<target name="copyUnixLibs" depends="testTSKLibs" if="tsk_so.present">
+		<!-- does nothing for now -->
+	</target>
 
+	<target name="copyLibs" depends="copyUnixLibs,copyMacLibs" />
+	
     <target name="copyTSKLibs" depends="copyTskLibs_so,copyTskLibs_dylib">
         <!-- depends targets take care of the actual copying since the file differs on OS X and Linux -->
         <!-- This assumes that TSK, libewf, and zlib have been installed on the system and those libraries will be with normal loading approaches -->
