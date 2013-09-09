@@ -5002,10 +5002,10 @@ on_error:
         // and the memory is freed directly afterwards?
         fs->tag = 0;
     }
-    if( ntfs->fs != NULL ) {
-        free( ntfs->fs );
-    }
     if( ntfs != NULL ) {
+        if( ntfs->fs != NULL ) {
+            free( ntfs->fs );
+        }
         free( ntfs );
     }
     return NULL;
