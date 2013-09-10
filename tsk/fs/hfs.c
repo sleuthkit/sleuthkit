@@ -3422,6 +3422,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     unsigned char done;         // Flag to indicate that we are done looping over leaf nodes
     uint16_t attribute_counter = 2;     // The ID of the next attribute to be loaded.
     HFS_INFO *hfs;
+    char *buffer = NULL;   // buffer to hold the attribute
 
 
     tsk_error_reset();
@@ -3687,7 +3688,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 hfs_attr_data *attrData;
                 uint32_t attributeLength;
                 int diff;       // Difference in bytes between the start of the record and the start of data.
-                char *buffer;   // buffer to hold the attribute
 
                 int conversionResult;
                 char nameBuff[MAX_ATTR_NAME_LENGTH];
