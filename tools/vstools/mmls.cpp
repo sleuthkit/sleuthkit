@@ -268,13 +268,13 @@ main(int argc, char **argv1)
 
     if (img == NULL) {
         tsk_error_print(stderr);
-        exit(1);
+        goto on_error;
     }
     if ((imgaddr * img->sector_size) >= img->size) {
         tsk_fprintf(stderr,
             "Sector offset supplied is larger than disk image (maximum: %"
             PRIu64 ")\n", img->size / img->sector_size);
-        exit(1);
+        goto on_error;
     }
 
     /* process the partition tables */
@@ -283,8 +283,7 @@ main(int argc, char **argv1)
         tsk_error_print(stderr);
         if (tsk_error_get_errno() == TSK_ERR_VS_UNSUPTYPE)
             tsk_vs_type_print(stderr);
-        tsk_img_close(img);
-        exit(1);
+        goto on_error;
     }
 
     print_header(vs);
@@ -293,10 +292,10 @@ main(int argc, char **argv1)
             (TSK_VS_PART_FLAG_ENUM) flags, part_act, NULL)) {
         tsk_error_print(stderr);
         tsk_vs_close(vs);
-        tsk_img_close(img);
-        exit(1);
+        goto on_error;
     }
 
+    // TODO: vs is closed here but still accessed afterwards.
     tsk_vs_close(vs);
     if ((recurse) && (vs->vstype == TSK_VS_TYPE_DOS)) {
         int i;
@@ -321,7 +320,15 @@ main(int argc, char **argv1)
             }
         }
     }
+    // TODO: tsk error leaks here.
+    // is the memory managed by pthread_setspecific(pt_tls_key, ...) freed?
 
     tsk_img_close(img);
     exit(0);
+
+on_error:
+    if( img != NULL ) {
+        tsk_img_close( img );
+    }
+    exit( 1 );
 }

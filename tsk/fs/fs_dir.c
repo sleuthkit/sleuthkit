@@ -888,6 +888,10 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
 {
     FIND_ORPHAN_DATA *data = (FIND_ORPHAN_DATA *) a_ptr;
 
+    if( a_fs_file == NULL ) {
+        return TSK_WALK_ERROR;
+    }
+
     // ignore DOT entries
     if ((a_fs_file->name) && (a_fs_file->name->name) &&
         (TSK_FS_ISDOT(a_fs_file->name->name)))
@@ -925,8 +929,11 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
          * the info when we have it. */
         if ((a_fs_file->meta->type == TSK_FS_META_TYPE_DIR)
             && (TSK_FS_TYPE_ISFAT(a_fs_file->fs_info->ftype))) {
-            if (fatfs_dir_buf_add((FATFS_INFO *) a_fs_file->fs_info,
-                    a_fs_file->name->par_addr, a_fs_file->meta->addr))
+            // Make sure a_fs_file->name->par_addr is not accessed when
+            // a_fs_file->name is NULL
+            if ((a_fs_file->name) &&
+                (fatfs_dir_buf_add((FATFS_INFO *) a_fs_file->fs_info,
+                    a_fs_file->name->par_addr, a_fs_file->meta->addr)))
                 return TSK_WALK_ERROR;
         }
     }
