@@ -134,13 +134,17 @@ make_pt_tls_key()
 TSK_ERROR_INFO *
 tsk_error_get_info()
 {
-    TSK_ERROR_INFO *ptr = 0;
+    TSK_ERROR_INFO *ptr = NULL;
     (void) pthread_once(&pt_tls_key_once, make_pt_tls_key);
     if ((ptr = (TSK_ERROR_INFO *) pthread_getspecific(pt_tls_key)) == 0) {
+        // Under high memory presure malloc will return NULL.
         ptr = (TSK_ERROR_INFO *) malloc(sizeof(TSK_ERROR_INFO));
-        ptr->t_errno = 0;
-        ptr->errstr[0] = 0;
-        ptr->errstr2[0] = 0;
+
+        if( ptr != NULL ) {
+            ptr->t_errno = 0;
+            ptr->errstr[0] = 0;
+            ptr->errstr2[0] = 0;
+        }
         (void) pthread_setspecific(pt_tls_key, ptr);
     }
     return ptr;
@@ -417,8 +421,11 @@ void
 tsk_error_reset()
 {
     TSK_ERROR_INFO *info = tsk_error_get_info();
-    info->t_errno = 0;
-    info->errstr[0] = 0;
-    info->errstr2[0] = 0;
-    info->errstr_print[0] = 0;
+
+    if( info != NULL ) {
+       info->t_errno = 0;
+       info->errstr[0] = 0;
+       info->errstr2[0] = 0;
+       info->errstr_print[0] = 0;
+    }
 }
