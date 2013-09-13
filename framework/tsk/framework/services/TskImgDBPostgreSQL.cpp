@@ -614,7 +614,7 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
 
     fileName = fileNameAsString.c_str();
 
-    uint64_t parFileId = findParObjId(fileSystemID, fileSystemFile->name->par_addr);
+    uint64_t parFileId = findParObjId(fileSystemFile, fileSystemID);
 
     // Get the file size.
     TSK_OFF_T size = 0; 
@@ -715,7 +715,7 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
 
     //if dir, update parent id cache
     if (meta_type == TSK_FS_META_TYPE_DIR) {
-        storeParObjId(fileSystemID, fileSystemFile->name->meta_addr, fileID);
+        storeParObjId(fileSystemID, fileSystemFile, fileID);
     }
 
     return 0;
