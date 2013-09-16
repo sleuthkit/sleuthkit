@@ -297,9 +297,6 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    // we are done with this vs object
-    tsk_vs_close(vs);
-
     if ((recurse) && (vs->vstype == TSK_VS_TYPE_DOS)) {
         int i;
         /* disable recursing incase we hit another DOS partition
@@ -325,6 +322,7 @@ main(int argc, char **argv1)
         }
     }
 
+    tsk_vs_close(vs);
     tsk_img_close(img);
     exit(0);
 }
