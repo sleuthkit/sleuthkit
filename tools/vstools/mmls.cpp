@@ -297,6 +297,9 @@ main(int argc, char **argv1)
         exit(1);
     }
 
+    // we are done with this vs object
+    tsk_vs_close(vs);
+
     if ((recurse) && (vs->vstype == TSK_VS_TYPE_DOS)) {
         int i;
         /* disable recursing incase we hit another DOS partition
@@ -304,15 +307,16 @@ main(int argc, char **argv1)
         recurse = 0;
 
         for (i = 0; i < recurse_cnt; i++) {
-            vs = tsk_vs_open(img, recurse_list[i], TSK_VS_TYPE_DETECT);
-            if (vs != NULL) {
+            TSK_VS_INFO *vs2;
+            vs2 = tsk_vs_open(img, recurse_list[i], TSK_VS_TYPE_DETECT);
+            if (vs2 != NULL) {
                 tsk_printf("\n\n");
-                print_header(vs);
-                if (tsk_vs_part_walk(vs, 0, vs->part_count - 1,
+                print_header(vs2);
+                if (tsk_vs_part_walk(vs2, 0, vs2->part_count - 1,
                         (TSK_VS_PART_FLAG_ENUM) flags, part_act, NULL)) {
                     tsk_error_reset();
                 }
-                tsk_vs_close(vs);
+                tsk_vs_close(vs2);
             }
             else {
                 /* Ignore error in this case and reset */
@@ -321,7 +325,6 @@ main(int argc, char **argv1)
         }
     }
 
-    tsk_vs_close(vs);
     tsk_img_close(img);
     exit(0);
 }
