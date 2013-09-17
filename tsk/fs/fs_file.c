@@ -609,9 +609,10 @@ tsk_fs_file_hash_calc_callback(TSK_FS_FILE * file, TSK_OFF_T offset,
  * @param a_flags Indicates which hash algorithm(s) to use
  * @returns 0 on success or 1 on error
  */
-extern uint8_t tsk_fs_file_hash_calc(TSK_FS_FILE * a_fs_file, TSK_FS_HASH_RESULTS * a_hash_results, TSK_BASE_HASH_ENUM a_flags){
+extern uint8_t 
+    tsk_fs_file_hash_calc(TSK_FS_FILE * a_fs_file, TSK_FS_HASH_RESULTS * a_hash_results, TSK_BASE_HASH_ENUM a_flags)
+{
 	TSK_FS_HASH_DATA hash_data;
-	int i;
 
     if ((a_fs_file == NULL) || (a_fs_file->fs_info == NULL)
         || (a_fs_file->meta == NULL)) {

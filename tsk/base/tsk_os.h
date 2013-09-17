@@ -98,7 +98,11 @@ typedef int mode_t;
 // if python.h is included
 #if !defined( HAVE_SSIZE_T )
 #define HAVE_SSIZE_T
-typedef int ssize_t;
+#if _WIN64
+typedef int64_t ssize_t;
+#else
+typedef int32_t ssize_t;
+#endif
 #endif
 
 // remap some of the POSIX functions

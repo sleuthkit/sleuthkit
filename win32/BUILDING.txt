@@ -2,6 +2,10 @@ This file describes how to build TSK using Visual Studio (see README_win32.txt f
 
     http://www.microsoft.com/express/vc/
 
+Visual Studio 2010 Express cannot make 64-bit versions of the executables.  To do that, you must download and install an additional SDK:
+
+    http://msdn.microsoft.com/en-us/windowsserver/bb980924.aspx
+
 The Visual Studio Solution file has three build targets: Debug, Debug_NoLibs, and Release.  Debug and Release require that libewf exists (to provide support for E01 image files) and that zlib exists (to provide support for HFS+ compressed data).   Debug_NoLibs does not require libewf or zlib and you should be able to compile Debug_NoLibs without any additional setup.
 
 The steps below outline the process required to compile the Debug and Release targets.
@@ -9,7 +13,7 @@ The steps below outline the process required to compile the Debug and Release ta
 1) Download libewf-20130128 (or later) from:
     http://sourceforge.net/projects/libewf/
 
-2) Open archive file and follow the README instructions in libewf to build libewf_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libewf_dll.  Later steps also depend on the zlib dll being built inside of libewf. 
+2) Open archive file and follow the README instructions in libewf to build libewf_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libewf_dll.  Later steps also depend on the zlib dll being built inside of libewf.  Note that libewf will need to be converted to Visual Studio 2010 and be upgraded to support a 64-bit build.
 
 3) Set the LIBEWF_HOME environment variable to point to the libewf folder that you created and built in step 2. 
 
@@ -17,7 +21,7 @@ The steps below outline the process required to compile the Debug and Release ta
 
 5) Open the TSK Visual Studio Solution file, tsk-win.sln, in the win32 directory. 
 
-6) Compile a Debug, Debug_NoLibs, or Release version of the libraries and executables.  The resulting libraries and executables will be put in win32/Debug, win32/Debug_NoLibs, or win32/Release as appropriate.
+6) Compile a Debug, Debug_NoLibs, or Release version of the libraries and executables.  The resulting libraries and executables on a 32-bit build will be put in win32/Debug, win32/Debug_NoLibs, or win32/Release as appropriate.  A 64-bit build will put them into the win32/x64 folders. You can change the type of build using the pulldown in Visual Studio and switching between Win32 and x64.
 
 7) Note that the libraries and executables will depend on the libewf and zlib dll files (which are copied to the TSK build directories). 
 

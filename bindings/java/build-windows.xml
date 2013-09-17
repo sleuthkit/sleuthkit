@@ -45,22 +45,25 @@
 	
 	<target name="copyWinLibs64" depends="checkLibDirs" if="win64.exists">
 		<property name="win64dir" location="${basedir}/../../win32/x64/Release" />
+		
 		<fileset dir="${win64dir}" id="win64dlls">
 			<include name="*.dll" />
 		</fileset>
-		<copy todir="${amd64}/win">
-			<fileset refid="win64dlls" />
-		</copy>
-		<copy todir="${x86_64}/win">
-			<fileset refid="win64dlls" />
-		</copy>
 		<fileset dir="${crt}/win64" id="crt64dlls">
 			<include name="*.dll" />
 		</fileset>
-		<copy todir="${amd64}/win">
+		
+		<copy todir="${amd64}/win" overwrite="true">
+			<fileset refid="win64dlls" />
+		</copy>
+		<copy todir="${amd64}/win" overwrite="true">
 			<fileset refid="crt64dlls" />
 		</copy>
-		<copy todir="${x86_64}/win">
+		
+		<copy todir="${x86_64}/win" overwrite="true">
+			<fileset refid="win64dlls" />
+		</copy>		
+		<copy todir="${x86_64}/win" overwrite="true">
 			<fileset refid="crt64dlls" />
 		</copy>
 	</target>
@@ -70,26 +73,30 @@
 		<fileset dir="${win32dir}" id="win32dlls">
 			<include name="*.dll" />
 		</fileset>
-		<copy todir="${i386}/win">
-			<fileset refid="win32dlls" />
-		</copy>
-		<copy todir="${x86}/win">
-			<fileset refid="win32dlls" />
-		</copy>
-		<copy todir="${i586}/win">
-			<fileset refid="win32dlls" />
-		</copy>
 		<fileset dir="${crt}/win32" id="crt32dlls">
 			<include name="*.dll" />
 		</fileset>
-		<copy todir="${i386}/win">
+		
+		<copy todir="${i386}/win" overwrite="true">
+			<fileset refid="win32dlls" />
+		</copy>
+		<copy todir="${i386}/win" overwrite="true">
 			<fileset refid="crt32dlls" />
 		</copy>
-		<copy todir="${x86}/win">
+		
+		<copy todir="${x86}/win" overwrite="true">
+			<fileset refid="win32dlls" />
+		</copy>
+		<copy todir="${x86}/win" overwrite="true">
 			<fileset refid="crt32dlls" />
 		</copy>
-		<copy todir="${i586}/win">
-			<fileset refid="crt32dlls" />
+		
+		<copy todir="${i586}/win" overwrite="true">
+			<fileset refid="win32dlls" />
 		</copy>
+		<copy todir="${i586}/win" overwrite="true">
+			<fileset refid="crt32dlls" />
+		</copy>		
+		
 	</target>
 </project>

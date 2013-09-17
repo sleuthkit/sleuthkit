@@ -92,7 +92,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
             }
             else {
                 memcpy(a_buf, buf2, a_len);
-                nbytes = a_len;
+                nbytes = (ssize_t)a_len;
             }
             free(buf2);
         }
@@ -119,7 +119,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
 
     // Protect against INT64_MAX + INT64_MAX > value
     if (((TSK_OFF_T) len2 > a_img_info->size)
-        || (a_off >= (a_img_info->size - len2))) {
+        || (a_off >= (a_img_info->size - (TSK_OFF_T)len2))) {
         len2 = (size_t) (a_img_info->size - a_off);
     }
 
@@ -188,7 +188,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         // Read a full cache block or the remaining data.
         read_size = TSK_IMG_INFO_CACHE_LEN;
 
-        if ((a_img_info->cache_off[cache_next] + read_size) >
+        if ((a_img_info->cache_off[cache_next] + (TSK_OFF_T)read_size) >
             a_img_info->size) {
             read_size =
                 (size_t) (a_img_info->size -
