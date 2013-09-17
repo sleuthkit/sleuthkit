@@ -143,7 +143,7 @@ public class SleuthkitCase {
 	 * @return
 	 * @throws TskCoreException
 	 */
-	private LogicalFileTransaction createTransaction() throws TskCoreException {
+	public LogicalFileTransaction createTransaction() throws TskCoreException {
 		if (con != null) {
 			try {
 				return LogicalFileTransaction.startTransaction(con);
