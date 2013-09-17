@@ -24,7 +24,7 @@ package org.sleuthkit.datamodel;
  *
  *
  */
-interface Transaction {
+public interface Transaction {
 
 	/**
 	 * rollback whatever changes this transaction represents
