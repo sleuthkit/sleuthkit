@@ -134,7 +134,16 @@ public class SleuthkitCase {
 
 	}
 
-	public LogicalFileTransaction createTransaction() throws TskCoreException {
+	/**
+	 * create a new transaction: lock the database and set auto-commit false.
+	 * this transaction should be passed to methods who take a transaction and
+	 * then have transaction.commit() invoked on it to commit changes and unlock
+	 * the database
+	 *
+	 * @return
+	 * @throws TskCoreException
+	 */
+	private LogicalFileTransaction createTransaction() throws TskCoreException {
 		if (con != null) {
 			try {
 				return LogicalFileTransaction.startTransaction(con);
