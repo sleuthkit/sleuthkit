@@ -46,15 +46,21 @@
 		<mkdir dir="${native-libs}" />
 		<mkdir dir="${amd64}" />
 		<mkdir dir="${amd64}/win" />
+		<mkdir dir="${amd64}/mac" />
+		<mkdir dir="${amd64}/unix" />
 	    <mkdir dir="${x86}" />
 		<mkdir dir="${x86}/win" />
+		<mkdir dir="${x86}/unix" />
 		<mkdir dir="${x86_64}" />
 		<mkdir dir="${x86_64}/win" />
 		<mkdir dir="${x86_64}/mac" />
+		<mkdir dir="${x86_64}/unix"/>
 		<mkdir dir="${i386}" />
 		<mkdir dir="${i386}/win" />
+		<mkdir dir="${i386}/unix"/>
 		<mkdir dir="${i586}" />
 		<mkdir dir="${i586}/win" />
+		<mkdir dir="${i586}/unix" />
 	</target>
   
 	<property name="ivy.install.version" value="2.3.0-rc2" />
