@@ -26,6 +26,7 @@
 	<property name="x86_64" location="build/NATIVELIBS/x86_64" />
 	<property name="i386" location="build/NATIVELIBS/i386" />
 	<property name="i586" location="build/NATIVELIBS/i586" />
+	<property name="i686" location="build/NATIVELIBS/i686"/>
 	<property name="crt" location="${basedir}/crt" />
   
 	<path id="libraries">
@@ -47,20 +48,23 @@
 		<mkdir dir="${amd64}" />
 		<mkdir dir="${amd64}/win" />
 		<mkdir dir="${amd64}/mac" />
-		<mkdir dir="${amd64}/unix" />
+		<mkdir dir="${amd64}/linux" />
 	    <mkdir dir="${x86}" />
 		<mkdir dir="${x86}/win" />
-		<mkdir dir="${x86}/unix" />
+		<mkdir dir="${x86}/linux" />
 		<mkdir dir="${x86_64}" />
 		<mkdir dir="${x86_64}/win" />
 		<mkdir dir="${x86_64}/mac" />
-		<mkdir dir="${x86_64}/unix"/>
+		<mkdir dir="${x86_64}/linux"/>
 		<mkdir dir="${i386}" />
 		<mkdir dir="${i386}/win" />
-		<mkdir dir="${i386}/unix"/>
+		<mkdir dir="${i386}/linux"/>
 		<mkdir dir="${i586}" />
 		<mkdir dir="${i586}/win" />
-		<mkdir dir="${i586}/unix" />
+		<mkdir dir="${i586}/linux" />
+		<mkdir dir="${i686}"/>
+		<mkdir dir="${i686}/win"/>
+		<mkdir dir="${i686}/linux"/>
 	</target>
   
 	<property name="ivy.install.version" value="2.3.0-rc2" />
