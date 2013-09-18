@@ -64,12 +64,10 @@ public class LibraryUtils {
 	 */
 	public static String getPlatform() {
 		String os = System.getProperty("os.name").toLowerCase();
-		if(os.contains("win")) {
+		if(LibraryUtils.isWindows()) {
 			os = "win";
-		} else if(os.contains("mac")) {
+		} else if(LibraryUtils.isMac()) {
 			os = "mac";
-		} else {
-			os = "unix";
 		}
 		// os.arch represents the architecture of the JVM, not the os
 		String arch = System.getProperty("os.arch");
@@ -92,6 +90,15 @@ public class LibraryUtils {
 	 */
 	private static boolean isMac() {
 		return System.getProperty("os.name").toLowerCase().contains("mac");
+	}
+	
+	/**
+	 * Is the platform Linux?
+	 * 
+	 * @return
+	 */
+	public static boolean isLinux() {
+		return System.getProperty("os.name").equals("Linux");
 	}
 	
     /**
