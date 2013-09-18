@@ -118,6 +118,7 @@ public class SleuthkitJNI {
 
 	//Linked library loading
 	static {
+		boolean loaded = false;
         if (LibraryUtils.isWindows()) {
             try { 
                 // on windows force loading ms crt dependencies first
@@ -127,9 +128,13 @@ public class SleuthkitJNI {
                 // We should update this if we officially switch to a new version of CRT/compiler
 
                 for(LibraryUtils.Lib crt : LibraryUtils.getCRTLibs()) {
-                    LibraryUtils.loadLibrary(crt);
+                    loaded = LibraryUtils.loadLibrary(crt);
+					if(!loaded) {
+						System.out.println("SleuthkitJNI: failed to load " + crt.getLibName());
+					} else {
+						System.out.println("SleuthkitJNI: loaded " + crt.getLibName());
+					}
                 }
-                System.out.println("Loaded CRT libraries");
             } catch (UnsatisfiedLinkError e1) {
                 System.out.println(e1.toString());
                 try {
@@ -145,8 +150,12 @@ public class SleuthkitJNI {
 
         for (LibraryUtils.Lib lib : LibraryUtils.getLibs()) {
             try {
-                LibraryUtils.loadLibrary(lib);
-                System.out.println("SleuthkitJNI: loaded " + lib);
+                loaded = LibraryUtils.loadLibrary(lib);
+				if(loaded) {
+					System.out.println("SleuthkitJNI: loaded " + lib);
+				} else {
+					System.out.println("SleuthkitJNI: failed to load " + lib);
+				}
             } catch (UnsatisfiedLinkError e) {
                 System.out.println("SleuthkitJNI: error loading " + lib + "library, " + e.toString());
             }

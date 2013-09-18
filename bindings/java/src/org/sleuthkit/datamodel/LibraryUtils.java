@@ -100,7 +100,7 @@ public class LibraryUtils {
 	 * @param library
 	 * @return 
 	 */
-	public static void loadLibrary(Lib library) {
+	public static boolean loadLibrary(Lib library) {
 		StringBuilder path = new StringBuilder();
 		path.append("/NATIVELIBS/");
 		path.append(getPlatform());
@@ -120,32 +120,36 @@ public class LibraryUtils {
 			}
 		}
 		
-		if(libraryURL != null) {
-			// copy library to temp folder and load it
-			try {
-				java.io.File libTemp = new java.io.File(System.getProperty("java.io.tmpdir") + libName + libExt);
-				
-				if(libTemp.exists()) {
-					// Delete old file
-					libTemp.delete();
-				}
-				
-				InputStream in = libraryURL.openStream();
-				OutputStream out = new FileOutputStream(libTemp);
-				
-				byte[] buffer = new byte[1024];
-				int length;
-				while((length = in.read(buffer)) > 0) {
-					out.write(buffer, 0, length);
-				}
-				in.close();
-				out.close();
-				
-				System.load(libTemp.getAbsolutePath());
-			} catch (IOException e) {
-				// Loading failed.
-			} 
+		if(libraryURL == null) {
+			return false;
 		}
+		
+		// copy library to temp folder and load it
+		try {
+			java.io.File libTemp = new java.io.File(System.getProperty("java.io.tmpdir") + libName + libExt);
+
+			if(libTemp.exists()) {
+				// Delete old file
+				libTemp.delete();
+			}
+
+			InputStream in = libraryURL.openStream();
+			OutputStream out = new FileOutputStream(libTemp);
+
+			byte[] buffer = new byte[1024];
+			int length;
+			while((length = in.read(buffer)) > 0) {
+				out.write(buffer, 0, length);
+			}
+			in.close();
+			out.close();
+
+			System.load(libTemp.getAbsolutePath());
+		} catch (IOException e) {
+			// Loading failed.
+			return false;
+		} 
+		return true;
 	} 
 	
 	public static Lib[] getCRTLibs() {
