@@ -37,7 +37,7 @@
  * Have seen FAT image that uses non-standard flags in the short name (00 00 -> unallocated, 20 00 -> allocated)
  */
 #define FATXXFS_IS_DELETED(name, fatfs)	\
-	fatfs->android_ver_1 ? \
+	(fatfs->subtype == TSK_FATFS_SUBTYPE_ANDROID_1) ? \
 	((name[0] == 0) && (name[1] == 0)) : \
 	(name[0] == FATXXFS_SLOT_DELETED) 
 

@@ -825,18 +825,18 @@ fatxxfs_open(FATFS_INFO *fatfs)
 	// If there are no entries found with the normal short name
 	// and we find more entries by removing the short name test for allocated directories, then assume
 	// this is the case where we have no short names
-	fatfs->android_ver_1 = 0;
+	fatfs->subtype = TSK_FATFS_SUBTYPE_SPEC;
 	test_dir1 = tsk_fs_dir_open_meta(fs, fs->root_inum);
 
 	if(test_dir1->names_used <= 4){ // At most four automatic directores ($MBR, $FAT1, $FAT1, $OrphanFiles)
-		fatfs->android_ver_1 = 1;
+		fatfs->subtype = TSK_FATFS_SUBTYPE_ANDROID_1;
 		test_dir2 = tsk_fs_dir_open_meta(fs, fs->root_inum);
 
 		if(test_dir2->names_used > test_dir1->names_used){
-			fatfs->android_ver_1 = 1;
+			fatfs->subtype = TSK_FATFS_SUBTYPE_ANDROID_1;
 		}
 		else{
-			fatfs->android_ver_1 = 0;
+			fatfs->subtype = TSK_FATFS_SUBTYPE_SPEC;
 		}
 		tsk_fs_dir_close(test_dir2);
 	}

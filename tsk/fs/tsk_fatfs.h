@@ -177,6 +177,11 @@ extern "C" {
     };
     typedef enum FATFS_DATA_UNIT_ALLOC_STATUS_ENUM FATFS_DATA_UNIT_ALLOC_STATUS_ENUM;
 
+	typedef enum {
+		TSK_FATFS_SUBTYPE_SPEC = 0,
+		TSK_FATFS_SUBTYPE_ANDROID_1 = 1
+	} TSK_FATFS_SUBTYPE_ENUM;
+
     typedef struct
     {
         uint8_t data[FATFS_MASTER_BOOT_RECORD_SIZE - 2];
@@ -245,7 +250,7 @@ extern "C" {
 		char boot_sector_buffer[FATFS_MASTER_BOOT_RECORD_SIZE];
         int using_backup_boot_sector;
 
-		int android_ver_1; // Flag for strange FAT variant seen in Android
+		TSK_FATFS_SUBTYPE_ENUM subtype; // Identifies any variations on the standard FAT format
 
         int8_t (*is_cluster_alloc)(FATFS_INFO *fatfs, TSK_DADDR_T clust);
 
