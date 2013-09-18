@@ -44,7 +44,7 @@ public class LibraryUtils {
 		MSVCR ("msvcr100"),
 		ZLIB ("zlib"),
 		LIBEWF ("libewf"),
-		TSK_JNI ("tsk_jni");
+		TSK_JNI ("libtsk_jni");
 		
 		private final String name;
 		
