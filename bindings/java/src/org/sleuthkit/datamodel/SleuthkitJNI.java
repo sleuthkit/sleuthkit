@@ -118,49 +118,8 @@ public class SleuthkitJNI {
 
 	//Linked library loading
 	static {
-		boolean loaded = false;
-        if (LibraryUtils.isWindows()) {
-            try { 
-                // on windows force loading ms crt dependencies first
-                // in case linker can't find them on some systems
-                // Note: if shipping with a different CRT version, this will only print a warning
-                // and try to use linker mechanism to find the correct versions of libs.
-                // We should update this if we officially switch to a new version of CRT/compiler
-
-                for(LibraryUtils.Lib crt : LibraryUtils.getCRTLibs()) {
-                    loaded = LibraryUtils.loadLibrary(crt);
-					if(!loaded) {
-						System.out.println("SleuthkitJNI: failed to load " + crt.getLibName());
-					} else {
-						System.out.println("SleuthkitJNI: loaded " + crt.getLibName());
-					}
-                }
-            } catch (UnsatisfiedLinkError e1) {
-                System.out.println(e1.toString());
-                try {
-                    //Try to load from system path.
-                    System.out.println("Can't find CRT libraries, attempting to load from System.loadLibrary");
-                    System.loadLibrary("msvcr100");
-                    System.loadLibrary("msvcp100");
-                } catch (UnsatisfiedLinkError e2) {
-                    System.out.println("SleuthkitJNI: error loading CRT libraries, " + e2.toString());
-                }
-            }
-        }
-
-        for (LibraryUtils.Lib lib : LibraryUtils.getLibs()) {
-            try {
-                loaded = LibraryUtils.loadLibrary(lib);
-				if(loaded) {
-					System.out.println("SleuthkitJNI: loaded " + lib);
-				} else {
-					System.out.println("SleuthkitJNI: failed to load " + lib);
-				}
-            } catch (UnsatisfiedLinkError e) {
-                System.out.println("SleuthkitJNI: error loading " + lib + "library, " + e.toString());
-            }
-        }
-
+		LibraryUtils.loadAuxilliaryLibs();
+		LibraryUtils.loadSleuthkitJNI();
     }
 
 	public SleuthkitJNI() {
