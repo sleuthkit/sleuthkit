@@ -42,10 +42,16 @@
         <property environment="env"/>
 		<property name="jni.dylib" location="${basedir}/jni/.libs/libtsk_jni.dylib" />
 		<property name="jni.jnilib" value="libtsk_jni.jnilib" />
+		<property name="zlib.jni" location="/usr/lib/libz.dylib"/>
+		<property name="libewf.jni" location="/usr/local/lib/libewf.dylib"/>
 		<!-- x86_64 -->
         <copy file="${jni.dylib}" tofile="${x86_64}/mac/${jni.jnilib}"/>
+		<copy file="${zlib.jni}" tofile="${x86_64}/mac/zlib.dylib"/>
+		<copy file="${libewf.jni}" tofile="${x86_64}/mac/libewf.dylib"/>
 		<!-- amd64 -->
 		<copy file="${jni.dylib}" tofile="${amd64}/mac/${jni.jnilib}"/>
+		<copy file="${zlib.jni}" tofile="${x86_64}/mac/zlib.dylib"/>
+		<copy file="${libewf.jni}" tofile="${x86_64}/mac/libewf.dylib"/>
     </target>
 
     <!-- Non-OS X -->
