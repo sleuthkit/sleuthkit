@@ -42,16 +42,16 @@
         <property environment="env"/>
 		<property name="jni.dylib" location="${basedir}/jni/.libs/libtsk_jni.dylib" />
 		<property name="jni.jnilib" value="libtsk_jni.jnilib" />
-		<property name="mac.zlib" location="/usr/lib/libz.dylib"/>
-		<property name="mac.libewf" location="${env.LIBEWF_HOME}/libewf/.libs/libewf.dylib"/>
+		<property name="zlib.jni" location="/usr/lib/libz.dylib"/>
+		<property name="libewf.jni" location="/usr/local/lib/libewf.dylib"/>
 		<!-- x86_64 -->
         <copy file="${jni.dylib}" tofile="${x86_64}/mac/${jni.jnilib}"/>
-		<copy file="${mac.libewf}" tofile="${x86_64}/mac/libewf.dylib"/>
-		<copy file="${mac.zlib}" tofile="${x86_64}/mac/zlib.dylib"/>
+		<copy file="${zlib.jni}" tofile="${x86_64}/mac/zlib.dylib"/>
+		<copy file="${libewf.jni}" tofile="${x86_64}/mac/libewf.dylib"/>
 		<!-- amd64 -->
 		<copy file="${jni.dylib}" tofile="${amd64}/mac/${jni.jnilib}"/>
-		<copy file="${mac.libewf}" tofile="${amd64}/mac/libewf.dylib"/>
-		<copy file="${mac.zlib}" tofile="${amd64}/mac/zlib.dylib"/>
+		<copy file="${zlib.jni}" tofile="${x86_64}/mac/zlib.dylib"/>
+		<copy file="${libewf.jni}" tofile="${x86_64}/mac/libewf.dylib"/>
     </target>
 
     <!-- Non-OS X -->
@@ -63,35 +63,18 @@
 	<target name="copyLinuxLibs" depends="testTSKLibs" if="tsk_so.present">
 		<property environment="env"/>
 		<property name="jni.so" location="${basedir}/jni/.libs/libtsk_jni.so" />
-		<!-- check that this location is correct -->
-		<property name="linux.zlib" location="/usr/lib/libz.so"/>
-		<property name="zlib.so" value="zlib.so"/>
-		<property name="linux.libewf" location="${env.LIBEWF_HOME}/libewf/.libs/libewf.so"/>
-		<property name="libewf.so" value="libewf.so"/>
 		<!-- x86_64 -->
 		<copy file="${jni.so}" tofile="${x86_64}/linux/libtsk_jni.so"/>
-		<copy file="${linux.zlib}" tofile="${x86_64}/linux/${zlib.so}"/>
-		<copy file="${linux.libewf}" tofile="${x86_64}/linux/${libewf.so}"/>
 		<!-- amd64 -->
 		<copy file="${jni.so}" tofile="${amd64}/linux/libtsk_jni.so"/>
-		<copy file="${linux.zlib}" tofile="${amd64}/linux/${zlib.so}"/>
-		<copy file="${linux.libewf}" tofile="${amd64}/linux/${libewf.so}"/>
 		<!-- x86 -->
 		<copy file="${jni.so}" tofile="${x86}/linux/libtsk_jni.so"/>
-		<copy file="${linux.zlib}" tofile="${x86}/linux/${zlib.so}"/>
-		<copy file="${linux.libewf}" tofile="${x86}/linux/${libewf.so}"/>
 		<!-- i386 -->
 		<copy file="${jni.so}" tofile="${i386}/linux/libtsk_jni.so"/>
-		<copy file="${linux.zlib}" tofile="${i386}/linux/${zlib.so}"/>
-		<copy file="${linux.libewf}" tofile="${i386}/linux/${libewf.so}"/>
 		<!-- i586 -->
 		<copy file="${jni.so}" tofile="${i586}/linux/libtsk_jni.so"/>
-		<copy file="${linux.zlib}" tofile="${i586}/linux/${zlib.so}"/>
-		<copy file="${linux.libewf}" tofile="${i586}/linux/${libewf.so}"/>
 		<!-- i686 -->
 		<copy file="${jni.so}" tofile="${i686}/linux/libtsk_jni.so"/>
-		<copy file="${linux.zlib}" tofile="${i686}/linux/${zlib.so}"/>
-		<copy file="${linux.libewf}" tofile="${i686}/linux/${libewf.so}"/>
 	</target>
 
 	<target name="copyLibs" depends="copyLinuxLibs,copyMacLibs" />
