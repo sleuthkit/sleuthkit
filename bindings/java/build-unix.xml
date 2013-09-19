@@ -79,6 +79,8 @@
 
 	<target name="copyLibs" depends="copyLinuxLibs,copyMacLibs" />
 	
+	<target name="copyLibsDebug" depends="copyLibs" />
+	
     <target name="copyTSKLibs" depends="copyTskLibs_so,copyTskLibs_dylib">
         <!-- depends targets take care of the actual copying since the file differs on OS X and Linux -->
         <!-- This assumes that TSK, libewf, and zlib have been installed on the system and those libraries will be with normal loading approaches -->
