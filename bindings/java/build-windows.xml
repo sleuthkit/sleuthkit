@@ -34,17 +34,25 @@
 		</java>
 	</target>
 	
-	<target name="copyLibs" depends="copyWinLibs" description="Copy native libs to the correct folder" />
+	<target name="copyLibs" depends="copyWinLibs" description="Copy native libs to the correct folder">
+		<property name="tsk.config" value="Release"/>
+		<antcall target="copyWinLibs" />
+	</target>
+	
+	<target name="copyLibsDebug" depends="copyWinLibs" description="Copy native libs to the correct folder">
+		<property name="tsk.config" value="Debug"/>
+		<antcall target="copyWinLibs" />
+	</target>
 	
 	<target name="copyWinLibs" depends="copyWinLibs64,copyWinLibs32" description="Copy windows dlls to the correct location." />
 	
 	<target name="checkLibDirs">
-		<available property="win64.exists" type="dir" file="${basedir}/../../win32/x64/Release" />
-		<available property="win32.exists" type="dir" file="${basedir}/../../win32/Release" />
+		<available property="win64.exists" type="dir" file="${basedir}/../../win32/x64/${tsk.config}" />
+		<available property="win32.exists" type="dir" file="${basedir}/../../win32/${tsk.config}" />
 	</target>
 	
 	<target name="copyWinLibs64" depends="checkLibDirs" if="win64.exists">
-		<property name="win64dir" location="${basedir}/../../win32/x64/Release" />
+		<property name="win64dir" location="${basedir}/../../win32/x64/${tsk.config}" />
 		
 		<fileset dir="${win64dir}" id="win64dlls">
 			<include name="*.dll" />
@@ -69,7 +77,7 @@
 	</target>
 	
 	<target name="copyWinLibs32" depends="checkLibDirs" if="win32.exists">
-		<property name="win32dir" location="${basedir}/../../win32/Release" />
+		<property name="win32dir" location="${basedir}/../../win32/${tsk.config}" />
 		<fileset dir="${win32dir}" id="win32dlls">
 			<include name="*.dll" />
 		</fileset>
