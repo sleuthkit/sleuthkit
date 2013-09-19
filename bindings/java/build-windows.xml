@@ -98,5 +98,11 @@
 			<fileset refid="crt32dlls" />
 		</copy>		
 		
+		<copy todir="${i686}/win" overwrite="true">
+			<fileset refid="win32dlls" />
+		</copy>
+		<copy todir="${i686}/win" overwrite="true">
+			<fileset refid="crt32dlls" />
+		</copy>	
 	</target>
 </project>

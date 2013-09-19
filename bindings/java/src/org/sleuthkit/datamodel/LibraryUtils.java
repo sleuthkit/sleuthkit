@@ -44,7 +44,7 @@ public class LibraryUtils {
 		MSVCR ("msvcr100"),
 		ZLIB ("zlib"),
 		LIBEWF ("libewf"),
-		TSK_JNI ("tsk_jni");
+		TSK_JNI ("libtsk_jni");
 		
 		private final String name;
 		
@@ -64,12 +64,10 @@ public class LibraryUtils {
 	 */
 	public static String getPlatform() {
 		String os = System.getProperty("os.name").toLowerCase();
-		if(os.contains("win")) {
+		if(LibraryUtils.isWindows()) {
 			os = "win";
-		} else if(os.contains("mac")) {
+		} else if(LibraryUtils.isMac()) {
 			os = "mac";
-		} else {
-			os = "unix";
 		}
 		// os.arch represents the architecture of the JVM, not the os
 		String arch = System.getProperty("os.arch");
@@ -94,21 +92,27 @@ public class LibraryUtils {
 		return System.getProperty("os.name").toLowerCase().contains("mac");
 	}
 	
+	/**
+	 * Is the platform Linux?
+	 * 
+	 * @return
+	 */
+	public static boolean isLinux() {
+		return System.getProperty("os.name").equals("Linux");
+	}
+	
     /**
 	 * Attempt to extract and load the specified library.
 	 * 
 	 * @param library
 	 * @return 
 	 */
-	public static void loadLibrary(Lib library) {
+	public static boolean loadLibrary(Lib library) {
 		StringBuilder path = new StringBuilder();
 		path.append("/NATIVELIBS/");
 		path.append(getPlatform());
 		
 		String libName = library.getLibName();
-		if(library == Lib.TSK_JNI && (isWindows() || isMac())) {
-			libName = "lib" + libName;
-		}
 		
 		path.append("/");
 		path.append(libName);
@@ -123,32 +127,36 @@ public class LibraryUtils {
 			}
 		}
 		
-		if(libraryURL != null) {
-			// copy library to temp folder and load it
-			try {
-				java.io.File libTemp = new java.io.File(System.getProperty("java.io.tmpdir") + libName + libExt);
-				
-				if(libTemp.exists()) {
-					// Delete old file
-					libTemp.delete();
-				}
-				
-				InputStream in = libraryURL.openStream();
-				OutputStream out = new FileOutputStream(libTemp);
-				
-				byte[] buffer = new byte[1024];
-				int length;
-				while((length = in.read(buffer)) > 0) {
-					out.write(buffer, 0, length);
-				}
-				in.close();
-				out.close();
-				
-				System.load(libTemp.getAbsolutePath());
-			} catch (IOException e) {
-				// Loading failed.
-			} 
+		if(libraryURL == null) {
+			return false;
 		}
+		
+		// copy library to temp folder and load it
+		try {
+			java.io.File libTemp = new java.io.File(System.getProperty("java.io.tmpdir") + libName + libExt);
+
+			if(libTemp.exists()) {
+				// Delete old file
+				libTemp.delete();
+			}
+
+			InputStream in = libraryURL.openStream();
+			OutputStream out = new FileOutputStream(libTemp);
+
+			byte[] buffer = new byte[1024];
+			int length;
+			while((length = in.read(buffer)) > 0) {
+				out.write(buffer, 0, length);
+			}
+			in.close();
+			out.close();
+
+			System.load(libTemp.getAbsolutePath());
+		} catch (IOException e) {
+			// Loading failed.
+			return false;
+		} 
+		return true;
 	} 
 	
 	public static Lib[] getCRTLibs() {
