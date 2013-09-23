@@ -26,8 +26,7 @@ import java.util.List;
  * Populated based on data in database.
  */
 public class Volume extends AbstractContent {
-	// @@@ We should comment somewhere what the units are (bytes, sectors, etc.)
-
+	
 	private long addr;
 	private long start; //in sectors, relative to volume system start
 	private long length; //in sectors
@@ -41,8 +40,8 @@ public class Volume extends AbstractContent {
 	 * @param db database object
 	 * @param obj_id
 	 * @param addr
-	 * @param start
-	 * @param length
+	 * @param start	in sectors, relative to start of VS
+	 * @param length in sectors
 	 * @param flags
 	 * @param desc
 	 */
@@ -123,7 +122,7 @@ public class Volume extends AbstractContent {
 	//methods get exact data from database. could be manipulated to get more
 	//meaningful data.
 	/**
-	 * get the partition address
+	 * get the unique partition address within this volume system (assigned by The Sleuth Kit)
 	 *
 	 * @return partition address in volume system
 	 */
@@ -132,16 +131,16 @@ public class Volume extends AbstractContent {
 	}
 
 	/**
-	 * get the starting byte offset
+	 * get the starting sector address of this volume relative to start of the volume system
 	 *
-	 * @return starting byte offset
+	 * @return starting address
 	 */
 	public long getStart() {
 		return start;
 	}
 
 	/**
-	 * get the length
+	 * get the length of the volume in sectors
 	 *
 	 * @return length
 	 */
@@ -168,7 +167,7 @@ public class Volume extends AbstractContent {
 	}
 
 	/**
-	 * get the description
+	 * get the description. This is set by the volume system and doesn't exist for all volumes.
 	 *
 	 * @return description
 	 */

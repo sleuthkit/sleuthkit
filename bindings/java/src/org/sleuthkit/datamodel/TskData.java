@@ -118,7 +118,7 @@ public class TskData {
 			return metaTypeStr;
 		}
 		
-		public static TSK_FS_META_TYPE_ENUM ValueOf(short metaType) {
+		public static TSK_FS_META_TYPE_ENUM valueOf(short metaType) {
 			for (TSK_FS_META_TYPE_ENUM type : TSK_FS_META_TYPE_ENUM.values()) {
 				if (type.getValue() == metaType) {
 					return type;
@@ -316,6 +316,7 @@ public class TskData {
 		public long getVsFlag(){
 			return vs_flag;
 		}
+		
 	} 
 
 	/**
@@ -450,28 +451,47 @@ public class TskData {
 	 */
 	public enum TSK_IMG_TYPE_ENUM {
 		/* The following describe the image type */
-		TSK_IMG_TYPE_DETECT(0),       // Auto Detection
-		TSK_IMG_TYPE_RAW_SING(1),     // Single raw file (dd)
-		TSK_IMG_TYPE_RAW_SPLIT(2),    // Split raw files
-		TSK_IMG_TYPE_AFF_AFF(4),      // Advanced Forensic Format
-		TSK_IMG_TYPE_AFF_AFD(8),      // AFF Multiple File
-		TSK_IMG_TYPE_AFF_AFM(16),     // AFF with external metadata
-		TSK_IMG_TYPE_AFF_ANY(32),     // All AFFLIB image formats (including beta ones)
-		TSK_IMG_TYPE_EWF_EWF(64),     // Expert Witness format (encase)
-		TSK_IMG_TYPE_UNSUPP(65535);   // Unsupported Image Type
+		TSK_IMG_TYPE_DETECT(0, "Auto Detect"),       // Auto Detection
+		TSK_IMG_TYPE_RAW_SING(1, "Raw Single"),     // Single raw file (dd)
+		TSK_IMG_TYPE_RAW_SPLIT(2, "Raw Split"),    // Split raw files
+		TSK_IMG_TYPE_AFF_AFF(4, "AFF"),      // Advanced Forensic Format
+		TSK_IMG_TYPE_AFF_AFD(8, "AFD"),      // AFF Multiple File
+		TSK_IMG_TYPE_AFF_AFM(16, "AFM"),     // AFF with external metadata
+		TSK_IMG_TYPE_AFF_ANY(32, "AFF"),     // All AFFLIB image formats (including beta ones)
+		TSK_IMG_TYPE_EWF_EWF(64, "E01"),     // Expert Witness format (encase)
+		TSK_IMG_TYPE_UNSUPP(65535, "Unknown");   // Unsupported Image Type
 
 		private long imgType;
+		private String name;
 
-		private TSK_IMG_TYPE_ENUM (long type){
+		private TSK_IMG_TYPE_ENUM (long type, String name){
 			this.imgType = type;
+			this.name = name;
 		}
 
+		public static TSK_IMG_TYPE_ENUM valueOf(long imgType) {
+			for (TSK_IMG_TYPE_ENUM type : TSK_IMG_TYPE_ENUM.values()) {
+				if (type.getValue() == imgType) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_IMG_TYPE_ENUM of value: " + imgType);
+		}
+		
 		/**
-		 * Get long value of the image tyoe
+		 * Get long value of the image type
 		 * @return the long value of the image type
 		 */
-		public long getImageType(){
+		public long getValue(){
 			return imgType;
+		}
+		
+		/**
+		 * Get the name of the image type
+		 * @return 
+		 */
+		public String getName() {
+			return name;
 		}
 	};
     

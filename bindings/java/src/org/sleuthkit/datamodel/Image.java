@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  * 
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2013 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,7 @@ import java.io.File;
 
 /**
  * Represents a disk image file, stored in tsk_image_info. Populated based on
- * data in database.
+ * data in database.  
  *
  * Caches internal tsk image handle and reuses it for reads
  */
@@ -123,8 +123,8 @@ public class Image extends AbstractContent {
 	 *
 	 * @return image type
 	 */
-	public long getType() {
-		return type;
+	public TskData.TSK_IMG_TYPE_ENUM getType() {
+		return TskData.TSK_IMG_TYPE_ENUM.valueOf(type);
 	}
 
 	/**
@@ -205,93 +205,6 @@ public class Image extends AbstractContent {
 		return timezone;
 	}
 
-	// ----- Methods for Image Type conversion / mapping -----
-	/**
-	 * Convert image type id to string value
-	 *
-	 * @param imageType to convert
-	 * @return string representation of the image type
-	 */
-	public static String imageTypeToValue(long imageType) {
-
-		String result = "";
-
-		for (TskData.TSK_IMG_TYPE_ENUM imgType : TskData.TSK_IMG_TYPE_ENUM.values()) {
-			if (imgType.getImageType() == imageType) {
-				result = imgType.toString();
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * Convert image type value string to image type id
-	 *
-	 * @param imageType value string to convert
-	 * @return image type id
-	 */
-	public static long valueToImageType(String imageType) {
-
-		long result = 0;
-
-		for (TskData.TSK_IMG_TYPE_ENUM imgType : TskData.TSK_IMG_TYPE_ENUM.values()) {
-			if (imgType.toString().equals(imageType)) {
-				result = imgType.getImageType();
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * Convert image type id to string representation
-	 *
-	 * @param imageType to convert
-	 * @return user-readable string representation of the image type
-	 */
-	public static String imageTypeToString(long imageType) {
-
-		String result = "";
-
-		long detect = TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_DETECT.getImageType();
-		long raw = TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_RAW_SING.getImageType();
-		long split = TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_RAW_SPLIT.getImageType();
-		long aff = TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_AFF_AFF.getImageType();
-		long afd = TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_AFF_AFD.getImageType();
-		long afm = TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_AFF_AFM.getImageType();
-		long afflib = TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_AFF_ANY.getImageType();
-		long ewf = TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_EWF_EWF.getImageType();
-		long unsupported = TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_UNSUPP.getImageType();
-
-		if (imageType == detect) {
-			result = "Auto Detection";
-		}
-		if (imageType == raw) {
-			result = "Single raw file (dd)";
-		}
-		if (imageType == split) {
-			result = "Split raw files";
-		}
-		if (imageType == aff) {
-			result = "Advanced Forensic Format";
-		}
-		if (imageType == afd) {
-			result = "AFF Multiple File";
-		}
-		if (imageType == afm) {
-			result = "AFF with external metadata";
-		}
-		if (imageType == afflib) {
-			result = "All AFFLIB image formats (including beta ones)";
-		}
-		if (imageType == ewf) {
-			result = "Expert Witness format (encase)";
-		}
-		if (imageType == unsupported) {
-			result = "Unsupported Image Type";
-		}
-
-		return result;
-	}
 
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
@@ -317,6 +230,10 @@ public class Image extends AbstractContent {
 		return super.toString(preserveState) + "Image [\t" + "\t" + "paths " + Arrays.toString(paths) + "\t" + "size " + size + "\t" + "ssize " + ssize + "\t" + "timezone " + timezone + "\t" + "type " + type + "]\t";
 	}
 	
+	/**
+	 * Test if the image represented by this object exists on disk. 
+	 * @return True if the file still exists
+	 */
 	public Boolean imageFileExists() {
 		if (paths.length > 0) {
 			File imageFile = new File(paths[0]);
