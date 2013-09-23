@@ -499,19 +499,30 @@ public class TskData {
 	 * Volume System type
 	 */
     public enum TSK_VS_TYPE_ENUM {
-        TSK_VS_TYPE_DETECT(0x0000),    ///< Use autodetection methods
-        TSK_VS_TYPE_DOS(0x0001),       ///< DOS Partition table
-        TSK_VS_TYPE_BSD(0x0002),       ///< BSD Partition table
-        TSK_VS_TYPE_SUN(0x0004),       ///< Sun VTOC
-        TSK_VS_TYPE_MAC(0x0008),       ///< Mac partition table
-        TSK_VS_TYPE_GPT(0x0010),       ///< GPT partition table
-        TSK_VS_TYPE_DBFILLER(0x00F0),  ///< fake partition table type for loaddb (for images that do not have a volume system)
-        TSK_VS_TYPE_UNSUPP(0xFFFF);    ///< Unsupported
+        TSK_VS_TYPE_DETECT(0x0000, "Auto Detect"),    ///< Use autodetection methods
+        TSK_VS_TYPE_DOS(0x0001, "DOS"),       ///< DOS Partition table
+        TSK_VS_TYPE_BSD(0x0002, "BSD"),       ///< BSD Partition table
+        TSK_VS_TYPE_SUN(0x0004, "SUN VTOC"),       ///< Sun VTOC
+        TSK_VS_TYPE_MAC(0x0008, "Mac"),       ///< Mac partition table
+        TSK_VS_TYPE_GPT(0x0010, "GPT"),       ///< GPT partition table
+        TSK_VS_TYPE_DBFILLER(0x00F0, "Fake"),  ///< fake partition table type for loaddb (for images that do not have a volume system)
+        TSK_VS_TYPE_UNSUPP(0xFFFF, "Unsupported");    ///< Unsupported
         
         private long vsType;
-        private TSK_VS_TYPE_ENUM(long type){
+		private String name;
+        private TSK_VS_TYPE_ENUM(long type, String name){
             this.vsType = type;
+			this.name = name;
         }
+		
+		public static TSK_VS_TYPE_ENUM valueOf(long vsType) {
+			for (TSK_VS_TYPE_ENUM type : TSK_VS_TYPE_ENUM.values()) {
+				if (type.getVsType() == vsType) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_VS_TYPE_ENUM of value: " + vsType);
+		}
         
 		
 		/**
@@ -521,6 +532,14 @@ public class TskData {
         public long getVsType() {
             return vsType;
         }
+		
+		/**
+		 * Get the name of the volume system type.
+		 * @return 
+		 */
+		public String getName() {
+			return name;
+		}
     };
 	
 	
