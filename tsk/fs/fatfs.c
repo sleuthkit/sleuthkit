@@ -736,7 +736,8 @@ fatfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     FATFS_INFO *fatfs = (FATFS_INFO *) fs;
     fatfs_sb *sb = fatfs->sb;
     char *data_buf;
-    fatfs_dentry *de;
+    fatfs_dentry *de = NULL;
+	fatfs_dentry *current_entry = NULL;
     ssize_t cnt;
 
     // clean up any error messages that are lying around
@@ -763,16 +764,16 @@ fatfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
 
     /* Find the dentry that is set as the volume label */
-    de = (fatfs_dentry *) data_buf;
-    for (i = 0; i < fatfs->ssize; i += sizeof(*de)) {
-        if (de->attrib == FATFS_ATTR_VOLUME)
-            break;
-        de++;
-    }
-    /* If we didn't find it, then reset de */
-    if (de->attrib != FATFS_ATTR_VOLUME)
-        de = NULL;
-
+	if (fatfs->ssize <= fs->block_size) {
+		current_entry = (fatfs_dentry *) data_buf;
+		for (i = 0; i < fatfs->ssize; i += sizeof(*current_entry)) {
+			if (current_entry->attrib == FATFS_ATTR_VOLUME) {
+				de=current_entry;
+				break;
+			}
+        current_entry++;
+		}
+	}
 
     /* Print the general file system information */
 
