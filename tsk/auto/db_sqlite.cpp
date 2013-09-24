@@ -274,15 +274,15 @@ int
             "Error creating tsk_files_derived_method table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tag_names (id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, description TEXT, icon TEXT)",
+        ("CREATE TABLE tag_names (id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)",
             "Error creating tag_names table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE file_tags (id INTEGER PRIMARY KEY, file_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT, begin_byte_offset INTEGER, end_byte_offset INTEGER)",
+        ("CREATE TABLE content_tags (id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)",
             "Error creating file_tags table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifact_tags (id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, file_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT, begin_byte_offset INTEGER, end_byte_offset INTEGER)",
+        ("CREATE TABLE blackboard_artifact_tags (id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)",
             "Error creating blackboard_artifact_tags table: %s\n")
         ||
         attempt_exec

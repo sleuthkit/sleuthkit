@@ -108,6 +108,12 @@ public class SleuthkitCase {
 	private PreparedStatement hasChildrenSt;
 	private PreparedStatement getLastContentIdSt;
 	private PreparedStatement getFsIdForFileIdSt;
+	private PreparedStatement insertIntoTagNames;
+	private PreparedStatement selectMaxIdFromTagNames;
+	private PreparedStatement insertIntoContentTags;
+	private PreparedStatement selectMaxIdFromContentTags;
+	private PreparedStatement insertIntoBlackboardArtifactTags;
+	private PreparedStatement selectMaxIdFromBlackboardArtifactTags;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
 
@@ -277,177 +283,75 @@ public class SleuthkitCase {
 
 		getFsIdForFileIdSt = con.prepareStatement(
 				"SELECT fs_obj_id from tsk_files WHERE obj_id=?");
+		
+		insertIntoTagNames =  con.prepareStatement("INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)");
+		
+		selectMaxIdFromTagNames = con.prepareStatement("SELECT MAX(id) FROM tag_names");
+		
+		insertIntoContentTags = con.prepareStatement("INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)");
+		
+		selectMaxIdFromContentTags = con.prepareStatement("SELECT MAX(id) FROM content_tags");		
 
+		insertIntoBlackboardArtifactTags = con.prepareStatement("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)");
+		
+		selectMaxIdFromBlackboardArtifactTags = con.prepareStatement("SELECT MAX(id) FROM blackboard_artifact_tags");				
 	}
 
-	private void closeStatements() {
+	private void closeStatement(PreparedStatement statement) {
 		try {
-			if (getBlackboardAttributesSt != null) {
-				getBlackboardAttributesSt.close();
-				getBlackboardAttributesSt = null;
-			}
-			if (getBlackboardArtifactSt != null) {
-				getBlackboardArtifactSt.close();
-				getBlackboardArtifactSt = null;
-			}
-			if (getBlackboardArtifactsSt != null) {
-				getBlackboardArtifactsSt.close();
-				getBlackboardArtifactsSt = null;
-			}
-			if (getBlackboardArtifactsTypeCountSt != null) {
-				getBlackboardArtifactsTypeCountSt.close();
-				getBlackboardArtifactsTypeCountSt = null;
-			}
-			if (getBlackboardArtifactsContentCountSt != null) {
-				getBlackboardArtifactsContentCountSt.close();
-				getBlackboardArtifactsContentCountSt = null;
-			}
-			if (getArtifactsHelper1St != null) {
-				getArtifactsHelper1St.close();
-				getArtifactsHelper1St = null;
-			}
-			if (getArtifactsHelper2St != null) {
-				getArtifactsHelper2St.close();
-				getArtifactsHelper2St = null;
-			}
-			if (getArtifactsCountHelperSt != null) {
-				getArtifactsCountHelperSt.close();
-				getArtifactsCountHelperSt = null;
-			}
-
-			if (getAbstractFileChildren != null) {
-				getAbstractFileChildren.close();
-				getAbstractFileChildren = null;
-			}
-			if (getAbstractFileChildrenIds != null) {
-				getAbstractFileChildrenIds.close();
-				getAbstractFileChildrenIds = null;
-			}
-			if (getAbstractFileById != null) {
-				getAbstractFileById.close();
-				getAbstractFileById = null;
-			}
-			if (addArtifactSt1 != null) {
-				addArtifactSt1.close();
-				addArtifactSt1 = null;
-			}
-			if (addArtifactSt2 != null) {
-				addArtifactSt2.close();
-				addArtifactSt2 = null;
-			}
-			if (getLastArtifactId != null) {
-				getLastArtifactId.close();
-				getLastArtifactId = null;
-			}
-
-			if (addBlackboardAttributeStringSt != null) {
-				addBlackboardAttributeStringSt.close();
-				addBlackboardAttributeStringSt = null;
-			}
-
-			if (addBlackboardAttributeByteSt != null) {
-				addBlackboardAttributeByteSt.close();
-				addBlackboardAttributeByteSt = null;
-			}
-
-			if (addBlackboardAttributeIntegerSt != null) {
-				addBlackboardAttributeIntegerSt.close();
-				addBlackboardAttributeIntegerSt = null;
-			}
-
-			if (addBlackboardAttributeLongSt != null) {
-				addBlackboardAttributeLongSt.close();
-				addBlackboardAttributeLongSt = null;
-			}
-
-			if (addBlackboardAttributeDoubleSt != null) {
-				addBlackboardAttributeDoubleSt.close();
-				addBlackboardAttributeDoubleSt = null;
-			}
-
-			if (getFileSt != null) {
-				getFileSt.close();
-				getFileSt = null;
-			}
-
-			if (getFileWithParentSt != null) {
-				getFileWithParentSt.close();
-				getFileWithParentSt = null;
-			}
-
-			if (getFileNameSt != null) {
-				getFileNameSt.close();
-				getFileNameSt = null;
-			}
-
-			if (updateMd5St != null) {
-				updateMd5St.close();
-				updateMd5St = null;
-			}
-
-			if (getLastContentIdSt != null) {
-				getLastContentIdSt.close();
-				getLastContentIdSt = null;
-			}
-
-			if (getPathSt != null) {
-				getPathSt.close();
-				getPathSt = null;
-			}
-
-			if (getFileParentPathSt != null) {
-				getFileParentPathSt.close();
-				getFileParentPathSt = null;
-			}
-
-			if (getDerivedInfoSt != null) {
-				getDerivedInfoSt.close();
-				getDerivedInfoSt = null;
-			}
-
-			if (getDerivedMethodSt != null) {
-				getDerivedMethodSt.close();
-				getDerivedMethodSt = null;
-			}
-
-
-			if (addObjectSt != null) {
-				addObjectSt.close();
-				addObjectSt = null;
-			}
-
-			if (addFileSt != null) {
-				addFileSt.close();
-				addFileSt = null;
-			}
-
-			if (addLayoutFileSt != null) {
-				addLayoutFileSt.close();
-				addLayoutFileSt = null;
-			}
-
-			if (addPathSt != null) {
-				addPathSt.close();
-				addPathSt = null;
-			}
-
-			if (hasChildrenSt != null) {
-				hasChildrenSt.close();
-				hasChildrenSt = null;
-			}
-
-			if (getFsIdForFileIdSt != null) {
-				getFsIdForFileIdSt.close();
-				getFsIdForFileIdSt = null;
-			}
-
-
-		} catch (SQLException e) {
-			logger.log(Level.WARNING,
-					"Error closing prepared statements", e);
+			if (statement != null) {
+				statement.close();
+				statement = null;
+			}			
+		} 
+		catch (SQLException ex) {
+			logger.log(Level.WARNING, "Error closing prepared statement", ex);
 		}
 	}
-
+		
+	private void closeStatements() {
+		closeStatement(getBlackboardAttributesSt);
+		closeStatement(getBlackboardArtifactSt);
+		closeStatement(getBlackboardArtifactsSt);
+		closeStatement(getBlackboardArtifactsTypeCountSt);
+		closeStatement(getBlackboardArtifactsContentCountSt);
+		closeStatement(getArtifactsHelper1St);
+		closeStatement(getArtifactsHelper2St);
+		closeStatement(getArtifactsCountHelperSt);
+		closeStatement(getAbstractFileChildren);
+		closeStatement(getAbstractFileChildrenIds);
+		closeStatement(getAbstractFileById);
+		closeStatement(addArtifactSt1);
+		closeStatement(addArtifactSt2);
+		closeStatement(getLastArtifactId);
+		closeStatement(addBlackboardAttributeStringSt);
+		closeStatement(addBlackboardAttributeByteSt);
+		closeStatement(addBlackboardAttributeIntegerSt);
+		closeStatement(addBlackboardAttributeLongSt);
+		closeStatement(addBlackboardAttributeDoubleSt);
+		closeStatement(getFileSt);
+		closeStatement(getFileWithParentSt);
+		closeStatement(getPathSt);
+		closeStatement(getFileNameSt);
+		closeStatement(updateMd5St);
+		closeStatement(getLastContentIdSt);
+		closeStatement(getFileParentPathSt);
+		closeStatement(getDerivedInfoSt);
+		closeStatement(getDerivedMethodSt);
+		closeStatement(addObjectSt);
+		closeStatement(addFileSt);
+		closeStatement(addLayoutFileSt);
+		closeStatement(addPathSt);
+		closeStatement(hasChildrenSt);
+		closeStatement(getFsIdForFileIdSt);
+		closeStatement(insertIntoTagNames);
+		closeStatement(selectMaxIdFromTagNames);		
+		closeStatement(insertIntoContentTags);
+		closeStatement(selectMaxIdFromContentTags);
+		closeStatement(insertIntoBlackboardArtifactTags);
+		closeStatement(selectMaxIdFromBlackboardArtifactTags);		
+	}
+				
 	private void configureDB() throws TskCoreException {
 		try {
 			//this should match SleuthkitJNI db setup
@@ -3015,8 +2919,8 @@ public class SleuthkitCase {
 		}
 
 		return vd;
-	}
-
+	} 
+	
 	/**
 	 * Get IDs of the virtual folder roots (at the same level as image), used
 	 * for containers such as for local files.
@@ -5100,4 +5004,83 @@ public class SleuthkitCase {
 			observer.receiveError(context, errorMessage);
 		}
 	}
+	
+	/**
+	 * Inserts a record corresponding to a TagName into the tags_names table.
+	 * @throws TskCoreException 
+	 */
+	public void addTagName(TagName tagName) throws TskCoreException {
+		dbWriteLock();		
+		try {
+			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)			
+			insertIntoTagNames.clearParameters(); 			
+			insertIntoTagNames.setString(1, tagName.getDisplayName());
+			insertIntoTagNames.setString(2, tagName.getDescription());
+			insertIntoTagNames.setString(3, tagName.getColor().getName());
+			insertIntoTagNames.executeUpdate();
+
+			// SELECT MAX(id) FROM tag_names
+			tagName.setId(selectMaxIdFromTagNames.executeQuery().getLong(1));
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error adding record for " + tagName.getDisplayName() + " tag name to tag_names table", ex);
+		}
+		finally {
+			dbWriteUnlock();
+		}
+	}
+	
+	/**
+	 * Inserts a record corresponding to a ContentTag into the content_tags table.
+	 * @throws TskCoreException 
+	 */
+	public void addContentTag(ContentTag tag) throws TskCoreException {
+		dbWriteLock();		
+		try {			
+			// INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)
+			insertIntoContentTags.clearParameters(); 			
+			insertIntoContentTags.setLong(1, tag.getContent().getId());
+			insertIntoContentTags.setLong(2, tag.getName().getId());
+			insertIntoContentTags.setString(3, tag.getComment());
+			insertIntoContentTags.setLong(4, tag.getBeginByteOffset());
+			insertIntoContentTags.setLong(5, tag.getEndByteOffset());
+			insertIntoContentTags.executeUpdate();
+
+			// SELECT MAX(id) FROM content_tags
+			tag.setId(selectMaxIdFromContentTags.executeQuery().getLong(1));
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error adding record for " + tag.getContent().getUniquePath() + " " + tag.getName().getDisplayName() + " tag to content_tags table", ex);
+		}
+		finally {
+			dbWriteUnlock();
+		}	
+	}
+	
+	/**
+	 * Inserts a record corresponding to a BlackboardArtifactTag into the blackboard_artifact_tags table.
+	 * @throws TskCoreException 
+	 */
+	public void addBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
+		dbWriteLock();		
+		try {			
+			// INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)			
+			insertIntoBlackboardArtifactTags.clearParameters(); 			
+			insertIntoBlackboardArtifactTags.setLong(1, tag.getArtifact().getArtifactID());
+			insertIntoBlackboardArtifactTags.setLong(2, tag.getName().getId());
+			insertIntoBlackboardArtifactTags.setString(3, tag.getComment());
+			insertIntoBlackboardArtifactTags.setLong(4, tag.getBeginByteOffset());
+			insertIntoBlackboardArtifactTags.setLong(5, tag.getEndByteOffset());
+			insertIntoBlackboardArtifactTags.executeUpdate();
+
+			// SELECT MAX(id) FROM blackboard_artifact_tags
+			tag.setId(selectMaxIdFromBlackboardArtifactTags.executeQuery().getLong(1));
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error adding record for " + tag.getArtifact().getDisplayName() + " artifact (id = " + tag.getArtifact().getArtifactID() + ") " + tag.getName().getDisplayName() + " tag to blackboard_artifacts_tags table", ex);
+		}
+		finally {
+			dbWriteUnlock();
+		}	
+	}	
 }

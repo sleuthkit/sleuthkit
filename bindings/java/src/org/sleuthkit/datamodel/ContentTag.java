@@ -19,27 +19,28 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Instances of this class represent tags a user applies to an artifact.
+ * Instances of this class represent tags a user applies to content or to a 
+ * portion of content.
  */
-public class BlackboardArtifactTag extends Tag {
-	private final BlackboardArtifact artifact;
-	
-	public BlackboardArtifactTag(BlackboardArtifact artifact, TagName name) {
+public class ContentTag extends Tag {
+	private final Content content;
+		
+	public ContentTag(Content content, TagName name) {
 		super(name);
-		this.artifact = artifact;
+		this.content = content;
 	}
-	
-	public BlackboardArtifactTag(BlackboardArtifact artifact, TagName name, String comment) {
+			
+	public ContentTag(Content content, TagName name, String comment) {
 		super(name, comment);
-		this.artifact = artifact;
+		this.content = content;
 	}
-	
-	public BlackboardArtifactTag(BlackboardArtifact artifact, TagName name, String comment, long beginByteOffset, long endByteOffset) {
+			
+	public ContentTag(Content content, TagName name, String comment, long beginByteOffset, long endByteOffset) {
 		super(name, comment, beginByteOffset, endByteOffset);
-		this.artifact = artifact;
+		this.content = content;
 	}
 	
-	public BlackboardArtifact getArtifact() {
-		return artifact;
-	}
+	public Content getContent() {
+		return content;
+	}	
 }

@@ -19,37 +19,85 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Instances of this class represent the names of tags associated with content.
+ * Instances of this class represent the names of tags associated with content 
+ * or artifacts.
  */
 public class TagName {
+	public enum TAG_COLOR {
+		NONE("None"),
+		WHITE("White"),
+		SILVER("Silver"),	
+		GRAY("Gray"),	
+		BLACK("Black"),	
+		RED("Red"),	
+		MAROON("Maron"),	
+		YELLOW("Yellow"),	
+		OLIVE("Olive"),	
+		LIME("Lime"),	
+		GREEN("Green"),	
+		AQUA("Aqua"),	
+		TEAL("Teal"),	
+		BLUE("Blue"),	
+		NAVY("Navy"),	
+		FUCHSIA("Fuchsia"),	
+		PURPLE("Purple");
+		
+		private String name;
+		
+		private TAG_COLOR(String name) {
+			this.name = name;
+		}
+		
+		String getName() {
+			return name;
+		}
+	}
+		
 	static long ID_NOT_SET = 0;
 	private long id = ID_NOT_SET;
 	private final String displayName;
-	
+	private String description = "";
+	private TAG_COLOR color = TAG_COLOR.NONE;
+		
 	public TagName(String displayName) {
 		this.displayName = displayName;
+	}
+
+	public TagName(String displayName, String description) {
+		this(displayName);
+		this.description = description;
+	}
+
+	public TagName(String displayName, String description, TAG_COLOR color) {
+		this(displayName, description);
+		this.color = color;
 	}
 
 	public String getDisplayName() {
 		return displayName;
 	}
+	
+	public String getDescription() {
+		return description;
+	}
+	
+	public void setDescription (String description) {
+		this.description = description;
+	}
+	
+	public TAG_COLOR getColor() {
+		return color;
+	}
+	
+	public void setColor(TAG_COLOR color) {
+		this.color = color;
+	}
 		
-	// This method is package-private because its only intended client is the
-	// SleuthkitCase (i.e., database access) class. 	
-	TagName(long id, String displayName) {
-		this(displayName);
-		this.id = id;
-	}
-
-	// This method is package-private because its only intended client is the
-	// SleuthkitCase (i.e., database access) class. 	
-	void setId(long id) {
-		this.id = id;
-	}
-			
-	// This method is package-private because its only intended client is the
-	// SleuthkitCase (i.e., database access) class. 	
 	long getId() {
 		return id;
 	}	
+
+	void setId(long id) {
+		this.id = id;
+	}		
 }
