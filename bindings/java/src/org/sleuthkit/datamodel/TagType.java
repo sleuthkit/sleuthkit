@@ -19,11 +19,13 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Instances of this class represent the names of tags associated with content 
- * or artifacts.
+ * Instances of this class are data transfer objects (DTOs) that represent the 
+ * types of tags a user can apply to Content and BlackboardArtifact objects.
  */
-public class TagName {
-	public enum TAG_COLOR {
+public class TagType {
+	// With the exception of NONE, the elements of this enum correspond to the
+	// HTML colors.
+	public enum COLOR {
 		NONE("None"),
 		WHITE("White"),
 		SILVER("Silver"),	
@@ -44,7 +46,7 @@ public class TagName {
 		
 		private String name;
 		
-		private TAG_COLOR(String name) {
+		private COLOR(String name) {
 			this.name = name;
 		}
 		
@@ -53,23 +55,32 @@ public class TagName {
 		}
 	}
 		
-	static long ID_NOT_SET = 0;
+	static long ID_NOT_SET = -1;
 	private long id = ID_NOT_SET;
 	private final String displayName;
 	private String description = "";
-	private TAG_COLOR color = TAG_COLOR.NONE;
+	private COLOR color = COLOR.NONE;
 		
-	public TagName(String displayName) {
+	public TagType(String displayName) throws IllegalArgumentException {
+		if (null == displayName || displayName.isEmpty() == true) {
+			throw new IllegalArgumentException("displayName is null or empty");
+		}
 		this.displayName = displayName;
 	}
 
-	public TagName(String displayName, String description) {
+	public TagType(String displayName, String description) throws IllegalArgumentException {
 		this(displayName);
+		if (null == description || description.isEmpty() == true) {
+			throw new IllegalArgumentException("description is null or empty");
+		}
 		this.description = description;
 	}
 
-	public TagName(String displayName, String description, TAG_COLOR color) {
+	public TagType(String displayName, String description, COLOR color) throws IllegalArgumentException {
 		this(displayName, description);
+		if (null == color) {
+			throw new IllegalArgumentException("color is null");
+		}
 		this.color = color;
 	}
 
@@ -85,19 +96,19 @@ public class TagName {
 		this.description = description;
 	}
 	
-	public TAG_COLOR getColor() {
+	public COLOR getColor() {
 		return color;
 	}
 	
-	public void setColor(TAG_COLOR color) {
+	public void setColor(COLOR color) {
 		this.color = color;
-	}
-		
+	}		
+	
 	long getId() {
 		return id;
 	}	
 
 	void setId(long id) {
 		this.id = id;
-	}		
+	}			
 }

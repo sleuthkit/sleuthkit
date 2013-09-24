@@ -108,8 +108,8 @@ public class SleuthkitCase {
 	private PreparedStatement hasChildrenSt;
 	private PreparedStatement getLastContentIdSt;
 	private PreparedStatement getFsIdForFileIdSt;
-	private PreparedStatement insertIntoTagNames;
-	private PreparedStatement selectMaxIdFromTagNames;
+	private PreparedStatement insertIntoTagTypes;
+	private PreparedStatement selectMaxIdFromTagTypes;
 	private PreparedStatement insertIntoContentTags;
 	private PreparedStatement selectMaxIdFromContentTags;
 	private PreparedStatement insertIntoBlackboardArtifactTags;
@@ -284,15 +284,15 @@ public class SleuthkitCase {
 		getFsIdForFileIdSt = con.prepareStatement(
 				"SELECT fs_obj_id from tsk_files WHERE obj_id=?");
 		
-		insertIntoTagNames =  con.prepareStatement("INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)");
+		insertIntoTagTypes =  con.prepareStatement("INSERT INTO tag_types (display_name, description, color) VALUES (?, ?, ?)");
 		
-		selectMaxIdFromTagNames = con.prepareStatement("SELECT MAX(id) FROM tag_names");
+		selectMaxIdFromTagTypes = con.prepareStatement("SELECT MAX(id) FROM tag_types");
 		
-		insertIntoContentTags = con.prepareStatement("INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)");
+		insertIntoContentTags = con.prepareStatement("INSERT INTO content_tags (obj_id, tag_type_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)");
 		
 		selectMaxIdFromContentTags = con.prepareStatement("SELECT MAX(id) FROM content_tags");		
 
-		insertIntoBlackboardArtifactTags = con.prepareStatement("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)");
+		insertIntoBlackboardArtifactTags = con.prepareStatement("INSERT INTO blackboard_artifact_tags (artifact_id, tag_type_id, comment) VALUES (?, ?, ?)");
 		
 		selectMaxIdFromBlackboardArtifactTags = con.prepareStatement("SELECT MAX(id) FROM blackboard_artifact_tags");				
 	}
@@ -344,8 +344,8 @@ public class SleuthkitCase {
 		closeStatement(addPathSt);
 		closeStatement(hasChildrenSt);
 		closeStatement(getFsIdForFileIdSt);
-		closeStatement(insertIntoTagNames);
-		closeStatement(selectMaxIdFromTagNames);		
+		closeStatement(insertIntoTagTypes);
+		closeStatement(selectMaxIdFromTagTypes);		
 		closeStatement(insertIntoContentTags);
 		closeStatement(selectMaxIdFromContentTags);
 		closeStatement(insertIntoBlackboardArtifactTags);
@@ -5009,21 +5009,21 @@ public class SleuthkitCase {
 	 * Inserts a record corresponding to a TagName into the tags_names table.
 	 * @throws TskCoreException 
 	 */
-	public void addTagName(TagName tagName) throws TskCoreException {
+	public void addTagName(TagType tagType) throws TskCoreException {
 		dbWriteLock();		
 		try {
 			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)			
-			insertIntoTagNames.clearParameters(); 			
-			insertIntoTagNames.setString(1, tagName.getDisplayName());
-			insertIntoTagNames.setString(2, tagName.getDescription());
-			insertIntoTagNames.setString(3, tagName.getColor().getName());
-			insertIntoTagNames.executeUpdate();
+			insertIntoTagTypes.clearParameters(); 			
+			insertIntoTagTypes.setString(1, tagType.getDisplayName());
+			insertIntoTagTypes.setString(2, tagType.getDescription());
+			insertIntoTagTypes.setString(3, tagType.getColor().getName());
+			insertIntoTagTypes.executeUpdate();
 
 			// SELECT MAX(id) FROM tag_names
-			tagName.setId(selectMaxIdFromTagNames.executeQuery().getLong(1));
+			tagType.setId(selectMaxIdFromTagTypes.executeQuery().getLong(1));
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding record for " + tagName.getDisplayName() + " tag name to tag_names table", ex);
+			throw new TskCoreException("Error adding record for " + tagType.getDisplayName() + " tag name to tag_types table", ex);
 		}
 		finally {
 			dbWriteUnlock();
@@ -5040,7 +5040,7 @@ public class SleuthkitCase {
 			// INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)
 			insertIntoContentTags.clearParameters(); 			
 			insertIntoContentTags.setLong(1, tag.getContent().getId());
-			insertIntoContentTags.setLong(2, tag.getName().getId());
+			insertIntoContentTags.setLong(2, tag.getType().getId());
 			insertIntoContentTags.setString(3, tag.getComment());
 			insertIntoContentTags.setLong(4, tag.getBeginByteOffset());
 			insertIntoContentTags.setLong(5, tag.getEndByteOffset());
@@ -5050,7 +5050,7 @@ public class SleuthkitCase {
 			tag.setId(selectMaxIdFromContentTags.executeQuery().getLong(1));
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding record for " + tag.getContent().getUniquePath() + " " + tag.getName().getDisplayName() + " tag to content_tags table", ex);
+			throw new TskCoreException("Error adding record for " + tag.getContent().getUniquePath() + " " + tag.getType().getDisplayName() + " tag to content_tags table", ex);
 		}
 		finally {
 			dbWriteUnlock();
@@ -5067,17 +5067,15 @@ public class SleuthkitCase {
 			// INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)			
 			insertIntoBlackboardArtifactTags.clearParameters(); 			
 			insertIntoBlackboardArtifactTags.setLong(1, tag.getArtifact().getArtifactID());
-			insertIntoBlackboardArtifactTags.setLong(2, tag.getName().getId());
+			insertIntoBlackboardArtifactTags.setLong(2, tag.getType().getId());
 			insertIntoBlackboardArtifactTags.setString(3, tag.getComment());
-			insertIntoBlackboardArtifactTags.setLong(4, tag.getBeginByteOffset());
-			insertIntoBlackboardArtifactTags.setLong(5, tag.getEndByteOffset());
 			insertIntoBlackboardArtifactTags.executeUpdate();
 
 			// SELECT MAX(id) FROM blackboard_artifact_tags
 			tag.setId(selectMaxIdFromBlackboardArtifactTags.executeQuery().getLong(1));
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding record for " + tag.getArtifact().getDisplayName() + " artifact (id = " + tag.getArtifact().getArtifactID() + ") " + tag.getName().getDisplayName() + " tag to blackboard_artifacts_tags table", ex);
+			throw new TskCoreException("Error adding record for " + tag.getArtifact().getDisplayName() + " artifact (id = " + tag.getArtifact().getArtifactID() + ") " + tag.getType().getDisplayName() + " tag to blackboard_artifacts_tags table", ex);
 		}
 		finally {
 			dbWriteUnlock();

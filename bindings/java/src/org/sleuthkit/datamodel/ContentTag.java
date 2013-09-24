@@ -19,28 +19,44 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Instances of this class represent tags a user applies to content or to a 
- * portion of content.
+ * Instances of this class are data transfer objects (DTOs) that represent tags 
+ * a user can apply to Content objects.
  */
 public class ContentTag extends Tag {
 	private final Content content;
+	private final long beginByteOffset;
+	private final long endByteOffset;
 		
-	public ContentTag(Content content, TagName name) {
-		super(name);
+	public ContentTag(Content content, TagType type) {
+		super(type);
 		this.content = content;
+		this.beginByteOffset = 0;
+		this.endByteOffset = content.getSize();		
 	}
 			
-	public ContentTag(Content content, TagName name, String comment) {
-		super(name, comment);
+	public ContentTag(Content content, TagType type, String comment) {
+		super(type, comment);
 		this.content = content;
+		this.beginByteOffset = 0;
+		this.endByteOffset = content.getSize();		
 	}
 			
-	public ContentTag(Content content, TagName name, String comment, long beginByteOffset, long endByteOffset) {
-		super(name, comment, beginByteOffset, endByteOffset);
+	public ContentTag(Content content, TagType type, String comment, long beginByteOffset, long endByteOffset) {
+		super(type, comment);
 		this.content = content;
+		this.beginByteOffset = beginByteOffset;
+		this.endByteOffset = endByteOffset;		
 	}
 	
 	public Content getContent() {
 		return content;
+	}	
+	
+	public long getBeginByteOffset() {
+		return beginByteOffset;
+	}
+
+	public long getEndByteOffset() {
+		return endByteOffset;
 	}	
 }

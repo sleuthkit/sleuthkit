@@ -19,53 +19,37 @@
 package org.sleuthkit.datamodel;
 
 /**
- * This class is a base class for classes that model tags applied to objects by 
- * users.
+ * This class is a base class for data transfer object (DTO) classes that model 
+ * tags applied to Content and BlackboardArtifact objects by users.
  */
 public abstract class Tag {	
 	static long ID_NOT_SET = 0;
 	private long id = ID_NOT_SET;
-	private final TagName name;
+	private final TagType type;
 	private String comment = "";
-	private long beginByteOffset = 0;
-	private long endByteOffset = 0;
 
-	public Tag(TagName name) {
-		this.name = name;
+	public Tag(TagType name) {
+		this.type = name;
 	}
 			
-	public Tag(TagName name, String comment) {
+	public Tag(TagType name, String comment) {
 		this(name);
 		this.comment = comment;
 	}
-			
-	public Tag(TagName name, String comment, long beginByteOffset, long endByteOffset) {
-		this(name, comment);
-		this.beginByteOffset = beginByteOffset;
-		this.endByteOffset = endByteOffset;
+						
+	public TagType getType() {
+		return type;
 	}
-			
-	public TagName getName() {
-		return name;
-	}
-	
+		
 	public String getComment() {
 		return comment;
 	}
 	
-	public long getBeginByteOffset() {
-		return beginByteOffset;
-	}
-
-	public long getEndByteOffset() {
-		return endByteOffset;
-	}
-	
-	void setId(long id) {
-		this.id = id;
-	}
-
 	long getId() {
 		return id;
 	}	
+		
+	void setId(long id) {
+		this.id = id;
+	}
 }
