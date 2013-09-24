@@ -154,6 +154,7 @@ extern FILE  *t;				// text output or body file enabled
 void partition_info(const string &name,const string &value,const string &attribute);
 void partition_info(const string &name,const string &value);
 void partition_info(const string &name,long i);
+void partition_info(const string &name, const struct timeval &ts);
 
 
 
