@@ -242,4 +242,55 @@ public class Image extends AbstractContent {
 		
 		return false;
 	}
+	
+	/**
+     * Perform some sanity checks on the bounds of the image contents to 
+     * determine if we could be missing some pieces of the image. 
+     * 
+     * @returns String of error messages to display to user or empty string if there are no errors 
+     */
+    public String verifyImageSize() {
+        Logger logger1 = Logger.getLogger("verifyImageSizes");
+        String errorString = "";
+        try {
+            List<VolumeSystem> volumeSystems = getVolumeSystems();
+            for (VolumeSystem vs : volumeSystems) {
+                List<Volume> volumes = vs.getVolumes();
+                for (Volume v : volumes) {
+                    byte[] buf = new byte[512];
+                    long endOffset = (v.getStart() + v.getLength()) * 512 - 512;
+                    try {
+                        int readBytes = read(buf, endOffset, 512);
+                        if (readBytes < 0) {
+                            logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset);
+                            errorString = "\nPossible Incomplete Image: Error reading volume at offset " + endOffset;
+                        }
+                    } catch (TskCoreException ex) {
+                        logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset + ": " + ex.getLocalizedMessage());
+                        errorString = "\nPossible Incomplete Image: Error reading volume at offset " + endOffset;
+                    }
+                }
+            }
+            
+            List<FileSystem> fileSystems = getFileSystems();
+            for (FileSystem fs : fileSystems) {
+                long block_size = fs.getBlock_size();
+                long endOffset = fs.getImageOffset() + fs.getSize() - block_size;
+                try {
+                    byte[] buf = new byte[(int) block_size];
+                    int readBytes = read(buf, endOffset, block_size);
+                    if (readBytes < 0) {
+                        logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset);
+                        errorString = "\nPossible Incomplete Image: Error reading file system at offset " + endOffset;
+                    }
+                } catch (TskCoreException ex) {
+                    logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset + ": " + ex.getLocalizedMessage());
+                    errorString = "\nPossible Incomplete Image: Error reading file system at offset " + endOffset;
+                }
+            }
+        } catch (TskException ex) {
+            // do nothing if we got an exception from trying to get file systems and volume systems
+        }
+        return errorString;
+    }
 }
