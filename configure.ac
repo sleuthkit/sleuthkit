@@ -73,7 +73,7 @@ AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_UTIME_NULL
 AC_FUNC_VPRINTF
 #AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
-AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf])
+AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
 AX_PTHREAD( [
             AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
             CLIBS="$PTHREAD_LIBS $LIBS"
