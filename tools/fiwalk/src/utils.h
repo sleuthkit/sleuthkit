@@ -3,7 +3,7 @@
  *** 
  *** To use utils.c/utils.h, be sure this is in your configure.ac file:
  ***
-AC_CHECK_HEADERS([err.h err.h sys/mman.h sys/resource.h unistd.h])
+AC_CHECK_HEADERS([err.h err.h sys/mman.h unistd.h])
 AC_CHECK_FUNCS([ishexnumber unistd.h err errx warn warnx pread _lseeki64 ])
 
  ***
