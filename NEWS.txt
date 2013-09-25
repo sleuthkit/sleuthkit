@@ -1,6 +1,18 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.1.2 --------------
+Core:
+- Fixed more visual studio projects to work on 64-bit
+
+Java: 
+- added method to Image to perform sanity check on image sizes.
+
+fiwalk:
+- Fixed compile error on Linux etc.
+
+
+
 ---------------- VERSION 4.1.1 --------------
 Core: 
 - Added FILE_SHARE_WRITE to all windows open calls.
