@@ -4,7 +4,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.1.0)
+AC_INIT(sleuthkit, 4.1.2)
 m4_include([m4/ax_pthread.m4])
 # include the version from 1.12.1. This will work for 
 m4_include([m4/cppunit.m4])
@@ -38,7 +38,7 @@ AC_HEADER_STDC
 #AC_HEADER_MAJOR
 #AC_HEADER_SYS_WAIT
 #AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/param.h sys/time.h unistd.h utime.h wchar.h wctype.h])
-AC_CHECK_HEADERS([err.h inttypes.h unistd.h stdint.h sys/param.h])
+AC_CHECK_HEADERS([err.h inttypes.h unistd.h stdint.h sys/param.h sys/resource.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -73,7 +73,7 @@ AC_FUNC_SELECT_ARGTYPES
 AC_FUNC_UTIME_NULL
 AC_FUNC_VPRINTF
 #AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
-AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf])
+AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
 AX_PTHREAD( [
             AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
             CLIBS="$PTHREAD_LIBS $LIBS"

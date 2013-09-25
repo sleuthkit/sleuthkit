@@ -195,10 +195,17 @@ class TskAuto {
      * @return flags for lastly processed volume.
      */
     TSK_VS_PART_FLAG_ENUM getCurVsPartFlag() const;
+
+    /**
+     * Determine if we are inside of a volume system and 
+     * therefore we can trust the results of getCurVsPartFlag/Desc.
+     */
+    bool isCurVsValid() const;
     
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
     TSK_FS_DIR_WALK_FLAG_ENUM m_fileFilterFlags;
+    
     std::vector<error_record> m_errors;
 
     // prevent copying until we add proper logic to handle it
@@ -214,7 +221,7 @@ class TskAuto {
 
     std::string m_curVsPartDescr; ///< description string of the current volume being processed
     TSK_VS_PART_FLAG_ENUM m_curVsPartFlag; ///< Flag of the current volume being processed
-
+    bool m_curVsPartValid;         ///< True if we are inside of a volume system (and therefore m_CurVs are valid)
     void setCurVsPart(const TSK_VS_PART_INFO *);
 
 
@@ -222,6 +229,7 @@ class TskAuto {
     TSK_IMG_INFO * m_img_info;
     bool m_internalOpen;        ///< True if m_img_info was opened in TskAuto and false if passed in
     bool m_stopAllProcessing;   ///< True if no further processing should occur
+    
     
     uint8_t isNtfsSystemFiles(TSK_FS_FILE * fs_file, const char *path);
     uint8_t isFATSystemFiles(TSK_FS_FILE * fs_file);

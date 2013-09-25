@@ -121,6 +121,12 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
 	</target>
+	
+	<target name="dist-debug" depends="init-ivy, compile, copyLibsDebug"
+        description="generate the distribution" >
+    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
+	</target>
   
 	
 	

@@ -118,7 +118,7 @@ public class TskData {
 			return metaTypeStr;
 		}
 		
-		public static TSK_FS_META_TYPE_ENUM ValueOf(short metaType) {
+		public static TSK_FS_META_TYPE_ENUM valueOf(short metaType) {
 			for (TSK_FS_META_TYPE_ENUM type : TSK_FS_META_TYPE_ENUM.values()) {
 				if (type.getValue() == metaType) {
 					return type;
@@ -316,6 +316,7 @@ public class TskData {
 		public long getVsFlag(){
 			return vs_flag;
 		}
+		
 	} 
 
 	/**
@@ -450,28 +451,47 @@ public class TskData {
 	 */
 	public enum TSK_IMG_TYPE_ENUM {
 		/* The following describe the image type */
-		TSK_IMG_TYPE_DETECT(0),       // Auto Detection
-		TSK_IMG_TYPE_RAW_SING(1),     // Single raw file (dd)
-		TSK_IMG_TYPE_RAW_SPLIT(2),    // Split raw files
-		TSK_IMG_TYPE_AFF_AFF(4),      // Advanced Forensic Format
-		TSK_IMG_TYPE_AFF_AFD(8),      // AFF Multiple File
-		TSK_IMG_TYPE_AFF_AFM(16),     // AFF with external metadata
-		TSK_IMG_TYPE_AFF_ANY(32),     // All AFFLIB image formats (including beta ones)
-		TSK_IMG_TYPE_EWF_EWF(64),     // Expert Witness format (encase)
-		TSK_IMG_TYPE_UNSUPP(65535);   // Unsupported Image Type
+		TSK_IMG_TYPE_DETECT(0, "Auto Detect"),       // Auto Detection
+		TSK_IMG_TYPE_RAW_SING(1, "Raw Single"),     // Single raw file (dd)
+		TSK_IMG_TYPE_RAW_SPLIT(2, "Raw Split"),    // Split raw files
+		TSK_IMG_TYPE_AFF_AFF(4, "AFF"),      // Advanced Forensic Format
+		TSK_IMG_TYPE_AFF_AFD(8, "AFD"),      // AFF Multiple File
+		TSK_IMG_TYPE_AFF_AFM(16, "AFM"),     // AFF with external metadata
+		TSK_IMG_TYPE_AFF_ANY(32, "AFF"),     // All AFFLIB image formats (including beta ones)
+		TSK_IMG_TYPE_EWF_EWF(64, "E01"),     // Expert Witness format (encase)
+		TSK_IMG_TYPE_UNSUPP(65535, "Unknown");   // Unsupported Image Type
 
 		private long imgType;
+		private String name;
 
-		private TSK_IMG_TYPE_ENUM (long type){
+		private TSK_IMG_TYPE_ENUM (long type, String name){
 			this.imgType = type;
+			this.name = name;
 		}
 
+		public static TSK_IMG_TYPE_ENUM valueOf(long imgType) {
+			for (TSK_IMG_TYPE_ENUM type : TSK_IMG_TYPE_ENUM.values()) {
+				if (type.getValue() == imgType) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_IMG_TYPE_ENUM of value: " + imgType);
+		}
+		
 		/**
-		 * Get long value of the image tyoe
+		 * Get long value of the image type
 		 * @return the long value of the image type
 		 */
-		public long getImageType(){
+		public long getValue(){
 			return imgType;
+		}
+		
+		/**
+		 * Get the name of the image type
+		 * @return 
+		 */
+		public String getName() {
+			return name;
 		}
 	};
     
@@ -479,19 +499,30 @@ public class TskData {
 	 * Volume System type
 	 */
     public enum TSK_VS_TYPE_ENUM {
-        TSK_VS_TYPE_DETECT(0x0000),    ///< Use autodetection methods
-        TSK_VS_TYPE_DOS(0x0001),       ///< DOS Partition table
-        TSK_VS_TYPE_BSD(0x0002),       ///< BSD Partition table
-        TSK_VS_TYPE_SUN(0x0004),       ///< Sun VTOC
-        TSK_VS_TYPE_MAC(0x0008),       ///< Mac partition table
-        TSK_VS_TYPE_GPT(0x0010),       ///< GPT partition table
-        TSK_VS_TYPE_DBFILLER(0x00F0),  ///< fake partition table type for loaddb (for images that do not have a volume system)
-        TSK_VS_TYPE_UNSUPP(0xFFFF);    ///< Unsupported
+        TSK_VS_TYPE_DETECT(0x0000, "Auto Detect"),    ///< Use autodetection methods
+        TSK_VS_TYPE_DOS(0x0001, "DOS"),       ///< DOS Partition table
+        TSK_VS_TYPE_BSD(0x0002, "BSD"),       ///< BSD Partition table
+        TSK_VS_TYPE_SUN(0x0004, "SUN VTOC"),       ///< Sun VTOC
+        TSK_VS_TYPE_MAC(0x0008, "Mac"),       ///< Mac partition table
+        TSK_VS_TYPE_GPT(0x0010, "GPT"),       ///< GPT partition table
+        TSK_VS_TYPE_DBFILLER(0x00F0, "Fake"),  ///< fake partition table type for loaddb (for images that do not have a volume system)
+        TSK_VS_TYPE_UNSUPP(0xFFFF, "Unsupported");    ///< Unsupported
         
         private long vsType;
-        private TSK_VS_TYPE_ENUM(long type){
+		private String name;
+        private TSK_VS_TYPE_ENUM(long type, String name){
             this.vsType = type;
+			this.name = name;
         }
+		
+		public static TSK_VS_TYPE_ENUM valueOf(long vsType) {
+			for (TSK_VS_TYPE_ENUM type : TSK_VS_TYPE_ENUM.values()) {
+				if (type.getVsType() == vsType) {
+					return type;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_VS_TYPE_ENUM of value: " + vsType);
+		}
         
 		
 		/**
@@ -501,6 +532,14 @@ public class TskData {
         public long getVsType() {
             return vsType;
         }
+		
+		/**
+		 * Get the name of the volume system type.
+		 * @return 
+		 */
+		public String getName() {
+			return name;
+		}
     };
 	
 	

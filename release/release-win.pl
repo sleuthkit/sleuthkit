@@ -193,7 +193,7 @@ sub build_core {
 # Runs in root sleuthkit dir
 sub package_core {
 	# Verify that the directory does not already exist
-	my $rfile = "sleuthkit-win32-${VER}";
+	my $rfile = "sleuthkit-${VER}-win32";
 	my $rdir = $RELDIR . "/" . $rfile;
 	die "Release directory already exists: $rdir" if (-d "$rdir");
 
@@ -285,7 +285,7 @@ sub build_framework {
 
 sub package_framework {
 	# Verify that the directory does not already exist
-	my $rfile = "sleuthkit-framework-win32-${VER}";
+	my $rfile = "sleuthkit-${VER}-framework-win32";
 	my $rdir = $RELDIR . "/" . $rfile;
 	die "Release directory already exists: $rdir" if (-d "$rdir");
 

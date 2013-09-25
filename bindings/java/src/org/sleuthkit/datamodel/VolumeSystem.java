@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.sleuthkit.datamodel.TskData.TSK_VS_TYPE_ENUM;
 
 /**
  * Represents a volume system. Populated based on data in database.
@@ -66,8 +67,8 @@ public class VolumeSystem extends AbstractContent {
 	 *
 	 * @return type
 	 */
-	public long getType() {
-		return type;
+	public TSK_VS_TYPE_ENUM getType() {
+		return TskData.TSK_VS_TYPE_ENUM.valueOf(type);
 	}
 
 	/**

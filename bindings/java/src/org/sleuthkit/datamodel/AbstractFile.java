@@ -169,7 +169,7 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Get the change time as Date
+	 * Get the change time as Date (in local timezone)
 	 *
 	 * @return change time as Date
 	 */
@@ -187,7 +187,7 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Get the creation time as Date
+	 * Get the creation time as Date (in local timezone)
 	 *
 	 * @return creation time as Date
 	 */
@@ -205,7 +205,7 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Get the access time as Date
+	 * Get the access time as Date (in local timezone)
 	 *
 	 * @return access time as Date
 	 */
@@ -223,7 +223,7 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Get the modified time as Date
+	 * Get the modified time as Date (in local timezone)
 	 *
 	 * @return modified time as Date
 	 */
@@ -694,7 +694,7 @@ public abstract class AbstractFile extends AbstractContent {
 					try {
 						localFileHandle = new RandomAccessFile(localFile, "r");
 					} catch (FileNotFoundException ex) {
-						final String msg = "Error reading local file: " + this.toString();
+						final String msg = "Error reading local file: " + localAbsPath;
 						logger.log(Level.SEVERE, msg, ex);
 						//file could have been deleted or moved
 						throw new TskCoreException(msg, ex);
@@ -712,7 +712,7 @@ public abstract class AbstractFile extends AbstractContent {
 			//note, we are always writing at 0 offset of user buffer
 			bytesRead = localFileHandle.read(buf, 0, (int) len);
 		} catch (IOException ex) {
-			final String msg = "Cannot read local file: " + this.toString();
+			final String msg = "Cannot read local file: " + localAbsPath;
 			logger.log(Level.SEVERE, msg, ex);
 			//local file could have been deleted / moved
 			throw new TskCoreException(msg, ex);
@@ -828,7 +828,7 @@ public abstract class AbstractFile extends AbstractContent {
 					try {
 						localFileHandle.close();
 					} catch (IOException ex) {
-						logger.log(Level.SEVERE, "Could not close file handle for file: " + this.toString(), ex);
+						logger.log(Level.SEVERE, "Could not close file handle for file: " + getParentPath() + "/" + getName(), ex);
 					}
 					localFileHandle = null;
 				}
@@ -881,7 +881,7 @@ public abstract class AbstractFile extends AbstractContent {
 	public static String epochToTime(long epoch) {
 		String time = "0000-00-00 00:00:00";
 		if (epoch != 0) {
-			time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(epoch * 1000));
+			time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").format(new java.util.Date(epoch * 1000));
 		}
 		return time;
 	}

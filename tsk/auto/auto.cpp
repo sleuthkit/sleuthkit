@@ -27,6 +27,8 @@ TskAuto::TskAuto()
     m_fileFilterFlags = TSK_FS_DIR_WALK_FLAG_RECURSE;
     m_stopAllProcessing = false;
     m_internalOpen = false;
+    m_curVsPartValid = false;
+    m_curVsPartDescr = "";
 }
 
 
@@ -43,6 +45,7 @@ void TskAuto::setCurVsPart(const TSK_VS_PART_INFO *partInfo) {
     else
         m_curVsPartDescr = "";
     m_curVsPartFlag = partInfo->flags;
+    m_curVsPartValid = true;
 }
 
 std::string TskAuto::getCurVsPartDescr() const {
@@ -51,6 +54,10 @@ std::string TskAuto::getCurVsPartDescr() const {
 
 TSK_VS_PART_FLAG_ENUM TskAuto::getCurVsPartFlag() const {
     return m_curVsPartFlag;
+}
+
+bool TskAuto::isCurVsValid() const {
+    return m_curVsPartValid;
 }
 
 /**
@@ -345,7 +352,12 @@ TSK_RETVAL_ENUM
 
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        if (getCurVsPartFlag() & TSK_VS_PART_FLAG_ALLOC) {
+        if (isCurVsValid() == false) {
+            tsk_error_set_errstr2 ("Sector offset: %" PRIuOFF, a_start/512);
+            registerError();
+            return TSK_ERR;
+        }
+        else if (getCurVsPartFlag() & TSK_VS_PART_FLAG_ALLOC) {
             tsk_error_set_errstr2 ("Sector offset: %" PRIuOFF ", Partition Type: %s",
                 a_start/512, getCurVsPartDescr().c_str() );
             registerError();
@@ -425,7 +437,12 @@ uint8_t
 
     TSK_FS_INFO *fs_info;
     if ((fs_info = tsk_fs_open_img(m_img_info, a_start, a_ftype)) == NULL) {
-        if (getCurVsPartFlag() & TSK_VS_PART_FLAG_ALLOC) {
+        if (isCurVsValid() == false) {
+            tsk_error_set_errstr2 ("Sector offset: %" PRIuOFF, a_start/512);
+            registerError();
+            return TSK_ERR;
+        }
+        else if (getCurVsPartFlag() & TSK_VS_PART_FLAG_ALLOC) {
             tsk_error_set_errstr2(
                 "Sector offset: %" PRIuOFF ", Partition Type: %s",
                 a_start / 512, getCurVsPartDescr().c_str());
@@ -594,7 +611,7 @@ uint8_t TskAuto::registerError() {
     
     // call super class implementation
     uint8_t retval = handleError();
-    
+
     tsk_error_reset();
     return retval;
 }
