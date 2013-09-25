@@ -18,14 +18,14 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.HashMap;
+
 /**
  * Instances of this class are data transfer objects (DTOs) that represent the 
  * types of tags a user can apply to Content and BlackboardArtifact objects.
  */
 public class TagType {
-	// With the exception of NONE, the elements of this enum correspond to the
-	// HTML colors.
-	public enum COLOR {
+	public enum HTML_COLOR {
 		NONE("None"),
 		WHITE("White"),
 		SILVER("Silver"),	
@@ -44,46 +44,61 @@ public class TagType {
 		FUCHSIA("Fuchsia"),	
 		PURPLE("Purple");
 		
+		private final static HashMap<String, HTML_COLOR> colorMap = new HashMap<String, HTML_COLOR>();
 		private String name;
 		
-		private COLOR(String name) {
+		static {
+			for (HTML_COLOR color : HTML_COLOR.values()) {
+				colorMap.put(color.name(), color);
+			}
+		}
+		
+		private HTML_COLOR(String name) {
 			this.name = name;
 		}
 		
 		String getName() {
 			return name;
 		}
+		
+		public static HTML_COLOR getColorByName(String colorName) {
+			if (colorMap.containsKey(colorName)) {
+				return colorMap.get(colorName);
+			}
+			else {
+				return NONE;
+			}
+		}
 	}
 		
 	static long ID_NOT_SET = -1;
 	private long id = ID_NOT_SET;
 	private final String displayName;
-	private String description = "";
-	private COLOR color = COLOR.NONE;
+	private String description;
+	private HTML_COLOR color;
 		
-	public TagType(String displayName) throws IllegalArgumentException {
+	public TagType(String displayName, String description, HTML_COLOR color) throws IllegalArgumentException {
 		if (null == displayName || displayName.isEmpty() == true) {
 			throw new IllegalArgumentException("displayName is null or empty");
 		}
 		this.displayName = displayName;
-	}
 
-	public TagType(String displayName, String description) throws IllegalArgumentException {
-		this(displayName);
-		if (null == description || description.isEmpty() == true) {
+		if (null == description) {
 			throw new IllegalArgumentException("description is null or empty");
 		}
 		this.description = description;
-	}
-
-	public TagType(String displayName, String description, COLOR color) throws IllegalArgumentException {
-		this(displayName, description);
+				
 		if (null == color) {
 			throw new IllegalArgumentException("color is null");
 		}
 		this.color = color;
 	}
 
+	TagType(long id, String displayName, String description, HTML_COLOR color) throws IllegalArgumentException {
+		this(displayName, description, color);
+		this.id = id;
+	}
+	
 	public String getDisplayName() {
 		return displayName;
 	}
@@ -91,18 +106,10 @@ public class TagType {
 	public String getDescription() {
 		return description;
 	}
-	
-	public void setDescription (String description) {
-		this.description = description;
-	}
-	
-	public COLOR getColor() {
+		
+	public HTML_COLOR getColor() {
 		return color;
 	}
-	
-	public void setColor(COLOR color) {
-		this.color = color;
-	}		
 	
 	long getId() {
 		return id;

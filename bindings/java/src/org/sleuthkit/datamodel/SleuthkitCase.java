@@ -108,12 +108,15 @@ public class SleuthkitCase {
 	private PreparedStatement hasChildrenSt;
 	private PreparedStatement getLastContentIdSt;
 	private PreparedStatement getFsIdForFileIdSt;
+	private PreparedStatement selectAllFromTagTypes;
 	private PreparedStatement insertIntoTagTypes;
 	private PreparedStatement selectMaxIdFromTagTypes;
 	private PreparedStatement insertIntoContentTags;
 	private PreparedStatement selectMaxIdFromContentTags;
+	private PreparedStatement deleteFromContentTags;
 	private PreparedStatement insertIntoBlackboardArtifactTags;
 	private PreparedStatement selectMaxIdFromBlackboardArtifactTags;
+	private PreparedStatement deleteFromBlackboardArtifactTags;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
 
@@ -284,6 +287,8 @@ public class SleuthkitCase {
 		getFsIdForFileIdSt = con.prepareStatement(
 				"SELECT fs_obj_id from tsk_files WHERE obj_id=?");
 		
+		selectAllFromTagTypes = con.prepareStatement("SELECT * FROM tag_types");
+		
 		insertIntoTagTypes =  con.prepareStatement("INSERT INTO tag_types (display_name, description, color) VALUES (?, ?, ?)");
 		
 		selectMaxIdFromTagTypes = con.prepareStatement("SELECT MAX(id) FROM tag_types");
@@ -291,10 +296,14 @@ public class SleuthkitCase {
 		insertIntoContentTags = con.prepareStatement("INSERT INTO content_tags (obj_id, tag_type_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)");
 		
 		selectMaxIdFromContentTags = con.prepareStatement("SELECT MAX(id) FROM content_tags");		
+		
+		deleteFromContentTags = con.prepareStatement("DELETE FROM content_tags WHERE id = ?");
 
 		insertIntoBlackboardArtifactTags = con.prepareStatement("INSERT INTO blackboard_artifact_tags (artifact_id, tag_type_id, comment) VALUES (?, ?, ?)");
 		
 		selectMaxIdFromBlackboardArtifactTags = con.prepareStatement("SELECT MAX(id) FROM blackboard_artifact_tags");				
+		
+		deleteFromBlackboardArtifactTags  = con.prepareStatement("DELETE FROM content_tags WHERE id = ?");
 	}
 
 	private void closeStatement(PreparedStatement statement) {
@@ -344,12 +353,15 @@ public class SleuthkitCase {
 		closeStatement(addPathSt);
 		closeStatement(hasChildrenSt);
 		closeStatement(getFsIdForFileIdSt);
+		closeStatement(selectAllFromTagTypes);
 		closeStatement(insertIntoTagTypes);
 		closeStatement(selectMaxIdFromTagTypes);		
 		closeStatement(insertIntoContentTags);
 		closeStatement(selectMaxIdFromContentTags);
+		closeStatement(deleteFromContentTags);
 		closeStatement(insertIntoBlackboardArtifactTags);
-		closeStatement(selectMaxIdFromBlackboardArtifactTags);		
+		closeStatement(selectMaxIdFromBlackboardArtifactTags);	
+		closeStatement(deleteFromBlackboardArtifactTags);
 	}
 				
 	private void configureDB() throws TskCoreException {
@@ -5006,10 +5018,34 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Inserts a record corresponding to a TagName into the tags_names table.
+	 * Selects all of the rows in the tag_types table.
+	 * @return A list of TagType data transfer objects (DTOs).
 	 * @throws TskCoreException 
 	 */
-	public void addTagName(TagType tagType) throws TskCoreException {
+	public List<TagType> getTagTypes() throws TskCoreException {
+		dbReadLock();
+		try {
+			ArrayList<TagType> tagTypes = new ArrayList<TagType>(); 
+			ResultSet resultSet = selectAllFromTagTypes.executeQuery();
+			while(resultSet.next()) {
+				tagTypes.add(new TagType(resultSet.getLong("id"), resultSet.getString("display_name"), resultSet.getString("description"), TagType.HTML_COLOR.getColorByName(resultSet.getString("color"))));
+			}
+			return tagTypes;
+		}
+		catch(SQLException ex) {
+			throw new TskCoreException("Error selecting rows from tag_types table", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}
+	}
+	
+	/**
+	 * Inserts tag type row into the tags_types table.
+	 * tagType A TagType data transfer object (DTO).
+	 * @throws TskCoreException 
+	 */
+	public void addTagType(TagType tagType) throws TskCoreException {
 		dbWriteLock();		
 		try {
 			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)			
@@ -5023,7 +5059,7 @@ public class SleuthkitCase {
 			tagType.setId(selectMaxIdFromTagTypes.executeQuery().getLong(1));
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding record for " + tagType.getDisplayName() + " tag name to tag_types table", ex);
+			throw new TskCoreException("Error adding row for " + tagType.getDisplayName() + " tag name to tag_types table", ex);
 		}
 		finally {
 			dbWriteUnlock();
@@ -5031,7 +5067,7 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Inserts a record corresponding to a ContentTag into the content_tags table.
+	 * Inserts a row corresponding to a ContentTag into the content_tags table.
 	 * @throws TskCoreException 
 	 */
 	public void addContentTag(ContentTag tag) throws TskCoreException {
@@ -5050,7 +5086,26 @@ public class SleuthkitCase {
 			tag.setId(selectMaxIdFromContentTags.executeQuery().getLong(1));
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding record for " + tag.getContent().getUniquePath() + " " + tag.getType().getDisplayName() + " tag to content_tags table", ex);
+			throw new TskCoreException("Error adding row to content_tags table (obj_id = " + tag.getContent().getId() + ", tag_type_id = " + tag.getType().getId() + ")", ex);
+		}
+		finally {
+			dbWriteUnlock();
+		}	
+	}
+	
+	/*
+	 * Deletes a row corresponding to a ContentTag from the content_tags table.
+	 */
+	public void deleteContentTag(ContentTag tag) throws TskCoreException {
+		dbWriteLock();		
+		try {			
+			// DELETE FROM content_tags WHERE id = ?		
+			deleteFromContentTags.clearParameters(); 			
+			deleteFromContentTags.setLong(1, tag.getContent().getId());
+			deleteFromContentTags.executeUpdate();
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error deleting row from content_tags table (obj_id = " + tag.getContent().getId() + ")", ex);
 		}
 		finally {
 			dbWriteUnlock();
@@ -5058,7 +5113,7 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Inserts a record corresponding to a BlackboardArtifactTag into the blackboard_artifact_tags table.
+	 * Inserts a row corresponding to a BlackboardArtifactTag into the blackboard_artifact_tags table.
 	 * @throws TskCoreException 
 	 */
 	public void addBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
@@ -5075,10 +5130,29 @@ public class SleuthkitCase {
 			tag.setId(selectMaxIdFromBlackboardArtifactTags.executeQuery().getLong(1));
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding record for " + tag.getArtifact().getDisplayName() + " artifact (id = " + tag.getArtifact().getArtifactID() + ") " + tag.getType().getDisplayName() + " tag to blackboard_artifacts_tags table", ex);
+			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + tag.getArtifact().getArtifactID() + ", tag_type_id = " + tag.getType().getId() + ")", ex);
 		}
 		finally {
 			dbWriteUnlock();
 		}	
 	}	
+
+	/*
+	 * Deletes a row corresponding to a BlackboardArtifactTag from the blackboard_artifact_tags table.
+	 */
+	public void deleteBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
+		dbWriteLock();		
+		try {			
+			// DELETE FROM content_tags WHERE id = ?
+			deleteFromBlackboardArtifactTags.clearParameters(); 			
+			deleteFromBlackboardArtifactTags.setLong(1, tag.getArtifact().getArtifactID());
+			deleteFromBlackboardArtifactTags.executeUpdate();
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (artifact_id = " +tag.getArtifact().getArtifactID() + ")", ex);
+		}
+		finally {
+			dbWriteUnlock();
+		}	
+	}
 }

@@ -26,21 +26,7 @@ public class ContentTag extends Tag {
 	private final Content content;
 	private final long beginByteOffset;
 	private final long endByteOffset;
-		
-	public ContentTag(Content content, TagType type) {
-		super(type);
-		this.content = content;
-		this.beginByteOffset = 0;
-		this.endByteOffset = content.getSize();		
-	}
-			
-	public ContentTag(Content content, TagType type, String comment) {
-		super(type, comment);
-		this.content = content;
-		this.beginByteOffset = 0;
-		this.endByteOffset = content.getSize();		
-	}
-			
+					
 	public ContentTag(Content content, TagType type, String comment, long beginByteOffset, long endByteOffset) {
 		super(type, comment);
 		this.content = content;
@@ -58,5 +44,5 @@ public class ContentTag extends Tag {
 
 	public long getEndByteOffset() {
 		return endByteOffset;
-	}	
+	}		
 }

@@ -26,14 +26,10 @@ public abstract class Tag {
 	static long ID_NOT_SET = 0;
 	private long id = ID_NOT_SET;
 	private final TagType type;
-	private String comment = "";
-
-	public Tag(TagType name) {
-		this.type = name;
-	}
+	private final String comment;
 			
 	public Tag(TagType name, String comment) {
-		this(name);
+		this.type = name;
 		this.comment = comment;
 	}
 						
