@@ -52,6 +52,11 @@
 //#define mkdir _mkdir
 #endif
 
+
+#ifdef HAVE_GETRUSAGE
+#include <sys/resource.h>
+#endif
+
 /* Output Devices */
 class arff *a = 0;			// ARFF generator
 class xml  *x = 0;

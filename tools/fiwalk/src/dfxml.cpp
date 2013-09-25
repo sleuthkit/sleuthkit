@@ -35,6 +35,10 @@ using namespace std;
 #include <fcntl.h>
 #include <stack>
 
+#ifdef HAVE_GETRUSAGE
+#include <sys/resource.h>
+#endif
+
 static const char *xml_header = "<?xml version='1.0' encoding='UTF-8'?>\n";
 
 // Implementation of mkstemp for windows found on pan-devel mailing
