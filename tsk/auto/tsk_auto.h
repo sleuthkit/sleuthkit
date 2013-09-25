@@ -200,7 +200,7 @@ class TskAuto {
      * Determine if we are inside of a volume system and 
      * therefore we can trust the results of getCurVsPartFlag/Desc.
      */
-    bool TskAuto::isCurVsValid() const;
+    bool isCurVsValid() const;
     
   private:
     TSK_VS_PART_FLAG_ENUM m_volFilterFlags;
