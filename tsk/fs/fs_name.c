@@ -447,9 +447,8 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
 
     tsk_fprintf(hFile, "%s:\t",
         ((fs_file->meta) && (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)
-            && (fs_file->
-                name->flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" :
-        "");
+            && (fs_file->name->
+                flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" : "");
 
     if ((print_path) && (a_path != NULL)) {
         for (i = 0; i < strlen(a_path); i++) {
@@ -585,7 +584,8 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, const TSK_FS_ATTR * fs_attr,
     const char *prefix, int32_t time_skew)
 {
-	tsk_fs_name_print_mac_md5(hFile, fs_file, a_path, fs_attr, prefix, time_skew, NULL);
+    tsk_fs_name_print_mac_md5(hFile, fs_file, a_path, fs_attr, prefix,
+        time_skew, NULL);
 }
 
 /**
@@ -610,7 +610,7 @@ void
 tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, const TSK_FS_ATTR * fs_attr,
     const char *prefix, int32_t time_skew,
-	const unsigned char * hash_results)
+    const unsigned char *hash_results)
 {
     char ls[12];
     size_t i;
@@ -630,17 +630,17 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     }
 
     /* hash
-	 * Print out the hash buffer (if not null)
-	 */
-	if(hash_results == NULL){
-		tsk_fprintf(hFile, "0|");
-	}
-	else{
-		for(i = 0;i < 16;i++){
-			tsk_fprintf(hFile, "%02x", hash_results[i]);
-		}
-		tsk_fprintf(hFile, "|");
-	}
+     * Print out the hash buffer (if not null)
+     */
+    if (hash_results == NULL) {
+        tsk_fprintf(hFile, "0|");
+    }
+    else {
+        for (i = 0; i < 16; i++) {
+            tsk_fprintf(hFile, "%02x", hash_results[i]);
+        }
+        tsk_fprintf(hFile, "|");
+    }
 
     /* file name */
     tsk_fprintf(hFile, "%s", prefix);
@@ -688,9 +688,8 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
      * allocated, then add realloc comment */
     if (fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC)
         tsk_fprintf(hFile, " (deleted%s)", ((fs_file->meta)
-                && (fs_file->
-                    meta->flags & TSK_FS_META_FLAG_ALLOC)) ? "-realloc" :
-            "");
+                && (fs_file->meta->
+                    flags & TSK_FS_META_FLAG_ALLOC)) ? "-realloc" : "");
 
     /* inode */
     tsk_fprintf(hFile, "|%" PRIuINUM, fs_file->name->meta_addr);
