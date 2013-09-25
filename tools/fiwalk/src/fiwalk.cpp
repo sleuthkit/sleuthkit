@@ -53,7 +53,7 @@
 #endif
 
 
-#ifdef HAVE_GETRUSAGE
+#ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
 
@@ -758,6 +758,7 @@ int main(int argc, char * const *argv1)
 
     comment("clock: %s",tvbuf);
 
+#ifdef HAVE_SYS_RESOURCE_H
 #ifdef HAVE_GETRUSAGE
     /* Print usage information */
     struct rusage ru;
@@ -776,6 +777,7 @@ int main(int argc, char * const *argv1)
 	comment("stop_time: %s",cstr(mytime()));
 	if(x) x->pop();
     }
+#endif
 #endif
 
     // *** Added <finished time="(time_t)" duration="<seconds>" />
