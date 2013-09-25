@@ -38,7 +38,7 @@ AC_HEADER_STDC
 #AC_HEADER_MAJOR
 #AC_HEADER_SYS_WAIT
 #AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h locale.h memory.h netinet/in.h stdint.h stdlib.h string.h sys/ioctl.h sys/param.h sys/time.h unistd.h utime.h wchar.h wctype.h])
-AC_CHECK_HEADERS([err.h inttypes.h unistd.h stdint.h sys/param.h])
+AC_CHECK_HEADERS([err.h inttypes.h unistd.h stdint.h sys/param.h sys/resource.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
