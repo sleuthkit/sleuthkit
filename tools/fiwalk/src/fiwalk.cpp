@@ -245,6 +245,12 @@ void partition_info(const string &name,long i)
     partition_info(name,buf,fw_empty);
 }
 
+void partition_info(const string &name, const struct timeval &ts)
+{
+    char buf[64];
+    sprintf(buf, "%d.%06d",(int)ts.tv_sec, (int)ts.tv_usec);
+    partition_info(name,buf,fw_empty);
+}
 
 /****************************************************************
  * These file_info(name,value) are called for each extracted attribute
@@ -466,7 +472,10 @@ int main(int argc, char * const *argv1)
     bool opt_zap = false;
     u_int sector_size=512;			// defaults to 512; may be changed by AFF
 
-    int t0 = time(0);
+    struct timeval tv0;
+    struct timeval tv1;
+    gettimeofday(&tv0,0);
+
     TSK_TCHAR * const *argv;
 
 #ifdef TSK_WIN32
@@ -729,23 +738,37 @@ int main(int argc, char * const *argv1)
     }
 #endif
 
-    int t1 = time(0);
-    comment("clock: %d",t1-t0);
+    /* Calculate time elapsed (reported as a comment and with rusage) */
+    struct timeval tv;
+    char tvbuf[64];
+    gettimeofday(&tv1,0);
+    tv.tv_sec = tv1.tv_sec - tv0.tv_sec;
+    if(tv1.tv_usec > tv0.tv_usec){
+        tv.tv_usec = tv1.tv_usec - tv0.tv_usec;
+    } else {
+        tv.tv_sec--;
+        tv.tv_usec = (tv1.tv_usec+1000000) - tv0.tv_usec;
+    }
+    sprintf(tvbuf, "%d.%06d",(int)tv.tv_sec, (int)tv.tv_usec);
+
+    comment("clock: %s",tvbuf);
+
 #ifdef HAVE_GETRUSAGE
     /* Print usage information */
     struct rusage ru;
     memset(&ru,0,sizeof(ru));
     if(getrusage(RUSAGE_SELF,&ru)==0){
-	if(x) x->push("runstats");
-	partition_info("user_seconds",ru.ru_utime.tv_sec);
-	partition_info("system_seconds",ru.ru_stime.tv_sec);
+	if(x) x->push("rusage");
+	partition_info("utime",ru.ru_utime);
+	partition_info("stime",ru.ru_stime);
 	partition_info("maxrss",ru.ru_maxrss);
-	partition_info("reclaims",ru.ru_minflt);
-	partition_info("faults",ru.ru_majflt);
-	partition_info("swaps",ru.ru_nswap);
-	partition_info("inputs",ru.ru_inblock);
-	partition_info("outputs",ru.ru_oublock);
-	partition_info("stop_time",cstr(mytime()));
+	partition_info("minflt",ru.ru_minflt);
+	partition_info("majflt",ru.ru_majflt);
+	partition_info("nswap",ru.ru_nswap);
+	partition_info("inblock",ru.ru_inblock);
+	partition_info("oublock",ru.ru_oublock);
+	partition_info("clocktime",tv);
+	comment("stop_time: %s",cstr(mytime()));
 	if(x) x->pop();
     }
 #endif

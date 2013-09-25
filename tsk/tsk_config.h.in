@@ -36,6 +36,9 @@
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
 
+/* Define to 1 if you have the `getrusage' function. */
+#undef HAVE_GETRUSAGE
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
