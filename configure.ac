@@ -260,6 +260,7 @@ AC_CONFIG_FILES([Makefile
                  tests/Makefile
                  samples/Makefile
                  man/Makefile
+		 bindings/java/Makefile
                  bindings/java/jni/Makefile
                  unit_tests/Makefile
                  unit_tests/base/Makefile])
