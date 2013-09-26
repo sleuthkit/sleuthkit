@@ -8,3 +8,6 @@ $(tsk_jar):
 	ant dist	
 
 CLEANFILES = $(tsk_jar)
+
+clean-local:
+	ant clean
