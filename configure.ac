@@ -202,6 +202,10 @@ if test "x$JAVAC" != x; then
 fi
 AM_CONDITIONAL([X_JNI],[test "x$JNI_CPPFLAGS" != x])
 
+# Test is ant is available
+AC_PATH_PROG([ANT_FOUND], [ant], [])
+AM_CONDITIONAL([X_ANT],[test "x$ANT_FOUND" != x])
+
 AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
         [
           echo "#ifndef _TSK_INCS_H" > tsk/tsk_incs.h
