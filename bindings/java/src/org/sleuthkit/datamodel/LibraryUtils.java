@@ -77,32 +77,38 @@ public class LibraryUtils {
         if (LibraryUtils.isWindows()) {
             loaded = LibraryUtils.loadCRTLibs();
 		}
-		
-		if (! LibraryUtils.isLinux()) {
-			
-			for(LibraryUtils.Lib lib : LibraryUtils.getLibs()) {
-				loaded = LibraryUtils.loadLibFromJar(lib);
-				if (!loaded) {
-					System.out.println("SleuthkitJNI: failed to load " + lib.getLibName());
-				} else {
-					System.out.println("SleuthkitJNI: loaded " + lib.getLibName());
-				}
+
+		// Always try to load from jar first.
+		for(Lib lib : LibraryUtils.getLibs()) {
+			// Always try to load from jar first.
+			loaded = LibraryUtils.loadLibFromJar(lib);
+			if (!loaded) {
+				// if that fails, try to load from system
+				loaded = loadLibFromSystem(lib);
 			}
-		} else {
-			System.out.println("In unix path.");
-			// Unix platform
-			for (Lib lib : LibraryUtils.getLibs()) {
-				try {
-					System.out.println("Lib name: " + lib.getUnixName());
-					System.loadLibrary(lib.getUnixName());
-					System.out.println("SleuthkitJNI: loaded " + lib.getLibName());
-				} catch (UnsatisfiedLinkError e) {
-					loaded = false;
-					System.out.println("SleuthkitJNI: failed to load " + lib.getLibName());
-				}
+			if (!loaded) {
+				System.out.println("SleuthkitJNI: failed to load " + lib.getLibName());
+			} else {
+				System.out.println("SleuthkitJNI: loaded " + lib.getLibName());
 			}
 		}
 		return loaded;
+	}
+	
+	/**
+	 * Try to load the given Library from the System path.
+	 * 
+	 * @param lib
+	 * @return 
+	 */
+	private static boolean loadLibFromSystem(Lib lib) {
+		String libName = (isWindows() ? lib.getLibName() : lib.getUnixName());
+		try {
+			System.loadLibrary(libName);
+		} catch (UnsatisfiedLinkError e) {
+			return false;
+		}
+		return true;
 	}
 	
 	/**
