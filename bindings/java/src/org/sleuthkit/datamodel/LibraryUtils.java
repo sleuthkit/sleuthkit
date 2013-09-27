@@ -173,6 +173,8 @@ public class LibraryUtils {
 			os = "win";
 		} else if(LibraryUtils.isMac()) {
 			os = "mac";
+		} else if(LibraryUtils.isLinux()) {
+			os = "linux";
 		}
 		// os.arch represents the architecture of the JVM, not the os
 		String arch = System.getProperty("os.arch");
@@ -238,7 +240,7 @@ public class LibraryUtils {
 		
 		// copy library to temp folder and load it
 		try {
-			java.io.File libTemp = new java.io.File(System.getProperty("java.io.tmpdir") + libName + libExt);
+			java.io.File libTemp = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator + libName + libExt);
 
 			if(libTemp.exists()) {
 				// Delete old file
