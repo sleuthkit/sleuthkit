@@ -17,6 +17,8 @@
  * \defgroup hashdblib_cpp C++ Hash Database Classes
 */
 
+#include "tsk/auto/sqlite3.h"
+
 #ifndef _TSK_HDB_H
 #define _TSK_HDB_H
 
@@ -71,6 +73,15 @@ extern "C" {
 
 
     /**
+    * Hash Index types
+    */
+    enum TSK_HDB_ITYPE_ENUM {
+        TSK_HDB_ITYPE_PLAIN_TXT = 1,     ///< Plain text format
+        TSK_HDB_ITYPE_SQLITE_V1 = 2    ///< Sqlite database format
+    };
+    typedef enum TSK_HDB_ITYPE_ENUM TSK_HDB_ITYPE_ENUM;
+
+    /**
     * Hash Database types
     */
     enum TSK_HDB_DBTYPE_ENUM {
@@ -98,11 +109,63 @@ extern "C" {
 
 
     typedef struct TSK_HDB_INFO TSK_HDB_INFO;
+    typedef struct TSK_IDX_INFO TSK_IDX_INFO;
 
     typedef TSK_WALK_RET_ENUM(*TSK_HDB_LOOKUP_FN) (TSK_HDB_INFO *,
         const char *hash,
         const char *name,
         void *);
+
+    /**
+     * Holds information about a sqlite index
+     */
+    struct TSK_IDX_SQLITE_V1 {
+		sqlite3 *hIdx_sqlite;	///< Sqlite DB if index is using sqlite schema
+    };
+    typedef struct TSK_IDX_SQLITE_V1 TSK_IDX_SQLITE_V1;
+
+    /**
+     * Holds information about a plain text index
+     */
+    struct TSK_IDX_PLAIN_TXT {
+        FILE *hIdx;             ///< File handle to index (only open during lookups)
+        FILE *hIdxTmp;          ///< File handle to temp (unsorted) index file (only open during index creation)
+        TSK_TCHAR *uns_fname;   ///< Name of unsorted index file
+
+        TSK_OFF_T idx_size;     ///< Size of index file
+        uint16_t idx_off;       ///< Offset in index file to first index entry
+        size_t idx_llen;        ///< Length of each line in index
+        char *idx_lbuf;         ///< Buffer to hold a line from the index  (r/w shared - lock) 
+    };
+    typedef struct TSK_IDX_PLAIN_TXT TSK_IDX_PLAIN_TXT;
+
+    /**
+     * Holds information about a hash index. Created by idx_open.
+     */
+    struct TSK_IDX_INFO {
+        TSK_HDB_ITYPE_ENUM index_type;   ///< Type of index
+        TSK_TCHAR *idx_fname;   ///< Name of index file
+        
+        /* lock protects idx_lbuf and lazy loading of hIdx */
+        tsk_lock_t lock;        ///< Lock for lazy loading and idx_lbuf
+
+        union {
+            TSK_IDX_SQLITE_V1 * idx_sqlite_v1;
+            TSK_IDX_PLAIN_TXT * idx_plain_txt;
+        }idx_struct;
+
+        uint8_t(*open) (TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
+        uint8_t(*initialize) (TSK_HDB_INFO *, TSK_TCHAR *);
+        uint8_t(*addentry) (TSK_HDB_INFO *, char *, TSK_OFF_T);
+        uint8_t(*addentry_bin) (TSK_HDB_INFO *, unsigned char *, int, TSK_OFF_T);
+        uint8_t(*finalize) (TSK_HDB_INFO *);
+        int8_t(*lookup_str) (TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM,
+                TSK_HDB_LOOKUP_FN, void *);
+        int8_t(*lookup_raw) (TSK_HDB_INFO *, uint8_t *, uint8_t,
+                TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+        void(*close) (TSK_IDX_INFO *);
+
+    };
 
     /**
     * Holds information about an open hash database. Created by 
@@ -114,25 +177,13 @@ extern "C" {
 
         TSK_TCHAR *db_fname;    ///< Name of the database file
 
-        TSK_TCHAR *uns_fname;   ///< Name of unsorted index file
-
         FILE *hDb;              ///< File handle to database (always open)
-        FILE *hIdxTmp;          ///< File handle to temp (unsorted) index file (only open during index creation)
-        FILE *hIdx;             ///< File handle to index (only open during lookups) 
-
-        TSK_OFF_T idx_size;     ///< Size of index file
-        uint16_t idx_off;       ///< Offset in index file to first index entry
-        size_t idx_llen;        ///< Length of each line in index
-
-        /* lock protects idx_lbuf and lazy loading of hIdx */
-        tsk_lock_t lock;        ///< Lock for lazy loading and idx_lbuf
-        char *idx_lbuf;         ///< Buffer to hold a line from the index  (r/w shared - lock) 
-        TSK_TCHAR *idx_fname;   ///< Name of index file
 
         TSK_HDB_HTYPE_ENUM hash_type;   ///< Type of hash used in index
         uint16_t hash_len;      ///< Length of hash
 
         TSK_HDB_DBTYPE_ENUM db_type;    ///< Type of database
+        TSK_IDX_INFO * idx_info;  ///< The index for the hdb info
 
         uint8_t(*getentry) (TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);    ///< \internal Database-specific function to find entry at a given offset
         uint8_t(*makeindex) (TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index
@@ -146,7 +197,6 @@ extern "C" {
         TSK_HDB_OPEN_IDXONLY = (0x1 << 0)       ///< Open only the index -- do not look for the original DB
     };
     typedef enum TSK_HDB_OPEN_ENUM TSK_HDB_OPEN_ENUM;
-
 
     extern TSK_HDB_INFO *tsk_hdb_open(TSK_TCHAR * db_file,
         TSK_HDB_OPEN_ENUM flags);
