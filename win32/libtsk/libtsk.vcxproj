@@ -203,7 +203,7 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tsk\hashdb\ascii_index.c" />
-    <ClCompile Include="..\..\tsk\hashdb\sqlite_index.c" />
+    <ClCompile Include="..\..\tsk\hashdb\sqlite_index.cpp" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />
@@ -280,7 +280,7 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
     <ClCompile Include="..\..\tsk\hashdb\idxonly_index.c" />
     <ClCompile Include="..\..\tsk\hashdb\md5sum_index.c" />
     <ClCompile Include="..\..\tsk\hashdb\nsrl_index.c" />
-    <ClCompile Include="..\..\tsk\hashdb\tm_lookup.c" />
+    <ClCompile Include="..\..\tsk\hashdb\tm_lookup.cpp" />
     <ClCompile Include="..\..\tsk\img\aff.c" />
     <ClCompile Include="..\..\tsk\img\ewf.c" />
     <ClCompile Include="..\..\tsk\img\img_io.c" />

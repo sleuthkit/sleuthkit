@@ -160,7 +160,7 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
                     TSK_OFF_T offset)
 {
 	const size_t len = (hdb_info->hash_len)/2;
-	unsigned char hash[len+1];
+	unsigned char* hash = new unsigned char[len+1];
 	size_t count;
 
 	if (strlen(hvalue) != hdb_info->hash_len) {
@@ -176,8 +176,9 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
 		hvalue += 2 * sizeof(char);
 	}
 
-	return tsk_hdb_idxaddentry_bin(hdb_info, hash, len, offset);
-
+    uint8_t ret = tsk_hdb_idxaddentry_bin(hdb_info, hash, len, offset);
+    delete [] hash;
+	return ret;
 }
 
 /**

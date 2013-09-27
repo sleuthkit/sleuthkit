@@ -50,14 +50,14 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
     /* Get hash type specific information */
     switch (htype) {
         case TSK_HDB_HTYPE_MD5_ID:
-            hdb_info->hash_type = htype;
+            hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(htype);
             hdb_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
             TSNPRINTF(idx_info->idx_fname, flen,
                     _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
                     hdb_info->db_fname, TSK_HDB_HTYPE_MD5_STR);
             break;
         case TSK_HDB_HTYPE_SHA1_ID:
-            hdb_info->hash_type = htype;
+            hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(htype);
             hdb_info->hash_len = TSK_HDB_HTYPE_SHA1_LEN;
             TSNPRINTF(idx_info->idx_fname, flen,
                     _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
@@ -74,26 +74,26 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
         HANDLE hWin;
         DWORD szLow, szHi;
 
-        if (-1 == GetFileAttributes(hdb_info->idx_fname)) {
-            tsk_release_lock(&hdb_info->lock);
+        if (-1 == GetFileAttributes(idx_info->idx_fname)) {
+            tsk_release_lock(&idx_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
             tsk_error_set_errstr(
                     "hdb_setupindex: Error finding index file: %"PRIttocTSK,
-                    hdb_info->idx_fname);
+                    idx_info->idx_fname);
             free(idx_info);
             return NULL;
         }
 
-        if ((hWin = CreateFile(hdb_info->idx_fname, GENERIC_READ,
+        if ((hWin = CreateFile(idx_info->idx_fname, GENERIC_READ,
                         FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0)) ==
                 INVALID_HANDLE_VALUE) {
-            tsk_release_lock(&hdb_info->lock);
+            tsk_release_lock(&idx_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
                     "hdb_setupindex: Error opening index file: %"PRIttocTSK,
-                    hdb_info->idx_fname);
+                    idx_info->idx_fname);
             free(idx_info);
             return NULL;
         }
@@ -564,12 +564,12 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
     TSTRNCPY(hdb_info->db_fname, db_file, flen);
 
     
-    hdb_info->hash_type = 0;
+    hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(0);
     hdb_info->hash_len = 0;
     hdb_info->idx_info = NULL;
 
     /* Get database specific information */
-    hdb_info->db_type = dbtype;
+    hdb_info->db_type = static_cast<TSK_HDB_DBTYPE_ENUM>(dbtype);
     switch (dbtype) {
         case TSK_HDB_DBTYPE_NSRL_ID:
             nsrl_name(hdb_info);
