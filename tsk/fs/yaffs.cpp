@@ -725,7 +725,7 @@ uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs){
         while(badBlock && (! outOfData)){
             // Read the last one of the set first. It makes dealing with the unallocated stuff easier
             offset = blockIndex * yfs->chunks_per_block * (yfs->page_size + yfs->spare_size) + (chunksToTest - 1) * (yfs->page_size + yfs->spare_size) + yfs->page_size;
-            if (offset > YAFFS_MAX_SIZE) {
+            if (offset > YAFFS_MAX_SCAN_SIZE) {
                 outOfData = 1;
             }
             cnt = tsk_img_read(fs->img_info, offset, (char *) spareBuffer,

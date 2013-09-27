@@ -32,8 +32,8 @@ extern "C" {
 #define YAFFS_DEFAULT_PAGE_SIZE     2048
 #define YAFFS_DEFAULT_SPARE_SIZE    64
 
-/* Don't scan more than YAFFS_MAX_SIZE data when trying to detect a yaffs2 filesystem */
-#define YAFFS_MAX_SIZE (64 * 1024 * 1024 * 1024)
+/* Don't scan more than YAFFS_MAX_SCAN_SIZE data when trying to detect a yaffs2 filesystem */
+#define YAFFS_MAX_SCAN_SIZE (64 * 1024 * 1024 * 1024)
 
 /*
 ** Yaffs Object Flags
