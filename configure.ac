@@ -153,6 +153,12 @@ AS_IF(
     [AC_MSG_NOTICE([NOT checking for zlib because with_zlib is no])]
 )
 
+AM_CONDITIONAL([X_ZLIB],[test "x$with_zlib" != "xno" && test "x$with_zlib" != "xyes"])
+AS_IF([test "x$with_zlib" != "xno"],
+   [Z_PATH="${with_zlib}/lib"],
+   [AC_MSG_NOTICE([failed to make Z_PATH])]
+)
+AC_SUBST(Z_PATH, $Z_PATH)
 
 #needed for sqllite
 AC_CHECK_LIB(dl, dlopen) 
@@ -181,10 +187,16 @@ AS_IF([test "x$with_libewf" != "xno"],
     )]
     # Check for the header file first to make sure they have the dev install
     [AC_CHECK_HEADERS([libewf.h],
-      [AC_CHECK_LIB([ewf], [libewf_get_version])]
+      [AC_CHECK_LIB([ewf], [libewf_get_version], [], [NO_LIBEWF=true])]
     )]
 )
 
+AM_CONDITIONAL([X_LIBEWF],[test "x$with_libewf" != "xno" && test "x$with_libewf" != "xyes"])
+AS_IF([test "x$with_libewf" != "xno"],
+   [EWF_PATH="${with_libewf}/lib"],
+)
+AC_SUBST(EWF_PATH, $EWF_PATH)
+   
 # sqlite requires pthread libraries - this was copied from its configure.ac
 # AC_SEARCH_LIBS(pthread_create, pthread)
 AC_SEARCH_LIBS(dlopen, dl)
