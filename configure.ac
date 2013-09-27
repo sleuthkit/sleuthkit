@@ -86,6 +86,10 @@ if test -d /usr/local/include; then
     LDFLAGS="$LDFLAGS -L/usr/local/lib"
 fi
 
+# Add enable/disable option
+AC_ARG_ENABLE([java],
+    [AS_HELP_STRING([--disable-java], [Do not build the java bindings or jar file])])
+ 
 # Checks for libraries.
 
 # Check if we should link afflib.
@@ -202,16 +206,18 @@ AC_SUBST(EWF_PATH, $EWF_PATH)
 AC_SEARCH_LIBS(dlopen, dl)
 
 # Test for java/jni so that we can compile the java bindings
-AC_PROG_JAVAC
-if test "x$JAVAC" != x; then
-    AX_JNI_INCLUDE_DIR
-    for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
-    do
-        JNI_CPPFLAGS="$JNI_CPPFLAGS -I$JNI_INCLUDE_DIR"
-    done
-    # Export the paths so that the makefile gets them
-    AC_SUBST(JNI_CPPFLAGS, $JNI_CPPFLAGS)
-fi
+AS_IF([test "x$enable_java" != "xno"], [
+    AC_PROG_JAVAC
+    if test "x$JAVAC" != x; then
+        AX_JNI_INCLUDE_DIR
+        for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
+        do
+            JNI_CPPFLAGS="$JNI_CPPFLAGS -I$JNI_INCLUDE_DIR"
+        done
+        # Export the paths so that the makefile gets them
+        AC_SUBST(JNI_CPPFLAGS, $JNI_CPPFLAGS)
+    fi
+]) # test enable_java
 AM_CONDITIONAL([X_JNI],[test "x$JNI_CPPFLAGS" != x])
 
 # Test is ant is available
