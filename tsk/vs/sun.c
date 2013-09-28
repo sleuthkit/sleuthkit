@@ -216,6 +216,7 @@ sun_load_table(TSK_VS_INFO * vs)
     ssize_t cnt;
     TSK_DADDR_T taddr =
         vs->offset / vs->block_size + SUN_SPARC_PART_SOFFSET;
+    int result = 0;
 
 
     /* Sanity check in case label sizes change */
@@ -232,8 +233,9 @@ sun_load_table(TSK_VS_INFO * vs)
         tsk_fprintf(stderr,
             "sun_load_table: Trying sector: %" PRIuDADDR "\n", taddr);
 
-    if ((buf = tsk_malloc(vs->block_size)) == NULL)
-        return 1;
+    if ((buf = tsk_malloc(vs->block_size)) == NULL) {
+        goto on_error;
+    }
 
     /* Try the given offset */
     cnt = tsk_vs_read_block
@@ -247,8 +249,7 @@ sun_load_table(TSK_VS_INFO * vs)
         }
         tsk_error_set_errstr2("SUN Disk Label in Sector: %" PRIuDADDR,
             taddr);
-        free(buf);
-        return 1;
+        goto on_error;
     }
 
 
@@ -262,12 +263,18 @@ sun_load_table(TSK_VS_INFO * vs)
     dlabel_x86 = (sun_dlabel_i386 *) buf;
     if (tsk_vs_guessu16(vs, dlabel_sp->magic, SUN_MAGIC) == 0) {
         if (tsk_getu32(vs->endian, dlabel_sp->sanity) == SUN_SANITY) {
+            result = sun_load_table_sparc(vs, dlabel_sp);
+            // TODO: I assume based on the existing free that the previous function
+            // does not take ownership of buf.
             free(buf);
-            return sun_load_table_sparc(vs, dlabel_sp);
+            return result;
         }
         else if (tsk_getu32(vs->endian, dlabel_x86->sanity) == SUN_SANITY) {
+            result = sun_load_table_i386(vs, dlabel_x86);
+            // TODO: I assume based on the existing free that the previous function
+            // does not take ownership of buf.
             free(buf);
-            return sun_load_table_i386(vs, dlabel_x86);
+            return result;
         }
     }
 
@@ -290,8 +297,7 @@ sun_load_table(TSK_VS_INFO * vs)
         }
         tsk_error_set_errstr2("SUN (Intel) Disk Label in Sector: %"
             PRIuDADDR, taddr);
-        free(buf);
-        return 1;
+        goto on_error;
     }
 
     dlabel_x86 = (sun_dlabel_i386 *) buf;
@@ -301,8 +307,7 @@ sun_load_table(TSK_VS_INFO * vs)
         tsk_error_set_errstr("SUN (intel) partition table (Sector: %"
             PRIuDADDR ") %x", taddr, tsk_getu16(vs->endian,
                 dlabel_sp->magic));
-        free(buf);
-        return 1;
+        goto on_error;
     }
 
     if (tsk_getu32(vs->endian, dlabel_x86->sanity) != SUN_SANITY) {
@@ -311,12 +316,20 @@ sun_load_table(TSK_VS_INFO * vs)
         tsk_error_set_errstr("SUN (intel) sanity value (Sector: %"
             PRIuDADDR ") %x", taddr, tsk_getu16(vs->endian,
                 dlabel_sp->magic));
-        free(buf);
-        return 1;
+        goto on_error;
     }
 
+    result = sun_load_table_i386(vs, dlabel_x86);
+    // TODO: I assume based on the existing free that the previous function
+    // does not take ownership of buf.
     free(buf);
-    return sun_load_table_i386(vs, dlabel_x86);
+    return result;
+
+on_error:
+    if( buf != NULL ) {
+        free( buf );
+    }
+    return 1;
 }
 
 
