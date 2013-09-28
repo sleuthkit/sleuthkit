@@ -1,5 +1,6 @@
 #!/bin/sh
-aclocal \
+autoreconf --force --install || aclocal --force -I m4 \
     && (libtoolize -c --force || glibtoolize -c --force) \
-    && automake --foreign --add-missing --copy \
-    && autoconf
+    && autoheader --force \
+    && autoconf --force \
+    && automake --foreign --add-missing --copy

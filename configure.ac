@@ -13,8 +13,8 @@ m4_include([m4/ac_prog_javac_works.m4])
 m4_include([m4/ac_prog_javac.m4])
 
 
-AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
-AC_CONFIG_HEADERS([tsk/tsk_config.h])
+AC_CONFIG_SRCDIR([tsk/tsk_config.h.in])
+dnl AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([foreign])
 AM_PATH_CPPUNIT(1.12.1)
@@ -262,7 +262,10 @@ AC_CONFIG_FILES([Makefile
                  man/Makefile
                  bindings/java/jni/Makefile
                  unit_tests/Makefile
-                 unit_tests/base/Makefile])
+ 
+                unit_tests/base/Makefile])
+AC_CONFIG_HEADERS([tsk/tsk_config.h])
+
 AC_OUTPUT
 
 
