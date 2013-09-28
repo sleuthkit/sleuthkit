@@ -88,6 +88,24 @@ fi
 
 # Checks for libraries.
 
+dnl Some platforms will complain about missing included functions if libstdc++ is not included.
+AC_CHECK_LIB(stdc++, main, , AC_MSG_ERROR([missing libstdc++])) 
+AC_CHECK_HEADERS(list, , , AC_MSG_ERROR([missing STL list class header])) 
+AC_CHECK_HEADERS(map, , , AC_MSG_ERROR([missing STL map class header])) 
+AC_CHECK_HEADERS(queue, , , AC_MSG_ERROR([missing STL queue class header])) 
+AC_CHECK_HEADERS(set, , , AC_MSG_ERROR([missing STL set class header])) 
+AC_CHECK_HEADERS(stack, , , AC_MSG_ERROR([missing STL stack class header])) 
+AC_CHECK_HEADERS(streambuf, , , AC_MSG_ERROR([missing STL streambuf class header])) 
+AC_CHECK_HEADERS(string, , , AC_MSG_ERROR([missing STL string class header])) 
+AC_CHECK_HEADERS(vector, , , AC_MSG_ERROR([missing STL vector class header])) 
+
+
+dnl needed for sqllite
+AC_CHECK_LIB(dl, dlopen) 
+dnl sqlite requires pthread libraries - this was copied from its configure.ac
+dnl AC_SEARCH_LIBS(pthread_create, pthread)
+dnl AC_SEARCH_LIBS(dlopen, dl)
+
 # Check if we should link afflib.
 AC_ARG_WITH([afflib],
     [AS_HELP_STRING([--without-afflib],[Do not use AFFLIB even if it is installed])]
@@ -154,11 +172,6 @@ AS_IF(
 )
 
 
-#needed for sqllite
-AC_CHECK_LIB(dl, dlopen) 
-
-
-
 # Check if we should link libewf.
 AC_ARG_WITH([libewf],
     [AS_HELP_STRING([--without-libewf],[Do not use libewf even if it is installed])]
@@ -184,10 +197,6 @@ AS_IF([test "x$with_libewf" != "xno"],
       [AC_CHECK_LIB([ewf], [libewf_get_version])]
     )]
 )
-
-# sqlite requires pthread libraries - this was copied from its configure.ac
-# AC_SEARCH_LIBS(pthread_create, pthread)
-AC_SEARCH_LIBS(dlopen, dl)
 
 # Test for java/jni so that we can compile the java bindings
 AC_PROG_JAVAC
