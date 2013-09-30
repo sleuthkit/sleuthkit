@@ -13,7 +13,7 @@ if X_LIBEWF
 endif
 
 tsk_jar = $(top_builddir)/bindings/java/dist/Tsk_DataModel.jar
-jardir = $(datadir)/java
+jardir = /usr/share/java
 jar_DATA = $(tsk_jar)
 
 
