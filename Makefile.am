@@ -61,10 +61,18 @@ ACLOCAL_AMFLAGS = -I m4
 if CPPUNIT
   UNIT_TESTS=unit_tests
 endif
-if X_JNI
-  JNI=bindings/java/jni
+
+if X_ANT
+  JAVA_BINDINGS=bindings/java
+else
+  JAVA_BINDINGS=bindings/java/jni
 endif
-SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JNI) 
+
+if !X_JNI
+  JAVA_BINDINGS=
+endif
+
+SUBDIRS = tsk tools tests samples man $(UNIT_TESTS) $(JAVA_BINDINGS) 
 
 nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/base/tsk_base.h tsk/base/tsk_os.h \
