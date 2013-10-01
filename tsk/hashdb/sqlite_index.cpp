@@ -160,7 +160,7 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
                     TSK_OFF_T offset)
 {
 	const size_t len = (hdb_info->hash_len)/2;
-	unsigned char* hash = new unsigned char[len+1];
+    uint8_t* hash = (uint8_t*) tsk_malloc(len+1);
     
 	size_t count;
 
@@ -176,7 +176,7 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
     short unsigned int binval;
     for (count = 0; count < len; count++) {
 		int r = sscanf(hvalue, "%2hx", &binval);
-        hash[count] = (unsigned char) binval;
+        hash[count] = (uint8_t) binval;
 		hvalue += 2 * sizeof(char);
 	}
 
@@ -197,7 +197,7 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
  * @return 1 on error and 0 on success
  */
 uint8_t
-sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,
+sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen,
                     TSK_OFF_T offset)
 {
     if (attempt(sqlite3_bind_blob(m_stmt, 1, hvalue, hlen, SQLITE_TRANSIENT),
@@ -328,7 +328,7 @@ sqlite_v1_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
                    void *ptr)
 {
 	const size_t len = strlen(hash)/2;
-	uint8_t * hashBlob = (uint8_t *) malloc(len+1);
+	uint8_t * hashBlob = (uint8_t *) tsk_malloc(len+1);
 	const char * pos = hash;
 	size_t count = 0;
 
