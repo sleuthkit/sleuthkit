@@ -28,8 +28,15 @@ public abstract class Tag {
 	private final TagType type;
 	private final String comment;
 			
-	public Tag(TagType name, String comment) {
-		this.type = name;
+	public Tag(TagType type, String comment) throws IllegalArgumentException {
+		if (null == type) {
+			throw new IllegalArgumentException("type is null");
+		}
+		this.type = type;
+				
+		if (null == comment || comment.isEmpty() == true) {
+			throw new IllegalArgumentException("comment is null or empty");
+		}
 		this.comment = comment;
 	}
 						

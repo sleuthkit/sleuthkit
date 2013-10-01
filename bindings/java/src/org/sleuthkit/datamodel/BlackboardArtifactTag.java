@@ -27,6 +27,10 @@ public class BlackboardArtifactTag extends Tag {
 	
 	public BlackboardArtifactTag(BlackboardArtifact artifact, TagType type, String comment) {
 		super(type, comment);
+		
+		if (null == artifact) {
+			throw new IllegalArgumentException("artifact is null");
+		}
 		this.artifact = artifact;
 	}
 	
