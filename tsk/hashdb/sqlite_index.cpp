@@ -161,6 +161,7 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
 {
 	const size_t len = (hdb_info->hash_len)/2;
 	unsigned char* hash = new unsigned char[len+1];
+    
 	size_t count;
 
 	if (strlen(hvalue) != hdb_info->hash_len) {
@@ -171,13 +172,18 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
 		return 1;
 	}
 
-	for (count = 0; count < len; count++) {
-		sscanf(hvalue, "%2hhx", &(hash[count]));
+    // We use an intermediate short to be compatible with Microsoft's implementation of the scanf family format
+    short unsigned int binval;
+    for (count = 0; count < len; count++) {
+		int r = sscanf(hvalue, "%2hx", &binval);
+        hash[count] = (unsigned char) binval;
 		hvalue += 2 * sizeof(char);
 	}
 
     uint8_t ret = tsk_hdb_idxaddentry_bin(hdb_info, hash, len, offset);
+
     delete [] hash;
+
 	return ret;
 }
 
@@ -194,7 +200,7 @@ uint8_t
 sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,
                     TSK_OFF_T offset)
 {
-    if (attempt(sqlite3_bind_blob(m_stmt, 1, hvalue, hlen, NULL),
+    if (attempt(sqlite3_bind_blob(m_stmt, 1, hvalue, hlen, SQLITE_TRANSIENT),
 		SQLITE_OK,
 		"Error binding binary blob: %s\n",
 		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
@@ -249,7 +255,7 @@ sqlite_v1_finalize(TSK_HDB_INFO * hdb_info)
 uint8_t
 sqlite_v1_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
 {
-    sqlite3 * sqlite;
+    sqlite3 * sqlite = NULL;
 
     if ((idx_info->idx_struct.idx_sqlite_v1 =
                 (TSK_IDX_SQLITE_V1 *) tsk_malloc
@@ -279,6 +285,7 @@ sqlite_v1_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
             sqlite3_close(sqlite);
             return 1;
         }
+
     }
 #else
     {

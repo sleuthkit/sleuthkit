@@ -25,7 +25,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
     size_t flen;
     const int header_size = 16;
     char header[header_size];
-    FILE * idx;
+    FILE * idx = NULL;
 
     if (hdb_info->idx_info != NULL) {
         return hdb_info->idx_info;
@@ -68,6 +68,8 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
             return NULL;
     }
 
+
+#if 0
     /* Verify the index exists, get its size, and open it */
 #ifdef TSK_WIN32
     {
@@ -104,6 +106,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
     {
         idx = fopen(idx_info->idx_fname, "r");
     }
+#endif
 #endif
 
     if (NULL != idx)
