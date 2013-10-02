@@ -808,13 +808,11 @@ ffs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
         return 1;
 
     if (ffs_dinode_load(ffs, inum, dino_buf)) {
-        tsk_fs_file_close(a_fs_file);
         free(dino_buf);
         return 1;
     }
 
     if (ffs_dinode_copy(ffs, a_fs_file->meta, inum, dino_buf)) {
-        tsk_fs_file_close(a_fs_file);
         free(dino_buf);
         return 1;
     }
