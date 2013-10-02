@@ -962,13 +962,11 @@ ext2fs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     }
 
     if (ext2fs_dinode_load(ext2fs, inum, dino_buf)) {
-        tsk_fs_meta_close(a_fs_file->meta);
         free(dino_buf);
         return 1;
     }
 
     if (ext2fs_dinode_copy(ext2fs, a_fs_file->meta, inum, dino_buf)) {
-        tsk_fs_meta_close(a_fs_file->meta);
         free(dino_buf);
         return 1;
     }
