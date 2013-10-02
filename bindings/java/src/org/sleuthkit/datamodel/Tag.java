@@ -34,8 +34,8 @@ public abstract class Tag {
 		}
 		this.type = type;
 				
-		if (null == comment || comment.isEmpty() == true) {
-			throw new IllegalArgumentException("comment is null or empty");
+		if (null == comment) {
+			throw new IllegalArgumentException("comment is null");
 		}
 		this.comment = comment;
 	}
