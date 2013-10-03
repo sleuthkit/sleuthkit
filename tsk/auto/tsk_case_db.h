@@ -116,6 +116,7 @@ class TskAutoDb:public TskAuto {
     bool m_noFatFsOrphans;
     bool m_addUnallocSpace;
 	int64_t m_chunkSize;
+    bool m_foundStructure;  ///< Set to true when we find either a volume or file system
 
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);

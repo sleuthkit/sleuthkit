@@ -4,6 +4,7 @@ Numbers refer to SourceForge.net tracker IDs:
 ---------------- VERSION 4.1.2 --------------
 Core:
 - Fixed more visual studio projects to work on 64-bit
+- TskAutoDB considers not finding a VS/FS a critical error.
 
 Java: 
 - added method to Image to perform sanity check on image sizes.
