@@ -649,7 +649,14 @@ static void
 *
 */
 
-uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
+/*
+* Function to attempt to determine the layout of the yaffs spare area
+*
+* @param yfs File system being anlayzed
+* @param maxBlocksToTest Number of block groups to scan to detect spare area or 0 if there is no limit.
+* @returns 1 on error, 0 on success
+*/
+static uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
 
     // Testing parameters - can all be changed
     unsigned int blocksToTest = 10;  // Number of blocks (64 chunks) to test
@@ -748,34 +755,37 @@ uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToT
             }
         }
 
+		if(skipBlock){
+			continue;
+		}
+
 		// If this block is potentially valid (i.e., the spare contains something besides 0x00 and 0xff), copy all the spares into
 		// the big array of extracted spare areas
-		if(! skipBlock){
-			// Copy this spare area
+
+		// Copy this spare area
+		nGoodSpares++;
+		for(i = 0;i < yfs->spare_size;i++){
+			allSpares[blocksTested * yfs->spare_size * chunksToTest + (chunksToTest - 1) * yfs->spare_size + i] = spareBuffer[i];
+		}
+
+		// Copy all earlier spare areas in the block
+		for(chunkIndex = 0;chunkIndex < chunksToTest - 1;chunkIndex++){
+			offset = blockIndex * yfs->chunks_per_block * (yfs->page_size + yfs->spare_size) + chunkIndex * (yfs->page_size + yfs->spare_size) + yfs->page_size;
+			cnt = tsk_img_read(fs->img_info, offset, (char *) spareBuffer,
+				yfs->spare_size);
+			if (cnt == -1 || cnt < yfs->spare_size) {
+				// We really shouldn't run out of data here since we already read in the furthest entry
+				break; // Break out of chunksToTest loop
+			}
+
 			nGoodSpares++;
 			for(i = 0;i < yfs->spare_size;i++){
-				allSpares[blocksTested * yfs->spare_size * chunksToTest + (chunksToTest - 1) * yfs->spare_size + i] = spareBuffer[i];
+				allSpares[blocksTested * yfs->spare_size * chunksToTest + chunkIndex * yfs->spare_size + i] = spareBuffer[i];
 			}
-
-			// Copy all earlier spare areas in the block
-			for(chunkIndex = 0;chunkIndex < chunksToTest - 1;chunkIndex++){
-				offset = blockIndex * yfs->chunks_per_block * (yfs->page_size + yfs->spare_size) + chunkIndex * (yfs->page_size + yfs->spare_size) + yfs->page_size;
-				cnt = tsk_img_read(fs->img_info, offset, (char *) spareBuffer,
-					yfs->spare_size);
-				if (cnt == -1 || cnt < yfs->spare_size) {
-					// We really shouldn't run out of data here since we already read in the furthest entry
-					break; // Break out of chunksToTest loop
-				}
-
-				nGoodSpares++;
-				for(i = 0;i < yfs->spare_size;i++){
-					allSpares[blocksTested * yfs->spare_size * chunksToTest + chunkIndex * yfs->spare_size + i] = spareBuffer[i];
-				}
-			}
-
-			// Record that we've found a potentially valid block
-			nBlocksTested++;
 		}
+
+		// Record that we've found a potentially valid block
+		nBlocksTested++;
 
 		// If we've found enough potentailly valid blocks, break
 		if(nBlocksTested >= blocksToTest){
@@ -1263,7 +1273,7 @@ static uint8_t
 // A version is allocated if:
 //   1. This version is pointed to by yco_latest
 //   2. This version didn't have a delete/unlinked header after the most recent copy of the normal header
-uint8_t yaffs_is_version_allocated(YAFFSFS_INFO * yfs, TSK_INUM_T inode){
+static uint8_t yaffs_is_version_allocated(YAFFSFS_INFO * yfs, TSK_INUM_T inode){
     YaffsCacheObject * obj;
     YaffsCacheVersion * version;
     YaffsCacheChunk * curr;
