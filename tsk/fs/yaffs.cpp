@@ -676,12 +676,12 @@ static uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBl
 
     unsigned char * allSpares;
     TSK_OFF_T offset;
-	TSK_OFF_T maxBlocks;
+    TSK_OFF_T maxBlocks;
 
     bool skipBlock;
     int goodOffset;
     unsigned int nGoodSpares;
-	unsigned int nBlocksTested;
+    unsigned int nBlocksTested;
 
     int okOffsetFound = 0;   // Used as a flag for if we've found an offset that sort of works but doesn't seem great
     int goodOffsetFound = 0; // Flag to mark that we've found an offset that also passed secondary testing
@@ -697,7 +697,7 @@ static uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBl
     }
 
     if ((allSpares = (unsigned char*) tsk_malloc(yfs->spare_size * blocksToTest * chunksToTest)) == NULL) {
-		free(spareBuffer);
+        free(spareBuffer);
         return TSK_ERR;
     }
 
@@ -722,28 +722,28 @@ static uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBl
     //  In particular we frequently see the 0x1000 seq number used over multiple blocks, but this isn't the only
     //  observed exception.
 
-	// Calculate the number of blocks in the image
-	maxBlocks = yfs->fs_info.img_info->size / (yfs->chunks_per_block * (yfs->page_size + yfs->spare_size));
+    // Calculate the number of blocks in the image
+    maxBlocks = yfs->fs_info.img_info->size / (yfs->chunks_per_block * (yfs->page_size + yfs->spare_size));
 
-	// If maxBlocksToTest = 0 (unlimited), set it to the total number of blocks
-	// Also reduce the number of blocks to test if it is larger than the total number of blocks
-	if((maxBlocksToTest == 0) || (maxBlocksToTest > maxBlocks)){
-		maxBlocksToTest = maxBlocks;
-	}
+    // If maxBlocksToTest = 0 (unlimited), set it to the total number of blocks
+    // Also reduce the number of blocks to test if it is larger than the total number of blocks
+    if((maxBlocksToTest == 0) || (maxBlocksToTest > maxBlocks)){
+        maxBlocksToTest = maxBlocks;
+    }
 
-	nGoodSpares = 0;
-	nBlocksTested = 0;
-	for(TSK_OFF_T blockIndex = 0;blockIndex < maxBlocksToTest;blockIndex++){
+    nGoodSpares = 0;
+    nBlocksTested = 0;
+    for(TSK_OFF_T blockIndex = 0;blockIndex < maxBlocksToTest;blockIndex++){
 
-		// Read the last spare area that we want to test first
-		offset = (TSK_OFF_T)blockIndex * yfs->chunks_per_block * (yfs->page_size + yfs->spare_size) + (chunksToTest - 1) * (yfs->page_size + yfs->spare_size) + yfs->page_size;
+        // Read the last spare area that we want to test first
+        offset = (TSK_OFF_T)blockIndex * yfs->chunks_per_block * (yfs->page_size + yfs->spare_size) + (chunksToTest - 1) * (yfs->page_size + yfs->spare_size) + yfs->page_size;
         cnt = tsk_img_read(fs->img_info, offset, (char *) spareBuffer,
             yfs->spare_size);
         if (cnt == -1 || cnt < yfs->spare_size) {
             break;
         }
 
-		// Is the spare all 0xff / 0x00?
+        // Is the spare all 0xff / 0x00?
         // If not, we know we should have all allocated chunks since YAFFS2 writes sequentially in a block
         //  - can't have an unallocated chunk followed by an allocated one
         // We occasionally see almost all null spare area with a few 0xff, which is not a valid spare.
@@ -755,43 +755,43 @@ static uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBl
             }
         }
 
-		if(skipBlock){
-			continue;
-		}
+        if(skipBlock){
+            continue;
+        }
 
-		// If this block is potentially valid (i.e., the spare contains something besides 0x00 and 0xff), copy all the spares into
-		// the big array of extracted spare areas
+        // If this block is potentially valid (i.e., the spare contains something besides 0x00 and 0xff), copy all the spares into
+        // the big array of extracted spare areas
 
-		// Copy this spare area
-		nGoodSpares++;
-		for(i = 0;i < yfs->spare_size;i++){
-			allSpares[blocksTested * yfs->spare_size * chunksToTest + (chunksToTest - 1) * yfs->spare_size + i] = spareBuffer[i];
-		}
+        // Copy this spare area
+        nGoodSpares++;
+        for(i = 0;i < yfs->spare_size;i++){
+            allSpares[blocksTested * yfs->spare_size * chunksToTest + (chunksToTest - 1) * yfs->spare_size + i] = spareBuffer[i];
+        }
 
-		// Copy all earlier spare areas in the block
-		for(chunkIndex = 0;chunkIndex < chunksToTest - 1;chunkIndex++){
-			offset = blockIndex * yfs->chunks_per_block * (yfs->page_size + yfs->spare_size) + chunkIndex * (yfs->page_size + yfs->spare_size) + yfs->page_size;
-			cnt = tsk_img_read(fs->img_info, offset, (char *) spareBuffer,
-				yfs->spare_size);
-			if (cnt == -1 || cnt < yfs->spare_size) {
-				// We really shouldn't run out of data here since we already read in the furthest entry
-				break; // Break out of chunksToTest loop
-			}
+        // Copy all earlier spare areas in the block
+        for(chunkIndex = 0;chunkIndex < chunksToTest - 1;chunkIndex++){
+            offset = blockIndex * yfs->chunks_per_block * (yfs->page_size + yfs->spare_size) + chunkIndex * (yfs->page_size + yfs->spare_size) + yfs->page_size;
+            cnt = tsk_img_read(fs->img_info, offset, (char *) spareBuffer,
+                yfs->spare_size);
+            if (cnt == -1 || cnt < yfs->spare_size) {
+                // We really shouldn't run out of data here since we already read in the furthest entry
+                break; // Break out of chunksToTest loop
+            }
 
-			nGoodSpares++;
-			for(i = 0;i < yfs->spare_size;i++){
-				allSpares[blocksTested * yfs->spare_size * chunksToTest + chunkIndex * yfs->spare_size + i] = spareBuffer[i];
-			}
-		}
+            nGoodSpares++;
+            for(i = 0;i < yfs->spare_size;i++){
+                allSpares[blocksTested * yfs->spare_size * chunksToTest + chunkIndex * yfs->spare_size + i] = spareBuffer[i];
+            }
+        }
 
-		// Record that we've found a potentially valid block
-		nBlocksTested++;
+        // Record that we've found a potentially valid block
+        nBlocksTested++;
 
-		// If we've found enough potentailly valid blocks, break
-		if(nBlocksTested >= blocksToTest){
-			break;
-		}
-	}
+        // If we've found enough potentailly valid blocks, break
+        if(nBlocksTested >= blocksToTest){
+            break;
+        }
+    }
 
     // Make sure we read enough data to reasonably perform the testing
     if(nGoodSpares < minChunksRead){
@@ -811,7 +811,7 @@ static uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBl
             "yaffs_initialize_spare_format: Testing potential offsets for the sequence number in the spare area\n");
     }
 
-	// Print out the collected spare areas if we're in verbose mode
+    // Print out the collected spare areas if we're in verbose mode
     if(tsk_verbose && (! yfs->autoDetect)){
         for(blockIndex = 0;blockIndex < blocksToTest;blockIndex++){
             for(chunkIndex = 0;chunkIndex < chunksToTest;chunkIndex++){
@@ -2671,14 +2671,14 @@ TSK_FS_INFO *
 
     // Determine the layout of the spare area
 
-	// Decide how many blocks to test. If we're not doing auto-detection, set to zero (no limit)
-	unsigned int maxBlocksToTest;
-	if(yaffsfs->autoDetect){
-		maxBlocksToTest = YAFFS_DEFAULT_MAX_TEST_BLOCKS;
-	}
-	else{
-		maxBlocksToTest = 0;
-	}
+    // Decide how many blocks to test. If we're not doing auto-detection, set to zero (no limit)
+    unsigned int maxBlocksToTest;
+    if(yaffsfs->autoDetect){
+        maxBlocksToTest = YAFFS_DEFAULT_MAX_TEST_BLOCKS;
+    }
+    else{
+        maxBlocksToTest = 0;
+    }
 
     if(yaffs_initialize_spare_format(yaffsfs, maxBlocksToTest)){
         tsk_error_reset();
