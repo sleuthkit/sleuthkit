@@ -32,6 +32,8 @@ extern "C" {
 #define YAFFS_DEFAULT_PAGE_SIZE     2048
 #define YAFFS_DEFAULT_SPARE_SIZE    64
 
+#define YAFFS_DEFAULT_MAX_TEST_BLOCKS   400  // Maximum number of blocks to test looking for Yaffs2 spare under auto-detect
+
 /*
 ** Yaffs Object Flags
 */
