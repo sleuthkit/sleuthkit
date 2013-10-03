@@ -10,6 +10,7 @@
 
 #include "tsk_hashdb_i.h"
 
+
 /**
  * \file tm_lookup.c
  * Contains the generic hash database creation and lookup code.
@@ -53,14 +54,14 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
             hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(htype);
             hdb_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
             TSNPRINTF(idx_info->idx_fname, flen,
-                    _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
-                    hdb_info->db_fname, TSK_HDB_HTYPE_MD5_STR);
+                    _TSK_T("%s") _TSK_T(".kdb"),
+                    hdb_info->db_fname);
             break;
         case TSK_HDB_HTYPE_SHA1_ID:
             hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(htype);
             hdb_info->hash_len = TSK_HDB_HTYPE_SHA1_LEN;
             TSNPRINTF(idx_info->idx_fname, flen,
-                    _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
+                    _TSK_T("%s-%") _TSK_T(".kdb"),
                     hdb_info->db_fname, TSK_HDB_HTYPE_SHA1_STR);
             break;
         default:
