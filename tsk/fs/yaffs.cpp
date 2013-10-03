@@ -650,13 +650,16 @@ static void
 */
 
 /*
-* Function to attempt to determine the layout of the yaffs spare area
+* Function to attempt to determine the layout of the yaffs spare area.
+* Results of the analysis (if the format could be determined) will be stored
+* in yfs variables. 
 *
 * @param yfs File system being anlayzed
 * @param maxBlocksToTest Number of block groups to scan to detect spare area or 0 if there is no limit.
-* @returns 1 on error, 0 on success
+* @returns TSK_ERR if format could not be detected and TSK_OK if it could be.
 */
-static uint8_t yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
+static TSK_RETVAL_ENUM 
+yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
 
     // Testing parameters - can all be changed
     unsigned int blocksToTest = 10;  // Number of blocks (64 chunks) to test
@@ -2680,7 +2683,7 @@ TSK_FS_INFO *
         maxBlocksToTest = 0;
     }
 
-    if(yaffs_initialize_spare_format(yaffsfs, maxBlocksToTest)){
+    if(yaffs_initialize_spare_format(yaffsfs, maxBlocksToTest) != TSK_OK){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("not a YAFFS file system (bad spare format)");
