@@ -72,19 +72,8 @@ AC_FUNC_SELECT_ARGTYPES
 dnl AC_FUNC_STAT
 AC_FUNC_UTIME_NULL
 AC_FUNC_VPRINTF
-<<<<<<< HEAD
-#AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
-AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
-AX_PTHREAD( [
-            AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
-            CLIBS="$PTHREAD_LIBS $LIBS"
-            CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS"
-            LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
-            CC="$PTHREAD_CC"],[])
-# Not all compilers include /usr/local in the include and link path
-=======
 dnl AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
-AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf])
+AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
 AX_PTHREAD([
     AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
     CLIBS="$PTHREAD_LIBS $LIBS"
@@ -93,7 +82,6 @@ AX_PTHREAD([
     CC="$PTHREAD_CC"],[])
 
 dnl Not all compilers include /usr/local in the include and link path
->>>>>>> 7dd33889053174706ded0ab5c7b52965f64ff6a6
 if test -d /usr/local/include; then
     CPPFLAGS="$CPPFLAGS -I/usr/local/include"
     LDFLAGS="$LDFLAGS -L/usr/local/lib"
@@ -102,13 +90,29 @@ fi
 dnl Checks for libraries.
 
 
-dnl Check if we should link afflib.
+dnl Some platforms will complain about missing included functions if libstdc++ is not included.
+AC_CHECK_LIB(stdc++, main, , AC_MSG_ERROR([missing libstdc++])) 
+AC_CHECK_HEADERS(list, , , AC_MSG_ERROR([missing STL list class header])) 
+AC_CHECK_HEADERS(map, , , AC_MSG_ERROR([missing STL map class header])) 
+AC_CHECK_HEADERS(queue, , , AC_MSG_ERROR([missing STL queue class header])) 
+AC_CHECK_HEADERS(set, , , AC_MSG_ERROR([missing STL set class header])) 
+AC_CHECK_HEADERS(stack, , , AC_MSG_ERROR([missing STL stack class header])) 
+AC_CHECK_HEADERS(streambuf, , , AC_MSG_ERROR([missing STL streambuf class header])) 
+AC_CHECK_HEADERS(string, , , AC_MSG_ERROR([missing STL string class header])) 
+AC_CHECK_HEADERS(vector, , , AC_MSG_ERROR([missing STL vector class header])) 
+
+
+dnl needed for sqllite
+AC_CHECK_LIB(dl, dlopen) 
+dnl sqlite requires pthread libraries - this was copied from its configure.ac
+dnl AC_SEARCH_LIBS(pthread_create, pthread)
+dnl AC_SEARCH_LIBS(dlopen, dl)
+
+# Check if we should link afflib.
 AC_ARG_WITH([afflib],
     [AS_HELP_STRING([--without-afflib],[Do not use AFFLIB even if it is installed])]
     [AS_HELP_STRING([--with-afflib=dir],[Specify that AFFLIB is installed in directory 'dir'])],
     dnl If --with-afflib or --without-afflib is given
-    [],
-    dnl if nothing was specified, default to a test
     [with_afflib=yes])
 
 dnl check for the lib if they did not specify no
@@ -170,8 +174,6 @@ AS_IF([test "x$ac_cv_lib_z_inflate" = "xyes"], [ax_zlib=yes], [ax_zlib=no])
 dnl needed for sqllite
 AC_CHECK_LIB(dl, dlopen)
 
-
-
 dnl Check if we should link libewf.
 AC_ARG_WITH([libewf],
     [AS_HELP_STRING([--without-libewf],[Do not use libewf even if it is installed])]
@@ -198,10 +200,6 @@ AS_IF([test "x$with_libewf" != "xno"],
     )]
 )
 AS_IF([test "x$ac_cv_lib_ewf_libewf_get_version" = "xyes"], [ax_libewf=yes], [ax_libewf=no])
-
-dnl sqlite requires pthread libraries - this was copied from its configure.ac
-dnl AC_SEARCH_LIBS(pthread_create, pthread)
-AC_SEARCH_LIBS(dlopen, dl)
 
 dnl Test for java/jni so that we can compile the java bindings
 AC_PROG_JAVAC
