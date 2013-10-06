@@ -2,6 +2,7 @@
 /bindings/java/nbproject/private/
 
 # Bindings dependecies and build folders
+*.class
 /bindings/java/lib/
 /bindings/java/build/
 /bindings/java/dist
@@ -16,8 +17,6 @@
 /bindings/java/nbproject/jdk.xml
 /bindings/java/nbproject/nbjdk.xml
 /bindings/java/libts*
-*~
-*.class
 /bindings/java/build/
 /bindings/java/dist/
 /bindings/java/nbproject/*
