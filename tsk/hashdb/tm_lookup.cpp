@@ -16,11 +16,65 @@
  * Contains the generic hash database creation and lookup code.
  */
 
+
 /**
- * Open the index structure for the given hash db
+ * Open an existing old plaintext idx structure.
+ * We can load both kdb (SQLite) and the old plaintext idx files.
+ */
+FILE *
+tsk_idx_open_file(TSK_TCHAR *idx_fname)
+{
+    if (idx_fname == NULL) {
+        return NULL;
+    }
+
+    FILE * idx = NULL;
+
+#ifdef TSK_WIN32
+    {
+        HANDLE hWin;
+        //DWORD szLow, szHi;
+
+        if (-1 == GetFileAttributes(idx_fname)) {
+            //tsk_release_lock(&idx_info->lock);
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_MISSING);
+            tsk_error_set_errstr(
+                    "tsk_idx_open_file: Error finding index file: %"PRIttocTSK,
+                    idx_fname);
+            return NULL;
+        }
+
+        if ((hWin = CreateFile(idx_fname, GENERIC_READ,
+                        FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0)) ==
+                INVALID_HANDLE_VALUE) {
+            //tsk_release_lock(&idx_info->lock);
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_OPEN);
+            tsk_error_set_errstr(
+                    "tsk_idx_open_file: Error opening index file: %"PRIttocTSK,
+                    idx_fname);
+            return NULL;
+        }
+
+        idx = _fdopen(_open_osfhandle((intptr_t) hWin, _O_RDONLY), "r");
+    }
+#else
+    {
+        idx = fopen(idx_fname, "r");
+    }
+#endif
+
+    return idx;
+}
+
+
+/**
+ * Open a newly created blank index file for the given hash db
+ * We only create kdb (SQLite) files.
  */
 TSK_IDX_INFO *
-tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
+tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, bool create)
 {
     TSK_IDX_INFO * idx_info;
     size_t flen;
@@ -39,6 +93,8 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
 
     hdb_info->idx_info = idx_info;
 
+    tsk_init_lock(&hdb_info->idx_info->lock);
+
     /* Make the name for the index file */
     flen = TSTRLEN(hdb_info->db_fname) + 32;
     idx_info->idx_fname =
@@ -54,15 +110,15 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
             hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(htype);
             hdb_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
             TSNPRINTF(idx_info->idx_fname, flen,
-                    _TSK_T("%s") _TSK_T(".kdb"),
+                    _TSK_T("%s.kdb"),
                     hdb_info->db_fname);
             break;
         case TSK_HDB_HTYPE_SHA1_ID:
             hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(htype);
             hdb_info->hash_len = TSK_HDB_HTYPE_SHA1_LEN;
             TSNPRINTF(idx_info->idx_fname, flen,
-                    _TSK_T("%s-%") _TSK_T(".kdb"),
-                    hdb_info->db_fname, TSK_HDB_HTYPE_SHA1_STR);
+                    _TSK_T("%s.kdb"),
+                    hdb_info->db_fname);
             break;
         default:
             free(idx_info);
@@ -70,49 +126,42 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
     }
 
 
-#if 0
-    /* Verify the index exists, get its size, and open it */
-#ifdef TSK_WIN32
-    {
-        HANDLE hWin;
-        DWORD szLow, szHi;
+    // Verify the index exists, get its size, and open it for header reading
+    if ((idx = tsk_idx_open_file(idx_info->idx_fname)) == NULL) {
 
-        if (-1 == GetFileAttributes(idx_info->idx_fname)) {
-            tsk_release_lock(&idx_info->lock);
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_HDB_MISSING);
-            tsk_error_set_errstr(
-                    "hdb_setupindex: Error finding index file: %"PRIttocTSK,
-                    idx_info->idx_fname);
-            free(idx_info);
-            return NULL;
+        // If file DNE, then we might want to create a new one
+        if (create) {
+            idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
+        } else {
+            // Try opening an old format index file
+
+            // Change the filename to the old format
+            switch (htype) {
+                case TSK_HDB_HTYPE_MD5_ID:
+                    TSNPRINTF(idx_info->idx_fname, flen,
+                              _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
+                              hdb_info->db_fname, TSK_HDB_HTYPE_MD5_STR);
+                    break;
+                case TSK_HDB_HTYPE_SHA1_ID:
+                    TSNPRINTF(idx_info->idx_fname, flen,
+                              _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
+                              hdb_info->db_fname, TSK_HDB_HTYPE_SHA1_STR);
+                    break;
+            }
+
+            idx = tsk_idx_open_file(idx_info->idx_fname);
+
+            if (!idx) {
+                free(idx_info);
+                return NULL;
+            }
         }
-
-        if ((hWin = CreateFile(idx_info->idx_fname, GENERIC_READ,
-                        FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0)) ==
-                INVALID_HANDLE_VALUE) {
-            tsk_release_lock(&idx_info->lock);
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_HDB_OPEN);
-            tsk_error_set_errstr(
-                    "hdb_setupindex: Error opening index file: %"PRIttocTSK,
-                    idx_info->idx_fname);
-            free(idx_info);
-            return NULL;
-        }
-        idx =
-            _fdopen(_open_osfhandle((intptr_t) hWin, _O_RDONLY), "r");
     }
-#else
-    {
-        idx = fopen(idx_info->idx_fname, "r");
-    }
-#endif
-#endif
 
-    if (NULL != idx)
-    {
-        if(NULL == fread(header, header_size, 1, idx)) {
+    // Read header (if this was an existing file)
+    if (idx) {
+        if (NULL == fread(header, header_size, 1, idx)) {
+            ///@todo should this actually be an error?
             idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
         } else if (strncmp(header,
                     IDX_SQLITE_V1_HEADER,
@@ -126,15 +175,14 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
             tsk_error_set_errstr(
-                    "hdb_setupindex: Unrecognized header format: %s\n",
+                    "tsk_idx_open: Unrecognized header format: %s\n",
                     idx_info->idx_fname);
             free(idx_info);
             return NULL;
         }
-    } else {
-        idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
     }
 
+    // Set up function pointers based on index type
     switch (idx_info->index_type) {
         case TSK_HDB_ITYPE_SQLITE_V1:
             idx_info->open = sqlite_v1_open;
@@ -161,6 +209,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
             return NULL;
     }
 
+    // Open
     if (idx_info->open(hdb_info, idx_info, htype) == 0) {
         return idx_info;
     }
@@ -179,13 +228,13 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
  * @return 0 if already set up or if setup successful, 1 otherwise
  */
 uint8_t
-hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
+hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype, bool create)
 {
     if (hdb_info->idx_info != NULL) {
         return 0;
     }
 
-    hdb_info->idx_info = tsk_idx_open(hdb_info, htype);
+    hdb_info->idx_info = tsk_idx_open(hdb_info, htype, create);
 
 
     if (hdb_info->idx_info != NULL) {
@@ -210,7 +259,7 @@ tsk_hdb_idxinitialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 {
     char dbtmp[32];
     int i;
-
+    bool create = true; //create new file if it doesn't already exist
 
     /* Use the string of the index/hash type to figure out some
      * settings */
@@ -287,7 +336,7 @@ tsk_hdb_idxinitialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
     }
 
     /* Setup the internal hash information */
-    if (hdb_setupindex(hdb_info, hdb_info->hash_type)) {
+    if (hdb_setupindex(hdb_info, hdb_info->hash_type, create)) {
         return 1;
     }
 
@@ -377,7 +426,7 @@ tsk_hdb_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
         return -1;
     }
 
-    if (hdb_setupindex(hdb_info, htype)) {
+    if (hdb_setupindex(hdb_info, htype, false)) {
         return -1;
     }
 
@@ -421,7 +470,7 @@ tsk_hdb_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
         return -1;
     }
 
-    if (hdb_setupindex(hdb_info, htype)) {
+    if (hdb_setupindex(hdb_info, htype, false)) {
         return -1;
     }
 
@@ -442,7 +491,7 @@ tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
 {
     /* Check if the index is already open, and 
      * try to open it if not */
-    if (tsk_idx_open(hdb_info, htype))
+    if (tsk_idx_open(hdb_info, htype, false))
         return 0;
     else
         return 1;
@@ -571,6 +620,7 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
     hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(0);
     hdb_info->hash_len = 0;
     hdb_info->idx_info = NULL;
+
 
     /* Get database specific information */
     hdb_info->db_type = static_cast<TSK_HDB_DBTYPE_ENUM>(dbtype);
