@@ -1,5 +1,3 @@
-SUBDIRS = jni
-
 Z_PATH=@Z_PATH@
 EWF_PATH=@EWF_PATH@
 ANT_PROPS=
@@ -13,7 +11,7 @@ if X_LIBEWF
 endif
 
 tsk_jar = $(top_builddir)/bindings/java/dist/Tsk_DataModel.jar
-jardir = /usr/share/java
+jardir = $(prefix)/share/java
 jar_DATA = $(tsk_jar)
 
 

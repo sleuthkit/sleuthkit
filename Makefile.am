@@ -62,13 +62,9 @@ if CPPUNIT
   UNIT_TESTS=unit_tests
 endif
 
-if X_ANT
-  JAVA_BINDINGS=bindings/java
-else
-  JAVA_BINDINGS=bindings/java/jni
-endif
-
-if !X_JNI
+if X_JNI
+  JAVA_BINDINGS=bindings/java/jni bindings/java
+else   
   JAVA_BINDINGS=
 endif
 

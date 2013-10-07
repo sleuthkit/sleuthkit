@@ -218,11 +218,10 @@ AS_IF([test "x$enable_java" != "xno"], [
         AC_SUBST(JNI_CPPFLAGS, $JNI_CPPFLAGS)
     fi
 ]) # test enable_java
-AM_CONDITIONAL([X_JNI],[test "x$JNI_CPPFLAGS" != x])
 
 # Test is ant is available
 AC_PATH_PROG([ANT_FOUND], [ant], [])
-AM_CONDITIONAL([X_ANT],[test "x$ANT_FOUND" != x])
+AM_CONDITIONAL([X_JNI],[test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x])
 
 AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
         [
