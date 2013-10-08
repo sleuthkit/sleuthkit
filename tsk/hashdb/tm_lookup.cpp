@@ -93,8 +93,6 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, bool create)
 
     hdb_info->idx_info = idx_info;
 
-    tsk_init_lock(&hdb_info->idx_info->lock);
-
     /* Make the name for the index file */
     flen = TSTRLEN(hdb_info->db_fname) + 32;
     idx_info->idx_fname =
@@ -230,7 +228,11 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, bool create)
 uint8_t
 hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype, bool create)
 {
+    // Lock for lazy load of idx_info and lazy alloc of idx_lbuf.
+    tsk_take_lock(&hdb_info->lock);
+
     if (hdb_info->idx_info != NULL) {
+        tsk_release_lock(&hdb_info->lock);
         return 0;
     }
 
@@ -238,9 +240,11 @@ hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype, bool create)
 
 
     if (hdb_info->idx_info != NULL) {
+        tsk_release_lock(&hdb_info->lock);
         return 0;
     }
 
+    tsk_release_lock(&hdb_info->lock);
     return 1;
 }
 
@@ -605,6 +609,9 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
 
     hdb_info->hDb = hDb;
 
+    // Initialize mutex (or critical section) obj
+    tsk_init_lock(&hdb_info->lock);
+
     /* Copy the database name into the structure */
     flen = TSTRLEN(db_file) + 8;        // + 32;
 
@@ -697,7 +704,7 @@ tsk_hdb_close(TSK_HDB_INFO * hdb_info)
         tsk_idx_close(hdb_info->idx_info);
     }
 
-    tsk_deinit_lock(&hdb_info->idx_info->lock);
+    tsk_deinit_lock(&hdb_info->lock);
 
     free(hdb_info);
 }
