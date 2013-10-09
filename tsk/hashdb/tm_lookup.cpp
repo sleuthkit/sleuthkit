@@ -72,6 +72,7 @@ tsk_idx_open_file(TSK_TCHAR *idx_fname)
 /**
  * Open a newly created blank index file for the given hash db
  * We only create kdb (SQLite) files.
+ * @return NULL on error, TSK_IDX_INFO instance on success
  */
 TSK_IDX_INFO *
 tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, bool create)
@@ -495,10 +496,11 @@ tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
 {
     /* Check if the index is already open, and 
      * try to open it if not */
-    if (tsk_idx_open(hdb_info, htype, false))
+    if (hdb_setupindex(hdb_info, htype, false)) {
         return 0;
-    else
+    } else {
         return 1;
+    }
 }
 
 
@@ -609,9 +611,6 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
 
     hdb_info->hDb = hDb;
 
-    // Initialize mutex (or critical section) obj
-    tsk_init_lock(&hdb_info->lock);
-
     /* Copy the database name into the structure */
     flen = TSTRLEN(db_file) + 8;        // + 32;
 
@@ -628,6 +627,8 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
     hdb_info->hash_len = 0;
     hdb_info->idx_info = NULL;
 
+    // Initialize mutex (or critical section) obj
+    tsk_init_lock(&hdb_info->lock);
 
     /* Get database specific information */
     hdb_info->db_type = static_cast<TSK_HDB_DBTYPE_ENUM>(dbtype);
