@@ -673,7 +673,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
 
     unsigned int blockIndex;
     unsigned int chunkIndex;
-    unsigned int blocksTested = 0;
+    //unsigned int blocksTested = 0;
 
     unsigned int currentOffset;
 
@@ -689,6 +689,8 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
     int okOffsetFound = 0;   // Used as a flag for if we've found an offset that sort of works but doesn't seem great
     int goodOffsetFound = 0; // Flag to mark that we've found an offset that also passed secondary testing
     int bestOffset = 0;
+
+    bool allSameByte; // Used in test that the spare area fields not be one repeated byte
 
     unsigned int i;
 
@@ -768,7 +770,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
         // Copy this spare area
         nGoodSpares++;
         for(i = 0;i < yfs->spare_size;i++){
-            allSpares[blocksTested * yfs->spare_size * chunksToTest + (chunksToTest - 1) * yfs->spare_size + i] = spareBuffer[i];
+            allSpares[nBlocksTested * yfs->spare_size * chunksToTest + (chunksToTest - 1) * yfs->spare_size + i] = spareBuffer[i];
         }
 
         // Copy all earlier spare areas in the block
@@ -783,7 +785,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
 
             nGoodSpares++;
             for(i = 0;i < yfs->spare_size;i++){
-                allSpares[blocksTested * yfs->spare_size * chunksToTest + chunkIndex * yfs->spare_size + i] = spareBuffer[i];
+                allSpares[nBlocksTested * yfs->spare_size * chunksToTest + chunkIndex * yfs->spare_size + i] = spareBuffer[i];
             }
         }
 
@@ -890,8 +892,29 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                         goodOffset = 0;
                         break;
                 }
-            }
-            if(!goodOffset){
+
+                // All 16 bytes should not be the same
+                // (It is theoretically possible that this could be valid, but incredibly unlikely)
+                allSameByte = true;
+                for(i = 1;i < 16;i++){
+                    if(allSpares[thisChunkBase + currentOffset] != allSpares[thisChunkBase + currentOffset + i]){
+                        allSameByte = false;
+                        break;
+                    }
+                }
+                if(allSameByte && (allSpares[thisChunkBase + currentOffset] != 0x01)){ // allSpares was initialized with all 0x01 - there might be lines of it left
+                    if(tsk_verbose && (! yfs->autoDetect)){
+                        tsk_fprintf(stderr,
+                            "yaffs_initialize_spare_format: Elimimating offset %d - all repeated bytes\n", 
+                            currentOffset);
+                    }
+                    goodOffset = 0;
+				    break;
+				}
+
+            } // End of loop over chunks
+
+            if(!goodOffset){ // Break out of loop over blocks
                 break;
             }
         }
@@ -1167,7 +1190,6 @@ static uint8_t
     yaffsfs_cache_fs(YAFFSFS_INFO * yfs)
 {
     uint8_t status = TSK_OK;
-    size_t offset = 0;
     uint32_t nentries = 0;
     YaffsSpare *spare = NULL;
 
@@ -1177,9 +1199,7 @@ static uint8_t
     if (yfs->cache_objects)
         return 0;
 
-    offset = 0;
-    while (1) {
-
+	for(TSK_OFF_T offset = 0;offset < yfs->fs_info.img_info->size;offset += yfs->page_size + yfs->spare_size){
         status = yaffsfs_read_spare( yfs, &spare, offset + yfs->page_size);
         if (status != TSK_OK) {
             break;
@@ -1226,7 +1246,6 @@ static uint8_t
         spare = NULL;
 
         ++nentries;
-        offset += yfs->page_size + yfs->spare_size;
     }
 
     if (tsk_verbose)
@@ -2462,6 +2481,7 @@ static uint8_t
     YaffsCacheChunk *curr;
     TSK_FS_ATTR_RUN *data_run_new;
 
+
     if (file == NULL || file->meta == NULL || file->fs_info == NULL)
     {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -2517,6 +2537,14 @@ static uint8_t
             meta->attr_state = TSK_FS_META_ATTR_ERROR;
             return 1;
     }
+
+	// Check for the special directories, which aren't found in the normal cache objects
+    if((meta->addr == YAFFS_OBJECT_UNLINKED) || (meta->addr == YAFFS_OBJECT_DELETED) ||
+        (meta->addr == yfs->fs_info.last_inum)){
+        meta->attr_state = TSK_FS_META_ATTR_STUDIED;
+        return 0;
+    }
+
 
     /* Walk the version pointer back to the start adding single
     * block runs as we go.
