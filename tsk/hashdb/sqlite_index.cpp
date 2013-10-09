@@ -366,9 +366,11 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 	TSK_OFF_T offset;
     char * selectStmt;
 
+    tsk_take_lock(&hdb_info->lock);
 
 	/* Sanity check */
 	if ((hdb_info->hash_len)/2 != len) {
+        tsk_release_lock(&hdb_info->lock);
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_HDB_ARG);
 		tsk_error_set_errstr("hdb_lookup: Hash passed is different size than expected: %d vs %d",
@@ -382,6 +384,7 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
         } else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
             selectStmt = "SELECT sha1,database_offset from hashset_hashes where sha1=? limit 1";
         } else {
+            tsk_release_lock(&hdb_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
             tsk_error_set_errstr("Unknown hash type: %d\n", hdb_info->hash_type);
@@ -394,6 +397,7 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 		SQLITE_OK,
 		"Error binding binary blob: %s\n",
 		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+            tsk_release_lock(&hdb_info->lock);
 			return -1;
 	}
 
@@ -401,6 +405,7 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 		if ((flags & TSK_HDB_FLAG_QUICK)
 			|| (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
 				sqlite3_reset(m_stmt);
+                tsk_release_lock(&hdb_info->lock);
 				return 1;
 		} else {
 			for (i = 0; i < len; i++) {
@@ -413,6 +418,7 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 			sqlite3_reset(m_stmt);
 
 			if (hdb_info->getentry(hdb_info, hashbuf, offset, flags, action, ptr)) {
+                tsk_release_lock(&hdb_info->lock);
 				tsk_error_set_errstr2("hdb_lookup");
 				return -1;
 			}
@@ -421,6 +427,8 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 	}
 
 	sqlite3_reset(m_stmt);
+    
+    tsk_release_lock(&hdb_info->lock);
 
 	return 0;
 
