@@ -237,9 +237,6 @@
     <ClCompile Include="..\..\tsk\hashdb\nsrl_index.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\tm_lookup.c">
-      <Filter>hash</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tsk\img\aff.c">
       <Filter>img</Filter>
     </ClCompile>
@@ -274,7 +271,10 @@
     <ClCompile Include="..\..\tsk\hashdb\ascii_index.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\sqlite_index.c">
+    <ClCompile Include="..\..\tsk\hashdb\tm_lookup.cpp">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\sqlite_index.cpp">
       <Filter>hash</Filter>
     </ClCompile>
   </ItemGroup>
