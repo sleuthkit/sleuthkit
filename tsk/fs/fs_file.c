@@ -616,7 +616,7 @@ tsk_fs_file_hash_calc(TSK_FS_FILE * a_fs_file,
     TSK_FS_HASH_RESULTS * a_hash_results, TSK_BASE_HASH_ENUM a_flags)
 {
     TSK_FS_HASH_DATA hash_data;
-	int i;
+    int i;
 
     if (a_hash_results == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -625,13 +625,13 @@ tsk_fs_file_hash_calc(TSK_FS_FILE * a_fs_file,
         return 1;
     }
 
-	// Initialize the hash results to zero (so the hash will be consistent even if there's no file data)
-	for(i = 0;i < 16;i++){
-		a_hash_results->md5_digest[i] = 0;
-	}
-	for(i = 0;i < 20;i++){
-		a_hash_results->sha1_digest[i] = 0;
-	}
+    // Initialize the hash results to zero (so the hash will be consistent even if there's no file data)
+    for(i = 0;i < 16;i++){
+        a_hash_results->md5_digest[i] = 0;
+    }
+    for(i = 0;i < 20;i++){
+        a_hash_results->sha1_digest[i] = 0;
+    }
 
     if ((a_fs_file == NULL) || (a_fs_file->fs_info == NULL)
         || (a_fs_file->meta == NULL)) {

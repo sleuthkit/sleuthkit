@@ -673,7 +673,6 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
 
     unsigned int blockIndex;
     unsigned int chunkIndex;
-    //unsigned int blocksTested = 0;
 
     unsigned int currentOffset;
 
@@ -909,8 +908,8 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                             currentOffset);
                     }
                     goodOffset = 0;
-				    break;
-				}
+                    break;
+                }
 
             } // End of loop over chunks
 
@@ -1199,7 +1198,7 @@ static uint8_t
     if (yfs->cache_objects)
         return 0;
 
-	for(TSK_OFF_T offset = 0;offset < yfs->fs_info.img_info->size;offset += yfs->page_size + yfs->spare_size){
+    for(TSK_OFF_T offset = 0;offset < yfs->fs_info.img_info->size;offset += yfs->page_size + yfs->spare_size){
         status = yaffsfs_read_spare( yfs, &spare, offset + yfs->page_size);
         if (status != TSK_OK) {
             break;
@@ -2538,7 +2537,7 @@ static uint8_t
             return 1;
     }
 
-	// Check for the special directories, which aren't found in the normal cache objects
+    // Check for the special directories, which aren't found in the normal cache objects
     if((meta->addr == YAFFS_OBJECT_UNLINKED) || (meta->addr == YAFFS_OBJECT_DELETED) ||
         (meta->addr == yfs->fs_info.last_inum)){
         meta->attr_state = TSK_FS_META_ATTR_STUDIED;
