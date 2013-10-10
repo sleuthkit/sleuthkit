@@ -14,6 +14,7 @@
  */
 
 #include "tsk_case_db.h"
+#include "tsk/img/ewf.h"
 #include <string.h>
 
 #include <algorithm>
@@ -190,8 +191,16 @@ uint8_t
 uint8_t
 TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
 {
+    string md5 = "";
+    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
+        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)m_img_info;
+        if (ewf_info->md5hash_isset) {
+            md5 = ewf_info->md5hash;
+        }
+    }
+
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
-            m_curImgId, m_curImgTZone)) {
+            m_curImgId, m_curImgTZone, m_img_info->size, md5)) {
         return 1;
     }
 
