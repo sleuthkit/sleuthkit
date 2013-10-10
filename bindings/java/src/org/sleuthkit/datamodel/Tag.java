@@ -25,14 +25,14 @@ package org.sleuthkit.datamodel;
 public abstract class Tag {	
 	static long ID_NOT_SET = 0;
 	private long id = ID_NOT_SET;
-	private final TagType type;
+	private final TagName name;
 	private final String comment;
 			
-	public Tag(TagType type, String comment) throws IllegalArgumentException {
-		if (null == type) {
+	public Tag(TagName name, String comment) throws IllegalArgumentException {
+		if (null == name) {
 			throw new IllegalArgumentException("type is null");
 		}
-		this.type = type;
+		this.name = name;
 				
 		if (null == comment) {
 			throw new IllegalArgumentException("comment is null");
@@ -40,8 +40,8 @@ public abstract class Tag {
 		this.comment = comment;
 	}
 						
-	public TagType getType() {
-		return type;
+	public TagName getName() {
+		return name;
 	}
 		
 	public String getComment() {

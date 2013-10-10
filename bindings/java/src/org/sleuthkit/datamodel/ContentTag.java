@@ -30,7 +30,7 @@ public class ContentTag extends Tag {
 	private final long beginByteOffset;
 	private final long endByteOffset;
 					
-	public ContentTag(Content content, TagType type, String comment, long beginByteOffset, long endByteOffset) throws IllegalArgumentException {
+	public ContentTag(Content content, TagName type, String comment, long beginByteOffset, long endByteOffset) throws IllegalArgumentException {
 		super(type, comment);
 
 			if (null == content) {

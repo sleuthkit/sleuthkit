@@ -108,9 +108,9 @@ public class SleuthkitCase {
 	private PreparedStatement hasChildrenSt;
 	private PreparedStatement getLastContentIdSt;
 	private PreparedStatement getFsIdForFileIdSt;
-	private PreparedStatement selectAllFromTagTypes;
-	private PreparedStatement insertIntoTagTypes;
-	private PreparedStatement selectMaxIdFromTagTypes;
+	private PreparedStatement selectAllFromTagNames;
+	private PreparedStatement insertIntoTagNames;
+	private PreparedStatement selectMaxIdFromTagNames;
 	private PreparedStatement insertIntoContentTags;
 	private PreparedStatement selectMaxIdFromContentTags;
 	private PreparedStatement deleteFromContentTags;
@@ -287,19 +287,19 @@ public class SleuthkitCase {
 		getFsIdForFileIdSt = con.prepareStatement(
 				"SELECT fs_obj_id from tsk_files WHERE obj_id=?");
 		
-		selectAllFromTagTypes = con.prepareStatement("SELECT * FROM tag_types");
+		selectAllFromTagNames = con.prepareStatement("SELECT * FROM tag_names");
 		
-		insertIntoTagTypes =  con.prepareStatement("INSERT INTO tag_types (display_name, description, color) VALUES (?, ?, ?)");
+		insertIntoTagNames =  con.prepareStatement("INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)");
 		
-		selectMaxIdFromTagTypes = con.prepareStatement("SELECT MAX(id) FROM tag_types");
+		selectMaxIdFromTagNames = con.prepareStatement("SELECT MAX(id) FROM tag_names");
 		
-		insertIntoContentTags = con.prepareStatement("INSERT INTO content_tags (obj_id, tag_type_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)");
+		insertIntoContentTags = con.prepareStatement("INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)");
 		
 		selectMaxIdFromContentTags = con.prepareStatement("SELECT MAX(id) FROM content_tags");		
 		
 		deleteFromContentTags = con.prepareStatement("DELETE FROM content_tags WHERE id = ?");
 
-		insertIntoBlackboardArtifactTags = con.prepareStatement("INSERT INTO blackboard_artifact_tags (artifact_id, tag_type_id, comment) VALUES (?, ?, ?)");
+		insertIntoBlackboardArtifactTags = con.prepareStatement("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment) VALUES (?, ?, ?)");
 		
 		selectMaxIdFromBlackboardArtifactTags = con.prepareStatement("SELECT MAX(id) FROM blackboard_artifact_tags");				
 		
@@ -353,9 +353,9 @@ public class SleuthkitCase {
 		closeStatement(addPathSt);
 		closeStatement(hasChildrenSt);
 		closeStatement(getFsIdForFileIdSt);
-		closeStatement(selectAllFromTagTypes);
-		closeStatement(insertIntoTagTypes);
-		closeStatement(selectMaxIdFromTagTypes);		
+		closeStatement(selectAllFromTagNames);
+		closeStatement(insertIntoTagNames);
+		closeStatement(selectMaxIdFromTagNames);		
 		closeStatement(insertIntoContentTags);
 		closeStatement(selectMaxIdFromContentTags);
 		closeStatement(deleteFromContentTags);
@@ -5018,22 +5018,22 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Selects all of the rows in the tag_types table.
-	 * @return A list of TagType data transfer objects (DTOs).
+	 * Selects all of the rows in the tag_names table.
+	 * @return A list of TagName data transfer objects (DTOs).
 	 * @throws TskCoreException 
 	 */
-	public List<TagType> getTagTypes() throws TskCoreException {
+	public List<TagName> getTagNames() throws TskCoreException {
 		dbReadLock();
 		try {
-			ArrayList<TagType> tagTypes = new ArrayList<TagType>(); 
-			ResultSet resultSet = selectAllFromTagTypes.executeQuery();
+			ArrayList<TagName> tagNames = new ArrayList<TagName>(); 
+			ResultSet resultSet = selectAllFromTagNames.executeQuery();
 			while(resultSet.next()) {
-				tagTypes.add(new TagType(resultSet.getLong("id"), resultSet.getString("display_name"), resultSet.getString("description"), TagType.HTML_COLOR.getColorByName(resultSet.getString("color"))));
+				tagNames.add(new TagName(resultSet.getLong("id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
-			return tagTypes;
+			return tagNames;
 		}
 		catch(SQLException ex) {
-			throw new TskCoreException("Error selecting rows from tag_types table", ex);
+			throw new TskCoreException("Error selecting rows from tag_names table", ex);
 		}
 		finally {
 			dbReadUnlock();
@@ -5041,25 +5041,25 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Inserts tag type row into the tags_types table.
-	 * tagType A TagType data transfer object (DTO).
+	 * Inserts tag name row into the tags_names table.
+	 * tagName A TagName data transfer object (DTO).
 	 * @throws TskCoreException 
 	 */
-	public void addTagType(TagType tagType) throws TskCoreException {
+	public void addTagName(TagName tagName) throws TskCoreException {
 		dbWriteLock();		
 		try {
 			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)			
-			insertIntoTagTypes.clearParameters(); 			
-			insertIntoTagTypes.setString(1, tagType.getDisplayName());
-			insertIntoTagTypes.setString(2, tagType.getDescription());
-			insertIntoTagTypes.setString(3, tagType.getColor().getName());
-			insertIntoTagTypes.executeUpdate();
+			insertIntoTagNames.clearParameters(); 			
+			insertIntoTagNames.setString(1, tagName.getDisplayName());
+			insertIntoTagNames.setString(2, tagName.getDescription());
+			insertIntoTagNames.setString(3, tagName.getColor().getName());
+			insertIntoTagNames.executeUpdate();
 
 			// SELECT MAX(id) FROM tag_names
-			tagType.setId(selectMaxIdFromTagTypes.executeQuery().getLong(1));
+			tagName.setId(selectMaxIdFromTagNames.executeQuery().getLong(1));
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding row for " + tagType.getDisplayName() + " tag name to tag_types table", ex);
+			throw new TskCoreException("Error adding row for " + tagName.getDisplayName() + " tag name to tag_names table", ex);
 		}
 		finally {
 			dbWriteUnlock();
@@ -5076,7 +5076,7 @@ public class SleuthkitCase {
 			// INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)
 			insertIntoContentTags.clearParameters(); 			
 			insertIntoContentTags.setLong(1, tag.getContent().getId());
-			insertIntoContentTags.setLong(2, tag.getType().getId());
+			insertIntoContentTags.setLong(2, tag.getName().getId());
 			insertIntoContentTags.setString(3, tag.getComment());
 			insertIntoContentTags.setLong(4, tag.getBeginByteOffset());
 			insertIntoContentTags.setLong(5, tag.getEndByteOffset());
@@ -5086,7 +5086,7 @@ public class SleuthkitCase {
 			tag.setId(selectMaxIdFromContentTags.executeQuery().getLong(1));
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding row to content_tags table (obj_id = " + tag.getContent().getId() + ", tag_type_id = " + tag.getType().getId() + ")", ex);
+			throw new TskCoreException("Error adding row to content_tags table (obj_id = " + tag.getContent().getId() + ", tag_name_id = " + tag.getName().getId() + ")", ex);
 		}
 		finally {
 			dbWriteUnlock();
@@ -5122,7 +5122,7 @@ public class SleuthkitCase {
 			// INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)			
 			insertIntoBlackboardArtifactTags.clearParameters(); 			
 			insertIntoBlackboardArtifactTags.setLong(1, tag.getArtifact().getArtifactID());
-			insertIntoBlackboardArtifactTags.setLong(2, tag.getType().getId());
+			insertIntoBlackboardArtifactTags.setLong(2, tag.getName().getId());
 			insertIntoBlackboardArtifactTags.setString(3, tag.getComment());
 			insertIntoBlackboardArtifactTags.executeUpdate();
 
@@ -5130,7 +5130,7 @@ public class SleuthkitCase {
 			tag.setId(selectMaxIdFromBlackboardArtifactTags.executeQuery().getLong(1));
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + tag.getArtifact().getArtifactID() + ", tag_type_id = " + tag.getType().getId() + ")", ex);
+			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + tag.getArtifact().getArtifactID() + ", tag_name_id = " + tag.getName().getId() + ")", ex);
 		}
 		finally {
 			dbWriteUnlock();

@@ -25,7 +25,7 @@ package org.sleuthkit.datamodel;
 public class BlackboardArtifactTag extends Tag {
 	private final BlackboardArtifact artifact;
 	
-	public BlackboardArtifactTag(BlackboardArtifact artifact, TagType type, String comment) {
+	public BlackboardArtifactTag(BlackboardArtifact artifact, TagName type, String comment) {
 		super(type, comment);
 		
 		if (null == artifact) {

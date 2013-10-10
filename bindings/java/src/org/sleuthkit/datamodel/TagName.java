@@ -22,9 +22,10 @@ import java.util.HashMap;
 
 /**
  * Instances of this class are data transfer objects (DTOs) that represent the 
- * types of tags a user can apply to Content and BlackboardArtifact objects.
+ * names (and related properties) a user can select from to apply a tag to a 
+ * Content or BlackboardArtifact object.
  */
-public class TagType {
+public class TagName {
 	public enum HTML_COLOR {
 		NONE("None"),
 		WHITE("White"),
@@ -77,7 +78,7 @@ public class TagType {
 	private String description;
 	private HTML_COLOR color;
 		
-	public TagType(String displayName, String description, HTML_COLOR color) throws IllegalArgumentException {
+	public TagName(String displayName, String description, HTML_COLOR color) throws IllegalArgumentException {
 		if (null == displayName || displayName.isEmpty() == true) {
 			throw new IllegalArgumentException("displayName is null or empty");
 		}
@@ -94,7 +95,7 @@ public class TagType {
 		this.color = color;
 	}
 
-	TagType(long id, String displayName, String description, HTML_COLOR color) throws IllegalArgumentException {
+	TagName(long id, String displayName, String description, HTML_COLOR color) throws IllegalArgumentException {
 		this(displayName, description, color);
 		this.id = id;
 	}
