@@ -113,6 +113,8 @@ AC_ARG_WITH([afflib],
     [AS_HELP_STRING([--without-afflib],[Do not use AFFLIB even if it is installed])]
     [AS_HELP_STRING([--with-afflib=dir],[Specify that AFFLIB is installed in directory 'dir'])],
     dnl If --with-afflib or --without-afflib is given
+    [],
+    dnl If --with-afflib or --without-afflib is given
     [with_afflib=yes])
 
 dnl check for the lib if they did not specify no
