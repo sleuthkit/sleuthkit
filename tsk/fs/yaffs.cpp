@@ -2537,9 +2537,8 @@ static uint8_t
             return 1;
     }
 
-    // Check for the special directories, which aren't found in the normal cache objects
-    if((meta->addr == YAFFS_OBJECT_UNLINKED) || (meta->addr == YAFFS_OBJECT_DELETED) ||
-        (meta->addr == yfs->fs_info.last_inum)){
+    // If the file has size zero, return now
+    if(meta->size == 0){
         meta->attr_state = TSK_FS_META_ATTR_STUDIED;
         return 0;
     }
