@@ -5019,18 +5019,16 @@ public class SleuthkitCase {
 	
 	/**
 	 * Selects all of the rows in the tag_names table.
-	 * @return A list of TagName data transfer objects (DTOs).
+	 * @param [out] A list, possibly empty, of TagName data transfer objects (DTOs).
 	 * @throws TskCoreException 
 	 */
-	public List<TagName> getTagNames() throws TskCoreException {
+	public void getTagNames(List<TagName> tagNames) throws TskCoreException {
 		dbReadLock();
 		try {
-			ArrayList<TagName> tagNames = new ArrayList<TagName>(); 
 			ResultSet resultSet = selectAllFromTagNames.executeQuery();
 			while(resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
-			return tagNames;
 		}
 		catch(SQLException ex) {
 			throw new TskCoreException("Error selecting rows from tag_names table", ex);
