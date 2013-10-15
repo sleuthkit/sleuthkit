@@ -256,7 +256,7 @@ tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
  * Set the needed fields along with an initial run list for a data attribute.  To add more 
  * runs, use ...._add_run().
  *
- * @param a_fs File system the run comes from.
+ * @param a_fs_file File to add attribute to
  * @param a_fs_attr The data attribute to initialize and add the run to
  * @param a_data_run_new The set of runs to add (can be NULL).
  * @param name Name of the attribute (can be NULL)

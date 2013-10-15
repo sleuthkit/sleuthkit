@@ -57,18 +57,36 @@
 /* Define to 1 if you have the <libewf.h> header file. */
 #undef HAVE_LIBEWF_H
 
+/* Define to 1 if you have the `stdc++' library (-lstdc++). */
+#undef HAVE_LIBSTDC__
+
 /* Define to 1 if you have the `z' library (-lz). */
 #undef HAVE_LIBZ
+
+/* Define to 1 if you have the <list> header file. */
+#undef HAVE_LIST
 
 /* Define to 1 if `lstat' has the bug that it succeeds when given the
    zero-length file name argument. */
 #undef HAVE_LSTAT_EMPTY_STRING_BUG
+
+/* Define to 1 if you have the <map> header file. */
+#undef HAVE_MAP
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
+
+/* Define to 1 if you have the <queue> header file. */
+#undef HAVE_QUEUE
+
+/* Define to 1 if you have the <set> header file. */
+#undef HAVE_SET
+
+/* Define to 1 if you have the <stack> header file. */
+#undef HAVE_STACK
 
 /* Define to 1 if stdbool.h conforms to C99. */
 #undef HAVE_STDBOOL_H
@@ -78,6 +96,12 @@
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <streambuf> header file. */
+#undef HAVE_STREAMBUF
+
+/* Define to 1 if you have the <string> header file. */
+#undef HAVE_STRING
 
 /* Define to 1 if you have the <strings.h> header file. */
 #undef HAVE_STRINGS_H
@@ -114,6 +138,9 @@
 
 /* Define to 1 if you have the `vasprintf' function. */
 #undef HAVE_VASPRINTF
+
+/* Define to 1 if you have the <vector> header file. */
+#undef HAVE_VECTOR
 
 /* Define to 1 if you have the `vprintf' function. */
 #undef HAVE_VPRINTF

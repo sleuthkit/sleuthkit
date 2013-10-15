@@ -2515,19 +2515,27 @@ static uint8_t
         return 1;
     }
 
-    data_run = tsk_fs_attr_run_alloc();
-    if (data_run == NULL) {
-        tsk_fs_attr_run_free(data_run);
-        meta->attr_state = TSK_FS_META_ATTR_ERROR;
-        return 1;
+    if (meta->size == 0) {
+        data_run = NULL;
     }
+    else {
+        /* BC: I'm not entirely sure this is needed.  My guess is that
+         * this was done instead of maintaining the head of the list of 
+         * runs.  In theory, the tsk_fs_attr_add_run() method should handle
+         * the fillers. */
+        data_run = tsk_fs_attr_run_alloc();
+        if (data_run == NULL) {
+            tsk_fs_attr_run_free(data_run);
+            meta->attr_state = TSK_FS_META_ATTR_ERROR;
+            return 1;
+        }
 
-    data_run->offset = 0;
-    data_run->addr = 0;
-    data_run->len = (meta->size + fs->block_size - 1) / fs->block_size;
-    data_run->flags = TSK_FS_ATTR_RUN_FLAG_FILLER;
-
-    file_block_count = data_run->len;
+        data_run->offset = 0;
+        data_run->addr = 0;
+        data_run->len = (meta->size + fs->block_size - 1) / fs->block_size;
+        data_run->flags = TSK_FS_ATTR_RUN_FLAG_FILLER;
+    }
+    
 
     // initialize the data run
     if (tsk_fs_attr_set_run(file, attr, data_run, NULL,
@@ -2544,10 +2552,7 @@ static uint8_t
     }
 
 
-    /* Walk the version pointer back to the start adding single
-    * block runs as we go.
-    */
-
+    /* Get the version for the given object. */
     result = yaffscache_version_find_by_inode(yfs, meta->addr, &version, &obj);
     if (result != TSK_OK || version == NULL) {
         if (tsk_verbose)
@@ -2559,6 +2564,8 @@ static uint8_t
     if (tsk_verbose)
         yaffscache_object_dump(stderr, obj);
 
+    file_block_count = data_run->len;
+    /* Cycle through the chunks for this version of this object */
     curr = version->ycv_last_chunk;
     while (curr != NULL && curr->ycc_obj_id == obj->yco_obj_id) {
 
@@ -2574,7 +2581,9 @@ static uint8_t
             if (tsk_verbose)
                 tsk_fprintf(stderr, "yaffsfs_load_attrs: skipping chunk past end\n");
         }
+        /* We like this chunk */
         else {
+            // add it to our internal list
             if (tsk_list_add(&chunks_seen, curr->ycc_chunk_id)) {
                 meta->attr_state = TSK_FS_META_ATTR_ERROR;
                 tsk_list_free(chunks_seen);

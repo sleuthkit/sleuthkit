@@ -166,6 +166,7 @@ class TskDbSqlite {
     int open(bool);
     int close();
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone);
+    int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5);
     int addImageName(int64_t objId, char const *imgName, int sequence);
     int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
         int64_t & objId);
