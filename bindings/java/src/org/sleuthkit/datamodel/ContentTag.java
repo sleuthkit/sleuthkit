@@ -18,9 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * Instances of this class are data transfer objects (DTOs) that represent tags 
  * a user can apply to Content objects.
@@ -40,13 +37,13 @@ public class ContentTag extends Tag {
 
 			if ((beginByteOffset < 0) || (beginByteOffset > (content.getSize() - 1))) {				
 				StringBuilder message = new StringBuilder("beginByteOffset (= ").append(beginByteOffset).append(") is out of range 0 - ").append(content.getSize() - 1);
-				addContentPath(content, message);
+				addContentIdToErrorMessage(message);
 				throw new IllegalArgumentException(message.toString());			
 			}
 
 			if (endByteOffset < 0 || endByteOffset > content.getSize() - 1) {
 				StringBuilder message = new StringBuilder("endByteOffset (= ").append(beginByteOffset).append(") is out of range 0 - ").append(content.getSize() - 1);
-				addContentPath(content, message);
+				addContentIdToErrorMessage(message);
 				throw new IllegalArgumentException(message.toString());			
 			}
 
@@ -58,16 +55,8 @@ public class ContentTag extends Tag {
 			this.endByteOffset = endByteOffset;				
 	}
 	
-	private void addContentPath(Content content, StringBuilder errorMessage) {
-		try {
-			String path = content.getUniquePath();
-			if (!path.isEmpty()) {
-				errorMessage.append(" for ").append(path);
-			}
-		}
-		catch (TskCoreException ex) {
-			Logger.getLogger(ContentTag.class.getName()).log(Level.SEVERE, "failed to get unique path for Content object", ex);
-		}		
+	private void addContentIdToErrorMessage(StringBuilder errorMessage) {
+		errorMessage.append(" for content (obj_id = ").append(content.getId()).append(")");
 	}
 	
 	public Content getContent() {

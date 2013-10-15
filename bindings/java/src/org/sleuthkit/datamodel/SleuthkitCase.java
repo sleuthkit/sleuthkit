@@ -5166,7 +5166,7 @@ public class SleuthkitCase {
 			}						
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error getting rows from content_tags table (tag_name_id = " + tagName.getId() + ")", ex);
+			throw new TskCoreException("Error getting content_tags data (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
 			dbReadUnlock();
@@ -5230,13 +5230,15 @@ public class SleuthkitCase {
 			selectBlackboardArtifactTagsByTagName.setLong(1, tagName.getId());
 			ResultSet resultSet = selectBlackboardArtifactTagsByTagName.executeQuery();
 			while(resultSet.next()) {
-				BlackboardArtifactTag tag = new BlackboardArtifactTag(getBlackboardArtifact(resultSet.getLong("artifact_id")), tagName, resultSet.getString("comment")); 
+				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id"));
+				Content content = getContentById(artifact.getObjectID());
+				BlackboardArtifactTag tag = new BlackboardArtifactTag(artifact, content, tagName, resultSet.getString("comment")); 
 				tag.setId(resultSet.getLong("id"));
 				tags.add(tag);
 			}			
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error getting rows from backboard_artifact_tags table (tag_name_id = " + tagName.getId() + ")", ex);
+			throw new TskCoreException("Error getting backboard artifact tags tags data (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
 			dbReadUnlock();

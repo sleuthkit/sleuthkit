@@ -24,17 +24,27 @@ package org.sleuthkit.datamodel;
  */
 public class BlackboardArtifactTag extends Tag {
 	private final BlackboardArtifact artifact;
+	private final Content content;
 	
-	public BlackboardArtifactTag(BlackboardArtifact artifact, TagName type, String comment) {
+	public BlackboardArtifactTag(BlackboardArtifact artifact, Content content, TagName type, String comment) {
 		super(type, comment);
 		
 		if (null == artifact) {
 			throw new IllegalArgumentException("artifact is null");
 		}
 		this.artifact = artifact;
+
+		if (null == content) {
+			throw new IllegalArgumentException("content is null");
+		}
+		this.content = content;
 	}
 	
 	public BlackboardArtifact getArtifact() {
 		return artifact;
+	}
+	
+	public Content getContent() {
+		return content;
 	}
 }
