@@ -5,4 +5,5 @@ Changes to make once we are ready to do a backwards incompatible change.
 - Java SleuthkitCase.findFilesWhere should return AbstractFile liek findFiles
 - getUniquePath() should not throw exception. 
 - findFilesInImage should return an enum like TskDB methods differentiating if any data was found or not.
+- remove addImageInfo in db_Sqlite that does not take MD5, and/oor make it take IMG_INFO as argument
 
