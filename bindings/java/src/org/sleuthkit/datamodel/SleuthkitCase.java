@@ -594,6 +594,9 @@ public class SleuthkitCase {
 	 * @param path The path to the database
 	 * @return a handle for that database
 	 */
+	// BC: This is called by IngestModule
+	// Use jni.openNSRLDatabase instead
+	@Deprecated
 	public int setNSRLDatabase(String path) throws TskCoreException {
 		return this.caseHandle.setNSRLDatabase(path);
 	}
@@ -604,6 +607,8 @@ public class SleuthkitCase {
 	 * @param path The path to the database
 	 * @return a handle for that database
 	 */
+	// use jni.openHashDatabase instead
+	@Deprecated
 	public int addKnownBadDatabase(String path) throws TskCoreException {
 		return this.caseHandle.addKnownBadDatabase(path);
 	}
@@ -614,6 +619,8 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
+	// use jni.closeHashDatabases instead
+	@Deprecated
 	public void clearLookupDatabases() throws TskCoreException {
 		this.caseHandle.clearLookupDatabases();
 	}
@@ -4878,6 +4885,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
 	 */
+	@Deprecated
 	public TskData.FileKnown nsrlLookupMd5(String md5Hash) throws TskCoreException {
 		return SleuthkitJNI.nsrlHashLookup(md5Hash);
 	}
@@ -4891,6 +4899,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
 	 */
+	@Deprecated
 	public TskData.FileKnown knownBadLookupMd5(String md5Hash, int dbHandle) throws TskCoreException {
 		return SleuthkitJNI.knownBadHashLookup(md5Hash, dbHandle);
 	}
