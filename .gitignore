@@ -33,6 +33,7 @@
 /win32/*/Release/
 /win32/*/*.user
 win32/ipch
+win32/tsk-win.opensdf
 framework/msvcpp/framework/Debug/
 framework/msvcpp/framework/Release/
 framework/msvcpp/*/*.user
