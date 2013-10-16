@@ -160,7 +160,8 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
                     TSK_OFF_T offset)
 {
 	const size_t len = (hdb_info->hash_len)/2;
-	unsigned char hash[len+1];
+    uint8_t* hash = (uint8_t*) tsk_malloc(len+1);
+    
 	size_t count;
 
 	if (strlen(hvalue) != hdb_info->hash_len) {
@@ -171,13 +172,19 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
 		return 1;
 	}
 
-	for (count = 0; count < len; count++) {
-		sscanf(hvalue, "%2hhx", &(hash[count]));
+    // We use an intermediate short to be compatible with Microsoft's implementation of the scanf family format
+    short unsigned int binval;
+    for (count = 0; count < len; count++) {
+		int r = sscanf(hvalue, "%2hx", &binval);
+        hash[count] = (uint8_t) binval;
 		hvalue += 2 * sizeof(char);
 	}
 
-	return tsk_hdb_idxaddentry_bin(hdb_info, hash, len, offset);
+    uint8_t ret = tsk_hdb_idxaddentry_bin(hdb_info, hash, len, offset);
 
+    delete [] hash;
+
+	return ret;
 }
 
 /**
@@ -190,10 +197,10 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
  * @return 1 on error and 0 on success
  */
 uint8_t
-sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,
+sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen,
                     TSK_OFF_T offset)
 {
-    if (attempt(sqlite3_bind_blob(m_stmt, 1, hvalue, hlen, NULL),
+    if (attempt(sqlite3_bind_blob(m_stmt, 1, hvalue, hlen, SQLITE_TRANSIENT),
 		SQLITE_OK,
 		"Error binding binary blob: %s\n",
 		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
@@ -248,7 +255,7 @@ sqlite_v1_finalize(TSK_HDB_INFO * hdb_info)
 uint8_t
 sqlite_v1_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
 {
-    sqlite3 * sqlite;
+    sqlite3 * sqlite = NULL;
 
     if ((idx_info->idx_struct.idx_sqlite_v1 =
                 (TSK_IDX_SQLITE_V1 *) tsk_malloc
@@ -278,6 +285,7 @@ sqlite_v1_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
             sqlite3_close(sqlite);
             return 1;
         }
+
     }
 #else
     {
@@ -320,7 +328,7 @@ sqlite_v1_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
                    void *ptr)
 {
 	const size_t len = strlen(hash)/2;
-	uint8_t * hashBlob = (uint8_t *) malloc(len+1);
+	uint8_t * hashBlob = (uint8_t *) tsk_malloc(len+1);
 	const char * pos = hash;
 	size_t count = 0;
 
@@ -358,9 +366,11 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 	TSK_OFF_T offset;
     char * selectStmt;
 
+    tsk_take_lock(&hdb_info->lock);
 
 	/* Sanity check */
 	if ((hdb_info->hash_len)/2 != len) {
+        tsk_release_lock(&hdb_info->lock);
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_HDB_ARG);
 		tsk_error_set_errstr("hdb_lookup: Hash passed is different size than expected: %d vs %d",
@@ -374,6 +384,7 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
         } else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
             selectStmt = "SELECT sha1,database_offset from hashset_hashes where sha1=? limit 1";
         } else {
+            tsk_release_lock(&hdb_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
             tsk_error_set_errstr("Unknown hash type: %d\n", hdb_info->hash_type);
@@ -386,6 +397,7 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 		SQLITE_OK,
 		"Error binding binary blob: %s\n",
 		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+            tsk_release_lock(&hdb_info->lock);
 			return -1;
 	}
 
@@ -393,6 +405,7 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 		if ((flags & TSK_HDB_FLAG_QUICK)
 			|| (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
 				sqlite3_reset(m_stmt);
+                tsk_release_lock(&hdb_info->lock);
 				return 1;
 		} else {
 			for (i = 0; i < len; i++) {
@@ -405,6 +418,7 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 			sqlite3_reset(m_stmt);
 
 			if (hdb_info->getentry(hdb_info, hashbuf, offset, flags, action, ptr)) {
+                tsk_release_lock(&hdb_info->lock);
 				tsk_error_set_errstr2("hdb_lookup");
 				return -1;
 			}
@@ -413,6 +427,8 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 	}
 
 	sqlite3_reset(m_stmt);
+    
+    tsk_release_lock(&hdb_info->lock);
 
 	return 0;
 

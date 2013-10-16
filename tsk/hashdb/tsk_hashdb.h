@@ -146,9 +146,6 @@ extern "C" {
         TSK_HDB_ITYPE_ENUM index_type;   ///< Type of index
         TSK_TCHAR *idx_fname;   ///< Name of index file
         
-        /* lock protects idx_lbuf and lazy loading of hIdx */
-        tsk_lock_t lock;        ///< Lock for lazy loading and idx_lbuf
-
         union {
             TSK_IDX_SQLITE_V1 * idx_sqlite_v1;
             TSK_IDX_PLAIN_TXT * idx_plain_txt;
@@ -184,6 +181,9 @@ extern "C" {
 
         TSK_HDB_DBTYPE_ENUM db_type;    ///< Type of database
         TSK_IDX_INFO * idx_info;  ///< The index for the hdb info
+
+        /* lock protects idx_lbuf and lazy loading of idx_info */
+        tsk_lock_t lock;        ///< Lock for lazy loading and idx_lbuf
 
         uint8_t(*getentry) (TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);    ///< \internal Database-specific function to find entry at a given offset
         uint8_t(*makeindex) (TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index

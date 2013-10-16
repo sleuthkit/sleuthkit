@@ -111,7 +111,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
 
     if ((htype != TSK_HDB_HTYPE_MD5_ID)
             && (htype != TSK_HDB_HTYPE_SHA1_ID)) {
-        tsk_release_lock(&idx_info->lock);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
@@ -128,7 +127,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
         DWORD szLow, szHi;
 
         if (-1 == GetFileAttributes(idx_info->idx_fname)) {
-            tsk_release_lock(&idx_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
             tsk_error_set_errstr(
@@ -140,7 +138,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
         if ((hWin = CreateFile(idx_info->idx_fname, GENERIC_READ,
                         FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0)) ==
                 INVALID_HANDLE_VALUE) {
-            tsk_release_lock(&idx_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
@@ -151,7 +148,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
         idx_info->idx_struct.idx_plain_txt->hIdx =
             _fdopen(_open_osfhandle((intptr_t) hWin, _O_RDONLY), "r");
         if (idx_info->idx_struct.idx_plain_txt->hIdx == NULL) {
-            tsk_release_lock(&idx_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
@@ -161,7 +157,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
 
         szLow = GetFileSize(hWin, &szHi);
         if (szLow == 0xffffffff) {
-            tsk_release_lock(&idx_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
@@ -176,7 +171,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
     {
         struct stat sb;
         if (stat(idx_info->idx_fname, &sb) < 0) {
-            tsk_release_lock(&idx_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
             tsk_error_set_errstr(
@@ -187,7 +181,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
         idx_info->idx_struct.idx_plain_txt->idx_size = sb.st_size;
 
         if (NULL == (idx_info->idx_struct.idx_plain_txt->hIdx = fopen(idx_info->idx_fname, "r"))) {
-            tsk_release_lock(&idx_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
@@ -201,7 +194,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
 
     /* Do some testing on the first line */
     if (NULL == fgets(head, TSK_HDB_MAXLEN, idx_info->idx_struct.idx_plain_txt->hIdx)) {
-        tsk_release_lock(&idx_info->lock);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
         tsk_error_set_errstr(
@@ -211,7 +203,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
 
     if (strncmp(head, TSK_HDB_IDX_HEAD_TYPE_STR, strlen(TSK_HDB_IDX_HEAD_TYPE_STR))
         != 0) {
-        tsk_release_lock(&idx_info->lock);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
         tsk_error_set_errstr(
@@ -221,7 +212,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
 
     /* Do some testing on the second line */
     if (NULL == fgets(head2, TSK_HDB_MAXLEN, idx_info->idx_struct.idx_plain_txt->hIdx)) {
-        tsk_release_lock(&idx_info->lock);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
         tsk_error_set_errstr(
@@ -251,7 +241,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
     if (strcmp(ptr, TSK_HDB_DBTYPE_NSRL_STR) == 0) {
         if ((hdb_info->db_type != TSK_HDB_DBTYPE_NSRL_ID) &&
             (hdb_info->db_type != TSK_HDB_DBTYPE_IDXONLY_ID)) {
-            tsk_release_lock(&idx_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
             tsk_error_set_errstr(
@@ -263,7 +252,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
     else if (strcmp(ptr, TSK_HDB_DBTYPE_MD5SUM_STR) == 0) {
         if ((hdb_info->db_type != TSK_HDB_DBTYPE_MD5SUM_ID) &&
             (hdb_info->db_type != TSK_HDB_DBTYPE_IDXONLY_ID)) {
-            tsk_release_lock(&idx_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
             tsk_error_set_errstr(
@@ -275,7 +263,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
     else if (strcmp(ptr, TSK_HDB_DBTYPE_HK_STR) == 0) {
         if ((hdb_info->db_type != TSK_HDB_DBTYPE_HK_ID) &&
             (hdb_info->db_type != TSK_HDB_DBTYPE_IDXONLY_ID)) {
-            tsk_release_lock(&idx_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
             tsk_error_set_errstr(
@@ -285,7 +272,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
         }
     }
     else if (hdb_info->db_type != TSK_HDB_DBTYPE_IDXONLY_ID) {
-        tsk_release_lock(&idx_info->lock);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
         tsk_error_set_errstr(
@@ -297,7 +283,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
     /* Do some sanity checking */
     if (((idx_info->idx_struct.idx_plain_txt->idx_size - idx_info->idx_struct.idx_plain_txt->idx_off) % idx_info->idx_struct.idx_plain_txt->idx_llen) !=
         0) {
-        tsk_release_lock(&idx_info->lock);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
         tsk_error_set_errstr(
@@ -307,11 +292,8 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
 
     /* allocate a buffer for a row */
     if ((idx_info->idx_struct.idx_plain_txt->idx_lbuf = tsk_malloc(idx_info->idx_struct.idx_plain_txt->idx_llen + 1)) == NULL) {
-        tsk_release_lock(&idx_info->lock);
         return 1;
     }
-
-    tsk_release_lock(&idx_info->lock);
 
     return 0;
 }
@@ -394,14 +376,14 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
 
     // We have to lock access to idx_info->idx_struct.idx_plain_txt->idx_lbuf, but since we're in a loop,
     // I'm assuming one lock up front is better than many inside.
-    tsk_take_lock(&hdb_info->idx_info->lock);
+    tsk_take_lock(&hdb_info->lock);
 
     while (1) {
         TSK_OFF_T offset;
 
         /* If top and bottom are the same, it's not there */
         if (up == low) {
-            tsk_release_lock(&hdb_info->idx_info->lock);
+            tsk_release_lock(&hdb_info->lock);
             return 0;
         }
 
@@ -410,7 +392,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
 
         /* Sanity Check */
         if ((offset % hdb_info->idx_info->idx_struct.idx_plain_txt->idx_llen) != 0) {
-            tsk_release_lock(&hdb_info->idx_info->lock);
+            tsk_release_lock(&hdb_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
             tsk_error_set_errstr(
@@ -423,13 +405,13 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
 
         /* If we didn't move, then it's not there */
         if (poffset == offset) {
-            tsk_release_lock(&hdb_info->idx_info->lock);
+            tsk_release_lock(&hdb_info->lock);
             return 0;
         }
 
         /* Seek to the offset and read it */
         if (0 != fseeko(hdb_info->idx_info->idx_struct.idx_plain_txt->hIdx, offset, SEEK_SET)) {
-            tsk_release_lock(&hdb_info->idx_info->lock);
+            tsk_release_lock(&hdb_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READIDX);
             tsk_error_set_errstr(
@@ -442,10 +424,10 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
             fgets(hdb_info->idx_info->idx_struct.idx_plain_txt->idx_lbuf, (int) hdb_info->idx_info->idx_struct.idx_plain_txt->idx_llen + 1,
                   hdb_info->idx_info->idx_struct.idx_plain_txt->hIdx)) {
             if (feof(hdb_info->idx_info->idx_struct.idx_plain_txt->hIdx)) {
-                tsk_release_lock(&hdb_info->idx_info->lock);
+                tsk_release_lock(&hdb_info->lock);
                 return 0;
             }
-            tsk_release_lock(&hdb_info->idx_info->lock);
+            tsk_release_lock(&hdb_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READIDX);
             tsk_error_set_errstr(
@@ -457,7 +439,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
         /* Sanity Check */
         if ((strlen(hdb_info->idx_info->idx_struct.idx_plain_txt->idx_lbuf) < hdb_info->idx_info->idx_struct.idx_plain_txt->idx_llen) ||
             (hdb_info->idx_info->idx_struct.idx_plain_txt->idx_lbuf[hdb_info->hash_len] != '|')) {
-            tsk_release_lock(&hdb_info->idx_info->lock);
+            tsk_release_lock(&hdb_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
             tsk_error_set_errstr(
@@ -489,7 +471,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
 
             if ((flags & TSK_HDB_FLAG_QUICK)
                 || (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
-                tsk_release_lock(&hdb_info->idx_info->lock);
+                tsk_release_lock(&hdb_info->lock);
                 return 1;
             }
             else {
@@ -507,7 +489,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
                 /* Print the one that we found first */
                 if (hdb_info->
                     getentry(hdb_info, hash, db_off, flags, action, ptr)) {
-                    tsk_release_lock(&hdb_info->idx_info->lock);
+                    tsk_release_lock(&hdb_info->lock);
                     tsk_error_set_errstr2( "hdb_lookup");
                     return -1;
                 }
@@ -526,7 +508,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
                         break;
 
                     if (0 != fseeko(hdb_info->idx_info->idx_struct.idx_plain_txt->hIdx, tmpoff, SEEK_SET)) {
-                        tsk_release_lock(&hdb_info->idx_info->lock);
+                        tsk_release_lock(&hdb_info->lock);
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
                         tsk_error_set_errstr(
@@ -539,7 +521,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
                         fgets(hdb_info->idx_info->idx_struct.idx_plain_txt->idx_lbuf,
                               (int) hdb_info->idx_info->idx_struct.idx_plain_txt->idx_llen + 1,
                               hdb_info->idx_info->idx_struct.idx_plain_txt->hIdx)) {
-                        tsk_release_lock(&hdb_info->idx_info->lock);
+                        tsk_release_lock(&hdb_info->lock);
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
                         tsk_error_set_errstr(
@@ -549,7 +531,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
                     }
                     else if (strlen(hdb_info->idx_info->idx_struct.idx_plain_txt->idx_lbuf) <
                              hdb_info->idx_info->idx_struct.idx_plain_txt->idx_llen) {
-                        tsk_release_lock(&hdb_info->idx_info->lock);
+                        tsk_release_lock(&hdb_info->lock);
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
                         tsk_error_set_errstr(
@@ -577,7 +559,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
                     if (hdb_info->
                         getentry(hdb_info, hash, db_off, flags, action,
                                  ptr)) {
-                        tsk_release_lock(&hdb_info->idx_info->lock);
+                        tsk_release_lock(&hdb_info->lock);
                         return -1;
                     }
                     tmpoff -= hdb_info->idx_info->idx_struct.idx_plain_txt->idx_llen;
@@ -588,7 +570,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
                 while (tmpoff < up) {
 
                     if (0 != fseeko(hdb_info->idx_info->idx_struct.idx_plain_txt->hIdx, tmpoff, SEEK_SET)) {
-                        tsk_release_lock(&hdb_info->idx_info->lock);
+                        tsk_release_lock(&hdb_info->lock);
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
                         tsk_error_set_errstr(
@@ -603,7 +585,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
                               hdb_info->idx_info->idx_struct.idx_plain_txt->hIdx)) {
                         if (feof(hdb_info->idx_info->idx_struct.idx_plain_txt->hIdx))
                             break;
-                        tsk_release_lock(&hdb_info->idx_info->lock);
+                        tsk_release_lock(&hdb_info->lock);
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
                         tsk_error_set_errstr(
@@ -613,7 +595,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
                     }
                     else if (strlen(hdb_info->idx_info->idx_struct.idx_plain_txt->idx_lbuf) <
                              hdb_info->idx_info->idx_struct.idx_plain_txt->idx_llen) {
-                        tsk_release_lock(&hdb_info->idx_info->lock);
+                        tsk_release_lock(&hdb_info->lock);
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
                         tsk_error_set_errstr(
@@ -639,7 +621,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
                     if (hdb_info->
                         getentry(hdb_info, hash, db_off, flags, action,
                                  ptr)) {
-                        tsk_release_lock(&hdb_info->idx_info->lock);
+                        tsk_release_lock(&hdb_info->lock);
                         return -1;
                     }
 
@@ -650,7 +632,7 @@ plain_txt_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
         }
         poffset = offset;
     }
-    tsk_release_lock(&hdb_info->idx_info->lock);
+    tsk_release_lock(&hdb_info->lock);
 
     return wasFound;
 }
