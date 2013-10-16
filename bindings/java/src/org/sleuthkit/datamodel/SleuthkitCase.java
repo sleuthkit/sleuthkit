@@ -310,7 +310,7 @@ public class SleuthkitCase {
 		
 		selectMaxIdFromBlackboardArtifactTags = con.prepareStatement("SELECT MAX(id) FROM blackboard_artifact_tags");				
 		
-		deleteFromBlackboardArtifactTags  = con.prepareStatement("DELETE FROM content_tags WHERE id = ?");
+		deleteFromBlackboardArtifactTags  = con.prepareStatement("DELETE FROM blackboard_artifact_tags WHERE id = ?");
 
 		selectBlackboardArtifactTagsByTagName = con.prepareStatement("SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?");
 	}
@@ -5205,7 +5205,7 @@ public class SleuthkitCase {
 	public void deleteBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
 		dbWriteLock();		
 		try {			
-			// DELETE FROM content_tags WHERE id = ?
+			// DELETE FROM blackboard_artifact_tags WHERE id = ?
 			deleteFromBlackboardArtifactTags.clearParameters(); 			
 			deleteFromBlackboardArtifactTags.setLong(1, tag.getArtifact().getArtifactID());
 			deleteFromBlackboardArtifactTags.executeUpdate();
