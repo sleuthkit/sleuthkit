@@ -720,11 +720,14 @@ public class SleuthkitJNI {
 	
 	/**
 	 * Adds a hash value to a hash database. 
-	 * @param hash STring of hash value to add
+	 * @param filename Name of file (can be null)
+	 * @param md5 Text of MD5 hash (can be null)
+	 * @param sha1 Text of SHA1 hash (can be null)
+	 * @param sha256 Text of SHA256 hash (can be null)
 	 * @param dbHandle Handle to DB
 	 * @throws TskCoreException 
 	 */
-	public static void addToHashDatabase(String hash, int dbHandle) throws TskCoreException {
+	public static void addToHashDatabase(String filename, String md5, String sha1, String sha256, int dbHandle) throws TskCoreException {
 		// @@@ TODO
 	}
 
