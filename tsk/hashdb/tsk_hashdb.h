@@ -76,7 +76,7 @@ extern "C" {
     * Hash Index types
     */
     enum TSK_HDB_ITYPE_ENUM {
-        TSK_HDB_ITYPE_PLAIN_TXT = 1,     ///< Plain text format
+        TSK_HDB_ITYPE_BINSRCH = 1,     ///< Original binary search text format
         TSK_HDB_ITYPE_SQLITE_V1 = 2    ///< Sqlite database format
     };
     typedef enum TSK_HDB_ITYPE_ENUM TSK_HDB_ITYPE_ENUM;
@@ -125,9 +125,9 @@ extern "C" {
     typedef struct TSK_IDX_SQLITE_V1 TSK_IDX_SQLITE_V1;
 
     /**
-     * Holds information about a plain text index
+     * Holds information about a plain text / binary search index
      */
-    struct TSK_IDX_PLAIN_TXT {
+    struct TSK_IDX_BINSRCH {
         FILE *hIdx;             ///< File handle to index (only open during lookups)
         FILE *hIdxTmp;          ///< File handle to temp (unsorted) index file (only open during index creation)
         TSK_TCHAR *uns_fname;   ///< Name of unsorted index file
@@ -137,7 +137,7 @@ extern "C" {
         size_t idx_llen;        ///< Length of each line in index
         char *idx_lbuf;         ///< Buffer to hold a line from the index  (r/w shared - lock) 
     };
-    typedef struct TSK_IDX_PLAIN_TXT TSK_IDX_PLAIN_TXT;
+    typedef struct TSK_IDX_BINSRCH TSK_IDX_BINSRCH;
 
     /**
      * Holds information about a hash index. Created by idx_open.
@@ -148,7 +148,7 @@ extern "C" {
         
         union {
             TSK_IDX_SQLITE_V1 * idx_sqlite_v1;
-            TSK_IDX_PLAIN_TXT * idx_plain_txt;
+            TSK_IDX_BINSRCH * idx_binsrch;
         }idx_struct;
 
         uint8_t(*open) (TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);

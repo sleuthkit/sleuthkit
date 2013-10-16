@@ -155,17 +155,17 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             return NULL;
         }
         else if (strncmp(header,
-                           IDX_PLAIN_TXT_HEADER,
-                           strlen(IDX_PLAIN_TXT_HEADER)) == 0) {
-            idx_info->index_type = TSK_HDB_ITYPE_PLAIN_TXT;
-            idx_info->open = plain_txt_open;
-            idx_info->close = plain_txt_close;
-            idx_info->initialize = plain_txt_initialize;
-            idx_info->addentry = plain_txt_addentry;
-            idx_info->addentry_bin = plain_txt_addentry_bin;
-            idx_info->finalize = plain_txt_finalize;
-            idx_info->lookup_str = plain_txt_lookup_str;
-            idx_info->lookup_raw = plain_txt_lookup_raw;
+                           IDX_BINSRCH_HEADER,
+                           strlen(IDX_BINSRCH_HEADER)) == 0) {
+            idx_info->index_type = TSK_HDB_ITYPE_BINSRCH;
+            idx_info->open = binsrch_open;
+            idx_info->close = binsrch_close;
+            idx_info->initialize = binsrch_initialize;
+            idx_info->addentry = binsrch_addentry;
+            idx_info->addentry_bin = binsrch_addentry_bin;
+            idx_info->finalize = binsrch_finalize;
+            idx_info->lookup_str = binsrch_lookup_str;
+            idx_info->lookup_raw = binsrch_lookup_raw;
         }
         else {
             tsk_error_reset();
