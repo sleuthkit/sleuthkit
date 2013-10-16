@@ -5129,7 +5129,8 @@ public class SleuthkitCase {
 	}
 	
 	/*
-	 * Deletes a row corresponding to a ContentTag from the content_tags table.
+	 * Deletes a row from the content_tags table in the case database.
+	 * @param tag A ContentTag data transfer object (DTO) representing the row to delete.
 	 * @throws TskCoreException 
 	 */
 	public void deleteContentTag(ContentTag tag) throws TskCoreException {
@@ -5137,11 +5138,11 @@ public class SleuthkitCase {
 		try {			
 			// DELETE FROM content_tags WHERE id = ?		
 			deleteFromContentTags.clearParameters(); 			
-			deleteFromContentTags.setLong(1, tag.getContent().getId());
+			deleteFromContentTags.setLong(1, tag.getId());
 			deleteFromContentTags.executeUpdate();
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error deleting row from content_tags table (obj_id = " + tag.getContent().getId() + ")", ex);
+			throw new TskCoreException("Error deleting row from content_tags table (id = " + tag.getId() + ")", ex);
 		}
 		finally {
 			dbWriteUnlock();
@@ -5199,7 +5200,8 @@ public class SleuthkitCase {
 	}	
 
 	/*
-	 * Deletes a row corresponding to a BlackboardArtifactTag from the blackboard_artifact_tags table.
+	 * Deletes a row from the blackboard_artifact_tags table in the case database.
+	 * @param tag A BlackboardArtifactTag data transfer object (DTO) representing the row to delete.
 	 * @throws TskCoreException 
 	 */
 	public void deleteBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
@@ -5207,11 +5209,11 @@ public class SleuthkitCase {
 		try {			
 			// DELETE FROM blackboard_artifact_tags WHERE id = ?
 			deleteFromBlackboardArtifactTags.clearParameters(); 			
-			deleteFromBlackboardArtifactTags.setLong(1, tag.getArtifact().getArtifactID());
+			deleteFromBlackboardArtifactTags.setLong(1, tag.getId());
 			deleteFromBlackboardArtifactTags.executeUpdate();
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (artifact_id = " +tag.getArtifact().getArtifactID() + ")", ex);
+			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (id = " +tag.getId() + ")", ex);
 		}
 		finally {
 			dbWriteUnlock();
