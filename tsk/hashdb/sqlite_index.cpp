@@ -85,7 +85,7 @@ static uint8_t tsk_hdb_commit_transaction(TSK_IDX_INFO * idx_info) {
 	return attempt_exec_nocallback("COMMIT", "Error committing transaction %s\n", idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
 }
 
-/** Initialize the TSK hash DB index file.
+/** Initialize the TSK hash DB index file by creating tables, etc..
  *
  * @param hdb_info Hash database state structure
  * @param htype String of index type to create
@@ -125,11 +125,12 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 	}
 
 	if (attempt_exec_nocallback
-		("CREATE TABLE hashset_hashes (md5 BINARY(16), sha1 BINARY(20), database_offset INTEGER);",
+		("CREATE TABLE hashset_hashes (md5 BINARY(16), sha1 BINARY(20), sha256 BINARY(32), database_offset INTEGER);",
 		"Error creating hashset_hashes table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 			return 1;
 	}
 
+    // @@@ This seems like the wrong long-term place for this because we could want to insert even if we don't initialize a new DB
 	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
 		insertStmt = "INSERT INTO hashset_hashes (md5, database_offset) VALUES (?, ?)";
 	} else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
@@ -147,8 +148,9 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 	return 0;
 }
 
+
 /**
- * Add a string entry to the intermediate index file.
+ * Add a string representation of a hash value to the index.
  *
  * @param hdb_info Hash database state info
  * @param hvalue String of hash value to add
@@ -188,7 +190,7 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
 }
 
 /**
- * Add a binary entry to the intermediate index file.
+ * Add a binary representation of a hash value into the index.
  *
  * @param hdb_info Hash database state info
  * @param hvalue Array of integers of hash value to add
@@ -217,8 +219,7 @@ sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen,
 }
 
 /**
- * Finalize index creation process by sorting the index and removing the
- * intermediate temp file.
+ * Finalize index creation process
  *
  * @param hdb_info Hash database state info structure.
  * @return 1 on error and 0 on success
@@ -244,11 +245,11 @@ sqlite_v1_finalize(TSK_HDB_INFO * hdb_info)
 
 
 /** \internal
- * Setup the internal variables to read an index. This
+ * Setup the internal variables to read an index or database. This
  * opens the index and sets the needed size information.
  *
  * @param hdb_info Hash database to analyze
- * @param hash The hash type that was used to make the index.
+ * @param htype The hash type that was used to make the index.
  *
  * @return 1 on error and 0 on success
  */

@@ -67,6 +67,11 @@ extern "C" {
 #define IDX_SQLITE_V1_HEADER "SQLite format 3"
 
 
+    extern uint8_t
+        hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create);
+
+    extern void tsk_idx_close(TSK_IDX_INFO * idx_info);
+
     extern uint8_t tsk_hdb_idxinitialize(TSK_HDB_INFO *,
                                          TSK_TCHAR * dbname);
     extern uint8_t tsk_hdb_idxaddentry(TSK_HDB_INFO *, char *hvalue,

@@ -14,7 +14,8 @@
 
 /**
  * \file sqlite_index.c
- * Contains functions for creating a SQLite format hash index
+ * Contains functions for creating the original binary search / ASCII index
+ * and looking up values in it. 
  */
 
 /** Initialize the TSK hash DB index file. This creates the intermediate file,
@@ -64,6 +65,7 @@ plain_txt_addentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,
         TSK_OFF_T offset)
 {
     // Creating plain text indices is unsupported
+    // @@@ ERROR NEEDED HERE
     return 1;
 }
 
@@ -78,6 +80,7 @@ plain_txt_addentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,
 plain_txt_finalize(TSK_HDB_INFO * hdb_info)
 {
     // Creating plain text indices is unsupported
+    // @@@ ERROR NEEDED HERE
     return 1;
 }
 
@@ -297,11 +300,6 @@ plain_txt_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
 
     return 0;
 }
-
-
-
-
-
 
 
 

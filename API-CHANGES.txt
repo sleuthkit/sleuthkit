@@ -4,3 +4,4 @@ Changes to make once we are ready to do a backwards incompatible change.
 - Java SleuthkitCase.addArtifactType shoudl return different if artifact already exists or getArtifactId should....
 - Java SleuthkitCase.findFilesWhere should return AbstractFile liek findFiles
 - getUniquePath() should not throw exception. 
+- hashdb idx_open (and others) shoudl have htype be enum

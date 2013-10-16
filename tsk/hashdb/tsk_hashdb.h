@@ -96,12 +96,12 @@ extern "C" {
 
 
     /* String versions of DB types */
-#define TSK_HDB_DBTYPE_NSRL_STR		        "nsrl"  ///< NSRL String name
-#define TSK_HDB_DBTYPE_NSRL_MD5_STR		"nsrl-md5"      ///< NSRL md5 string name
-#define TSK_HDB_DBTYPE_NSRL_SHA1_STR		"nsrl-sha1"     ///< NSRL SHA1 string name
-#define TSK_HDB_DBTYPE_MD5SUM_STR		"md5sum"        ///< md5sum db string n ame
-#define TSK_HDB_DBTYPE_HK_STR			"hk"    ///< hash keeper string name
-#define TSK_HDB_DBTYPE_ENCASE_STR			"encase"    ///< encase string name
+#define TSK_HDB_DBTYPE_NSRL_STR		        "nsrl"  ///< NSRL database 
+#define TSK_HDB_DBTYPE_NSRL_MD5_STR		"nsrl-md5"      ///< NSRL database with MD5 index
+#define TSK_HDB_DBTYPE_NSRL_SHA1_STR		"nsrl-sha1"     ///< NSRL database with SHA1 index
+#define TSK_HDB_DBTYPE_MD5SUM_STR		"md5sum"        ///< md5sum database
+#define TSK_HDB_DBTYPE_HK_STR			"hk"    ///< hash keeper index
+#define TSK_HDB_DBTYPE_ENCASE_STR			"encase"    ///< encase index
     /// List of supported data base types
 #define TSK_HDB_DBTYPE_SUPPORT_STR		"nsrl-md5, nsrl-sha1, md5sum, encase, hk"
 
