@@ -2219,11 +2219,12 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Check if the database schema is version 3.
+	 * Get the database version.
+	 * 
 	 * @return
 	 * @throws TskCoreException 
 	 */
-	private boolean isDbSchemaV3() throws TskCoreException {
+	private int getDbVersion() throws TskCoreException {
 		int ver = 0;
 		dbReadLock();
 		try {
@@ -2232,7 +2233,7 @@ public class SleuthkitCase {
 				ver = rs.getInt("schema_ver");
 			}
 			rs.close();
-			return ver == 3;
+			return ver;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
 		} finally {
@@ -4555,7 +4556,7 @@ public class SleuthkitCase {
 	 * @return the image size, or -1 if it doesn't have one stored in the database.
 	 */
 	public long getImageSize(Image img) throws TskCoreException {
-		if (isDbSchemaV3() == false) {
+		if (getDbVersion() != 3) {
 			return -1;
 		}
 		dbReadLock();
@@ -4610,7 +4611,8 @@ public class SleuthkitCase {
 	 */
 	public boolean imageHasHash(Image img) {
 		try {
-			return isDbSchemaV3() && (img.getType() == TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_EWF_EWF);
+			return (getDbVersion() == 3) && 
+					(img.getType() == TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_EWF_EWF);
 		} catch (TskCoreException ex) {
 			logger.log(Level.SEVERE, "Core exception while attempting to check if image has a hash", ex);
 			return false;
