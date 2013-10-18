@@ -119,8 +119,10 @@ public class SleuthkitCase {
 	private PreparedStatement insertIntoBlackboardArtifactTags;
 	private PreparedStatement selectMaxIdFromBlackboardArtifactTags;
 	private PreparedStatement deleteFromBlackboardArtifactTags;
+	private PreparedStatement selectBlackboardArtifactTagsCountByTagName;
 	private PreparedStatement selectBlackboardArtifactTagsByTagName;
 	private PreparedStatement selectBlackboardArtifactTagsByArtifact;
+	private PreparedStatement selectContentTagsCountByTagName;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
 
@@ -305,8 +307,10 @@ public class SleuthkitCase {
 		
 		deleteFromContentTags = con.prepareStatement("DELETE FROM content_tags WHERE tag_id = ?");
 		
+		selectContentTagsCountByTagName = con.prepareStatement("SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?");
+				
 		selectContentTagsByTagName = con.prepareStatement("SELECT * FROM content_tags WHERE tag_name_id = ?");
-
+		
 		insertIntoBlackboardArtifactTags = con.prepareStatement("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment) VALUES (?, ?, ?)");
 		
 		selectMaxIdFromBlackboardArtifactTags = con.prepareStatement("SELECT MAX(tag_id) FROM blackboard_artifact_tags");				
@@ -316,6 +320,8 @@ public class SleuthkitCase {
 		selectBlackboardArtifactTagsByTagName = con.prepareStatement("SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?");
 		
 		selectBlackboardArtifactTagsByArtifact = con.prepareStatement("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?");
+				
+		selectBlackboardArtifactTagsCountByTagName = con.prepareStatement("SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?");;		
 	}
 
 	private void closeStatement(PreparedStatement statement) {
@@ -372,10 +378,12 @@ public class SleuthkitCase {
 		closeStatement(insertIntoContentTags);
 		closeStatement(selectMaxIdFromContentTags);
 		closeStatement(deleteFromContentTags);
+		closeStatement(selectContentTagsCountByTagName);
 		closeStatement(selectContentTagsByTagName);
 		closeStatement(insertIntoBlackboardArtifactTags);
 		closeStatement(selectMaxIdFromBlackboardArtifactTags);	
 		closeStatement(deleteFromBlackboardArtifactTags);
+		closeStatement(selectBlackboardArtifactTagsCountByTagName);
 		closeStatement(selectBlackboardArtifactTagsByTagName);
 		closeStatement(selectBlackboardArtifactTagsByArtifact);
 	}
@@ -5152,6 +5160,32 @@ public class SleuthkitCase {
 			dbWriteUnlock();
 		}	
 	}
+
+	/**
+	 * Gets a count of all of the content tags with a specified tag name.
+	 * @throws TskCoreException 
+	 */
+	public long getContentTagsCountByTagName(TagName tagName) throws TskCoreException {
+		dbReadLock();		
+		try {
+			// SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?
+			selectContentTagsCountByTagName.clearParameters();
+			selectContentTagsCountByTagName.setLong(1, tagName.getId());
+			ResultSet resultSet = selectContentTagsCountByTagName.executeQuery();
+			if (resultSet.next()) {
+				return resultSet.getLong(1);
+			} 
+			else {
+				throw new TskCoreException("Error getting content_tags count for tag name (tag_name_id = " + tagName.getId() + ")");
+			}
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error getting content_tags count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}			
+	}
 	
 	/**
 	 * Gets all of the content tags with a specified tag name.
@@ -5177,7 +5211,7 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}			
 	}
-	
+
 	/**
 	 * Inserts a row corresponding to a BlackboardArtifactTag into the blackboard_artifact_tags table.
 	 * @throws TskCoreException 
@@ -5224,6 +5258,32 @@ public class SleuthkitCase {
 		}	
 	}
 	
+	/**
+	 * Gets a count of all of the blackboard artifact tags with a specified tag name.
+	 * @throws TskCoreException 
+	 */
+	public long getBlackboardArtifactTagsCountByTagName(TagName tagName) throws TskCoreException {
+		dbReadLock();		
+		try {
+			// SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?
+			selectBlackboardArtifactTagsCountByTagName.clearParameters();
+			selectBlackboardArtifactTagsCountByTagName.setLong(1, tagName.getId());
+			ResultSet resultSet = selectBlackboardArtifactTagsCountByTagName.executeQuery();
+			if (resultSet.next()) {
+				return resultSet.getLong(1);
+			} 
+			else {
+				throw new TskCoreException("Error getting blackboard_artifact_tags row count for tag name (tag_name_id = " + tagName.getId() + ")");
+			}
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error getting blackboard artifact_content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}			
+	}
+		
 	/**
 	 * Gets all of the blackboard artifact tags with a specified tag name.
 	 * @throws TskCoreException 
