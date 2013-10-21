@@ -121,9 +121,12 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
     }
 
 
-    // Verify the new SQLITE index exists, get its size, and open it for header reading
+    // Verify the new SQLite index exists, get its size, and open it for header reading
+    
+    // Set SQLite index filename
     TSNPRINTF(idx_info->idx_fname, flen,
             _TSK_T("%s.kdb"), hdb_info->db_fname);
+    
     if (((idx = tsk_idx_open_file(idx_info->idx_fname)) == NULL) && (create == 0)) {
 
         // Try opening an old format index file

@@ -12,7 +12,7 @@
 
 
 /**
- * \file tm_lookup.c
+ * \file tm_lookup.cpp
  * Contains the generic hash database lookup code.
  */
 

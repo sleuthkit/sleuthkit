@@ -25,7 +25,7 @@
  * @param db_file Path to database (even if only an index exists, in which case db path should still be listed).
  * @param flags Flags for opening the database.  
  *
- * @return Poiner to hash database state structure or NULL on error
+ * @return Pointer to hash database state structure or NULL on error
  */
 TSK_HDB_INFO *
 tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
