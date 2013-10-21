@@ -28,6 +28,10 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 --*/
 
 #include <vector>
+#include <map>
+#include <algorithm>
+#include <string>
+#include <set>
 
 #include "tsk_fs_i.h"
 #include "tsk_yaffs.h"
@@ -630,6 +634,7 @@ static void
 static void
     yaffscache_chunks_free(YAFFSFS_INFO *yfs)
 {
+    // Free the YaffsCacheChunks in each ChunkGroup
     std::map<unsigned int,YaffsCacheChunkGroup>::iterator iter;
     for( iter = yfs->chunkMap->begin(); iter != yfs->chunkMap->end(); ++iter ) {
         YaffsCacheChunk *chunk = yfs->chunkMap->operator[](iter->first).cache_chunks_head;
@@ -639,6 +644,11 @@ static void
             free(to_free);
         }
     }
+
+    // Free the map
+    yfs->chunkMap->clear();
+    delete yfs->chunkMap;
+
 }
 
 
@@ -648,6 +658,212 @@ static void
 *
 *
 */
+
+/* Function to parse config file
+ *
+ * @param img_info Image info for this image
+ * @param map<string, int> Stores values from config file indexed on parameter name
+ * @returns YAFFS_CONFIG_STATUS One of 	YAFFS_CONFIG_OK, YAFFS_CONFIG_FILE_NOT_FOUND, or YAFFS_CONFIG_ERROR
+ */
+static YAFFS_CONFIG_STATUS
+yaffs_load_config_file(TSK_IMG_INFO * a_img_info, std::map<std::string, std::string> & results){
+    const TSK_TCHAR ** image_names;
+    int num_imgs;
+    size_t config_file_name_len;
+    TSK_TCHAR * config_file_name;
+    FILE* config_file;
+    char buf[1001];
+
+    // Get the image name(s)
+    image_names = tsk_img_get_names(a_img_info, &num_imgs);
+    if(num_imgs < 1){
+        return YAFFS_CONFIG_ERROR;
+    }
+
+    // Construct the name of the config file from the first image name
+    config_file_name_len = TSTRLEN(image_names[0]);
+    config_file_name_len += TSTRLEN(YAFFS_CONFIG_FILE_SUFFIX);
+    config_file_name = (TSK_TCHAR *) tsk_malloc(sizeof(TSK_TCHAR) * (config_file_name_len + 1));
+
+    TSTRNCPY(config_file_name, image_names[0], TSTRLEN(image_names[0]) + 1);
+    TSTRNCAT(config_file_name, YAFFS_CONFIG_FILE_SUFFIX, TSTRLEN(YAFFS_CONFIG_FILE_SUFFIX) + 1);
+
+#ifdef TSK_WIN32
+    HANDLE hWin;
+
+    if ((hWin = CreateFile(config_file_name, GENERIC_READ,
+            FILE_SHARE_READ, 0, OPEN_EXISTING, 0,
+            0)) == INVALID_HANDLE_VALUE) {
+
+        // For the moment, assume that the file just doesn't exist, which isn't an error
+        free(config_file_name);
+        return YAFFS_CONFIG_FILE_NOT_FOUND;
+    }
+    config_file = _fdopen(_open_osfhandle((intptr_t) hWin, _O_RDONLY), "r");
+    if (config_file == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS);
+        tsk_error_set_errstr(
+                    "yaffs_load_config: Error converting Windows handle to C handle");
+        free(config_file_name);
+        CloseHandle(hWin);
+        return YAFFS_CONFIG_ERROR;
+    }
+#else
+    if (NULL == (config_file = fopen(config_file_name, "r"))) {
+        free(config_file_name);
+        return YAFFS_CONFIG_FILE_NOT_FOUND;
+    }
+#endif
+
+    while(fgets(buf, 1000, config_file) != NULL){
+
+        // Is it a comment?
+        if((buf[0] == '#') || (buf[0] == ';')){
+            continue;
+        }
+
+        // Is there a '=' ?
+        if(strchr(buf, '=') == NULL){
+            continue;
+        }
+
+        // Copy to strings while removing whitespace and converting to lower case
+        std::string paramName("");
+        std::string paramVal("");
+        
+        const char * paramNamePtr = strtok(buf, "=");
+        while(*paramNamePtr != '\0'){
+            if(! isspace((char)(*paramNamePtr))){
+                paramName += tolower((char)(*paramNamePtr));
+            }
+            paramNamePtr++;
+        }
+    
+        const char * paramValPtr = strtok(NULL, "=");
+        while(*paramValPtr != '\0'){
+            if(! isspace(*paramValPtr)){
+                paramVal += tolower((char)(*paramValPtr));
+            }
+            paramValPtr++;
+        }
+        
+        // Make sure this parameter is not already in the map
+        if(results.find(paramName) != results.end()){
+            // Duplicate parameter - return an error
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS);
+            tsk_error_set_errstr(
+                        "yaffs_load_config: Duplicate parameter name in config file (\"%s\"). %s", paramName.c_str(), YAFFS_HELP_MESSAGE);
+            fclose(config_file);
+            free(config_file_name);
+            return YAFFS_CONFIG_ERROR;
+        }
+
+        // Add this entry to the map
+        results[paramName] = paramVal;
+    }
+
+    fclose(config_file);
+    free(config_file_name);
+    return YAFFS_CONFIG_OK;
+}
+
+/*
+ * Helper function for yaffs_validate_config
+ * Tests that a string consists only of digits and has at least one digit
+ * (Can modify later if we want negative fields to be valid)
+ *
+ * @param numStr String to test
+ * @returns 1 on error, 0 on success
+ */
+static int
+yaffs_validate_integer_field(std::string numStr){
+    unsigned int i;
+
+    // Test if empty
+    if(numStr.length() == 0){
+        return 1;
+    }
+
+    // Test each character
+    for(i = 0;i < numStr.length();i++){
+        if(! isdigit(numStr[i])){
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+/*
+ * Function to validate the contents of the config file
+ * Currently testing:
+ *  All YAFFS_CONFIG fields should be integers (if they exist)
+ *  Either need all three of YAFFS_CONFIG_SEQ_NUM_STR, YAFFS_CONFIG_OBJ_ID_STR, YAFFS_CONFIG_CHUNK_ID_STR
+ *   or none of them
+ *
+ * @param paramMap Holds mapping of parameter name to parameter value
+ * @returns 1 on error (invalid parameters), 0 on success
+ */
+static int
+yaffs_validate_config_file(std::map<std::string, std::string> & paramMap){
+    int offset_field_count;
+
+    // Make a list of all fields to test
+    std::set<std::string> integerParams;
+    integerParams.insert(YAFFS_CONFIG_SEQ_NUM_STR);
+    integerParams.insert(YAFFS_CONFIG_OBJ_ID_STR);
+    integerParams.insert(YAFFS_CONFIG_CHUNK_ID_STR);
+    integerParams.insert(YAFFS_CONFIG_PAGE_SIZE_STR);
+    integerParams.insert(YAFFS_CONFIG_SPARE_SIZE_STR);
+    integerParams.insert(YAFFS_CONFIG_CHUNKS_PER_BLOCK_STR);
+
+    // If the parameter is set, verify that the value is an int
+    for(std::set<std::string>::iterator it = integerParams.begin();it != integerParams.end();it++){
+        if((paramMap.find(*it) != paramMap.end()) && 
+            (0 != yaffs_validate_integer_field(paramMap[*it]))){
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS);
+            tsk_error_set_errstr(
+                        "yaffs_validate_config_file: Empty or non-integer value for Yaffs2 parameter \"%s\". %s", (*it).c_str(), YAFFS_HELP_MESSAGE);
+            return 1;
+        }
+    }
+
+    // Check that we have all three spare offset fields, or none of the three
+    offset_field_count = 0;
+    if(paramMap.find(YAFFS_CONFIG_SEQ_NUM_STR) != paramMap.end()){
+        offset_field_count++;
+    }
+    if(paramMap.find(YAFFS_CONFIG_OBJ_ID_STR) != paramMap.end()){
+        offset_field_count++;
+    }
+    if(paramMap.find(YAFFS_CONFIG_CHUNK_ID_STR) != paramMap.end()){
+        offset_field_count++;
+    }
+
+    if(! ((offset_field_count == 0) || (offset_field_count == 3))){
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS);
+            tsk_error_set_errstr(
+                        "yaffs_validate_config_file: Require either all three spare offset fields or none. %s", YAFFS_HELP_MESSAGE);
+            return 1;
+    }
+
+    // Make sure there aren't any unexpected fields present
+    for(std::map<std::string, std::string>::iterator it = paramMap.begin(); it != paramMap.end();it++){
+        if(integerParams.find(it->first) == integerParams.end()){
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS);
+            tsk_error_set_errstr(
+                        "yaffs_validate_config_file: Found unexpected field in config file (\"%s\"). %s", it->first.c_str(), YAFFS_HELP_MESSAGE);
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 /*
 * Function to attempt to determine the layout of the yaffs spare area.
@@ -666,6 +882,8 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
     unsigned int chunksToTest = 10;  // Number of chunks to test in each block 
     unsigned int minChunksRead = 10; // Minimum number of chunks we require to run the test (we might not get the full number we want to test for a very small file)
 
+    unsigned int chunkSize = yfs->page_size + yfs->spare_size;
+    unsigned int blockSize = yfs->chunks_per_block * chunkSize;
 
     TSK_FS_INFO *fs = &(yfs->fs_info);
     unsigned int cnt;
@@ -677,6 +895,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
     unsigned int currentOffset;
 
     unsigned char * allSpares;
+    unsigned int allSparesLength;
     TSK_OFF_T offset;
     TSK_OFF_T maxBlocks;
 
@@ -696,19 +915,23 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
     int thisChunkBase;
     int lastChunkBase;
 
+    // The spare area needs to be at least 16 bytes to run the test
+    if(yfs->spare_size < 16){
+        if(tsk_verbose && (! yfs->autoDetect)){
+            tsk_fprintf(stderr,
+                "yaffs_initialize_spare_format failed - given spare size (%d) is not large enough to contain needed fields\n", yfs->spare_size);
+        }
+        return TSK_ERR;
+    }
+
     if ((spareBuffer = (unsigned char*) tsk_malloc(yfs->spare_size)) == NULL) {
         return TSK_ERR;
     }
 
-    if ((allSpares = (unsigned char*) tsk_malloc(yfs->spare_size * blocksToTest * chunksToTest)) == NULL) {
+    allSparesLength = yfs->spare_size * blocksToTest * chunksToTest;
+    if ((allSpares = (unsigned char*) tsk_malloc(allSparesLength)) == NULL) {
         free(spareBuffer);
         return TSK_ERR;
-    }
-
-    // Initialize the array containing the spares so that uninitialized entries won't cause failure if we don't have enough
-    // data to fill it.
-    for(i = 0;i < yfs->spare_size * blocksToTest * chunksToTest;i++){
-        allSpares[i] = 0x01;
     }
 
     // Initialize the pointers to one of the configurations we've seen (thought these defaults should not get used)
@@ -727,7 +950,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
     //  observed exception.
 
     // Calculate the number of blocks in the image
-    maxBlocks = yfs->fs_info.img_info->size / (yfs->chunks_per_block * (yfs->page_size + yfs->spare_size));
+    maxBlocks = yfs->fs_info.img_info->size / (yfs->chunks_per_block * chunkSize);
 
     // If maxBlocksToTest = 0 (unlimited), set it to the total number of blocks
     // Also reduce the number of blocks to test if it is larger than the total number of blocks
@@ -740,7 +963,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
     for(TSK_OFF_T blockIndex = 0;blockIndex < maxBlocksToTest;blockIndex++){
 
         // Read the last spare area that we want to test first
-        offset = (TSK_OFF_T)blockIndex * yfs->chunks_per_block * (yfs->page_size + yfs->spare_size) + (chunksToTest - 1) * (yfs->page_size + yfs->spare_size) + yfs->page_size;
+        offset = (TSK_OFF_T)blockIndex * blockSize + (chunksToTest - 1) * chunkSize + yfs->page_size;
         cnt = tsk_img_read(fs->img_info, offset, (char *) spareBuffer,
             yfs->spare_size);
         if (cnt == -1 || cnt < yfs->spare_size) {
@@ -774,7 +997,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
 
         // Copy all earlier spare areas in the block
         for(chunkIndex = 0;chunkIndex < chunksToTest - 1;chunkIndex++){
-            offset = blockIndex * yfs->chunks_per_block * (yfs->page_size + yfs->spare_size) + chunkIndex * (yfs->page_size + yfs->spare_size) + yfs->page_size;
+            offset = blockIndex * blockSize + chunkIndex * chunkSize + yfs->page_size;
             cnt = tsk_img_read(fs->img_info, offset, (char *) spareBuffer,
                 yfs->spare_size);
             if (cnt == -1 || cnt < yfs->spare_size) {
@@ -817,7 +1040,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
 
     // Print out the collected spare areas if we're in verbose mode
     if(tsk_verbose && (! yfs->autoDetect)){
-        for(blockIndex = 0;blockIndex < blocksToTest;blockIndex++){
+        for(blockIndex = 0;blockIndex < nBlocksTested;blockIndex++){
             for(chunkIndex = 0;chunkIndex < chunksToTest;chunkIndex++){
                 for(i = 0;i < yfs->spare_size;i++){
                     fprintf(stderr, "%02x", allSpares[blockIndex * yfs->spare_size * chunksToTest + chunkIndex * yfs->spare_size + i]);
@@ -828,9 +1051,9 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
     }
 
     // Test all indices into the spare area (that leave enough space for all 16 bytes)
-    for(currentOffset = 0;currentOffset < yfs->spare_size - 16;currentOffset++){
+    for(currentOffset = 0;currentOffset <= yfs->spare_size - 16;currentOffset++){
         goodOffset = 1;
-        for(blockIndex = 0;blockIndex < blocksToTest;blockIndex++){
+        for(blockIndex = 0;blockIndex < nBlocksTested;blockIndex++){
             for(chunkIndex = 1;chunkIndex < chunksToTest;chunkIndex++){
 
                 lastChunkBase = blockIndex * yfs->spare_size * chunksToTest + (chunkIndex - 1) * yfs->spare_size;
@@ -901,7 +1124,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                         break;
                     }
                 }
-                if(allSameByte && (allSpares[thisChunkBase + currentOffset] != 0x01)){ // allSpares was initialized with all 0x01 - there might be lines of it left
+                if(allSameByte){
                     if(tsk_verbose && (! yfs->autoDetect)){
                         tsk_fprintf(stderr,
                             "yaffs_initialize_spare_format: Elimimating offset %d - all repeated bytes\n", 
@@ -937,7 +1160,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
 
             // We probably don't want the first byte to always be 0xff
             int firstByteFF = 1;
-            for(blockIndex = 0;blockIndex < blocksToTest;blockIndex++){
+            for(blockIndex = 0;blockIndex < nBlocksTested;blockIndex++){
                 for(chunkIndex = 1;chunkIndex < chunksToTest;chunkIndex++){
                     if(allSpares[blockIndex * yfs->spare_size * chunksToTest + chunkIndex * yfs->spare_size + currentOffset] != 0xff){
                         firstByteFF = 0;
@@ -993,6 +1216,8 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
             tsk_fprintf(stderr,
                 "yaffs_initialize_spare_format: Final offsets: %d (sequence number), %d (object id), %d (chunk id), %d (n bytes)\n",
                 bestOffset, bestOffset+4, bestOffset+8, bestOffset+12);
+            tsk_fprintf(stderr,
+                "If these do not seem valid: %s\n", YAFFS_HELP_MESSAGE);
         }
         return TSK_OK;
     }
@@ -1079,11 +1304,18 @@ static uint8_t
     uint32_t object_id;
     uint32_t chunk_id;
 
+    // Should have checked this by now, but just in case
+    if((yfs->spare_seq_offset + 4 > yfs->spare_size) ||
+        (yfs->spare_obj_id_offset + 4 > yfs->spare_size) ||
+        (yfs->spare_chunk_id_offset + 4 > yfs->spare_size)){
+            return 1;
+    }
+
     if ((spr = (unsigned char*) tsk_malloc(yfs->spare_size)) == NULL) {
         return 1;
     }
 
-    if (yfs->spare_size < 46) {
+    if (yfs->spare_size < 46) { // Why is this 46?
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("yaffsfs_read_spare: spare size is too small");
@@ -1528,7 +1760,6 @@ static uint8_t
     uint8_t type;
     char *real_name;
 
-
     if (a_fs_file == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("yaffsfs_inode_lookup: fs_file is NULL");
@@ -1566,6 +1797,10 @@ static uint8_t
     if (result != TSK_OK) {
         if (tsk_verbose)
             tsk_fprintf(stderr, "yaffs_inode_lookup: yaffscache_version_find_by_inode failed! (inode = %d)\n", inum);
+        return 1;
+    }
+
+    if(version->ycv_header_chunk == NULL){
         return 1;
     }
 
@@ -2222,7 +2457,7 @@ static void
 
     fs->tag = 0;
 
-    // TODO: Walk and free the cache structures
+    // Walk and free the cache structures
     yaffscache_objects_free(yfs);
     yaffscache_chunks_free(yfs);
 
@@ -2383,6 +2618,7 @@ static TSK_RETVAL_ENUM
     if ((fs_name = tsk_fs_name_alloc(YAFFSFS_MAXNAMLEN, 0)) == NULL) {
         return TSK_ERR;
     }
+
 
     if ((fs_dir->fs_file = 
         tsk_fs_file_open_meta(a_fs, NULL, a_addr)) == NULL) {
@@ -2667,6 +2903,8 @@ TSK_FS_INFO *
     const unsigned int ssize = img_info->spare_size;
     YaffsHeader * first_header = NULL;
     TSK_FS_DIR *test_dir;
+    std::map<std::string, std::string> configParams;
+    YAFFS_CONFIG_STATUS config_file_status;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -2681,12 +2919,44 @@ TSK_FS_INFO *
     if ((yaffsfs = (YAFFSFS_INFO *) tsk_fs_malloc(sizeof(YAFFSFS_INFO))) == NULL)
         return NULL;
 
-    yaffsfs->page_size = psize == 0 ? YAFFS_DEFAULT_PAGE_SIZE : psize;
-    yaffsfs->spare_size = ssize == 0 ? YAFFS_DEFAULT_SPARE_SIZE : ssize;
-    yaffsfs->chunks_per_block = 64;
+    // Read config file (if it exists)
+    config_file_status = yaffs_load_config_file(img_info, configParams);
+    if(config_file_status == YAFFS_CONFIG_ERROR){
+        // tsk_error was set by yaffs_load_config
+        goto on_error;
+    }
+    else if(config_file_status == YAFFS_CONFIG_OK){
+        // Validate the input
+        // If it fails validation, return (tsk_error will be set up already)
+        if(1 == yaffs_validate_config_file(configParams)){
+            goto on_error;
+        }
+    }
+
+    // If we read these fields from the config file, use those values. Otherwise use the defaults
+    if(configParams.find(YAFFS_CONFIG_PAGE_SIZE_STR) != configParams.end()){
+        yaffsfs->page_size = atoi(configParams[YAFFS_CONFIG_PAGE_SIZE_STR].c_str());
+    }
+    else{
+        yaffsfs->page_size = psize == 0 ? YAFFS_DEFAULT_PAGE_SIZE : psize;
+    }
+
+    if(configParams.find(YAFFS_CONFIG_SPARE_SIZE_STR) != configParams.end()){
+        yaffsfs->spare_size = atoi(configParams[YAFFS_CONFIG_SPARE_SIZE_STR].c_str());
+    }
+    else{
+        yaffsfs->spare_size = ssize == 0 ? YAFFS_DEFAULT_SPARE_SIZE : ssize;
+    }
+
+    if(configParams.find(YAFFS_CONFIG_CHUNKS_PER_BLOCK_STR) != configParams.end()){
+        yaffsfs->chunks_per_block = atoi(configParams[YAFFS_CONFIG_CHUNKS_PER_BLOCK_STR].c_str());
+    }
+    else{
+        yaffsfs->chunks_per_block = 64;
+    }
+
     // TODO: Why are 2 different memory allocation methods used in the same code?
     // This makes things unnecessary complex.
-    yaffsfs->chunkMap = new std::map<uint32_t, YaffsCacheChunkGroup>;
     yaffsfs->max_obj_id = 1;
     yaffsfs->max_version = 0;
 
@@ -2708,23 +2978,45 @@ TSK_FS_INFO *
     fs->endian = TSK_LIT_ENDIAN;
 
     // Determine the layout of the spare area
+    // If it was specified in the config file, use those values. Otherwise do the auto-detection
+    if(configParams.find(YAFFS_CONFIG_SEQ_NUM_STR) != configParams.end()){
+        // In the validation step, we ensured that if one of the offsets was set, we have all of them
+        yaffsfs->spare_seq_offset = atoi(configParams[YAFFS_CONFIG_SEQ_NUM_STR].c_str());
+        yaffsfs->spare_obj_id_offset = atoi(configParams[YAFFS_CONFIG_OBJ_ID_STR].c_str());
+        yaffsfs->spare_chunk_id_offset = atoi(configParams[YAFFS_CONFIG_CHUNK_ID_STR].c_str());
 
-    // Decide how many blocks to test. If we're not doing auto-detection, set to zero (no limit)
-    unsigned int maxBlocksToTest;
-    if(yaffsfs->autoDetect){
-        maxBlocksToTest = YAFFS_DEFAULT_MAX_TEST_BLOCKS;
+        // Check that the offsets are valid for the given spare area size (fields are 4 bytes long)
+        if((yaffsfs->spare_seq_offset + 4 > yaffsfs->spare_size) ||
+            (yaffsfs->spare_obj_id_offset + 4 > yaffsfs->spare_size) ||
+            (yaffsfs->spare_chunk_id_offset + 4 > yaffsfs->spare_size)){
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS);
+            tsk_error_set_errstr("yaffs2_open: Offset(s) in config file too large for spare area (size %d). %s", yaffsfs->spare_size, YAFFS_HELP_MESSAGE);
+            goto on_error;
+        }
+
+
+        // nBytes isn't currently used, so just set to zero
+        yaffsfs->spare_nbytes_offset = 0;
     }
     else{
-        maxBlocksToTest = 0;
-    }
+        // Decide how many blocks to test. If we're not doing auto-detection, set to zero (no limit)
+        unsigned int maxBlocksToTest;
+        if(yaffsfs->autoDetect){
+            maxBlocksToTest = YAFFS_DEFAULT_MAX_TEST_BLOCKS;
+        }
+        else{
+            maxBlocksToTest = 0;
+        }
 
-    if(yaffs_initialize_spare_format(yaffsfs, maxBlocksToTest) != TSK_OK){
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr("not a YAFFS file system (bad spare format)");
-        if (tsk_verbose)
-            fprintf(stderr, "yaffsfs_open: could not find valid spare area format\n");
-        goto on_error;
+        if(yaffs_initialize_spare_format(yaffsfs, maxBlocksToTest) != TSK_OK){
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+            tsk_error_set_errstr("not a YAFFS file system (bad spare format). %s", YAFFS_HELP_MESSAGE);
+            if (tsk_verbose)
+                fprintf(stderr, "yaffsfs_open: could not find valid spare area format\n%s\n", YAFFS_HELP_MESSAGE);
+            goto on_error;
+        }
     }
 
     /*
@@ -2736,9 +3028,9 @@ TSK_FS_INFO *
     if (yaffsfs_read_header(yaffsfs, &first_header, 0)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr("not a YAFFS file system (first record)");
+        tsk_error_set_errstr("not a YAFFS file system (first record). %s", YAFFS_HELP_MESSAGE);
         if (tsk_verbose)
-            fprintf(stderr, "yaffsfs_open: invalid first record\n");
+            fprintf(stderr, "yaffsfs_open: invalid first record\n%s\n", YAFFS_HELP_MESSAGE);
         goto on_error;
     }
     free(first_header);
@@ -2798,6 +3090,7 @@ TSK_FS_INFO *
     *       cache is shared among threads.
     */
     //tsk_init_lock(&yaffsfs->lock);
+    yaffsfs->chunkMap = new std::map<uint32_t, YaffsCacheChunkGroup>;
     yaffsfs->cache_objects = NULL;
     yaffsfs_cache_fs(yaffsfs);
 
@@ -2805,37 +3098,27 @@ TSK_FS_INFO *
         fprintf(stderr, "yaffsfs_open: done building cache!\n");
         //yaffscache_objects_dump(yaffsfs, stderr);
     }
-    fflush(stderr);
 
     // Update the number of inums now that we've read in the file system
     fs->inum_count = fs->last_inum - 1;
 
     test_dir = tsk_fs_dir_open_meta(fs, fs->root_inum);
     if (test_dir == NULL) {
-        yaffsfs_close(fs);
-
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr("not a YAFFS file system (no root directory)");
+        tsk_error_set_errstr("not a YAFFS file system (no root directory). %s", YAFFS_HELP_MESSAGE);
         if (tsk_verbose)
-            fprintf(stderr, "yaffsfs_open: invalid file system\n");
-        return NULL;
+            fprintf(stderr, "yaffsfs_open: invalid file system\n%s\n", YAFFS_HELP_MESSAGE);
+        goto on_error;
     }
     tsk_fs_dir_close(test_dir);
 
     return fs;
 
 on_error:
-    // Make sure to free yaffsfs here otherwise it will leak
-    if( yaffsfs != NULL ) {
-        // TODO: where is chunkMap freed in normal operations?
-        if( yaffsfs->chunkMap != NULL ) {
-            yaffsfs->chunkMap->clear();
+    // yaffsfs_close frees all the cache objects
+    yaffsfs_close(fs);
 
-            delete yaffsfs->chunkMap;
-        }
-        free( yaffsfs );
-    }
     return NULL;
 }
 
