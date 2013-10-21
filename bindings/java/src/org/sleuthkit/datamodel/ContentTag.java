@@ -20,45 +20,24 @@ package org.sleuthkit.datamodel;
 
 /**
  * Instances of this class are data transfer objects (DTOs) that represent tags 
- * a user can apply to Content objects.
+ * a user can apply to content.
  */
 public class ContentTag extends Tag {
 	private final Content content;
 	private final long beginByteOffset;
 	private final long endByteOffset;
 					
-	public ContentTag(Content content, TagName type, String comment, long beginByteOffset, long endByteOffset) throws IllegalArgumentException {
+	public ContentTag(Content content, TagName type, String comment, long beginByteOffset, long endByteOffset) {
+		this(Tag.ID_NOT_SET, content, type, comment, beginByteOffset, endByteOffset);
+	}
+
+	ContentTag(long id, Content content, TagName type, String comment, long beginByteOffset, long endByteOffset) {
 		super(type, comment);
-
-			if (null == content) {
-				throw new IllegalArgumentException("content is null");
-			}
-			this.content = content;
-
-			if ((beginByteOffset < 0) || (beginByteOffset > (content.getSize() - 1))) {				
-				StringBuilder message = new StringBuilder("beginByteOffset (= ").append(beginByteOffset).append(") is out of range 0 - ").append(content.getSize() - 1);
-				addContentIdToErrorMessage(message);
-				throw new IllegalArgumentException(message.toString());			
-			}
-
-			if (endByteOffset < 0 || endByteOffset > content.getSize() - 1) {
-				StringBuilder message = new StringBuilder("endByteOffset (= ").append(beginByteOffset).append(") is out of range 0 - ").append(content.getSize() - 1);
-				addContentIdToErrorMessage(message);
-				throw new IllegalArgumentException(message.toString());			
-			}
-
-			if (endByteOffset < beginByteOffset) {
-				StringBuilder message = new StringBuilder("endByteOffset (= ").append(endByteOffset).append(" is less than beginByteOffset (= ").append(beginByteOffset).append(")");
-				throw new IllegalArgumentException(message.toString());			
-			}
-			this.beginByteOffset = beginByteOffset;
-			this.endByteOffset = endByteOffset;				
+		this.content = content;
+		this.beginByteOffset = beginByteOffset;
+		this.endByteOffset = endByteOffset;				
 	}
-	
-	private void addContentIdToErrorMessage(StringBuilder errorMessage) {
-		errorMessage.append(" for content (obj_id = ").append(content.getId()).append(")");
-	}
-	
+		
 	public Content getContent() {
 		return content;
 	}	

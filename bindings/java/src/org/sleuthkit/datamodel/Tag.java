@@ -20,7 +20,7 @@ package org.sleuthkit.datamodel;
 
 /**
  * This class is a base class for data transfer object (DTO) classes that model 
- * tags applied to Content and BlackboardArtifact objects by users.
+ * tags applied to content and blackboard artifacts by users.
  */
 public abstract class Tag {	
 	static long ID_NOT_SET = 0;
@@ -28,18 +28,16 @@ public abstract class Tag {
 	private final TagName name;
 	private final String comment;
 			
-	public Tag(TagName name, String comment) throws IllegalArgumentException {
-		if (null == name) {
-			throw new IllegalArgumentException("type is null");
-		}
+	public Tag(TagName name, String comment) {
 		this.name = name;
-				
-		if (null == comment) {
-			throw new IllegalArgumentException("comment is null");
-		}
 		this.comment = comment;
 	}
-						
+				
+	Tag(long id, TagName name, String comment) {
+		this(name, comment);
+		this.id = id;
+	}
+	
 	public TagName getName() {
 		return name;
 	}

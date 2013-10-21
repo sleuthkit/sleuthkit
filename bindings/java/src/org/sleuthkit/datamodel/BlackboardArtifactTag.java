@@ -26,19 +26,15 @@ public class BlackboardArtifactTag extends Tag {
 	private final BlackboardArtifact artifact;
 	private final Content content;
 	
-	public BlackboardArtifactTag(BlackboardArtifact artifact, Content content, TagName type, String comment) {
-		super(type, comment);
-		
-		if (null == artifact) {
-			throw new IllegalArgumentException("artifact is null");
-		}
-		this.artifact = artifact;
-
-		if (null == content) {
-			throw new IllegalArgumentException("content is null");
-		}
-		this.content = content;
+	public BlackboardArtifactTag(BlackboardArtifact artifact, Content content, TagName name, String comment) {
+		this(Tag.ID_NOT_SET, artifact, content, name, comment);
 	}
+	
+	BlackboardArtifactTag(long id, BlackboardArtifact artifact, Content content, TagName name, String comment) {
+		super(id, name, comment);
+		this.artifact = artifact;
+		this.content = content;
+	}	
 	
 	public BlackboardArtifact getArtifact() {
 		return artifact;

@@ -78,24 +78,13 @@ public class TagName {
 	private String description;
 	private HTML_COLOR color;
 		
-	public TagName(String displayName, String description, HTML_COLOR color) throws IllegalArgumentException {
-		if (null == displayName || displayName.isEmpty() == true) {
-			throw new IllegalArgumentException("displayName is null or empty");
-		}
+	public TagName(String displayName, String description, HTML_COLOR color) {
 		this.displayName = displayName;
-
-		if (null == description) {
-			throw new IllegalArgumentException("description is null or empty");
-		}
 		this.description = description;
-				
-		if (null == color) {
-			throw new IllegalArgumentException("color is null");
-		}
 		this.color = color;
 	}
 
-	TagName(long id, String displayName, String description, HTML_COLOR color) throws IllegalArgumentException {
+	TagName(long id, String displayName, String description, HTML_COLOR color) {
 		this(displayName, description, color);
 		this.id = id;
 	}
