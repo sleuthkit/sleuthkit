@@ -32,6 +32,9 @@
 binsrch_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 {
     // Creating plain text indices is unsupported
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_UNSUPTYPE);
+    tsk_error_set_errstr("binsrch_initialize: Creating plain text indices is unsupported.");
     return 1;
 }
 
@@ -48,6 +51,9 @@ binsrch_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
         TSK_OFF_T offset)
 {
     // Creating plain text indices is unsupported
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_UNSUPTYPE);
+    tsk_error_set_errstr("binsrch_addentry: Creating plain text indices is unsupported.");
     return 1;
 }
 
@@ -65,7 +71,9 @@ binsrch_addentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,
         TSK_OFF_T offset)
 {
     // Creating plain text indices is unsupported
-    // @@@ ERROR NEEDED HERE
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_UNSUPTYPE);
+    tsk_error_set_errstr("binsrch_addentry_bin: Creating plain text indices is unsupported.");
     return 1;
 }
 
@@ -80,7 +88,9 @@ binsrch_addentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,
 binsrch_finalize(TSK_HDB_INFO * hdb_info)
 {
     // Creating plain text indices is unsupported
-    // @@@ ERROR NEEDED HERE
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_UNSUPTYPE);
+    tsk_error_set_errstr("binsrch_finalize: Creating plain text indices is unsupported.");
     return 1;
 }
 
@@ -117,7 +127,7 @@ binsrch_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
-                "hdb_setupindex: Invalid hash type : %d", htype);
+                "binsrch_open: Invalid hash type : %d", htype);
         return 1;
     }
 
@@ -133,7 +143,7 @@ binsrch_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
             tsk_error_set_errstr(
-                    "hdb_setupindex: Error finding index file: %"PRIttocTSK,
+                    "binsrch_open: Error finding index file: %"PRIttocTSK,
                     idx_info->idx_fname);
             return 1;
         }
@@ -144,7 +154,7 @@ binsrch_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
-                    "hdb_setupindex: Error opening index file: %"PRIttocTSK,
+                    "binsrch_open: Error opening index file: %"PRIttocTSK,
                     idx_info->idx_fname);
             return 1;
         }
@@ -154,7 +164,7 @@ binsrch_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
-                    "hdb_setupindex: Error converting Windows handle to C handle");
+                    "binsrch_open: Error converting Windows handle to C handle");
             return 1;
         }
 
@@ -163,7 +173,7 @@ binsrch_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
-                    "hdb_setupindex: Error getting size of index file: %"PRIttocTSK" - %d",
+                    "binsrch_open: Error getting size of index file: %"PRIttocTSK" - %d",
                     idx_info->idx_fname, (int)GetLastError());
             return 1;
         }
@@ -177,7 +187,7 @@ binsrch_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
             tsk_error_set_errstr(
-                    "hdb_setupindex: Error finding index file: %s",
+                    "binsrch_open: Error finding index file: %s",
                     idx_info->idx_fname);
             return 1;
         }
@@ -187,7 +197,7 @@ binsrch_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
-                    "hdb_setupindex: Error opening index file: %s",
+                    "binsrch_open: Error opening index file: %s",
                     idx_info->idx_fname);
             return 1;
         }

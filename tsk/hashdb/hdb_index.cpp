@@ -116,7 +116,11 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             break;
         default:
             free(idx_info);
-            // @@@ ERROR INFO NEEDED
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_MISSING);
+            tsk_error_set_errstr(
+                "tsk_idx_open: Unknown hash type: %d\n",
+                (int)htype);
             return NULL;
     }
 
@@ -149,12 +153,20 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
 
         if (!idx) {
             free(idx_info);
-            // @@@ ERROR NEEDED
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_MISSING);
+            tsk_error_set_errstr(
+                "tsk_idx_open: Error opening index file: %s\n",
+                idx_info->idx_fname);
             return NULL;
         }
         
         if (1 != fread(header, header_size, 1, idx)) {
-            ///@@@ ERROR
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_MISSING);
+            tsk_error_set_errstr(
+                "tsk_idx_open: Error reading header: %s\n",
+                idx_info->idx_fname);
             return NULL;
         }
         else if (strncmp(header,
@@ -174,8 +186,8 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
             tsk_error_set_errstr(
-                                 "tsk_idx_open: Unrecognized header format: %s\n",
-                                 idx_info->idx_fname);
+                "tsk_idx_open: Unrecognized header format: %s\n",
+                idx_info->idx_fname);
             free(idx_info);
             return NULL;
         }
