@@ -29,6 +29,8 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
     char *bufptr = buf;
     size_t i = 0;
     memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
+
+    //Calling tsk_hdb_hasindex() has the side effect to set up the index structure (if the index exist)
     if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
         if (tsk_verbose)
             fprintf(stderr,
@@ -36,26 +38,33 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
         tsk_hdb_name_from_path(hdb_info);
         return;
     }
-    //TODO implement sqlite indices
-    hFile = hdb_info->idx_info->idx_struct.idx_binsrch->hIdx;
-    fseeko(hFile, 0, 0);
-    if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
-        NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
-        strncmp(buf,
-                TSK_HDB_IDX_HEAD_NAME_STR,
-                strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
-        if (tsk_verbose)
-            fprintf(stderr,
-                "Failed to read name from index; using file name instead");
+
+    // Get the DB name. Alternatively, we could query the index for Hashset Name.
+    if (hdb_info->idx_info->index_type == TSK_HDB_ITYPE_SQLITE_V1) {
         tsk_hdb_name_from_path(hdb_info);
         return;
-    }
-    bufptr = strchr(buf, '|');
-    bufptr++;
-    while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
-    {
-        hdb_info->db_name[i] = bufptr[i];
-        i++;
+    } else {
+        // Get name from legacy (bin search text) index
+        hFile = hdb_info->idx_info->idx_struct.idx_binsrch->hIdx;
+        fseeko(hFile, 0, 0);
+        if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+            NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+            strncmp(buf,
+                    TSK_HDB_IDX_HEAD_NAME_STR,
+                    strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
+            if (tsk_verbose)
+                fprintf(stderr,
+                    "Failed to read name from index; using file name instead");
+            tsk_hdb_name_from_path(hdb_info);
+            return;
+        }
+        bufptr = strchr(buf, '|');
+        bufptr++;
+        while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
+        {
+            hdb_info->db_name[i] = bufptr[i];
+            i++;
+        }
     }
 }
 
