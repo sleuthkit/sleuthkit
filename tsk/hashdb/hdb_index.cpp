@@ -468,6 +468,33 @@ tsk_hdb_makeindex(TSK_HDB_INFO * a_hdb_info, TSK_TCHAR * a_type)
 }
 
 /**
+ * \ingroup hashdblib
+ * Create an empty index.
+ * @param a_hdb_info Open hash database to index
+ * @param 
+ * @returns NULL on error
+ */
+TSK_HDB_INFO *
+tsk_hdb_new(TSK_TCHAR * db_file)
+{
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+    TSK_HDB_INFO * hdb_info = tsk_hdb_open(db_file, flags);
+    if (hdb_info != NULL) {
+        ///@todo
+        TSK_TCHAR * dbtype = NULL; //ignored for IDX only
+        if (hdb_info->makeindex(hdb_info, dbtype) != 0) {
+            tsk_hdb_close(hdb_info);
+            hdb_info = NULL;
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_CREATE);
+            tsk_error_set_errstr("tsk_hdb_new: creating new index failed");
+        }
+    }
+
+    return hdb_info;
+}
+
+/**
  * Set db_name to the name of the database file
  *
  * @param hdb_info the hash database object

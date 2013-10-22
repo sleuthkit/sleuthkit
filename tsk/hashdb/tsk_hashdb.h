@@ -203,20 +203,29 @@ extern "C" {
     };
     typedef enum TSK_HDB_OPEN_ENUM TSK_HDB_OPEN_ENUM;
 
+    /* Functions */
     extern TSK_HDB_INFO *tsk_hdb_open(TSK_TCHAR * db_file,
         TSK_HDB_OPEN_ENUM flags);
+
     extern void tsk_hdb_close(TSK_HDB_INFO * hdb);
 
     extern uint8_t tsk_hdb_hasindex(TSK_HDB_INFO *, uint8_t htype);
+
     extern uint8_t tsk_hdb_makeindex(TSK_HDB_INFO *, TSK_TCHAR *);
 
+    extern TSK_HDB_INFO * tsk_hdb_new(TSK_TCHAR * db_file);
 
-    /* Functions */
+    extern uint8_t tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
+                        const TSK_TCHAR * fileName, 
+                        const char * md5, 
+                        const char * sha1, 
+                        const char * sha256);
+
     extern int8_t tsk_hdb_lookup_str(TSK_HDB_INFO *, const char *,
         TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
         void *);
 
-    extern int8_t tsk_hdb_lookup_raw(TSK_HDB_INFO *, uint8_t * hash,
+    extern int8_t tsk_hdb_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash,
         uint8_t len, TSK_HDB_FLAG_ENUM,
         TSK_HDB_LOOKUP_FN, void *);
 
