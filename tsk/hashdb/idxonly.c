@@ -70,22 +70,32 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
 
 
 /**
- * This function should process the database to create a sorted index of it,
- * but in this case we do not have a database, so just make an error...
+ * This function creates an empty
  *
  * @param hdb_info Hash database to make index of.
- * @param dbtype Type of hash database 
+ * @param dbtype Type of hash database. Ignored for IDX only.
  *
  * @return 1 on error and 0 on success.
  */
 uint8_t
 idxonly_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 {
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr(
-             "idxonly_makeindex: Make index not supported when INDEX ONLY option is used");
-    return 1;
+    //tsk_error_reset();
+    //tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    //tsk_error_set_errstr(
+    //         "idxonly_makeindex: Make index not supported when INDEX ONLY option is used");
+
+    ///@temporary until we exorcise all the htype conditionals out
+    TSK_TCHAR dbType[1024];
+    TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
+
+    /* Initialize the TSK index file */
+    if (tsk_hdb_idxinitialize(hdb_info, dbtype)) {
+        tsk_error_set_errstr2( "idxonly_makeindex");
+        return 1;
+    }
+
+    return 0;
 }
 
 

@@ -470,8 +470,7 @@ tsk_hdb_makeindex(TSK_HDB_INFO * a_hdb_info, TSK_TCHAR * a_type)
 /**
  * \ingroup hashdblib
  * Create an empty index.
- * @param a_hdb_info Open hash database to index
- * @param 
+ * @param db_file Filename. For a new index from scratch, the db name == idx name.
  * @returns NULL on error
  */
 TSK_HDB_INFO *
@@ -480,18 +479,52 @@ tsk_hdb_new(TSK_TCHAR * db_file)
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
     TSK_HDB_INFO * hdb_info = tsk_hdb_open(db_file, flags);
     if (hdb_info != NULL) {
-        ///@todo
         TSK_TCHAR * dbtype = NULL; //ignored for IDX only
         if (hdb_info->makeindex(hdb_info, dbtype) != 0) {
             tsk_hdb_close(hdb_info);
             hdb_info = NULL;
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CREATE);
-            tsk_error_set_errstr("tsk_hdb_new: creating new index failed");
+            tsk_error_set_errstr("tsk_hdb_new: making new index failed");
         }
-    }
 
+        if (tsk_hdb_idxfinalize(hdb_info) != 0) {
+            tsk_hdb_close(hdb_info);
+            hdb_info = NULL;
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_WRITE);
+            tsk_error_set_errstr("tsk_hdb_new: finalizing new index failed");
+        }
+        
+    }
     return hdb_info;
+}
+
+/**
+ * \ingroup hashdblib
+ * Add a binary hash entry to the index
+ *
+ * @param hdb_info Hash database state info
+
+ * @return 1 on error and 0 on success
+ */
+uint8_t
+tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
+                const TSK_TCHAR * fileName, 
+                const char * md5, 
+                const char * sha1, 
+                const char * sha256)
+{
+    ///@todo stuff
+
+    // Close and sort the index
+    if (tsk_hdb_idxfinalize(hdb_info) != 0) {
+        tsk_hdb_close(hdb_info);
+        hdb_info = NULL;
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_WRITE);
+        tsk_error_set_errstr("tsk_hdb_add_str: finalizing index failed");
+    }
 }
 
 /**
