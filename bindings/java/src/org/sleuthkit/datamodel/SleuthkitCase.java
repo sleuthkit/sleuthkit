@@ -148,7 +148,7 @@ public class SleuthkitCase {
 		configureDB();
 		initBlackboardTypes();
 		initStatements();
-
+		new DatabaseSchemaUpdater().updateDatabaseSchema();
 	}
 
 	/**
@@ -5304,7 +5304,7 @@ public class SleuthkitCase {
 				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id"));
 				Content content = getContentById(artifact.getObjectID());
-				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString(3)); 
+				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			} 
 		}
@@ -5356,7 +5356,7 @@ public class SleuthkitCase {
 			while(resultSet.next()) {
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id"));
 				Content content = getContentById(artifact.getObjectID());
-				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString(3)); 
+				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			}			
 		}
@@ -5388,5 +5388,109 @@ public class SleuthkitCase {
 		finally {
 			dbReadUnlock();
 		}					
+	}
+	
+	private class DatabaseSchemaUpdater {
+		private int schemaVersionNumber = 0;
+		
+		DatabaseSchemaUpdater() throws TskCoreException {
+			try {			
+				Statement statement = con.createStatement();
+				ResultSet resultSet = statement.executeQuery("SELECT schema_ver FROM tsk_db_info");
+				if (resultSet.next()) {
+					schemaVersionNumber = resultSet.getInt("schema_ver");					
+				}
+				resultSet.close();
+				statement.close();						
+			} 
+			catch (SQLException ex) {				
+				throw new TskCoreException("Error querying schema version number", ex);
+			}									
+		}		
+		
+		void updateDatabaseSchema() throws TskCoreException {			
+			updateFromSchema3toSchema4();		
+		} 
+		
+		private void updateFromSchema3toSchema4() throws TskCoreException {
+			if (schemaVersionNumber != 3) {
+				return;
+			}
+			
+			// Keep track of the unique tag names created from the TSK_TAG_NAME attributes of 
+			// the now obsolete TSK_TAG_FILE and TSK_TAG_ARTIFACT artifacts.
+			HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
+			
+			// Convert TSK_TAG_FILE artifacts into content tags.
+			for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_FILE)) {
+				Content content = getContentById(artifact.getObjectID());
+				String name = "";
+				String comment = "";
+				ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
+				for (BlackboardAttribute attribute : attributes) {
+					if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID()) {
+						name = attribute.getValueString();
+					}
+					else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID()) {
+						comment = attribute.getValueString();
+					}
+				}
+				
+				if (!name.isEmpty()) {
+					TagName tagName;
+					if (!tagNames.containsKey(name)) {
+						tagName = tagNames.get(name);
+					}
+					else {
+						tagName = new TagName(name, "", TagName.HTML_COLOR.NONE);
+						addTagName(tagName);
+						tagNames.put(name, tagName);
+					}
+					addContentTag(new ContentTag(content, tagName, comment, 0, content.getSize() - 1));
+				}
+			}
+
+			// Convert TSK_TAG_ARTIFACT artifacts into blackboard artifact tags.
+			for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_ARTIFACT)) {
+				Content content = getContentById(artifact.getObjectID());
+				String name = "";
+				String comment = "";
+				ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
+				for (BlackboardAttribute attribute : attributes) {
+					if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID()) {
+						name = attribute.getValueString();
+					}
+					else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID()) {
+						comment = attribute.getValueString();
+					}
+				}
+				
+				if (!name.isEmpty()) {
+					TagName tagName;
+					if (!tagNames.containsKey(name)) {
+						tagName = tagNames.get(name);
+					}
+					else {
+						tagName = new TagName(name, "", TagName.HTML_COLOR.NONE);
+						addTagName(tagName);
+						tagNames.put(name, tagName);
+					}
+					addBlackboardArtifactTag(new BlackboardArtifactTag(artifact, content, tagName, comment));
+				}
+			}
+						
+			updateSchemaVersionNumber(4);
+		}		
+		
+		private void updateSchemaVersionNumber(int schemaVersionNumber) throws TskCoreException {
+			try {			
+				Statement statement = con.createStatement();
+				statement.executeUpdate("UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
+				statement.close();		
+			} 
+			catch (SQLException ex) {
+				throw new TskCoreException("Error updating schema version number", ex);
+			}			
+		} 		
 	}
 }
