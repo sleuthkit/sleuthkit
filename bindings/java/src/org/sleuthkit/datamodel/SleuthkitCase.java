@@ -58,22 +58,18 @@ import org.sqlite.SQLiteJDBCLoader;
  * database implementations (such as SQLite) that might need it.
  */
 public class SleuthkitCase {
-
+	
 	private String dbPath;
 	private String dbDirPath;
 	private volatile SleuthkitJNI.CaseDbHandle caseHandle;
 	private volatile Connection con;
+	private int schemaVersionNumber = 0;
 	private ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private int artifactIDcounter = 1001;
-	private int attributeIDcounter = 1001;
-	// for use by getCarvedDirectoryId method only
-	private final Map<Long, Long> systemIdMap = new HashMap<Long, Long>();
-	//database lock
+	private int attributeIDcounter = 1001;	
+	private final Map<Long, Long> systemIdMap = new HashMap<Long, Long>(); // for use by getCarvedDirectoryId method only
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
 	private static final Lock caseDbLock = rwLock.writeLock(); //using exclusing lock for all db ops for now
-	//private static final Lock caseDbWriteLock = rwLock.writeLock();
-	//private static final Lock caseDbReadLock = rwLock.readLock();
-	//prepared statements
 	private PreparedStatement getBlackboardAttributesSt;
 	private PreparedStatement getBlackboardArtifactSt;
 	private PreparedStatement getBlackboardArtifactsSt;
@@ -147,10 +143,126 @@ public class SleuthkitCase {
 		con = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
 		configureDB();
 		initBlackboardTypes();
+		updateDatabaseSchema();
 		initStatements();
-		new DatabaseSchemaUpdater().updateDatabaseSchema();
 	}
+	
+	private void updateDatabaseSchema() throws TskCoreException {
+		try {
+			con.setAutoCommit(false);
 
+			// Get the schema version.
+			Statement statement = con.createStatement();
+			ResultSet resultSet = statement.executeQuery("SELECT schema_ver FROM tsk_db_info");
+			if (resultSet.next()) {
+				schemaVersionNumber = resultSet.getInt("schema_ver");	
+			}
+			resultSet.close();
+			statement.close();						
+						
+			// Call schema update methods here.
+			updateFromSchema3toSchema4();		
+			
+			// Update the schema version.
+			statement = con.createStatement();
+			statement.executeUpdate("UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
+			statement.close();		
+			
+			con.commit();
+			con.setAutoCommit(true);
+		}
+		catch (Exception ex) {
+			try {
+				con.rollback();
+				throw new TskCoreException("Failed to update database schema", ex);
+			}
+			catch (SQLException e) {
+				throw new TskCoreException("Failed to rollback erroneous database schema update", e);
+			}				
+		}
+	}
+		
+	private void updateFromSchema3toSchema4() throws SQLException, TskCoreException {
+		if (schemaVersionNumber != 3) {
+			return;
+		}
+
+		// Add new tables for tags.
+		Statement statement = con.createStatement();
+		statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)");
+		statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)");
+		statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
+		
+		// Make the prepared staements available for use in migrating legacy data.
+		initStatements();
+		
+		// Keep track of the unique tag names created from the TSK_TAG_NAME attributes of 
+		// the now obsolete TSK_TAG_FILE and TSK_TAG_ARTIFACT artifacts.
+		HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
+
+		// Convert TSK_TAG_FILE artifacts into content tags.
+		for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_FILE)) {
+			Content content = getContentById(artifact.getObjectID());
+			String name = "";
+			String comment = "";
+			ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
+			for (BlackboardAttribute attribute : attributes) {
+				if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID()) {
+					name = attribute.getValueString();
+				}
+				else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID()) {
+					comment = attribute.getValueString();
+				}
+			}
+
+			if (!name.isEmpty()) {
+				TagName tagName;
+				if (tagNames.containsKey(name)) {
+					tagName = tagNames.get(name);
+				}
+				else {
+					tagName = new TagName(name, "", TagName.HTML_COLOR.NONE);
+					addTagName(tagName);
+					tagNames.put(name, tagName);
+				}
+				addContentTag(new ContentTag(content, tagName, comment, 0, content.getSize() - 1));
+			}
+		}
+
+		// Convert TSK_TAG_ARTIFACT artifacts into blackboard artifact tags.
+		for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_ARTIFACT)) {
+			Content content = getContentById(artifact.getObjectID());
+			String name = "";
+			String comment = "";
+			ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
+			for (BlackboardAttribute attribute : attributes) {
+				if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID()) {
+					name = attribute.getValueString();
+				}
+				else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID()) {
+					comment = attribute.getValueString();
+				}
+			}
+
+			if (!name.isEmpty()) {
+				TagName tagName;
+				if (tagNames.containsKey(name)) {
+					tagName = tagNames.get(name);
+				}
+				else {
+					tagName = new TagName(name, "", TagName.HTML_COLOR.NONE);
+					addTagName(tagName);
+					tagNames.put(name, tagName);
+				}
+				addBlackboardArtifactTag(new BlackboardArtifactTag(artifact, content, tagName, comment));
+			}
+		}		
+				
+		closeStatements();
+		
+		schemaVersionNumber = 4;	
+	}			
+				
 	/**
 	 * create a new transaction: lock the database and set auto-commit false.
 	 * this transaction should be passed to methods who take a transaction and
@@ -5430,7 +5542,8 @@ public class SleuthkitCase {
 			if (schemaVersionNumber != 3) {
 				return;
 			}
-						
+
+			
 			// Keep track of the unique tag names created from the TSK_TAG_NAME attributes of 
 			// the now obsolete TSK_TAG_FILE and TSK_TAG_ARTIFACT artifacts.
 			HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
@@ -5506,5 +5619,5 @@ public class SleuthkitCase {
 				throw new TskCoreException("Error updating schema version number", ex);
 			}			
 		} 		
-	}
+	}		
 }
