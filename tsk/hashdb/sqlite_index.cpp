@@ -125,7 +125,7 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 	}
 
 	if (attempt_exec_nocallback
-		("CREATE TABLE hashset_hashes (md5 BINARY(16), sha1 BINARY(20), sha256 BINARY(32), database_offset INTEGER);",
+		("CREATE TABLE hashset_hashes (md5 BINARY(16), sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);",
 		"Error creating hashset_hashes table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 			return 1;
 	}

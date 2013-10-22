@@ -45,12 +45,15 @@ extern "C" {
         TSK_HDB_HTYPE_INVALID_ID = 0,   ///< Invalid algorithm signals error.
         TSK_HDB_HTYPE_MD5_ID = 1,       ///< MD5 Algorithm
         TSK_HDB_HTYPE_SHA1_ID = 2,      ///< SHA1 Algorithm
+        TSK_HDB_HTYPE_SHA2_256_ID = 4,  ///< SHA2-256 (aka SHA-256) Algorithm
     };
     typedef enum TSK_HDB_HTYPE_ENUM TSK_HDB_HTYPE_ENUM;
 
 #define TSK_HDB_HTYPE_MD5_STR	"md5"   ///< String name for MD5 algorithm
 #define TSK_HDB_HTYPE_SHA1_STR	"sha1"  ///< String name for SHA1 algorithm
+#define TSK_HDB_HTYPE_SHA2_256_STR	"sha2_256"  ///< String name for SHA256 algorithm
 
+#define TSK_HDB_HTYPE_SHA2_256_LEN 64   ///< Length of SHA256 hash
 #define TSK_HDB_HTYPE_SHA1_LEN 40       ///< Length of SHA1 hash
 #define TSK_HDB_HTYPE_MD5_LEN 32        ///< Length of MD5 hash
 #define TSK_HDB_HTYPE_CRC32_LEN 8       ///< Length of CRC hash
@@ -61,14 +64,16 @@ extern "C" {
     */
 #define TSK_HDB_HTYPE_STR(x) \
     ( ((x) & TSK_HDB_HTYPE_MD5_ID) ? (TSK_HDB_HTYPE_MD5_STR) : ( \
-    ( ((x) & TSK_HDB_HTYPE_SHA1_ID) ? TSK_HDB_HTYPE_SHA1_STR : "") ) )
+    ( ((x) & TSK_HDB_HTYPE_SHA1_ID) ? (TSK_HDB_HTYPE_SHA1_STR) : ( \
+    ( ((x) & TSK_HDB_HTYPE_SHA2_256_ID) ? TSK_HDB_HTYPE_SHA2_256_STR : "") ) ) ) )
 
     /**
     * Return the length of a hash, given its ID
     */
 #define TSK_HDB_HTYPE_LEN(x) \
     ( ((x) & TSK_HDB_HTYPE_MD5_ID) ? (TSK_HDB_HTYPE_MD5_LEN) : ( \
-    ( ((x) & TSK_HDB_HTYPE_SHA1_ID) ? TSK_HDB_HTYPE_SHA1_LEN : 0) ) )
+    ( ((x) & TSK_HDB_HTYPE_SHA1_ID) ? (TSK_HDB_HTYPE_SHA1_LEN) : ( \
+    ( ((x) & TSK_HDB_HTYPE_SHA2_256_ID) ? TSK_HDB_HTYPE_SHA2_256_LEN : 0) ) ) ) )
 
 
 
