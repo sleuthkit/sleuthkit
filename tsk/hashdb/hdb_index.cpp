@@ -318,7 +318,7 @@ tsk_hdb_idxinitialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * a_dbtype)
         hdb_info->hash_type = TSK_HDB_HTYPE_SHA1_ID;
     }
     else if (strcmp(dbtmp, TSK_HDB_DBTYPE_MD5SUM_STR) == 0) {
-        if (hdb_info->db_type != TSK_HDB_DBTYPE_MD5SUM_ID) {
+        if ((hdb_info->db_type != TSK_HDB_DBTYPE_MD5SUM_ID) && (hdb_info->db_type != TSK_HDB_DBTYPE_IDXONLY_ID)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
             tsk_error_set_errstr(
