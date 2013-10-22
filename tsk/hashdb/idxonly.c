@@ -86,11 +86,11 @@ idxonly_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     //         "idxonly_makeindex: Make index not supported when INDEX ONLY option is used");
 
     ///@temporary until we exorcise all the htype conditionals out
-    TSK_TCHAR dbType[1024];
-    TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
+    TSK_TCHAR dbtype_default[1024];
+    TSNPRINTF(dbtype_default, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
 
     /* Initialize the TSK index file */
-    if (tsk_hdb_idxinitialize(hdb_info, dbtype)) {
+    if (tsk_hdb_idxinitialize(hdb_info, dbtype_default)) {
         tsk_error_set_errstr2( "idxonly_makeindex");
         return 1;
     }

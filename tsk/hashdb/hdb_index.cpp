@@ -155,9 +155,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             free(idx_info);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
-            tsk_error_set_errstr(
-                "tsk_idx_open: Error opening index file: %s\n",
-                idx_info->idx_fname);
+            tsk_error_set_errstr( "tsk_idx_open: Error opening index file");
             return NULL;
         }
         
@@ -165,7 +163,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
             tsk_error_set_errstr(
-                "tsk_idx_open: Error reading header: %s\n",
+                "tsk_idx_open: Error reading header: %"PRIttocTSK,
                 idx_info->idx_fname);
             return NULL;
         }
@@ -186,7 +184,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
             tsk_error_set_errstr(
-                "tsk_idx_open: Unrecognized header format: %s\n",
+                "tsk_idx_open: Unrecognized header format: %"PRIttocTSK,
                 idx_info->idx_fname);
             free(idx_info);
             return NULL;
@@ -208,7 +206,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_MISSING);
                 tsk_error_set_errstr(
-                        "tsk_idx_open: Unrecognized header format: %s\n",
+                        "tsk_idx_open: Unrecognized header format: %"PRIttocTSK,
                         idx_info->idx_fname);
                 free(idx_info);
                 return NULL;
@@ -283,7 +281,7 @@ tsk_hdb_idxinitialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * a_dbtype)
 {
     char dbtmp[32];
     int i;
-    bool create = true; //create new file if it doesn't already exist
+    uint8_t create = 1; //create new file if it doesn't already exist
 
     /* Use the string of the index/hash type to figure out some
      * settings */
@@ -429,7 +427,7 @@ tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
 {
     /* Check if the index is already open, and 
      * try to open it if not */
-    if (hdb_setupindex(hdb_info, htype, false)) {
+    if (hdb_setupindex(hdb_info, htype, 0)) {
         return 0;
     } else {
         return 1;
@@ -486,16 +484,16 @@ tsk_hdb_new(TSK_TCHAR * db_file)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CREATE);
             tsk_error_set_errstr("tsk_hdb_new: making new index failed");
-        }
 
-        if (tsk_hdb_idxfinalize(hdb_info) != 0) {
-            tsk_hdb_close(hdb_info);
-            hdb_info = NULL;
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_HDB_WRITE);
-            tsk_error_set_errstr("tsk_hdb_new: finalizing new index failed");
+        } else {
+            if (tsk_hdb_idxfinalize(hdb_info) != 0) {
+                tsk_hdb_close(hdb_info);
+                hdb_info = NULL;
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_HDB_WRITE);
+                tsk_error_set_errstr("tsk_hdb_new: finalizing new index failed");
+            }
         }
-        
     }
     return hdb_info;
 }
@@ -524,7 +522,9 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_WRITE);
         tsk_error_set_errstr("tsk_hdb_add_str: finalizing index failed");
+        return 1;
     }
+    return 0;
 }
 
 /**

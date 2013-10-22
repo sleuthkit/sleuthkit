@@ -53,7 +53,7 @@ tsk_hdb_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
         return -1;
     }
 
-    if (hdb_setupindex(hdb_info, htype, false)) {
+    if (hdb_setupindex(hdb_info, htype, 0)) {
         return -1;
     }
 
@@ -97,7 +97,7 @@ tsk_hdb_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
         return -1;
     }
 
-    if (hdb_setupindex(hdb_info, htype, false)) {
+    if (hdb_setupindex(hdb_info, htype, 0)) {
         return -1;
     }
 
