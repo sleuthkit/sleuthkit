@@ -5409,18 +5409,32 @@ public class SleuthkitCase {
 		}		
 		
 		void updateDatabaseSchema() throws TskCoreException {			
-			updateFromSchema3toSchema4();		
+			try {
+				con.setAutoCommit(false);
+				updateFromSchema3toSchema4();		
+				con.commit();
+				con.setAutoCommit(true);
+			}
+			catch (Exception ex) {
+				try {
+					con.rollback();
+					throw new TskCoreException("Failed to update database schema", ex);
+				}
+				catch (SQLException e) {
+					logger.log(Level.SEVERE, "Failed to rollback erroneous database schema update", e);
+				}				
+			}
 		} 
 		
 		private void updateFromSchema3toSchema4() throws TskCoreException {
 			if (schemaVersionNumber != 3) {
 				return;
 			}
-			
+						
 			// Keep track of the unique tag names created from the TSK_TAG_NAME attributes of 
 			// the now obsolete TSK_TAG_FILE and TSK_TAG_ARTIFACT artifacts.
 			HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
-			
+
 			// Convert TSK_TAG_FILE artifacts into content tags.
 			for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_FILE)) {
 				Content content = getContentById(artifact.getObjectID());
@@ -5435,7 +5449,7 @@ public class SleuthkitCase {
 						comment = attribute.getValueString();
 					}
 				}
-				
+
 				if (!name.isEmpty()) {
 					TagName tagName;
 					if (!tagNames.containsKey(name)) {
@@ -5464,7 +5478,7 @@ public class SleuthkitCase {
 						comment = attribute.getValueString();
 					}
 				}
-				
+
 				if (!name.isEmpty()) {
 					TagName tagName;
 					if (!tagNames.containsKey(name)) {
@@ -5478,7 +5492,7 @@ public class SleuthkitCase {
 					addBlackboardArtifactTag(new BlackboardArtifactTag(artifact, content, tagName, comment));
 				}
 			}
-						
+
 			updateSchemaVersionNumber(4);
 		}		
 		
