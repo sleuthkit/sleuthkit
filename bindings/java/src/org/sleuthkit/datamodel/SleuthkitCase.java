@@ -62,7 +62,6 @@ public class SleuthkitCase {
 	private String dbDirPath;
 	private volatile SleuthkitJNI.CaseDbHandle caseHandle;
 	private volatile Connection con;
-	private int schemaVersionNumber = 0;
 	private ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private int artifactIDcounter = 1001;
 	private int attributeIDcounter = 1001;
@@ -154,6 +153,7 @@ public class SleuthkitCase {
 			con.setAutoCommit(false);
 
 			// Get the schema version.
+			int schemaVersionNumber = 0;
 			Statement statement = con.createStatement();
 			ResultSet resultSet = statement.executeQuery("SELECT schema_ver FROM tsk_db_info");
 			if (resultSet.next()) {
@@ -161,8 +161,8 @@ public class SleuthkitCase {
 			}
 			resultSet.close();
 						
-			// Call schema update methods here.
-			updateFromSchema3toSchema4();		
+			// Call schema update methods here. These methods should update schemaVersionNumber.
+			schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber);		
 			
 			// Update the schema version.
 			statement.executeUpdate("UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
@@ -174,6 +174,7 @@ public class SleuthkitCase {
 		catch (Exception ex) {
 			try {
 				con.rollback();
+				con.setAutoCommit(true);
 				throw new TskCoreException("Failed to update database schema", ex);
 			}
 			catch (SQLException e) {
@@ -182,9 +183,9 @@ public class SleuthkitCase {
 		}
 	}
 		
-	private void updateFromSchema3toSchema4() throws SQLException, TskCoreException {
+	private int updateFromSchema3toSchema4(int schemaVersionNumber) throws SQLException, TskCoreException {
 		if (schemaVersionNumber != 3) {
-			return;
+			return schemaVersionNumber;
 		}
 
 		// Add new tables for tags.
@@ -257,7 +258,7 @@ public class SleuthkitCase {
 				
 		closeStatements();
 		
-		schemaVersionNumber = 4;	
+		return 4;	
 	}			
 				
 	/**
