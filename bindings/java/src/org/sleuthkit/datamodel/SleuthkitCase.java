@@ -4556,7 +4556,7 @@ public class SleuthkitCase {
 	 * @return the image size, or -1 if it doesn't have one stored in the database.
 	 */
 	public long getImageSize(Image img) throws TskCoreException {
-		if (getDbVersion() != 3) {
+		if (getDbVersion() < 3) {
 			return -1;
 		}
 		dbReadLock();
@@ -4611,7 +4611,7 @@ public class SleuthkitCase {
 	 */
 	public boolean imageHasHash(Image img) {
 		try {
-			return (getDbVersion() == 3) && 
+			return (getDbVersion() >= 3) && 
 					(img.getType() == TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_EWF_EWF);
 		} catch (TskCoreException ex) {
 			logger.log(Level.SEVERE, "Core exception while attempting to check if image has a hash", ex);
