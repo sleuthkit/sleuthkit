@@ -58,6 +58,7 @@ import org.sqlite.SQLiteJDBCLoader;
  * database implementations (such as SQLite) that might need it.
  */
 public class SleuthkitCase {
+	
 	private String dbPath;
 	private String dbDirPath;
 	private volatile SleuthkitJNI.CaseDbHandle caseHandle;
