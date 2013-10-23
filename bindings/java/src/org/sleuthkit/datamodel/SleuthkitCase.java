@@ -152,7 +152,7 @@ public class SleuthkitCase {
 		try {
 			con.setAutoCommit(false);
 
-			// Get the schema version.
+			// Get the schema version number.
 			int schemaVersionNumber = 0;
 			Statement statement = con.createStatement();
 			ResultSet resultSet = statement.executeQuery("SELECT schema_ver FROM tsk_db_info");
@@ -161,10 +161,10 @@ public class SleuthkitCase {
 			}
 			resultSet.close();
 						
-			// Call schema update methods here. These methods should update schemaVersionNumber.
+			// ***CALL SCHEMA UPDATE METHODS HERE***
 			schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber);		
 			
-			// Update the schema version.
+			// Update the schema version number.
 			statement.executeUpdate("UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
 			statement.close();		
 			
@@ -194,14 +194,15 @@ public class SleuthkitCase {
 		statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)");
 		statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
 		
-		// Make the prepared staements available for use in migrating legacy data.
+		// Make the prepared statements available for use in migrating legacy data.
 		initStatements();
 		
-		// Keep track of the unique tag names created from the TSK_TAG_NAME attributes of 
-		// the now obsolete TSK_TAG_FILE and TSK_TAG_ARTIFACT artifacts.
+		// This data structure is used to eep track of the unique tag names 
+		// created from the TSK_TAG_NAME attributes of the now obsolete 
+		// TSK_TAG_FILE and TSK_TAG_ARTIFACT artifacts.
 		HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
 
-		// Convert TSK_TAG_FILE artifacts into content tags.
+		// Convert TSK_TAG_FILE artifacts into content tags. Leave the artifacts behind as a backup.
 		for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_FILE)) {
 			Content content = getContentById(artifact.getObjectID());
 			String name = "";
@@ -229,7 +230,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		// Convert TSK_TAG_ARTIFACT artifacts into blackboard artifact tags.
+		// Convert TSK_TAG_ARTIFACT artifacts into blackboard artifact tags. Leave the artifacts behind as a backup.
 		for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_ARTIFACT)) {
 			String name = "";
 			String comment = "";
@@ -440,18 +441,6 @@ public class SleuthkitCase {
 		selectBlackboardArtifactTagsCountByTagName = con.prepareStatement("SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?");;		
 	}
 
-	private void closeStatement(PreparedStatement statement) {
-		try {
-			if (statement != null) {
-				statement.close();
-				statement = null;
-			}			
-		} 
-		catch (SQLException ex) {
-			logger.log(Level.WARNING, "Error closing prepared statement", ex);
-		}
-	}
-		
 	private void closeStatements() {
 		closeStatement(getBlackboardAttributesSt);
 		closeStatement(getBlackboardArtifactSt);
@@ -506,6 +495,18 @@ public class SleuthkitCase {
 		closeStatement(selectBlackboardArtifactTagsByArtifact);
 	}
 				
+	private void closeStatement(PreparedStatement statement) {
+		try {
+			if (statement != null) {
+				statement.close();
+				statement = null;
+			}			
+		} 
+		catch (SQLException ex) {
+			logger.log(Level.WARNING, "Error closing prepared statement", ex);
+		}
+	}
+		
 	private void configureDB() throws TskCoreException {
 		try {
 			//this should match SleuthkitJNI db setup
