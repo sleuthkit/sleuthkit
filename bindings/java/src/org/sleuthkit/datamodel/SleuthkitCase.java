@@ -58,7 +58,6 @@ import org.sqlite.SQLiteJDBCLoader;
  * database implementations (such as SQLite) that might need it.
  */
 public class SleuthkitCase {
-	
 	private String dbPath;
 	private String dbDirPath;
 	private volatile SleuthkitJNI.CaseDbHandle caseHandle;
@@ -67,9 +66,12 @@ public class SleuthkitCase {
 	private ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private int artifactIDcounter = 1001;
 	private int attributeIDcounter = 1001;	
-	private final Map<Long, Long> systemIdMap = new HashMap<Long, Long>(); // for use by getCarvedDirectoryId method only
+	// for use by getCarvedDirectoryId method only
+	private final Map<Long, Long> systemIdMap = new HashMap<Long, Long>();
+	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
 	private static final Lock caseDbLock = rwLock.writeLock(); //using exclusing lock for all db ops for now
+	//prepared statements
 	private PreparedStatement getBlackboardAttributesSt;
 	private PreparedStatement getBlackboardArtifactSt;
 	private PreparedStatement getBlackboardArtifactsSt;
@@ -112,6 +114,7 @@ public class SleuthkitCase {
 	private PreparedStatement selectMaxIdFromContentTags;
 	private PreparedStatement deleteFromContentTags;
 	private PreparedStatement selectAllContentTags;
+	private PreparedStatement selectContentTagsCountByTagName;
 	private PreparedStatement selectContentTagsByTagName;
 	private PreparedStatement insertIntoBlackboardArtifactTags;
 	private PreparedStatement selectMaxIdFromBlackboardArtifactTags;
@@ -120,7 +123,6 @@ public class SleuthkitCase {
 	private PreparedStatement selectBlackboardArtifactTagsCountByTagName;
 	private PreparedStatement selectBlackboardArtifactTagsByTagName;
 	private PreparedStatement selectBlackboardArtifactTagsByArtifact;
-	private PreparedStatement selectContentTagsCountByTagName;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
 
@@ -158,13 +160,11 @@ public class SleuthkitCase {
 				schemaVersionNumber = resultSet.getInt("schema_ver");	
 			}
 			resultSet.close();
-			statement.close();						
 						
 			// Call schema update methods here.
 			updateFromSchema3toSchema4();		
 			
 			// Update the schema version.
-			statement = con.createStatement();
 			statement.executeUpdate("UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
 			statement.close();		
 			
@@ -221,17 +221,15 @@ public class SleuthkitCase {
 					tagName = tagNames.get(name);
 				}
 				else {
-					tagName = new TagName(name, "", TagName.HTML_COLOR.NONE);
-					addTagName(tagName);
+					tagName = addTagName(name, "", TagName.HTML_COLOR.NONE);
 					tagNames.put(name, tagName);
 				}
-				addContentTag(new ContentTag(content, tagName, comment, 0, content.getSize() - 1));
+				addContentTag(content, tagName, comment, 0, content.getSize() - 1);
 			}
 		}
 
 		// Convert TSK_TAG_ARTIFACT artifacts into blackboard artifact tags.
 		for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_ARTIFACT)) {
-			Content content = getContentById(artifact.getObjectID());
 			String name = "";
 			String comment = "";
 			ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
@@ -250,11 +248,10 @@ public class SleuthkitCase {
 					tagName = tagNames.get(name);
 				}
 				else {
-					tagName = new TagName(name, "", TagName.HTML_COLOR.NONE);
-					addTagName(tagName);
+					tagName = addTagName(name, "", TagName.HTML_COLOR.NONE);
 					tagNames.put(name, tagName);
 				}
-				addBlackboardArtifactTag(new BlackboardArtifactTag(artifact, content, tagName, comment));
+				addBlackboardArtifactTag(artifact, tagName, comment);
 			}
 		}		
 				
@@ -5162,18 +5159,22 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Selects all of the rows in the tag_names table.
-	 * @param [out] A list, possibly empty, of TagName data transfer objects (DTOs).
+	 * Selects all of the rows from the tag_names table in the case database.
+	 * @return A list, possibly empty, of TagName data transfer objects (DTOs) for the rows.
 	 * @throws TskCoreException 
 	 */
-	public void getAllTagNames(List<TagName> tagNames) throws TskCoreException {
+	public List<TagName> getAllTagNames() throws TskCoreException {
 		dbReadLock();
 		try {
+			ArrayList<TagName> tagNames = new ArrayList<TagName>();
+			
 			// SELECT * FROM tag_names
 			ResultSet resultSet = selectAllFromTagNames.executeQuery();
 			while(resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
+			
+			return tagNames;
 		}
 		catch(SQLException ex) {
 			throw new TskCoreException("Error selecting rows from tag_names table", ex);
@@ -5184,20 +5185,24 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Selects all of the rows in the tag_names table for which there is at 
-	 * least one matching row in the content_tags or blackboard_artifact_tags 
-	 * tables.
-	 * @param [out] A list, possibly empty, of TagName data transfer objects (DTOs).
+	 * Selects all of the rows from the tag_names table in the case database for 
+	 * which there is at least one matching row in the content_tags or 
+	 * blackboard_artifact_tags tables.
+	 * @return A list, possibly empty, of TagName data transfer objects (DTOs) for the rows.
 	 * @throws TskCoreException 
 	 */
-	public void getTagNamesInUse(List<TagName> tagNames) throws TskCoreException {
+	public List<TagName> getTagNamesInUse() throws TskCoreException {
 		dbReadLock();
 		try {
+			ArrayList<TagName> tagNames = new ArrayList<TagName>();
+			
 			// SELECT * FROM tag_names WHERE tag_name_id IN (SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)
 			ResultSet resultSet = selectFromTagNamesWhereInUse.executeQuery();
 			while(resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
+			
+			return tagNames;
 		}
 		catch(SQLException ex) {
 			throw new TskCoreException("Error selecting rows from tag_names table", ex);
@@ -5208,25 +5213,28 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Inserts tag name row into the tags_names table.
-	 * tagName A TagName data transfer object (DTO).
+	 * Inserts row into the tags_names table in the case database.
+     * @param [in] displayName The display name for the new tag name.
+     * @param [in] description The description for the new tag name.
+     * @param [in] color The HTML color to associate with the new tag name.
+	 * @return A TagName data transfer object (DTO) for the new row.
 	 * @throws TskCoreException 
 	 */
-	public void addTagName(TagName tagName) throws TskCoreException {
+	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
 		dbWriteLock();		
 		try {
 			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)			
 			insertIntoTagNames.clearParameters(); 			
-			insertIntoTagNames.setString(1, tagName.getDisplayName());
-			insertIntoTagNames.setString(2, tagName.getDescription());
-			insertIntoTagNames.setString(3, tagName.getColor().getName());
+			insertIntoTagNames.setString(1, displayName);
+			insertIntoTagNames.setString(2, description);
+			insertIntoTagNames.setString(3, color.getName());
 			insertIntoTagNames.executeUpdate();
 
 			// SELECT MAX(id) FROM tag_names
-			tagName.setId(selectMaxIdFromTagNames.executeQuery().getLong(1));
+			return new TagName(selectMaxIdFromTagNames.executeQuery().getLong(1), displayName, description, color);			
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding row for " + tagName.getDisplayName() + " tag name to tag_names table", ex);
+			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
 		}
 		finally {
 			dbWriteUnlock();
@@ -5234,26 +5242,32 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Inserts a row corresponding to a ContentTag into the content_tags table.
+	 * Inserts a row into the content_tags table in the case database.
+     * @param [in] content The content to tag.
+     * @param [in] tagName The name to use for the tag.
+     * @param [in] comment A comment to store with the tag.
+     * @param [in] beginByteOffset Designates the beginning of a tagged section. 
+     * @param [in] endByteOffset Designates the end of a tagged section.
+	 * @return A ContentTag data transfer object (DTO) for the new row.
 	 * @throws TskCoreException 
 	 */
-	public void addContentTag(ContentTag tag) throws TskCoreException {
+	public ContentTag addContentTag(Content content, TagName tagName, String comment, long beginByteOffset, long endByteOffset) throws TskCoreException {
 		dbWriteLock();		
 		try {			
 			// INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)
 			insertIntoContentTags.clearParameters(); 			
-			insertIntoContentTags.setLong(1, tag.getContent().getId());
-			insertIntoContentTags.setLong(2, tag.getName().getId());
-			insertIntoContentTags.setString(3, tag.getComment());
-			insertIntoContentTags.setLong(4, tag.getBeginByteOffset());
-			insertIntoContentTags.setLong(5, tag.getEndByteOffset());
+			insertIntoContentTags.setLong(1, content.getId());
+			insertIntoContentTags.setLong(2, tagName.getId());
+			insertIntoContentTags.setString(3, comment);
+			insertIntoContentTags.setLong(4, beginByteOffset);
+			insertIntoContentTags.setLong(5, endByteOffset);
 			insertIntoContentTags.executeUpdate();
 
 			// SELECT MAX(tag_id) FROM content_tags
-			tag.setId(selectMaxIdFromContentTags.executeQuery().getLong(1));
+			return new ContentTag(selectMaxIdFromContentTags.executeQuery().getLong(1), content, tagName, comment, beginByteOffset, endByteOffset);
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding row to content_tags table (obj_id = " + tag.getContent().getId() + ", tag_name_id = " + tag.getName().getId() + ")", ex);
+			throw new TskCoreException("Error adding row to content_tags table (obj_id = " +content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
 			dbWriteUnlock();
@@ -5262,7 +5276,7 @@ public class SleuthkitCase {
 	
 	/*
 	 * Deletes a row from the content_tags table in the case database.
-	 * @param tag A ContentTag data transfer object (DTO) representing the row to delete.
+	 * @param tag A ContentTag data transfer object (DTO) for the row to delete.
 	 * @throws TskCoreException 
 	 */
 	public void deleteContentTag(ContentTag tag) throws TskCoreException {
@@ -5282,13 +5296,15 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Gets all content tags.
-	 * @param tags A list, possibly empty, of content tags. 
+	 * Selects all of the rows from the content_tags table in the case database.
+	 * @return A list, possibly empty, of ContentTag data transfer objects (DTOs) for the rows.
 	 * @throws TskCoreException 
 	 */
-	public void getAllContentTags(List<ContentTag> tags) throws TskCoreException {
+	public List<ContentTag> getAllContentTags() throws TskCoreException {
 		dbReadLock();		
 		try {
+			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
+			
 			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id
 			ResultSet resultSet = selectAllContentTags.executeQuery();
 			while (resultSet.next()) {
@@ -5296,9 +5312,11 @@ public class SleuthkitCase {
 				Content content = getContentById(resultSet.getLong("obj_id"));
 				tags.add(new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"))); 
 			} 
+			
+			return tags;
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error getting all content_tags", ex);
+			throw new TskCoreException("Error selecting rows from content_tags table", ex);
 		}
 		finally {
 			dbReadUnlock();
@@ -5306,10 +5324,17 @@ public class SleuthkitCase {
 	}
 		
 	/**
-	 * Gets a count of all of the content tags with a specified tag name.
+	 * Gets a count of the rows in the content_tags table in the case database 
+	 * with a specified foreign key into the tag_names table.
+	 * @param [in] tagName A data transfer object (DTO) for the tag name to match.
+	 * @return The count, possibly zero.
 	 * @throws TskCoreException 
 	 */
 	public long getContentTagsCountByTagName(TagName tagName) throws TskCoreException {
+		if (tagName.getId() == Tag.ID_NOT_SET) {
+			throw new TskCoreException("TagName object is invalid, id not set");
+		}
+		
 		dbReadLock();		
 		try {
 			// SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?
@@ -5320,11 +5345,11 @@ public class SleuthkitCase {
 				return resultSet.getLong(1);
 			} 
 			else {
-				throw new TskCoreException("Error getting content_tags count for tag name (tag_name_id = " + tagName.getId() + ")");
+				throw new TskCoreException("Error getting content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")");
 			}
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error getting content_tags count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
+			throw new TskCoreException("Error getting content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
 			dbReadUnlock();
@@ -5332,24 +5357,34 @@ public class SleuthkitCase {
 	}
 		
 	/**
-	 * Gets all of the content tags with a specified tag name.
+	 * Selects the rows in the content_tags table in the case database with a 
+	 * specified foreign key into the tag_names table.
+	 * @param [in] tagName A data transfer object (DTO) for the tag name to match.
+	 * @return A list, possibly empty, of ContentTag data transfer objects (DTOs) for the rows.
 	 * @throws TskCoreException 
 	 */
-	public void getContentTagsByTagName(TagName tagName, List<ContentTag> tags) throws TskCoreException {
+	public List<ContentTag> getContentTagsByTagName(TagName tagName) throws TskCoreException {
+		if (tagName.getId() == Tag.ID_NOT_SET) {
+			throw new TskCoreException("TagName object is invalid, id not set");
+		}
+		
 		dbReadLock();		
 		try {
+			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();			
+			
 			// SELECT * FROM content_tags WHERE tag_name_id = ?
 			selectContentTagsByTagName.clearParameters();
 			selectContentTagsByTagName.setLong(1, tagName.getId());
 			ResultSet resultSet = selectContentTagsByTagName.executeQuery();
 			while(resultSet.next()) {
-				ContentTag tag = new ContentTag(getContentById(resultSet.getLong("obj_id")), tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
-				tag.setId(resultSet.getLong("tag_id"));
+				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
 				tags.add(tag);				
 			}						
+			
+			return tags;
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error getting content_tags data (tag_name_id = " + tagName.getId() + ")", ex);
+			throw new TskCoreException("Error getting content_tags rows (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
 			dbReadUnlock();
@@ -5357,24 +5392,28 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Inserts a row corresponding to a BlackboardArtifactTag into the blackboard_artifact_tags table.
+	 * Inserts a row into the blackboard_artifact_tags table in the case database.
+     * @param [in] artifact The blackboard artifact to tag.
+     * @param [in] tagName The name to use for the tag.
+     * @param [in] comment A comment to store with the tag.
+	 * @return A BlackboardArtifactTag data transfer object (DTO) for the new row.
 	 * @throws TskCoreException 
 	 */
-	public void addBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
+	public BlackboardArtifactTag addBlackboardArtifactTag(BlackboardArtifact artifact, TagName tagName, String comment) throws TskCoreException {
 		dbWriteLock();		
 		try {			
 			// INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)			
 			insertIntoBlackboardArtifactTags.clearParameters(); 			
-			insertIntoBlackboardArtifactTags.setLong(1, tag.getArtifact().getArtifactID());
-			insertIntoBlackboardArtifactTags.setLong(2, tag.getName().getId());
-			insertIntoBlackboardArtifactTags.setString(3, tag.getComment());
+			insertIntoBlackboardArtifactTags.setLong(1, artifact.getArtifactID());
+			insertIntoBlackboardArtifactTags.setLong(2, tagName.getId());
+			insertIntoBlackboardArtifactTags.setString(3, comment);
 			insertIntoBlackboardArtifactTags.executeUpdate();
 
 			// SELECT MAX(tag_id) FROM blackboard_artifact_tags
-			tag.setId(selectMaxIdFromBlackboardArtifactTags.executeQuery().getLong(1));
+			return new BlackboardArtifactTag(selectMaxIdFromBlackboardArtifactTags.executeQuery().getLong(1), artifact, getContentById(artifact.getObjectID()), tagName, comment);
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + tag.getArtifact().getArtifactID() + ", tag_name_id = " + tag.getName().getId() + ")", ex);
+			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
 			dbWriteUnlock();
@@ -5403,13 +5442,15 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Gets all blackboard artifact tags.
-	 * @param tags A list, possibly empty, of blackboard artifact tags. 
+	 * Selects all of the rows from the blackboard_artifacts_tags table in the case database.
+	 * @return A list, possibly empty, of BlackboardArtifactTag data transfer objects (DTOs) for the rows.
 	 * @throws TskCoreException 
 	 */
-	public void getAllBlackboardArtifactTags(List<BlackboardArtifactTag> tags) throws TskCoreException {
+	public List<BlackboardArtifactTag> getAllBlackboardArtifactTags() throws TskCoreException {
 		dbReadLock();		
 		try {
+			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
+			
 			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id
 			ResultSet resultSet = selectAllBlackboardArtifactTags.executeQuery();
 			while (resultSet.next()) {
@@ -5419,9 +5460,11 @@ public class SleuthkitCase {
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			} 
+
+			return tags;
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error getting all content_tags", ex);
+			throw new TskCoreException("Error selecting rows from blackboard_artifact_tags table", ex);
 		}
 		finally {
 			dbReadUnlock();
@@ -5429,10 +5472,17 @@ public class SleuthkitCase {
 	}
 			
 	/**
-	 * Gets a count of all of the blackboard artifact tags with a specified tag name.
+	 * Gets a count of the rows in the blackboard_artifact_tags table in the case database 
+	 * with a specified foreign key into the tag_names table.
+	 * @param [in] tagName A data transfer object (DTO) for the tag name to match.
+	 * @return The count, possibly zero.
 	 * @throws TskCoreException 
 	 */
 	public long getBlackboardArtifactTagsCountByTagName(TagName tagName) throws TskCoreException {
+		if (tagName.getId() == Tag.ID_NOT_SET) {
+			throw new TskCoreException("TagName object is invalid, id not set");
+		}
+		
 		dbReadLock();		
 		try {
 			// SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?
@@ -5455,12 +5505,21 @@ public class SleuthkitCase {
 	}
 		
 	/**
-	 * Gets all of the blackboard artifact tags with a specified tag name.
+	 * Selects the rows in the blackboard_artifacts_tags table in the case database with a 
+	 * specified foreign key into the tag_names table.
+	 * @param [in] tagName A data transfer object (DTO) for the tag name to match.
+	 * @return A list, possibly empty, of BlackboardArtifactTag data transfer objects (DTOs) for the rows.
 	 * @throws TskCoreException 
 	 */
-	public void getBlackboardArtifactTagsByTagName(TagName tagName, List<BlackboardArtifactTag> tags) throws TskCoreException {
+	public List<BlackboardArtifactTag> getBlackboardArtifactTagsByTagName(TagName tagName) throws TskCoreException {
+		if (tagName.getId() == Tag.ID_NOT_SET) {
+			throw new TskCoreException("TagName object is invalid, id not set");
+		}
+		
 		dbReadLock();		
 		try {
+			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
+			
 			// SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?
 			selectBlackboardArtifactTagsByTagName.clearParameters();
 			selectBlackboardArtifactTagsByTagName.setLong(1, tagName.getId());
@@ -5471,6 +5530,8 @@ public class SleuthkitCase {
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			}			
+			
+			return tags;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error getting backboard artifact tags data (tag_name_id = " + tagName.getId() + ")", ex);
@@ -5480,9 +5541,18 @@ public class SleuthkitCase {
 		}			
 	}	
 	
-	public void getBlackboardArtifactTagsByArtifact(BlackboardArtifact artifact, List<BlackboardArtifactTag> tags) throws TskCoreException {
+	/**
+	 * Selects the rows in the blackboard_artifacts_tags table in the case database with a 
+	 * specified foreign key into the blackboard_artifacts table.
+	 * @param [in] artifact A data transfer object (DTO) for the artifact to match.
+	 * @return A list, possibly empty, of BlackboardArtifactTag data transfer objects (DTOs) for the rows.
+	 * @throws TskCoreException 
+	 */
+	public List<BlackboardArtifactTag> getBlackboardArtifactTagsByArtifact(BlackboardArtifact artifact) throws TskCoreException {
 		dbReadLock();		
 		try {
+			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
+			
 			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?			
 			selectBlackboardArtifactTagsByArtifact.clearParameters();
 			selectBlackboardArtifactTagsByArtifact.setLong(1, artifact.getArtifactID());
@@ -5492,7 +5562,9 @@ public class SleuthkitCase {
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
-			}			
+			}
+			
+			return tags;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error getting backboard artifact tags data (artifact_id = " + artifact.getArtifactID() + ")", ex);
@@ -5500,124 +5572,5 @@ public class SleuthkitCase {
 		finally {
 			dbReadUnlock();
 		}					
-	}
-	
-	private class DatabaseSchemaUpdater {
-		private int schemaVersionNumber = 0;
-		
-		DatabaseSchemaUpdater() throws TskCoreException {
-			try {			
-				Statement statement = con.createStatement();
-				ResultSet resultSet = statement.executeQuery("SELECT schema_ver FROM tsk_db_info");
-				if (resultSet.next()) {
-					schemaVersionNumber = resultSet.getInt("schema_ver");					
-				}
-				resultSet.close();
-				statement.close();						
-			} 
-			catch (SQLException ex) {				
-				throw new TskCoreException("Error querying schema version number", ex);
-			}									
-		}		
-		
-		void updateDatabaseSchema() throws TskCoreException {			
-			try {
-				con.setAutoCommit(false);
-				updateFromSchema3toSchema4();		
-				con.commit();
-				con.setAutoCommit(true);
-			}
-			catch (Exception ex) {
-				try {
-					con.rollback();
-					throw new TskCoreException("Failed to update database schema", ex);
-				}
-				catch (SQLException e) {
-					logger.log(Level.SEVERE, "Failed to rollback erroneous database schema update", e);
-				}				
-			}
-		} 
-		
-		private void updateFromSchema3toSchema4() throws TskCoreException {
-			if (schemaVersionNumber != 3) {
-				return;
-			}
-
-			
-			// Keep track of the unique tag names created from the TSK_TAG_NAME attributes of 
-			// the now obsolete TSK_TAG_FILE and TSK_TAG_ARTIFACT artifacts.
-			HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
-
-			// Convert TSK_TAG_FILE artifacts into content tags.
-			for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_FILE)) {
-				Content content = getContentById(artifact.getObjectID());
-				String name = "";
-				String comment = "";
-				ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
-				for (BlackboardAttribute attribute : attributes) {
-					if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID()) {
-						name = attribute.getValueString();
-					}
-					else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID()) {
-						comment = attribute.getValueString();
-					}
-				}
-
-				if (!name.isEmpty()) {
-					TagName tagName;
-					if (!tagNames.containsKey(name)) {
-						tagName = tagNames.get(name);
-					}
-					else {
-						tagName = new TagName(name, "", TagName.HTML_COLOR.NONE);
-						addTagName(tagName);
-						tagNames.put(name, tagName);
-					}
-					addContentTag(new ContentTag(content, tagName, comment, 0, content.getSize() - 1));
-				}
-			}
-
-			// Convert TSK_TAG_ARTIFACT artifacts into blackboard artifact tags.
-			for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_ARTIFACT)) {
-				Content content = getContentById(artifact.getObjectID());
-				String name = "";
-				String comment = "";
-				ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
-				for (BlackboardAttribute attribute : attributes) {
-					if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID()) {
-						name = attribute.getValueString();
-					}
-					else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID()) {
-						comment = attribute.getValueString();
-					}
-				}
-
-				if (!name.isEmpty()) {
-					TagName tagName;
-					if (!tagNames.containsKey(name)) {
-						tagName = tagNames.get(name);
-					}
-					else {
-						tagName = new TagName(name, "", TagName.HTML_COLOR.NONE);
-						addTagName(tagName);
-						tagNames.put(name, tagName);
-					}
-					addBlackboardArtifactTag(new BlackboardArtifactTag(artifact, content, tagName, comment));
-				}
-			}
-
-			updateSchemaVersionNumber(4);
-		}		
-		
-		private void updateSchemaVersionNumber(int schemaVersionNumber) throws TskCoreException {
-			try {			
-				Statement statement = con.createStatement();
-				statement.executeUpdate("UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
-				statement.close();		
-			} 
-			catch (SQLException ex) {
-				throw new TskCoreException("Error updating schema version number", ex);
-			}			
-		} 		
-	}		
+	}	
 }
