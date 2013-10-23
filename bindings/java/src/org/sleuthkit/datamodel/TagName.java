@@ -22,8 +22,8 @@ import java.util.HashMap;
 
 /**
  * Instances of this class are data transfer objects (DTOs) that represent the 
- * names (and related properties) a user can select from to apply a tag to a 
- * Content or BlackboardArtifact object.
+ * names (and related properties) a user can select from to apply a tag to 
+ * content or a blackboard artifact.
  */
 public class TagName {
 	public enum HTML_COLOR {
@@ -78,17 +78,18 @@ public class TagName {
 	private String description;
 	private HTML_COLOR color;
 		
-	public TagName(String displayName, String description, HTML_COLOR color) {
+	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.		
+	TagName(long id, String displayName, String description, HTML_COLOR color) {
+		this.id = id;
 		this.displayName = displayName;
 		this.description = description;
 		this.color = color;
 	}
-
-	TagName(long id, String displayName, String description, HTML_COLOR color) {
-		this(displayName, description, color);
-		this.id = id;
-	}
 	
+	public long getId() {
+		return id;
+	}	
+		
 	public String getDisplayName() {
 		return displayName;
 	}
@@ -99,13 +100,5 @@ public class TagName {
 		
 	public HTML_COLOR getColor() {
 		return color;
-	}
-	
-	long getId() {
-		return id;
 	}	
-
-	void setId(long id) {
-		this.id = id;
-	}			
 }

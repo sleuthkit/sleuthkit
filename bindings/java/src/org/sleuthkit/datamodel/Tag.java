@@ -23,34 +23,26 @@ package org.sleuthkit.datamodel;
  * tags applied to content and blackboard artifacts by users.
  */
 public abstract class Tag {	
-	static long ID_NOT_SET = 0;
+	static long ID_NOT_SET = -1;
 	private long id = ID_NOT_SET;
 	private final TagName name;
 	private final String comment;
-			
-	public Tag(TagName name, String comment) {
+	
+	Tag(long id, TagName name, String comment) {
+		this.id = id;
 		this.name = name;
 		this.comment = comment;
 	}
-				
-	Tag(long id, TagName name, String comment) {
-		this(name, comment);
-		this.id = id;
-	}
 	
+	public long getId() {
+		return id;
+	}			
+		
 	public TagName getName() {
 		return name;
 	}
 		
 	public String getComment() {
 		return comment;
-	}
-	
-	long getId() {
-		return id;
 	}	
-		
-	void setId(long id) {
-		this.id = id;
-	}
 }
