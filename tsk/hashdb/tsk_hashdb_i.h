@@ -134,6 +134,7 @@ extern "C" {
     extern uint8_t sqlite_v1_open(TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
     extern void sqlite_v1_close(TSK_IDX_INFO *);
     extern uint8_t sqlite_v1_initialize(TSK_HDB_INFO *, TSK_TCHAR *);
+    extern uint8_t sqlite_v1_begin(TSK_HDB_INFO *);
     extern uint8_t sqlite_v1_addentry(TSK_HDB_INFO *, char *, TSK_OFF_T);
     extern uint8_t sqlite_v1_addentry_bin(TSK_HDB_INFO *,
             unsigned char *, int, TSK_OFF_T);

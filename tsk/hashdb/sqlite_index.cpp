@@ -85,6 +85,35 @@ static uint8_t tsk_hdb_commit_transaction(TSK_IDX_INFO * idx_info) {
 	return attempt_exec_nocallback("COMMIT", "Error committing transaction %s\n", idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
 }
 
+/** Init prepared statements. Call before adding to the database. Call finalize() when done.
+ *
+ * @param hdb_info Hash database state structure
+ *
+ * @return 1 on error and 0 on success
+ *
+ */
+uint8_t
+sqlite_v1_begin(TSK_HDB_INFO * hdb_info)
+{
+	char * insertStmt;
+
+	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
+		insertStmt = "INSERT INTO hashset_hashes (md5, database_offset) VALUES (?, ?)";
+	} else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
+		insertStmt = "INSERT INTO hashset_hashes (sha1, database_offset) VALUES (?, ?)";
+	} else {
+        return 1;
+    }
+
+	prepare_stmt(insertStmt, &m_stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+
+	if (tsk_hdb_begin_transaction(hdb_info->idx_info)) {
+		return 1;
+	} else {
+        return 0;
+    }
+}
+
 /** Initialize the TSK hash DB index file by creating tables, etc..
  *
  * @param hdb_info Hash database state structure
@@ -97,7 +126,6 @@ uint8_t
 sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 {
 	char stmt[1024];
-	char * insertStmt;
 
 	if (attempt_exec_nocallback("PRAGMA synchronous = OFF;",
 		"Error setting PRAGMA synchronous: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
@@ -130,24 +158,8 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 			return 1;
 	}
 
-    // @@@ This seems like the wrong long-term place for this because we could want to insert even if we don't initialize a new DB
-	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
-		insertStmt = "INSERT INTO hashset_hashes (md5, database_offset) VALUES (?, ?)";
-	} else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
-		insertStmt = "INSERT INTO hashset_hashes (sha1, database_offset) VALUES (?, ?)";
-	} else {
-        return 1;
-    }
-
-	prepare_stmt(insertStmt, &m_stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
-
-	if (tsk_hdb_begin_transaction(hdb_info->idx_info)) {
-		return 1;
-	}
-
-	return 0;
+	return sqlite_v1_begin(hdb_info);
 }
-
 
 /**
  * Add a string representation of a hash value to the index.

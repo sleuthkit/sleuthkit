@@ -484,14 +484,6 @@ tsk_hdb_new(TSK_TCHAR * db_file)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CREATE);
             tsk_error_set_errstr("tsk_hdb_new: making new index failed");
-        } else {
-            if (tsk_hdb_idxfinalize(hdb_info) != 0) {
-                tsk_hdb_close(hdb_info);
-                hdb_info = NULL;
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_HDB_WRITE);
-                tsk_error_set_errstr("tsk_hdb_new: finalizing new index failed");
-            }
         }
     }
     return hdb_info;
@@ -522,6 +514,10 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
         ///@todo also allow use of other htypes
         char * hvalue = (char *)md5;
 
+        // @todo Could set up a polymorphic mechanism like with finalize() but
+        // we know it's going to be sqlite in this function.
+        sqlite_v1_begin(hdb_info);
+
         // Attempt to add a new row to the hash index
         TSK_OFF_T offset = 0; //not needed since there might not be an original DB
         if (tsk_hdb_idxaddentry(hdb_info, hvalue, offset) != 0) {
@@ -536,7 +532,7 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
                 tsk_error_set_errno(TSK_ERR_HDB_WRITE);
                 tsk_error_set_errstr("tsk_hdb_add_str: finalizing index failed");
                 return 1;
-            }
+            }  
             return 0;
         }
     }
