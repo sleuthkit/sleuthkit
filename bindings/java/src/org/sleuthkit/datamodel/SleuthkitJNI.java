@@ -54,6 +54,10 @@ public class SleuthkitJNI {
 
 	private static native int addDbKnownBadNat(String hashDbPath) throws TskCoreException;
 
+    private static native int newDbKnownBadNat(String hashDbPath) throws TskCoreException;
+    
+    private static native int addStrDbKnownBadNat(String filename, String hashMd5, String hashSha1, String hashSha256, int dbHandle) throws TskCoreException;
+    
 	private static native String getDbName(String hashDbPath) throws TskCoreException;
 
 	private static native void closeDbLookupsNat() throws TskCoreException;
@@ -111,6 +115,8 @@ public class SleuthkitJNI {
 
 	private static native boolean lookupIndexExistsNat(String dbPath) throws TskCoreException;
 
+    
+    
 	//util functions
 	private static native long findDeviceSizeNat(String devicePath) throws TskCoreException;
 
@@ -655,9 +661,8 @@ public class SleuthkitJNI {
 	 * @return a handle for that database
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
-	public static int newHashDatabase(String path) throws TskCoreException {
-		// @@@ TO BUILD
-		return 0;
+	public static int newHashDatabase(String path) throws TskCoreException {		
+		return newDbKnownBadNat(path);
 	}
 
 	/**

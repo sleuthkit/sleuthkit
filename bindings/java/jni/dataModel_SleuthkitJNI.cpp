@@ -317,6 +317,79 @@ JNIEXPORT jint JNICALL
 }
 
 /*
+ * Create a new hash db.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param pathJ the path to the database
+ * @return a handle for the database
+ */
+JNIEXPORT jint JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_newDbKnownBadNat(JNIEnv * env,
+    jclass obj, jstring pathJ)
+{
+    TSK_TCHAR pathT[1024];
+    toTCHAR(env, pathT, 1024, pathJ);
+
+    TSK_HDB_INFO * temp = tsk_hdb_new(pathT);
+
+    if(temp == NULL)
+    {
+        setThrowTskCoreError(env);
+        return -1;
+    }
+
+    m_knownbads.push_back(temp);
+    
+    return m_knownbads.size();
+}
+
+/*
+ * Add entry to hash db.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param filenameJ Name of the file that was hashed (can be empty)
+ * @param hashMd5J Text of MD5 hash (can be empty)
+ * @param hashSha1J Text of SHA1 hash (can be empty)
+ * @param hashSha256J Text of SHA256 hash (can be empty)
+ * @return 1 on error and 0 on success
+ */
+JNIEXPORT jint JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_addStrDbKnownBadNat(JNIEnv * env,
+    jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J, jint dbHandle)
+{
+    int8_t retval = 0;
+
+    if((size_t) dbHandle > m_knownbads.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        retval = 1;
+    } else {
+        jboolean isCopy;
+        const char *md5 = (const char *) env->GetStringUTFChars(hashMd5J, &isCopy);
+        const char *sha1 = (const char *) env->GetStringUTFChars(hashSha1J, &isCopy);
+        const char *sha256 = (const char *) env->GetStringUTFChars(hashSha256J, &isCopy);
+   
+        TSK_TCHAR filenameT[1024];
+        toTCHAR(env, filenameT, 1024, filenameJ);
+
+        TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
+
+        if(db != NULL) {
+            retval = tsk_hdb_add_str(db, filenameT, md5, sha1, sha256);
+
+            if (retval == 1) {
+                setThrowTskCoreError(env);
+            }
+        }
+
+        env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
+        env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
+        env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
+    }
+
+    return retval;
+}
+
+/*
  * Get the name of the database pointed to by path
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
