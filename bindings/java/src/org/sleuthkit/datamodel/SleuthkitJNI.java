@@ -733,7 +733,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException 
 	 */
 	public static void addToHashDatabase(String filename, String md5, String sha1, String sha256, int dbHandle) throws TskCoreException {
-		// @@@ TODO
+		addStrDbKnownBadNat(filename, md5, sha1, sha256, dbHandle);
 	}
 
 	/**
