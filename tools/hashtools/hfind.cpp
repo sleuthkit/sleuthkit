@@ -134,7 +134,7 @@ main(int argc, char ** argv1)
             tsk_error_print(stderr);
             return 1;
         } else {
-            printf("New index %s.kdb created.\n", db_file);
+            printf("New index %"PRIttocTSK".kdb created.\n", db_file);
             return 0;
         }
     } else {
@@ -172,6 +172,8 @@ main(int argc, char ** argv1)
         tsk_hdb_close(hdb_info);
         return 0;
     }
+
+    ///@todo support adding hashes to updateable indices
 
     /* Do some hash lookups 
      *
