@@ -150,7 +150,8 @@ extern "C" {
     struct TSK_IDX_INFO {
         TSK_HDB_ITYPE_ENUM index_type;   ///< Type of index
         TSK_TCHAR *idx_fname;   ///< Name of index file
-        
+        uint8_t   updateable;   ///< Allow new entries to be added?
+
         union {
             TSK_IDX_SQLITE_V1 * idx_sqlite_v1;
             TSK_IDX_BINSRCH * idx_binsrch;

@@ -351,6 +351,7 @@ JNIEXPORT jint JNICALL
  * @param hashMd5J Text of MD5 hash (can be empty)
  * @param hashSha1J Text of SHA1 hash (can be empty)
  * @param hashSha256J Text of SHA256 hash (can be empty)
+ * @param dbHandle Which DB.
  * @return 1 on error and 0 on success
  */
 JNIEXPORT jint JNICALL
@@ -386,6 +387,31 @@ JNIEXPORT jint JNICALL
         env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
     }
 
+    return retval;
+}
+
+/*
+ * Get updateable state.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ * @return true if db can be updated
+ */
+JNIEXPORT jboolean JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_isUpdateableDbKnownBadNat(JNIEnv * env,
+    jclass obj, jint dbHandle)
+{
+    bool retval = false;
+
+    if((size_t) dbHandle > m_knownbads.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+    } else {
+        TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
+
+        if(db != NULL) {
+            retval = (db->idx_info->updateable == 1) ? true : false;
+        }
+    }
     return retval;
 }
 

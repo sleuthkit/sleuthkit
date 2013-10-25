@@ -152,6 +152,13 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 		return 1;
 	}
 
+	snprintf(stmt, 1024,
+		"INSERT INTO hashset_properties (name, value) VALUES ('%s', '%s');",
+		IDX_HASHSET_UPDATEABLE, (hdb_info->idx_info->updateable == 1) ? "true" : "false");
+	if (attempt_exec_nocallback(stmt, "Error adding updateable to hashset_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		return 1;
+	}
+
 	if (attempt_exec_nocallback
 		("CREATE TABLE hashset_hashes (md5 BINARY(16), sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);",
 		"Error creating hashset_hashes table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {

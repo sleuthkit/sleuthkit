@@ -83,6 +83,16 @@ JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_addStrDbKnownBadNat(JNIEnv * env,
     jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J, jint dbHandle);
 
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    isUpdateableDbKnownBadNat
+ * Signature: 
+ */
+JNIEXPORT jboolean JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_isUpdateableDbKnownBadNat(JNIEnv * env,
+    jclass obj, jint dbHandle)
+
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    getDbName

@@ -94,6 +94,12 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
 
     hdb_info->idx_info = idx_info;
 
+    if (create == 1) {
+        idx_info->updateable = 1;
+    } else {
+        idx_info->updateable = 0;
+    }
+
     /* Make the name for the index file */
     flen = TSTRLEN(hdb_info->db_fname) + 32;
     idx_info->idx_fname =

@@ -57,6 +57,8 @@ public class SleuthkitJNI {
     private static native int newDbKnownBadNat(String hashDbPath) throws TskCoreException;
     
     private static native int addStrDbKnownBadNat(String filename, String hashMd5, String hashSha1, String hashSha256, int dbHandle) throws TskCoreException;
+
+    private static native boolean isUpdateableDbKnownBadNat(int dbHandle);
     
 	private static native String getDbName(String hashDbPath) throws TskCoreException;
 
