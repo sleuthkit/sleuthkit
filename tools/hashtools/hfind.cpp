@@ -73,7 +73,8 @@ main(int argc, char ** argv1)
     unsigned int flags = 0;
     TSK_HDB_INFO *hdb_info;
     TSK_TCHAR **argv;
-    
+    bool create = false;
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -88,7 +89,7 @@ main(int argc, char ** argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ef:i:qV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("cef:i:qV"))) > 0) {
         switch (ch) {
         case _TSK_T('e'):
             flags |= TSK_HDB_FLAG_EXT;
@@ -100,6 +101,10 @@ main(int argc, char ** argv1)
 
         case _TSK_T('i'):
             idx_type = OPTARG;
+            break;
+
+        case _TSK_T('c'):
+            create = true;
             break;
 
         case _TSK_T('q'):
@@ -123,9 +128,21 @@ main(int argc, char ** argv1)
 
     db_file = argv[OPTIND++];
 
-    if ((hdb_info = tsk_hdb_open(db_file, TSK_HDB_OPEN_NONE)) == NULL) {
-        tsk_error_print(stderr);
-        return 1;
+    // Make a new database (creates an index from scratch)
+    if (create) {
+        if ((hdb_info = tsk_hdb_new(db_file)) == NULL) {
+            tsk_error_print(stderr);
+            return 1;
+        } else {
+            printf("New index %s.kdb created.\n", db_file);
+            return 0;
+        }
+    } else {
+        // Open an existing database
+        if ((hdb_info = tsk_hdb_open(db_file, TSK_HDB_OPEN_NONE)) == NULL) {
+            tsk_error_print(stderr);
+            return 1;
+        }
     }
 
     /* What mode are we going to run in 
