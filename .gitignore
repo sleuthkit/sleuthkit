@@ -46,6 +46,7 @@ framework/SampleConfig/to_install/
 framework/modules/*/win32/Debug/
 framework/modules/*/win32/Release/
 framework/modules/*/win32/*.user
+framework/modules/c_InterestingFilesModule/tsk
 
 # Release files
 release/sleuthkit-*
