@@ -490,7 +490,15 @@ tsk_hdb_new(TSK_TCHAR * db_file)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CREATE);
             tsk_error_set_errstr("tsk_hdb_new: making new index failed");
-        }
+        } else {
+            if (tsk_hdb_idxfinalize(hdb_info) != 0) {
+                tsk_hdb_close(hdb_info);
+                hdb_info = NULL;
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_HDB_WRITE);
+                tsk_error_set_errstr("tsk_hdb_new: finalizing new index failed");
+            }
+        }    
     }
     return hdb_info;
 }
@@ -506,7 +514,7 @@ tsk_hdb_new(TSK_TCHAR * db_file)
  * @param sha256 Text of SHA256 hash (can be null)
  * @return 1 on error, 0 on success, -1 if not updateable
  */
-uint8_t
+int8_t
 tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
                 const TSK_TCHAR * filename, 
                 const char * md5, 

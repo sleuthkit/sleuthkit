@@ -216,7 +216,7 @@ extern "C" {
 
     extern TSK_HDB_INFO * tsk_hdb_new(TSK_TCHAR * db_file);
 
-    extern uint8_t tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
+    extern int8_t tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
                         const TSK_TCHAR * filename, 
                         const char * md5, 
                         const char * sha1, 
