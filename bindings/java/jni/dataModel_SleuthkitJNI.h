@@ -91,7 +91,7 @@ JNIEXPORT jint JNICALL
  */
 JNIEXPORT jboolean JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_isUpdateableDbKnownBadNat(JNIEnv * env,
-    jclass obj, jint dbHandle)
+    jclass obj, jint dbHandle);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
