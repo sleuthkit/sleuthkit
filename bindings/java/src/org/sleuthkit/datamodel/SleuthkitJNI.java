@@ -738,6 +738,11 @@ public class SleuthkitJNI {
 		addStrDbKnownBadNat(filename, md5, sha1, sha256, dbHandle);
 	}
 
+    
+	public static boolean isUpdateableHashDatabase(int dbHandle) throws TskCoreException {
+		return isUpdateableDbKnownBadNat(dbHandle);
+	}    
+    
 	/**
 	 * Get the size of the index of the given database
 	 *
