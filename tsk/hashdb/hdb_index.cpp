@@ -94,12 +94,6 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
 
     hdb_info->idx_info = idx_info;
 
-    if (create == 1) {
-        idx_info->updateable = 1;
-    } else {
-        idx_info->updateable = 0;
-    }
-
     /* Make the name for the index file */
     flen = TSTRLEN(hdb_info->db_fname) + 32;
     idx_info->idx_fname =
@@ -185,6 +179,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             idx_info->finalize = binsrch_finalize;
             idx_info->lookup_str = binsrch_lookup_str;
             idx_info->lookup_raw = binsrch_lookup_raw;
+            idx_info->get_updateable = binsrch_get_updateable;
         }
         else {
             tsk_error_reset();
@@ -227,10 +222,17 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
         idx_info->finalize = sqlite_v1_finalize;
         idx_info->lookup_str = sqlite_v1_lookup_str;
         idx_info->lookup_raw = sqlite_v1_lookup_raw;
+        idx_info->get_updateable = sqlite_v1_get_updateable;
     }
 
     // Open
     if (idx_info->open(hdb_info, idx_info, htype) == 0) {
+        if (create == 1) {
+            idx_info->updateable = 1;
+        } else {
+            idx_info->get_updateable(hdb_info);
+        }
+
         return idx_info;
     }
 

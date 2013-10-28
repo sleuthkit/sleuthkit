@@ -166,6 +166,7 @@ extern "C" {
                 TSK_HDB_LOOKUP_FN, void *);
         int8_t(*lookup_raw) (TSK_HDB_INFO *, uint8_t *, uint8_t,
                 TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+        int8_t(*get_updateable) (TSK_HDB_INFO *);        
         void(*close) (TSK_IDX_INFO *);
 
     };
