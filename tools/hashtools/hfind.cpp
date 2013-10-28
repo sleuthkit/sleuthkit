@@ -74,6 +74,7 @@ main(int argc, char ** argv1)
     TSK_HDB_INFO *hdb_info;
     TSK_TCHAR **argv;
     bool create = false;
+    bool addHash = false;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -89,7 +90,7 @@ main(int argc, char ** argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("cef:i:qV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("cef:i:aqV"))) > 0) {
         switch (ch) {
         case _TSK_T('e'):
             flags |= TSK_HDB_FLAG_EXT;
@@ -105,6 +106,10 @@ main(int argc, char ** argv1)
 
         case _TSK_T('c'):
             create = true;
+            break;
+
+        case _TSK_T('a'):
+            addHash = true;
             break;
 
         case _TSK_T('q'):
@@ -139,7 +144,12 @@ main(int argc, char ** argv1)
         }
     } else {
         // Open an existing database
-        if ((hdb_info = tsk_hdb_open(db_file, TSK_HDB_OPEN_NONE)) == NULL) {
+        TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
+        if(addHash) {
+            flags = TSK_HDB_OPEN_IDXONLY;
+        }
+
+        if ((hdb_info = tsk_hdb_open(db_file, flags)) == NULL) {
             tsk_error_print(stderr);
             return 1;
         }
@@ -210,19 +220,33 @@ main(int argc, char ** argv1)
             }
             htmp[i] = '\0';
 
-            /* Perform lookup */
-            retval =
-                tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
-                        (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
-            if (retval == -1) {
-                tsk_error_print(stderr);
-                return 1;
-            }
-            if (flags & TSK_HDB_FLAG_QUICK) {
-                printf("%d\n", retval);
-            }
-            else if (retval == 0) {
-                print_notfound(htmp);
+            if (addHash) {
+                // Write a new hash to the database/index, if it's updateable
+                //@todo support sha1 and sha2-256
+                retval = tsk_hdb_add_str(hdb_info, NULL, (const char *)htmp, NULL, NULL);
+                if (retval == 1) {
+                    tsk_error_print(stderr);
+                    return 1;
+                } else if (retval == -1) {
+                    printf("Database is not updateable.\n");
+                } else if (retval == 0) {
+                    printf("Hash added.\n");
+                }
+            } else {
+                /* Perform lookup */
+                retval =
+                    tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
+                            (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
+                if (retval == -1) {
+                    tsk_error_print(stderr);
+                    return 1;
+                }
+                if (flags & TSK_HDB_FLAG_QUICK) {
+                    printf("%d\n", retval);
+                }
+                else if (retval == 0) {
+                    print_notfound(htmp);
+                }
             }
             OPTIND++;
         }
