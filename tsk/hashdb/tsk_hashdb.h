@@ -166,6 +166,7 @@ extern "C" {
                 TSK_HDB_LOOKUP_FN, void *);
         int8_t(*lookup_raw) (TSK_HDB_INFO *, uint8_t *, uint8_t,
                 TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+        int8_t(*get_updateable) (TSK_HDB_INFO *);        
         void(*close) (TSK_IDX_INFO *);
 
     };
@@ -216,7 +217,7 @@ extern "C" {
 
     extern TSK_HDB_INFO * tsk_hdb_new(TSK_TCHAR * db_file);
 
-    extern uint8_t tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
+    extern int8_t tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
                         const TSK_TCHAR * filename, 
                         const char * md5, 
                         const char * sha1, 

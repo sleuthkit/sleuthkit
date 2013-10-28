@@ -183,8 +183,6 @@ main(int argc, char ** argv1)
         return 0;
     }
 
-    ///@todo support adding hashes to updateable indices
-
     /* Do some hash lookups 
      *
      * Check if the values were passed on the command line or via a file */
@@ -225,12 +223,13 @@ main(int argc, char ** argv1)
                 //@todo support sha1 and sha2-256
                 retval = tsk_hdb_add_str(hdb_info, NULL, (const char *)htmp, NULL, NULL);
                 if (retval == 1) {
+                    printf("There was an error adding the hash.\n");
                     tsk_error_print(stderr);
                     return 1;
                 } else if (retval == -1) {
                     printf("Database is not updateable.\n");
                 } else if (retval == 0) {
-                    printf("Hash added.\n");
+                    printf("Hash %s added.\n", htmp);
                 }
             } else {
                 /* Perform lookup */

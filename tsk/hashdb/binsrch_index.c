@@ -685,6 +685,14 @@ binsrch_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
     return tsk_hdb_lookup_str(hdb_info, hashbuf, flags, action, ptr);
 }
 
+int8_t
+binsrch_get_updateable(TSK_HDB_INFO * hdb_info)
+{
+    // Always false
+    hdb_info->idx_info->updateable = 0;
+    return 0;
+}
+
 void
 binsrch_close(TSK_IDX_INFO * idx_info)
 {
