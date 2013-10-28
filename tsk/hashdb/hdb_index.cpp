@@ -504,7 +504,7 @@ tsk_hdb_new(TSK_TCHAR * db_file)
  * @param md5 Text of MD5 hash (can be null)
  * @param sha1 Text of SHA1 hash (can be null)
  * @param sha256 Text of SHA256 hash (can be null)
- * @return 1 on error and 0 on success
+ * @return 1 on error, 0 on success, -1 if not updateable
  */
 uint8_t
 tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
@@ -517,29 +517,38 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
         tsk_error_set_errstr2("tsk_hdb_add_str: null hdb_info");
         return 1;
     } else {
-        ///@todo also allow use of other htypes
-        char * hvalue = (char *)md5;
+        uint8_t htype = TSK_HDB_HTYPE_MD5_ID;
+        if (hdb_setupindex(hdb_info, htype, 0)) {
+            return 1;
+        }
 
-        // @todo Could set up a polymorphic mechanism like with finalize() but
-        // we know it's going to be sqlite in this function.
-        sqlite_v1_begin(hdb_info);
+        if(hdb_info->idx_info->updateable == 1) {
+            ///@todo also allow use of other htypes
+            char * hvalue = (char *)md5;
 
-        // Attempt to add a new row to the hash index
-        TSK_OFF_T offset = 0; //not needed since there might not be an original DB
-        if (tsk_hdb_idxaddentry(hdb_info, hvalue, offset) != 0) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_HDB_WRITE);
-            tsk_error_set_errstr("tsk_hdb_add_str: adding entry failed");
-            return 1;            
-        } else {
-            // Close and sort the index
-            if (tsk_hdb_idxfinalize(hdb_info) != 0) {
+            // @todo Could set up a polymorphic mechanism like with finalize() but
+            // we know it's going to be sqlite in this function.
+            sqlite_v1_begin(hdb_info);
+
+            // Attempt to add a new row to the hash index
+            TSK_OFF_T offset = 0; //not needed since there might not be an original DB
+            if (tsk_hdb_idxaddentry(hdb_info, hvalue, offset) != 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_WRITE);
-                tsk_error_set_errstr("tsk_hdb_add_str: finalizing index failed");
-                return 1;
-            }  
-            return 0;
+                tsk_error_set_errstr("tsk_hdb_add_str: adding entry failed");
+                return 1;            
+            } else {
+                // Close and sort the index
+                if (tsk_hdb_idxfinalize(hdb_info) != 0) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_HDB_WRITE);
+                    tsk_error_set_errstr("tsk_hdb_add_str: finalizing index failed");
+                    return 1;
+                }  
+                return 0;
+            }
+        } else {
+            return -1;
         }
     }
 }
