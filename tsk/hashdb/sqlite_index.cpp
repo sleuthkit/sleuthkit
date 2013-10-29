@@ -167,7 +167,7 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 	}
 
 	if (attempt_exec_nocallback
-		("CREATE TABLE hashes (md5 BINARY(16), sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);",
+		("CREATE TABLE hashes (md5 BINARY(16) UNIQUE, sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);",
 		"Error creating hashes table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 			return 1;
 	}
@@ -245,11 +245,26 @@ sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen,
 		attempt(sqlite3_bind_int64(m_stmt, 2, offset),
 		SQLITE_OK,
 		"Error binding entry offset: %s\n",
-		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
-		attempt(sqlite3_step(m_stmt), SQLITE_DONE, "Error stepping: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
-		attempt(sqlite3_reset(m_stmt), SQLITE_OK, "Error resetting: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-			return 1;
-	}
+		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ) {
+        return 1;
+    }
+
+    // Don't report error on constraint -- we just will silently not add that duplicate hash
+	int r = sqlite3_step(m_stmt);
+    if ((r != SQLITE_DONE) && (r != SQLITE_CONSTRAINT) ) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_AUTO_DB);
+		tsk_error_set_errstr("Error stepping: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
+        return 1;
+    }
+
+	r = sqlite3_reset(m_stmt);
+    if ((r != SQLITE_OK) && (r != SQLITE_CONSTRAINT) ) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_AUTO_DB);
+		tsk_error_set_errstr("Error resetting: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
+        return 1;
+    }
 
     return 0;
 }
