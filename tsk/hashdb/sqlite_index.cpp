@@ -580,5 +580,7 @@ sqlite3_test(FILE * hFile)
             return 1;
         }
     }
+
+    return 0;
 }
 
