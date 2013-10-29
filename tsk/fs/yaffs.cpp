@@ -615,26 +615,28 @@ static void
 static void
     yaffscache_objects_free(YAFFSFS_INFO *yfs)
 {
-    YaffsCacheObject *obj = yfs->cache_objects;
-    while(obj != NULL) {
-        YaffsCacheObject *to_free = obj;
+    if((yfs != NULL) && (yfs->cache_objects != NULL)){
+        YaffsCacheObject *obj = yfs->cache_objects;
+        while(obj != NULL) {
+            YaffsCacheObject *to_free = obj;
 
-        YaffsCacheVersion *ver = obj->yco_latest;
-        while(ver != NULL) {
-            YaffsCacheVersion *v_to_free = ver;
-            ver = ver->ycv_prior;
-            free(v_to_free);
+            YaffsCacheVersion *ver = obj->yco_latest;
+            while(ver != NULL) {
+                YaffsCacheVersion *v_to_free = ver;
+                ver = ver->ycv_prior;
+                free(v_to_free);
+            }
+
+            obj = obj->yco_next;
+            free(to_free);
         }
-
-        obj = obj->yco_next;
-        free(to_free);
     }
 }
 
 static void
     yaffscache_chunks_free(YAFFSFS_INFO *yfs)
 {
-    if(yfs->chunkMap != NULL){
+    if((yfs != NULL) && (yfs->chunkMap != NULL)){
         // Free the YaffsCacheChunks in each ChunkGroup
         std::map<unsigned int,YaffsCacheChunkGroup>::iterator iter;
         for( iter = yfs->chunkMap->begin(); iter != yfs->chunkMap->end(); ++iter ) {
@@ -649,7 +651,7 @@ static void
         // Free the map
         yfs->chunkMap->clear();
         delete yfs->chunkMap;
-	}
+    }
 
 }
 
@@ -2455,20 +2457,18 @@ static uint8_t
 static void
     yaffsfs_close(TSK_FS_INFO *fs)
 {
-    YAFFSFS_INFO *yfs = (YAFFSFS_INFO *)fs;
+    if(fs != NULL){
+        YAFFSFS_INFO *yfs = (YAFFSFS_INFO *)fs;
 
-    fs->tag = 0;
+        fs->tag = 0;
 
-    // Walk and free the cache structures
-    yaffscache_objects_free(yfs);
-	fprintf(stderr, "After objects free\n");
-	fflush(stderr);
-    yaffscache_chunks_free(yfs);
-	fprintf(stderr, "After chunks free\n");
+        // Walk and free the cache structures
+        yaffscache_objects_free(yfs);
+        yaffscache_chunks_free(yfs);
 
-    //tsk_deinit_lock(&yaffsfs->lock);
-
-    tsk_fs_free(fs);
+        //tsk_deinit_lock(&yaffsfs->lock);
+        tsk_fs_free(fs);
+	}
 }
 
 typedef struct _dir_open_cb_args {
@@ -2902,8 +2902,8 @@ TSK_FS_INFO *
     yaffs2_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     TSK_FS_TYPE_ENUM ftype, uint8_t test)
 {
-    YAFFSFS_INFO *yaffsfs;
-    TSK_FS_INFO *fs;
+    YAFFSFS_INFO *yaffsfs = NULL;
+    TSK_FS_INFO *fs = NULL;
     const unsigned int psize = img_info->page_size;
     const unsigned int ssize = img_info->spare_size;
     YaffsHeader * first_header = NULL;
@@ -2923,6 +2923,8 @@ TSK_FS_INFO *
 
     if ((yaffsfs = (YAFFSFS_INFO *) tsk_fs_malloc(sizeof(YAFFSFS_INFO))) == NULL)
         return NULL;
+    yaffsfs->cache_objects = NULL;
+    yaffsfs->chunkMap = NULL;
 
     // Read config file (if it exists)
     config_file_status = yaffs_load_config_file(img_info, configParams);
@@ -3096,7 +3098,6 @@ TSK_FS_INFO *
     */
     //tsk_init_lock(&yaffsfs->lock);
     yaffsfs->chunkMap = new std::map<uint32_t, YaffsCacheChunkGroup>;
-    yaffsfs->cache_objects = NULL;
     yaffsfs_cache_fs(yaffsfs);
 
     if (tsk_verbose) {
