@@ -72,47 +72,54 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
 #endif
 
         /* Try to figure out what type of DB it is */
-        if (nsrl_test(hDb)) {
-            dbtype = TSK_HDB_DBTYPE_NSRL_ID;
-        }
-        if (md5sum_test(hDb)) {
-            if (dbtype != 0) {
+        if (sqlite3_test(hDb)) {
+            dbtype = TSK_HDB_DBTYPE_IDXONLY_ID;
+            fclose(hDb);
+            hDb = NULL;
+
+        } else {
+            if (nsrl_test(hDb)) {
+                dbtype = TSK_HDB_DBTYPE_NSRL_ID;
+            }
+            if (md5sum_test(hDb)) {
+                if (dbtype != 0) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
+                    tsk_error_set_errstr(
+                             "hdb_open: Error determining DB type (MD5sum)");
+                    return NULL;
+                }
+                dbtype = TSK_HDB_DBTYPE_MD5SUM_ID;
+            }
+            if (encase_test(hDb)) {
+                if (dbtype != 0) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
+                    tsk_error_set_errstr(
+                             "hdb_open: Error determining DB type (EnCase)");
+                    return NULL;
+                }
+                dbtype = TSK_HDB_DBTYPE_ENCASE_ID;
+            }
+            if (hk_test(hDb)) {
+                if (dbtype != 0) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
+                    tsk_error_set_errstr(
+                             "hdb_open: Error determining DB type (HK)");
+                    return NULL;
+                }
+                dbtype = TSK_HDB_DBTYPE_HK_ID;
+            }
+            if (dbtype == 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
                 tsk_error_set_errstr(
-                         "hdb_open: Error determining DB type (MD5sum)");
+                         "hdb_open: Error determining DB type");
                 return NULL;
             }
-            dbtype = TSK_HDB_DBTYPE_MD5SUM_ID;
+            fseeko(hDb, 0, SEEK_SET);
         }
-        if (encase_test(hDb)) {
-            if (dbtype != 0) {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
-                tsk_error_set_errstr(
-                         "hdb_open: Error determining DB type (EnCase)");
-                return NULL;
-            }
-            dbtype = TSK_HDB_DBTYPE_ENCASE_ID;
-        }
-        if (hk_test(hDb)) {
-            if (dbtype != 0) {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
-                tsk_error_set_errstr(
-                         "hdb_open: Error determining DB type (HK)");
-                return NULL;
-            }
-            dbtype = TSK_HDB_DBTYPE_HK_ID;
-        }
-        if (dbtype == 0) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
-            tsk_error_set_errstr(
-                     "hdb_open: Error determining DB type");
-            return NULL;
-        }
-        fseeko(hDb, 0, SEEK_SET);
     }
     else {
         dbtype = TSK_HDB_DBTYPE_IDXONLY_ID;

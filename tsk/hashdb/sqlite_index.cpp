@@ -21,6 +21,7 @@
  * Static sqlite statements, prepared initially and bound before each use
  */
 static sqlite3_stmt *m_stmt = NULL;
+static bool need_SQL_index = false;
 
 /**
  * Prototypes 
@@ -104,9 +105,9 @@ sqlite_v1_begin(TSK_HDB_INFO * hdb_info)
 	char * insertStmt;
 
 	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
-		insertStmt = "INSERT INTO hashset_hashes (md5, database_offset) VALUES (?, ?)";
+		insertStmt = "INSERT INTO hashes (md5, database_offset) VALUES (?, ?)";
 	} else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
-		insertStmt = "INSERT INTO hashset_hashes (sha1, database_offset) VALUES (?, ?)";
+		insertStmt = "INSERT INTO hashes (sha1, database_offset) VALUES (?, ?)";
 	} else {
         return 1;
     }
@@ -139,37 +140,47 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 	}
 
 	if (attempt_exec_nocallback
-		("CREATE TABLE hashset_properties (name TEXT, value TEXT);",
-		"Error creating hashset_properties table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		("CREATE TABLE properties (name TEXT, value TEXT);",
+		"Error creating properties table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 			return 1;
 	}
 
 	snprintf(stmt, 1024,
-		"INSERT INTO hashset_properties (name, value) VALUES ('%s', '%s');",
+		"INSERT INTO properties (name, value) VALUES ('%s', '%s');",
 		IDX_SCHEMA_VER, IDX_VERSION_NUM);
-	if (attempt_exec_nocallback(stmt, "Error adding schema info to hashset_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+	if (attempt_exec_nocallback(stmt, "Error adding schema info to properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 		return 1;
 	}
 
 	snprintf(stmt, 1024,
-		"INSERT INTO hashset_properties (name, value) VALUES ('%s', '%s');",
+		"INSERT INTO properties (name, value) VALUES ('%s', '%s');",
 		IDX_HASHSET_NAME, hdb_info->db_name);
-	if (attempt_exec_nocallback(stmt, "Error adding name to hashset_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+	if (attempt_exec_nocallback(stmt, "Error adding name to properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 		return 1;
 	}
 
 	snprintf(stmt, 1024,
-		"INSERT INTO hashset_properties (name, value) VALUES ('%s', '%s');",
+		"INSERT INTO properties (name, value) VALUES ('%s', '%s');",
 		IDX_HASHSET_UPDATEABLE, (hdb_info->idx_info->updateable == 1) ? "true" : "false");
-	if (attempt_exec_nocallback(stmt, "Error adding updateable to hashset_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+	if (attempt_exec_nocallback(stmt, "Error adding updateable to properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 		return 1;
 	}
 
 	if (attempt_exec_nocallback
-		("CREATE TABLE hashset_hashes (md5 BINARY(16), sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);",
-		"Error creating hashset_hashes table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 BINARY(16) UNIQUE, sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);",
+		"Error creating hashes table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 			return 1;
 	}
+
+    // The names table enables the user to optionally map one or many names to each hash.
+    // "name" should be the filename without the path.
+	if (attempt_exec_nocallback
+		("CREATE TABLE names (name TEXT, hash_id INTEGER);",
+		"Error creating names table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+			return 1;
+	}
+
+    need_SQL_index = true;
 
 	return sqlite_v1_begin(hdb_info);
 }
@@ -234,11 +245,26 @@ sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen,
 		attempt(sqlite3_bind_int64(m_stmt, 2, offset),
 		SQLITE_OK,
 		"Error binding entry offset: %s\n",
-		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
-		attempt(sqlite3_step(m_stmt), SQLITE_DONE, "Error stepping: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
-		attempt(sqlite3_reset(m_stmt), SQLITE_OK, "Error resetting: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-			return 1;
-	}
+		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ) {
+        return 1;
+    }
+
+    // Don't report error on constraint -- we just will silently not add that duplicate hash
+	int r = sqlite3_step(m_stmt);
+    if ((r != SQLITE_DONE) && (r != SQLITE_CONSTRAINT) ) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_AUTO_DB);
+		tsk_error_set_errstr("Error stepping: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
+        return 1;
+    }
+
+	r = sqlite3_reset(m_stmt);
+    if ((r != SQLITE_OK) && (r != SQLITE_CONSTRAINT) ) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_AUTO_DB);
+		tsk_error_set_errstr("Error resetting: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
+        return 1;
+    }
 
     return 0;
 }
@@ -260,14 +286,20 @@ sqlite_v1_finalize(TSK_HDB_INFO * hdb_info)
 		return 1;
 	}
 	
-	return attempt_exec_nocallback
-		("CREATE INDEX hashset_md5_index ON hashset_hashes(md5);",
-		"Error creating hashset_md5_index on md5: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
-		attempt_exec_nocallback
-		("CREATE INDEX hashset_sha1_index ON hashset_hashes(sha1);",
-		"Error creating hashset_sha1_index on sha1: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+    // We create the indexes at the end in order to make adding the initial batch of data (e.g. indexing an NSRL db)
+    // faster. Updates after indexing can be slower since the index has to update as well.
+    if (need_SQL_index) {
+        need_SQL_index = false;
+	    return attempt_exec_nocallback
+		    ("CREATE INDEX hashset_md5_index ON hashes(md5);",
+		    "Error creating hashset_md5_index on md5: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
+		    attempt_exec_nocallback
+		    ("CREATE INDEX hashset_sha1_index ON hashes(sha1);",
+		    "Error creating hashset_sha1_index on sha1: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+    } else {
+        return 0;
+    }
 }
-
 
 /** \internal
  * Setup the internal variables to read an index or database. This
@@ -295,7 +327,8 @@ sqlite_v1_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
 
 
     if ((htype != TSK_HDB_HTYPE_MD5_ID)
-        && (htype != TSK_HDB_HTYPE_SHA1_ID)) {
+        && (htype != TSK_HDB_HTYPE_SHA1_ID)
+        && (htype != TSK_HDB_HTYPE_SHA2_256_ID)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
@@ -311,7 +344,6 @@ sqlite_v1_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
             sqlite3_close(sqlite);
             return 1;
         }
-
     }
 #else
     {
@@ -406,9 +438,9 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 
     if (m_stmt == NULL) {
     	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
-            selectStmt = "SELECT md5,database_offset from hashset_hashes where md5=? limit 1";
+            selectStmt = "SELECT md5,database_offset from hashes where md5=? limit 1";
         } else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
-            selectStmt = "SELECT sha1,database_offset from hashset_hashes where sha1=? limit 1";
+            selectStmt = "SELECT sha1,database_offset from hashes where sha1=? limit 1";
         } else {
             tsk_release_lock(&hdb_info->lock);
             tsk_error_reset();
@@ -477,7 +509,7 @@ sqlite_v1_get_updateable(TSK_HDB_INFO * hdb_info)
 
     tsk_take_lock(&hdb_info->lock);
     
-    snprintf(selectStmt, 1024, "SELECT value from hashset_properties where name='%s'", IDX_HASHSET_UPDATEABLE);
+    snprintf(selectStmt, 1024, "SELECT value from properties where name='%s'", IDX_HASHSET_UPDATEABLE);
     prepare_stmt(selectStmt, &stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
 
 	if (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -524,4 +556,31 @@ sqlite_v1_close(TSK_IDX_INFO * idx_info)
     }
 }
 
+/**
+ * Test the file to see if it is an sqlite database (== index only)
+ *
+ * @param hFile File handle to hash database
+ *
+ * @return 1 if sqlite and 0 if not
+ */
+uint8_t
+sqlite3_test(FILE * hFile)
+{
+    const int header_size = 16;
+    char header[header_size];
+
+    if (hFile) {
+        if (1 != fread(header, header_size, 1, hFile)) {
+            ///@todo should this actually be an error?
+            return 0;
+        }
+        else if (strncmp(header,
+                IDX_SQLITE_V1_HEADER,
+                strlen(IDX_SQLITE_V1_HEADER)) == 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
 

@@ -22,13 +22,15 @@ usage()
 {
     TFPRINTF(stderr,
              _TSK_T
-             ("usage: %s [-eqV] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
+             ("usage: %s [-eqVa] [-c db_name] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
              progname);
     tsk_fprintf(stderr,
                 "\t-e: Extended mode - where values other than just the name are printed\n");
     tsk_fprintf(stderr,
                 "\t-q: Quick mode - where a 1 is printed if it is found, else 0\n");
     tsk_fprintf(stderr, "\t-V: Print version to STDOUT\n");
+    tsk_fprintf(stderr, "\t-c db_name: Create blank index with the given name.\n");
+    tsk_fprintf(stderr, "\t-a: Add given hashes to the database.\n");
     tsk_fprintf(stderr,
                 "\t-f lookup_file: File with one hash per line to lookup\n");
     tsk_fprintf(stderr,
@@ -233,9 +235,8 @@ main(int argc, char ** argv1)
                 }
             } else {
                 /* Perform lookup */
-                retval =
-                    tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
-                            (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
+                retval = tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
+                         (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
                 if (retval == -1) {
                     tsk_error_print(stderr);
                     return 1;

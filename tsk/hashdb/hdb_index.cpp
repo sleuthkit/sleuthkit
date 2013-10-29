@@ -141,8 +141,17 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
     // Verify the new SQLite index exists, get its size, and open it for header reading
     
     // Set SQLite index filename
-    TSNPRINTF(idx_info->idx_fname, flen,
+    // first check if it already has a .kdb extension
+    TSK_TCHAR * c;
+    c = TSTRRCHR(hdb_info->db_fname, _TSK_T('.'));
+    if ((c != NULL) && (TSTRLEN(c) >= 4)) {
+        if (TSTRCMP(c, _TSK_T(".kdb")) == 0) {
+            TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
+        }
+    } else {
+        TSNPRINTF(idx_info->idx_fname, flen,
             _TSK_T("%s.kdb"), hdb_info->db_fname);
+    }
     
     if (((idx = tsk_idx_open_file(idx_info->idx_fname)) == NULL) && (create == 0)) {
 
@@ -451,10 +460,10 @@ tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
 {
     /* Check if the index is already open, and 
      * try to open it if not */
-    if (hdb_setupindex(hdb_info, htype, 0)) {
-        return 0;
-    } else {
+    if (hdb_setupindex(hdb_info, htype, 0) == 0) {
         return 1;
+    } else {
+        return 0;
     }
 }
 
@@ -567,7 +576,7 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
                 tsk_error_set_errstr("tsk_hdb_add_str: adding entry failed");
                 return 1;            
             } else {
-                // Close and sort the index
+                // Close the index
                 if (tsk_hdb_idxfinalize(hdb_info) != 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_HDB_WRITE);

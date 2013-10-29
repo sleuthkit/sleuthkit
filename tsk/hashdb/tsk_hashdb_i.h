@@ -61,7 +61,7 @@ extern "C" {
  * Properties for the sqlite hash database index
  */
 #define IDX_SCHEMA_VER "Index Schema Version"
-#define IDX_VERSION_NUM "v1"
+#define IDX_VERSION_NUM "1"
 #define IDX_HASHSET_NAME "Hashset Name"
 #define IDX_HASHSET_UPDATEABLE "Updateable"
 #define IDX_BINSRCH_HEADER "0000000000000000"
@@ -146,7 +146,7 @@ extern "C" {
     extern int8_t sqlite_v1_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t,
                                     TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t sqlite_v1_get_updateable(TSK_HDB_INFO * hdb_info);
-
+    extern uint8_t sqlite3_test(FILE *);
 #ifdef __cplusplus
 }
 #endif
