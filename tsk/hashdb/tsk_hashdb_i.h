@@ -61,7 +61,7 @@ extern "C" {
  * Properties for the sqlite hash database index
  */
 #define IDX_SCHEMA_VER "Index Schema Version"
-#define IDX_VERSION_NUM "v1"
+#define IDX_VERSION_NUM "1"
 #define IDX_HASHSET_NAME "Hashset Name"
 #define IDX_HASHSET_UPDATEABLE "Updateable"
 #define IDX_BINSRCH_HEADER "0000000000000000"

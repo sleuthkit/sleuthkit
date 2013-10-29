@@ -567,7 +567,7 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
                 tsk_error_set_errstr("tsk_hdb_add_str: adding entry failed");
                 return 1;            
             } else {
-                // Close and sort the index
+                // Close the index
                 if (tsk_hdb_idxfinalize(hdb_info) != 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_HDB_WRITE);
