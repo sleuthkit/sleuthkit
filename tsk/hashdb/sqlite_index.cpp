@@ -541,4 +541,29 @@ sqlite_v1_close(TSK_IDX_INFO * idx_info)
     }
 }
 
+/**
+ * Test the file to see if it is an sqlite database (== index only)
+ *
+ * @param hFile File handle to hash database
+ *
+ * @return 1 if sqlite and 0 if not
+ */
+uint8_t
+sqlite3_test(FILE * hFile)
+{
+    const int header_size = 16;
+    char header[header_size];
+
+    if (hFile) {
+        if (1 != fread(header, header_size, 1, hFile)) {
+            ///@todo should this actually be an error?
+            return 0;
+        }
+        else if (strncmp(header,
+                IDX_SQLITE_V1_HEADER,
+                strlen(IDX_SQLITE_V1_HEADER)) == 0) {
+            return 1;
+        }
+    }
+}
 

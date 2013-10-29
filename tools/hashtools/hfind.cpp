@@ -233,9 +233,8 @@ main(int argc, char ** argv1)
                 }
             } else {
                 /* Perform lookup */
-                retval =
-                    tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
-                            (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
+                retval = tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
+                         (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
                 if (retval == -1) {
                     tsk_error_print(stderr);
                     return 1;
