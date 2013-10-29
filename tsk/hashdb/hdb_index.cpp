@@ -68,6 +68,19 @@ tsk_idx_open_file(TSK_TCHAR *idx_fname)
 }
 
 
+static void
+tsk_idx_close_file(FILE * idx)
+{
+    if (idx == NULL) {
+        return;
+    }
+
+    // fclose should work on all platforms:
+    if (fclose(idx) != 0) {
+        tsk_error_set_errstr2("tsk_idx_close_file: Error closing index file object.");
+    }
+}
+
 /**
  * Open an index for the given hash db
  * We only create kdb (SQLite) files, but can open old indexes.
@@ -209,7 +222,8 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
                 tsk_error_set_errstr(
                         "tsk_idx_open: Unrecognized header format: %"PRIttocTSK,
                         idx_info->idx_fname);
-                free(idx_info);
+                tsk_idx_close_file(idx);
+                free(idx_info);                
                 return NULL;
             }
         }
@@ -224,6 +238,8 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
         idx_info->lookup_raw = sqlite_v1_lookup_raw;
         idx_info->get_updateable = sqlite_v1_get_updateable;
     }
+
+    tsk_idx_close_file(idx);
 
     // Open
     if (idx_info->open(hdb_info, idx_info, htype) == 0) {
@@ -538,7 +554,10 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
 
             // @todo Could set up a polymorphic mechanism like with finalize() but
             // we know it's going to be sqlite in this function.
-            sqlite_v1_begin(hdb_info);
+            if (sqlite_v1_begin(hdb_info) == 1) {
+                tsk_error_set_errstr2("tsk_hdb_add_str: sqlite_v1_begin failed");
+                return 1;
+            }
 
             // Attempt to add a new row to the hash index
             TSK_OFF_T offset = 0; //not needed since there might not be an original DB
