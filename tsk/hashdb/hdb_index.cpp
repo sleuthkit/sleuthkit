@@ -460,10 +460,10 @@ tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
 {
     /* Check if the index is already open, and 
      * try to open it if not */
-    if (hdb_setupindex(hdb_info, htype, 0)) {
-        return 0;
-    } else {
+    if (hdb_setupindex(hdb_info, htype, 0) == 0) {
         return 1;
+    } else {
+        return 0;
     }
 }
 
