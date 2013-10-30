@@ -34,6 +34,30 @@ extern "C" {
 
 #define YAFFS_DEFAULT_MAX_TEST_BLOCKS   400  // Maximum number of blocks to test looking for Yaffs2 spare under auto-detect
 
+#define YAFFS_HELP_MESSAGE   "See http://wiki.sleuthkit.org/index.php?title=YAFFS2 for help on Yaffs2 configuration"
+
+/*
+ * Yaffs config file constants and return values
+ */
+#ifdef TSK_WIN32
+#define YAFFS_CONFIG_FILE_SUFFIX          L"-yaffs2.config"
+#else
+#define YAFFS_CONFIG_FILE_SUFFIX          "-yaffs2.config"
+#endif
+
+#define YAFFS_CONFIG_SEQ_NUM_STR          "spare_seq_num_offset"
+#define YAFFS_CONFIG_OBJ_ID_STR           "spare_obj_id_offset"
+#define YAFFS_CONFIG_CHUNK_ID_STR         "spare_chunk_id_offset"
+#define YAFFS_CONFIG_PAGE_SIZE_STR        "flash_page_size"
+#define YAFFS_CONFIG_SPARE_SIZE_STR       "flash_spare_size"
+#define YAFFS_CONFIG_CHUNKS_PER_BLOCK_STR "flash_chunks_per_block"
+
+typedef enum {
+    YAFFS_CONFIG_OK,
+    YAFFS_CONFIG_FILE_NOT_FOUND,
+    YAFFS_CONFIG_ERROR
+} YAFFS_CONFIG_STATUS;
+
 /*
 ** Yaffs Object Flags
 */
