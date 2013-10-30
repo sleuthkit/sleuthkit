@@ -290,16 +290,23 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat
  * Method:    createLookupIndexNat
  * Signature: (Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexByPathNat
   (JNIEnv *, jclass, jstring);
+
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat
+  (JNIEnv *, jclass, jint);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    lookupIndexExistsNat
  * Signature: (Ljava/lang/String;)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsByPathNat
   (JNIEnv *, jclass, jstring);
+
+
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
+  (JNIEnv *, jclass, jint);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
