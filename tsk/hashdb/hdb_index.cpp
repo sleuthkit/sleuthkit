@@ -141,11 +141,13 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
     // Verify the new SQLite index exists, get its size, and open it for header reading
     
     // Set SQLite index filename
-    // first check if it already has a .kdb extension
+    // First check if it already has a .kdb extension
+    // Also do not auto-add .kdb extension if we are creating a new kdb file.
     TSK_TCHAR * c;
     c = TSTRRCHR(hdb_info->db_fname, _TSK_T('.'));
-    if ((c != NULL) && (TSTRLEN(c) >= 4)
-        && (TSTRCMP(c, _TSK_T(".kdb")) == 0)) {
+    if ((create == 1) ||
+        ((c != NULL) && (TSTRLEN(c) >= 4)
+        && (TSTRCMP(c, _TSK_T(".kdb")) == 0))) {
 
         TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
     } else {
