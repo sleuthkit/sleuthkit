@@ -1448,7 +1448,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
  * @param dbPathJ path for the database
  */
 JNIEXPORT void JNICALL
-Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
+Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexByPathNat (JNIEnv * env,
     jclass obj, jstring dbPathJ)
 {
     TSK_TCHAR dbPathT[1024];
@@ -1483,13 +1483,51 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     tsk_hdb_close(temp);
 }
 
+JNIEXPORT void JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
+    jclass obj, jint dbHandle)
+{
+    if((size_t) dbHandle > m_knownbads.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return;
+    } else {
+        TSK_HDB_INFO * temp = m_knownbads.at(dbHandle-1);
+        if (temp == NULL) {
+            setThrowTskCoreError(env, "Error opening database to create index");
+            return;
+        }
+
+        TSK_TCHAR dbType[1024];
+
+        if(temp->db_type == TSK_HDB_DBTYPE_MD5SUM_ID) {
+            TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
+        }
+        else if(temp->db_type == TSK_HDB_DBTYPE_HK_ID) {
+            TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_HK_STR);
+        }
+        else if(temp->db_type == TSK_HDB_DBTYPE_ENCASE_ID) {
+            TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_ENCASE_STR);
+        }
+        else {
+            TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_NSRL_MD5_STR);
+        }
+
+        if (tsk_hdb_makeindex(temp, dbType)) {
+            setThrowTskCoreError(env, "Error creating index");
+        }
+
+        tsk_hdb_close(temp);
+        return;
+    }
+}
+
 /*
  * Check if an index exists for the given database path.
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param dbPathJ path for the database
  */
-JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsByPathNat
   (JNIEnv * env, jclass obj, jstring dbPathJ) {
 
     TSK_TCHAR dbPathT[1024];
@@ -1505,6 +1543,25 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndex
 
     tsk_hdb_close(temp);
     return (jboolean) retval == 1;
+}
+
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
+  (JNIEnv * env, jclass obj, jint dbHandle) {
+
+    if((size_t) dbHandle > m_knownbads.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return (jboolean) false;
+    } else {
+        TSK_HDB_INFO * temp = m_knownbads.at(dbHandle-1);
+        if (temp == NULL) {
+            return (jboolean) false;
+        }
+
+        uint8_t retval = tsk_hdb_hasindex(temp, TSK_HDB_HTYPE_MD5_ID);
+
+        tsk_hdb_close(temp);
+        return (jboolean) retval == 1;
+    }
 }
 
 /*

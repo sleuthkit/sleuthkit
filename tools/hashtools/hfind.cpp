@@ -141,7 +141,7 @@ main(int argc, char ** argv1)
             tsk_error_print(stderr);
             return 1;
         } else {
-            printf("New index %"PRIttocTSK".kdb created.\n", db_file);
+            printf("New index %"PRIttocTSK" created.\n", db_file);
             return 0;
         }
     } else {

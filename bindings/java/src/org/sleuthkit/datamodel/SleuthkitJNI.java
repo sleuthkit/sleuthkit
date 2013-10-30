@@ -113,9 +113,13 @@ public class SleuthkitJNI {
 	private static native void closeFileNat(long fileHandle);
 
 	//hash-lookup database functions
-	private static native void createLookupIndexNat(String dbPath) throws TskCoreException;
+	private static native void createLookupIndexByPathNat(String dbPath) throws TskCoreException;
+    
+    private static native void createLookupIndexNat(int dbHandle) throws TskCoreException;
 
-	private static native boolean lookupIndexExistsNat(String dbPath) throws TskCoreException;
+	private static native boolean lookupIndexExistsByPathNat(String dbPath) throws TskCoreException;
+    
+    private static native boolean lookupIndexExistsNat(int dbHandle) throws TskCoreException;
 
     
     
@@ -602,10 +606,22 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	// BC: Called by HashDb.
+	// use createLookupIndexForHashDatabase instead
+	@Deprecated    
 	public static void createLookupIndex(String dbPath) throws TskCoreException {
-		createLookupIndexNat(dbPath);
+		createLookupIndexByPathNat(dbPath);
 	}
 
+	/**
+	 * Create an index for the given database path.
+	 *
+	 * @param dbPath The path to the database
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */
+	public static void createLookupIndexForHashDatabase(int dbHandle) throws TskCoreException {
+		createLookupIndexNat(dbHandle);
+	}    
+    
 	/**
 	 * Check if an index exists for the given database path.
 	 *
@@ -614,10 +630,24 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	// BC: Called by HashDB
+	// use lookupIndexForHashDatabaseExists instead
+	@Deprecated        
 	public static boolean lookupIndexExists(String dbPath) throws TskCoreException {
-		return lookupIndexExistsNat(dbPath);
+		return lookupIndexExistsByPathNat(dbPath);
 	}
 
+    
+	/**
+	 * Check if an index exists for the given database path.
+	 *
+	 * @param dbPath
+	 * @return true if index exists
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */
+	public static boolean lookupIndexForHashDatabaseExists(int dbHandle) throws TskCoreException {
+		return lookupIndexExistsNat(dbHandle);
+	}    
+    
 	/**
 	 * Set the NSRL database
 	 *
@@ -663,7 +693,7 @@ public class SleuthkitJNI {
 	 * @return a handle for that database
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
-	public static int newHashDatabase(String path) throws TskCoreException {		
+	public static int createHashDatabase(String path) throws TskCoreException {		
 		return newDbKnownBadNat(path);
 	}
 
