@@ -144,10 +144,10 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
     // first check if it already has a .kdb extension
     TSK_TCHAR * c;
     c = TSTRRCHR(hdb_info->db_fname, _TSK_T('.'));
-    if ((c != NULL) && (TSTRLEN(c) >= 4)) {
-        if (TSTRCMP(c, _TSK_T(".kdb")) == 0) {
-            TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
-        }
+    if ((c != NULL) && (TSTRLEN(c) >= 4)
+        && (TSTRCMP(c, _TSK_T(".kdb")) == 0)) {
+
+        TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
     } else {
         TSNPRINTF(idx_info->idx_fname, flen,
             _TSK_T("%s.kdb"), hdb_info->db_fname);
