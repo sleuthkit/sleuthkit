@@ -214,7 +214,7 @@ extern "C" {
 
     extern uint8_t tsk_hdb_hasindex(TSK_HDB_INFO *, uint8_t htype);
 
-    extern uint8_t tsk_hdb_is_idxonly(TSK_TCHAR * db_file);
+    extern uint8_t tsk_hdb_is_idxonly(TSK_HDB_INFO *);
 
     extern uint8_t tsk_hdb_makeindex(TSK_HDB_INFO *, TSK_TCHAR *);
 

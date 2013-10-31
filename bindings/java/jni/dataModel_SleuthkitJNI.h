@@ -93,6 +93,12 @@ JNIEXPORT jboolean JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_isUpdateableDbKnownBadNat(JNIEnv * env,
     jclass obj, jint dbHandle);
 
+
+JNIEXPORT jboolean JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_isIdxOnlyHashDbNat(JNIEnv * env,
+    jclass obj, jint dbHandle);
+
+
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    getDbName

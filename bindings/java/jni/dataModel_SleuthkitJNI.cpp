@@ -274,7 +274,7 @@ JNIEXPORT jint JNICALL
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_TRY;
     TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
 
     if(tempdb == NULL)
@@ -302,7 +302,7 @@ JNIEXPORT jint JNICALL
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_TRY;
     TSK_HDB_INFO * temp = tsk_hdb_open(pathT, flags);
 
     if(temp == NULL)
@@ -410,6 +410,31 @@ JNIEXPORT jboolean JNICALL
 
         if(db != NULL) {
             retval = (db->idx_info->updateable == 1) ? true : false;
+        }
+    }
+    return retval;
+}
+
+/*
+ * Test for index only (no original Db file) legacy (IDX format).
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ * @return true if index only AND is legacy
+ */
+JNIEXPORT jboolean JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_isIdxOnlyHashDbNat(JNIEnv * env,
+    jclass obj, jint dbHandle)
+{
+    bool retval = false;
+
+    if((size_t) dbHandle > m_knownbads.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+    } else {
+        TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
+
+        if(db != NULL) {
+            retval = (tsk_hdb_is_idxonly(db) == 1) ? true : false;
         }
     }
     return retval;

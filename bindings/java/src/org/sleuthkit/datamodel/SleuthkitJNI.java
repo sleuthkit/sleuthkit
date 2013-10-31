@@ -121,7 +121,7 @@ public class SleuthkitJNI {
     
     private static native boolean lookupIndexExistsNat(int dbHandle) throws TskCoreException;
 
-    
+    private static native boolean isIdxOnlyHashDbNat(int dbHandle) throws TskCoreException;
     
 	//util functions
 	private static native long findDeviceSizeNat(String devicePath) throws TskCoreException;
@@ -644,7 +644,7 @@ public class SleuthkitJNI {
 	 * @return true if index exists
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
-	public static boolean lookupIndexForHashDatabaseExists(int dbHandle) throws TskCoreException {
+	public static boolean hashDatabaseHasLookupIndex(int dbHandle) throws TskCoreException {
 		return lookupIndexExistsNat(dbHandle);
 	}    
     
@@ -772,6 +772,10 @@ public class SleuthkitJNI {
 	public static boolean isUpdateableHashDatabase(int dbHandle) throws TskCoreException {
 		return isUpdateableDbKnownBadNat(dbHandle);
 	}    
+    
+    public boolean hashDatabaseIsLookupIndexOnly(int dbHandle) throws TskCoreException {
+        return isIdxOnlyHashDbNat(dbHandle);
+    }
     
 	/**
 	 * Get the size of the index of the given database

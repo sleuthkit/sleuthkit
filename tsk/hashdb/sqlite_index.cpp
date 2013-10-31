@@ -536,7 +536,7 @@ sqlite_v1_get_properties(TSK_HDB_INFO * hdb_info)
     }
 
 
-    ///@todo load db name property as well
+    ///@todo load db name property as well?
 
     tsk_release_lock(&hdb_info->lock);
 
