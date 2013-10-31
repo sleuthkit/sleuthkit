@@ -444,10 +444,10 @@ JNIEXPORT jboolean JNICALL
  * Get the name of the database pointed to by path
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
- * @param pathJ the path to the database
+ * @param pathJ the path to the database (expects the actual database path, not an index path)
  */
 JNIEXPORT jstring JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbName(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbNameByPath(JNIEnv * env,
     jclass obj, jstring pathJ) {
 
     TSK_HDB_OPEN_ENUM flags;
@@ -474,6 +474,30 @@ JNIEXPORT jstring JNICALL
     return jname;
 }
 
+/*
+ * Get the name of the database pointed to by path
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ */
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbName
+  (JNIEnv * env, jclass obj, jint dbHandle)
+{
+    if((size_t) dbHandle > m_knownbads.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return env->NewStringUTF("-1");
+    } else {
+        TSK_HDB_INFO * temp = m_knownbads.at(dbHandle-1);
+        if (temp == NULL) {
+            setThrowTskCoreError(env, "Error: database object is null");
+            return env->NewStringUTF("-1");
+        }
+
+
+        jstring jname = env->NewStringUTF(temp->db_name);
+        return jname;
+    }
+}
 
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupsNat(JNIEnv * env,
@@ -1518,7 +1542,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     } else {
         TSK_HDB_INFO * temp = m_knownbads.at(dbHandle-1);
         if (temp == NULL) {
-            setThrowTskCoreError(env, "Error opening database to create index");
+            setThrowTskCoreError(env, "Error: database object is null");
             return;
         }
 
@@ -1541,7 +1565,6 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
             setThrowTskCoreError(env, "Error creating index");
         }
 
-        tsk_hdb_close(temp);
         return;
     }
 }
@@ -1584,7 +1607,6 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndex
 
         uint8_t retval = tsk_hdb_hasindex(temp, TSK_HDB_HTYPE_MD5_ID);
 
-        tsk_hdb_close(temp);
         return (jboolean) retval == 1;
     }
 }

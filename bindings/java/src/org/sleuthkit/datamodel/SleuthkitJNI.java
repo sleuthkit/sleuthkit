@@ -60,7 +60,9 @@ public class SleuthkitJNI {
 
     private static native boolean isUpdateableDbKnownBadNat(int dbHandle);
     
-	private static native String getDbName(String hashDbPath) throws TskCoreException;
+	private static native String getDbNameByPath(String hashDbPath) throws TskCoreException;
+
+    private static native String getDbName(int dbHandle) throws TskCoreException;
 
 	private static native void closeDbLookupsNat() throws TskCoreException;
 
@@ -714,10 +716,24 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	// BC: Used by HasDBAddDatabaseDialog an HashDBXML
+    //use getHashDatabaseName instead
+    @Deprecated
 	public static String getDatabaseName(String path) throws TskCoreException {
-		return getDbName(path);
+		return getDbNameByPath(path);
 	}
 
+	
+	/**
+	 * Get the name of the database
+	 *
+	 * @param dbHandle previously opened hash db handle
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */
+	public static String getHashDatabaseName(int dbHandle) throws TskCoreException {
+		return getDbName(dbHandle);
+	}
+    
+    
 	/**
 	 * Look up the given hash in the NSRL database
 	 *
