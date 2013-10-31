@@ -166,7 +166,7 @@ extern "C" {
                 TSK_HDB_LOOKUP_FN, void *);
         int8_t(*lookup_raw) (TSK_HDB_INFO *, uint8_t *, uint8_t,
                 TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-        int8_t(*get_updateable) (TSK_HDB_INFO *);        
+        int8_t(*get_properties) (TSK_HDB_INFO *);        
         void(*close) (TSK_IDX_INFO *);
 
     };
@@ -201,7 +201,8 @@ extern "C" {
     */
     enum TSK_HDB_OPEN_ENUM {
         TSK_HDB_OPEN_NONE = 0,  ///< No special flags
-        TSK_HDB_OPEN_IDXONLY = (0x1 << 0)       ///< Open only the index -- do not look for the original DB
+        TSK_HDB_OPEN_IDXONLY = (0x1 << 0),       ///< Open only the index -- do not look for the original DB
+        TSK_HDB_OPEN_TRY = (0x1 << 1)           ///< Try to open original db. If that fails, try TSK_HDB_OPEN_IDXONLY.
     };
     typedef enum TSK_HDB_OPEN_ENUM TSK_HDB_OPEN_ENUM;
 
@@ -212,6 +213,8 @@ extern "C" {
     extern void tsk_hdb_close(TSK_HDB_INFO * hdb);
 
     extern uint8_t tsk_hdb_hasindex(TSK_HDB_INFO *, uint8_t htype);
+
+    extern uint8_t tsk_hdb_is_idxonly(TSK_TCHAR * db_file);
 
     extern uint8_t tsk_hdb_makeindex(TSK_HDB_INFO *, TSK_TCHAR *);
 

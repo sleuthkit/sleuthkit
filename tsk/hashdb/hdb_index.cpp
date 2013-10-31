@@ -205,7 +205,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             idx_info->finalize = binsrch_finalize;
             idx_info->lookup_str = binsrch_lookup_str;
             idx_info->lookup_raw = binsrch_lookup_raw;
-            idx_info->get_updateable = binsrch_get_updateable;
+            idx_info->get_properties = binsrch_get_properties;
         }
         else {
             tsk_error_reset();
@@ -249,7 +249,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
         idx_info->finalize = sqlite_v1_finalize;
         idx_info->lookup_str = sqlite_v1_lookup_str;
         idx_info->lookup_raw = sqlite_v1_lookup_raw;
-        idx_info->get_updateable = sqlite_v1_get_updateable;
+        idx_info->get_properties = sqlite_v1_get_properties;
     }
 
     tsk_idx_close_file(idx);
@@ -259,7 +259,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
         if (create == 1) {
             idx_info->updateable = 1;
         } else {
-            idx_info->get_updateable(hdb_info);
+            idx_info->get_properties(hdb_info);
         }
 
         return idx_info;
@@ -471,7 +471,24 @@ tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
     }
 }
 
-
+/**
+ * \ingroup hashdblib
+ * Test for index only (legacy)
+ * Assumes that the db was opened using the TSK_HDB_OPEN_TRY option.
+ *
+ * @param hdb_info Hash database to consider
+ *
+ * @return 1 if there is only a legacy index AND no db, 0 otherwise
+ */
+uint8_t
+tsk_hdb_is_idxonly(TSK_HDB_INFO * hdb_info)
+{
+    if (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) {
+        return (hdb_info->idx_info->index_type == TSK_HDB_ITYPE_BINSRCH) ? 1 : 0;
+    } else {
+        return 0;
+    }
+}
 
 /**
  * \ingroup hashdblib

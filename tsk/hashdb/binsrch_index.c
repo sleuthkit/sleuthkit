@@ -686,7 +686,7 @@ binsrch_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 }
 
 int8_t
-binsrch_get_updateable(TSK_HDB_INFO * hdb_info)
+binsrch_get_properties(TSK_HDB_INFO * hdb_info)
 {
     // Always false
     hdb_info->idx_info->updateable = 0;

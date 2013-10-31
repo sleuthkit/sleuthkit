@@ -131,7 +131,7 @@ extern "C" {
                                     TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t binsrch_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t,
                                     TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-    extern int8_t binsrch_get_updateable(TSK_HDB_INFO * hdb_info);
+    extern int8_t binsrch_get_properties(TSK_HDB_INFO * hdb_info);
 
     extern uint8_t sqlite_v1_open(TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
     extern void sqlite_v1_close(TSK_IDX_INFO *);
@@ -145,7 +145,7 @@ extern "C" {
                                     TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t sqlite_v1_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t,
                                     TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-    extern int8_t sqlite_v1_get_updateable(TSK_HDB_INFO * hdb_info);
+    extern int8_t sqlite_v1_get_properties(TSK_HDB_INFO * hdb_info);
     extern uint8_t sqlite3_test(FILE *);
 #ifdef __cplusplus
 }

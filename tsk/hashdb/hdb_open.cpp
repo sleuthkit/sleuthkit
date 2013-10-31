@@ -35,6 +35,19 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
     FILE *hDb;
     uint8_t dbtype = 0;
 
+    if (flags == TSK_HDB_OPEN_TRY) {
+        TSK_HDB_OPEN_ENUM tryflag = TSK_HDB_OPEN_NONE;
+
+        if ((hdb_info = tsk_hdb_open(db_file, tryflag)) != NULL) {
+            // success (and there is a src db file existent)
+            return hdb_info;
+        } else {
+            // if null then maybe it's IDX only
+            flags = TSK_HDB_OPEN_IDXONLY;
+            // continue this function in IDXONLY mode
+        }
+    }
+
     if ((flags & TSK_HDB_OPEN_IDXONLY) == 0) {
         /* Open the database file */
 #ifdef TSK_WIN32
@@ -141,8 +154,8 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
         free(hdb_info);
         return NULL;
     }
-    TSTRNCPY(hdb_info->db_fname, db_file, flen);
 
+    TSTRNCPY(hdb_info->db_fname, db_file, flen);
     
     hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(0);
     hdb_info->hash_len = 0;
@@ -185,6 +198,7 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
             break;
 
         default:
+            free(hdb_info);
             return NULL;
     }
 
