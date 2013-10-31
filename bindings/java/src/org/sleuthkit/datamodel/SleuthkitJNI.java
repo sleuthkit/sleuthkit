@@ -745,10 +745,10 @@ public class SleuthkitJNI {
 	// use lookupNSRLDatabase instead
 	@Deprecated
 	public static TskData.FileKnown nsrlHashLookup(String hash) throws TskCoreException {
-		return lookupNSRLDatabase(hash);
+		return lookupInNSRLDatabase(hash);
 	}
 	
-	public static TskData.FileKnown lookupNSRLDatabase(String hash) throws TskCoreException {
+	public static TskData.FileKnown lookupInNSRLDatabase(String hash) throws TskCoreException {
 		return TskData.FileKnown.valueOf((byte) nsrlDbLookup(hash));
 	}
 
@@ -761,13 +761,13 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	// BC: Called by SleuthkitCase -> Deprecated
-	// use lookupHashDatabse instead
+	// use lookupInHashDatabase instead
 	@Deprecated
 	public static TskData.FileKnown knownBadHashLookup(String hash, int dbHandle) throws TskCoreException {
-		return lookupHashDatabase(hash, dbHandle);
+		return lookupInHashDatabase(hash, dbHandle);
 	}
 	
-	public static TskData.FileKnown lookupHashDatabase(String hash, int dbHandle) throws TskCoreException {
+	public static TskData.FileKnown lookupInHashDatabase(String hash, int dbHandle) throws TskCoreException {
 		return TskData.FileKnown.valueOf((byte) knownBadDbLookup(hash, dbHandle));
 	}
 	
