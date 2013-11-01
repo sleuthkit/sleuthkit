@@ -26,7 +26,7 @@ using std::stringstream;
 using std::for_each;
 
 static TSK_HDB_INFO * m_NSRLDb = NULL;
-static std::vector<TSK_HDB_INFO *> m_knownbads;
+static std::vector<TSK_HDB_INFO *> m_hashDbs;
 
 /*
 * JNI file handle structure encapsulates both
@@ -311,9 +311,9 @@ JNIEXPORT jint JNICALL
         return -1;
     }
 
-    m_knownbads.push_back(temp);
+    m_hashDbs.push_back(temp);
     
-    return m_knownbads.size();
+    return m_hashDbs.size();
 }
 
 /*
@@ -338,9 +338,9 @@ JNIEXPORT jint JNICALL
         return -1;
     }
 
-    m_knownbads.push_back(temp);
+    m_hashDbs.push_back(temp);
     
-    return m_knownbads.size();
+    return m_hashDbs.size();
 }
 
 /*
@@ -360,7 +360,7 @@ JNIEXPORT jint JNICALL
 {
     int8_t retval = 0;
 
-    if((size_t) dbHandle > m_knownbads.size()) {
+    if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         retval = 1;
     } else {
@@ -372,7 +372,7 @@ JNIEXPORT jint JNICALL
         TSK_TCHAR filenameT[1024];
         toTCHAR(env, filenameT, 1024, filenameJ);
 
-        TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
 
         if(db != NULL) {
             retval = tsk_hdb_add_str(db, filenameT, md5, sha1, sha256);
@@ -403,10 +403,10 @@ JNIEXPORT jboolean JNICALL
 {
     bool retval = false;
 
-    if((size_t) dbHandle > m_knownbads.size()) {
+    if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
     } else {
-        TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
 
         if(db != NULL) {
             retval = (db->idx_info->updateable == 1) ? true : false;
@@ -428,10 +428,10 @@ JNIEXPORT jboolean JNICALL
 {
     bool retval = false;
 
-    if((size_t) dbHandle > m_knownbads.size()) {
+    if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
     } else {
-        TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
 
         if(db != NULL) {
             retval = (tsk_hdb_is_idxonly(db) == 1) ? true : false;
@@ -483,11 +483,11 @@ JNIEXPORT jstring JNICALL
 JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbName
   (JNIEnv * env, jclass obj, jint dbHandle)
 {
-    if((size_t) dbHandle > m_knownbads.size()) {
+    if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return env->NewStringUTF("-1");
     } else {
-        TSK_HDB_INFO * temp = m_knownbads.at(dbHandle-1);
+        TSK_HDB_INFO * temp = m_hashDbs.at(dbHandle-1);
         if (temp == NULL) {
             setThrowTskCoreError(env, "Error: database object is null");
             return env->NewStringUTF("-1");
@@ -508,9 +508,9 @@ JNIEXPORT void JNICALL
         m_NSRLDb = NULL;
     }
 
-    for_each(m_knownbads.begin(), m_knownbads.end(), tsk_hdb_close);
+    for_each(m_hashDbs.begin(), m_hashDbs.end(), tsk_hdb_close);
    
-    m_knownbads.clear();
+    m_hashDbs.clear();
 }
 
 /*
@@ -550,7 +550,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLookup
 (JNIEnv * env, jclass obj, jstring hash, jint dbHandle){
 
-    if((size_t) dbHandle > m_knownbads.size()) {
+    if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return -1;
     }
@@ -563,7 +563,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLooku
 
     
 
-    TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
+    TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
 
     if(db != NULL) {
         int8_t retval = tsk_hdb_lookup_str(db, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
@@ -1532,15 +1532,21 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexByPathNat (JNIEnv * e
     tsk_hdb_close(temp);
 }
 
+/*
+ * Create an index for the given database
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle handle for the database
+ */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     jclass obj, jint dbHandle)
 {
-    if((size_t) dbHandle > m_knownbads.size()) {
+    if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return;
     } else {
-        TSK_HDB_INFO * temp = m_knownbads.at(dbHandle-1);
+        TSK_HDB_INFO * temp = m_hashDbs.at(dbHandle-1);
         if (temp == NULL) {
             setThrowTskCoreError(env, "Error: database object is null");
             return;
@@ -1593,14 +1599,20 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndex
     return (jboolean) retval == 1;
 }
 
+/*
+ * Check if an index exists for the given database.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle handle for the database
+ */
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
   (JNIEnv * env, jclass obj, jint dbHandle) {
 
-    if((size_t) dbHandle > m_knownbads.size()) {
+    if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return (jboolean) false;
     } else {
-        TSK_HDB_INFO * temp = m_knownbads.at(dbHandle-1);
+        TSK_HDB_INFO * temp = m_hashDbs.at(dbHandle-1);
         if (temp == NULL) {
             return (jboolean) false;
         }
