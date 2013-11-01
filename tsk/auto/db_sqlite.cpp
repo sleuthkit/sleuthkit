@@ -26,6 +26,7 @@ using std::sort;
 using std::for_each;
 
 
+//#define TSK_SCHEMA_VER 3
 #define TSK_SCHEMA_VER 2
 
 /**
@@ -238,6 +239,8 @@ int
             "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
+//        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT);",
+
         ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT);",
             "Error creating tsk_image_info table: %s\n")
         ||
@@ -396,10 +399,19 @@ void
 }
 
 /**
+  * deprecated
+  */
+int
+ TskDbSqlite::addImageInfo(int type, int size, int64_t & objId, const string & timezone)
+{
+    return addImageInfo(type, size, objId, timezone, 0, "");
+}
+
+/**
  * @returns 1 on error, 0 on success
  */
 int
- TskDbSqlite::addImageInfo(int type, int size, int64_t & objId, const string & timezone)
+ TskDbSqlite::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5)
 {
     char
      stmt[1024];
@@ -412,9 +424,14 @@ int
 
     objId = sqlite3_last_insert_rowid(m_db);
 
+//    snprintf(stmt, 1024,
+//        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
+//        objId, type, ssize, timezone.c_str(), size, md5.c_str());
+    
     snprintf(stmt, 1024,
         "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone) VALUES (%lld, %d, %d, '%s');",
-        objId, type, size, timezone.c_str());
+        objId, type, ssize, timezone.c_str());
+
     return attempt_exec(stmt,
         "Error adding data to tsk_image_info table: %s\n");
 }

@@ -1,9 +1,15 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.1.3 --------------
+Core: 
+- fixed bug that could crash UFS/ExtX in inode_lookup.
+- Updated sqlite database to have image size and md5 (schema v3)
+
 ---------------- VERSION 4.1.2 --------------
 Core:
 - Fixed more visual studio projects to work on 64-bit
+- TskAutoDB considers not finding a VS/FS a critical error.
 
 Java: 
 - added method to Image to perform sanity check on image sizes.

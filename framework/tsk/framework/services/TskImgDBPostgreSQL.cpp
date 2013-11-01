@@ -157,11 +157,11 @@ int TskImgDBPostgreSQL::initialize()
         return 1;
     }
 
-    if (initializePreparedStatements())
-    {
-        // Error message will have been logged by initializePreparedStatements()
-        return 1;
-    }
+    //if (initializePreparedStatements())
+    //{
+    //    // Error message will have been logged by initializePreparedStatements()
+    //    return 1;
+    //}
 
     addToolInfo("DbSchema", IMGDB_SCHEMA_VERSION);
     LOGINFO(L"ImgDB Created.");
@@ -273,7 +273,7 @@ int TskImgDBPostgreSQL::open()
 
         std::stringstream dbConnectionString;
         dbConnectionString << "host='" << db_host_ip << "' port='" << db_port
-            << "' dbname='" << m_dbName << "' user='" << name << "'";
+            << "' dbname='" << Poco::replace(m_dbName, "'", "\\'") << "' user='" << name << "'";
 
         m_dbConnection = new pqxx::connection(dbConnectionString.str());
     }
@@ -653,24 +653,35 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
     try
     {
         // We don't provide file_id to the prepared function because it uses DEFAULT for that.
-        stmt << "EXECUTE addFsFileInfoPlan ("
-            << IMGDB_FILES_TYPE_FS << ", "
-            << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << ", "
-            << m_dbConnection->quote(fileName) << ", "
-            << parFileId << ", "
-            << fileSystemFile->name->type << ", "
-            << meta_type << ", "
-            << fileSystemFile->name->flags << ", "
-            << meta_flags << ", "
-            << size << ", "
-            << crtime << ", "
-            << ctime << ", "
-            << atime << ", "
-            << mtime << ", "
-            << meta_mode << ", "
-            << gid << ", "
-            << uid
-            << ", E" << m_dbConnection->quote(fullpath) << ")";
+        stmt << "INSERT INTO files (file_id, type_id, status, name, par_file_id, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, full_path) VALUES ("
+            << "DEFAULT, " << IMGDB_FILES_TYPE_FS << ", " << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << ", " << m_dbConnection->quote(fileName) << ", "
+            << parFileId << ", " << fileSystemFile->name->type << ", " << meta_type << ", "
+            << fileSystemFile->name->flags << ", " << meta_flags << ", " << size << ", " << crtime << ", " << ctime << ", " << atime << ", "
+            << mtime << ", " << meta_mode << ", " << gid << ", " << uid << ", E" << m_dbConnection->quote(fullpath) << ")"
+            << " RETURNING file_id";
+
+        // Commenting out to see if the addition of prepared statements is
+        // the cause of the frequent PostgreSQL server crashes we've seen
+        // recently.
+
+        //stmt << "EXECUTE addFsFileInfoPlan ("
+        //    << IMGDB_FILES_TYPE_FS << ", "
+        //    << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << ", "
+        //    << m_dbConnection->quote(fileName) << ", "
+        //    << parFileId << ", "
+        //    << fileSystemFile->name->type << ", "
+        //    << meta_type << ", "
+        //    << fileSystemFile->name->flags << ", "
+        //    << meta_flags << ", "
+        //    << size << ", "
+        //    << crtime << ", "
+        //    << ctime << ", "
+        //    << atime << ", "
+        //    << mtime << ", "
+        //    << meta_mode << ", "
+        //    << gid << ", "
+        //    << uid
+        //    << ", E" << m_dbConnection->quote(fullpath) << ")";
 
         result R = executeStatement(stmt.str());
         
@@ -1367,16 +1378,28 @@ int TskImgDBPostgreSQL::addCarvedFileInfo(int vol_id, const char *name, uint64_t
 
     stringstream stmt;
 
-    stmt << "EXECUTE addCarvedFileInfoPlan ("
-        << IMGDB_FILES_TYPE_CARVED << ", "
-        << IMGDB_FILES_STATUS_CREATED << ", "
-        << m_dbConnection->quote(utf8Name) << ", "
-        << TSK_FS_NAME_TYPE_REG << ", "
-        << TSK_FS_META_TYPE_REG << ", "
-        << TSK_FS_NAME_FLAG_UNALLOC << ", "
-        << TSK_FS_META_FLAG_UNALLOC << ", "
-        << size << ","
-        << m_dbConnection->quote(utf8Name) << ")";
+    // Commenting out to see if the addition of prepared statements is
+    // the cause of the frequent PostgreSQL server crashes we've seen
+    // recently.
+
+    //stmt << "EXECUTE addCarvedFileInfoPlan ("
+    //    << IMGDB_FILES_TYPE_CARVED << ", "
+    //    << IMGDB_FILES_STATUS_CREATED << ", "
+    //    << m_dbConnection->quote(utf8Name) << ", "
+    //    << TSK_FS_NAME_TYPE_REG << ", "
+    //    << TSK_FS_META_TYPE_REG << ", "
+    //    << TSK_FS_NAME_FLAG_UNALLOC << ", "
+    //    << TSK_FS_META_FLAG_UNALLOC << ", "
+    //    << size << ","
+    //    << m_dbConnection->quote(utf8Name) << ")";
+
+    stmt << "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type,"
+        "dir_flags, meta_flags, size, ctime, crtime, atime, mtime, mode, uid, gid, status, full_path) "
+        "VALUES (DEFAULT, " << IMGDB_FILES_TYPE_CARVED << ", " << m_dbConnection->quote(utf8Name)
+        << ", NULL, " <<  TSK_FS_NAME_TYPE_REG << ", " <<  TSK_FS_META_TYPE_REG << ", "
+        << TSK_FS_NAME_FLAG_UNALLOC << ", " << TSK_FS_META_FLAG_UNALLOC << ", "
+        << size << ", 0, 0, 0, 0, NULL, NULL, NULL, " << IMGDB_FILES_STATUS_CREATED << "," << m_dbConnection->quote(utf8Name) << ")"
+        << " RETURNING file_id";
 
     try
     {
@@ -1467,19 +1490,28 @@ int TskImgDBPostgreSQL::addDerivedFileInfo(const std::string& name, const uint64
 
     std::stringstream stmt;
 
-    stmt << "EXECUTE addDerivedFileInfoPlan ("
-        << IMGDB_FILES_TYPE_DERIVED << ", "
-        << IMGDB_FILES_STATUS_CREATED << ", "
-        << m_dbConnection->quote(&cleanName[0]) << ", " 
-        << parentId << ", "
-        << dirType << ", "
-        << metaType << ", "
-        << size << ", "
-        << crtime << ", "
-        << ctime << ", "
-        << atime << ", "
-        << mtime << ", "
-        << m_dbConnection->quote(&cleanPath[0]) << ")";
+    // Commenting out to see if the addition of prepared statements is
+    // the cause of the frequent PostgreSQL server crashes we've seen
+    // recently.
+
+    //stmt << "EXECUTE addDerivedFileInfoPlan ("
+    //    << IMGDB_FILES_TYPE_DERIVED << ", "
+    //    << IMGDB_FILES_STATUS_CREATED << ", "
+    //    << m_dbConnection->quote(&cleanName[0]) << ", " 
+    //    << parentId << ", "
+    //    << dirType << ", "
+    //    << metaType << ", "
+    //    << size << ", "
+    //    << crtime << ", "
+    //    << ctime << ", "
+    //    << atime << ", "
+    //    << mtime << ", "
+    //    << m_dbConnection->quote(&cleanPath[0]) << ")";
+
+    stmt << "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type, size, ctime, crtime, atime, mtime, status, full_path) "
+        "VALUES (DEFAULT, " << IMGDB_FILES_TYPE_DERIVED << ", " << m_dbConnection->quote(&cleanName[0]) << ", " << parentId << ", " << dirType << ", " << metaType << ", " << size
+        << ", " << ctime << ", " << crtime << ", " << atime << ", " << mtime << ", " << IMGDB_FILES_STATUS_CREATED << ", E" << m_dbConnection->quote(&cleanPath[0]) << ")"
+        << " RETURNING file_id";
 
     try
     {
