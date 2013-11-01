@@ -26,7 +26,7 @@ static bool need_SQL_index = false;
 /**
  * Prototypes 
  */
-int8_t sqlite_v1_get_updateable(TSK_HDB_INFO * hdb_info);
+int8_t sqlite_v1_get_properties(TSK_HDB_INFO * hdb_info);
 
 
 static int attempt(int resultCode, int expectedResultCode,
@@ -501,7 +501,7 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
  * @return -1 on error, 0 on success.
  */
 int8_t
-sqlite_v1_get_updateable(TSK_HDB_INFO * hdb_info)
+sqlite_v1_get_properties(TSK_HDB_INFO * hdb_info)
 {
     int8_t ret = 0;
 	sqlite3_stmt* stmt = NULL;
@@ -516,7 +516,7 @@ sqlite_v1_get_updateable(TSK_HDB_INFO * hdb_info)
 		const char* value = (const char *)sqlite3_column_text(stmt, 0);
 
         if (value == NULL) {
-            tsk_error_set_errstr2("sqlite_v1_get_updateable: null value");
+            tsk_error_set_errstr2("sqlite_v1_get_properties: null value");
             ret = -1;
         } else {
             // Set the updateable flag
@@ -525,7 +525,7 @@ sqlite_v1_get_updateable(TSK_HDB_INFO * hdb_info)
             }
         }
 	} else {
-        tsk_error_set_errstr2("sqlite_v1_get_updateable");
+        tsk_error_set_errstr2("sqlite_v1_get_properties");
         ret = -1;
     }
 
@@ -534,6 +534,9 @@ sqlite_v1_get_updateable(TSK_HDB_INFO * hdb_info)
     if (stmt) {
         finalize_stmt(stmt);
     }
+
+
+    ///@todo load db name property as well?
 
     tsk_release_lock(&hdb_info->lock);
 

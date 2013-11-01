@@ -161,18 +161,37 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
 
         // Try opening an old format index file
 
-        // Change the filename to the old format
-        switch (htype) {
-            case TSK_HDB_HTYPE_MD5_ID:
-                TSNPRINTF(idx_info->idx_fname, flen,
-                          _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
-                          hdb_info->db_fname, TSK_HDB_HTYPE_MD5_STR);
-                break;
-            case TSK_HDB_HTYPE_SHA1_ID:
-                TSNPRINTF(idx_info->idx_fname, flen,
-                          _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
-                          hdb_info->db_fname, TSK_HDB_HTYPE_SHA1_STR);
-                break;
+        // Clear index filename
+        free(idx_info->idx_fname);
+        idx_info->idx_fname = (TSK_TCHAR *) tsk_malloc(flen * sizeof(TSK_TCHAR));
+        if (idx_info->idx_fname == NULL) {
+            free(idx_info);
+            // @@@ ERROR INFO NEEDED
+            return NULL;
+        }
+
+        // Check if it already has an .idx extension
+        TSK_TCHAR * c;
+        c = TSTRRCHR(hdb_info->db_fname, _TSK_T('.'));    
+        if ((c != NULL) && (TSTRLEN(c) >= 4)
+            && (TSTRCMP(c, _TSK_T(".idx")) == 0)) {
+
+            // Use given db filename as the index filename
+            TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
+        } else {
+            // Change the filename to the old format
+            switch (htype) {
+                case TSK_HDB_HTYPE_MD5_ID:
+                    TSNPRINTF(idx_info->idx_fname, flen,
+                              _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
+                              hdb_info->db_fname, TSK_HDB_HTYPE_MD5_STR);
+                    break;
+                case TSK_HDB_HTYPE_SHA1_ID:
+                    TSNPRINTF(idx_info->idx_fname, flen,
+                              _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
+                              hdb_info->db_fname, TSK_HDB_HTYPE_SHA1_STR);
+                    break;
+            }
         }
 
         idx = tsk_idx_open_file(idx_info->idx_fname);
@@ -205,7 +224,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             idx_info->finalize = binsrch_finalize;
             idx_info->lookup_str = binsrch_lookup_str;
             idx_info->lookup_raw = binsrch_lookup_raw;
-            idx_info->get_updateable = binsrch_get_updateable;
+            idx_info->get_properties = binsrch_get_properties;
         }
         else {
             tsk_error_reset();
@@ -249,7 +268,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
         idx_info->finalize = sqlite_v1_finalize;
         idx_info->lookup_str = sqlite_v1_lookup_str;
         idx_info->lookup_raw = sqlite_v1_lookup_raw;
-        idx_info->get_updateable = sqlite_v1_get_updateable;
+        idx_info->get_properties = sqlite_v1_get_properties;
     }
 
     tsk_idx_close_file(idx);
@@ -259,7 +278,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
         if (create == 1) {
             idx_info->updateable = 1;
         } else {
-            idx_info->get_updateable(hdb_info);
+            idx_info->get_properties(hdb_info);
         }
 
         return idx_info;
@@ -471,7 +490,24 @@ tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
     }
 }
 
-
+/**
+ * \ingroup hashdblib
+ * Test for index only (legacy)
+ * Assumes that the db was opened using the TSK_HDB_OPEN_TRY option.
+ *
+ * @param hdb_info Hash database to consider
+ *
+ * @return 1 if there is only a legacy index AND no db, 0 otherwise
+ */
+uint8_t
+tsk_hdb_is_idxonly(TSK_HDB_INFO * hdb_info)
+{
+    if (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) {
+        return (hdb_info->idx_info->index_type == TSK_HDB_ITYPE_BINSRCH) ? 1 : 0;
+    } else {
+        return 0;
+    }
+}
 
 /**
  * \ingroup hashdblib
