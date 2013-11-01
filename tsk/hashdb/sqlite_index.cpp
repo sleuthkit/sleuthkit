@@ -395,7 +395,17 @@ sqlite_v1_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
 		pos += 2 * sizeof(char);
 	}
 
-	return sqlite_v1_lookup_raw(hdb_info, hashBlob, len, flags, action, ptr);
+	int8_t ret = sqlite_v1_lookup_raw(hdb_info, hashBlob, len, flags, action, ptr);
+
+    
+    if ((ret == 1) && (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
+        //name is blank because we don't have a name in this case
+        ///@todo query the names table for associations
+        char * name = "";
+        action(hdb_info, hash, name, ptr);
+    }
+
+	return ret;		
 			
 }
 
