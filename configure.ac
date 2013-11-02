@@ -11,7 +11,8 @@ m4_include([m4/cppunit.m4])
 m4_include([m4/ax_jni_include_dir.m4])
 m4_include([m4/ac_prog_javac_works.m4])
 m4_include([m4/ac_prog_javac.m4])
-
+m4_include([m4/ac_prog_java_works.m4])
+m4_include([m4/ac_prog_java.m4])
 
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
@@ -236,13 +237,14 @@ AS_IF([test "x$enable_java" != "xno"], [
         dnl Export the paths so that the makefile gets them
         AC_SUBST(JNI_CPPFLAGS, $JNI_CPPFLAGS)
     fi
+    AC_PROG_JAVA
 ]) dnl test enable_java
 
 dnl Test is ant is available
 AC_PATH_PROG([ANT_FOUND], [ant], [])
-AM_CONDITIONAL([X_JNI],[test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x])
+AM_CONDITIONAL([X_JNI],[test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x && test "x$JAVA" != x])
 
-AS_IF([test "x$JNI_CPPFLAGS" != x], [ax_java_support=yes], [ax_java_support=no])
+AS_IF([test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x && test "x$JAVA" != x], [ax_java_support=yes], [ax_java_support=no])
 
 AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
     [echo "#ifndef _TSK_INCS_H" > tsk/tsk_incs.h
