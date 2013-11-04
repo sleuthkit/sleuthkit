@@ -83,7 +83,6 @@ JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_addStrDbKnownBadNat(JNIEnv * env,
     jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J, jint dbHandle);
 
-
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    isUpdateableDbKnownBadNat
@@ -93,11 +92,14 @@ JNIEXPORT jboolean JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_isUpdateableDbKnownBadNat(JNIEnv * env,
     jclass obj, jint dbHandle);
 
-
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    isIdxOnlyHashDbNat
+ * Signature: 
+ */
 JNIEXPORT jboolean JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_isIdxOnlyHashDbNat(JNIEnv * env,
     jclass obj, jint dbHandle);
-
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -301,24 +303,33 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    createLookupIndexNat
+ * Method:    createLookupIndexByPathNat
  * Signature: (Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexByPathNat
   (JNIEnv *, jclass, jstring);
 
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    createLookupIndexNat
+ * Signature: 
+ */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat
   (JNIEnv *, jclass, jint);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    lookupIndexExistsNat
+ * Method:    lookupIndexExistsByPathNat
  * Signature: (Ljava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsByPathNat
   (JNIEnv *, jclass, jstring);
 
-
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    lookupIndexExistsNat
+ * Signature: 
+ */
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
   (JNIEnv *, jclass, jint);
 

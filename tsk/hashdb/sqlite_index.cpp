@@ -395,7 +395,17 @@ sqlite_v1_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
 		pos += 2 * sizeof(char);
 	}
 
-	return sqlite_v1_lookup_raw(hdb_info, hashBlob, len, flags, action, ptr);
+	int8_t ret = sqlite_v1_lookup_raw(hdb_info, hashBlob, len, flags, action, ptr);
+    
+    if ((ret == 1) && (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)
+        && !(flags & TSK_HDB_FLAG_QUICK) && (action != NULL)) {
+        //name is blank because we don't have a name in this case
+        ///@todo query the names table for associations
+        char * name = "";
+        action(hdb_info, hash, name, ptr);
+    }
+
+	return ret;		
 			
 }
 
@@ -419,77 +429,83 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
                    TSK_HDB_LOOKUP_FN action, void *ptr)
 {
 	char hashbuf[TSK_HDB_HTYPE_SHA1_LEN + 1];
-	int i;
+	int8_t ret = 0;
+    int i;
 	static const char hex[] = "0123456789abcdef";
 	TSK_OFF_T offset;
     char * selectStmt;
+    sqlite3_stmt* stmt = NULL;
 
     tsk_take_lock(&hdb_info->lock);
 
 	/* Sanity check */
 	if ((hdb_info->hash_len)/2 != len) {
-        tsk_release_lock(&hdb_info->lock);
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_HDB_ARG);
 		tsk_error_set_errstr("hdb_lookup: Hash passed is different size than expected: %d vs %d",
 			hdb_info->hash_len, len);
-		return -1;
-	}
+		ret = -1;
+	} else {
 
-    if (m_stmt == NULL) {
     	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
             selectStmt = "SELECT md5,database_offset from hashes where md5=? limit 1";
         } else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
             selectStmt = "SELECT sha1,database_offset from hashes where sha1=? limit 1";
         } else {
-            tsk_release_lock(&hdb_info->lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
             tsk_error_set_errstr("Unknown hash type: %d\n", hdb_info->hash_type);
-            return 1;
+            ret = -1;
         }
-        prepare_stmt(selectStmt, &m_stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+
+        if (ret != -1) {
+            prepare_stmt(selectStmt, &stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+        
+	        if (attempt(sqlite3_bind_blob(stmt, 1, hash, len, free),
+		        SQLITE_OK,
+		        "Error binding binary blob: %s\n",
+		        hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+			    ret = -1;
+	        } else {
+                // Found a match
+	            if (sqlite3_step(stmt) == SQLITE_ROW) {
+		            if ((flags & TSK_HDB_FLAG_QUICK)
+			            || (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
+				        
+                        // There is just an index, so no other info to get
+                        ///@todo Look up a name in the sqlite db
+                        ret = 1;
+		            } else {
+                        // Use offset to get more info
+			            for (i = 0; i < len; i++) {
+				            hashbuf[2 * i] = hex[(hash[i] >> 4) & 0xf];
+				            hashbuf[2 * i + 1] = hex[hash[i] & 0xf];
+			            }
+			            hashbuf[2 * len] = '\0';
+
+			            offset = sqlite3_column_int64(stmt, 1);
+
+			            if (hdb_info->getentry(hdb_info, hashbuf, offset, flags, action, ptr)) {
+				            tsk_error_set_errstr2("hdb_lookup");
+				            ret = -1;
+			            } else {
+			                ret = 1;
+                        }
+		            }
+                }
+            }
+        
+	        sqlite3_reset(stmt);
+    
+            if (stmt) {
+                finalize_stmt(stmt);
+            }
+        }
     }
 
-	if (attempt(sqlite3_bind_blob(m_stmt, 1, hash, len, free),
-		SQLITE_OK,
-		"Error binding binary blob: %s\n",
-		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-            tsk_release_lock(&hdb_info->lock);
-			return -1;
-	}
-
-	if (sqlite3_step(m_stmt) == SQLITE_ROW) {
-		if ((flags & TSK_HDB_FLAG_QUICK)
-			|| (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
-				sqlite3_reset(m_stmt);
-                tsk_release_lock(&hdb_info->lock);
-				return 1;
-		} else {
-			for (i = 0; i < len; i++) {
-				hashbuf[2 * i] = hex[(hash[i] >> 4) & 0xf];
-				hashbuf[2 * i + 1] = hex[hash[i] & 0xf];
-			}
-			hashbuf[2 * len] = '\0';
-
-			offset = sqlite3_column_int64(m_stmt, 1);
-			sqlite3_reset(m_stmt);
-
-			if (hdb_info->getentry(hdb_info, hashbuf, offset, flags, action, ptr)) {
-                tsk_release_lock(&hdb_info->lock);
-				tsk_error_set_errstr2("hdb_lookup");
-				return -1;
-			}
-			return 1;
-		}
-	}
-
-	sqlite3_reset(m_stmt);
-    
     tsk_release_lock(&hdb_info->lock);
 
-	return 0;
-
+	return ret;
 }
 
 

@@ -789,7 +789,7 @@ public class SleuthkitJNI {
 		return isUpdateableDbKnownBadNat(dbHandle);
 	}    
     
-    public boolean hashDatabaseHasLegacyLookupIndexOnly(int dbHandle) throws TskCoreException {
+    public static boolean hashDatabaseHasLegacyLookupIndexOnly(int dbHandle) throws TskCoreException {
         return isIdxOnlyHashDbNat(dbHandle);
     }
     

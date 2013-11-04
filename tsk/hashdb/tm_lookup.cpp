@@ -57,8 +57,7 @@ tsk_hdb_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
         return -1;
     }
 
-	return hdb_info->idx_info->lookup_str(hdb_info, hash, flags, action, ptr);
-			
+    return hdb_info->idx_info->lookup_str(hdb_info, hash, flags, action, ptr);
 }
 
 /**
