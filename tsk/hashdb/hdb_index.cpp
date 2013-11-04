@@ -82,6 +82,30 @@ tsk_idx_close_file(FILE * idx)
 }
 
 /**
+ * Update the hash type. New indices can handle multiple hash types, so hash
+ * type is now dependent on what the client is doing (e.g. lookup md5).
+ * @return 1 on error, 0 on success
+ */
+static int
+hdb_update_htype(TSK_HDB_INFO * hdb_info, uint8_t htype)
+{
+    /* Get hash type specific information */
+    switch (htype) {
+        case TSK_HDB_HTYPE_MD5_ID:
+            hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(htype);
+            hdb_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
+            break;
+        case TSK_HDB_HTYPE_SHA1_ID:
+            hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(htype);
+            hdb_info->hash_len = TSK_HDB_HTYPE_SHA1_LEN;
+            break;
+        default:
+            return 1;
+    }
+    return 0;
+}
+
+/**
  * Open an index for the given hash db
  * We only create kdb (SQLite) files, but can open old indexes.
  * @return NULL on error, TSK_IDX_INFO instance on success
@@ -117,26 +141,15 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
         return NULL;
     }
 
-    /* Get hash type specific information */
-    switch (htype) {
-        case TSK_HDB_HTYPE_MD5_ID:
-            hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(htype);
-            hdb_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
-            break;
-        case TSK_HDB_HTYPE_SHA1_ID:
-            hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(htype);
-            hdb_info->hash_len = TSK_HDB_HTYPE_SHA1_LEN;
-            break;
-        default:
-            free(idx_info);
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_HDB_MISSING);
-            tsk_error_set_errstr(
-                "tsk_idx_open: Unknown hash type: %d\n",
-                (int)htype);
-            return NULL;
+    if (hdb_update_htype(hdb_info, htype) == 1) {
+        free(idx_info);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_MISSING);
+        tsk_error_set_errstr(
+            "tsk_idx_open: Unknown hash type: %d\n",
+            (int)htype);
+        return NULL;
     }
-
 
     // Verify the new SQLite index exists, get its size, and open it for header reading
     
@@ -308,6 +321,9 @@ hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
 
     // already opened
     if (hdb_info->idx_info != NULL) {
+        // update htype
+        hdb_update_htype(hdb_info, htype);
+
         tsk_release_lock(&hdb_info->lock);
         return 0;
     }

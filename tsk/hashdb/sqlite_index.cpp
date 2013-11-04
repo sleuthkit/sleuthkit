@@ -506,7 +506,7 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hvalue, uint8_t len,
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_HDB_ARG);
 		tsk_error_set_errstr("hdb_lookup: Hash passed is different size than expected: %d vs %d",
-			hdb_info->hash_len, len);
+			hdb_info->hash_len, (len * 2));
 		ret = -1;
 	} else {
 
