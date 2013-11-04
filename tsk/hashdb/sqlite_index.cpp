@@ -448,7 +448,7 @@ sqlite_v1_lookup_str(TSK_HDB_INFO * hdb_info, const char* hvalue,
 #ifdef IDX_SQLITE_STORE_TEXT
     ret = lookup_text(hdb_info, hvalue, flags, action, ptr);
 #else
-	const size_t len = strlen(hash)/2;
+	const size_t len = strlen(hvalue)/2;
 	uint8_t * hashBlob = (uint8_t *) tsk_malloc(len+1);
 	const char * pos = hvalue;
 	size_t count = 0;
