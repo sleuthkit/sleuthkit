@@ -464,6 +464,8 @@ public class SleuthkitCase {
 
 		} catch (SQLException e) {
 			throw new TskCoreException("Couldn't configure the database connection", e);
+		} catch (Exception e) {
+			throw new TskCoreException("Couldn't configure the database connection", e);
 		}
 	}
 
