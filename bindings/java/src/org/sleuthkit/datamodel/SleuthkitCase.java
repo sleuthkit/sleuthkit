@@ -4737,12 +4737,11 @@ public class SleuthkitCase {
 	private void closeConnection() {
 		SleuthkitCase.dbWriteLock();
 		try {
+			closeStatements();
 			if (con != null) {
 				con.close();
 				con = null;
 			}
-			closeStatements();
-
 		} catch (SQLException e) {
 			// connection close failed.
 			logger.log(Level.WARNING,
