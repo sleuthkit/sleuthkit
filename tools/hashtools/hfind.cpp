@@ -22,13 +22,15 @@ usage()
 {
     TFPRINTF(stderr,
              _TSK_T
-             ("usage: %s [-eqV] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
+             ("usage: %s [-eqVa] [-c db_name] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
              progname);
     tsk_fprintf(stderr,
                 "\t-e: Extended mode - where values other than just the name are printed\n");
     tsk_fprintf(stderr,
                 "\t-q: Quick mode - where a 1 is printed if it is found, else 0\n");
     tsk_fprintf(stderr, "\t-V: Print version to STDOUT\n");
+    tsk_fprintf(stderr, "\t-c db_name: Create blank index with the given name.\n");
+    tsk_fprintf(stderr, "\t-a: Add given hashes to the database.\n");
     tsk_fprintf(stderr,
                 "\t-f lookup_file: File with one hash per line to lookup\n");
     tsk_fprintf(stderr,
@@ -73,7 +75,9 @@ main(int argc, char ** argv1)
     unsigned int flags = 0;
     TSK_HDB_INFO *hdb_info;
     TSK_TCHAR **argv;
-    
+    bool create = false;
+    bool addHash = false;
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -88,7 +92,7 @@ main(int argc, char ** argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ef:i:qV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("cef:i:aqV"))) > 0) {
         switch (ch) {
         case _TSK_T('e'):
             flags |= TSK_HDB_FLAG_EXT;
@@ -100,6 +104,14 @@ main(int argc, char ** argv1)
 
         case _TSK_T('i'):
             idx_type = OPTARG;
+            break;
+
+        case _TSK_T('c'):
+            create = true;
+            break;
+
+        case _TSK_T('a'):
+            addHash = true;
             break;
 
         case _TSK_T('q'):
@@ -123,9 +135,26 @@ main(int argc, char ** argv1)
 
     db_file = argv[OPTIND++];
 
-    if ((hdb_info = tsk_hdb_open(db_file, TSK_HDB_OPEN_NONE)) == NULL) {
-        tsk_error_print(stderr);
-        return 1;
+    // Make a new database (creates an index from scratch)
+    if (create) {
+        if ((hdb_info = tsk_hdb_new(db_file)) == NULL) {
+            tsk_error_print(stderr);
+            return 1;
+        } else {
+            printf("New index %"PRIttocTSK" created.\n", db_file);
+            return 0;
+        }
+    } else {
+        // Open an existing database
+        TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
+        if(addHash) {
+            flags = TSK_HDB_OPEN_IDXONLY;
+        }
+
+        if ((hdb_info = tsk_hdb_open(db_file, flags)) == NULL) {
+            tsk_error_print(stderr);
+            return 1;
+        }
     }
 
     /* What mode are we going to run in 
@@ -191,19 +220,33 @@ main(int argc, char ** argv1)
             }
             htmp[i] = '\0';
 
-            /* Perform lookup */
-            retval =
-                tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
-                        (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
-            if (retval == -1) {
-                tsk_error_print(stderr);
-                return 1;
-            }
-            if (flags & TSK_HDB_FLAG_QUICK) {
-                printf("%d\n", retval);
-            }
-            else if (retval == 0) {
-                print_notfound(htmp);
+            if (addHash) {
+                // Write a new hash to the database/index, if it's updateable
+                //@todo support sha1 and sha2-256
+                retval = tsk_hdb_add_str(hdb_info, NULL, (const char *)htmp, NULL, NULL);
+                if (retval == 1) {
+                    printf("There was an error adding the hash.\n");
+                    tsk_error_print(stderr);
+                    return 1;
+                } else if (retval == -1) {
+                    printf("Database is not updateable.\n");
+                } else if (retval == 0) {
+                    printf("Hash %s added.\n", htmp);
+                }
+            } else {
+                /* Perform lookup */
+                retval = tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
+                         (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
+                if (retval == -1) {
+                    tsk_error_print(stderr);
+                    return 1;
+                }
+                if (flags & TSK_HDB_FLAG_QUICK) {
+                    printf("%d\n", retval);
+                }
+                else if (retval == 0) {
+                    print_notfound(htmp);
+                }
             }
             OPTIND++;
         }

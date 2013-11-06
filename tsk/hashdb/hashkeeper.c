@@ -401,7 +401,7 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
         }
 
         if (NULL ==
-            fgets(hdb_info->idx_lbuf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
+            fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
             if (feof(hdb_info->hDb)) {
                 break;
             }

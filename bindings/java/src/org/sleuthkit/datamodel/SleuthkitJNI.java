@@ -54,7 +54,15 @@ public class SleuthkitJNI {
 
 	private static native int addDbKnownBadNat(String hashDbPath) throws TskCoreException;
 
-	private static native String getDbName(String hashDbPath) throws TskCoreException;
+    private static native int newDbKnownBadNat(String hashDbPath) throws TskCoreException;
+    
+    private static native int addStrDbKnownBadNat(String filename, String hashMd5, String hashSha1, String hashSha256, int dbHandle) throws TskCoreException;
+
+    private static native boolean isUpdateableDbKnownBadNat(int dbHandle);
+    
+	private static native String getDbNameByPath(String hashDbPath) throws TskCoreException;
+
+    private static native String getDbName(int dbHandle) throws TskCoreException;
 
 	private static native void closeDbLookupsNat() throws TskCoreException;
 
@@ -107,10 +115,16 @@ public class SleuthkitJNI {
 	private static native void closeFileNat(long fileHandle);
 
 	//hash-lookup database functions
-	private static native void createLookupIndexNat(String dbPath) throws TskCoreException;
+	private static native void createLookupIndexByPathNat(String dbPath) throws TskCoreException;
+    
+    private static native void createLookupIndexNat(int dbHandle) throws TskCoreException;
 
-	private static native boolean lookupIndexExistsNat(String dbPath) throws TskCoreException;
+	private static native boolean lookupIndexExistsByPathNat(String dbPath) throws TskCoreException;
+    
+    private static native boolean lookupIndexExistsNat(int dbHandle) throws TskCoreException;
 
+    private static native boolean isIdxOnlyHashDbNat(int dbHandle) throws TskCoreException;
+    
 	//util functions
 	private static native long findDeviceSizeNat(String devicePath) throws TskCoreException;
 
@@ -150,12 +164,16 @@ public class SleuthkitJNI {
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 		}
 
+		
+		/******************** Hash Database Methods ***********************/
 		/**
-		 * Clear currently set lookup databases within TSK
+		 * Close the currently open lookup databases 
 		 *
 		 * @throws TskCoreException exception thrown if critical error occurs
 		 * within TSK
 		 */
+		// use jni.closeHashDatabases() instead
+		@Deprecated
 		void clearLookupDatabases() throws TskCoreException {
 			closeDbLookupsNat();
 		}
@@ -166,20 +184,27 @@ public class SleuthkitJNI {
 		 * @param path The path to the database
 		 * @return a handle for that database
 		 */
+		// BC: Called by SleuthkitCase, which is called by IngestModule
+		// use jni.openNSRLDatabase() instead
+		@Deprecated
 		int setNSRLDatabase(String path) throws TskCoreException {
 			return setDbNSRLNat(path);
 		}
+		
 
 		/**
-		 * Add the known bad database
+		 * Open a hash bad database
 		 *
 		 * @param path The path to the database
 		 * @return a handle for that database
 		 */
+		// use jni.openHashDatabase() instead
+		@Deprecated
 		int addKnownBadDatabase(String path) throws TskCoreException {
 			return addDbKnownBadNat(path);
 		}
-
+		
+		
 		/**
 		 * Start the process of adding a disk image to the case
 		 *
@@ -574,16 +599,31 @@ public class SleuthkitJNI {
 		closeFileNat(fileHandle);
 	}
 
+	
+	/****************************** Hash database methods *****************/
 	/**
 	 * Create an index for the given database path.
 	 *
 	 * @param dbPath The path to the database
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
+	// BC: Called by HashDb.
+	// use createLookupIndexForHashDatabase instead
+	@Deprecated    
 	public static void createLookupIndex(String dbPath) throws TskCoreException {
-		createLookupIndexNat(dbPath);
+		createLookupIndexByPathNat(dbPath);
 	}
 
+	/**
+	 * Create an index for the given database path.
+	 *
+	 * @param dbPath The path to the database
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */
+	public static void createLookupIndexForHashDatabase(int dbHandle) throws TskCoreException {
+		createLookupIndexNat(dbHandle);
+	}    
+    
 	/**
 	 * Check if an index exists for the given database path.
 	 *
@@ -591,10 +631,25 @@ public class SleuthkitJNI {
 	 * @return true if index exists
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
+	// BC: Called by HashDB
+	// use lookupIndexForHashDatabaseExists instead
+	@Deprecated        
 	public static boolean lookupIndexExists(String dbPath) throws TskCoreException {
-		return lookupIndexExistsNat(dbPath);
+		return lookupIndexExistsByPathNat(dbPath);
 	}
 
+    
+	/**
+	 * Check if an index exists for the given database path.
+	 *
+	 * @param dbPath
+	 * @return true if index exists
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */
+	public static boolean hashDatabaseHasLookupIndex(int dbHandle) throws TskCoreException {
+		return lookupIndexExistsNat(dbHandle);
+	}    
+    
 	/**
 	 * Set the NSRL database
 	 *
@@ -602,31 +657,83 @@ public class SleuthkitJNI {
 	 * @return a handle for that database
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
+	// BC: Does not appear to be called. HashDBINgestModule calls SleuthkitCase.setNSRLDatabase, which calls the version of this in CaseHandle
+	// use openNSRLDatabase instead
+	@Deprecated
 	public static int setNSRLDatabase(String path) throws TskCoreException {
+		return openNSRLDatabase(path);
+	}
+	
+	public static int openNSRLDatabase(String path) throws TskCoreException {
 		return setDbNSRLNat(path);
 	}
+	
 
 	/**
-	 * Add the known bad database
+	 * Opens a hash database.  Supports the various formats that TSK supports
 	 *
 	 * @param path The path to the database
 	 * @return a handle for that database
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
+	// BC: Does not appear to be called.  HashDBIngestModule calls SleuthkitCase.addKnownBad, which calls the version in CaseHandle
+	// use openHashDatabase instead
+	@Deprecated
 	public static int addKnownBadDatabase(String path) throws TskCoreException {
+		return openHashDatabase(path);
+	}
+	
+	public static int openHashDatabase(String path) throws TskCoreException {
 		return addDbKnownBadNat(path);
 	}
+	
+	
+	/**
+	 * Creates a hash database.  Will be of the default TSK hash database type.
+	 *
+	 * @param path The path to the database
+	 * @return a handle for that database
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */
+	public static int createHashDatabase(String path) throws TskCoreException {		
+		return newDbKnownBadNat(path);
+	}
 
+	/**
+	 * Close the currently open lookup databases 
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs
+	 * within TSK
+	 */
+	public static void closeHashDatabases() throws TskCoreException {
+		closeDbLookupsNat();
+	}
+	
 	/**
 	 * Get the name of the database
 	 *
 	 * @param path The path to the database
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
+	// BC: Used by HasDBAddDatabaseDialog an HashDBXML
+    //use getHashDatabaseName instead
+    @Deprecated
 	public static String getDatabaseName(String path) throws TskCoreException {
-		return getDbName(path);
+		return getDbNameByPath(path);
 	}
 
+	
+	/**
+	 * Get the name of the database
+	 *
+	 * @param dbHandle previously opened hash db handle
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */
+	public static String getHashDatabaseName(int dbHandle) throws TskCoreException {
+		return getDbName(dbHandle);
+	}
+    
+    
 	/**
 	 * Look up the given hash in the NSRL database
 	 *
@@ -634,7 +741,14 @@ public class SleuthkitJNI {
 	 * @return the status of the hash in the NSRL
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
+	// BC: Called by SleuthkitCase -> Deprecated
+	// use lookupNSRLDatabase instead
+	@Deprecated
 	public static TskData.FileKnown nsrlHashLookup(String hash) throws TskCoreException {
+		return lookupInNSRLDatabase(hash);
+	}
+	
+	public static TskData.FileKnown lookupInNSRLDatabase(String hash) throws TskCoreException {
 		return TskData.FileKnown.valueOf((byte) nsrlDbLookup(hash));
 	}
 
@@ -646,10 +760,39 @@ public class SleuthkitJNI {
 	 * @return the status of the hash in the known bad database
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
+	// BC: Called by SleuthkitCase -> Deprecated
+	// use lookupInHashDatabase instead
+	@Deprecated
 	public static TskData.FileKnown knownBadHashLookup(String hash, int dbHandle) throws TskCoreException {
+		return lookupInHashDatabase(hash, dbHandle);
+	}
+	
+	public static TskData.FileKnown lookupInHashDatabase(String hash, int dbHandle) throws TskCoreException {
 		return TskData.FileKnown.valueOf((byte) knownBadDbLookup(hash, dbHandle));
 	}
+	
+	/**
+	 * Adds a hash value to a hash database. 
+	 * @param filename Name of file (can be null)
+	 * @param md5 Text of MD5 hash (can be null)
+	 * @param sha1 Text of SHA1 hash (can be null)
+	 * @param sha256 Text of SHA256 hash (can be null)
+	 * @param dbHandle Handle to DB
+	 * @throws TskCoreException 
+	 */
+	public static void addToHashDatabase(String filename, String md5, String sha1, String sha256, int dbHandle) throws TskCoreException {
+		addStrDbKnownBadNat(filename, md5, sha1, sha256, dbHandle);
+	}
 
+    
+	public static boolean isUpdateableHashDatabase(int dbHandle) throws TskCoreException {
+		return isUpdateableDbKnownBadNat(dbHandle);
+	}    
+    
+    public static boolean hashDatabaseHasLegacyLookupIndexOnly(int dbHandle) throws TskCoreException {
+        return isIdxOnlyHashDbNat(dbHandle);
+    }
+    
 	/**
 	 * Get the size of the index of the given database
 	 *
@@ -657,6 +800,8 @@ public class SleuthkitJNI {
 	 * @return the size of the index or -1 if it doesn't exist
 	 * @throws TskCoreException
 	 */
+	// BC: Does not appear to be used at all -> SHould probably go away.
+	@Deprecated
 	public static int getIndexSize(String path) throws TskCoreException {
 		return getIndexSizeNat(path);
 	}
