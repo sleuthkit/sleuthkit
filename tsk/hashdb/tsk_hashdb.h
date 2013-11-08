@@ -213,6 +213,8 @@ extern "C" {
     extern void tsk_hdb_close(TSK_HDB_INFO * hdb_info);
 
     extern uint8_t tsk_hdb_hasindex(TSK_HDB_INFO *, uint8_t htype);
+    
+    extern uint8_t tsk_hdb_idxsetup(TSK_HDB_INFO * hdb_info, uint8_t htype);
 
     extern uint8_t tsk_hdb_is_idxonly(TSK_HDB_INFO *);
 
