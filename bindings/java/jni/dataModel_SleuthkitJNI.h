@@ -119,11 +119,19 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbName
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    closeDbLookupsNat
+ * Method:    closeAllDbLookupsNat
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupsNat
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeAllDbLookupsNat
   (JNIEnv *, jclass);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    closeDbLookupNat
+ * Signature: 
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupNat
+  (JNIEnv *, jclass, jint dbHandle);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
