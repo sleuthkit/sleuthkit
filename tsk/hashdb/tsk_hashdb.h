@@ -210,7 +210,7 @@ extern "C" {
     extern TSK_HDB_INFO *tsk_hdb_open(TSK_TCHAR * db_file,
         TSK_HDB_OPEN_ENUM flags);
 
-    extern void tsk_hdb_close(TSK_HDB_INFO * hdb);
+    extern void tsk_hdb_close(TSK_HDB_INFO * hdb_info);
 
     extern uint8_t tsk_hdb_hasindex(TSK_HDB_INFO *, uint8_t htype);
 
