@@ -72,6 +72,8 @@ extern "C" {
     extern uint8_t
         hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create);
 
+    extern uint8_t tsk_hdb_idxsetup(TSK_HDB_INFO * hdb_info, uint8_t htype);
+
     extern void tsk_idx_close(TSK_IDX_INFO * idx_info);
 
     extern uint8_t tsk_hdb_idxinitialize(TSK_HDB_INFO *,

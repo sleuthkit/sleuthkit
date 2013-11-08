@@ -1660,7 +1660,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getIndexSizeNat
         return -1;
     }
 
-    if(tsk_hdb_hasindex(temp, TSK_HDB_HTYPE_MD5_ID)) {
+    if(tsk_hdb_idxsetup(temp, TSK_HDB_HTYPE_MD5_ID)) {
         return (jint) ((temp->idx_info->idx_struct.idx_binsrch->idx_size - temp->idx_info->idx_struct.idx_binsrch->idx_off) / (temp->idx_info->idx_struct.idx_binsrch->idx_llen));
     }
 

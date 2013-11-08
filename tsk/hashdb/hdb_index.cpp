@@ -497,6 +497,30 @@ tsk_hdb_idxfinalize(TSK_HDB_INFO * hdb_info)
 uint8_t
 tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
 {
+    ///@todo change this function to not call hdb_setupindex
+
+    if (hdb_setupindex(hdb_info, htype, 0) == 0) {
+        return 1;
+    } else {
+        return 0;
+    }
+
+    return 0;
+}
+
+/**
+ * \ingroup hashdblib
+ * Setup the index if the open hash database has one.
+ * 
+ *
+ * @param hdb_info Hash database to consider
+ * @param htype Hash type that index should be of
+ *
+ * @return 1 if index exists / was setup; 0 if not / failed
+ */
+uint8_t
+tsk_hdb_idxsetup(TSK_HDB_INFO * hdb_info, uint8_t htype)
+{
     /* Check if the index is already open, and 
      * try to open it if not */
     if (hdb_setupindex(hdb_info, htype, 0) == 0) {

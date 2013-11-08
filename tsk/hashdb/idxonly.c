@@ -30,8 +30,7 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
     size_t i = 0;
     memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
 
-    //Calling tsk_hdb_hasindex() has the side effect to set up the index structure (if the index exist)
-    if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
+    if(tsk_hdb_idxsetup(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
         if (tsk_verbose)
             fprintf(stderr,
                 "Failed to get name from index (index does not exist); using file name instead");
