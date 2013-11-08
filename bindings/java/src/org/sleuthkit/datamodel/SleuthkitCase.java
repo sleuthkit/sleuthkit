@@ -115,6 +115,7 @@ public class SleuthkitCase {
 	private PreparedStatement selectAllContentTags;
 	private PreparedStatement selectContentTagsCountByTagName;
 	private PreparedStatement selectContentTagsByTagName;
+	private PreparedStatement selectContentTagsByContent;
 	private PreparedStatement insertIntoBlackboardArtifactTags;
 	private PreparedStatement selectMaxIdFromBlackboardArtifactTags;
 	private PreparedStatement deleteFromBlackboardArtifactTags;
@@ -426,6 +427,8 @@ public class SleuthkitCase {
 				
 		selectContentTagsByTagName = con.prepareStatement("SELECT * FROM content_tags WHERE tag_name_id = ?");
 		
+		selectContentTagsByContent = con.prepareStatement("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?");
+		
 		insertIntoBlackboardArtifactTags = con.prepareStatement("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment) VALUES (?, ?, ?)");
 		
 		selectMaxIdFromBlackboardArtifactTags = con.prepareStatement("SELECT MAX(tag_id) FROM blackboard_artifact_tags");				
@@ -486,6 +489,7 @@ public class SleuthkitCase {
 		closeStatement(selectContentTagsCountByTagName);
 		closeStatement(selectAllContentTags);
 		closeStatement(selectContentTagsByTagName);
+		closeStatement(selectContentTagsByContent);
 		closeStatement(insertIntoBlackboardArtifactTags);
 		closeStatement(selectMaxIdFromBlackboardArtifactTags);	
 		closeStatement(deleteFromBlackboardArtifactTags);
@@ -5403,6 +5407,36 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Selects the rows in the content_tags table in the case database with a 
+	 * specified foreign key into the tsk_objects table.
+	 * @param [in] content A data transfer object (DTO) for the content to match.
+	 * @return A list, possibly empty, of ContentTag data transfer objects (DTOs) for the rows.
+	 * @throws TskCoreException 
+	 */
+	public List<ContentTag> getContentTagsByContent(Content content) throws TskCoreException {
+		dbReadLock();		
+		try {
+			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
+			
+			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?
+			ResultSet resultSet = selectContentTagsByContent.executeQuery();
+			while (resultSet.next()) {
+				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
+				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
+				tags.add(tag);
+			} 
+			
+			return tags;
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error getting content tags data for content (obj_id = " + content.getId() + ")", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}					
+	}	
+		
+	/**
 	 * Inserts a row into the blackboard_artifact_tags table in the case database.
      * @param [in] artifact The blackboard artifact to tag.
      * @param [in] tagName The name to use for the tag.
@@ -5545,7 +5579,7 @@ public class SleuthkitCase {
 			return tags;
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error getting backboard artifact tags data (tag_name_id = " + tagName.getId() + ")", ex);
+			throw new TskCoreException("Error getting blackboard artifact tags data (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
 			dbReadUnlock();
@@ -5578,7 +5612,7 @@ public class SleuthkitCase {
 			return tags;
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error getting backboard artifact tags data (artifact_id = " + artifact.getArtifactID() + ")", ex);
+			throw new TskCoreException("Error getting blackboard artifact tags data (artifact_id = " + artifact.getArtifactID() + ")", ex);
 		}
 		finally {
 			dbReadUnlock();
