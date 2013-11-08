@@ -666,6 +666,8 @@ public class SleuthkitJNI {
 		return openNSRLDatabase(path);
 	}
 	
+    // use openHashDatabase instead
+    @Deprecated
 	public static int openNSRLDatabase(String path) throws TskCoreException {
 		return setDbNSRLNat(path);
 	}
@@ -761,6 +763,8 @@ public class SleuthkitJNI {
 		return lookupInNSRLDatabase(hash);
 	}
 	
+    // use lookupInHashDatabase instead
+    @Deprecated
 	public static TskData.FileKnown lookupInNSRLDatabase(String hash) throws TskCoreException {
 		return TskData.FileKnown.valueOf((byte) nsrlDbLookup(hash));
 	}
