@@ -64,7 +64,9 @@ public class SleuthkitJNI {
 
     private static native String getDbName(int dbHandle) throws TskCoreException;
 
-	private static native void closeDbLookupsNat() throws TskCoreException;
+	private static native void closeAllDbLookupsNat() throws TskCoreException;
+    
+    private static native void closeDbLookupNat(int dbHandle) throws TskCoreException;
 
 	private static native int knownBadDbLookup(String hash, int dbHandle) throws TskCoreException;
 
@@ -175,7 +177,7 @@ public class SleuthkitJNI {
 		// use jni.closeHashDatabases() instead
 		@Deprecated
 		void clearLookupDatabases() throws TskCoreException {
-			closeDbLookupsNat();
+			closeAllDbLookupsNat();
 		}
 
 		/**
@@ -632,7 +634,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	// BC: Called by HashDB
-	// use lookupIndexForHashDatabaseExists instead
+	// use hashDatabaseHasLookupIndex instead
 	@Deprecated        
 	public static boolean lookupIndexExists(String dbPath) throws TskCoreException {
 		return lookupIndexExistsByPathNat(dbPath);
@@ -664,6 +666,8 @@ public class SleuthkitJNI {
 		return openNSRLDatabase(path);
 	}
 	
+    // use openHashDatabase instead
+    @Deprecated
 	public static int openNSRLDatabase(String path) throws TskCoreException {
 		return setDbNSRLNat(path);
 	}
@@ -700,14 +704,25 @@ public class SleuthkitJNI {
 	}
 
 	/**
-	 * Close the currently open lookup databases 
+	 * Close the currently open lookup databases. Resets the handle counting.
 	 *
 	 * @throws TskCoreException exception thrown if critical error occurs
 	 * within TSK
 	 */
-	public static void closeHashDatabases() throws TskCoreException {
-		closeDbLookupsNat();
+	public static void closeAllHashDatabases() throws TskCoreException {
+		closeAllDbLookupsNat();
 	}
+
+	/**
+	 * Close a particular open lookup database. Existing handles are not affected.
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs
+	 * within TSK
+	 */
+	public static void closeHashDatabase(int dbHandle) throws TskCoreException {
+		closeDbLookupNat(dbHandle);
+	}
+
 	
 	/**
 	 * Get the name of the database
@@ -748,6 +763,8 @@ public class SleuthkitJNI {
 		return lookupInNSRLDatabase(hash);
 	}
 	
+    // use lookupInHashDatabase instead
+    @Deprecated
 	public static TskData.FileKnown lookupInNSRLDatabase(String hash) throws TskCoreException {
 		return TskData.FileKnown.valueOf((byte) nsrlDbLookup(hash));
 	}

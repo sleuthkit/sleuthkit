@@ -499,8 +499,15 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbName
     }
 }
 
+/*
+ * Close all hash dbs and destroy associated memory structures.
+ * And it resets the handle counting.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupsNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_closeAllDbLookupsNat(JNIEnv * env,
     jclass obj) {
 
     if (m_NSRLDb != NULL) {
@@ -511,6 +518,32 @@ JNIEXPORT void JNICALL
     for_each(m_hashDbs.begin(), m_hashDbs.end(), tsk_hdb_close);
    
     m_hashDbs.clear();
+}
+
+/*
+ * Close a hash db and destroy associated memory structures.
+ * Existing handles are not affected.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ */
+JNIEXPORT void JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupNat(JNIEnv * env,
+    jclass obj, jint dbHandle) {
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+    } else {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+
+        if(db != NULL) {
+            tsk_hdb_close(db);
+
+            // We do NOT erase the element because that would shift the indices,
+            // messing up the existing handles.
+            m_hashDbs.at(dbHandle-1) = NULL;
+        }
+    }
 }
 
 /*
