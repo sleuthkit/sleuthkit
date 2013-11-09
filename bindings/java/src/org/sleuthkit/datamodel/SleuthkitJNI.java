@@ -60,6 +60,12 @@ public class SleuthkitJNI {
 
     private static native boolean isUpdateableDbKnownBadNat(int dbHandle);
     
+    private static native boolean hashDbIsReindexableNat(int dbHandle);
+    
+    private static native String hashDbPathNat(int dbHandle);    
+    
+    private static native String hashDbIndexPathNat(int dbHandle);
+        
 	private static native String getDbNameByPath(String hashDbPath) throws TskCoreException;
 
     private static native String getDbName(int dbHandle) throws TskCoreException;
@@ -641,6 +647,40 @@ public class SleuthkitJNI {
 	public static boolean hashDatabaseHasLookupIndex(int dbHandle) throws TskCoreException {
 		return lookupIndexExistsNat(dbHandle);
 	}    
+    
+	/**
+	 * hashDatabaseCanBeReindexed
+	 *
+	 * @param dbHandle previously opened hash db handle
+	 * @return Does this database have a source database that is different than the index?
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */    
+    public static boolean hashDatabaseCanBeReindexed(int dbHandle) throws TskCoreException {
+        return hashDbIsReindexableNat(dbHandle);
+    }
+    
+    /**
+	 * getHashDatabasePath
+	 *
+	 * @param dbHandle previously opened hash db handle
+	 * @return Hash db file path
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */    
+    public static String getHashDatabasePath(int dbHandle) throws TskCoreException {
+        return hashDbPathNat(dbHandle);
+    }
+
+	/**
+	 * getHashDatabaseIndexPath
+	 *
+	 * @param dbHandle previously opened hash db handle
+	 * @return Index file path
+	 * @throws TskCoreException if a critical error occurs within TSK core
+	 */        
+    public static String getHashDatabaseIndexPath(int dbHandle) throws TskCoreException {
+        return hashDbIndexPathNat(dbHandle);
+    }
+      
     
 	/**
 	 * Set the NSRL database

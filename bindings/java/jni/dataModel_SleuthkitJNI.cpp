@@ -400,6 +400,91 @@ JNIEXPORT jboolean JNICALL
 }
 
 /*
+ * Get reindexable state.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ * @return true if db is allowed to be reindexed
+ */
+JNIEXPORT jboolean JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsReindexableNat(JNIEnv * env,
+    jclass obj, jint dbHandle)
+{
+    bool retval = false;
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+    } else {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+
+        if(db != NULL) {
+            if (db->hDb != NULL) {
+                retval = true;
+            }
+        }
+    }
+    return retval;
+}
+    
+/*
+ * Get path.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ * @return path
+ */
+JNIEXPORT jstring JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbPathNat(JNIEnv * env,
+    jclass obj, jint dbHandle)
+{
+    char cpath[1024];
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return env->NewStringUTF("-1");
+    } else {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+        if(db != NULL) {
+            snprintf(cpath, 1024, "%" PRIttocTSK, db->db_fname);
+            jstring jname = env->NewStringUTF(cpath);
+            return jname;
+        } else {
+            return env->NewStringUTF("-1");
+        }
+    }   
+}
+
+
+/*
+ * Get index path.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ * @return path
+ */
+JNIEXPORT jstring JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIndexPathNat(JNIEnv * env,
+    jclass obj, jint dbHandle)
+{
+    char cpath[1024];
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return env->NewStringUTF("-1");
+    } else {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+        if(db != NULL) {
+            snprintf(cpath, 1024, "%" PRIttocTSK, db->idx_info->idx_fname);
+            jstring jname = env->NewStringUTF(cpath);
+            return jname;
+        } else {
+            return env->NewStringUTF("-1");
+        }
+    }  
+}
+
+
+/*
  * Test for index only (no original Db file) legacy (IDX format).
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from

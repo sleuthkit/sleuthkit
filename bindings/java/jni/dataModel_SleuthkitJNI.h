@@ -103,6 +103,33 @@ JNIEXPORT jboolean JNICALL
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    hashDbIsReindexableNat
+ * Signature: 
+ */
+JNIEXPORT jboolean JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsReindexableNat(JNIEnv * env,
+    jclass obj, jint dbHandle);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    hashDbPathNat
+ * Signature: 
+ */
+JNIEXPORT jstring JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbPathNat(JNIEnv * env,
+    jclass obj, jint dbHandle);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    hashDbIndexPathNat
+ * Signature: 
+ */
+JNIEXPORT jstring JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIndexPathNat(JNIEnv * env,
+    jclass obj, jint dbHandle);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    getDbName
  * Signature: (Ljava/lang/String;)Ljava/lang/String;
  */
