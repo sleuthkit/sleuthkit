@@ -25,7 +25,7 @@ using std::map;
 using std::stringstream;
 using std::for_each;
 
-static TSK_HDB_INFO * m_NSRLDb = NULL;
+static int m_nsrlHandle = -1;
 static std::vector<TSK_HDB_INFO *> m_hashDbs;
 
 /*
@@ -267,25 +267,9 @@ JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_setDbNSRLNat(JNIEnv * env,
     jclass obj, jstring pathJ) {
  
-    if (m_NSRLDb != NULL) {
-        tsk_hdb_close(m_NSRLDb);
-        m_NSRLDb = NULL;
-    }
-    TSK_TCHAR pathT[1024];
-    toTCHAR(env, pathT, 1024, pathJ);
-
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_TRY;
-    TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
-
-    if(tempdb == NULL)
-    {
-        setThrowTskCoreError(env);
-        return -1;
-    }
+    m_nsrlHandle = Java_org_sleuthkit_datamodel_SleuthkitJNI_addDbKnownBadNat(env, obj, pathJ);
     
-    m_NSRLDb = tempdb;
-    
-    return 0;
+    return m_nsrlHandle;
 }
 
 /*
@@ -510,14 +494,11 @@ JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_closeAllDbLookupsNat(JNIEnv * env,
     jclass obj) {
 
-    if (m_NSRLDb != NULL) {
-        tsk_hdb_close(m_NSRLDb);
-        m_NSRLDb = NULL;
-    }
-
     for_each(m_hashDbs.begin(), m_hashDbs.end(), tsk_hdb_close);
    
     m_hashDbs.clear();
+
+    m_nsrlHandle = -1;
 }
 
 /*
@@ -542,6 +523,10 @@ JNIEXPORT void JNICALL
             // We do NOT erase the element because that would shift the indices,
             // messing up the existing handles.
             m_hashDbs.at(dbHandle-1) = NULL;
+
+            if (m_nsrlHandle == dbHandle) {
+                m_nsrlHandle = -1;
+            }
         }
     }
 }
@@ -560,8 +545,8 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
 
     TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
 
-    if (m_NSRLDb != NULL) {
-        int8_t retval = tsk_hdb_lookup_str(m_NSRLDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
+    if ((m_nsrlHandle > 0) && (m_hashDbs.at(m_nsrlHandle - 1) != NULL)) {
+        int8_t retval = tsk_hdb_lookup_str(m_hashDbs.at(m_nsrlHandle - 1), md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
         if (retval == -1) {
             setThrowTskCoreError(env);

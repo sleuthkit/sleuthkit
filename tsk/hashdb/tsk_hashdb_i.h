@@ -67,7 +67,7 @@ extern "C" {
 #define IDX_BINSRCH_HEADER "0000000000000000"
 #define IDX_SQLITE_V1_HEADER "SQLite format 3"
 // Warning: changing the hash storage type changes the Db schema
-#define IDX_SQLITE_STORE_TEXT
+//#define IDX_SQLITE_STORE_TEXT
 
     extern uint8_t
         hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create);

@@ -136,17 +136,48 @@ sqlite_v1_begin(TSK_HDB_INFO * hdb_info)
 uint8_t
 sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 {
+    static const int chunkSize = 1024 * 1024;
 	char stmt[1024];
 
+    // Hand off data to OS and carry on (faster than waiting for disk write syncing)
 	if (attempt_exec_nocallback("PRAGMA synchronous = OFF;",
 		"Error setting PRAGMA synchronous: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-			return 1;
+		return 1;
 	}
+
+    if (attempt_exec_nocallback("PRAGMA encoding = \"UTF-8\";",
+		"Error setting PRAGMA encoding UTF-8: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		return 1;
+	}
+
+    // allow to read while in transaction
+    if (attempt_exec_nocallback("PRAGMA read_uncommitted = True;",
+        "Error setting PRAGMA read_uncommitted: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+        return 1;
+    }
+
+    // set page size
+    if (attempt_exec_nocallback("PRAGMA page_size = 4096;",
+        "Error setting PRAGMA page_size: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+        return 1;
+    }
+
+    //// increase the DB by 1MB at a time.    
+    if (sqlite3_file_control(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite, 
+        NULL, SQLITE_FCNTL_CHUNK_SIZE, const_cast<int *>(&chunkSize)) != SQLITE_OK) {
+
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("sqlite_v1_initialize: error setting chunk size %s", sqlite3_errmsg(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite));
+        return 1;
+    }
+
+    // Make the Tables
 
 	if (attempt_exec_nocallback
 		("CREATE TABLE properties (name TEXT, value TEXT);",
 		"Error creating properties table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-			return 1;
+		return 1;
 	}
 
 	snprintf(stmt, 1024,

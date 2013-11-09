@@ -181,20 +181,6 @@ public class SleuthkitJNI {
 		}
 
 		/**
-		 * Set the NSRL database
-		 *
-		 * @param path The path to the database
-		 * @return a handle for that database
-		 */
-		// BC: Called by SleuthkitCase, which is called by IngestModule
-		// use jni.openNSRLDatabase() instead
-		@Deprecated
-		int setNSRLDatabase(String path) throws TskCoreException {
-			return setDbNSRLNat(path);
-		}
-		
-
-		/**
 		 * Open a hash bad database
 		 *
 		 * @param path The path to the database
@@ -206,6 +192,10 @@ public class SleuthkitJNI {
 			return addDbKnownBadNat(path);
 		}
 		
+        @Deprecated
+        int setNSRLDatabase(String path) throws TskCoreException {
+            return setDbNSRLNat(path);
+        }
 		
 		/**
 		 * Start the process of adding a disk image to the case
@@ -660,19 +650,12 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	// BC: Does not appear to be called. HashDBINgestModule calls SleuthkitCase.setNSRLDatabase, which calls the version of this in CaseHandle
-	// use openNSRLDatabase instead
+    // use openHashDatabase instead
 	@Deprecated
 	public static int setNSRLDatabase(String path) throws TskCoreException {
-		return openNSRLDatabase(path);
-	}
-	
-    // use openHashDatabase instead
-    @Deprecated
-	public static int openNSRLDatabase(String path) throws TskCoreException {
 		return setDbNSRLNat(path);
 	}
 	
-
 	/**
 	 * Opens a hash database.  Supports the various formats that TSK supports
 	 *
@@ -757,17 +740,12 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	// BC: Called by SleuthkitCase -> Deprecated
-	// use lookupNSRLDatabase instead
+    // use lookupInHashDatabase instead
 	@Deprecated
 	public static TskData.FileKnown nsrlHashLookup(String hash) throws TskCoreException {
-		return lookupInNSRLDatabase(hash);
-	}
-	
-    // use lookupInHashDatabase instead
-    @Deprecated
-	public static TskData.FileKnown lookupInNSRLDatabase(String hash) throws TskCoreException {
 		return TskData.FileKnown.valueOf((byte) nsrlDbLookup(hash));
 	}
+	
 
 	/**
 	 * Look up the given hash in the known bad database
