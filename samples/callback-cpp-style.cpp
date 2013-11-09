@@ -300,7 +300,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
+    if (tsk_hdb_idxsetup(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
         delete img_info;
         fprintf(stderr,
             "Hash database does not have an index (create one using hfind -i nsrl-md5 HASHFILE\n");
