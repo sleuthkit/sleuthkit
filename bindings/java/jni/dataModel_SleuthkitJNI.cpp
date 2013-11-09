@@ -444,7 +444,7 @@ JNIEXPORT jstring JNICALL
         return env->NewStringUTF("-1");
     } else {
         TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
-        if(db != NULL) {
+        if((db != NULL) && (db->hDb != NULL)) {
             snprintf(cpath, 1024, "%" PRIttocTSK, db->db_fname);
             jstring jname = env->NewStringUTF(cpath);
             return jname;
@@ -473,7 +473,7 @@ JNIEXPORT jstring JNICALL
         return env->NewStringUTF("-1");
     } else {
         TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
-        if(db != NULL) {
+        if((db != NULL) && (db->idx_info != NULL)) {
             snprintf(cpath, 1024, "%" PRIttocTSK, db->idx_info->idx_fname);
             jstring jname = env->NewStringUTF(cpath);
             return jname;
