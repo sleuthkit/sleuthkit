@@ -288,8 +288,13 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
 
     // Open
     if (idx_info->open(hdb_info, idx_info, htype) == 0) {
+        // Set the properties such as updateable
         if (create == 1) {
-            idx_info->updateable = 1;
+            if (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) {
+                idx_info->updateable = 1;
+            } else {
+                idx_info->updateable = 0;
+            }
         } else {
             idx_info->get_properties(hdb_info);
         }
