@@ -1670,6 +1670,9 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
             TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_NSRL_MD5_STR);
         }
 
+        // In case we legacy, force upgrade to TskSQLite format
+        temp->idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
+
         if (tsk_hdb_makeindex(temp, dbType)) {
             setThrowTskCoreError(env, "Error creating index");
         }
