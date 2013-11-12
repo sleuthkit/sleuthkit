@@ -251,17 +251,16 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
     }
     // kdb extension
     else {
+        ///@todo should we require the header check here?
         if (idx) {
             if (1 != fread(header, header_size, 1, idx)) {
-                ///@todo should this actually be an error?
-                idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
+                ///@todo should this actually be an error?                
             }
-            else if (strncmp(header,
+            
+            if (strncmp(header,
                         IDX_SQLITE_V1_HEADER,
-                        strlen(IDX_SQLITE_V1_HEADER)) == 0) {
-                idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
-            }
-            else {
+                        strlen(IDX_SQLITE_V1_HEADER)) != 0) {
+
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_MISSING);
                 tsk_error_set_errstr(
@@ -272,6 +271,8 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
                 return NULL;
             }
         }
+        
+        idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
 
         idx_info->open = sqlite_v1_open;
         idx_info->close = sqlite_v1_close;
