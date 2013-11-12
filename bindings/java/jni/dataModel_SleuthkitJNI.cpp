@@ -438,26 +438,36 @@ JNIEXPORT jstring JNICALL
     jclass obj, jint dbHandle)
 {
     char cpath[1024];
+    char * none = "None";   //on error or if no name is available
 
     if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
-        return env->NewStringUTF("None");
+        return env->NewStringUTF(none);
     } else {
         TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
 
-        if ((db->hash_type == TSK_HDB_DBTYPE_IDXONLY_ID) && (db->idx_info->index_type == TSK_HDB_ITYPE_SQLITE_V1)) {
-            snprintf(cpath, 1024, "%" PRIttocTSK, db->idx_info->idx_fname);
+
+        // Index might not be set up yet
+        if(tsk_hdb_idxsetup(db, db->hash_type)) {
+            // If this is a Tsk SQLite db+index, then use index fname as db fname.
+            if ((db->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) && 
+                (db->idx_info->index_type == TSK_HDB_ITYPE_SQLITE_V1)) {
+
+                snprintf(cpath, 1024, "%" PRIttocTSK, db->idx_info->idx_fname);
+                jstring jname = env->NewStringUTF(cpath);
+                return jname;
+            }      
+        }
+
+        // Otherwise, try using the db fname.
+        if((db != NULL) && (db->hDb != NULL)) {
+            snprintf(cpath, 1024, "%" PRIttocTSK, db->db_fname);
             jstring jname = env->NewStringUTF(cpath);
             return jname;
         } else {
-            if((db != NULL) && (db->hDb != NULL)) {
-                snprintf(cpath, 1024, "%" PRIttocTSK, db->db_fname);
-                jstring jname = env->NewStringUTF(cpath);
-                return jname;
-            } else {
-                return env->NewStringUTF("None");
-            }
+            return env->NewStringUTF(none);
         }
+
     }
 }
 
