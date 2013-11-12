@@ -441,17 +441,24 @@ JNIEXPORT jstring JNICALL
 
     if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
-        return env->NewStringUTF("-1");
+        return env->NewStringUTF("None");
     } else {
         TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
-        if((db != NULL) && (db->hDb != NULL)) {
-            snprintf(cpath, 1024, "%" PRIttocTSK, db->db_fname);
+
+        if ((db->hash_type == TSK_HDB_DBTYPE_IDXONLY_ID) && (db->idx_info->index_type == TSK_HDB_ITYPE_SQLITE_V1)) {
+            snprintf(cpath, 1024, "%" PRIttocTSK, db->idx_info->idx_fname);
             jstring jname = env->NewStringUTF(cpath);
             return jname;
         } else {
-            return env->NewStringUTF("-1");
+            if((db != NULL) && (db->hDb != NULL)) {
+                snprintf(cpath, 1024, "%" PRIttocTSK, db->db_fname);
+                jstring jname = env->NewStringUTF(cpath);
+                return jname;
+            } else {
+                return env->NewStringUTF("None");
+            }
         }
-    }   
+    }
 }
 
 
@@ -1639,11 +1646,12 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexByPathNat (JNIEnv * e
  * Create an index for the given database
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
+ * @param overwrite flag indicating if the old db (if it exists) can be deleted
  * @param dbHandle handle for the database
  */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
-    jclass obj, jint dbHandle)
+    jclass obj, jint dbHandle, jboolean overwrite)
 {
     if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -1652,6 +1660,11 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
         TSK_HDB_INFO * temp = m_hashDbs.at(dbHandle-1);
         if (temp == NULL) {
             setThrowTskCoreError(env, "Error: database object is null");
+            return;
+        }
+
+        if (temp->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) {
+            setThrowTskCoreError(env, "Error: index only");
             return;
         }
 
@@ -1671,11 +1684,14 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
         }
 
         // In case we legacy, force upgrade to TskSQLite format
-        temp->idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
-
-        if (tsk_hdb_makeindex(temp, dbType)) {
-            setThrowTskCoreError(env, "Error creating index");
+        //temp->idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
+        
+        // [Re]create the hash information and file
+        if (tsk_hdb_regenerate_index(temp, dbType) == 0) {
+            setThrowTskCoreError(env, "Error: index");
+            return;
         }
+
 
         return;
     }

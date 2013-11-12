@@ -537,6 +537,42 @@ tsk_hdb_idxsetup(TSK_HDB_INFO * hdb_info, uint8_t htype)
 
 /**
  * \ingroup hashdblib
+ * Clear, setup, init, and make a fresh index.
+ *  
+ * @param hdb_info Hash database to consider
+ * @param htype Hash type that index should be of
+ *
+ * @return 1 if index exists / was setup; 0 if not / failed
+ */
+uint8_t
+tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type)
+{
+    // blow away the existing index info
+    //tsk_take_lock(&hdb_info->lock);
+    tsk_idx_close(hdb_info->idx_info);
+    free(hdb_info->idx_info);
+    hdb_info->idx_info = NULL;
+    //tsk_release_lock(&hdb_info->lock);
+
+    if (hdb_setupindex(hdb_info, hdb_info->hash_type, 1) == 0) {
+        /* Call db-specific initialize function */
+	    if (hdb_info->idx_info->initialize(hdb_info, db_type)) {
+            return 0;
+        }
+
+        if (tsk_hdb_makeindex(hdb_info, db_type)) {
+            return 0;
+        }
+        return 1;
+    } else {
+        return 0;
+    }
+
+
+}
+
+/**
+ * \ingroup hashdblib
  * Test for index only (legacy)
  * Assumes that the db was opened using the TSK_HDB_OPEN_TRY option.
  *

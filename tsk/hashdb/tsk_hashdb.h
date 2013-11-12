@@ -220,6 +220,8 @@ extern "C" {
 
     extern uint8_t tsk_hdb_makeindex(TSK_HDB_INFO *, TSK_TCHAR *);
 
+    extern uint8_t tsk_hdb_regenerate_index(TSK_HDB_INFO *, TSK_TCHAR *);
+
     extern TSK_HDB_INFO * tsk_hdb_new(TSK_TCHAR * db_file);
 
     extern int8_t tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 

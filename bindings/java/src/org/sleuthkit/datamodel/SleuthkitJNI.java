@@ -125,7 +125,7 @@ public class SleuthkitJNI {
 	//hash-lookup database functions
 	private static native void createLookupIndexByPathNat(String dbPath) throws TskCoreException;
     
-    private static native void createLookupIndexNat(int dbHandle) throws TskCoreException;
+    private static native void createLookupIndexNat(int dbHandle, boolean overwrite) throws TskCoreException;
 
 	private static native boolean lookupIndexExistsByPathNat(String dbPath) throws TskCoreException;
     
@@ -616,10 +616,11 @@ public class SleuthkitJNI {
 	 * Create an index for the given database path.
 	 *
 	 * @param dbPath The path to the database
+     * @param overwrite flag indicating if the old db (if it exists) can be deleted     
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
-	public static void createLookupIndexForHashDatabase(int dbHandle) throws TskCoreException {
-		createLookupIndexNat(dbHandle);
+	public static void createLookupIndexForHashDatabase(int dbHandle, boolean overwrite) throws TskCoreException {
+		createLookupIndexNat(dbHandle, overwrite);
 	}    
     
 	/**
