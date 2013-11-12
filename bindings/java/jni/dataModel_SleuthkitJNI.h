@@ -350,7 +350,7 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupInd
  * Signature: 
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat
-  (JNIEnv *, jclass, jint);
+  (JNIEnv *, jclass, jint, jboolean);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI

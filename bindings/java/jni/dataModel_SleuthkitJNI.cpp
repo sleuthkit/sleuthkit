@@ -1646,11 +1646,12 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexByPathNat (JNIEnv * e
  * Create an index for the given database
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
+ * @param overwrite flag indicating if the old db (if it exists) can be deleted
  * @param dbHandle handle for the database
  */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
-    jclass obj, jint dbHandle)
+    jclass obj, jint dbHandle, jboolean overwrite)
 {
     if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
