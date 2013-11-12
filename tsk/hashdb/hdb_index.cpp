@@ -550,11 +550,12 @@ tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type)
 {
     uint8_t ret = 1;
     // blow away the existing index info
-    //tsk_take_lock(&hdb_info->lock);
     if (hdb_info->idx_info != NULL) {
+        tsk_take_lock(&hdb_info->lock);
         tsk_idx_close(hdb_info->idx_info);
         free(hdb_info->idx_info);
         hdb_info->idx_info = NULL;
+        tsk_release_lock(&hdb_info->lock);
     }
 
     // Create, initialize, and fill in the new index from the src db
@@ -562,7 +563,6 @@ tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type)
         ret = 0;
     }
 
-    //tsk_release_lock(&hdb_info->lock);
     return ret;
 }
 

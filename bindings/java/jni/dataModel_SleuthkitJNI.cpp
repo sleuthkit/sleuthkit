@@ -1692,16 +1692,12 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
         else {
             TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_NSRL_MD5_STR);
         }
-
-        // In case we legacy, force upgrade to TskSQLite format
-        //temp->idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
-        
+  
         // [Re]create the hash information and file
         if (tsk_hdb_regenerate_index(temp, dbType) == 0) {
             setThrowTskCoreError(env, "Error: index");
             return;
         }
-
 
         return;
     }
