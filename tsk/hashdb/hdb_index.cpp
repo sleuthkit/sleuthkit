@@ -543,33 +543,27 @@ tsk_hdb_idxsetup(TSK_HDB_INFO * hdb_info, uint8_t htype)
  * @param hdb_info Hash database to consider
  * @param htype Hash type that index should be of
  *
- * @return 1 if index exists / was setup; 0 if not / failed
+ * @return 1 if index was created; 0 if failed
  */
 uint8_t
 tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type)
 {
+    uint8_t ret = 1;
     // blow away the existing index info
     //tsk_take_lock(&hdb_info->lock);
-    tsk_idx_close(hdb_info->idx_info);
-    free(hdb_info->idx_info);
-    hdb_info->idx_info = NULL;
-    //tsk_release_lock(&hdb_info->lock);
-
-    if (hdb_setupindex(hdb_info, hdb_info->hash_type, 1) == 0) {
-        /* Call db-specific initialize function */
-	    if (hdb_info->idx_info->initialize(hdb_info, db_type)) {
-            return 0;
-        }
-
-        if (tsk_hdb_makeindex(hdb_info, db_type)) {
-            return 0;
-        }
-        return 1;
-    } else {
-        return 0;
+    if (hdb_info->idx_info != NULL) {
+        tsk_idx_close(hdb_info->idx_info);
+        free(hdb_info->idx_info);
+        hdb_info->idx_info = NULL;
     }
 
+    // Create, initialize, and fill in the new index from the src db
+    if (tsk_hdb_makeindex(hdb_info, db_type)) {
+        ret = 0;
+    }
 
+    //tsk_release_lock(&hdb_info->lock);
+    return ret;
 }
 
 /**
