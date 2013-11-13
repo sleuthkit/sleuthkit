@@ -5419,6 +5419,8 @@ public class SleuthkitCase {
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			
 			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?
+			selectContentTagsByContent.clearParameters(); 			
+			selectContentTagsByContent.setLong(1, content.getId());			
 			ResultSet resultSet = selectContentTagsByContent.executeQuery();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
