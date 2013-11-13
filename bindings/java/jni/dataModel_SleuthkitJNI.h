@@ -51,15 +51,6 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    setDbNSRLNat
- * Signature: (Ljava/lang/String;)I
- */
-//@deprecated
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_setDbNSRLNat
-  (JNIEnv *, jclass, jstring);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    addDbKnownBadNat
  * Signature: (Ljava/lang/String;)I
  */
@@ -131,15 +122,6 @@ JNIEXPORT jstring JNICALL
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    getDbName
- * Signature: (Ljava/lang/String;)Ljava/lang/String;
- */
-//@deprecated
-JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbNameByPath
-  (JNIEnv *, jclass, jstring);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    getHashDbName
  * Signature: 
  */
@@ -170,14 +152,6 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupNa
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLookup
   (JNIEnv *, jclass, jstring, jint);
 
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    nsrlDbLookup
- * Signature: (Ljava/lang/String;)I
- */
-//@deprecated
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
-  (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -185,8 +159,8 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
  * Signature: (Ljava/lang/String;)I
  */
 //@deprecated
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getIndexSizeNat
-  (JNIEnv *, jclass, jstring);
+//JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getIndexSizeNat
+//  (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -342,29 +316,11 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    createLookupIndexByPathNat
- * Signature: (Ljava/lang/String;)V
- */
-//@deprecated
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexByPathNat
-  (JNIEnv *, jclass, jstring);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    createLookupIndexNat
  * Signature: 
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat
   (JNIEnv *, jclass, jint, jboolean);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    lookupIndexExistsByPathNat
- * Signature: (Ljava/lang/String;)Z
- */
-//@deprecated
-JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsByPathNat
-  (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI

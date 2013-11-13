@@ -256,21 +256,6 @@ JNIEXPORT void JNICALL
     return;
 }
 
-/*
- * Set the NSRL database to use for hash lookups.
- * @param env pointer to java environment this was called from
- * @param obj the java object this was called from
- * @param pathJ the path to the database
- * @return a handle for the nsrl database
- */
-JNIEXPORT jint JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_setDbNSRLNat(JNIEnv * env,
-    jclass obj, jstring pathJ) {
- 
-    m_nsrlHandle = Java_org_sleuthkit_datamodel_SleuthkitJNI_addDbKnownBadNat(env, obj, pathJ);
-    
-    return m_nsrlHandle;
-}
 
 /*
  * Set the "known bad" database to use for hash lookups.
@@ -529,39 +514,6 @@ JNIEXPORT jboolean JNICALL
     return retval;
 }
 
-/*
- * Get the name of the database pointed to by path
- * @param env pointer to java environment this was called from
- * @param obj the java object this was called from
- * @param pathJ the path to the database (expects the actual database path, not an index path)
- */
-JNIEXPORT jstring JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbNameByPath(JNIEnv * env,
-    jclass obj, jstring pathJ) {
-
-    TSK_HDB_OPEN_ENUM flags;
-    TSK_TCHAR pathT[1024];
-    toTCHAR(env, pathT, 1024, pathJ);
-    struct STAT_STR buffer;
-
-    if( TSTAT(pathT, &buffer) != -1 )
-        flags = TSK_HDB_OPEN_NONE;
-    else
-        flags = TSK_HDB_OPEN_IDXONLY;
-
-    TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
-
-    if(tempdb == NULL)
-    {
-        setThrowTskCoreError(env);
-        return env->NewStringUTF("-1");
-    }
-
-    jstring jname = env->NewStringUTF(tempdb->db_name);
-
-    tsk_hdb_close(tempdb);
-    return jname;
-}
 
 /*
  * Get the name of the database pointed to by path
@@ -636,34 +588,6 @@ JNIEXPORT void JNICALL
     }
 }
 
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    nsrlDbLookup
- * Signature: (Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
-(JNIEnv * env, jclass obj, jstring hash){
-
-    jboolean isCopy;
-
-    const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
-
-    TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
-
-    if ((m_nsrlHandle > 0) && (m_hashDbs.at(m_nsrlHandle - 1) != NULL)) {
-        int8_t retval = tsk_hdb_lookup_str(m_hashDbs.at(m_nsrlHandle - 1), md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
-
-        if (retval == -1) {
-            setThrowTskCoreError(env);
-        } else if (retval) {
-            file_known = TSK_DB_FILES_KNOWN_KNOWN;
-        }
-    }
-
-    env->ReleaseStringUTFChars(hash, (const char *) md5);
-
-    return (int) file_known;
-}
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -1613,47 +1537,6 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
     tsk_verbose++;
 }
 
-/*
- * Create an index for the given database path
- * @param env pointer to java environment this was called from
- * @param obj the java object this was called from
- * @param dbPathJ path for the database
- */
-JNIEXPORT void JNICALL
-Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexByPathNat (JNIEnv * env,
-    jclass obj, jstring dbPathJ)
-{
-    TSK_TCHAR dbPathT[1024];
-    toTCHAR(env, dbPathT, 1024, dbPathJ);
-
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
-    TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
-    if (temp == NULL) {
-        setThrowTskCoreError(env, "Error opening database to create index");
-        return;
-    }
-
-    TSK_TCHAR dbType[1024];
-
-    if(temp->db_type == TSK_HDB_DBTYPE_MD5SUM_ID) {
-        TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
-    }
-    else if(temp->db_type == TSK_HDB_DBTYPE_HK_ID) {
-        TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_HK_STR);
-    }
-    else if(temp->db_type == TSK_HDB_DBTYPE_ENCASE_ID) {
-        TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_ENCASE_STR);
-    }
-    else {
-        TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_NSRL_MD5_STR);
-    }
-
-    if (tsk_hdb_makeindex(temp, dbType)) {
-        setThrowTskCoreError(env, "Error creating index");
-    }
-
-    tsk_hdb_close(temp);
-}
 
 /*
  * Create an index for the given database
@@ -1706,29 +1589,6 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
     }
 }
 
-/*
- * Check if an index exists for the given database path.
- * @param env pointer to java environment this was called from
- * @param obj the java object this was called from
- * @param dbPathJ path for the database
- */
-JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsByPathNat
-  (JNIEnv * env, jclass obj, jstring dbPathJ) {
-
-    TSK_TCHAR dbPathT[1024];
-    toTCHAR(env, dbPathT, 1024, dbPathJ);
-
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-    TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
-    if (temp == NULL) {
-        return (jboolean) false;
-    }
-
-    uint8_t retval = tsk_hdb_hasindex(temp, TSK_HDB_HTYPE_MD5_ID);
-
-    tsk_hdb_close(temp);
-    return (jboolean) retval == 1;
-}
 
 /*
  * Check if an index exists for the given database.
@@ -1754,33 +1614,33 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndex
     }
 }
 
-/*
- * Get the size of the index for the database at the given path
- * @param env pointer to java environment this was called from
- * @param obj the java object this was called from
- * @param dbPathJ the path for the database
- * @return -1 on error, otherwise size of index
- */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getIndexSizeNat
-  (JNIEnv * env, jclass obj, jstring dbPathJ) {
-
-    TSK_TCHAR dbPathT[1024];
-    toTCHAR(env, dbPathT, 1024, dbPathJ);
-
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-    TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
-    if (temp == NULL) {
-        return -1;
-    }
-
-    if(tsk_hdb_idxsetup(temp, TSK_HDB_HTYPE_MD5_ID)) {
-        return (jint) ((temp->idx_info->idx_struct.idx_binsrch->idx_size - temp->idx_info->idx_struct.idx_binsrch->idx_off) / (temp->idx_info->idx_struct.idx_binsrch->idx_llen));
-    }
-
-
-    tsk_hdb_close(temp);
-    return -1;
-}
+///*
+// * Get the size of the index for the database at the given path
+// * @param env pointer to java environment this was called from
+// * @param obj the java object this was called from
+// * @param dbPathJ the path for the database
+// * @return -1 on error, otherwise size of index
+// */
+//JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getIndexSizeNat
+//  (JNIEnv * env, jclass obj, jstring dbPathJ) {
+//
+//    TSK_TCHAR dbPathT[1024];
+//    toTCHAR(env, dbPathT, 1024, dbPathJ);
+//
+//    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+//    TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
+//    if (temp == NULL) {
+//        return -1;
+//    }
+//
+//    if(tsk_hdb_idxsetup(temp, TSK_HDB_HTYPE_MD5_ID)) {
+//        return (jint) ((temp->idx_info->idx_struct.idx_binsrch->idx_size - temp->idx_info->idx_struct.idx_binsrch->idx_off) / (temp->idx_info->idx_struct.idx_binsrch->idx_llen));
+//    }
+//
+//
+//    tsk_hdb_close(temp);
+//    return -1;
+//}
 
 
 /*
