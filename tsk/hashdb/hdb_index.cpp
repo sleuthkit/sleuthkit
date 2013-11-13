@@ -536,6 +536,26 @@ tsk_hdb_idxsetup(TSK_HDB_INFO * hdb_info, uint8_t htype)
     }
 }
 
+
+/**
+ * \ingroup hashdblib
+ *
+ * @param hdb_info Hash database to consider
+ *
+ */
+void tsk_idx_clear(TSK_HDB_INFO * hdb_info)
+{
+    // blow away the existing index info
+    if (hdb_info->idx_info != NULL) {
+        tsk_take_lock(&hdb_info->lock);
+        tsk_idx_close(hdb_info->idx_info);
+        free(hdb_info->idx_info);
+        hdb_info->idx_info = NULL;
+        tsk_release_lock(&hdb_info->lock);
+    }
+ }
+
+
 /**
  * \ingroup hashdblib
  * Clear, setup, init, and make a fresh index.
@@ -558,6 +578,9 @@ tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type, uint8_t o
             char cfname[1024];
             snprintf(cfname, 1024, "%" PRIttocTSK, hdb_info->idx_info->idx_fname);
 
+            // Now that we have a filename, close out all index stuff.
+            tsk_idx_clear(hdb_info);
+
             if (cfname != "") {
                 //attempt to delete the old index file
                 if (remove(cfname) != 0) {
@@ -565,15 +588,9 @@ tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type, uint8_t o
                 }
             }
         }
-    }
-
-    // blow away the existing index info
-    if (hdb_info->idx_info != NULL) {
-        tsk_take_lock(&hdb_info->lock);
-        tsk_idx_close(hdb_info->idx_info);
-        free(hdb_info->idx_info);
-        hdb_info->idx_info = NULL;
-        tsk_release_lock(&hdb_info->lock);
+    } else {
+        // Close index stuff before trying to create a new one.
+        tsk_idx_clear(hdb_info);
     }
 
     // Create, initialize, and fill in the new index from the src db
@@ -583,6 +600,7 @@ tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type, uint8_t o
 
     return 1; //success
 }
+
 
 /**
  * \ingroup hashdblib
