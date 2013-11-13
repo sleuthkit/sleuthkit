@@ -714,7 +714,7 @@ tsk_hdb_new(TSK_TCHAR * db_file)
  */
 int8_t
 tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
-                const TSK_TCHAR * filename, 
+                char * filename, 
                 const char * md5, 
                 const char * sha1, 
                 const char * sha256,
@@ -750,7 +750,9 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
             }
 
             // Add name and comment
-            ///@todo name
+            if ((filename != "") && (hdb_info->idx_info->addfilename != NULL)) {
+                hdb_info->idx_info->addfilename(hdb_info, filename);
+            }
 
             if ((comment != "") && (hdb_info->idx_info->addcomment != NULL)) {
                 hdb_info->idx_info->addcomment(hdb_info, comment);

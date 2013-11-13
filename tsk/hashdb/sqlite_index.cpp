@@ -400,7 +400,20 @@ sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value)
 uint8_t
 sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value)
 {
-    return 1;
+    // In the next iteration we might want to actually search for the row id
+    sqlite3_int64 id = sqlite3_last_insert_rowid(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+
+    if (id == 0) {
+        return 1;
+    }
+
+    char stmt[1024];
+	snprintf(stmt, 1024,
+		"INSERT INTO names (name, hash_id) VALUES ('%s', '%d');",	value, id);
+	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		return 1;
+	}
+    return 0;
 }
 
 /**
