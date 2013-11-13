@@ -18,17 +18,52 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
+
 /**
- * Data exception that is thrown from Sleuthkit classes.
+ * Used to transmit hashDb information about a particular file from TSK to Autopsy 
  */
 public class HashInfo {
-    private String test;
+	private String hashMd5;
+	private String hashSha1;
+	private String hashSha2_256;
+    private ArrayList<String> names = new ArrayList<String>();
+	private ArrayList<String> comments = new ArrayList<String>();
 
 	/**
 	 * Default constructor when error message is not available
 	 */
-	public HashInfo(String s) {
-		test = s;
+	public HashInfo(String hashMd5, String hashSha1, String hashSha2_256) {
+		this.hashMd5 = hashMd5;
+		this.hashSha1 = hashSha1;
+		this.hashSha2_256 = hashSha2_256;
 	}
-
+	
+    public void addName(String name) {
+        names.add(name);
+    }
+    
+    public void addComment(String comment) {
+        comments.add(comment);
+    }	
+	
+	public String getHashMd5() {
+		return hashMd5;
+	}
+	
+	public String getHashSha1() {
+		return hashSha1;
+	}
+	
+	public String getHashSha2() {
+		return hashSha2_256;
+	}	
+	
+	public ArrayList<String> getNames() {
+		return names;
+	}
+	
+	public ArrayList<String> getComments() {
+		return comments;
+	}
 }

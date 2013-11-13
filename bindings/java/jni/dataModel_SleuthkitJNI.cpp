@@ -639,11 +639,26 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
     jclass clazz;
     clazz = env->FindClass("org/sleuthkit/datamodel/HashInfo");
 
-    const char *ctest = "foobarbaz";
+    const char *ctest = "123456";
     jstring s = env->NewStringUTF(ctest);
 
-    jmethodID ctor = env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;)V");
-    jobject object = env->NewObject(clazz, ctor, s);
+    // get methods
+    jmethodID ctor = env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+    jmethodID addName = env->GetMethodID(clazz, "addName", "(Ljava/lang/String;)V");
+    jmethodID addComment = env->GetMethodID(clazz, "addComment", "(Ljava/lang/String;)V");
+
+    // make the object
+    jobject object = env->NewObject(clazz, ctor, s, s, s);
+
+    // finish populating the object
+    const char *cname = "foo.bar";
+    jstring jname = env->NewStringUTF(cname);
+    env->CallVoidMethod(object, addName, jname);
+    env->CallVoidMethod(object, addName, jname);
+
+    const char *ccomment = "The mysterious case";
+    jstring jcomment = env->NewStringUTF(ccomment);
+    env->CallVoidMethod(object, addComment, jcomment);
 
     return object;
 }
