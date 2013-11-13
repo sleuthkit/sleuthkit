@@ -73,6 +73,7 @@ extern "C" {
         hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create);
 
     extern void tsk_idx_close(TSK_IDX_INFO * idx_info);
+    extern void tsk_idx_close_file(FILE * idx);
 
     extern uint8_t tsk_hdb_idxinitialize(TSK_HDB_INFO *,
                                          TSK_TCHAR * dbname);

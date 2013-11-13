@@ -68,7 +68,7 @@ tsk_idx_open_file(TSK_TCHAR *idx_fname)
 }
 
 
-static void
+void
 tsk_idx_close_file(FILE * idx)
 {
     if (idx == NULL) {
@@ -345,7 +345,6 @@ hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
     return 1;
 }
 
-
 /** 
  * Creates and initialize a new TSK hash DB index file.
  *
@@ -570,8 +569,24 @@ tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type, uint8_t o
 {
     // remove old file
     if (overwrite) {
+        // Set the hash type since that will affect the filename for legacy indices
+        char c_db_type[32];
+        snprintf(c_db_type, 32, "%" PRIttocTSK, db_type);
+        TSK_HDB_HTYPE_ENUM htype = TSK_HDB_HTYPE_MD5_ID;
+        if (strcmp(c_db_type, TSK_HDB_DBTYPE_NSRL_MD5_STR) == 0) {
+            hdb_info->hash_type = TSK_HDB_HTYPE_MD5_ID;
+        } else if (strcmp(c_db_type, TSK_HDB_DBTYPE_NSRL_SHA1_STR) == 0) {
+            hdb_info->hash_type = TSK_HDB_HTYPE_SHA1_ID;
+        } else if (strcmp(c_db_type, TSK_HDB_DBTYPE_MD5SUM_STR) == 0) {
+            hdb_info->hash_type = TSK_HDB_HTYPE_MD5_ID;
+        } else if (strcmp(c_db_type, TSK_HDB_DBTYPE_HK_STR) == 0) {
+            hdb_info->hash_type = TSK_HDB_HTYPE_MD5_ID;
+        } else if (strcmp(c_db_type, TSK_HDB_DBTYPE_ENCASE_STR) == 0) {
+            hdb_info->hash_type = TSK_HDB_HTYPE_MD5_ID;
+        }
+
         // Call setup to populate the idx_info struct so we can get the filename
-        hdb_setupindex(hdb_info, TSK_HDB_DBTYPE_MD5SUM_ID, 0);
+        hdb_setupindex(hdb_info, htype, 0);
 
         // If idx_info is null then there isn't an index
         if (hdb_info->idx_info != NULL) {
