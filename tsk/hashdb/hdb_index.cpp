@@ -554,6 +554,38 @@ void tsk_idx_clear(TSK_HDB_INFO * hdb_info)
     }
  }
 
+/**
+ * \ingroup hashdblib
+ * Remove old indices.
+ *  
+ * @param hdb_info Hash database to consider
+ * @param htype Hash type that index should be of
+ *
+ * @return 0 if success; 1 if failed
+ */
+uint8_t
+tsk_hdb_delete_old(TSK_HDB_INFO * hdb_info)
+{
+    // Call setup to populate the idx_info struct so we can get the filename
+    hdb_setupindex(hdb_info, hdb_info->hash_type, 0);
+
+    // If idx_info is null then there isn't an index
+    if (hdb_info->idx_info != NULL) {
+        char cfname[1024];
+        snprintf(cfname, 1024, "%" PRIttocTSK, hdb_info->idx_info->idx_fname);
+
+        // Now that we have a filename, close out all index stuff.
+        tsk_idx_clear(hdb_info);
+
+        if (cfname != "") {
+            //attempt to delete the old index file
+            if (remove(cfname) != 0) {
+                return 1;  //error
+            }
+        }
+    }
+    return 0;
+}
 
 /**
  * \ingroup hashdblib
@@ -572,7 +604,7 @@ tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type, uint8_t o
         // Set the hash type since that will affect the filename for legacy indices
         char c_db_type[32];
         snprintf(c_db_type, 32, "%" PRIttocTSK, db_type);
-        TSK_HDB_HTYPE_ENUM htype = TSK_HDB_HTYPE_MD5_ID;
+        hdb_info->hash_type = TSK_HDB_HTYPE_MD5_ID;
         if (strcmp(c_db_type, TSK_HDB_DBTYPE_NSRL_MD5_STR) == 0) {
             hdb_info->hash_type = TSK_HDB_HTYPE_MD5_ID;
         } else if (strcmp(c_db_type, TSK_HDB_DBTYPE_NSRL_SHA1_STR) == 0) {
@@ -584,25 +616,16 @@ tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type, uint8_t o
         } else if (strcmp(c_db_type, TSK_HDB_DBTYPE_ENCASE_STR) == 0) {
             hdb_info->hash_type = TSK_HDB_HTYPE_MD5_ID;
         }
-
-        // Call setup to populate the idx_info struct so we can get the filename
-        hdb_setupindex(hdb_info, htype, 0);
-
-        // If idx_info is null then there isn't an index
-        if (hdb_info->idx_info != NULL) {
-            char cfname[1024];
-            snprintf(cfname, 1024, "%" PRIttocTSK, hdb_info->idx_info->idx_fname);
-
-            // Now that we have a filename, close out all index stuff.
-            tsk_idx_clear(hdb_info);
-
-            if (cfname != "") {
-                //attempt to delete the old index file
-                if (remove(cfname) != 0) {
-                    return 0;  //error
-                }
-            }
+        
+        if (tsk_hdb_delete_old(hdb_info) != 0) {
+            return 0; //error
         }
+
+        // Run a second pass in case there were two indices
+        if (tsk_hdb_delete_old(hdb_info) != 0) {
+            return 0; //error
+        }
+
     } else {
         // Close index stuff before trying to create a new one.
         tsk_idx_clear(hdb_info);
