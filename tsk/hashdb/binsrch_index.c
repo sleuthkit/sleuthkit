@@ -696,5 +696,7 @@ binsrch_get_properties(TSK_HDB_INFO * hdb_info)
 void
 binsrch_close(TSK_IDX_INFO * idx_info)
 {
-    //Nothing to do here...
+    if (idx_info->idx_struct.idx_binsrch->hIdx != NULL) {
+        tsk_idx_close_file(idx_info->idx_struct.idx_binsrch->hIdx);
+    }
 }

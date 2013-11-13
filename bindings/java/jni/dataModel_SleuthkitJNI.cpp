@@ -286,6 +286,8 @@ JNIEXPORT jint JNICALL
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
+    ///@todo Check if the db_file passed in is really an index filename
+
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_TRY;
     TSK_HDB_INFO * temp = tsk_hdb_open(pathT, flags);
 
@@ -438,26 +440,36 @@ JNIEXPORT jstring JNICALL
     jclass obj, jint dbHandle)
 {
     char cpath[1024];
+    char * none = "None";   //on error or if no name is available
 
     if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
-        return env->NewStringUTF("None");
+        return env->NewStringUTF(none);
     } else {
         TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
 
-        if ((db->hash_type == TSK_HDB_DBTYPE_IDXONLY_ID) && (db->idx_info->index_type == TSK_HDB_ITYPE_SQLITE_V1)) {
-            snprintf(cpath, 1024, "%" PRIttocTSK, db->idx_info->idx_fname);
+
+        // Index might not be set up yet
+        if(tsk_hdb_idxsetup(db, db->hash_type)) {
+            // If this is a Tsk SQLite db+index, then use index fname as db fname.
+            if ((db->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) && 
+                (db->idx_info->index_type == TSK_HDB_ITYPE_SQLITE_V1)) {
+
+                snprintf(cpath, 1024, "%" PRIttocTSK, db->idx_info->idx_fname);
+                jstring jname = env->NewStringUTF(cpath);
+                return jname;
+            }      
+        }
+
+        // Otherwise, try using the db fname.
+        if((db != NULL) && (db->hDb != NULL)) {
+            snprintf(cpath, 1024, "%" PRIttocTSK, db->db_fname);
             jstring jname = env->NewStringUTF(cpath);
             return jname;
         } else {
-            if((db != NULL) && (db->hDb != NULL)) {
-                snprintf(cpath, 1024, "%" PRIttocTSK, db->db_fname);
-                jstring jname = env->NewStringUTF(cpath);
-                return jname;
-            } else {
-                return env->NewStringUTF("None");
-            }
+            return env->NewStringUTF(none);
         }
+
     }
 }
 
@@ -1657,41 +1669,37 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
         setThrowTskCoreError(env, "Invalid database handle");
         return;
     } else {
-        TSK_HDB_INFO * temp = m_hashDbs.at(dbHandle-1);
-        if (temp == NULL) {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+        if (db == NULL) {
             setThrowTskCoreError(env, "Error: database object is null");
             return;
         }
 
-        if (temp->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) {
+        if (db->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) {
             setThrowTskCoreError(env, "Error: index only");
             return;
         }
 
         TSK_TCHAR dbType[1024];
 
-        if(temp->db_type == TSK_HDB_DBTYPE_MD5SUM_ID) {
+        if(db->db_type == TSK_HDB_DBTYPE_MD5SUM_ID) {
             TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
         }
-        else if(temp->db_type == TSK_HDB_DBTYPE_HK_ID) {
+        else if(db->db_type == TSK_HDB_DBTYPE_HK_ID) {
             TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_HK_STR);
         }
-        else if(temp->db_type == TSK_HDB_DBTYPE_ENCASE_ID) {
+        else if(db->db_type == TSK_HDB_DBTYPE_ENCASE_ID) {
             TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_ENCASE_STR);
         }
         else {
             TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_NSRL_MD5_STR);
         }
-
-        // In case we legacy, force upgrade to TskSQLite format
-        //temp->idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
-        
+  
         // [Re]create the hash information and file
-        if (tsk_hdb_regenerate_index(temp, dbType) == 0) {
-            setThrowTskCoreError(env, "Error: index");
+        if (tsk_hdb_regenerate_index(db, dbType, (overwrite ? 1 : 0)) == 0) {
+            setThrowTskCoreError(env, "Error: index regeneration");
             return;
         }
-
 
         return;
     }

@@ -68,7 +68,7 @@ tsk_idx_open_file(TSK_TCHAR *idx_fname)
 }
 
 
-static void
+void
 tsk_idx_close_file(FILE * idx)
 {
     if (idx == NULL) {
@@ -251,17 +251,16 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
     }
     // kdb extension
     else {
+        ///@todo should we require the header check here?
         if (idx) {
             if (1 != fread(header, header_size, 1, idx)) {
-                ///@todo should this actually be an error?
-                idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
+                ///@todo should this actually be an error?                
             }
-            else if (strncmp(header,
+            
+            if (strncmp(header,
                         IDX_SQLITE_V1_HEADER,
-                        strlen(IDX_SQLITE_V1_HEADER)) == 0) {
-                idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
-            }
-            else {
+                        strlen(IDX_SQLITE_V1_HEADER)) != 0) {
+
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_MISSING);
                 tsk_error_set_errstr(
@@ -272,6 +271,8 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
                 return NULL;
             }
         }
+        
+        idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
 
         idx_info->open = sqlite_v1_open;
         idx_info->close = sqlite_v1_close;
@@ -343,7 +344,6 @@ hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
     tsk_release_lock(&hdb_info->lock);
     return 1;
 }
-
 
 /** 
  * Creates and initialize a new TSK hash DB index file.
@@ -535,6 +535,26 @@ tsk_hdb_idxsetup(TSK_HDB_INFO * hdb_info, uint8_t htype)
     }
 }
 
+
+/**
+ * \ingroup hashdblib
+ *
+ * @param hdb_info Hash database to consider
+ *
+ */
+void tsk_idx_clear(TSK_HDB_INFO * hdb_info)
+{
+    // blow away the existing index info
+    if (hdb_info->idx_info != NULL) {
+        tsk_take_lock(&hdb_info->lock);
+        tsk_idx_close(hdb_info->idx_info);
+        free(hdb_info->idx_info);
+        hdb_info->idx_info = NULL;
+        tsk_release_lock(&hdb_info->lock);
+    }
+ }
+
+
 /**
  * \ingroup hashdblib
  * Clear, setup, init, and make a fresh index.
@@ -542,34 +562,60 @@ tsk_hdb_idxsetup(TSK_HDB_INFO * hdb_info, uint8_t htype)
  * @param hdb_info Hash database to consider
  * @param htype Hash type that index should be of
  *
- * @return 1 if index exists / was setup; 0 if not / failed
+ * @return 1 if index was created; 0 if failed
  */
 uint8_t
-tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type)
+tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type, uint8_t overwrite)
 {
-    // blow away the existing index info
-    //tsk_take_lock(&hdb_info->lock);
-    tsk_idx_close(hdb_info->idx_info);
-    free(hdb_info->idx_info);
-    hdb_info->idx_info = NULL;
-    //tsk_release_lock(&hdb_info->lock);
-
-    if (hdb_setupindex(hdb_info, hdb_info->hash_type, 1) == 0) {
-        /* Call db-specific initialize function */
-	    if (hdb_info->idx_info->initialize(hdb_info, db_type)) {
-            return 0;
+    // remove old file
+    if (overwrite) {
+        // Set the hash type since that will affect the filename for legacy indices
+        char c_db_type[32];
+        snprintf(c_db_type, 32, "%" PRIttocTSK, db_type);
+        TSK_HDB_HTYPE_ENUM htype = TSK_HDB_HTYPE_MD5_ID;
+        if (strcmp(c_db_type, TSK_HDB_DBTYPE_NSRL_MD5_STR) == 0) {
+            hdb_info->hash_type = TSK_HDB_HTYPE_MD5_ID;
+        } else if (strcmp(c_db_type, TSK_HDB_DBTYPE_NSRL_SHA1_STR) == 0) {
+            hdb_info->hash_type = TSK_HDB_HTYPE_SHA1_ID;
+        } else if (strcmp(c_db_type, TSK_HDB_DBTYPE_MD5SUM_STR) == 0) {
+            hdb_info->hash_type = TSK_HDB_HTYPE_MD5_ID;
+        } else if (strcmp(c_db_type, TSK_HDB_DBTYPE_HK_STR) == 0) {
+            hdb_info->hash_type = TSK_HDB_HTYPE_MD5_ID;
+        } else if (strcmp(c_db_type, TSK_HDB_DBTYPE_ENCASE_STR) == 0) {
+            hdb_info->hash_type = TSK_HDB_HTYPE_MD5_ID;
         }
 
-        if (tsk_hdb_makeindex(hdb_info, db_type)) {
-            return 0;
+        // Call setup to populate the idx_info struct so we can get the filename
+        hdb_setupindex(hdb_info, htype, 0);
+
+        // If idx_info is null then there isn't an index
+        if (hdb_info->idx_info != NULL) {
+            char cfname[1024];
+            snprintf(cfname, 1024, "%" PRIttocTSK, hdb_info->idx_info->idx_fname);
+
+            // Now that we have a filename, close out all index stuff.
+            tsk_idx_clear(hdb_info);
+
+            if (cfname != "") {
+                //attempt to delete the old index file
+                if (remove(cfname) != 0) {
+                    return 0;  //error
+                }
+            }
         }
-        return 1;
     } else {
-        return 0;
+        // Close index stuff before trying to create a new one.
+        tsk_idx_clear(hdb_info);
     }
 
+    // Create, initialize, and fill in the new index from the src db
+    if (tsk_hdb_makeindex(hdb_info, db_type)) {
+        return 0; //error
+    }
 
+    return 1; //success
 }
+
 
 /**
  * \ingroup hashdblib
