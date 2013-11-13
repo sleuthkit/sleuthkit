@@ -486,10 +486,11 @@ JNIEXPORT jstring JNICALL
     jclass obj, jint dbHandle)
 {
     char cpath[1024];
+    char * none = "None";   //on error or if no name is available
 
     if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
-        return env->NewStringUTF("-1");
+        return env->NewStringUTF(none);
     } else {
         TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
         if((db != NULL) && (db->idx_info != NULL)) {
@@ -497,7 +498,7 @@ JNIEXPORT jstring JNICALL
             jstring jname = env->NewStringUTF(cpath);
             return jname;
         } else {
-            return env->NewStringUTF("-1");
+            return env->NewStringUTF(none);
         }
     }  
 }
