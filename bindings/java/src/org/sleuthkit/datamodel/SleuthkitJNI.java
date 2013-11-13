@@ -50,13 +50,13 @@ public class SleuthkitJNI {
 
 	private static native void closeCaseDbNat(long db) throws TskCoreException;
 
-	private static native int addDbKnownBadNat(String hashDbPath) throws TskCoreException;
+	private static native int hashDbOpenNat(String hashDbPath) throws TskCoreException;
 
-    private static native int newDbKnownBadNat(String hashDbPath) throws TskCoreException;
+    private static native int hashDbNewNat(String hashDbPath) throws TskCoreException;
     
-    private static native int addStrDbKnownBadNat(String filename, String hashMd5, String hashSha1, String hashSha256, int dbHandle) throws TskCoreException;
+    private static native int hashDbAddRecordNat(String filename, String hashMd5, String hashSha1, String hashSha256, int dbHandle) throws TskCoreException;
 
-    private static native boolean isUpdateableDbKnownBadNat(int dbHandle);
+    private static native boolean hashDbIsUpdateableNat(int dbHandle);
     
     private static native boolean hashDbIsReindexableNat(int dbHandle);
     
@@ -77,7 +77,7 @@ public class SleuthkitJNI {
 
     private static native boolean isIdxOnlyHashDbNat(int dbHandle) throws TskCoreException;
     
-	private static native int knownBadDbLookup(String hash, int dbHandle) throws TskCoreException;            
+	private static native int hashDbLookup(String hash, int dbHandle) throws TskCoreException;            
 
 	//load image
 	private static native long initAddImgNat(long db, String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
@@ -619,7 +619,7 @@ public class SleuthkitJNI {
       
 
 	public static int openHashDatabase(String path) throws TskCoreException {
-		return addDbKnownBadNat(path);
+		return hashDbOpenNat(path);
 	}
 	
 	
@@ -631,7 +631,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static int createHashDatabase(String path) throws TskCoreException {		
-		return newDbKnownBadNat(path);
+		return hashDbNewNat(path);
 	}
 
 	/**
@@ -667,7 +667,7 @@ public class SleuthkitJNI {
     
     
 	public static TskData.FileKnown lookupInHashDatabase(String hash, int dbHandle) throws TskCoreException {
-		return TskData.FileKnown.valueOf((byte) knownBadDbLookup(hash, dbHandle));
+		return TskData.FileKnown.valueOf((byte) hashDbLookup(hash, dbHandle));
 	}
 	
 	/**
@@ -680,12 +680,12 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException 
 	 */
 	public static void addToHashDatabase(String filename, String md5, String sha1, String sha256, int dbHandle) throws TskCoreException {
-		addStrDbKnownBadNat(filename, md5, sha1, sha256, dbHandle);
+		hashDbAddRecordNat(filename, md5, sha1, sha256, dbHandle);
 	}
 
     
 	public static boolean isUpdateableHashDatabase(int dbHandle) throws TskCoreException {
-		return isUpdateableDbKnownBadNat(dbHandle);
+		return hashDbIsUpdateableNat(dbHandle);
 	}    
     
     public static boolean hashDatabaseHasLegacyLookupIndexOnly(int dbHandle) throws TskCoreException {

@@ -51,37 +51,37 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeCaseDbNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    addDbKnownBadNat
+ * Method:    hashDbOpenNat
  * Signature: (Ljava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_addDbKnownBadNat
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbOpenNat
   (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    newDbKnownBadNat
+ * Method:    hashDbNewNat
  * Signature: (Ljava/lang/String;)I
  */
 JNIEXPORT jint JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_newDbKnownBadNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbNewNat(JNIEnv * env,
     jclass obj, jstring pathJ);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    addStrDbKnownBadNat
+ * Method:    hashDbAddRecordNat
  * Signature: 
  */
 JNIEXPORT jint JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_addStrDbKnownBadNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbAddRecordNat(JNIEnv * env,
     jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J, jint dbHandle);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    isUpdateableDbKnownBadNat
+ * Method:    hashDbIsUpdateableNat
  * Signature: 
  */
 JNIEXPORT jboolean JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_isUpdateableDbKnownBadNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsUpdateableNat(JNIEnv * env,
     jclass obj, jint dbHandle);
 
 /*
@@ -146,10 +146,10 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupNa
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    knownBadDbLookup
+ * Method:    hashDbLookup
  * Signature: (Ljava/lang/String;I)I
  */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLookup
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
   (JNIEnv *, jclass, jstring, jint);
 
 

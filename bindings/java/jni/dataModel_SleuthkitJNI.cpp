@@ -258,14 +258,14 @@ JNIEXPORT void JNICALL
 
 
 /*
- * Set the "known bad" database to use for hash lookups.
+ * Open a hash database to use for hash lookups. It's added to the list.
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param pathJ the path to the database
  * @return a handle for the known bad database
  */
 JNIEXPORT jint JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_addDbKnownBadNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbOpenNat(JNIEnv * env,
     jclass obj, jstring pathJ) {
 
     TSK_TCHAR pathT[1024];
@@ -295,7 +295,7 @@ JNIEXPORT jint JNICALL
  * @return a handle for the database
  */
 JNIEXPORT jint JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_newDbKnownBadNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbNewNat(JNIEnv * env,
     jclass obj, jstring pathJ)
 {
     TSK_TCHAR pathT[1024];
@@ -326,7 +326,7 @@ JNIEXPORT jint JNICALL
  * @return 1 on error and 0 on success
  */
 JNIEXPORT jint JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_addStrDbKnownBadNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbAddRecordNat(JNIEnv * env,
     jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J, jint dbHandle)
 {
     int8_t retval = 0;
@@ -369,7 +369,7 @@ JNIEXPORT jint JNICALL
  * @return true if db can be updated
  */
 JNIEXPORT jboolean JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_isUpdateableDbKnownBadNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsUpdateableNat(JNIEnv * env,
     jclass obj, jint dbHandle)
 {
     bool retval = false;
@@ -591,10 +591,10 @@ JNIEXPORT void JNICALL
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    knownBadDbLookup
+ * Method:    hashDbLookup
  * Signature: (Ljava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLookup
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 (JNIEnv * env, jclass obj, jstring hash, jint dbHandle){
 
     if((size_t) dbHandle > m_hashDbs.size()) {
