@@ -594,8 +594,8 @@ JNIEXPORT void JNICALL
  * Method:    hashDbLookup
  * Signature: (Ljava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
-(JNIEnv * env, jclass obj, jstring hash, jint dbHandle){
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
+(JNIEnv * env, jclass obj, jstring hash, jint dbHandle) {
 
     if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -606,8 +606,8 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 
     const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
-    TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
-
+    //TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
+    jboolean file_known = false;
     
 
     TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
@@ -618,13 +618,34 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
         if (retval == -1) {
             setThrowTskCoreError(env);
         } else if (retval) {
-            file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
+            //file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
+            file_known = true;
         }
     }
 
     env->ReleaseStringUTFChars(hash, (const char *) md5);
 
     return (int) file_known;
+}
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    hashDbLookupVerbose
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookupVerbose
+(JNIEnv * env, jclass obj, jstring hash, jint dbHandle) {
+
+    jclass clazz;
+    clazz = env->FindClass("org/sleuthkit/datamodel/HashInfo");
+
+    const char *ctest = "foobarbaz";
+    jstring s = env->NewStringUTF(ctest);
+
+    jmethodID ctor = env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;)V");
+    jobject object = env->NewObject(clazz, ctor, s);
+
+    return object;
 }
 
 /*

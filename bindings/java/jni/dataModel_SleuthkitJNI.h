@@ -147,11 +147,18 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbClose
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    hashDbLookup
- * Signature: (Ljava/lang/String;I)I
+ * Signature: (Ljava/lang/String;I)B
  */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
   (JNIEnv *, jclass, jstring, jint);
 
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    hashDbLookup
+ * Signature: (Ljava/lang/String;I)Lorg/sleuthkit/datamodel/HashInfo
+ */
+JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookupVerbose
+  (JNIEnv *, jclass, jstring, jint);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
