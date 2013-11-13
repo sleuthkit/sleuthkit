@@ -50,8 +50,6 @@ public class SleuthkitJNI {
 
 	private static native void closeCaseDbNat(long db) throws TskCoreException;
 
-	private static native int setDbNSRLNat(String hashDbPath) throws TskCoreException;
-
 	private static native int addDbKnownBadNat(String hashDbPath) throws TskCoreException;
 
     private static native int newDbKnownBadNat(String hashDbPath) throws TskCoreException;
@@ -66,19 +64,20 @@ public class SleuthkitJNI {
     
     private static native String hashDbIndexPathNat(int dbHandle);
         
-	private static native String getDbNameByPath(String hashDbPath) throws TskCoreException;
-
     private static native String getDbName(int dbHandle) throws TskCoreException;
 
 	private static native void closeAllDbLookupsNat() throws TskCoreException;
     
     private static native void closeDbLookupNat(int dbHandle) throws TskCoreException;
 
-	private static native int knownBadDbLookup(String hash, int dbHandle) throws TskCoreException;
+	//hash-lookup database functions   
+    private static native void createLookupIndexNat(int dbHandle, boolean overwrite) throws TskCoreException;
+    
+    private static native boolean lookupIndexExistsNat(int dbHandle) throws TskCoreException;
 
-	private static native int nsrlDbLookup(String hash) throws TskCoreException;
-
-	private static native int getIndexSizeNat(String hashDbPath) throws TskCoreException;
+    private static native boolean isIdxOnlyHashDbNat(int dbHandle) throws TskCoreException;
+    
+	private static native int knownBadDbLookup(String hash, int dbHandle) throws TskCoreException;            
 
 	//load image
 	private static native long initAddImgNat(long db, String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
@@ -122,17 +121,7 @@ public class SleuthkitJNI {
 
 	private static native void closeFileNat(long fileHandle);
 
-	//hash-lookup database functions
-	private static native void createLookupIndexByPathNat(String dbPath) throws TskCoreException;
-    
-    private static native void createLookupIndexNat(int dbHandle, boolean overwrite) throws TskCoreException;
 
-	private static native boolean lookupIndexExistsByPathNat(String dbPath) throws TskCoreException;
-    
-    private static native boolean lookupIndexExistsNat(int dbHandle) throws TskCoreException;
-
-    private static native boolean isIdxOnlyHashDbNat(int dbHandle) throws TskCoreException;
-    
 	//util functions
 	private static native long findDeviceSizeNat(String devicePath) throws TskCoreException;
 
