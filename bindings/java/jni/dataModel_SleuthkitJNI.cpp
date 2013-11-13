@@ -286,6 +286,8 @@ JNIEXPORT jint JNICALL
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
+    ///@todo Check if the db_file passed in is really an index filename
+
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_TRY;
     TSK_HDB_INFO * temp = tsk_hdb_open(pathT, flags);
 
@@ -1667,26 +1669,26 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
         setThrowTskCoreError(env, "Invalid database handle");
         return;
     } else {
-        TSK_HDB_INFO * temp = m_hashDbs.at(dbHandle-1);
-        if (temp == NULL) {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+        if (db == NULL) {
             setThrowTskCoreError(env, "Error: database object is null");
             return;
         }
 
-        if (temp->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) {
+        if (db->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) {
             setThrowTskCoreError(env, "Error: index only");
             return;
         }
 
         TSK_TCHAR dbType[1024];
 
-        if(temp->db_type == TSK_HDB_DBTYPE_MD5SUM_ID) {
+        if(db->db_type == TSK_HDB_DBTYPE_MD5SUM_ID) {
             TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
         }
-        else if(temp->db_type == TSK_HDB_DBTYPE_HK_ID) {
+        else if(db->db_type == TSK_HDB_DBTYPE_HK_ID) {
             TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_HK_STR);
         }
-        else if(temp->db_type == TSK_HDB_DBTYPE_ENCASE_ID) {
+        else if(db->db_type == TSK_HDB_DBTYPE_ENCASE_ID) {
             TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_ENCASE_STR);
         }
         else {
@@ -1694,8 +1696,8 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
         }
   
         // [Re]create the hash information and file
-        if (tsk_hdb_regenerate_index(temp, dbType) == 0) {
-            setThrowTskCoreError(env, "Error: index");
+        if (tsk_hdb_regenerate_index(db, dbType, (overwrite ? 1 : 0)) == 0) {
+            setThrowTskCoreError(env, "Error: index regeneration");
             return;
         }
 

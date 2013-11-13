@@ -546,9 +546,27 @@ tsk_hdb_idxsetup(TSK_HDB_INFO * hdb_info, uint8_t htype)
  * @return 1 if index was created; 0 if failed
  */
 uint8_t
-tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type)
+tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type, uint8_t overwrite)
 {
-    uint8_t ret = 1;
+    // remove old file
+    if (overwrite) {
+        // Call setup to populate the idx_info struct so we can get the filename
+        hdb_setupindex(hdb_info, TSK_HDB_DBTYPE_MD5SUM_ID, 0);
+
+        // If idx_info is null then there isn't an index
+        if (hdb_info->idx_info != NULL) {
+            char cfname[1024];
+            snprintf(cfname, 1024, "%" PRIttocTSK, hdb_info->idx_info->idx_fname);
+
+            if (cfname != "") {
+                //attempt to delete the old index file
+                if (remove(cfname) != 0) {
+                    return 0;  //error
+                }
+            }
+        }
+    }
+
     // blow away the existing index info
     if (hdb_info->idx_info != NULL) {
         tsk_take_lock(&hdb_info->lock);
@@ -560,10 +578,10 @@ tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type)
 
     // Create, initialize, and fill in the new index from the src db
     if (tsk_hdb_makeindex(hdb_info, db_type)) {
-        ret = 0;
+        return 0; //error
     }
 
-    return ret;
+    return 1; //success
 }
 
 /**
