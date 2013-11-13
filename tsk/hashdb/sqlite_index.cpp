@@ -223,6 +223,13 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 			return 1;
 	}
 
+    // The comments table enables the user to optionally map one or many arbitrary strings to each hash.
+	if (attempt_exec_nocallback
+		("CREATE TABLE comments (comment TEXT, hash_id INTEGER);",
+		"Error creating comments table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+			return 1;
+	}
+
     need_SQL_index = true;
 
 	return sqlite_v1_begin(hdb_info);
