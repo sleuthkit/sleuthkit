@@ -497,7 +497,7 @@ JNIEXPORT jstring JNICALL
  * @return true if index only AND is legacy
  */
 JNIEXPORT jboolean JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_isIdxOnlyHashDbNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsIdxOnlyNat(JNIEnv * env,
     jclass obj, jint dbHandle)
 {
     bool retval = false;
@@ -521,7 +521,7 @@ JNIEXPORT jboolean JNICALL
  * @param obj the java object this was called from
  * @param dbHandle Which DB.
  */
-JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbName
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbGetName
   (JNIEnv * env, jclass obj, jint dbHandle)
 {
     if((size_t) dbHandle > m_hashDbs.size()) {
@@ -548,7 +548,7 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbName
  * @param dbHandle Which DB.
  */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_closeAllDbLookupsNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCloseAll(JNIEnv * env,
     jclass obj) {
 
     for_each(m_hashDbs.begin(), m_hashDbs.end(), tsk_hdb_close);
@@ -566,7 +566,7 @@ JNIEXPORT void JNICALL
  * @param dbHandle Which DB.
  */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbClose(JNIEnv * env,
     jclass obj, jint dbHandle) {
 
     if((size_t) dbHandle > m_hashDbs.size()) {
@@ -1546,7 +1546,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
  * @param dbHandle handle for the database
  */
 JNIEXPORT void JNICALL
-Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
+Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCreateIndexNat (JNIEnv * env,
     jclass obj, jint dbHandle, jboolean overwrite)
 {
     if((size_t) dbHandle > m_hashDbs.size()) {
@@ -1591,12 +1591,12 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
 
 
 /*
- * Check if an index exists for the given database.
+ * Check if a lookup index exists for the given hash database.
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param dbHandle handle for the database
  */
-JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIndexExistsNat
   (JNIEnv * env, jclass obj, jint dbHandle) {
 
     if((size_t) dbHandle > m_hashDbs.size()) {

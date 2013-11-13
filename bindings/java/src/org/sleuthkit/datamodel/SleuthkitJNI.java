@@ -64,18 +64,18 @@ public class SleuthkitJNI {
     
     private static native String hashDbIndexPathNat(int dbHandle);
         
-    private static native String getDbName(int dbHandle) throws TskCoreException;
+    private static native String hashDbGetName(int dbHandle) throws TskCoreException;
 
-	private static native void closeAllDbLookupsNat() throws TskCoreException;
+	private static native void hashDbCloseAll() throws TskCoreException;
     
-    private static native void closeDbLookupNat(int dbHandle) throws TskCoreException;
+    private static native void hashDbClose(int dbHandle) throws TskCoreException;
 
 	//hash-lookup database functions   
-    private static native void createLookupIndexNat(int dbHandle, boolean overwrite) throws TskCoreException;
+    private static native void hashDbCreateIndexNat(int dbHandle, boolean overwrite) throws TskCoreException;
     
-    private static native boolean lookupIndexExistsNat(int dbHandle) throws TskCoreException;
+    private static native boolean hashDbIndexExistsNat(int dbHandle) throws TskCoreException;
 
-    private static native boolean isIdxOnlyHashDbNat(int dbHandle) throws TskCoreException;
+    private static native boolean hashDbIsIdxOnlyNat(int dbHandle) throws TskCoreException;
     
 	private static native int hashDbLookup(String hash, int dbHandle) throws TskCoreException;            
 
@@ -569,7 +569,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static void createLookupIndexForHashDatabase(int dbHandle, boolean overwrite) throws TskCoreException {
-		createLookupIndexNat(dbHandle, overwrite);
+		hashDbCreateIndexNat(dbHandle, overwrite);
 	}    
     
    
@@ -581,7 +581,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static boolean hashDatabaseHasLookupIndex(int dbHandle) throws TskCoreException {
-		return lookupIndexExistsNat(dbHandle);
+		return hashDbIndexExistsNat(dbHandle);
 	}    
     
 	/**
@@ -641,7 +641,7 @@ public class SleuthkitJNI {
 	 * within TSK
 	 */
 	public static void closeAllHashDatabases() throws TskCoreException {
-		closeAllDbLookupsNat();
+		hashDbCloseAll();
 	}
 
 	/**
@@ -651,7 +651,7 @@ public class SleuthkitJNI {
 	 * within TSK
 	 */
 	public static void closeHashDatabase(int dbHandle) throws TskCoreException {
-		closeDbLookupNat(dbHandle);
+		hashDbClose(dbHandle);
 	}
 
 	
@@ -662,7 +662,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static String getHashDatabaseName(int dbHandle) throws TskCoreException {
-		return getDbName(dbHandle);
+		return hashDbGetName(dbHandle);
 	}
     
     
@@ -689,7 +689,7 @@ public class SleuthkitJNI {
 	}    
     
     public static boolean hashDatabaseHasLegacyLookupIndexOnly(int dbHandle) throws TskCoreException {
-        return isIdxOnlyHashDbNat(dbHandle);
+        return hashDbIsIdxOnlyNat(dbHandle);
     }
     
 

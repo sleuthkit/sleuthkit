@@ -86,11 +86,11 @@ JNIEXPORT jboolean JNICALL
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    isIdxOnlyHashDbNat
+ * Method:    hashDbIsIdxOnlyNat
  * Signature: 
  */
 JNIEXPORT jboolean JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_isIdxOnlyHashDbNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsIdxOnlyNat(JNIEnv * env,
     jclass obj, jint dbHandle);
 
 /*
@@ -122,26 +122,26 @@ JNIEXPORT jstring JNICALL
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    getHashDbName
+ * Method:    hashDbGetName
  * Signature: 
  */
-JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbName
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbGetName
   (JNIEnv *, jclass, jint dbHandle);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    closeAllDbLookupsNat
+ * Method:    hashDbCloseAll
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeAllDbLookupsNat
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCloseAll
   (JNIEnv *, jclass);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    closeDbLookupNat
+ * Method:    hashDbClose
  * Signature: 
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupNat
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbClose
   (JNIEnv *, jclass, jint dbHandle);
 
 /*
@@ -316,18 +316,18 @@ JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    createLookupIndexNat
+ * Method:    hashDbCreateIndexNat
  * Signature: 
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCreateIndexNat
   (JNIEnv *, jclass, jint, jboolean);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    lookupIndexExistsNat
+ * Method:    hashDbIndexExistsNat
  * Signature: 
  */
-JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIndexExistsNat
   (JNIEnv *, jclass, jint);
 
 /*
