@@ -478,7 +478,23 @@ JNIEXPORT jstring JNICALL
         return env->NewStringUTF(none);
     } else {
         TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
-        if((db != NULL) && (db->idx_info != NULL)) {
+        if (db == NULL) {
+            setThrowTskCoreError(env, "Invalid database");
+            return env->NewStringUTF(none);
+        }
+
+        ///@todo there isn't a db type for this (would be needed to get legacy index filename)
+        /*if(db->db_type == TSK_HDB_DBTYPE_NSRL_SHA1_ID) {
+            db->hash_type = TSK_HDB_HTYPE_SHA1_ID;
+        }*/
+        //else {
+            db->hash_type = TSK_HDB_HTYPE_MD5_ID;
+        //}
+
+        // Call setup to populate the idx_info struct so we can get the filename
+        tsk_hdb_idxsetup(db, db->hash_type);
+
+        if(db->idx_info != NULL) {
             snprintf(cpath, 1024, "%" PRIttocTSK, db->idx_info->idx_fname);
             jstring jname = env->NewStringUTF(cpath);
             return jname;
