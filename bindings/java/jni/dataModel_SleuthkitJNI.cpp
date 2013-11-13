@@ -327,7 +327,8 @@ JNIEXPORT jint JNICALL
  */
 JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbAddRecordNat(JNIEnv * env,
-    jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J, jint dbHandle)
+    jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J,
+    jstring commentJ, jint dbHandle)
 {
     int8_t retval = 0;
 
@@ -339,6 +340,7 @@ JNIEXPORT jint JNICALL
         const char *md5 = (const char *) env->GetStringUTFChars(hashMd5J, &isCopy);
         const char *sha1 = (const char *) env->GetStringUTFChars(hashSha1J, &isCopy);
         const char *sha256 = (const char *) env->GetStringUTFChars(hashSha256J, &isCopy);
+        char *comment = (char *) env->GetStringUTFChars(commentJ, &isCopy);
    
         TSK_TCHAR filenameT[1024];
         toTCHAR(env, filenameT, 1024, filenameJ);
@@ -346,7 +348,7 @@ JNIEXPORT jint JNICALL
         TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
 
         if(db != NULL) {
-            retval = tsk_hdb_add_str(db, filenameT, md5, sha1, sha256);
+            retval = tsk_hdb_add_str(db, filenameT, md5, sha1, sha256, comment);
 
             if (retval == 1) {
                 setThrowTskCoreError(env);
@@ -356,6 +358,7 @@ JNIEXPORT jint JNICALL
         env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
         env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
         env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
+        env->ReleaseStringUTFChars(commentJ, (const char *) comment);
     }
 
     return retval;

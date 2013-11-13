@@ -55,7 +55,7 @@ public class HashInfo {
 		return hashSha1;
 	}
 	
-	public String getHashSha2() {
+	public String getHashSha256() {
 		return hashSha2_256;
 	}	
 	

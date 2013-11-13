@@ -55,7 +55,7 @@ public class SleuthkitJNI {
 
     private static native int hashDbNewNat(String hashDbPath) throws TskCoreException;
     
-    private static native int hashDbAddRecordNat(String filename, String hashMd5, String hashSha1, String hashSha256, int dbHandle) throws TskCoreException;
+    private static native int hashDbAddRecordNat(String filename, String hashMd5, String hashSha1, String hashSha256, String comment, int dbHandle) throws TskCoreException;
 
     private static native boolean hashDbIsUpdateableNat(int dbHandle);
     
@@ -686,8 +686,8 @@ public class SleuthkitJNI {
 	 * @param dbHandle Handle to DB
 	 * @throws TskCoreException 
 	 */
-	public static void addToHashDatabase(String filename, String md5, String sha1, String sha256, int dbHandle) throws TskCoreException {
-		hashDbAddRecordNat(filename, md5, sha1, sha256, dbHandle);
+	public static void addToHashDatabase(String filename, String md5, String sha1, String sha256, String comment, int dbHandle) throws TskCoreException {
+		hashDbAddRecordNat(filename, md5, sha1, sha256, comment, dbHandle);
 	}
 
     

@@ -73,7 +73,8 @@ JNIEXPORT jint JNICALL
  */
 JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbAddRecordNat(JNIEnv * env,
-    jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J, jint dbHandle);
+    jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J, 
+    jstring commentJ, jint dbHandle);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI

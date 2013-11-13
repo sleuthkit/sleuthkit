@@ -366,6 +366,44 @@ addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset)
 }
 
 /**
+ * add
+ *
+ * @param hdb_info Hash database state info structure.
+ * @return 1 on error and 0 on success
+ */
+uint8_t
+sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value)
+{
+    // In the next iteration we might want to actually search for the row id
+    sqlite3_int64 id = sqlite3_last_insert_rowid(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+
+    if (id == 0) {
+        return 1;
+    }
+
+    char stmt[1024];
+	snprintf(stmt, 1024,
+		"INSERT INTO comments (comment, hash_id) VALUES ('%s', '%d');",	value, id);
+	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		return 1;
+	}
+    return 0;
+}
+
+
+/**
+ * add
+ *
+ * @param hdb_info Hash database state info structure.
+ * @return 1 on error and 0 on success
+ */
+uint8_t
+sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value)
+{
+    return 1;
+}
+
+/**
  * Finalize index creation process
  *
  * @param hdb_info Hash database state info structure.
