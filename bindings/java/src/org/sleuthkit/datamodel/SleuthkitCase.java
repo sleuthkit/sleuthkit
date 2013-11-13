@@ -588,42 +588,6 @@ public class SleuthkitCase {
 		return this.caseHandle.initAddImageProcess(timezone, processUnallocSpace, noFatFsOrphans);
 	}
 
-	/**
-	 * Set the NSRL database
-	 *
-	 * @param path The path to the database
-	 * @return a handle for that database
-	 */
-	// BC: This is called by IngestModule
-	// Use jni.openNSRLDatabase instead
-	@Deprecated
-	public int setNSRLDatabase(String path) throws TskCoreException {
-		return this.caseHandle.setNSRLDatabase(path);
-	}
-
-	/**
-	 * Add the known bad database
-	 *
-	 * @param path The path to the database
-	 * @return a handle for that database
-	 */
-	// use jni.openHashDatabase instead
-	@Deprecated
-	public int addKnownBadDatabase(String path) throws TskCoreException {
-		return this.caseHandle.addKnownBadDatabase(path);
-	}
-
-	/**
-	 * Reset currently used lookup databases on that case object
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 */
-	// use jni.closeHashDatabases instead
-	@Deprecated
-	public void clearLookupDatabases() throws TskCoreException {
-		this.caseHandle.clearLookupDatabases();
-	}
 
 	/**
 	 * Get the list of root objects, meaning image files or local files virtual
@@ -4877,32 +4841,6 @@ public class SleuthkitCase {
 		}
 	}
 
-	/**
-	 * Look up the given hash in the NSRL database
-	 *
-	 * @param md5Hash The hash to look up
-	 * @return the status of the hash in the NSRL
-	 * @throws TskCoreException thrown if a critical error occurred within tsk
-	 * core
-	 */
-	@Deprecated
-	public TskData.FileKnown nsrlLookupMd5(String md5Hash) throws TskCoreException {
-		return SleuthkitJNI.nsrlHashLookup(md5Hash);
-	}
-
-	/**
-	 * Look up the given hash in the known bad database
-	 *
-	 * @param md5Hash The hash to look up
-	 * @param dbHandle The handle of the open database to look in
-	 * @return the status of the hash in the known bad database
-	 * @throws TskCoreException thrown if a critical error occurred within tsk
-	 * core
-	 */
-	@Deprecated
-	public TskData.FileKnown knownBadLookupMd5(String md5Hash, int dbHandle) throws TskCoreException {
-		return SleuthkitJNI.knownBadHashLookup(md5Hash, dbHandle);
-	}
 
 	/**
 	 * Return the number of objects in the database of a given file type.
