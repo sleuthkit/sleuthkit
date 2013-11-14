@@ -227,11 +227,11 @@ extern "C" {
     extern TSK_HDB_INFO * tsk_hdb_new(TSK_TCHAR * db_file);
 
     extern int8_t tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
-                        char * filename, 
+                        const char * filename, 
                         const char * md5, 
                         const char * sha1, 
                         const char * sha256,
-                        char * comment);
+                        const char * comment);
 
     extern int8_t tsk_hdb_lookup_str(TSK_HDB_INFO *, const char *,
         TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,

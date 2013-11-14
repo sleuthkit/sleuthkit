@@ -337,11 +337,11 @@ JNIEXPORT jint JNICALL
         retval = 1;
     } else {
         jboolean isCopy;
-        char * name = (char *) env->GetStringUTFChars(filenameJ, &isCopy);
+        const char * name = (const char *) env->GetStringUTFChars(filenameJ, &isCopy);
         const char * md5 = (const char *) env->GetStringUTFChars(hashMd5J, &isCopy);
         const char * sha1 = (const char *) env->GetStringUTFChars(hashSha1J, &isCopy);
         const char * sha256 = (const char *) env->GetStringUTFChars(hashSha256J, &isCopy);
-        char * comment = (char *) env->GetStringUTFChars(commentJ, &isCopy);
+        const char * comment = (const char *) env->GetStringUTFChars(commentJ, &isCopy);
    
         //TSK_TCHAR filenameT[1024];
         //toTCHAR(env, filenameT, 1024, filenameJ);
@@ -356,11 +356,11 @@ JNIEXPORT jint JNICALL
             }
         }
 
-        env->ReleaseStringUTFChars(filenameJ, (char *) name);
+        env->ReleaseStringUTFChars(filenameJ, (const char *) name);
         env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
         env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
         env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
-        env->ReleaseStringUTFChars(commentJ, (char *) comment);
+        env->ReleaseStringUTFChars(commentJ, (const char *) comment);
     }
 
     return retval;

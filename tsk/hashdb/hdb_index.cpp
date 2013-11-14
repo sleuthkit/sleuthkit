@@ -714,11 +714,11 @@ tsk_hdb_new(TSK_TCHAR * db_file)
  */
 int8_t
 tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
-                char * filename, 
+                const char * filename, 
                 const char * md5, 
                 const char * sha1, 
                 const char * sha256,
-                char * comment)
+                const char * comment)
 {
     if(hdb_info == NULL) {
         tsk_error_set_errstr2("tsk_hdb_add_str: null hdb_info");
@@ -732,6 +732,10 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
         if(hdb_info->idx_info->updateable == 1) {
             ///@todo also allow use of other htypes
             char * hvalue = (char *)md5;
+            if (hvalue == NULL) {
+                tsk_error_set_errstr2("tsk_hdb_add_str: no hash value(s) provided");
+                return 1;
+            }
 
             // @todo Could set up a polymorphic mechanism like with finalize() but
             // we know it's going to be sqlite in this function.
@@ -750,12 +754,12 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
             }
 
             // Add name and comment
-            if ((filename != "") && (hdb_info->idx_info->addfilename != NULL)) {
-                hdb_info->idx_info->addfilename(hdb_info, filename);
+            if ((filename != NULL) && (hdb_info->idx_info->addfilename != NULL)) {
+                hdb_info->idx_info->addfilename(hdb_info, (char *)filename);
             }
 
-            if ((comment != "") && (hdb_info->idx_info->addcomment != NULL)) {
-                hdb_info->idx_info->addcomment(hdb_info, comment);
+            if ((comment != NULL) && (hdb_info->idx_info->addcomment != NULL)) {
+                hdb_info->idx_info->addcomment(hdb_info, (char *)comment);
             }
 
             // Close the index
