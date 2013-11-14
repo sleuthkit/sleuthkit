@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
+import org.sleuthkit.datamodel.HashInfo;
 
 /**
  * Interfaces with the Sleuthkit TSK c/c++ libraries Supports case management,
@@ -54,7 +55,7 @@ public class SleuthkitJNI {
 
     private static native int hashDbNewNat(String hashDbPath) throws TskCoreException;
     
-    private static native int hashDbAddRecordNat(String filename, String hashMd5, String hashSha1, String hashSha256, int dbHandle) throws TskCoreException;
+    private static native int hashDbAddRecordNat(String filename, String hashMd5, String hashSha1, String hashSha256, String comment, int dbHandle) throws TskCoreException;
 
     private static native boolean hashDbIsUpdateableNat(int dbHandle);
     
@@ -77,7 +78,9 @@ public class SleuthkitJNI {
 
     private static native boolean hashDbIsIdxOnlyNat(int dbHandle) throws TskCoreException;
     
-	private static native int hashDbLookup(String hash, int dbHandle) throws TskCoreException;            
+	private static native boolean hashDbLookup(String hash, int dbHandle) throws TskCoreException;
+    
+    private static native HashInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
 	//load image
 	private static native long initAddImgNat(long db, String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
@@ -666,10 +669,14 @@ public class SleuthkitJNI {
 	}
     
     
-	public static TskData.FileKnown lookupInHashDatabase(String hash, int dbHandle) throws TskCoreException {
-		return TskData.FileKnown.valueOf((byte) hashDbLookup(hash, dbHandle));
+	public static boolean lookupInHashDatabase(String hash, int dbHandle) throws TskCoreException {
+		return hashDbLookup(hash, dbHandle);
 	}
 	
+    public static HashInfo lookupInHashDatabaseVerbose(String hash, int dbHandle) throws TskCoreException {
+		return hashDbLookupVerbose(hash, dbHandle);
+	}
+    
 	/**
 	 * Adds a hash value to a hash database. 
 	 * @param filename Name of file (can be null)
@@ -679,8 +686,8 @@ public class SleuthkitJNI {
 	 * @param dbHandle Handle to DB
 	 * @throws TskCoreException 
 	 */
-	public static void addToHashDatabase(String filename, String md5, String sha1, String sha256, int dbHandle) throws TskCoreException {
-		hashDbAddRecordNat(filename, md5, sha1, sha256, dbHandle);
+	public static void addToHashDatabase(String filename, String md5, String sha1, String sha256, String comment, int dbHandle) throws TskCoreException {
+		hashDbAddRecordNat(filename, md5, sha1, sha256, comment, dbHandle);
 	}
 
     

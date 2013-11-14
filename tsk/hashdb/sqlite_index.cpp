@@ -223,6 +223,13 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 			return 1;
 	}
 
+    // The comments table enables the user to optionally map one or many arbitrary strings to each hash.
+	if (attempt_exec_nocallback
+		("CREATE TABLE comments (comment TEXT, hash_id INTEGER);",
+		"Error creating comments table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+			return 1;
+	}
+
     need_SQL_index = true;
 
 	return sqlite_v1_begin(hdb_info);
@@ -356,6 +363,44 @@ addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset)
     }
 
     return 0;
+}
+
+/**
+ * add
+ *
+ * @param hdb_info Hash database state info structure.
+ * @return 1 on error and 0 on success
+ */
+uint8_t
+sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value)
+{
+    // In the next iteration we might want to actually search for the row id
+    sqlite3_int64 id = sqlite3_last_insert_rowid(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+
+    if (id == 0) {
+        return 1;
+    }
+
+    char stmt[1024];
+	snprintf(stmt, 1024,
+		"INSERT INTO comments (comment, hash_id) VALUES ('%s', '%d');",	value, id);
+	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		return 1;
+	}
+    return 0;
+}
+
+
+/**
+ * add
+ *
+ * @param hdb_info Hash database state info structure.
+ * @return 1 on error and 0 on success
+ */
+uint8_t
+sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value)
+{
+    return 1;
 }
 
 /**

@@ -3034,7 +3034,7 @@ public class SleuthkitCase {
 			addFileSt.executeUpdate();
 
 			vd = new VirtualDirectory(this, newObjId, directoryName, dirType,
-					metaType, dirFlag, metaFlags, size, null, FileKnown.UKNOWN,
+					metaType, dirFlag, metaFlags, size, null, FileKnown.UNKNOWN,
 					parentPath);
 		} catch (SQLException e) {
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
@@ -3277,7 +3277,7 @@ public class SleuthkitCase {
 			// create the LayoutFile object
 			lf = new LayoutFile(this, newObjId, carvedFileName, type, dirType,
 					metaType, dirFlag, metaFlags, carvedFileSize, null,
-					FileKnown.UKNOWN, parentPath);
+					FileKnown.UNKNOWN, parentPath);
 
 		} catch (SQLException e) {
 			throw new TskCoreException("Error creating a carved file '" + carvedFileName + "'", e);

@@ -234,6 +234,8 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             idx_info->initialize = binsrch_initialize;
             idx_info->addentry = binsrch_addentry;
             idx_info->addentry_bin = binsrch_addentry_bin;
+            idx_info->addcomment = NULL;
+            idx_info->addfilename = NULL;
             idx_info->finalize = binsrch_finalize;
             idx_info->lookup_str = binsrch_lookup_str;
             idx_info->lookup_raw = binsrch_lookup_raw;
@@ -279,6 +281,8 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
         idx_info->initialize = sqlite_v1_initialize;
         idx_info->addentry = sqlite_v1_addentry;
         idx_info->addentry_bin = sqlite_v1_addentry_bin;
+        idx_info->addcomment = sqlite_v1_addcomment;
+        idx_info->addfilename = sqlite_v1_addfilename;
         idx_info->finalize = sqlite_v1_finalize;
         idx_info->lookup_str = sqlite_v1_lookup_str;
         idx_info->lookup_raw = sqlite_v1_lookup_raw;
@@ -736,7 +740,8 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
                 const TSK_TCHAR * filename, 
                 const char * md5, 
                 const char * sha1, 
-                const char * sha256)
+                const char * sha256,
+                char * comment)
 {
     if(hdb_info == NULL) {
         tsk_error_set_errstr2("tsk_hdb_add_str: null hdb_info");
@@ -765,16 +770,24 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
                 tsk_error_set_errno(TSK_ERR_HDB_WRITE);
                 tsk_error_set_errstr("tsk_hdb_add_str: adding entry failed");
                 return 1;            
-            } else {
-                // Close the index
-                if (tsk_hdb_idxfinalize(hdb_info) != 0) {
-                    tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_HDB_WRITE);
-                    tsk_error_set_errstr("tsk_hdb_add_str: finalizing index failed");
-                    return 1;
-                }  
-                return 0;
             }
+
+            // Add name and comment
+            ///@todo name
+
+            if ((comment != "") && (hdb_info->idx_info->addcomment != NULL)) {
+                hdb_info->idx_info->addcomment(hdb_info, comment);
+            }
+
+            // Close the index
+            if (tsk_hdb_idxfinalize(hdb_info) != 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_HDB_WRITE);
+                tsk_error_set_errstr("tsk_hdb_add_str: finalizing index failed");
+                return 1;
+            }  
+            return 0;
+            
         } else {
             return -1;
         }
