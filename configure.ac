@@ -11,7 +11,8 @@ m4_include([m4/cppunit.m4])
 m4_include([m4/ax_jni_include_dir.m4])
 m4_include([m4/ac_prog_javac_works.m4])
 m4_include([m4/ac_prog_javac.m4])
-
+m4_include([m4/ac_prog_java_works.m4])
+m4_include([m4/ac_prog_java.m4])
 
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
@@ -87,6 +88,10 @@ if test -d /usr/local/include; then
     LDFLAGS="$LDFLAGS -L/usr/local/lib"
 fi
 
+dnl Add enable/disable option
+AC_ARG_ENABLE([java],
+    [AS_HELP_STRING([--disable-java], [Do not build the java bindings or jar file])])
+ 
 dnl Checks for libraries.
 
 
@@ -173,6 +178,13 @@ AS_IF(
 )
 AS_IF([test "x$ac_cv_lib_z_inflate" = "xyes"], [ax_zlib=yes], [ax_zlib=no])
 
+AM_CONDITIONAL([X_ZLIB],[test "x$with_zlib" != "xno" && test "x$with_zlib" != "xyes"])
+AS_IF([test "x$with_zlib" != "xno"],
+   [Z_PATH="${with_zlib}/lib"],
+   [AC_MSG_NOTICE([failed to make Z_PATH])]
+)
+AC_SUBST(Z_PATH, $Z_PATH)
+
 dnl needed for sqllite
 AC_CHECK_LIB(dl, dlopen)
 
@@ -198,25 +210,41 @@ AS_IF([test "x$with_libewf" != "xno"],
     )]
     dnl Check for the header file first to make sure they have the dev install
     [AC_CHECK_HEADERS([libewf.h],
-      [AC_CHECK_LIB([ewf], [libewf_get_version])]
+      [AC_CHECK_LIB([ewf], [libewf_get_version], [], [NO_LIBEWF=true])]
     )]
 )
 AS_IF([test "x$ac_cv_lib_ewf_libewf_get_version" = "xyes"], [ax_libewf=yes], [ax_libewf=no])
 
-dnl Test for java/jni so that we can compile the java bindings
-AC_PROG_JAVAC
-if test "x$JAVAC" != x; then
-    AX_JNI_INCLUDE_DIR
-    for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
-    do
-        JNI_CPPFLAGS="$JNI_CPPFLAGS -I$JNI_INCLUDE_DIR"
-    done
-    dnl Export the paths so that the makefile gets them
-    AC_SUBST(JNI_CPPFLAGS, $JNI_CPPFLAGS)
-fi
-AM_CONDITIONAL([X_JNI],[test "x$JNI_CPPFLAGS" != x])
+AM_CONDITIONAL([X_LIBEWF],[test "x$with_libewf" != "xno" && test "x$with_libewf" != "xyes"])
+AS_IF([test "x$with_libewf" != "xno"],
+   [EWF_PATH="${with_libewf}/lib"],
+)
+AC_SUBST(EWF_PATH, $EWF_PATH)
+   
+dnl sqlite requires pthread libraries - this was copied from its configure.ac
+dnl AC_SEARCH_LIBS(pthread_create, pthread)
+AC_SEARCH_LIBS(dlopen, dl)
 
-AS_IF([test "x$JNI_CPPFLAGS" != x], [ax_java_support=yes], [ax_java_support=no])
+dnl Test for java/jni so that we can compile the java bindings
+AS_IF([test "x$enable_java" != "xno"], [
+    AC_PROG_JAVAC
+    if test "x$JAVAC" != x; then
+        AX_JNI_INCLUDE_DIR
+        for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
+        do
+            JNI_CPPFLAGS="$JNI_CPPFLAGS -I$JNI_INCLUDE_DIR"
+        done
+        dnl Export the paths so that the makefile gets them
+        AC_SUBST(JNI_CPPFLAGS, $JNI_CPPFLAGS)
+    fi
+    AC_PROG_JAVA
+]) dnl test enable_java
+
+dnl Test is ant is available
+AC_PATH_PROG([ANT_FOUND], [ant], [])
+AM_CONDITIONAL([X_JNI],[test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x && test "x$JAVA" != x])
+
+AS_IF([test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x && test "x$JAVA" != x], [ax_java_support=yes], [ax_java_support=no])
 
 AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
     [echo "#ifndef _TSK_INCS_H" > tsk/tsk_incs.h
@@ -274,6 +302,7 @@ AC_CONFIG_FILES([
     tests/Makefile
     samples/Makefile
     man/Makefile
+    bindings/java/Makefile 
     bindings/java/jni/Makefile
     unit_tests/Makefile
     unit_tests/base/Makefile])

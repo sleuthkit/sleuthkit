@@ -36,7 +36,7 @@ The configuration file is an XML document that defines interesting
 file sets in terms of search criteria.  Here is a sample: 
 
 <?xml version="1.0" encoding="utf-8"?>
-<INTERESTING_FILES>
+<INTERESTING_FILES ignoreKnown="0">
     <INTERESTING_FILE_SET name="HTMLFilesType" description="Files with extension .htm*">
         <EXTENSION typeFilter="file">.htm*</EXTENSION>
     </INTERESTING_FILE_SET>
@@ -97,7 +97,20 @@ search named "SuspiciousFiles" will find files and directories that end in
 attributes. Matches with this filter must contain the specified string as
 a sub-string of the file or directory path.
 
+Known files (e.g. files in the NSRL) can be ignored by providing the 
+'ignoreKnown' attribute either on the top level 'INTERESTING_FILES' element
+or on one or more 'INTERESTING_FILE_SET' elements.
+The following valid values for the 'ignoreKnown' attribute are based on the
+TskImgDB::KNOWN_STATUS enumeration in TskImgDB.h.
 
+  0 - All known files (both good and bad)
+  1 - Known good files
+  2 - Known bad (or notable) files
+  3 - Unknown files
+
+The ability to ignore known files depends on the existence of a hash database
+along with hash calculation and lookup modules.
+  
 RESULTS
 
 The result of the lookup is written to the blackboard as an artifact. 
