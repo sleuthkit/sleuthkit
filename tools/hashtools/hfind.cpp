@@ -223,7 +223,7 @@ main(int argc, char ** argv1)
             if (addHash) {
                 // Write a new hash to the database/index, if it's updateable
                 //@todo support sha1 and sha2-256
-                retval = tsk_hdb_add_str(hdb_info, NULL, (const char *)htmp, NULL, NULL);
+                retval = tsk_hdb_add_str(hdb_info, NULL, (const char *)htmp, NULL, NULL, NULL);
                 if (retval == 1) {
                     printf("There was an error adding the hash.\n");
                     tsk_error_print(stderr);

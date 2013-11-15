@@ -149,6 +149,7 @@ extern "C" {
                                     TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t sqlite_v1_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t,
                                     TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+    extern void * sqlite_v1_getAllData(TSK_HDB_INFO *, unsigned long hashId);
     extern int8_t sqlite_v1_get_properties(TSK_HDB_INFO * hdb_info);
     extern uint8_t sqlite3_test(FILE *);
 #ifdef __cplusplus
