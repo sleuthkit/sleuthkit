@@ -10,6 +10,7 @@
  */
 #include "tsk/tsk_tools_i.h"
 #include "tsk/auto/tsk_case_db.h"
+#include "sqlite_index.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
@@ -640,30 +641,68 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLooku
  */
 JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookupVerbose
 (JNIEnv * env, jclass obj, jstring hash, jint dbHandle) {
+    jobject object = NULL;
+    SQliteHashStruct * hdata = NULL;
 
-    jclass clazz;
-    clazz = env->FindClass("org/sleuthkit/datamodel/HashInfo");
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return NULL;
+    }
 
-    const char *ctest = "123456";
-    jstring s = env->NewStringUTF(ctest);
+    jboolean isCopy;
+    const char *inputHash = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
-    // get methods
-    jmethodID ctor = env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
-    jmethodID addName = env->GetMethodID(clazz, "addName", "(Ljava/lang/String;)V");
-    jmethodID addComment = env->GetMethodID(clazz, "addComment", "(Ljava/lang/String;)V");
+    TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+    if (db != NULL) {
+        // tsk_hdb_lookup_str will also make sure the index struct is setup
+        unsigned long hashId = tsk_hdb_lookup_str(db, inputHash, TSK_HDB_FLAG_QUICK, NULL, NULL);
 
-    // make the object
-    jobject object = env->NewObject(clazz, ctor, s, s, s);
+        if ((hashId > 0) && (db->idx_info->getAllData != NULL)) {
+            // Find the data associated with this hash
+            hdata = (SQliteHashStruct *)(db->idx_info->getAllData(db, hashId));
 
-    // finish populating the object
-    const char *cname = "foo.bar";
-    jstring jname = env->NewStringUTF(cname);
-    env->CallVoidMethod(object, addName, jname);
-    env->CallVoidMethod(object, addName, jname);
+            // Build the Java version of the HashInfo object
+            jclass clazz;
+            clazz = env->FindClass("org/sleuthkit/datamodel/HashInfo");
+            // get methods
+            jmethodID ctor = env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+            jmethodID addName = env->GetMethodID(clazz, "addName", "(Ljava/lang/String;)V");
+            jmethodID addComment = env->GetMethodID(clazz, "addComment", "(Ljava/lang/String;)V");
 
-    const char *ccomment = "The mysterious case";
-    jstring jcomment = env->NewStringUTF(ccomment);
-    env->CallVoidMethod(object, addComment, jcomment);
+            //convert hashes
+            const char *md5 = hdata->hashMd5.c_str();
+            jstring md5j = env->NewStringUTF(md5);
+            
+            const char *sha1 = hdata->hashSha1.c_str();
+            jstring sha1j = env->NewStringUTF(sha1);
+            
+            const char *sha256 = hdata->hashSha2_256.c_str();
+            jstring sha256j = env->NewStringUTF(sha256);
+
+            // make the object
+            object = env->NewObject(clazz, ctor, md5j, sha1j, sha256j);
+
+            // finish populating the object
+            std::vector<std::string>::iterator name_it = hdata->names.begin();
+            for (; name_it != hdata->names.end(); ++name_it) {
+                const char *name = name_it->c_str();
+                jstring namej = env->NewStringUTF(name);
+                env->CallVoidMethod(object, addName, namej);
+            }
+
+            std::vector<std::string>::iterator comment_it = hdata->comments.begin();
+            for (; comment_it != hdata->comments.end(); ++comment_it) {
+                const char *comment = comment_it->c_str();
+                jstring commentj = env->NewStringUTF(comment);
+                env->CallVoidMethod(object, addComment, commentj);
+            }
+
+        }
+    }
+
+    // Cleanup
+    env->ReleaseStringUTFChars(hash, (const char *) inputHash);
+    delete hdata;
 
     return object;
 }

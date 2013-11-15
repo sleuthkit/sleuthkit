@@ -239,6 +239,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             idx_info->finalize = binsrch_finalize;
             idx_info->lookup_str = binsrch_lookup_str;
             idx_info->lookup_raw = binsrch_lookup_raw;
+            idx_info->getAllData = NULL;
             idx_info->get_properties = binsrch_get_properties;
         }
         else {
@@ -286,6 +287,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
         idx_info->finalize = sqlite_v1_finalize;
         idx_info->lookup_str = sqlite_v1_lookup_str;
         idx_info->lookup_raw = sqlite_v1_lookup_raw;
+        idx_info->getAllData = sqlite_v1_getAllData;
         idx_info->get_properties = sqlite_v1_get_properties;
     }
 

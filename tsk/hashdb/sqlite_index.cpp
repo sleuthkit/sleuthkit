@@ -3,7 +3,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2013 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -11,9 +11,11 @@
  */
 
 #include "tsk_hashdb_i.h"
+#include "sqlite_index.h"
+
 
 /**
- * \file sqlite_index.c
+ * \file sqlite_index.cpp
  * Contains functions for creating a SQLite format hash index
  */
 
@@ -745,6 +747,82 @@ lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags
     tsk_release_lock(&hdb_info->lock);
 
 	return ret;
+}
+
+int8_t
+getStrings(TSK_HDB_INFO * hdb_info, const char* selectStmt, std::vector<std::string>& out)
+{
+	int8_t ret = 0;
+    sqlite3_stmt* stmt = NULL;
+    int len = strlen(selectStmt);
+
+    tsk_take_lock(&hdb_info->lock);
+
+    prepare_stmt(selectStmt, &stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+        
+	while (sqlite3_step(stmt) == SQLITE_ROW) {
+		const char* value = (const char *)sqlite3_column_text(stmt, 0);
+        if (value != NULL) {
+            std::string s(value);
+            out.push_back(s);
+        }
+	}
+
+	sqlite3_reset(stmt);
+    
+    if (stmt) {
+        finalize_stmt(stmt);
+    }
+
+    tsk_release_lock(&hdb_info->lock);
+
+	return ret;
+}
+
+/**
+ * \ingroup hashdblib
+ * Search the index for the given hash value given (in string form).
+ *
+ * @param hdb_info Open hash database (with index)
+ * @param hashId   unique id of hash (corresponds to hashes.id)
+ *
+ * @return -1 on error, 0 if hash value not found, and 1 if value was found.
+ */
+void * sqlite_v1_getAllData(TSK_HDB_INFO * hdb_info, unsigned long hashId)
+{
+    SQliteHashStruct * h = new SQliteHashStruct();
+    {
+        std::vector<std::string> temp;
+        char selectStmt[1024];
+        snprintf(selectStmt, 1024, "SELECT md5 from hashes where id=%d", hashId);
+        getStrings(hdb_info, selectStmt,  temp);
+        h->hashMd5 = temp.at(0);
+    }
+    {
+        std::vector<std::string> temp;
+        char selectStmt[1024];
+        snprintf(selectStmt, 1024, "SELECT sha1 from hashes where id=%d", hashId);
+        getStrings(hdb_info, selectStmt,  temp);
+        h->hashSha1 = temp.at(0);
+    }
+    {
+        std::vector<std::string> temp;
+        char selectStmt[1024];
+        snprintf(selectStmt, 1024, "SELECT sha2_256 from hashes where id=%d", hashId);
+        getStrings(hdb_info, selectStmt,  temp);
+        h->hashSha2_256 = temp.at(0);
+    }
+    {
+        char selectStmt[1024];
+        snprintf(selectStmt, 1024, "SELECT name from names where hash_id=%d", hashId);
+        getStrings(hdb_info, selectStmt,  h->names);
+    }
+    {
+        char selectStmt[1024];
+        snprintf(selectStmt, 1024, "SELECT comment from comments where hash_id=%d", hashId);
+        getStrings(hdb_info, selectStmt,  h->comments);
+    }
+    return h;
 }
 
 
