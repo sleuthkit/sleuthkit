@@ -655,7 +655,7 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
     TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
     if (db != NULL) {
         // tsk_hdb_lookup_str will also make sure the index struct is setup
-        unsigned long hashId = tsk_hdb_lookup_str(db, inputHash, TSK_HDB_FLAG_QUICK, NULL, NULL);
+        int64_t hashId = tsk_hdb_lookup_str_id(db, inputHash);
 
         if ((hashId > 0) && (db->idx_info->getAllData != NULL)) {
             // Find the data associated with this hash

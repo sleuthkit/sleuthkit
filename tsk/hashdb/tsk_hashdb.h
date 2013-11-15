@@ -126,6 +126,7 @@ extern "C" {
      */
     struct TSK_IDX_SQLITE_V1 {
 		sqlite3 *hIdx_sqlite;	///< Sqlite DB if index is using sqlite schema
+        int64_t lastId;
     };
     typedef struct TSK_IDX_SQLITE_V1 TSK_IDX_SQLITE_V1;
 
@@ -237,6 +238,8 @@ extern "C" {
     extern int8_t tsk_hdb_lookup_str(TSK_HDB_INFO *, const char *,
         TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
         void *);
+
+    extern int64_t tsk_hdb_lookup_str_id(TSK_HDB_INFO * hdb_info, const char *hash);
 
     extern int8_t tsk_hdb_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash,
         uint8_t len, TSK_HDB_FLAG_ENUM,

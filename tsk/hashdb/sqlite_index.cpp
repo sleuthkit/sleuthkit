@@ -367,6 +367,7 @@ addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset)
     return 0;
 }
 
+
 /**
  * add
  *
@@ -535,6 +536,7 @@ sqlite_v1_lookup_str(TSK_HDB_INFO * hdb_info, const char* hvalue,
                    void *ptr)
 {
     int8_t ret = 0;
+    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = 0;
 
 #ifdef IDX_SQLITE_STORE_TEXT
     ret = lookup_text(hdb_info, hvalue, flags, action, ptr);
@@ -602,9 +604,9 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hvalue, uint8_t len,
 	} else {
 
     	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
-            selectStmt = "SELECT md5,database_offset from hashes where md5=? limit 1";
+            selectStmt = "SELECT md5,database_offset,id from hashes where md5=? limit 1";
         } else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
-            selectStmt = "SELECT sha1,database_offset from hashes where sha1=? limit 1";
+            selectStmt = "SELECT sha1,database_offset,id from hashes where sha1=? limit 1";
         } else {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
@@ -630,6 +632,9 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hvalue, uint8_t len,
                         ///@todo Look up a name in the sqlite db
                         ret = 1;
 		            } else {
+                        // save id
+                        hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_column_int64(stmt, 2);
+
                         // Use offset to get more info
 			            for (i = 0; i < len; i++) {
 				            hashbuf[2 * i] = hex[(hvalue[i] >> 4) & 0xf];
@@ -699,11 +704,11 @@ lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags
 	} else {
     	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
             snprintf(selectStmt, 1024,
-		        "SELECT md5,database_offset from hashes where md5='%s' limit 1",
+		        "SELECT md5,database_offset,id from hashes where md5='%s' limit 1",
                 hvalue);
         } else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
             snprintf(selectStmt, 1024,
-		        "SELECT sha1,database_offset from hashes where sha1='%s' limit 1",
+		        "SELECT sha1,database_offset,id from hashes where sha1='%s' limit 1",
                 hvalue);
         } else {
             tsk_error_reset();
@@ -724,6 +729,9 @@ lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags
                     ///@todo Look up a name in the sqlite db
                     ret = 1;
 		        } else {
+                    // save id
+                    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_column_int64(stmt, 2);
+
                     // Use offset to get more info
 			        offset = sqlite3_column_int64(stmt, 1);
 
