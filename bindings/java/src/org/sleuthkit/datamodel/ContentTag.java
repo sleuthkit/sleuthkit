@@ -39,7 +39,7 @@ public class ContentTag extends Tag {
 		return content;
 	}	
 	
-	public boolean hasByteExtents() {
+	public boolean hasByteExtent() {
 		return (beginByteOffset > 0) && (endByteOffset > 0) && (endByteOffset > beginByteOffset);
 	}
 	
