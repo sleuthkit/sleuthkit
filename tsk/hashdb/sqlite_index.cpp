@@ -625,16 +625,16 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hvalue, uint8_t len,
 	        } else {
                 // Found a match
 	            if (sqlite3_step(stmt) == SQLITE_ROW) {
-		            if ((flags & TSK_HDB_FLAG_QUICK)
+                    // save id
+                    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_column_int64(stmt, 2);
+                    
+                    if ((flags & TSK_HDB_FLAG_QUICK)
 			            || (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
 				        
                         // There is just an index, so no other info to get
                         ///@todo Look up a name in the sqlite db
                         ret = 1;
 		            } else {
-                        // save id
-                        hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_column_int64(stmt, 2);
-
                         // Use offset to get more info
 			            for (i = 0; i < len; i++) {
 				            hashbuf[2 * i] = hex[(hvalue[i] >> 4) & 0xf];
