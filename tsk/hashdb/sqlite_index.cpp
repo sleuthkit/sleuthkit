@@ -804,21 +804,27 @@ void * sqlite_v1_getAllData(TSK_HDB_INFO * hdb_info, unsigned long hashId)
         char selectStmt[1024];
         snprintf(selectStmt, 1024, "SELECT md5 from hashes where id=%d", hashId);
         getStrings(hdb_info, selectStmt,  temp);
-        h->hashMd5 = temp.at(0);
+        if (temp.size() > 0) {
+            h->hashMd5 = temp.at(0);
+        }
     }
     {
         std::vector<std::string> temp;
         char selectStmt[1024];
         snprintf(selectStmt, 1024, "SELECT sha1 from hashes where id=%d", hashId);
         getStrings(hdb_info, selectStmt,  temp);
-        h->hashSha1 = temp.at(0);
+        if (temp.size() > 0) {      
+            h->hashSha1 = temp.at(0);
+        }
     }
     {
         std::vector<std::string> temp;
         char selectStmt[1024];
         snprintf(selectStmt, 1024, "SELECT sha2_256 from hashes where id=%d", hashId);
         getStrings(hdb_info, selectStmt,  temp);
-        h->hashSha2_256 = temp.at(0);
+        if (temp.size() > 0) {
+            h->hashSha2_256 = temp.at(0);
+        }
     }
     {
         char selectStmt[1024];
