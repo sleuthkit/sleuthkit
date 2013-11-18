@@ -128,8 +128,8 @@ extern "C" {
     extern uint8_t binsrch_addentry(TSK_HDB_INFO *, char *, TSK_OFF_T);
     extern uint8_t binsrch_addentry_bin(TSK_HDB_INFO *,
             unsigned char *, int, TSK_OFF_T);
-    extern uint8_t sqlite_v1_addcomment(TSK_HDB_INFO *, char*);
-    extern uint8_t sqlite_v1_addfilename(TSK_HDB_INFO *, char*);
+    extern uint8_t sqlite_v1_addcomment(TSK_HDB_INFO *, char*, int64_t);
+    extern uint8_t sqlite_v1_addfilename(TSK_HDB_INFO *, char*, int64_t);
     extern uint8_t binsrch_finalize(TSK_HDB_INFO *);
     extern int8_t binsrch_lookup_str(TSK_HDB_INFO *, const char *,
                                     TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
