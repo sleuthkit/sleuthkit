@@ -73,35 +73,16 @@ public class HashDbTest extends ImgTraverser {
 	@Test
 	public void testHashDb() {
 		try {
-			// Doesn't matter for hashDB tests
-			//List<Boolean> test = basicTest();
-			//assertEquals("Generated results (" + outputExceptionsPath + ") differ with gold standard (" + goldExceptionsPath + ") .", test.get(0), true);
-			//assertEquals("Generated results (" + outputFilePath + ") differ with gold standard (" + goldFilePath + ") .", test.get(1), true);
-			
             String hashfn = "regtestHash.kdb";
             String md5hash = "2c875b03541ffa970679986b48dca943";
 			String md5hash2 = "48199F51973F317459E80E18DC744B12";
             String md5hash3 = "CB4ACA35F3FD54AACF96DA9CD9ACADB8";			
             String md5hashBad = "35b299c6fcf47ece375b3221bdc16969";
-            
-            // Test Reindexing
-            
-            // Re-index a legacy index (which has a source db)          
-            //String pathLegacy = "testmd5.dat";
-            //("Opening existing idx (legacy) file...");
-            //int handleLegacy = SleuthkitJNI.openHashDatabase(pathLegacy);
-            
-            //("Re-indexing...");
-            //SleuthkitJNI.createLookupIndexForHashDatabase(handleLegacy, true);
-            //File f2 = new File("testmd5.dat.kdb");
-            //assertTrue(Boolean.toString(f2.exists()), Boolean.toString(true));
-
-			// End Test Reindexing
-			
-            //("Opening existing kdb file...");
-            //int handle = SleuthkitJNI.openHashDatabase(hashfn);
-            //("handle = " + handle);
-            
+			String name = "junk.exe";
+			String name2 = "bunk.exe";
+			String com = "The Mysterious Case of Mr. Chunk";
+			String com2 = "The Sinister Case of Capt. Funk";
+			          
             // Make sure we start with a clean slate
 			//java.io.File currdir = new java.io.File(".");
             //java.io.File f = new File(currdir.getAbsolutePath() + java.io.File.separator + hashfn);
@@ -112,24 +93,18 @@ public class HashDbTest extends ImgTraverser {
             //Creating hash db
             int handle = SleuthkitJNI.createHashDatabase(hashfn);
             assertTrue(handle > 0);
-					
-            // hashDatabaseCanBeReindexed?
-            boolean retIndexable = SleuthkitJNI.hashDatabaseCanBeReindexed(handle);
-            assertFalse(retIndexable);
-			
-            // getHashDatabasePath?
-            String retDbpath = SleuthkitJNI.getHashDatabasePath(handle);
+							
+            // Test the get path or name functions            
+			String retDbpath = SleuthkitJNI.getHashDatabasePath(handle);
 			assertFalse(retDbpath.equals("None"));
 
-            // getHashDatabaseIndexPath?
             String retIndexDbpath = SleuthkitJNI.getHashDatabaseIndexPath(handle);
 			assertFalse(retIndexDbpath.equals("None"));
            
+			String dbName = SleuthkitJNI.getHashDatabaseName(handle);
+			assertTrue(dbName.equals(hashfn));
+
 			// Make a little hash set to test with
-			String name = "junk.exe";
-			String name2 = "bunk.exe";
-			String com = "The Mysterious Case of Mr. Chunk";
-			String com2 = "The Sinister Case of Capt. Funk";
 			SleuthkitJNI.addToHashDatabase(null, md5hash, null, null, null, handle);
 			SleuthkitJNI.addToHashDatabase(name, md5hash2, null, null, com, handle); 
 			SleuthkitJNI.addToHashDatabase(name2, md5hash3, null, null, com2, handle);
@@ -168,12 +143,37 @@ public class HashDbTest extends ImgTraverser {
 			assertTrue(nlist2.get(0).equals(name2));
 			assertTrue(clist2.get(0).equals(com2));
 			
-            // hashDatabaseHasLookupIndex?
+            // Test the boolean functions
+            boolean indexable = SleuthkitJNI.hashDatabaseCanBeReindexed(handle);
+            assertFalse(indexable);			
+			
             boolean hasLookup = SleuthkitJNI.hashDatabaseHasLookupIndex(handle);
 			assertTrue(hasLookup);
 			            
+			boolean isUpdateable = SleuthkitJNI.isUpdateableHashDatabase(handle);
+			assertTrue(isUpdateable);
+			
+			boolean hlio = SleuthkitJNI.hashDatabaseHasLegacyLookupIndexOnly(handle);
+			assertFalse(hlio);
+			
 			// Close it out
 			SleuthkitJNI.closeHashDatabase(handle);
+			
+            // Test Reindexing            
+            // Re-index a legacy index (which has a source db)          
+            //String pathLegacy = "testmd5.dat";
+            //("Opening existing idx (legacy) file...");
+            //int handleLegacy = SleuthkitJNI.openHashDatabase(pathLegacy);
+            
+            //("Re-indexing...");
+            //SleuthkitJNI.createLookupIndexForHashDatabase(handleLegacy, true);
+            //File f2 = new File("testmd5.dat.kdb");
+            //assertTrue(Boolean.toString(f2.exists()), Boolean.toString(true));
+	
+            //Test existing kdb file
+            //int handle = SleuthkitJNI.openHashDatabase(hashfn);
+            //("handle = " + handle);			
+			
 
 		} catch (Exception ex) {
 			fail("Error running JNI HashDb test: " + ex.getMessage());
