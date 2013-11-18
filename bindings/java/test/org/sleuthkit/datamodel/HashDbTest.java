@@ -103,41 +103,44 @@ public class HashDbTest extends ImgTraverser {
             //("handle = " + handle);
             
             // Make sure we start with a clean slate
-			java.io.File currdir = new java.io.File(".");
-			 
-            java.io.File f = new File(currdir.getAbsolutePath() + java.io.File.separator + hashfn);
-            //if (f.exists()) {
+			//java.io.File currdir = new java.io.File(".");
+            //java.io.File f = new File(currdir.getAbsolutePath() + java.io.File.separator + hashfn);
+			java.io.File f = new File(hashfn);
 			boolean deleted = f.delete();
 			assertTrue(deleted);
 				
             //Creating hash db
             int handle = SleuthkitJNI.createHashDatabase(hashfn);
-            
-            //hashDatabaseCanBeReindexed?
+            assertTrue(handle > 0);
+					
+            // hashDatabaseCanBeReindexed?
             boolean retIndexable = SleuthkitJNI.hashDatabaseCanBeReindexed(handle);
-            
-            //getHashDatabasePath?
+            assertFalse(retIndexable);
+			
+            // getHashDatabasePath?
             String retDbpath = SleuthkitJNI.getHashDatabasePath(handle);
 			assertFalse(retDbpath.equals("None"));
 
-            //getHashDatabaseIndexPath?
+            // getHashDatabaseIndexPath?
             String retIndexDbpath = SleuthkitJNI.getHashDatabaseIndexPath(handle);
 			assertFalse(retIndexDbpath.equals("None"));
            
+			// Make a little hash set to test with
 			SleuthkitJNI.addToHashDatabase(null, md5hash, null, null, null, handle);
-
 			SleuthkitJNI.addToHashDatabase("junk.exe", md5hash2, null, null, "The Mysterious Case of Mr. Chunk", handle); 
-
 			SleuthkitJNI.addToHashDatabase("bunk.exe", md5hash3, null, null, "The Sinister Case of Capt. Funk", handle);
 			
-            //Querying for known hash " + md5hash
+            // Querying for known hash " + md5hash
             boolean b = SleuthkitJNI.lookupInHashDatabase(md5hash, handle);
+			assertTrue(b);
 
-            //Querying for unknown hash " + md5hashBad
+            // Querying for unknown hash " + md5hashBad
             boolean b2 = SleuthkitJNI.lookupInHashDatabase(md5hashBad, handle);
+			assertFalse(b2);
 
-            //Test: hashDatabaseHasLookupIndex()
+            // hashDatabaseHasLookupIndex?
             boolean hasLookup = SleuthkitJNI.hashDatabaseHasLookupIndex(handle);
+			assertTrue(hasLookup);
 			            
 			// Close it out
 			SleuthkitJNI.closeHashDatabase(handle);
