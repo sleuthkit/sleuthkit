@@ -80,8 +80,8 @@ public class HashDbTest extends ImgTraverser {
 			
             String hashfn = "regtestHash.kdb";
             String md5hash = "2c875b03541ffa970679986b48dca943";
-            String md5hash2 = "cb4aca35f3fd54aacf96da9cd9acadb8";
-			String md5hash3 = "48199F51973F317459E80E18DC744B12";
+			String md5hash2 = "48199F51973F317459E80E18DC744B12";
+            String md5hash3 = "CB4ACA35F3FD54AACF96DA9CD9ACADB8";			
             String md5hashBad = "35b299c6fcf47ece375b3221bdc16969";
             
             // Test Reindexing
@@ -126,18 +126,48 @@ public class HashDbTest extends ImgTraverser {
 			assertFalse(retIndexDbpath.equals("None"));
            
 			// Make a little hash set to test with
+			String name = "junk.exe";
+			String name2 = "bunk.exe";
+			String com = "The Mysterious Case of Mr. Chunk";
+			String com2 = "The Sinister Case of Capt. Funk";
 			SleuthkitJNI.addToHashDatabase(null, md5hash, null, null, null, handle);
-			SleuthkitJNI.addToHashDatabase("junk.exe", md5hash2, null, null, "The Mysterious Case of Mr. Chunk", handle); 
-			SleuthkitJNI.addToHashDatabase("bunk.exe", md5hash3, null, null, "The Sinister Case of Capt. Funk", handle);
+			SleuthkitJNI.addToHashDatabase(name, md5hash2, null, null, com, handle); 
+			SleuthkitJNI.addToHashDatabase(name2, md5hash3, null, null, com2, handle);
 			
-            // Querying for known hash " + md5hash
+            // Querying for known hash
             boolean b = SleuthkitJNI.lookupInHashDatabase(md5hash, handle);
 			assertTrue(b);
 
-            // Querying for unknown hash " + md5hashBad
+            // Querying for unknown hash
             boolean b2 = SleuthkitJNI.lookupInHashDatabase(md5hashBad, handle);
 			assertFalse(b2);
 
+			// Getting full hash info
+            HashInfo h = SleuthkitJNI.lookupInHashDatabaseVerbose(md5hash2, handle);  
+			ArrayList<String> nlist = h.getNames();
+			ArrayList<String> clist = h.getComments();
+			
+			//assertTrue(h.getHashMd5().equals(md5hash2));
+			assertTrue(h.getHashSha1().equals(""));
+			assertTrue(h.getHashSha256().equals(""));
+			assertTrue(nlist.size() > 0);
+			assertTrue(clist.size() > 0);
+			assertTrue(nlist.get(0).equals(name));
+			assertTrue(clist.get(0).equals(com));
+				
+			// Getting full hash info (for another hash)
+            HashInfo h2 = SleuthkitJNI.lookupInHashDatabaseVerbose(md5hash3, handle);
+			ArrayList<String> nlist2 = h2.getNames();
+			ArrayList<String> clist2 = h2.getComments();
+			
+			//assertTrue(h.getHashMd5().equals(md5hash2));
+			assertTrue(h2.getHashSha1().equals(""));
+			assertTrue(h2.getHashSha256().equals(""));
+			assertTrue(nlist2.size() > 0);
+			assertTrue(clist2.size() > 0);
+			assertTrue(nlist2.get(0).equals(name2));
+			assertTrue(clist2.get(0).equals(com2));
+			
             // hashDatabaseHasLookupIndex?
             boolean hasLookup = SleuthkitJNI.hashDatabaseHasLookupIndex(handle);
 			assertTrue(hasLookup);
