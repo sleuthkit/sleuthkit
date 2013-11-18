@@ -338,11 +338,11 @@ JNIEXPORT jint JNICALL
         retval = 1;
     } else {
         jboolean isCopy;
-        const char * name = (const char *) env->GetStringUTFChars(filenameJ, &isCopy);
-        const char * md5 = (const char *) env->GetStringUTFChars(hashMd5J, &isCopy);
-        const char * sha1 = (const char *) env->GetStringUTFChars(hashSha1J, &isCopy);
-        const char * sha256 = (const char *) env->GetStringUTFChars(hashSha256J, &isCopy);
-        const char * comment = (const char *) env->GetStringUTFChars(commentJ, &isCopy);
+        const char * name = filenameJ ? (const char *) env->GetStringUTFChars(filenameJ, &isCopy) : NULL;
+        const char * md5 = hashMd5J ? (const char *) env->GetStringUTFChars(hashMd5J, &isCopy) : NULL;
+        const char * sha1 = hashSha1J ? (const char *) env->GetStringUTFChars(hashSha1J, &isCopy) : NULL;
+        const char * sha256 = hashSha256J ? (const char *) env->GetStringUTFChars(hashSha256J, &isCopy) : NULL;
+        const char * comment = commentJ ? (const char *) env->GetStringUTFChars(commentJ, &isCopy) : NULL;
    
         //TSK_TCHAR filenameT[1024];
         //toTCHAR(env, filenameT, 1024, filenameJ);
@@ -357,11 +357,21 @@ JNIEXPORT jint JNICALL
             }
         }
 
-        env->ReleaseStringUTFChars(filenameJ, (const char *) name);
-        env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
-        env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
-        env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
-        env->ReleaseStringUTFChars(commentJ, (const char *) comment);
+        if (filenameJ) {
+            env->ReleaseStringUTFChars(filenameJ, (const char *) name);
+        }
+        if (hashMd5J) { 
+            env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
+        }
+        if (hashSha1J) {
+            env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
+        }
+        if (hashSha256J) {
+            env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
+        }
+        if (commentJ) {
+            env->ReleaseStringUTFChars(commentJ, (const char *) comment);
+        }
     }
 
     return retval;
