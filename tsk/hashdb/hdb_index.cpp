@@ -745,13 +745,15 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
                 const char * sha256,
                 const char * comment)
 {
+    int8_t ret = 0;
+
     if(hdb_info == NULL) {
         tsk_error_set_errstr2("tsk_hdb_add_str: null hdb_info");
-        return 1;
+        ret = 1; //error
     } else {
         uint8_t htype = TSK_HDB_HTYPE_MD5_ID;
         if (hdb_setupindex(hdb_info, htype, 0)) {
-            return 1;
+            return 1; //error
         }
 
         if(hdb_info->idx_info->updateable == 1) {
@@ -759,14 +761,14 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
             char * hvalue = (char *)md5;
             if (hvalue == NULL) {
                 tsk_error_set_errstr2("tsk_hdb_add_str: no hash value(s) provided");
-                return 1;
+                return 1; //error
             }
 
             // @todo Could set up a polymorphic mechanism like with finalize() but
             // we know it's going to be sqlite in this function.
             if (sqlite_v1_begin(hdb_info) == 1) {
                 tsk_error_set_errstr2("tsk_hdb_add_str: sqlite_v1_begin failed");
-                return 1;
+                return 1; //error
             }
 
             // Attempt to add a new row to the hash index
@@ -775,16 +777,20 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_WRITE);
                 tsk_error_set_errstr("tsk_hdb_add_str: adding entry failed");
-                return 1;            
+                return 1; //error
             }
 
             // Add name and comment
-            if ((filename != NULL) && (hdb_info->idx_info->addfilename != NULL)) {
-                hdb_info->idx_info->addfilename(hdb_info, (char *)filename);
-            }
+            if (hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId != 0) {
+                if ((filename != NULL) && (hdb_info->idx_info->addfilename != NULL)) {
+                    hdb_info->idx_info->addfilename(hdb_info, (char *)filename, hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId);
+                }
 
-            if ((comment != NULL) && (hdb_info->idx_info->addcomment != NULL)) {
-                hdb_info->idx_info->addcomment(hdb_info, (char *)comment);
+                if ((comment != NULL) && (hdb_info->idx_info->addcomment != NULL)) {
+                    hdb_info->idx_info->addcomment(hdb_info, (char *)comment, hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId);
+                }
+            } else {
+                ret = 1; //error
             }
 
             // Close the index
@@ -792,14 +798,14 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_WRITE);
                 tsk_error_set_errstr("tsk_hdb_add_str: finalizing index failed");
-                return 1;
+                ret = 1; //error
             }  
-            return 0;
             
         } else {
-            return -1;
+            ret = -1; //not updateable
         }
     }
+    return ret;
 }
 
 /**

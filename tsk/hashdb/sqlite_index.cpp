@@ -249,6 +249,8 @@ uint8_t
 sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char* hvalue,
                     TSK_OFF_T offset)
 {
+    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = 0;
+
 	if (strlen(hvalue) != hdb_info->hash_len) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -277,7 +279,12 @@ sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char* hvalue,
     delete [] hash;
 #endif
 
-	return ret;
+    if (ret == 0) {
+        // The current id can be used by subsequent add name or add comment operations
+	    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_last_insert_rowid(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+    }
+
+    return ret;
 }
 
 /**
@@ -369,17 +376,14 @@ addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset)
 
 
 /**
- * add
+ * Add new comment (e.g. the case name)
  *
  * @param hdb_info Hash database state info structure.
  * @return 1 on error and 0 on success
  */
 uint8_t
-sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value)
+sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
 {
-    // In the next iteration we might want to actually search for the row id
-    sqlite3_int64 id = sqlite3_last_insert_rowid(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
-
     if (id == 0) {
         return 1;
     }
@@ -395,24 +399,21 @@ sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value)
 
 
 /**
- * add
+ * Add new name (e.g. a filename associated with a hash)
  *
  * @param hdb_info Hash database state info structure.
  * @return 1 on error and 0 on success
  */
 uint8_t
-sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value)
+sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
 {
-    // In the next iteration we might want to actually search for the row id
-    sqlite3_int64 id = sqlite3_last_insert_rowid(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
-
     if (id == 0) {
         return 1;
     }
 
     char stmt[1024];
 	snprintf(stmt, 1024,
-		"INSERT INTO names (name, hash_id) VALUES ('%s', '%d');",	value, id);
+		"INSERT INTO names (name, hash_id) VALUES ('%s', '%d');", value, id);
 	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 		return 1;
 	}
@@ -722,16 +723,16 @@ lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags
         
             // Found a match
 	        if (sqlite3_step(stmt) == SQLITE_ROW) {
-		        if ((flags & TSK_HDB_FLAG_QUICK)
+                // save id
+                hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_column_int64(stmt, 2);
+
+                if ((flags & TSK_HDB_FLAG_QUICK)
 			        || (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
 				        
                     // There is just an index, so no other info to get
                     ///@todo Look up a name in the sqlite db
                     ret = 1;
 		        } else {
-                    // save id
-                    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_column_int64(stmt, 2);
-
                     // Use offset to get more info
 			        offset = sqlite3_column_int64(stmt, 1);
 

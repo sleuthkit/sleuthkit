@@ -162,8 +162,8 @@ extern "C" {
         uint8_t(*initialize) (TSK_HDB_INFO *, TSK_TCHAR *);
         uint8_t(*addentry) (TSK_HDB_INFO *, char *, TSK_OFF_T);
         uint8_t(*addentry_bin) (TSK_HDB_INFO *, unsigned char *, int, TSK_OFF_T);
-        uint8_t(*addcomment) (TSK_HDB_INFO *, char *);
-        uint8_t(*addfilename) (TSK_HDB_INFO *, char *);
+        uint8_t(*addcomment) (TSK_HDB_INFO *, char *, int64_t);
+        uint8_t(*addfilename) (TSK_HDB_INFO *, char *, int64_t);
         uint8_t(*finalize) (TSK_HDB_INFO *);
         int8_t(*lookup_str) (TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM,
                 TSK_HDB_LOOKUP_FN, void *);
