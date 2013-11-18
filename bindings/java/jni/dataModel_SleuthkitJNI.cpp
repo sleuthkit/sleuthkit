@@ -10,6 +10,7 @@
  */
 #include "tsk/tsk_tools_i.h"
 #include "tsk/auto/tsk_case_db.h"
+#include "sqlite_index.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
@@ -327,7 +328,8 @@ JNIEXPORT jint JNICALL
  */
 JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbAddRecordNat(JNIEnv * env,
-    jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J, jint dbHandle)
+    jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J,
+    jstring commentJ, jint dbHandle)
 {
     int8_t retval = 0;
 
@@ -336,26 +338,40 @@ JNIEXPORT jint JNICALL
         retval = 1;
     } else {
         jboolean isCopy;
-        const char *md5 = (const char *) env->GetStringUTFChars(hashMd5J, &isCopy);
-        const char *sha1 = (const char *) env->GetStringUTFChars(hashSha1J, &isCopy);
-        const char *sha256 = (const char *) env->GetStringUTFChars(hashSha256J, &isCopy);
+        const char * name = filenameJ ? (const char *) env->GetStringUTFChars(filenameJ, &isCopy) : NULL;
+        const char * md5 = hashMd5J ? (const char *) env->GetStringUTFChars(hashMd5J, &isCopy) : NULL;
+        const char * sha1 = hashSha1J ? (const char *) env->GetStringUTFChars(hashSha1J, &isCopy) : NULL;
+        const char * sha256 = hashSha256J ? (const char *) env->GetStringUTFChars(hashSha256J, &isCopy) : NULL;
+        const char * comment = commentJ ? (const char *) env->GetStringUTFChars(commentJ, &isCopy) : NULL;
    
-        TSK_TCHAR filenameT[1024];
-        toTCHAR(env, filenameT, 1024, filenameJ);
+        //TSK_TCHAR filenameT[1024];
+        //toTCHAR(env, filenameT, 1024, filenameJ);
 
         TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
 
         if(db != NULL) {
-            retval = tsk_hdb_add_str(db, filenameT, md5, sha1, sha256);
+            retval = tsk_hdb_add_str(db, name, md5, sha1, sha256, comment);
 
             if (retval == 1) {
                 setThrowTskCoreError(env);
             }
         }
 
-        env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
-        env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
-        env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
+        if (filenameJ) {
+            env->ReleaseStringUTFChars(filenameJ, (const char *) name);
+        }
+        if (hashMd5J) { 
+            env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
+        }
+        if (hashSha1J) {
+            env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
+        }
+        if (hashSha256J) {
+            env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
+        }
+        if (commentJ) {
+            env->ReleaseStringUTFChars(commentJ, (const char *) comment);
+        }
     }
 
     return retval;
@@ -610,8 +626,8 @@ JNIEXPORT void JNICALL
  * Method:    hashDbLookup
  * Signature: (Ljava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
-(JNIEnv * env, jclass obj, jstring hash, jint dbHandle){
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
+(JNIEnv * env, jclass obj, jstring hash, jint dbHandle) {
 
     if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
@@ -622,8 +638,8 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 
     const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
-    TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
-
+    //TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
+    jboolean file_known = false;
     
 
     TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
@@ -634,13 +650,87 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
         if (retval == -1) {
             setThrowTskCoreError(env);
         } else if (retval) {
-            file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
+            //file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
+            file_known = true;
         }
     }
 
     env->ReleaseStringUTFChars(hash, (const char *) md5);
 
     return (int) file_known;
+}
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    hashDbLookupVerbose
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookupVerbose
+(JNIEnv * env, jclass obj, jstring hash, jint dbHandle) {
+    jobject object = NULL;
+    SQliteHashStruct * hdata = NULL;
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return NULL;
+    }
+
+    jboolean isCopy;
+    const char *inputHash = (const char *) env->GetStringUTFChars(hash, &isCopy);
+
+    TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+    if (db != NULL) {
+        // tsk_hdb_lookup_str will also make sure the index struct is setup
+        int64_t hashId = tsk_hdb_lookup_str_id(db, inputHash);
+
+        if ((hashId > 0) && (db->idx_info->getAllData != NULL)) {
+            // Find the data associated with this hash
+            hdata = (SQliteHashStruct *)(db->idx_info->getAllData(db, hashId));
+
+            // Build the Java version of the HashInfo object
+            jclass clazz;
+            clazz = env->FindClass("org/sleuthkit/datamodel/HashInfo");
+            // get methods
+            jmethodID ctor = env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+            jmethodID addName = env->GetMethodID(clazz, "addName", "(Ljava/lang/String;)V");
+            jmethodID addComment = env->GetMethodID(clazz, "addComment", "(Ljava/lang/String;)V");
+
+            //convert hashes
+            const char *md5 = hdata->hashMd5.c_str();
+            jstring md5j = env->NewStringUTF(md5);
+            
+            const char *sha1 = hdata->hashSha1.c_str();
+            jstring sha1j = env->NewStringUTF(sha1);
+            
+            const char *sha256 = hdata->hashSha2_256.c_str();
+            jstring sha256j = env->NewStringUTF(sha256);
+
+            // make the object
+            object = env->NewObject(clazz, ctor, md5j, sha1j, sha256j);
+
+            // finish populating the object
+            std::vector<std::string>::iterator name_it = hdata->names.begin();
+            for (; name_it != hdata->names.end(); ++name_it) {
+                const char *name = name_it->c_str();
+                jstring namej = env->NewStringUTF(name);
+                env->CallVoidMethod(object, addName, namej);
+            }
+
+            std::vector<std::string>::iterator comment_it = hdata->comments.begin();
+            for (; comment_it != hdata->comments.end(); ++comment_it) {
+                const char *comment = comment_it->c_str();
+                jstring commentj = env->NewStringUTF(comment);
+                env->CallVoidMethod(object, addComment, commentj);
+            }
+
+        }
+    }
+
+    // Cleanup
+    env->ReleaseStringUTFChars(hash, (const char *) inputHash);
+    delete hdata;
+
+    return object;
 }
 
 /*

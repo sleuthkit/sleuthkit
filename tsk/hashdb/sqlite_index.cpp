@@ -3,7 +3,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2013 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -11,9 +11,11 @@
  */
 
 #include "tsk_hashdb_i.h"
+#include "sqlite_index.h"
+
 
 /**
- * \file sqlite_index.c
+ * \file sqlite_index.cpp
  * Contains functions for creating a SQLite format hash index
  */
 
@@ -223,6 +225,13 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 			return 1;
 	}
 
+    // The comments table enables the user to optionally map one or many arbitrary strings to each hash.
+	if (attempt_exec_nocallback
+		("CREATE TABLE comments (comment TEXT, hash_id INTEGER);",
+		"Error creating comments table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+			return 1;
+	}
+
     need_SQL_index = true;
 
 	return sqlite_v1_begin(hdb_info);
@@ -358,6 +367,58 @@ addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset)
     return 0;
 }
 
+
+/**
+ * add
+ *
+ * @param hdb_info Hash database state info structure.
+ * @return 1 on error and 0 on success
+ */
+uint8_t
+sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value)
+{
+    // In the next iteration we might want to actually search for the row id
+    sqlite3_int64 id = sqlite3_last_insert_rowid(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+
+    if (id == 0) {
+        return 1;
+    }
+
+    char stmt[1024];
+	snprintf(stmt, 1024,
+		"INSERT INTO comments (comment, hash_id) VALUES ('%s', '%d');",	value, id);
+	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		return 1;
+	}
+    return 0;
+}
+
+
+/**
+ * add
+ *
+ * @param hdb_info Hash database state info structure.
+ * @return 1 on error and 0 on success
+ */
+uint8_t
+sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value)
+{
+    // In the next iteration we might want to actually search for the row id
+    sqlite3_int64 id = sqlite3_last_insert_rowid(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+
+    if (id == 0) {
+        return 1;
+    }
+
+    char stmt[1024];
+	snprintf(stmt, 1024,
+		"INSERT INTO names (name, hash_id) VALUES ('%s', '%d');",	value, id);
+	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		return 1;
+	}
+    return 0;
+}
+
 /**
  * Finalize index creation process
  *
@@ -475,6 +536,7 @@ sqlite_v1_lookup_str(TSK_HDB_INFO * hdb_info, const char* hvalue,
                    void *ptr)
 {
     int8_t ret = 0;
+    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = 0;
 
 #ifdef IDX_SQLITE_STORE_TEXT
     ret = lookup_text(hdb_info, hvalue, flags, action, ptr);
@@ -542,9 +604,9 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hvalue, uint8_t len,
 	} else {
 
     	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
-            selectStmt = "SELECT md5,database_offset from hashes where md5=? limit 1";
+            selectStmt = "SELECT md5,database_offset,id from hashes where md5=? limit 1";
         } else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
-            selectStmt = "SELECT sha1,database_offset from hashes where sha1=? limit 1";
+            selectStmt = "SELECT sha1,database_offset,id from hashes where sha1=? limit 1";
         } else {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
@@ -563,7 +625,10 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hvalue, uint8_t len,
 	        } else {
                 // Found a match
 	            if (sqlite3_step(stmt) == SQLITE_ROW) {
-		            if ((flags & TSK_HDB_FLAG_QUICK)
+                    // save id
+                    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_column_int64(stmt, 2);
+                    
+                    if ((flags & TSK_HDB_FLAG_QUICK)
 			            || (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
 				        
                         // There is just an index, so no other info to get
@@ -639,11 +704,11 @@ lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags
 	} else {
     	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
             snprintf(selectStmt, 1024,
-		        "SELECT md5,database_offset from hashes where md5='%s' limit 1",
+		        "SELECT md5,database_offset,id from hashes where md5='%s' limit 1",
                 hvalue);
         } else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
             snprintf(selectStmt, 1024,
-		        "SELECT sha1,database_offset from hashes where sha1='%s' limit 1",
+		        "SELECT sha1,database_offset,id from hashes where sha1='%s' limit 1",
                 hvalue);
         } else {
             tsk_error_reset();
@@ -664,6 +729,9 @@ lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags
                     ///@todo Look up a name in the sqlite db
                     ret = 1;
 		        } else {
+                    // save id
+                    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_column_int64(stmt, 2);
+
                     // Use offset to get more info
 			        offset = sqlite3_column_int64(stmt, 1);
 
@@ -687,6 +755,88 @@ lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags
     tsk_release_lock(&hdb_info->lock);
 
 	return ret;
+}
+
+int8_t
+getStrings(TSK_HDB_INFO * hdb_info, const char* selectStmt, std::vector<std::string>& out)
+{
+	int8_t ret = 0;
+    sqlite3_stmt* stmt = NULL;
+    int len = strlen(selectStmt);
+
+    tsk_take_lock(&hdb_info->lock);
+
+    prepare_stmt(selectStmt, &stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+        
+	while (sqlite3_step(stmt) == SQLITE_ROW) {
+		const char* value = (const char *)sqlite3_column_text(stmt, 0);
+        if (value != NULL) {
+            std::string s(value);
+            out.push_back(s);
+        }
+	}
+
+	sqlite3_reset(stmt);
+    
+    if (stmt) {
+        finalize_stmt(stmt);
+    }
+
+    tsk_release_lock(&hdb_info->lock);
+
+	return ret;
+}
+
+/**
+ * \ingroup hashdblib
+ * Search the index for the given hash value given (in string form).
+ *
+ * @param hdb_info Open hash database (with index)
+ * @param hashId   unique id of hash (corresponds to hashes.id)
+ *
+ * @return -1 on error, 0 if hash value not found, and 1 if value was found.
+ */
+void * sqlite_v1_getAllData(TSK_HDB_INFO * hdb_info, unsigned long hashId)
+{
+    SQliteHashStruct * h = new SQliteHashStruct();
+    {
+        std::vector<std::string> temp;
+        char selectStmt[1024];
+        snprintf(selectStmt, 1024, "SELECT md5 from hashes where id=%d", hashId);
+        getStrings(hdb_info, selectStmt,  temp);
+        if (temp.size() > 0) {
+            h->hashMd5 = temp.at(0);
+        }
+    }
+    {
+        std::vector<std::string> temp;
+        char selectStmt[1024];
+        snprintf(selectStmt, 1024, "SELECT sha1 from hashes where id=%d", hashId);
+        getStrings(hdb_info, selectStmt,  temp);
+        if (temp.size() > 0) {      
+            h->hashSha1 = temp.at(0);
+        }
+    }
+    {
+        std::vector<std::string> temp;
+        char selectStmt[1024];
+        snprintf(selectStmt, 1024, "SELECT sha2_256 from hashes where id=%d", hashId);
+        getStrings(hdb_info, selectStmt,  temp);
+        if (temp.size() > 0) {
+            h->hashSha2_256 = temp.at(0);
+        }
+    }
+    {
+        char selectStmt[1024];
+        snprintf(selectStmt, 1024, "SELECT name from names where hash_id=%d", hashId);
+        getStrings(hdb_info, selectStmt,  h->names);
+    }
+    {
+        char selectStmt[1024];
+        snprintf(selectStmt, 1024, "SELECT comment from comments where hash_id=%d", hashId);
+        getStrings(hdb_info, selectStmt,  h->comments);
+    }
+    return h;
 }
 
 

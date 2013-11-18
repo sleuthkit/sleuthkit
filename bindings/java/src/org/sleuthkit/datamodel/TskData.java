@@ -634,7 +634,7 @@ public class TskData {
 	 * FileKnown status
 	 */
 	public enum FileKnown {
-		UKNOWN(0, "unknown"), ///< File marked as unknown by hash db
+		UNKNOWN(0, "unknown"), ///< File marked as unknown by hash db
 		KNOWN(1, "known"),  ///< File marked as a known by hash db
 		BAD(2, "known bad"); ///< File marked as known and bad/notable/interesting by hash db
 		

@@ -126,6 +126,7 @@ extern "C" {
      */
     struct TSK_IDX_SQLITE_V1 {
 		sqlite3 *hIdx_sqlite;	///< Sqlite DB if index is using sqlite schema
+        int64_t lastId;
     };
     typedef struct TSK_IDX_SQLITE_V1 TSK_IDX_SQLITE_V1;
 
@@ -161,11 +162,14 @@ extern "C" {
         uint8_t(*initialize) (TSK_HDB_INFO *, TSK_TCHAR *);
         uint8_t(*addentry) (TSK_HDB_INFO *, char *, TSK_OFF_T);
         uint8_t(*addentry_bin) (TSK_HDB_INFO *, unsigned char *, int, TSK_OFF_T);
+        uint8_t(*addcomment) (TSK_HDB_INFO *, char *);
+        uint8_t(*addfilename) (TSK_HDB_INFO *, char *);
         uint8_t(*finalize) (TSK_HDB_INFO *);
         int8_t(*lookup_str) (TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM,
                 TSK_HDB_LOOKUP_FN, void *);
         int8_t(*lookup_raw) (TSK_HDB_INFO *, uint8_t *, uint8_t,
                 TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+        void* (*getAllData)(TSK_HDB_INFO *, unsigned long);
         int8_t(*get_properties) (TSK_HDB_INFO *);        
         void(*close) (TSK_IDX_INFO *);
 
@@ -225,14 +229,17 @@ extern "C" {
     extern TSK_HDB_INFO * tsk_hdb_new(TSK_TCHAR * db_file);
 
     extern int8_t tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
-                        const TSK_TCHAR * filename, 
+                        const char * filename, 
                         const char * md5, 
                         const char * sha1, 
-                        const char * sha256);
+                        const char * sha256,
+                        const char * comment);
 
     extern int8_t tsk_hdb_lookup_str(TSK_HDB_INFO *, const char *,
         TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
         void *);
+
+    extern int64_t tsk_hdb_lookup_str_id(TSK_HDB_INFO * hdb_info, const char *hash);
 
     extern int8_t tsk_hdb_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash,
         uint8_t len, TSK_HDB_FLAG_ENUM,
