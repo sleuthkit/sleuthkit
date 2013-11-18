@@ -357,11 +357,21 @@ JNIEXPORT jint JNICALL
             }
         }
 
-        env->ReleaseStringUTFChars(filenameJ, (const char *) name);
-        env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
-        env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
-        env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
-        env->ReleaseStringUTFChars(commentJ, (const char *) comment);
+        if (filenameJ) {
+            env->ReleaseStringUTFChars(filenameJ, (const char *) name);
+        }
+        if (hashMd5J) { 
+            env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
+        }
+        if (hashSha1J) {
+            env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
+        }
+        if (hashSha256J) {
+            env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
+        }
+        if (commentJ) {
+            env->ReleaseStringUTFChars(commentJ, (const char *) comment);
+        }
     }
 
     return retval;
