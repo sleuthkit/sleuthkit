@@ -57,7 +57,7 @@ extern "C" {
 #define TSK_HDB_HTYPE_SHA1_LEN 40       ///< Length of SHA1 hash
 #define TSK_HDB_HTYPE_MD5_LEN 32        ///< Length of MD5 hash
 #define TSK_HDB_HTYPE_CRC32_LEN 8       ///< Length of CRC hash
-
+#define TSK_HDB_MAX_BINHASH_LEN 32      ///< Half the length of biggest hash
 
     /**
     * Return the name of the hash algorithm, given its ID

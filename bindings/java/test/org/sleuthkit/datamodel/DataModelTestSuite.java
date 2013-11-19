@@ -42,7 +42,7 @@ import org.junit.runners.Suite;
  * The default ant target sets properties for the various folders. 
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class, org.sleuthkit.datamodel.SequentialTraversal.class, org.sleuthkit.datamodel.CrossCompare.class, org.sleuthkit.datamodel.BottomUpTest.class, org.sleuthkit.datamodel.CPPtoJavaCompare.class})
+@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class, org.sleuthkit.datamodel.SequentialTraversal.class, org.sleuthkit.datamodel.CrossCompare.class, org.sleuthkit.datamodel.BottomUpTest.class, org.sleuthkit.datamodel.CPPtoJavaCompare.class, org.sleuthkit.datamodel.HashDbTest.class})
 public class DataModelTestSuite {
 
 	static final String TEST_IMAGE_DIR_NAME = "test" + java.io.File.separator + "Input";
@@ -51,6 +51,7 @@ public class DataModelTestSuite {
 	static final String RSLT = "rslt";
 	static final String SEQ = "_Seq";
 	static final String TD = "_TD";
+	static final String HASH = "_Hash";
 	static final String BTTMUP = "_BU";	// update .gitignore if this changes
 	static final String EX = "_Exc";
 	static final String TST = "types";
