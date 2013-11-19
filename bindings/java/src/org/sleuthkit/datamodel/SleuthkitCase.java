@@ -194,6 +194,12 @@ public class SleuthkitCase {
 		statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)");
 		statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)");
 		statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
+
+        // add columns for existing tables
+        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
+        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN md5 TEXT;");
+        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN display_name TEXT;");
+        statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN display_name TEXT;");
 		
 		// Make the prepared statements available for use in migrating legacy data.
 		initStatements();
