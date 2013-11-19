@@ -596,7 +596,7 @@ uint32_t TskDbSqlite::hash(const unsigned char *str) {
     uint32_t hash = 5381;
     int c;
 
-    while (c = *str++) {
+    while ((c = *str++)) {
         // skip slashes -> normalizes leading/ending/double slashes
         if (c == '/')
             continue;

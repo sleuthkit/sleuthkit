@@ -236,7 +236,7 @@ class TskDbSqlite {
     
     void storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId);
     int64_t findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId);
-    uint32_t TskDbSqlite::hash(const unsigned char *str);
+    uint32_t hash(const unsigned char *str);
     sqlite3 *m_db;
     TSK_TCHAR m_dbFilePath[1024];
     char m_dbFilePathUtf8[1024];
