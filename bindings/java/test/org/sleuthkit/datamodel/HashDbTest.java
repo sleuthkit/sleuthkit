@@ -35,10 +35,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Tests that we get all of the results by directly requesting a specific
- * object.  Basic concept of test is to sequentially request objects, starting
- * at 1.  Details of each object are printed and results are compared with
- * gold standard. 
+ * Tests TSK SQLite HashDb functionality
  */
 @RunWith(Parameterized.class)
 public class HashDbTest extends ImgTraverser {
@@ -88,7 +85,7 @@ public class HashDbTest extends ImgTraverser {
             //java.io.File f = new File(currdir.getAbsolutePath() + java.io.File.separator + hashfn);
 			java.io.File f = new File(hashfn);
 			boolean deleted = f.delete();
-			assertTrue(deleted);
+			assertTrue("Delete old file", deleted);
 				
             //Creating hash db
             int handle = SleuthkitJNI.createHashDatabase(hashfn);
@@ -117,31 +114,31 @@ public class HashDbTest extends ImgTraverser {
             boolean b2 = SleuthkitJNI.lookupInHashDatabase(md5hashBad, handle);
 			assertFalse(b2);
 
-			// Getting full hash info
+			// Getting full hash info (we only do md5 for now)
             HashInfo h = SleuthkitJNI.lookupInHashDatabaseVerbose(md5hash2, handle);  
 			ArrayList<String> nlist = h.getNames();
 			ArrayList<String> clist = h.getComments();
 			
-			//assertTrue(h.getHashMd5().equals(md5hash2));
-			assertTrue(h.getHashSha1().equals(""));
-			assertTrue(h.getHashSha256().equals(""));
+			assertEquals(md5hash2.toLowerCase(), h.getHashMd5().toLowerCase());
+			assertEquals("", h.getHashSha1());
+			assertEquals("", h.getHashSha256());
 			assertTrue(nlist.size() > 0);
 			assertTrue(clist.size() > 0);
-			assertTrue(nlist.get(0).equals(name));
-			assertTrue(clist.get(0).equals(com));
+			assertEquals(name, nlist.get(0));
+			assertEquals(com, clist.get(0));
 				
 			// Getting full hash info (for another hash)
             HashInfo h2 = SleuthkitJNI.lookupInHashDatabaseVerbose(md5hash3, handle);
 			ArrayList<String> nlist2 = h2.getNames();
 			ArrayList<String> clist2 = h2.getComments();
 			
-			//assertTrue(h.getHashMd5().equals(md5hash2));
-			assertTrue(h2.getHashSha1().equals(""));
-			assertTrue(h2.getHashSha256().equals(""));
+			assertEquals(md5hash3.toLowerCase(), h2.getHashMd5().toLowerCase());
+			assertEquals("", h2.getHashSha1());
+			assertEquals("", h2.getHashSha256());
 			assertTrue(nlist2.size() > 0);
 			assertTrue(clist2.size() > 0);
-			assertTrue(nlist2.get(0).equals(name2));
-			assertTrue(clist2.get(0).equals(com2));
+			assertEquals(name2, nlist2.get(0));
+			assertEquals(com2, clist2.get(0));
 			
             // Test the boolean functions
             boolean indexable = SleuthkitJNI.hashDatabaseCanBeReindexed(handle);
@@ -168,7 +165,7 @@ public class HashDbTest extends ImgTraverser {
             //("Re-indexing...");
             //SleuthkitJNI.createLookupIndexForHashDatabase(handleLegacy, true);
             //File f2 = new File("testmd5.dat.kdb");
-            //assertTrue(Boolean.toString(f2.exists()), Boolean.toString(true));
+            //assertTrue(f2.exists());
 	
             //Test existing kdb file
             //int handle = SleuthkitJNI.openHashDatabase(hashfn);
