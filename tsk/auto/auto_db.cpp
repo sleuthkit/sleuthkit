@@ -194,7 +194,7 @@ uint8_t
 TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
 {
    string md5 = "";
-if HAVE_LIBEWF
+#if HAVE_LIBEWF 
    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
      // @@@ This shoudl really probably be inside of a tsk_img_ method
        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)m_img_info;
@@ -202,7 +202,7 @@ if HAVE_LIBEWF
            md5 = ewf_info->md5hash;
        }
    }
-endif
+#endif
 
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
           m_curImgId, m_curImgTZone, m_img_info->size, md5)) {
