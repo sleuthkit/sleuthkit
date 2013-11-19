@@ -62,7 +62,7 @@ extern "C" {
  */
 #define IDX_SCHEMA_VER "Schema Version"
 #define IDX_VERSION_NUM "1"
-#define IDX_HASHSET_NAME "Hashset Name"
+#define IDX_HASHSET_NAME "Hashset Filename"
 #define IDX_HASHSET_TYPE "Hashset Type"
 #define IDX_HASHSET_UPDATEABLE "Updateable"
 #define IDX_BINSRCH_HEADER "0000000000000000"
