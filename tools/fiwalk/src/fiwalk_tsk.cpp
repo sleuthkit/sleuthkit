@@ -247,8 +247,8 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     {
         /* fs_file->meta */
         file_info("filesize",fs_file->meta->size);
-        if(fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc",1);
-        if(fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) file_info("unalloc",1);
+        if(fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc_inode",1);
+        if(fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) file_info("alloc_inode",0);
         if(fs_file->meta->flags & TSK_FS_META_FLAG_USED)    file_info("used",1);
         if(fs_file->meta->flags & TSK_FS_META_FLAG_UNUSED)  file_info("unused",1);
         if(fs_file->meta->flags & TSK_FS_META_FLAG_ORPHAN)  file_info("orphan",1);
@@ -293,10 +293,15 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     	}
         }
     }
+
+    if(fs_file->name != NULL)
+    {
+        if(fs_file->name->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc_name",1);
+        if(fs_file->name->flags & TSK_FS_META_FLAG_UNALLOC) file_info("alloc_name",0);
+    }
+
     if(fs_file->meta == NULL)
     {
-        if(fs_file->name->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_UNALLOC) file_info("unalloc",1);
         if(fs_file->name->flags & TSK_FS_META_FLAG_USED)    file_info("used",1);
         if(fs_file->name->flags & TSK_FS_META_FLAG_UNUSED)  file_info("unused",1);
         if(fs_file->name->flags & TSK_FS_META_FLAG_ORPHAN)  file_info("orphan",1);
