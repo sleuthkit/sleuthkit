@@ -237,9 +237,7 @@ int
             "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-//        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT);",
-
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT);",
+        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT);",
             "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
@@ -434,13 +432,9 @@ int
 
     objId = sqlite3_last_insert_rowid(m_db);
 
-//    snprintf(stmt, 1024,
-//        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
-//        objId, type, ssize, timezone.c_str(), size, md5.c_str());
-    
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone) VALUES (%lld, %d, %d, '%s');",
-        objId, type, ssize, timezone.c_str());
+        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
+        objId, type, ssize, timezone.c_str(), size, md5.c_str());
 
     return attempt_exec(stmt,
         "Error adding data to tsk_image_info table: %s\n");
