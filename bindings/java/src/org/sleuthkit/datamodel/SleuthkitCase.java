@@ -163,7 +163,7 @@ public class SleuthkitCase {
 			resultSet.close();
 						
 			// ***CALL SCHEMA UPDATE METHODS HERE***
-			schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber);		
+			schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber);		
 			
 			// Update the schema version number.
 			statement.executeUpdate("UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
@@ -184,8 +184,8 @@ public class SleuthkitCase {
 		}
 	}
 		
-	private int updateFromSchema3toSchema4(int schemaVersionNumber) throws SQLException, TskCoreException {
-		if (schemaVersionNumber != 3) {
+	private int updateFromSchema2toSchema3(int schemaVersionNumber) throws SQLException, TskCoreException {
+		if (schemaVersionNumber != 2) {
 			return schemaVersionNumber;
 		}
 
@@ -260,7 +260,7 @@ public class SleuthkitCase {
 				
 		closeStatements();
 		
-		return 4;	
+		return 3;	
 	}			
 				
 	/**
