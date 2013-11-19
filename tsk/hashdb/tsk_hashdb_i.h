@@ -60,9 +60,10 @@ extern "C" {
 /**
  * Properties for the sqlite hash database index
  */
-#define IDX_SCHEMA_VER "Index Schema Version"
+#define IDX_SCHEMA_VER "Schema Version"
 #define IDX_VERSION_NUM "1"
 #define IDX_HASHSET_NAME "Hashset Name"
+#define IDX_HASHSET_TYPE "Hashset Type"
 #define IDX_HASHSET_UPDATEABLE "Updateable"
 #define IDX_BINSRCH_HEADER "0000000000000000"
 #define IDX_SQLITE_V1_HEADER "SQLite format 3"
