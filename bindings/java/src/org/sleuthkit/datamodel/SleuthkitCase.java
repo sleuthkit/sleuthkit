@@ -58,7 +58,6 @@ import org.sqlite.SQLiteJDBCLoader;
  * database implementations (such as SQLite) that might need it.
  */
 public class SleuthkitCase {
-
 	private String dbPath;
 	private String dbDirPath;
 	private volatile SleuthkitJNI.CaseDbHandle caseHandle;
@@ -71,8 +70,6 @@ public class SleuthkitCase {
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
 	private static final Lock caseDbLock = rwLock.writeLock(); //using exclusing lock for all db ops for now
-	//private static final Lock caseDbWriteLock = rwLock.writeLock();
-	//private static final Lock caseDbReadLock = rwLock.readLock();
 	//prepared statements
 	private PreparedStatement getBlackboardAttributesSt;
 	private PreparedStatement getBlackboardArtifactSt;
@@ -108,6 +105,24 @@ public class SleuthkitCase {
 	private PreparedStatement hasChildrenSt;
 	private PreparedStatement getLastContentIdSt;
 	private PreparedStatement getFsIdForFileIdSt;
+	private PreparedStatement selectAllFromTagNames;
+	private PreparedStatement selectFromTagNamesWhereInUse;
+	private PreparedStatement insertIntoTagNames;
+	private PreparedStatement selectMaxIdFromTagNames;
+	private PreparedStatement insertIntoContentTags;
+	private PreparedStatement selectMaxIdFromContentTags;
+	private PreparedStatement deleteFromContentTags;
+	private PreparedStatement selectAllContentTags;
+	private PreparedStatement selectContentTagsCountByTagName;
+	private PreparedStatement selectContentTagsByTagName;
+	private PreparedStatement selectContentTagsByContent;
+	private PreparedStatement insertIntoBlackboardArtifactTags;
+	private PreparedStatement selectMaxIdFromBlackboardArtifactTags;
+	private PreparedStatement deleteFromBlackboardArtifactTags;
+	private PreparedStatement selectAllBlackboardArtifactTags;
+	private PreparedStatement selectBlackboardArtifactTagsCountByTagName;
+	private PreparedStatement selectBlackboardArtifactTagsByTagName;
+	private PreparedStatement selectBlackboardArtifactTagsByArtifact;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
 
@@ -130,10 +145,124 @@ public class SleuthkitCase {
 		con = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
 		configureDB();
 		initBlackboardTypes();
+		updateDatabaseSchema();
 		initStatements();
-
 	}
+	
+	private void updateDatabaseSchema() throws TskCoreException {
+		try {
+			con.setAutoCommit(false);
 
+			// Get the schema version number.
+			int schemaVersionNumber = 0;
+			Statement statement = con.createStatement();
+			ResultSet resultSet = statement.executeQuery("SELECT schema_ver FROM tsk_db_info");
+			if (resultSet.next()) {
+				schemaVersionNumber = resultSet.getInt("schema_ver");	
+			}
+			resultSet.close();
+						
+			// ***CALL SCHEMA UPDATE METHODS HERE***
+			schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber);		
+			
+			// Update the schema version number.
+			statement.executeUpdate("UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
+			statement.close();		
+			
+			con.commit();
+			con.setAutoCommit(true);
+		}
+		catch (Exception ex) {
+			try {
+				con.rollback();
+				con.setAutoCommit(true);
+				throw new TskCoreException("Failed to update database schema", ex);
+			}
+			catch (SQLException e) {
+				throw new TskCoreException("Failed to rollback erroneous database schema update", e);
+			}				
+		}
+	}
+		
+	private int updateFromSchema3toSchema4(int schemaVersionNumber) throws SQLException, TskCoreException {
+		if (schemaVersionNumber != 3) {
+			return schemaVersionNumber;
+		}
+
+		// Add new tables for tags.
+		Statement statement = con.createStatement();
+		statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)");
+		statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)");
+		statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
+		
+		// Make the prepared statements available for use in migrating legacy data.
+		initStatements();
+		
+		// This data structure is used to eep track of the unique tag names 
+		// created from the TSK_TAG_NAME attributes of the now obsolete 
+		// TSK_TAG_FILE and TSK_TAG_ARTIFACT artifacts.
+		HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
+
+		// Convert TSK_TAG_FILE artifacts into content tags. Leave the artifacts behind as a backup.
+		for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_FILE)) {
+			Content content = getContentById(artifact.getObjectID());
+			String name = "";
+			String comment = "";
+			ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
+			for (BlackboardAttribute attribute : attributes) {
+				if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID()) {
+					name = attribute.getValueString();
+				}
+				else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID()) {
+					comment = attribute.getValueString();
+				}
+			}
+
+			if (!name.isEmpty()) {
+				TagName tagName;
+				if (tagNames.containsKey(name)) {
+					tagName = tagNames.get(name);
+				}
+				else {
+					tagName = addTagName(name, "", TagName.HTML_COLOR.NONE);
+					tagNames.put(name, tagName);
+				}
+				addContentTag(content, tagName, comment, 0, content.getSize() - 1);
+			}
+		}
+
+		// Convert TSK_TAG_ARTIFACT artifacts into blackboard artifact tags. Leave the artifacts behind as a backup.
+		for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_ARTIFACT)) {
+			String name = "";
+			String comment = "";
+			ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
+			for (BlackboardAttribute attribute : attributes) {
+				if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAG_NAME.getTypeID()) {
+					name = attribute.getValueString();
+				}
+				else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID()) {
+					comment = attribute.getValueString();
+				}
+			}
+
+			if (!name.isEmpty()) {
+				TagName tagName;
+				if (tagNames.containsKey(name)) {
+					tagName = tagNames.get(name);
+				}
+				else {
+					tagName = addTagName(name, "", TagName.HTML_COLOR.NONE);
+					tagNames.put(name, tagName);
+				}
+				addBlackboardArtifactTag(artifact, tagName, comment);
+			}
+		}		
+				
+		closeStatements();
+		
+		return 4;	
+	}			
+				
 	/**
 	 * create a new transaction: lock the database and set auto-commit false.
 	 * this transaction should be passed to methods who take a transaction and
@@ -277,177 +406,111 @@ public class SleuthkitCase {
 
 		getFsIdForFileIdSt = con.prepareStatement(
 				"SELECT fs_obj_id from tsk_files WHERE obj_id=?");
+		
+		selectAllFromTagNames = con.prepareStatement("SELECT * FROM tag_names");
+		
+		selectFromTagNamesWhereInUse = con.prepareStatement("SELECT * FROM tag_names WHERE tag_name_id IN (SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)");
+		
+		insertIntoTagNames =  con.prepareStatement("INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)");
+		
+		selectMaxIdFromTagNames = con.prepareStatement("SELECT MAX(tag_name_id) FROM tag_names");
+		
+		insertIntoContentTags = con.prepareStatement("INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)");
+		
+		selectMaxIdFromContentTags = con.prepareStatement("SELECT MAX(tag_id) FROM content_tags");		
+		
+		deleteFromContentTags = con.prepareStatement("DELETE FROM content_tags WHERE tag_id = ?");
+		
+		selectContentTagsCountByTagName = con.prepareStatement("SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?");
+		
+		selectAllContentTags = con.prepareStatement("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id");
+				
+		selectContentTagsByTagName = con.prepareStatement("SELECT * FROM content_tags WHERE tag_name_id = ?");
+		
+		selectContentTagsByContent = con.prepareStatement("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?");
+		
+		insertIntoBlackboardArtifactTags = con.prepareStatement("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment) VALUES (?, ?, ?)");
+		
+		selectMaxIdFromBlackboardArtifactTags = con.prepareStatement("SELECT MAX(tag_id) FROM blackboard_artifact_tags");				
+		
+		deleteFromBlackboardArtifactTags  = con.prepareStatement("DELETE FROM blackboard_artifact_tags WHERE tag_id = ?");
 
+		selectAllBlackboardArtifactTags = con.prepareStatement("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id");		
+		
+		selectBlackboardArtifactTagsByTagName = con.prepareStatement("SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?");
+		
+		selectBlackboardArtifactTagsByArtifact = con.prepareStatement("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?");
+				
+		selectBlackboardArtifactTagsCountByTagName = con.prepareStatement("SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?");;		
 	}
 
 	private void closeStatements() {
+		closeStatement(getBlackboardAttributesSt);
+		closeStatement(getBlackboardArtifactSt);
+		closeStatement(getBlackboardArtifactsSt);
+		closeStatement(getBlackboardArtifactsTypeCountSt);
+		closeStatement(getBlackboardArtifactsContentCountSt);
+		closeStatement(getArtifactsHelper1St);
+		closeStatement(getArtifactsHelper2St);
+		closeStatement(getArtifactsCountHelperSt);
+		closeStatement(getAbstractFileChildren);
+		closeStatement(getAbstractFileChildrenIds);
+		closeStatement(getAbstractFileById);
+		closeStatement(addArtifactSt1);
+		closeStatement(addArtifactSt2);
+		closeStatement(getLastArtifactId);
+		closeStatement(addBlackboardAttributeStringSt);
+		closeStatement(addBlackboardAttributeByteSt);
+		closeStatement(addBlackboardAttributeIntegerSt);
+		closeStatement(addBlackboardAttributeLongSt);
+		closeStatement(addBlackboardAttributeDoubleSt);
+		closeStatement(getFileSt);
+		closeStatement(getFileWithParentSt);
+		closeStatement(getPathSt);
+		closeStatement(getFileNameSt);
+		closeStatement(updateMd5St);
+		closeStatement(getLastContentIdSt);
+		closeStatement(getFileParentPathSt);
+		closeStatement(getDerivedInfoSt);
+		closeStatement(getDerivedMethodSt);
+		closeStatement(addObjectSt);
+		closeStatement(addFileSt);
+		closeStatement(addLayoutFileSt);
+		closeStatement(addPathSt);
+		closeStatement(hasChildrenSt);
+		closeStatement(getFsIdForFileIdSt);
+		closeStatement(selectAllFromTagNames);
+		closeStatement(selectFromTagNamesWhereInUse);
+		closeStatement(insertIntoTagNames);
+		closeStatement(selectMaxIdFromTagNames);		
+		closeStatement(insertIntoContentTags);
+		closeStatement(selectMaxIdFromContentTags);
+		closeStatement(deleteFromContentTags);
+		closeStatement(selectContentTagsCountByTagName);
+		closeStatement(selectAllContentTags);
+		closeStatement(selectContentTagsByTagName);
+		closeStatement(selectContentTagsByContent);
+		closeStatement(insertIntoBlackboardArtifactTags);
+		closeStatement(selectMaxIdFromBlackboardArtifactTags);	
+		closeStatement(deleteFromBlackboardArtifactTags);
+		closeStatement(selectAllBlackboardArtifactTags);
+		closeStatement(selectBlackboardArtifactTagsCountByTagName);
+		closeStatement(selectBlackboardArtifactTagsByTagName);
+		closeStatement(selectBlackboardArtifactTagsByArtifact);
+	}
+				
+	private void closeStatement(PreparedStatement statement) {
 		try {
-			if (getBlackboardAttributesSt != null) {
-				getBlackboardAttributesSt.close();
-				getBlackboardAttributesSt = null;
-			}
-			if (getBlackboardArtifactSt != null) {
-				getBlackboardArtifactSt.close();
-				getBlackboardArtifactSt = null;
-			}
-			if (getBlackboardArtifactsSt != null) {
-				getBlackboardArtifactsSt.close();
-				getBlackboardArtifactsSt = null;
-			}
-			if (getBlackboardArtifactsTypeCountSt != null) {
-				getBlackboardArtifactsTypeCountSt.close();
-				getBlackboardArtifactsTypeCountSt = null;
-			}
-			if (getBlackboardArtifactsContentCountSt != null) {
-				getBlackboardArtifactsContentCountSt.close();
-				getBlackboardArtifactsContentCountSt = null;
-			}
-			if (getArtifactsHelper1St != null) {
-				getArtifactsHelper1St.close();
-				getArtifactsHelper1St = null;
-			}
-			if (getArtifactsHelper2St != null) {
-				getArtifactsHelper2St.close();
-				getArtifactsHelper2St = null;
-			}
-			if (getArtifactsCountHelperSt != null) {
-				getArtifactsCountHelperSt.close();
-				getArtifactsCountHelperSt = null;
-			}
-
-			if (getAbstractFileChildren != null) {
-				getAbstractFileChildren.close();
-				getAbstractFileChildren = null;
-			}
-			if (getAbstractFileChildrenIds != null) {
-				getAbstractFileChildrenIds.close();
-				getAbstractFileChildrenIds = null;
-			}
-			if (getAbstractFileById != null) {
-				getAbstractFileById.close();
-				getAbstractFileById = null;
-			}
-			if (addArtifactSt1 != null) {
-				addArtifactSt1.close();
-				addArtifactSt1 = null;
-			}
-			if (addArtifactSt2 != null) {
-				addArtifactSt2.close();
-				addArtifactSt2 = null;
-			}
-			if (getLastArtifactId != null) {
-				getLastArtifactId.close();
-				getLastArtifactId = null;
-			}
-
-			if (addBlackboardAttributeStringSt != null) {
-				addBlackboardAttributeStringSt.close();
-				addBlackboardAttributeStringSt = null;
-			}
-
-			if (addBlackboardAttributeByteSt != null) {
-				addBlackboardAttributeByteSt.close();
-				addBlackboardAttributeByteSt = null;
-			}
-
-			if (addBlackboardAttributeIntegerSt != null) {
-				addBlackboardAttributeIntegerSt.close();
-				addBlackboardAttributeIntegerSt = null;
-			}
-
-			if (addBlackboardAttributeLongSt != null) {
-				addBlackboardAttributeLongSt.close();
-				addBlackboardAttributeLongSt = null;
-			}
-
-			if (addBlackboardAttributeDoubleSt != null) {
-				addBlackboardAttributeDoubleSt.close();
-				addBlackboardAttributeDoubleSt = null;
-			}
-
-			if (getFileSt != null) {
-				getFileSt.close();
-				getFileSt = null;
-			}
-
-			if (getFileWithParentSt != null) {
-				getFileWithParentSt.close();
-				getFileWithParentSt = null;
-			}
-
-			if (getFileNameSt != null) {
-				getFileNameSt.close();
-				getFileNameSt = null;
-			}
-
-			if (updateMd5St != null) {
-				updateMd5St.close();
-				updateMd5St = null;
-			}
-
-			if (getLastContentIdSt != null) {
-				getLastContentIdSt.close();
-				getLastContentIdSt = null;
-			}
-
-			if (getPathSt != null) {
-				getPathSt.close();
-				getPathSt = null;
-			}
-
-			if (getFileParentPathSt != null) {
-				getFileParentPathSt.close();
-				getFileParentPathSt = null;
-			}
-
-			if (getDerivedInfoSt != null) {
-				getDerivedInfoSt.close();
-				getDerivedInfoSt = null;
-			}
-
-			if (getDerivedMethodSt != null) {
-				getDerivedMethodSt.close();
-				getDerivedMethodSt = null;
-			}
-
-
-			if (addObjectSt != null) {
-				addObjectSt.close();
-				addObjectSt = null;
-			}
-
-			if (addFileSt != null) {
-				addFileSt.close();
-				addFileSt = null;
-			}
-
-			if (addLayoutFileSt != null) {
-				addLayoutFileSt.close();
-				addLayoutFileSt = null;
-			}
-
-			if (addPathSt != null) {
-				addPathSt.close();
-				addPathSt = null;
-			}
-
-			if (hasChildrenSt != null) {
-				hasChildrenSt.close();
-				hasChildrenSt = null;
-			}
-
-			if (getFsIdForFileIdSt != null) {
-				getFsIdForFileIdSt.close();
-				getFsIdForFileIdSt = null;
-			}
-
-
-		} catch (SQLException e) {
-			logger.log(Level.WARNING,
-					"Error closing prepared statements", e);
+			if (statement != null) {
+				statement.close();
+				statement = null;
+			}			
+		} 
+		catch (SQLException ex) {
+			logger.log(Level.WARNING, "Error closing prepared statement", ex);
 		}
 	}
-
+		
 	private void configureDB() throws TskCoreException {
 		try {
 			//this should match SleuthkitJNI db setup
@@ -588,35 +651,6 @@ public class SleuthkitCase {
 		return this.caseHandle.initAddImageProcess(timezone, processUnallocSpace, noFatFsOrphans);
 	}
 
-	/**
-	 * Set the NSRL database
-	 *
-	 * @param path The path to the database
-	 * @return a handle for that database
-	 */
-	public int setNSRLDatabase(String path) throws TskCoreException {
-		return this.caseHandle.setNSRLDatabase(path);
-	}
-
-	/**
-	 * Add the known bad database
-	 *
-	 * @param path The path to the database
-	 * @return a handle for that database
-	 */
-	public int addKnownBadDatabase(String path) throws TskCoreException {
-		return this.caseHandle.addKnownBadDatabase(path);
-	}
-
-	/**
-	 * Reset currently used lookup databases on that case object
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 */
-	public void clearLookupDatabases() throws TskCoreException {
-		this.caseHandle.clearLookupDatabases();
-	}
 
 	/**
 	 * Get the list of root objects, meaning image files or local files virtual
@@ -3000,7 +3034,7 @@ public class SleuthkitCase {
 			addFileSt.executeUpdate();
 
 			vd = new VirtualDirectory(this, newObjId, directoryName, dirType,
-					metaType, dirFlag, metaFlags, size, null, FileKnown.UKNOWN,
+					metaType, dirFlag, metaFlags, size, null, FileKnown.UNKNOWN,
 					parentPath);
 		} catch (SQLException e) {
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
@@ -3015,8 +3049,8 @@ public class SleuthkitCase {
 		}
 
 		return vd;
-	}
-
+	} 
+	
 	/**
 	 * Get IDs of the virtual folder roots (at the same level as image), used
 	 * for containers such as for local files.
@@ -3243,7 +3277,7 @@ public class SleuthkitCase {
 			// create the LayoutFile object
 			lf = new LayoutFile(this, newObjId, carvedFileName, type, dirType,
 					metaType, dirFlag, metaFlags, carvedFileSize, null,
-					FileKnown.UKNOWN, parentPath);
+					FileKnown.UNKNOWN, parentPath);
 
 		} catch (SQLException e) {
 			throw new TskCoreException("Error creating a carved file '" + carvedFileName + "'", e);
@@ -4870,30 +4904,6 @@ public class SleuthkitCase {
 		}
 	}
 
-	/**
-	 * Look up the given hash in the NSRL database
-	 *
-	 * @param md5Hash The hash to look up
-	 * @return the status of the hash in the NSRL
-	 * @throws TskCoreException thrown if a critical error occurred within tsk
-	 * core
-	 */
-	public TskData.FileKnown nsrlLookupMd5(String md5Hash) throws TskCoreException {
-		return SleuthkitJNI.nsrlHashLookup(md5Hash);
-	}
-
-	/**
-	 * Look up the given hash in the known bad database
-	 *
-	 * @param md5Hash The hash to look up
-	 * @param dbHandle The handle of the open database to look in
-	 * @return the status of the hash in the known bad database
-	 * @throws TskCoreException thrown if a critical error occurred within tsk
-	 * core
-	 */
-	public TskData.FileKnown knownBadLookupMd5(String md5Hash, int dbHandle) throws TskCoreException {
-		return SleuthkitJNI.knownBadHashLookup(md5Hash, dbHandle);
-	}
 
 	/**
 	 * Return the number of objects in the database of a given file type.
@@ -5100,4 +5110,452 @@ public class SleuthkitCase {
 			observer.receiveError(context, errorMessage);
 		}
 	}
+	
+	/**
+	 * Selects all of the rows from the tag_names table in the case database.
+	 * @return A list, possibly empty, of TagName data transfer objects (DTOs) for the rows.
+	 * @throws TskCoreException 
+	 */
+	public List<TagName> getAllTagNames() throws TskCoreException {
+		dbReadLock();
+		try {
+			ArrayList<TagName> tagNames = new ArrayList<TagName>();
+			
+			// SELECT * FROM tag_names
+			ResultSet resultSet = selectAllFromTagNames.executeQuery();
+			while(resultSet.next()) {
+				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
+			}
+			
+			return tagNames;
+		}
+		catch(SQLException ex) {
+			throw new TskCoreException("Error selecting rows from tag_names table", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}
+	}
+	
+	/**
+	 * Selects all of the rows from the tag_names table in the case database for 
+	 * which there is at least one matching row in the content_tags or 
+	 * blackboard_artifact_tags tables.
+	 * @return A list, possibly empty, of TagName data transfer objects (DTOs) for the rows.
+	 * @throws TskCoreException 
+	 */
+	public List<TagName> getTagNamesInUse() throws TskCoreException {
+		dbReadLock();
+		try {
+			ArrayList<TagName> tagNames = new ArrayList<TagName>();
+			
+			// SELECT * FROM tag_names WHERE tag_name_id IN (SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)
+			ResultSet resultSet = selectFromTagNamesWhereInUse.executeQuery();
+			while(resultSet.next()) {
+				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
+			}
+			
+			return tagNames;
+		}
+		catch(SQLException ex) {
+			throw new TskCoreException("Error selecting rows from tag_names table", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}
+	}
+	
+	/**
+	 * Inserts row into the tags_names table in the case database.
+     * @param [in] displayName The display name for the new tag name.
+     * @param [in] description The description for the new tag name.
+     * @param [in] color The HTML color to associate with the new tag name.
+	 * @return A TagName data transfer object (DTO) for the new row.
+	 * @throws TskCoreException 
+	 */
+	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
+		dbWriteLock();		
+		try {
+			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)			
+			insertIntoTagNames.clearParameters(); 			
+			insertIntoTagNames.setString(1, displayName);
+			insertIntoTagNames.setString(2, description);
+			insertIntoTagNames.setString(3, color.getName());
+			insertIntoTagNames.executeUpdate();
+
+			// SELECT MAX(id) FROM tag_names
+			return new TagName(selectMaxIdFromTagNames.executeQuery().getLong(1), displayName, description, color);			
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
+		}
+		finally {
+			dbWriteUnlock();
+		}
+	}
+	
+	/**
+	 * Inserts a row into the content_tags table in the case database.
+     * @param [in] content The content to tag.
+     * @param [in] tagName The name to use for the tag.
+     * @param [in] comment A comment to store with the tag.
+     * @param [in] beginByteOffset Designates the beginning of a tagged section. 
+     * @param [in] endByteOffset Designates the end of a tagged section.
+	 * @return A ContentTag data transfer object (DTO) for the new row.
+	 * @throws TskCoreException 
+	 */
+	public ContentTag addContentTag(Content content, TagName tagName, String comment, long beginByteOffset, long endByteOffset) throws TskCoreException {
+		dbWriteLock();		
+		try {			
+			// INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)
+			insertIntoContentTags.clearParameters(); 			
+			insertIntoContentTags.setLong(1, content.getId());
+			insertIntoContentTags.setLong(2, tagName.getId());
+			insertIntoContentTags.setString(3, comment);
+			insertIntoContentTags.setLong(4, beginByteOffset);
+			insertIntoContentTags.setLong(5, endByteOffset);
+			insertIntoContentTags.executeUpdate();
+
+			// SELECT MAX(tag_id) FROM content_tags
+			return new ContentTag(selectMaxIdFromContentTags.executeQuery().getLong(1), content, tagName, comment, beginByteOffset, endByteOffset);
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error adding row to content_tags table (obj_id = " +content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
+		}
+		finally {
+			dbWriteUnlock();
+		}	
+	}
+	
+	/*
+	 * Deletes a row from the content_tags table in the case database.
+	 * @param tag A ContentTag data transfer object (DTO) for the row to delete.
+	 * @throws TskCoreException 
+	 */
+	public void deleteContentTag(ContentTag tag) throws TskCoreException {
+		dbWriteLock();		
+		try {			
+			// DELETE FROM content_tags WHERE tag_id = ?		
+			deleteFromContentTags.clearParameters(); 			
+			deleteFromContentTags.setLong(1, tag.getId());
+			deleteFromContentTags.executeUpdate();
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error deleting row from content_tags table (id = " + tag.getId() + ")", ex);
+		}
+		finally {
+			dbWriteUnlock();
+		}	
+	}
+
+	/**
+	 * Selects all of the rows from the content_tags table in the case database.
+	 * @return A list, possibly empty, of ContentTag data transfer objects (DTOs) for the rows.
+	 * @throws TskCoreException 
+	 */
+	public List<ContentTag> getAllContentTags() throws TskCoreException {
+		dbReadLock();		
+		try {
+			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
+			
+			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id
+			ResultSet resultSet = selectAllContentTags.executeQuery();
+			while (resultSet.next()) {
+				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
+				Content content = getContentById(resultSet.getLong("obj_id"));
+				tags.add(new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"))); 
+			} 
+			
+			return tags;
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error selecting rows from content_tags table", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}					
+	}
+		
+	/**
+	 * Gets a count of the rows in the content_tags table in the case database 
+	 * with a specified foreign key into the tag_names table.
+	 * @param [in] tagName A data transfer object (DTO) for the tag name to match.
+	 * @return The count, possibly zero.
+	 * @throws TskCoreException 
+	 */
+	public long getContentTagsCountByTagName(TagName tagName) throws TskCoreException {
+		if (tagName.getId() == Tag.ID_NOT_SET) {
+			throw new TskCoreException("TagName object is invalid, id not set");
+		}
+		
+		dbReadLock();		
+		try {
+			// SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?
+			selectContentTagsCountByTagName.clearParameters();
+			selectContentTagsCountByTagName.setLong(1, tagName.getId());
+			ResultSet resultSet = selectContentTagsCountByTagName.executeQuery();
+			if (resultSet.next()) {
+				return resultSet.getLong(1);
+			} 
+			else {
+				throw new TskCoreException("Error getting content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")");
+			}
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error getting content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}			
+	}
+		
+	/**
+	 * Selects the rows in the content_tags table in the case database with a 
+	 * specified foreign key into the tag_names table.
+	 * @param [in] tagName A data transfer object (DTO) for the tag name to match.
+	 * @return A list, possibly empty, of ContentTag data transfer objects (DTOs) for the rows.
+	 * @throws TskCoreException 
+	 */
+	public List<ContentTag> getContentTagsByTagName(TagName tagName) throws TskCoreException {
+		if (tagName.getId() == Tag.ID_NOT_SET) {
+			throw new TskCoreException("TagName object is invalid, id not set");
+		}
+		
+		dbReadLock();		
+		try {
+			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();			
+			
+			// SELECT * FROM content_tags WHERE tag_name_id = ?
+			selectContentTagsByTagName.clearParameters();
+			selectContentTagsByTagName.setLong(1, tagName.getId());
+			ResultSet resultSet = selectContentTagsByTagName.executeQuery();
+			while(resultSet.next()) {
+				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
+				tags.add(tag);				
+			}						
+			
+			return tags;
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error getting content_tags rows (tag_name_id = " + tagName.getId() + ")", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}			
+	}
+
+	/**
+	 * Selects the rows in the content_tags table in the case database with a 
+	 * specified foreign key into the tsk_objects table.
+	 * @param [in] content A data transfer object (DTO) for the content to match.
+	 * @return A list, possibly empty, of ContentTag data transfer objects (DTOs) for the rows.
+	 * @throws TskCoreException 
+	 */
+	public List<ContentTag> getContentTagsByContent(Content content) throws TskCoreException {
+		dbReadLock();		
+		try {
+			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
+			
+			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?
+			selectContentTagsByContent.clearParameters(); 			
+			selectContentTagsByContent.setLong(1, content.getId());			
+			ResultSet resultSet = selectContentTagsByContent.executeQuery();
+			while (resultSet.next()) {
+				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
+				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
+				tags.add(tag);
+			} 
+			
+			return tags;
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error getting content tags data for content (obj_id = " + content.getId() + ")", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}					
+	}	
+		
+	/**
+	 * Inserts a row into the blackboard_artifact_tags table in the case database.
+     * @param [in] artifact The blackboard artifact to tag.
+     * @param [in] tagName The name to use for the tag.
+     * @param [in] comment A comment to store with the tag.
+	 * @return A BlackboardArtifactTag data transfer object (DTO) for the new row.
+	 * @throws TskCoreException 
+	 */
+	public BlackboardArtifactTag addBlackboardArtifactTag(BlackboardArtifact artifact, TagName tagName, String comment) throws TskCoreException {
+		dbWriteLock();		
+		try {			
+			// INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)			
+			insertIntoBlackboardArtifactTags.clearParameters(); 			
+			insertIntoBlackboardArtifactTags.setLong(1, artifact.getArtifactID());
+			insertIntoBlackboardArtifactTags.setLong(2, tagName.getId());
+			insertIntoBlackboardArtifactTags.setString(3, comment);
+			insertIntoBlackboardArtifactTags.executeUpdate();
+
+			// SELECT MAX(tag_id) FROM blackboard_artifact_tags
+			return new BlackboardArtifactTag(selectMaxIdFromBlackboardArtifactTags.executeQuery().getLong(1), artifact, getContentById(artifact.getObjectID()), tagName, comment);
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
+		}
+		finally {
+			dbWriteUnlock();
+		}	
+	}	
+
+	/*
+	 * Deletes a row from the blackboard_artifact_tags table in the case database.
+	 * @param tag A BlackboardArtifactTag data transfer object (DTO) representing the row to delete.
+	 * @throws TskCoreException 
+	 */
+	public void deleteBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
+		dbWriteLock();		
+		try {			
+			// DELETE FROM blackboard_artifact_tags WHERE tag_id = ?
+			deleteFromBlackboardArtifactTags.clearParameters(); 			
+			deleteFromBlackboardArtifactTags.setLong(1, tag.getId());
+			deleteFromBlackboardArtifactTags.executeUpdate();
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (id = " + tag.getId() + ")", ex);
+		}
+		finally {
+			dbWriteUnlock();
+		}	
+	}
+	
+	/**
+	 * Selects all of the rows from the blackboard_artifacts_tags table in the case database.
+	 * @return A list, possibly empty, of BlackboardArtifactTag data transfer objects (DTOs) for the rows.
+	 * @throws TskCoreException 
+	 */
+	public List<BlackboardArtifactTag> getAllBlackboardArtifactTags() throws TskCoreException {
+		dbReadLock();		
+		try {
+			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
+			
+			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id
+			ResultSet resultSet = selectAllBlackboardArtifactTags.executeQuery();
+			while (resultSet.next()) {
+				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
+				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id"));
+				Content content = getContentById(artifact.getObjectID());
+				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
+				tags.add(tag);
+			} 
+
+			return tags;
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error selecting rows from blackboard_artifact_tags table", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}					
+	}
+			
+	/**
+	 * Gets a count of the rows in the blackboard_artifact_tags table in the case database 
+	 * with a specified foreign key into the tag_names table.
+	 * @param [in] tagName A data transfer object (DTO) for the tag name to match.
+	 * @return The count, possibly zero.
+	 * @throws TskCoreException 
+	 */
+	public long getBlackboardArtifactTagsCountByTagName(TagName tagName) throws TskCoreException {
+		if (tagName.getId() == Tag.ID_NOT_SET) {
+			throw new TskCoreException("TagName object is invalid, id not set");
+		}
+		
+		dbReadLock();		
+		try {
+			// SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?
+			selectBlackboardArtifactTagsCountByTagName.clearParameters();
+			selectBlackboardArtifactTagsCountByTagName.setLong(1, tagName.getId());
+			ResultSet resultSet = selectBlackboardArtifactTagsCountByTagName.executeQuery();
+			if (resultSet.next()) {
+				return resultSet.getLong(1);
+			} 
+			else {
+				throw new TskCoreException("Error getting blackboard_artifact_tags row count for tag name (tag_name_id = " + tagName.getId() + ")");
+			}
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error getting blackboard artifact_content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}			
+	}
+		
+	/**
+	 * Selects the rows in the blackboard_artifacts_tags table in the case database with a 
+	 * specified foreign key into the tag_names table.
+	 * @param [in] tagName A data transfer object (DTO) for the tag name to match.
+	 * @return A list, possibly empty, of BlackboardArtifactTag data transfer objects (DTOs) for the rows.
+	 * @throws TskCoreException 
+	 */
+	public List<BlackboardArtifactTag> getBlackboardArtifactTagsByTagName(TagName tagName) throws TskCoreException {
+		if (tagName.getId() == Tag.ID_NOT_SET) {
+			throw new TskCoreException("TagName object is invalid, id not set");
+		}
+		
+		dbReadLock();		
+		try {
+			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
+			
+			// SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?
+			selectBlackboardArtifactTagsByTagName.clearParameters();
+			selectBlackboardArtifactTagsByTagName.setLong(1, tagName.getId());
+			ResultSet resultSet = selectBlackboardArtifactTagsByTagName.executeQuery();
+			while(resultSet.next()) {
+				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id"));
+				Content content = getContentById(artifact.getObjectID());
+				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
+				tags.add(tag);
+			}			
+			
+			return tags;
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error getting blackboard artifact tags data (tag_name_id = " + tagName.getId() + ")", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}			
+	}	
+	
+	/**
+	 * Selects the rows in the blackboard_artifacts_tags table in the case database with a 
+	 * specified foreign key into the blackboard_artifacts table.
+	 * @param [in] artifact A data transfer object (DTO) for the artifact to match.
+	 * @return A list, possibly empty, of BlackboardArtifactTag data transfer objects (DTOs) for the rows.
+	 * @throws TskCoreException 
+	 */
+	public List<BlackboardArtifactTag> getBlackboardArtifactTagsByArtifact(BlackboardArtifact artifact) throws TskCoreException {
+		dbReadLock();		
+		try {
+			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
+			
+			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?			
+			selectBlackboardArtifactTagsByArtifact.clearParameters();
+			selectBlackboardArtifactTagsByArtifact.setLong(1, artifact.getArtifactID());
+			ResultSet resultSet = selectBlackboardArtifactTagsByArtifact.executeQuery();
+			while(resultSet.next()) {
+				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
+				Content content = getContentById(artifact.getObjectID());
+				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
+				tags.add(tag);
+			}
+			
+			return tags;
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error getting blackboard artifact tags data (artifact_id = " + artifact.getArtifactID() + ")", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}					
+	}	
 }

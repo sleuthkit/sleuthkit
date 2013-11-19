@@ -29,53 +29,72 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
     char *bufptr = buf;
     size_t i = 0;
     memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
-    if(tsk_hdb_hasindex(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
+
+    if(tsk_hdb_idxsetup(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
         if (tsk_verbose)
             fprintf(stderr,
                 "Failed to get name from index (index does not exist); using file name instead");
         tsk_hdb_name_from_path(hdb_info);
         return;
     }
-    hFile = hdb_info->hIdx;
-    fseeko(hFile, 0, 0);
-    if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
-        NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
-        strncmp(buf,
-                TSK_HDB_IDX_HEAD_NAME_STR,
-                strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
-        if (tsk_verbose)
-            fprintf(stderr,
-                "Failed to read name from index; using file name instead");
+
+    // Get the DB name. Alternatively, we could query the index for Hashset Name.
+    if (hdb_info->idx_info->index_type == TSK_HDB_ITYPE_SQLITE_V1) {
         tsk_hdb_name_from_path(hdb_info);
         return;
-    }
-    bufptr = strchr(buf, '|');
-    bufptr++;
-    while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
-    {
-        hdb_info->db_name[i] = bufptr[i];
-        i++;
+    } else {
+        // Get name from legacy (bin search text) index
+        hFile = hdb_info->idx_info->idx_struct.idx_binsrch->hIdx;
+        fseeko(hFile, 0, 0);
+        if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+            NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+            strncmp(buf,
+                    TSK_HDB_IDX_HEAD_NAME_STR,
+                    strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
+            if (tsk_verbose)
+                fprintf(stderr,
+                    "Failed to read name from index; using file name instead");
+            tsk_hdb_name_from_path(hdb_info);
+            return;
+        }
+        bufptr = strchr(buf, '|');
+        bufptr++;
+        while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
+        {
+            hdb_info->db_name[i] = bufptr[i];
+            i++;
+        }
     }
 }
 
 
 /**
- * This function should process the database to create a sorted index of it,
- * but in this case we do not have a database, so just make an error...
+ * This function creates an empty
  *
  * @param hdb_info Hash database to make index of.
- * @param dbtype Type of hash database 
+ * @param dbtype Type of hash database. Ignored for IDX only.
  *
  * @return 1 on error and 0 on success.
  */
 uint8_t
 idxonly_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 {
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr(
-             "idxonly_makeindex: Make index not supported when INDEX ONLY option is used");
-    return 1;
+    //tsk_error_reset();
+    //tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    //tsk_error_set_errstr(
+    //         "idxonly_makeindex: Make index not supported when INDEX ONLY option is used");
+
+    ///@temporary until we exorcise all the htype conditionals out
+    TSK_TCHAR dbtype_default[1024];
+    TSNPRINTF(dbtype_default, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
+
+    /* Initialize the TSK index file */
+    if (tsk_hdb_idxinitialize(hdb_info, dbtype_default)) {
+        tsk_error_set_errstr2( "idxonly_makeindex");
+        return 1;
+    }
+
+    return 0;
 }
 
 

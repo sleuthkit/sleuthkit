@@ -125,7 +125,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 		this.md5Hash = md5Hash;
 		if (knownState == null) {
-			this.knownState = FileKnown.UKNOWN;
+			this.knownState = FileKnown.UNKNOWN;
 		} else {
 			this.knownState = knownState;
 		}
