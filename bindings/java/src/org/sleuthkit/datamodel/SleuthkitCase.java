@@ -2219,6 +2219,29 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Get the database version.
+	 * 
+	 * @return
+	 * @throws TskCoreException 
+	 */
+	private int getDbVersion() throws TskCoreException {
+		int ver = 0;
+		dbReadLock();
+		try {
+			ResultSet rs = con.createStatement().executeQuery("select * from tsk_db_info");
+			if (rs.next()) {
+				ver = rs.getInt("schema_ver");
+			}
+			rs.close();
+			return ver;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
+		} finally {
+			dbReadUnlock();
+		}
+	}
+
+	/**
 	 * Stores a pair of object ID and its type
 	 */
 	static class ObjectInfo {
@@ -4524,6 +4547,76 @@ public class SleuthkitCase {
 		}
 
 		return images;
+	}
+	
+	/**
+	 * Get the size of the image as it is stored in the database.
+	 * 
+	 * @param img the image whose size should be queried.
+	 * @return the image size, or -1 if it doesn't have one stored in the database.
+	 */
+	public long getImageSize(Image img) throws TskCoreException {
+		if (getDbVersion() < 3) {
+			return -1;
+		}
+		dbReadLock();
+		long objId = img.getId();
+		long size = -1;
+		try {
+			ResultSet rs = con.createStatement().executeQuery("select * from tsk_image_info where obj_id = " + objId);
+			if (rs.next()) {
+				size = rs.getLong("size");
+			}
+			rs.close();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error retrieving image size.", ex);
+		} finally {
+			dbReadUnlock();
+		}
+		return size;
+	}
+	
+	/**
+	 * Get the hash stored in the database for the given image.
+	 * 
+	 * @param img the image whose hash to get
+	 * @return the hash, or null if the image doesn't have one.
+	 * @throws TskCoreException 
+	 */
+	public String getImageHash(Image img) throws TskCoreException {
+		if ( imageHasHash(img) == false ) {
+			return null;
+		}
+		dbReadLock();
+		long objId = img.getId();
+		String hash = "";
+		try {
+			ResultSet rs = con.createStatement().executeQuery("select * from tsk_image_info where obj_id = " + objId);
+			if (rs.next()) {
+				hash = rs.getString("md5");
+			}
+			rs.close();
+			return hash;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error retrieving image hash.", ex);
+		} finally {
+			dbReadUnlock();
+		}
+	}
+	
+	/**
+	 * Does the given image have a hash stored in the database?
+	 * @param img the image to check
+	 * @return true, if a hash is present.
+	 */
+	public boolean imageHasHash(Image img) {
+		try {
+			return (getDbVersion() >= 3) && 
+					(img.getType() == TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_EWF_EWF);
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Core exception while attempting to check if image has a hash", ex);
+			return false;
+		}
 	}
 
 	/**
