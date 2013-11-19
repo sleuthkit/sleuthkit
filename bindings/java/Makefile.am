@@ -2,6 +2,9 @@ Z_PATH=@Z_PATH@
 EWF_PATH=@EWF_PATH@
 ANT_PROPS=
 
+# Compile the sub directories
+SUBDIRS = jni
+
 if X_ZLIB
   ANT_PROPS+=-Dlib.z.path=$(Z_PATH)
 endif
