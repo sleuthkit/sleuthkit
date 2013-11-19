@@ -25,8 +25,7 @@ using std::stringstream;
 using std::sort;
 using std::for_each;
 
-
-#define TSK_SCHEMA_VER 3
+#define TSK_SCHEMA_VER 4
 
 /**
  * Set the locations and logging object.  Must call
@@ -238,7 +237,9 @@ int
             "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT);",
+//        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT);",
+
+        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT);",
             "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
@@ -272,6 +273,18 @@ int
         attempt_exec
         ("CREATE TABLE tsk_files_derived_method (derived_id INTEGER PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)",
             "Error creating tsk_files_derived_method table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)",
+            "Error creating tag_names table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)",
+            "Error creating content_tags table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)",
+            "Error creating blackboard_artifact_tags table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL)",
@@ -421,9 +434,14 @@ int
 
     objId = sqlite3_last_insert_rowid(m_db);
 
+//    snprintf(stmt, 1024,
+//        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
+//        objId, type, ssize, timezone.c_str(), size, md5.c_str());
+    
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
-        objId, type, ssize, timezone.c_str(), size, md5.c_str());
+        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone) VALUES (%lld, %d, %d, '%s');",
+        objId, type, ssize, timezone.c_str());
+
     return attempt_exec(stmt,
         "Error adding data to tsk_image_info table: %s\n");
 }

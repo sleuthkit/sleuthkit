@@ -664,13 +664,6 @@ int main(int argc, char * const *argv1)
 	fprintf(stderr,"ERROR: fiwalk was compiled without AFF support.\n");
 	exit(0);
 #else
-#if 0
-	if((tsk_img_type_supported() & TSK_IMG_TYPE_AFF_AFF)==0){
-	    fprintf(stderr,"ERROR: fiwalk was compiled with AFF support but the TSK library is not.\n");
-	    fprintf(stderr,"tsk_img_type_supported=0x%x\n",tsk_img_type_supported());
-	    exit(0);
-	}
-#endif
 #endif
     }
 

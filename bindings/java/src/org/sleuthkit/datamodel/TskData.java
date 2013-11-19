@@ -413,8 +413,8 @@ public class TskData {
         TSK_FS_TYPE_HFS (0x00001000),   ///< HFS file system
         TSK_FS_TYPE_HFS_DETECT (0x00001000),    ///< HFS auto detection
         TSK_FS_TYPE_EXT4 (0x00002000),  ///< Ext4 file system
-        TSK_FS_TYPE_YAFFS2(0x00003000),  ///< YAFFS2 file system
-        TSK_FS_TYPE_YAFFS2_DETECT(0x00003000),   ///< YAFFS2 auto detection
+        TSK_FS_TYPE_YAFFS2(0x00004000),  ///< YAFFS2 file system
+        TSK_FS_TYPE_YAFFS2_DETECT(0x00004000),   ///< YAFFS2 auto detection
         TSK_FS_TYPE_UNSUPP (0xffffffff);        ///< Unsupported file system
 		
 		private int value;
@@ -634,7 +634,7 @@ public class TskData {
 	 * FileKnown status
 	 */
 	public enum FileKnown {
-		UKNOWN(0, "unknown"), ///< File marked as unknown by hash db
+		UNKNOWN(0, "unknown"), ///< File marked as unknown by hash db
 		KNOWN(1, "known"),  ///< File marked as a known by hash db
 		BAD(2, "known bad"); ///< File marked as known and bad/notable/interesting by hash db
 		

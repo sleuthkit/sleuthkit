@@ -19,6 +19,9 @@
 // TSK Framework includes
 #include "CarvePrep.h"
 
+// Poco includes
+#include "Poco/File.h"
+
 // C/C++ library includes
 #include <string>
 
@@ -131,6 +134,15 @@ private:
      *  @return Throws TskException on error.
      */
     void mapFileToImage(int unallocSectorsImgId, std::ofstream & outfile, uint64_t startingFileOffset, uint64_t endingFileOffset, int volumeID, uint64_t startingImageOffset) const;
+
+    /**
+     * Close the unallocated sectors image file and schedule for carving
+     * if necessary.
+     * Carving will not be necessary if it is a zero length file, in which 
+     * case the file will be deleted and the unalloc image status record
+     * will be set to carving not needed.
+     */
+    void closeAndSchedule(const int unallocSectorsImgId, Poco::File& outFile, std::ofstream& outFileStream) const;
 };
 
 #endif
