@@ -24,6 +24,7 @@
  */
 static sqlite3_stmt *m_stmt = NULL;
 static bool need_SQL_index = false;
+static const char hex[] = "0123456789abcdef";
 
 /**
  * Prototypes 
@@ -585,10 +586,9 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hvalue, uint8_t len,
                    TSK_HDB_FLAG_ENUM flags,
                    TSK_HDB_LOOKUP_FN action, void *ptr)
 {
-	char hashbuf[TSK_HDB_HTYPE_SHA1_LEN + 1];
+	char hashbuf[TSK_HDB_HTYPE_SHA2_256_LEN + 1];
 	int8_t ret = 0;
     int i;
-	static const char hex[] = "0123456789abcdef";
 	TSK_OFF_T offset;
     char * selectStmt;
     sqlite3_stmt* stmt = NULL;
@@ -789,6 +789,31 @@ getStrings(TSK_HDB_INFO * hdb_info, const char* selectStmt, std::vector<std::str
 }
 
 /**
+ * Convert binary blob hash string to text hash string
+ * Returns the input if compiled in text hash mode.
+ */
+std::string blobToText(std::string binblob)
+{
+#ifdef IDX_SQLITE_STORE_TEXT
+    return binblob; //already text
+#else
+    unsigned int blobsize = binblob.size();
+    if (blobsize <= TSK_HDB_MAX_BINHASH_LEN) {
+        char hashbuf[TSK_HDB_HTYPE_SHA2_256_LEN + 1];
+
+		for (unsigned int i = 0; i < blobsize; i++) {
+			hashbuf[2 * i] = hex[(binblob[i] >> 4) & 0xf];
+			hashbuf[2 * i + 1] = hex[binblob[i] & 0xf];
+		}
+		hashbuf[2 * blobsize] = '\0';
+        return std::string(&hashbuf[0]);
+    } else {
+        return "";
+    }
+#endif
+}
+
+/**
  * \ingroup hashdblib
  * Search the index for the given hash value given (in string form).
  *
@@ -806,7 +831,7 @@ void * sqlite_v1_getAllData(TSK_HDB_INFO * hdb_info, unsigned long hashId)
         snprintf(selectStmt, 1024, "SELECT md5 from hashes where id=%d", hashId);
         getStrings(hdb_info, selectStmt,  temp);
         if (temp.size() > 0) {
-            h->hashMd5 = temp.at(0);
+            h->hashMd5 = blobToText(temp.at(0));
         }
     }
     {
@@ -814,8 +839,8 @@ void * sqlite_v1_getAllData(TSK_HDB_INFO * hdb_info, unsigned long hashId)
         char selectStmt[1024];
         snprintf(selectStmt, 1024, "SELECT sha1 from hashes where id=%d", hashId);
         getStrings(hdb_info, selectStmt,  temp);
-        if (temp.size() > 0) {      
-            h->hashSha1 = temp.at(0);
+        if (temp.size() > 0) {
+            h->hashSha1 = blobToText(temp.at(0));
         }
     }
     {
@@ -824,7 +849,7 @@ void * sqlite_v1_getAllData(TSK_HDB_INFO * hdb_info, unsigned long hashId)
         snprintf(selectStmt, 1024, "SELECT sha2_256 from hashes where id=%d", hashId);
         getStrings(hdb_info, selectStmt,  temp);
         if (temp.size() > 0) {
-            h->hashSha2_256 = temp.at(0);
+            h->hashSha2_256 = blobToText(temp.at(0));
         }
     }
     {
