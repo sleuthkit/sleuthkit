@@ -27,7 +27,6 @@
 	<property name="i386" location="build/NATIVELIBS/i386" />
 	<property name="i586" location="build/NATIVELIBS/i586" />
 	<property name="i686" location="build/NATIVELIBS/i686"/>
-	<property name="crt" location="${basedir}/crt" />
   
 	<path id="libraries">
 		<fileset dir="${lib}">
