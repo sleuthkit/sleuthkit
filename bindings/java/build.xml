@@ -115,7 +115,23 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		</javac>
 	</target>
 
-	<target name="dist" depends="init-ivy, compile, copyLibs"
+	<target name="dist" depends="check-build" unless="up-to-date">
+		<antcall target="dist-do"/>
+	</target>
+
+	<target name="check-build" depends="check-native-build">
+		<uptodate property="java-up-to-date" targetfile="${dist}/Tsk_DataModel.jar" >
+		    <srcfiles dir="${src}" includes="**/*.java"/>
+		</uptodate>
+		<condition property="up-to-date">
+			<and>
+				<isset property="java-up-to-date"/>
+				<isset property="native-up-to-date"/>
+			</and>
+		</condition>
+	</target>
+	
+	<target name="dist-do" depends="init-ivy, compile, copyLibs"
         description="generate the distribution" >
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>

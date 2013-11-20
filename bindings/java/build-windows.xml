@@ -33,7 +33,20 @@
 			<sysproperty key="types" value="${test-types}"/>
 		</java>
 	</target>
-	
+
+	<target name="check-build-native" depends="check-build-32,check-build-64"/>
+
+	<target name="check-build-32" depends="checkLibDirs" if="win32.exists">
+		<uptodate property="native-up-to-date" srcfile="${basedir}/../../win32/Release/libtsk_jni.dll"
+		targetfile="${x86}/win/libtsk_jni.dll"/>
+	</target>
+
+
+	<target name="check-build-64" depends="checkLibDirs" if="win32.exists">
+		<uptodate property="native-up-to-date" srcfile="${basedir}/../../win32/Release/libtsk_jni.dll"
+		targetfile="${amd64}/win/libtsk_jni.dll"/>
+	</target>
+
 	<target name="copyLibs" depends="copyWinLibs" description="Copy native libs to the correct folder">
 		<property name="tsk.config" value="Release"/>
 		<antcall target="copyWinLibs" />

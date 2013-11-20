@@ -23,6 +23,17 @@
 		</java>
 	</target>
 
+	<target name="check-native-build" depends="check-native-build-mac,check-native-build-unix"/>
+
+	<target name="check-native-build-mac" depends="testTSKLibs" if="tsk_dylib.present">
+		<uptodate property="native-up-to-date" srcfile="./jni/.libs/libtsk_jni.dylib"
+		targetfile="${amd64}/mac/libtsk_jni.jnilib" />
+	</target>
+
+	<target name="check-native-build-unix" depends="testTSKLibs" if="tsk_so.present">
+		<uptodate property="native-up-to-date" srcfile="./jni/.libs/libtsk_jni.so"
+		targetfile="${amd64}/linux/libtsk_jni.so"/>
+	</target>
 
     <target name="testTSKLibs">
         <property environment="env"/>
@@ -35,7 +46,7 @@
     <!-- OS X -->
     <target name="copyTskLibs_dylib" depends="testTSKLibs" if="tsk_dylib.present">
         <property environment="env"/>
-        <copy file="./jni/.libs/libtsk_jni.dylib" tofile="./libtsk_jni.jnilib"/>
+        <copy file="./jni/.libs/libtsk_jni.dylib" tofile="./libtsk_jni.jnilib" overwrite="true"/>
     </target>
 	
 	<target name="copyMacLibs" depends="testTSKLibs" if="tsk_dylib.present">
@@ -45,30 +56,30 @@
 		<!-- x86_64 -->
         <copy file="${jni.dylib}" tofile="${x86_64}/mac/${jni.jnilib}"/>
 		<!-- amd64 -->
-		<copy file="${jni.dylib}" tofile="${amd64}/mac/${jni.jnilib}"/>
+		<copy file="${jni.dylib}" tofile="${amd64}/mac/${jni.jnilib}" overwrite="true"/>
     </target>
 
     <!-- Non-OS X -->
     <target name="copyTskLibs_so" depends="testTSKLibs" if="tsk_so.present">
         <property environment="env"/>
-        <copy file="./jni/.libs/libtsk_jni.so" tofile="./libtsk_jni.so"/>
+        <copy file="./jni/.libs/libtsk_jni.so" tofile="./libtsk_jni.so" overwrite="true"/>
     </target>
 	
 	<target name="copyLinuxLibs" depends="testTSKLibs" if="tsk_so.present">
 		<property environment="env"/>
 		<property name="jni.so" location="${basedir}/jni/.libs/libtsk_jni.so" />
 		<!-- x86_64 -->
-		<copy file="${jni.so}" tofile="${x86_64}/linux/libtsk_jni.so"/>
+		<copy file="${jni.so}" tofile="${x86_64}/linux/libtsk_jni.so" overwrite="true"/>
 		<!-- amd64 -->
-		<copy file="${jni.so}" tofile="${amd64}/linux/libtsk_jni.so"/>
+		<copy file="${jni.so}" tofile="${amd64}/linux/libtsk_jni.so" overwrite="true"/>
 		<!-- x86 -->
-		<copy file="${jni.so}" tofile="${x86}/linux/libtsk_jni.so"/>
+		<copy file="${jni.so}" tofile="${x86}/linux/libtsk_jni.so" overwrite="true"/>
 		<!-- i386 -->
-		<copy file="${jni.so}" tofile="${i386}/linux/libtsk_jni.so"/>
+		<copy file="${jni.so}" tofile="${i386}/linux/libtsk_jni.so" overwrite="true"/>
 		<!-- i586 -->
-		<copy file="${jni.so}" tofile="${i586}/linux/libtsk_jni.so"/>
+		<copy file="${jni.so}" tofile="${i586}/linux/libtsk_jni.so" overwrite="true"/>
 		<!-- i686 -->
-		<copy file="${jni.so}" tofile="${i686}/linux/libtsk_jni.so"/>
+		<copy file="${jni.so}" tofile="${i686}/linux/libtsk_jni.so" overwrite="true"/>
 	</target>
 
 	<target name="copyLibs" depends="copyLinuxLibs,copyMacLibs" />
