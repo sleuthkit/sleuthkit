@@ -198,7 +198,7 @@ public class SleuthkitCase {
         // add columns for existing tables
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN md5 TEXT;");
-        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN display_name TEXT;");
+        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN description TEXT;");
         statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN display_name TEXT;");
 		
 		// Make the prepared statements available for use in migrating legacy data.
