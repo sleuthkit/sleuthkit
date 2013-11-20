@@ -10,7 +10,7 @@
  */
 #include "tsk/tsk_tools_i.h"
 #include "tsk/auto/tsk_case_db.h"
-#include "sqlite_index.h"
+#include "tsk/hashdb/sqlite_index.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>

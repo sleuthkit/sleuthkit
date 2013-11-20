@@ -293,4 +293,18 @@ public class Image extends AbstractContent {
         }
         return errorString;
     }
+	
+	/**
+	 * Get the Hash stored in this Image.
+	 * 
+	 * Returns null if the image is not an ewf image.
+	 * @return the image hash.
+	 */
+	public String getHash() {
+		try {
+			return getSleuthkitCase().getImageHash(this);
+		} catch (TskCoreException ex) {
+			return null;
+		}
+	}
 }
