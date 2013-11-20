@@ -17,9 +17,10 @@ tsk_jar = $(top_builddir)/bindings/java/dist/Tsk_DataModel.jar
 jardir = $(prefix)/share/java
 jar_DATA = $(tsk_jar)
 
+$(tsk_jar):
 
-$(tsk_jar): 
-	ant dist $(ANT_PROPS) 
+all-local:
+	ant dist $(ANT_PROPS) -Dcalled.from=all-local
 
 CLEANFILES = $(tsk_jar)
 
