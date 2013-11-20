@@ -178,29 +178,59 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
     // Make the Tables
 
 	if (attempt_exec_nocallback
-		("CREATE TABLE properties (name TEXT, value TEXT);",
-		"Error creating properties table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		("CREATE TABLE db_properties (name TEXT NOT NULL, value TEXT);",
+		"Error creating db_properties table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 		return 1;
 	}
 
 	snprintf(stmt, 1024,
-		"INSERT INTO properties (name, value) VALUES ('%s', '%s');",
+		"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
 		IDX_SCHEMA_VER, IDX_VERSION_NUM);
-	if (attempt_exec_nocallback(stmt, "Error adding schema info to properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+	if (attempt_exec_nocallback(stmt, "Error adding schema info to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 		return 1;
 	}
 
+    // Default prop: Hashset Name
 	snprintf(stmt, 1024,
-		"INSERT INTO properties (name, value) VALUES ('%s', '%s');",
+		"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
 		IDX_HASHSET_NAME, hdb_info->db_name);
-	if (attempt_exec_nocallback(stmt, "Error adding name to properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+	if (attempt_exec_nocallback(stmt, "Error adding name to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 		return 1;
 	}
 
+    // Default prop: Hashset Type
+    std::string db_type_str;
+    switch(hdb_info->db_type) {
+        case TSK_HDB_DBTYPE_MD5SUM_ID:
+            db_type_str = "md5sum";
+        break;
+        case TSK_HDB_DBTYPE_NSRL_ID:
+            db_type_str = "NSRL";
+        break;
+        case TSK_HDB_DBTYPE_HK_ID:
+            db_type_str = "HashKeeper";
+        break;
+        case TSK_HDB_DBTYPE_ENCASE_ID:
+            db_type_str = "EnCase";
+        break;
+        case TSK_HDB_DBTYPE_IDXONLY_ID:
+            db_type_str = "TskSqlite";
+        break;
+    }
+    if (!db_type_str.empty()) {
+	    snprintf(stmt, 1024,
+		    "INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
+            IDX_HASHSET_TYPE, db_type_str.c_str());
+	    if (attempt_exec_nocallback(stmt, "Error adding updateable to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		    return 1;
+	    }
+    }
+
+    // Default prop: Updateable
 	snprintf(stmt, 1024,
-		"INSERT INTO properties (name, value) VALUES ('%s', '%s');",
+		"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
 		IDX_HASHSET_UPDATEABLE, (hdb_info->idx_info->updateable == 1) ? "true" : "false");
-	if (attempt_exec_nocallback(stmt, "Error adding updateable to properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+	if (attempt_exec_nocallback(stmt, "Error adding updateable to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 		return 1;
 	}
 
@@ -218,17 +248,17 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 	}
 #endif
 
-    // The names table enables the user to optionally map one or many names to each hash.
+    // The file_names table enables the user to optionally map one or many names to each hash.
     // "name" should be the filename without the path.
 	if (attempt_exec_nocallback
-		("CREATE TABLE names (name TEXT, hash_id INTEGER);",
-		"Error creating names table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+		("CREATE TABLE file_names (name TEXT NOT NULL, hash_id INTEGER NOT NULL);",
+		"Error creating file_names table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 			return 1;
 	}
 
     // The comments table enables the user to optionally map one or many arbitrary strings to each hash.
 	if (attempt_exec_nocallback
-		("CREATE TABLE comments (comment TEXT, hash_id INTEGER);",
+		("CREATE TABLE comments (comment TEXT NOT NULL, hash_id INTEGER NOT NULL);",
 		"Error creating comments table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 			return 1;
 	}
@@ -414,7 +444,7 @@ sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
 
     char stmt[1024];
 	snprintf(stmt, 1024,
-		"INSERT INTO names (name, hash_id) VALUES ('%s', '%d');", value, id);
+		"INSERT INTO file_names (name, hash_id) VALUES ('%s', '%d');", value, id);
 	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 		return 1;
 	}
@@ -559,7 +589,7 @@ sqlite_v1_lookup_str(TSK_HDB_INFO * hdb_info, const char* hvalue,
     if ((ret == 1) && (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)
         && !(flags & TSK_HDB_FLAG_QUICK) && (action != NULL)) {
         //name is blank because we don't have a name in this case
-        ///@todo query the names table for associations
+        ///@todo query the file_names table for associations
         char * name = "";
         action(hdb_info, hvalue, name, ptr);
     }
@@ -854,7 +884,7 @@ void * sqlite_v1_getAllData(TSK_HDB_INFO * hdb_info, unsigned long hashId)
     }
     {
         char selectStmt[1024];
-        snprintf(selectStmt, 1024, "SELECT name from names where hash_id=%d", hashId);
+        snprintf(selectStmt, 1024, "SELECT name from file_names where hash_id=%d", hashId);
         getStrings(hdb_info, selectStmt,  h->names);
     }
     {
@@ -882,7 +912,7 @@ sqlite_v1_get_properties(TSK_HDB_INFO * hdb_info)
 
     tsk_take_lock(&hdb_info->lock);
     
-    snprintf(selectStmt, 1024, "SELECT value from properties where name='%s'", IDX_HASHSET_UPDATEABLE);
+    snprintf(selectStmt, 1024, "SELECT value from db_properties where name='%s'", IDX_HASHSET_UPDATEABLE);
     prepare_stmt(selectStmt, &stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
 
 	if (sqlite3_step(stmt) == SQLITE_ROW) {
