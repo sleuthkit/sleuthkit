@@ -243,12 +243,26 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     file_info("id",next_id++);
     file_info("name_type",tsk_fs_name_type_str[fs_file->name->type]);
 
+    /* Report metadata structures' allocation first */
+    if (fs_file->meta != NULL)
+    {
+        // Also report filesize to preserve the original element order, and save an if branch
+        file_info("filesize",fs_file->meta->size); 
+
+        if(fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc_inode",1);
+        if(fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) file_info("alloc_inode",0);
+    }
+    if(fs_file->name != NULL)
+    {
+        if(fs_file->name->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc_name",1);
+        if(fs_file->name->flags & TSK_FS_META_FLAG_UNALLOC) file_info("alloc_name",0);
+    }
+
+    
+    /* Report contents of metadata structures */
     if(fs_file->meta != NULL)
     {
         /* fs_file->meta */
-        file_info("filesize",fs_file->meta->size);
-        if(fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc_inode",1);
-        if(fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) file_info("alloc_inode",0);
         if(fs_file->meta->flags & TSK_FS_META_FLAG_USED)    file_info("used",1);
         if(fs_file->meta->flags & TSK_FS_META_FLAG_UNUSED)  file_info("unused",1);
         if(fs_file->meta->flags & TSK_FS_META_FLAG_ORPHAN)  file_info("orphan",1);
@@ -292,12 +306,6 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     	    file_infot("bkup_time",fs_file->meta->time2.hfs.bkup_time);
     	}
         }
-    }
-
-    if(fs_file->name != NULL)
-    {
-        if(fs_file->name->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc_name",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_UNALLOC) file_info("alloc_name",0);
     }
 
     if(fs_file->meta == NULL)
