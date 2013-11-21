@@ -62,8 +62,9 @@ if CPPUNIT
   UNIT_TESTS=unit_tests
 endif
 
+# Compile java bindings if all of the dependencies existed
 if X_JNI
-  JAVA_BINDINGS=bindings/java/jni bindings/java
+  JAVA_BINDINGS=bindings/java
 else   
   JAVA_BINDINGS=
 endif

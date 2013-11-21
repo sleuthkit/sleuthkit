@@ -34,10 +34,6 @@ import java.util.List;
 public class LibraryUtils {
 	
 	public static final String[] EXTS = new String[] { ".so", ".dylib", ".dll", ".jnilib" };
-	
-	public static final Lib[] CRT_LIBS = new Lib[] { Lib.MSVCP, Lib.MSVCR };
-	
-	public static final Lib[] OTHER_LIBS = new Lib[] { Lib.ZLIB, Lib.LIBEWF };
 
 	/**
 	 * The libraries the TSK Datamodel needs.
@@ -67,51 +63,6 @@ public class LibraryUtils {
 	}
 	
 	/**
-	 * Load all libraries needed for the current platform except the TSK JNI.
-	 * 
-	 * @return 
-	 */
-	public static boolean loadAuxilliaryLibs() {
-		System.out.println("Java lib path: " + System.getProperty("java.library.path"));
-		boolean loaded = true;
-        if (LibraryUtils.isWindows()) {
-            loaded = LibraryUtils.loadCRTLibs();
-		}
-
-		// Always try to load from jar first.
-		for(Lib lib : LibraryUtils.getLibs()) {
-			// Always try to load from jar first.
-			loaded = LibraryUtils.loadLibFromJar(lib);
-			if (!loaded) {
-				// if that fails, try to load from system
-				loaded = loadLibFromSystem(lib);
-			}
-			if (!loaded) {
-				System.out.println("SleuthkitJNI: failed to load " + lib.getLibName());
-			} else {
-				System.out.println("SleuthkitJNI: loaded " + lib.getLibName());
-			}
-		}
-		return loaded;
-	}
-	
-	/**
-	 * Try to load the given Library from the System path.
-	 * 
-	 * @param lib
-	 * @return 
-	 */
-	private static boolean loadLibFromSystem(Lib lib) {
-		String libName = (isWindows() ? lib.getLibName() : lib.getUnixName());
-		try {
-			System.loadLibrary(libName);
-		} catch (UnsatisfiedLinkError e) {
-			return false;
-		}
-		return true;
-	}
-	
-	/**
 	 * Load the Sleuthkit JNI.
 	 * 
 	 * @return 
@@ -122,42 +73,6 @@ public class LibraryUtils {
 			System.out.println("SleuthkitJNI: failed to load " + Lib.TSK_JNI.getLibName());
 		} else {
 			System.out.println("SleuthkitJNI: loaded " + Lib.TSK_JNI.getLibName());
-		}
-		return loaded;
-	}
-	
-	/** Load the CRT Libraries.
-	 * 
-	 * @return 
-	 */
-	private static boolean loadCRTLibs() {
-		boolean loaded = true;
-		try { 
-			// on windows force loading ms crt dependencies first
-			// in case linker can't find them on some systems
-			// Note: if shipping with a different CRT version, this will only print a warning
-			// and try to use linker mechanism to find the correct versions of libs.
-			// We should update this if we officially switch to a new version of CRT/compiler
-			for(LibraryUtils.Lib crt : LibraryUtils.getCRTLibs()) {
-				loaded = LibraryUtils.loadLibFromJar(crt);
-				if(!loaded) {
-					System.out.println("SleuthkitJNI: failed to load " + crt.getLibName());
-				} else {
-					System.out.println("SleuthkitJNI: loaded " + crt.getLibName());
-				}
-			}
-		} catch (UnsatisfiedLinkError e1) {
-			System.out.println(e1.toString());
-			try {
-				//Try to load from system path.
-				System.out.println("Can't find CRT libraries, attempting to load from System.loadLibrary");
-				System.loadLibrary("msvcr100");
-				System.loadLibrary("msvcp100");
-				loaded = true;
-			} catch (UnsatisfiedLinkError e2) {
-				System.out.println("SleuthkitJNI: error loading CRT libraries, " + e2.toString());
-				loaded = false;
-			}
 		}
 		return loaded;
 	}
@@ -265,12 +180,4 @@ public class LibraryUtils {
 		} 
 		return true;
 	} 
-	
-	private static Lib[] getCRTLibs() {
-		return CRT_LIBS;
-	}
-	
-	private static Lib[] getLibs() {
-		return OTHER_LIBS;
-	}
 }
