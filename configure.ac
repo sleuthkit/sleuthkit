@@ -178,13 +178,6 @@ AS_IF(
 )
 AS_IF([test "x$ac_cv_lib_z_inflate" = "xyes"], [ax_zlib=yes], [ax_zlib=no])
 
-AM_CONDITIONAL([X_ZLIB],[test "x$with_zlib" != "xno" && test "x$with_zlib" != "xyes"])
-AS_IF([test "x$with_zlib" != "xno"],
-   [Z_PATH="${with_zlib}/lib"],
-   [AC_MSG_NOTICE([failed to make Z_PATH])]
-)
-AC_SUBST(Z_PATH, $Z_PATH)
-
 dnl needed for sqllite
 AC_CHECK_LIB(dl, dlopen)
 
@@ -215,12 +208,6 @@ AS_IF([test "x$with_libewf" != "xno"],
 )
 AS_IF([test "x$ac_cv_lib_ewf_libewf_get_version" = "xyes"], [ax_libewf=yes], [ax_libewf=no])
 
-AM_CONDITIONAL([X_LIBEWF],[test "x$with_libewf" != "xno" && test "x$with_libewf" != "xyes"])
-AS_IF([test "x$with_libewf" != "xno"],
-   [EWF_PATH="${with_libewf}/lib"],
-)
-AC_SUBST(EWF_PATH, $EWF_PATH)
-   
 dnl sqlite requires pthread libraries - this was copied from its configure.ac
 dnl AC_SEARCH_LIBS(pthread_create, pthread)
 AC_SEARCH_LIBS(dlopen, dl)
