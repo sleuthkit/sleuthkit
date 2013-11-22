@@ -6250,6 +6250,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if (file != NULL) {
         hfs->root_crtime = file->meta->crtime;
         hfs->has_root_crtime = TRUE;
+        tsk_fs_file_close(file);
     }
     else {
         hfs->has_root_crtime = FALSE;
@@ -6280,6 +6281,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             hfs->meta_crtime = file->meta->crtime;
             hfs->has_meta_crtime = TRUE;
             hfs->meta_inum = inum;
+            tsk_fs_file_close(file);
         }
     }
 
@@ -6298,6 +6300,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             hfs->metadir_crtime = file->meta->crtime;
             hfs->has_meta_dir_crtime = TRUE;
             hfs->meta_dir_inum = inum;
+            tsk_fs_file_close(file);
         }
     }
 
