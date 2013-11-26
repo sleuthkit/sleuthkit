@@ -188,7 +188,11 @@ public class BlackboardAttribute {
 		TSK_CATEGORY(89, "TSK_CATEGORY", "Category"),	// category/type, possible value set varies by the artifact
 		TSK_EMAIL_REPLYTO(90, "TSK_EMAIL_REPLYTO", "ReplyTo Address"),	// ReplyTo address
 		TSK_SERVER_NAME(91, "TSK_SERVER_NAME", "Server Name"),	// server name, e.g. a mail server name - "smtp.google.com", a DNS server name...
-		
+		TSK_COUNT(92, "TSK_COUNT", "Count"), // Count related to the artifact
+		TSK_MIN_COUNT(93, "TSK_MIN_COUNT", "Minimum Count"), // Minimum number/count
+		TSK_PATH_SOURCE(94, "TSK_PATH_SOURCE", "Path Source"), // Path to a source file related to the artifact
+		TSK_PERMISSIONS(95, "TSK_PERMISSIONS", "Permissions"), // Permissions
+		TSK_PROG_LAUNCHED(96, "TSK_PROG_LAUNCHED", "Program Launched"), // Flag for whether a program has been run
 		
 		
 		
