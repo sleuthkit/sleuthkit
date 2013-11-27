@@ -188,6 +188,11 @@ enum TSK_ATTRIBUTE_TYPE {
 	TSK_CATEGORY = 89, 	///< category/type, possible value set varies by the artifact
 	TSK_EMAIL_REPLYTO = 90, ///< ReplyTo address
 	TSK_SERVER_NAME = 91, 	///< server name
+	TSK_COUNT = 92, ///< Count related to the artifact
+	TSK_MIN_COUNT = 93, ///<  Minimum number/count
+	TSK_PATH_SOURCE = 94, ///< Path to a source file related to the artifact
+	TSK_PERMISSIONS = 95, ///< Permissions
+	TSK_PROG_LAUNCHED = 96, ///< Flag for whether a program has been run
 
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 
