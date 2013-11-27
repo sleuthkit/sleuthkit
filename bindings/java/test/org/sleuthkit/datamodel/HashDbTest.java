@@ -160,9 +160,11 @@ public class HashDbTest extends ImgTraverser {
             //re-opening test
             int handle2 = SleuthkitJNI.openHashDatabase(hashfn);
             assertTrue(handle2 > 0);
-            SleuthkitJNI.addToHashDatabase(null, md5hash, null, null, null, handle2);
-            boolean hasLookup2 = SleuthkitJNI.hashDatabaseHasLookupIndex(handle2);
-			assertTrue(hasLookup2);
+            // SleuthkitJNI.addToHashDatabase(null, md5hash, null, null, null, handle2);
+            // boolean hasLookup2 = SleuthkitJNI.hashDatabaseHasLookupIndex(handle2);
+			// assertTrue(hasLookup2);
+			// boolean hlio2 = SleuthkitJNI.hashDatabaseHasLegacyLookupIndexOnly(handle);
+			// assertFalse(hlio2);
             
             // Test Reindexing            
 			String legacyDbName = "testmd5.dat";
