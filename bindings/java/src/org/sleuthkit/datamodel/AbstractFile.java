@@ -619,7 +619,7 @@ public abstract class AbstractFile extends AbstractContent {
 		String str = "";
 		if (metaFlags.contains(TSK_FS_META_FLAG_ENUM.ALLOC)) {
 			str = TSK_FS_META_FLAG_ENUM.ALLOC.toString();
-		} else if (metaFlags.contains(TSK_FS_META_FLAG_ENUM.ALLOC)) {
+		} else if (metaFlags.contains(TSK_FS_META_FLAG_ENUM.UNALLOC)) {
 			str = TSK_FS_META_FLAG_ENUM.UNALLOC.toString();
 		}
 		return str;
