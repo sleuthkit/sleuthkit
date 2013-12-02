@@ -53,7 +53,7 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
         /* Open the database file */
 #ifdef TSK_WIN32
         int fd;
-        if (_wsopen_s(&fd, db_file, _O_RDONLY, _SH_DENYNO, 0)) {
+        if (_wsopen_s(&fd, db_file, _O_RDONLY | _O_BINARY, _SH_DENYNO, 0)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
@@ -62,7 +62,7 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
             return NULL;
         }
 
-        hDb = _wfdopen(fd, L"r");
+        hDb = _wfdopen(fd, L"rb");
 
 #else
         if (NULL == (hDb = fopen(db_file, "r"))) {
