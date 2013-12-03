@@ -132,7 +132,6 @@ public class SleuthkitJNI {
 
 	//Linked library loading
 	static {
-		LibraryUtils.loadAuxilliaryLibs();
 		LibraryUtils.loadSleuthkitJNI();
     }
 
